@@ -26,8 +26,11 @@
     "index.js"
   ],
   "dependencies": {
-    "@sanity/cli": "3.70.0",
+    "@sanity/cli": "workspace:*",
     "resolve-pkg": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.7"
   },
   "engines": {
     "node": ">=18"

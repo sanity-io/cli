@@ -1,0 +1,49 @@
+{
+  "name": "@sanity/cli-monorepo",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Command line tool monorepo for Sanity",
+  "keywords": [
+    "sanity",  "cli"
+  ],
+  "homepage": "https://github.com/sanity-io/cli#readme",
+  "bugs": {
+    "url": "https://github.com/sanity-io/cli/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sanity-io/cli.git"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "scripts": {
+    "build": "turbo run build",
+    "check": "npm run check:lint && npm run check:types",
+    "check:lint": "eslint .",
+    "check:types": "tsc --noEmit",
+    "clean": "rimraf packages/@sanity/*/lib packages/*/lib  ",
+    "dev": "turbo run dev",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@sanity/pkg-utils": "^7.0.1",
+    "@types/node": "^20.17.12",
+    "prettier": "^3.4.2",
+    "prettier-plugin-packagejson": "^2.5.6",
+    "tsx": "^4.19.2"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-sanity": "^7.1.3",
+    "rimraf": "^5.0.10",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
