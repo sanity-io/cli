@@ -1,15 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022"],
+    "target": "ES2023",
+    "lib": ["ES2023"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "node",
+    "module": "NodeNext",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",

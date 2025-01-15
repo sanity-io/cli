@@ -1,4 +1,4 @@
-import printVersionResult from './printVersionResult'
+import printVersionResult from './printVersionResult.js'
 
 const help = `
 Shows a list of installed Sanity modules and their respective versions, and

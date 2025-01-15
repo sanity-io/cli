@@ -2,7 +2,7 @@ import {TagIcon} from '@sanity/icons'
 
 import {defineField} from 'sanity'
 
-import ShopifyDocumentStatus from '../../../components/media/ShopifyDocumentStatus'
+import ShopifyDocumentStatus from '../../../components/media/ShopifyDocumentStatus.js'
 
 export const productReferenceType = defineField({
   name: 'productReference',

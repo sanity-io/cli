@@ -2,8 +2,8 @@ import {
   getPackageManagerChoice,
   installDeclaredPackages,
   installNewPackages,
-} from '../../packageManager'
-import {type CliCommandDefinition} from '../../types'
+} from '../../packageManager.js'
+import {type CliCommandDefinition} from '../../types.js'
 
 const installCommand: CliCommandDefinition = {
   name: 'install',

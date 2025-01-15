@@ -1,8 +1,7 @@
-
 import {PackageIcon} from '@sanity/icons'
 import {defineField} from 'sanity'
 
-import ShopifyDocumentStatus from '../../../components/media/ShopifyDocumentStatus'
+import ShopifyDocumentStatus from '../../../components/media/ShopifyDocumentStatus.js'
 
 export const collectionReferenceType = defineField({
   name: 'collectionReference',

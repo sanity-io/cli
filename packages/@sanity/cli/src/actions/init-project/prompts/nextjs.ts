@@ -1,4 +1,4 @@
-import {type CliPrompter} from '../../../types'
+import {type CliPrompter} from '../../../types.js'
 
 export function promptForEmbeddedStudio(prompt: CliPrompter): Promise<string> {
   return prompt.single({

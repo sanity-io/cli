@@ -448,8 +448,10 @@ function resolveImportSpecifier({
             resolver,
             babelConfig,
           })
-        } catch (e) {
-          if (e.cause !== `noBinding:${importName}`) throw e
+        } catch (e: unknown) {
+          if (!(e instanceof Error) || !('cause' in e) || e.cause !== `noBinding:${importName}`) {
+            throw e
+          }
         }
       }
     },

@@ -7,8 +7,8 @@ import {
   useClient,
 } from 'sanity'
 import {useRouter} from 'sanity/router'
-import type {ShopifyDocument, ShopifyDocumentActionProps} from './types'
-import {SANITY_API_VERSION} from '../../constants'
+import type {ShopifyDocument, ShopifyDocumentActionProps} from './types.js'
+import {SANITY_API_VERSION} from '../../constants.js'
 
 export default (props: ShopifyDocumentActionProps): DocumentActionDescription | undefined => {
   const {
@@ -51,7 +51,7 @@ export default (props: ShopifyDocumentActionProps): DocumentActionDescription | 
                 _type == "productVariant"
                 && store.productId == $productId
               ]._id`,
-            {productId}
+            {productId},
           )
         }
 

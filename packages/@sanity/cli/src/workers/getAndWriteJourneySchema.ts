@@ -1,6 +1,6 @@
 import {parentPort, workerData} from 'node:worker_threads'
 
-import {getAndWriteJourneySchema} from '../util/journeyConfig'
+import {getAndWriteJourneySchema} from '../util/journeyConfig.js'
 
 getAndWriteJourneySchema(workerData)
   .then(() => parentPort?.postMessage({type: 'success'}))

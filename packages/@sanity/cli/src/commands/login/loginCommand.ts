@@ -1,5 +1,5 @@
-import {login} from '../../actions/login/login'
-import {type CliCommandDefinition} from '../../types'
+import {login} from '../../actions/login/login.js'
+import {type CliCommandDefinition} from '../../types.js'
 
 const helpText = `
 Options

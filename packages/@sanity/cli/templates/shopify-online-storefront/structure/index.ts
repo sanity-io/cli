@@ -1,6 +1,6 @@
 import {ListItemBuilder, StructureResolver} from 'sanity/structure'
-import collections from './collectionStructure'
-import products from './productStructure'
+import collections from './collectionStructure.js'
+import products from './productStructure.js'
 
 /**
  * Structure overrides

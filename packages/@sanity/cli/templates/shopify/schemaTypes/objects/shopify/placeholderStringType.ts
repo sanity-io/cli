@@ -1,5 +1,5 @@
-import { defineType } from 'sanity'
-import PlaceholderStringInput from '../../../components/inputs/PlaceholderString'
+import {defineType} from 'sanity'
+import PlaceholderStringInput from '../../../components/inputs/PlaceholderString.js'
 
 export const placeholderStringType = defineType({
   name: 'placeholderString',
@@ -8,5 +8,4 @@ export const placeholderStringType = defineType({
   components: {
     input: PlaceholderStringInput,
   },
-}
-)
+})

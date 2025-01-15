@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {readdirRecursive} from './readdirRecursive'
+import {readdirRecursive} from './readdirRecursive.js'
 
 interface CopyOptions {
   rename?: (originalName: string) => string

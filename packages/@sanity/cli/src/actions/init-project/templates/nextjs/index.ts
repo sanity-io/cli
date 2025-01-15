@@ -1,4 +1,4 @@
-import {blogSchemaFolder, blogSchemaJS, blogSchemaTS} from './schemaTypes/blog'
+import {blogSchemaFolder, blogSchemaJS, blogSchemaTS} from './schemaTypes/blog.js'
 
 export const sanityConfigTemplate = (hasSrcFolder = false): string => `'use client'
 
@@ -214,7 +214,7 @@ export const sanityFolder = (
   // Files used in both templates
   const structure: FolderStructure = {
     'env.': useTypeScript ? envTS : envJS,
-    'lib': {
+    lib: {
       'client.': client,
       'live.': live,
       'image.': useTypeScript ? imageTS : imageJS,

@@ -1,7 +1,7 @@
 import execa, {type CommonOptions, type ExecaReturnValue} from 'execa'
 
-import {type CliCommandContext} from '../types'
-import {getPartialEnvWithNpmPath, type PackageManager} from './packageManagerChoice'
+import {type CliCommandContext} from '../types.js'
+import {getPartialEnvWithNpmPath, type PackageManager} from './packageManagerChoice.js'
 
 export interface UninstallOptions {
   packageManager: PackageManager

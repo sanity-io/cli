@@ -1,8 +1,13 @@
 import {expect} from 'vitest'
 
-import {describeCliTest, testConcurrent} from './shared/describe'
-import {getTestRunArgs, runSanityCmdCommand, studioVersions, testClient} from './shared/environment'
-import {request} from './shared/request'
+import {describeCliTest, testConcurrent} from './shared/describe.js'
+import {
+  getTestRunArgs,
+  runSanityCmdCommand,
+  studioVersions,
+  testClient,
+} from './shared/environment.js'
+import {request} from './shared/request.js'
 
 describeCliTest('CLI: `sanity graphql`', () => {
   describeCliTest.each(studioVersions)('%s', (version) => {
@@ -31,7 +36,7 @@ describeCliTest('CLI: `sanity graphql`', () => {
       const response = await request(graphqlUrl, {
         method: 'POST',
         body: JSON.stringify({query: '{allPerson {_id, name}}'}),
-        headers: {'content-type': 'application/json', 'accept': 'application/json'},
+        headers: {'content-type': 'application/json', accept: 'application/json'},
       }).then(
         (res) =>
           JSON.parse(res.body.toString('utf8')) as Promise<{

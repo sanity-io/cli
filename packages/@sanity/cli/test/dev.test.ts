@@ -4,9 +4,9 @@ import path from 'node:path'
 
 import {describe, expect, test} from 'vitest'
 
-import {describeCliTest} from './shared/describe'
-import {testServerCommand} from './shared/devServer'
-import {getTestRunArgs, studiosPath, studioVersions} from './shared/environment'
+import {describeCliTest} from './shared/describe.js'
+import {testServerCommand} from './shared/devServer.js'
+import {getTestRunArgs, studiosPath, studioVersions} from './shared/environment.js'
 
 describeCliTest('CLI: `sanity dev`', () => {
   describe.each(studioVersions)('%s', (version) => {

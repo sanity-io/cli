@@ -5,8 +5,8 @@ import getGitConfig from '@rexxars/gitconfiglocal'
 import {getGitUserInfo} from 'git-user-info'
 import promiseProps from 'promise-props-recursive'
 
-import {type CliCommandContext} from '../types'
-import {getCliToken} from './clientWrapper'
+import {type CliCommandContext} from '../types.js'
+import {getCliToken} from './clientWrapper.js'
 
 export interface ProjectDefaults {
   license: string

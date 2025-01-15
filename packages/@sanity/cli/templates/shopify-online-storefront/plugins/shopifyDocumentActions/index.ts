@@ -4,10 +4,10 @@ import {
   DocumentActionsResolver,
   NewDocumentOptionsResolver,
 } from 'sanity'
-import shopifyDelete from './shopifyDelete'
-import shopifyLink from './shopifyLink'
+import shopifyDelete from './shopifyDelete.js'
+import shopifyLink from './shopifyLink.js'
 
-import {SHOPIFY_DOCUMENT_TYPES} from '../../constants'
+import {SHOPIFY_DOCUMENT_TYPES} from '../../constants.js'
 
 export const resolveDocumentActions: DocumentActionsResolver = (prev, {schemaType}) => {
   if (SHOPIFY_DOCUMENT_TYPES.includes(schemaType)) {
@@ -15,7 +15,7 @@ export const resolveDocumentActions: DocumentActionsResolver = (prev, {schemaTyp
       (previousAction: DocumentActionComponent) =>
         previousAction.action === 'publish' ||
         previousAction.action === 'unpublish' ||
-        previousAction.action === 'discardChanges'
+        previousAction.action === 'discardChanges',
     )
 
     return [

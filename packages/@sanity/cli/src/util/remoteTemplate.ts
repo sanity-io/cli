@@ -7,8 +7,8 @@ import {type ReadableStream} from 'node:stream/web'
 import {ENV_TEMPLATE_FILES, REQUIRED_ENV_VAR} from '@sanity/template-validator'
 import {x} from 'tar'
 
-import {debug} from '../debug'
-import {type CliApiClient, type PackageJson} from '../types'
+import {debug} from '../debug.js'
+import {type CliApiClient, type PackageJson} from '../types.js'
 
 const DISALLOWED_PATHS = [
   // Prevent security risks from unknown GitHub Actions
@@ -55,7 +55,7 @@ function isGithubRepoShorthand(value: string): boolean {
 }
 
 function isGithubRepoUrl(value: string | URL): value is URL | GithubUrlString {
-  if (URL.canParse(value) === false) {
+  if (typeof value === 'string' && !URL.canParse(value)) {
     return false
   }
   const url = new URL(value)
@@ -149,7 +149,7 @@ export async function getGitHubRepoInfo(value: string, bearerToken?: string): Pr
       throw new Error('GitHub repository not found')
     }
 
-    const info = await infoResponse.json()
+    const info: any = await infoResponse.json()
 
     return {
       username,

@@ -1,7 +1,7 @@
 import {EarthGlobeIcon} from '@sanity/icons'
 import {type DocumentActionDescription} from 'sanity'
-import {collectionUrl, productUrl, productVariantUrl} from '../../utils/shopifyUrls'
-import type {ShopifyDocument, ShopifyDocumentActionProps} from './types'
+import {collectionUrl, productUrl, productVariantUrl} from '../../utils/shopifyUrls.js'
+import type {ShopifyDocument, ShopifyDocumentActionProps} from './types.js'
 
 export default (props: ShopifyDocumentActionProps): DocumentActionDescription | undefined => {
   const {published, type}: {published: ShopifyDocument; type: string} = props

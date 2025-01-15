@@ -1,0 +1,12 @@
+{
+  "name": "@repo/dev-aliases",
+  "version": "3.70.0",
+  "private": true,
+  "description": "Dev aliases for the CLI monorepo",
+  "type": "module",
+  "exports": {
+    ".": "./dev-aliases.cjs",
+    "./vite": "./vite.mjs"
+  },
+  "main": "./dev-aliases.cjs"
+}

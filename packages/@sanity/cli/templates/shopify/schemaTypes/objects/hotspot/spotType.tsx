@@ -1,6 +1,6 @@
 import {defineField} from 'sanity'
 
-import ShopifyDocumentStatus from '../../../components/media/ShopifyDocumentStatus'
+import ShopifyDocumentStatus from '../../../components/media/ShopifyDocumentStatus.js'
 
 export const spotType = defineField({
   name: 'spot',

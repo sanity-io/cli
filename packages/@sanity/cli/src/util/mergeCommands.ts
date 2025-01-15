@@ -6,9 +6,9 @@ import {
   type CliCommandGroupDefinition,
   type SanityCore,
   type SanityModuleInternal,
-} from '../types'
-import {dynamicRequire} from './dynamicRequire'
-import {isCommandGroup} from './isCommandGroup'
+} from '../types.js'
+import {dynamicRequire} from './dynamicRequire.js'
+import {isCommandGroup} from './isCommandGroup.js'
 
 export interface MergeOptions {
   cwd: string

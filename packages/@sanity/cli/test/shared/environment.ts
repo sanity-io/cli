@@ -185,7 +185,7 @@ ${stdoutStr}\n
   })
 }
 
-class ExecError extends Error {
+export class ExecError extends Error {
   code: number
   stdout: string
   stderr: string

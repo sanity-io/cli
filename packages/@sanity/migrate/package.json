@@ -61,11 +61,12 @@
     "p-map": "^7.0.1"
   },
   "devDependencies": {
+    "@repo/tsconfig": "workspace:*",
     "@types/debug": "^4.1.12",
     "rimraf": "^5.0.10",
     "vitest": "^2.1.8"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }

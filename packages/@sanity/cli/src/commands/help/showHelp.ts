@@ -1,11 +1,11 @@
-import {debug} from '../../debug'
-import {type CliCommandDefinition} from '../../types'
+import {debug} from '../../debug.js'
+import {type CliCommandDefinition} from '../../types.js'
 import {
   generateCommandDocumentation,
   generateCommandsDocumentation,
-} from '../../util/generateCommandsDocumentation'
-import {isCommandGroup} from '../../util/isCommandGroup'
-import {getNoSuchCommandText} from '../../util/noSuchCommandText'
+} from '../../util/generateCommandsDocumentation.js'
+import {isCommandGroup} from '../../util/isCommandGroup.js'
+import {getNoSuchCommandText} from '../../util/noSuchCommandText.js'
 
 const showHelpAction: CliCommandDefinition['action'] = async (args, context) => {
   const [commandName, subCommandName] = args.argsWithoutOptions

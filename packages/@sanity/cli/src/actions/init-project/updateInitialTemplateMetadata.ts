@@ -1,5 +1,5 @@
-import {debug} from '../../debug'
-import {type CliApiClient} from '../../types'
+import {debug} from '../../debug.js'
+import {type CliApiClient} from '../../types.js'
 
 export async function updateInitialTemplateMetadata(
   apiClient: CliApiClient,

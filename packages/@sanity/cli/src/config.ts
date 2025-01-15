@@ -1,4 +1,4 @@
-import {type CliConfig} from './types'
+import {type CliConfig} from './types.js'
 
 /** @beta */
 export function defineCliConfig(config: CliConfig): CliConfig {

@@ -1,6 +1,6 @@
 import {parentPort, workerData} from 'node:worker_threads'
 
-import {getCliConfig} from '../util/getCliConfig'
+import {getCliConfig} from '../util/getCliConfig.js'
 
 // We're communicating with a parent process through a message channel
 getCliConfig(workerData, {forked: false})

@@ -1,4 +1,4 @@
-import {type CliCommandGroupDefinition} from '../../types'
+import {type CliCommandGroupDefinition} from '../../types.js'
 
 const projectGroup: CliCommandGroupDefinition = {
   name: 'projects',

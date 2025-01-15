@@ -1,7 +1,7 @@
 import {describe, expect, test, vi} from 'vitest'
 
-import {describeCliTest} from './shared/describe'
-import {getTestRunArgs, runSanityCmdCommand, studioVersions} from './shared/environment'
+import {describeCliTest} from './shared/describe.js'
+import {getTestRunArgs, runSanityCmdCommand, studioVersions} from './shared/environment.js'
 
 describeCliTest('CLI: `sanity dataset copy`', () => {
   describe.each(studioVersions)('%s', (version) => {

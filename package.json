@@ -4,7 +4,8 @@
   "private": true,
   "description": "Command line tool monorepo for Sanity",
   "keywords": [
-    "sanity",  "cli"
+    "sanity",
+    "cli"
   ],
   "homepage": "https://github.com/sanity-io/cli#readme",
   "bugs": {
@@ -21,7 +22,7 @@
     "check": "npm run check:lint && npm run check:types",
     "check:lint": "eslint .",
     "check:types": "tsc --noEmit",
-    "clean": "rimraf packages/@sanity/*/lib packages/*/lib  ",
+    "clean": "rimraf packages/@sanity/*/lib packages/*/lib",
     "dev": "turbo run dev",
     "format": "prettier --write ."
   },

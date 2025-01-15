@@ -1,5 +1,5 @@
 import {defineField} from 'sanity'
-import blocksToText from '../../../utils/blocksToText'
+import blocksToText from '../../../utils/blocksToText.js'
 
 export const accordionGroupType = defineField({
   name: 'accordionGroup',

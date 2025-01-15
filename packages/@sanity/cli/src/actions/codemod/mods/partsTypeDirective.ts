@@ -1,4 +1,4 @@
-import {type CodeMod} from '../types'
+import {type CodeMod} from '../types.js'
 
 const purpose = 'Add parts types directive to all ts/tsx files that has one or more part imports'
 const description = `

@@ -3,9 +3,14 @@ import path from 'node:path'
 
 import {describe, expect} from 'vitest'
 
-import templates from '../src/actions/init-project/templates'
-import {describeCliTest, testConcurrent} from './shared/describe'
-import {baseTestPath, cliProjectId, getTestRunArgs, runSanityCmdCommand} from './shared/environment'
+import templates from '../src/actions/init-project/templates.js'
+import {describeCliTest, testConcurrent} from './shared/describe.js'
+import {
+  baseTestPath,
+  cliProjectId,
+  getTestRunArgs,
+  runSanityCmdCommand,
+} from './shared/environment.js'
 
 describeCliTest('CLI: `sanity init v3`', () => {
   describe.each(Object.keys(templates))('for template %s', (template) => {

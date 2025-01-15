@@ -4,8 +4,8 @@ import {padEnd, padStart} from 'lodash'
 import {
   findSanityModuleVersions,
   type ModuleVersionResult,
-} from '../../actions/versions/findSanityModuleVersions'
-import {type CliCommandAction} from '../../types'
+} from '../../actions/versions/findSanityModuleVersions.js'
+import type {CliCommandAction} from '../../types.js'
 
 const printVersionResultCommand: CliCommandAction = async (args, context) => {
   const versions = await findSanityModuleVersions(context, {target: 'latest'})

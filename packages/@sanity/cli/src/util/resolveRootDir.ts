@@ -2,7 +2,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import {debug} from '../debug'
+import {debug} from '../debug.js'
 
 /**
  * Resolve project root directory, falling back to cwd if it cannot be found
@@ -10,8 +10,9 @@ import {debug} from '../debug'
 export function resolveRootDir(cwd: string): string {
   try {
     return resolveProjectRoot(cwd) || cwd
-  } catch (err) {
-    throw new Error(`Error occurred trying to resolve project root:\n${err.message}`)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : `${err}`
+    throw new Error(`Error occurred trying to resolve project root:\n${message}`)
   }
 }
 

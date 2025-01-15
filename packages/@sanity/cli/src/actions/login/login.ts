@@ -4,19 +4,19 @@ import os from 'node:os'
 import {type SanityClient} from '@sanity/client'
 import open from 'open'
 
-import {debug as debugIt} from '../../debug'
+import {debug as debugIt} from '../../debug.js'
 import {
   type CliApiClient,
   type CliCommandArguments,
   type CliCommandContext,
   type CliPrompter,
-} from '../../types'
-import {canLaunchBrowser} from '../../util/canLaunchBrowser'
-import {getCliToken} from '../../util/clientWrapper'
-import {TELEMETRY_CONSENT_CONFIG_KEY} from '../../util/createTelemetryStore'
-import {getUserConfig} from '../../util/getUserConfig'
-import {LoginTrace} from './login.telemetry'
-import {type LoginProvider, type ProvidersResponse, type SamlLoginProvider} from './types'
+} from '../../types.js'
+import {canLaunchBrowser} from '../../util/canLaunchBrowser.js'
+import {getCliToken} from '../../util/clientWrapper.js'
+import {TELEMETRY_CONSENT_CONFIG_KEY} from '../../util/createTelemetryStore.mjs.js'
+import {getUserConfig} from '../../util/getUserConfig.js'
+import {LoginTrace} from './login.telemetry.js'
+import {type LoginProvider, type ProvidersResponse, type SamlLoginProvider} from './types.js'
 
 const callbackEndpoint = '/callback'
 

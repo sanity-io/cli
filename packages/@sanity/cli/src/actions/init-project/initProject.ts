@@ -12,20 +12,20 @@ import pFilter from 'p-filter'
 import resolveFrom from 'resolve-from'
 import semver from 'semver'
 
-import {CLIInitStepCompleted} from '../../__telemetry__/init.telemetry'
-import {type InitFlags} from '../../commands/init/initCommand'
-import {debug} from '../../debug'
+import {CLIInitStepCompleted} from '../../__telemetry__/init.telemetry.js'
+import {type InitFlags} from '../../commands/init/initCommand.js'
+import {debug} from '../../debug.js'
 import {
   getPackageManagerChoice,
   installDeclaredPackages,
   installNewPackages,
-} from '../../packageManager'
+} from '../../packageManager.js'
 import {
   ALLOWED_PACKAGE_MANAGERS,
   allowedPackageManagersString,
   getPartialEnvWithNpmPath,
   type PackageManager,
-} from '../../packageManager/packageManagerChoice'
+} from '../../packageManager/packageManagerChoice.js'
 import {
   type CliApiClient,
   type CliCommandArguments,
@@ -34,39 +34,39 @@ import {
   type SanityCore,
   type SanityModuleInternal,
   type SanityUser,
-} from '../../types'
-import {getClientWrapper} from '../../util/clientWrapper'
-import {dynamicRequire} from '../../util/dynamicRequire'
-import {getProjectDefaults, type ProjectDefaults} from '../../util/getProjectDefaults'
-import {getProviderName} from '../../util/getProviderName'
-import {getUserConfig} from '../../util/getUserConfig'
-import {isCommandGroup} from '../../util/isCommandGroup'
-import {isInteractive} from '../../util/isInteractive'
-import {fetchJourneyConfig} from '../../util/journeyConfig'
-import {checkIsRemoteTemplate, getGitHubRepoInfo, type RepoInfo} from '../../util/remoteTemplate'
-import {login, type LoginFlags} from '../login/login'
-import {createProject} from '../project/createProject'
-import {bootstrapLocalTemplate} from './bootstrapLocalTemplate'
-import {bootstrapRemoteTemplate} from './bootstrapRemoteTemplate'
-import {type GenerateConfigOptions} from './createStudioConfig'
-import {absolutify, validateEmptyPath} from './fsUtils'
-import {tryGitInit} from './git'
-import {promptForDatasetName} from './promptForDatasetName'
-import {promptForAclMode, promptForDefaultConfig, promptForTypeScript} from './prompts'
+} from '../../types.js'
+import {getClientWrapper} from '../../util/clientWrapper.js'
+import {dynamicRequire} from '../../util/dynamicRequire.js'
+import {getProjectDefaults, type ProjectDefaults} from '../../util/getProjectDefaults.js'
+import {getProviderName} from '../../util/getProviderName.js'
+import {getUserConfig} from '../../util/getUserConfig.js'
+import {isCommandGroup} from '../../util/isCommandGroup.js'
+import {isInteractive} from '../../util/isInteractive.js'
+import {fetchJourneyConfig} from '../../util/journeyConfig.js'
+import {checkIsRemoteTemplate, getGitHubRepoInfo, type RepoInfo} from '../../util/remoteTemplate.js'
+import {login, type LoginFlags} from '../login/login.js'
+import {createProject} from '../project/createProject.js'
+import {bootstrapLocalTemplate} from './bootstrapLocalTemplate.js'
+import {bootstrapRemoteTemplate} from './bootstrapRemoteTemplate.js'
+import {type GenerateConfigOptions} from './createStudioConfig.js'
+import {absolutify, validateEmptyPath} from './fsUtils.js'
+import {tryGitInit} from './git.js'
+import {promptForDatasetName} from './promptForDatasetName.js'
+import {promptForAclMode, promptForDefaultConfig, promptForTypeScript} from './prompts.js'
 import {
   promptForAppendEnv,
   promptForEmbeddedStudio,
   promptForNextTemplate,
   promptForStudioPath,
-} from './prompts/nextjs'
-import {readPackageJson} from './readPackageJson'
-import templates from './templates'
+} from './prompts/nextjs.js'
+import {readPackageJson} from './readPackageJson.js'
+import templates from './templates.js'
 import {
   sanityCliTemplate,
   sanityConfigTemplate,
   sanityFolder,
   sanityStudioTemplate,
-} from './templates/nextjs'
+} from './templates/nextjs.js'
 
 // eslint-disable-next-line no-process-env
 const isCI = Boolean(process.env.CI)

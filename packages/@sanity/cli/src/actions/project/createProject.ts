@@ -1,4 +1,4 @@
-import {type CliApiClient} from '../../types'
+import {type CliApiClient} from '../../types.js'
 
 export interface CreateProjectOptions {
   displayName: string

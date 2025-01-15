@@ -1,6 +1,6 @@
 import {describe, test} from 'vitest'
 
-import {cliUserToken, hasBuiltCli} from './environment'
+import {cliUserToken, hasBuiltCli} from './environment.js'
 
 type ProvidesCallback = () => Promise<unknown>
 

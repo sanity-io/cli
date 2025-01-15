@@ -1,6 +1,6 @@
 import sortObject from 'deep-sort-object'
 
-import {type PackageJson, type SanityJson} from '../../types'
+import {type PackageJson, type SanityJson} from '../../types.js'
 
 const manifestPropOrder = [
   'name',
@@ -30,10 +30,10 @@ export function createPackageManifest(
     main: 'package.json',
     keywords: ['sanity'],
     scripts: {
-      'dev': 'sanity dev',
-      'start': 'sanity start',
-      'build': 'sanity build',
-      'deploy': 'sanity deploy',
+      dev: 'sanity dev',
+      start: 'sanity start',
+      build: 'sanity build',
+      deploy: 'sanity deploy',
       'deploy-graphql': 'sanity graphql deploy',
     },
 

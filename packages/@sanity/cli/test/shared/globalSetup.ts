@@ -8,7 +8,7 @@ import {createClient} from '@sanity/client'
 import Configstore from 'configstore'
 import {copy as copyCb} from 'cpx'
 
-import {cleanupDangling} from './cleanupDangling'
+import {cleanupDangling} from './cleanupDangling.js'
 import {
   baseTestPath,
   cliApiHost,
@@ -28,7 +28,7 @@ import {
   studioVersions,
   testClient,
   testIdPath,
-} from './environment'
+} from './environment.js'
 
 const SYMLINK_SCRIPT = path.resolve(__dirname, '../../../../../scripts/symlinkDependencies.js')
 

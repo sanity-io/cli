@@ -1,12 +1,12 @@
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 
-import initProject from '../../actions/init-project/initProject'
+import initProject from '../../actions/init-project/initProject.js'
 import {
   allowedPackageManagersString,
   type PackageManager,
-} from '../../packageManager/packageManagerChoice'
-import {type CliCommandDefinition} from '../../types'
+} from '../../packageManager/packageManagerChoice.js'
+import {type CliCommandDefinition} from '../../types.js'
 
 const helpText = `
 Options
@@ -52,19 +52,19 @@ Examples
 `
 
 export interface InitFlags {
-  'y'?: boolean
-  'yes'?: boolean
-  'project'?: string
-  'dataset'?: string
-  'template'?: string
+  y?: boolean
+  yes?: boolean
+  project?: string
+  dataset?: string
+  template?: string
   /**
    * Used for accessing private GitHub repo templates
    * @beta
    */
   'template-token'?: string
 
-  'visibility'?: string
-  'typescript'?: boolean
+  visibility?: string
+  typescript?: boolean
   'auto-updates'?: boolean
   /**
    * Used for initializing a project from a server schema that is saved in the Journey API
@@ -74,23 +74,23 @@ export interface InitFlags {
    * Overrides `visibility` option.
    * @beta
    */
-  'quickstart'?: string
-  'bare'?: boolean
-  'env'?: boolean | string
-  'git'?: boolean | string
+  quickstart?: string
+  bare?: boolean
+  env?: boolean | string
+  git?: boolean | string
 
   'output-path'?: string
   'project-plan'?: string
   'create-project'?: boolean | string
   'dataset-default'?: boolean
 
-  'coupon'?: string
+  coupon?: string
   /**
    * @deprecated `--reconfigure` is deprecated - manual configuration is now required
    */
-  'reconfigure'?: boolean
+  reconfigure?: boolean
 
-  'organization'?: string
+  organization?: string
 
   'package-manager'?: PackageManager
 }

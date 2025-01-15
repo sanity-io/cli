@@ -1,4 +1,4 @@
-import supportedLanguages from './supportedLanguages'
+import supportedLanguages from './supportedLanguages.js'
 
 export default {
   name: 'localeString',

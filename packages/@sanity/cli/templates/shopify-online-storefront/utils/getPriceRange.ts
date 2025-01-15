@@ -1,4 +1,4 @@
-import {DEFAULT_CURRENCY_CODE} from '../constants'
+import {DEFAULT_CURRENCY_CODE} from '../constants.js'
 
 type PriceObject = {
   minVariantPrice: number

@@ -5,9 +5,9 @@ import {getMonoRepo, GitHubFileReader, validateTemplate} from '@sanity/template-
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 
-import {debug} from '../../debug'
-import {type CliCommandContext} from '../../types'
-import {getDefaultPortForFramework} from '../../util/frameworkPort'
+import {debug} from '../../debug.js'
+import {type CliCommandContext} from '../../types.js'
+import {getDefaultPortForFramework} from '../../util/frameworkPort.js'
 import {
   applyEnvVariables,
   checkNeedsReadToken,
@@ -17,10 +17,10 @@ import {
   type RepoInfo,
   setCorsOrigin,
   tryApplyPackageName,
-} from '../../util/remoteTemplate'
-import {type GenerateConfigOptions} from './createStudioConfig'
-import {tryGitInit} from './git'
-import {updateInitialTemplateMetadata} from './updateInitialTemplateMetadata'
+} from '../../util/remoteTemplate.js'
+import {type GenerateConfigOptions} from './createStudioConfig.js'
+import {tryGitInit} from './git.js'
+import {updateInitialTemplateMetadata} from './updateInitialTemplateMetadata.js'
 
 export interface BootstrapRemoteOptions {
   outputPath: string

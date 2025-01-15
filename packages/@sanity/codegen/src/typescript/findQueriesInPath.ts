@@ -69,7 +69,8 @@ export async function* findQueriesInPath({
         queryNames.add(query.name)
       }
       yield {type: 'queries', filename, queries}
-    } catch (error) {
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(`${err}`)
       debug(`Error in file "${filename}"`, error)
       yield {type: 'error', error, filename}
     }

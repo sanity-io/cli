@@ -1,7 +1,7 @@
 // Copied from packages/@sanity/cli/templates/ecommerce/plugins/barcode-input/BarcodeType.js
 
 import {defineField, defineType} from 'sanity'
-import {BarcodeInput} from './BarcodeInput'
+import {BarcodeInput} from './BarcodeInput.js'
 
 export const barcodeSchemaType = defineType({
   name: 'barcode',

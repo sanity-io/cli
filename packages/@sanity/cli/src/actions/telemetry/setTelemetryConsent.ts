@@ -3,15 +3,15 @@ import {type ConsentStatus} from '@sanity/telemetry'
 import {
   telemetryLearnMoreMessage,
   telemetryStatusMessage,
-} from '../../commands/telemetry/telemetryStatusCommand'
-import {debug} from '../../debug'
-import {type CliCommandAction} from '../../types'
+} from '../../commands/telemetry/telemetryStatusCommand.js'
+import {debug} from '../../debug.js'
+import {type CliCommandAction} from '../../types.js'
 import {
   type ConsentInformation,
   resolveConsent,
   TELEMETRY_CONSENT_CONFIG_KEY,
-} from '../../util/createTelemetryStore'
-import {getUserConfig} from '../../util/getUserConfig'
+} from '../../util/createTelemetryStore.mjs.js'
+import {getUserConfig} from '../../util/getUserConfig.js'
 
 type SettableConsentStatus = Extract<ConsentStatus, 'granted' | 'denied'>
 

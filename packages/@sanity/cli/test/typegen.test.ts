@@ -2,12 +2,14 @@ import {readFile, writeFile} from 'node:fs/promises'
 
 import {expect, test} from 'vitest'
 
-import {describeCliTest} from './shared/describe'
-import {runSanityCmdCommand, studiosPath} from './shared/environment'
+import {describeCliTest} from './shared/describe.js'
+import {ExecError, runSanityCmdCommand, studiosPath} from './shared/environment.js'
 
 describeCliTest('CLI: `sanity typegen`', () => {
   test('sanity typegen generate: missing schema, default path', async () => {
-    const err = await runSanityCmdCommand('v3', ['typegen', 'generate']).catch((error) => error)
+    const err = await runSanityCmdCommand('v3', ['typegen', 'generate']).catch(
+      (error: ExecError) => error,
+    )
     expect(err.code).toBe(1)
     expect(err.stderr).toContain('did you run "sanity schema extract"')
     expect(err.stderr).toContain('Schema file not found')
@@ -19,7 +21,7 @@ describeCliTest('CLI: `sanity typegen`', () => {
       'generate',
       '--config-path',
       'missing-typegen.json',
-    ]).catch((error) => error)
+    ]).catch((error: ExecError) => error)
     expect(err.code).toBe(1)
     expect(err.stderr).not.toContain('did you run "sanity schema extract"')
     expect(err.stderr).toContain('custom-schema.json')
@@ -31,7 +33,7 @@ describeCliTest('CLI: `sanity typegen`', () => {
       'generate',
       '--config-path',
       'folder-typegen.json',
-    ]).catch((error) => error)
+    ]).catch((error: ExecError) => error)
     expect(err.code).toBe(1)
     expect(err.stderr).toContain('Schema path is not a file')
   })

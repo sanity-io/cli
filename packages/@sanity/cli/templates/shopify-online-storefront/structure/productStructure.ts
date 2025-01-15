@@ -1,6 +1,6 @@
 import {InfoOutlineIcon} from '@sanity/icons'
 import {ListItemBuilder} from 'sanity/structure'
-import defineStructure from '../utils/defineStructure'
+import defineStructure from '../utils/defineStructure.js'
 
 export default defineStructure<ListItemBuilder>((S) =>
   S.listItem()
@@ -27,9 +27,9 @@ export default defineStructure<ListItemBuilder>((S) =>
                   .filter(`_type == "productVariant" && store.productId == $productId`)
                   .params({
                     productId: Number(id.replace('shopifyProduct-', '')),
-                  })
+                  }),
               ),
-          ])
-      )
-    )
+          ]),
+      ),
+    ),
 )

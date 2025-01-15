@@ -1,11 +1,11 @@
-import {type ProjectTemplate} from '../initProject'
-import blog from './blog'
-import clean from './clean'
-import getStartedTemplate from './getStarted'
-import moviedb from './moviedb'
-import quickstart from './quickstart'
-import shopify from './shopify'
-import shopifyOnline from './shopifyOnline'
+import {type ProjectTemplate} from '../initProject.js'
+import blog from './blog.js'
+import clean from './clean.js'
+import getStartedTemplate from './getStarted.js'
+import moviedb from './moviedb.js'
+import quickstart from './quickstart.js'
+import shopify from './shopify.js'
+import shopifyOnline from './shopifyOnline.js'
 
 const templates: Record<string, ProjectTemplate | undefined> = {
   blog,

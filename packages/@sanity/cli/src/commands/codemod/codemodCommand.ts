@@ -1,5 +1,5 @@
-import {codemodAction} from '../../actions/codemod/codemodAction'
-import {type CliCommandDefinition} from '../../types'
+import {codemodAction} from '../../actions/codemod/codemodAction.js'
+import {type CliCommandDefinition} from '../../types.js'
 
 const helpText = `
 Runs a given code modification script on the current studio folder.

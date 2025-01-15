@@ -1,4 +1,4 @@
-import styles from './MyLogo.module.css'
+import styles from './MyLogo.module.css.js'
 
 // Since bundles are compressed and symbols obfuscated,
 // use an uncommon symbol taht we can use to find the string in tests

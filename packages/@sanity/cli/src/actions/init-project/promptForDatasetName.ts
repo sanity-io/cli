@@ -1,6 +1,6 @@
 import chalk from 'chalk'
 
-import {type CliPrompter} from '../../types'
+import {type CliPrompter} from '../../types.js'
 
 const MAX_DATASET_NAME_LENGTH = 64
 

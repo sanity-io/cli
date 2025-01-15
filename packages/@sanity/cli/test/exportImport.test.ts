@@ -4,13 +4,13 @@ import path from 'node:path'
 import tar from 'tar'
 import {describe, expect} from 'vitest'
 
-import {describeCliTest, testConcurrent} from './shared/describe'
+import {describeCliTest, testConcurrent} from './shared/describe.js'
 import {
   getTestRunArgs,
   runSanityCmdCommand,
   studiosPath,
   studioVersions,
-} from './shared/environment'
+} from './shared/environment.js'
 
 describeCliTest('CLI: `sanity dataset export` / `import`', () => {
   describe.each(studioVersions)('%s', (version) => {
