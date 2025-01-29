@@ -1,0 +1,14 @@
+diff --git a/package.json b/package.json
+index a0affeea95d9c710610974fea585cad1fe7d996c..cef252425de2708cac08528c830c6698dd5ea307 100644
+--- a/package.json
++++ b/package.json
+@@ -115,9 +115,6 @@
+       ]
+     }
+   },
+-  "bin": {
+-    "sanity": "./bin/sanity"
+-  },
+   "files": [
+     "bin",
+     "lib",

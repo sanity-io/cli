@@ -44,5 +44,10 @@
   "packageManager": "pnpm@9.15.4",
   "engines": {
     "node": ">=20.0.0"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "sanity": "patches/sanity.patch"
+    }
   }
 }
