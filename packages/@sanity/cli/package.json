@@ -26,6 +26,7 @@
   "files": [
     "./bin",
     "./dist",
+    "./oclif.config.js",
     "./oclif.manifest.json"
   ],
   "scripts": {
@@ -36,16 +37,7 @@
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "posttest": "pnpm run lint",
     "version": "oclif readme && git add README.md",
-    "watch": ""
-  },
-  "oclif": {
-    "bin": "sanity",
-    "commands": "./dist/commands",
-    "dirname": "sanity",
-    "plugins": [
-      "@oclif/plugin-help"
-    ],
-    "topicSeparator": " "
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
     "@oclif/core": "^4.2.5",
