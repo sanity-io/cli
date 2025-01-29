@@ -1,0 +1,28 @@
+import {Command, Flags} from '@oclif/core'
+
+export default class Dev extends Command {
+  static override description =
+    'Starts a local development server for Sanity Studio with live reloading'
+  static override examples = [
+    '<%= config.bin %> <%= command.id %> --host=0.0.0.0',
+    '<%= config.bin %> <%= command.id %> --port=1942',
+  ]
+  static override flags = {
+    host: Flags.string({
+      default: '127.0.0.1',
+      description: 'The local network interface at which to listen',
+    }),
+    port: Flags.integer({
+      default: 3333,
+      description: 'TCP port to start server on',
+      max: 65_535,
+      min: 1,
+    }),
+  }
+
+  public async run(): Promise<void> {
+    const {flags} = await this.parse(Dev)
+
+    console.log(flags)
+  }
+}

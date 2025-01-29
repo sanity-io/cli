@@ -1,4 +1,7 @@
 packages:
   - 'packages/@repo/*'
-  - 'packages/@sanity/*'
+  - 'packages/@sanity/cli'
+  - 'packages/@sanity/migrate'
+  - 'packages/@sanity/codegen'
   - 'packages/create-sanity'
+  - 'examples/*'

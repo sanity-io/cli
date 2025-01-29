@@ -1,0 +1,79 @@
+{
+  "name": "@sanity/cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Sanity CLI tool for managing Sanity projects and organizations",
+  "keywords": [
+    "sanity",
+    "cms",
+    "headless",
+    "realtime",
+    "content",
+    "cli",
+    "tool"
+  ],
+  "homepage": "https://github.com/sanity-io/cli",
+  "bugs": "https://github.com/sanity-io/cli/issues",
+  "repository": "sanity-io/cli",
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "sanity": "./bin/run.js"
+  },
+  "files": [
+    "./bin",
+    "./dist",
+    "./oclif.manifest.json"
+  ],
+  "scripts": {
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
+    "lint": "eslint",
+    "prepack": "oclif manifest && oclif readme",
+    "postpack": "rimraf oclif.manifest.json",
+    "test": "mocha --forbid-only \"test/**/*.test.ts\"",
+    "posttest": "pnpm run lint",
+    "version": "oclif readme && git add README.md",
+    "watch": ""
+  },
+  "oclif": {
+    "bin": "sanity",
+    "commands": "./dist/commands",
+    "dirname": "sanity",
+    "plugins": [
+      "@oclif/plugin-help"
+    ],
+    "topicSeparator": " "
+  },
+  "dependencies": {
+    "@oclif/core": "^4.2.5",
+    "@oclif/plugin-help": "^6.2.23",
+    "debug": "^4.4.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^1.2.5",
+    "@oclif/prettier-config": "^0.2.1",
+    "@oclif/test": "^4.1.8",
+    "@repo/eslint-config": "workspace:*",
+    "@swc/cli": "^0.6.0",
+    "@swc/core": "^1.10.11",
+    "@types/chai": "^4",
+    "@types/debug": "^4.1.12",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.11.0",
+    "eslint": "^9.19.0",
+    "eslint-config-oclif": "^6.0.0",
+    "eslint-config-prettier": "^10.0.1",
+    "oclif": "^4.17.20",
+    "rimraf": "^6.0.1",
+    "ts-blank-space": "^0.5.0",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.4"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  }
+}
