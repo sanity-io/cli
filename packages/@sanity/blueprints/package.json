@@ -1,0 +1,53 @@
+{
+  "name": "@sanity/blueprints",
+  "version": "0.0.1",
+  "description": "Blueprint definitions for Sanity",
+  "keywords": [
+    "sanity",
+    "blueprints",
+    "blueprint",
+    "cli"
+  ],
+  "homepage": "https://github.com/sanity-io/cli#readme",
+  "bugs": {
+    "url": "https://github.com/sanity-io/cli/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sanity-io/cli.git"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "lib/index.js",
+  "files": [
+    "src",
+    "lib"
+  ],
+  "scripts": {
+    "build": "rimraf lib && tsc",
+    "lint": "eslint",
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir lib/ --watch src"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^1.2.5",
+    "@repo/eslint-config": "workspace:*",
+    "@swc/cli": "^0.6.0",
+    "@swc/core": "^1.10.11",
+    "@types/node": "^20.11.0",
+    "eslint": "^9.19.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3"
+  }
+}
