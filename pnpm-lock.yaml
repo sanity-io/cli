@@ -50,6 +50,9 @@ importers:
 
   examples/basic-blueprint:
     dependencies:
+      '@sanity/blueprints':
+        specifier: workspace:*
+        version: link:../../packages/@sanity/blueprints
       '@sanity/cli':
         specifier: workspace:*
         version: link:../../packages/@sanity/cli
@@ -168,6 +171,9 @@ importers:
       eslint:
         specifier: ^9.19.0
         version: 9.19.0
+      rimraf:
+        specifier: ^6.0.1
+        version: 6.0.1
       typescript:
         specifier: ^5.7.3
         version: 5.7.3
