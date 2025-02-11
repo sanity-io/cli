@@ -1,6 +1,6 @@
+import {getCliToken} from '../../config/cliToken.js'
+import {setConfig} from '../../config/cliUserConfig.js'
 import {getGlobalCliClient} from '../../core/apiClient.js'
-import {setConfig} from '../../core/cliConfig.js'
-import {getCliToken} from '../../core/cliToken.js'
 import {isHttpError} from '../../util/isHttpError.js'
 
 const LOGOUT_API_VERSION = '2024-02-01'

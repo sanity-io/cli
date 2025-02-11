@@ -1,4 +1,4 @@
-import {getConfig} from './cliConfig.js'
+import {getConfig} from '../config/cliUserConfig.js'
 
 let cachedToken: string | undefined
 

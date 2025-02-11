@@ -11,9 +11,9 @@ import {
   type ProvidersResponse,
   type SamlLoginProvider,
 } from '../actions/auth/types.js'
+import {getCliToken} from '../config/cliToken.js'
+import {setConfig} from '../config/cliUserConfig.js'
 import {getGlobalCliClient} from '../core/apiClient.js'
-import {setConfig} from '../core/cliConfig.js'
-import {getCliToken} from '../core/cliToken.js'
 import {spinner} from '../core/spinner.js'
 import {canLaunchBrowser} from '../util/canLaunchBrowser.js'
 

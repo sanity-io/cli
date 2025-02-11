@@ -3,7 +3,7 @@ import type {FlagInput} from '@oclif/core/interfaces'
 import {Command} from '@oclif/core'
 
 import {logout} from '../actions/auth/logout.js'
-import {getCliToken} from '../core/cliToken.js'
+import {getCliToken} from '../config/cliToken.js'
 
 export default class LogoutCommand extends Command {
   static override description = 'Logs out the CLI from the current user session'

@@ -7,9 +7,9 @@ import {
   type ServerError,
 } from '@sanity/client'
 
+import {getCliToken} from '../config/cliToken.js'
 import {generateHelpUrl} from '../util/generateHelpUrl.js'
 import {isHttpError} from '../util/isHttpError.js'
-import {getCliToken} from './cliToken.js'
 
 const apiHosts: Record<string, string | undefined> = {
   staging: 'https://api.sanity.work',

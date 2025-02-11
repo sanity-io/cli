@@ -8,7 +8,7 @@ import {debug} from '../debug.js'
 import {readJsonFile} from '../util/readJsonFile.js'
 import {writeJsonFile} from '../util/writeJsonFile.js'
 
-const cliConfigSchema = {
+const cliUserConfigSchema = {
   authToken: z.string().optional(),
   telemetryConsent: z
     .object({
@@ -24,11 +24,11 @@ const cliConfigSchema = {
 }
 
 /**
- * The CLI configuration schema.
+ * The CLI user configuration schema.
  *
  * @internal
  */
-export type CliConfig = z.infer<z.ZodObject<typeof cliConfigSchema>>
+export type CliUserConfig = z.infer<z.ZodObject<typeof cliUserConfigSchema>>
 
 /**
  * Set the config value for the given property.
@@ -38,9 +38,9 @@ export type CliConfig = z.infer<z.ZodObject<typeof cliConfigSchema>>
  * @param value - The value to set
  * @internal
  */
-export async function setConfig<P extends keyof CliConfig>(prop: P, value: CliConfig[P]) {
+export async function setConfig<P extends keyof CliUserConfig>(prop: P, value: CliUserConfig[P]) {
   const config = await readConfig()
-  const valueSchema = cliConfigSchema[prop]
+  const valueSchema = cliUserConfigSchema[prop]
   if (!valueSchema) {
     throw new Error(`No schema defined for config property "${prop}"`)
   }
@@ -54,7 +54,7 @@ export async function setConfig<P extends keyof CliConfig>(prop: P, value: CliCo
     throw new Error(`Invalid value for config property "${prop}": ${message}`)
   }
 
-  const configPath = getCliConfigPath()
+  const configPath = getCliUserConfigPath()
   await mkdir(dirname(configPath), {recursive: true})
   await writeJsonFile(configPath, {...config, [prop]: value}, {pretty: true})
 }
@@ -66,9 +66,9 @@ export async function setConfig<P extends keyof CliConfig>(prop: P, value: CliCo
  * @returns The value of the given property
  * @internal
  */
-export async function getConfig<P extends keyof CliConfig>(prop: P): Promise<CliConfig[P]> {
+export async function getConfig<P extends keyof CliUserConfig>(prop: P): Promise<CliUserConfig[P]> {
   const config = await readConfig()
-  const valueSchema = cliConfigSchema[prop]
+  const valueSchema = cliUserConfigSchema[prop]
   if (!valueSchema) {
     throw new Error(`No schema defined for config property "${prop}"`)
   }
@@ -92,10 +92,10 @@ export async function getConfig<P extends keyof CliConfig>(prop: P): Promise<Cli
  * @returns The whole CLI configuration.
  * @internal
  */
-async function readConfig(): Promise<CliConfig> {
-  const defaultConfig: CliConfig = {}
+async function readConfig(): Promise<CliUserConfig> {
+  const defaultConfig: CliUserConfig = {}
   try {
-    const config = await readJsonFile(getCliConfigPath())
+    const config = await readJsonFile(getCliUserConfigPath())
     if (!config || typeof config !== 'object' || Array.isArray(config)) {
       throw new Error('Invalid config file - expected an object')
     }
@@ -107,14 +107,14 @@ async function readConfig(): Promise<CliConfig> {
 }
 
 /**
- * Get the file system location for the CLI configuration file.
+ * Get the file system location for the CLI user configuration file.
  * Takes into account the active environment (staging vs production).
  * The file is located in the user's home directory under the `.config` directory.
  *
  * @returns The path to the CLI configuration file.
  * @internal
  */
-function getCliConfigPath() {
+function getCliUserConfigPath() {
   const sanityEnvSuffix = process.env.SANITY_INTERNAL_ENV === 'staging' ? '-staging' : ''
   const cliConfigPath =
     process.env.SANITY_CLI_CONFIG_PATH ||
