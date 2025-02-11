@@ -56,7 +56,7 @@ export async function setConfig<P extends keyof CliConfig>(prop: P, value: CliCo
 
   const configPath = getCliConfigPath()
   await mkdir(dirname(configPath), {recursive: true})
-  await writeJsonFile(configPath, {...config, [prop]: value})
+  await writeJsonFile(configPath, {...config, [prop]: value}, {pretty: true})
 }
 
 /**

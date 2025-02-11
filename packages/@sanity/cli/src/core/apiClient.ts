@@ -8,6 +8,7 @@ import {
 } from '@sanity/client'
 
 import {generateHelpUrl} from '../util/generateHelpUrl.js'
+import {isHttpError} from '../util/isHttpError.js'
 import {getCliToken} from './cliToken.js'
 
 const apiHosts: Record<string, string | undefined> = {
@@ -78,7 +79,7 @@ function authErrors() {
         return err
       }
 
-      const statusCode = err.response && err.response.body && err.response.body.statusCode
+      const statusCode = isHttpError(err) && err.response.body.statusCode
       if (statusCode === 401) {
         err.message = `${err.message}. You may need to login again with ${ux.colorize('cyan', 'sanity login')}.\nFor more information, see ${generateHelpUrl('cli-errors')}.`
       }

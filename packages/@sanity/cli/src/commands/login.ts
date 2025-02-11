@@ -5,12 +5,12 @@ import {input, select} from '@inquirer/prompts'
 import {Command, Flags} from '@oclif/core'
 import open from 'open'
 
-import {startServerForTokenCallback} from '../actions/login/authServer.js'
+import {startServerForTokenCallback} from '../actions/auth/authServer.js'
 import {
   type LoginProvider,
   type ProvidersResponse,
   type SamlLoginProvider,
-} from '../actions/login/types.js'
+} from '../actions/auth/types.js'
 import {getGlobalCliClient} from '../core/apiClient.js'
 import {setConfig} from '../core/cliConfig.js'
 import {getCliToken} from '../core/cliToken.js'
