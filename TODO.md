@@ -8,7 +8,7 @@
 | ❌      | debug     |
 | ❌      | deploy    |
 | ❌      | dev       |
-| ❌      | docs      |
+| ✅      | docs      |
 | ❌      | documents |
 | ❌      | exec      |
 | ❌      | graphql   |
