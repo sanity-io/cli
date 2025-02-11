@@ -1,12 +1,16 @@
+import type {FlagInput} from '@oclif/core/interfaces'
+
 import {Command, Flags} from '@oclif/core'
 
-export default class Dev extends Command {
+export default class DevCommand extends Command {
   static override description =
     'Starts a local development server for Sanity Studio with live reloading'
+
   static override examples = [
     '<%= config.bin %> <%= command.id %> --host=0.0.0.0',
     '<%= config.bin %> <%= command.id %> --port=1942',
-  ]
+  ] satisfies Array<Command.Example>
+
   static override flags = {
     host: Flags.string({
       default: '127.0.0.1',
@@ -18,10 +22,10 @@ export default class Dev extends Command {
       max: 65_535,
       min: 1,
     }),
-  }
+  } satisfies FlagInput
 
   public async run(): Promise<void> {
-    const {flags} = await this.parse(Dev)
+    const {flags} = await this.parse(DevCommand)
 
     console.log(flags)
   }

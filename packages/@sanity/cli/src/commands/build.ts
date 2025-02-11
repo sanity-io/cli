@@ -1,15 +1,20 @@
+import type {ArgInput, FlagInput} from '@oclif/core/interfaces'
+
 import {Args, Command, Flags} from '@oclif/core'
 
-export default class Build extends Command {
+export default class BuildCommand extends Command {
   static override args = {
     outputDir: Args.directory({default: 'dist', description: 'Output directory'}),
-  }
+  } satisfies ArgInput
+
   static override description = 'Builds the Sanity Studio configuration into a static bundle'
+
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
     '<%= config.bin %> <%= command.id %> --no-minify',
     '<%= config.bin %> <%= command.id %> --source-maps',
-  ]
+  ] satisfies Array<Command.Example>
+
   static override flags = {
     'auto-updates': Flags.boolean({
       allowNo: true,
@@ -31,10 +36,10 @@ export default class Build extends Command {
       description:
         'Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults',
     }),
-  }
+  } satisfies FlagInput
 
   public async run(): Promise<void> {
-    const {flags} = await this.parse(Build)
+    const {flags} = await this.parse(BuildCommand)
     console.log(flags)
   }
 }

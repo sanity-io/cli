@@ -53,6 +53,11 @@ export default [
     },
     jsdoc.configs['flat/recommended'],
     {
+      rules: {
+        'jsdoc/check-param-names': 'off',
+      },
+    },
+    {
       files: ['test/**/*.test.ts'],
       rules: {
         '@typescript-eslint/no-unused-expressions': 'off',
