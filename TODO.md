@@ -16,7 +16,7 @@
 | ❌      | hook      |
 | ❌      | init      |
 | ❌      | install   |
-| ❌      | learn     |
+| ✅      | learn     |
 | ✅      | login     |
 | ✅      | logout    |
 | ❌      | manage    |
