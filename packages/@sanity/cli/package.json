@@ -40,9 +40,14 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
+    "@inquirer/prompts": "^7.3.1",
     "@oclif/core": "^4.2.5",
     "@oclif/plugin-help": "^6.2.23",
+    "@sanity/client": "^6.27.2",
+    "@sanity/telemetry": "^0.7.9",
     "debug": "^4.4.0",
+    "open": "^10.1.0",
+    "ora": "^8.2.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {

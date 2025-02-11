@@ -1,5 +1,6 @@
+import {mkdir} from 'node:fs/promises'
 import {homedir} from 'node:os'
-import {join as joinPath} from 'node:path'
+import {dirname, join as joinPath} from 'node:path'
 
 import {z} from 'zod'
 
@@ -53,7 +54,9 @@ export async function setConfig<P extends keyof CliConfig>(prop: P, value: CliCo
     throw new Error(`Invalid value for config property "${prop}": ${message}`)
   }
 
-  await writeJsonFile(getCliConfigPath(), {...config, [prop]: value})
+  const configPath = getCliConfigPath()
+  await mkdir(dirname(configPath), {recursive: true})
+  await writeJsonFile(configPath, {...config, [prop]: value})
 }
 
 /**
@@ -115,7 +118,7 @@ function getCliConfigPath() {
   const sanityEnvSuffix = process.env.SANITY_INTERNAL_ENV === 'staging' ? '-staging' : ''
   const cliConfigPath =
     process.env.SANITY_CLI_CONFIG_PATH ||
-    joinPath(homedir(), '.config', `sanity-${sanityEnvSuffix}`, 'config.json')
+    joinPath(homedir(), '.config', `sanity${sanityEnvSuffix}`, 'config.json')
 
   return cliConfigPath
 }
