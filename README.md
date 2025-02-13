@@ -9,6 +9,8 @@ We're rewriting the Sanity CLI and CLI-related modules for a blueprints-first wo
 
 The current state is very much WIP - see migration progress below.
 
+The currently published `@sanity/cli` source code lives in the [sanity monorepo](https://github.com/sanity-io/sanity/tree/next/packages/%40sanity/cli) and is spread across the `@sanity/cli` and `sanity` modules for legacy reasons. The intention is for the `@sanity/cli` module to house everything CLI related going forward.
+
 ## Technical implementation
 
 We're trying out oclif as the CLI framework. It implements a lot of common CLI patterns, and means we can reuse a lot of the existing code.
