@@ -17,6 +17,7 @@
   },
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
+  "type": "module",
   "scripts": {
     "build": "turbo run build",
     "check": "npm run check:lint && npm run check:types",

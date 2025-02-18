@@ -136,10 +136,33 @@ export default [
               'unknown',
             ],
             order: 'asc',
-            type: 'alphabetical',
+            type: 'natural',
+          },
+        ],
+        'perfectionist/sort-interfaces': [
+          'error',
+          {
+            groups: [
+              'index-signature',
+              {newlinesBetween: 'ignore'},
+              ['property', 'method'],
+              {newlinesBetween: 'always'},
+              ['optional-property', 'optional-method'],
+              {newlinesBetween: 'ignore'},
+            ],
+            order: 'asc',
+            type: 'natural',
           },
         ],
         'perfectionist/sort-modules': 'off',
+        'perfectionist/sort-union-types': [
+          'error',
+          {
+            groups: ['unknown', 'nullish'],
+            order: 'asc',
+            type: 'natural',
+          },
+        ],
         'unicorn/catch-error-name': 'off',
         'unicorn/filename-case': [
           'error',

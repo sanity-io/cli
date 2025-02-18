@@ -1,9 +1,9 @@
 {
   "name": "@sanity/basic-studio",
   "private": true,
-  "type": "module",
   "version": "1.0.0",
   "main": "package.json",
+  "type": "module",
   "license": "MIT",
   "scripts": {
     "dev": "sanity dev",

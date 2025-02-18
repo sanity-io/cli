@@ -34,7 +34,6 @@
     "lint": "eslint",
     "prepack": "oclif manifest && oclif readme",
     "postpack": "rimraf oclif.manifest.json",
-    "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "posttest": "pnpm run lint",
     "version": "oclif readme && git add README.md",
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
@@ -46,8 +45,12 @@
     "@sanity/client": "^6.27.2",
     "@sanity/telemetry": "^0.7.9",
     "debug": "^4.4.0",
+    "import-meta-resolve": "^4.1.0",
+    "jsdom": "^26.0.0",
     "open": "^10.1.0",
     "ora": "^8.2.0",
+    "vite": "^6.1.0",
+    "vite-node": "^3.0.5",
     "zod": "^3.24.1"
   },
   "devDependencies": {
@@ -59,14 +62,14 @@
     "@swc/core": "^1.10.11",
     "@types/chai": "^4",
     "@types/debug": "^4.1.12",
-    "@types/mocha": "^10.0.10",
+    "@types/jsdom": "^21.1.7",
     "@types/node": "^20.11.0",
     "eslint": "^9.19.0",
     "eslint-config-oclif": "^6.0.0",
     "eslint-config-prettier": "^10.0.1",
     "oclif": "^4.17.20",
     "rimraf": "^6.0.1",
-    "ts-blank-space": "^0.5.0",
+    "ts-blank-space": "^0.6.0",
     "typescript": "^5.7.3",
     "vitest": "^3.0.4"
   },
