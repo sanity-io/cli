@@ -16,6 +16,7 @@
     "target": "ES2023",
     "useDefineForClassFields": true,
     "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]

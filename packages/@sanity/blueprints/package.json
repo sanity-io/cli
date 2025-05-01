@@ -38,16 +38,16 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir lib/ --watch src"
   },
   "dependencies": {
-    "zod": "^3.24.1"
+    "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@eslint/compat": "^1.2.5",
+    "@eslint/compat": "^1.2.7",
     "@repo/eslint-config": "workspace:*",
     "@swc/cli": "^0.6.0",
-    "@swc/core": "^1.10.11",
-    "@types/node": "^20.11.0",
-    "eslint": "^9.19.0",
+    "@swc/core": "^1.11.8",
+    "@types/node": "^20.17.23",
+    "eslint": "^9.22.0",
     "rimraf": "^6.0.1",
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.2"
   }
 }

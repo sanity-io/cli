@@ -30,7 +30,7 @@
     "resolve-pkg": "^2.0.0"
   },
   "devDependencies": {
-    "@types/react": "^19.0.7"
+    "@types/react": "^19.0.10"
   },
   "engines": {
     "node": ">=18"

@@ -164,12 +164,7 @@ export default [
           },
         ],
         'unicorn/catch-error-name': 'off',
-        'unicorn/filename-case': [
-          'error',
-          {
-            case: 'camelCase',
-          },
-        ],
+        'unicorn/filename-case': 'off',
         'unicorn/import-style': [
           'error',
           {
