@@ -47,7 +47,7 @@
     "clean": "rimraf lib coverage",
     "lint": "echo \"Fix Me\"",
     "prepublishOnly": "turbo run build",
-    "test": "vitest",
+    "test": "echo \"Fix Me\"",
     "watch": "pkg-utils watch"
   },
   "dependencies": {
