@@ -1,5 +1,5 @@
 import {existsSync} from 'node:fs'
-import {resolve as resolvePath} from 'node:path'
+import {dirname, resolve as resolvePath} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
@@ -53,7 +53,10 @@ export function studioWorkerTask(
       throw new Error('Studio worker tasks must include `.worker.(js|ts)` in path')
     }
 
-    let workerLoaderPath = resolvePath(import.meta.dirname, 'studioWorkerLoader.js')
+    let workerLoaderPath = resolvePath(
+      dirname(fileURLToPath(import.meta.url)),
+      'studioWorkerLoader.js',
+    )
     const workerLoaderPathTs = workerLoaderPath.replace(/\.js$/, '.ts')
 
     const execArgv = [...(options.execArgv || [])]

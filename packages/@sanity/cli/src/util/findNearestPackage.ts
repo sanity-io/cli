@@ -16,11 +16,11 @@ export function findNearestPackage(
   fromDir: string,
   iterations = 0,
 ):
-  | undefined
   | {
       packageDir: string
       packageJsonPath: string
-    } {
+    }
+  | undefined {
   const packageJsonPath = joinPath(fromDir, 'package.json')
   if (existsSync(packageJsonPath)) {
     return {packageDir: fromDir, packageJsonPath}

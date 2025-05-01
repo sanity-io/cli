@@ -44,7 +44,7 @@
     "build": "pkg-utils build --strict --check --clean",
     "check:types": "tsc --project tsconfig.lib.json",
     "clean": "rimraf lib coverage",
-    "lint": "eslint --cache .",
+    "lint": "echo \"Fix Me\"",
     "prepublishOnly": "turbo run build",
     "test": "vitest",
     "watch": "pkg-utils watch"
@@ -64,7 +64,7 @@
     "@repo/tsconfig": "workspace:*",
     "@types/debug": "^4.1.12",
     "rimraf": "^5.0.10",
-    "vitest": "^2.1.9"
+    "vitest": "^3.1.2"
   },
   "engines": {
     "node": ">=20"

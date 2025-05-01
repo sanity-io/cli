@@ -11,6 +11,7 @@ coverage
 # misc
 .DS_Store
 *.pem
+.eslintcache
 
 # debug
 npm-debug.log*
@@ -36,3 +37,8 @@ yarn-error.log*
 # Compiled files
 /packages/*/lib
 /packages/@sanity/*/lib
+
+# IDE
+.vscode
+
+coverage/

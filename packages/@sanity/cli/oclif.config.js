@@ -1,9 +1,11 @@
 import {existsSync} from 'node:fs'
-import {join as joinPath} from 'node:path'
+import {dirname, join as joinPath} from 'node:path'
+import {fileURLToPath} from 'node:url'
 
 import debugIt from 'debug'
 
 const debug = debugIt('sanity:cli')
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /**
  * To make it easy to run the CLI in development mode (without needing to compile),
@@ -14,7 +16,7 @@ const debug = debugIt('sanity:cli')
  */
 const isProduction = (() => {
   try {
-    return existsSync(joinPath(import.meta.dirname, '..', 'oclif.manifest.json'))
+    return existsSync(joinPath(__dirname, '..', 'oclif.manifest.json'))
   } catch {
     return false
   }

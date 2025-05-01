@@ -21,11 +21,12 @@
   "scripts": {
     "build": "turbo run build",
     "check": "npm run check:lint && npm run check:types",
-    "check:lint": "eslint .",
+    "check:lint": "turbo run lint",
     "check:types": "tsc --noEmit",
     "clean": "rimraf packages/@sanity/*/lib packages/*/lib",
     "dev": "turbo run dev",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test": "turbo run test"
   },
   "dependencies": {
     "@sanity/pkg-utils": "^7.2.1",

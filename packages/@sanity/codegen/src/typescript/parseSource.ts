@@ -1,5 +1,6 @@
-import {parse, type TransformOptions} from '@babel/core'
 import type * as babelTypes from '@babel/types'
+
+import {parse, type TransformOptions} from '@babel/core'
 
 // helper function to parse a source file
 export function parseSourceFile(

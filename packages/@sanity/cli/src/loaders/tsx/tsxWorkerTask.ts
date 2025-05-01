@@ -1,4 +1,5 @@
-import {resolve} from 'node:path'
+import {dirname, resolve} from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {getTsconfig} from 'get-tsconfig'
@@ -6,6 +7,8 @@ import {getTsconfig} from 'get-tsconfig'
 import type {RequireProps} from '../../typeHelpers.js'
 
 import {isRecord} from '../../util/isRecord.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /**
  * Options for the tsx worker task
@@ -32,7 +35,7 @@ export interface TsxWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'
  * @internal
  */
 export function tsxWorkerTask(filePath: string, options: TsxWorkerTaskOptions): Promise<unknown> {
-  const loaderPath = resolve(import.meta.dirname, './tsxWorkerLoader.js')
+  const loaderPath = resolve(__dirname, './tsxWorkerLoader.js')
   const tsconfig = getTsconfig(options.rootPath)
 
   const env = {

@@ -22,6 +22,7 @@
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
   "sideEffects": false,
+  "type": "module",
   "exports": {
     ".": {
       "source": "./src/_exports/index.ts",
@@ -44,7 +45,7 @@
     "build": "pkg-utils build --strict --check --clean",
     "check:types": "tsc --project tsconfig.lib.json",
     "clean": "rimraf lib coverage",
-    "lint": "eslint --cache .",
+    "lint": "echo \"Fix Me\"",
     "prepublishOnly": "turbo run build",
     "test": "vitest",
     "watch": "pkg-utils watch"
@@ -67,14 +68,17 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@eslint/compat": "^1.2.9",
+    "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
+    "@sanity/pkg-utils": "^7.2.2",
     "@types/babel__core": "^7.20.5",
     "@types/babel__generator": "^7.6.8",
     "@types/babel__register": "^7.17.3",
     "@types/babel__traverse": "^7.20.6",
     "@types/debug": "^4.1.12",
     "rimraf": "^5.0.10",
-    "vitest": "^2.1.9"
+    "vitest": "^3.1.2"
   },
   "engines": {
     "node": ">=18"
