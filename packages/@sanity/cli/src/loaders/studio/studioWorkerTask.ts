@@ -5,6 +5,17 @@ import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import type {RequireProps} from '../../typeHelpers.js'
 
+import {isRecord} from '../../util/isRecord.js'
+
+/**
+ * Options for the studio worker task
+ *
+ * @internal
+ */
+export interface StudioWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
+  studioRootPath: string
+}
+
 /**
  * Executes a worker file in a Sanity Studio browser context.
  *
@@ -35,7 +46,7 @@ import type {RequireProps} from '../../typeHelpers.js'
  */
 export function studioWorkerTask(
   filePath: string,
-  options: RequireProps<WorkerOptions, 'name'>,
+  options: StudioWorkerTaskOptions,
 ): Promise<unknown> {
   return new Promise((resolve, reject) => {
     if (!/\.worker\.(js|ts)$/.test(filePath)) {
@@ -54,7 +65,11 @@ export function studioWorkerTask(
 
     const worker = new Worker(workerLoaderPath, {
       ...options,
-      argv: ['--worker-script', filePath, ...(options.argv || [])],
+      env: {
+        ...(isRecord(options.env) ? options.env : process.env),
+        STUDIO_WORKER_STUDIO_ROOT_PATH: options.studioRootPath,
+        STUDIO_WORKER_TASK_FILE: filePath,
+      },
       execArgv,
     })
 

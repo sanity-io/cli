@@ -1,0 +1,71 @@
+import {existsSync} from 'node:fs'
+import {resolve} from 'node:path'
+
+import {getTsconfig} from 'get-tsconfig'
+import {register} from 'tsx/esm/api'
+
+import type {CliConfig} from './types.js'
+
+import {debug} from '../../debug.js'
+import {NotFoundError} from '../../errors/NotFoundError.js'
+import {tsxWorkerTask} from '../../loaders/tsx/tsxWorkerTask.js'
+import {isRecord} from '../../util/isRecord.js'
+import {cliConfigSchema} from './schemas.js'
+
+/**
+ * Get the CLI config for a project, given the root path.
+ *
+ * We really want to avoid loading the CLI config in the main thread, as we'll need
+ * TypeScript loading logic, potentially with ts path aliases, syntax extensions and all
+ * sorts of nonsense. Thus, we _attempt_ to use a worker thread - but have to fall back
+ * to using the main thread if not possible. This can be the case if the configuration
+ * contains non-serializable properties, such as functions. This is unfortunately used
+ * by the vite config, for example.
+ *
+ * @param rootPath - Root path for the project, eg where `sanity.cli.(ts|js)` is located.
+ * @returns The CLI config
+ * @internal
+ */
+export async function getCliConfig(rootPath: string): Promise<CliConfig> {
+  const configPath = ['sanity.cli.ts', 'sanity.cli.js']
+    .map((file) => resolve(rootPath, file))
+    .find((file) => existsSync(file))
+
+  if (!configPath) {
+    throw new NotFoundError(`No CLI config found at ${rootPath}/sanity.cli.(ts|js)`)
+  }
+
+  let cliConfig: unknown
+  try {
+    cliConfig = await tsxWorkerTask(resolve(import.meta.dirname, 'getCliConfig.worker.ts'), {
+      name: 'cliConfig',
+      rootPath,
+      workerData: {configPath},
+    })
+  } catch (err) {
+    debug('Failed to load CLI config in worker thread: %s', err)
+
+    // Assuming that didn't work because of unseriazable properties, so we'll try the
+    // main thread with tsx registered.
+    const tsconfig = getTsconfig(rootPath)
+    const tsx = register({
+      namespace: 'get-cli-config',
+      tsconfig: tsconfig?.path ?? undefined,
+    })
+
+    // Ensure we get the default export (sometimes we get a bit of a mixed bag)
+    cliConfig = await tsx.import(configPath, import.meta.url)
+    cliConfig = isRecord(cliConfig) && 'default' in cliConfig ? cliConfig.default : cliConfig
+
+    tsx.unregister()
+  }
+
+  const {data, error, success} = cliConfigSchema.safeParse(cliConfig)
+  if (!success) {
+    throw new Error(`Invalid CLI config: ${error.message}`)
+  }
+
+  // There is a minor difference here because of the `vite` property and how the types
+  // aren't as specific as our manually typed `CliConfig` type, thus the cast.
+  return data as CliConfig
+}

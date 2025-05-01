@@ -1,20 +1,32 @@
+import {resolve} from 'node:path'
+import {pathToFileURL} from 'node:url'
 import {isMainThread} from 'node:worker_threads'
 
-import {createServer, loadEnv} from 'vite'
+import {moduleResolve} from 'import-meta-resolve'
+import {createServer, type InlineConfig, loadEnv, mergeConfig} from 'vite'
 import {ViteNodeRunner} from 'vite-node/client'
 import {ViteNodeServer} from 'vite-node/server'
 import {installSourcemapsSupport} from 'vite-node/source-map'
 
+import type {CliConfig} from '../../config/cli/types.js'
+
+import {getCliConfig} from '../../config/cli/getCliConfig.js'
+import {isNotFoundError} from '../../errors/NotFoundError.js'
+import {isRecord} from '../../util/isRecord.js'
 import * as stubs from './stubs.js'
 
 if (isMainThread) {
   throw new Error('Should be child of thread, not the main thread')
 }
 
-const WORKER_SCRIPT_FLAG_INDEX = process.argv.indexOf('--worker-script')
-const WORKER_SCRIPT = process.argv[WORKER_SCRIPT_FLAG_INDEX + 1]
-if (WORKER_SCRIPT_FLAG_INDEX === -1) {
-  throw new Error('No worker script path passed through `--worker-script`')
+const rootPath = process.env.STUDIO_WORKER_STUDIO_ROOT_PATH
+if (!rootPath) {
+  throw new Error('Missing `STUDIO_WORKER_STUDIO_ROOT_PATH` environment variable')
+}
+
+const workerScriptPath = process.env.STUDIO_WORKER_TASK_FILE
+if (!workerScriptPath) {
+  throw new Error('Missing `STUDIO_WORKER_TASK_FILE` environment variable')
 }
 
 const mockStubs = stubs as Record<string, unknown>
@@ -25,19 +37,58 @@ for (const key in stubs) {
   }
 }
 
-// Vite will build the files we give it - targetting Node.js instead of the browser.
-// We include the inject plugin in order to provide the stubs for the undefined global APIs.
-const server = await createServer({
+// Doesn't have to be correct, just need the root path to be
+const fakeConfigUrl = pathToFileURL(resolve(rootPath, 'sanity.config.mjs'))
+
+// We'll load `getStudioEnvironmentVariables` from the `sanity/cli` module installed
+// relative to where the studio is located, instead of resolving from where this CLI is
+// running in, in order to ensure we're using the same version as the studio would.
+const sanityCliUrl = await moduleResolve('sanity/cli', fakeConfigUrl)
+const {getStudioEnvironmentVariables} = await import(sanityCliUrl.href)
+if (typeof getStudioEnvironmentVariables !== 'function') {
+  throw new TypeError('Expected `getStudioEnvironmentVariables` from `sanity/cli` to be a function')
+}
+
+const defaultViteConfig: InlineConfig = {
   build: {target: 'node'},
   configFile: false, // @todo Should use `vite` prop from `sanity.cli.ts` (if any)
+  define: {
+    ...getStudioEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'}),
+  },
   logLevel: 'error',
-  optimizeDeps: {disabled: true}, // @todo see if this is needed
-  root: '/Users/espenh/webdev/cli/examples/basic-studio',
+  optimizeDeps: {disabled: true}, // @todo is this necessary? cant remember why was added
+  root: rootPath,
   server: {
     hmr: false,
     watch: null,
   },
-})
+}
+
+// Allow the CLI config (`sanity.cli.(js|ts)`) to define a `vite` property which can
+// extend/modify the default vite configuration for the studio.
+let cliConfig: CliConfig | undefined
+try {
+  cliConfig = await getCliConfig(rootPath)
+} catch (err) {
+  if (!isNotFoundError(err)) {
+    console.warn('[warn] Failed to load CLI config:', err)
+  }
+}
+
+let viteConfig = defaultViteConfig
+if (typeof cliConfig?.vite === 'function') {
+  viteConfig = await cliConfig.vite(viteConfig, {
+    command: 'build',
+    isSsrBuild: true,
+    mode: 'production',
+  })
+} else if (isRecord(cliConfig?.vite)) {
+  viteConfig = mergeConfig(viteConfig, cliConfig.vite)
+}
+
+// Vite will build the files we give it - targetting Node.js instead of the browser.
+// We include the inject plugin in order to provide the stubs for the undefined global APIs.
+const server = await createServer(viteConfig)
 
 // Bit of a hack, but seems necessary based on the `node-vite` binary implementation
 await server.pluginContainer.buildStart({})
@@ -75,4 +126,4 @@ const runner = new ViteNodeRunner({
 // point why this is, so we should investigate whether it's necessary or not.
 await runner.executeId('/@vite/env')
 
-await runner.executeId(WORKER_SCRIPT)
+await runner.executeId(workerScriptPath)

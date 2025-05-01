@@ -1,5 +1,5 @@
 import {access} from 'node:fs/promises'
-import {dirname, join, resolve} from 'node:path'
+import {basename, dirname, join, resolve} from 'node:path'
 
 import {readJsonFile} from '../util/readJsonFile.js'
 
@@ -8,7 +8,7 @@ import {readJsonFile} from '../util/readJsonFile.js'
  *
  * @internal
  */
-export interface ProjectConfigResult {
+export interface ProjectRootResult {
   directory: string
   path: string
   type: 'blueprint' | 'studio'
@@ -26,10 +26,9 @@ export interface ProjectConfigResult {
  *
  * @internal
  */
-export async function findProjectConfig(cwd: string): Promise<false | ProjectConfigResult> {
+export async function findProjectRoot(cwd: string): Promise<false | ProjectRootResult> {
   try {
-    const projectRoot = await resolveProjectConfig(cwd)
-    return projectRoot
+    return resolveProjectRoot(cwd)
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : `${err}`
     throw new Error(`Error occurred trying to resolve project root:\n${message}`)
@@ -44,28 +43,33 @@ export async function findProjectConfig(cwd: string): Promise<false | ProjectCon
  * @returns A promise that resolves to a string containing the found config path, or `false` if not found
  * @internal
  */
-async function findStudioConfigPath(basePath: string): Promise<false | string> {
+export async function findStudioConfigPath(basePath: string): Promise<false | string> {
   const tsStudioPath = join(basePath, 'sanity.config.ts')
+  const tsxStudioPath = join(basePath, 'sanity.config.tsx')
   const jsStudioPath = join(basePath, 'sanity.config.js')
+  const jsxStudioPath = join(basePath, 'sanity.config.jsx')
 
-  const [tsStudio, jsStudio, v2Studio] = await Promise.all([
-    fileExists(tsStudioPath),
-    fileExists(jsStudioPath),
-    isSanityV2StudioRoot(basePath),
-  ])
+  const studioConfigs = await Promise.all(
+    [tsStudioPath, tsxStudioPath, jsStudioPath, jsxStudioPath].map(async (path) => ({
+      exists: await fileExists(path),
+      path,
+    })),
+  )
 
-  if (v2Studio) {
+  const configPaths = studioConfigs.filter((config) => config.exists)
+  if (configPaths.length > 1) {
+    const baseNames = configPaths.map((config) => config.path).map((path) => basename(path))
+    throw new Error(`Multiple studio config files found (${baseNames.join(', ')})`)
+  }
+
+  if (configPaths.length === 1) {
+    return configPaths[0].path
+  }
+
+  if (await isSanityV2StudioRoot(basePath)) {
     throw new Error(
       `Found 'sanity.json' at ${basePath} - Sanity Studio < v3 is no longer supported`,
     )
-  }
-
-  if (tsStudio) {
-    return tsStudioPath
-  }
-
-  if (jsStudio) {
-    return jsStudioPath
   }
 
   return false
@@ -107,10 +111,10 @@ async function findBlueprintConfigPath(basePath: string): Promise<false | string
  * @returns A promise that resolves to an object if config is found, false otherwise
  * @internal
  */
-async function resolveProjectConfig(
+async function resolveProjectRoot(
   basePath: string,
   iterations = 0,
-): Promise<false | ProjectConfigResult> {
+): Promise<false | ProjectRootResult> {
   const [studioConfigPath, blueprintConfigPath] = await Promise.all([
     findStudioConfigPath(basePath),
     findBlueprintConfigPath(basePath),
@@ -143,7 +147,7 @@ async function resolveProjectConfig(
     return false
   }
 
-  return resolveProjectConfig(parentDir, iterations + 1)
+  return resolveProjectRoot(parentDir, iterations + 1)
 }
 
 /**
