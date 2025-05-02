@@ -12,6 +12,8 @@
       "persistent": true
     },
     "watch": {},
-    "test": {}
+    "test": {},
+    "test:coverage": {},
+    "test:watch": {}
   }
 }

@@ -26,7 +26,9 @@
     "clean": "rimraf packages/@sanity/*/lib packages/*/lib",
     "dev": "turbo run dev",
     "format": "prettier --write .",
-    "test": "turbo run test"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@sanity/pkg-utils": "^7.2.1",
@@ -37,11 +39,13 @@
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
+    "@vitest/coverage-v8": "^3.1.2",
     "eslint": "^9.23.0",
     "eslint-config-prettier": "^10.1.1",
     "rimraf": "^5.0.10",
     "turbo": "^2.4.4",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^3.1.2"
   },
   "packageManager": "pnpm@9.15.4",
   "engines": {
