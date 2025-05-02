@@ -26,6 +26,8 @@ export const sanityEnv = {...envLessEnv, XDG_CONFIG_HOME: path.join(baseTestPath
 export const cliConfigPath = path.join(sanityEnv.XDG_CONFIG_HOME, 'sanity-staging', 'config.json')
 export const nodeMajorVersion = process.version.split('.')[0]
 export const npmPath = which.sync('npm')
+// note: we use pnpm for `pack`, because npm doesn't rewrite `workspace:*` protocols
+export const pnpmPath = which.sync('pnpm')
 export const nodePath = process.execPath
 
 // We don't need a super precise timestamp, but enough to include hours (for dangling cleanup)
@@ -185,7 +187,7 @@ ${stdoutStr}\n
   })
 }
 
-export class ExecError extends Error {
+class ExecError extends Error {
   code: number
   stdout: string
   stderr: string

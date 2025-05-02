@@ -15,8 +15,8 @@ import {
 import {startCase, uniqBy} from 'lodash'
 import oneline from 'oneline'
 
-import * as helpUrls from './helpUrls.js'
-import {SchemaError} from './SchemaError.js'
+import * as helpUrls from './helpUrls'
+import {SchemaError} from './SchemaError'
 import {
   type ApiSpecification,
   type ConvertedFieldDefinition,
@@ -24,7 +24,7 @@ import {
   type ConvertedType,
   type ConvertedUnion,
   type Deprecation,
-} from './types.js'
+} from './types'
 
 const skipTypes = ['document', 'reference']
 const allowedJsonTypes = ['object', 'array']
@@ -45,6 +45,18 @@ function getBaseType(baseSchema: CompiledSchema, typeName: IntrinsicTypeName): S
         {
           name: `__placeholder__`,
           type: 'crossDatasetReference',
+          // Just needs _something_ to refer to, doesn't matter what
+          to: [{type: 'sanity.imageAsset'}],
+        },
+      ]),
+    }).get('__placeholder__')
+  }
+  if (typeName === 'globalDocumentReference') {
+    return Schema.compile({
+      types: (baseSchema._original?.types || []).concat([
+        {
+          name: `__placeholder__`,
+          type: 'globalDocumentReference',
           // Just needs _something_ to refer to, doesn't matter what
           to: [{type: 'sanity.imageAsset'}],
         },
@@ -393,8 +405,23 @@ export function extractFromSanitySchema(
       return {type: getTypeName(candidates[0].type.name), ...base}
     }
 
-    const unionDefinition = getUnionDefinition(candidates, def, {grandParent: parent})
-    return {...unionDefinition, ...base}
+    const allTypeNames = candidates.map((c) => getTypeName(c.type.name))
+    const targetTypes = [...new Set(allTypeNames)].sort()
+    const name = targetTypes.join('Or')
+
+    // Register the union type if we haven't seen it before
+    if (!unionTypes.some((item) => item.name === name)) {
+      unionTypes.push({
+        kind: 'Union',
+        name,
+        types: targetTypes,
+      })
+    }
+
+    return {
+      type: name,
+      ...base,
+    }
   }
 
   function getArrayDefinition(
@@ -481,9 +508,7 @@ export function extractFromSanitySchema(
     }
 
     try {
-      if (guardPathName !== 'reference') {
-        unionRecursionGuards.add(guardPathName)
-      }
+      unionRecursionGuards.add(guardPathName)
 
       candidates.forEach((def, i) => {
         if (typeNeedsHoisting(def)) {

@@ -1,9 +1,9 @@
 import {createWriteStream} from 'node:fs'
-import {constants as zlibConstants} from 'node:zlib'
+import zlib from 'node:zlib'
 
 import {type ProgressData} from 'archiver'
 
-import debug from './debug.js'
+import debug from './debug'
 
 const archiver = require('archiver')
 
@@ -24,7 +24,7 @@ function archiveDir(tmpOutDir: string, outFilePath: string, progressCb: Progress
 
     const archive = archiver('tar', {
       gzip: true,
-      gzipOptions: {level: zlibConstants.Z_DEFAULT_COMPRESSION},
+      gzipOptions: {level: zlib.constants.Z_DEFAULT_COMPRESSION},
     })
 
     archive.on('error', (err: Error) => {

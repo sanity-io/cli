@@ -3,7 +3,7 @@ import {
   type ConvertedInterface,
   type ConvertedType,
   type ConvertedUnion,
-} from './types.js'
+} from './types'
 
 export function isUnion(
   type: ConvertedType | ConvertedUnion | ConvertedInterface,

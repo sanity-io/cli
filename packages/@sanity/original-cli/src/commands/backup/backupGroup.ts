@@ -1,4 +1,4 @@
-import type {CliCommandGroupDefinition} from '../../types.js'
+import {type CliCommandGroupDefinition} from '@sanity/cli'
 
 // defaultApiVersion is the backend API version used for dataset backup.
 export const defaultApiVersion = 'v2024-02-21'

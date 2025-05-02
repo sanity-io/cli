@@ -1,8 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import {addCorsOrigin} from '../../actions/cors/addCorsOrigin.js'
-import type {CliCommandDefinition} from '../../types.js'
+import {type CliCommandDefinition} from '@sanity/cli'
+
+import {addCorsOrigin} from '../../actions/cors/addCorsOrigin'
 
 const helpText = `
 Options

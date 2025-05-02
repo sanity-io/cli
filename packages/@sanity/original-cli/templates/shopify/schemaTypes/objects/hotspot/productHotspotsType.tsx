@@ -1,6 +1,6 @@
 import {defineArrayMember, defineField} from 'sanity'
 
-import ProductTooltip from '../../../components/hotspots/ProductTooltip.js'
+import ProductTooltip from '../../../components/hotspots/ProductTooltip'
 
 export const productHotspotsType = defineField({
   name: 'productHotspots',

@@ -2,16 +2,17 @@ import {createReadStream} from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+import {type CliCommandContext, type CliCommandDefinition, type CliOutputter} from '@sanity/cli'
 import sanityImport from '@sanity/import'
 import {getIt} from 'get-it'
+// eslint-disable-next-line import/extensions
 import {promise} from 'get-it/middleware'
 import {padStart} from 'lodash'
 import prettyMs from 'pretty-ms'
 
-import {chooseDatasetPrompt} from '../../actions/dataset/chooseDatasetPrompt.js'
-import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
-import {debug} from '../../debug.js'
-import {type CliCommandContext, type CliCommandDefinition, type CliOutputter} from '../../types.js'
+import {chooseDatasetPrompt} from '../../actions/dataset/chooseDatasetPrompt'
+import {validateDatasetName} from '../../actions/dataset/validateDatasetName'
+import {debug} from '../../debug'
 
 const yellow = (str: string) => `\u001b[33m${str}\u001b[39m`
 
@@ -102,6 +103,9 @@ function parseFlags(rawFlags: ImportFlags): ParsedImportFlags {
   }
 }
 
+// The minimum supported API version, providing the ability to handle version documents.
+const MINIMUM_API_VERSION = '2025-02-19'
+
 const importDatasetCommand: CliCommandDefinition = {
   name: 'import',
   group: 'dataset',
@@ -160,7 +164,10 @@ const importDatasetCommand: CliCommandDefinition = {
       }
     }
 
-    const importClient = client.clone().config({dataset: targetDataset})
+    const importClient = client.clone().config({
+      apiVersion: MINIMUM_API_VERSION,
+      dataset: targetDataset,
+    })
 
     // Print information about what projectId and dataset it is being imported to
     const {projectId, dataset} = importClient.config()

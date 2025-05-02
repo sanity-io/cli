@@ -3,7 +3,7 @@ import path from 'node:path'
 import {type Migration} from '@sanity/migrate'
 import {isPlainObject} from 'lodash'
 
-import {MIGRATION_SCRIPT_EXTENSIONS, MIGRATIONS_DIRECTORY} from '../constants.js'
+import {MIGRATION_SCRIPT_EXTENSIONS, MIGRATIONS_DIRECTORY} from '../constants'
 
 interface ResolvedMigrationScript {
   /**
@@ -47,10 +47,11 @@ export function resolveMigrationScript(
       const absolutePath = path.resolve(workDir, relativePath)
       let mod
       try {
+        // eslint-disable-next-line import/no-dynamic-require
         mod = require(absolutePath)
-      } catch (err: unknown) {
-        if (!(err instanceof Error) || !('code' in err) || err.code !== 'MODULE_NOT_FOUND') {
-          throw new Error(`Error: ${err instanceof Error ? err.message : err}"`)
+      } catch (err) {
+        if (err.code !== 'MODULE_NOT_FOUND') {
+          throw new Error(`Error: ${err.message}"`)
         }
       }
       return {relativePath, absolutePath, mod}

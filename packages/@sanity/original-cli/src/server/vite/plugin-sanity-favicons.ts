@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import {type Plugin} from 'vite'
 
-import {generateWebManifest} from '../webManifest.js'
+import {generateWebManifest} from '../webManifest'
 
 const mimeTypes: Record<string, string | undefined> = {
   '.ico': 'image/x-icon',

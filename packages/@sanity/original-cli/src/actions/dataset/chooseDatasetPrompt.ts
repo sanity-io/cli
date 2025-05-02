@@ -1,6 +1,7 @@
-import {debug} from '../../debug.js'
-import type {CliCommandContext} from '../../types.js'
-import {promptForDatasetName} from './datasetNamePrompt.js'
+import {type CliCommandContext} from '@sanity/cli'
+
+import {debug} from '../../debug'
+import {promptForDatasetName} from './datasetNamePrompt'
 
 export async function chooseDatasetPrompt(
   context: CliCommandContext,

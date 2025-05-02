@@ -1,7 +1,7 @@
 import {createClient, type SanityClient} from '@sanity/client'
 
-import {getCliConfigSync} from './util/getCliConfig.js'
-import {resolveRootDir} from './util/resolveRootDir.js'
+import {getCliConfigSync} from './util/getCliConfig'
+import {resolveRootDir} from './util/resolveRootDir'
 
 export interface CliClientOptions {
   cwd?: string

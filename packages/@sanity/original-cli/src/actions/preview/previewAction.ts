@@ -1,8 +1,9 @@
 import path from 'node:path'
 
-import {type PreviewServerOptions, startPreviewServer} from '../../server.js'
-import type {CliCommandArguments, CliCommandContext, CliConfig} from '../../types.js'
-import {getSharedServerConfig, gracefulServerDeath} from '../../util/servers.js'
+import {type CliCommandArguments, type CliCommandContext, type CliConfig} from '@sanity/cli'
+
+import {type PreviewServerOptions, startPreviewServer} from '../../server'
+import {getSharedServerConfig, gracefulServerDeath} from '../../util/servers'
 
 export interface StartPreviewServerCommandFlags {
   host?: string

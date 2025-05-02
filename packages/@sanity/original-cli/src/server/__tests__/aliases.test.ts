@@ -8,8 +8,8 @@ import {describe, expect, it, vi} from 'vitest'
 import {
   browserCompatibleSanityPackageSpecifiers,
   getSanityPkgExportAliases,
-} from '../getBrowserAliases.js'
-import {getMonorepoAliases} from '../sanityMonorepo.js'
+} from '../getBrowserAliases'
+import {getMonorepoAliases} from '../sanityMonorepo'
 
 const sanityPkgPath = path.resolve(__dirname, '../../../../../package.json')
 // eslint-disable-next-line import/no-dynamic-require

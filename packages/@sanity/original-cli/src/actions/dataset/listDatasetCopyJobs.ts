@@ -1,7 +1,6 @@
+import {type CliCommandContext} from '@sanity/cli'
 import {Table} from 'console-table-printer'
 import {formatDistance, formatDistanceToNow, parseISO} from 'date-fns'
-
-import type {CliCommandContext} from '../../types.js'
 
 interface ListFlags {
   offset?: number

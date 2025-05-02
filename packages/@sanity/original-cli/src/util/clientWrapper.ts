@@ -10,12 +10,12 @@ import {
 import {generateHelpUrl} from '@sanity/generate-help-url'
 import chalk from 'chalk'
 
-import {type CliApiConfig} from '../types.js'
-import {getUserConfig} from './getUserConfig.js'
+import {type CliApiConfig} from '../types'
+import {getUserConfig} from './getUserConfig'
 
 const apiHosts: Record<string, string | undefined> = {
   staging: 'https://api.sanity.work',
-  development: 'http://api.sanity.wtf',
+  development: 'http://api.sanity.local',
 }
 
 /**

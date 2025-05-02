@@ -1,9 +1,9 @@
+import {type CliCommandArguments, type CliCommandContext} from '@sanity/cli'
 import {type SanityClient} from '@sanity/client'
 import {hideBin} from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 
-import type {CliCommandArguments, CliCommandContext} from '../../types.js'
-import {getGraphQLAPIs} from './getGraphQLAPIs.js'
+import {getGraphQLAPIs} from './getGraphQLAPIs'
 
 export interface DeleteGraphQLApiFlags {
   project?: string

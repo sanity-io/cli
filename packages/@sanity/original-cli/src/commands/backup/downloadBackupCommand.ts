@@ -4,7 +4,12 @@ import {tmpdir} from 'node:os'
 import path from 'node:path'
 import {finished} from 'node:stream/promises'
 
-import type {SanityClient} from '@sanity/client'
+import {
+  type CliCommandArguments,
+  type CliCommandContext,
+  type CliCommandDefinition,
+  type SanityClient,
+} from '@sanity/cli'
 import {absolutify} from '@sanity/util/fs'
 import {Mutex} from 'async-mutex'
 import createDebug from 'debug'
@@ -13,23 +18,18 @@ import prettyMs from 'pretty-ms'
 import {hideBin} from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 
-import archiveDir from '../../actions/backup/archiveDir.js'
-import chooseBackupIdPrompt from '../../actions/backup/chooseBackupIdPrompt.js'
-import cleanupTmpDir from '../../actions/backup/cleanupTmpDir.js'
-import downloadAsset from '../../actions/backup/downloadAsset.js'
-import downloadDocument from '../../actions/backup/downloadDocument.js'
-import {type File, PaginatedGetBackupStream} from '../../actions/backup/fetchNextBackupPage.js'
-import parseApiErr from '../../actions/backup/parseApiErr.js'
-import newProgress from '../../actions/backup/progressSpinner.js'
-import resolveApiClient from '../../actions/backup/resolveApiClient.js'
-import {
-  type CliCommandArguments,
-  type CliCommandContext,
-  type CliCommandDefinition,
-} from '../../types.js'
-import humanFileSize from '../../util/humanFileSize.js'
-import isPathDirName from '../../util/isPathDirName.js'
-import {defaultApiVersion} from './backupGroup.js'
+import archiveDir from '../../actions/backup/archiveDir'
+import chooseBackupIdPrompt from '../../actions/backup/chooseBackupIdPrompt'
+import cleanupTmpDir from '../../actions/backup/cleanupTmpDir'
+import downloadAsset from '../../actions/backup/downloadAsset'
+import downloadDocument from '../../actions/backup/downloadDocument'
+import {type File, PaginatedGetBackupStream} from '../../actions/backup/fetchNextBackupPage'
+import parseApiErr from '../../actions/backup/parseApiErr'
+import newProgress from '../../actions/backup/progressSpinner'
+import resolveApiClient from '../../actions/backup/resolveApiClient'
+import humanFileSize from '../../util/humanFileSize'
+import isPathDirName from '../../util/isPathDirName'
+import {defaultApiVersion} from './backupGroup'
 
 const debug = createDebug('sanity:backup')
 

@@ -2,9 +2,9 @@ import React from 'react'
 import {defineField, defineType} from 'sanity'
 import {PackageIcon} from '@sanity/icons'
 import pluralize from 'pluralize-esm'
-import CollectionHiddenInput from '../../components/inputs/CollectionHidden.js'
-import ShopifyIcon from '../../components/icons/Shopify.js'
-import ShopifyDocumentStatus from '../../components/media/ShopifyDocumentStatus.js'
+import CollectionHiddenInput from '../../components/inputs/CollectionHidden'
+import ShopifyIcon from '../../components/icons/Shopify'
+import ShopifyDocumentStatus from '../../components/media/ShopifyDocumentStatus'
 
 const GROUPS = [
   {

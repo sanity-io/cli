@@ -1,5 +1,6 @@
-import type {BuildSanityStudioCommandFlags} from '../actions/build/buildAction.js'
-import type {CliConfig} from '../types.js'
+import {type CliConfig} from '@sanity/cli'
+
+import {type BuildSanityStudioCommandFlags} from '../actions/build/buildAction'
 
 interface AutoUpdateSources {
   flags: BuildSanityStudioCommandFlags

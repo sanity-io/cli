@@ -1,6 +1,6 @@
 import {HomeIcon} from '@sanity/icons'
 import {defineArrayMember, defineField} from 'sanity'
-import {GROUPS} from '../../constants.js'
+import {GROUPS} from '../../constants'
 
 const TITLE = 'Home'
 

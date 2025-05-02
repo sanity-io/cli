@@ -1,13 +1,13 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+import {type CliCommandDefinition, type CliPrompter} from '@sanity/cli'
 import exportDataset from '@sanity/export'
 import {absolutify} from '@sanity/util/fs'
 import prettyMs from 'pretty-ms'
 
-import {chooseDatasetPrompt} from '../../actions/dataset/chooseDatasetPrompt.js'
-import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
-import type {CliCommandDefinition, CliPrompter} from '../../types.js'
+import {chooseDatasetPrompt} from '../../actions/dataset/chooseDatasetPrompt'
+import {validateDatasetName} from '../../actions/dataset/validateDatasetName'
 
 const noop = () => null
 
@@ -99,7 +99,8 @@ const exportDatasetCommand: CliCommandDefinition<ExportFlags> = {
   name: 'export',
   group: 'dataset',
   signature: '[NAME] [DESTINATION]',
-  description: 'Export dataset to local filesystem as a gzipped tarball',
+  description: `Export dataset to local filesystem as a gzipped tarball.
+      Assets failing with HTTP status codes 401, 403 and 404 upon download are ignored and excluded from export.`,
   helpText,
   action: async (args, context) => {
     const {apiClient, output, chalk, workDir, prompt} = context

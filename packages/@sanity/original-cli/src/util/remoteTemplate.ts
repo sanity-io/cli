@@ -7,8 +7,8 @@ import {type ReadableStream} from 'node:stream/web'
 import {ENV_TEMPLATE_FILES, REQUIRED_ENV_VAR} from '@sanity/template-validator'
 import {x} from 'tar'
 
-import {debug} from '../debug.js'
-import {type CliApiClient, type PackageJson} from '../types.js'
+import {debug} from '../debug'
+import {type CliApiClient, type PackageJson} from '../types'
 
 const DISALLOWED_PATHS = [
   // Prevent security risks from unknown GitHub Actions
@@ -18,12 +18,17 @@ const DISALLOWED_PATHS = [
 const ENV_VAR = {
   ...REQUIRED_ENV_VAR,
   READ_TOKEN: 'SANITY_API_READ_TOKEN',
+  WRITE_TOKEN: 'SANITY_API_WRITE_TOKEN',
 } as const
+
+const API_READ_TOKEN_ROLE = 'viewer'
+const API_WRITE_TOKEN_ROLE = 'editor'
 
 type EnvData = {
   projectId: string
   dataset: string
   readToken?: string
+  writeToken?: string
 }
 
 type GithubUrlString =
@@ -55,7 +60,7 @@ function isGithubRepoShorthand(value: string): boolean {
 }
 
 function isGithubRepoUrl(value: string | URL): value is URL | GithubUrlString {
-  if (typeof value === 'string' && !URL.canParse(value)) {
+  if (URL.canParse(value) === false) {
     return false
   }
   const url = new URL(value)
@@ -149,7 +154,7 @@ export async function getGitHubRepoInfo(value: string, bearerToken?: string): Pr
       throw new Error('GitHub repository not found')
     }
 
-    const info: any = await infoResponse.json()
+    const info = await infoResponse.json()
 
     return {
       username,
@@ -191,7 +196,7 @@ export async function downloadAndExtractRepo(
   )
 }
 
-export async function checkNeedsReadToken(root: string): Promise<boolean> {
+export async function checkIfNeedsApiToken(root: string, type: 'read' | 'write'): Promise<boolean> {
   try {
     const templatePath = await Promise.any(
       ENV_TEMPLATE_FILES.map(async (file) => {
@@ -199,9 +204,8 @@ export async function checkNeedsReadToken(root: string): Promise<boolean> {
         return file
       }),
     )
-
     const templateContent = await readFile(join(root, templatePath), 'utf8')
-    return templateContent.includes(ENV_VAR.READ_TOKEN)
+    return templateContent.includes(type === 'read' ? ENV_VAR.READ_TOKEN : ENV_VAR.WRITE_TOKEN)
   } catch {
     return false
   }
@@ -225,7 +229,7 @@ export async function applyEnvVariables(
 
   try {
     const templateContent = await readFile(join(root, templatePath), 'utf8')
-    const {projectId, dataset, readToken = ''} = envData
+    const {projectId, dataset, readToken = '', writeToken = ''} = envData
 
     const findAndReplaceVariable = (
       content: string,
@@ -251,6 +255,7 @@ export async function applyEnvVariables(
       {pattern: ENV_VAR.PROJECT_ID, value: projectId},
       {pattern: ENV_VAR.DATASET, value: dataset},
       {pattern: ENV_VAR.READ_TOKEN, value: readToken},
+      {pattern: ENV_VAR.WRITE_TOKEN, value: writeToken},
     ]
     const useQuotes = templateContent.includes('="')
 
@@ -278,8 +283,9 @@ export async function tryApplyPackageName(root: string, name: string): Promise<v
   }
 }
 
-export async function generateSanityApiReadToken(
+export async function generateSanityApiToken(
   label: string,
+  type: 'read' | 'write',
   projectId: string,
   apiClient: CliApiClient,
 ): Promise<string> {
@@ -289,8 +295,8 @@ export async function generateSanityApiReadToken(
       uri: `/projects/${projectId}/tokens`,
       method: 'POST',
       body: {
-        label: `${label} (${Date.now()})`, // Add timestamp to ensure uniqueness
-        roleName: 'viewer',
+        label: `${label} (${Date.now()})`,
+        roleName: type === 'read' ? API_READ_TOKEN_ROLE : API_WRITE_TOKEN_ROLE,
       },
     })
   return response.key

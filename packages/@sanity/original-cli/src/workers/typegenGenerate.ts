@@ -12,6 +12,7 @@ import createDebug from 'debug'
 import {typeEvaluate, type TypeNode} from 'groq-js'
 
 const $info = createDebug('sanity:codegen:generate:info')
+const $warn = createDebug('sanity:codegen:generate:warn')
 
 export interface TypegenGenerateTypesWorkerData {
   workDir: string
@@ -127,12 +128,11 @@ async function main() {
           typeNodesGenerated: queryTypeStats.allTypes,
           emptyUnionTypeNodesGenerated: queryTypeStats.emptyUnions,
         })
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : `${err}`
+      } catch (err) {
         parentPort?.postMessage({
           type: 'error',
           error: new Error(
-            `Error generating types for query "${queryName}" in "${result.filename}": ${message}`,
+            `Error generating types for query "${queryName}" in "${result.filename}": ${err.message}`,
             {cause: err},
           ),
           fatal: false,

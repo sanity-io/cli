@@ -4,7 +4,7 @@ import jsdomGlobal from 'jsdom-global'
 import {addHook} from 'pirates'
 import resolveFrom from 'resolve-from'
 
-import {getStudioEnvironmentVariables} from '../server/getStudioEnvironmentVariables.js'
+import {getStudioEnvironmentVariables} from '../server/getStudioEnvironmentVariables'
 
 const jsdomDefaultHtml = `<!doctype html>
 <html>
@@ -13,20 +13,15 @@ const jsdomDefaultHtml = `<!doctype html>
 </html>`
 
 export function mockBrowserEnvironment(basePath: string): () => void {
-  const window = global && 'window' in global ? global.window : undefined
-  if (!isWindowLike(window)) {
-    throw new Error('`global.window` does not appear to be "window-like"')
-  }
-
   // Guard against double-registering
-  if ('__mockedBySanity' in window) {
+  if (global && global.window && '__mockedBySanity' in global.window) {
     return () => {
       /* intentional noop */
     }
   }
 
   const domCleanup = jsdomGlobal(jsdomDefaultHtml, {url: 'http://localhost:3333/'})
-  const windowCleanup = () => window.close()
+  const windowCleanup = () => global.window.close()
   const globalCleanup = provideFakeGlobals(basePath)
   const cleanupFileLoader = addHook(
     (code, filename) => `module.exports = ${JSON.stringify(filename)}`,
@@ -59,18 +54,18 @@ export function mockBrowserEnvironment(basePath: string): () => void {
   }
 }
 
-const getFakeGlobals = (window: WindowLike, basePath: string) => ({
+const getFakeGlobals = (basePath: string) => ({
   __mockedBySanity: true,
   requestAnimationFrame: setImmediate,
   cancelAnimationFrame: clearImmediate,
   requestIdleCallback: setImmediate,
   cancelIdleCallback: clearImmediate,
   ace: tryGetAceGlobal(basePath),
-  InputEvent: window.InputEvent,
-  customElements: window?.customElements,
-  ResizeObserver: window?.ResizeObserver || ResizeObserver,
+  InputEvent: global.window?.InputEvent,
+  customElements: global.window?.customElements,
+  ResizeObserver: global.window?.ResizeObserver || ResizeObserver,
   matchMedia:
-    window?.matchMedia ||
+    global.window?.matchMedia ||
     (() => ({
       matches: false,
       media: '',
@@ -81,11 +76,11 @@ const getFakeGlobals = (window: WindowLike, basePath: string) => ({
 const getFakeDocumentProps = () => ({
   execCommand: function execCommand(
     // Provide the right arity for the function, even if unused
-    /* eslint-disable @typescript-eslint/no-unused-vars */
+    /* eslint-disable @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars */
     _commandName: string,
     _showDefaultUI: boolean,
     _valueArgument: unknown,
-    /* eslint-enable @typescript-eslint/no-unused-vars */
+    /* eslint-enable @typescript-eslint/no-unused-vars, unused-imports/no-unused-vars */
   ) {
     // Return false to indicate "unsupported"
     return false
@@ -94,16 +89,15 @@ const getFakeDocumentProps = () => ({
 
 function provideFakeGlobals(basePath: string): () => void {
   const globalEnv = global as any as Record<string, unknown>
-  const globalWindow =
-    'window' in global && isWindowLike(global.window) ? global.window : ({} as WindowLike)
-  const globalDocument = (globalEnv.document || globalWindow.document || {}) as Record<string, any>
+  const globalWindow = global.window as Record<string, any>
+  const globalDocument = (global.document || document || {}) as Record<string, any>
 
-  const fakeGlobals = getFakeGlobals(globalWindow, basePath)
+  const fakeGlobals = getFakeGlobals(basePath)
   const fakeDocumentProps = getFakeDocumentProps()
 
-  const stubbedGlobalKeys: (keyof typeof fakeGlobals)[] = []
-  const stubbedWindowKeys: (keyof typeof fakeGlobals)[] = []
-  const stubbedDocumentKeys: (keyof typeof fakeDocumentProps)[] = []
+  const stubbedGlobalKeys: string[] = []
+  const stubbedWindowKeys: string[] = []
+  const stubbedDocumentKeys: string[] = []
 
   for (const [rawKey, value] of Object.entries(fakeGlobals)) {
     if (typeof value === 'undefined') {
@@ -117,7 +111,7 @@ function provideFakeGlobals(basePath: string): () => void {
       stubbedGlobalKeys.push(key)
     }
 
-    if (!(key in globalWindow)) {
+    if (!(key in global.window)) {
       globalWindow[key] = fakeGlobals[key]
       stubbedWindowKeys.push(key)
     }
@@ -159,6 +153,7 @@ function tryGetAceGlobal(basePath: string) {
   }
 
   try {
+    // eslint-disable-next-line import/no-dynamic-require
     return require(acePath)
   } catch (err) {
     return undefined
@@ -182,25 +177,4 @@ function getFileExtensions() {
     '.woff',
     '.woff2',
   ]
-}
-
-interface WindowLike {
-  __mockedBySanity?: boolean
-  ace?: unknown
-  cancelAnimationFrame?: unknown
-  cancelIdleCallback?: unknown
-  close: () => void
-  customElements?: unknown
-  document?: unknown
-  InputEvent?: unknown
-  matchMedia?: unknown
-  requestAnimationFrame?: unknown
-  requestIdleCallback?: unknown
-  ResizeObserver?: unknown
-}
-
-function isWindowLike(win: unknown): win is WindowLike {
-  return (
-    typeof win === 'object' && win !== null && 'close' in win && typeof win.close === 'function'
-  )
 }

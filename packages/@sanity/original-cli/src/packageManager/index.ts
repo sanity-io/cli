@@ -1,9 +1,9 @@
-import {getInstallCommand} from './getInstallCommand.js'
-import {getCliUpgradeCommand} from './getUpgradeCommand.js'
-import {installDeclaredPackages, installNewPackages} from './installPackages.js'
-import {getPackageManagerChoice} from './packageManagerChoice.js'
-import {uninstallPackages} from './uninstallPackages.js'
-import {getYarnStub} from './yarnStub.js'
+import {getInstallCommand} from './getInstallCommand'
+import {getCliUpgradeCommand} from './getUpgradeCommand'
+import {installDeclaredPackages, installNewPackages} from './installPackages'
+import {getPackageManagerChoice} from './packageManagerChoice'
+import {uninstallPackages} from './uninstallPackages'
+import {getYarnStub} from './yarnStub'
 
 // Exported for internal CLI usage
 export {

@@ -1,6 +1,5 @@
+import {type CliCommandContext} from '@sanity/cli'
 import tokenize, {type LexerToken} from 'json-lexer'
-
-import type {CliCommandContext} from '../types.js'
 
 interface KeyToken {
   type: 'key'

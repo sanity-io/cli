@@ -41,5 +41,6 @@ yarn-error.log*
 # IDE
 .vscode
 
+.eslintcache
 coverage/
 .vitest-reports/

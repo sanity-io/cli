@@ -1,4 +1,4 @@
-import type {CliCommandGroupDefinition} from '../../types.js'
+import {type CliCommandGroupDefinition} from '@sanity/cli'
 
 const hookGroup: CliCommandGroupDefinition = {
   name: 'hook',

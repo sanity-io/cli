@@ -1,15 +1,15 @@
 import path from 'node:path'
 import {Worker} from 'node:worker_threads'
 
+import {type CliCommandArguments, type CliCommandContext} from '@sanity/cli'
 import logSymbols from 'log-symbols'
 import readPkgUp from 'read-pkg-up'
 
 import {
   type ValidateSchemaWorkerData,
   type ValidateSchemaWorkerResult,
-} from '../../threads/validateSchema.js'
-import type {CliCommandArguments, CliCommandContext} from '../../types.js'
-import {formatSchemaValidation, getAggregatedSeverity} from './formatSchemaValidation.js'
+} from '../../threads/validateSchema'
+import {formatSchemaValidation, getAggregatedSeverity} from './formatSchemaValidation'
 
 interface ValidateFlags {
   workspace?: string

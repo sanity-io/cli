@@ -1,5 +1,5 @@
-import {type BuiltInValidationReporter} from '../../validateAction.js'
-import {formatDocumentValidation} from './formatDocumentValidation.js'
+import {type BuiltInValidationReporter} from '../../validateAction'
+import {formatDocumentValidation} from './formatDocumentValidation'
 import {
   count,
   type DocumentValidationResult,
@@ -8,7 +8,7 @@ import {
   percent,
   seconds,
   summary,
-} from './util.js'
+} from './util'
 
 /**
  * Represents the default stylish/pretty reporter

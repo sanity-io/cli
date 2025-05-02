@@ -1,23 +1,23 @@
 // document types
-import collection from './documents/collection.js'
-import product from './documents/product.js'
-import productVariant from './documents/productVariant.js'
+import collection from './documents/collection'
+import product from './documents/product'
+import productVariant from './documents/productVariant'
 
 // objects
-import accordion from './objects/accordion.js'
-import accordionGroup from './objects/accordionGroup.js'
-import callout from './objects/callout.js'
-import inventory from './objects/inventory.js'
-import option from './objects/option.js'
-import priceRange from './objects/priceRange.js'
-import proxyString from './objects/proxyString.js'
-import shopifyCollection from './objects/shopifyCollection.js'
-import shopifyCollectionRule from './objects/shopifyCollectionRule.js'
-import shopifyProduct from './objects/shopifyProduct.js'
-import shopifyProductVariant from './objects/shopifyProductVariant.js'
+import accordion from './objects/accordion'
+import accordionGroup from './objects/accordionGroup'
+import callout from './objects/callout'
+import inventory from './objects/inventory'
+import option from './objects/option'
+import priceRange from './objects/priceRange'
+import proxyString from './objects/proxyString'
+import shopifyCollection from './objects/shopifyCollection'
+import shopifyCollectionRule from './objects/shopifyCollectionRule'
+import shopifyProduct from './objects/shopifyProduct'
+import shopifyProductVariant from './objects/shopifyProductVariant'
 
 // block content
-import blockContent from './blocks/blockContent.js'
+import blockContent from './blocks/blockContent'
 
 export const schemaTypes = [
   // document types

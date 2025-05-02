@@ -37,6 +37,7 @@ const conditions = ['import', 'browser', 'default']
 // locate the entry points for each subpath the Sanity module exports
 export function getSanityPkgExportAliases(sanityPkgPath: string) {
   // Load the package.json of the Sanity package
+  // eslint-disable-next-line import/no-dynamic-require
   const pkg = require(sanityPkgPath)
   const dirname = path.dirname(sanityPkgPath)
 

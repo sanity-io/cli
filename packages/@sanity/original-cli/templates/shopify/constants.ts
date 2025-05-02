@@ -1,6 +1,6 @@
 // Currency code (ISO 4217) to use when displaying prices in the studio
 
-import ShopifyIcon from './components/icons/Shopify.js'
+import ShopifyIcon from './components/icons/Shopify'
 import {ColorWheelIcon, ComposeIcon, SearchIcon} from '@sanity/icons'
 
 // https://en.wikipedia.org/wiki/ISO_4217

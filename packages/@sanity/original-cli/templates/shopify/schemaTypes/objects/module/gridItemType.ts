@@ -1,6 +1,6 @@
 import {defineField} from 'sanity'
 
-import blocksToText from '../../../utils/blocksToText.js'
+import blocksToText from '../../../utils/blocksToText'
 
 export const gridItemType = defineField({
   name: 'gridItem',

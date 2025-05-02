@@ -1,6 +1,5 @@
+import {type CliCommandDefinition} from '@sanity/cli'
 import pluralize from 'pluralize-esm'
-
-import type {CliCommandDefinition} from '../../types.js'
 
 const helpText = `
 Delete a document from the projects configured dataset

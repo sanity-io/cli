@@ -1,5 +1,5 @@
-import {type CliCommandDefinition} from '../../types.js'
-import showHelp from './showHelp.js'
+import {type CliCommandDefinition} from '../../types'
+import showHelp from './showHelp'
 
 const help = `
 With no options and no COMMAND given, the synopsis of the sanity command and a

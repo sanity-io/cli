@@ -1,9 +1,8 @@
+import {type CliOutputter} from '@sanity/cli'
 import {generateHelpUrl} from '@sanity/generate-help-url'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {upperFirst} from 'lodash'
 import logSymbols from 'log-symbols'
-
-import type {CliOutputter} from '../../types.js'
 
 // eslint-disable-next-line no-console
 const consoleOutputter = {error: (...args: unknown[]) => console.error(...args)}

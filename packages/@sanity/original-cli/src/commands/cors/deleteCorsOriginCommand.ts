@@ -1,5 +1,6 @@
-import type {CliCommandContext, CliCommandDefinition} from '../../types.js'
-import type {CorsOrigin} from './types.js'
+import {type CliCommandContext, type CliCommandDefinition} from '@sanity/cli'
+
+import {type CorsOrigin} from './types'
 
 const helpText = `
 Examples

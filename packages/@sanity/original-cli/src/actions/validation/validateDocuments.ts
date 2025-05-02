@@ -8,8 +8,8 @@ import readPkgUp from 'read-pkg-up'
 import {
   type ValidateDocumentsWorkerData,
   type ValidationWorkerChannel,
-} from '../../threads/validateDocuments.js'
-import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels.js'
+} from '../../threads/validateDocuments'
+import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels'
 
 export interface ValidateDocumentsOptions<TReturn = unknown> {
   level?: 'error' | 'warning' | 'info'

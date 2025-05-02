@@ -1,18 +1,21 @@
 import path from 'node:path'
 
+import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli'
 import debug from 'debug'
 import readPkgUp from 'read-pkg-up'
-import type {ConfigEnv, InlineConfig, Rollup} from 'vite'
+import {type ConfigEnv, type InlineConfig, type Rollup} from 'vite'
 
-import type {ReactCompilerConfig, UserViteConfig} from '../types.js'
-import {createExternalFromImportMap} from './createExternalFromImportMap.js'
-import {getSanityPkgExportAliases} from './getBrowserAliases.js'
-import {getStudioEnvironmentVariables} from './getStudioEnvironmentVariables.js'
-import {normalizeBasePath} from './helpers.js'
-import {getMonorepoAliases, loadSanityMonorepo} from './sanityMonorepo.js'
-import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
-import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
-import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
+import {createExternalFromImportMap} from './createExternalFromImportMap'
+import {getSanityPkgExportAliases} from './getBrowserAliases'
+import {
+  getAppEnvironmentVariables,
+  getStudioEnvironmentVariables,
+} from './getStudioEnvironmentVariables'
+import {normalizeBasePath} from './helpers'
+import {getMonorepoAliases, loadSanityMonorepo} from './sanityMonorepo'
+import {sanityBuildEntries} from './vite/plugin-sanity-build-entries'
+import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons'
+import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite'
 
 export interface ViteOptions {
   /**
@@ -53,6 +56,7 @@ export interface ViteOptions {
 
   importMap?: {imports?: Record<string, string>}
   reactCompiler: ReactCompilerConfig | undefined
+  isApp?: boolean
 }
 
 /**
@@ -72,6 +76,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     basePath: rawBasePath = '/',
     importMap,
     reactCompiler,
+    isApp,
   } = options
 
   const monorepo = await loadSanityMonorepo(cwd)
@@ -87,6 +92,11 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const staticPath = `${basePath}static`
 
   const {default: viteReact} = await import('@vitejs/plugin-react')
+
+  const envVars = isApp
+    ? getAppEnvironmentVariables({prefix: 'process.env.', jsonEncode: true})
+    : getStudioEnvironmentVariables({prefix: 'process.env.', jsonEncode: true})
+
   const viteConfig: InlineConfig = {
     // Define a custom cache directory so that sanity's vite cache
     // does not conflict with any potential local vite projects
@@ -110,9 +120,9 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       ),
       sanityFaviconsPlugin({defaultFaviconsPath, customFaviconsPath, staticUrlPath: staticPath}),
       sanityRuntimeRewritePlugin(),
-      sanityBuildEntries({basePath, cwd, monorepo, importMap}),
+      sanityBuildEntries({basePath, cwd, monorepo, importMap, isApp}),
     ],
-    envPrefix: 'SANITY_STUDIO_',
+    envPrefix: isApp ? 'SANITY_APP_' : 'SANITY_STUDIO_',
     logLevel: mode === 'production' ? 'silent' : 'info',
     resolve: {
       alias: monorepo?.path
@@ -134,7 +144,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
        * and there is no longer any reason to use the much slower method in dev mode.
        */
       'process.env.SC_DISABLE_SPEEDY': JSON.stringify('false'),
-      ...getStudioEnvironmentVariables({prefix: 'process.env.', jsonEncode: true}),
+      ...envVars,
     },
   }
 

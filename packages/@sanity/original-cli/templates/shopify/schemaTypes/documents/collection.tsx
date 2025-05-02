@@ -2,9 +2,9 @@ import {defineArrayMember, defineField, defineType} from 'sanity'
 import {PackageIcon} from '@sanity/icons'
 import {getExtension} from '@sanity/asset-utils'
 import pluralize from 'pluralize-esm'
-import CollectionHiddenInput from '../../components/inputs/CollectionHidden.js'
-import ShopifyDocumentStatus from '../../components/media/ShopifyDocumentStatus.js'
-import {GROUPS} from '../../constants.js'
+import CollectionHiddenInput from '../../components/inputs/CollectionHidden'
+import ShopifyDocumentStatus from '../../components/media/ShopifyDocumentStatus'
+import {GROUPS} from '../../constants'
 
 export const collectionType = defineType({
   name: 'collection',

@@ -2,14 +2,14 @@ import {writeFile} from 'node:fs/promises'
 import {dirname, join} from 'node:path'
 import {Worker} from 'node:worker_threads'
 
+import {type CliCommandArguments, type CliCommandContext} from '@sanity/cli'
 import readPkgUp from 'read-pkg-up'
 
 import {
   type ExtractSchemaWorkerData,
   type ExtractSchemaWorkerResult,
-} from '../../threads/extractSchema.js'
-import type {CliCommandArguments, CliCommandContext} from '../../types.js'
-import {SchemaExtractedTrace} from './extractSchema.telemetry.js'
+} from '../../threads/extractSchema'
+import {SchemaExtractedTrace} from './extractSchema.telemetry'
 
 interface ExtractFlags {
   workspace?: string

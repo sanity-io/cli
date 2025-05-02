@@ -1,13 +1,8 @@
 import {expect} from 'vitest'
 
-import {describeCliTest, testConcurrent} from './shared/describe.js'
-import {
-  getTestRunArgs,
-  runSanityCmdCommand,
-  studioVersions,
-  testClient,
-} from './shared/environment.js'
-import {request} from './shared/request.js'
+import {describeCliTest, testConcurrent} from './shared/describe'
+import {getTestRunArgs, runSanityCmdCommand, studioVersions, testClient} from './shared/environment'
+import {request} from './shared/request'
 
 describeCliTest('CLI: `sanity graphql`', () => {
   describeCliTest.each(studioVersions)('%s', (version) => {

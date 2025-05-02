@@ -9,8 +9,8 @@ import {
 } from '@sanity/types'
 import {format} from 'prettier'
 
-import {type CliApiClient} from '../types.js'
-import {getCliWorkerPath} from './cliWorker.js'
+import {type CliApiClient} from '../types'
+import {getCliWorkerPath} from './cliWorker'
 
 /**
  * A Journey schema is a server schema that is saved in the Journey API
@@ -57,10 +57,8 @@ export async function getAndWriteJourneySchema(data: JourneySchemaWorkerData): P
     // Write an index file that exports all the schemas
     const indexContent = await assembleJourneyIndexContent(documentTypes)
     await fs.writeFile(path.join(schemasPath, `index.${fileExtension}`), indexContent)
-  } catch (error: unknown) {
-    throw new Error(
-      `Failed to fetch remote schema: ${error instanceof Error ? error.message : error}`,
-    )
+  } catch (error) {
+    throw new Error(`Failed to fetch remote schema: ${error.message}`)
   }
 }
 

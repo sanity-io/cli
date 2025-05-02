@@ -1,4 +1,4 @@
-import type {CliCommandDefinition} from '../../types.js'
+import {type CliCommandDefinition} from '@sanity/cli'
 
 const description = 'Validates all schema types specified in a workspace.'
 
@@ -26,7 +26,7 @@ const validateDocumentsCommand: CliCommandDefinition = {
   description,
   helpText,
   action: async (args, context) => {
-    const mod = await import('../../actions/schema/validateAction.js')
+    const mod = await import('../../actions/schema/validateAction')
 
     return mod.default(args, context)
   },

@@ -1,7 +1,7 @@
 import {type AliasOptions} from 'vite'
 
-import {getSanityPkgExportAliases} from './getBrowserAliases.js'
-import {getMonorepoAliases} from './sanityMonorepo.js'
+import {getSanityPkgExportAliases} from './getBrowserAliases'
+import {getMonorepoAliases} from './sanityMonorepo'
 
 /**
  * @internal

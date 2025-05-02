@@ -10,12 +10,12 @@ import resolveFrom from 'resolve-from'
 import semver from 'semver'
 import validateNpmPackageName from 'validate-npm-package-name'
 
-import {type CliCommandContext} from '../...js'
-import {debug} from '../../debug.js'
-import {type SanityJson} from '../../types.js'
-import {dynamicRequire} from '../../util/dynamicRequire.js'
-import {getCliVersion} from '../../util/getCliVersion.js'
-import {readJson} from '../../util/readJson.js'
+import {type CliCommandContext} from '../..'
+import {debug} from '../../debug'
+import {type SanityJson} from '../../types'
+import {dynamicRequire} from '../../util/dynamicRequire'
+import {getCliVersion} from '../../util/getCliVersion'
+import {readJson} from '../../util/readJson'
 
 const request = getIt([promise()])
 

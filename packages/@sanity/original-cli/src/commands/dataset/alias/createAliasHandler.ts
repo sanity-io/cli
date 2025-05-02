@@ -1,10 +1,11 @@
-import {promptForDatasetAliasName} from '../../../actions/dataset/alias/promptForDatasetAliasName.js'
-import {validateDatasetAliasName} from '../../../actions/dataset/alias/validateDatasetAliasName.js'
-import {promptForDatasetName} from '../../../actions/dataset/datasetNamePrompt.js'
-import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
-import type {CliCommandAction} from '../../../types.js'
-import * as aliasClient from './datasetAliasesClient.js'
-import {ALIAS_PREFIX} from './datasetAliasesClient.js'
+import {type CliCommandAction} from '@sanity/cli'
+
+import {promptForDatasetAliasName} from '../../../actions/dataset/alias/promptForDatasetAliasName'
+import {validateDatasetAliasName} from '../../../actions/dataset/alias/validateDatasetAliasName'
+import {promptForDatasetName} from '../../../actions/dataset/datasetNamePrompt'
+import {validateDatasetName} from '../../../actions/dataset/validateDatasetName'
+import * as aliasClient from './datasetAliasesClient'
+import {ALIAS_PREFIX} from './datasetAliasesClient'
 
 export const createAliasHandler: CliCommandAction = async (args, context) => {
   const {apiClient, output, prompt} = context

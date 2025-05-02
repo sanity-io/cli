@@ -5,13 +5,13 @@ import {Worker} from 'node:worker_threads'
 import {readConfig} from '@sanity/codegen'
 import {format as prettierFormat, resolveConfig as resolvePrettierConfig} from 'prettier'
 
-import {type CliCommandArguments, type CliCommandContext} from '../../types.js'
-import {getCliWorkerPath} from '../../util/cliWorker.js'
+import {type CliCommandArguments, type CliCommandContext} from '../../types'
+import {getCliWorkerPath} from '../../util/cliWorker'
 import {
   type TypegenGenerateTypesWorkerData,
   type TypegenGenerateTypesWorkerMessage,
-} from '../../workers/typegenGenerate.js'
-import {TypesGeneratedTrace} from './generate.telemetry.js'
+} from '../../workers/typegenGenerate'
+import {TypesGeneratedTrace} from './generate.telemetry'
 
 export interface TypegenGenerateTypesCommandFlags {
   'config-path'?: string

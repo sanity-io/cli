@@ -1,5 +1,10 @@
-import type {StartPreviewServerCommandFlags} from '../../actions/preview/previewAction.js'
-import type {CliCommandArguments, CliCommandContext, CliCommandDefinition} from '../../types.js'
+import {
+  type CliCommandArguments,
+  type CliCommandContext,
+  type CliCommandDefinition,
+} from '@sanity/cli'
+
+import {type StartPreviewServerCommandFlags} from '../../actions/preview/previewAction'
 
 const helpText = `
 Notes
@@ -34,12 +39,13 @@ async function getPreviewAction() {
   // NOTE: in dev-mode we want to include from `src` so we need to use `.ts` extension
   // NOTE: this `if` statement is not included in the output bundle
   if (__DEV__) {
-    const mod: typeof import('../../actions/preview/previewAction.js') = require('../../actions/preview/previewAction.ts')
+    // eslint-disable-next-line import/extensions,@typescript-eslint/consistent-type-imports
+    const mod: typeof import('../../actions/preview/previewAction') = require('../../actions/preview/previewAction.ts')
 
     return mod.default
   }
 
-  const mod = await import('../../actions/preview/previewAction.js')
+  const mod = await import('../../actions/preview/previewAction')
 
   return mod.default
 }

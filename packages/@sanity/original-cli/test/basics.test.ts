@@ -2,8 +2,8 @@ import path from 'node:path'
 
 import {describe, expect} from 'vitest'
 
-import {describeCliTest, testConcurrent} from './shared/describe.js'
-import {getCliUserEmail, runSanityCmdCommand, studioVersions} from './shared/environment.js'
+import {describeCliTest, testConcurrent} from './shared/describe'
+import {getCliUserEmail, runSanityCmdCommand, studioVersions} from './shared/environment'
 
 describeCliTest('CLI: basic commands', () => {
   describe.each(studioVersions)('%s', (version) => {

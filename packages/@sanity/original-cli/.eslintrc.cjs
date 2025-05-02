@@ -1,3 +1,7 @@
+const path = require('node:path')
+
+const ROOT_PATH = path.resolve(__dirname, '../../..')
+
 module.exports = {
   env: {
     browser: false,
@@ -5,5 +9,6 @@ module.exports = {
   },
   rules: {
     complexity: [1, 18],
+    'import/no-extraneous-dependencies': ['error', {packageDir: [ROOT_PATH, __dirname]}],
   },
 }

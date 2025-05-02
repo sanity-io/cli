@@ -1,7 +1,7 @@
+import {type CliCommandDefinition} from '@sanity/cli'
 import {size, sortBy} from 'lodash'
 
-import type {CliCommandDefinition} from '../../types.js'
-import type {Invite, PartialProjectResponse, User} from './types.js'
+import {type Invite, type PartialProjectResponse, type User} from './types'
 
 const sortFields = ['id', 'name', 'role', 'date']
 

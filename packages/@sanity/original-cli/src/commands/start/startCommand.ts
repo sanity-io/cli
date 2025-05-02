@@ -1,7 +1,12 @@
-import type {StartPreviewServerCommandFlags} from '../../actions/preview/previewAction.js'
-import type {CliCommandArguments, CliCommandContext, CliCommandDefinition} from '../../types.js'
-import {isInteractive} from '../../util/isInteractive.js'
-import {getDevAction} from '../dev/devCommand.js'
+import {
+  type CliCommandArguments,
+  type CliCommandContext,
+  type CliCommandDefinition,
+} from '@sanity/cli'
+
+import {type StartPreviewServerCommandFlags} from '../../actions/preview/previewAction'
+import {isInteractive} from '../../util/isInteractive'
+import {getDevAction} from '../dev/devCommand'
 
 const helpText = `
 Notes
@@ -60,7 +65,7 @@ const startCommand: CliCommandDefinition = {
         }))
 
       if (shouldRunDevServer) {
-        const devAction = await getDevAction()
+        const devAction = await getDevAction(context)
         await devAction(args, context)
       } else {
         // Indicate that this isn't an expected exit

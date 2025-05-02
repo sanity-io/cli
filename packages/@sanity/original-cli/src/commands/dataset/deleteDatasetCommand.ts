@@ -1,8 +1,8 @@
+import {type CliCommandDefinition} from '@sanity/cli'
 import {hideBin} from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 
-import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
-import type {CliCommandDefinition} from '../../types.js'
+import {validateDatasetName} from '../../actions/dataset/validateDatasetName'
 
 const helpText = `
 Options

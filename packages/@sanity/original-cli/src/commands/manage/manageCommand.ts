@@ -1,6 +1,6 @@
 import open from 'open'
 
-import {type CliCommandDefinition} from '../../types.js'
+import {type CliCommandDefinition} from '../../types'
 
 const manageCommand: CliCommandDefinition = {
   name: 'manage',
