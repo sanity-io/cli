@@ -1,8 +1,11 @@
 import {dirname, resolve} from 'node:path'
+import {fileURLToPath} from 'node:url'
 
 import {z} from 'zod'
 
 import {studioWorkerTask} from '../../loaders/studio/studioWorkerTask.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const schemaSchema = z.object({
   name: z.string().optional(),
@@ -71,14 +74,11 @@ export async function readStudioConfig(
   configPath: string,
   options: ReadStudioConfigOptions,
 ): Promise<RawStudioConfig | ResolvedStudioConfig> {
-  const result = await studioWorkerTask(
-    resolve(import.meta.dirname, 'readStudioConfig.worker.js'),
-    {
-      name: 'studioConfig',
-      studioRootPath: dirname(configPath),
-      workerData: {configPath, resolvePlugins: options.resolvePlugins},
-    },
-  )
+  const result = await studioWorkerTask(resolve(__dirname, 'readStudioConfig.worker.js'), {
+    name: 'studioConfig',
+    studioRootPath: dirname(configPath),
+    workerData: {configPath, resolvePlugins: options.resolvePlugins},
+  })
 
   return options.resolvePlugins ? resolvedConfigSchema.parse(result) : rawConfigSchema.parse(result)
 }

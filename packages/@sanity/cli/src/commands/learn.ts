@@ -3,6 +3,8 @@ import type {FlagInput} from '@oclif/core/interfaces'
 import {Command} from '@oclif/core'
 import open from 'open'
 
+console.log(process.env, open)
+
 export default class LearnCommand extends Command {
   static override description = 'Opens Sanity Learn in your web browser'
   static override flags = {} satisfies FlagInput
