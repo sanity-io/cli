@@ -1,0 +1,58 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["local>sanity-io/renovate-config"],
+  "ignorePresets": ["github>sanity-io/renovate-config:group-non-major"],
+  "schedule": ["before 5am"],
+  "prConcurrentLimit": 3,
+  "automerge": true,
+  "dependencyDashboardApproval": false,
+  "packageRules": [
+    {
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "devDependencies (non-major)",
+      "group": {"semanticCommitType": "chore"},
+      "semanticCommitType": "chore"
+    },
+    {
+      "description": "Group TypeScript related deps in a single PR, as they often have to update together",
+      "groupName": "typescript-tooling",
+      "matchPackageNames": ["@sanity/pkg-utils", "typescript"],
+      "group": {"semanticCommitType": "chore"},
+      "semanticCommitType": "chore"
+    },
+    {
+      "description": "Group eslint related deps in a single PR, as they often have to update together",
+      "groupName": "eslint-tooling",
+      "matchPackageNames": [
+        "@eslint/*",
+        "eslint",
+        "eslint-plugin-*",
+        "eslint-config-*",
+        "typescript-eslint"
+      ],
+      "group": {"semanticCommitType": "chore"},
+      "semanticCommitType": "chore"
+    },
+    {
+      "group": {"semanticCommitType": "chore"},
+      "matchDepTypes": [
+        "dependencies",
+        "devDependencies",
+        "engines",
+        "optionalDependencies",
+        "peerDependencies"
+      ],
+      "matchManagers": ["npm"],
+      "semanticCommitType": "chore",
+      "description": "Group all dependencies from the examples directory",
+      "matchFileNames": ["examples/**/package.json"],
+      "groupName": "Examples dependencies"
+    },
+    {
+      "matchDepTypes": ["dependencies", "peerDependencies"],
+      "rangeStrategy": "bump",
+      "semanticCommitType": "fix"
+    }
+  ]
+}
