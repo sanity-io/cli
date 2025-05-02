@@ -25,6 +25,7 @@
     "check:lint": "turbo run lint",
     "check:types": "tsc --noEmit",
     "clean": "rimraf packages/@sanity/*/lib packages/*/lib",
+    "clean:deps": "rimraf packages/*/node_modules examples/*/node_modules node_modules",
     "dev": "turbo run dev",
     "format": "prettier --write .",
     "test": "vitest run",
@@ -57,6 +58,10 @@
     },
     "patchedDependencies": {
       "sanity": "patches/sanity.patch"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "esbuild"
+    ]
   }
 }
