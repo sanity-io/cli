@@ -385,40 +385,40 @@ importers:
   packages/@sanity/codegen:
     dependencies:
       '@babel/core':
-        specifier: ^7.26.9
+        specifier: ^7.23.9
         version: 7.26.10
       '@babel/generator':
-        specifier: ^7.26.9
+        specifier: ^7.23.6
         version: 7.27.0
       '@babel/preset-env':
-        specifier: ^7.26.9
+        specifier: ^7.23.8
         version: 7.26.9(@babel/core@7.26.10)
       '@babel/preset-react':
-        specifier: ^7.26.3
+        specifier: ^7.23.3
         version: 7.26.3(@babel/core@7.26.10)
       '@babel/preset-typescript':
-        specifier: ^7.26.0
+        specifier: ^7.23.3
         version: 7.27.0(@babel/core@7.26.10)
       '@babel/register':
-        specifier: ^7.25.9
+        specifier: ^7.23.7
         version: 7.25.9(@babel/core@7.26.10)
       '@babel/traverse':
-        specifier: ^7.26.9
+        specifier: ^7.23.5
         version: 7.27.0
       '@babel/types':
-        specifier: ^7.26.9
+        specifier: ^7.23.9
         version: 7.27.0
       debug:
-        specifier: ^4.4.0
+        specifier: ^4.3.4
         version: 4.4.0(supports-color@8.1.1)
       globby:
         specifier: ^11.1.0
         version: 11.1.0
       groq:
-        specifier: ^3.78.1
-        version: 3.82.0
+        specifier: ^3.87.0
+        version: 3.87.0
       groq-js:
-        specifier: ^1.16.0
+        specifier: ^1.16.1
         version: 1.16.1
       json5:
         specifier: ^2.2.3
@@ -427,7 +427,7 @@ importers:
         specifier: ^4.2.0
         version: 4.2.0
       zod:
-        specifier: ^3.24.2
+        specifier: ^3.22.4
         version: 3.24.2
     devDependencies:
       '@eslint/compat':
@@ -452,7 +452,7 @@ importers:
         specifier: ^7.17.3
         version: 7.17.3
       '@types/babel__traverse':
-        specifier: ^7.20.6
+        specifier: ^7.20.5
         version: 7.20.7
       '@types/debug':
         specifier: ^4.1.12
@@ -467,36 +467,33 @@ importers:
   packages/@sanity/migrate:
     dependencies:
       '@sanity/client':
-        specifier: ^6.28.3
-        version: 6.28.4(debug@4.4.0)
+        specifier: ^7.0.0
+        version: 7.0.0(debug@4.4.0)
       '@sanity/mutate':
-        specifier: ^0.11.1
-        version: 0.11.1(debug@4.4.0)
+        specifier: ^0.12.4
+        version: 0.12.4(debug@4.4.0)
       '@sanity/types':
-        specifier: 3.70.0
-        version: 3.70.0(@types/react@19.0.12)(debug@4.4.0)
+        specifier: ^3.87.0
+        version: 3.87.0(@types/react@19.0.12)(debug@4.4.0)
       '@sanity/util':
-        specifier: 3.70.0
-        version: 3.70.0(@types/react@19.0.12)(debug@4.4.0)
+        specifier: ^3.87.0
+        version: 3.87.0(@types/react@19.0.12)(debug@4.4.0)
       arrify:
         specifier: ^2.0.1
         version: 2.0.1
       debug:
-        specifier: ^4.4.0
+        specifier: ^4.3.4
         version: 4.4.0(supports-color@8.1.1)
       fast-fifo:
         specifier: ^1.3.2
         version: 1.3.2
       groq-js:
-        specifier: ^1.16.0
+        specifier: ^1.16.1
         version: 1.16.1
       p-map:
-        specifier: ^7.0.3
+        specifier: ^7.0.1
         version: 7.0.3
     devDependencies:
-      '@repo/tsconfig':
-        specifier: workspace:*
-        version: link:../../@repo/tsconfig
       '@types/debug':
         specifier: ^4.1.12
         version: 4.1.12
@@ -2423,6 +2420,14 @@ packages:
     resolution: {integrity: sha512-xUv+Mzqv1JvzWgpNE+DDUPjsvImOEuwxHwOQZijX3+eqOBuRnqmlk7XtYIIw5NsDg6lE0b+uQ0wE5in9/JhYjw==}
     engines: {node: '>=14.18'}
 
+  '@sanity/client@6.29.1':
+    resolution: {integrity: sha512-BQRCMeDlBxwnMbFtB61HUxFf9aSb4HNVrpfrC7IFVqFf4cwcc3o5H8/nlrL9U3cDFedbe4W0AXt1mQzwbY/ljw==}
+    engines: {node: '>=14.18'}
+
+  '@sanity/client@7.0.0':
+    resolution: {integrity: sha512-Kr96rYNJpA/zSyYhio9tx3SvID1ew2Y4mICzHYe81xF1MdjZLdUf0BudRv+wSa1QxtQdBnY4hDZKA96BAYo5ng==}
+    engines: {node: '>=20'}
+
   '@sanity/code-input@5.1.2':
     resolution: {integrity: sha512-hYqNYn4Qtl+Q6787bM8P6gZJ5DbGzpFDKhFeZM2jQ1TnM2/CrUVmQBTuos5FxfJbgQwBX+I42EDjip8moYZl3g==}
     engines: {node: '>=18'}
@@ -2503,10 +2508,6 @@ packages:
     resolution: {integrity: sha512-exvkSoPMkD8pHt2ucKYOSWaSC5D1iV/9N2uhoVSZ5uktAyYQEXYZaM0Nn2j0Y+kfl3Dd2da/C9n2OyqkqllTDQ==}
     engines: {node: '>=18'}
 
-  '@sanity/mutate@0.11.1':
-    resolution: {integrity: sha512-72chdEK8s9h1BLE/n7tOkCOGnrfFV/cH1fpvH/PpcxhpUY7wg6vvL7/durpXLEchWCO1ToS5DcFrCfmy1iKOrw==}
-    engines: {node: '>=18'}
-
   '@sanity/mutate@0.12.4':
     resolution: {integrity: sha512-CBPOOTCTyHFyhBL+seWpkGKJIE6lpaFd9yIeTIDt6miluBz6W8OKTNbaU6gPzOztqrr8KbrTaROiQAaMQDndQA==}
     engines: {node: '>=18'}
@@ -2557,13 +2558,13 @@ packages:
     peerDependencies:
       '@types/react': 18 || 19
 
-  '@sanity/types@3.70.0':
-    resolution: {integrity: sha512-Qr2tk9Kr6VP2nL30w/wo+92NI/De+RmpMgkL9jY1hLLWYiGG1c3cJyR2pUK7iIwF3pUHwHPGV+S1APhw5XQ8zw==}
+  '@sanity/types@3.82.0':
+    resolution: {integrity: sha512-YUVHc6XXApZYYds3AuIhxM9Nx0ncAQ7t5XPSRv8ZOUvSRdFPtbMysXN9V+CW5yFrvWpJ05aEgn9EjlKVSLU+kw==}
     peerDependencies:
       '@types/react': 18 || 19
 
-  '@sanity/types@3.82.0':
-    resolution: {integrity: sha512-YUVHc6XXApZYYds3AuIhxM9Nx0ncAQ7t5XPSRv8ZOUvSRdFPtbMysXN9V+CW5yFrvWpJ05aEgn9EjlKVSLU+kw==}
+  '@sanity/types@3.87.0':
+    resolution: {integrity: sha512-VX0Veow8vp4HPPiIVgEYrOvzmKLmjAOT2b35Twt3xlb5piXqHZpjd8AbUQtSGJ29auiCbsuEKI9bGUBmiSfeRA==}
     peerDependencies:
       '@types/react': 18 || 19
 
@@ -2580,12 +2581,12 @@ packages:
     resolution: {integrity: sha512-J4Ov75oUvMqx221VEJkKNSibzF0D8VyCzejtwftW+jP80XguYFqBz7bAcTmwJ5vnxNUoAUCeAdZBoOYVpgew4g==}
     engines: {node: '>=18'}
 
-  '@sanity/util@3.70.0':
-    resolution: {integrity: sha512-F7U23gTv9+ZEo+JktWkhnRgFEz+OrUuRKb1bPceWfkXj8d3nAAdJ+8+hZ1tik0KFxnl4dooltcDxp/5Jo+OnNg==}
-    engines: {node: '>=18'}
-
   '@sanity/util@3.82.0':
     resolution: {integrity: sha512-20a4tGJ7ZKyDr5R6EmVYh7kfWHBLlnLevAuM3NPK19soL21UCU+53qFN+ku3M9EbiEAiCBTY9qCVCm3LudAN+Q==}
+    engines: {node: '>=18'}
+
+  '@sanity/util@3.87.0':
+    resolution: {integrity: sha512-X8ugSF5s8yWkKYHrAKGYb1NnruuuMhjZs7qriwglEXDBrTYvOJbsKz6HpKH1skr9LFNOrr+/pwBEFMQh6+Ivzw==}
     engines: {node: '>=18'}
 
   '@sanity/uuid@3.0.2':
@@ -4782,8 +4783,8 @@ packages:
     resolution: {integrity: sha512-n22UJPBYE8CLAlTOwXTZVjFH1a5+x2hORDv13zi1gwbR23CpvSLPioNtzVovotuAciLLH/pVJe9PyKOR5MykGg==}
     engines: {node: '>= 14'}
 
-  groq@3.82.0:
-    resolution: {integrity: sha512-c/PDJ0Jm3cvU2LkQZYEHoqErVWQZp5Ch7+gOLXtR7g2YhukIQQPgu/PXBavEDOL2kb1VKak0V4M2WDxcAnXe4Q==}
+  groq@3.87.0:
+    resolution: {integrity: sha512-d8RDHFXTln2ieeeTfT68JDvwRT5w07U7GJL/DRYdJnhiVNA8kAs0hbvfFVjQUQRwyMYPZvOw/EMwjh++ISbvkQ==}
     engines: {node: '>=18'}
 
   gunzip-maybe@1.4.2:
@@ -9818,6 +9819,22 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
+  '@sanity/client@6.29.1(debug@4.4.0)':
+    dependencies:
+      '@sanity/eventsource': 5.0.2
+      get-it: 8.6.7(debug@4.4.0)
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - debug
+
+  '@sanity/client@7.0.0(debug@4.4.0)':
+    dependencies:
+      '@sanity/eventsource': 5.0.2
+      get-it: 8.6.7(debug@4.4.0)
+      rxjs: 7.8.2
+    transitivePeerDependencies:
+      - debug
+
   '@sanity/code-input@5.1.2(@babel/runtime@7.27.0)(@codemirror/lint@6.8.5)(@codemirror/theme-one-dark@6.1.2)(@emotion/is-prop-valid@1.2.2)(codemirror@6.0.1)(react-dom@18.3.1(react@18.3.1))(react-is@18.3.1)(react@18.3.1)(sanity@3.82.0(patch_hash=69918b67ee6214bc53da73c7ffde257846a1a04717b01e4d4807219044da3db3)(@emotion/is-prop-valid@1.2.2)(@types/node@22.13.17)(@types/react@18.3.20)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(styled-components@6.1.16(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.1))(styled-components@6.1.16(react-dom@18.3.1(react@18.3.1))(react@18.3.1))':
     dependencies:
       '@codemirror/autocomplete': 6.18.6
@@ -9971,18 +9988,6 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react'
       - supports-color
-
-  '@sanity/mutate@0.11.1(debug@4.4.0)':
-    dependencies:
-      '@sanity/client': 6.28.4(debug@4.4.0)
-      '@sanity/diff-match-patch': 3.2.0
-      hotscript: 1.0.13
-      lodash: 4.17.21
-      mendoza: 3.0.8
-      nanoid: 5.1.5
-      rxjs: 7.8.2
-    transitivePeerDependencies:
-      - debug
 
   '@sanity/mutate@0.12.4(debug@4.4.0)':
     dependencies:
@@ -10155,17 +10160,17 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@sanity/types@3.70.0(@types/react@19.0.12)(debug@4.4.0)':
-    dependencies:
-      '@sanity/client': 6.28.4(debug@4.4.0)
-      '@types/react': 19.0.12
-    transitivePeerDependencies:
-      - debug
-
   '@sanity/types@3.82.0(@types/react@18.3.20)(debug@4.4.0)':
     dependencies:
       '@sanity/client': 6.28.4(debug@4.4.0)
       '@types/react': 18.3.20
+    transitivePeerDependencies:
+      - debug
+
+  '@sanity/types@3.87.0(@types/react@19.0.12)(debug@4.4.0)':
+    dependencies:
+      '@sanity/client': 6.29.1(debug@4.4.0)
+      '@types/react': 19.0.12
     transitivePeerDependencies:
       - debug
 
@@ -10198,10 +10203,10 @@ snapshots:
       - '@types/react'
       - debug
 
-  '@sanity/util@3.70.0(@types/react@19.0.12)(debug@4.4.0)':
+  '@sanity/util@3.82.0(@types/react@18.3.20)(debug@4.4.0)':
     dependencies:
       '@sanity/client': 6.28.4(debug@4.4.0)
-      '@sanity/types': 3.70.0(@types/react@19.0.12)(debug@4.4.0)
+      '@sanity/types': 3.82.0(@types/react@18.3.20)(debug@4.4.0)
       get-random-values-esm: 1.0.2
       moment: 2.30.1
       rxjs: 7.8.2
@@ -10209,10 +10214,10 @@ snapshots:
       - '@types/react'
       - debug
 
-  '@sanity/util@3.82.0(@types/react@18.3.20)(debug@4.4.0)':
+  '@sanity/util@3.87.0(@types/react@19.0.12)(debug@4.4.0)':
     dependencies:
-      '@sanity/client': 6.28.4(debug@4.4.0)
-      '@sanity/types': 3.82.0(@types/react@18.3.20)(debug@4.4.0)
+      '@sanity/client': 6.29.1(debug@4.4.0)
+      '@sanity/types': 3.87.0(@types/react@19.0.12)(debug@4.4.0)
       get-random-values-esm: 1.0.2
       moment: 2.30.1
       rxjs: 7.8.2
@@ -12965,7 +12970,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  groq@3.82.0: {}
+  groq@3.87.0: {}
 
   gunzip-maybe@1.4.2:
     dependencies:
