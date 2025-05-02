@@ -26,14 +26,13 @@
   "exports": {
     ".": {
       "source": "./src/_exports/index.ts",
-      "import": "./lib/index.mjs",
-      "require": "./lib/index.js",
+      "import": "./lib/index.js",
       "default": "./lib/index.js"
     },
     "./package.json": "./package.json"
   },
   "main": "./lib/index.js",
-  "module": "./lib/index.mjs",
+  "module": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "files": [
     "lib",

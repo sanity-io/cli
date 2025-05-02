@@ -1,6 +1,7 @@
 {
   "extends": "@repo/tsconfig/build.json",
   "include": ["./src"],
+  "exclude": ["./lib/**/*"],
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "./lib"
