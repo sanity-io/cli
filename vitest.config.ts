@@ -6,7 +6,7 @@ export default defineConfig({
       exclude: ['**/*.{test,spec,stories,d}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}', 'examples/**'],
       include: ['packages/@sanity/cli/**/*.{ts,tsx}', 'packages/create-sanity/**/*.{ts,tsx}'],
       provider: 'v8',
-      reporter: ['text', 'html'],
+      reporter: ['html', 'json', 'json-summary'],
     },
   },
 })
