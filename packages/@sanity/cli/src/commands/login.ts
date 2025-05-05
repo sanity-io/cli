@@ -10,6 +10,7 @@ import {
   type ProvidersResponse,
   type SamlLoginProvider,
 } from '../actions/auth/types.js'
+import {SanityCliCommand} from '../BaseCommand.js'
 import {getCliToken} from '../config/cliToken.js'
 import {setConfig} from '../config/cliUserConfig.js'
 import {getGlobalCliClient} from '../core/apiClient.js'
@@ -18,7 +19,7 @@ import {canLaunchBrowser} from '../util/canLaunchBrowser.js'
 
 const LOGIN_API_VERSION = '2024-02-01'
 
-export default class LoginCommand extends Command {
+export default class LoginCommand extends SanityCliCommand<typeof LoginCommand> {
   static override description = 'Authenticates the CLI for access to Sanity projects'
   static override examples: Array<Command.Example> = [
     {
