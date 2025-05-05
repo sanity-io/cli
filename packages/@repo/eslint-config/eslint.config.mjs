@@ -1,9 +1,9 @@
 import eslint from '@eslint/js'
 import prettier from 'eslint-config-prettier'
 import importPlugin from 'eslint-plugin-import'
-import jsdoc from 'eslint-plugin-jsdoc'
 import nodePlugin from 'eslint-plugin-n'
 import perfectionist from 'eslint-plugin-perfectionist'
+import tsdoc from 'eslint-plugin-tsdoc'
 import unicorn from 'eslint-plugin-unicorn'
 import tseslint, {configs} from 'typescript-eslint'
 
@@ -51,10 +51,12 @@ export default [
         ],
       },
     },
-    jsdoc.configs['flat/recommended'],
     {
+      plugins: {
+        tsdoc,
+      },
       rules: {
-        'jsdoc/check-param-names': 'off',
+        'tsdoc/syntax': 'error',
       },
     },
     {
