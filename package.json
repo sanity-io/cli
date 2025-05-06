@@ -20,6 +20,7 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build",
+    "build:cli": "turbo run build --filter=@sanity/cli",
     "check": "npm run check:lint && npm run check:types",
     "check:lint": "turbo run lint",
     "check:types": "tsc --noEmit",

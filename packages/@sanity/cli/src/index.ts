@@ -4,21 +4,6 @@
  */
 
 // @todo implement
-export function getCliClient(_options: any): any {
-  throw new Error('@todo not implemented yet')
-}
-
-// @todo implement typings
-export function defineCliConfig(config: any) {
-  return config
-}
-
-// @todo implement typings
-export function createCliConfig(config: any) {
-  return config
-}
-
-// @todo implement
 export function loadEnv(
   mode: string,
   envDir: string,
@@ -26,3 +11,7 @@ export function loadEnv(
 ): Record<string, string> {
   return {}
 }
+
+export {createCliConfig} from './config/cli/createCliConfig.js'
+export {defineCliConfig} from './config/cli/defineCliConfig.js'
+export {getCliConfig} from './config/cli/getCliConfig.js'

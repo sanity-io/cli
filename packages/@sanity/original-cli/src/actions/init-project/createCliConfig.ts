@@ -3,7 +3,7 @@ import {parse, print} from 'recast'
 import * as parser from 'recast/parsers/typescript'
 
 const defaultTemplate = `
-import {defineCliConfig} from 'sanity/cli'
+import {defineCliConfig} from '@sanity/cli'
 
 export default defineCliConfig({
   api: {
