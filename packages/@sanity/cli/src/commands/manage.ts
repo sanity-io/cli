@@ -1,6 +1,5 @@
-import type {FlagInput} from '@oclif/core/interfaces'
-
 import {Command} from '@oclif/core'
+import {type FlagInput} from '@oclif/core/interfaces'
 import open from 'open'
 
 import {getCliConfig} from '../config/cli/getCliConfig.js'

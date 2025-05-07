@@ -1,4 +1,4 @@
-import type {ConfigEnv, InlineConfig} from 'vite'
+import {type ConfigEnv, type InlineConfig} from 'vite'
 
 export interface GraphQLAPIConfig {
   /**

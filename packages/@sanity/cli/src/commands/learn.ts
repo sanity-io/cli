@@ -1,6 +1,5 @@
-import type {FlagInput} from '@oclif/core/interfaces'
-
 import {Command} from '@oclif/core'
+import {type FlagInput} from '@oclif/core/interfaces'
 import open from 'open'
 
 export default class LearnCommand extends Command {

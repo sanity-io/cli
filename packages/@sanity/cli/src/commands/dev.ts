@@ -1,6 +1,5 @@
-import type {FlagInput} from '@oclif/core/interfaces'
-
 import {Command, Flags} from '@oclif/core'
+import {type FlagInput} from '@oclif/core/interfaces'
 
 export default class DevCommand extends Command {
   static override description =

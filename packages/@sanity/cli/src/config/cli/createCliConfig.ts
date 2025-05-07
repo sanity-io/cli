@@ -1,4 +1,4 @@
-import type {CliConfig} from './types.js'
+import {type CliConfig} from './types.js'
 
 /**
  * @deprecated Use `defineCliConfig` instead

@@ -1,6 +1,5 @@
-import type {FlagInput} from '@oclif/core/interfaces'
-
 import {Command} from '@oclif/core'
+import {type FlagInput} from '@oclif/core/interfaces'
 
 import {logout} from '../actions/auth/logout.js'
 import {getCliToken} from '../config/cliToken.js'

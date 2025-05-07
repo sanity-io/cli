@@ -1,8 +1,7 @@
-import type {FlagInput} from '@oclif/core/interfaces'
-import type {SanityClient} from '@sanity/client'
-
 import {input, select} from '@inquirer/prompts'
 import {Command, Flags} from '@oclif/core'
+import {type FlagInput} from '@oclif/core/interfaces'
+import {type SanityClient} from '@sanity/client'
 import open from 'open'
 
 import {startServerForTokenCallback} from '../actions/auth/authServer.js'

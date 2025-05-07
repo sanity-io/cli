@@ -3,7 +3,6 @@ import fs from 'node:fs'
 import {isBuiltin} from 'node:module'
 import path from 'node:path'
 
-import baseConfig from '@repo/package.config'
 import {nodeResolve} from '@rollup/plugin-node-resolve'
 import {defineConfig} from '@sanity/pkg-utils'
 
@@ -15,8 +14,6 @@ const workerNames = fs
   .map((file) => path.basename(file, '.ts'))
 
 export default defineConfig({
-  ...baseConfig,
-
   rollup: {
     plugins: (plugins) => [
       ...plugins.filter((plugin) => plugin.name !== 'node-resolve'),
@@ -30,7 +27,6 @@ export default defineConfig({
   },
 
   extract: {
-    ...baseConfig.extract,
     // By default pkg-utils will add deps in devDependencies that are not in peerDependencies to the list over bundledPackages
     // but we don't want certain deps like `ora` to be a peer dep, or attempt bundling its typings, so we exclude it here
     bundledPackages: (prev) => {
