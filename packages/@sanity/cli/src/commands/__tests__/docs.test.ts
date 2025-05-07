@@ -1,17 +1,17 @@
 import {runCommand} from '@oclif/test'
 import {describe, expect, test} from 'vitest'
 
-describe('#learn', () => {
+describe('#docs', () => {
   test('help text is correct', async () => {
-    const {stdout} = await runCommand('learn --help')
+    const {stdout} = await runCommand('docs --help')
     expect(stdout).toMatchInlineSnapshot(`
-      "Opens Sanity Learn in your web browser
+      "Opens Sanity Studio documentation in your web browser
 
       USAGE
-        $ sanity learn
+        $ sanity docs
 
       DESCRIPTION
-        Opens Sanity Learn in your web browser
+        Opens Sanity Studio documentation in your web browser
 
       "
     `)

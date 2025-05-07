@@ -6,7 +6,7 @@
 /tmp
 /node_modules
 oclif.manifest.json
-
+coverage
 
 yarn.lock
 package-lock.json

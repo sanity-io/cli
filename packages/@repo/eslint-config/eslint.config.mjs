@@ -5,6 +5,7 @@ import nodePlugin from 'eslint-plugin-n'
 import perfectionist from 'eslint-plugin-perfectionist'
 import tsdoc from 'eslint-plugin-tsdoc'
 import unicorn from 'eslint-plugin-unicorn'
+import unusedImports from 'eslint-plugin-unused-imports'
 import tseslint, {configs} from 'typescript-eslint'
 
 export default [
@@ -68,6 +69,7 @@ export default [
     {
       plugins: {
         n: nodePlugin,
+        'unused-imports': unusedImports,
       },
       rules: {
         '@stylistic/comma-dangle': ['error', 'always-multiline'],
@@ -181,6 +183,16 @@ export default [
         'unicorn/no-null': 'off',
         'unicorn/prefer-module': 'warn',
         'unicorn/prevent-abbreviations': 'off',
+        'unused-imports/no-unused-imports': 'error',
+        'unused-imports/no-unused-vars': [
+          'error',
+          {
+            args: 'after-used',
+            argsIgnorePattern: '^_',
+            vars: 'all',
+            varsIgnorePattern: '^_',
+          },
+        ],
       },
       settings: {
         'import/parsers': {
