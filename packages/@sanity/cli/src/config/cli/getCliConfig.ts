@@ -5,13 +5,12 @@ import {fileURLToPath} from 'node:url'
 import {getTsconfig} from 'get-tsconfig'
 import {register} from 'tsx/esm/api'
 
-import type {CliConfig} from './types.js'
-
 import {debug} from '../../debug.js'
 import {NotFoundError} from '../../errors/NotFoundError.js'
 import {tsxWorkerTask} from '../../loaders/tsx/tsxWorkerTask.js'
 import {isRecord} from '../../util/isRecord.js'
 import {cliConfigSchema} from './schemas.js'
+import {type CliConfig} from './types.js'
 
 /**
  * Get the CLI config for a project, given the root path.

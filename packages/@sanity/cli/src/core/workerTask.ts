@@ -2,7 +2,7 @@ import {existsSync} from 'node:fs'
 import {fileURLToPath} from 'node:url'
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
-import type {RequireProps} from '../typeHelpers.js'
+import {type RequireProps} from '../typeHelpers.js'
 
 /**
  * Executes a worker file and once it has received a single message will resolve the

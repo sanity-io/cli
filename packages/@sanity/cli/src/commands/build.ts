@@ -1,6 +1,5 @@
-import type {ArgInput, FlagInput} from '@oclif/core/interfaces'
-
 import {Args, Command, Flags} from '@oclif/core'
+import {type ArgInput, type FlagInput} from '@oclif/core/interfaces'
 
 export default class BuildCommand extends Command {
   static override args = {

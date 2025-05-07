@@ -1,7 +1,7 @@
-import type {SanityClient} from '@sanity/client'
-
 import {createServer, type Server} from 'node:http'
 import os from 'node:os'
+
+import {type SanityClient} from '@sanity/client'
 
 import {subdebug} from '../../debug.js'
 

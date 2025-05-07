@@ -4,8 +4,7 @@ import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {getTsconfig} from 'get-tsconfig'
 
-import type {RequireProps} from '../../typeHelpers.js'
-
+import {type RequireProps} from '../../typeHelpers.js'
 import {isRecord} from '../../util/isRecord.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))

@@ -8,9 +8,8 @@ import {ViteNodeRunner} from 'vite-node/client'
 import {ViteNodeServer} from 'vite-node/server'
 import {installSourcemapsSupport} from 'vite-node/source-map'
 
-import type {CliConfig} from '../../config/cli/types.js'
-
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
+import {type CliConfig} from '../../config/cli/types.js'
 import {isNotFoundError} from '../../errors/NotFoundError.js'
 import {isRecord} from '../../util/isRecord.js'
 import * as stubs from './stubs.js'
