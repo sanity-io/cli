@@ -10,16 +10,16 @@ import xdgBasedir from 'xdg-basedir'
 import {
   findSanityModuleVersions,
   type ModuleVersionResult,
-} from '../../actions/versions/findSanityModuleVersions.js'
+} from '../../actions/versions/findSanityModuleVersions'
 import {
   type CliCommandAction,
   type CliCommandContext,
   type CliUserConfig,
   type SanityJson,
-} from '../../types.js'
-import {getCliToken} from '../../util/clientWrapper.js'
-import {getUserConfig} from '../../util/getUserConfig.js'
-import {printResult as printVersionsResult} from '../versions/printVersionResult.js'
+} from '../../types'
+import {getCliToken} from '../../util/clientWrapper'
+import {getUserConfig} from '../../util/getUserConfig'
+import {printResult as printVersionsResult} from '../versions/printVersionResult'
 
 export const printDebugInfo: CliCommandAction = async (args, context) => {
   const flags = args.extOptions

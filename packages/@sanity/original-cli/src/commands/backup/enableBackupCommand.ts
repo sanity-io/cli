@@ -1,7 +1,8 @@
-import parseApiErr from '../../actions/backup/parseApiErr.js'
-import resolveApiClient from '../../actions/backup/resolveApiClient.js'
-import type {CliCommandDefinition} from '../../types.js'
-import {defaultApiVersion} from './backupGroup.js'
+import {type CliCommandDefinition} from '@sanity/cli'
+
+import parseApiErr from '../../actions/backup/parseApiErr'
+import resolveApiClient from '../../actions/backup/resolveApiClient'
+import {defaultApiVersion} from './backupGroup'
 
 const helpText = `
 Examples

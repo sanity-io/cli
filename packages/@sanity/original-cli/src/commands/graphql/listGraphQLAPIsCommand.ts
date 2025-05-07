@@ -1,4 +1,8 @@
-import type {CliCommandArguments, CliCommandContext, CliCommandDefinition} from '../../types.js'
+import {
+  type CliCommandArguments,
+  type CliCommandContext,
+  type CliCommandDefinition,
+} from '@sanity/cli'
 
 const helpText = `
 Examples

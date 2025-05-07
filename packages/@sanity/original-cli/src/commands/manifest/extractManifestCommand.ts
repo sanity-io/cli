@@ -1,4 +1,4 @@
-import type {CliCommandDefinition} from '../../types.js'
+import {type CliCommandDefinition} from '@sanity/cli'
 
 const description = 'Extracts the studio configuration as one or more JSON manifest files.'
 
@@ -23,7 +23,7 @@ const extractManifestCommand: CliCommandDefinition = {
   description,
   helpText,
   action: async (args, context) => {
-    const {extractManifestSafe} = await import('../../actions/manifest/extractManifestAction.js')
+    const {extractManifestSafe} = await import('../../actions/manifest/extractManifestAction')
     const extractError = await extractManifestSafe(args, context)
     if (extractError) {
       throw extractError

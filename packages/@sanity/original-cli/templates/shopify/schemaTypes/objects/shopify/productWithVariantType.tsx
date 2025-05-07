@@ -3,9 +3,9 @@ import pluralize from 'pluralize-esm'
 
 import {defineField} from 'sanity'
 
-import ShopifyDocumentStatus from '../../../components/media/ShopifyDocumentStatus.js'
-import {SANITY_API_VERSION} from '../../../constants.js'
-import {getPriceRange} from '../../../utils/getPriceRange.js'
+import ShopifyDocumentStatus from '../../../components/media/ShopifyDocumentStatus'
+import {SANITY_API_VERSION} from '../../../constants'
+import {getPriceRange} from '../../../utils/getPriceRange'
 
 export const productWithVariantType = defineField({
   name: 'productWithVariant',

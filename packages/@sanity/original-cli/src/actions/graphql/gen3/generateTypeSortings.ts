@@ -1,11 +1,11 @@
-import {isDocumentType, isNonUnion} from '../helpers.js'
+import {isDocumentType, isNonUnion} from '../helpers'
 import {
   type ConvertedDocumentType,
   type ConvertedEnum,
   type ConvertedType,
   type ConvertedUnion,
   type InputObjectType,
-} from '../types.js'
+} from '../types'
 
 const builtInTypes = [
   'Boolean',

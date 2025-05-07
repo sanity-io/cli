@@ -1,5 +1,5 @@
-import {json} from './jsonReporter.js'
-import {ndjson} from './ndjsonReporter.js'
-import {pretty} from './prettyReporter.js'
+import {json} from './jsonReporter'
+import {ndjson} from './ndjsonReporter'
+import {pretty} from './prettyReporter'
 
 export const reporters = {pretty, ndjson, json}

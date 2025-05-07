@@ -1,7 +1,8 @@
-import {promptForDatasetName} from '../../actions/dataset/datasetNamePrompt.js'
-import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
-import {debug} from '../../debug.js'
-import type {CliCommandDefinition, CliOutputter, CliPrompter} from '../../types.js'
+import {type CliCommandDefinition, type CliOutputter, type CliPrompter} from '@sanity/cli'
+
+import {promptForDatasetName} from '../../actions/dataset/datasetNamePrompt'
+import {validateDatasetName} from '../../actions/dataset/validateDatasetName'
+import {debug} from '../../debug'
 
 const helpText = `
 Options

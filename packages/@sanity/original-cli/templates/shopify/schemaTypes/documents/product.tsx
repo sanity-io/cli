@@ -1,10 +1,10 @@
 import {TagIcon} from '@sanity/icons'
 import pluralize from 'pluralize-esm'
-import ProductHiddenInput from '../../components/inputs/ProductHidden.js'
-import ShopifyDocumentStatus from '../../components/media/ShopifyDocumentStatus.js'
+import ProductHiddenInput from '../../components/inputs/ProductHidden'
+import ShopifyDocumentStatus from '../../components/media/ShopifyDocumentStatus'
 import {defineField, defineType} from 'sanity'
-import {getPriceRange} from '../../utils/getPriceRange.js'
-import {GROUPS} from '../../constants.js'
+import {getPriceRange} from '../../utils/getPriceRange'
+import {GROUPS} from '../../constants'
 
 export const productType = defineType({
   name: 'product',

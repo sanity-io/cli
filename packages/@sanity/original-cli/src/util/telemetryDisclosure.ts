@@ -1,10 +1,10 @@
 import boxen from 'boxen'
 import chalk from 'chalk'
 
-import {telemetryLearnMoreMessage} from '../commands/telemetry/telemetryStatusCommand.js'
-import {debug} from '../debug.js'
-import {getUserConfig} from './getUserConfig.js'
-import {isCi} from './isCi.js'
+import {telemetryLearnMoreMessage} from '../commands/telemetry/telemetryStatusCommand'
+import {debug} from '../debug'
+import {getUserConfig} from './getUserConfig'
+import {isCi} from './isCi'
 
 const TELEMETRY_DISCLOSED_CONFIG_KEY = 'telemetryDisclosed'
 

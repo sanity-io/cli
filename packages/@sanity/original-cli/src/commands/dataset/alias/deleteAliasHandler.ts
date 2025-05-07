@@ -1,10 +1,10 @@
+import {type CliCommandAction} from '@sanity/cli'
 import {hideBin} from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 
-import {validateDatasetAliasName} from '../../../actions/dataset/alias/validateDatasetAliasName.js'
-import type {CliCommandAction} from '../../../types.js'
-import * as aliasClient from './datasetAliasesClient.js'
-import {ALIAS_PREFIX} from './datasetAliasesClient.js'
+import {validateDatasetAliasName} from '../../../actions/dataset/alias/validateDatasetAliasName'
+import * as aliasClient from './datasetAliasesClient'
+import {ALIAS_PREFIX} from './datasetAliasesClient'
 
 function parseCliFlags(args: {argv?: string[]}) {
   return yargs(hideBin(args.argv || process.argv).slice(2)).option('force', {type: 'boolean'}).argv

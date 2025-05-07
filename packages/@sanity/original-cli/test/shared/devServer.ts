@@ -1,8 +1,8 @@
 import {spawn} from 'node:child_process'
 import {createHash} from 'node:crypto'
 
-import {cliBinPath, sanityEnv} from './environment.js'
-import {request, type ResponseData} from './request.js'
+import {cliBinPath, sanityEnv} from './environment'
+import {request, type ResponseData} from './request'
 
 export async function testServerCommand({
   command,

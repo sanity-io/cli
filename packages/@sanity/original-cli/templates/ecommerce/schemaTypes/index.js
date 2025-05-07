@@ -1,12 +1,12 @@
-import blockContent from './blockContent.js'
-import category from './category.js'
-import product from './product.js'
-import vendor from './vendor.js'
-import productVariant from './productVariant.js'
+import blockContent from './blockContent'
+import category from './category'
+import product from './product'
+import vendor from './vendor'
+import productVariant from './productVariant'
 
-import localeString from './locale/localeString.js'
-import localeText from './locale/localeText.js'
-import localeBlockContent from './locale/localeBlockContent.js'
+import localeString from './locale/localeString'
+import localeText from './locale/localeText'
+import localeBlockContent from './locale/localeBlockContent'
 
 export const schemaTypes = [
   // Document types

@@ -1,4 +1,4 @@
-import debug from './debug.js'
+import debug from './debug'
 
 const MAX_RETRIES = 5
 const BACKOFF_DELAY_BASE = 200

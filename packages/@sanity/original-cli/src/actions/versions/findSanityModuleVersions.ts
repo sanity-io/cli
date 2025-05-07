@@ -6,9 +6,9 @@ import promiseProps from 'promise-props-recursive'
 import semver from 'semver'
 import semverCompare from 'semver-compare'
 
-import {type CliCommandContext, type PackageJson} from '../../types.js'
-import {getCliVersion} from '../../util/getCliVersion.js'
-import {getLocalVersion} from '../../util/getLocalVersion.js'
+import {type CliCommandContext, type PackageJson} from '../../types'
+import {getCliVersion} from '../../util/getCliVersion'
+import {getLocalVersion} from '../../util/getLocalVersion'
 
 /*
  * The `sanity upgrade` command should only be responsible for upgrading the
@@ -21,7 +21,6 @@ import {getLocalVersion} from '../../util/getLocalVersion.js'
 const PACKAGES_TO_EXCLUDE = [
   '@sanity/block-content-to-html',
   '@sanity/block-content-to-react',
-  '@sanity/block-tools',
   '@sanity/client',
 ]
 

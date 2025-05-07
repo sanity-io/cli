@@ -1,5 +1,10 @@
-import type {DeleteGraphQLApiFlags} from '../../actions/graphql/deleteApiAction.js'
-import type {CliCommandArguments, CliCommandContext, CliCommandDefinition} from '../../types.js'
+import {
+  type CliCommandArguments,
+  type CliCommandContext,
+  type CliCommandDefinition,
+} from '@sanity/cli'
+
+import {type DeleteGraphQLApiFlags} from '../../actions/graphql/deleteApiAction'
 
 const helpText = `
 Options

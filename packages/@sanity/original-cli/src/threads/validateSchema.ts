@@ -4,8 +4,8 @@ import {groupProblems, validateSchema} from '@sanity/schema/_internal'
 import {type SchemaValidationProblem, type SchemaValidationProblemGroup} from '@sanity/types'
 import {resolveSchemaTypes} from 'sanity'
 
-import {getStudioConfig} from '../util/getStudioWorkspaces.js'
-import {mockBrowserEnvironment} from '../util/mockBrowserEnvironment.js'
+import {getStudioConfig} from '../util/getStudioWorkspaces'
+import {mockBrowserEnvironment} from '../util/mockBrowserEnvironment'
 
 /** @internal */
 export interface ValidateSchemaWorkerData {

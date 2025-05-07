@@ -1,4 +1,4 @@
-import type {CliCommandDefinition} from '../../types.js'
+import {type CliCommandDefinition} from '@sanity/cli'
 
 const description = 'Extracts a JSON representation of a Sanity schema within a Studio context.'
 
@@ -23,7 +23,7 @@ const extractSchemaCommand: CliCommandDefinition = {
   description,
   helpText,
   action: async (args, context) => {
-    const mod = await import('../../actions/schema/extractAction.js')
+    const mod = await import('../../actions/schema/extractAction')
 
     return mod.default(args, context)
   },

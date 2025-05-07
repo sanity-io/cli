@@ -25,7 +25,7 @@ import {
 } from 'sanity'
 import {ServerStyleSheet} from 'styled-components'
 
-import {SchemaIcon, type SchemaIconProps} from './Icon.js'
+import {SchemaIcon, type SchemaIconProps} from './Icon'
 import {
   getCustomFields,
   isCrossDatasetReference,
@@ -36,7 +36,7 @@ import {
   isReference,
   isString,
   isType,
-} from './manifestTypeHelpers.js'
+} from './manifestTypeHelpers'
 import {
   type CreateWorkspaceManifest,
   type ManifestField,
@@ -47,8 +47,8 @@ import {
   type ManifestTool,
   type ManifestValidationGroup,
   type ManifestValidationRule,
-} from './manifestTypes.js'
-import {config} from './purifyConfig.js'
+} from './manifestTypes'
+import {config} from './purifyConfig'
 
 interface Context {
   schema: Schema

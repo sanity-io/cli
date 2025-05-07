@@ -1,6 +1,6 @@
-import {deskRename} from './deskRename.js'
-import {partsTypeDirective} from './partsTypeDirective.js'
-import {reactIconsV3} from './reactIconsV3.js'
+import {deskRename} from './deskRename'
+import {partsTypeDirective} from './partsTypeDirective'
+import {reactIconsV3} from './reactIconsV3'
 
 export default {
   reactIconsV3,

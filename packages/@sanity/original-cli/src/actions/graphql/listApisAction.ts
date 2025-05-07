@@ -1,6 +1,6 @@
 import {type CliCommandArguments, type CliCommandContext} from '@sanity/cli'
 
-import {getClientUrl} from '../../util/getClientUrl.js'
+import {getClientUrl} from '../../util/getClientUrl'
 
 type ListApisResponse = {
   projectId: string
@@ -21,10 +21,15 @@ export default async function listGraphQLApis(
     requireProject: true,
   }).config({apiVersion: '2023-08-01'})
 
-  const endpoints: ListApisResponse | undefined = await client.request<ListApisResponse>({
-    url: '/apis/graphql',
-    method: 'GET',
-  })
+  let endpoints: ListApisResponse | undefined
+  try {
+    endpoints = await client.request<ListApisResponse>({
+      url: '/apis/graphql',
+      method: 'GET',
+    })
+  } catch (err) {
+    throw err
+  }
 
   if (!endpoints || endpoints.length === 0) {
     output.print("This project doesn't have any GraphQL endpoints deployed.")

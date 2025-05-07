@@ -1,4 +1,4 @@
-import {getPackageManagerChoice} from './packageManagerChoice.js'
+import {getPackageManagerChoice} from './packageManagerChoice'
 
 export async function getInstallCommand(options: {
   workDir: string

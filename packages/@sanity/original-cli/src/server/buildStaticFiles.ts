@@ -2,13 +2,13 @@ import {constants as fsConstants} from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli'
 import readPkgUp from 'read-pkg-up'
 
-import {type ReactCompilerConfig, type UserViteConfig} from '../types.js'
-import {debug as serverDebug} from './debug.js'
-import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig.js'
-import {writeSanityRuntime} from './runtime.js'
-import {generateWebManifest} from './webManifest.js'
+import {debug as serverDebug} from './debug'
+import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig'
+import {writeSanityRuntime} from './runtime'
+import {generateWebManifest} from './webManifest'
 
 const debug = serverDebug.extend('static')
 
@@ -34,6 +34,8 @@ export interface StaticBuildOptions {
 
   vite?: UserViteConfig
   reactCompiler: ReactCompilerConfig | undefined
+  entry?: string
+  isApp?: boolean
 }
 
 export async function buildStaticFiles(
@@ -48,10 +50,19 @@ export async function buildStaticFiles(
     vite: extendViteConfig,
     importMap,
     reactCompiler,
+    entry,
+    isApp,
   } = options
 
   debug('Writing Sanity runtime files')
-  await writeSanityRuntime({cwd, reactStrictMode: false, watch: false, basePath})
+  await writeSanityRuntime({
+    cwd,
+    reactStrictMode: false,
+    watch: false,
+    basePath,
+    entry,
+    isApp,
+  })
 
   debug('Resolving vite config')
   const mode = 'production'
@@ -64,6 +75,7 @@ export async function buildStaticFiles(
     mode,
     importMap,
     reactCompiler,
+    isApp,
   })
 
   // Extend Vite configuration with user-provided config
@@ -147,8 +159,8 @@ async function tryReadDir(dir: string): Promise<string[]> {
   try {
     const content = await fs.readdir(dir)
     return content
-  } catch (err: unknown) {
-    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
+  } catch (err) {
+    if (err.code === 'ENOENT') {
       return []
     }
 

@@ -1,10 +1,10 @@
 import {ListItemBuilder, StructureResolver} from 'sanity/structure'
-import collections from './collectionStructure.js'
-import colorThemes from './colorThemeStructure.js'
-import home from './homeStructure.js'
-import pages from './pageStructure.js'
-import products from './productStructure.js'
-import settings from './settingStructure.js'
+import collections from './collectionStructure'
+import colorThemes from './colorThemeStructure'
+import home from './homeStructure'
+import pages from './pageStructure'
+import products from './productStructure'
+import settings from './settingStructure'
 
 /**
  * Structure overrides

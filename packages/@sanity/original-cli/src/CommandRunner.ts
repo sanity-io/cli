@@ -1,11 +1,11 @@
 import chalk from 'chalk'
 import {cloneDeep, sortBy} from 'lodash'
 
-import {baseCommands} from './commands.js'
-import {debug} from './debug.js'
-import cliOutputter from './outputters/cliOutputter.js'
-import {cliPackageManager} from './packageManager.js'
-import {prompt as cliPrompter} from './prompters/cliPrompter.js'
+import {baseCommands} from './commands'
+import {debug} from './debug'
+import cliOutputter from './outputters/cliOutputter'
+import {cliPackageManager} from './packageManager'
+import {prompt as cliPrompter} from './prompters/cliPrompter'
 import {
   type CliCommandArguments,
   type CliCommandContext,
@@ -17,15 +17,15 @@ import {
   type CommandRunnerOptions,
   type ResolvedCliCommand,
   type SanityJson,
-} from './types.js'
-import {getClientWrapper} from './util/clientWrapper.js'
+} from './types'
+import {getClientWrapper} from './util/clientWrapper'
 import {
   generateCommandDocumentation,
   generateCommandsDocumentation,
-} from './util/generateCommandsDocumentation.js'
-import {type CliConfigResult} from './util/getCliConfig.js'
-import {isCommandGroup} from './util/isCommandGroup.js'
-import {getNoSuchCommandText} from './util/noSuchCommandText.js'
+} from './util/generateCommandsDocumentation'
+import {type CliConfigResult} from './util/getCliConfig'
+import {isCommandGroup} from './util/isCommandGroup'
+import {getNoSuchCommandText} from './util/noSuchCommandText'
 
 interface Handlers {
   outputter: CliOutputter

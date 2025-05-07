@@ -1,4 +1,4 @@
-import {type CliCommandContext} from '../../types.js'
+import {type CliCommandContext} from '../../types'
 
 export interface CodeMod {
   purpose: string

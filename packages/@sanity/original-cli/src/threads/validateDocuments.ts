@@ -12,17 +12,17 @@ import {
   type SanityDocument,
 } from '@sanity/client'
 import {isReference, type ValidationContext, type ValidationMarker} from '@sanity/types'
-import {validateDocument} from 'sanity'
+import {isRecord, validateDocument} from 'sanity'
 
-import {extractDocumentsFromNdjsonOrTarball} from '../util/extractDocumentsFromNdjsonOrTarball.js'
-import {getStudioWorkspaces} from '../util/getStudioWorkspaces.js'
-import {mockBrowserEnvironment} from '../util/mockBrowserEnvironment.js'
+import {extractDocumentsFromNdjsonOrTarball} from '../util/extractDocumentsFromNdjsonOrTarball'
+import {getStudioWorkspaces} from '../util/getStudioWorkspaces'
+import {mockBrowserEnvironment} from '../util/mockBrowserEnvironment'
 import {
   createReporter,
   type WorkerChannel,
   type WorkerChannelEvent,
   type WorkerChannelStream,
-} from '../util/workerChannels.js'
+} from '../util/workerChannels'
 
 const MAX_VALIDATION_CONCURRENCY = 100
 const DOCUMENT_VALIDATION_TIMEOUT = 30000
@@ -117,8 +117,8 @@ const idRegex = /^[^-][A-Z0-9._-]*$/i
 // during testing, the `doc` endpoint 502'ed if given an invalid ID
 const isValidId = (id: unknown) => typeof id === 'string' && idRegex.test(id)
 const shouldIncludeDocument = (document: SanityDocument) => {
-  // Filter out system documents
-  return !document._type.startsWith('system.')
+  // Filter out system documents and sanity documents
+  return !document._type.startsWith('system.') && !document._type.startsWith('sanity.')
 }
 
 async function* readerToGenerator(reader: ReadableStreamDefaultReader<Uint8Array>) {
@@ -375,7 +375,7 @@ async function main() {
               levelValues[level as keyof typeof levelValues] ?? levelValues.info
             return markerValue <= flagLevelValue
           })
-      } catch (err: unknown) {
+      } catch (err) {
         const errorMessage =
           isRecord(err) && typeof err.message === 'string' ? err.message : 'Unknown error'
 
@@ -419,8 +419,4 @@ async function main() {
     await cleanupDownloadedDocuments?.()
     cleanupBrowserEnvironment()
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }

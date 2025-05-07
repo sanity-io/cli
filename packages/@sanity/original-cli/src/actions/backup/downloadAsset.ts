@@ -1,12 +1,13 @@
 import {createWriteStream} from 'node:fs'
-import {basename, join as joinPath} from 'node:path'
+import path from 'node:path'
 import {pipeline} from 'node:stream/promises'
 
 import {getIt} from 'get-it'
+// eslint-disable-next-line import/extensions
 import {keepAlive, promise} from 'get-it/middleware'
 
-import debug from './debug.js'
-import withRetry from './withRetry.js'
+import debug from './debug'
+import withRetry from './withRetry'
 
 const CONNECTION_TIMEOUT = 15 * 1000 // 15 seconds
 const READ_TIMEOUT = 3 * 60 * 1000 // 3 minutes
@@ -22,7 +23,7 @@ async function downloadAsset(
   // File names that contain a path to file (e.g. sanity-storage/assets/file-name.tar.gz) fail when archive is
   // created due to missing parent dir (e.g. sanity-storage/assets), so we want to handle them by taking
   // the base name as file name.
-  const normalizedFileName = basename(fileName)
+  const normalizedFileName = path.basename(fileName)
 
   const assetFilePath = getAssetFilePath(normalizedFileName, fileType, outDir)
   await withRetry(async () => {
@@ -44,9 +45,9 @@ function getAssetFilePath(fileName: string, fileType: string, outDir: string): s
   // If it's a JSON document, assetFilePath will be an empty string.
   let assetFilePath = ''
   if (fileType === 'image') {
-    assetFilePath = joinPath(outDir, 'images', fileName)
+    assetFilePath = path.join(outDir, 'images', fileName)
   } else if (fileType === 'file') {
-    assetFilePath = joinPath(outDir, 'files', fileName)
+    assetFilePath = path.join(outDir, 'files', fileName)
   }
 
   return assetFilePath

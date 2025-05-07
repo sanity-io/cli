@@ -1,14 +1,14 @@
-import {isUnion} from '../helpers.js'
+import {isUnion} from '../helpers'
 import {
   type ApiCustomizationOptions,
   type ApiSpecification,
   type ConvertedType,
   type GeneratedApiSpecification,
   type InputObjectType,
-} from '../types.js'
-import {generateTypeFilters} from './generateTypeFilters.js'
-import {generateTypeQueries} from './generateTypeQueries.js'
-import {generateTypeSortings} from './generateTypeSortings.js'
+} from '../types'
+import {generateTypeFilters} from './generateTypeFilters'
+import {generateTypeQueries} from './generateTypeQueries'
+import {generateTypeSortings} from './generateTypeSortings'
 
 export default (
   extracted: ApiSpecification,

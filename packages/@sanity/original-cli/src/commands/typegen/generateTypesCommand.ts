@@ -1,4 +1,4 @@
-import {type CliCommandDefinition} from '../../types.js'
+import {type CliCommandDefinition} from '../../types'
 
 const description = 'Generates TypeScript types from schema types and GROQ queries'
 

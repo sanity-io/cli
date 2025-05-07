@@ -1,6 +1,5 @@
+import {type CliCommandDefinition} from '@sanity/cli'
 import open from 'open'
-
-import type {CliCommandDefinition} from '../../types.js'
 
 const createHookCommand: CliCommandDefinition = {
   name: 'create',

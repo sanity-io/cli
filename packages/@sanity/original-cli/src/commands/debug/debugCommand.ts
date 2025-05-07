@@ -1,5 +1,5 @@
-import {type CliCommandDefinition} from '../../types.js'
-import {printDebugInfo} from './printDebugInfo.js'
+import {type CliCommandDefinition} from '../../types'
+import {printDebugInfo} from './printDebugInfo'
 
 const help = `
 Used to find information about the Sanity environment, and to debug Sanity-related issues.

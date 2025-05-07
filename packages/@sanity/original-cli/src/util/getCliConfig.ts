@@ -17,9 +17,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {Worker} from 'node:worker_threads'
 
-import {type CliConfig, type SanityJson} from '../types.js'
-import {getCliWorkerPath} from './cliWorker.js'
-import {dynamicRequire} from './dynamicRequire.js'
+import {type CliConfig, type SanityJson} from '../types'
+import {getCliWorkerPath} from './cliWorker'
+import {dynamicRequire} from './dynamicRequire'
 
 export type CliMajorVersion = 2 | 3
 
@@ -51,6 +51,8 @@ export async function getCliConfig(
     }
 
     return getSanityJsonConfig(cwd)
+  } catch (err) {
+    throw err
   } finally {
     unregister()
   }
@@ -134,8 +136,8 @@ function loadJsonConfig(filePath: string): SanityJson | null {
   try {
     const content = fs.readFileSync(filePath, 'utf8')
     return JSON.parse(content)
-  } catch (err: unknown) {
-    console.error(`Error reading "${filePath}": ${err instanceof Error ? err.message : err}`)
+  } catch (err) {
+    console.error(`Error reading "${filePath}": ${err.message}`)
     return null
   }
 }
@@ -148,20 +150,15 @@ function importConfig(filePath: string): CliConfig | null {
     }
 
     return 'default' in config ? config.default : config
-  } catch (err: unknown) {
+  } catch (err) {
     // If attempting to import `defineCliConfig` or similar from `sanity/cli`,
     // accept the fact that it might not be installed. Instead, let the CLI
     // give a warning about the `sanity` module not being installed
-    if (
-      err instanceof Error &&
-      'code' in err &&
-      err.code === 'MODULE_NOT_FOUND' &&
-      err.message.includes('sanity/cli')
-    ) {
+    if (err.code === 'MODULE_NOT_FOUND' && err.message.includes('sanity/cli')) {
       return null
     }
 
-    console.error(`Error reading "${filePath}": ${err instanceof Error ? err.message : err}`)
+    console.error(`Error reading "${filePath}": ${err.message}`)
     return null
   }
 }

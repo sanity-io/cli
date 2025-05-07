@@ -1,10 +1,10 @@
 import {inspect} from 'node:util'
 
+import {type CliCommandContext, type CliCommandDefinition} from '@sanity/cli'
 import {groupBy} from 'lodash'
 
-import type {CliCommandContext, CliCommandDefinition} from '../../types.js'
-import {formatFailure} from './printHookAttemptCommand.js'
-import type {DeliveryAttempt, Hook, HookMessage} from './types.js'
+import {formatFailure} from './printHookAttemptCommand'
+import {type DeliveryAttempt, type Hook, type HookMessage} from './types'
 
 interface ListHookFlags {
   detailed?: boolean

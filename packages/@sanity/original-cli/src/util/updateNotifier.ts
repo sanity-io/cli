@@ -5,11 +5,11 @@ import latestVersion from 'get-latest-version'
 import pTimeout from 'p-timeout'
 import semverCompare from 'semver-compare'
 
-import {debug} from '../debug.js'
-import {getCliUpgradeCommand} from '../packageManager/getUpgradeCommand.js'
-import {type PackageJson} from '../types.js'
-import {getUserConfig} from './getUserConfig.js'
-import {isCi} from './isCi.js'
+import {debug} from '../debug'
+import {getCliUpgradeCommand} from '../packageManager'
+import {type PackageJson} from '../types'
+import {getUserConfig} from './getUserConfig'
+import {isCi} from './isCi'
 
 const MAX_BLOCKING_TIME = 300
 const TWELVE_HOURS = 1000 * 60 * 60 * 12
@@ -130,9 +130,8 @@ export function runUpdateCheck(options: UpdateCheckOptions): {notify: () => Prom
       debug('Checking for latest remote version')
       latestRemote = await latestVersion(name)
       debug('Latest remote version is %s', latestRemote)
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.stack : `${err}`
-      debug(`Failed to fetch latest version of ${name} from npm:\n${message}`)
+    } catch (err) {
+      debug(`Failed to fetch latest version of ${name} from npm:\n${err.stack}`)
       return false
     }
 

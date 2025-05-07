@@ -1,4 +1,4 @@
-import {type SanityUser} from '../types.js'
+import {type SanityUser} from '../types'
 
 export function getProviderName(provider: SanityUser['provider']) {
   if (provider === 'google') return 'Google'

@@ -3,8 +3,8 @@ import {isMainThread, parentPort, workerData as _workerData} from 'node:worker_t
 import {extractSchema} from '@sanity/schema/_internal'
 import {type Workspace} from 'sanity'
 
-import {getStudioWorkspaces} from '../util/getStudioWorkspaces.js'
-import {mockBrowserEnvironment} from '../util/mockBrowserEnvironment.js'
+import {getStudioWorkspaces} from '../util/getStudioWorkspaces'
+import {mockBrowserEnvironment} from '../util/mockBrowserEnvironment'
 
 /** @internal */
 export interface ExtractSchemaWorkerData {

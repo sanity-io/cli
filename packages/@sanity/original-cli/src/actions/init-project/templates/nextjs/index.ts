@@ -1,4 +1,4 @@
-import {blogSchemaFolder, blogSchemaJS, blogSchemaTS} from './schemaTypes/blog.js'
+import {blogSchemaFolder, blogSchemaJS, blogSchemaTS} from './schemaTypes/blog'
 
 export const sanityConfigTemplate = (hasSrcFolder = false): string => `'use client'
 

@@ -4,7 +4,7 @@ import path from 'node:path'
 import {type SanityDocument} from '@sanity/types'
 import {describe, expect, it} from 'vitest'
 
-import {extractDocumentsFromNdjsonOrTarball} from '../extractDocumentsFromNdjsonOrTarball.js'
+import {extractDocumentsFromNdjsonOrTarball} from '../extractDocumentsFromNdjsonOrTarball'
 
 describe('extractDocumentsFromNdjsonOrTarball', () => {
   it('extracts the contents of a tarball, finds the ndjson file, parses it, and yields each document', async () => {

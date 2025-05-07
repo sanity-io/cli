@@ -2,6 +2,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
+import {type CliCommandDefinition} from '@sanity/cli'
 import {
   type IdentifiedSanityDocumentStub,
   type MultipleMutationResult,
@@ -13,8 +14,6 @@ import chokidar from 'chokidar'
 import execa from 'execa'
 import json5 from 'json5'
 import {isEqual, isPlainObject, noop} from 'lodash'
-
-import {type CliCommandDefinition} from '../../types.js'
 
 type MutationOperationName = 'create' | 'createOrReplace' | 'createIfNotExists'
 

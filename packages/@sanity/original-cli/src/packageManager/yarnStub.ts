@@ -1,7 +1,7 @@
-import {type CliCommandContext, type CliYarnOptions} from '../types.js'
-import {installDeclaredPackages, installNewPackages} from './installPackages.js'
-import {getPackageManagerChoice} from './packageManagerChoice.js'
-import {uninstallPackages} from './uninstallPackages.js'
+import {type CliCommandContext, type CliYarnOptions} from '../types'
+import {installDeclaredPackages, installNewPackages} from './installPackages'
+import {getPackageManagerChoice} from './packageManagerChoice'
+import {uninstallPackages} from './uninstallPackages'
 
 export function getYarnStub(context: Pick<CliCommandContext, 'output' | 'workDir'>) {
   return async function yarnStub(args: string[], options?: CliYarnOptions): Promise<void> {

@@ -45,7 +45,7 @@
     "@inquirer/prompts": "^7.3.2",
     "@oclif/core": "^4.2.8",
     "@oclif/plugin-help": "^6.2.26",
-    "@sanity/client": "^6.28.3",
+    "@sanity/client": "^7.0.0",
     "@sanity/telemetry": "^0.7.9",
     "debug": "^4.4.0",
     "esbuild": "^0.25.0",

@@ -2,15 +2,15 @@ import {existsSync, mkdirSync} from 'node:fs'
 import {writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
+import {type CliCommandDefinition} from '@sanity/cli'
 import {deburr} from 'lodash'
 
-import {type CliCommandDefinition} from '../../types.js'
-import {MIGRATIONS_DIRECTORY} from './constants.js'
-import {minimalAdvanced} from './templates/minimalAdvanced.js'
-import {minimalSimple} from './templates/minimalSimple.js'
-import {renameField} from './templates/renameField.js'
-import {renameType} from './templates/renameType.js'
-import {stringToPTE} from './templates/stringToPTE.js'
+import {MIGRATIONS_DIRECTORY} from './constants'
+import {minimalAdvanced} from './templates/minimalAdvanced'
+import {minimalSimple} from './templates/minimalSimple'
+import {renameField} from './templates/renameField'
+import {renameType} from './templates/renameType'
+import {stringToPTE} from './templates/stringToPTE'
 
 const helpText = `
 Examples:

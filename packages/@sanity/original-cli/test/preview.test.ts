@@ -2,9 +2,9 @@ import path from 'node:path'
 
 import {describe, expect} from 'vitest'
 
-import {describeCliTest, testConcurrent} from './shared/describe.js'
-import {testServerCommand} from './shared/devServer.js'
-import {runSanityCmdCommand, studiosPath} from './shared/environment.js'
+import {describeCliTest, testConcurrent} from './shared/describe'
+import {testServerCommand} from './shared/devServer'
+import {runSanityCmdCommand, studiosPath} from './shared/environment'
 
 describeCliTest('CLI: `sanity preview`', () => {
   describe('v3', () => {

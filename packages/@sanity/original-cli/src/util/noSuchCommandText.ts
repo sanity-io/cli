@@ -1,7 +1,7 @@
 import chalk from 'chalk'
 import leven from 'leven'
 
-import {type CliCommandDefinition, type CliCommandGroupDefinition} from '../types.js'
+import {type CliCommandDefinition, type CliCommandGroupDefinition} from '../types'
 
 const commonMistakes: Record<string, string | undefined> = {get: 'list'}
 const levenThreshold = 3

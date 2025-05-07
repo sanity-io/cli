@@ -6,12 +6,9 @@ import {type SanityDocument} from '@sanity/client'
 import {evaluate, parse} from 'groq-js'
 import {afterAll, beforeAll, describe, expect, it, vi} from 'vitest'
 
-import {getMonorepoAliases} from '../../server/sanityMonorepo.js'
-import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels.js'
-import {
-  type ValidateDocumentsWorkerData,
-  type ValidationWorkerChannel,
-} from '../validateDocuments.js'
+import {getMonorepoAliases} from '../../server/sanityMonorepo'
+import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels'
+import {type ValidateDocumentsWorkerData, type ValidationWorkerChannel} from '../validateDocuments'
 
 async function toArray<T>(asyncIterator: AsyncIterable<T>) {
   const arr: T[] = []
@@ -72,6 +69,13 @@ const documents: SanityDocument[] = [
     _createdAt: '2024-01-18T19:18:39.048Z',
     _updatedAt: '2024-01-18T19:18:39.048Z',
     _rev: 'rev6',
+  },
+  {
+    _id: 'some-sanity-internal-document.foo',
+    _type: 'sanity.some-sanity-internal-document',
+    _createdAt: '2024-01-18T19:18:39.048Z',
+    _updatedAt: '2024-01-18T19:18:39.048Z',
+    _rev: 'rev7',
   },
 ]
 
@@ -246,7 +250,10 @@ describe('validateDocuments', () => {
 
     expect(await receiver.event.exportFinished()).toEqual({
       totalDocumentsToValidate:
-        documents.length - documents.filter((doc) => doc._type.startsWith('system.')).length,
+        documents.length -
+        documents.filter(
+          (doc) => doc._type.startsWith('system.') || doc._type.startsWith('sanity.'),
+        ).length,
     })
     await receiver.event.loadedReferenceIntegrity()
 

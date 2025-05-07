@@ -4,7 +4,7 @@ import path from 'node:path'
 import resolveFrom from 'resolve-from'
 import semver from 'semver'
 
-import {createExternalFromImportMap} from './createExternalFromImportMap.js'
+import {createExternalFromImportMap} from './createExternalFromImportMap'
 
 // Directory where vendor packages will be stored
 const VENDOR_DIR = 'vendor'
@@ -136,9 +136,9 @@ export async function buildVendorDependencies({
     try {
       // Read and parse the package.json file
       packageJson = JSON.parse(await fs.promises.readFile(packageJsonPath, 'utf-8'))
-    } catch (e: unknown) {
+    } catch (e) {
       const message = `Could not read package.json for package '${packageName}' from directory '${dir}'`
-      if (e instanceof Error && typeof e?.message === 'string') {
+      if (typeof e?.message === 'string') {
         // Re-assign the error message so the stack trace is more visible
         e.message = `${message}: ${e.message}`
         throw e
@@ -223,6 +223,7 @@ export async function buildVendorDependencies({
     define: {'process.env.NODE_ENV': JSON.stringify('production')},
 
     build: {
+      commonjsOptions: {strictRequires: 'auto'},
       minify: true,
       emptyOutDir: false, // Rely on CLI to do this
       outDir: path.join(outputDir, VENDOR_DIR),

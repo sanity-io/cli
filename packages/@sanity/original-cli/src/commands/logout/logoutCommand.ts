@@ -1,9 +1,8 @@
 import chalk from 'chalk'
 
-import {type CliCommandDefinition} from '../../types.js'
-import {TELEMETRY_CONSENT_CONFIG_KEY} from '../../util/createTelemetryStore.mjs'
-import {getUserConfig} from '../../util/getUserConfig.js'
-import {isRecord} from '../../util/isRecord.js'
+import {type CliCommandDefinition} from '../../types'
+import {TELEMETRY_CONSENT_CONFIG_KEY} from '../../util/createTelemetryStore'
+import {getUserConfig} from '../../util/getUserConfig'
 
 const helpText = `
 Examples
@@ -28,22 +27,14 @@ const logoutCommand: CliCommandDefinition = {
     const client = apiClient({requireUser: true, requireProject: false})
     try {
       await client.request({uri: '/auth/logout', method: 'POST'})
-    } catch (err: unknown) {
-      const statusCode =
-        err instanceof Error &&
-        'response' in err &&
-        isRecord(err.response) &&
-        err.response.statusCode
+    } catch (err) {
+      const statusCode = err && err.response && err.response.statusCode
 
       // In the case of session timeouts or missing sessions, we'll get a 401
       // This is an acceptable situation seen from a logout perspective - all we
       // need to do in this case is clear the session from the view of the CLI
       if (statusCode !== 401) {
-        output.error(
-          chalk.red(
-            `Failed to communicate with the Sanity API:\n${err instanceof Error ? err.message : err}`,
-          ),
-        )
+        output.error(chalk.red(`Failed to communicate with the Sanity API:\n${err.message}`))
         return
       }
     }

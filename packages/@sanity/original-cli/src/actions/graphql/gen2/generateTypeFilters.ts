@@ -1,13 +1,13 @@
-import {isNonUnion, isUnion} from '../helpers.js'
-import {type ConvertedType, type ConvertedUnion, type InputObjectType} from '../types.js'
-import {createBooleanFilters} from './filters/booleanFilters.js'
-import {createDateFilters} from './filters/dateFilters.js'
-import {createDateTimeFilters} from './filters/dateTimeFilters.js'
-import {createDocumentFilters} from './filters/documentFilters.js'
-import {createFloatFilters} from './filters/floatFilters.js'
-import {createIdFilters} from './filters/idFilters.js'
-import {createIntegerFilters} from './filters/integerFilters.js'
-import {createStringFilters} from './filters/stringFilters.js'
+import {isNonUnion, isUnion} from '../helpers'
+import {type ConvertedType, type ConvertedUnion, type InputObjectType} from '../types'
+import {createBooleanFilters} from './filters/booleanFilters'
+import {createDateFilters} from './filters/dateFilters'
+import {createDateTimeFilters} from './filters/dateTimeFilters'
+import {createDocumentFilters} from './filters/documentFilters'
+import {createFloatFilters} from './filters/floatFilters'
+import {createIdFilters} from './filters/idFilters'
+import {createIntegerFilters} from './filters/integerFilters'
+import {createStringFilters} from './filters/stringFilters'
 
 const typeAliases: Record<string, string | undefined> = {
   Url: 'String',

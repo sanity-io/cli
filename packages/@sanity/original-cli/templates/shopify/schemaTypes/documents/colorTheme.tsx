@@ -1,7 +1,7 @@
 import {IceCreamIcon} from '@sanity/icons'
 import {defineField, defineType} from 'sanity'
 
-import ColorTheme from '../../components/media/ColorTheme.js'
+import ColorTheme from '../../components/media/ColorTheme'
 
 export const colorThemeType = defineType({
   name: 'colorTheme',

@@ -1,25 +1,21 @@
 /* eslint-disable no-process-env, no-process-exit, max-statements */
+import {type CliCommandContext, type CliOutputter, type CliPrompter} from '@sanity/cli'
 import {type SanityClient} from '@sanity/client'
 import {get} from 'lodash'
 import oneline from 'oneline'
 import {hideBin} from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 
-import {debug} from '../../debug.js'
-import type {CliCommandContext, CliOutputter, CliPrompter} from '../../types.js'
-import {getClientUrl} from '../../util/getClientUrl.js'
-import {getUrlHeaders} from '../../util/getUrlHeaders.js'
-import {extractFromSanitySchema} from './extractFromSanitySchema.js'
-import gen1 from './gen1/index.js'
-import gen2 from './gen2/index.js'
-import gen3 from './gen3/index.js'
-import {getGraphQLAPIs} from './getGraphQLAPIs.js'
-import {SchemaError} from './SchemaError.js'
-import {
-  type DeployResponse,
-  type GeneratedApiSpecification,
-  type ValidationResponse,
-} from './types.js'
+import {debug} from '../../debug'
+import {getClientUrl} from '../../util/getClientUrl'
+import {getUrlHeaders} from '../../util/getUrlHeaders'
+import {extractFromSanitySchema} from './extractFromSanitySchema'
+import gen1 from './gen1'
+import gen2 from './gen2'
+import gen3 from './gen3'
+import {getGraphQLAPIs} from './getGraphQLAPIs'
+import {SchemaError} from './SchemaError'
+import {type DeployResponse, type GeneratedApiSpecification, type ValidationResponse} from './types'
 
 const latestGeneration = 'gen3'
 const generations = {
@@ -147,6 +143,7 @@ export default async function deployGraphQLApiAction(
     output.warn(`Deploying only specified APIs: ${onlyApis.join(', ')}`)
   }
 
+  process.exitCode = 0
   let index = -1
   for (const apiDef of apiDefs) {
     if (onlyApis && (!apiDef.id || !onlyApis.includes(apiDef.id))) {
@@ -222,7 +219,7 @@ export default async function deployGraphQLApiAction(
 
       if (err instanceof SchemaError) {
         err.print(output)
-        process.exit(1) // eslint-disable-line no-process-exit
+        process.exitCode = 1
       }
 
       throw err
@@ -248,7 +245,8 @@ export default async function deployGraphQLApiAction(
       if (dryRun) {
         spinner.fail()
         renderBreakingChanges(valid, output)
-        process.exit(1)
+        process.exitCode = 1
+        continue
       }
 
       if (!isInteractive) {
@@ -276,7 +274,7 @@ export default async function deployGraphQLApiAction(
     } else if (dryRun) {
       spinner.succeed()
       output.print('GraphQL API is valid and has no breaking changes')
-      process.exit(0)
+      continue
     }
 
     deployTasks.push({
@@ -326,7 +324,8 @@ export default async function deployGraphQLApiAction(
   // Because of side effects when loading the schema, we can end up in situations where
   // the API has been successfully deployed, but some timer or other handle is keeping
   // the process from naturally exiting.
-  process.exit(0)
+
+  process.exit(process.exitCode)
 }
 
 async function shouldEnablePlayground({

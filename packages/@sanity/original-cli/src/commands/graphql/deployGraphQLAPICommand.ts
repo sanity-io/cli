@@ -1,4 +1,4 @@
-import type {CliCommandContext, CliCommandDefinition} from '../../types.js'
+import {type CliCommandContext, type CliCommandDefinition} from '@sanity/cli'
 
 const helpText = `
 Options

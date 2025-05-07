@@ -1,11 +1,10 @@
-/* eslint-disable max-nested-callbacks */
 import fs from 'node:fs'
 import path from 'node:path'
 
 import {type InlineConfig} from 'vite'
-import {beforeEach, describe, expect, it, type Mock, vi} from 'vitest'
+import {beforeEach, describe, expect, it, vi} from 'vitest'
 
-import {buildVendorDependencies} from '../buildVendorDependencies.js'
+import {buildVendorDependencies} from '../buildVendorDependencies'
 
 // Mocking the vite.build function to inspect its calls. This allows us to test
 // that the function is called with the correct configuration without actually
@@ -13,9 +12,7 @@ import {buildVendorDependencies} from '../buildVendorDependencies.js'
 vi.mock('vite', () => ({build: vi.fn()}))
 
 describe('buildVendorDependencies', async () => {
-  const {build: buildFn} = await import('vite')
-  const build = buildFn as Mock
-
+  const {build} = await import('vite')
   const packageRoot = path.resolve(__dirname, '../../../../..')
   const examplesRoot = path.join(packageRoot, './fixtures/examples')
   const outputDir = './output-dir'

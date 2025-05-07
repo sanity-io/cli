@@ -1,12 +1,12 @@
 import {upperFirst} from 'lodash'
 
-import {isDocumentType} from '../helpers.js'
+import {isDocumentType} from '../helpers'
 import {
   type ConvertedType,
   type ConvertedUnion,
   type InputObjectType,
   type QueryDefinition,
-} from '../types.js'
+} from '../types'
 
 export function generateTypeQueries(
   types: (ConvertedType | ConvertedUnion)[],

@@ -1,4 +1,4 @@
-import {type InputObjectType} from '../../types.js'
+import {type InputObjectType} from '../../types'
 
 export function createStringFilters(): InputObjectType {
   return {

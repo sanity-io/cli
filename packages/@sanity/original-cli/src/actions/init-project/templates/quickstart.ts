@@ -1,4 +1,4 @@
-import {type ProjectTemplate} from '../initProject.js'
+import {type ProjectTemplate} from '../initProject'
 
 const quickStartTemplate: ProjectTemplate = {}
 

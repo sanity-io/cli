@@ -1,6 +1,5 @@
+import {type CliOutputter} from '@sanity/cli'
 import prettyMs from 'pretty-ms'
-
-import {CliOutputter} from '../../types.js'
 
 type ProgressEvent = {
   step: string

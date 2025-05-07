@@ -1,12 +1,12 @@
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 
-import initProject from '../../actions/init-project/initProject.js'
+import initProject from '../../actions/init-project/initProject'
 import {
   allowedPackageManagersString,
   type PackageManager,
-} from '../../packageManager/packageManagerChoice.js'
-import {type CliCommandDefinition} from '../../types.js'
+} from '../../packageManager/packageManagerChoice'
+import {type CliCommandDefinition} from '../../types'
 
 const helpText = `
 Options
@@ -101,7 +101,6 @@ export const initCommand: CliCommandDefinition<InitFlags> = {
   description: 'Initializes a new Sanity Studio and/or project',
   helpText,
   action: async (args, context) => {
-    const {output, chalk} = context
     const [type] = args.argsWithoutOptions
 
     // `sanity init whatever`

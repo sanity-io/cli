@@ -1,8 +1,8 @@
+import {type CliCommandArguments, type CliCommandContext} from '@sanity/cli'
 import {hideBin} from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 
-import type {CliCommandArguments, CliCommandContext} from '../../types.js'
-import {colorizeJson} from '../../util/colorizeJson.js'
+import {colorizeJson} from '../../util/colorizeJson'
 
 const defaultApiVersion = 'v2022-06-01'
 

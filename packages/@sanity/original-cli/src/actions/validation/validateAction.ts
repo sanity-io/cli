@@ -1,15 +1,20 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
+import {
+  type CliCommandArguments,
+  type CliCommandContext,
+  type CliConfig,
+  type CliOutputter,
+} from '@sanity/cli'
 import {type ClientConfig} from '@sanity/client'
 import chalk from 'chalk'
 import logSymbols from 'log-symbols'
 
-import {type ValidationWorkerChannel} from '../../threads/validateDocuments.js'
-import type {CliCommandArguments, CliCommandContext, CliConfig, CliOutputter} from '../../types.js'
-import {type WorkerChannelReceiver} from '../../util/workerChannels.js'
-import {reporters} from './reporters.js'
-import {validateDocuments} from './validateDocuments.js'
+import {type ValidationWorkerChannel} from '../../threads/validateDocuments'
+import {type WorkerChannelReceiver} from '../../util/workerChannels'
+import {reporters} from './reporters'
+import {validateDocuments} from './validateDocuments'
 
 interface ValidateFlags {
   workspace?: string

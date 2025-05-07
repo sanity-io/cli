@@ -4,8 +4,8 @@ import path from 'node:path'
 import preferredPM from 'preferred-pm'
 import which from 'which'
 
-import {type CliPrompter} from '../types.js'
-import {isInteractive} from '../util/isInteractive.js'
+import {type CliPrompter} from '../types'
+import {isInteractive} from '../util/isInteractive'
 
 export type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun' | 'manual'
 

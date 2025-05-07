@@ -1,13 +1,13 @@
 import {readdir} from 'node:fs/promises'
 import path from 'node:path'
 
-import type {Migration} from '@sanity/migrate'
+import {type CliCommandDefinition} from '@sanity/cli'
+import {type Migration} from '@sanity/migrate'
 import {Table} from 'console-table-printer'
 import {register} from 'esbuild-register/dist/node'
 
-import type {CliCommandDefinition} from '../../types.js'
-import {MIGRATION_SCRIPT_EXTENSIONS, MIGRATIONS_DIRECTORY} from './constants.js'
-import {isLoadableMigrationScript, resolveMigrationScript} from './utils/resolveMigrationScript.js'
+import {MIGRATION_SCRIPT_EXTENSIONS, MIGRATIONS_DIRECTORY} from './constants'
+import {isLoadableMigrationScript, resolveMigrationScript} from './utils/resolveMigrationScript'
 
 const helpText = ``
 

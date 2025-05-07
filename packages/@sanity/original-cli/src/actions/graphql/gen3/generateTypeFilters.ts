@@ -1,20 +1,20 @@
-import {createBooleanFilters} from '../gen2/filters/booleanFilters.js'
-import {createDateFilters} from '../gen2/filters/dateFilters.js'
-import {createDateTimeFilters} from '../gen2/filters/dateTimeFilters.js'
-import {createFloatFilters} from '../gen2/filters/floatFilters.js'
-import {createIdFilters} from '../gen2/filters/idFilters.js'
-import {createIntegerFilters} from '../gen2/filters/integerFilters.js'
-import {createStringFilters} from '../gen2/filters/stringFilters.js'
-import {isDocumentType, isNonUnion, isUnion} from '../helpers.js'
+import {createBooleanFilters} from '../gen2/filters/booleanFilters'
+import {createDateFilters} from '../gen2/filters/dateFilters'
+import {createDateTimeFilters} from '../gen2/filters/dateTimeFilters'
+import {createFloatFilters} from '../gen2/filters/floatFilters'
+import {createIdFilters} from '../gen2/filters/idFilters'
+import {createIntegerFilters} from '../gen2/filters/integerFilters'
+import {createStringFilters} from '../gen2/filters/stringFilters'
+import {isDocumentType, isNonUnion, isUnion} from '../helpers'
 import {
   type ApiCustomizationOptions,
   type ConvertedDocumentType,
   type ConvertedType,
   type ConvertedUnion,
   type InputObjectType,
-} from '../types.js'
-import {createDocumentFilters} from './filters/documentFilters.js'
-import {getFilterFieldName} from './utils.js'
+} from '../types'
+import {createDocumentFilters} from './filters/documentFilters'
+import {getFilterFieldName} from './utils'
 
 const typeAliases: Record<string, string | undefined> = {
   Url: 'String',

@@ -4,7 +4,7 @@
  * determined by "older than 16 hours".
  */
 
-import {testClient} from './environment.js'
+import {testClient} from './environment'
 
 // 16 hours in milliseconds, subtracted from current time, then rounded
 // to same precision as test IDs(8 digits)

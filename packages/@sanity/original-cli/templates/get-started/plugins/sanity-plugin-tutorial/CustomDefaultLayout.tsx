@@ -1,6 +1,6 @@
 import React from 'react'
 import {LayoutProps, useCurrentUser} from 'sanity'
-import {GetStartedTutorial} from './GetStartedTutorial.js'
+import {GetStartedTutorial} from './GetStartedTutorial'
 
 export function CustomDefaultLayout(props: LayoutProps) {
   const user = useCurrentUser()

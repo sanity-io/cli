@@ -5,7 +5,7 @@ import path from 'node:path'
 import {firstValueFrom} from 'rxjs'
 import {type Config, resolveConfig, type Workspace, type WorkspaceOptions} from 'sanity'
 
-import {mockBrowserEnvironment} from './mockBrowserEnvironment.js'
+import {mockBrowserEnvironment} from './mockBrowserEnvironment'
 
 const candidates = [
   'sanity.config.js',
@@ -45,16 +45,13 @@ export function getStudioConfig({
 
     let config: Config | undefined
     try {
+      // eslint-disable-next-line import/no-dynamic-require
       const mod = require(configPath)
       config = mod.__esModule && mod.default ? mod.default : mod
     } catch (err) {
-      if (err instanceof Error) {
-        // this helps preserve the stack trace
-        const message = `Failed to load configuration file "${configPath}":\n${err.message}`
-        throw Object.assign(err, {message})
-      }
-
-      throw err
+      const message = `Failed to load configuration file "${configPath}":\n${err.message}`
+      // this helps preserve the stack trace
+      throw Object.assign(err, {message})
     }
 
     if (!config) throw new Error('Configuration did not export expected config shape')

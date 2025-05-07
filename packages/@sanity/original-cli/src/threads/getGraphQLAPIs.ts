@@ -1,13 +1,13 @@
 import {isMainThread, type MessagePort, parentPort, workerData} from 'node:worker_threads'
 
+import {type CliV3CommandContext, type GraphQLAPIConfig} from '@sanity/cli'
 import {type Schema} from '@sanity/types'
 import {isPlainObject} from 'lodash'
 import oneline from 'oneline'
 import {type Workspace} from 'sanity'
 
-import {type SchemaDefinitionish, type TypeResolvedGraphQLAPI} from '../actions/graphql/types.js'
-import {CliV3CommandContext, GraphQLAPIConfig} from '../types.js'
-import {getStudioWorkspaces} from '../util/getStudioWorkspaces.js'
+import {type SchemaDefinitionish, type TypeResolvedGraphQLAPI} from '../actions/graphql/types'
+import {getStudioWorkspaces} from '../util/getStudioWorkspaces'
 
 async function main() {
   if (isMainThread || !parentPort) {
