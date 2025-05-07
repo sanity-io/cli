@@ -37,8 +37,6 @@ const studioWorkspaceSchema = z.object({
 const rawConfigSchema = z.union([z.array(studioWorkspaceSchema), singleStudioWorkspaceSchema])
 const resolvedConfigSchema = z.array(studioWorkspaceSchema)
 
-export type SingleStudioWorkspace = z.infer<typeof singleStudioWorkspaceSchema>
-export type StudioWorkspace = z.infer<typeof studioWorkspaceSchema>
 export type RawStudioConfig = z.infer<typeof rawConfigSchema>
 export type ResolvedStudioConfig = z.infer<typeof resolvedConfigSchema>
 
@@ -74,7 +72,7 @@ export async function readStudioConfig(
   configPath: string,
   options: ReadStudioConfigOptions,
 ): Promise<RawStudioConfig | ResolvedStudioConfig> {
-  const result = await studioWorkerTask(resolve(__dirname, 'readStudioConfig.worker.js'), {
+  const result = await studioWorkerTask(resolve(__dirname, '_worker_/readStudioConfig.worker.js'), {
     name: 'studioConfig',
     studioRootPath: dirname(configPath),
     workerData: {configPath, resolvePlugins: options.resolvePlugins},

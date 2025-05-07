@@ -38,7 +38,7 @@ export async function getCliConfig(rootPath: string): Promise<CliConfig> {
   let cliConfig: unknown
   try {
     cliConfig = await tsxWorkerTask(
-      resolve(dirname(fileURLToPath(import.meta.url)), 'getCliConfig.worker.ts'),
+      resolve(dirname(fileURLToPath(import.meta.url)), '_worker_/getCliConfig.worker.ts'),
       {
         name: 'cliConfig',
         rootPath,

@@ -8,7 +8,7 @@ import {readJsonFile} from '../util/readJsonFile.js'
  *
  * @internal
  */
-export interface ProjectRootResult {
+interface ProjectRootResult {
   directory: string
   path: string
   type: 'blueprint' | 'studio'

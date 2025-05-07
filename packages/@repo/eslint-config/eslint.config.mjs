@@ -6,6 +6,7 @@ import perfectionist from 'eslint-plugin-perfectionist'
 import tsdoc from 'eslint-plugin-tsdoc'
 import unicorn from 'eslint-plugin-unicorn'
 import unusedImports from 'eslint-plugin-unused-imports'
+import {createTypeScriptImportResolver} from 'eslint-import-resolver-typescript'
 import tseslint, {configs} from 'typescript-eslint'
 
 export default [
@@ -236,6 +237,15 @@ export default [
             alwaysTryTypes: true,
           },
         },
+        'import/resolver-next': [
+          createTypeScriptImportResolver({
+            alwaysTryTypes: true,
+            extensions: ['.js', '.jsx', '.ts', 'tsx', '.mjs', '.mts'],
+
+            // use an array of glob patterns
+            project: ['packages/*/tsconfig.json', 'examples/*/tsconfig.json'],
+          }),
+        ],
       },
     },
   ),

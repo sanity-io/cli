@@ -8,5 +8,8 @@
   "dependencies": {
     "@sanity/blueprints": "workspace:*",
     "@sanity/cli": "workspace:*"
+  },
+  "devDependencies": {
+    "@repo/tsconfig": "workspace:*"
   }
 }

@@ -5,7 +5,7 @@
  *
  * @internal
  */
-export interface HttpError {
+interface HttpError {
   request: {
     headers: unknown
   }

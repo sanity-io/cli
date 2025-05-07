@@ -43,6 +43,7 @@
   "devDependencies": {
     "@eslint/compat": "^1.2.9",
     "@repo/eslint-config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
     "@swc/cli": "^0.6.0",
     "@swc/core": "^1.11.8",
     "@types/node": "^20.17.23",
