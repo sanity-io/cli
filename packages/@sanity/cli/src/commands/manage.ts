@@ -2,7 +2,6 @@ import {type FlagInput} from '@oclif/core/interfaces'
 import open from 'open'
 
 import {SanityCliCommand} from '../BaseCommand.js'
-import {findProjectRoot} from '../config/findProjectRoot.js'
 import {getStudioConfig} from '../config/studio/getStudioConfig.js'
 
 export default class ManageCommand extends SanityCliCommand<typeof ManageCommand> {
@@ -17,12 +16,9 @@ export default class ManageCommand extends SanityCliCommand<typeof ManageCommand
     let projectId = this.cliConfig?.api?.projectId
 
     if (!projectId) {
-      const root = await findProjectRoot(process.cwd())
-      if (root) {
-        const config = await getStudioConfig(root.directory, {resolvePlugins: false})
-        if (!Array.isArray(config) && config.projectId) {
-          projectId = config.projectId
-        }
+      const config = await getStudioConfig(this.projectRoot.directory, {resolvePlugins: false})
+      if (!Array.isArray(config) && config.projectId) {
+        projectId = config.projectId
       }
     }
 

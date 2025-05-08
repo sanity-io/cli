@@ -1,9 +1,8 @@
 import {Command, Interfaces} from '@oclif/core'
 
-import type {CliConfig} from './config/cli/types.js'
-
 import {getCliConfig} from './config/cli/getCliConfig.js'
-import {findProjectRoot} from './config/findProjectRoot.js'
+import {type CliConfig} from './config/cli/types.js'
+import {findProjectRoot, type ProjectRootResult} from './config/findProjectRoot.js'
 
 export type Flags<T extends typeof Command> = Interfaces.InferredFlags<
   (typeof SanityCliCommand)['baseFlags'] & T['flags']
@@ -15,6 +14,7 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
   protected args!: Args<T>
   protected cliConfig!: CliConfig | undefined
   protected flags!: Flags<T>
+  protected projectRoot!: ProjectRootResult
 
   public async init(): Promise<void> {
     const {args, flags} = await this.parse({
@@ -35,6 +35,7 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
       throw new Error('Project root not found')
     }
 
+    this.projectRoot = root
     this.cliConfig = await getCliConfig(root.directory)
   }
 }
