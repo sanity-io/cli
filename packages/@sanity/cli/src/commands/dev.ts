@@ -26,8 +26,6 @@ export class DevCommand extends SanityCliCommand<typeof DevCommand> {
   } satisfies FlagInput
 
   public async run(): Promise<void> {
-    const {flags} = await this.parse(DevCommand)
-
-    console.log(flags)
+    this.log(JSON.stringify(this.flags))
   }
 }

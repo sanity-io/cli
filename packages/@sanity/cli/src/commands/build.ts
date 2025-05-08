@@ -40,7 +40,6 @@ export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
   } satisfies FlagInput
 
   public async run(): Promise<void> {
-    const {flags} = await this.parse(BuildCommand)
-    console.log(flags)
+    this.log(JSON.stringify(this.flags))
   }
 }

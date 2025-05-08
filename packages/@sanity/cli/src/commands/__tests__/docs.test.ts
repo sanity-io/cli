@@ -7,7 +7,9 @@ import {DocsCommand} from '../docs.js'
 
 describe('#docs', () => {
   test('command runs', async () => {
-    await testCommand(DocsCommand)
+    const {stdout} = await testCommand(DocsCommand)
+
+    expect(stdout).toContain('Opening https://www.sanity.io/docs')
     // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/docs')
   })

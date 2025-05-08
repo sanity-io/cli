@@ -7,7 +7,9 @@ import {LearnCommand} from '../learn.js'
 
 describe('#learn', () => {
   test('command runs', async () => {
-    await testCommand(LearnCommand)
+    const {stdout} = await testCommand(LearnCommand)
+
+    expect(stdout).toContain('Opening https://www.sanity.io/learn')
     // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/learn')
   })
