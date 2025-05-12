@@ -3,7 +3,7 @@ import {type ArgInput, type FlagInput} from '@oclif/core/interfaces'
 
 import {SanityCliCommand} from '../BaseCommand.js'
 
-export default class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
+export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
   static override args = {
     outputDir: Args.directory({default: 'dist', description: 'Output directory'}),
   } satisfies ArgInput

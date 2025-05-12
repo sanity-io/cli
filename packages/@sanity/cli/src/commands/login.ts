@@ -19,7 +19,7 @@ import {canLaunchBrowser} from '../util/canLaunchBrowser.js'
 
 const LOGIN_API_VERSION = '2024-02-01'
 
-export default class LoginCommand extends SanityCliCommand<typeof LoginCommand> {
+export class LoginCommand extends SanityCliCommand<typeof LoginCommand> {
   static override description = 'Authenticates the CLI for access to Sanity projects'
   static override examples: Array<Command.Example> = [
     {

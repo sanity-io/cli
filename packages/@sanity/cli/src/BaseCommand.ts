@@ -12,9 +12,23 @@ export type Args<T extends typeof Command> = Interfaces.InferredArgs<T['args']>
 
 export abstract class SanityCliCommand<T extends typeof Command> extends Command {
   protected args!: Args<T>
-  protected cliConfig!: CliConfig | undefined
   protected flags!: Flags<T>
-  protected projectRoot!: ProjectRootResult
+
+  public async getCliConfig(): Promise<CliConfig> {
+    const root = await this.getProjectRoot()
+    const config = await getCliConfig(root.directory)
+
+    return config
+  }
+
+  public async getProjectRoot(): Promise<ProjectRootResult> {
+    const root = await findProjectRoot(process.cwd())
+    if (!root) {
+      throw new Error('Project root not found')
+    }
+
+    return root
+  }
 
   public async init(): Promise<void> {
     const {args, flags} = await this.parse({
@@ -29,13 +43,5 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
     this.flags = flags as Flags<T>
 
     await super.init()
-
-    const root = await findProjectRoot(process.cwd())
-    if (!root) {
-      throw new Error('Project root not found')
-    }
-
-    this.projectRoot = root
-    this.cliConfig = await getCliConfig(root.directory)
   }
 }

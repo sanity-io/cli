@@ -4,7 +4,7 @@ import open from 'open'
 import {SanityCliCommand} from '../BaseCommand.js'
 import {getStudioConfig} from '../config/studio/getStudioConfig.js'
 
-export default class ManageCommand extends SanityCliCommand<typeof ManageCommand> {
+export class ManageCommand extends SanityCliCommand<typeof ManageCommand> {
   static override description = 'Opens project management interface in your web browser'
   static override flags = {} satisfies FlagInput
 
@@ -12,11 +12,14 @@ export default class ManageCommand extends SanityCliCommand<typeof ManageCommand
     // Parse to ensure no invalid flags are passed
     await this.parse(ManageCommand)
 
+    const cliConfig = await this.getCliConfig()
     // Read the projectId from the CLI config
-    let projectId = this.cliConfig?.api?.projectId
+    let projectId = cliConfig?.api?.projectId
 
     if (!projectId) {
-      const config = await getStudioConfig(this.projectRoot.directory, {resolvePlugins: false})
+      const projectRoot = await this.getProjectRoot()
+      // TODO: Move this to a util or baseclass
+      const config = await getStudioConfig(projectRoot.directory, {resolvePlugins: false})
       if (!Array.isArray(config) && config.projectId) {
         projectId = config.projectId
       }

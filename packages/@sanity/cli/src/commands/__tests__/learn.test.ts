@@ -3,12 +3,12 @@ import open from 'open'
 import {describe, expect, test} from 'vitest'
 import {testCommand} from '~test/helpers/testCommand.js'
 
-import LearnCommand from '../learn.js'
+import {LearnCommand} from '../learn.js'
 
 describe('#learn', () => {
   test('command runs', async () => {
     await testCommand(LearnCommand)
-
+    // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/learn')
   })
 

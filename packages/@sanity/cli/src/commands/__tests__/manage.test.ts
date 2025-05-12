@@ -5,13 +5,33 @@ import {testCommand} from '~test/helpers/testCommand.js'
 
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {getStudioConfig} from '../../config/studio/getStudioConfig.js'
-import ManageCommand from '../manage.js'
+import {ManageCommand} from '../manage.js'
 
 vi.mock(import('../../config/studio/getStudioConfig.js'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,
     getStudioConfig: vi.fn(),
+  }
+})
+
+vi.mock(import('../../config/findProjectRoot.js'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    findProjectRoot: vi.fn().mockResolvedValue({
+      directory: '/test/path',
+      root: '/test/path',
+      type: 'studio',
+    }),
+  }
+})
+
+vi.mock(import('../../config/cli/getCliConfig.js'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    getCliConfig: vi.fn().mockResolvedValue({}),
   }
 })
 
@@ -45,6 +65,7 @@ describe('#manage', () => {
 
     await testCommand(ManageCommand)
 
+    // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/manage/project/test-project-id')
   })
 
@@ -61,6 +82,7 @@ describe('#manage', () => {
 
     await testCommand(ManageCommand)
 
+    // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/manage/project/test-project-id')
   })
 
@@ -81,16 +103,16 @@ describe('#manage', () => {
     ])
 
     await testCommand(ManageCommand)
-
+    // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/manage/')
   })
 
   test('opens root manage page if no projectId is found', async () => {
     vi.mocked(getCliConfig).mockResolvedValueOnce({})
-    vi.mocked(getStudioConfig).mockResolvedValueOnce({} as any)
+    vi.mocked(getStudioConfig).mockResolvedValueOnce({} as never)
 
     await testCommand(ManageCommand)
-
+    // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/manage/')
   })
 })

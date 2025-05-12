@@ -2,7 +2,7 @@ import {Command} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import open from 'open'
 
-export default class DocsCommand extends Command {
+export class DocsCommand extends Command {
   static override description = 'Opens Sanity Studio documentation in your web browser'
   static override flags = {} satisfies FlagInput
 

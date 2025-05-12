@@ -4,7 +4,7 @@ import {logout} from '../actions/auth/logout.js'
 import {SanityCliCommand} from '../BaseCommand.js'
 import {getCliToken} from '../config/cliToken.js'
 
-export default class LogoutCommand extends SanityCliCommand<typeof LogoutCommand> {
+export class LogoutCommand extends SanityCliCommand<typeof LogoutCommand> {
   static override description = 'Logs out the CLI from the current user session'
   static override flags = {} satisfies FlagInput
 

@@ -3,12 +3,12 @@ import open from 'open'
 import {describe, expect, test} from 'vitest'
 import {testCommand} from '~test/helpers/testCommand.js'
 
-import DocsCommand from '../docs.js'
+import {DocsCommand} from '../docs.js'
 
 describe('#docs', () => {
   test('command runs', async () => {
     await testCommand(DocsCommand)
-
+    // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/docs')
   })
 
