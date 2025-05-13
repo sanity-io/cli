@@ -14,6 +14,11 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
   protected args!: Args<T>
   protected flags!: Flags<T>
 
+  /**
+   * Get the CLI config.
+   *
+   * @returns The CLI config.
+   */
   public async getCliConfig(): Promise<CliConfig> {
     const root = await this.getProjectRoot()
     const config = await getCliConfig(root.directory)
@@ -21,6 +26,11 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
     return config
   }
 
+  /**
+   * Get the project's root directory by resolving the blueprint or studio config.
+   *
+   * @returns The root project root.
+   */
   public async getProjectRoot(): Promise<ProjectRootResult> {
     const root = await findProjectRoot(process.cwd())
     if (!root) {

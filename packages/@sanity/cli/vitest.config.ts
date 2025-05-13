@@ -5,6 +5,9 @@ export default defineConfig({
     alias: {
       '~test/helpers': new URL('test/helpers', import.meta.url).pathname,
     },
+    coverage: {
+      provider: 'istanbul',
+    },
     disableConsoleIntercept: true, // helps @oclif/test helpers
     env: {
       OCLIF_TEST_ROOT: 'packages/@sanity/cli',

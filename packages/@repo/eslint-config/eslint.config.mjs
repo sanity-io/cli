@@ -68,6 +68,12 @@ export default [
       },
     },
     {
+      files: ['**/*.test.ts'],
+      rules: {
+        'unicorn/no-useless-undefined': 'off',
+      },
+    },
+    {
       plugins: {
         n: nodePlugin,
         'unused-imports': unusedImports,

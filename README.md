@@ -55,4 +55,4 @@ In development mode, all the command modules will be "loaded" (eg imported) in o
 | ❌      | typegen   |
 | ❌      | undeploy  |
 | ❌      | users     |
-| ❌      | versions  |
+| ✅      | versions  |
