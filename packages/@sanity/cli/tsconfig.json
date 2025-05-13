@@ -4,7 +4,8 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "groq": ["./node_modules/groq/src/groq.ts"]
+      "groq": ["./node_modules/groq/src/groq.ts"],
+      "~test/helpers/*": ["./test/helpers/*"]
     }
   }
 }
