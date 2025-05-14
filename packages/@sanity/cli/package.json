@@ -62,7 +62,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@eslint/compat": "^1.2.7",
+    "@eslint/compat": "^1.2.9",
     "@oclif/prettier-config": "^0.2.1",
     "@oclif/test": "^4.1.12",
     "@repo/eslint-config": "workspace:*",
@@ -74,9 +74,9 @@
     "@types/node": "^20.17.23",
     "@vitest/coverage-v8": "^3.1.2",
     "ansis": "^3.17.0",
-    "eslint": "^9.22.0",
-    "eslint-config-oclif": "^6.0.24",
-    "eslint-config-prettier": "^10.1.1",
+    "eslint": "^9.26.0",
+    "eslint-config-oclif": "^6.0.56",
+    "eslint-config-prettier": "^10.1.5",
     "oclif": "^4.17.34",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.2",
