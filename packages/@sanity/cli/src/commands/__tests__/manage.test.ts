@@ -63,8 +63,9 @@ describe('#manage', () => {
       },
     })
 
-    await testCommand(ManageCommand)
+    const {stdout} = await testCommand(ManageCommand)
 
+    expect(stdout).toContain('Opening https://www.sanity.io/manage/project/test-project-id')
     // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/manage/project/test-project-id')
   })
@@ -80,8 +81,9 @@ describe('#manage', () => {
       },
     })
 
-    await testCommand(ManageCommand)
+    const {stdout} = await testCommand(ManageCommand)
 
+    expect(stdout).toContain('Opening https://www.sanity.io/manage/project/test-project-id')
     // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/manage/project/test-project-id')
   })
@@ -102,7 +104,9 @@ describe('#manage', () => {
       },
     ])
 
-    await testCommand(ManageCommand)
+    const {stdout} = await testCommand(ManageCommand)
+
+    expect(stdout).toContain('Opening https://www.sanity.io/manage/')
     // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/manage/')
   })
@@ -111,7 +115,9 @@ describe('#manage', () => {
     vi.mocked(getCliConfig).mockResolvedValueOnce({})
     vi.mocked(getStudioConfig).mockResolvedValueOnce({} as never)
 
-    await testCommand(ManageCommand)
+    const {stdout} = await testCommand(ManageCommand)
+
+    expect(stdout).toContain('Opening https://www.sanity.io/manage/')
     // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/manage/')
   })

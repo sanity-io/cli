@@ -364,6 +364,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^3.1.2
         version: 3.1.2(vitest@3.1.2(@types/debug@4.1.12)(@types/node@20.17.30)(jsdom@26.0.0)(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.1))
+      ansis:
+        specifier: ^3.17.0
+        version: 3.17.0
       eslint:
         specifier: ^9.22.0
         version: 9.23.0
