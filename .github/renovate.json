@@ -29,10 +29,27 @@
         "eslint",
         "eslint-plugin-*",
         "eslint-config-*",
-        "typescript-eslint"
+        "typescript-eslint",
+        "@typescript-eslint/*",
+        "eslint-*",
+        "@stylistic/eslint-plugin"
       ],
       "group": {"semanticCommitType": "chore"},
       "semanticCommitType": "chore"
+    },
+    {
+      "description": "Group sanity related deps in a single PR, as they often have to update together",
+      "groupName": "sanity-tooling",
+      "matchPackageNames": ["@sanity/*", "sanity"],
+      "group": {"semanticCommitType": "fix"},
+      "semanticCommitType": "fix"
+    },
+    {
+      "description": "Group oclif related deps in a single PR, as they often have to update together",
+      "groupName": "oclif-tooling",
+      "matchPackageNames": ["@oclif/*", "oclif"],
+      "group": {"semanticCommitType": "fix"},
+      "semanticCommitType": "fix"
     },
     {
       "group": {"semanticCommitType": "chore"},
@@ -48,6 +65,13 @@
       "description": "Group all dependencies from the examples directory",
       "matchFileNames": ["examples/**/package.json"],
       "groupName": "Examples dependencies"
+    },
+    {
+      "description": "Group vitest related deps in a single PR, as they often have to update together",
+      "groupName": "vitest-tooling",
+      "matchPackageNames": ["@vitest/*", "vitest", "vitest-*"],
+      "group": {"semanticCommitType": "chore"},
+      "semanticCommitType": "chore"
     },
     {
       "matchDepTypes": ["dependencies", "peerDependencies"],
