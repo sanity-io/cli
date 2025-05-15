@@ -31,6 +31,6 @@ export default {
   bin: 'sanity',
   commands: isProduction ? './dist/commands' : './src/commands',
   dirname: 'sanity',
-  plugins: ['@oclif/plugin-help'],
+  plugins: ['@oclif/plugin-help', '@oclif/plugin-not-found'],
   topicSeparator: ' ',
 }

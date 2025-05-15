@@ -45,6 +45,7 @@
     "@inquirer/prompts": "^7.3.2",
     "@oclif/core": "^4.3.0",
     "@oclif/plugin-help": "^6.2.28",
+    "@oclif/plugin-not-found": "^3.2.51",
     "@sanity/client": "^7.0.0",
     "@sanity/telemetry": "^0.7.9",
     "debug": "^4.4.0",
