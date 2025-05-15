@@ -3,6 +3,7 @@ import {Command, Interfaces} from '@oclif/core'
 import {getCliConfig} from './config/cli/getCliConfig.js'
 import {type CliConfig} from './config/cli/types.js'
 import {findProjectRoot, type ProjectRootResult} from './config/findProjectRoot.js'
+import {getGlobalCliClient, type GlobalCliClientOptions} from './core/apiClient.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
   (typeof SanityCliCommand)['baseFlags'] & T['flags']
@@ -15,6 +16,14 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
   protected flags!: Flags<T>
 
   /**
+   * Get the global API client.
+   *
+   * @param args - The global API client options.
+   * @returns The global API client.
+   */
+  public getGlobalApiClient = (args: GlobalCliClientOptions) => getGlobalCliClient(args)
+
+  /**
    * Get the CLI config.
    *
    * @returns The CLI config.
@@ -24,6 +33,17 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
     const config = await getCliConfig(root.directory)
 
     return config
+  }
+
+  /**
+   * Get the project ID from the CLI config.
+   *
+   * @returns The project ID or `undefined` if it's not set.
+   */
+  public async getProjectId(): Promise<string | undefined> {
+    const config = await this.getCliConfig()
+
+    return config.api?.projectId
   }
 
   /**

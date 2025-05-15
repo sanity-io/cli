@@ -1,4 +1,7 @@
 import {type ConfigEnv, type InlineConfig} from 'vite'
+import {type z} from 'zod'
+
+import {type cliConfigSchema} from './schemas.js'
 
 interface GraphQLAPIConfig {
   /**
@@ -99,38 +102,4 @@ type UserViteConfig =
   | ((config: InlineConfig, env: ConfigEnv) => InlineConfig | Promise<InlineConfig>)
   | InlineConfig
 
-export interface CliConfig {
-  api?: CliApiConfig
-
-  autoUpdates?: boolean
-
-  graphql?: GraphQLAPIConfig[]
-
-  project?: {
-    basePath?: string
-  }
-
-  /**
-   * The React Compiler is currently in beta, and is disabled by default.
-   * @see https://react.dev/learn/react-compiler
-   * @beta
-   */
-  reactCompiler?: ReactCompilerConfig
-
-  /**
-   * Wraps the Studio in `<React.StrictMode>` root to aid flagging potential problems related to concurrent features (`startTransition`, `useTransition`, `useDeferredValue`, `Suspense`)
-   * Can also be enabled by setting `SANITY_STUDIO_REACT_STRICT_MODE="true"|"false"`.
-   * It only applies to `sanity dev` in dev mode, it's ignored in `sanity build` and in production.
-   * Defaults to `false`
-   */
-  reactStrictMode?: boolean
-
-  server?: {
-    hostname?: string
-    port?: number
-  }
-
-  studioHost?: string
-
-  vite?: UserViteConfig
-}
+export type CliConfig = z.infer<typeof cliConfigSchema>
