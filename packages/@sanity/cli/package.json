@@ -43,8 +43,8 @@
   },
   "dependencies": {
     "@inquirer/prompts": "^7.3.2",
-    "@oclif/core": "^4.2.8",
-    "@oclif/plugin-help": "^6.2.26",
+    "@oclif/core": "^4.3.0",
+    "@oclif/plugin-help": "^6.2.28",
     "@sanity/client": "^7.0.0",
     "@sanity/telemetry": "^0.7.9",
     "debug": "^4.4.0",
@@ -77,7 +77,7 @@
     "eslint": "^9.26.0",
     "eslint-config-oclif": "^6.0.56",
     "eslint-config-prettier": "^10.1.5",
-    "oclif": "^4.17.34",
+    "oclif": "^4.17.46",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.2",
     "vitest": "^3.1.2"
