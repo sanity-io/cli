@@ -8,6 +8,14 @@ export const cliConfigSchema = z.object({
     })
     .optional(),
 
+  app: z
+    .object({
+      entry: z.string().optional(),
+      id: z.string().optional(),
+      organizationId: z.string().optional(),
+    })
+    .optional(),
+
   autoUpdates: z.boolean().optional(),
 
   graphql: z

@@ -32,6 +32,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Test
+        env:
+          SANITY_AUTH_TOKEN: 'test-token'
         run: |
           ARGS="--test-timeout=60000 --retry 4"
           if [ "${{ matrix.node-version }}" == "20" ]; then
