@@ -48,7 +48,7 @@ In development mode, all the command modules will be "loaded" (eg imported) in o
 | ❌      | manifest  |
 | ❌      | migration |
 | ❌      | preview   |
-| ❌      | projects  |
+| ✅      | projects  |
 | ❌      | schema    |
 | ❌      | start     |
 | ❌      | telemetry |
