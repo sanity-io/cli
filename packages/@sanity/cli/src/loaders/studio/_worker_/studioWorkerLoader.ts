@@ -8,11 +8,11 @@ import {ViteNodeRunner} from 'vite-node/client'
 import {ViteNodeServer} from 'vite-node/server'
 import {installSourcemapsSupport} from 'vite-node/source-map'
 
-import {getCliConfig} from '../../config/cli/getCliConfig.js'
-import {type CliConfig} from '../../config/cli/types.js'
-import {isNotFoundError} from '../../errors/NotFoundError.js'
-import {isRecord} from '../../util/isRecord.js'
-import * as stubs from './stubs.js'
+import {getCliConfig} from '../../../config/cli/getCliConfig.js'
+import {type CliConfig} from '../../../config/cli/types.js'
+import {isNotFoundError} from '../../../errors/NotFoundError.js'
+import {isRecord} from '../../../util/isRecord.js'
+import * as stubs from '../stubs.js'
 
 if (isMainThread) {
   throw new Error('Should be child of thread, not the main thread')

@@ -18,7 +18,7 @@ const apiHosts: Record<string, string | undefined> = {
 /**
  * @internal
  */
-export interface GlobalCliClientOptions {
+interface GlobalCliClientOptions {
   /**
    * The API version to use for this client.
    */

@@ -25,7 +25,7 @@ const platformNames: Record<string, string | undefined> = {
  *
  * @internal
  */
-export interface TokenDetails {
+interface TokenDetails {
   label: string
   token: string
 }

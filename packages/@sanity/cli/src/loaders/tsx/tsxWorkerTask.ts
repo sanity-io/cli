@@ -14,7 +14,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
  *
  * @internal
  */
-export interface TsxWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
+interface TsxWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
   rootPath: string
 }
 
@@ -34,7 +34,7 @@ export interface TsxWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'
  * @internal
  */
 export function tsxWorkerTask(filePath: string, options: TsxWorkerTaskOptions): Promise<unknown> {
-  const loaderPath = resolve(__dirname, './tsxWorkerLoader.js')
+  const loaderPath = resolve(__dirname, './_worker_/tsxWorkerLoader.js')
   const tsconfig = getTsconfig(options.rootPath)
 
   const env = {

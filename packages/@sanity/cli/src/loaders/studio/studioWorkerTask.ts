@@ -11,7 +11,7 @@ import {isRecord} from '../../util/isRecord.js'
  *
  * @internal
  */
-export interface StudioWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
+interface StudioWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
   studioRootPath: string
 }
 
@@ -54,7 +54,7 @@ export function studioWorkerTask(
 
     let workerLoaderPath = resolvePath(
       dirname(fileURLToPath(import.meta.url)),
-      'studioWorkerLoader.js',
+      '_worker_/studioWorkerLoader.js',
     )
     const workerLoaderPathTs = workerLoaderPath.replace(/\.js$/, '.ts')
 

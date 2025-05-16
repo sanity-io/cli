@@ -1,6 +1,6 @@
 import {type ConfigEnv, type InlineConfig} from 'vite'
 
-export interface GraphQLAPIConfig {
+interface GraphQLAPIConfig {
   /**
    * Suffix to use for generated filter types.
    *
@@ -90,12 +90,12 @@ export interface ReactCompilerConfig {
   sources?: ((filename: string) => boolean) | Array<string> | null
 }
 
-export interface CliApiConfig {
+interface CliApiConfig {
   dataset?: string
   projectId?: string
 }
 
-export type UserViteConfig =
+type UserViteConfig =
   | ((config: InlineConfig, env: ConfigEnv) => InlineConfig | Promise<InlineConfig>)
   | InlineConfig
 

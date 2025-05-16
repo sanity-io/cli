@@ -4,11 +4,11 @@ import {getCliConfig} from './config/cli/getCliConfig.js'
 import {type CliConfig} from './config/cli/types.js'
 import {findProjectRoot, type ProjectRootResult} from './config/findProjectRoot.js'
 
-export type Flags<T extends typeof Command> = Interfaces.InferredFlags<
+type Flags<T extends typeof Command> = Interfaces.InferredFlags<
   (typeof SanityCliCommand)['baseFlags'] & T['flags']
 >
 
-export type Args<T extends typeof Command> = Interfaces.InferredArgs<T['args']>
+type Args<T extends typeof Command> = Interfaces.InferredArgs<T['args']>
 
 export abstract class SanityCliCommand<T extends typeof Command> extends Command {
   protected args!: Args<T>

@@ -18,6 +18,13 @@
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
   "type": "module",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js"
+    }
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
@@ -47,10 +54,7 @@
     "@oclif/plugin-help": "^6.2.28",
     "@oclif/plugin-not-found": "^3.2.51",
     "@sanity/client": "^7.0.0",
-    "@sanity/telemetry": "^0.7.9",
     "debug": "^4.4.0",
-    "esbuild": "^0.25.0",
-    "esbuild-register": "^3.6.0",
     "get-tsconfig": "^4.10.0",
     "import-meta-resolve": "^4.1.0",
     "jsdom": "^26.0.0",
@@ -58,27 +62,23 @@
     "ora": "^8.2.0",
     "ts-blank-space": "^0.6.1",
     "tsx": "^4.19.3",
-    "vite": "^6.2.1",
+    "vite": "^6.3.5",
     "vite-node": "^3.0.8",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.9",
-    "@oclif/prettier-config": "^0.2.1",
     "@oclif/test": "^4.1.12",
     "@repo/eslint-config": "workspace:*",
     "@swc/cli": "^0.6.0",
     "@swc/core": "^1.11.8",
-    "@types/chai": "^4.3.20",
     "@types/debug": "^4.1.12",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20.17.23",
     "@vitest/coverage-v8": "^3.1.2",
     "ansis": "^3.17.0",
     "eslint": "^9.26.0",
-    "eslint-config-oclif": "^6.0.56",
-    "eslint-config-prettier": "^10.1.5",
-    "oclif": "^4.17.46",
+    "oclif": "^4.17.34",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.2",
     "vitest": "^3.1.2"

@@ -28,7 +28,7 @@ const cliUserConfigSchema = {
  *
  * @internal
  */
-export type CliUserConfig = z.infer<z.ZodObject<typeof cliUserConfigSchema>>
+type CliUserConfig = z.infer<z.ZodObject<typeof cliUserConfigSchema>>
 
 /**
  * Set the config value for the given property.

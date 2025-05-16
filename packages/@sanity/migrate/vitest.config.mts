@@ -1,4 +1,4 @@
-import {defineConfig} from '@repo/test-config/vitest'
+import {defineConfig} from 'vitest/config'
 
 export default defineConfig({
   test: {

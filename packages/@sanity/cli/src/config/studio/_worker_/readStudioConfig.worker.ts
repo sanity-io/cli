@@ -5,7 +5,7 @@ import {createClient} from '@sanity/client'
 import {moduleResolve} from 'import-meta-resolve'
 import {z} from 'zod'
 
-import {safeStructuredClone} from '../../util/safeStructuredClone.js'
+import {safeStructuredClone} from '../../../util/safeStructuredClone.js'
 
 if (isMainThread || !parentPort) {
   throw new Error('Should only be run in a worker!')

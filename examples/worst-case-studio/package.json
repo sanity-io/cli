@@ -1,20 +1,20 @@
 {
   "name": "@sanity/worst-case-studio",
-  "private": true,
-  "type": "module",
   "version": "1.0.0",
-  "main": "package.json",
-  "license": "MIT",
-  "scripts": {
-    "dev": "sanity dev",
-    "start": "sanity start",
-    "build": "sanity build",
-    "deploy": "sanity deploy",
-    "deploy-graphql": "sanity graphql deploy"
-  },
+  "private": true,
   "keywords": [
     "sanity"
   ],
+  "license": "MIT",
+  "type": "module",
+  "main": "package.json",
+  "scripts": {
+    "build": "sanity build",
+    "deploy": "sanity deploy",
+    "deploy-graphql": "sanity graphql deploy",
+    "dev": "sanity dev",
+    "start": "sanity start"
+  },
   "dependencies": {
     "@sanity/cli": "workspace:*",
     "@sanity/code-input": "^5.1.2",
@@ -26,16 +26,9 @@
     "vite-tsconfig-paths": "^5.1.4"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
+    "@sanity/color": "^3.0.6",
     "@types/react": "^18.3.18",
-    "eslint": "^9.22.0",
-    "prettier": "^3.5.3",
-    "typescript": "^5.8.2"
-  },
-  "prettier": {
-    "semi": false,
-    "printWidth": 100,
-    "bracketSpacing": false,
-    "singleQuote": true
+    "typescript": "^5.8.2",
+    "vite": "^6.3.5"
   }
 }
