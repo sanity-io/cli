@@ -10,15 +10,22 @@ import {readJsonFile} from '../util/readJsonFile.js'
  */
 export interface ProjectRootResult {
   directory: string
-  path: string
-  type: 'blueprint' | 'studio'
+
+  /**
+   * Type of project root.
+   */
+  type: 'studio'
+
+  /**
+   * Path to the project configuration file, if found.
+   */
+  path?: string
 }
 
 /**
  * Resolve project root directory and type, falling back to cwd if it cannot be found.
  *
- * Project root is either:
- * - `blueprint` - A blueprints root (containing `blueprint.(ts|js)`)
+ * Project root is:
  * - `studio` - A pre-blueprints Sanity studio root (containing `sanity.config.(ts|js)`)
  *
  * If a Sanity Studio v2/v1 root is found (containing `sanity.json` with `root: true`),
@@ -28,7 +35,15 @@ export interface ProjectRootResult {
  */
 export async function findProjectRoot(cwd: string): Promise<false | ProjectRootResult> {
   try {
-    return resolveProjectRoot(cwd)
+    const projectRoot = await resolveProjectRoot(cwd)
+
+    // Find the project root, or fallback to cwd if it cannot be found
+    return (
+      projectRoot || {
+        directory: cwd,
+        type: 'studio',
+      }
+    )
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : `${err}`
     throw new Error(`Error occurred trying to resolve project root:\n${message}`)
@@ -76,33 +91,6 @@ export async function findStudioConfigPath(basePath: string): Promise<false | st
 }
 
 /**
- * Resolves to a string containing the found blueprint path, or `false` if not found.
- *
- * @param basePath - The base path to start searching from
- * @returns A promise that resolves to a string containing the found blueprint path, or `false` if not found
- * @internal
- */
-async function findBlueprintConfigPath(basePath: string): Promise<false | string> {
-  const tsBlueprintPath = join(basePath, 'blueprint.ts')
-  const jsBlueprintPath = join(basePath, 'blueprint.js')
-
-  const [tsBlueprint, jsBlueprint] = await Promise.all([
-    fileExists(tsBlueprintPath),
-    fileExists(jsBlueprintPath),
-  ])
-
-  if (tsBlueprint) {
-    return tsBlueprintPath
-  }
-
-  if (jsBlueprint) {
-    return jsBlueprintPath
-  }
-
-  return false
-}
-
-/**
  * Recursively searches for a project configuration file in the given directory and its parents.
  * Throws if Sanity v2 studio root is found.
  *
@@ -115,29 +103,13 @@ async function resolveProjectRoot(
   basePath: string,
   iterations = 0,
 ): Promise<false | ProjectRootResult> {
-  const [studioConfigPath, blueprintConfigPath] = await Promise.all([
-    findStudioConfigPath(basePath),
-    findBlueprintConfigPath(basePath),
-  ])
-
-  if (studioConfigPath && blueprintConfigPath) {
-    // @todo
-    throw new Error('Both studio and blueprint file found - what do we do?')
-  }
+  const studioConfigPath = await findStudioConfigPath(basePath)
 
   if (studioConfigPath) {
     return {
       directory: dirname(studioConfigPath),
       path: studioConfigPath,
       type: 'studio',
-    }
-  }
-
-  if (blueprintConfigPath) {
-    return {
-      directory: dirname(blueprintConfigPath),
-      path: blueprintConfigPath,
-      type: 'blueprint',
     }
   }
 
