@@ -1,0 +1,26 @@
+{
+  "name": "basic-app",
+  "version": "1.0.0",
+  "private": true,
+  "keywords": [
+    "sanity"
+  ],
+  "license": "UNLICENSED",
+  "main": "package.json",
+  "scripts": {
+    "build": "sanity build",
+    "dev": "sanity dev",
+    "start": "sanity start"
+  },
+  "dependencies": {
+    "@sanity/cli": "workspace:*",
+    "@sanity/sdk": "^1.0.0",
+    "@sanity/sdk-react": "^1.0.0",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@types/react": "^18.0.25",
+    "typescript": "^5.1.6"
+  }
+}
