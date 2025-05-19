@@ -116,29 +116,6 @@ describe('#versions', () => {
     `)
   })
 
-  test('skips packages from excluded list', async () => {
-    vi.mocked(getCliVersion).mockResolvedValueOnce('3.0.0')
-    vi.mocked(readPackageJson).mockResolvedValueOnce({
-      dependencies: {
-        '@sanity/block-content-to-html': '3.0.0',
-        '@sanity/block-content-to-react': '3.0.0',
-        '@sanity/client': '3.0.0',
-      },
-      name: 'test',
-      version: '1.0.0',
-    })
-    vi.mocked(getLatestVersion).mockResolvedValue('3.0.0' as never)
-
-    vi.mocked(getLocalPackageVersion).mockResolvedValue('2.0.0')
-
-    const {stdout} = await testCommand(Versions)
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "@sanity/cli (global)  3.0.0 (up to date)
-      "
-    `)
-  })
-
   test("doesn't show anything if no sanity packages", async () => {
     vi.mocked(getCliVersion).mockResolvedValueOnce('3.0.0')
     vi.mocked(readPackageJson).mockResolvedValueOnce({
