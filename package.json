@@ -40,7 +40,7 @@
     "@sanity/pkg-utils": "^7.2.1",
     "@types/node": "^20.17.23",
     "prettier": "^3.5.3",
-    "prettier-plugin-packagejson": "^2.5.10"
+    "prettier-plugin-packagejson": "^2.5.14"
   },
   "devDependencies": {
     "@eslint/compat": "^1.2.9",
