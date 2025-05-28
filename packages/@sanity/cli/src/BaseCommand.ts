@@ -21,14 +21,14 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
    * @param args - The global API client options.
    * @returns The global API client.
    */
-  public getGlobalApiClient = (args: GlobalCliClientOptions) => getGlobalCliClient(args)
+  protected getGlobalApiClient = (args: GlobalCliClientOptions) => getGlobalCliClient(args)
 
   /**
    * Get the CLI config.
    *
    * @returns The CLI config.
    */
-  public async getCliConfig(): Promise<CliConfig> {
+  protected async getCliConfig(): Promise<CliConfig> {
     const root = await this.getProjectRoot()
     const config = await getCliConfig(root.directory)
 
@@ -40,7 +40,7 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
    *
    * @returns The project ID or `undefined` if it's not set.
    */
-  public async getProjectId(): Promise<string | undefined> {
+  protected async getProjectId(): Promise<string | undefined> {
     const config = await this.getCliConfig()
 
     return config.api?.projectId
@@ -51,7 +51,7 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
    *
    * @returns The root project root.
    */
-  public async getProjectRoot(): Promise<ProjectRootResult> {
+  protected async getProjectRoot(): Promise<ProjectRootResult> {
     const root = await findProjectRoot(process.cwd())
     if (!root) {
       throw new Error('Project root not found')
