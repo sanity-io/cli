@@ -11,12 +11,12 @@ interface GetMembersForProjectOptions {
   /**
    * Whether to include pending invitations in the response
    */
-  invitations?: boolean
+  includeInvitations?: boolean
 
   /**
    * Whether to include robots in the response
    */
-  robots?: boolean
+  includeRobots?: boolean
 }
 
 function getUserProps(user: User | undefined) {
@@ -38,14 +38,14 @@ interface MemberList {
  */
 export async function getMembersForProject({
   client,
-  invitations,
+  includeInvitations,
+  includeRobots,
   projectId,
-  robots,
 }: GetMembersForProjectOptions): Promise<MemberList[]> {
   try {
     const useGlobalApi = true
     const [pendingInvitations, project] = await Promise.all([
-      invitations
+      includeInvitations
         ? client
             .request<Invite[]>({uri: `/invitations/project/${projectId}`, useGlobalApi})
             .then(getPendingInvitations)
@@ -61,7 +61,7 @@ export async function getMembersForProject({
 
     const memberIds = project.members
       // Filter all the robot users if the robots flag is not set
-      .filter((member) => !member.isRobot || robots)
+      .filter((member) => !member.isRobot || includeRobots)
       .map((member) => member.id)
 
     const users = await client
@@ -75,7 +75,7 @@ export async function getMembersForProject({
           ...getUserProps(users.find((candidate) => candidate.id === member.id)),
         }
       })
-      .filter((member) => !member.isRobot || robots)
+      .filter((member) => !member.isRobot || includeRobots)
 
     const members = [...projectMembers, ...pendingInvitations]
 
