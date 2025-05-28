@@ -63,9 +63,9 @@ export class List extends SanityCliCommand<typeof List> {
 
     const members = await getMembersForProject({
       client,
-      invitations,
+      includeInvitations: invitations,
+      includeRobots: robots,
       projectId,
-      robots,
     })
 
     const ordered = sortBy(
