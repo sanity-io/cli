@@ -276,7 +276,7 @@ importers:
   packages/@sanity/cli:
     dependencies:
       '@inquirer/prompts':
-        specifier: ^7.3.2
+        specifier: ^7.5.1
         version: 7.5.1(@types/node@20.17.30)
       '@oclif/core':
         specifier: ^4.3.0
@@ -293,9 +293,15 @@ importers:
       chalk:
         specifier: ^5.4.1
         version: 5.4.1
+      chokidar:
+        specifier: ^4.0.3
+        version: 4.0.3
       debug:
         specifier: ^4.4.0
         version: 4.4.1(supports-color@8.1.1)
+      esbuild-register:
+        specifier: ^3.6.0
+        version: 3.6.0(esbuild@0.25.5)
       get-latest-version:
         specifier: ^5.1.0
         version: 5.1.0(debug@4.4.1)
@@ -311,6 +317,9 @@ importers:
       lodash-es:
         specifier: ^4.17.21
         version: 4.17.21
+      log-symbols:
+        specifier: ^7.0.1
+        version: 7.0.1
       open:
         specifier: ^10.1.0
         version: 10.1.0
@@ -5415,6 +5424,10 @@ packages:
     resolution: {integrity: sha512-i24m8rpwhmPIS4zscNzK6MSEhk0DUWa/8iYQWxhffV8jkI4Phvs3F+quL5xvS0gdQR0FyTCMMH33Y78dDTzzIw==}
     engines: {node: '>=18'}
 
+  log-symbols@7.0.1:
+    resolution: {integrity: sha512-ja1E3yCr9i/0hmBVaM0bfwDjnGy8I/s6PP4DFp+yP+a+mrHO4Rm7DtmnqROTUkHIkqffC84YY7AeqX6oFk0WFg==}
+    engines: {node: '>=18'}
+
   loose-envify@1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
     hasBin: true
@@ -7509,6 +7522,10 @@ packages:
 
   yoctocolors-cjs@2.1.2:
     resolution: {integrity: sha512-cYVsTjKl8b+FrnidjibDWskAv7UKOfcwaVZdp/it9n1s9fU3IkgDbhdIRKCW4JDsAlECJY0ytoVPT3sK6kideA==}
+    engines: {node: '>=18'}
+
+  yoctocolors@2.1.1:
+    resolution: {integrity: sha512-GQHQqAopRhwU8Kt1DDM8NjibDXHC8eoh1erhGAJPEyveY9qqVeXvVikNKrDz69sHowPMorbPUrH/mx8c50eiBQ==}
     engines: {node: '>=18'}
 
   zip-stream@6.0.1:
@@ -13746,6 +13763,11 @@ snapshots:
       chalk: 5.4.1
       is-unicode-supported: 1.3.0
 
+  log-symbols@7.0.1:
+    dependencies:
+      is-unicode-supported: 2.1.0
+      yoctocolors: 2.1.1
+
   loose-envify@1.4.0:
     dependencies:
       js-tokens: 4.0.0
@@ -16188,6 +16210,8 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yoctocolors-cjs@2.1.2: {}
+
+  yoctocolors@2.1.1: {}
 
   zip-stream@6.0.1:
     dependencies:
