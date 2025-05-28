@@ -52,12 +52,7 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
    * @returns The root project root.
    */
   protected async getProjectRoot(): Promise<ProjectRootResult> {
-    const root = await findProjectRoot(process.cwd())
-    if (!root) {
-      throw new Error('Project root not found')
-    }
-
-    return root
+    return findProjectRoot(process.cwd())
   }
 
   public async init(): Promise<void> {

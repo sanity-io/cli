@@ -8,7 +8,7 @@ import {readJsonFile} from '../util/readJsonFile.js'
  *
  * @internal
  */
-interface ProjectRootResult {
+export interface ProjectRootResult {
   directory: string
 
   /**
@@ -33,7 +33,7 @@ interface ProjectRootResult {
  *
  * @internal
  */
-export async function findProjectRoot(cwd: string): Promise<false | ProjectRootResult> {
+export async function findProjectRoot(cwd: string): Promise<ProjectRootResult> {
   try {
     const projectRoot = await resolveProjectRoot(cwd)
 

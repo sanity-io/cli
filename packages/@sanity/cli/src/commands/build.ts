@@ -1,20 +1,22 @@
-import {Args, Command, Flags} from '@oclif/core'
-import {type ArgInput, type FlagInput} from '@oclif/core/interfaces'
+import {Args, Flags} from '@oclif/core'
 
+import {buildApp} from '../actions/build/buildApp.js'
+import {buildStudio} from '../actions/build/buildStudio.js'
+import {shouldAutoUpdate} from '../actions/build/shouldAutoUpdate.js'
 import {SanityCliCommand} from '../BaseCommand.js'
+import {determineIsApp} from '../util/determineIsApp.js'
 
 export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
   static override args = {
-    outputDir: Args.directory({default: 'dist', description: 'Output directory'}),
-  } satisfies ArgInput
+    outputDir: Args.directory({description: 'Output directory'}),
+  }
 
   static override description = 'Builds the Sanity Studio configuration into a static bundle'
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> --no-minify',
-    '<%= config.bin %> <%= command.id %> --source-maps',
-  ] satisfies Array<Command.Example>
+    '<%= config.bin %> <%= command.id %> --no-minify --source-maps',
+  ]
 
   static override flags = {
     'auto-updates': Flags.boolean({
@@ -37,9 +39,28 @@ export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
       description:
         'Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults',
     }),
-  } satisfies FlagInput
+  }
 
   public async run(): Promise<void> {
+    const cliConfig = await this.getCliConfig()
+
+    const {flags} = await this.parse(BuildCommand)
+
+    const isApp = determineIsApp(cliConfig)
+
+    const log = this.log.bind(this)
+    const workDir = (await this.getProjectRoot()).directory
+
+    console.log(flags)
+
+    const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags})
+
+    if (isApp) {
+      buildApp({autoUpdatesEnabled, flags, log, outDir: this.args.outputDir, workDir})
+    } else {
+      buildStudio({log})
+    }
+
     this.log(JSON.stringify(this.flags))
   }
 }
