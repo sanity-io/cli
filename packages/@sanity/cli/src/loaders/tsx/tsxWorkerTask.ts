@@ -33,7 +33,10 @@ interface TsxWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
  * @throws If the worker exits with a non-zero code
  * @internal
  */
-export function tsxWorkerTask(filePath: string, options: TsxWorkerTaskOptions): Promise<unknown> {
+export function tsxWorkerTask<T = unknown>(
+  filePath: string,
+  options: TsxWorkerTaskOptions,
+): Promise<T> {
   const loaderPath = resolve(__dirname, './_worker_/tsxWorkerLoader.js')
   const tsconfig = getTsconfig(options.rootPath)
 
@@ -50,7 +53,7 @@ export function tsxWorkerTask(filePath: string, options: TsxWorkerTaskOptions): 
 
   return new Promise((resolve, reject) => {
     worker.addListener('error', function onWorkerError(err) {
-      reject(new Error(`Fail to load file through worker: ${err.message}`, {cause: err}))
+      reject(new Error(`Failed to load file through worker: ${err.message}`, {cause: err}))
       cleanup()
     })
     worker.addListener('exit', function onWorkerExit(code) {

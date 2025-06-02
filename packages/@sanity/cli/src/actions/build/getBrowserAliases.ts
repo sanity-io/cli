@@ -1,8 +1,10 @@
 import path from 'node:path'
 
-import {escapeRegExp} from 'lodash'
-import resolve from 'resolve.exports'
+import {escapeRegExp} from 'lodash-es'
+import * as resolve from 'resolve.exports'
 import {type Alias} from 'vite'
+
+import {readPackageJson} from '../../util/readPackageJson.js'
 
 /**
  * The following are the specifiers that are expected/allowed to be used within
@@ -35,13 +37,14 @@ export const browserCompatibleSanityPackageSpecifiers = [
 const conditions = ['import', 'browser', 'default']
 
 // locate the entry points for each subpath the Sanity module exports
-export function getSanityPkgExportAliases(sanityPkgPath: string) {
+export async function getSanityPkgExportAliases(sanityPkgPath: string) {
   // Load the package.json of the Sanity package
-  // eslint-disable-next-line import/no-dynamic-require
-  const pkg = require(sanityPkgPath)
+
+  const pkg = await readPackageJson(sanityPkgPath)
   const dirname = path.dirname(sanityPkgPath)
 
   // Resolve the entry points for each allowed specifier
+  // eslint-disable-next-line unicorn/no-array-reduce
   const unifiedSanityAliases = browserCompatibleSanityPackageSpecifiers.reduce<Alias[]>(
     (acc, next) => {
       // Resolve the export path for the specifier using resolve.exports

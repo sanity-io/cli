@@ -1,4 +1,4 @@
-import {escapeRegExp} from 'lodash'
+import {escapeRegExp} from 'lodash-es'
 
 type ImportMap = {imports?: Record<string, string>}
 
@@ -8,7 +8,7 @@ type ImportMap = {imports?: Record<string, string>}
  * modules listed in the import map are not bundled into the Rollup output so
  * the browser can load these bare specifiers according to the import map.
  */
-export function createExternalFromImportMap({imports = {}}: ImportMap = {}): (string | RegExp)[] {
+export function createExternalFromImportMap({imports = {}}: ImportMap = {}): (RegExp | string)[] {
   return Object.keys(imports).map((specifier) =>
     specifier.endsWith('/') ? new RegExp(`^${escapeRegExp(specifier)}.+`) : specifier,
   )

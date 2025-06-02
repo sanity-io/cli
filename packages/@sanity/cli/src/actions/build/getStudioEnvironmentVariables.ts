@@ -1,4 +1,3 @@
-/* eslint-disable no-process-env */
 import {loadEnv} from '@sanity/cli'
 
 const envPrefix = 'SANITY_STUDIO_'
@@ -11,22 +10,22 @@ const appEnvPrefix = 'SANITY_APP_'
  */
 export interface StudioEnvVariablesOptions {
   /**
-   * When specified adds a prefix to the environment variable keys,
-   * eg: `getStudioEnvironmentVariables({prefix: 'process.env.'})`
-   */
-  prefix?: string
-  /**
    * When specified includes environment variables from dotenv files (`.env`), in the same way the studio does.
    * A `mode` must be specified, usually `development`
    * or `production`, which will load the corresponding `.env.development` or `.env.production`.
    * To specify where to look for the dotenv files, specify `options.envFile.envDir`.
    */
-  envFile?: {mode: string; envDir?: string} | false
+  envFile?: false | {envDir?: string; mode: string}
   /**
    * When specified, JSON-encodes the values, which is handy if you want to pass
    * this to a bundlers hardcoded defines, such as Vite's `define` or Webpack's `DefinePlugin`.
    */
   jsonEncode?: boolean
+  /**
+   * When specified adds a prefix to the environment variable keys,
+   * eg: `getStudioEnvironmentVariables({prefix: 'process.env.'})`
+   */
+  prefix?: string
 }
 
 /**
@@ -46,7 +45,7 @@ export interface StudioEnvVariablesOptions {
 export function getStudioEnvironmentVariables(
   options: StudioEnvVariablesOptions = {},
 ): Record<string, string> {
-  const {prefix = '', envFile = false, jsonEncode = false} = options
+  const {envFile = false, jsonEncode = false, prefix = ''} = options
   const fullEnv = envFile
     ? {...process.env, ...loadEnv(envFile.mode, envFile.envDir || process.cwd(), [envPrefix])}
     : process.env
@@ -74,7 +73,7 @@ export function getStudioEnvironmentVariables(
 export function getAppEnvironmentVariables(
   options: StudioEnvVariablesOptions = {},
 ): Record<string, string> {
-  const {prefix = '', envFile = false, jsonEncode = false} = options
+  const {envFile = false, jsonEncode = false, prefix = ''} = options
   const fullEnv = envFile
     ? {...process.env, ...loadEnv(envFile.mode, envFile.envDir || process.cwd(), [envPrefix])}
     : process.env

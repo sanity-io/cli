@@ -51,12 +51,10 @@ export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
     const log = this.log.bind(this)
     const workDir = (await this.getProjectRoot()).directory
 
-    console.log(flags)
-
     const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags})
 
     if (isApp) {
-      buildApp({autoUpdatesEnabled, flags, log, outDir: this.args.outputDir, workDir})
+      buildApp({autoUpdatesEnabled, cliConfig, flags, log, outDir: this.args.outputDir, workDir})
     } else {
       buildStudio({log})
     }

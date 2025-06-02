@@ -1,9 +1,9 @@
-import {dirname} from 'node:path'
+import path, {dirname} from 'node:path'
 import {fileURLToPath} from 'node:url'
-import {Worker} from 'node:worker_threads'
 
 import chalk from 'chalk'
 
+import {tsxWorkerTask} from '../../loaders/tsx/tsxWorkerTask.js'
 import {buildDebug} from './buildDebug.js'
 
 interface DocumentProps {
@@ -23,60 +23,69 @@ interface RenderDocumentOptions {
   props?: DocumentProps
 }
 
-const __DEV__ = false
-
 const hasWarnedAbout = new Set<string>()
 
-export function renderDocument(options: RenderDocumentOptions): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const filename = fileURLToPath(import.meta.url)
-    const dir = dirname(fileURLToPath(import.meta.url))
+interface RenderDocumentWorkerResult {
+  type: 'error' | 'result' | 'warning'
 
-    buildDebug('Starting worker thread for %s', filename)
-    const worker = new Worker(filename, {
-      env: process.env,
-      execArgv: __DEV__ ? ['-r', `${dir}/esbuild-register.js`] : undefined,
-      workerData: {...options, dev: __DEV__, shouldWarn: true},
-    })
+  html?: string
+  message?: string | string[]
+  warnKey?: string
+}
 
-    worker.on('message', (msg) => {
-      if (msg.type === 'warning') {
-        if (hasWarnedAbout.has(msg.warnKey)) {
-          return
+export async function renderDocument(options: RenderDocumentOptions): Promise<string> {
+  const filename = fileURLToPath(import.meta.url)
+  const dir = dirname(fileURLToPath(import.meta.url))
+
+  buildDebug('Starting worker thread for %s', filename)
+  try {
+    const msg = await tsxWorkerTask<RenderDocumentWorkerResult>(
+      path.resolve(`${dir}/renderDocument.worker.ts`),
+      {
+        name: 'renderDocument',
+        rootPath: dir,
+        workerData: {...options, dev: globalThis.__DEV__, shouldWarn: true},
+      },
+    )
+
+    if (msg.type === 'warning') {
+      if (msg.warnKey && hasWarnedAbout.has(msg.warnKey)) {
+        return ''
+      }
+
+      if (Array.isArray(msg.message)) {
+        for (const warning of msg.message) {
+          console.warn(`${chalk.yellow('[warn]')} ${warning}`)
         }
+      } else {
+        console.warn(`${chalk.yellow('[warn]')} ${msg.message}`)
+      }
 
-        if (Array.isArray(msg.message)) {
-          for (const warning of msg.message) {
-            console.warn(`${chalk.yellow('[warn]')} ${warning}`)
-          }
-        } else {
-          console.warn(`${chalk.yellow('[warn]')} ${msg.message}`)
-        }
-
+      if (msg.warnKey) {
         hasWarnedAbout.add(msg.warnKey)
-        return
+      }
+      return ''
+    }
+
+    if (msg.type === 'error') {
+      buildDebug('Error from worker: %s', msg.message || 'Unknown error')
+      throw new Error(
+        Array.isArray(msg.message)
+          ? msg.message.join('\n')
+          : msg.message || 'Document rendering worker stopped with an unknown error',
+      )
+    }
+
+    if (msg.type === 'result') {
+      if (!msg.html) {
+        throw new Error('Document rendering worker stopped with an unknown error')
       }
 
-      if (msg.type === 'error') {
-        buildDebug('Error from worker: %s', msg.error || 'Unknown error')
-        reject(new Error(msg.error || 'Document rendering worker stopped with an unknown error'))
-        return
-      }
-
-      if (msg.type === 'result') {
-        buildDebug('Document HTML rendered, %d bytes', msg.html.length)
-        resolve(msg.html)
-      }
-    })
-    worker.on('error', (err) => {
-      buildDebug('Worker errored: %s', err.message)
-      reject(err)
-    })
-    worker.on('exit', (code) => {
-      if (code !== 0) {
-        buildDebug('Worker stopped with code %d', code)
-        reject(new Error(`Document rendering worker stopped with exit code ${code}`))
-      }
-    })
-  })
+      buildDebug('Document HTML rendered, %d bytes', msg.html.length)
+      return msg.html
+    }
+  } catch (err) {
+    buildDebug('Worker errored: %s', err.message)
+    throw err
+  }
 }

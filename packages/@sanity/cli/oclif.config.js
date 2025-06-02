@@ -22,9 +22,15 @@ const isProduction = (() => {
   }
 })()
 
+/**
+ * Sets a global __DEV__ variable
+ */
+globalThis.__DEV__ = false
+
 if (!isProduction) {
   debug('Running in development mode - registering typescript loader')
   import('ts-blank-space/register')
+  globalThis.__DEV__ = true
 }
 
 export default {

@@ -1,10 +1,10 @@
 import {type ChunkMetadata, type Plugin} from 'vite'
 
-import {decorateIndexWithBridgeScript, renderDocument} from '../renderDocument'
-import {type SanityMonorepo} from '../sanityMonorepo'
+import {decorateIndexWithBridgeScript} from '../decorateIndexWithBridgeScript.js'
+import {renderDocument} from '../renderDocument.js'
 
 interface ViteOutputBundle {
-  [fileName: string]: ViteRenderedChunk | ViteRenderedAsset
+  [fileName: string]: ViteRenderedAsset | ViteRenderedChunk
 }
 
 interface ViteRenderedAsset {
@@ -12,36 +12,35 @@ interface ViteRenderedAsset {
 }
 
 interface ViteRenderedChunk {
-  type: 'chunk'
-  name: string
-  fileName: string
-  facadeModuleId: string | null
   code: string
+  facadeModuleId: string | null
+  fileName: string
   imports: string[]
-  viteMetadata: ChunkMetadata
   isEntry: boolean
+  name: string
+  type: 'chunk'
+  viteMetadata: ChunkMetadata
 }
 
 const entryChunkId = '.sanity/runtime/app.js'
 
 export function sanityBuildEntries(options: {
-  cwd: string
-  monorepo: SanityMonorepo | undefined
   basePath: string
+  cwd: string
   importMap?: {imports?: Record<string, string>}
   isApp?: boolean
 }): Plugin {
-  const {cwd, monorepo, basePath, importMap, isApp} = options
+  const {basePath, cwd, importMap, isApp} = options
 
   return {
-    name: 'sanity/server/build-entries',
     apply: 'build',
+    name: 'sanity/server/build-entries',
 
     buildStart() {
       this.emitFile({
-        type: 'chunk',
         id: entryChunkId,
         name: 'sanity',
+        type: 'chunk',
       })
     },
 
@@ -84,21 +83,20 @@ export function sanityBuildEntries(options: {
       }
 
       this.emitFile({
-        type: 'asset',
         fileName: 'index.html',
         source: decorateIndexWithBridgeScript(
           await renderDocument({
-            monorepo,
-            studioRootPath: cwd,
             importMap,
+            isApp,
             props: {
               basePath,
-              entryPath,
               css,
+              entryPath,
             },
-            isApp,
+            studioRootPath: cwd,
           }),
         ),
+        type: 'asset',
       })
     },
   }
