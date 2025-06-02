@@ -2,7 +2,6 @@ import {type Plugin} from 'vite'
 
 export function sanityBasePathRedirectPlugin(basePath: string | undefined): Plugin {
   return {
-    name: 'sanity/server/sanity-base-path-redirect',
     apply: 'serve',
     configurePreviewServer(vitePreviewServer) {
       return () => {
@@ -21,5 +20,6 @@ export function sanityBasePathRedirectPlugin(basePath: string | undefined): Plug
         })
       }
     },
+    name: 'sanity/server/sanity-base-path-redirect',
   }
 }

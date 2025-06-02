@@ -122,6 +122,17 @@ export async function buildApp(options: BuildAppOptions) {
       vite: cliConfig && 'vite' in cliConfig ? cliConfig.vite : undefined,
     })
 
+    // TODO: telemetry
+    // trace.log({
+    //   outputSize: bundle.chunks
+    //     .flatMap((chunk) => chunk.modules.flatMap((mod) => mod.renderedLength))
+    //     .reduce((sum, n) => sum + n, 0),
+    // })
+    const buildDuration = timer.end('bundleStudio')
+
+    spin.text = `Build Sanity application (${buildDuration.toFixed(0)}ms)`
+    spin.succeed()
+
     if (flags.stats) {
       log('\nLargest module files:')
       log(formatModuleSizes(sortModulesBySize(bundle.chunks).slice(0, 15)))

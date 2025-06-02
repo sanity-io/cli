@@ -1,21 +1,20 @@
 import path from 'node:path'
 
-import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli'
 import debug from 'debug'
-import readPkgUp from 'read-pkg-up'
+import {readPackageUp} from 'read-package-up'
 import {type ConfigEnv, type InlineConfig, type Rollup} from 'vite'
 
-import {createExternalFromImportMap} from './createExternalFromImportMap'
-import {getSanityPkgExportAliases} from './getBrowserAliases'
+import {type ReactCompilerConfig, type UserViteConfig} from '../../config/cli/types.js'
+import {createExternalFromImportMap} from './createExternalFromImportMap.js'
+import {getSanityPkgExportAliases} from './getBrowserAliases.js'
 import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
-} from './getStudioEnvironmentVariables'
-import {normalizeBasePath} from './helpers'
-import {getMonorepoAliases, loadSanityMonorepo} from './sanityMonorepo'
-import {sanityBuildEntries} from './vite/plugin-sanity-build-entries'
-import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons'
-import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite'
+} from './getStudioEnvironmentVariables.js'
+import {normalizeBasePath} from './normalizeBasePath.js'
+import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
+import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
+import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
 
 export interface ViteOptions {
   /**
@@ -24,20 +23,21 @@ export interface ViteOptions {
   cwd: string
 
   /**
+   * Mode to run vite in - eg development or production
+   */
+  mode: 'development' | 'production'
+
+  reactCompiler: ReactCompilerConfig | undefined
+
+  /**
    * Base path (eg under where to serve the app - `/studio` or similar)
    * Will be normalized to ensure it starts and ends with a `/`
    */
   basePath?: string
 
-  /**
-   * Output directory (eg where to place the built files, if any)
-   */
-  outputDir?: string
+  importMap?: {imports?: Record<string, string>}
 
-  /**
-   * Whether or not to enable source maps
-   */
-  sourceMap?: boolean
+  isApp?: boolean
 
   /**
    * Whether or not to minify the output (only used in `mode: 'production'`)
@@ -45,18 +45,17 @@ export interface ViteOptions {
   minify?: boolean
 
   /**
+   * Output directory (eg where to place the built files, if any)
+   */
+  outputDir?: string
+  /**
    * HTTP development server configuration
    */
-  server?: {port?: number; host?: string}
-
+  server?: {host?: string; port?: number}
   /**
-   * Mode to run vite in - eg development or production
+   * Whether or not to enable source maps
    */
-  mode: 'development' | 'production'
-
-  importMap?: {imports?: Record<string, string>}
-  reactCompiler: ReactCompilerConfig | undefined
-  isApp?: boolean
+  sourceMap?: boolean
 }
 
 /**
@@ -66,23 +65,22 @@ export interface ViteOptions {
  */
 export async function getViteConfig(options: ViteOptions): Promise<InlineConfig> {
   const {
+    basePath: rawBasePath = '/',
     cwd,
+    importMap,
+    isApp,
+    minify,
     mode,
     outputDir,
+    reactCompiler,
+    server,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
-    server,
-    minify,
-    basePath: rawBasePath = '/',
-    importMap,
-    reactCompiler,
-    isApp,
   } = options
 
-  const monorepo = await loadSanityMonorepo(cwd)
   const basePath = normalizeBasePath(rawBasePath)
 
-  const sanityPkgPath = (await readPkgUp({cwd: __dirname}))?.path
+  const sanityPkgPath = (await readPackageUp({cwd}))?.path
   if (!sanityPkgPath) {
     throw new Error('Unable to resolve `sanity` module root')
   }
@@ -94,44 +92,20 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const {default: viteReact} = await import('@vitejs/plugin-react')
 
   const envVars = isApp
-    ? getAppEnvironmentVariables({prefix: 'process.env.', jsonEncode: true})
-    : getStudioEnvironmentVariables({prefix: 'process.env.', jsonEncode: true})
+    ? getAppEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'})
+    : getStudioEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'})
 
   const viteConfig: InlineConfig = {
-    // Define a custom cache directory so that sanity's vite cache
-    // does not conflict with any potential local vite projects
-    cacheDir: 'node_modules/.sanity/vite',
-    root: cwd,
     base: basePath,
     build: {
       outDir: outputDir || path.resolve(cwd, 'dist'),
       sourcemap: sourceMap,
     },
-    server: {
-      host: server?.host,
-      port: server?.port || 3333,
-      strictPort: true,
-    },
+    // Define a custom cache directory so that sanity's vite cache
+    // does not conflict with any potential local vite projects
+    cacheDir: 'node_modules/.sanity/vite',
     configFile: false,
-    mode,
-    plugins: [
-      viteReact(
-        reactCompiler ? {babel: {plugins: [['babel-plugin-react-compiler', reactCompiler]]}} : {},
-      ),
-      sanityFaviconsPlugin({defaultFaviconsPath, customFaviconsPath, staticUrlPath: staticPath}),
-      sanityRuntimeRewritePlugin(),
-      sanityBuildEntries({basePath, cwd, monorepo, importMap, isApp}),
-    ],
-    envPrefix: isApp ? 'SANITY_APP_' : 'SANITY_STUDIO_',
-    logLevel: mode === 'production' ? 'silent' : 'info',
-    resolve: {
-      alias: monorepo?.path
-        ? await getMonorepoAliases(monorepo.path)
-        : getSanityPkgExportAliases(sanityPkgPath),
-      dedupe: ['styled-components'],
-    },
     define: {
-      // eslint-disable-next-line no-process-env
       __SANITY_STAGING__: process.env.SANITY_INTERNAL_ENV === 'staging',
       'process.env.MODE': JSON.stringify(mode),
       /**
@@ -146,6 +120,27 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       'process.env.SC_DISABLE_SPEEDY': JSON.stringify('false'),
       ...envVars,
     },
+    envPrefix: isApp ? 'SANITY_APP_' : 'SANITY_STUDIO_',
+    logLevel: mode === 'production' ? 'silent' : 'info',
+    mode,
+    plugins: [
+      viteReact(
+        reactCompiler ? {babel: {plugins: [['babel-plugin-react-compiler', reactCompiler]]}} : {},
+      ),
+      sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
+      sanityRuntimeRewritePlugin(),
+      sanityBuildEntries({basePath, cwd, importMap, isApp}),
+    ],
+    resolve: {
+      alias: await getSanityPkgExportAliases(sanityPkgPath),
+      dedupe: ['styled-components'],
+    },
+    root: cwd,
+    server: {
+      host: server?.host,
+      port: server?.port || 3333,
+      strictPort: true,
+    },
   }
 
   if (mode === 'production') {
@@ -153,15 +148,15 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       ...viteConfig.build,
 
       assetsDir: 'static',
-      minify: minify ? 'esbuild' : false,
       emptyOutDir: false, // Rely on CLI to do this
+      minify: minify ? 'esbuild' : false,
 
       rollupOptions: {
-        onwarn: onRollupWarn,
         external: createExternalFromImportMap(importMap),
         input: {
           sanity: path.join(cwd, '.sanity', 'runtime', 'app.js'),
         },
+        onwarn: onRollupWarn,
       },
     }
   }
@@ -204,7 +199,7 @@ function suppressUnusedImport(warning: Rollup.RollupLog & {ids?: string[]}): boo
  */
 export async function finalizeViteConfig(config: InlineConfig): Promise<InlineConfig> {
   if (typeof config.build?.rollupOptions?.input !== 'object') {
-    throw new Error(
+    throw new TypeError(
       'Vite config must contain `build.rollupOptions.input`, and it must be an object',
     )
   }

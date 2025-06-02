@@ -3,12 +3,12 @@ import path from 'node:path'
 
 import {type Plugin} from 'vite'
 
-import {generateWebManifest} from '../webManifest'
+import {generateWebManifest} from '../generateWebManifest.js'
 
 const mimeTypes: Record<string, string | undefined> = {
   '.ico': 'image/x-icon',
-  '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.svg': 'image/svg+xml',
 }
 
 /**
@@ -23,12 +23,12 @@ const mimeTypes: Record<string, string | undefined> = {
  * @internal
  */
 export function sanityFaviconsPlugin({
-  defaultFaviconsPath,
   customFaviconsPath,
+  defaultFaviconsPath,
   staticUrlPath,
 }: {
-  defaultFaviconsPath: string
   customFaviconsPath: string
+  defaultFaviconsPath: string
   staticUrlPath: string
 }): Plugin {
   const cache: {favicons?: string[]} = {}
@@ -46,13 +46,12 @@ export function sanityFaviconsPlugin({
     try {
       await fs.access(path.join(customFaviconsPath, fileName))
       return true
-    } catch (err) {
+    } catch {
       return false
     }
   }
 
   return {
-    name: 'sanity/server/sanity-favicons',
     apply: 'serve',
     configureServer(viteDevServer) {
       const webManifest = JSON.stringify(generateWebManifest(staticUrlPath), null, 2)
@@ -91,5 +90,6 @@ export function sanityFaviconsPlugin({
         res.end()
       })
     },
+    name: 'sanity/server/sanity-favicons',
   }
 }

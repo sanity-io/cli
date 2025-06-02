@@ -38,13 +38,13 @@ root.render(element)
 `
 
 export function getEntryModule(options: {
-  reactStrictMode: boolean
-  relativeConfigLocation: string | null
   basePath?: string
   entry?: string
   isApp?: boolean
+  reactStrictMode: boolean
+  relativeConfigLocation: string | null
 }): string {
-  const {reactStrictMode, relativeConfigLocation, basePath, entry, isApp} = options
+  const {basePath, entry, isApp, reactStrictMode, relativeConfigLocation} = options
 
   if (isApp) {
     return appEntryModule.replace(/%ENTRY%/, JSON.stringify(entry || './src/App'))
