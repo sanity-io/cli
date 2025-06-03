@@ -15,8 +15,6 @@ export async function writeFavicons(basePath: string, destDir: string): Promise<
     ? path.join(path.dirname(sanityPkgPath), 'static', 'favicons')
     : undefined
 
-  console.log('faviconsPath', faviconsPath, destDir)
-
   if (!faviconsPath) {
     throw new Error('Unable to resolve `sanity` module root')
   }

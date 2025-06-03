@@ -95,7 +95,6 @@ export async function buildStaticFiles(
   // Write favicons, not overwriting ones that already exist, to static folder
   buildDebug('Writing favicons to output dir')
   const faviconBasePath = `${basePath.replace(/\/+$/, '')}/static`
-  console.log('faviconBasePath', faviconBasePath)
   await writeFavicons(faviconBasePath, staticPath)
 
   buildDebug('Bundling using vite')

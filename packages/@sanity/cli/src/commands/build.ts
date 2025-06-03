@@ -58,7 +58,5 @@ export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
     } else {
       buildStudio({log})
     }
-
-    this.log(JSON.stringify(this.flags))
   }
 }
