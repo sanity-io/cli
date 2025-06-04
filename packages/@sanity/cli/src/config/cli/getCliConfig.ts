@@ -1,6 +1,5 @@
 import {existsSync} from 'node:fs'
-import {dirname, resolve} from 'node:path'
-import {fileURLToPath} from 'node:url'
+import {resolve} from 'node:path'
 
 import {getTsconfig} from 'get-tsconfig'
 import {register} from 'tsx/esm/api'
@@ -37,14 +36,11 @@ export async function getCliConfig(rootPath: string): Promise<CliConfig> {
 
   let cliConfig: unknown
   try {
-    cliConfig = await tsxWorkerTask(
-      resolve(dirname(fileURLToPath(import.meta.url)), '_worker_/getCliConfig.worker.ts'),
-      {
-        name: 'cliConfig',
-        rootPath,
-        workerData: {configPath},
-      },
-    )
+    cliConfig = await tsxWorkerTask(new URL('getCliConfig.worker.js', import.meta.url), {
+      name: 'cliConfig',
+      rootPath,
+      workerData: {configPath},
+    })
   } catch (err) {
     debug('Failed to load CLI config in worker thread: %s', err)
 

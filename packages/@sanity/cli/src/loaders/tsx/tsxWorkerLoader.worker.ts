@@ -5,6 +5,8 @@ const unregister = register({
   tsconfig: process.env.TSX_TSCONFIG_PATH || undefined,
 })
 
-await import(workerScript)
+if (workerScript) {
+  await import(workerScript)
+}
 
 unregister()
