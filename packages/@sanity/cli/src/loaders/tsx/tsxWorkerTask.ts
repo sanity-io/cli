@@ -49,7 +49,7 @@ export function tsxWorkerTask(
 
   return new Promise((resolve, reject) => {
     worker.addListener('error', function onWorkerError(err) {
-      reject(new Error(`Fail to load file through worker: ${err.message}`, {cause: err}))
+      reject(new Error(`Failed to load file through worker: ${err.message}`, {cause: err}))
       cleanup()
     })
     worker.addListener('exit', function onWorkerExit(code) {
