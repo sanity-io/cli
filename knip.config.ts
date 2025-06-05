@@ -36,6 +36,7 @@ const baseConfig = {
         'test/helpers/testCommand.ts',
         // Worker files
         'src/**/*.worker.ts',
+        'src/**/*.worker.js',
       ],
       oclif: {
         config: ['oclif.config.js'],
