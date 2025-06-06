@@ -1,7 +1,40 @@
-import {describe, expect, test} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 import {testCommand} from '~test/helpers/testCommand.js'
 
 import {BuildCommand} from '../build.js'
+
+vi.mock('../../actions/build/buildApp.js')
+vi.mock('../../actions/build/buildStudio.js')
+vi.mock('../../actions/build/shouldAutoUpdate.js', () => ({
+  shouldAutoUpdate: vi.fn().mockReturnValue(false),
+}))
+vi.mock('../../util/determineIsApp.js', () => ({
+  determineIsApp: vi.fn().mockReturnValue(false),
+}))
+
+vi.mock(import('../../config/findProjectRoot.js'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    findProjectRoot: vi.fn().mockResolvedValue({
+      directory: '/test/path',
+      root: '/test/path',
+      type: 'studio',
+    }),
+  }
+})
+
+vi.mock(import('../../config/cli/getCliConfig.js'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    getCliConfig: vi.fn().mockResolvedValue({}),
+  }
+})
+
+afterEach(() => {
+  vi.clearAllMocks()
+})
 
 describe('#build', () => {
   test('command runs', async () => {
