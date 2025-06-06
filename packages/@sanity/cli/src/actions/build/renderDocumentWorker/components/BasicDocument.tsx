@@ -3,22 +3,21 @@
  * to avoid importing styled-components from sanity pacakge
  */
 
-/* eslint-disable i18next/no-literal-string  -- title is literal for now */
 import {type JSX} from 'react'
 
 import {Favicons} from './Favicons'
-import {GlobalErrorHandler} from './globalErrorHandler/GlobalErrorHandler'
+import {GlobalErrorHandler} from './GlobalErrorHandler'
 import {NoJavascript} from './NoJavascript'
 
 /**
  * @internal
  */
-export interface BasicDocumentProps {
+interface BasicDocumentProps {
   entryPath: string
-  css?: string[]
+
   // Currently unused, but kept for potential future use
-  // eslint-disable-next-line react/no-unused-prop-types
   basePath?: string
+  css?: string[]
 }
 
 const EMPTY_ARRAY: never[] = []
@@ -28,27 +27,27 @@ const EMPTY_ARRAY: never[] = []
  * @internal
  */
 export function BasicDocument(props: BasicDocumentProps): JSX.Element {
-  const {entryPath, css = EMPTY_ARRAY} = props
+  const {css = EMPTY_ARRAY, entryPath} = props
 
   return (
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-        <meta name="robots" content="noindex" />
-        <meta name="referrer" content="same-origin" />
+        <meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport" />
+        <meta content="noindex" name="robots" />
+        <meta content="same-origin" name="referrer" />
 
         <Favicons />
         <title>Sanity CORE App</title>
         <GlobalErrorHandler />
 
         {css.map((href) => (
-          <link key={href} rel="stylesheet" href={href} />
+          <link href={href} key={href} rel="stylesheet" />
         ))}
       </head>
       <body>
         <div id="root" />
-        <script type="module" src={entryPath} />
+        <script src={entryPath} type="module" />
         <NoJavascript />
       </body>
     </html>

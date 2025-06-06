@@ -1,6 +1,6 @@
 import {performance} from 'node:perf_hooks'
 
-export interface TimeMeasurer {
+interface TimeMeasurer {
   end: (name: string) => number
   getTimings: () => Record<string, number>
   start: (name: string) => void

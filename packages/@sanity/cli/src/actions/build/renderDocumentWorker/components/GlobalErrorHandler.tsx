@@ -170,6 +170,5 @@ const errorHandlerScript = `
 
 /** @internal */
 export function GlobalErrorHandler(): JSX.Element {
-  // eslint-disable-next-line react/no-danger
   return <script dangerouslySetInnerHTML={{__html: errorHandlerScript}} />
 }

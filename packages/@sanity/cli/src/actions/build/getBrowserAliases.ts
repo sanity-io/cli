@@ -17,7 +17,7 @@ import {readPackageJson} from '../../util/readPackageJson.js'
  *
  * @internal
  */
-export const browserCompatibleSanityPackageSpecifiers = [
+const browserCompatibleSanityPackageSpecifiers = [
   'sanity',
   'sanity/_createContext',
   'sanity/_singletons',

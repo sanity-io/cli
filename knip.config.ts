@@ -3,7 +3,7 @@ import {join} from 'node:path'
 import {type KnipConfig} from 'knip'
 import {match} from 'minimatch'
 
-const project = ['src/**/*.{js,jsx,ts,tsx}', '!**/build/**', '!**/docs/**']
+const project = ['src/**/*.{js,jsx,ts,tsx}', '!**/docs/**']
 
 const baseConfig = {
   // For now only care about cli package

@@ -16,7 +16,7 @@ import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
 
-export interface ViteOptions {
+interface ViteOptions {
   /**
    * Root path of the studio/sanity app
    */

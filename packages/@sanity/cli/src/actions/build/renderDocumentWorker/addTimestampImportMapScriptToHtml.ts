@@ -11,7 +11,7 @@ import {parse as parseHtml} from 'node-html-parser'
  * Note that this is in a separate constants file to prevent "Cannot access
  * before initialization" errors.
  */
-export const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
+const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   // auto-generated script to add import map with timestamp
   const importsJson = document.getElementById('__imports')?.textContent;
   const { imports = {}, ...rest } = importsJson ? JSON.parse(importsJson) : {};

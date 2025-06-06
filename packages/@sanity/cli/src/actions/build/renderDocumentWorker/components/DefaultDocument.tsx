@@ -1,7 +1,5 @@
-/* eslint-disable i18next/no-literal-string */
-
 import {Favicons} from './Favicons'
-import {GlobalErrorHandler} from './globalErrorHandler/GlobalErrorHandler'
+import {GlobalErrorHandler} from './GlobalErrorHandler'
 import {NoJavascript} from './NoJavascript'
 
 const globalStyles = `
@@ -114,11 +112,11 @@ const globalStyles = `
  */
 export interface DefaultDocumentProps {
   entryPath: string
-  css?: string[]
 
   // Currently unused, but kept for potential future use
-  // eslint-disable-next-line react/no-unused-prop-types
   basePath?: string
+
+  css?: string[]
 }
 
 const EMPTY_ARRAY: never[] = []
@@ -127,18 +125,18 @@ const EMPTY_ARRAY: never[] = []
  * @internal
  */
 export function DefaultDocument(props: DefaultDocumentProps): React.JSX.Element {
-  const {entryPath, css = EMPTY_ARRAY} = props
+  const {css = EMPTY_ARRAY, entryPath} = props
 
   return (
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
         <meta
-          name="viewport"
           content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+          name="viewport"
         />
-        <meta name="robots" content="noindex" />
-        <meta name="referrer" content="same-origin" />
+        <meta content="noindex" name="robots" />
+        <meta content="same-origin" name="referrer" />
 
         <Favicons />
 
@@ -147,14 +145,13 @@ export function DefaultDocument(props: DefaultDocumentProps): React.JSX.Element 
         <GlobalErrorHandler />
 
         {css.map((href) => (
-          <link key={href} rel="stylesheet" href={href} />
+          <link href={href} key={href} rel="stylesheet" />
         ))}
-        {/* eslint-disable-next-line react/no-danger */}
         <style dangerouslySetInnerHTML={{__html: globalStyles}} />
       </head>
       <body>
         <div id="sanity" />
-        <script type="module" src={entryPath} />
+        <script src={entryPath} type="module" />
         <NoJavascript />
       </body>
     </html>

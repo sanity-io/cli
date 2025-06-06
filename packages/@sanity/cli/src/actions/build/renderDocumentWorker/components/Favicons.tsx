@@ -4,10 +4,10 @@ export function Favicons(): JSX.Element {
   const base = '/static'
   return (
     <>
-      <link rel="icon" href={`${base}/favicon.ico`} sizes="any" />
-      <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
-      <link rel="apple-touch-icon" href={`${base}/apple-touch-icon.png`} />
-      <link rel="manifest" href={`${base}/manifest.webmanifest`} />
+      <link href={`${base}/favicon.ico`} rel="icon" sizes="any" />
+      <link href={`${base}/favicon.svg`} rel="icon" type="image/svg+xml" />
+      <link href={`${base}/apple-touch-icon.png`} rel="apple-touch-icon" />
+      <link href={`${base}/manifest.webmanifest`} rel="manifest" />
     </>
   )
 }

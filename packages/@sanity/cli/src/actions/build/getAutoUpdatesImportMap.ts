@@ -27,7 +27,7 @@ function getTimestamp(): string {
 /**
  * @internal
  */
-export function getStudioAutoUpdateImportMap(version: string): StudioAutoUpdatesImportMap {
+function getStudioAutoUpdateImportMap(version: string): StudioAutoUpdatesImportMap {
   const timestamp = getTimestamp()
 
   const autoUpdatesImports = {
