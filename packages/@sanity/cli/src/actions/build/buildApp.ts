@@ -1,18 +1,23 @@
+import {rm} from 'node:fs/promises'
 import path from 'node:path'
 
 import {confirm} from '@inquirer/prompts'
 import {type Command} from '@oclif/core'
+import chalk from 'chalk'
 import logSymbols from 'log-symbols'
 import semver from 'semver'
 
 import {type CliConfig} from '../../config/cli/types.js'
 import {spinner} from '../../core/spinner.js'
 import {getTimer} from '../../core/timer.js'
+import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
+import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
 import {getAppEnvVars} from './getAppEnvVars.js'
+import {getAppAutoUpdateImportMap} from './getAutoUpdatesImportMap.js'
 import {type BuildFlags} from './types.js'
 
 interface BuildAppOptions {
@@ -54,10 +59,30 @@ export async function buildApp(options: BuildAppOptions) {
   }
   const sdkVersion = encodeURIComponent(`^${coercedSdkVersion}`)
   const sanityVersion = coercedSanityVersion && encodeURIComponent(`^${coercedSanityVersion}`)
+  const autoUpdatesImports = getAppAutoUpdateImportMap({sanityVersion, sdkVersion})
 
   if (autoUpdatesEnabled) {
     log(`${logSymbols.info} Building with auto-updates enabled`)
-    throw new Error(`TODO: Implement`)
+
+    // Check the versions
+    const result = await compareDependencyVersions(autoUpdatesImports, workDir)
+
+    // If it is in unattended mode, we don't want to prompt
+    if (result?.length && !unattendedMode) {
+      const shouldContinue = await confirm({
+        default: false,
+        message: chalk.yellow(
+          `The following local package versions are different from the versions currently served at runtime.\n` +
+            `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
+            `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')} \n\n` +
+            `Continue anyway?`,
+        ),
+      })
+
+      if (!shouldContinue) {
+        return process.exit(0)
+      }
+    }
   }
 
   const envVarKeys = getAppEnvVars()
@@ -82,7 +107,7 @@ export async function buildApp(options: BuildAppOptions) {
   if (shouldClean) {
     timer.start('cleanOutputFolder')
     spin = spinner('Clean output folder').start()
-    // await rimraf(outputDir)
+    await rm(outputDir, {force: true, recursive: true})
     const cleanDuration = timer.end('cleanOutputFolder')
     spin.text = `Clean output folder (${cleanDuration.toFixed(0)}ms)`
     spin.succeed()
@@ -99,8 +124,8 @@ export async function buildApp(options: BuildAppOptions) {
   if (autoUpdatesEnabled) {
     importMap = {
       imports: {
-        // ...(await buildVendorDependencies({cwd: workDir, outputDir, basePath})),
-        // ...autoUpdatesImports,
+        ...(await buildVendorDependencies({basePath, cwd: workDir, outputDir})),
+        ...autoUpdatesImports,
       },
     }
   }

@@ -6,10 +6,10 @@ import semver from 'semver'
 import {
   type SanityAppAutoUpdatesImportMap,
   type StudioAutoUpdatesImportMap,
-} from './getAutoUpdatesImportMap'
-import {readPackageManifest} from './readPackageManifest'
+} from '../actions/build/getAutoUpdatesImportMap.js'
+import {readPackageJson} from './readPackageJson.js'
 
-async function getRemoteResolvedVersion(fetchFn: typeof fetch, url: string) {
+async function getRemoteResolvedVersion(fetchFn: typeof globalThis.fetch, url: string) {
   try {
     const res = await fetchFn(url, {method: 'HEAD', redirect: 'manual'})
     return res.headers.get('x-resolved-version')
@@ -19,8 +19,8 @@ async function getRemoteResolvedVersion(fetchFn: typeof fetch, url: string) {
 }
 
 interface CompareDependencyVersions {
-  pkg: string
   installed: string
+  pkg: string
   remote: string
 }
 
@@ -45,11 +45,12 @@ interface CompareDependencyVersions {
  * cannot be parsed.
  */
 export async function compareDependencyVersions(
-  autoUpdatesImports: StudioAutoUpdatesImportMap | SanityAppAutoUpdatesImportMap,
+  autoUpdatesImports: SanityAppAutoUpdatesImportMap | StudioAutoUpdatesImportMap,
   workDir: string,
+  // eslint-disable-next-line n/no-unsupported-features/node-builtins
   fetchFn = globalThis.fetch,
 ): Promise<Array<CompareDependencyVersions>> {
-  const manifest = await readPackageManifest(path.join(workDir, 'package.json'))
+  const manifest = await readPackageJson(path.join(workDir, 'package.json'))
   const dependencies = {...manifest.dependencies, ...manifest.devDependencies}
 
   const failedDependencies: Array<CompareDependencyVersions> = []
@@ -70,7 +71,7 @@ export async function compareDependencyVersions(
     const manifestPath = resolveFrom.silent(workDir, path.join(pkg, 'package.json'))
 
     const installed = semver.coerce(
-      manifestPath ? (await readPackageManifest(manifestPath)).version : dependency,
+      manifestPath ? (await readPackageJson(manifestPath)).version : dependency,
     )
 
     if (!installed) {
@@ -78,7 +79,7 @@ export async function compareDependencyVersions(
     }
 
     if (!semver.eq(resolvedVersion, installed.version)) {
-      failedDependencies.push({pkg, installed: installed.version, remote: resolvedVersion})
+      failedDependencies.push({installed: installed.version, pkg, remote: resolvedVersion})
     }
   }
 

@@ -4,7 +4,7 @@ import path from 'node:path'
 import resolveFrom from 'resolve-from'
 import semver from 'semver'
 
-import {createExternalFromImportMap} from './createExternalFromImportMap'
+import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 
 // Directory where vendor packages will be stored
 const VENDOR_DIR = 'vendor'
@@ -62,36 +62,36 @@ type VendorImports = {
 // Define the vendor packages and their corresponding versions and entry points
 const VENDOR_IMPORTS: VendorImports = {
   react: {
-    '^19.0.0': {
-      '.': './cjs/react.production.js',
-      './jsx-runtime': './cjs/react-jsx-runtime.production.js',
-      './jsx-dev-runtime': './cjs/react-jsx-dev-runtime.production.js',
-      './compiler-runtime': './cjs/react-compiler-runtime.production.js',
-      './package.json': './package.json',
-    },
     '^18.0.0': {
       '.': './cjs/react.production.min.js',
-      './jsx-runtime': './cjs/react-jsx-runtime.production.min.js',
       './jsx-dev-runtime': './cjs/react-jsx-dev-runtime.production.min.js',
+      './jsx-runtime': './cjs/react-jsx-runtime.production.min.js',
+      './package.json': './package.json',
+    },
+    '^19.0.0': {
+      '.': './cjs/react.production.js',
+      './compiler-runtime': './cjs/react-compiler-runtime.production.js',
+      './jsx-dev-runtime': './cjs/react-jsx-dev-runtime.production.js',
+      './jsx-runtime': './cjs/react-jsx-runtime.production.js',
       './package.json': './package.json',
     },
   },
   'react-dom': {
+    '^18.0.0': {
+      '.': './cjs/react-dom.production.min.js',
+      './client': './cjs/react-dom.production.min.js',
+      './package.json': './package.json',
+      './server': './cjs/react-dom-server-legacy.browser.production.min.js',
+      './server.browser': './cjs/react-dom-server-legacy.browser.production.min.js',
+    },
     '^19.0.0': {
       '.': './cjs/react-dom.production.js',
       './client': './cjs/react-dom-client.production.js',
+      './package.json': './package.json',
       './server': './cjs/react-dom-server-legacy.browser.production.js',
       './server.browser': './cjs/react-dom-server-legacy.browser.production.js',
       './static': './cjs/react-dom-server.browser.production.js',
       './static.browser': './cjs/react-dom-server.browser.production.js',
-      './package.json': './package.json',
-    },
-    '^18.0.0': {
-      '.': './cjs/react-dom.production.min.js',
-      './client': './cjs/react-dom.production.min.js',
-      './server': './cjs/react-dom-server-legacy.browser.production.min.js',
-      './server.browser': './cjs/react-dom-server-legacy.browser.production.min.js',
-      './package.json': './package.json',
     },
   },
   'styled-components': {
@@ -103,9 +103,9 @@ const VENDOR_IMPORTS: VendorImports = {
 }
 
 interface VendorBuildOptions {
+  basePath: string
   cwd: string
   outputDir: string
-  basePath: string
 }
 
 /**
@@ -113,9 +113,9 @@ interface VendorBuildOptions {
  * specified in VENDOR_IMPORTS. Returns the `imports` object of an import map.
  */
 export async function buildVendorDependencies({
+  basePath,
   cwd,
   outputDir,
-  basePath,
 }: VendorBuildOptions): Promise<Record<string, string>> {
   // normalize the CWD to a relative dir for better error messages
   const dir = path.relative(process.cwd(), path.resolve(cwd))
@@ -135,7 +135,7 @@ export async function buildVendorDependencies({
 
     try {
       // Read and parse the package.json file
-      packageJson = JSON.parse(await fs.promises.readFile(packageJsonPath, 'utf-8'))
+      packageJson = JSON.parse(await fs.promises.readFile(packageJsonPath, 'utf8'))
     } catch (e) {
       const message = `Could not read package.json for package '${packageName}' from directory '${dir}'`
       if (typeof e?.message === 'string') {
@@ -169,7 +169,7 @@ export async function buildVendorDependencies({
     const matchedRange = sortedRanges.find((range) => semver.satisfies(version, range))
 
     if (!matchedRange) {
-      const min = semver.minVersion(sortedRanges[sortedRanges.length - 1])
+      const min = semver.minVersion(sortedRanges.at(-1)!)
       if (!min) {
         throw new Error(`Could not find a minimum version for package '${packageName}'`)
       }
@@ -211,34 +211,32 @@ export async function buildVendorDependencies({
   const {build} = await import('vite')
   // Use Vite to build the packages into the output directory
   let buildResult = (await build({
-    // Define a custom cache directory so that sanity's vite cache
-    // does not conflict with any potential local vite projects
-    cacheDir: 'node_modules/.sanity/vite-vendor',
-    root: cwd,
-    configFile: false,
-    logLevel: 'silent',
-
     appType: 'custom',
-    mode: 'production',
-    define: {'process.env.NODE_ENV': JSON.stringify('production')},
-
     build: {
       commonjsOptions: {strictRequires: 'auto'},
-      minify: true,
       emptyOutDir: false, // Rely on CLI to do this
-      outDir: path.join(outputDir, VENDOR_DIR),
       lib: {entry, formats: ['es']},
+      minify: true,
+      outDir: path.join(outputDir, VENDOR_DIR),
       rollupOptions: {
         external: createExternalFromImportMap({imports}),
         output: {
-          entryFileNames: '[name]-[hash].mjs',
           chunkFileNames: '[name]-[hash].mjs',
+          entryFileNames: '[name]-[hash].mjs',
           exports: 'named',
           format: 'es',
         },
         treeshake: {preset: 'recommended'},
       },
     },
+    // Define a custom cache directory so that sanity's vite cache
+    // does not conflict with any potential local vite projects
+    cacheDir: 'node_modules/.sanity/vite-vendor',
+    configFile: false,
+    define: {'process.env.NODE_ENV': JSON.stringify('production')},
+    logLevel: 'silent',
+    mode: 'production',
+    root: cwd,
   })) as BuildResult
 
   buildResult = Array.isArray(buildResult) ? buildResult : [buildResult]

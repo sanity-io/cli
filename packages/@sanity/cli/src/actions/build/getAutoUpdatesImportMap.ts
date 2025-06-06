@@ -2,17 +2,17 @@
  * @internal
  */
 export interface StudioAutoUpdatesImportMap {
-  sanity: string
-  'sanity/': string
   '@sanity/vision': string
   '@sanity/vision/': string
+  sanity: string
+  'sanity/': string
 }
 
 export interface SanityAppAutoUpdatesImportMap extends Partial<StudioAutoUpdatesImportMap> {
   '@sanity/sdk': string
-  '@sanity/sdk/': string
   '@sanity/sdk-react': string
   '@sanity/sdk-react/': string
+  '@sanity/sdk/': string
 }
 
 const MODULES_HOST =
@@ -31,10 +31,10 @@ export function getStudioAutoUpdateImportMap(version: string): StudioAutoUpdates
   const timestamp = getTimestamp()
 
   const autoUpdatesImports = {
-    sanity: `${MODULES_HOST}/v1/modules/sanity/default/${version}/${timestamp}`,
-    'sanity/': `${MODULES_HOST}/v1/modules/sanity/default/${version}/${timestamp}/`,
     '@sanity/vision': `${MODULES_HOST}/v1/modules/@sanity__vision/default/${version}/${timestamp}`,
     '@sanity/vision/': `${MODULES_HOST}/v1/modules/@sanity__vision/default/${version}/${timestamp}/`,
+    sanity: `${MODULES_HOST}/v1/modules/sanity/default/${version}/${timestamp}`,
+    'sanity/': `${MODULES_HOST}/v1/modules/sanity/default/${version}/${timestamp}/`,
   }
 
   return autoUpdatesImports
@@ -42,6 +42,7 @@ export function getStudioAutoUpdateImportMap(version: string): StudioAutoUpdates
 
 interface GetAppAutoUpdateImportMapOptions {
   sdkVersion: string
+
   sanityVersion?: string
 }
 
@@ -53,13 +54,13 @@ export function getAppAutoUpdateImportMap(
 ): SanityAppAutoUpdatesImportMap {
   const timestamp = getTimestamp()
 
-  const {sdkVersion, sanityVersion} = options
+  const {sanityVersion, sdkVersion} = options
 
   const autoUpdatesImports: SanityAppAutoUpdatesImportMap = {
     '@sanity/sdk': `${MODULES_HOST}/v1/modules/@sanity__sdk/default/${sdkVersion}/${timestamp}`,
-    '@sanity/sdk/': `${MODULES_HOST}/v1/modules/@sanity__sdk/default/${sdkVersion}/${timestamp}/`,
     '@sanity/sdk-react': `${MODULES_HOST}/v1/modules/@sanity__sdk-react/default/${sdkVersion}/${timestamp}`,
     '@sanity/sdk-react/': `${MODULES_HOST}/v1/modules/@sanity__sdk-react/default/${sdkVersion}/${timestamp}/`,
+    '@sanity/sdk/': `${MODULES_HOST}/v1/modules/@sanity__sdk/default/${sdkVersion}/${timestamp}/`,
   }
 
   if (sanityVersion) {
