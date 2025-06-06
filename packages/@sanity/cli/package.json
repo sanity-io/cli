@@ -50,7 +50,7 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "version": "oclif readme && git add README.md",
-    "prewatch": "pnpm run make:devfile",
+    "prewatch": "rimraf oclif.manifest.json && pnpm run make:devfile",
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src",
     "postwatch": "rimraf isDev"
   },
