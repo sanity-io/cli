@@ -1,4 +1,4 @@
-import {loadEnv} from '@sanity/cli'
+import {loadEnv} from '../../util/loadEnv.js'
 
 const envPrefix = 'SANITY_STUDIO_'
 const appEnvPrefix = 'SANITY_APP_'
