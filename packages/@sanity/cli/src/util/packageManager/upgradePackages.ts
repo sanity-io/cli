@@ -27,7 +27,6 @@ export async function upgradePackages(
     stdio: 'inherit',
   }
   const upgradePackageArgs = packages.map((pkg) => pkg.join('@'))
-  const npmArgs = ['upgrade', '--legacy-peer-deps', ...upgradePackageArgs]
   let result: Result | undefined
   switch (packageManager) {
     case 'bun': {
@@ -45,7 +44,8 @@ export async function upgradePackages(
       break
     }
     case 'npm': {
-      output.log(`Running 'npm upgrade ${npmArgs.join(' ')}'`)
+      const npmArgs = ['install', '--legacy-peer-deps', ...upgradePackageArgs]
+      output.log(`Running 'npm ${npmArgs.join(' ')}'`)
       result = await execa('npm', npmArgs, execOptions)
 
       break

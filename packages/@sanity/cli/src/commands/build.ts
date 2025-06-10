@@ -33,6 +33,10 @@ export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
       default: false,
       description: 'Enable source maps for built bundles (increases size of bundle)',
     }),
+    stats: Flags.boolean({
+      default: false,
+      description: 'Show stats about the built bundles',
+    }),
     yes: Flags.boolean({
       char: 'y',
       default: false,
