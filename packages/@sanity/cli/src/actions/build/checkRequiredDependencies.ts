@@ -1,14 +1,17 @@
 import path from 'node:path'
 
-import {type CliCommandContext} from '@sanity/cli'
-import execa from 'execa'
-import oneline from 'oneline'
+import {type Command} from '@oclif/core'
+import {execa} from 'execa'
+import {oneline} from 'oneline'
 import semver, {type SemVer} from 'semver'
 
-import {peerDependencies} from '../../../../package.json'
-import {determineIsApp} from './determineIsApp'
-import {readModuleVersion} from './readModuleVersion'
-import {type PartialPackageManifest, readPackageManifest} from './readPackageManifest'
+import {type CliConfig} from '../../config/cli/types.js'
+import {determineIsApp} from '../../util/determineIsApp.js'
+import {isInteractive} from '../../util/isInteractive.js'
+import {installNewPackages} from '../../util/packageManager/installPackages.js'
+import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
+import {readModuleVersion} from '../../util/readModuleVersion.js'
+import {type PartialPackageManifest, readPackageManifest} from '../../util/readPackageManifest.js'
 
 const defaultStudioManifestProps: PartialPackageManifest = {
   name: 'studio',
@@ -19,6 +22,18 @@ interface CheckResult {
   didInstall: boolean
   installedSanityVersion: string
 }
+
+interface CheckRequiredDependenciesOptions {
+  cliConfig: CliConfig
+  output: {
+    error: Command['error']
+    log: Command['log']
+    warn: Command['warn']
+  }
+  workDir: string
+}
+
+const styledComponentsVersionRange = '^6.1.15'
 
 /**
  * Checks that the studio has declared and installed the required dependencies
@@ -31,23 +46,25 @@ interface CheckResult {
  *
  * Additionally, returns the version of the 'sanity' dependency from the package.json.
  */
-export async function checkRequiredDependencies(context: CliCommandContext): Promise<CheckResult> {
+export async function checkRequiredDependencies(
+  options: CheckRequiredDependenciesOptions,
+): Promise<CheckResult> {
+  const {cliConfig, output, workDir: studioPath} = options
   // currently there's no check needed for core apps,
   // but this should be removed once they are more mature
-  const isApp = determineIsApp(context.cliConfig)
+  const isApp = determineIsApp(cliConfig)
   if (isApp) {
     return {didInstall: false, installedSanityVersion: ''}
   }
 
-  const {workDir: studioPath, output} = context
   const [studioPackageManifest, installedStyledComponentsVersion, installedSanityVersion] =
     await Promise.all([
-      await readPackageManifest(path.join(studioPath, 'package.json'), defaultStudioManifestProps),
-      await readModuleVersion(studioPath, 'styled-components'),
-      await readModuleVersion(studioPath, 'sanity'),
+      readPackageManifest(path.join(studioPath, 'package.json'), defaultStudioManifestProps),
+      readModuleVersion(studioPath, 'styled-components'),
+      readModuleVersion(studioPath, 'sanity'),
     ])
 
-  const wantedStyledComponentsVersionRange = peerDependencies['styled-components']
+  const wantedStyledComponentsVersionRange = styledComponentsVersionRange
 
   // Retrieve the version of the 'sanity' dependency
   if (!installedSanityVersion) {
@@ -64,7 +81,7 @@ export async function checkRequiredDependencies(context: CliCommandContext): Pro
   if (!declaredStyledComponentsVersion) {
     const [file, ...args] = process.argv
     const deps = {'styled-components': wantedStyledComponentsVersionRange}
-    await installDependencies(deps, context)
+    await installDependencies(deps, options)
 
     // Re-run the same command (sanity dev/sanity build etc) after installation,
     // as it can have shifted the entire `node_modules` folder around, result in
@@ -78,7 +95,7 @@ export async function checkRequiredDependencies(context: CliCommandContext): Pro
   let minDeclaredStyledComponentsVersion: SemVer | null = null
   try {
     minDeclaredStyledComponentsVersion = semver.minVersion(declaredStyledComponentsVersion)
-  } catch (err) {
+  } catch {
     // Intentional fall-through (variable will be left as null, throwing below)
   }
 
@@ -137,34 +154,28 @@ export async function checkRequiredDependencies(context: CliCommandContext): Pro
  */
 async function installDependencies(
   dependencies: Record<string, string>,
-  context: CliCommandContext,
+  options: CheckRequiredDependenciesOptions,
 ): Promise<void> {
-  const {output, prompt, workDir, cliPackageManager} = context
+  const {output, workDir} = options
   const packages: string[] = []
 
-  output.print('The Sanity studio needs to install missing dependencies:')
+  output.log('The Sanity studio needs to install missing dependencies:')
   for (const [pkgName, version] of Object.entries(dependencies)) {
     const declaration = `${pkgName}@${version}`
-    output.print(`- ${declaration}`)
+    output.log(`- ${declaration}`)
     packages.push(declaration)
   }
 
-  if (!cliPackageManager) {
-    output.error(
-      'ERROR: Could not determine package manager choice - run `npm install` or equivalent',
-    )
-    return
-  }
-
-  const {getPackageManagerChoice, installNewPackages} = cliPackageManager
-  const {mostOptimal, chosen: pkgManager} = await getPackageManagerChoice(workDir, {prompt})
+  const {chosen: pkgManager, mostOptimal} = await getPackageManagerChoice(workDir, {
+    interactive: isInteractive,
+  })
   if (mostOptimal && pkgManager !== mostOptimal) {
     output.warn(
       `WARN: This project appears to be installed with or using ${mostOptimal} - using a different package manager _may_ result in errors.`,
     )
   }
 
-  await installNewPackages({packages, packageManager: pkgManager}, context)
+  await installNewPackages({packageManager: pkgManager, packages}, {output, workDir})
 }
 
 function isComparableRange(range: string): boolean {

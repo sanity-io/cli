@@ -1,8 +1,9 @@
 import path from 'node:path'
+import {fileURLToPath} from 'node:url'
 
 import isInstalledGlobally from 'is-installed-globally'
 
-import {debug} from '../debug'
+import {debug} from '../../debug.js'
 import {getPackageManagerChoice} from './packageManagerChoice'
 
 const cliPkgName = '@sanity/cli'
@@ -47,6 +48,8 @@ function isInstalledUsingYarn() {
   const yarnPath = isWindows
     ? path.join('Yarn', 'config', 'global')
     : path.join('.config', 'yarn', 'global')
+
+  const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
   return __dirname.includes(yarnPath)
 }

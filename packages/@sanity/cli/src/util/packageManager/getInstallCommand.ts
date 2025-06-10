@@ -1,11 +1,11 @@
-import {getPackageManagerChoice} from './packageManagerChoice'
+import {getPackageManagerChoice} from './packageManagerChoice.js'
 
 export async function getInstallCommand(options: {
-  workDir: string
+  depType?: 'dev' | 'peer' | 'prod'
   pkgNames?: string[]
-  depType?: 'dev' | 'prod' | 'peer'
+  workDir: string
 }): Promise<string> {
-  const {workDir, depType = 'prod', pkgNames} = options
+  const {depType = 'prod', pkgNames, workDir} = options
   const {chosen} = await getPackageManagerChoice(workDir, {interactive: false})
 
   // eg `npm install`, `yarn install`, `pnpm install`

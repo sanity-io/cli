@@ -5,10 +5,11 @@ import {type CliConfig} from '../../config/cli/types.js'
  *
  * @internal
  */
-export function determineBasePath(cliConfig: CliConfig): string {
+export function determineBasePath(cliConfig: CliConfig, type: 'app' | 'studio'): string {
   // Determine base path for built studio
   let basePath = '/'
-  const envBasePath = process.env.SANITY_APP_BASEPATH
+  const envBasePath =
+    type === 'app' ? process.env.SANITY_APP_BASEPATH : process.env.SANITY_STUDIO_BASEPATH
   const configBasePath = cliConfig?.project?.basePath
 
   if (envBasePath) {

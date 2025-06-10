@@ -4,32 +4,32 @@ import {generateHelpUrl} from '@sanity/generate-help-url'
 import resolveFrom from 'resolve-from'
 import semver, {type SemVer} from 'semver'
 
-import {readPackageJson, readPackageManifest} from './readPackageManifest'
+import {readPackageJson} from '../../util/readPackageJson.js'
 
 interface PackageInfo {
+  deprecatedBelow: string | null
+  installed: SemVer
+  isDeprecated: boolean
+  isUnsupported: boolean
+  isUntested: boolean
   name: string
   supported: string[]
-  deprecatedBelow: null | string
-  installed: SemVer
-  isUnsupported: boolean
-  isDeprecated: boolean
-  isUntested: boolean
 }
 
 // NOTE: when doing changes here, also remember to update versions in help docs at
 // https://sanity.io/admin/structure/docs;helpArticle;upgrade-packages
 const PACKAGES = [
-  {name: 'react', supported: ['^18 || ^19'], deprecatedBelow: null},
-  {name: 'react-dom', supported: ['^18 || ^19'], deprecatedBelow: null},
-  {name: 'styled-components', supported: ['^6'], deprecatedBelow: null},
-  {name: '@sanity/ui', supported: ['^2'], deprecatedBelow: null},
+  {deprecatedBelow: null, name: 'react', supported: ['^18 || ^19']},
+  {deprecatedBelow: null, name: 'react-dom', supported: ['^18 || ^19']},
+  {deprecatedBelow: null, name: 'styled-components', supported: ['^6']},
+  {deprecatedBelow: null, name: '@sanity/ui', supported: ['^2']},
 ]
 
 export async function checkStudioDependencyVersions(workDir: string): Promise<void> {
-  const manifest = await readPackageJson(path.join(workDir, 'package.json'))
+  const manifest = await readPackageJson(path.join(workDir, 'package.json'), true)
   const dependencies = {...manifest.dependencies, ...manifest.devDependencies}
 
-  const packageInfo = PACKAGES.map(async (pkg): Promise<PackageInfo | false> => {
+  const packageInfo = PACKAGES.map(async (pkg): Promise<false | PackageInfo> => {
     const dependency = dependencies[pkg.name]
     if (!dependency) {
       return false
@@ -38,8 +38,8 @@ export async function checkStudioDependencyVersions(workDir: string): Promise<vo
     const manifestPath = resolveFrom.silent(workDir, path.join(pkg.name, 'package.json'))
     const installed = semver.coerce(
       manifestPath
-        ? (await readPackageManifest(manifestPath)).version
-        : dependency.replace(/[\D.]/g, ''),
+        ? (await readPackageJson(manifestPath)).version
+        : dependency.replaceAll(/[\D.]/g, ''),
     )
 
     if (!installed) {
@@ -65,8 +65,8 @@ export async function checkStudioDependencyVersions(workDir: string): Promise<vo
     return {
       ...pkg,
       installed,
-      isUnsupported,
       isDeprecated,
+      isUnsupported,
       isUntested,
     }
   })
@@ -79,7 +79,6 @@ export async function checkStudioDependencyVersions(workDir: string): Promise<vo
   const untested = installedPackages.filter((pkg) => pkg.isUntested)
 
   if (deprecated.length > 0) {
-    // eslint-disable-next-line no-console
     console.warn(`
 [WARN] The following package versions have been deprecated and should be upgraded:
 
@@ -92,7 +91,6 @@ Support for these will be removed in a future release!
   }
 
   if (untested.length > 0) {
-    // eslint-disable-next-line no-console
     console.warn(`
 [WARN] The following package versions have not yet been marked as supported:
 
@@ -105,7 +103,6 @@ You _may_ encounter bugs while using these versions.
   }
 
   if (unsupported.length > 0) {
-    // eslint-disable-next-line no-console
     console.error(`
 [ERROR] The following package versions are no longer supported and needs to be upgraded:
 

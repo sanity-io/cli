@@ -2,12 +2,11 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 
 import {confirm} from '@inquirer/prompts'
-import {type Command} from '@oclif/core'
 import chalk from 'chalk'
-import logSymbols from 'log-symbols'
+import {type Ora} from 'ora'
 import semver from 'semver'
 
-import {type CliConfig} from '../../config/cli/types.js'
+import {info} from '../../core/logSymbols.js'
 import {spinner} from '../../core/spinner.js'
 import {getTimer} from '../../core/timer.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
@@ -18,25 +17,15 @@ import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
 import {getAppEnvVars} from './getAppEnvVars.js'
 import {getAppAutoUpdateImportMap} from './getAutoUpdatesImportMap.js'
-import {type BuildFlags} from './types.js'
-
-interface BuildAppOptions {
-  autoUpdatesEnabled: boolean
-  cliConfig: CliConfig
-  flags: BuildFlags
-  log: Command['log']
-  workDir: string
-
-  outDir?: string
-}
+import {type BuildOptions} from './types.js'
 
 /**
  * Build the Sanity app.
  *
  * @internal
  */
-export async function buildApp(options: BuildAppOptions) {
-  const {autoUpdatesEnabled, cliConfig, flags, log, outDir, workDir} = options
+export async function buildApp(options: BuildOptions) {
+  const {autoUpdatesEnabled, cliConfig, flags, outDir, output, workDir} = options
   const unattendedMode = flags.yes
   const timer = getTimer()
 
@@ -62,7 +51,7 @@ export async function buildApp(options: BuildAppOptions) {
   const autoUpdatesImports = getAppAutoUpdateImportMap({sanityVersion, sdkVersion})
 
   if (autoUpdatesEnabled) {
-    log(`${logSymbols.info} Building with auto-updates enabled`)
+    output.log(`${info} Building with auto-updates enabled`)
 
     // Check the versions
     const result = await compareDependencyVersions(autoUpdatesImports, workDir)
@@ -87,9 +76,9 @@ export async function buildApp(options: BuildAppOptions) {
 
   const envVarKeys = getAppEnvVars()
   if (envVarKeys.length > 0) {
-    log('\nIncluding the following environment variables as part of the JavaScript bundle:')
-    for (const key of envVarKeys) log(`- ${key}`)
-    log('')
+    output.log('\nIncluding the following environment variables as part of the JavaScript bundle:')
+    for (const key of envVarKeys) output.log(`- ${key}`)
+    output.log('')
   }
 
   let shouldClean = true
@@ -101,9 +90,9 @@ export async function buildApp(options: BuildAppOptions) {
   }
 
   // Determine base path for built studio
-  const basePath = determineBasePath(cliConfig)
+  const basePath = determineBasePath(cliConfig, 'app')
 
-  let spin
+  let spin: Ora
   if (shouldClean) {
     timer.start('cleanOutputFolder')
     spin = spinner('Clean output folder').start()
@@ -159,8 +148,8 @@ export async function buildApp(options: BuildAppOptions) {
     spin.succeed()
 
     if (flags.stats) {
-      log('\nLargest module files:')
-      log(formatModuleSizes(sortModulesBySize(bundle.chunks).slice(0, 15)))
+      output.log('\nLargest module files:')
+      output.log(formatModuleSizes(sortModulesBySize(bundle.chunks).slice(0, 15)))
     }
   } catch (error) {
     spin.fail()

@@ -1,6 +1,7 @@
+// TODO: Consolidate with readPackageJson.ts
 import {readFile} from 'node:fs/promises'
 
-import {type PackageJson} from '@sanity/cli'
+import {type PackageJson} from '../types.js'
 
 interface DependencyDeclarations {
   dependencies: Record<string, string | undefined>
@@ -56,6 +57,6 @@ export async function readPackageManifest(
     throw new Error(`Failed to read "${packageJsonPath}": Invalid package manifest`)
   }
 
-  const {name, version, dependencies = {}, devDependencies = {}} = manifest
-  return {name, version, dependencies, devDependencies}
+  const {dependencies = {}, devDependencies = {}, name, version} = manifest
+  return {dependencies, devDependencies, name, version}
 }

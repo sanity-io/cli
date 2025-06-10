@@ -1,20 +1,19 @@
-/* eslint-disable no-process-env */
 import path from 'node:path'
 
-import preferredPM from 'preferred-pm'
+import {select} from '@inquirer/prompts'
+import {default as preferredPM} from 'preferred-pm'
 import which from 'which'
 
-import {type CliPrompter} from '../types'
-import {isInteractive} from '../util/isInteractive'
+import {isInteractive} from '../isInteractive.js'
 
-export type PackageManager = 'npm' | 'yarn' | 'pnpm' | 'bun' | 'manual'
+export type PackageManager = 'bun' | 'manual' | 'npm' | 'pnpm' | 'yarn'
 
 export const ALLOWED_PACKAGE_MANAGERS: PackageManager[] = ['npm', 'yarn', 'pnpm', 'bun', 'manual']
 export const allowedPackageManagersString = ALLOWED_PACKAGE_MANAGERS.map((pm) => `"${pm}"`).join(
   ' | ',
 )
 
-const EXPERIMENTAL = ['bun']
+const EXPERIMENTAL = new Set(['bun'])
 
 /**
  * Attempts to resolve the most optimal package manager to use to install/upgrade
@@ -39,7 +38,7 @@ const EXPERIMENTAL = ['bun']
  */
 export async function getPackageManagerChoice(
   workDir: string,
-  options: {interactive: false} | {interactive?: true; prompt: CliPrompter},
+  options: {interactive: boolean},
 ): Promise<{chosen: PackageManager; mostOptimal?: PackageManager}> {
   const rootDir = workDir || process.cwd()
   const preferred = (await preferredPM(rootDir))?.name
@@ -58,18 +57,13 @@ export async function getPackageManagerChoice(
     return {chosen: mostLikelyPM || (await getFallback(rootDir)), mostOptimal: preferred}
   }
 
-  if (!('prompt' in options)) {
-    throw new Error('Must pass `prompt` when in interactive mode')
-  }
-
   // We can ask the user for their preference, hurray!
   const messageSuffix = preferred ? ` (preferred is ${preferred}, but is not installed)` : ''
   const installed = await getAvailablePackageManagers(rootDir)
-  const chosen = await options.prompt.single<PackageManager>({
-    type: 'list',
+  const chosen = await select<PackageManager>({
     choices: installed.map((pm) => ({
+      name: EXPERIMENTAL.has(pm) ? `${pm} (experimental)` : pm,
       value: pm,
-      name: EXPERIMENTAL.includes(pm) ? `${pm} (experimental)` : pm,
     })),
     default: preferred || mostLikelyPM,
     message: `Package manager to use for installing dependencies?${messageSuffix}`,
@@ -161,7 +155,7 @@ function getPathEnvVarKey(): string {
 }
 
 function getCommandPath(cmd: string, cwd?: string): Promise<string | null> {
-  const options = cwd ? {path: getNpmRunPath(cwd)} : {}
+  const options = cwd ? {path: getNpmRunPath(cwd)} : undefined
   return which(cmd, options).catch(() => null)
 }
 

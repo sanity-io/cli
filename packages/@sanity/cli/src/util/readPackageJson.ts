@@ -29,15 +29,23 @@ export type PackageJson = z.infer<typeof packageJsonSchema>
  * Read the `package.json` file at the given path
  *
  * @param filePath - Path to package.json to read
+ * @param skipSchemaValidation - Skip schema validation if true
  * @returns The parsed package.json
  * @internal
  */
-export async function readPackageJson(filePath: string): Promise<PackageJson> {
+export async function readPackageJson(
+  filePath: string,
+  skipSchemaValidation = false,
+): Promise<PackageJson> {
   let pkg: unknown
   try {
     pkg = JSON.parse(await readFile(filePath, 'utf8'))
   } catch (err: unknown) {
     throw new Error(`Failed to read "${filePath}"`, {cause: err})
+  }
+
+  if (skipSchemaValidation) {
+    return pkg as PackageJson
   }
 
   const {data, error, success} = packageJsonSchema.safeParse(pkg)
