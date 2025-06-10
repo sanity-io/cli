@@ -38,16 +38,21 @@
   ],
   "scripts": {
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
+    "postbuild": "pnpm run manifest:generate",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
-    "prepack": "oclif manifest && oclif readme",
+    "make:devfile": "nodetouch isDev",
+    "manifest:generate": "oclif manifest && oclif readme",
+    "prepack": "pnpm run manifest:generate",
     "postpack": "rimraf oclif.manifest.json",
     "test": "vitest run",
     "posttest": "pnpm run lint",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "version": "oclif readme && git add README.md",
-    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
+    "prewatch": "rimraf oclif.manifest.json && pnpm run make:devfile",
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src",
+    "postwatch": "rimraf isDev"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.3.2",
@@ -93,6 +98,7 @@
     "eslint": "^9.26.0",
     "oclif": "^4.17.34",
     "rimraf": "^6.0.1",
+    "touch": "^3.1.1",
     "typescript": "^5.8.3",
     "vitest": "^3.1.3"
   },

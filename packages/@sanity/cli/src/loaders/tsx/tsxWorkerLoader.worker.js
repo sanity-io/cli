@@ -5,6 +5,10 @@ const unregister = register({
   tsconfig: process.env.TSX_TSCONFIG_PATH || undefined,
 })
 
-await import(workerScript)
+if (workerScript) {
+  await import(workerScript)
+} else {
+  throw new Error('`TX_WORKER_TASK_SCRIPT` not defined')
+}
 
 unregister()

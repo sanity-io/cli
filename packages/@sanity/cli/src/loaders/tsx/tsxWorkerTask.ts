@@ -1,13 +1,10 @@
-import {dirname, resolve} from 'node:path'
-import {fileURLToPath} from 'node:url'
+import {URL} from 'node:url'
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {getTsconfig} from 'get-tsconfig'
 
 import {type RequireProps} from '../../typeHelpers.js'
 import {isRecord} from '../../util/isRecord.js'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /**
  * Options for the tsx worker task
@@ -33,24 +30,26 @@ interface TsxWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
  * @throws If the worker exits with a non-zero code
  * @internal
  */
-export function tsxWorkerTask(filePath: string, options: TsxWorkerTaskOptions): Promise<unknown> {
-  const loaderPath = resolve(__dirname, './_worker_/tsxWorkerLoader.js')
+export function tsxWorkerTask(
+  filePath: string | URL,
+  options: TsxWorkerTaskOptions,
+): Promise<unknown> {
   const tsconfig = getTsconfig(options.rootPath)
 
   const env = {
     ...(isRecord(options.env) ? options.env : process.env),
     ...(tsconfig?.path ? {TSX_TSCONFIG_PATH: tsconfig.path} : {}),
-    TSX_WORKER_TASK_SCRIPT: filePath,
+    TSX_WORKER_TASK_SCRIPT: filePath instanceof URL ? filePath.toString() : filePath,
   }
 
-  const worker = new Worker(loaderPath, {
+  const worker = new Worker(new URL('tsxWorkerLoader.worker.js', import.meta.url), {
     ...options,
     env,
   })
 
   return new Promise((resolve, reject) => {
     worker.addListener('error', function onWorkerError(err) {
-      reject(new Error(`Fail to load file through worker: ${err.message}`, {cause: err}))
+      reject(new Error(`Failed to load file through worker: ${err.message}`, {cause: err}))
       cleanup()
     })
     worker.addListener('exit', function onWorkerExit(code) {

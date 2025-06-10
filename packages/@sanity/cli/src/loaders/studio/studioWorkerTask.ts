@@ -54,7 +54,7 @@ export function studioWorkerTask(
 
     let workerLoaderPath = resolvePath(
       dirname(fileURLToPath(import.meta.url)),
-      '_worker_/studioWorkerLoader.js',
+      'studioWorkerLoader.worker.js',
     )
     const workerLoaderPathTs = workerLoaderPath.replace(/\.js$/, '.ts')
 
