@@ -17,14 +17,14 @@
   },
   "dependencies": {
     "@sanity/cli": "workspace:*",
-    "@sanity/vision": "^3.88.2",
+    "@sanity/vision": "^3.92.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "sanity": "^3.88.2",
-    "styled-components": "^6.1.15"
+    "sanity": "^3.92.0",
+    "styled-components": "^6.1.18"
   },
   "devDependencies": {
-    "@types/react": "^18.3.18",
-    "typescript": "^5.8.2"
+    "@types/react": "^18.3.23",
+    "typescript": "^5.8.3"
   }
 }
