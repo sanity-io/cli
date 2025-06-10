@@ -28,7 +28,7 @@ function isPackageManifest(item: unknown): item is PartialPackageManifest {
  * @param filePath - Path to package.json to read
  * @returns The parsed package.json
  */
-export async function readPackageJson(filePath: string): Promise<PackageJson> {
+async function readPackageJson(filePath: string): Promise<PackageJson> {
   try {
     return JSON.parse(await readFile(filePath, 'utf8'))
   } catch (err) {

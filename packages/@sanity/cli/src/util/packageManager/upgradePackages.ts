@@ -3,13 +3,19 @@ import {execa, type Options, type Result} from 'execa'
 
 import {getPartialEnvWithNpmPath, type PackageManager} from './packageManagerChoice.js'
 
-export interface InstallOptions {
+/**
+ * @internal
+ */
+interface UpgradeOptions {
   packageManager: PackageManager
   packages: [name: string, version: string][]
 }
 
+/**
+ * @internal
+ */
 export async function upgradePackages(
-  options: InstallOptions,
+  options: UpgradeOptions,
   context: {output: {log: Command['log']}; workDir: string},
 ): Promise<void> {
   const {packageManager, packages} = options

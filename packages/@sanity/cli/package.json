@@ -69,7 +69,6 @@
     "get-latest-version": "^5.1.0",
     "get-tsconfig": "^4.10.1",
     "import-meta-resolve": "^4.1.0",
-    "is-installed-globally": "^1.0.0",
     "jsdom": "^26.0.0",
     "lodash-es": "^4.17.21",
     "log-symbols": "^7.0.1",
