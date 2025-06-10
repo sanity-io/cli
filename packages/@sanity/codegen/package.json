@@ -70,7 +70,7 @@
     "@eslint/compat": "^1.2.9",
     "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
-    "@sanity/pkg-utils": "^7.2.2",
+    "@sanity/pkg-utils": "^7.2.4",
     "@types/babel__core": "^7.20.5",
     "@types/babel__generator": "^7.6.8",
     "@types/babel__register": "^7.17.3",

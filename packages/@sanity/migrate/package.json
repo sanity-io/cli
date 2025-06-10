@@ -50,10 +50,10 @@
     "watch": "pkg-utils watch"
   },
   "dependencies": {
-    "@sanity/client": "^7.0.0",
+    "@sanity/client": "^7.5.0",
     "@sanity/mutate": "^0.12.4",
-    "@sanity/types": "^3.87.0",
-    "@sanity/util": "^3.87.0",
+    "@sanity/types": "^3.92.0",
+    "@sanity/util": "^3.92.0",
     "arrify": "^2.0.1",
     "debug": "^4.3.4",
     "fast-fifo": "^1.3.2",
