@@ -7,6 +7,8 @@ const unregister = register({
 
 if (workerScript) {
   await import(workerScript)
+} else {
+  throw new Error('`TX_WORKER_TASK_SCRIPT` not defined')
 }
 
 unregister()
