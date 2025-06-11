@@ -42,7 +42,7 @@
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
     "make:devfile": "nodetouch isDev",
-    "manifest:generate": "oclif manifest && oclif readme",
+    "manifest:generate": "oclif manifest",
     "prepack": "pnpm run manifest:generate",
     "postpack": "rimraf oclif.manifest.json",
     "test": "vitest run",

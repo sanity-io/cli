@@ -9,8 +9,8 @@ import {tryFindLatestVersion} from './tryFindLatestVersion.js'
  *
  * @internal
  */
-function isPinnedVersion(version) {
-  return semver.valid(version)
+function isPinnedVersion(version: string): boolean {
+  return !!semver.valid(version)
 }
 
 /**
