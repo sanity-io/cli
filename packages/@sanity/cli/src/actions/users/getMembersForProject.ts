@@ -83,7 +83,6 @@ export async function getMembersForProject({
     usersDebug(`Found ${pendingInvitations.length} pending invitations for ${projectId}`)
     return members
   } catch (error) {
-    usersDebug(`Error fetching members for ${projectId}:`, error)
     throw new Error(`Error fetching members for ${projectId}`, {cause: error})
   }
 }

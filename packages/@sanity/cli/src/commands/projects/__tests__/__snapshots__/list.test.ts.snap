@@ -1,0 +1,8 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`#list > displays projects correctly 1`] = `
+"id         members   name          url                                             created   
+project2   1         Project Two   https://www.sanity.io/manage/project/project2   2023-01-02
+project1   2         Project One   https://www.sanity.io/manage/project/project1   2023-01-01
+"
+`;

@@ -40,16 +40,7 @@ describe('#list', () => {
 
     const {stdout} = await testCommand(List)
 
-    expect(stdout).toContain('id')
-    expect(stdout).toContain('members')
-    expect(stdout).toContain('name')
-    expect(stdout).toContain('url')
-    expect(stdout).toContain('created')
-    expect(stdout).toContain('project1')
-    expect(stdout).toContain('Project One')
-    expect(stdout).toContain('2') // number of members
-    expect(stdout).toContain('2023-01-01')
-    expect(stdout).toContain('https://www.sanity.io/manage/project/project1')
+    expect(stdout).toMatchSnapshot()
   })
 
   test('sorts by members when --sort members is specified', async () => {

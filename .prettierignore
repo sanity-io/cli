@@ -11,3 +11,4 @@ pnpm-lock.yaml
 CHANGELOG.md
 .release-please-manifest.json
 **/tsconfig.json
+**/__snapshots__/**

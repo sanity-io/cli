@@ -72,14 +72,7 @@ describe('#list', () => {
 
     const {stdout} = await testCommand(List)
 
-    expect(stdout).toContain('id')
-    expect(stdout).toContain('name')
-    expect(stdout).toContain('role')
-    expect(stdout).toContain('date')
-    expect(stdout).toContain('user1')
-    expect(stdout).toContain('User One')
-    expect(stdout).toContain('developer')
-    expect(stdout).toContain('2023-01-01')
+    expect(stdout).toMatchSnapshot()
   })
 
   test('displays pending invitations correctly', async () => {
@@ -115,9 +108,7 @@ describe('#list', () => {
 
     const {stdout} = await testCommand(List)
 
-    expect(stdout).toContain('pending@example.com')
-    expect(stdout).toContain('viewer')
-    expect(stdout).toContain('2023-02-01')
+    expect(stdout).toMatchSnapshot()
   })
 
   test('displays an error if the API request fails', async () => {
@@ -167,9 +158,7 @@ describe('#list', () => {
     const {stdout} = await testCommand(List, ['--sort', 'role'])
 
     // Check that we have all the roles in the output
-    expect(stdout).toContain('admin')
-    expect(stdout).toContain('developer')
-    expect(stdout).toContain('viewer')
+    expect(stdout).toMatchSnapshot()
 
     // Split by lines and remove empty lines
     const lines = stdout.split('\n').filter(Boolean)
