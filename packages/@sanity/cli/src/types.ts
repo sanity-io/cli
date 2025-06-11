@@ -1,3 +1,5 @@
+import {type Command} from '@oclif/core'
+
 export interface PackageJson {
   name: string
   version: string
@@ -14,4 +16,10 @@ export interface PackageJson {
   repository?: {type: string; url: string}
 
   scripts?: Record<string, string>
+}
+
+export interface Output {
+  error: Command['error']
+  log: Command['log']
+  warn: Command['warn']
 }

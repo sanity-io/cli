@@ -12,7 +12,7 @@ describe('#build', () => {
 
       USAGE
         $ sanity build [OUTPUTDIR] [--auto-updates] [--minify]
-          [--source-maps] [-y]
+          [--source-maps] [--stats] [-y]
 
       ARGUMENTS
         OUTPUTDIR  Output directory
@@ -24,6 +24,7 @@ describe('#build', () => {
             --[no-]minify        Enable/disable minifying of built bundles
             --[no-]source-maps   Enable source maps for built bundles (increases size
                                  of bundle)
+            --stats              Show stats about the built bundles
 
       DESCRIPTION
         Builds the Sanity Studio configuration into a static bundle

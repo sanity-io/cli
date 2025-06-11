@@ -1,6 +1,6 @@
-import {type Command} from '@oclif/core'
 import {execa, type Options, type Result} from 'execa'
 
+import {type Output} from '../../types.js'
 import {getPartialEnvWithNpmPath, type PackageManager} from './packageManagerChoice.js'
 
 /**
@@ -16,7 +16,7 @@ interface InstallOptions {
  */
 export async function installNewPackages(
   options: InstallOptions,
-  context: {output: {log: Command['log']}; workDir: string},
+  context: {output: Output; workDir: string},
 ): Promise<void> {
   const {packageManager, packages} = options
   const {output, workDir} = context

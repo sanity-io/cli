@@ -1,11 +1,11 @@
 import path from 'node:path'
 
-import {type Command} from '@oclif/core'
 import {execa} from 'execa'
 import {oneline} from 'oneline'
 import semver, {type SemVer} from 'semver'
 
 import {type CliConfig} from '../../config/cli/types.js'
+import {type Output} from '../../types.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
 import {isInteractive} from '../../util/isInteractive.js'
 import {installNewPackages} from '../../util/packageManager/installPackages.js'
@@ -25,11 +25,7 @@ interface CheckResult {
 
 interface CheckRequiredDependenciesOptions {
   cliConfig: CliConfig
-  output: {
-    error: Command['error']
-    log: Command['log']
-    warn: Command['warn']
-  }
+  output: Output
   workDir: string
 }
 

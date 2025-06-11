@@ -1,6 +1,7 @@
 import {Args, Flags} from '@oclif/core'
 
 import {buildApp} from '../actions/build/buildApp.js'
+import {buildDebug} from '../actions/build/buildDebug.js'
 import {buildStudio} from '../actions/build/buildStudio.js'
 import {shouldAutoUpdate} from '../actions/build/shouldAutoUpdate.js'
 import {SanityCliCommand} from '../BaseCommand.js'
@@ -52,24 +53,28 @@ export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
 
     const isApp = determineIsApp(cliConfig)
 
-    const output = {
-      error: this.error.bind(this),
-      log: this.log.bind(this),
-      warn: this.warn.bind(this),
-    }
     const workDir = (await this.getProjectRoot()).directory
 
     const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags})
 
     if (isApp) {
-      buildApp({autoUpdatesEnabled, cliConfig, flags, outDir: this.args.outputDir, output, workDir})
+      buildDebug(`Building app`)
+      buildApp({
+        autoUpdatesEnabled,
+        cliConfig,
+        flags,
+        outDir: this.args.outputDir,
+        output: this.output,
+        workDir,
+      })
     } else {
+      buildDebug(`Building studio`)
       buildStudio({
         autoUpdatesEnabled,
         cliConfig,
         flags,
         outDir: this.args.outputDir,
-        output,
+        output: this.output,
         workDir,
       })
     }

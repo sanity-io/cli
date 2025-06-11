@@ -5,6 +5,7 @@ import {type CliConfig} from './config/cli/types.js'
 import {findProjectRoot} from './config/findProjectRoot.js'
 import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
 import {getGlobalCliClient, type GlobalCliClientOptions} from './core/apiClient.js'
+import {type Output} from './types.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
   (typeof SanityCliCommand)['baseFlags'] & T['flags']
@@ -23,6 +24,22 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
    * @returns The global API client.
    */
   protected getGlobalApiClient = (args: GlobalCliClientOptions) => getGlobalCliClient(args)
+
+  /**
+   * Helper for outputting to the console.
+   *
+   * @example
+   * ```ts
+   * this.output.log('Hello')
+   * this.output.warn('Warning')
+   * this.output.error('Error')
+   * ```
+   */
+  protected output: Output = {
+    error: this.error.bind(this),
+    log: this.log.bind(this),
+    warn: this.warn.bind(this),
+  }
 
   /**
    * Get the CLI config.
