@@ -1,12 +1,12 @@
 import eslint from '@eslint/js'
 import prettier from 'eslint-config-prettier'
+import {createTypeScriptImportResolver} from 'eslint-import-resolver-typescript'
 import importPlugin from 'eslint-plugin-import'
 import nodePlugin from 'eslint-plugin-n'
 import perfectionist from 'eslint-plugin-perfectionist'
 import tsdoc from 'eslint-plugin-tsdoc'
 import unicorn from 'eslint-plugin-unicorn'
 import unusedImports from 'eslint-plugin-unused-imports'
-import {createTypeScriptImportResolver} from 'eslint-import-resolver-typescript'
 import tseslint, {configs} from 'typescript-eslint'
 
 export default [
