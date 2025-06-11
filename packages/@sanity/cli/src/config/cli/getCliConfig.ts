@@ -34,13 +34,16 @@ export async function getCliConfig(rootPath: string): Promise<CliConfig> {
     throw new NotFoundError(`No CLI config found at ${rootPath}/sanity.cli.(ts|js)`)
   }
 
-  let cliConfig: unknown
+  let cliConfig: CliConfig | undefined
   try {
-    cliConfig = await tsxWorkerTask(new URL('getCliConfig.worker.js', import.meta.url), {
-      name: 'cliConfig',
-      rootPath,
-      workerData: {configPath},
-    })
+    cliConfig = await tsxWorkerTask<CliConfig | undefined>(
+      new URL('getCliConfig.worker.js', import.meta.url),
+      {
+        name: 'cliConfig',
+        rootPath,
+        workerData: {configPath},
+      },
+    )
   } catch (err) {
     debug('Failed to load CLI config in worker thread: %s', err)
 
@@ -54,7 +57,9 @@ export async function getCliConfig(rootPath: string): Promise<CliConfig> {
 
     // Ensure we get the default export (sometimes we get a bit of a mixed bag)
     cliConfig = await tsx.import(configPath, import.meta.url)
-    cliConfig = isRecord(cliConfig) && 'default' in cliConfig ? cliConfig.default : cliConfig
+    cliConfig = (isRecord(cliConfig) && 'default' in cliConfig ? cliConfig.default : cliConfig) as
+      | CliConfig
+      | undefined
 
     tsx.unregister()
   }

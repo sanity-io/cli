@@ -23,7 +23,7 @@
     "build:cli": "turbo run build --filter=@sanity/cli",
     "check": "npm run check:lint && npm run check:types",
     "check:lint": "turbo run lint -- --fix",
-    "check:types": "tsc --noEmit",
+    "check:types": "turbo run check:types --filter=@sanity/cli",
     "clean": "rimraf packages/@sanity/*/lib packages/*/lib packages/@sanity/*/dist packages/*/dist",
     "clean:deps": "rimraf packages/*/node_modules examples/*/node_modules node_modules",
     "depcheck": "knip",

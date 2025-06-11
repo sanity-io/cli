@@ -76,11 +76,11 @@ try {
 
 let viteConfig = defaultViteConfig
 if (typeof cliConfig?.vite === 'function') {
-  viteConfig = await cliConfig.vite(viteConfig, {
+  viteConfig = (await cliConfig.vite(viteConfig, {
     command: 'build',
     isSsrBuild: true,
     mode: 'production',
-  })
+  })) as InlineConfig
 } else if (isRecord(cliConfig?.vite)) {
   viteConfig = mergeConfig(viteConfig, cliConfig.vite)
 }

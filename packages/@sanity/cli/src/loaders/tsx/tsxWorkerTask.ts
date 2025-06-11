@@ -30,10 +30,10 @@ interface TsxWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
  * @throws If the worker exits with a non-zero code
  * @internal
  */
-export function tsxWorkerTask(
+export function tsxWorkerTask<T = unknown>(
   filePath: string | URL,
   options: TsxWorkerTaskOptions,
-): Promise<unknown> {
+): Promise<T> {
   const tsconfig = getTsconfig(options.rootPath)
 
   const env = {
