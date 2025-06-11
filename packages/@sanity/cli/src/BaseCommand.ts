@@ -3,6 +3,7 @@ import {Command, Interfaces} from '@oclif/core'
 import {getCliConfig} from './config/cli/getCliConfig.js'
 import {type CliConfig} from './config/cli/types.js'
 import {findProjectRoot, type ProjectRootResult} from './config/findProjectRoot.js'
+import {getGlobalCliClient, type GlobalCliClientOptions} from './core/apiClient.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
   (typeof SanityCliCommand)['baseFlags'] & T['flags']
@@ -15,11 +16,19 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
   protected flags!: Flags<T>
 
   /**
+   * Get the global API client.
+   *
+   * @param args - The global API client options.
+   * @returns The global API client.
+   */
+  protected getGlobalApiClient = (args: GlobalCliClientOptions) => getGlobalCliClient(args)
+
+  /**
    * Get the CLI config.
    *
    * @returns The CLI config.
    */
-  public async getCliConfig(): Promise<CliConfig> {
+  protected async getCliConfig(): Promise<CliConfig> {
     const root = await this.getProjectRoot()
     const config = await getCliConfig(root.directory)
 
@@ -27,11 +36,22 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
   }
 
   /**
+   * Get the project ID from the CLI config.
+   *
+   * @returns The project ID or `undefined` if it's not set.
+   */
+  protected async getProjectId(): Promise<string | undefined> {
+    const config = await this.getCliConfig()
+
+    return config.api?.projectId
+  }
+
+  /**
    * Get the project's root directory by resolving the blueprint or studio config.
    *
    * @returns The root project root.
    */
-  public async getProjectRoot(): Promise<ProjectRootResult> {
+  protected async getProjectRoot(): Promise<ProjectRootResult> {
     const root = await findProjectRoot(process.cwd())
     if (!root) {
       throw new Error('Project root not found')
