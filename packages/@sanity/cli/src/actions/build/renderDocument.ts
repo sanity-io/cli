@@ -84,6 +84,8 @@ export async function renderDocument(options: RenderDocumentOptions): Promise<st
       buildDebug('Document HTML rendered, %d bytes', msg.html.length)
       return msg.html
     }
+
+    throw new Error('Unknown message type')
   } catch (err) {
     buildDebug('Worker errored: %s', err.message)
     throw err

@@ -15,5 +15,5 @@ export type UserViteConfig =
   | InlineConfig
 
 export type CliConfig = z.infer<typeof cliConfigSchema> & {
-  vite: UserViteConfig
+  vite?: UserViteConfig
 }
