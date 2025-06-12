@@ -1,6 +1,3 @@
-import {existsSync} from 'node:fs'
-import {resolve} from 'node:path'
-
 import {getTsconfig} from 'get-tsconfig'
 import {register} from 'tsx/esm/api'
 
@@ -8,6 +5,7 @@ import {debug} from '../../debug.js'
 import {NotFoundError} from '../../errors/NotFoundError.js'
 import {tsxWorkerTask} from '../../loaders/tsx/tsxWorkerTask.js'
 import {isRecord} from '../../util/isRecord.js'
+import {findPathForFiles} from '../util/findConfigsPaths.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types.js'
 
@@ -26,13 +24,20 @@ import {type CliConfig} from './types.js'
  * @internal
  */
 export async function getCliConfig(rootPath: string): Promise<CliConfig> {
-  const configPath = ['sanity.cli.ts', 'sanity.cli.js']
-    .map((file) => resolve(rootPath, file))
-    .find((file) => existsSync(file))
+  const paths = await findPathForFiles(rootPath, ['sanity.cli.ts', 'sanity.cli.js'])
+  const configPaths = paths.filter((path) => path.exists)
 
-  if (!configPath) {
+  if (configPaths.length === 0) {
     throw new NotFoundError(`No CLI config found at ${rootPath}/sanity.cli.(ts|js)`)
   }
+
+  if (configPaths.length > 1) {
+    throw new Error(
+      `Multiple CLI config files found (${configPaths.map((path) => path.path).join(', ')})`,
+    )
+  }
+
+  const configPath = configPaths[0].path
 
   let cliConfig: CliConfig | undefined
   try {

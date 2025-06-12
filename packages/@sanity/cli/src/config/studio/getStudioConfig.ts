@@ -1,4 +1,4 @@
-import {findStudioConfigPath} from '../findProjectRoot.js'
+import {findStudioConfigPath} from '../util/findStudioConfigPath.js'
 import {
   type RawStudioConfig,
   readStudioConfig,
