@@ -3,7 +3,7 @@ import {findStudioConfigPath} from './util/findStudioConfigPath.js'
 import {
   type ProjectRootResult,
   recursivelyResolveProjectRoot,
-} from './util/rescursivelyResolveProjectRoot.js'
+} from './util/recursivelyResolveProjectRoot.js'
 
 /**
  * Resolve project root directory and type.
