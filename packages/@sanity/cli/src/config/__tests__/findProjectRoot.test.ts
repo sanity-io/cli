@@ -109,31 +109,21 @@ describe('#findProjectRoot', () => {
     })
   })
 
-  test('falls back to cwd when no config is found', async () => {
+  test('throws error when no config is found', async () => {
     // Mock access to reject all files
     vi.mocked(access).mockRejectedValue(new Error('File not found'))
 
     // Mock readJsonFile to return non-root config
     vi.mocked(readJsonFile).mockResolvedValue({root: false})
 
-    const result = await findProjectRoot(mockCwd)
-    expect(result).toEqual({
-      directory: mockCwd,
-      type: 'studio',
-    })
+    await expect(findProjectRoot(mockCwd)).rejects.toThrow('No project root found')
   })
 
-  test('handles error when reading sanity.json fails', async () => {
-    // Mock access to reject all config files
-    vi.mocked(access).mockRejectedValue(new Error('File not found'))
+  test('throws an error if v2 studio root is found', async () => {
+    vi.mocked(readJsonFile).mockResolvedValue({root: true})
 
-    // Mock readJsonFile to throw an error
-    vi.mocked(readJsonFile).mockRejectedValue(new Error('Failed to read sanity.json'))
-
-    const result = await findProjectRoot(mockCwd)
-    expect(result).toEqual({
-      directory: mockCwd,
-      type: 'studio',
-    })
+    await expect(findProjectRoot(mockCwd)).rejects.toThrow(
+      "Found 'sanity.json' at /mock/project/path - Sanity Studio < v3 is no longer supported",
+    )
   })
 })
