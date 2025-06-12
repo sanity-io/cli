@@ -3,7 +3,7 @@ import {Command, Interfaces} from '@oclif/core'
 import {getCliConfig} from './config/cli/getCliConfig.js'
 import {type CliConfig} from './config/cli/types.js'
 import {findProjectRoot} from './config/findProjectRoot.js'
-import {type ProjectRootResult} from './config/util/rescursivelyResolveProjectRoot.js'
+import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
 import {getGlobalCliClient, type GlobalCliClientOptions} from './core/apiClient.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
