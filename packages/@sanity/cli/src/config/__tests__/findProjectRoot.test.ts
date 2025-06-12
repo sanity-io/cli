@@ -126,4 +126,75 @@ describe('#findProjectRoot', () => {
       "Found 'sanity.json' at /mock/project/path - Sanity Studio < v3 is no longer supported",
     )
   })
+
+  test('finds a TypeScript app config in the current directory', async () => {
+    // Mock access to return true for sanity.cli.ts
+    vi.mocked(access).mockImplementation((path) => {
+      if (path === join(mockCwd, 'sanity.cli.ts')) {
+        return Promise.resolve()
+      }
+      return Promise.reject(new Error('File not found'))
+    })
+
+    const result = await findProjectRoot(mockCwd)
+    expect(result).toEqual({
+      directory: mockCwd,
+      path: join(mockCwd, 'sanity.cli.ts'),
+      type: 'app',
+    })
+  })
+
+  test('finds a JavaScript app config in the current directory', async () => {
+    // Mock access to return true for sanity.cli.js
+    vi.mocked(access).mockImplementation((path) => {
+      if (path === join(mockCwd, 'sanity.cli.js')) {
+        return Promise.resolve()
+      }
+      return Promise.reject(new Error('File not found'))
+    })
+
+    const result = await findProjectRoot(mockCwd)
+    expect(result).toEqual({
+      directory: mockCwd,
+      path: join(mockCwd, 'sanity.cli.js'),
+      type: 'app',
+    })
+  })
+
+  test('throws error when multiple app config files are found', async () => {
+    // Mock access to return true for multiple app config files
+    vi.mocked(access).mockImplementation((path) => {
+      if (
+        path === join(mockCwd, 'sanity.cli.ts') ||
+        path === join(mockCwd, 'sanity.cli.js')
+      ) {
+        return Promise.resolve()
+      }
+      return Promise.reject(new Error('File not found'))
+    })
+
+    await expect(findProjectRoot(mockCwd)).rejects.toThrow(
+      'Multiple app config files found',
+    )
+  })
+
+  test('prioritizes studio config over app config when both are present', async () => {
+    // Mock access to return true for both studio and app config files
+    vi.mocked(access).mockImplementation((path) => {
+      if (
+        path === join(mockCwd, 'sanity.config.ts') ||
+        path === join(mockCwd, 'sanity.cli.ts')
+      ) {
+        return Promise.resolve()
+      }
+      return Promise.reject(new Error('File not found'))
+    })
+
+    const result = await findProjectRoot(mockCwd)
+    expect(result).toEqual({
+      directory: mockCwd,
+      path: join(mockCwd, 'sanity.config.ts'),
+      type: 'studio',
+    })
+  })
 })
