@@ -1,4 +1,4 @@
-import path, {dirname} from 'node:path'
+import {dirname} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
 import chalk from 'chalk'
@@ -40,7 +40,7 @@ export async function renderDocument(options: RenderDocumentOptions): Promise<st
   buildDebug('Starting worker thread for %s', filename)
   try {
     const msg = await tsxWorkerTask<RenderDocumentWorkerResult>(
-      path.resolve(`${dir}/renderDocument.worker.ts`),
+      new URL(`renderDocument.worker.js`, import.meta.url),
       {
         name: 'renderDocument',
         rootPath: dir,

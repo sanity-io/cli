@@ -1,3 +1,5 @@
+import {existsSync} from 'node:fs'
+import {createRequire} from 'node:module'
 import {URL} from 'node:url'
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
@@ -42,9 +44,21 @@ export function tsxWorkerTask<T = unknown>(
     TSX_WORKER_TASK_SCRIPT: filePath.pathname,
   }
 
-  const worker = new Worker(new URL('tsxWorkerLoader.worker.js', import.meta.url), {
+  let workerLoaderPath = new URL('tsxWorkerLoader.worker.js', import.meta.url).pathname
+  const workerLoaderPathTs = workerLoaderPath.replace(/\.js$/, '.ts')
+
+  const execArgv = [...(options.execArgv || [])]
+  if (existsSync(workerLoaderPathTs)) {
+    // Running from uncompiled/development mode, load the ts version
+    workerLoaderPath = workerLoaderPathTs
+    const require = createRequire(import.meta.url)
+    execArgv.push('--import', require.resolve('ts-blank-space/register'))
+  }
+
+  const worker = new Worker(workerLoaderPath, {
     ...options,
     env,
+    execArgv,
   })
 
   return new Promise((resolve, reject) => {

@@ -34,7 +34,7 @@ type CaptureResult<T = unknown> = {
  * Credits to oclif for the original implementation:
  * https://github.com/oclif/test/blob/2a5407e6fc80d388043d10f6b7b8eaa586483015/src/index.ts
  *
- * We are not using the libary directly since it does not support mocking code inside of the command
+ * We are not using the library directly since it does not support mocking code inside of the command
  * possibly because the commands run in a different thread
  */
 async function captureOutput<T>(

@@ -59,7 +59,7 @@ export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
 
     if (isApp) {
       buildDebug(`Building app`)
-      buildApp({
+      await buildApp({
         autoUpdatesEnabled,
         cliConfig,
         flags,
@@ -69,7 +69,7 @@ export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
       })
     } else {
       buildDebug(`Building studio`)
-      buildStudio({
+      await buildStudio({
         autoUpdatesEnabled,
         cliConfig,
         flags,
