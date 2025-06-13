@@ -29,7 +29,9 @@
     "depcheck": "knip",
     "dev": "turbo run dev",
     "format": "prettier --write .",
+    "pretest": "pnpm run build:cli",
     "test": "vitest run",
+    "pretest:watch": "pnpm run build:cli",
     "test:watch": "vitest",
     "watch:cli": "turbo run watch --filter=@sanity/cli"
   },

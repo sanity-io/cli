@@ -157,6 +157,7 @@ export default [
         'mocha/no-setup-in-describe': 'off',
         'n/hashbang': 0,
         'n/no-missing-import': 'off',
+        'n/no-process-exit': 'off',
         'n/no-unsupported-features/es-syntax': 'off',
         'no-dupe-class-members': 'off',
         'no-redeclare': 'off',

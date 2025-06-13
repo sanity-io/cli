@@ -307,9 +307,6 @@ importers:
       semver-compare:
         specifier: ^1.0.0
         version: 1.0.0
-      ts-blank-space:
-        specifier: ^0.6.1
-        version: 0.6.1
       tsx:
         specifier: ^4.19.3
         version: 4.19.3
@@ -377,9 +374,6 @@ importers:
       rimraf:
         specifier: ^6.0.1
         version: 6.0.1
-      touch:
-        specifier: ^3.1.1
-        version: 3.1.1
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
@@ -6789,10 +6783,6 @@ packages:
     resolution: {integrity: sha512-lbDrTLVsHhOMljPscd0yitpozq7Ga2M5Cvez5AjGg8GASBjtt6iERCAJ93yommPmz62fb45oFIXHEZ3u9bfJEA==}
     engines: {node: '>=14.16'}
 
-  touch@3.1.1:
-    resolution: {integrity: sha512-r0eojU4bI8MnHr8c5bNo7lJDdI2qXlWWJk6a9EAFG7vbhTjElYhBVS3/miuE0uOuoLdb8Mc/rVfsmm6eo5o9GA==}
-    hasBin: true
-
   tough-cookie@4.1.4:
     resolution: {integrity: sha512-Loo5UUvLD9ScZ6jh8beX1T6sO1w2/MpCRpEP7V280GKMVUQ0Jzar2U3UJPsrdbziLEMMhu3Ujnq//rhiFuIeag==}
     engines: {node: '>=6'}
@@ -6818,10 +6808,6 @@ packages:
     engines: {node: '>=18.12'}
     peerDependencies:
       typescript: '>=4.8.4'
-
-  ts-blank-space@0.6.1:
-    resolution: {integrity: sha512-LcM3W5HEyzTaXUeQITV8ploUOGe+zuuoFYsCfPscFLhx3bZn2sSfHMKxsULVG/zA7an9UhReiHv4Kk/6QzlpXQ==}
-    engines: {node: '>=18.0.0'}
 
   ts-brand@0.2.0:
     resolution: {integrity: sha512-H5uo7OqMvd91D2EefFmltBP9oeNInNzWLAZUSt6coGDn8b814Eis6SnEtzyXORr9ccEb38PfzyiRVDacdkycSQ==}
@@ -15277,8 +15263,6 @@ snapshots:
       '@tokenizer/token': 0.3.0
       ieee754: 1.2.1
 
-  touch@3.1.1: {}
-
   tough-cookie@4.1.4:
     dependencies:
       psl: 1.15.0
@@ -15299,10 +15283,6 @@ snapshots:
   trim-newlines@3.0.1: {}
 
   ts-api-utils@2.1.0(typescript@5.8.3):
-    dependencies:
-      typescript: 5.8.3
-
-  ts-blank-space@0.6.1:
     dependencies:
       typescript: 5.8.3
 

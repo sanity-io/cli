@@ -41,8 +41,8 @@
     "postbuild": "pnpm run manifest:generate",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
-    "make:devfile": "nodetouch isDev",
     "manifest:generate": "oclif manifest",
+    "manifest:remove": "rimraf oclif.manifest.json",
     "prepack": "pnpm run manifest:generate",
     "postpack": "rimraf oclif.manifest.json",
     "test": "vitest run",
@@ -50,9 +50,8 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "version": "oclif readme && git add README.md",
-    "prewatch": "rimraf oclif.manifest.json && pnpm run make:devfile",
-    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src",
-    "postwatch": "rimraf isDev"
+    "prewatch": "pnpm run manifest:remove",
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
     "@inquirer/prompts": "^7.3.2",
@@ -74,7 +73,6 @@
     "resolve-from": "^5.0.0",
     "semver": "^7.7.2",
     "semver-compare": "^1.0.0",
-    "ts-blank-space": "^0.6.1",
     "tsx": "^4.19.3",
     "vite": "^6.3.5",
     "vite-node": "^3.0.8",
@@ -99,7 +97,6 @@
     "nock": "^14.0.4",
     "oclif": "^4.17.46",
     "rimraf": "^6.0.1",
-    "touch": "^3.1.1",
     "typescript": "^5.8.3",
     "vitest": "^3.1.3"
   },

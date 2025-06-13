@@ -1,6 +1,3 @@
-import {existsSync} from 'node:fs'
-import {dirname, resolve as resolvePath} from 'node:path'
-import {fileURLToPath} from 'node:url'
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {type RequireProps} from '../../typeHelpers.js'
@@ -44,35 +41,21 @@ interface StudioWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
  * @internal
  */
 export function studioWorkerTask(
-  filePath: string,
+  filePath: URL,
   options: StudioWorkerTaskOptions,
 ): Promise<unknown> {
   return new Promise((resolve, reject) => {
-    if (!/\.worker\.(js|ts)$/.test(filePath)) {
+    if (!/\.worker\.(js|ts)$/.test(filePath.pathname)) {
       throw new Error('Studio worker tasks must include `.worker.(js|ts)` in path')
     }
 
-    let workerLoaderPath = resolvePath(
-      dirname(fileURLToPath(import.meta.url)),
-      'studioWorkerLoader.worker.js',
-    )
-    const workerLoaderPathTs = workerLoaderPath.replace(/\.js$/, '.ts')
-
-    const execArgv = [...(options.execArgv || [])]
-    if (existsSync(workerLoaderPathTs)) {
-      // Running from uncompiled/development mode, load the ts version
-      workerLoaderPath = workerLoaderPathTs
-      execArgv.push('--import', fileURLToPath(import.meta.resolve('ts-blank-space/register')))
-    }
-
-    const worker = new Worker(workerLoaderPath, {
+    const worker = new Worker(new URL('studioWorkerLoader.worker.js', import.meta.url), {
       ...options,
       env: {
         ...(isRecord(options.env) ? options.env : process.env),
         STUDIO_WORKER_STUDIO_ROOT_PATH: options.studioRootPath,
-        STUDIO_WORKER_TASK_FILE: filePath,
+        STUDIO_WORKER_TASK_FILE: filePath.pathname,
       },
-      execArgv,
     })
 
     worker.addListener('error', function onWorkerError(err) {
