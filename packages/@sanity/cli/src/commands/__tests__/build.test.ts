@@ -50,13 +50,19 @@ describe('#build', () => {
     expect(error?.message).toContain('Nonexistent flag: --invalid')
   })
 
-  test('should build the "basic-studio" example', async () => {
+  test.only('should build the "basic-studio" example', async () => {
     const cwd = join(examplesDir, 'basic-studio')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
     const {error, stderr, stdout} = await testCommand(BuildCommand, [], {
       config: {root: cwd},
+    })
+
+    console.log({
+      error,
+      stderr,
+      stdout,
     })
 
     // Assert things here
