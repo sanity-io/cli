@@ -11,4 +11,5 @@ coverage
 yarn.lock
 package-lock.json
 
-isdev
+# Worker js files, created for tests
+*.worker.js
