@@ -1,3 +1,4 @@
+import {readdir, readFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
@@ -50,7 +51,7 @@ describe('#build', () => {
     expect(error?.message).toContain('Nonexistent flag: --invalid')
   })
 
-  test.only('should build the "basic-studio" example', async () => {
+  test('should build the "basic-studio" example', async () => {
     const cwd = join(examplesDir, 'basic-studio')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
@@ -59,16 +60,57 @@ describe('#build', () => {
       config: {root: cwd},
     })
 
-    console.log({
-      error,
-      stderr,
-      stdout,
-    })
-
     // Assert things here
     expect(error).toBeUndefined()
     expect(stdout).toContain(`Building with auto-updates enabled`)
     expect(stderr).toContain('✔ Clean output folder')
     expect(stderr).toContain(`✔ Build Sanity Studio`)
+
+    const outputFolder = join(cwd, 'dist')
+    const files = await readdir(outputFolder)
+    expect(files).toContain('index.html')
+    expect(files).toContain('static')
+  })
+
+  test('should build the "basic-app" example', async () => {
+    const cwd = join(examplesDir, 'basic-app')
+    // Mock the process.cwd() to the example directory
+    process.cwd = () => cwd
+
+    const {error, stderr} = await testCommand(BuildCommand, [], {
+      config: {root: cwd},
+    })
+
+    expect(error).toBeUndefined()
+    expect(stderr).toContain('Clean output folder')
+    expect(stderr).toContain(`Build Sanity application`)
+
+    const outputFolder = join(cwd, 'dist')
+    const files = await readdir(outputFolder)
+    expect(files).toContain('index.html')
+    expect(files).toContain('static')
+  })
+
+  test('should build the "basic-app" example with auto-updates', async () => {
+    const cwd = join(examplesDir, 'basic-app')
+    // Mock the process.cwd() to the example directory
+    process.cwd = () => cwd
+
+    const {error, stderr, stdout} = await testCommand(BuildCommand, ['--auto-updates'], {
+      config: {root: cwd},
+    })
+
+    expect(error).toBeUndefined()
+    expect(stdout).toContain(`Building with auto-updates enabled`)
+    expect(stderr).toContain('Clean output folder')
+    expect(stderr).toContain(`Build Sanity application`)
+
+    const outputFolder = join(cwd, 'dist')
+    const files = await readdir(outputFolder)
+    expect(files).toContain('index.html')
+    expect(files).toContain('static')
+
+    const indexHtml = await readFile(join(outputFolder, 'index.html'), 'utf8')
+    expect(indexHtml).toContain('importmap')
   })
 })
