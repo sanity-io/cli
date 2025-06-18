@@ -1,11 +1,7 @@
 import fs from 'node:fs'
-import path from 'node:path'
 
 import {buildDebug} from '../buildDebug.js'
-
-function getPossibleDocumentComponentLocations(studioRootPath: string): string[] {
-  return [path.join(studioRootPath, '_document.js'), path.join(studioRootPath, '_document.tsx')]
-}
+import {getPossibleDocumentComponentLocations} from '../getPossibleDocumentComponentLocations.js'
 
 /**
  * @internal
