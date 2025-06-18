@@ -44,7 +44,7 @@ export async function renderDocument(options: RenderDocumentOptions): Promise<st
       {
         name: 'renderDocument',
         rootPath: dir,
-        workerData: {...options, dev: globalThis.__DEV__, shouldWarn: true},
+        workerData: {...options, shouldWarn: true},
       },
     )
 

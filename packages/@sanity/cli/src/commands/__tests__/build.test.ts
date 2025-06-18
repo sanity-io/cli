@@ -56,7 +56,7 @@ describe('#build', () => {
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
-    const {error, stderr, stdout} = await testCommand(BuildCommand, [], {
+    const {error, stderr, stdout} = await testCommand(BuildCommand, ['--yes'], {
       config: {root: cwd},
     })
 
@@ -77,7 +77,7 @@ describe('#build', () => {
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
-    const {error, stderr} = await testCommand(BuildCommand, [], {
+    const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
       config: {root: cwd},
     })
 
@@ -96,7 +96,7 @@ describe('#build', () => {
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
-    const {error, stderr, stdout} = await testCommand(BuildCommand, ['--auto-updates'], {
+    const {error, stderr, stdout} = await testCommand(BuildCommand, ['--auto-updates', '--yes'], {
       config: {root: cwd},
     })
 

@@ -23,10 +23,6 @@ interface RenderDocumentOptions {
 async function renderDocument(parent: MessagePort, options: RenderDocumentOptions) {
   const {importMap, isApp, props, studioRootPath} = options
 
-  if (workerData?.dev) {
-    globalThis.__DEV__ = true
-  }
-
   if (typeof studioRootPath !== 'string') {
     parent.postMessage({
       message: 'Missing/invalid `studioRootPath` option',
