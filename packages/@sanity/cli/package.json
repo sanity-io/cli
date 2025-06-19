@@ -87,7 +87,6 @@
     "resolve.exports": "^2.0.3",
     "semver": "^7.7.2",
     "semver-compare": "^1.0.0",
-    "ts-blank-space": "0.6.1",
     "tsx": "^4.19.3",
     "vite": "^6.3.5",
     "vite-node": "^3.0.8",

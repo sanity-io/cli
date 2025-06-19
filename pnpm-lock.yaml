@@ -371,9 +371,6 @@ importers:
       semver-compare:
         specifier: ^1.0.0
         version: 1.0.0
-      ts-blank-space:
-        specifier: 0.6.1
-        version: 0.6.1
       tsx:
         specifier: ^4.19.3
         version: 4.19.3
@@ -7071,10 +7068,6 @@ packages:
     engines: {node: '>=18.12'}
     peerDependencies:
       typescript: '>=4.8.4'
-
-  ts-blank-space@0.6.1:
-    resolution: {integrity: sha512-LcM3W5HEyzTaXUeQITV8ploUOGe+zuuoFYsCfPscFLhx3bZn2sSfHMKxsULVG/zA7an9UhReiHv4Kk/6QzlpXQ==}
-    engines: {node: '>=18.0.0'}
 
   ts-brand@0.2.0:
     resolution: {integrity: sha512-H5uo7OqMvd91D2EefFmltBP9oeNInNzWLAZUSt6coGDn8b814Eis6SnEtzyXORr9ccEb38PfzyiRVDacdkycSQ==}
@@ -15799,10 +15792,6 @@ snapshots:
   trim-newlines@3.0.1: {}
 
   ts-api-utils@2.1.0(typescript@5.8.3):
-    dependencies:
-      typescript: 5.8.3
-
-  ts-blank-space@0.6.1:
     dependencies:
       typescript: 5.8.3
 
