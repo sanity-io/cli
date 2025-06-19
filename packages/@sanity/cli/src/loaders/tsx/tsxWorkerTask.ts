@@ -42,8 +42,7 @@ export function tsxWorkerTask<T = unknown>(
     TSX_WORKER_TASK_SCRIPT: filePath.pathname,
   }
 
-  const workerLoaderPath = new URL('tsxWorkerLoader.worker.js', import.meta.url)
-  const worker = new Worker(workerLoaderPath, {
+  const worker = new Worker(new URL('tsxWorkerLoader.worker.js', import.meta.url), {
     ...options,
     env,
   })
