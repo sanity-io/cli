@@ -14,7 +14,7 @@ export default defineConfig({
     },
     environment: 'node',
     globals: false,
-    globalSetup: ['test/globalSetup.ts'],
+    globalSetup: ['test/globalSetup.ts', 'test/workerBuild.ts'],
     setupFiles: ['test/setup.ts'],
   },
 })

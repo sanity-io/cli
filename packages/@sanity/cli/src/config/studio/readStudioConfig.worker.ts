@@ -5,7 +5,7 @@ import {createClient} from '@sanity/client'
 import {moduleResolve} from 'import-meta-resolve'
 import {z} from 'zod'
 
-import {safeStructuredClone} from '../../../util/safeStructuredClone.js'
+import {safeStructuredClone} from '../../util/safeStructuredClone.js'
 
 if (isMainThread || !parentPort) {
   throw new Error('Should only be run in a worker!')
@@ -57,7 +57,6 @@ parentPort.postMessage(safeStructuredClone(config))
 // Explicitly exit the process to avoid any dangling references from keeping
 // the process alive after resolving it's main task
 setImmediate(() => {
-  // eslint-disable-next-line n/no-process-exit
   process.exit(1)
 })
 

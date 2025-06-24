@@ -21,6 +21,14 @@ You _may_ have to run `npm run build` (`npm run watch` is also available) to bui
 
 In development mode, all the command modules will be "loaded" (eg imported) in order to get their help description etc. At build time (pre-publish), a manifest file will be generated containing the available commands. This will be used by the CLI to determine which commands are available, and prevent loading commands that are not to be run (functionality provided by oclif, not specific to Sanity CLI).
 
+## Local Development
+
+To run the CLI in development mode, you can run `pnpm run watch` in the `packages/@sanity/cli` folder or `pnpm watch:cli` in the root of the repo.
+
+This will watch for changes in the `src` folder and rebuild the CLI on every change running it from the `dist` folder.
+
+To test the specific commands you can navigate to `examples` and run `npx sanity <command>`. Since everything is watching for changes no need to rebuild when trying new commands.
+
 ## Migration progress
 
 | Ported? | Command   |
@@ -44,7 +52,7 @@ In development mode, all the command modules will be "loaded" (eg imported) in o
 | ✅      | learn     |
 | ✅      | login     |
 | ✅      | logout    |
-| ❌      | manage    |
+| ✅      | manage    |
 | ❌      | manifest  |
 | ❌      | migration |
 | ❌      | preview   |

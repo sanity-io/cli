@@ -31,7 +31,7 @@ interface TsxWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
  * @internal
  */
 export function tsxWorkerTask<T = unknown>(
-  filePath: string | URL,
+  filePath: URL,
   options: TsxWorkerTaskOptions,
 ): Promise<T> {
   const tsconfig = getTsconfig(options.rootPath)
@@ -39,7 +39,7 @@ export function tsxWorkerTask<T = unknown>(
   const env = {
     ...(isRecord(options.env) ? options.env : process.env),
     ...(tsconfig?.path ? {TSX_TSCONFIG_PATH: tsconfig.path} : {}),
-    TSX_WORKER_TASK_SCRIPT: filePath instanceof URL ? filePath.toString() : filePath,
+    TSX_WORKER_TASK_SCRIPT: filePath.pathname,
   }
 
   const worker = new Worker(new URL('tsxWorkerLoader.worker.js', import.meta.url), {
