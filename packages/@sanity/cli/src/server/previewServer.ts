@@ -1,34 +1,40 @@
 import fs from 'node:fs/promises'
+import {createRequire} from 'node:module'
 import path from 'node:path'
 
-import {type UserViteConfig} from '@sanity/cli'
 import chalk from 'chalk'
 import {type InlineConfig} from 'vite'
 
-import {debug as serverDebug} from './debug'
-import {extendViteConfigWithUserConfig} from './getViteConfig'
-import {sanityBasePathRedirectPlugin} from './vite/plugin-sanity-basepath-redirect'
+import {extendViteConfigWithUserConfig} from '../actions/build/getViteConfig.js'
+import {type UserViteConfig} from '../config/cli/types.js'
+import {serverDebug} from './serverDebug.js'
+import {sanityBasePathRedirectPlugin} from './vite/plugin-sanity-basepath-redirect.js'
+
+const require = createRequire(import.meta.url)
+const {version} = require('vite/package.json')
 
 const debug = serverDebug.extend('preview')
 
 export interface PreviewServer {
-  urls: {local: string[]; network: string[]}
   close(): Promise<void>
+  urls: {local: string[]; network: string[]}
 }
 
 export interface PreviewServerOptions {
-  root: string
   cwd: string
-
   httpPort: number
-  httpHost?: string
 
-  vite?: UserViteConfig
+  root: string
+
+  workDir: string
+
+  httpHost?: string
   isApp?: boolean
+  vite?: UserViteConfig
 }
 
 export async function startPreviewServer(options: PreviewServerOptions): Promise<PreviewServer> {
-  const {httpPort, httpHost, root, vite: extendViteConfig, isApp} = options
+  const {httpHost, httpPort, isApp, root, vite: extendViteConfig, workDir} = options
   const startTime = Date.now()
 
   const indexPath = path.join(root, 'index.html')
@@ -50,20 +56,20 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
 
   const mode = 'production'
   let previewConfig: InlineConfig = {
-    root,
     base: basePath || '/',
-    plugins: [sanityBasePathRedirectPlugin(basePath)],
-    configFile: false,
-    preview: {
-      port: httpPort,
-      host: httpHost,
-      strictPort: true,
-    },
     // Needed for vite to not serve `root/dist`
     build: {
       outDir: root,
     },
+    configFile: false,
     mode,
+    plugins: [sanityBasePathRedirectPlugin(basePath)],
+    preview: {
+      host: httpHost,
+      port: httpPort,
+      strictPort: true,
+    },
+    root: workDir,
   }
 
   // Extend Vite configuration with user-provided config
@@ -82,7 +88,7 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
   const info = server.config.logger.info
   const url = server.resolvedUrls!.local[0]
 
-  if (typeof basePath === 'undefined') {
+  if (basePath === undefined) {
     warn('Could not determine base path from index.html, using "/" as default')
   } else if (basePath && basePath !== '/') {
     info(`Using resolved base path from static build: ${chalk.cyan(basePath)}`)
@@ -92,17 +98,17 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
 
   info(
     `Sanity ${isApp ? 'application' : 'Studio'} ` +
-      `using ${chalk.cyan(`vite@${require('vite/package.json').version}`)} ` +
+      `using ${chalk.cyan(`vite@${version}`)} ` +
       `ready in ${chalk.cyan(`${Math.ceil(startupDuration)}ms`)} ` +
       `and running at ${chalk.cyan(url)} (production preview mode)`,
   )
 
   return {
-    urls: server.resolvedUrls!,
     close: () =>
       new Promise((resolve, reject) =>
         server.httpServer.close((err) => (err ? reject(err) : resolve())),
       ),
+    urls: server.resolvedUrls!,
   }
 }
 
@@ -113,7 +119,7 @@ function tryResolveBasePathFromIndex(index: string): string | undefined {
   // We _expect_ to be able to find the base path. If we can't, we should warn.
   // Note that we're checking for `undefined` here, since an empty string is a
   // valid base path.
-  if (typeof basePath === 'undefined') {
+  if (basePath === undefined) {
     return undefined
   }
 

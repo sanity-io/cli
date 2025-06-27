@@ -1,0 +1,86 @@
+import path from 'node:path'
+
+import {confirm} from '@inquirer/prompts'
+import {Args, Flags} from '@oclif/core'
+import chalk from 'chalk'
+
+import {previewAction} from '../actions/preview/previewAction.js'
+import {SanityCliCommand} from '../BaseCommand.js'
+import {isInteractive} from '../util/isInteractive.js'
+
+export class StartCommand extends SanityCliCommand<typeof StartCommand> {
+  static override args = {
+    outputDir: Args.directory({description: 'Output directory'}),
+  }
+
+  static override description = 'Alias for `sanity preview`'
+
+  static override examples = [
+    '<%= config.bin %> <%= command.id %> --host=0.0.0.0',
+    '<%= config.bin %> <%= command.id %> --port=1942',
+    '<%= config.bin %> <%= command.id %> some/build-output-dir',
+  ]
+
+  static override flags = {
+    host: Flags.string({
+      default: 'localhost',
+      description: 'The local network interface at which to listen.',
+    }),
+    port: Flags.string({
+      default: '3333',
+      description: 'TCP port to start server on.',
+    }),
+  }
+
+  showWarning = (msg: string) => this.output.log(chalk.yellow.bgBlack(msg))
+
+  public async run(): Promise<void> {
+    const {args, flags} = await this.parse(StartCommand)
+
+    this.showWarning('╭───────────────────────────────────────────────────────────╮')
+    this.showWarning('│                                                           │')
+    this.showWarning("│  You're running Sanity Studio v3. In this version the     │")
+    this.showWarning('│  [start] command is used to preview static builds.        |')
+    this.showWarning('│                                                           │')
+    this.showWarning('│  To run a development server, use the [npm run dev] or    |')
+    this.showWarning('│  [npx sanity dev] command instead. For more information,  │')
+    this.showWarning('│  see https://www.sanity.io/help/studio-v2-vs-v3           │')
+    this.showWarning('│                                                           │')
+    this.showWarning('╰───────────────────────────────────────────────────────────╯')
+    this.showWarning('') // Newline to separate from other output
+
+    const workDir = (await this.getProjectRoot()).directory
+    const cliConfig = await this.getCliConfig()
+
+    const {outputDir} = args
+
+    const defaultRootDir = path.resolve(path.join(workDir, 'dist'))
+    const outDir = path.resolve(outputDir || defaultRootDir)
+
+    try {
+      await previewAction({cliConfig, flags, outDir, workDir})
+    } catch (error) {
+      if (error.name !== 'BUILD_NOT_FOUND') {
+        throw error
+      }
+
+      this.output.log(chalk.red.bgBlack(error.message))
+      this.output.log(chalk.red.bgBlack('\n'))
+
+      const shouldRunDevServer =
+        isInteractive &&
+        (await confirm({
+          message: 'Do you want to start a development server instead?',
+        }))
+
+      if (shouldRunDevServer) {
+        // TODO: Implement dev server
+        this.output.log(chalk.green.bgBlack('Starting development server...'))
+      } else {
+        // Indicate that this isn't an expected exit
+
+        process.exit(1)
+      }
+    }
+  }
+}
