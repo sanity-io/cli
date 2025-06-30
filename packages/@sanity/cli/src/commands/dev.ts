@@ -1,6 +1,9 @@
-import {Command, Flags} from '@oclif/core'
-import {type FlagInput} from '@oclif/core/interfaces'
-import {SanityCommand} from '@sanity/cli-core'
+import {confirm} from '@inquirer/prompts'
+import {Flags} from '@oclif/core'
+import {isInteractive, SanityCommand} from '@sanity/cli-core'
+import chalk from 'chalk'
+
+import {devAction} from '../actions/dev/devAction.js'
 
 export class DevCommand extends SanityCommand<typeof DevCommand> {
   static override description =
@@ -9,22 +12,58 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
   static override examples = [
     '<%= config.bin %> <%= command.id %> --host=0.0.0.0',
     '<%= config.bin %> <%= command.id %> --port=1942',
-  ] satisfies Array<Command.Example>
+    '<%= config.bin %> <%= command.id %> --load-in-dashboard',
+  ]
 
   static override flags = {
     host: Flags.string({
-      default: '127.0.0.1',
-      description: 'The local network interface at which to listen',
+      default: 'localhost',
+      description: 'The local network interface at which to listen.',
     }),
-    port: Flags.integer({
-      default: 3333,
-      description: 'TCP port to start server on',
-      max: 65_535,
-      min: 1,
+    'load-in-dashboard': Flags.boolean({
+      allowNo: true,
+      default: false,
+      description: 'Load the dev server in the Sanity dashboard.',
     }),
-  } satisfies FlagInput
+    port: Flags.string({
+      default: '3333',
+      description: 'TCP port to start server on.',
+    }),
+  }
 
   public async run(): Promise<void> {
-    this.log(JSON.stringify(this.flags))
+    const {flags} = await this.parse(DevCommand)
+
+    const workDir = (await this.getProjectRoot()).directory
+    const cliConfig = await this.getCliConfig()
+
+    try {
+      await devAction({
+        cliConfig,
+        flags,
+        output: this.output,
+        workDir,
+      })
+    } catch (error) {
+      this.output.log(chalk.red.bgBlack(`Failed to start dev server: ${error.message}`))
+
+      if (error.name === 'MISSING_DEPENDENCIES') {
+        const shouldInstall =
+          isInteractive &&
+          (await confirm({
+            message: 'Missing dependencies detected. Would you like to install them?',
+          }))
+
+        if (shouldInstall) {
+          // TODO: Implement dependency installation
+          this.output.log(chalk.green.bgBlack('Installing dependencies...'))
+        } else {
+          process.exit(1)
+        }
+      } else {
+        // Re-throw for unexpected errors
+        throw error
+      }
+    }
   }
 }

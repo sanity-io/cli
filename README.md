@@ -40,7 +40,7 @@ To test the specific commands you can navigate to `examples` and run `npx sanity
 | ❌      | dataset   |
 | ✅      | debug     |
 | ❌      | deploy    |
-| ❌      | dev       |
+| ✅      | dev       |
 | ✅      | docs      |
 | ❌      | documents |
 | ❌      | exec      |
