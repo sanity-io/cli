@@ -3,11 +3,11 @@ import {type CliConfig} from '@sanity/cli-core'
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
 import {startPreviewServer} from '../../server/previewServer.js'
 import {getPreviewServerConfig} from './getPreviewServerConfig.js'
-import {type StartFlags} from './types.js'
+import {type ServerFlags} from './types.js'
 
 interface PreviewActionOptions {
   cliConfig: CliConfig
-  flags: StartFlags
+  flags: ServerFlags
   outDir: string
   workDir: string
 }
