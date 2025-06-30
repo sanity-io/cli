@@ -15,12 +15,12 @@ const {version} = require('vite/package.json')
 
 const debug = serverDebug.extend('preview')
 
-export interface PreviewServer {
+interface PreviewServer {
   close(): Promise<void>
   urls: {local: string[]; network: string[]}
 }
 
-export interface PreviewServerOptions {
+interface PreviewServerOptions {
   cwd: string
   httpPort: number
 
