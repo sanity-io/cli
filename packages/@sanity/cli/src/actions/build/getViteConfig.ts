@@ -1,4 +1,5 @@
 import path from 'node:path'
+import {fileURLToPath} from 'node:url'
 
 import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core'
 import debug from 'debug'
@@ -9,7 +10,6 @@ import {sanityBuildEntries} from '../../server/vite/plugin-sanity-build-entries.
 import {sanityFaviconsPlugin} from '../../server/vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from '../../server/vite/plugin-sanity-runtime-rewrite.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
-import {getSanityPkgExportAliases} from './getBrowserAliases.js'
 import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
@@ -80,7 +80,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
 
   const basePath = normalizeBasePath(rawBasePath)
 
-  const sanityPkgPath = (await readPackageUp({cwd}))?.path
+  const sanityPkgPath = (await readPackageUp({cwd: fileURLToPath(import.meta.url)}))?.path
   if (!sanityPkgPath) {
     throw new Error('Unable to resolve `sanity` module root')
   }
@@ -132,7 +132,6 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       sanityBuildEntries({basePath, cwd, importMap, isApp}),
     ],
     resolve: {
-      alias: await getSanityPkgExportAliases(sanityPkgPath),
       dedupe: ['styled-components'],
     },
     root: cwd,

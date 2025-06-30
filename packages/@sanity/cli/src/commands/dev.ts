@@ -16,6 +16,10 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
   ]
 
   static override flags = {
+    'auto-updates': Flags.boolean({
+      allowNo: true,
+      description: 'Automatically update Sanity Studio dependencies.',
+    }),
     host: Flags.string({
       default: 'localhost',
       description: 'The local network interface at which to listen.',
@@ -39,13 +43,14 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
 
     try {
       await devAction({
+        apiClient: this.getGlobalApiClient,
         cliConfig,
         flags,
         output: this.output,
         workDir,
       })
     } catch (error) {
-      this.output.log(chalk.red.bgBlack(`Failed to start dev server: ${error.message}`))
+      this.output.log(chalk.red.bgBlack(`Failed to start dev server: ${error.message}`, error))
 
       if (error.name === 'MISSING_DEPENDENCIES') {
         const shouldInstall =

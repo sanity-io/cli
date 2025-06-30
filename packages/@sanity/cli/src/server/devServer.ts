@@ -32,7 +32,7 @@ export interface DevServerOptions {
   vite?: UserViteConfig
 }
 
-export interface DevServer {
+interface DevServer {
   close(): Promise<void>
 }
 

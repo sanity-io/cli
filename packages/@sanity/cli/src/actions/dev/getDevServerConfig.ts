@@ -4,6 +4,7 @@ import {type CliConfig} from '../../config/cli/types.js'
 import {spinner} from '../../core/spinner.js'
 import {type DevServerOptions} from '../../server/devServer.js'
 import {type Output} from '../../types.js'
+import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {type DevFlags} from './types.js'
 
 export function getDevServerConfig({
@@ -19,10 +20,14 @@ export function getDevServerConfig({
 }): Omit<DevServerOptions, 'spinner'> {
   const configSpinner = spinner('Checking configuration files...')
 
-  // Basic configuration based on flags and CLI config
-  const httpHost = flags.host || 'localhost'
-  const httpPort = Number.parseInt(flags.port, 10) || 3333
-  const basePath = cliConfig?.project?.basePath || '/'
+  const baseConfig = getSharedServerConfig({
+    cliConfig,
+    flags: {
+      host: flags.host,
+      port: flags.port,
+    },
+    workDir,
+  })
 
   configSpinner.succeed()
 
@@ -38,10 +43,7 @@ export function getDevServerConfig({
   }
 
   return {
-    basePath: env.SANITY_STUDIO_BASEPATH || basePath,
-    cwd: workDir,
-    httpHost,
-    httpPort,
+    ...baseConfig,
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),

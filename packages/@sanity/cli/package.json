@@ -89,7 +89,6 @@
     "react-dom": "^18.3.1",
     "read-package-up": "^11.0.0",
     "resolve-from": "^5.0.0",
-    "resolve.exports": "^2.0.3",
     "semver": "^7.7.2",
     "semver-compare": "^1.0.0",
     "tar-fs": "^3.1.0",
