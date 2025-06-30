@@ -2,7 +2,8 @@ import {Command, Interfaces} from '@oclif/core'
 
 import {getCliConfig} from './config/cli/getCliConfig.js'
 import {type CliConfig} from './config/cli/types.js'
-import {findProjectRoot, type ProjectRootResult} from './config/findProjectRoot.js'
+import {findProjectRoot} from './config/findProjectRoot.js'
+import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
 import {getGlobalCliClient, type GlobalCliClientOptions} from './core/apiClient.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
@@ -47,17 +48,12 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
   }
 
   /**
-   * Get the project's root directory by resolving the blueprint or studio config.
+   * Get the project's root directory by resolving the config
    *
    * @returns The root project root.
    */
-  protected async getProjectRoot(): Promise<ProjectRootResult> {
-    const root = await findProjectRoot(process.cwd())
-    if (!root) {
-      throw new Error('Project root not found')
-    }
-
-    return root
+  protected getProjectRoot(): Promise<ProjectRootResult> {
+    return findProjectRoot(process.cwd())
   }
 
   public async init(): Promise<void> {
