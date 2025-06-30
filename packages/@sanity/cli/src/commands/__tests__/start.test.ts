@@ -26,8 +26,51 @@ vi.mock('../../util/isInteractive.js', () => ({
   isInteractive: true,
 }))
 
+// Mock fs/promises to control file existence
+vi.mock('node:fs/promises', async () => {
+  const actual = await vi.importActual('node:fs/promises')
+  return {
+    ...actual,
+    access: vi.fn().mockImplementation((path) => {
+      // Only allow access to .ts files (not .js) to avoid multiple config file errors
+      if (typeof path === 'string' && path.endsWith('.js')) {
+        return Promise.reject(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
+      }
+      return Promise.resolve(undefined)
+    }),
+    readdir: vi.fn().mockImplementation((path) => {
+      // Return different results based on what's being read
+      if (path.includes('basic-studio')) {
+        return Promise.resolve(['sanity.config.ts', 'sanity.cli.ts', 'package.json'])
+      }
+      return Promise.resolve([])
+    }),
+    readFile: vi.fn(),
+    stat: vi.fn().mockResolvedValue({isDirectory: () => true}),
+  }
+})
+
+// Mock findProjectRoot to avoid multiple config file errors
+vi.mock('../../config/findProjectRoot.js', async () => {
+  const {join, resolve} = await import('node:path')
+  const {fileURLToPath} = await import('node:url')
+  const __dirname = fileURLToPath(new URL('.', import.meta.url))
+  const rootDir = resolve(__dirname, '../../../../../../')
+  const examplesDir = resolve(rootDir, 'examples')
+  const cwd = join(examplesDir, 'basic-studio')
+
+  return {
+    findProjectRoot: vi.fn().mockResolvedValue({
+      directory: cwd,
+      root: cwd,
+      type: 'studio',
+    }),
+  }
+})
+
 const mockVitePreview = vi.mocked((await import('vite')).preview)
 const mockConfirm = vi.mocked(confirm)
+const mockReadFile = vi.mocked((await import('node:fs/promises')).readFile)
 
 // Mock process.exit
 const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
@@ -59,6 +102,9 @@ describe('#start', () => {
     } as never)
 
     mockConfirm.mockResolvedValue(false)
+
+    // Mock readFile to simulate a valid index.html by default
+    mockReadFile.mockResolvedValue('<html><script src="/static/sanity-abc123.js"></script></html>')
 
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
@@ -153,7 +199,9 @@ describe('#start', () => {
   })
 
   test('starts preview server with custom output directory', async () => {
-    // Use a directory that definitely doesn't exist
+    // Mock readFile to throw ENOENT error for missing index.html
+    mockReadFile.mockRejectedValueOnce(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
+
     const {stdout} = await testCommand(StartCommand, ['non-existent-build-directory'], {
       config: {root: cwd},
     })
@@ -163,7 +211,8 @@ describe('#start', () => {
   })
 
   test('handles BUILD_NOT_FOUND error when no index.html exists', async () => {
-    // Use a directory that definitely doesn't exist
+    // Mock readFile to throw ENOENT error for missing index.html
+    mockReadFile.mockRejectedValueOnce(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
     mockConfirm.mockResolvedValue(true)
 
     const {stdout} = await testCommand(StartCommand, ['non-existent-build-directory'], {
@@ -178,7 +227,8 @@ describe('#start', () => {
   })
 
   test('handles BUILD_NOT_FOUND error and user declines dev server', async () => {
-    // Use a directory that definitely doesn't exist
+    // Mock readFile to throw ENOENT error for missing index.html
+    mockReadFile.mockRejectedValueOnce(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
     mockConfirm.mockResolvedValue(false)
 
     const {error} = await testCommand(StartCommand, ['non-existent-build-directory'], {
@@ -208,6 +258,9 @@ describe('#start', () => {
   test('handles generic vite preview server errors', async () => {
     // Test that generic errors from vite preview are properly propagated
     // (as opposed to BUILD_NOT_FOUND errors which are handled specially)
+
+    // Ensure index.html exists so we don't hit BUILD_NOT_FOUND
+    // The default mock already handles this, so no need to change it
 
     const genericError = new Error('Generic server error')
     mockVitePreview.mockRejectedValue(genericError)
