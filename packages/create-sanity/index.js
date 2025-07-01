@@ -1,9 +1,18 @@
 #!/usr/bin/env node
-const childProcess = require('node:child_process')
-const path = require('node:path')
-const resolvePkg = require('resolve-pkg')
+import {spawn} from 'node:child_process'
+import {join} from 'node:path'
+
+import {moduleResolve} from 'import-meta-resolve'
 
 const args = process.argv.slice(2)
-const cliDir = resolvePkg('@sanity/cli', {cwd: __dirname})
-const cli = path.join(cliDir, 'bin', 'sanity')
-childProcess.spawn('node', [cli, 'init', '', ...args.concat('--from-create')], {stdio: 'inherit'})
+
+let cliBin
+try {
+  const cliPkgDir = await moduleResolve('@sanity/cli/package.json', import.meta.url)
+  const cliDir = join(cliPkgDir.pathname, '..')
+  cliBin = join(cliDir, 'bin', 'run.js')
+} catch (err) {
+  throw new Error('Failed to resolve `@sanity/cli` package', {cause: err})
+}
+
+spawn('node', [cliBin, 'init', ...args, '--from-create'], {stdio: 'inherit'})

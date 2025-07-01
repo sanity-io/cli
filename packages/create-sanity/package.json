@@ -21,18 +21,16 @@
   },
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
+  "type": "module",
   "bin": "./index.js",
   "files": [
     "index.js"
   ],
   "dependencies": {
     "@sanity/cli": "workspace:*",
-    "resolve-pkg": "^2.0.0"
-  },
-  "devDependencies": {
-    "@types/react": "^19.0.10"
+    "import-meta-resolve": "^4.1.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   }
 }
