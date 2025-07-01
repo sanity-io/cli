@@ -15,4 +15,7 @@ try {
   throw new Error('Failed to resolve `@sanity/cli` package', {cause: err})
 }
 
-spawn('node', [cliBin, 'init', ...args, '--from-create'], {stdio: 'inherit'})
+const proc = spawn('node', [cliBin, 'init', ...args, '--from-create'], {stdio: 'inherit'})
+proc.on('exit', (code) => {
+  process.exitCode = code
+})
