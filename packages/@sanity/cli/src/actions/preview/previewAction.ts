@@ -19,6 +19,6 @@ export async function previewAction(options: PreviewActionOptions) {
   try {
     await startPreviewServer(config)
   } catch (err) {
-    gracefulServerDeath('preview', config.httpHost, config.httpPort, err)
+    throw gracefulServerDeath('preview', config.httpHost, config.httpPort, err)
   }
 }

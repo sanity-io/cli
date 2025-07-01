@@ -3,9 +3,9 @@ export function gracefulServerDeath(
   httpHost: string | undefined,
   httpPort: number,
   err: Error & {code?: string},
-): void {
+): Error {
   if (err.code === 'EADDRINUSE') {
-    throw new Error(
+    return new Error(
       `Port number is already in use, configure \`server.port\` in \`sanity.cli.js\` or pass \`--port <somePort>\` to \`sanity ${command}\``,
     )
   }
@@ -16,8 +16,8 @@ export function gracefulServerDeath(
         ? 'port numbers below 1024 requires root privileges'
         : `do you have access to listen to the given host (${httpHost || '127.0.0.1'})?`
 
-    throw new Error(`The studio server does not have access to listen to given port - ${help}`)
+    return new Error(`The studio server does not have access to listen to given port - ${help}`)
   }
 
-  throw err
+  return err
 }
