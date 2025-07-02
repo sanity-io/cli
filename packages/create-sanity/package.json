@@ -26,6 +26,9 @@
   "files": [
     "index.js"
   ],
+  "scripts": {
+    "test": "node test.js"
+  },
   "dependencies": {
     "@sanity/cli": "workspace:*",
     "import-meta-resolve": "^4.1.0"

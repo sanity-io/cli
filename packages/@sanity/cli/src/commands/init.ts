@@ -6,6 +6,7 @@ import {SanityCliCommand} from '../BaseCommand.js'
 export class InitCommand extends SanityCliCommand<typeof InitCommand> {
   static override args = {type: Args.string({hidden: true})}
   static override description = 'Initialize a new Sanity Studio, project and/or app'
+  static override enableJsonFlag = true
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
