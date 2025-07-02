@@ -12,10 +12,10 @@ const createSanityScript = join(__dirname, 'index.js')
 /**
  * Helper function to run create-sanity with given arguments and return result
  */
-function runCreateSanity(args = []) {
+function runCreateSanity(args = [], env = {}) {
   return new Promise((resolve) => {
     const proc = spawn('node', [createSanityScript, ...args], {
-      env: {...process.env},
+      env: {...process.env, ...env},
       stdio: 'pipe',
     })
 
@@ -96,4 +96,38 @@ test('create-sanity script is executable', async () => {
   // Even without arguments, the script should run and delegate to sanity init
   // It might show help or prompt for input, but shouldn't crash
   assert.equal(typeof result.code, 'number', 'Should return a numeric exit code')
+})
+
+test('should reference `npm create sanity@latest` in help text, not `sanity init`', async () => {
+  const result = await runCreateSanity(['--help'])
+
+  assert.match(
+    result.output,
+    /npm create sanity@latest/i,
+    'Should reference `npm create sanity` in help text',
+  )
+  assert.doesNotMatch(
+    result.output,
+    /sanity init/i,
+    'Should not reference `sanity init` in help text',
+  )
+})
+
+// strictly speaking this is testing the `@sanity/cli` module, since this is determined
+// there - but we want to ensure we pass on environment variables etc
+test('should reference `pnpm create sanity@latest` in help text if pnpm is used ', async () => {
+  const result = await runCreateSanity(['--help'], {
+    npm_config_user_agent: 'pnpm/10.7.1 npm/? node/v22.14.0 darwin arm64',
+  })
+
+  assert.match(
+    result.output,
+    /pnpm create sanity@latest/i,
+    'Should reference `pnpm create sanity` in help text',
+  )
+  assert.doesNotMatch(
+    result.output,
+    /sanity init/i,
+    'Should not reference `sanity init` in help text',
+  )
 })
