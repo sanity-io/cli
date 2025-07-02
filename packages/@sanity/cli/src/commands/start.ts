@@ -60,6 +60,7 @@ export class StartCommand extends SanityCliCommand<typeof StartCommand> {
     try {
       await previewAction({cliConfig, flags, outDir, workDir})
     } catch (error) {
+      console.log(error)
       if (error.name !== 'BUILD_NOT_FOUND') {
         throw error
       }

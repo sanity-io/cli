@@ -83,30 +83,6 @@ describe('#start', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-
-    // Setup default successful vite preview server mock
-    mockVitePreview.mockResolvedValue({
-      config: {
-        logger: {
-          info: vi.fn(),
-          warn: vi.fn(),
-        },
-      },
-      httpServer: {
-        close: vi.fn((callback) => callback && callback()),
-      },
-      resolvedUrls: {
-        local: ['http://localhost:3333'],
-        network: ['http://192.168.1.1:3333'],
-      },
-    } as never)
-
-    mockConfirm.mockResolvedValue(false)
-
-    // Mock readFile to simulate a valid index.html by default
-    mockReadFile.mockResolvedValue('<html><script src="/static/sanity-abc123.js"></script></html>')
-
-    // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
   })
 
@@ -123,6 +99,23 @@ describe('#start', () => {
   })
 
   test('displays warning message and starts preview server successfully', async () => {
+    mockVitePreview.mockResolvedValue({
+      config: {
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+        },
+      },
+      httpServer: {
+        close: vi.fn((callback) => callback && callback()),
+      },
+      resolvedUrls: {
+        local: ['http://localhost:3333'],
+        network: ['http://192.168.1.1:3333'],
+      },
+    } as never)
+    mockReadFile.mockResolvedValue('<html><script src="/static/sanity-abc123.js"></script></html>')
+
     const {stdout} = await testCommand(StartCommand, [], {
       config: {root: cwd},
     })
@@ -155,6 +148,22 @@ describe('#start', () => {
   })
 
   test('starts preview server with custom output directory that exists', async () => {
+    mockVitePreview.mockResolvedValue({
+      config: {
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+        },
+      },
+      httpServer: {
+        close: vi.fn((callback) => callback && callback()),
+      },
+      resolvedUrls: {
+        local: ['http://localhost:3333'],
+        network: ['http://192.168.1.1:3333'],
+      },
+    } as never)
+    mockReadFile.mockResolvedValue('<html><script src="/static/sanity-abc123.js"></script></html>')
     await testCommand(StartCommand, ['dist'], {
       config: {root: cwd},
     })
@@ -177,6 +186,22 @@ describe('#start', () => {
   })
 
   test('starts preview server with custom host and port flags', async () => {
+    mockVitePreview.mockResolvedValue({
+      config: {
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+        },
+      },
+      httpServer: {
+        close: vi.fn((callback) => callback && callback()),
+      },
+      resolvedUrls: {
+        local: ['http://localhost:3333'],
+        network: ['http://192.168.1.1:3333'],
+      },
+    } as never)
+    mockReadFile.mockResolvedValue('<html><script src="/static/sanity-abc123.js"></script></html>')
     await testCommand(StartCommand, ['--host', '0.0.0.0', '--port', '8080'], {
       config: {root: cwd},
     })
@@ -246,6 +271,7 @@ describe('#start', () => {
     const serverError = new Error('EADDRINUSE: Port already in use') as Error & {code: string}
     serverError.code = 'EADDRINUSE'
     mockVitePreview.mockRejectedValue(serverError)
+    mockReadFile.mockResolvedValue('<html><script src="/static/sanity-abc123.js"></script></html>')
 
     const {error} = await testCommand(StartCommand, [], {
       config: {root: cwd},
@@ -258,9 +284,7 @@ describe('#start', () => {
   test('handles generic vite preview server errors', async () => {
     // Test that generic errors from vite preview are properly propagated
     // (as opposed to BUILD_NOT_FOUND errors which are handled specially)
-
-    // Ensure index.html exists so we don't hit BUILD_NOT_FOUND
-    // The default mock already handles this, so no need to change it
+    mockReadFile.mockResolvedValue('<html><script src="/static/sanity-abc123.js"></script></html>')
 
     const genericError = new Error('Generic server error')
     mockVitePreview.mockRejectedValue(genericError)
