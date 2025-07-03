@@ -1,14 +1,12 @@
-import {register} from 'tsx/esm/api'
+import {tsImport} from 'tsx/esm/api'
 
 const workerScript = process.env.TSX_WORKER_TASK_SCRIPT
-const unregister = register({
-  tsconfig: process.env.TSX_TSCONFIG_PATH || undefined,
-})
 
 if (workerScript) {
-  await import(workerScript)
+  await tsImport(workerScript, {
+    parentURL: import.meta.url,
+    tsconfig: process.env.TSX_TSCONFIG_PATH,
+  })
 } else {
   throw new Error('`TX_WORKER_TASK_SCRIPT` not defined')
 }
-
-unregister()
