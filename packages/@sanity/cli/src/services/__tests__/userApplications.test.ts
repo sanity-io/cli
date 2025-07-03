@@ -1,10 +1,17 @@
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {getGlobalCliClient} from '../../core/apiClient.js'
 import {deleteUserApplication, getUserApplication} from '../userApplications.js'
+
+vi.mock('../../core/apiClient.js')
 
 const mockClient = {
   request: vi.fn(),
 }
+
+beforeEach(() => {
+  vi.mocked(getGlobalCliClient).mockResolvedValue(mockClient as never)
+})
 
 afterEach(() => {
   vi.clearAllMocks()
@@ -15,7 +22,7 @@ describe('getUserApplication', () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
-    const app = await getUserApplication({appId: '123', client: mockClient as never})
+    const app = await getUserApplication({appId: '123'})
 
     expect(mockClient.request).toHaveBeenCalledWith({
       query: {appType: 'coreApp'},
@@ -28,7 +35,7 @@ describe('getUserApplication', () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
-    const app = await getUserApplication({appHost: 'my-host', client: mockClient as never})
+    const app = await getUserApplication({appHost: 'my-host'})
 
     expect(mockClient.request).toHaveBeenCalledWith({
       query: {appHost: 'my-host'},
@@ -41,7 +48,7 @@ describe('getUserApplication', () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
-    const app = await getUserApplication({client: mockClient as never})
+    const app = await getUserApplication({})
 
     expect(mockClient.request).toHaveBeenCalledWith({
       query: {default: 'true'},
@@ -55,7 +62,7 @@ describe('getUserApplication', () => {
     error.statusCode = 404
     mockClient.request.mockRejectedValueOnce(error)
 
-    const app = await getUserApplication({appId: '404', client: mockClient as never})
+    const app = await getUserApplication({appId: '404'})
 
     expect(app).toBeNull()
   })
@@ -64,9 +71,7 @@ describe('getUserApplication', () => {
     const error = new Error('oops')
     mockClient.request.mockRejectedValueOnce(error)
 
-    await expect(getUserApplication({appId: '123', client: mockClient as never})).rejects.toThrow(
-      'oops',
-    )
+    await expect(getUserApplication({appId: '123'})).rejects.toThrow('oops')
   })
 })
 
@@ -77,7 +82,6 @@ describe('deleteUserApplication', () => {
     await deleteUserApplication({
       applicationId: '123',
       appType: 'coreApp',
-      client: mockClient as never,
     })
 
     expect(mockClient.request).toHaveBeenCalledWith({

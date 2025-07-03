@@ -1,14 +1,13 @@
+import {confirm} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 import {testCommand} from '~test/helpers/testCommand.js'
 
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
-import {
-  deleteUserApplication,
-  getUserApplication,
-} from '../../services/userApplications.js'
+import {deleteUserApplication, getUserApplication} from '../../services/userApplications.js'
 import {UndeployCommand} from '../undeploy.js'
 
+vi.mock('@inquirer/prompts')
 vi.mock('../../services/userApplications.js')
 
 vi.mock(import('../../config/findProjectRoot.js'), async (importOriginal) => {
@@ -50,7 +49,7 @@ describe('#undeploy', () => {
     vi.mocked(getUserApplication).mockResolvedValueOnce({
       appHost: 'my-host',
       id: 'app-id',
-    } as any)
+    } as never)
 
     const {stdout} = await testCommand(UndeployCommand, ['--yes'])
 
@@ -67,7 +66,7 @@ describe('#undeploy', () => {
     vi.mocked(getUserApplication).mockResolvedValueOnce({
       appHost: 'core-host',
       id: 'core-id',
-    } as any)
+    } as never)
 
     const {stdout} = await testCommand(UndeployCommand, ['--yes'])
 
@@ -88,5 +87,77 @@ describe('#undeploy', () => {
 
     expect(deleteUserApplication).not.toHaveBeenCalled()
     expect(stdout).toContain('Nothing to undeploy')
+  })
+
+  test('does nothing if studioHost is missing', async () => {
+    vi.mocked(getCliConfig).mockResolvedValueOnce({
+      api: {projectId: 'test'},
+    })
+
+    const {stdout} = await testCommand(UndeployCommand, ['--yes'])
+
+    expect(deleteUserApplication).not.toHaveBeenCalled()
+    expect(stdout).toContain('No studio host provided')
+    expect(stdout).toContain('Nothing to undeploy')
+  })
+
+  test('does nothing if appId is missing', async () => {
+    vi.mocked(getCliConfig).mockResolvedValueOnce({
+      app: {},
+    })
+
+    const {stdout} = await testCommand(UndeployCommand, ['--yes'])
+
+    expect(deleteUserApplication).not.toHaveBeenCalled()
+    expect(stdout).toContain('No application ID provided')
+    expect(stdout).toContain('Nothing to undeploy')
+  })
+
+  test('does not undeploy if prompt is rejected', async () => {
+    vi.mocked(getCliConfig).mockResolvedValueOnce({
+      api: {projectId: 'test'},
+      studioHost: 'my-host',
+    })
+    vi.mocked(getUserApplication).mockResolvedValueOnce({
+      appHost: 'my-host',
+      id: 'app-id',
+    } as never)
+    vi.mocked(confirm).mockResolvedValueOnce(false)
+
+    await testCommand(UndeployCommand, [])
+
+    expect(deleteUserApplication).not.toHaveBeenCalled()
+  })
+
+  test('undeploys if prompt is accepted', async () => {
+    vi.mocked(getCliConfig).mockResolvedValueOnce({
+      api: {projectId: 'test'},
+      studioHost: 'my-host',
+    })
+    vi.mocked(getUserApplication).mockResolvedValueOnce({
+      appHost: 'my-host',
+      id: 'app-id',
+    } as never)
+    vi.mocked(confirm).mockResolvedValueOnce(true)
+
+    const {stdout} = await testCommand(UndeployCommand, [])
+
+    expect(deleteUserApplication).toHaveBeenCalledWith(
+      expect.objectContaining({applicationId: 'app-id', appType: 'studio'}),
+    )
+    expect(stdout).toContain('Studio undeploy scheduled')
+  })
+
+  test('handles generic errors', async () => {
+    vi.mocked(getCliConfig).mockResolvedValueOnce({
+      api: {projectId: 'test'},
+      studioHost: 'my-host',
+    })
+    vi.mocked(getUserApplication).mockRejectedValueOnce(new Error('Generic error'))
+
+    const {error, stderr} = await testCommand(UndeployCommand, ['--yes'])
+
+    expect(error?.message).toContain('Generic error')
+    expect(stderr).toContain('Checking application info')
   })
 })

@@ -1,6 +1,7 @@
-import {type SanityClient} from '@sanity/client'
-
+import {getGlobalCliClient} from '../core/apiClient.js'
 import {debug} from '../debug.js'
+
+const USER_APPLICATIONS_API_VERSION = 'v2024-08-01'
 
 interface ActiveDeployment {
   createdAt: string
@@ -28,8 +29,6 @@ interface UserApplication {
 }
 
 interface GetUserApplicationOptions {
-  client: SanityClient
-
   appHost?: string
   appId?: string
 }
@@ -37,7 +36,6 @@ interface GetUserApplicationOptions {
 export async function getUserApplication({
   appHost,
   appId,
-  client,
 }: GetUserApplicationOptions): Promise<UserApplication | null> {
   let uri = '/user-applications'
   let query: Record<string, string | string[]>
@@ -45,10 +43,17 @@ export async function getUserApplication({
     uri = `/user-applications/${appId}`
     query = {appType: 'coreApp'}
   } else if (appHost) {
-    query = {appHost}
+    query = {appHost, appType: 'studio'}
   } else {
     query = {default: 'true'}
   }
+
+  console.log(query, uri)
+
+  const client = await getGlobalCliClient({
+    apiVersion: USER_APPLICATIONS_API_VERSION,
+    requireUser: true,
+  })
 
   try {
     return await client.request({query, uri})
@@ -65,14 +70,17 @@ export async function getUserApplication({
 interface DeleteUserApplicationOptions {
   applicationId: string
   appType: 'coreApp' | 'studio'
-  client: SanityClient
 }
 
 export async function deleteUserApplication({
   applicationId,
   appType,
-  client,
 }: DeleteUserApplicationOptions): Promise<void> {
+  const client = await getGlobalCliClient({
+    apiVersion: USER_APPLICATIONS_API_VERSION,
+    requireUser: true,
+  })
+
   await client.request({
     method: 'DELETE',
     query: {appType},
