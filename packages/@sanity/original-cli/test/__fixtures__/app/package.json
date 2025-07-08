@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@sanity/eslint-config-studio": "^5.0.1",
-    "@types/react": "^18.3.20",
+    "@types/react": "^18.3.23",
     "eslint": "^9.9.0",
     "sanity": "^3",
     "typescript": "^5.8.3"
