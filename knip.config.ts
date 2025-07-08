@@ -13,6 +13,9 @@ const baseConfig = {
     'packages/@sanity/codegen/**',
     'packages/@sanity/blueprints/**',
     'packages/create-sanity/**',
+
+    // See `helpClass` in `oclif.config.js`
+    'packages/@sanity/cli/src/SanityHelp.ts',
   ],
   workspaces: {
     '.': {
