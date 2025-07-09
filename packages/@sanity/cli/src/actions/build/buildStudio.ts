@@ -13,6 +13,7 @@ import {compareDependencyVersions} from '../../util/compareDependencyVersions.js
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
+import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {checkRequiredDependencies} from './checkRequiredDependencies.js'
@@ -28,15 +29,15 @@ import {type BuildOptions} from './types.js'
  *
  * @internal
  */
-export async function buildStudio(options: BuildOptions) {
+export async function buildStudio(options: BuildOptions): Promise<void> {
   const timer = getTimer()
-  const {cliConfig, flags, outDir, output, workDir} = options
+  const {cliConfig, exit, flags, outDir, output, workDir} = options
 
   const unattendedMode = Boolean(flags.yes)
   const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
   const outputDir = path.resolve(outDir || defaultOutputDir)
 
-  await checkStudioDependencyVersions(workDir)
+  await checkStudioDependencyVersions(workDir, output)
 
   // If the check resulted in a dependency install, the CLI command will be re-run,
   // thus we want to exit early
@@ -46,7 +47,7 @@ export async function buildStudio(options: BuildOptions) {
     workDir,
   })
   if (didInstall) {
-    return {didCompile: false}
+    return exit(1)
   }
 
   const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags})
@@ -89,7 +90,7 @@ export async function buildStudio(options: BuildOptions) {
       })
 
       if (choice === 'cancel') {
-        return {didCompile: false}
+        return exit(1)
       }
 
       if (choice === 'upgrade' || choice === 'upgrade-and-proceed') {
@@ -102,7 +103,7 @@ export async function buildStudio(options: BuildOptions) {
         )
 
         if (choice !== 'upgrade-and-proceed') {
-          return {didCompile: false}
+          return exit(1)
         }
       }
     }
@@ -185,9 +186,9 @@ export async function buildStudio(options: BuildOptions) {
       output.log('\nLargest module files:')
       output.log(formatModuleSizes(sortModulesBySize(bundle.chunks).slice(0, 15)))
     }
-  } catch (err) {
+  } catch (error) {
     spin.fail()
-    // trace.error(err)
-    throw err
+    buildDebug(`Failed to build Sanity Studio`, {error})
+    output.error(`Failed to build Sanity Studio`, {exit: 1})
   }
 }

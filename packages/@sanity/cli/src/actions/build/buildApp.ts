@@ -12,6 +12,7 @@ import {getTimer} from '../../core/timer.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
+import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
@@ -24,8 +25,8 @@ import {type BuildOptions} from './types.js'
  *
  * @internal
  */
-export async function buildApp(options: BuildOptions) {
-  const {autoUpdatesEnabled, cliConfig, flags, outDir, output, workDir} = options
+export async function buildApp(options: BuildOptions): Promise<void> {
+  const {autoUpdatesEnabled, cliConfig, exit, flags, outDir, output, workDir} = options
   const unattendedMode = flags.yes
   const timer = getTimer()
 
@@ -69,7 +70,7 @@ export async function buildApp(options: BuildOptions) {
       })
 
       if (!shouldContinue) {
-        return process.exit(0)
+        return exit(1)
       }
     }
   }
@@ -153,7 +154,7 @@ export async function buildApp(options: BuildOptions) {
     }
   } catch (error) {
     spin.fail()
-    // trace.error(err)
-    throw error
+    buildDebug(`Failed to build Sanity application`, {error})
+    output.error(`Failed to build Sanity application`, {exit: 1})
   }
 }

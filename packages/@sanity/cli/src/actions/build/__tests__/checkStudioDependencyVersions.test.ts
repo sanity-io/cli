@@ -5,6 +5,7 @@ import resolveFrom from 'resolve-from'
 import semver from 'semver'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {type Output} from '../../../types.js'
 import {readPackageJson} from '../../../util/readPackageJson'
 import {checkStudioDependencyVersions} from '../checkStudioDependencyVersions'
 
@@ -23,11 +24,23 @@ const mockedReadPackageJson = vi.mocked(readPackageJson)
 describe('checkStudioDependencyVersions', () => {
   const workDir = '/test/work/dir'
   const packageJsonPath = '/test/work/dir/package.json'
+  let mockOutput: Output
 
   beforeEach(() => {
     vi.resetAllMocks()
 
-    // Mock console methods
+    // Create mock output
+    mockOutput = {
+      error: vi.fn().mockImplementation((message: Error | string, options?: {exit?: boolean}) => {
+        if (options?.exit !== false) {
+          throw new Error('process.exit called')
+        }
+      }),
+      log: vi.fn(),
+      warn: vi.fn(),
+    } as unknown as Output
+
+    // Mock console methods (keeping for backwards compatibility if needed)
     vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(process, 'exit').mockImplementation(() => {
@@ -50,10 +63,10 @@ describe('checkStudioDependencyVersions', () => {
         version: '1.0.0',
       })
 
-      await checkStudioDependencyVersions(workDir)
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
-      expect(console.warn).not.toHaveBeenCalled()
-      expect(console.error).not.toHaveBeenCalled()
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
     })
   })
 
@@ -75,10 +88,10 @@ describe('checkStudioDependencyVersions', () => {
         .mockReturnValueOnce('/node_modules/react/package.json')
         .mockReturnValueOnce('/node_modules/react-dom/package.json')
 
-      await checkStudioDependencyVersions(workDir)
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
-      expect(console.warn).not.toHaveBeenCalled()
-      expect(console.error).not.toHaveBeenCalled()
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
     })
 
     test('should handle packages with untested versions (newer than supported)', async () => {
@@ -94,17 +107,17 @@ describe('checkStudioDependencyVersions', () => {
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
 
-      await checkStudioDependencyVersions(workDir)
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining(
-          '[WARN] The following package versions have not yet been marked as supported:',
+          'The following package versions have not yet been marked as supported:',
         ),
       )
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining('react (installed: 20.0.0, want: ^18 || ^19)'),
       )
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining('To downgrade, run either:'),
       )
     })
@@ -122,17 +135,24 @@ describe('checkStudioDependencyVersions', () => {
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
 
-      await expect(checkStudioDependencyVersions(workDir)).rejects.toThrow('process.exit called')
+      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
+        'process.exit called',
+      )
 
-      expect(console.error).toHaveBeenCalledWith(
+      expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining(
-          '[ERROR] The following package versions are no longer supported and needs to be upgraded:',
+          'The following package versions are no longer supported and needs to be upgraded:',
         ),
+        {exit: 1},
       )
-      expect(console.error).toHaveBeenCalledWith(
+      expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('react (installed: 16.14.0, want: ^18 || ^19)'),
+        {exit: 1},
       )
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('To upgrade, run either:'))
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('To upgrade, run either:'),
+        {exit: 1},
+      )
     })
 
     test('should handle deprecated packages when deprecatedBelow is set', async () => {
@@ -156,8 +176,7 @@ describe('checkStudioDependencyVersions', () => {
       // Manually trigger the deprecated path by simulating the filtered array
       const deprecated = [mockPackageInfo]
       if (deprecated.length > 0) {
-        console.warn(`
-[WARN] The following package versions have been deprecated and should be upgraded:
+        mockOutput.warn(`The following package versions have been deprecated and should be upgraded:
 
   react (installed: 17.0.2, want: 18.0.0)
 
@@ -182,9 +201,9 @@ Read more at https://help.sanity.io/upgrade-packages
 
       expect(deprecated.length).toBe(1)
       expect(deprecated[0].isDeprecated).toBe(true)
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining(
-          '[WARN] The following package versions have been deprecated and should be upgraded:',
+          'The following package versions have been deprecated and should be upgraded:',
         ),
       )
     })
@@ -203,10 +222,10 @@ Read more at https://help.sanity.io/upgrade-packages
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
 
-      await checkStudioDependencyVersions(workDir)
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
-      expect(console.warn).not.toHaveBeenCalled()
-      expect(console.error).not.toHaveBeenCalled()
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
     })
 
     test('should handle packages where manifest path cannot be resolved', async () => {
@@ -220,14 +239,14 @@ Read more at https://help.sanity.io/upgrade-packages
 
       mockedResolveFromSilent.mockReturnValue(null)
 
-      await checkStudioDependencyVersions(workDir)
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
       // When manifest path cannot be resolved, the function falls back to using the dependency version
       // which gets stripped of non-digit/dot characters, resulting in "1800" which is treated as 1800.0.0
       // This is much higher than the supported range, so it becomes "untested"
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining(
-          '[WARN] The following package versions have not yet been marked as supported:',
+          'The following package versions have not yet been marked as supported:',
         ),
       )
     })
@@ -243,10 +262,10 @@ Read more at https://help.sanity.io/upgrade-packages
 
       mockedResolveFromSilent.mockReturnValue(null)
 
-      await checkStudioDependencyVersions(workDir)
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
-      expect(console.warn).not.toHaveBeenCalled()
-      expect(console.error).not.toHaveBeenCalled()
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
     })
 
     test('should handle mixed package states correctly', async () => {
@@ -269,16 +288,19 @@ Read more at https://help.sanity.io/upgrade-packages
         .mockReturnValueOnce('/node_modules/react-dom/package.json')
         .mockReturnValueOnce('/node_modules/styled-components/package.json')
 
-      await expect(checkStudioDependencyVersions(workDir)).rejects.toThrow('process.exit called')
+      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
+        'process.exit called',
+      )
 
       // Should warn about untested versions
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining('react-dom (installed: 20.0.0, want: ^18 || ^19)'),
       )
 
       // Should error about unsupported versions
-      expect(console.error).toHaveBeenCalledWith(
+      expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('react (installed: 16.14.0, want: ^18 || ^19)'),
+        {exit: 1},
       )
     })
   })
@@ -314,10 +336,15 @@ Read more at https://help.sanity.io/upgrade-packages
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
 
-      await expect(checkStudioDependencyVersions(workDir)).rejects.toThrow('process.exit called')
+      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
+        'process.exit called',
+      )
 
       // Should still generate instructions even with invalid version range
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('To upgrade, run either:'))
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('To upgrade, run either:'),
+        {exit: 1},
+      )
     })
   })
 
@@ -335,13 +362,22 @@ Read more at https://help.sanity.io/upgrade-packages
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
 
-      await expect(checkStudioDependencyVersions(workDir)).rejects.toThrow('process.exit called')
-
-      expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('npm install "react@18.0.0"'),
+      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
+        'process.exit called',
       )
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('yarn add "react@18.0.0"'))
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('pnpm add "react@18.0.0"'))
+
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('npm install "react@18.0.0"'),
+        {exit: 1},
+      )
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('yarn add "react@18.0.0"'),
+        {exit: 1},
+      )
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('pnpm add "react@18.0.0"'),
+        {exit: 1},
+      )
       expect(mockedGenerateHelpUrl).toHaveBeenCalledWith('upgrade-packages')
     })
 
@@ -358,13 +394,15 @@ Read more at https://help.sanity.io/upgrade-packages
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
 
-      await checkStudioDependencyVersions(workDir)
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
-      expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('yarn add "react@18.0.0"'))
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining('yarn add "react@18.0.0"'),
+      )
+      expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining('npm install "react@18.0.0"'),
       )
-      expect(console.warn).toHaveBeenCalledWith(
+      expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining('pnpm install "react@18.0.0"'),
       )
     })
@@ -386,13 +424,17 @@ Read more at https://help.sanity.io/upgrade-packages
         .mockReturnValueOnce('/node_modules/react/package.json')
         .mockReturnValueOnce('/node_modules/react-dom/package.json')
 
-      await expect(checkStudioDependencyVersions(workDir)).rejects.toThrow('process.exit called')
-
-      expect(console.error).toHaveBeenCalledWith(
-        expect.stringContaining('react (installed: 16.14.0, want: ^18 || ^19)'),
+      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
+        'process.exit called',
       )
-      expect(console.error).toHaveBeenCalledWith(
+
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('react (installed: 16.14.0, want: ^18 || ^19)'),
+        {exit: 1},
+      )
+      expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('react-dom (installed: 16.14.0, want: ^18 || ^19)'),
+        {exit: 1},
       )
     })
   })
@@ -401,7 +443,7 @@ Read more at https://help.sanity.io/upgrade-packages
     test('should handle readPackageJson throwing an error', async () => {
       mockedReadPackageJson.mockRejectedValue(new Error('Failed to read package.json'))
 
-      await expect(checkStudioDependencyVersions(workDir)).rejects.toThrow(
+      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
         'Failed to read package.json',
       )
     })
@@ -412,10 +454,10 @@ Read more at https://help.sanity.io/upgrade-packages
         version: '1.0.0',
       })
 
-      await checkStudioDependencyVersions(workDir)
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
-      expect(console.warn).not.toHaveBeenCalled()
-      expect(console.error).not.toHaveBeenCalled()
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
     })
 
     test('should handle packages with empty dependencies', async () => {
@@ -426,10 +468,10 @@ Read more at https://help.sanity.io/upgrade-packages
         version: '1.0.0',
       })
 
-      await checkStudioDependencyVersions(workDir)
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
-      expect(console.warn).not.toHaveBeenCalled()
-      expect(console.error).not.toHaveBeenCalled()
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
     })
 
     test('should handle semver.coerce returning null', async () => {
@@ -446,29 +488,29 @@ Read more at https://help.sanity.io/upgrade-packages
       // Mock semver.coerce to return null
       vi.spyOn(semver, 'coerce').mockReturnValue(null)
 
-      await checkStudioDependencyVersions(workDir)
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
-      expect(console.warn).not.toHaveBeenCalled()
-      expect(console.error).not.toHaveBeenCalled()
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
     })
 
     test('should handle @sanity/ui package correctly', async () => {
       mockedReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
-            '@sanity/ui': '^2.0.0',
+            '@sanity/ui': '^1.4.0',
           },
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: '@sanity/ui', version: '2.1.0'})
+        .mockResolvedValueOnce({name: '@sanity/ui', version: '1.4.5'})
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/@sanity/ui/package.json')
 
-      await checkStudioDependencyVersions(workDir)
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
-      expect(console.warn).not.toHaveBeenCalled()
-      expect(console.error).not.toHaveBeenCalled()
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
     })
 
     test('should handle styled-components package correctly', async () => {
@@ -484,10 +526,10 @@ Read more at https://help.sanity.io/upgrade-packages
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/styled-components/package.json')
 
-      await checkStudioDependencyVersions(workDir)
+      await checkStudioDependencyVersions(workDir, mockOutput)
 
-      expect(console.warn).not.toHaveBeenCalled()
-      expect(console.error).not.toHaveBeenCalled()
+      expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
     })
   })
 })

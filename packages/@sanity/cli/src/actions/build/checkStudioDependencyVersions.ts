@@ -4,6 +4,7 @@ import {generateHelpUrl} from '@sanity/generate-help-url'
 import resolveFrom from 'resolve-from'
 import semver, {type SemVer} from 'semver'
 
+import {type Output} from '../../types.js'
 import {readPackageJson} from '../../util/readPackageJson.js'
 
 interface PackageInfo {
@@ -22,10 +23,13 @@ const PACKAGES = [
   {deprecatedBelow: null, name: 'react', supported: ['^18 || ^19']},
   {deprecatedBelow: null, name: 'react-dom', supported: ['^18 || ^19']},
   {deprecatedBelow: null, name: 'styled-components', supported: ['^6']},
-  {deprecatedBelow: null, name: '@sanity/ui', supported: ['^2']},
+  {deprecatedBelow: '1.4.0', name: '@sanity/ui', supported: ['^1.4.0']},
 ]
 
-export async function checkStudioDependencyVersions(workDir: string): Promise<void> {
+export async function checkStudioDependencyVersions(
+  workDir: string,
+  output: Output,
+): Promise<void> {
   const manifest = await readPackageJson(path.join(workDir, 'package.json'), true)
   const dependencies = {...manifest.dependencies, ...manifest.devDependencies}
 
@@ -79,8 +83,7 @@ export async function checkStudioDependencyVersions(workDir: string): Promise<vo
   const untested = installedPackages.filter((pkg) => pkg.isUntested)
 
   if (deprecated.length > 0) {
-    console.warn(`
-[WARN] The following package versions have been deprecated and should be upgraded:
+    output.warn(`The following package versions have been deprecated and should be upgraded:
 
   ${listPackages(deprecated)}
 
@@ -91,8 +94,7 @@ Support for these will be removed in a future release!
   }
 
   if (untested.length > 0) {
-    console.warn(`
-[WARN] The following package versions have not yet been marked as supported:
+    output.warn(`The following package versions have not yet been marked as supported:
 
   ${listPackages(untested)}
 
@@ -103,14 +105,15 @@ You _may_ encounter bugs while using these versions.
   }
 
   if (unsupported.length > 0) {
-    console.error(`
-[ERROR] The following package versions are no longer supported and needs to be upgraded:
+    output.error(
+      `The following package versions are no longer supported and needs to be upgraded:
 
   ${listPackages(unsupported)}
 
   ${getUpgradeInstructions(unsupported)}
-`)
-    process.exit(1)
+`,
+      {exit: 1},
+    )
   }
 }
 

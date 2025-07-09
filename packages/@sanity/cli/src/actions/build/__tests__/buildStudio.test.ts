@@ -94,6 +94,7 @@ describe('buildStudio', () => {
   const baseBuildOptions: BuildOptions = {
     autoUpdatesEnabled: false,
     cliConfig: {},
+    exit: vi.fn(),
     flags: {
       'auto-updates': false,
       json: false,
@@ -139,7 +140,7 @@ describe('buildStudio', () => {
   it('should build studio successfully with basic options', async () => {
     await buildStudio(baseBuildOptions)
 
-    expect(mockedCheckStudioDependencyVersions).toHaveBeenCalledWith('/test/work/dir')
+    expect(mockedCheckStudioDependencyVersions).toHaveBeenCalledWith('/test/work/dir', mockOutput)
     expect(mockedCheckRequiredDependencies).toHaveBeenCalledWith({
       cliConfig: {},
       output: mockOutput,
@@ -154,9 +155,9 @@ describe('buildStudio', () => {
       installedSanityVersion: '3.0.0',
     })
 
-    const result = await buildStudio(baseBuildOptions)
+    await buildStudio(baseBuildOptions)
 
-    expect(result).toEqual({didCompile: false})
+    expect(baseBuildOptions.exit).toHaveBeenCalledWith(1)
     expect(mockedBuildStaticFiles).not.toHaveBeenCalled()
   })
 
@@ -249,9 +250,9 @@ describe('buildStudio', () => {
       flags: {...baseBuildOptions.flags, yes: false},
     }
 
-    const result = await buildStudio(options)
+    await buildStudio(options)
 
-    expect(result).toEqual({didCompile: false})
+    expect(baseBuildOptions.exit).toHaveBeenCalledWith(1)
     expect(mockedUpgradePackages).not.toHaveBeenCalled()
   })
 
@@ -274,7 +275,7 @@ describe('buildStudio', () => {
       flags: {...baseBuildOptions.flags, yes: false},
     }
 
-    const result = await buildStudio(options)
+    await buildStudio(options)
 
     expect(mockedUpgradePackages).toHaveBeenCalledWith(
       {
@@ -283,7 +284,7 @@ describe('buildStudio', () => {
       },
       {output: mockOutput, workDir: '/test/work/dir'},
     )
-    expect(result).toEqual({didCompile: false})
+    expect(baseBuildOptions.exit).toHaveBeenCalledWith(1)
   })
 
   it('should upgrade packages and continue building when user selects upgrade-and-proceed', async () => {
@@ -457,7 +458,8 @@ describe('buildStudio', () => {
     const buildError = new Error('Build failed')
     mockedBuildStaticFiles.mockRejectedValue(buildError)
 
-    await expect(buildStudio(baseBuildOptions)).rejects.toThrow('Build failed')
+    await buildStudio(baseBuildOptions)
+    expect(mockOutput.error).toHaveBeenCalledWith('Failed to build Sanity Studio', {exit: 1})
   })
 
   it('should handle minify flag', async () => {

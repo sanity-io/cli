@@ -1,5 +1,4 @@
 import {rm} from 'node:fs/promises'
-import path from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, it, type MockedFunction, vi} from 'vitest'
 
@@ -8,13 +7,11 @@ import {type Output} from '../../../types.js'
 import {buildApp} from '../buildApp.js'
 import {type BuildOptions} from '../types.js'
 
-// Mock all the external dependencies
 vi.mock('node:fs/promises')
 vi.mock('@inquirer/prompts', () => ({
   confirm: vi.fn(),
 }))
 
-// Mock internal modules
 vi.mock('../../../core/spinner.js', () => ({
   spinner: vi.fn(() => ({
     fail: vi.fn().mockReturnThis(),
@@ -77,6 +74,7 @@ describe('buildApp', () => {
   const baseBuildOptions: BuildOptions = {
     autoUpdatesEnabled: false,
     cliConfig: {},
+    exit: vi.fn(),
     flags: {
       'auto-updates': false,
       json: false,
@@ -112,10 +110,7 @@ describe('buildApp', () => {
   it('should build app successfully with basic options', async () => {
     await buildApp(baseBuildOptions)
 
-    expect(mockedReadModuleVersion).toHaveBeenCalledWith(
-      path.resolve('/test/work/dir/dist'),
-      '@sanity/sdk-react',
-    )
+    expect(mockedReadModuleVersion).toHaveBeenCalledWith('/test/work/dir/dist', '@sanity/sdk-react')
     expect(mockedBuildStaticFiles).toHaveBeenCalled()
   })
 
@@ -191,9 +186,27 @@ describe('buildApp', () => {
     mockedCompareDependencyVersions.mockResolvedValue(versionDifferences)
     mockedConfirm.mockResolvedValue(false)
 
-    const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
-      throw new Error('process.exit called')
-    })
+    const options = {
+      ...baseBuildOptions,
+      autoUpdatesEnabled: true,
+      flags: {...baseBuildOptions.flags, yes: false},
+    }
+
+    await buildApp(options)
+    expect(baseBuildOptions.exit).toHaveBeenCalledWith(1)
+  })
+
+  it('should continue build when user confirms version difference prompt', async () => {
+    const versionDifferences = [
+      {
+        installed: '1.0.0',
+        pkg: '@sanity/sdk-react',
+        remote: '1.1.0',
+      },
+    ]
+
+    mockedCompareDependencyVersions.mockResolvedValue(versionDifferences)
+    mockedConfirm.mockResolvedValue(true)
 
     const options = {
       ...baseBuildOptions,
@@ -201,10 +214,15 @@ describe('buildApp', () => {
       flags: {...baseBuildOptions.flags, yes: false},
     }
 
-    await expect(buildApp(options)).rejects.toThrow('process.exit called')
-    expect(mockExit).toHaveBeenCalledWith(0)
+    await buildApp(options)
 
-    mockExit.mockRestore()
+    expect(mockedConfirm).toHaveBeenCalledWith({
+      default: false,
+      message: expect.stringContaining('different from the versions currently served'),
+    })
+    expect(baseBuildOptions.exit).not.toHaveBeenCalled()
+    expect(mockedBuildStaticFiles).toHaveBeenCalled()
+    expect(mockedBuildVendorDependencies).toHaveBeenCalled()
   })
 
   it('should skip version confirmation in unattended mode', async () => {
@@ -371,7 +389,8 @@ describe('buildApp', () => {
     const buildError = new Error('Build failed')
     mockedBuildStaticFiles.mockRejectedValue(buildError)
 
-    await expect(buildApp(baseBuildOptions)).rejects.toThrow('Build failed')
+    await buildApp(baseBuildOptions)
+    expect(mockOutput.error).toHaveBeenCalledWith('Failed to build Sanity application', {exit: 1})
   })
 
   it('should handle minify flag', async () => {
