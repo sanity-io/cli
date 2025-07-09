@@ -2,13 +2,15 @@ import {access, readFile, writeFile} from 'node:fs/promises'
 import {join, posix, sep} from 'node:path'
 import {Readable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
-import {type ReadableStream} from 'node:stream/web'
 
 import {ENV_TEMPLATE_FILES, REQUIRED_ENV_VAR} from '@sanity/template-validator'
 import {x} from 'tar'
 
-import {debug} from '../debug'
-import {type CliApiClient, type PackageJson} from '../types'
+import {getGlobalCliClient} from '../../core/apiClient'
+import {subdebug} from '../../debug'
+import {readPackageJson} from '../../util/readPackageJson'
+
+const debug = subdebug('remoteTemplate')
 
 const DISALLOWED_PATHS = [
   // Prevent security risks from unknown GitHub Actions
@@ -25,29 +27,29 @@ const API_READ_TOKEN_ROLE = 'viewer'
 const API_WRITE_TOKEN_ROLE = 'editor'
 
 type EnvData = {
-  projectId: string
   dataset: string
+  projectId: string
   readToken?: string
   writeToken?: string
 }
 
-type GithubUrlString =
+type GitHubUrlString =
   | `https://github.com/${string}/${string}`
   | `https://www.github.com/${string}/${string}`
 
 export type RepoInfo = {
-  username: string
-  name: string
   branch: string
   filePath: string
+  name: string
+  username: string
 }
 
 export function getGitHubRawContentUrl(repoInfo: RepoInfo): string {
-  const {username, name, branch, filePath} = repoInfo
+  const {branch, filePath, name, username} = repoInfo
   return `https://raw.githubusercontent.com/${username}/${name}/${branch}/${filePath}`
 }
 
-function isGithubRepoShorthand(value: string): boolean {
+function isGitHubRepoShorthand(value: string): boolean {
   if (URL.canParse(value)) {
     return false
   }
@@ -59,7 +61,7 @@ function isGithubRepoShorthand(value: string): boolean {
   return /^[\w-]+\/[\w-.]+(\/[@\w-.]+)*$/.test(value)
 }
 
-function isGithubRepoUrl(value: string | URL): value is URL | GithubUrlString {
+function isGitHubRepoUrl(value: string | URL): value is GitHubUrlString | URL {
   if (URL.canParse(value) === false) {
     return false
   }
@@ -90,7 +92,8 @@ async function downloadTarStream(url: string, bearerToken?: string): Promise<Rea
     throw new Error(`Failed to download: ${url}`)
   }
 
-  return Readable.fromWeb(res.body as ReadableStream)
+  // eslint-disable-next-line n/no-unsupported-features/node-builtins
+  return Readable.fromWeb(res.body as any)
 }
 
 export function checkIsRemoteTemplate(templateName?: string): boolean {
@@ -103,7 +106,7 @@ export async function getGitHubRepoInfo(value: string, bearerToken?: string): Pr
   let branch = ''
   let filePath = ''
 
-  if (isGithubRepoShorthand(value)) {
+  if (isGitHubRepoShorthand(value)) {
     const parts = value.split('/')
     username = parts[0]
     name = parts[1]
@@ -113,7 +116,7 @@ export async function getGitHubRepoInfo(value: string, bearerToken?: string): Pr
     }
   }
 
-  if (isGithubRepoUrl(value)) {
+  if (isGitHubRepoUrl(value)) {
     const url = new URL(value)
     const pathSegments = url.pathname.slice(1).split('/')
     username = pathSegments[0]
@@ -157,10 +160,10 @@ export async function getGitHubRepoInfo(value: string, bearerToken?: string): Pr
     const info = await infoResponse.json()
 
     return {
-      username,
-      name,
       branch: branch || info.default_branch,
       filePath,
+      name,
+      username,
     }
   } catch {
     throw new Error(tokenMessage)
@@ -169,7 +172,7 @@ export async function getGitHubRepoInfo(value: string, bearerToken?: string): Pr
 
 export async function downloadAndExtractRepo(
   root: string,
-  {username, name, branch, filePath}: RepoInfo,
+  {branch, filePath, name, username}: RepoInfo,
   bearerToken?: string,
 ): Promise<void> {
   let rootPath: string | null = null
@@ -180,18 +183,18 @@ export async function downloadAndExtractRepo(
     ),
     x({
       cwd: root,
-      strip: filePath ? filePath.split('/').length + 1 : 1,
       filter: (p: string) => {
         const posixPath = p.split(sep).join(posix.sep)
         if (rootPath === null) {
           const pathSegments = posixPath.split(posix.sep)
-          rootPath = pathSegments.length ? pathSegments[0] : null
+          rootPath = pathSegments.length > 0 ? pathSegments[0] : null
         }
         for (const disallowedPath of DISALLOWED_PATHS) {
           if (posixPath.includes(disallowedPath)) return false
         }
         return posixPath.startsWith(`${rootPath}${filePath ? `/${filePath}/` : '/'}`)
       },
+      strip: filePath ? filePath.split('/').length + 1 : 1,
     }),
   )
 }
@@ -221,7 +224,7 @@ export async function applyEnvVariables(
       await access(join(root, file))
       return file
     }),
-  ).catch(() => undefined)
+  ).catch(() => {})
 
   if (!templatePath) {
     return // No template .env file found, skip
@@ -229,7 +232,7 @@ export async function applyEnvVariables(
 
   try {
     const templateContent = await readFile(join(root, templatePath), 'utf8')
-    const {projectId, dataset, readToken = '', writeToken = ''} = envData
+    const {dataset, projectId, readToken = '', writeToken = ''} = envData
 
     const findAndReplaceVariable = (
       content: string,
@@ -240,14 +243,18 @@ export async function applyEnvVariables(
       const varPattern = typeof varRegex === 'string' ? varRegex : varRegex.source
       const pattern = new RegExp(`.*${varPattern}=.*$`, 'gm')
       const matches = content.matchAll(pattern)
-      return Array.from(matches).reduce((updatedContent, match) => {
-        if (!match[0]) return updatedContent
+
+      let result = content
+      for (const match of matches) {
+        if (!match[0]) continue
         const varName = match[0].split('=')[0].trim()
-        return updatedContent.replace(
+        result = result.replaceAll(
           new RegExp(`${varName}=.*$`, 'gm'),
           `${varName}=${useQuotes ? `"${value}"` : value}`,
         )
-      }, content)
+      }
+
+      return result
     }
 
     let envContent = templateContent
@@ -264,7 +271,7 @@ export async function applyEnvVariables(
     }
 
     await writeFile(join(root, targetName), envContent)
-  } catch (err) {
+  } catch {
     throw new Error(
       'Failed to set environment variables. This could be due to file permissions or the .env file format. See https://www.sanity.io/docs/environment-variables for details on environment variable setup.',
     )
@@ -273,12 +280,11 @@ export async function applyEnvVariables(
 
 export async function tryApplyPackageName(root: string, name: string): Promise<void> {
   try {
-    const packageJson = await readFile(join(root, 'package.json'), 'utf8')
-    const pkg: PackageJson = JSON.parse(packageJson)
+    const pkg = await readPackageJson(join(root, 'package.json'))
     pkg.name = name
 
     await writeFile(join(root, 'package.json'), JSON.stringify(pkg, null, 2))
-  } catch (err) {
+  } catch {
     // noop
   }
 }
@@ -287,31 +293,33 @@ export async function generateSanityApiToken(
   label: string,
   type: 'read' | 'write',
   projectId: string,
-  apiClient: CliApiClient,
 ): Promise<string> {
-  const response = await apiClient({requireProject: false, requireUser: true})
-    .config({apiVersion: 'v2021-06-07'})
-    .request<{key: string}>({
-      uri: `/projects/${projectId}/tokens`,
-      method: 'POST',
-      body: {
-        label: `${label} (${Date.now()})`,
-        roleName: type === 'read' ? API_READ_TOKEN_ROLE : API_WRITE_TOKEN_ROLE,
-      },
-    })
+  const client = await getGlobalCliClient({
+    apiVersion: 'v2021-06-07',
+    requireUser: true,
+  })
+  const response = await client.request<{key: string}>({
+    body: {
+      label: `${label} (${Date.now()})`,
+      roleName: type === 'read' ? API_READ_TOKEN_ROLE : API_WRITE_TOKEN_ROLE,
+    },
+    method: 'POST',
+    uri: `/projects/${projectId}/tokens`,
+  })
   return response.key
 }
 
-export async function setCorsOrigin(
-  origin: string,
-  projectId: string,
-  apiClient: CliApiClient,
-): Promise<void> {
+export async function setCorsOrigin(origin: string, projectId: string): Promise<void> {
   try {
-    await apiClient({api: {projectId}}).request({
+    const client = await getGlobalCliClient({
+      apiVersion: 'v2021-06-07',
+      requireUser: true,
+    })
+
+    await client.withConfig({projectId}).request({
+      body: {allowCredentials: true, origin: origin}, // allowCredentials is true to allow for embedded studios if needed
       method: 'POST',
       url: '/cors',
-      body: {origin: origin, allowCredentials: true}, // allowCredentials is true to allow for embedded studios if needed
     })
   } catch (error) {
     // Silent fail, it most likely means that the origin is already set
