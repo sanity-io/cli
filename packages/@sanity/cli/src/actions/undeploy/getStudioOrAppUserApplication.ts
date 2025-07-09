@@ -19,13 +19,18 @@ export async function getStudioOrAppUserApplication(options: GetStudioOrAppUserA
       throw new Error(NO_APP_ID)
     }
 
-    return getUserApplication({appId: cliConfig.app?.id})
+    return getUserApplication({appId})
   }
 
-  console.log(cliConfig.studioHost)
   if (!cliConfig.studioHost) {
     throw new Error(NO_STUDIO_HOST)
   }
 
-  return getUserApplication({appHost: cliConfig.studioHost})
+  if (!cliConfig.api?.projectId) {
+    throw new Error(
+      `sanity.cli.ts does not contain a project identifier ("api.projectId"), which is required for the Sanity CLI to communicate with the Sanity API`,
+    )
+  }
+
+  return getUserApplication({appHost: cliConfig.studioHost, projectId: cliConfig.api?.projectId})
 }

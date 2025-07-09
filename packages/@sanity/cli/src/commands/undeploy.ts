@@ -33,23 +33,39 @@ export class UndeployCommand extends SanityCliCommand<typeof UndeployCommand> {
     let spin = spinner('Checking application info').start()
     try {
       const userApplication = await getStudioOrAppUserApplication({cliConfig})
-      console.log(userApplication)
       if (!userApplication) {
         spin.fail()
-        this.log('Application with the given ID does not exist.')
-        this.log('Nothing to undeploy.')
+        if (isApp) {
+          this.log('Application with the given ID does not exist.')
+          this.log('Nothing to undeploy.')
+        } else {
+          this.log('Your project has not been assigned a studio hostname')
+          this.log('or the `studioHost` provided does not exist.')
+          this.log('Nothing to undeploy.')
+        }
+
         return
       }
       spin.succeed()
 
+      const url = `https://${chalk.yellow(userApplication.appHost)}.sanity.studio`
+
       if (!flags.yes) {
+        let message = `This will undeploy ${url} and make it unavailable for your users.\nThe hostname will be available for anyone to claim.\nAre you ${chalk.red(
+          'sure',
+        )} you want to undeploy?`
+
+        if (isApp) {
+          message = `This will undeploy ${chalk.yellow(
+            userApplication.id,
+          )} and make it unavailable for your users.\nAre you ${chalk.red(
+            'sure',
+          )} you want to undeploy?`
+        }
+
         const shouldUndeploy = await confirm({
           default: false,
-          message: `This will undeploy ${chalk.yellow(
-            userApplication.id,
-          )} and make it unavailable for your users.\nThe hostname will be available for anyone to claim.\nAre you ${chalk.red(
-            'sure',
-          )} you want to undeploy?`,
+          message,
         })
 
         if (!shouldUndeploy) {
@@ -72,7 +88,6 @@ export class UndeployCommand extends SanityCliCommand<typeof UndeployCommand> {
           )} is unavailable.`,
         )
       } else {
-        const url = `https://${chalk.yellow(userApplication.appHost)}.sanity.studio`
         this.log(
           `Studio undeploy scheduled. It might take a few minutes before ${url} is unavailable.`,
         )

@@ -28,27 +28,32 @@ interface UserApplication {
   activeDeployment?: ActiveDeployment | null
 }
 
-interface GetUserApplicationOptions {
-  appHost?: string
-  appId?: string
-}
-
+export async function getUserApplication(options: {appId: string}): Promise<UserApplication | null>
+export async function getUserApplication(options: {
+  appHost: string
+  projectId: string
+}): Promise<UserApplication | null>
+export async function getUserApplication(): Promise<UserApplication | null>
 export async function getUserApplication({
   appHost,
   appId,
-}: GetUserApplicationOptions): Promise<UserApplication | null> {
+  projectId,
+}: {
+  appHost?: string
+  appId?: string
+  projectId?: string
+} = {}): Promise<UserApplication | null> {
   let uri = '/user-applications'
   let query: Record<string, string | string[]>
   if (appId) {
     uri = `/user-applications/${appId}`
     query = {appType: 'coreApp'}
   } else if (appHost) {
+    uri = `/projects/${projectId}/user-applications`
     query = {appHost, appType: 'studio'}
   } else {
     query = {default: 'true'}
   }
-
-  console.log(query, uri)
 
   const client = await getGlobalCliClient({
     apiVersion: USER_APPLICATIONS_API_VERSION,
