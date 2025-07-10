@@ -6,7 +6,10 @@ import chalk from 'chalk'
 
 import {previewAction} from '../actions/preview/previewAction.js'
 import {SanityCliCommand} from '../BaseCommand.js'
+import {subdebug} from '../debug.js'
 import {isInteractive} from '../util/isInteractive.js'
+
+export const startDebug = subdebug('start')
 
 export class StartCommand extends SanityCliCommand<typeof StartCommand> {
   static override args = {
@@ -60,9 +63,9 @@ export class StartCommand extends SanityCliCommand<typeof StartCommand> {
     try {
       await previewAction({cliConfig, flags, outDir, workDir})
     } catch (error) {
-      console.log(error)
       if (error.name !== 'BUILD_NOT_FOUND') {
-        throw error
+        startDebug(`Failed to start preview server`, {error})
+        this.output.error(error.message, {exit: 1})
       }
 
       this.output.log(chalk.red.bgBlack(error.message))
@@ -79,8 +82,7 @@ export class StartCommand extends SanityCliCommand<typeof StartCommand> {
         this.output.log(chalk.green.bgBlack('Starting development server...'))
       } else {
         // Indicate that this isn't an expected exit
-
-        process.exit(1)
+        this.output.error(`Failed to start preview server`, {exit: 1})
       }
     }
   }

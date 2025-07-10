@@ -72,11 +72,6 @@ const mockVitePreview = vi.mocked((await import('vite')).preview)
 const mockConfirm = vi.mocked(confirm)
 const mockReadFile = vi.mocked((await import('node:fs/promises')).readFile)
 
-// Mock process.exit
-const mockExit = vi.spyOn(process, 'exit').mockImplementation(() => {
-  throw new Error('process.exit called')
-})
-
 describe('#start', () => {
   const cwd = join(examplesDir, 'basic-studio')
   const originalCwd = process.cwd
@@ -260,8 +255,8 @@ describe('#start', () => {
       config: {root: cwd},
     })
 
-    expect(error?.message).toBe('process.exit called')
-    expect(mockExit).toHaveBeenCalledWith(1)
+    expect(error?.message).toBe('Failed to start preview server')
+    expect(error?.oclif?.exit).toBe(1)
     expect(mockConfirm).toHaveBeenCalledWith({
       message: 'Do you want to start a development server instead?',
     })
@@ -295,6 +290,7 @@ describe('#start', () => {
 
     // Generic errors should be re-thrown by the command
     expect(error?.message).toBe('Generic server error')
+    expect(error?.oclif?.exit).toBe(1)
     expect(mockVitePreview).toHaveBeenCalled()
   })
 })
