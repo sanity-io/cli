@@ -1,4 +1,4 @@
-import fs from 'node:fs/promises'
+import {readFile} from 'node:fs/promises'
 import {createRequire} from 'node:module'
 import path from 'node:path'
 
@@ -40,7 +40,7 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
   const indexPath = path.join(root, 'index.html')
   let basePath: string | undefined
   try {
-    const index = await fs.readFile(indexPath, 'utf8')
+    const index = await readFile(indexPath, 'utf8')
     basePath = tryResolveBasePathFromIndex(index)
   } catch (err) {
     if (err.code !== 'ENOENT') {

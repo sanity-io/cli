@@ -1,7 +1,6 @@
 import {join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
-import {confirm} from '@inquirer/prompts'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testCommand} from '~test/helpers/testCommand.js'
 
@@ -26,51 +25,39 @@ vi.mock('../../util/isInteractive.js', () => ({
   isInteractive: true,
 }))
 
-// Mock fs/promises to control file existence
-vi.mock('node:fs/promises', async () => {
-  const actual = await vi.importActual('node:fs/promises')
+// Mock fs/promises to control file existence - MUST be synchronous
+vi.mock('node:fs/promises', () => {
+  const mockAccess = vi.fn()
+  const mockReaddir = vi.fn()
+  const mockReadFile = vi.fn()
+  const mockStat = vi.fn()
+
   return {
-    ...actual,
-    access: vi.fn().mockImplementation((path) => {
-      // Only allow access to .ts files (not .js) to avoid multiple config file errors
-      if (typeof path === 'string' && path.endsWith('.js')) {
-        return Promise.reject(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
-      }
-      return Promise.resolve(undefined)
-    }),
-    readdir: vi.fn().mockImplementation((path) => {
-      // Return different results based on what's being read
-      if (path.includes('basic-studio')) {
-        return Promise.resolve(['sanity.config.ts', 'sanity.cli.ts', 'package.json'])
-      }
-      return Promise.resolve([])
-    }),
-    readFile: vi.fn(),
-    stat: vi.fn().mockResolvedValue({isDirectory: () => true}),
+    access: mockAccess,
+    default: {
+      access: mockAccess,
+      readdir: mockReaddir,
+      readFile: mockReadFile,
+      stat: mockStat,
+    },
+    readdir: mockReaddir,
+    readFile: mockReadFile,
+    stat: mockStat,
   }
 })
 
 // Mock findProjectRoot to avoid multiple config file errors
-vi.mock('../../config/findProjectRoot.js', async () => {
-  const {join, resolve} = await import('node:path')
-  const {fileURLToPath} = await import('node:url')
-  const __dirname = fileURLToPath(new URL('.', import.meta.url))
-  const rootDir = resolve(__dirname, '../../../../../../')
-  const examplesDir = resolve(rootDir, 'examples')
-  const cwd = join(examplesDir, 'basic-studio')
+vi.mock('../../config/findProjectRoot.js', () => ({
+  findProjectRoot: vi.fn(),
+}))
 
-  return {
-    findProjectRoot: vi.fn().mockResolvedValue({
-      directory: cwd,
-      root: cwd,
-      type: 'studio',
-    }),
-  }
-})
-
-const mockVitePreview = vi.mocked((await import('vite')).preview)
-const mockConfirm = vi.mocked(confirm)
-const mockReadFile = vi.mocked((await import('node:fs/promises')).readFile)
+// Import mocked modules after vi.mock() calls
+const {preview: mockVitePreview} = vi.mocked(await import('vite'))
+const {confirm: mockConfirm} = vi.mocked(await import('@inquirer/prompts'))
+const {findProjectRoot: mockFindProjectRoot} = vi.mocked(
+  await import('../../config/findProjectRoot.js'),
+)
+const {access: mockAccess, readFile: mockReadFile} = vi.mocked(await import('node:fs/promises'))
 
 describe('#start', () => {
   const cwd = join(examplesDir, 'basic-studio')
@@ -79,6 +66,22 @@ describe('#start', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     process.cwd = () => cwd
+
+    // Set up default mock implementations
+    mockAccess.mockImplementation((path) => {
+      // Only allow access to .ts files (not .js) to avoid multiple config file errors
+      const pathStr = typeof path === 'string' ? path : path.toString()
+      if (pathStr.endsWith('.js')) {
+        return Promise.reject(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
+      }
+      return Promise.resolve(undefined)
+    })
+
+    mockFindProjectRoot.mockResolvedValue({
+      directory: cwd,
+      path: cwd,
+      type: 'studio',
+    })
   })
 
   afterEach(() => {
