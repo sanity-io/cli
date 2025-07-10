@@ -1,20 +1,23 @@
-import {Args, Command, Flags} from '@oclif/core'
-import {type ArgInput, type FlagInput} from '@oclif/core/interfaces'
+import {Args, Flags} from '@oclif/core'
 
+import {buildApp} from '../actions/build/buildApp.js'
+import {buildDebug} from '../actions/build/buildDebug.js'
+import {buildStudio} from '../actions/build/buildStudio.js'
+import {shouldAutoUpdate} from '../actions/build/shouldAutoUpdate.js'
 import {SanityCliCommand} from '../BaseCommand.js'
+import {determineIsApp} from '../util/determineIsApp.js'
 
 export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
   static override args = {
-    outputDir: Args.directory({default: 'dist', description: 'Output directory'}),
-  } satisfies ArgInput
+    outputDir: Args.directory({description: 'Output directory'}),
+  }
 
   static override description = 'Builds the Sanity Studio configuration into a static bundle'
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',
-    '<%= config.bin %> <%= command.id %> --no-minify',
-    '<%= config.bin %> <%= command.id %> --source-maps',
-  ] satisfies Array<Command.Example>
+    '<%= config.bin %> <%= command.id %> --no-minify --source-maps',
+  ]
 
   static override flags = {
     'auto-updates': Flags.boolean({
@@ -31,15 +34,52 @@ export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
       default: false,
       description: 'Enable source maps for built bundles (increases size of bundle)',
     }),
+    stats: Flags.boolean({
+      default: false,
+      description: 'Show stats about the built bundles',
+    }),
     yes: Flags.boolean({
       char: 'y',
       default: false,
       description:
         'Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults',
     }),
-  } satisfies FlagInput
+  }
 
   public async run(): Promise<void> {
-    this.log(JSON.stringify(this.flags))
+    const cliConfig = await this.getCliConfig()
+
+    const {flags} = await this.parse(BuildCommand)
+
+    const isApp = determineIsApp(cliConfig)
+
+    const workDir = (await this.getProjectRoot()).directory
+
+    const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags})
+    const exit = this.exit.bind(this)
+
+    if (isApp) {
+      buildDebug(`Building app`)
+      await buildApp({
+        autoUpdatesEnabled,
+        cliConfig,
+        exit,
+        flags,
+        outDir: this.args.outputDir,
+        output: this.output,
+        workDir,
+      })
+    } else {
+      buildDebug(`Building studio`)
+      await buildStudio({
+        autoUpdatesEnabled,
+        cliConfig,
+        exit,
+        flags,
+        outDir: this.args.outputDir,
+        output: this.output,
+        workDir,
+      })
+    }
   }
 }

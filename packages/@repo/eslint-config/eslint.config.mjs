@@ -222,6 +222,7 @@ export default [
         ],
         'unicorn/no-await-expression-member': 'off',
         'unicorn/no-null': 'off',
+        'unicorn/no-process-exit': 'off',
         'unicorn/prefer-module': 'warn',
         'unicorn/prevent-abbreviations': 'off',
         'unused-imports/no-unused-imports': 'error',

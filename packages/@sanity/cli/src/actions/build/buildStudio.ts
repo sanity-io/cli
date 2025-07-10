@@ -1,0 +1,194 @@
+import {rm} from 'node:fs/promises'
+import path from 'node:path'
+
+import {confirm, select} from '@inquirer/prompts'
+import chalk from 'chalk'
+import {type Ora} from 'ora'
+import semver from 'semver'
+
+import {info} from '../../core/logSymbols.js'
+import {spinner} from '../../core/spinner.js'
+import {getTimer} from '../../core/timer.js'
+import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
+import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
+import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
+import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
+import {buildDebug} from './buildDebug.js'
+import {buildStaticFiles} from './buildStaticFiles.js'
+import {buildVendorDependencies} from './buildVendorDependencies.js'
+import {checkRequiredDependencies} from './checkRequiredDependencies.js'
+import {checkStudioDependencyVersions} from './checkStudioDependencyVersions.js'
+import {determineBasePath} from './determineBasePath.js'
+import {getStudioAutoUpdateImportMap} from './getAutoUpdatesImportMap.js'
+import {getStudioEnvVars} from './getStudioEnvVars.js'
+import {shouldAutoUpdate} from './shouldAutoUpdate.js'
+import {type BuildOptions} from './types.js'
+
+/**
+ * Build the Sanity Studio.
+ *
+ * @internal
+ */
+export async function buildStudio(options: BuildOptions): Promise<void> {
+  const timer = getTimer()
+  const {cliConfig, exit, flags, outDir, output, workDir} = options
+
+  const unattendedMode = Boolean(flags.yes)
+  const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
+  const outputDir = path.resolve(outDir || defaultOutputDir)
+
+  await checkStudioDependencyVersions(workDir, output)
+
+  // If the check resulted in a dependency install, the CLI command will be re-run,
+  // thus we want to exit early
+  const {didInstall, installedSanityVersion} = await checkRequiredDependencies({
+    cliConfig,
+    output,
+    workDir,
+  })
+  if (didInstall) {
+    return exit(1)
+  }
+
+  const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags})
+
+  // Get the version without any tags if any
+  const coercedSanityVersion = semver.coerce(installedSanityVersion)?.version
+  if (autoUpdatesEnabled && !coercedSanityVersion) {
+    throw new Error(`Failed to parse installed Sanity version: ${installedSanityVersion}`)
+  }
+  const version = encodeURIComponent(`^${coercedSanityVersion}`)
+  const autoUpdatesImports = getStudioAutoUpdateImportMap(version)
+
+  if (autoUpdatesEnabled) {
+    output.log(`${info} Building with auto-updates enabled`)
+
+    // Check the versions
+    const result = await compareDependencyVersions(autoUpdatesImports, workDir)
+
+    // If it is in unattended mode, we don't want to prompt
+    if (result?.length && !unattendedMode) {
+      const choice = await select({
+        choices: [
+          {
+            name: `Upgrade and proceed with build`,
+            value: 'upgrade-and-proceed',
+          },
+          {
+            name: `Upgrade only. You will need to run the build command again`,
+            value: 'upgrade',
+          },
+          {name: 'Cancel', value: 'cancel'},
+        ],
+        default: 'upgrade-and-proceed',
+        message: chalk.yellow(
+          `The following local package versions are different from the versions currently served at runtime.\n` +
+            `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
+            `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')} \n\n` +
+            `Do you want to upgrade local versions before deploying?`,
+        ),
+      })
+
+      if (choice === 'cancel') {
+        return exit(1)
+      }
+
+      if (choice === 'upgrade' || choice === 'upgrade-and-proceed') {
+        await upgradePackages(
+          {
+            packageManager: (await getPackageManagerChoice(workDir, {interactive: false})).chosen,
+            packages: result.map((res) => [res.pkg, res.remote]),
+          },
+          {output, workDir},
+        )
+
+        if (choice !== 'upgrade-and-proceed') {
+          return exit(1)
+        }
+      }
+    }
+  }
+
+  const envVarKeys = getStudioEnvVars()
+  if (envVarKeys.length > 0) {
+    output.log('\nIncluding the following environment variables as part of the JavaScript bundle:')
+    for (const key of envVarKeys) {
+      output.log(`- ${key}`)
+    }
+    output.log('')
+  }
+
+  let shouldClean = true
+  if (outputDir !== defaultOutputDir && !unattendedMode) {
+    shouldClean = await confirm({
+      default: true,
+      message: `Do you want to delete the existing directory (${outputDir}) first?`,
+    })
+  }
+
+  // Determine base path for built studio
+  const basePath = determineBasePath(cliConfig, 'studio')
+
+  let spin: Ora
+  if (shouldClean) {
+    timer.start('cleanOutputFolder')
+    spin = spinner('Clean output folder').start()
+    await rm(outputDir, {force: true, recursive: true})
+    const cleanDuration = timer.end('cleanOutputFolder')
+    spin.text = `Clean output folder (${cleanDuration.toFixed(0)}ms)`
+    spin.succeed()
+  }
+
+  spin = spinner(`Build Sanity Studio`).start()
+
+  // TODO: Add telemetry
+  // const trace = telemetry.trace(BuildTrace)
+  // trace.start()
+
+  let importMap
+
+  if (autoUpdatesEnabled) {
+    importMap = {
+      imports: {
+        ...(await buildVendorDependencies({basePath, cwd: workDir, outputDir})),
+        ...autoUpdatesImports,
+      },
+    }
+  }
+
+  try {
+    timer.start('bundleStudio')
+
+    const bundle = await buildStaticFiles({
+      basePath,
+      cwd: workDir,
+      importMap,
+      minify: Boolean(flags.minify),
+      outputDir,
+      reactCompiler:
+        cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
+      sourceMap: Boolean(flags['source-maps']),
+      vite: cliConfig && 'vite' in cliConfig ? cliConfig.vite : undefined,
+    })
+
+    // trace.log({
+    //   outputSize: bundle.chunks
+    //     .flatMap((chunk) => chunk.modules.flatMap((mod) => mod.renderedLength))
+    //     .reduce((sum, n) => sum + n, 0),
+    // })
+    const buildDuration = timer.end('bundleStudio')
+
+    spin.text = `Build Sanity Studio (${buildDuration.toFixed(0)}ms)`
+    spin.succeed()
+
+    // trace.complete()
+    if (flags.stats) {
+      output.log('\nLargest module files:')
+      output.log(formatModuleSizes(sortModulesBySize(bundle.chunks).slice(0, 15)))
+    }
+  } catch (error) {
+    spin.fail()
+    buildDebug(`Failed to build Sanity Studio`, {error})
+    output.error(`Failed to build Sanity Studio`, {exit: 1})
+  }
+}

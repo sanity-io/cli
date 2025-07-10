@@ -5,7 +5,6 @@ Code for sanity cli
 # Usage
 
   <!-- usage -->
-
 ```sh-session
 $ npm install -g @sanity/cli
 $ sanity COMMAND
@@ -17,22 +16,22 @@ USAGE
   $ sanity COMMAND
 ...
 ```
-
 <!-- usagestop -->
 
 # Commands
 
   <!-- commands -->
-
-- [`sanity build [OUTPUTDIR]`](#sanity-build-outputdir)
-- [`sanity dev`](#sanity-dev)
-- [`sanity docs`](#sanity-docs)
-- [`sanity help [COMMAND]`](#sanity-help-command)
-- [`sanity learn`](#sanity-learn)
-- [`sanity login`](#sanity-login)
-- [`sanity logout`](#sanity-logout)
-- [`sanity manage`](#sanity-manage)
-- [`sanity versions`](#sanity-versions)
+* [`sanity build [OUTPUTDIR]`](#sanity-build-outputdir)
+* [`sanity dev`](#sanity-dev)
+* [`sanity docs`](#sanity-docs)
+* [`sanity help [COMMAND]`](#sanity-help-command)
+* [`sanity learn`](#sanity-learn)
+* [`sanity login`](#sanity-login)
+* [`sanity logout`](#sanity-logout)
+* [`sanity manage`](#sanity-manage)
+* [`sanity projects list`](#sanity-projects-list)
+* [`sanity users list`](#sanity-users-list)
+* [`sanity versions`](#sanity-versions)
 
 ## `sanity build [OUTPUTDIR]`
 
@@ -43,7 +42,7 @@ USAGE
   $ sanity build [OUTPUTDIR] [--auto-updates] [--minify] [--source-maps] [-y]
 
 ARGUMENTS
-  OUTPUTDIR  [default: dist] Output directory
+  OUTPUTDIR  Output directory
 
 FLAGS
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
@@ -57,9 +56,7 @@ DESCRIPTION
 EXAMPLES
   $ sanity build
 
-  $ sanity build --no-minify
-
-  $ sanity build --source-maps
+  $ sanity build --no-minify --source-maps
 ```
 
 _See code: [src/commands/build.ts](https://github.com/sanity-io/cli/blob/v0.0.0/src/commands/build.ts)_
@@ -195,6 +192,70 @@ DESCRIPTION
 
 _See code: [src/commands/manage.ts](https://github.com/sanity-io/cli/blob/v0.0.0/src/commands/manage.ts)_
 
+## `sanity projects list`
+
+Lists projects connected to your user
+
+```
+USAGE
+  $ sanity projects list [--order asc|desc] [--sort id|members|name|url|created]
+
+FLAGS
+  --order=<option>  [default: desc]
+                    <options: asc|desc>
+  --sort=<option>   [default: created]
+                    <options: id|members|name|url|created>
+
+DESCRIPTION
+  Lists projects connected to your user
+
+EXAMPLES
+  List projects
+
+    $ sanity projects list
+
+  List all users of the project, but exclude pending invitations and robots
+
+    $ sanity projects list --sort=members --order=asc
+```
+
+_See code: [src/commands/projects/list.ts](https://github.com/sanity-io/cli/blob/v0.0.0/src/commands/projects/list.ts)_
+
+## `sanity users list`
+
+List all users of the project
+
+```
+USAGE
+  $ sanity users list [--invitations] [--order asc|desc] [--robots] [--sort id|name|role|date]
+
+FLAGS
+  --[no-]invitations  Includes or excludes pending invitations
+  --order=<option>    [default: asc] Sort output ascending/descending
+                      <options: asc|desc>
+  --[no-]robots       Includes or excludes robots (token users)
+  --sort=<option>     [default: date] Sort users by specified column
+                      <options: id|name|role|date>
+
+DESCRIPTION
+  List all users of the project
+
+EXAMPLES
+  List all users of the project
+
+    $ sanity users list
+
+  List all users of the project, but exclude pending invitations and robots
+
+    $ sanity users list --no-invitations --no-robots
+
+  List all users, sorted by role
+
+    $ sanity users list --sort role
+```
+
+_See code: [src/commands/users/list.ts](https://github.com/sanity-io/cli/blob/v0.0.0/src/commands/users/list.ts)_
+
 ## `sanity versions`
 
 Shows installed versions of Sanity Studio and components
@@ -211,15 +272,13 @@ EXAMPLES
 ```
 
 _See code: [src/commands/versions.ts](https://github.com/sanity-io/cli/blob/v0.0.0/src/commands/versions.ts)_
-
 <!-- commandsstop -->
 
 # Table of contents
 
   <!-- toc -->
-
-- [@sanity/cli](#sanitycli)
-- [Usage](#usage)
-- [Commands](#commands)
-- [Table of contents](#table-of-contents)
+* [@sanity/cli](#sanitycli)
+* [Usage](#usage)
+* [Commands](#commands)
+* [Table of contents](#table-of-contents)
 <!-- tocstop -->
