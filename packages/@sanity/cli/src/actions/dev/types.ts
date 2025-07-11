@@ -11,6 +11,7 @@ export interface DevActionOptions {
   apiClient: (args: GlobalCliClientOptions) => Promise<SanityClient>
   cliConfig: CliConfig
   flags: DevFlags
+  isApp: boolean
   output: Output
   workDir: string
 }

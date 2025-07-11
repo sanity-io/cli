@@ -1,9 +1,11 @@
-import {confirm} from '@inquirer/prompts'
 import {Flags} from '@oclif/core'
-import {isInteractive, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 import chalk from 'chalk'
 
 import {devAction} from '../actions/dev/devAction.js'
+import {determineIsApp} from '../util/determineIsApp.js'
+
+const devDebug = subdebug('dev')
 
 export class DevCommand extends SanityCommand<typeof DevCommand> {
   static override description =
@@ -26,7 +28,6 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
     }),
     'load-in-dashboard': Flags.boolean({
       allowNo: true,
-      default: false,
       description: 'Load the dev server in the Sanity dashboard.',
     }),
     port: Flags.string({
@@ -40,35 +41,30 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
 
     const workDir = (await this.getProjectRoot()).directory
     const cliConfig = await this.getCliConfig()
+    const isApp = determineIsApp(cliConfig)
+
+    // load-in-dashboard is defaulted to true for apps.
+    if (isApp && flags['load-in-dashboard'] === undefined) {
+      flags['load-in-dashboard'] = true
+    } else if (flags['load-in-dashboard'] === undefined) {
+      // For non-apps, load-in-dashboard is defaulted to false.
+      flags['load-in-dashboard'] = false
+    }
 
     try {
       await devAction({
         apiClient: this.getGlobalApiClient,
         cliConfig,
         flags,
+        isApp,
         output: this.output,
         workDir,
       })
     } catch (error) {
-      this.output.log(chalk.red.bgBlack(`Failed to start dev server: ${error.message}`, error))
-
-      if (error.name === 'MISSING_DEPENDENCIES') {
-        const shouldInstall =
-          isInteractive &&
-          (await confirm({
-            message: 'Missing dependencies detected. Would you like to install them?',
-          }))
-
-        if (shouldInstall) {
-          // TODO: Implement dependency installation
-          this.output.log(chalk.green.bgBlack('Installing dependencies...'))
-        } else {
-          process.exit(1)
-        }
-      } else {
-        // Re-throw for unexpected errors
-        throw error
-      }
+      devDebug(`Failed to start dev server`, error)
+      this.output.error(chalk.red.bgBlack(`Failed to start dev server: ${error.message}`), {
+        exit: 1,
+      })
     }
   }
 }

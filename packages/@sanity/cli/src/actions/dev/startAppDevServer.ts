@@ -21,8 +21,10 @@ export async function startAppDevServer(options: DevActionOptions): Promise<void
   }
 
   if (!organizationId) {
-    output.error(`Apps require an organization ID (orgId) specified in your sanity.cli.ts file`)
-    process.exit(1)
+    output.error(`Apps require an organization ID (orgId) specified in your sanity.cli.ts file`, {
+      exit: 1,
+    })
+    return
   }
 
   const config = getDevServerConfig({cliConfig, flags, output, workDir})

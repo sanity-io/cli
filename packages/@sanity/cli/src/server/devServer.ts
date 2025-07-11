@@ -86,13 +86,13 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   debug('Listening on specified port')
   await server.listen()
 
+  // Stop the spinner before logging the startup message
+  spinner.succeed()
+
   if (!skipStartLog) {
     const startupDuration = Date.now() - startTime
     const url = `http://${httpHost || 'localhost'}:${httpPort || '3333'}${basePath}`
     const appType = isApp ? 'Sanity application' : 'Sanity Studio'
-
-    // Stop the spinner before logging the startup message
-    spinner.succeed()
 
     info(
       `${appType} ` +

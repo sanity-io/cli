@@ -20,10 +20,10 @@ import {type DevActionOptions} from './types.js'
 export async function startStudioDevServer(options: DevActionOptions): Promise<void> {
   const {apiClient, cliConfig, flags, output, workDir} = options
 
-  const {loadInDashboard} = flags
+  const loadInDashboard = flags['load-in-dashboard']
 
   // Check studio dependency versions
-  await checkStudioDependencyVersions(workDir)
+  await checkStudioDependencyVersions(workDir, output)
 
   // Check required dependencies and exit early if they were installed
   const {didInstall, installedSanityVersion} = await checkRequiredDependencies(options)
@@ -98,8 +98,7 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
       })
       organizationId = project.organizationId
     } catch {
-      output.error('Failed to get organization Id from project Id')
-      process.exit(1)
+      output.error('Failed to get organization Id from project Id', {exit: 1})
     }
   }
 
@@ -109,8 +108,8 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
 
     if (loadInDashboard) {
       if (!organizationId) {
-        output.error('Organization Id not found for project')
-        process.exit(1)
+        output.error('Organization Id not found for project', {exit: 1})
+        return
       }
 
       output.log(`Dev server started on port ${config.httpPort}`)
