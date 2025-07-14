@@ -27,8 +27,8 @@ export interface DevServerOptions {
   entry?: string
   httpHost?: string
   isApp?: boolean
+  printStartLog?: boolean
   projectName?: string
-  skipStartLog?: boolean
   vite?: UserViteConfig
 }
 
@@ -44,9 +44,9 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     httpHost,
     httpPort,
     isApp,
+    printStartLog,
     reactCompiler,
     reactStrictMode,
-    skipStartLog,
     spinner,
     vite: extendViteConfig,
   } = options
@@ -89,7 +89,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   // Stop the spinner before logging the startup message
   spinner.succeed()
 
-  if (!skipStartLog) {
+  if (printStartLog) {
     const startupDuration = Date.now() - startTime
     const url = `http://${httpHost || 'localhost'}:${httpPort || '3333'}${basePath}`
     const appType = isApp ? 'Sanity application' : 'Sanity Studio'

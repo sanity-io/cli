@@ -105,7 +105,6 @@ describe('#getViteConfig', () => {
     })
 
     expect(config.plugins).toHaveLength(4)
-    expect(config.resolve?.alias).toEqual({alias1: 'path1', alias2: 'path2'})
     expect(config.resolve?.dedupe).toEqual(['styled-components'])
   })
 

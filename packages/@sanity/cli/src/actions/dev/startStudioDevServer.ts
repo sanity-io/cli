@@ -14,6 +14,7 @@ import {checkRequiredDependencies} from '../build/checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from '../build/checkStudioDependencyVersions.js'
 import {getStudioAutoUpdateImportMap} from '../build/getAutoUpdatesImportMap.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
+import {devDebug} from './devDebug.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 import {type DevActionOptions} from './types.js'
 
@@ -97,14 +98,15 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
         uri: `/projects/${projectId}`,
       })
       organizationId = project.organizationId
-    } catch {
+    } catch (error) {
+      devDebug('Error getting organization Id from project Id', error)
       output.error('Failed to get organization Id from project Id', {exit: 1})
     }
   }
 
   try {
     const spin = spinner('Starting dev server').start()
-    await startDevServer({...config, skipStartLog: loadInDashboard, spinner: spin})
+    await startDevServer({...config, printStartLog: !loadInDashboard, spinner: spin})
 
     if (loadInDashboard) {
       if (!organizationId) {
@@ -127,6 +129,8 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
       )
     }
   } catch (err) {
+    console.log(err)
+    devDebug('Error starting studio dev server', err)
     gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
   }
 }

@@ -3,6 +3,7 @@ import chalk from 'chalk'
 import {spinner} from '../../core/spinner.js'
 import {startDevServer} from '../../server/devServer.js'
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
+import {devDebug} from './devDebug.js'
 import {getCoreAppURL} from './getCoreAppUrl.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 import {type DevActionOptions} from './types.js'
@@ -31,7 +32,7 @@ export async function startAppDevServer(options: DevActionOptions): Promise<void
 
   try {
     const spin = spinner('Starting dev server').start()
-    await startDevServer({...config, isApp: true, skipStartLog: true, spinner: spin})
+    await startDevServer({...config, isApp: true, printStartLog: false, spinner: spin})
 
     output.log(`Dev server started on port ${config.httpPort}`)
     output.log(`View your app in the Sanity dashboard here:`)
@@ -47,6 +48,7 @@ export async function startAppDevServer(options: DevActionOptions): Promise<void
       ),
     )
   } catch (err) {
+    devDebug('Error starting app dev server', err)
     gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
   }
 }
