@@ -1,5 +1,6 @@
 import {createRequire} from 'node:module'
 
+import {confirm} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
@@ -7,6 +8,12 @@ import nock from 'nock'
 import {createServer} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+<<<<<<< HEAD
+=======
+import {getCliConfig} from '../../config/cli/getCliConfig.js'
+import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
+import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
+>>>>>>> 7510a541 (fix: add extensive testsing for dev command)
 import {DevCommand} from '../dev.js'
 
 const require = createRequire(import.meta.url)
@@ -59,6 +66,14 @@ vi.mock(import('../../actions/build/checkStudioDependencyVersions.js'), async (i
   }
 })
 
+vi.mock(import('../../util/compareDependencyVersions.js'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    compareDependencyVersions: vi.fn(),
+  }
+})
+
 vi.mock(import('vite'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -67,10 +82,44 @@ vi.mock(import('vite'), async (importOriginal) => {
   }
 })
 
+vi.mock(import('@inquirer/prompts'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    confirm: vi.fn(),
+  }
+})
+
+vi.mock(import('../../util/isInteractive.js'), () => ({
+  isInteractive: true,
+}))
+
+vi.mock(import('../../util/packageManager/upgradePackages.js'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    upgradePackages: vi.fn(),
+  }
+})
+vi.mock(import('../../util/packageManager/packageManagerChoice.js'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    getPackageManagerChoice: vi.fn().mockResolvedValue({chosen: 'pnpm'}),
+  }
+})
+
 const mockViteCreateServer = vi.mocked(createServer)
 const mockGetCliConfig = vi.mocked(getCliConfig)
+const mockCompareDependencyVersions = vi.mocked(compareDependencyVersions)
+const mockConfirm = vi.mocked(confirm)
+const mockUpgradePackages = vi.mocked(upgradePackages)
 
 describe('#dev', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
   test('help text is correct', async () => {
     const {stdout} = await runCommand('dev --help')
     expect(stdout).toMatchInlineSnapshot(`
@@ -108,16 +157,14 @@ describe('#dev', () => {
   })
 
   describe('app', () => {
-    beforeEach(() => {
+    test('should start the dev server', async () => {
       mockGetCliConfig.mockResolvedValue({
         app: {
           id: 'test',
           organizationId: 'test-org',
         },
       })
-    })
 
-    test('should start the dev server', async () => {
       mockViteCreateServer.mockResolvedValue({
         close: vi.fn(),
         config: {
@@ -137,6 +184,65 @@ describe('#dev', () => {
       expect(stderr).toContain(`Starting dev server`)
 
       expect(error).toBeUndefined()
+    })
+
+    test('should warn if no-load-in-dashboard is used', async () => {
+      mockGetCliConfig.mockResolvedValue({
+        app: {
+          id: 'test',
+          organizationId: 'test-org',
+        },
+      })
+
+      mockViteCreateServer.mockResolvedValue({
+        close: vi.fn(),
+        config: {
+          logger: {
+            info: vi.fn(),
+          },
+        },
+        listen: vi.fn(),
+      } as never)
+
+      const {error, stderr, stdout} = await testCommand(DevCommand, ['--no-load-in-dashboard'], {})
+
+      expect(stdout).toContain('Dev server started on port 3333')
+      expect(stdout).toContain('View your app in the Sanity dashboard here:')
+      expect(stdout).toContain('https://sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A3333')
+
+      expect(stderr).toContain('Warning: Apps cannot run without the Sanity dashboard')
+      expect(stderr).toContain('Starting dev server with the --load-in-dashboard flag set to true')
+
+      expect(error).toBeUndefined()
+    })
+
+    test('throws an error if organizationId is not set', async () => {
+      mockGetCliConfig.mockResolvedValue({
+        app: {
+          id: 'test',
+        },
+      })
+
+      const {error} = await testCommand(DevCommand, [], {})
+
+      expect(error?.message).toContain(
+        'Failed to start dev server: Apps require an organization ID (orgId) specified in your sanity.cli.ts file',
+      )
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('handles error from vite', async () => {
+      mockGetCliConfig.mockResolvedValue({
+        app: {
+          id: 'test',
+          organizationId: 'test-org',
+        },
+      })
+      mockViteCreateServer.mockRejectedValue(new Error('Vite error'))
+
+      const {error} = await testCommand(DevCommand, [], {})
+
+      expect(error?.message).toContain('Vite error')
     })
   })
 
@@ -207,6 +313,143 @@ describe('#dev', () => {
       expect(stderr).toContain(`Starting dev server`)
 
       expect(error).toBeUndefined()
+    })
+
+    test('throws an error if projectId is not set and load-in-dashboard is used', async () => {
+      mockGetCliConfig.mockResolvedValue({})
+
+      const {error} = await testCommand(DevCommand, ['--load-in-dashboard'], {})
+
+      expect(error?.message).toContain(
+        'Failed to start dev server: Project Id is required to load in dashboard',
+      )
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('throws an error if organizationId is not found', async () => {
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId: 'test-project',
+        },
+      })
+
+      mockApi({
+        apiVersion: 'v2024-01-01',
+        uri: `/projects/test-project`,
+      }).reply(404, {error: 'Project not found'})
+
+      const {error} = await testCommand(DevCommand, ['--load-in-dashboard'], {})
+
+      expect(error?.message).toContain(
+        'Failed to start dev server: Failed to get organization Id from project Id',
+      )
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('handles error thrown from vite', async () => {
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId: 'test-project',
+        },
+      })
+
+      mockViteCreateServer.mockRejectedValue(new Error('Vite error'))
+
+      const {error} = await testCommand(DevCommand, [], {})
+
+      expect(error?.message).toContain('Vite error')
+    })
+
+    test('shows a confirmation prompt if studio dependencies are out of date for auto-updates and is interactive', async () => {
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId: 'test-project',
+        },
+      })
+      mockViteCreateServer.mockResolvedValue({
+        close: vi.fn(),
+        config: {
+          logger: {
+            info: vi.fn(),
+          },
+        },
+        listen: vi.fn(),
+      } as never)
+      mockCompareDependencyVersions.mockResolvedValue([
+        {
+          installed: '3.98.0',
+          pkg: 'sanity',
+          remote: '3.99.0',
+        },
+        {
+          installed: '3.98.0',
+          pkg: '@sanity/vision',
+          remote: '3.99.0',
+        },
+      ])
+
+      await testCommand(DevCommand, ['--auto-updates'], {})
+
+      expect(mockConfirm).toHaveBeenCalledWith({
+        default: true,
+        message: `The following local package versions are different from the versions currently served at runtime.
+When using auto updates, we recommend that you run with the same versions locally as will be used when deploying.
+
+ - sanity (local version: 3.98.0, runtime version: 3.99.0)
+ - @sanity/vision (local version: 3.98.0, runtime version: 3.99.0)
+
+Do you want to upgrade local versions?`,
+      })
+    })
+
+    test('upgrades local versions if user confirms upgrade', async () => {
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId: 'test-project',
+        },
+      })
+      mockViteCreateServer.mockResolvedValue({
+        close: vi.fn(),
+        config: {
+          logger: {
+            info: vi.fn(),
+          },
+        },
+        listen: vi.fn(),
+      } as never)
+      mockCompareDependencyVersions.mockResolvedValue([
+        {
+          installed: '3.98.0',
+          pkg: 'sanity',
+          remote: '3.99.0',
+        },
+        {
+          installed: '3.98.0',
+          pkg: '@sanity/vision',
+          remote: '3.99.0',
+        },
+      ])
+      mockConfirm.mockResolvedValue(true)
+
+      await testCommand(DevCommand, ['--auto-updates'], {})
+
+      expect(mockUpgradePackages).toHaveBeenCalledWith(
+        {
+          packageManager: 'pnpm',
+          packages: [
+            ['sanity', '3.99.0'],
+            ['@sanity/vision', '3.99.0'],
+          ],
+        },
+        {
+          output: {
+            error: expect.any(Function),
+            log: expect.any(Function),
+            warn: expect.any(Function),
+          },
+          workDir: '/test/path',
+        },
+      )
     })
   })
 })

@@ -51,8 +51,8 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
     const result = await compareDependencyVersions(autoUpdatesImports, workDir)
     const message =
       `The following local package versions are different from the versions currently served at runtime.\n` +
-      `When using auto updates, we recommend that you run with the same versions locally as will be used when deploying. \n\n` +
-      `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')} \n\n`
+      `When using auto updates, we recommend that you run with the same versions locally as will be used when deploying.\n\n` +
+      `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')}\n\n`
 
     // mismatch between local and auto-updating dependencies
     if (result?.length) {
@@ -84,8 +84,8 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
 
   if (loadInDashboard) {
     if (!projectId) {
-      output.error('Project Id is required to load in dashboard')
-      process.exit(1)
+      output.error('Project Id is required to load in dashboard', {exit: 1})
+      return
     }
 
     const client = await apiClient({
@@ -109,11 +109,6 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
     await startDevServer({...config, printStartLog: !loadInDashboard, spinner: spin})
 
     if (loadInDashboard) {
-      if (!organizationId) {
-        output.error('Organization Id not found for project', {exit: 1})
-        return
-      }
-
       output.log(`Dev server started on port ${config.httpPort}`)
       output.log(`View your studio in the Sanity dashboard here:`)
       output.log(
@@ -122,16 +117,15 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
             await getCoreStudioURL({
               httpHost: config.httpHost,
               httpPort: config.httpPort,
-              organizationId,
+              organizationId: organizationId!,
             }),
           ),
         ),
       )
     }
   } catch (err) {
-    console.log(err)
     devDebug('Error starting studio dev server', err)
-    gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
+    throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
   }
 }
 

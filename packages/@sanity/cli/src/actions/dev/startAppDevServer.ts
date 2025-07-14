@@ -49,6 +49,6 @@ export async function startAppDevServer(options: DevActionOptions): Promise<void
     )
   } catch (err) {
     devDebug('Error starting app dev server', err)
-    gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
+    throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
   }
 }
