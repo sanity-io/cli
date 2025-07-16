@@ -12,6 +12,7 @@ import {
   type UserApplication,
 } from '../../services/userApplications.js'
 import {type Output} from '../../types.js'
+import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {deployDebug} from './deployDebug.js'
 
 interface FindUserApplicationForAppOptions {
@@ -43,7 +44,7 @@ export async function findUserApplicationForApp(
     const organizationId = cliConfig.app?.organizationId
 
     if (!organizationId) {
-      output.error('No organization id found in configuration', {exit: 1})
+      output.error(NO_ORGANIZATION_ID, {exit: 1})
       // This is unreachable, but we need to return a value to satisfy the type checker
       return null
     }

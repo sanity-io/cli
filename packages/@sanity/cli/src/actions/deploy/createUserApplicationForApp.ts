@@ -3,13 +3,14 @@ import {customAlphabet} from 'nanoid'
 
 import {spinner} from '../../core/spinner.js'
 import {createUserApplication, type UserApplication} from '../../services/userApplications.js'
+import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {deployDebug} from './deployDebug.js'
 
 export async function createUserApplicationForApp(
   organizationId?: string,
 ): Promise<UserApplication> {
   if (!organizationId) {
-    throw new Error('No organization id found in configuration')
+    throw new Error(NO_ORGANIZATION_ID)
   }
 
   // First get the title from the user

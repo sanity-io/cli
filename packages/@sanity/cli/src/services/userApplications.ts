@@ -38,7 +38,9 @@ export async function getUserApplication(options: {
   appHost: string
   projectId: string
 }): Promise<UserApplication | null>
-export async function getUserApplication(): Promise<UserApplication | null>
+export async function getUserApplication(options: {
+  projectId: string
+}): Promise<UserApplication | null>
 export async function getUserApplication({
   appHost,
   appId,
@@ -47,7 +49,7 @@ export async function getUserApplication({
   appHost?: string
   appId?: string
   projectId?: string
-} = {}): Promise<UserApplication | null> {
+}): Promise<UserApplication | null> {
   let uri = '/user-applications'
   let query: Record<string, string | string[]>
   if (appId) {
@@ -57,6 +59,7 @@ export async function getUserApplication({
     uri = `/projects/${projectId}/user-applications`
     query = {appHost, appType: 'studio'}
   } else {
+    uri = `/projects/${projectId}/user-applications`
     query = {default: 'true'}
   }
 
@@ -123,6 +126,7 @@ export async function getUserApplications(
     requireUser: true,
   })
 
+  console.log('getUserApplications', options)
   if (appType === 'studio') {
     const {projectId} = options as {appType: 'studio'; projectId?: string}
     return await client.request({

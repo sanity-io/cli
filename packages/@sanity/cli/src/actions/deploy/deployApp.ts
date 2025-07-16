@@ -63,46 +63,45 @@ export async function deployApp(options: DeployAppOptions) {
         output,
         workDir,
       })
+    }
 
-      // Ensure that the directory exists, is a directory and seems to have valid content
-      spin = spin.start()
-      try {
-        await checkDir(sourceDir)
-        spin.succeed()
-      } catch (err) {
-        spin.fail()
-        deployDebug('Error checking directory', err)
-        output.error('Error checking directory', {exit: 1})
-      }
-
-      // Create a tarball of the given directory
-      const parentDir = dirname(sourceDir)
-      const base = basename(sourceDir)
-      const tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
-
-      spin = spinner('Deploying...').start()
-      await createDeployment({
-        applicationId: userApplication.id,
-        isApp: true,
-        isAutoUpdating,
-        tarball,
-        version: installedSdkVersion,
-      })
-
+    // Ensure that the directory exists, is a directory and seems to have valid content
+    spin = spin.start()
+    try {
+      await checkDir(sourceDir)
       spin.succeed()
+    } catch (err) {
+      spin.fail()
+      deployDebug('Error checking directory', err)
+      output.error('Error checking directory', {exit: 1})
+    }
 
-      // And let the user know we're done
-      output.log(`\nSuccess! Application deployed`)
+    // Create a tarball of the given directory
+    const parentDir = dirname(sourceDir)
+    const base = basename(sourceDir)
+    const tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
 
-      if (!appId) {
-        output.log(`\nAdd ${chalk.cyan(`id: '${userApplication.id}'`)}`)
-        output.log('to `app` in sanity.cli.js or sanity.cli.ts')
-        output.log(`to avoid prompting on next deploy.`)
-      }
+    spin = spinner('Deploying...').start()
+    await createDeployment({
+      applicationId: userApplication.id,
+      isApp: true,
+      isAutoUpdating,
+      tarball,
+      version: installedSdkVersion,
+    })
+
+    spin.succeed()
+
+    // And let the user know we're done
+    output.log(`\nSuccess! Application deployed`)
+
+    if (!appId) {
+      output.log(`\nAdd ${chalk.cyan(`id: '${userApplication.id}'`)}`)
+      output.log('to `app` in sanity.cli.js or sanity.cli.ts')
+      output.log(`to avoid prompting on next deploy.`)
     }
   } catch (error) {
     spin.fail()
-    console.error(error)
     deployDebug('Error deploying application', error)
     output.error('Error deploying application', {exit: 1})
   }

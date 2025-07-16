@@ -1,6 +1,7 @@
 import {type CliConfig} from '../../config/cli/types.js'
 import {getUserApplication} from '../../services/userApplications.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
+import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 interface GetStudioOrAppUserApplicationOptions {
   cliConfig: CliConfig
@@ -27,9 +28,7 @@ export async function getStudioOrAppUserApplication(options: GetStudioOrAppUserA
   }
 
   if (!cliConfig.api?.projectId) {
-    throw new Error(
-      `sanity.cli.ts does not contain a project identifier ("api.projectId"), which is required for the Sanity CLI to communicate with the Sanity API`,
-    )
+    throw new Error(NO_PROJECT_ID)
   }
 
   return getUserApplication({appHost: cliConfig.studioHost, projectId: cliConfig.api?.projectId})

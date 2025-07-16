@@ -4,6 +4,7 @@ import {confirm} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 
 import {deployApp} from '../actions/deploy/deployApp.js'
+import {deployDebug} from '../actions/deploy/deployDebug.js'
 import {deployStudio} from '../actions/deploy/deployStudio.js'
 import {SanityCliCommand} from '../BaseCommand.js'
 import {determineIsApp} from '../util/determineIsApp.js'
@@ -106,6 +107,7 @@ export class DeployCommand extends SanityCliCommand<typeof DeployCommand> {
     }
 
     if (isApp) {
+      deployDebug('Deploying app')
       await deployApp({
         cliConfig,
         exit: this.exit,
@@ -115,7 +117,15 @@ export class DeployCommand extends SanityCliCommand<typeof DeployCommand> {
         workDir,
       })
     } else {
-      deployStudio()
+      deployDebug('Deploying studio')
+      await deployStudio({
+        cliConfig,
+        exit: this.exit,
+        flags,
+        output: this.output,
+        sourceDir,
+        workDir,
+      })
     }
   }
 }
