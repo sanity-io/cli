@@ -1,3 +1,8 @@
+import {PassThrough} from 'node:stream'
+import {type Gzip} from 'node:zlib'
+
+import FormData from 'form-data'
+
 import {getGlobalCliClient} from '../core/apiClient.js'
 import {debug} from '../debug.js'
 
@@ -14,7 +19,7 @@ interface ActiveDeployment {
   version: string
 }
 
-interface UserApplication {
+export interface UserApplication {
   appHost: string
   createdAt: string
   id: string
@@ -90,5 +95,126 @@ export async function deleteUserApplication({
     method: 'DELETE',
     query: {appType},
     uri: `/user-applications/${applicationId}`,
+  })
+}
+
+export async function getUserApplications(options: {
+  appType: 'studio'
+  projectId: string
+}): Promise<UserApplication[]>
+export async function getUserApplications(options: {
+  appType: 'coreApp'
+  organizationId: string
+}): Promise<UserApplication[]>
+export async function getUserApplications(
+  options:
+    | {
+        appType: 'coreApp'
+        organizationId?: string
+      }
+    | {
+        appType: 'studio'
+        projectId?: string
+      },
+): Promise<UserApplication[]> {
+  const {appType} = options
+  const client = await getGlobalCliClient({
+    apiVersion: USER_APPLICATIONS_API_VERSION,
+    requireUser: true,
+  })
+
+  if (appType === 'studio') {
+    const {projectId} = options as {appType: 'studio'; projectId?: string}
+    return await client.request({
+      query: {appType: 'studio'},
+      uri: `/projects/${projectId}/user-applications`,
+    })
+  }
+
+  const {organizationId} = options as {appType: 'coreApp'; organizationId?: string}
+  return await client.request({
+    query: {appType: 'coreApp', organizationId: organizationId!},
+    uri: `/user-applications`,
+  })
+}
+
+export async function createUserApplication(options: {
+  appType: 'coreApp'
+  body: Pick<UserApplication, 'appHost' | 'type' | 'urlType'> & {
+    title?: string
+  }
+  organizationId?: string
+}): Promise<UserApplication>
+export async function createUserApplication(options: {
+  appType: 'studio'
+  body: Pick<UserApplication, 'appHost' | 'type' | 'urlType'> & {
+    title?: string
+  }
+  projectId: string
+}): Promise<UserApplication>
+export async function createUserApplication(options: {
+  appType: 'coreApp' | 'studio'
+  body: Pick<UserApplication, 'appHost' | 'type' | 'urlType'> & {
+    title?: string
+  }
+  organizationId?: string
+  projectId?: string
+}): Promise<UserApplication> {
+  const {appType, body} = options
+
+  const client = await getGlobalCliClient({
+    apiVersion: USER_APPLICATIONS_API_VERSION,
+    requireUser: true,
+  })
+
+  let uri
+  let query
+
+  // If we have an organizationId, we're creating a core app
+  if (appType === 'coreApp') {
+    const {organizationId} = options as {appType: 'coreApp'; organizationId?: string}
+    uri = '/user-applications'
+    query = {appType: 'coreApp', organizationId: organizationId!}
+  } else {
+    const {projectId} = options as {appType: 'studio'; projectId?: string}
+    uri = `/projects/${projectId}/user-applications`
+    query = {appType: 'studio'}
+  }
+
+  return client.request({body, method: 'POST', query, uri})
+}
+
+interface CreateDeploymentOptions {
+  applicationId: string
+  isAutoUpdating: boolean
+  tarball: Gzip
+  version: string
+
+  isApp?: boolean
+}
+
+export async function createDeployment({
+  applicationId,
+  isApp,
+  isAutoUpdating,
+  tarball,
+  version,
+}: CreateDeploymentOptions): Promise<{location: string}> {
+  const client = await getGlobalCliClient({
+    apiVersion: USER_APPLICATIONS_API_VERSION,
+    requireUser: true,
+  })
+
+  const formData = new FormData()
+  formData.append('isAutoUpdating', isAutoUpdating.toString())
+  formData.append('version', version)
+  formData.append('tarball', tarball, {contentType: 'application/gzip', filename: 'app.tar.gz'})
+
+  return client.request({
+    body: formData.pipe(new PassThrough()),
+    headers: formData.getHeaders(),
+    method: 'POST',
+    query: isApp ? {appType: 'coreApp'} : {appType: 'studio'},
+    uri: `/user-applications/${applicationId}/deployments`,
   })
 }
