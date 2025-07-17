@@ -6,6 +6,7 @@ import {pack} from 'tar-fs'
 
 import {spinner} from '../../core/spinner.js'
 import {createDeployment} from '../../services/userApplications.js'
+import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
 import {buildApp} from '../build/buildApp.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
@@ -33,12 +34,18 @@ export async function deployApp(options: DeployAppOptions) {
     return
   }
 
+  if (!organizationId) {
+    output.error(NO_ORGANIZATION_ID, {exit: 1})
+    return
+  }
+
   let spin = spinner('Verifying local content')
 
   try {
     let userApplication = await findUserApplicationForApp({
       cliConfig,
-      output: options.output,
+      organizationId,
+      output,
     })
 
     deployDebug(`User application found`, userApplication)

@@ -81,7 +81,6 @@ export async function findUserApplicationForStudio(options: FindUserApplicationF
 
     return userApplications.find((app) => app.appHost === selected)!
   } catch (error) {
-    console.log('error', error)
     spin.fail()
     deployDebug('Error finding user application', error)
     output.error('Error finding user application', {exit: 1})

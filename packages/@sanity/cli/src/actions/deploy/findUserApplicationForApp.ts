@@ -12,11 +12,11 @@ import {
   type UserApplication,
 } from '../../services/userApplications.js'
 import {type Output} from '../../types.js'
-import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {deployDebug} from './deployDebug.js'
 
 interface FindUserApplicationForAppOptions {
   cliConfig: CliConfig
+  organizationId: string
   output: Output
 }
 
@@ -26,7 +26,7 @@ interface FindUserApplicationForAppOptions {
 export async function findUserApplicationForApp(
   options: FindUserApplicationForAppOptions,
 ): Promise<UserApplication | null> {
-  const {cliConfig, output} = options
+  const {organizationId, output} = options
 
   const spin = spinner('Checking application info').start()
 
@@ -40,14 +40,6 @@ export async function findUserApplicationForApp(
 
     output.log('The id provided in your configuration is not recognized.')
     output.log('Checking existing applications...')
-
-    const organizationId = cliConfig.app?.organizationId
-
-    if (!organizationId) {
-      output.error(NO_ORGANIZATION_ID, {exit: 1})
-      // This is unreachable, but we need to return a value to satisfy the type checker
-      return null
-    }
 
     // Show a list of existing applications to select from
     const userApplications = await getUserApplications({
@@ -81,7 +73,6 @@ export async function findUserApplicationForApp(
 
     return userApplications.find((app) => app.appHost === selected)!
   } catch (error) {
-    console.log(error)
     spin.fail()
     deployDebug('Failed to find user application for app', error)
     output.error('Failed to find user application for app', {exit: 1})

@@ -20,6 +20,13 @@ export interface MockApiOptions {
   apiVersion?: string
 
   /**
+   * HTTP method to mock
+   *
+   * Defaults to 'get'
+   */
+  method?: 'delete' | 'get' | 'post' | 'put'
+
+  /**
    * Query parameters to mock
    */
   query?: Record<string, string>
@@ -33,10 +40,11 @@ export interface MockApiOptions {
 export function mockApi({
   apiHost = 'https://api.sanity.io',
   apiVersion = 'v2025-05-14',
+  method = 'get',
   query = {},
   uri,
 }: MockApiOptions) {
   return nock(apiHost)
-    .get(`/${apiVersion}${uri}`)
+    [method](`/${apiVersion}${uri}`)
     .query({tag: 'sanity.cli', ...query})
 }

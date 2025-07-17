@@ -6,7 +6,7 @@ import FormData from 'form-data'
 import {getGlobalCliClient} from '../core/apiClient.js'
 import {debug} from '../debug.js'
 
-const USER_APPLICATIONS_API_VERSION = 'v2024-08-01'
+export const USER_APPLICATIONS_API_VERSION = 'v2024-08-01'
 
 interface ActiveDeployment {
   createdAt: string
@@ -126,7 +126,6 @@ export async function getUserApplications(
     requireUser: true,
   })
 
-  console.log('getUserApplications', options)
   if (appType === 'studio') {
     const {projectId} = options as {appType: 'studio'; projectId?: string}
     return await client.request({
