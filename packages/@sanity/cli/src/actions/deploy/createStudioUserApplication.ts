@@ -1,4 +1,5 @@
 import {input} from '@inquirer/prompts'
+import {CLIError} from '@oclif/core/errors'
 
 import {createUserApplication, type UserApplication} from '../../services/userApplications.js'
 import {deployDebug} from './deployDebug.js'
@@ -23,7 +24,6 @@ export async function createStudioUserApplication(projectId: string) {
     // the user to try again until this function returns true
     validate: async (inp: string) => {
       const appHost = inp.replace(/\.sanity\.studio$/i, '')
-
       try {
         const response = await createUserApplication({
           appType: 'studio',
@@ -44,7 +44,7 @@ export async function createStudioUserApplication(projectId: string) {
 
         deployDebug('Error creating user application', e)
         // otherwise, it's a fatal error
-        throw e
+        throw new CLIError('Error creating user application', {exit: 1})
       }
     },
   })

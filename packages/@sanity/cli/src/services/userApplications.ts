@@ -194,12 +194,15 @@ interface CreateDeploymentOptions {
   version: string
 
   isApp?: boolean
+
+  projectId?: string
 }
 
 export async function createDeployment({
   applicationId,
   isApp,
   isAutoUpdating,
+  projectId,
   tarball,
   version,
 }: CreateDeploymentOptions): Promise<{location: string}> {
@@ -213,11 +216,22 @@ export async function createDeployment({
   formData.append('version', version)
   formData.append('tarball', tarball, {contentType: 'application/gzip', filename: 'app.tar.gz'})
 
+  let uri
+  let query
+
+  if (isApp) {
+    uri = `/user-applications/${applicationId}/deployments`
+    query = {appType: 'coreApp'}
+  } else {
+    uri = `/projects/${projectId}/user-applications/${applicationId}/deployments`
+    query = {appType: 'studio'}
+  }
+
   return client.request({
     body: formData.pipe(new PassThrough()),
     headers: formData.getHeaders(),
     method: 'POST',
-    query: isApp ? {appType: 'coreApp'} : {appType: 'studio'},
-    uri: `/user-applications/${applicationId}/deployments`,
+    query,
+    uri,
   })
 }

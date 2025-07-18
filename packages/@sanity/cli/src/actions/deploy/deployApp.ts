@@ -1,6 +1,7 @@
 import {basename, dirname} from 'node:path'
 import {createGzip} from 'node:zlib'
 
+import {CLIError} from '@oclif/core/errors'
 import chalk from 'chalk'
 import {pack} from 'tar-fs'
 
@@ -108,6 +109,12 @@ export async function deployApp(options: DeployAppOptions) {
       output.log(`to avoid prompting on next deploy.`)
     }
   } catch (error) {
+    // if the error is a CLIError, we can just output the message and exit
+    if (error instanceof CLIError) {
+      output.error(error.message, {exit: 1})
+      return
+    }
+
     spin.fail()
     deployDebug('Error deploying application', error)
     output.error('Error deploying application', {exit: 1})

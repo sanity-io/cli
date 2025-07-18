@@ -1,13 +1,15 @@
 import {join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
-import {confirm, select} from '@inquirer/prompts'
+import {confirm, input, select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {mockApi} from '~test/helpers/mockApi.js'
 import {testCommand} from '~test/helpers/testCommand.js'
 
+import {buildApp} from '../../actions/build/buildApp.js'
+import {buildStudio} from '../../actions/build/buildStudio.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
@@ -29,6 +31,10 @@ vi.mock('../../util/readModuleVersion.js', () => ({
 
 vi.mock('../../actions/build/buildApp.js', () => ({
   buildApp: vi.fn(),
+}))
+
+vi.mock('../../actions/build/buildStudio.js', () => ({
+  buildStudio: vi.fn(),
 }))
 
 vi.mock('../../actions/deploy/checkDir.js', () => ({
@@ -57,13 +63,22 @@ vi.mock('tar-fs', () => ({
 const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockSelect = vi.mocked(select)
 const mockConfirm = vi.mocked(confirm)
+const mockInput = vi.mocked(input)
+const mockCheckDir = vi.mocked(checkDir)
 const mockDirIsEmptyOrNonExistent = vi.mocked(dirIsEmptyOrNonExistent)
+const mockReadModuleVersion = vi.mocked(readModuleVersion)
+const mockBuildStudio = vi.mocked(buildStudio)
+const mockBuildApp = vi.mocked(buildApp)
 
 describe('#deploy', () => {
   beforeEach(async () => {
     // Set up default mocks
-    vi.mocked(readModuleVersion).mockResolvedValue('1.0.0')
-    vi.mocked(checkDir).mockResolvedValue()
+    mockReadModuleVersion.mockImplementation(async (sourceDir, moduleName) => {
+      if (moduleName === 'sanity') return '3.0.0' // for studio deployments
+      if (moduleName === '@sanity/sdk-react') return '1.0.0' // for app deployments
+      return '1.0.0'
+    })
+    mockCheckDir.mockResolvedValue()
   })
 
   afterEach(() => {
@@ -263,13 +278,15 @@ describe('#deploy', () => {
       const cwd = join(examplesDir, 'basic-app')
       process.cwd = () => cwd
 
-      const {readModuleVersion} = await import('../../util/readModuleVersion.js')
-      vi.mocked(readModuleVersion).mockResolvedValue(null)
+      const appId = 'app-id'
+      const organizationId = 'org-id'
+
+      mockReadModuleVersion.mockResolvedValue(null)
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: 'app-id',
-          organizationId: 'org-id',
+          id: appId,
+          organizationId,
         },
       })
 
@@ -284,12 +301,15 @@ describe('#deploy', () => {
       const cwd = join(examplesDir, 'basic-app')
       process.cwd = () => cwd
 
-      const {input} = await import('@inquirer/prompts')
-      vi.mocked(input).mockResolvedValue('Test App')
+      const organizationId = 'org-id'
+      const newAppId = 'new-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockInput.mockResolvedValue('Test App')
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          organizationId: 'org-id',
+          organizationId,
         },
       })
 
@@ -297,7 +317,7 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appType: 'coreApp',
-          organizationId: 'org-id',
+          organizationId,
         },
         uri: `/user-applications`,
       }).reply(200, [])
@@ -307,14 +327,14 @@ describe('#deploy', () => {
         method: 'post',
         query: {
           appType: 'coreApp',
-          organizationId: 'org-id',
+          organizationId,
         },
         uri: `/user-applications`,
       }).reply(200, {
         appHost: 'generated-host',
         createdAt: '2024-01-01T00:00:00Z',
-        id: 'new-app-id',
-        organizationId: 'org-id',
+        id: newAppId,
+        organizationId,
         projectId: null,
         title: 'Test App',
         type: 'coreApp',
@@ -328,9 +348,9 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/new-app-id/deployments`,
+        uri: `/user-applications/${newAppId}/deployments`,
       }).reply(200, {
-        id: 'deployment-id',
+        id: deploymentId,
       })
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
@@ -339,9 +359,9 @@ describe('#deploy', () => {
 
       expect(error).toBeUndefined()
       expect(stdout).toContain('Success! Application deployed')
-      expect(stdout).toContain("Add id: 'new-app-id'")
+      expect(stdout).toContain(`Add id: '${newAppId}'`)
       expect(stdout).toContain('to `app` in sanity.cli.js or sanity.cli.ts')
-      expect(vi.mocked(input)).toHaveBeenCalledWith({
+      expect(mockInput).toHaveBeenCalledWith({
         message: 'Enter a title for your application:',
         validate: expect.any(Function),
       })
@@ -351,12 +371,14 @@ describe('#deploy', () => {
       const cwd = join(examplesDir, 'basic-app')
       process.cwd = () => cwd
 
-      const {buildApp} = await import('../../actions/build/buildApp.js')
+      const existingAppId = 'existing-app-id'
+      const organizationId = 'org-id'
+      const deploymentId = 'deployment-id'
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: 'existing-app-id',
-          organizationId: 'org-id',
+          id: existingAppId,
+          organizationId,
         },
       })
 
@@ -365,12 +387,12 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/existing-app-id`,
+        uri: `/user-applications/${existingAppId}`,
       }).reply(200, {
         appHost: 'existing-host',
         createdAt: '2024-01-01T00:00:00Z',
-        id: 'existing-app-id',
-        organizationId: 'org-id',
+        id: existingAppId,
+        organizationId,
         projectId: null,
         title: 'Existing App',
         type: 'coreApp',
@@ -384,9 +406,9 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/existing-app-id/deployments`,
+        uri: `/user-applications/${existingAppId}/deployments`,
       }).reply(200, {
-        id: 'deployment-id',
+        id: deploymentId,
       })
 
       const {error, stdout} = await testCommand(DeployCommand, ['--no-build'], {
@@ -395,21 +417,22 @@ describe('#deploy', () => {
 
       expect(error).toBeUndefined()
       expect(stdout).toContain('Success! Application deployed')
-      expect(vi.mocked(buildApp)).not.toHaveBeenCalled()
+      expect(mockBuildApp).not.toHaveBeenCalled()
     })
 
     test('should handle directory check errors', async () => {
       const cwd = join(examplesDir, 'basic-app')
       process.cwd = () => cwd
 
-      const {checkDir} = await import('../../actions/deploy/checkDir.js')
+      const existingAppId = 'existing-app-id'
+      const organizationId = 'org-id'
 
-      vi.mocked(checkDir).mockRejectedValue(new Error('Directory check failed'))
+      mockCheckDir.mockRejectedValue(new Error('Directory check failed'))
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: 'existing-app-id',
-          organizationId: 'org-id',
+          id: existingAppId,
+          organizationId,
         },
       })
 
@@ -418,12 +441,12 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/existing-app-id`,
+        uri: `/user-applications/${existingAppId}`,
       }).reply(200, {
         appHost: 'existing-host',
         createdAt: '2024-01-01T00:00:00Z',
-        id: 'existing-app-id',
-        organizationId: 'org-id',
+        id: existingAppId,
+        organizationId,
         projectId: null,
         title: 'Existing App',
         type: 'coreApp',
@@ -435,17 +458,20 @@ describe('#deploy', () => {
         config: {root: cwd},
       })
 
-      expect(error?.message).toContain('Error deploying application')
+      expect(error?.message).toContain('Error checking directory')
     })
 
     test('should handle general deployment errors', async () => {
       const cwd = join(examplesDir, 'basic-app')
       process.cwd = () => cwd
 
+      const existingAppId = 'existing-app-id'
+      const organizationId = 'org-id'
+
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: 'existing-app-id',
-          organizationId: 'org-id',
+          id: existingAppId,
+          organizationId,
         },
       })
 
@@ -454,7 +480,7 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/existing-app-id`,
+        uri: `/user-applications/${existingAppId}`,
       }).reply(500, {
         error: 'Internal server error',
       })
@@ -463,17 +489,20 @@ describe('#deploy', () => {
         config: {root: cwd},
       })
 
-      expect(error?.message).toContain('Error deploying application')
+      expect(error?.message).toContain('Failed to find user application for app')
     })
 
     test('should handle deployment API errors', async () => {
       const cwd = join(examplesDir, 'basic-app')
       process.cwd = () => cwd
 
+      const existingAppId = 'existing-app-id'
+      const organizationId = 'org-id'
+
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: 'existing-app-id',
-          organizationId: 'org-id',
+          id: existingAppId,
+          organizationId,
         },
       })
 
@@ -482,12 +511,12 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/existing-app-id`,
+        uri: `/user-applications/${existingAppId}`,
       }).reply(200, {
         appHost: 'existing-host',
         createdAt: '2024-01-01T00:00:00Z',
-        id: 'existing-app-id',
-        organizationId: 'org-id',
+        id: existingAppId,
+        organizationId,
         projectId: null,
         title: 'Existing App',
         type: 'coreApp',
@@ -501,7 +530,7 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/existing-app-id/deployments`,
+        uri: `/user-applications/${existingAppId}/deployments`,
       }).reply(500, {
         error: 'Internal server error',
       })
@@ -517,12 +546,15 @@ describe('#deploy', () => {
       const cwd = join(examplesDir, 'basic-app')
       process.cwd = () => cwd
 
-      const {input} = await import('@inquirer/prompts')
-      vi.mocked(input).mockResolvedValue('Test App')
+      const organizationId = 'org-id'
+      const newAppId = 'new-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockInput.mockResolvedValue('Test App')
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          organizationId: 'org-id',
+          organizationId,
         },
       })
 
@@ -530,7 +562,7 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appType: 'coreApp',
-          organizationId: 'org-id',
+          organizationId,
         },
         uri: `/user-applications`,
       }).reply(200, [])
@@ -540,7 +572,7 @@ describe('#deploy', () => {
         method: 'post',
         query: {
           appType: 'coreApp',
-          organizationId: 'org-id',
+          organizationId,
         },
         uri: `/user-applications`,
       })
@@ -555,7 +587,7 @@ describe('#deploy', () => {
         method: 'post',
         query: {
           appType: 'coreApp',
-          organizationId: 'org-id',
+          organizationId,
         },
         uri: `/user-applications`,
       })
@@ -563,8 +595,8 @@ describe('#deploy', () => {
         .reply(200, {
           appHost: 'generated-host-2',
           createdAt: '2024-01-01T00:00:00Z',
-          id: 'new-app-id',
-          organizationId: 'org-id',
+          id: newAppId,
+          organizationId,
           projectId: null,
           title: 'Test App',
           type: 'coreApp',
@@ -578,9 +610,9 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/new-app-id/deployments`,
+        uri: `/user-applications/${newAppId}/deployments`,
       }).reply(200, {
-        id: 'deployment-id',
+        id: deploymentId,
       })
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
@@ -595,12 +627,13 @@ describe('#deploy', () => {
       const cwd = join(examplesDir, 'basic-app')
       process.cwd = () => cwd
 
-      const {input} = await import('@inquirer/prompts')
-      vi.mocked(input).mockResolvedValue('Test App')
+      const organizationId = 'org-id'
+
+      mockInput.mockResolvedValue('Test App')
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          organizationId: 'org-id',
+          organizationId,
         },
       })
 
@@ -608,7 +641,7 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appType: 'coreApp',
-          organizationId: 'org-id',
+          organizationId,
         },
         uri: `/user-applications`,
       }).reply(200, [])
@@ -618,7 +651,7 @@ describe('#deploy', () => {
         method: 'post',
         query: {
           appType: 'coreApp',
-          organizationId: 'org-id',
+          organizationId,
         },
         uri: `/user-applications`,
       }).reply(500, {
@@ -637,10 +670,13 @@ describe('#deploy', () => {
       const cwd = join(examplesDir, 'basic-app')
       process.cwd = () => cwd
 
+      const existingAppId = 'existing-app-id'
+      const organizationId = 'org-id'
+
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: 'existing-app-id',
-          organizationId: 'org-id',
+          id: existingAppId,
+          organizationId,
         },
       })
 
@@ -649,7 +685,7 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/existing-app-id`,
+        uri: `/user-applications/${existingAppId}`,
       }).reply(500, {
         error: 'Internal server error',
       })
@@ -658,19 +694,23 @@ describe('#deploy', () => {
         config: {root: cwd},
       })
 
-      expect(error?.message).toContain('Error deploying application')
+      expect(error?.message).toContain('Failed to find user application for app')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('should test input validation for app title', async () => {
       const cwd = join(examplesDir, 'basic-app')
       process.cwd = () => cwd
 
-      const {input} = await import('@inquirer/prompts')
-      vi.mocked(input).mockResolvedValue('Valid App Title')
+      const organizationId = 'org-id'
+      const newAppId = 'new-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockInput.mockResolvedValue('Valid App Title')
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          organizationId: 'org-id',
+          organizationId,
         },
       })
 
@@ -678,7 +718,7 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appType: 'coreApp',
-          organizationId: 'org-id',
+          organizationId,
         },
         uri: `/user-applications`,
       }).reply(200, [])
@@ -688,14 +728,14 @@ describe('#deploy', () => {
         method: 'post',
         query: {
           appType: 'coreApp',
-          organizationId: 'org-id',
+          organizationId,
         },
         uri: `/user-applications`,
       }).reply(200, {
         appHost: 'generated-host',
         createdAt: '2024-01-01T00:00:00Z',
-        id: 'new-app-id',
-        organizationId: 'org-id',
+        id: newAppId,
+        organizationId,
         projectId: null,
         title: 'Valid App Title',
         type: 'coreApp',
@@ -709,9 +749,9 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/new-app-id/deployments`,
+        uri: `/user-applications/${newAppId}/deployments`,
       }).reply(200, {
-        id: 'deployment-id',
+        id: deploymentId,
       })
 
       const {error} = await testCommand(DeployCommand, [], {
@@ -720,7 +760,7 @@ describe('#deploy', () => {
 
       expect(error).toBeUndefined()
 
-      expect(vi.mocked(input)).toHaveBeenCalledWith({
+      expect(mockInput).toHaveBeenCalledWith({
         message: 'Enter a title for your application:',
         validate: expect.any(Function),
       })
@@ -730,9 +770,14 @@ describe('#deploy', () => {
       const cwd = join(examplesDir, 'basic-app')
       process.cwd = () => cwd
 
+      const organizationId = 'org-id'
+      const existingAppId1 = 'existing-app-id-1'
+      const existingAppId2 = 'existing-app-id-2'
+      const deploymentId = 'deployment-id'
+
       mockGetCliConfig.mockResolvedValue({
         app: {
-          organizationId: 'org-id',
+          organizationId,
         },
       })
 
@@ -740,15 +785,15 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appType: 'coreApp',
-          organizationId: 'org-id',
+          organizationId,
         },
         uri: `/user-applications`,
       }).reply(200, [
         {
           appHost: 'existing-host-1',
           createdAt: '2024-01-01T00:00:00Z',
-          id: 'existing-app-id-1',
-          organizationId: 'org-id',
+          id: existingAppId1,
+          organizationId,
           projectId: null,
           title: 'Existing App 1',
           type: 'coreApp',
@@ -758,8 +803,8 @@ describe('#deploy', () => {
         {
           appHost: 'existing-host-2',
           createdAt: '2024-01-01T00:00:00Z',
-          id: 'existing-app-id-2',
-          organizationId: 'org-id',
+          id: existingAppId2,
+          organizationId,
           projectId: null,
           title: 'Existing App 2',
           type: 'coreApp',
@@ -774,9 +819,9 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/existing-app-id-2/deployments`,
+        uri: `/user-applications/${existingAppId2}/deployments`,
       }).reply(200, {
-        id: 'deployment-id',
+        id: deploymentId,
       })
 
       mockSelect.mockResolvedValue('existing-host-2')
@@ -787,7 +832,7 @@ describe('#deploy', () => {
 
       expect(error).toBeUndefined()
       expect(stdout).toContain('Success! Application deployed')
-      expect(stdout).toContain(`Add id: 'existing-app-id-2'`)
+      expect(stdout).toContain(`Add id: '${existingAppId2}'`)
       expect(stdout).toContain('to `app` in sanity.cli.js or sanity.cli.ts')
       expect(stdout).toContain('to avoid prompting on next deploy.')
     })
@@ -796,9 +841,15 @@ describe('#deploy', () => {
       const cwd = join(examplesDir, 'basic-app')
       process.cwd = () => cwd
 
+      const organizationId = 'org-id'
+      const existingAppId1 = 'existing-app-id-1'
+      const existingAppId2 = 'existing-app-id-2'
+      const newAppId = 'new-app-id'
+      const deploymentId = 'deployment-id'
+
       mockGetCliConfig.mockResolvedValue({
         app: {
-          organizationId: 'org-id',
+          organizationId,
         },
       })
 
@@ -806,15 +857,15 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appType: 'coreApp',
-          organizationId: 'org-id',
+          organizationId,
         },
         uri: `/user-applications`,
       }).reply(200, [
         {
           appHost: 'existing-host-1',
           createdAt: '2024-01-01T00:00:00Z',
-          id: 'existing-app-id-1',
-          organizationId: 'org-id',
+          id: existingAppId1,
+          organizationId,
           projectId: null,
           title: 'Existing App 1',
           type: 'coreApp',
@@ -824,8 +875,8 @@ describe('#deploy', () => {
         {
           appHost: 'existing-host-2',
           createdAt: '2024-01-01T00:00:00Z',
-          id: 'existing-app-id-2',
-          organizationId: 'org-id',
+          id: existingAppId2,
+          organizationId,
           projectId: null,
           title: 'Existing App 2',
           type: 'coreApp',
@@ -839,14 +890,14 @@ describe('#deploy', () => {
         method: 'post',
         query: {
           appType: 'coreApp',
-          organizationId: 'org-id',
+          organizationId,
         },
         uri: `/user-applications`,
       }).reply(200, {
         appHost: 'generated-host',
         createdAt: '2024-01-01T00:00:00Z',
-        id: 'new-app-id',
-        organizationId: 'org-id',
+        id: newAppId,
+        organizationId,
         projectId: null,
         title: 'Test App',
         type: 'coreApp',
@@ -860,9 +911,9 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/new-app-id/deployments`,
+        uri: `/user-applications/${newAppId}/deployments`,
       }).reply(200, {
-        id: 'deployment-id',
+        id: deploymentId,
       })
 
       mockSelect.mockResolvedValue('NEW_APP')
@@ -873,7 +924,7 @@ describe('#deploy', () => {
 
       expect(error).toBeUndefined()
       expect(stdout).toContain('Success! Application deployed')
-      expect(stdout).toContain(`Add id: 'new-app-id'`)
+      expect(stdout).toContain(`Add id: '${newAppId}'`)
       expect(stdout).toContain('to `app` in sanity.cli.js or sanity.cli.ts')
       expect(stdout).toContain('to avoid prompting on next deploy.')
     })
@@ -896,6 +947,879 @@ describe('#deploy', () => {
         'sanity.cli.ts does not contain an organization identifier ("app.organizationId"), which is required for the Sanity CLI to communicate with the Sanity API',
       )
       expect(error?.oclif?.exit).toBe(1)
+    })
+  })
+
+  describe('studio', () => {
+    test('should handle missing sanity version', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      mockReadModuleVersion.mockResolvedValue(null)
+
+      mockGetCliConfig.mockResolvedValue({
+        studioHost: 'existing-studio',
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error?.message).toContain('Failed to find installed sanity version')
+    })
+
+    test('should handle directory check errors', async () => {
+      const cwd = join(examplesDir, 'basic-app')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+
+      mockCheckDir.mockRejectedValue(new Error('Directory check failed'))
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId,
+        },
+        studioHost,
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      const {error} = await testCommand(DeployCommand, ['--no-build'], {
+        config: {root: cwd},
+      })
+
+      expect(error?.message).toContain('Error checking directory')
+    })
+
+    test('should re-deploy studio if it already exists', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId,
+        },
+        studioHost,
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(200, {
+        id: deploymentId,
+      })
+
+      const {error, stderr, stdout} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeUndefined()
+      expect(stderr).toContain('Checking project info')
+      expect(stderr).toContain('Verifying local content')
+      expect(stderr).toContain('Deploying to sanity.studio')
+      expect(stdout).toContain('Success! Studio deployed')
+    })
+
+    test('should create new studio hostname when studioHost is provided but does not exist', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId: 'test-project-id',
+        },
+        studioHost: 'new-studio-host',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: 'new-studio-host',
+          appType: 'studio',
+        },
+        uri: `/projects/test-project-id/user-applications`,
+      }).reply(404, {
+        message: 'Not found',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/test-project-id/user-applications`,
+      }).reply(200, {
+        appHost: 'new-studio-host',
+        createdAt: '2024-01-01T00:00:00Z',
+        id: 'new-studio-app-id',
+        projectId: 'test-project-id',
+        title: 'New Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/test-project-id/user-applications/new-studio-app-id/deployments`,
+      }).reply(200, {
+        id: 'deployment-id',
+      })
+
+      const {error, stdout} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('Success! Studio deployed')
+      expect(stdout).toContain('Your project has not been assigned a studio hostname')
+      expect(stdout).toContain('Creating https://new-studio-host.sanity.studio')
+    })
+
+    test('should handle studio hostname creation failure when name is taken', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'taken-studio-host'
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId,
+        },
+        studioHost,
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(404, {
+        message: 'Not found',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(409, {
+        message: 'Studio hostname already taken',
+        statusCode: 409,
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error?.message).toContain('Studio hostname already taken')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should allow selecting from existing studio hostnames', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId,
+        },
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          default: 'true',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(404, {
+        message: 'Not found',
+      })
+
+      const studioOneId = 'studio-one-id'
+      const studioTwoId = 'studio-two-id'
+      const deploymentId = 'deployment-id'
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, [
+        {
+          appHost: 'studio-one',
+          createdAt: '2024-01-01T00:00:00Z',
+          id: studioOneId,
+          projectId,
+          title: 'Studio One',
+          type: 'studio',
+          updatedAt: '2024-01-01T00:00:00Z',
+          urlType: 'internal',
+        },
+        {
+          appHost: 'studio-two',
+          createdAt: '2024-01-01T00:00:00Z',
+          id: studioTwoId,
+          projectId,
+          title: 'Studio Two',
+          type: 'studio',
+          updatedAt: '2024-01-01T00:00:00Z',
+          urlType: 'internal',
+        },
+      ])
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications/${studioTwoId}/deployments`,
+      }).reply(200, {
+        id: deploymentId,
+        location: 'https://studio-two.sanity.studio',
+      })
+
+      mockSelect.mockResolvedValue('studio-two')
+
+      const {error, stdout} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('Success! Studio deployed to https://studio-two.sanity.studio')
+      expect(mockSelect).toHaveBeenCalledWith({
+        choices: [
+          {name: 'Create new studio hostname', value: 'NEW_STUDIO'},
+          expect.any(Object), // Separator
+          {name: 'Studio One', value: 'studio-one'},
+          {name: 'Studio Two', value: 'studio-two'},
+        ],
+        message: 'Select existing studio hostname',
+      })
+    })
+
+    test('should allow creating new studio hostname from selection menu', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const existingStudioId = 'existing-studio-id'
+      const newStudioFromMenuId = 'new-studio-from-menu-id'
+      const deploymentId = 'deployment-id'
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId,
+        },
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          default: 'true',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      })
+        .once()
+        .reply(404, {
+          message: 'Not found',
+        })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      })
+        .once()
+        .reply(200, [
+          {
+            appHost: 'existing-studio',
+            createdAt: '2024-01-01T00:00:00Z',
+            id: existingStudioId,
+            projectId,
+            title: 'Existing Studio',
+            type: 'studio',
+            updatedAt: '2024-01-01T00:00:00Z',
+            urlType: 'internal',
+          },
+        ])
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: 'new-studio-from-menu',
+        createdAt: '2024-01-01T00:00:00Z',
+        id: newStudioFromMenuId,
+        projectId,
+        title: 'New Studio From Menu',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications/${newStudioFromMenuId}/deployments`,
+      }).reply(200, {
+        id: deploymentId,
+      })
+
+      mockSelect.mockResolvedValue('NEW_STUDIO')
+      mockInput.mockImplementation(({validate}) => {
+        const promise = (async () => {
+          if (validate) {
+            await validate('new-studio-from-menu')
+          }
+          return 'new-studio-from-menu'
+        })() as Promise<string> & {cancel: () => void}
+
+        promise.cancel = () => {}
+        return promise
+      })
+
+      const {error, stdout} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('Success! Studio deployed')
+      expect(mockInput).toHaveBeenCalledWith({
+        message: 'Studio hostname (<value>.sanity.studio):',
+        validate: expect.any(Function),
+      })
+    })
+
+    test('should handle input validation with retry for studio hostname creation', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const validStudioId = 'valid-studio-id'
+      const deploymentId = 'deployment-id'
+
+      mockInput.mockImplementation(({validate}) => {
+        const promise = (async () => {
+          if (validate) {
+            // First attempt with a name that will be taken (triggers 409)
+            let result = await validate('taken-name')
+            if (result !== true) {
+              // Name was taken, try again with a valid name (triggers 200)
+              result = await validate('valid-name')
+            }
+          }
+          return 'valid-name'
+        })() as Promise<string> & {cancel: () => void}
+
+        promise.cancel = () => {}
+        return promise
+      })
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId,
+        },
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          default: 'true',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(404, {
+        message: 'Not found',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, [])
+
+      // First API call fails (hostname taken)
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      })
+        .once()
+        .reply(409, {
+          message: 'Studio hostname already taken',
+          statusCode: 409,
+        })
+
+      // Second API call succeeds
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      })
+        .once()
+        .reply(200, {
+          appHost: 'valid-name',
+          createdAt: '2024-01-01T00:00:00Z',
+          id: validStudioId,
+          projectId,
+          title: 'Valid Studio',
+          type: 'studio',
+          updatedAt: '2024-01-01T00:00:00Z',
+          urlType: 'internal',
+        })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications/${validStudioId}/deployments`,
+      }).reply(200, {
+        id: deploymentId,
+      })
+
+      const {error, stdout} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('Success! Studio deployed')
+    })
+
+    test('should handle input validation fails with unknown error', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+
+      mockInput.mockImplementation(({validate}) => {
+        const promise = (async () => {
+          if (validate) {
+            // First attempt with a name that will be taken (triggers 409)
+            let result = await validate('taken-name')
+            if (result !== true) {
+              // Name was taken, try again with a valid name (triggers 200)
+              result = await validate('valid-name')
+            }
+          }
+          return 'valid-name'
+        })() as Promise<string> & {cancel: () => void}
+
+        promise.cancel = () => {}
+        return promise
+      })
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId,
+        },
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          default: 'true',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(404, {
+        message: 'Not found',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, [])
+
+      // First API call fails (hostname taken)
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      })
+        .once()
+        .reply(500, {
+          message: 'Internal server error',
+          statusCode: 500,
+        })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error?.message).toContain('Error creating user application')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should throw error when no projectId is configured', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {},
+        studioHost: 'some-studio',
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error?.message).toContain(
+        'sanity.cli.ts does not contain a project identifier ("api.projectId"), which is required for the Sanity CLI to communicate with the Sanity API',
+      )
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should handle general API errors when finding user application', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId,
+        },
+        studioHost,
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(500, {
+        error: 'Internal server error',
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error?.message).toContain('Error finding user application')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should handle deployment API errors for studio', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId,
+        },
+        studioHost,
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(500, {
+        error: 'Internal server error',
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error?.message).toContain('Error deploying studio')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should handle fatal errors during studio hostname creation', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'new-studio-host'
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId,
+        },
+        studioHost,
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(404, {
+        message: 'Not found',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(500, {
+        message: 'Internal server error',
+        statusCode: 500,
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error?.message).toContain('Error creating user application from config')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should handle no existing studio applications scenario', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const newStudioId = 'new-studio-id'
+      const deploymentId = 'deployment-id'
+
+      mockInput.mockImplementation(({validate}) => {
+        const promise = (async () => {
+          if (validate) {
+            await validate('new-studio-name')
+          }
+          return 'new-studio-name'
+        })() as Promise<string> & {cancel: () => void}
+
+        promise.cancel = () => {}
+        return promise
+      })
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId,
+        },
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          default: 'true',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(404, {
+        message: 'Not found',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, [])
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: 'new-studio-name',
+        createdAt: '2024-01-01T00:00:00Z',
+        id: newStudioId,
+        projectId,
+        title: 'New Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications/${newStudioId}/deployments`,
+      }).reply(200, {
+        id: deploymentId,
+      })
+
+      const {error, stdout} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('Success! Studio deployed')
+      expect(mockInput).toHaveBeenCalledWith({
+        message: 'Studio hostname (<value>.sanity.studio):',
+        validate: expect.any(Function),
+      })
+    })
+
+    test('should skip build when --no-build flag is used for studio', async () => {
+      const cwd = join(examplesDir, 'basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockGetCliConfig.mockResolvedValue({
+        api: {
+          projectId,
+        },
+        studioHost,
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(200, {
+        id: deploymentId,
+      })
+
+      const {error, stdout} = await testCommand(DeployCommand, ['--no-build'], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('Success! Studio deployed')
+      expect(mockBuildStudio).not.toHaveBeenCalled()
     })
   })
 })
