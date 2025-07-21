@@ -4,12 +4,12 @@ import {
   type ClientError,
   createClient,
   requester as defaultRequester,
+  isHttpError,
   type SanityClient,
   type ServerError,
 } from '@sanity/client'
 
 import {generateHelpUrl} from '../util/generateHelpUrl.js'
-import {isHttpError} from '../util/isHttpError.js'
 import {getCliToken} from './getCliToken.js'
 
 const apiHosts: Record<string, string | undefined> = {
