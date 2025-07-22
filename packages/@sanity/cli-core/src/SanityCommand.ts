@@ -100,4 +100,19 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
 
     await super.init()
   }
+
+  /**
+   * Check if the command is running in unattended mode.
+   *
+   * This means the command should not ask for user input, instead using defaults where
+   * possible, and if that does not make sense (eg there's missing information), then we
+   * should error out (remember to exit with a non-zero code).
+   *
+   * Most commands should take an explicit `--yes` flag to enable unattended mode, but
+   * some commands may also be run in unattended mode if `process.stdin` is not a TTY
+   * (eg when running in a CI environment).
+   */
+  protected isUnattended(): boolean {
+    return this.flags.yes || !process.stdin.isTTY
+  }
 }
