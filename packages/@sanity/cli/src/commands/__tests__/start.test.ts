@@ -96,55 +96,6 @@ describe('#start', () => {
     expect(error?.message).toContain('Nonexistent flag: --invalid')
   })
 
-  test('displays warning message and starts preview server successfully', async () => {
-    mockVitePreview.mockResolvedValue({
-      config: {
-        logger: {
-          info: vi.fn(),
-          warn: vi.fn(),
-        },
-      },
-      httpServer: {
-        close: vi.fn((callback) => callback && callback()),
-      },
-      resolvedUrls: {
-        local: ['http://localhost:3333'],
-        network: ['http://192.168.1.1:3333'],
-      },
-    } as never)
-    mockReadFile.mockResolvedValue('<html><script src="/static/sanity-abc123.js"></script></html>')
-
-    const {stdout} = await testCommand(StartCommand, [], {
-      config: {root: cwd},
-    })
-
-    // Check that warning message is displayed
-    expect(stdout).toContain('╭───────────────────────────────────────────────────────────╮')
-    expect(stdout).toContain("You're running Sanity Studio v3. In this version the")
-    expect(stdout).toContain('[start] command is used to preview static builds.')
-    expect(stdout).toContain('To run a development server, use the [npm run dev] or')
-    expect(stdout).toContain('[npx sanity dev] command instead. For more information,')
-    expect(stdout).toContain('see https://www.sanity.io/help/studio-v2-vs-v3')
-    expect(stdout).toContain('╰───────────────────────────────────────────────────────────╯')
-
-    // Check that vite's preview function was called with correct configuration
-    expect(mockVitePreview).toHaveBeenCalledWith({
-      base: '/',
-      build: {
-        outDir: expect.stringContaining('dist'),
-      },
-      configFile: false,
-      mode: 'production',
-      plugins: expect.any(Array),
-      preview: {
-        host: 'localhost',
-        port: 3333,
-        strictPort: true,
-      },
-      root: expect.any(String),
-    })
-  })
-
   test('starts preview server with custom output directory that exists', async () => {
     mockVitePreview.mockResolvedValue({
       config: {

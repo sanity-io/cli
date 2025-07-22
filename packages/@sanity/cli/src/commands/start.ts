@@ -35,22 +35,8 @@ export class StartCommand extends SanityCliCommand<typeof StartCommand> {
     }),
   }
 
-  showWarning = (msg: string) => this.output.log(chalk.yellow.bgBlack(msg))
-
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(StartCommand)
-
-    this.showWarning('╭───────────────────────────────────────────────────────────╮')
-    this.showWarning('│                                                           │')
-    this.showWarning("│  You're running Sanity Studio v3. In this version the     │")
-    this.showWarning('│  [start] command is used to preview static builds.        |')
-    this.showWarning('│                                                           │')
-    this.showWarning('│  To run a development server, use the [npm run dev] or    |')
-    this.showWarning('│  [npx sanity dev] command instead. For more information,  │')
-    this.showWarning('│  see https://www.sanity.io/help/studio-v2-vs-v3           │')
-    this.showWarning('│                                                           │')
-    this.showWarning('╰───────────────────────────────────────────────────────────╯')
-    this.showWarning('') // Newline to separate from other output
 
     const workDir = (await this.getProjectRoot()).directory
     const cliConfig = await this.getCliConfig()
