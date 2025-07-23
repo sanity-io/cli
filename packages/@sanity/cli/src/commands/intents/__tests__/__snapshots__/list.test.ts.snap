@@ -1,0 +1,32 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`#list > --help works 1`] = `
+"List available intents for an organization
+
+USAGE
+  $ sanity intents list [--organization <value>]
+
+FLAGS
+  --organization=<value>  Organization ID to use
+
+DESCRIPTION
+  List available intents for an organization
+
+EXAMPLES
+  List intents for organization (if organization specified in sanity.cli.ts)
+
+    $ sanity intents list
+
+  List intents for specified organization
+
+    $ sanity intents list --organization abc123
+
+"
+`;
+
+exports[`#list > displays intents correctly 1`] = `
+"ID            Application     Title            Created By   Updated At            
+viewProduct   analytics-app   View Product     user1        7/23/2025, 11:54:23 AM
+editTag       analytics-app   Process Orders   user2        7/23/2025, 11:54:52 AM
+"
+`;

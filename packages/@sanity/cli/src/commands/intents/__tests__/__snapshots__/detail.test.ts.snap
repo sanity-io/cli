@@ -1,0 +1,84 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`#detail > --help works 1`] = `
+"Show detailed information about a specific intent
+
+USAGE
+  $ sanity intents detail INTENTID [--organization <value>]
+
+ARGUMENTS
+  INTENTID  The ID of the intent to show details for
+
+FLAGS
+  --organization=<value>  Organization ID to use
+
+DESCRIPTION
+  Show detailed information about a specific intent
+
+EXAMPLES
+  Show details for a specific intent (using organization ID in sanity.cli.ts)
+
+    $ sanity intents detail myIntentId
+
+  Show details for specific intent with organization ID
+
+    $ sanity intents detail myIntentId --organization abc123
+
+"
+`;
+
+exports[`#detail > displays intent details correctly 1`] = `
+"Intent Details
+
+ID: viewProduct
+Title: View Product
+Application: analytics-app
+Action: view
+Description: View product details
+Created By: user1
+Updated At: 7/23/2025, 11:54:23 AM
+
+Filters
+Filter 1:
+  Project ID: test-project
+  Dataset: production
+"
+`;
+
+exports[`#detail > displays intent with multiple filters correctly 1`] = `
+"Intent Details
+
+ID: editTag
+Title: Create Product
+Application: analytics-app
+Action: create
+Description: Create new documents with default values
+Created By: user2
+Updated At: 7/23/2025, 11:54:52 AM
+
+Filters
+Filter 1:
+  Project ID: test-project
+  Dataset: development
+  Types: product, article, user
+
+Filter 2:
+  Project ID: test-project-2
+  Dataset: production
+"
+`;
+
+exports[`#detail > displays intent without description correctly 1`] = `
+"Intent Details
+
+ID: simpleIntent
+Title: Simple Intent
+Application: simple-app
+Action: create
+Created By: user1
+Updated At: 7/23/2025, 11:54:23 AM
+
+Filters
+No filters defined
+"
+`;
