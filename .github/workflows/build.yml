@@ -30,4 +30,4 @@ jobs:
         run: pnpm check:types
 
       - name: Build CLI
-        run: pnpm build:cli
+        run: pnpm build:cli --force
