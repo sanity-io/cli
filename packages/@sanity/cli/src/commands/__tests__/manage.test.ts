@@ -1,8 +1,8 @@
 import {runCommand} from '@oclif/test'
 import {getCliConfig, getStudioConfig} from '@sanity/cli-core'
+import {testCommand} from '@sanity/cli-test'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
-import {testCommand} from '~test/helpers/testCommand.js'
 
 import {ManageCommand} from '../manage.js'
 

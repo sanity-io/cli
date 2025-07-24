@@ -1,7 +1,7 @@
 import {runCommand} from '@oclif/test'
+import {testCommand} from '@sanity/cli-test'
 import getLatestVersion from 'get-latest-version'
 import {afterEach, describe, expect, test, vi} from 'vitest'
-import {testCommand} from '~test/helpers/testCommand.js'
 
 import {Versions} from '../../commands/versions.js'
 import {getCliVersion} from '../../util/getCliVersion.js'

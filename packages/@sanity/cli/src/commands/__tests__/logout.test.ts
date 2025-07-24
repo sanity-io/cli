@@ -1,7 +1,7 @@
 import {runCommand} from '@oclif/test'
 import {getCliToken} from '@sanity/cli-core'
+import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
-import {testCommand} from '~test/helpers/testCommand.js'
 
 import {logout} from '../../actions/auth/logout.js'
 import {LogoutCommand} from '../logout.js'

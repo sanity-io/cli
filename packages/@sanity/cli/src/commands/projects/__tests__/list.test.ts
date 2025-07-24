@@ -1,8 +1,7 @@
 import {runCommand} from '@oclif/test'
+import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test} from 'vitest'
-import {mockApi} from '~test/helpers/mockApi.js'
-import {testCommand} from '~test/helpers/testCommand.js'
 
 import {List} from '../list.js'
 

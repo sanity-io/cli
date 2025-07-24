@@ -1,7 +1,7 @@
 import {runCommand} from '@oclif/test'
+import {testCommand} from '@sanity/cli-test'
 import open from 'open'
 import {describe, expect, test} from 'vitest'
-import {testCommand} from '~test/helpers/testCommand.js'
 
 import {DocsCommand} from '../docs.js'
 

@@ -1,5 +1,5 @@
+import {testCommand} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
-import {testCommand} from '~test/helpers/testCommand.js'
 
 import {DevCommand} from '../dev.js'
 

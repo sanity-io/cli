@@ -5,8 +5,7 @@
     "rootDir": ".",
     "jsx": "react-jsx",
     "paths": {
-      "@sanity/cli-core": ["./node_modules/@sanity/cli-core/src/index.ts"],
-      "~test/helpers/*": ["./test/helpers/*"]
+      "@sanity/cli-core": ["./node_modules/@sanity/cli-core/src/index.ts"]
     }
   }
 }

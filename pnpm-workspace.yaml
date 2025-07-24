@@ -3,6 +3,7 @@ packages:
   - 'packages/@sanity/blueprints'
   - 'packages/@sanity/cli'
   - 'packages/@sanity/cli-core'
+  - 'packages/@sanity/cli-test'
   - 'packages/@sanity/codegen'
   - 'packages/@sanity/migrate'
   - 'packages/create-sanity'

@@ -2,10 +2,6 @@ import {defineConfig} from 'vitest/config'
 
 export default defineConfig({
   test: {
-    alias: {
-      '@sanity/cli-core': new URL('node_modules/@sanity/cli-core/src/index.ts', import.meta.url)
-        .pathname,
-    },
     coverage: {
       provider: 'istanbul',
     },
@@ -15,7 +11,5 @@ export default defineConfig({
     },
     environment: 'node',
     globals: false,
-    globalSetup: ['test/workerBuild.ts'],
-    setupFiles: ['test/setup.ts'],
   },
 })

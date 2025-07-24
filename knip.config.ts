@@ -37,7 +37,6 @@ const baseConfig = {
     'packages/@sanity/cli': {
       entry: [
         'src/commands/**/*.ts',
-        'test/helpers/testCommand.ts',
         // Worker files
         'src/**/*.worker.ts',
       ],
@@ -51,9 +50,9 @@ const baseConfig = {
         // Worker files
         'src/**/*.worker.ts',
       ],
-      oclif: {
-        config: ['oclif.config.js'],
-      },
+      project,
+    },
+    'packages/@sanity/cli-test': {
       project,
     },
   },
