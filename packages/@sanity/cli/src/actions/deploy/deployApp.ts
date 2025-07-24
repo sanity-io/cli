@@ -2,10 +2,10 @@ import {basename, dirname} from 'node:path'
 import {createGzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
+import {spinner} from '@sanity/cli-core'
 import chalk from 'chalk'
 import {pack} from 'tar-fs'
 
-import {spinner} from '../../core/spinner.js'
 import {createDeployment} from '../../services/userApplications.js'
 import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'

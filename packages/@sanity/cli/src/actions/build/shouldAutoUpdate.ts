@@ -1,4 +1,5 @@
-import {type CliConfig} from '../../config/cli/types.js'
+import {type CliConfig} from '@sanity/cli-core'
+
 import {type DeployFlags} from '../deploy/types.js'
 import {type BuildFlags} from './types.js'
 

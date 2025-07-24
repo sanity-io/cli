@@ -1,13 +1,11 @@
 import path from 'node:path'
 
+import {type CliConfig, isInteractive, type Output} from '@sanity/cli-core'
 import {execa} from 'execa'
 import {oneline} from 'oneline'
 import semver, {type SemVer} from 'semver'
 
-import {type CliConfig} from '../../config/cli/types.js'
-import {type Output} from '../../types.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
-import {isInteractive} from '../../util/isInteractive.js'
 import {installNewPackages} from '../../util/packageManager/installPackages.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'

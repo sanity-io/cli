@@ -1,7 +1,6 @@
 import {Args, Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-
-import {SanityCliCommand} from '../BaseCommand.js'
+import {SanityCliCommand} from '@sanity/cli-core'
 
 export class InitCommand extends SanityCliCommand<typeof InitCommand> {
   static override args = {type: Args.string({hidden: true})}
@@ -151,7 +150,6 @@ export class InitCommand extends SanityCliCommand<typeof InitCommand> {
           : `Unknown init type "${this.args.type}"`,
         {exit: 1},
       )
-      return
     }
 
     throw new Error('Not yet implemented')

@@ -1,1 +1,1 @@
-export default ['packages/@sanity/cli']
+export default ['packages/@sanity/cli', 'packages/@sanity/core']

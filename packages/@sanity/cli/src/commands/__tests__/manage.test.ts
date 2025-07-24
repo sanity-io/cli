@@ -1,13 +1,12 @@
 import {runCommand} from '@oclif/test'
+import {getCliConfig, getStudioConfig} from '@sanity/cli-core'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 import {testCommand} from '~test/helpers/testCommand.js'
 
-import {getCliConfig} from '../../config/cli/getCliConfig.js'
-import {getStudioConfig} from '../../config/studio/getStudioConfig.js'
 import {ManageCommand} from '../manage.js'
 
-vi.mock(import('../../config/studio/getStudioConfig.js'), async (importOriginal) => {
+vi.mock(import('../../../../core/src/config/studio/getStudioConfig.js'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,
@@ -15,7 +14,7 @@ vi.mock(import('../../config/studio/getStudioConfig.js'), async (importOriginal)
   }
 })
 
-vi.mock(import('../../config/findProjectRoot.js'), async (importOriginal) => {
+vi.mock(import('../../../../core/src/config/findProjectRoot.js'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,
@@ -27,7 +26,7 @@ vi.mock(import('../../config/findProjectRoot.js'), async (importOriginal) => {
   }
 })
 
-vi.mock(import('../../config/cli/getCliConfig.js'), async (importOriginal) => {
+vi.mock(import('../../../../core/src/config/cli/getCliConfig.js'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,

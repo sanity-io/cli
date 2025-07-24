@@ -1,7 +1,6 @@
 import {Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-
-import {SanityCliCommand} from '../BaseCommand.js'
+import {SanityCliCommand} from '@sanity/cli-core'
 
 export class DevCommand extends SanityCliCommand<typeof DevCommand> {
   static override description =

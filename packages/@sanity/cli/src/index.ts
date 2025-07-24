@@ -1,5 +1,5 @@
-export {createCliConfig} from './config/cli/createCliConfig.js'
-export {defineCliConfig} from './config/cli/defineCliConfig.js'
-export {getCliConfig} from './config/cli/getCliConfig.js'
+export {createCliConfig} from './config/createCliConfig.js'
+export {defineCliConfig} from './config/defineCliConfig.js'
 export type {PackageJson} from './types.js'
 export {loadEnv} from './util/loadEnv.js'
+export {getCliConfig} from '@sanity/cli-core'

@@ -1,10 +1,10 @@
 import path from 'node:path'
 
+import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core'
 import debug from 'debug'
 import {readPackageUp} from 'read-package-up'
 import {type ConfigEnv, type InlineConfig, type Rollup} from 'vite'
 
-import {type ReactCompilerConfig, type UserViteConfig} from '../../config/cli/types.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {getSanityPkgExportAliases} from './getBrowserAliases.js'
 import {

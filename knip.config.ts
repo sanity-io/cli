@@ -18,12 +18,9 @@ const baseConfig = {
     'packages/@sanity/cli/src/SanityHelp.ts',
   ],
   workspaces: {
-    '.': {
-      entry: ['package.config.ts', 'vitest.config.ts', 'eslint.config.mjs'],
-    },
     'examples/*': {
       entry: ['sanity.cli.ts', 'blueprint.ts', 'sanity.config.ts'],
-      project,
+      project: ['schemaTypes/**/*.{js,jsx,ts,tsx}'],
     },
     'examples/basic-app': {
       entry: ['sanity.cli.ts', './src/App.tsx'],
@@ -43,7 +40,16 @@ const baseConfig = {
         'test/helpers/testCommand.ts',
         // Worker files
         'src/**/*.worker.ts',
-        'src/**/*.worker.js',
+      ],
+      oclif: {
+        config: ['oclif.config.js'],
+      },
+      project,
+    },
+    'packages/@sanity/core': {
+      entry: [
+        // Worker files
+        'src/**/*.worker.ts',
       ],
       oclif: {
         config: ['oclif.config.js'],
@@ -68,7 +74,7 @@ export const addBundlerEntries = async (config: KnipConfig): Promise<KnipConfig>
           }
         }
         // Add package.config.ts to entry points
-        configEntries.push('package.config.ts')
+        // configEntries.push('package.config.ts')
         if (config.workspaces && config.workspaces[configKey]) {
           config.workspaces[configKey].entry = [...new Set(configEntries)]
         }

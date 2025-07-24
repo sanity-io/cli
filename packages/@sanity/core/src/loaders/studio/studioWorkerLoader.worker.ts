@@ -10,8 +10,8 @@ import {installSourcemapsSupport} from 'vite-node/source-map'
 
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {type CliConfig} from '../../config/cli/types.js'
-import {isNotFoundError} from '../../errors/NotFoundError.js'
 import {isRecord} from '../../util/isRecord.js'
+import {isNotFoundError} from '../../util/NotFoundError.js'
 import * as stubs from './stubs.js'
 
 if (isMainThread) {

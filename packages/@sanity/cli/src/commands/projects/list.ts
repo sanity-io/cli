@@ -1,9 +1,7 @@
 import {Flags} from '@oclif/core'
+import {SanityCliCommand, subdebug} from '@sanity/cli-core'
 import chalk from 'chalk'
 import {size, sortBy} from 'lodash-es'
-
-import {SanityCliCommand} from '../../BaseCommand.js'
-import {subdebug} from '../../debug.js'
 
 const sortFields = ['id', 'members', 'name', 'url', 'created']
 

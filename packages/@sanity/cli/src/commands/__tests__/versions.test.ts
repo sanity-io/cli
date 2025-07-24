@@ -8,7 +8,7 @@ import {getCliVersion} from '../../util/getCliVersion.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {readPackageJson} from '../../util/readPackageJson.js'
 
-vi.mock(import('../../config/findProjectRoot.js'), async (importOriginal) => {
+vi.mock(import('../../../../core/src/config/findProjectRoot.js'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,

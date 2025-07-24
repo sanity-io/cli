@@ -20,7 +20,8 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build",
-    "build:cli": "turbo run build --filter=@sanity/cli",
+    "build:cli": "turbo run build --filter=@sanity/cli && pnpm run build:types",
+    "build:types": "turbo run build:types --filter=@sanity/cli --filter=@sanity/cli-core",
     "check": "npm run check:lint && npm run check:types",
     "check:lint": "turbo run lint -- --fix",
     "check:types": "turbo run check:types --filter=@sanity/cli",
@@ -33,7 +34,7 @@
     "test": "vitest run",
     "pretest:watch": "pnpm run build:cli",
     "test:watch": "vitest",
-    "watch:cli": "turbo run watch --filter=@sanity/cli"
+    "watch:cli": "turbo run watch --filter=@sanity/cli --filter=@sanity/cli-core"
   },
   "resolutions": {
     "@sanity/client": "^7.0.0"

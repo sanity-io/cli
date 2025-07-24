@@ -1,5 +1,6 @@
 import {confirm} from '@inquirer/prompts'
 import {Flags} from '@oclif/core'
+import {SanityCliCommand, spinner} from '@sanity/cli-core'
 import chalk from 'chalk'
 
 import {
@@ -7,8 +8,6 @@ import {
   NO_APP_ID,
   NO_STUDIO_HOST,
 } from '../actions/undeploy/getStudioOrAppUserApplication.js'
-import {SanityCliCommand} from '../BaseCommand.js'
-import {spinner} from '../core/spinner.js'
 import {deleteUserApplication} from '../services/userApplications.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 

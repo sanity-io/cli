@@ -1,4 +1,4 @@
-import {type CliConfig} from './types.js'
+import {type CliConfig} from '@sanity/cli-core'
 
 /** @beta */
 export function defineCliConfig(config: CliConfig): CliConfig {

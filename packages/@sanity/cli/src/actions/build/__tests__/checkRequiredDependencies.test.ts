@@ -1,7 +1,7 @@
+import {type Output} from '@sanity/cli-core'
 import {execa} from 'execa'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type Output} from '../../../types'
 // Imported mocks
 import {determineIsApp} from '../../../util/determineIsApp'
 import {installNewPackages} from '../../../util/packageManager/installPackages'
@@ -17,9 +17,13 @@ vi.mock('../../../util/readModuleVersion')
 vi.mock('../../../util/readPackageManifest')
 vi.mock('../../../util/packageManager/installPackages')
 vi.mock('../../../util/packageManager/packageManagerChoice')
-vi.mock('../../../util/isInteractive', () => ({
-  isInteractive: true,
-}))
+vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    isInteractive: true,
+  }
+})
 
 const mockedExeca = vi.mocked(execa)
 const mockedDetermineIsApp = vi.mocked(determineIsApp)

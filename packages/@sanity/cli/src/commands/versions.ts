@@ -1,10 +1,10 @@
+import {SanityCliCommand} from '@sanity/cli-core'
 import chalk from 'chalk'
 import {padStart} from 'lodash-es'
 
 import {findSanityModulesVersions} from '../actions/versions/findSanityModulesVersions.js'
 import {getDisplayName, getFormatters} from '../actions/versions/getFormatters.js'
 import {versionsDebug} from '../actions/versions/versionsDebug.js'
-import {SanityCliCommand} from '../BaseCommand.js'
 
 export class Versions extends SanityCliCommand<typeof Versions> {
   static override description = 'Shows installed versions of Sanity Studio and components'

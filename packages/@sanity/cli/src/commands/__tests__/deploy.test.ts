@@ -3,6 +3,7 @@ import {fileURLToPath} from 'node:url'
 
 import {confirm, input, select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
+import {getCliConfig} from '@sanity/cli-core'
 import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {mockApi} from '~test/helpers/mockApi.js'
@@ -11,7 +12,6 @@ import {testCommand} from '~test/helpers/testCommand.js'
 import {buildApp} from '../../actions/build/buildApp.js'
 import {buildStudio} from '../../actions/build/buildStudio.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
-import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
@@ -21,7 +21,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const rootDir = resolve(__dirname, '../../../../../../')
 const examplesDir = resolve(rootDir, 'examples')
 
-vi.mock('../../config/cli/getCliConfig.js', () => ({
+vi.mock('../../../../core/src/config/cli/getCliConfig.js', () => ({
   getCliConfig: vi.fn(),
 }))
 

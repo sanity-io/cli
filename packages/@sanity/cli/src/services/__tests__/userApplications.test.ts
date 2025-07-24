@@ -1,9 +1,15 @@
+import {getGlobalCliClient} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {getGlobalCliClient} from '../../core/apiClient.js'
 import {deleteUserApplication, getUserApplication} from '../userApplications.js'
 
-vi.mock('../../core/apiClient.js')
+vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    getGlobalCliClient: vi.fn(),
+  }
+})
 
 const mockClient = {
   request: vi.fn(),

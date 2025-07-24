@@ -1,10 +1,10 @@
 import {Flags} from '@oclif/core'
+import {SanityCliCommand} from '@sanity/cli-core'
 import chalk from 'chalk'
 import {size, sortBy} from 'lodash-es'
 
 import {LIST_USERS_API_VERSION} from '../../actions/users/apiVersion.js'
 import {getMembersForProject} from '../../actions/users/getMembersForProject.js'
-import {SanityCliCommand} from '../../BaseCommand.js'
 
 export class List extends SanityCliCommand<typeof List> {
   static override description = 'List all users of the project'

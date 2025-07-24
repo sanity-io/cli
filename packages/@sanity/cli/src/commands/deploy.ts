@@ -2,11 +2,11 @@ import path from 'node:path'
 
 import {confirm} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
+import {SanityCliCommand} from '@sanity/cli-core'
 
 import {deployApp} from '../actions/deploy/deployApp.js'
 import {deployDebug} from '../actions/deploy/deployDebug.js'
 import {deployStudio} from '../actions/deploy/deployStudio.js'
-import {SanityCliCommand} from '../BaseCommand.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 import {dirIsEmptyOrNonExistent} from '../util/dirIsEmptyOrNonExistent.js'
 

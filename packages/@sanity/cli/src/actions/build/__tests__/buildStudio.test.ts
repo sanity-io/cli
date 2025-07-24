@@ -1,24 +1,25 @@
 import {rm} from 'node:fs/promises'
 import path from 'node:path'
 
+import {logSymbols, type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, it, type MockedFunction, vi} from 'vitest'
 
-import {info} from '../../../core/logSymbols.js'
-import {type Output} from '../../../types.js'
 import {buildStudio} from '../buildStudio.js'
 import {type BuildOptions} from '../types.js'
 
-// Mock all the external dependencies
 vi.mock('node:fs/promises')
-// Mock internal modules
-vi.mock('../../../core/spinner.js', () => ({
-  spinner: vi.fn(() => ({
-    fail: vi.fn().mockReturnThis(),
-    start: vi.fn().mockReturnThis(),
-    succeed: vi.fn().mockReturnThis(),
-    text: '',
-  })),
-}))
+vi.mock('@sanity/cli-core', async () => {
+  const original = await import('@sanity/cli-core')
+  return {
+    ...original,
+    spinner: vi.fn(() => ({
+      fail: vi.fn().mockReturnThis(),
+      start: vi.fn().mockReturnThis(),
+      succeed: vi.fn().mockReturnThis(),
+      text: '',
+    })),
+  }
+})
 
 const mockedRm = rm as MockedFunction<typeof rm>
 const mockedConfirm = vi.hoisted(() => vi.fn())
@@ -188,7 +189,9 @@ describe('buildStudio', () => {
 
     await buildStudio(options)
 
-    expect(mockOutput.log).toHaveBeenCalledWith(`${info} Building with auto-updates enabled`)
+    expect(mockOutput.log).toHaveBeenCalledWith(
+      `${logSymbols.info} Building with auto-updates enabled`,
+    )
     expect(mockedCompareDependencyVersions).toHaveBeenCalled()
     expect(mockedGetStudioAutoUpdateImportMap).toHaveBeenCalledWith(encodeURIComponent('^3.0.0'))
   })

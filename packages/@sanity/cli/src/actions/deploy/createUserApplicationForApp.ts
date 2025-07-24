@@ -1,7 +1,7 @@
 import {input} from '@inquirer/prompts'
+import {spinner} from '@sanity/cli-core'
 import {customAlphabet} from 'nanoid'
 
-import {spinner} from '../../core/spinner.js'
 import {createUserApplication, type UserApplication} from '../../services/userApplications.js'
 import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {deployDebug} from './deployDebug.js'

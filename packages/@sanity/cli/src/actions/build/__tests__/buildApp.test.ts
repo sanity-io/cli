@@ -1,9 +1,8 @@
 import {rm} from 'node:fs/promises'
 
+import {logSymbols, type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, it, type MockedFunction, vi} from 'vitest'
 
-import {info} from '../../../core/logSymbols.js'
-import {type Output} from '../../../types.js'
 import {buildApp} from '../buildApp.js'
 import {type BuildOptions} from '../types.js'
 
@@ -12,14 +11,18 @@ vi.mock('@inquirer/prompts', () => ({
   confirm: vi.fn(),
 }))
 
-vi.mock('../../../core/spinner.js', () => ({
-  spinner: vi.fn(() => ({
-    fail: vi.fn().mockReturnThis(),
-    start: vi.fn().mockReturnThis(),
-    succeed: vi.fn().mockReturnThis(),
-    text: '',
-  })),
-}))
+vi.mock('@sanity/cli-core', async () => {
+  const original = await import('@sanity/cli-core')
+  return {
+    ...original,
+    spinner: vi.fn(() => ({
+      fail: vi.fn().mockReturnThis(),
+      start: vi.fn().mockReturnThis(),
+      succeed: vi.fn().mockReturnThis(),
+      text: '',
+    })),
+  }
+})
 vi.mock('../../../util/compareDependencyVersions.js')
 vi.mock('../../../util/readModuleVersion.js')
 vi.mock('../buildStaticFiles.js')
@@ -144,7 +147,9 @@ describe('buildApp', () => {
 
     await buildApp(options)
 
-    expect(mockOutput.log).toHaveBeenCalledWith(`${info} Building with auto-updates enabled`)
+    expect(mockOutput.log).toHaveBeenCalledWith(
+      `${logSymbols.info} Building with auto-updates enabled`,
+    )
     expect(mockedCompareDependencyVersions).toHaveBeenCalled()
   })
 

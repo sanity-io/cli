@@ -2,13 +2,11 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 
 import {confirm, select} from '@inquirer/prompts'
+import {getTimer, logSymbols, spinner} from '@sanity/cli-core'
 import chalk from 'chalk'
 import {type Ora} from 'ora'
 import semver from 'semver'
 
-import {info} from '../../core/logSymbols.js'
-import {spinner} from '../../core/spinner.js'
-import {getTimer} from '../../core/timer.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
@@ -61,7 +59,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   const autoUpdatesImports = getStudioAutoUpdateImportMap(version)
 
   if (autoUpdatesEnabled) {
-    output.log(`${info} Building with auto-updates enabled`)
+    output.log(`${logSymbols.info} Building with auto-updates enabled`)
 
     // Check the versions
     const result = await compareDependencyVersions(autoUpdatesImports, workDir)

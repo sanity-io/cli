@@ -1,13 +1,19 @@
 import {runCommand} from '@oclif/test'
+import {getCliToken} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 import {testCommand} from '~test/helpers/testCommand.js'
 
 import {logout} from '../../actions/auth/logout.js'
-import {getCliToken} from '../../config/cliToken.js'
 import {LogoutCommand} from '../logout.js'
 
 vi.mock('../../actions/auth/logout.js')
-vi.mock('../../config/cliToken.js')
+vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...actual,
+    getCliToken: vi.fn(),
+  }
+})
 
 afterEach(() => {
   vi.clearAllMocks()

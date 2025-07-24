@@ -1,10 +1,10 @@
 import path from 'node:path'
 
+import {type Output} from '@sanity/cli-core'
 import {generateHelpUrl} from '@sanity/generate-help-url'
 import resolveFrom from 'resolve-from'
 import semver, {type SemVer} from 'semver'
 
-import {type Output} from '../../types.js'
 import {readPackageJson} from '../../util/readPackageJson.js'
 
 interface PackageInfo {

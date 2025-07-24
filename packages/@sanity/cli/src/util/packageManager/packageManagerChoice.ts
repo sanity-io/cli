@@ -1,10 +1,9 @@
 import path from 'node:path'
 
 import {select} from '@inquirer/prompts'
+import {isInteractive} from '@sanity/cli-core'
 import {default as preferredPM} from 'preferred-pm'
 import which from 'which'
-
-import {isInteractive} from '../isInteractive.js'
 
 export type PackageManager = 'bun' | 'manual' | 'npm' | 'pnpm' | 'yarn'
 
