@@ -24,7 +24,7 @@
     "build:types": "turbo run build:types --filter=@sanity/cli --filter=@sanity/cli-core",
     "check": "npm run check:lint && npm run check:types",
     "check:lint": "turbo run lint -- --fix",
-    "check:types": "turbo run check:types --filter=@sanity/cli",
+    "check:types": "turbo run check:types --filter=@sanity/cli --filter=@sanity/cli-core",
     "clean": "rimraf packages/@sanity/*/lib packages/*/lib packages/@sanity/*/dist packages/*/dist",
     "clean:deps": "rimraf packages/*/node_modules examples/*/node_modules node_modules",
     "depcheck": "knip",

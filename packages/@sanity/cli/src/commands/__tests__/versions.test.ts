@@ -8,10 +8,8 @@ import {getCliVersion} from '../../util/getCliVersion.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {readPackageJson} from '../../util/readPackageJson.js'
 
-vi.mock(import('../../../../core/src/config/findProjectRoot.js'), async (importOriginal) => {
-  const actual = await importOriginal()
+vi.mock('../../../../core/src/config/findProjectRoot.js', async () => {
   return {
-    ...actual,
     findProjectRoot: vi.fn().mockResolvedValue({
       directory: '/test/path',
       root: '/test/path',

@@ -1,6 +1,6 @@
 {
   "extends": "@repo/tsconfig/base.json",
-  "include": ["./src", "../core/src/util/isInteractive.ts",],
+  "include": ["./src"],
   "compilerOptions": {
     "rootDir": ".",
     "jsx": "react-jsx",

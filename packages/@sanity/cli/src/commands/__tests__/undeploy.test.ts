@@ -9,10 +9,8 @@ import {UndeployCommand} from '../undeploy.js'
 
 vi.mock('@inquirer/prompts')
 
-vi.mock(import('../../../../core/src/config/findProjectRoot.js'), async (importOriginal) => {
-  const actual = await importOriginal()
+vi.mock('../../../../core/src/config/findProjectRoot.js', async () => {
   return {
-    ...actual,
     findProjectRoot: vi.fn().mockResolvedValue({
       directory: '/test/path',
       root: '/test/path',
@@ -21,10 +19,8 @@ vi.mock(import('../../../../core/src/config/findProjectRoot.js'), async (importO
   }
 })
 
-vi.mock(import('../../../../core/src/config/cli/getCliConfig.js'), async (importOriginal) => {
-  const actual = await importOriginal()
+vi.mock('../../../../core/src/config/cli/getCliConfig.js', async () => {
   return {
-    ...actual,
     getCliConfig: vi.fn(),
   }
 })
