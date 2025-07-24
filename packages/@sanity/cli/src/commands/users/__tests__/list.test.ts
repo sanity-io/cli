@@ -8,7 +8,7 @@ import {testCommand} from '~test/helpers/testCommand.js'
 import {LIST_USERS_API_VERSION} from '../../../actions/users/apiVersion.js'
 import {List} from '../list.js'
 
-vi.mock('../../../../../core/src/config/findProjectRoot.js', async () => {
+vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => {
   return {
     findProjectRoot: vi.fn().mockResolvedValue({
       directory: '/test/path',
@@ -18,7 +18,7 @@ vi.mock('../../../../../core/src/config/findProjectRoot.js', async () => {
   }
 })
 
-vi.mock('../../../../../core/src/config/cli/getCliConfig.js', async () => {
+vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
   return {
     getCliConfig: vi.fn().mockResolvedValue({
       api: {

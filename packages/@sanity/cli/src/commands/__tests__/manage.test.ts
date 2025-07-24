@@ -6,13 +6,13 @@ import {testCommand} from '~test/helpers/testCommand.js'
 
 import {ManageCommand} from '../manage.js'
 
-vi.mock('../../../../core/src/config/studio/getStudioConfig.js', async () => {
+vi.mock('../../../../cli-core/src/config/studio/getStudioConfig.js', async () => {
   return {
     getStudioConfig: vi.fn(),
   }
 })
 
-vi.mock('../../../../core/src/config/findProjectRoot.js', async () => {
+vi.mock('../../../../cli-core/src/config/findProjectRoot.js', async () => {
   return {
     findProjectRoot: vi.fn().mockResolvedValue({
       directory: '/test/path',
@@ -22,7 +22,7 @@ vi.mock('../../../../core/src/config/findProjectRoot.js', async () => {
   }
 })
 
-vi.mock('../../../../core/src/config/cli/getCliConfig.js', async () => {
+vi.mock('../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
   return {
     getCliConfig: vi.fn().mockResolvedValue({}),
   }

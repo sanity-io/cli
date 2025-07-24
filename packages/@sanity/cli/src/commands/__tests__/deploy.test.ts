@@ -21,7 +21,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const rootDir = resolve(__dirname, '../../../../../../')
 const examplesDir = resolve(rootDir, 'examples')
 
-vi.mock('../../../../core/src/config/cli/getCliConfig.js', () => ({
+vi.mock('../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
   getCliConfig: vi.fn(),
 }))
 

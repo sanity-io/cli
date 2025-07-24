@@ -10,7 +10,7 @@ export default defineConfig({
       ],
       include: [
         'packages/@sanity/cli/**/*.{ts,tsx}',
-        'packages/@sanity/core/**/*.{ts,tsx}',
+        'packages/@sanity/cli-core/**/*.{ts,tsx}',
         'packages/create-sanity/**/*.{ts,tsx}',
       ],
       provider: 'istanbul',

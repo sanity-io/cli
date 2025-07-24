@@ -2,7 +2,7 @@ packages:
   - 'packages/@repo/*'
   - 'packages/@sanity/blueprints'
   - 'packages/@sanity/cli'
-  - 'packages/@sanity/core'
+  - 'packages/@sanity/cli-core'
   - 'packages/@sanity/codegen'
   - 'packages/@sanity/migrate'
   - 'packages/create-sanity'
