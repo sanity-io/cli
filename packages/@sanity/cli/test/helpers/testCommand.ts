@@ -66,13 +66,13 @@ async function captureOutput<T>(
     (std: 'stderr' | 'stdout'): typeof process.stderr.write =>
     (
       chunk: string | Uint8Array,
-      encodingOrCb?: ((err?: Error) => void) | BufferEncoding,
-      cb?: (err?: Error) => void,
+      encodingOrCb?: ((err?: Error | null) => void) | BufferEncoding,
+      cb?: (err?: Error | null) => void,
     ) => {
       output[std].push(chunk.toString())
 
       if (print) {
-        let callback: ((err?: Error) => void) | undefined = cb
+        let callback: ((err?: Error | null) => void) | undefined = cb
         let encoding: BufferEncoding | undefined
         if (typeof encodingOrCb === 'function') {
           callback = encodingOrCb

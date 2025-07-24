@@ -48,11 +48,11 @@ describe('getUserApplication', () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
-    const app = await getUserApplication()
+    const app = await getUserApplication({projectId: 'projectId'})
 
     expect(mockClient.request).toHaveBeenCalledWith({
       query: {default: 'true'},
-      uri: '/user-applications',
+      uri: '/projects/projectId/user-applications',
     })
     expect(app).toBe(result)
   })

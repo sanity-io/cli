@@ -1,9 +1,10 @@
 import {type CliConfig} from '../../config/cli/types.js'
+import {type DeployFlags} from '../deploy/types.js'
 import {type BuildFlags} from './types.js'
 
 interface AutoUpdateSources {
   cliConfig: CliConfig
-  flags: BuildFlags
+  flags: BuildFlags | DeployFlags
 }
 
 /**
