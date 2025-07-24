@@ -1,9 +1,9 @@
 import {type FlagInput} from '@oclif/core/interfaces'
-import {getCliToken, SanityCliCommand} from '@sanity/cli-core'
+import {getCliToken, SanityCommand} from '@sanity/cli-core'
 
 import {logout} from '../actions/auth/logout.js'
 
-export class LogoutCommand extends SanityCliCommand<typeof LogoutCommand> {
+export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
   static override description = 'Logs out the CLI from the current user session'
   static override flags = {} satisfies FlagInput
 

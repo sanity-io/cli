@@ -8,12 +8,12 @@ import {getGlobalCliClient, type GlobalCliClientOptions} from './services/apiCli
 import {type Output} from './types.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
-  (typeof SanityCliCommand)['baseFlags'] & T['flags']
+  (typeof SanityCommand)['baseFlags'] & T['flags']
 >
 
 type Args<T extends typeof Command> = Interfaces.InferredArgs<T['args']>
 
-export abstract class SanityCliCommand<T extends typeof Command> extends Command {
+export abstract class SanityCommand<T extends typeof Command> extends Command {
   protected args!: Args<T>
   protected flags!: Flags<T>
 
@@ -76,7 +76,7 @@ export abstract class SanityCliCommand<T extends typeof Command> extends Command
   public async init(): Promise<void> {
     const {args, flags} = await this.parse({
       args: this.ctor.args,
-      baseFlags: (super.ctor as typeof SanityCliCommand).baseFlags,
+      baseFlags: (super.ctor as typeof SanityCommand).baseFlags,
       enableJsonFlag: this.ctor.enableJsonFlag,
       flags: this.ctor.flags,
       strict: this.ctor.strict,

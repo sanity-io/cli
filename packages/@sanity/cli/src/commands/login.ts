@@ -1,13 +1,7 @@
 import {input, select} from '@inquirer/prompts'
 import {Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {
-  getCliToken,
-  getGlobalCliClient,
-  SanityCliCommand,
-  setConfig,
-  spinner,
-} from '@sanity/cli-core'
+import {getCliToken, getGlobalCliClient, SanityCommand, setConfig, spinner} from '@sanity/cli-core'
 import {type SanityClient} from '@sanity/client'
 import open from 'open'
 
@@ -21,7 +15,7 @@ import {canLaunchBrowser} from '../util/canLaunchBrowser.js'
 
 const LOGIN_API_VERSION = '2024-02-01'
 
-export class LoginCommand extends SanityCliCommand<typeof LoginCommand> {
+export class LoginCommand extends SanityCommand<typeof LoginCommand> {
   static override description = 'Authenticates the CLI for access to Sanity projects'
   static override examples: Array<Command.Example> = [
     {

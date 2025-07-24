@@ -1,8 +1,8 @@
 import {Args, Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {SanityCliCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 
-export class InitCommand extends SanityCliCommand<typeof InitCommand> {
+export class InitCommand extends SanityCommand<typeof InitCommand> {
   static override args = {type: Args.string({hidden: true})}
   static override description = 'Initialize a new Sanity Studio, project and/or app'
   static override enableJsonFlag = true

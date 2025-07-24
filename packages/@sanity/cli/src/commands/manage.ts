@@ -1,8 +1,8 @@
 import {type FlagInput} from '@oclif/core/interfaces'
-import {getStudioConfig, SanityCliCommand} from '@sanity/cli-core'
+import {getStudioConfig, SanityCommand} from '@sanity/cli-core'
 import open from 'open'
 
-export class ManageCommand extends SanityCliCommand<typeof ManageCommand> {
+export class ManageCommand extends SanityCommand<typeof ManageCommand> {
   static override description = 'Opens project management interface in your web browser'
   static override flags = {} satisfies FlagInput
 
