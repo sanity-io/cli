@@ -3,8 +3,8 @@ import {join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
 import {runCommand} from '@oclif/test'
+import {testCommand} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
-import {testCommand} from '~test/helpers/testCommand.js'
 
 import {BuildCommand} from '../build.js'
 

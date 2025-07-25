@@ -1,9 +1,9 @@
 import {confirm} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
+import {testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
-import {testCommand} from '~test/helpers/testCommand.js'
 
 import {UndeployCommand} from '../undeploy.js'
 
