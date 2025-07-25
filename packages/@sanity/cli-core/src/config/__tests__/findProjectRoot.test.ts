@@ -164,27 +164,19 @@ describe('#findProjectRoot', () => {
   test('throws error when multiple app config files are found', async () => {
     // Mock access to return true for multiple app config files
     vi.mocked(access).mockImplementation((path) => {
-      if (
-        path === join(mockCwd, 'sanity.cli.ts') ||
-        path === join(mockCwd, 'sanity.cli.js')
-      ) {
+      if (path === join(mockCwd, 'sanity.cli.ts') || path === join(mockCwd, 'sanity.cli.js')) {
         return Promise.resolve()
       }
       return Promise.reject(new Error('File not found'))
     })
 
-    await expect(findProjectRoot(mockCwd)).rejects.toThrow(
-      'Multiple app config files found',
-    )
+    await expect(findProjectRoot(mockCwd)).rejects.toThrow('Multiple app config files found')
   })
 
   test('prioritizes studio config over app config when both are present', async () => {
     // Mock access to return true for both studio and app config files
     vi.mocked(access).mockImplementation((path) => {
-      if (
-        path === join(mockCwd, 'sanity.config.ts') ||
-        path === join(mockCwd, 'sanity.cli.ts')
-      ) {
+      if (path === join(mockCwd, 'sanity.config.ts') || path === join(mockCwd, 'sanity.cli.ts')) {
         return Promise.resolve()
       }
       return Promise.reject(new Error('File not found'))

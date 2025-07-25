@@ -1,6 +1,6 @@
+import {type Output} from '@sanity/cli-core'
 import {execa, type Options, type Result} from 'execa'
 
-import {type Output} from '../../types.js'
 import {getPartialEnvWithNpmPath, type PackageManager} from './packageManagerChoice.js'
 
 /**

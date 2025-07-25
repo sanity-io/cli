@@ -1,9 +1,8 @@
 import {Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
+import {SanityCommand} from '@sanity/cli-core'
 
-import {SanityCliCommand} from '../BaseCommand.js'
-
-export class DevCommand extends SanityCliCommand<typeof DevCommand> {
+export class DevCommand extends SanityCommand<typeof DevCommand> {
   static override description =
     'Starts a local development server for Sanity Studio with live reloading'
 

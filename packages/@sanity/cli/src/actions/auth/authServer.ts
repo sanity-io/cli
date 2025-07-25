@@ -1,9 +1,8 @@
 import {createServer, type Server} from 'node:http'
 import os from 'node:os'
 
+import {subdebug} from '@sanity/cli-core'
 import {type SanityClient} from '@sanity/client'
-
-import {subdebug} from '../../debug.js'
 
 const debug = subdebug('auth')
 const callbackPorts = [4321, 4000, 3003, 1234, 8080, 13_333]

@@ -1,6 +1,7 @@
 import path from 'node:path'
 
-import {type ReactCompilerConfig, type UserViteConfig} from '../../config/cli/types.js'
+import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core'
+
 import {copyDir} from '../../util/copyDir.js'
 import {buildDebug} from './buildDebug.js'
 import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig.js'

@@ -1,13 +1,13 @@
 import {Args, Flags} from '@oclif/core'
+import {SanityCommand} from '@sanity/cli-core'
 
 import {buildApp} from '../actions/build/buildApp.js'
 import {buildDebug} from '../actions/build/buildDebug.js'
 import {buildStudio} from '../actions/build/buildStudio.js'
 import {shouldAutoUpdate} from '../actions/build/shouldAutoUpdate.js'
-import {SanityCliCommand} from '../BaseCommand.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 
-export class BuildCommand extends SanityCliCommand<typeof BuildCommand> {
+export class BuildCommand extends SanityCommand<typeof BuildCommand> {
   static override args = {
     outputDir: Args.directory({description: 'Output directory'}),
   }

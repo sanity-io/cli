@@ -3,15 +3,13 @@
  */
 
 import {select, Separator} from '@inquirer/prompts'
+import {type CliConfig, type Output, spinner} from '@sanity/cli-core'
 
-import {type CliConfig} from '../../config/cli/types.js'
-import {spinner} from '../../core/spinner.js'
 import {
   getUserApplication,
   getUserApplications,
   type UserApplication,
 } from '../../services/userApplications.js'
-import {type Output} from '../../types.js'
 import {deployDebug} from './deployDebug.js'
 
 interface FindUserApplicationForAppOptions {

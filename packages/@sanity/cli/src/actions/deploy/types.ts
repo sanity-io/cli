@@ -1,6 +1,6 @@
+import {type CliConfig, type Output} from '@sanity/cli-core'
+
 import {DeployCommand} from '../../commands/deploy.js'
-import {type CliConfig} from '../../config/cli/types.js'
-import {type Output} from '../../types.js'
 
 export type DeployFlags = DeployCommand['flags']
 

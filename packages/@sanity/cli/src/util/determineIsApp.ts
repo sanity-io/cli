@@ -1,4 +1,4 @@
-import {type CliConfig} from '../config/cli/types.js'
+import {type CliConfig} from '@sanity/cli-core'
 
 /**
  * Determine if the current project is an app.

@@ -1,10 +1,10 @@
 import path from 'node:path'
 
+import {spinner} from '@sanity/cli-core'
 import promiseProps from 'promise-props-recursive'
 import semver from 'semver'
 import semverCompare from 'semver-compare'
 
-import {spinner} from '../../core/spinner.js'
 import {getCliVersion} from '../../util/getCliVersion.js'
 import {readPackageJson} from '../../util/readPackageJson.js'
 import {buildPackageArray} from './buildPackageArray.js'

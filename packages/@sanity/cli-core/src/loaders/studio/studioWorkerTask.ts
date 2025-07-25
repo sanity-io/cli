@@ -1,6 +1,6 @@
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
-import {type RequireProps} from '../../typeHelpers.js'
+import {type RequireProps} from '../../types.js'
 import {isRecord} from '../../util/isRecord.js'
 
 /**

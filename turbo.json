@@ -6,6 +6,10 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", ".sanity/**", "lib/**"]
     },
+    "build:types": {
+      "dependsOn": ["^build", "^build:types"],
+      "outputs": ["dist/**/*.d.ts"]
+    },
     "lint": {},
     "dev": {
       "cache": false,

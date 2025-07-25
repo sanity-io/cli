@@ -1,12 +1,9 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
-// Import the module under test
-import * as cliTokenModule from '../cliToken'
-// Import the mocked function
-import {getConfig} from '../cliUserConfig.js'
+import {getConfig} from '../../services/cliUserConfig'
+import * as cliTokenModule from '../../services/getCliToken'
 
-// Mock the config module
-vi.mock('../cliUserConfig.js', () => ({
+vi.mock('../../services/cliUserConfig', () => ({
   getConfig: vi.fn(),
 }))
 
@@ -15,14 +12,10 @@ describe('getCliToken', () => {
   let cachedToken: string | undefined
 
   beforeEach(() => {
-    // Reset environment before each test
     process.env = {...originalEnv}
-    // Clear all mocks
     vi.clearAllMocks()
-    // Reset modules and cached token
     vi.resetModules()
     cachedToken = undefined
-    // Reset the cached token
     vi.spyOn(cliTokenModule, 'getCliToken').mockImplementation(async () => {
       if (cachedToken !== undefined) {
         return cachedToken
@@ -40,7 +33,6 @@ describe('getCliToken', () => {
   })
 
   afterEach(() => {
-    // Restore original environment
     process.env = originalEnv
     vi.restoreAllMocks()
   })

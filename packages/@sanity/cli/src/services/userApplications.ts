@@ -1,10 +1,8 @@
 import {PassThrough} from 'node:stream'
 import {type Gzip} from 'node:zlib'
 
+import {debug, getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
-
-import {getGlobalCliClient} from '../core/apiClient.js'
-import {debug} from '../debug.js'
 
 export const USER_APPLICATIONS_API_VERSION = 'v2024-08-01'
 

@@ -1,4 +1,4 @@
-import {type CliConfig} from './types.js'
+import {type CliConfig} from '@sanity/cli-core'
 
 /**
  * @deprecated Use `defineCliConfig` instead

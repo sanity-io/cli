@@ -1,18 +1,16 @@
 import {confirm} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
+import {getCliConfig} from '@sanity/cli-core'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 import {testCommand} from '~test/helpers/testCommand.js'
 
-import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {UndeployCommand} from '../undeploy.js'
 
 vi.mock('@inquirer/prompts')
 
-vi.mock(import('../../config/findProjectRoot.js'), async (importOriginal) => {
-  const actual = await importOriginal()
+vi.mock('../../../../cli-core/src/config/findProjectRoot.js', async () => {
   return {
-    ...actual,
     findProjectRoot: vi.fn().mockResolvedValue({
       directory: '/test/path',
       root: '/test/path',
@@ -21,10 +19,8 @@ vi.mock(import('../../config/findProjectRoot.js'), async (importOriginal) => {
   }
 })
 
-vi.mock(import('../../config/cli/getCliConfig.js'), async (importOriginal) => {
-  const actual = await importOriginal()
+vi.mock('../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
   return {
-    ...actual,
     getCliConfig: vi.fn(),
   }
 })

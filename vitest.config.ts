@@ -8,7 +8,11 @@ export default defineConfig({
         'examples/**',
         'packages/@sanity/cli/test/**',
       ],
-      include: ['packages/@sanity/cli/**/*.{ts,tsx}', 'packages/create-sanity/**/*.{ts,tsx}'],
+      include: [
+        'packages/@sanity/cli/**/*.{ts,tsx}',
+        'packages/@sanity/cli-core/**/*.{ts,tsx}',
+        'packages/create-sanity/**/*.{ts,tsx}',
+      ],
       provider: 'istanbul',
       reporter: ['html', 'json', 'json-summary'],
     },

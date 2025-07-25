@@ -1,4 +1,5 @@
-import {type CliConfig} from '../../config/cli/types.js'
+import {type CliConfig} from '@sanity/cli-core'
+
 import {getUserApplication} from '../../services/userApplications.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'

@@ -1,16 +1,14 @@
 import {Flags} from '@oclif/core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 import chalk from 'chalk'
 import {size, sortBy} from 'lodash-es'
-
-import {SanityCliCommand} from '../../BaseCommand.js'
-import {subdebug} from '../../debug.js'
 
 const sortFields = ['id', 'members', 'name', 'url', 'created']
 
 const LIST_PROJECTS_API_VERSION = 'v2025-05-15'
 const projectsDebug = subdebug('projects')
 
-export class List extends SanityCliCommand<typeof List> {
+export class List extends SanityCommand<typeof List> {
   static override description = 'Lists projects connected to your user'
   static override examples = [
     {

@@ -1,11 +1,11 @@
 import path from 'node:path'
 
+import {type Output} from '@sanity/cli-core'
 import {generateHelpUrl} from '@sanity/generate-help-url'
 import resolveFrom from 'resolve-from'
 import semver from 'semver'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {type Output} from '../../../types.js'
 import {readPackageJson} from '../../../util/readPackageJson'
 import {checkStudioDependencyVersions} from '../checkStudioDependencyVersions'
 

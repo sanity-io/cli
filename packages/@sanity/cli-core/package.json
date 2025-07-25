@@ -1,0 +1,75 @@
+{
+  "name": "@sanity/cli-core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Sanity CLI core package",
+  "keywords": [
+    "sanity",
+    "cms",
+    "headless",
+    "realtime",
+    "content",
+    "cli",
+    "tool"
+  ],
+  "homepage": "https://github.com/sanity-io/cli",
+  "bugs": "https://github.com/sanity-io/cli/issues",
+  "repository": "sanity-io/cli",
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "type": "module",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "./dist"
+  ],
+  "scripts": {
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
+    "build:types": "tsc --project tsconfig.lib.json && echo 'types built'",
+    "check:types": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "posttest": "pnpm run lint",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
+  },
+  "dependencies": {
+    "@oclif/core": "^4.3.0",
+    "@sanity/client": "^7.5.0",
+    "debug": "^4.4.0",
+    "get-tsconfig": "^4.10.1",
+    "import-meta-resolve": "^4.1.0",
+    "jsdom": "^26.0.0",
+    "log-symbols": "^7.0.1",
+    "ora": "^8.2.0",
+    "tsx": "^4.20.3",
+    "vite": "^6.3.5",
+    "vite-node": "^3.0.8",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^1.3.1",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "@swc/cli": "^0.7.7",
+    "@swc/core": "^1.12.11",
+    "@types/debug": "^4.1.12",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^20.17.23",
+    "eslint": "^9.30.1",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.3"
+  },
+  "engines": {
+    "node": ">=20.19.1"
+  }
+}

@@ -3,9 +3,9 @@ import {homedir} from 'node:os'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {getConfig, setConfig} from '../../services/cliUserConfig'
 import {readJsonFile} from '../../util/readJsonFile'
 import {writeJsonFile} from '../../util/writeJsonFile'
-import {getConfig, setConfig} from '../cliUserConfig'
 
 vi.mock('node:fs/promises')
 vi.mock('node:os')
