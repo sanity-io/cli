@@ -6,7 +6,7 @@ import {getDashboardStoreId} from '../../actions/intents/getDashboardStoreId.js'
 import {queryDashboardStore} from '../../actions/intents/queryDashboardStore.js'
 import {type Intent} from '../../actions/intents/types.js'
 import {SanityCliCommand} from '../../BaseCommand.js'
-import { subdebug } from '../../debug.js'
+import {subdebug} from '../../debug.js'
 
 // unfortunately, querying the dashboard store is still experimental
 const LIST_INTENTS_API_VERSION = 'vX'
@@ -46,7 +46,10 @@ export class List extends SanityCliCommand<typeof List> {
     const organizationId = organization ?? configOrganizationId
 
     if (!organizationId) {
-      this.error('Organization ID is required. Provide it via an --organization flag or set it in your sanity.cli.ts config file under the app.organizationId property.', {exit: 1})
+      this.error(
+        'Organization ID is required. Provide it via an --organization flag or set it in your sanity.cli.ts config file under the app.organizationId property.',
+        {exit: 1},
+      )
     }
 
     try {
@@ -76,15 +79,15 @@ export class List extends SanityCliCommand<typeof List> {
         new Date(intent._updatedAt).toLocaleString(),
       ])
 
-    // Initialize maxWidths with the width of each header
-    const maxWidths = tableHeaders.map((str) => size(str))
+      // Initialize maxWidths with the width of each header
+      const maxWidths = tableHeaders.map((str) => size(str))
 
-    // Calculate maximum width for each column
-    for (const row of rows) {
-      for (const [i, element] of row.entries()) {
-        maxWidths[i] = Math.max(size(element), maxWidths[i])
+      // Calculate maximum width for each column
+      for (const row of rows) {
+        for (const [i, element] of row.entries()) {
+          maxWidths[i] = Math.max(size(element), maxWidths[i])
+        }
       }
-    }
       const printRow = (row: string[]) =>
         row.map((col, i) => `${col}`.padEnd(maxWidths[i])).join('   ')
 

@@ -38,7 +38,7 @@ describe('#list', () => {
     originalToLocaleString = Date.prototype.toLocaleString
     Date.prototype.toLocaleString = vi.fn().mockImplementation(function (this: Date) {
       // Return consistent US locale formatting to match existing snapshots
-      return originalToLocaleString.call(this, 'en-US', { timeZone: 'America/New_York' })
+      return originalToLocaleString.call(this, 'en-US', {timeZone: 'America/New_York'})
     })
   })
 
@@ -168,8 +168,7 @@ describe('#list', () => {
     })
 
     const {stdout} = await testCommand(List)
-    console.log(stdout)
 
     expect(stdout).toContain('No intents found for organization default-org.')
   })
-}) 
+})

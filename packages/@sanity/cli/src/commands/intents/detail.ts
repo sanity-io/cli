@@ -5,7 +5,7 @@ import {getDashboardStoreId} from '../../actions/intents/getDashboardStoreId.js'
 import {queryDashboardStore} from '../../actions/intents/queryDashboardStore.js'
 import {type Intent} from '../../actions/intents/types.js'
 import {SanityCliCommand} from '../../BaseCommand.js'
-import { subdebug } from '../../debug.js'
+import {subdebug} from '../../debug.js'
 
 // querying the dashboard store is still experimental
 const DETAIL_INTENTS_API_VERSION = 'vX'
@@ -58,7 +58,6 @@ export class Detail extends SanityCliCommand<typeof Detail> {
       )
     }
 
-    
     try {
       const dashboardStoreId = await getDashboardStoreId({
         client,
@@ -114,7 +113,7 @@ export class Detail extends SanityCliCommand<typeof Detail> {
       }
     } catch (error) {
       intentsDebug('Error getting intent details', error)
-      this.error(error)
+      this.error(`Failed to get intent details for ID "${intentId}".`, {exit: 1})
     }
   }
 }

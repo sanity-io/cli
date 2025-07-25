@@ -38,7 +38,7 @@ describe('#detail', () => {
     originalToLocaleString = Date.prototype.toLocaleString
     Date.prototype.toLocaleString = vi.fn().mockImplementation(function (this: Date) {
       // Return consistent US locale formatting to match existing snapshots
-      return originalToLocaleString.call(this, 'en-US', { timeZone: 'America/New_York' })
+      return originalToLocaleString.call(this, 'en-US', {timeZone: 'America/New_York'})
     })
   })
 
@@ -223,4 +223,4 @@ describe('#detail', () => {
 
     expect(stdout).toContain('No intent found with ID: "nonexistent" for organization test-org.')
   })
-}) 
+})

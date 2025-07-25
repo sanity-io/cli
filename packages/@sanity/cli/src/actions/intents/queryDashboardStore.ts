@@ -7,15 +7,12 @@ export async function queryDashboardStore<T = SanityDocument | SanityDocument[]>
 ): Promise<T> {
   const {client, dashboardStoreId, query} = options
 
-  const {result} = await client
-    // need to update the client with Renovate
-    // .withConfig({ignoreWarnings: ['experimental']})
-    .request({
-      query: {
-        query,
-      },
-      uri: `/dashboards/${dashboardStoreId}/query`,
-    }) 
+  const {result} = await client.withConfig({ignoreWarnings: ['experimental']}).request({
+    query: {
+      query,
+    },
+    uri: `/dashboards/${dashboardStoreId}/query`,
+  })
 
   return result
 }
