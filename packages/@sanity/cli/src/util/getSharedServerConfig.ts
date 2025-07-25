@@ -1,4 +1,5 @@
-import {type CliConfig} from '../config/cli/types.js'
+import {type CliConfig} from '@sanity/cli-core'
+
 import {ensureTrailingSlash} from './ensureTrailingSlash.js'
 import {toInt} from './toInt.js'
 

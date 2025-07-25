@@ -2,16 +2,14 @@ import path from 'node:path'
 
 import {confirm} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
+import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
 import chalk from 'chalk'
 
 import {previewAction} from '../actions/preview/previewAction.js'
-import {SanityCliCommand} from '../BaseCommand.js'
-import {subdebug} from '../debug.js'
-import {isInteractive} from '../util/isInteractive.js'
 
 export const startDebug = subdebug('start')
 
-export class StartCommand extends SanityCliCommand<typeof StartCommand> {
+export class StartCommand extends SanityCommand<typeof StartCommand> {
   static override args = {
     outputDir: Args.directory({description: 'Output directory'}),
   }

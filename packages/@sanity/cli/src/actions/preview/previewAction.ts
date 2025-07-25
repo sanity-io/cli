@@ -1,4 +1,5 @@
-import {type CliConfig} from '../../config/cli/types.js'
+import {type CliConfig} from '@sanity/cli-core'
+
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
 import {startPreviewServer} from '../../server/previewServer.js'
 import {getPreviewServerConfig} from './getPreviewServerConfig.js'

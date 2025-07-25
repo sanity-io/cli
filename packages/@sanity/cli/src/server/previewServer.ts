@@ -2,11 +2,11 @@ import {readFile} from 'node:fs/promises'
 import {createRequire} from 'node:module'
 import path from 'node:path'
 
+import {type UserViteConfig} from '@sanity/cli-core'
 import chalk from 'chalk'
 import {type InlineConfig} from 'vite'
 
 import {extendViteConfigWithUserConfig} from '../actions/build/getViteConfig.js'
-import {type UserViteConfig} from '../config/cli/types.js'
 import {serverDebug} from './serverDebug.js'
 import {sanityBasePathRedirectPlugin} from './vite/plugin-sanity-basepath-redirect.js'
 

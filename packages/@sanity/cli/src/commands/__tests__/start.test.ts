@@ -1,6 +1,10 @@
+import {access, readFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
+import {confirm} from '@inquirer/prompts'
+import {findProjectRoot} from '@sanity/cli-core'
+import {preview} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {testCommand} from '~test/helpers/testCommand.js'
 
@@ -10,22 +14,18 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const rootDir = resolve(__dirname, '../../../../../../')
 const examplesDir = resolve(rootDir, 'examples')
 
-// Mock vite's preview function for integration testing
 vi.mock('vite', () => ({
   preview: vi.fn(),
 }))
 
-// Mock the inquirer confirm function
 vi.mock('@inquirer/prompts', () => ({
   confirm: vi.fn(),
 }))
 
-// Mock isInteractive
-vi.mock('../../util/isInteractive.js', () => ({
+vi.mock('../../../../cli-core/src/util/isInteractive.js', () => ({
   isInteractive: true,
 }))
 
-// Mock fs/promises to control file existence - MUST be synchronous
 vi.mock('node:fs/promises', () => {
   const mockAccess = vi.fn()
   const mockReaddir = vi.fn()
@@ -46,18 +46,15 @@ vi.mock('node:fs/promises', () => {
   }
 })
 
-// Mock findProjectRoot to avoid multiple config file errors
-vi.mock('../../config/findProjectRoot.js', () => ({
+vi.mock('../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn(),
 }))
 
-// Import mocked modules after vi.mock() calls
-const {preview: mockVitePreview} = vi.mocked(await import('vite'))
-const {confirm: mockConfirm} = vi.mocked(await import('@inquirer/prompts'))
-const {findProjectRoot: mockFindProjectRoot} = vi.mocked(
-  await import('../../config/findProjectRoot.js'),
-)
-const {access: mockAccess, readFile: mockReadFile} = vi.mocked(await import('node:fs/promises'))
+const mockVitePreview = vi.mocked(preview)
+const mockConfirm = vi.mocked(confirm)
+const mockFindProjectRoot = vi.mocked(findProjectRoot)
+const mockAccess = vi.mocked(access)
+const mockReadFile = vi.mocked(readFile)
 
 describe('#start', () => {
   const cwd = join(examplesDir, 'basic-studio')
