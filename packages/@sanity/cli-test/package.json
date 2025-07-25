@@ -33,7 +33,7 @@
   ],
   "scripts": {
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
-    "build:types": "tsc --project tsconfig.lib.json && echo 'types built'",
+    "build:types": "tsc --project tsconfig.lib.json",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
