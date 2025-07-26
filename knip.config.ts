@@ -19,19 +19,18 @@ const baseConfig = {
   ],
   workspaces: {
     'examples/*': {
-      entry: ['sanity.cli.ts', 'blueprint.ts', 'sanity.config.ts'],
+      entry: ['sanity.cli.ts', 'sanity.config.ts'],
       project: ['schemaTypes/**/*.{js,jsx,ts,tsx}'],
     },
     'examples/basic-app': {
       entry: ['sanity.cli.ts', './src/App.tsx'],
       project,
     },
-    'examples/worst-case-studio': {
-      entry: ['sanity.cli.ts', 'sanity.config.tsx', 'sanity.config.ts', 'src/defines.ts'],
-      project,
+    'examples/basic-blueprint': {
+      entry: ['blueprint.ts'],
     },
-    'packages/@repo/dev-aliases': {
-      entry: ['dev-aliases.cjs', 'vite.mjs'],
+    'examples/worst-case-studio': {
+      entry: ['sanity.cli.ts', 'sanity.config.tsx', 'src/defines.ts'],
       project,
     },
     'packages/@sanity/cli': {
