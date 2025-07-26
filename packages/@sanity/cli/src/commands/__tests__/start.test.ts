@@ -1,247 +1,250 @@
-import {access, readFile} from 'node:fs/promises'
+import {chmod, readFile, rm, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
-import {confirm} from '@inquirer/prompts'
-import {findProjectRoot} from '@sanity/cli-core'
-import {preview} from 'vite'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-import {testCommand} from '~test/helpers/testCommand.js'
+import {testCommand} from '@sanity/cli-test'
+import {describe, expect, test} from 'vitest'
 
+import {BuildCommand} from '../build.js'
 import {StartCommand} from '../start.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const rootDir = resolve(__dirname, '../../../../../../')
 const examplesDir = resolve(rootDir, 'examples')
 
-vi.mock('vite', () => ({
-  preview: vi.fn(),
-}))
-
-vi.mock('@inquirer/prompts', () => ({
-  confirm: vi.fn(),
-}))
-
-vi.mock('../../../../cli-core/src/util/isInteractive.js', () => ({
-  isInteractive: true,
-}))
-
-vi.mock('node:fs/promises', () => {
-  const mockAccess = vi.fn()
-  const mockReaddir = vi.fn()
-  const mockReadFile = vi.fn()
-  const mockStat = vi.fn()
-
-  return {
-    access: mockAccess,
-    default: {
-      access: mockAccess,
-      readdir: mockReaddir,
-      readFile: mockReadFile,
-      stat: mockStat,
-    },
-    readdir: mockReaddir,
-    readFile: mockReadFile,
-    stat: mockStat,
-  }
-})
-
-vi.mock('../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn(),
-}))
-
-const mockVitePreview = vi.mocked(preview)
-const mockConfirm = vi.mocked(confirm)
-const mockFindProjectRoot = vi.mocked(findProjectRoot)
-const mockAccess = vi.mocked(access)
-const mockReadFile = vi.mocked(readFile)
-
 describe('#start', () => {
-  const cwd = join(examplesDir, 'basic-studio')
-  const originalCwd = process.cwd
-
-  beforeEach(() => {
-    vi.clearAllMocks()
+  test('should start the "basic-studio" example', async () => {
+    const cwd = join(examplesDir, 'basic-studio')
+    // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
-    // Set up default mock implementations
-    mockAccess.mockImplementation((path) => {
-      // Only allow access to .ts files (not .js) to avoid multiple config file errors
-      const pathStr = typeof path === 'string' ? path : path.toString()
-      if (pathStr.endsWith('.js')) {
-        return Promise.reject(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
-      }
-      return Promise.resolve(undefined)
-    })
-
-    mockFindProjectRoot.mockResolvedValue({
-      directory: cwd,
-      path: cwd,
-      type: 'studio',
-    })
-  })
-
-  afterEach(() => {
-    process.cwd = originalCwd
-  })
-
-  test('shows an error for invalid flags', async () => {
-    const {error} = await testCommand(StartCommand, ['--invalid'], {
+    // First build the example
+    await testCommand(BuildCommand, ['--yes'], {
       config: {root: cwd},
     })
 
-    expect(error?.message).toContain('Nonexistent flag: --invalid')
-  })
-
-  test('starts preview server with custom output directory that exists', async () => {
-    mockVitePreview.mockResolvedValue({
-      config: {
-        logger: {
-          info: vi.fn(),
-          warn: vi.fn(),
-        },
-      },
-      httpServer: {
-        close: vi.fn((callback) => callback && callback()),
-      },
-      resolvedUrls: {
-        local: ['http://localhost:3333'],
-        network: ['http://192.168.1.1:3333'],
-      },
-    } as never)
-    mockReadFile.mockResolvedValue('<html><script src="/static/sanity-abc123.js"></script></html>')
-    await testCommand(StartCommand, ['dist'], {
+    const {error, stdout} = await testCommand(StartCommand, [], {
       config: {root: cwd},
     })
 
-    expect(mockVitePreview).toHaveBeenCalledWith({
-      base: '/',
-      build: {
-        outDir: expect.stringContaining('dist'),
-      },
-      configFile: false,
-      mode: 'production',
-      plugins: expect.any(Array),
-      preview: {
-        host: 'localhost',
-        port: 3333,
-        strictPort: true,
-      },
-      root: expect.any(String),
-    })
+    expect(error).toBeUndefined()
+    expect(stdout).toContain(`Sanity Studio using vite@6.3.5 ready in`)
+    expect(stdout).toContain(`ms and running at http://localhost:3333/ (production preview mode)`)
   })
 
-  test('starts preview server with custom host and port flags', async () => {
-    mockVitePreview.mockResolvedValue({
-      config: {
-        logger: {
-          info: vi.fn(),
-          warn: vi.fn(),
-        },
-      },
-      httpServer: {
-        close: vi.fn((callback) => callback && callback()),
-      },
-      resolvedUrls: {
-        local: ['http://localhost:3333'],
-        network: ['http://192.168.1.1:3333'],
-      },
-    } as never)
-    mockReadFile.mockResolvedValue('<html><script src="/static/sanity-abc123.js"></script></html>')
-    await testCommand(StartCommand, ['--host', '0.0.0.0', '--port', '8080'], {
+  test('should start the "basic-app" example', async () => {
+    const cwd = join(examplesDir, 'basic-app')
+    // Mock the process.cwd() to the example directory
+    process.cwd = () => cwd
+
+    // First build the example
+    await testCommand(BuildCommand, ['--yes'], {
       config: {root: cwd},
     })
 
-    expect(mockVitePreview).toHaveBeenCalledWith({
-      base: '/',
-      build: {
-        outDir: expect.stringContaining('dist'),
-      },
-      configFile: false,
-      mode: 'production',
-      plugins: expect.any(Array),
-      preview: {
-        host: '0.0.0.0',
-        port: 8080,
-        strictPort: true,
-      },
-      root: expect.any(String),
-    })
-  })
-
-  test('starts preview server with custom output directory', async () => {
-    // Mock readFile to throw ENOENT error for missing index.html
-    mockReadFile.mockRejectedValueOnce(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
-
-    const {stdout} = await testCommand(StartCommand, ['non-existent-build-directory'], {
+    const {error, stdout} = await testCommand(StartCommand, ['--port', '3334'], {
       config: {root: cwd},
     })
 
-    // For a custom directory that doesn't exist, expect BUILD_NOT_FOUND behavior
-    expect(stdout).toContain('Could not find a production build')
+    expect(error).toBeUndefined()
+    expect(stdout).toContain(`Sanity application using vite@6.3.5 ready in`)
+    expect(stdout).toContain(`ms and running at http://localhost:3334/ (production preview mode)`)
   })
 
-  test('handles BUILD_NOT_FOUND error when no index.html exists', async () => {
-    // Mock readFile to throw ENOENT error for missing index.html
-    mockReadFile.mockRejectedValueOnce(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
-    mockConfirm.mockResolvedValue(true)
+  test('should throw an error if the basic-studio example has not been built', async () => {
+    const cwd = join(examplesDir, 'basic-studio')
+    // Mock the process.cwd() to the example directory
+    process.cwd = () => cwd
 
-    const {stdout} = await testCommand(StartCommand, ['non-existent-build-directory'], {
+    // Remove the dist folder
+    await rm(join(cwd, 'dist'), {recursive: true})
+
+    const {error, stdout} = await testCommand(StartCommand, [], {
       config: {root: cwd},
     })
 
-    expect(stdout).toContain('Could not find a production build')
-    expect(stdout).toContain('Starting development server...')
-    expect(mockConfirm).toHaveBeenCalledWith({
-      message: 'Do you want to start a development server instead?',
-    })
-  })
-
-  test('handles BUILD_NOT_FOUND error and user declines dev server', async () => {
-    // Mock readFile to throw ENOENT error for missing index.html
-    mockReadFile.mockRejectedValueOnce(Object.assign(new Error('ENOENT'), {code: 'ENOENT'}))
-    mockConfirm.mockResolvedValue(false)
-
-    const {error} = await testCommand(StartCommand, ['non-existent-build-directory'], {
-      config: {root: cwd},
-    })
-
-    expect(error?.message).toBe('Failed to start preview server')
+    expect(error).toBeDefined()
+    expect(error?.message).toContain('Failed to start preview server')
     expect(error?.oclif?.exit).toBe(1)
-    expect(mockConfirm).toHaveBeenCalledWith({
-      message: 'Do you want to start a development server instead?',
-    })
+    expect(stdout).toContain(`Could not find a production build in the '${cwd}/dist' directory.`)
+    expect(stdout).toContain(
+      `Try building your studio with 'sanity build' before starting the preview server.`,
+    )
   })
 
-  test('handles vite preview server startup errors', async () => {
-    const serverError = new Error('EADDRINUSE: Port already in use') as Error & {code: string}
-    serverError.code = 'EADDRINUSE'
-    mockVitePreview.mockRejectedValue(serverError)
-    mockReadFile.mockResolvedValue('<html><script src="/static/sanity-abc123.js"></script></html>')
+  test('should throw an error if the basic-app example has not been built', async () => {
+    const cwd = join(examplesDir, 'basic-app')
+    // Mock the process.cwd() to the example directory
+    process.cwd = () => cwd
 
-    const {error} = await testCommand(StartCommand, [], {
+    // Remove the dist folder
+    await rm(join(cwd, 'dist'), {recursive: true})
+
+    const {error, stdout} = await testCommand(StartCommand, [], {
       config: {root: cwd},
     })
 
-    expect(error?.message).toContain('Port number is already in use')
-    expect(mockVitePreview).toHaveBeenCalled()
-  })
-
-  test('handles generic vite preview server errors', async () => {
-    // Test that generic errors from vite preview are properly propagated
-    // (as opposed to BUILD_NOT_FOUND errors which are handled specially)
-    mockReadFile.mockResolvedValue('<html><script src="/static/sanity-abc123.js"></script></html>')
-
-    const genericError = new Error('Generic server error')
-    mockVitePreview.mockRejectedValue(genericError)
-
-    const {error} = await testCommand(StartCommand, [], {
-      config: {root: cwd},
-    })
-
-    // Generic errors should be re-thrown by the command
-    expect(error?.message).toBe('Generic server error')
+    expect(error).toBeDefined()
+    expect(error?.message).toContain('Failed to start preview server')
     expect(error?.oclif?.exit).toBe(1)
-    expect(mockVitePreview).toHaveBeenCalled()
+    expect(stdout).toContain(`Could not find a production build in the '${cwd}/dist' directory.`)
+    expect(stdout).toContain(
+      `Try building your application with 'sanity build' before starting the preview server.`,
+    )
+  })
+
+  test('should throw an error if the basepath cannot be resolved from the index.html file', async () => {
+    const cwd = join(examplesDir, 'basic-studio')
+    // Mock the process.cwd() to the example directory
+    process.cwd = () => cwd
+
+    await testCommand(BuildCommand, ['--yes'], {
+      config: {root: cwd},
+    })
+
+    // Replace the script tag in the index.html file with a script tag that does not have a src attribute
+    const indexPath = join(cwd, 'dist', 'index.html')
+    const index = await readFile(indexPath, 'utf8')
+
+    // Find the script tag that matches <script src="/static/sanity-D_-mPegc.js" type="module"></script>
+    const scriptTag = index.match(/<script src="\/static\/sanity-.*\.js" type="module"><\/script>/)
+    const newIndex = index.replace(
+      scriptTag?.[0] || '',
+      '<script src="/custom-base-path/static/sanity-a3cc3d86.js" type="module"></script>',
+    )
+
+    await writeFile(indexPath, newIndex)
+
+    const {error, stdout} = await testCommand(StartCommand, ['--port', '3335'], {
+      config: {root: cwd},
+    })
+
+    expect(error).toBeUndefined()
+    expect(stdout).toContain(`Using resolved base path from static build: /custom-base-path`)
+    expect(stdout).toContain(`Sanity Studio using vite@6.3.5 ready in`)
+    expect(stdout).toContain(
+      `ms and running at http://localhost:3335/custom-base-path (production preview mode)`,
+    )
+  })
+
+  test('should throw an error if the basepath cannot be resolved from the index.html file', async () => {
+    const cwd = join(examplesDir, 'basic-studio')
+    // Mock the process.cwd() to the example directory
+    process.cwd = () => cwd
+
+    await testCommand(BuildCommand, ['--yes'], {
+      config: {root: cwd},
+    })
+
+    // Replace the script tag in the index.html file with a script tag that does not have a src attribute
+    const indexPath = join(cwd, 'dist', 'index.html')
+    const index = await readFile(indexPath, 'utf8')
+
+    // Find the script tag that matches <script src="/static/sanity-D_-mPegc.js" type="module"></script>
+    const scriptTag = index.match(/<script src="\/static\/sanity-.*\.js" type="module"><\/script>/)
+    const newIndex = index.replace(
+      scriptTag?.[0] || '',
+      '<script src="/sanity-a3cc3d86.js" type="module"></script>',
+    )
+
+    await writeFile(indexPath, newIndex)
+
+    const {error, stderr, stdout} = await testCommand(StartCommand, ['--port', '3336'], {
+      config: {root: cwd},
+    })
+
+    expect(error).toBeUndefined()
+    expect(stderr).toContain(`Could not determine base path from index.html, using "/" as default`)
+    expect(stdout).toContain(`Sanity Studio using vite@6.3.5 ready in`)
+    expect(stdout).toContain(`ms and running at http://localhost:3336/ (production preview mode)`)
+  })
+
+  test('should throw an error if the index.html file is not found', async () => {
+    const cwd = join(examplesDir, 'basic-studio')
+    // Mock the process.cwd() to the example directory
+    process.cwd = () => cwd
+
+    await testCommand(BuildCommand, ['--yes'], {
+      config: {root: cwd},
+    })
+
+    // Make the index.html not readable
+    await chmod(join(cwd, 'dist', 'index.html'), 0)
+
+    const {error} = await testCommand(StartCommand, ['--port', '3337'], {
+      config: {root: cwd},
+    })
+
+    expect(error).toBeDefined()
+    expect(error?.message).toContain(
+      'The studio server does not have access to listen to given port - do you have access to listen to the given host (localhost)',
+    )
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('should throw an error if port is already in use', async () => {
+    const cwd = join(examplesDir, 'basic-studio')
+    // Mock the process.cwd() to the example directory
+    process.cwd = () => cwd
+
+    // First build the example
+    await testCommand(BuildCommand, ['--yes'], {
+      config: {root: cwd},
+    })
+
+    await testCommand(StartCommand, ['--port', '3333'], {
+      config: {root: cwd},
+    })
+
+    const {error} = await testCommand(StartCommand, ['--port', '3333'], {
+      config: {root: cwd},
+    })
+
+    expect(error).toBeDefined()
+    expect(error?.message).toContain('Port 3333 is already in use')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('should allow using vite config from sanity.cli.ts', async () => {
+    const cwd = join(examplesDir, 'basic-app')
+    // Mock the process.cwd() to the example directory
+    process.cwd = () => cwd
+
+    const existingSanityCli = await readFile(join(cwd, 'sanity.cli.ts'), 'utf8')
+
+    // Create a vite.config.ts file
+    await writeFile(
+      join(cwd, 'sanity.cli.ts'),
+      `
+      import {defineCliConfig} from '@sanity/cli'
+
+      export default defineCliConfig({
+        app: {
+          entry: './src/App.tsx',
+          organizationId: 'organizationId',
+        },
+        vite: {
+          preview: {
+            port: 1335,
+          },
+        },
+      })
+    `,
+    )
+
+    await testCommand(BuildCommand, ['--yes'], {
+      config: {root: cwd},
+    })
+
+    const {stdout} = await testCommand(StartCommand, [], {
+      config: {root: cwd},
+    })
+
+    expect(stdout).toContain(`ms and running at http://localhost:1335/ (production preview mode)`)
+
+    await writeFile(join(cwd, 'sanity.cli.ts'), existingSanityCli)
+
+    // Clear the dist folder
+    await rm(join(cwd, 'dist'), {recursive: true})
   })
 })
