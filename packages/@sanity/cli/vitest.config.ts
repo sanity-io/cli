@@ -5,6 +5,7 @@ export default defineConfig({
     alias: {
       '@sanity/cli-core': new URL('node_modules/@sanity/cli-core/src/index.ts', import.meta.url)
         .pathname,
+      '~test/helpers': new URL('test/helpers', import.meta.url).pathname,
     },
     coverage: {
       provider: 'istanbul',
@@ -15,7 +16,7 @@ export default defineConfig({
     },
     environment: 'node',
     globals: false,
-    globalSetup: ['test/workerBuild.ts'],
+    globalSetup: ['test/workerBuild.ts', 'test/testFixtures.ts'],
     setupFiles: ['test/setup.ts'],
   },
 })

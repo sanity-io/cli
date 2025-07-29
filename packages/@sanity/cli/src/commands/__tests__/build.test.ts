@@ -1,16 +1,12 @@
 import {readdir, readFile} from 'node:fs/promises'
-import {join, resolve} from 'node:path'
-import {fileURLToPath} from 'node:url'
+import {join} from 'node:path'
 
 import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
+import {testExample} from '~test/helpers/testExample.js'
 
 import {BuildCommand} from '../build.js'
-
-const __dirname = fileURLToPath(new URL('.', import.meta.url))
-const rootDir = resolve(__dirname, '../../../../../../')
-const examplesDir = resolve(rootDir, 'examples')
 
 describe('#build', () => {
   test('help text is correct', async () => {
@@ -52,7 +48,7 @@ describe('#build', () => {
   })
 
   test('should build the "basic-studio" example', async () => {
-    const cwd = join(examplesDir, 'basic-studio')
+    const cwd = await testExample('basic-studio')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -73,7 +69,7 @@ describe('#build', () => {
   })
 
   test('should build the "basic-app" example', async () => {
-    const cwd = join(examplesDir, 'basic-app')
+    const cwd = await testExample('basic-app')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -92,7 +88,7 @@ describe('#build', () => {
   })
 
   test('should build the "basic-app" example with auto-updates', async () => {
-    const cwd = join(examplesDir, 'basic-app')
+    const cwd = await testExample('basic-app')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
