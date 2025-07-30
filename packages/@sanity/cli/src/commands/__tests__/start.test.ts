@@ -28,7 +28,8 @@ describe('#start', () => {
     })
 
     expect(error).toBeUndefined()
-    expect(stdout).toContain(`Sanity Studio using vite@6.3.5 ready in`)
+    expect(stdout).toContain(`Sanity Studio using vite@`)
+    expect(stdout).toContain(`ready in`)
     expect(stdout).toContain(`ms and running at http://localhost:3333/ (production preview mode)`)
   })
 
@@ -47,7 +48,8 @@ describe('#start', () => {
     })
 
     expect(error).toBeUndefined()
-    expect(stdout).toContain(`Sanity application using vite@6.3.5 ready in`)
+    expect(stdout).toContain(`Sanity application using vite@`)
+    expect(stdout).toContain(`ready in`)
     expect(stdout).toContain(`ms and running at http://localhost:3334/ (production preview mode)`)
   })
 
@@ -121,7 +123,8 @@ describe('#start', () => {
 
     expect(error).toBeUndefined()
     expect(stdout).toContain(`Using resolved base path from static build: /custom-base-path`)
-    expect(stdout).toContain(`Sanity Studio using vite@6.3.5 ready in`)
+    expect(stdout).toContain(`Sanity Studio using vite@`)
+    expect(stdout).toContain(`ready in`)
     expect(stdout).toContain(
       `ms and running at http://localhost:3335/custom-base-path (production preview mode)`,
     )
@@ -155,7 +158,8 @@ describe('#start', () => {
 
     expect(error).toBeUndefined()
     expect(stderr).toContain(`Could not determine base path from index.html, using "/" as default`)
-    expect(stdout).toContain(`Sanity Studio using vite@6.3.5 ready in`)
+    expect(stdout).toContain(`Sanity Studio using vite@`)
+    expect(stdout).toContain(`ready in`)
     expect(stdout).toContain(`ms and running at http://localhost:3336/ (production preview mode)`)
   })
 

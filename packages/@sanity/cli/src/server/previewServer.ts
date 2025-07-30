@@ -1,5 +1,4 @@
 import {readFile} from 'node:fs/promises'
-import {createRequire} from 'node:module'
 import path from 'node:path'
 
 import {type UserViteConfig} from '@sanity/cli-core'
@@ -7,11 +6,9 @@ import chalk from 'chalk'
 import {type InlineConfig} from 'vite'
 
 import {extendViteConfigWithUserConfig} from '../actions/build/getViteConfig.js'
+import {readModuleVersion} from '../util/readModuleVersion.js'
 import {serverDebug} from './serverDebug.js'
 import {sanityBasePathRedirectPlugin} from './vite/plugin-sanity-basepath-redirect.js'
-
-const require = createRequire(import.meta.url)
-const {version} = require('vite/package.json')
 
 const debug = serverDebug.extend('preview')
 
@@ -96,9 +93,11 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
 
   const startupDuration = Date.now() - startTime
 
+  const viteVersion = await readModuleVersion(import.meta.url, 'vite')
+
   info(
     `Sanity ${isApp ? 'application' : 'Studio'} ` +
-      `using ${chalk.cyan(`vite@${version}`)} ` +
+      `using ${chalk.cyan(`vite@${viteVersion}`)} ` +
       `ready in ${chalk.cyan(`${Math.ceil(startupDuration)}ms`)} ` +
       `and running at ${chalk.cyan(url)} (production preview mode)`,
   )
