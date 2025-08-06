@@ -45,6 +45,7 @@
   "dependencies": {
     "@oclif/core": "^4.3.0",
     "@sanity/client": "^7.5.0",
+    "configstore": "^7.0.0",
     "debug": "^4.4.0",
     "get-tsconfig": "^4.10.1",
     "import-meta-resolve": "^4.1.0",
@@ -62,6 +63,7 @@
     "@repo/tsconfig": "workspace:*",
     "@swc/cli": "^0.7.8",
     "@swc/core": "^1.13.2",
+    "@types/configstore": "^6.0.2",
     "@types/debug": "^4.1.12",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20.17.23",

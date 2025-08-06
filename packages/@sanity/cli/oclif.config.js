@@ -3,6 +3,9 @@ export default {
   commands: './dist/commands',
   dirname: 'sanity',
   helpClass: './dist/SanityHelp',
+  hooks: {
+    prerun: ['./dist/hooks/prerun/setupTelemetry.js'],
+  },
   plugins: ['@oclif/plugin-help', '@oclif/plugin-not-found'],
   topicSeparator: ' ',
 }
