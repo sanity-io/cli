@@ -1,4 +1,4 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig, getSanityEnvVar} from '@sanity/cli-core'
 
 import {ensureTrailingSlash} from './ensureTrailingSlash.js'
 import {toInt} from './toInt.js'
@@ -37,21 +37,23 @@ export function getSharedServerConfig({
   workDir,
 }: GetSharedServerConfigOptions): GetSharedServerConfigResult {
   // Order of preference: CLI flags, environment variables, user build config, default config
-  const env = process.env
+  const isApp = cliConfig && 'app' in cliConfig
 
   const httpHost =
-    flags.host || env.SANITY_STUDIO_SERVER_HOSTNAME || cliConfig?.server?.hostname || 'localhost'
+    flags.host ||
+    getSanityEnvVar('SERVER_HOSTNAME', isApp ?? false) ||
+    cliConfig?.server?.hostname ||
+    'localhost'
 
   const httpPort = toInt(
-    flags.port || env.SANITY_STUDIO_SERVER_PORT || cliConfig?.server?.port,
+    flags.port || getSanityEnvVar('SERVER_PORT', isApp ?? false) || cliConfig?.server?.port,
     3333,
   )
 
   const basePath = ensureTrailingSlash(
-    env.SANITY_STUDIO_BASEPATH ?? (cliConfig?.project?.basePath || '/'),
+    getSanityEnvVar('BASEPATH', isApp ?? false) ?? (cliConfig?.project?.basePath || '/'),
   )
 
-  const isApp = cliConfig && 'app' in cliConfig
   const entry = cliConfig?.app?.entry
 
   return {
