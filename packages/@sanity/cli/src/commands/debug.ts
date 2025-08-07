@@ -62,7 +62,6 @@ export class Debug extends SanityCommand<typeof Debug> {
         printKeyValue({
           'Display name': project.displayName,
           ID: project.id,
-          'Studio URL': project.studioHostname,
         })
       }
 

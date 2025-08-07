@@ -1,4 +1,9 @@
-import  {type CliConfig,getCliToken, getConfig as getCliUserConfig, type ProjectRootResult} from '@sanity/cli-core'
+import {
+  type CliConfig,
+  getCliToken,
+  getConfig as getCliUserConfig,
+  type ProjectRootResult,
+} from '@sanity/cli-core'
 import {type SanityClient} from '@sanity/client'
 
 import {findSanityModulesVersions} from '../versions/findSanityModulesVersions.js'
@@ -25,6 +30,16 @@ interface ProjectInfo {
   studioHostname?: string | null
 }
 
+interface ProjectAPIResponse {
+  displayName: string
+  id: string
+  members: {
+    id: string
+    roles: {name: string}[]
+  }[]
+  studioHost: string
+}
+
 interface AuthInfo {
   authToken: string
   hasToken: boolean
@@ -32,7 +47,7 @@ interface AuthInfo {
 }
 
 interface GlobalConfig {
-  [key: string]: any
+  [key: string]: unknown
 
   authToken?: string
   telemetryConsent?: {
@@ -167,7 +182,7 @@ async function gatherProjectInfo(
   }
 
   try {
-    const projectInfo = await client.request<any>({
+    const projectInfo = await client.request<ProjectAPIResponse>({
       url: `/projects/${projectId}`,
     })
 
@@ -176,15 +191,12 @@ async function gatherProjectInfo(
     }
 
     const userId = user instanceof Error || !user ? null : user.id
-    const host = projectInfo.studioHost
-    const member = (projectInfo.members || []).find((member: any) => member.id === userId)
-    const hostname = host && `https://${host}.sanity.studio/`
+    const member = (projectInfo.members || []).find((member) => member.id === userId)
 
     return {
       displayName: projectInfo.displayName,
       id: projectId,
-      studioHostname: hostname,
-      userRoles: member && member.roles ? member.roles.map((role: any) => role.name) : ['<none>'],
+      userRoles: member && member.roles ? member.roles.map((role) => role.name) : ['<none>'],
     }
   } catch (error) {
     return error instanceof Error ? error : new Error('Failed to fetch project info')

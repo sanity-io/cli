@@ -345,7 +345,6 @@ describe('#debug', () => {
     expect(stdout).toContain('Project:')
     expect(stdout).toContain("Display name: 'Test Project'")
     expect(stdout).toContain("ID: 'project123'")
-    expect(stdout).toContain("Studio URL: 'https://test-project.sanity.studio/'")
     expect(stdout).toContain("Roles: [ 'administrator' ]")
   })
 
