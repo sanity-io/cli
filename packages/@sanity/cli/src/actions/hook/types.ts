@@ -1,6 +1,6 @@
 export type Hook = GroqHook | LegacyHook
 
-export interface GroqHook {
+interface GroqHook {
   apiVersion: string
   createdAt: string
   createdByUserId: string
@@ -25,7 +25,7 @@ export interface GroqHook {
   url: string
 }
 
-export interface LegacyHook {
+interface LegacyHook {
   createdAt: string
   createdByUserId: string
   dataset: string
@@ -38,46 +38,4 @@ export interface LegacyHook {
   projectId: string
   type: 'transaction'
   url: string
-}
-
-export type HookMessage = GroqHookMessage | LegacyHookMessage
-
-export interface GroqHookMessage {
-  createdAt: string
-  dataset: string
-  failureCount: number
-  id: string
-  payload: string
-  projectId: string
-  resultCode: number | null
-  status: 'failure' | 'queued' | 'sending' | 'success'
-}
-
-export interface LegacyHookMessage {
-  createdAt: string
-  dataset: string
-  deletedAt: string | null
-  failureCount: number
-  hookId: string
-  id: string
-  payload: string
-  projectId: string
-  resultCode: number | null
-  status: 'failure' | 'queued' | 'sending' | 'success'
-  updatedAt: string | null
-}
-
-export interface DeliveryAttempt {
-  createdAt: string
-  duration: number | null
-  failureReason: string
-  hookId: string
-  id: string
-  inProgress: boolean
-  isFailure: boolean
-  messageId: string
-  projectId: string
-  resultBody: string
-  resultCode: number
-  updatedAt: string | null
 }
