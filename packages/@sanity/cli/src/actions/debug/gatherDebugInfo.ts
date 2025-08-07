@@ -8,65 +8,15 @@ import {type SanityClient} from '@sanity/client'
 
 import {findSanityModulesVersions} from '../versions/findSanityModulesVersions.js'
 import {type ModuleVersionResult} from '../versions/types.js'
-
-interface DebugInfoOptions {
-  cliConfig: CliConfig
-  client: SanityClient
-  includeSecrets: boolean
-  projectRoot: ProjectRootResult
-}
-
-interface UserInfo {
-  email: string
-  id: string
-  name: string
-}
-
-interface ProjectInfo {
-  displayName: string
-  id: string
-  userRoles: string[]
-
-  studioHostname?: string | null
-}
-
-interface ProjectAPIResponse {
-  displayName: string
-  id: string
-  members: {
-    id: string
-    roles: {name: string}[]
-  }[]
-  studioHost: string
-}
-
-interface AuthInfo {
-  authToken: string
-  hasToken: boolean
-  userType: string
-}
-
-interface GlobalConfig {
-  [key: string]: unknown
-
-  authToken?: string
-  telemetryConsent?: {
-    updatedAt?: number
-    value: {
-      status: string
-      type: string
-    }
-  }
-}
-
-interface DebugInfo {
-  auth: AuthInfo
-  globalConfig: GlobalConfig
-  project: Error | ProjectInfo | null
-  projectConfig: CliConfig | Error
-  user: Error | UserInfo | null
-  versions: ModuleVersionResult[]
-}
+import {
+  type AuthInfo,
+  type DebugInfo,
+  type DebugInfoOptions,
+  type GlobalConfig,
+  type ProjectAPIResponse,
+  type ProjectInfo,
+  type UserInfo,
+} from './types.js'
 
 export async function gatherDebugInfo(options: DebugInfoOptions): Promise<DebugInfo> {
   const {cliConfig, client, includeSecrets, projectRoot} = options
