@@ -7,12 +7,12 @@ alwaysApply: false
 # Commands
 
 - pnpm test - runs unit tests
-- pnpm test --coverage - runs unit tests that genereates coverage reports at the root in `coverage` folder
+- pnpm test --coverage - runs unit tests that generates coverage reports at the root in `coverage` folder
 - pnpm check:types - checks typescript types
 - pnpm check:lint - checks for formatting and eslint issues.
-- pnpm depcheck - Checks for any extra depedency, files or unessary exports
+- pnpm depcheck - Checks for any extra dependency, files or unnecessary exports
 
 # Workflow
 
-- Be supre to typecheck, lint, depcheck and run tests when you are done.
-- Testing coverage should be maximized. Prefer running tests with coverage and the goal is to achive maximum testing coverage for any new code added. The way to run test is `pnpm test --coverage` at the root and the coverage report is generated in html at the coverage folder at the root. Look for the following pattern in the coverage directory. <filename>.<ext>.html
+- Be sure to typecheck, lint, depcheck and run tests when you are done.
+- Testing coverage should be maximized. Prefer running tests with coverage and the goal is to achieve maximum testing coverage for any new code added. The way to run test is `pnpm test --coverage` at the root and the coverage report is generated in html at the coverage folder at the root. Look for the following pattern in the coverage directory. <filename>.<ext>.html
