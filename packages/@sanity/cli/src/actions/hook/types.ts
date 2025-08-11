@@ -39,3 +39,20 @@ interface LegacyHook {
   type: 'transaction'
   url: string
 }
+
+export interface HookMessage {
+  createdAt: string
+  hookId: string
+  id: string
+  projectId: string
+}
+
+export interface DeliveryAttempt {
+  createdAt: string
+  id: string
+  messageId: string
+  status: 'failure' | 'success'
+
+  error?: string
+  statusCode?: number
+}
