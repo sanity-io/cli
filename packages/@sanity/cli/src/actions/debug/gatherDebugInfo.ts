@@ -12,8 +12,6 @@ import {
   type AuthInfo,
   type DebugInfo,
   type DebugInfoOptions,
-  type GlobalConfig,
-  type ProjectAPIResponse,
   type ProjectInfo,
   type UserInfo,
 } from './types.js'
@@ -54,7 +52,7 @@ async function gatherAuthInfo(includeSecrets: boolean): Promise<AuthInfo> {
   }
 }
 
-async function gatherGlobalConfig(): Promise<GlobalConfig> {
+async function gatherGlobalConfig(): Promise<Record<string, unknown>> {
   try {
     const [authToken, telemetryConsent] = await Promise.all([
       getCliUserConfig('authToken'),
@@ -102,9 +100,6 @@ async function gatherUserInfo(
 
   try {
     const userInfo = await client.users.getById('me')
-    if (!userInfo) {
-      return new Error('Token expired or invalid')
-    }
 
     return {
       email: userInfo.email,
@@ -132,9 +127,7 @@ async function gatherProjectInfo(
   }
 
   try {
-    const projectInfo = await client.request<ProjectAPIResponse>({
-      url: `/projects/${projectId}`,
-    })
+    const projectInfo = await client.projects.getById(projectId)
 
     if (!projectInfo) {
       return new Error(`Project specified in configuration (${projectId}) does not exist in API`)
@@ -146,6 +139,7 @@ async function gatherProjectInfo(
     return {
       displayName: projectInfo.displayName,
       id: projectId,
+      // @ts-expect-error - Incorrect type definition in @sanity/client
       userRoles: member && member.roles ? member.roles.map((role) => role.name) : ['<none>'],
     }
   } catch (error) {

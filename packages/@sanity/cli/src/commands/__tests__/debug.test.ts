@@ -558,38 +558,6 @@ describe('#debug', () => {
     )
   })
 
-  test('handles null user response and shows error message', async () => {
-    // Mock authentication
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-
-    // Mock project configuration
-    vi.mocked(findProjectRoot).mockResolvedValue({
-      directory: '/test/project',
-      path: '/test/project/sanity.cli.ts',
-      type: 'studio',
-    })
-    vi.mocked(getCliConfig).mockResolvedValue({
-      api: {
-        projectId: 'project123',
-      },
-    })
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    // Mock the /me API endpoint to return null
-    mockApi({apiVersion: 'v2025-08-06', uri: '/users/me'}).reply(200, (_uri, _requestBody) => {
-      return null
-    })
-
-    const {stdout} = await testCommand(Debug, [])
-
-    expect(stdout).toContain('User:')
-    expect(stdout).toContain('Token expired or invalid')
-  })
-
   test('handles project API error and continues gracefully', async () => {
     // Mock authentication
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')

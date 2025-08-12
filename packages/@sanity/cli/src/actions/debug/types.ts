@@ -20,18 +20,6 @@ export interface ProjectInfo {
   displayName: string
   id: string
   userRoles: string[]
-
-  studioHostname?: string | null
-}
-
-export interface ProjectAPIResponse {
-  displayName: string
-  id: string
-  members: {
-    id: string
-    roles: {name: string}[]
-  }[]
-  studioHost: string
 }
 
 export interface AuthInfo {
@@ -40,22 +28,9 @@ export interface AuthInfo {
   userType: string
 }
 
-export interface GlobalConfig {
-  [key: string]: unknown
-
-  authToken?: string
-  telemetryConsent?: {
-    updatedAt?: number
-    value: {
-      status: string
-      type: string
-    }
-  }
-}
-
 export interface DebugInfo {
   auth: AuthInfo
-  globalConfig: GlobalConfig
+  globalConfig: Record<string, unknown>
   project: Error | ProjectInfo | null
   projectConfig: CliConfig | Error
   user: Error | UserInfo | null
