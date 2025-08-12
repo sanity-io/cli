@@ -31,12 +31,16 @@ export async function setup() {
     await writeFile(packageJsonPath, JSON.stringify(packageJsonData, null, 2))
 
     // Run pnpm install --no-lockfile in the temp directory
-    const {stderr} = await exec(`pnpm install --prefer-offline --no-lockfile`, {
-      cwd: toPath,
-    })
-    if (stderr) {
-      console.error(stderr)
-      throw new Error(`Error installing dependencies in ${toPath}`)
+    try {
+      await exec(`pnpm install --prefer-offline --no-lockfile`, {
+        cwd: toPath,
+      })
+    } catch (error) {
+      const execError = error as {message: string; stderr?: string}
+      console.error(execError.stderr || execError.message)
+      throw new Error(
+        `Error installing dependencies in ${toPath}: ${execError.stderr || execError.message}`,
+      )
     }
   }
 
