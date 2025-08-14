@@ -1,6 +1,5 @@
 ---
 description: This is a generic project rule applied to all files
-globs:
 alwaysApply: false
 ---
 
