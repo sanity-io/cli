@@ -1,4 +1,4 @@
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {getSanityUrl, SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
 import {HOOK_API_VERSION} from '../../actions/hook/constants.js'
@@ -36,7 +36,7 @@ export class Create extends SanityCommand<typeof Create> {
     }
 
     const organizationId = projectInfo.organizationId || 'personal'
-    const manageUrl = `https://www.sanity.io/organizations/${organizationId}/project/${projectId}/api/webhooks/new`
+    const manageUrl = `${getSanityUrl()}/organizations/${organizationId}/project/${projectId}/api/webhooks/new`
 
     this.log(`Opening ${manageUrl}`)
 
