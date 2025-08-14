@@ -35,7 +35,6 @@ export async function setConsent({env, status}: SetConsentOptions): Promise<SetC
   // Check current consent status first
   const currentConsent = await resolveConsent({env})
 
-  console.log('isCi', isCi())
   // Handle various blocking conditions
   if (isCi()) {
     return {

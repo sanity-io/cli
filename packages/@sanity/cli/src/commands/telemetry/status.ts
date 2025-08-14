@@ -24,7 +24,6 @@ export class Status extends SanityCommand<typeof Status> {
 
     const consentInfo = await resolveConsent({env: process.env})
 
-    console.log('consentInfo', consentInfo)
     const statusMessage = getStatusMessage(consentInfo)
     const learnMoreMessage = getLearnMoreMessage(consentInfo.status)
 
