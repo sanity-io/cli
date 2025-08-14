@@ -1,36 +1,39 @@
 import {runCommand} from '@oclif/test'
-import {getCliToken, getUserConfig} from '@sanity/cli-core'
+import {getCliToken, isCi} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {fetchTelemetryConsent} from '../../../actions/telemetry/fetchTelemetryConsent.js'
 import {Disable} from '../disable.js'
 
 vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn(),
 }))
 
-const mockGetCliToken = vi.mocked(getCliToken)
+vi.mock('../../../../../cli-core/src/util/isCi.js', () => ({
+  isCi: vi.fn(() => false),
+}))
 
-describe('telemetry disable', () => {
+vi.mock('../../../actions/telemetry/fetchTelemetryConsent.js', () => ({
+  fetchTelemetryConsent: vi.fn(),
+}))
+
+const mockGetCliToken = vi.mocked(getCliToken)
+const mockFetchTelemetryConsent = vi.mocked(fetchTelemetryConsent)
+const mockIsCi = vi.mocked(isCi)
+
+describe('#disable', () => {
   const originalEnv = process.env
 
   beforeEach(() => {
     // Reset environment to clean state
     process.env = {...originalEnv}
     vi.clearAllMocks()
-
-    // Clear telemetry consent cache to ensure fresh API calls
-    const userConfig = getUserConfig()
-    userConfig.delete('telemetryConsent')
   })
 
   afterEach(() => {
     // Restore original environment
     process.env = originalEnv
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('help text is correct', async () => {
@@ -59,11 +62,7 @@ describe('telemetry disable', () => {
     mockGetCliToken.mockResolvedValue('test-token')
 
     // Mock current status as granted
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'granted'})
+    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'granted'})
 
     // Mock disable API call
     mockApi({
@@ -73,11 +72,7 @@ describe('telemetry disable', () => {
     }).reply(200)
 
     // Mock updated status fetch
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'denied'})
+    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'denied'})
 
     const {stdout} = await testCommand(Disable, [])
 
@@ -93,11 +88,7 @@ describe('telemetry disable', () => {
     mockGetCliToken.mockResolvedValue('test-token')
 
     // Mock current status as already denied
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'denied'})
+    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'denied'})
 
     const {stdout} = await testCommand(Disable, [])
 
@@ -118,6 +109,17 @@ describe('telemetry disable', () => {
     )
   })
 
+  test('shows cannot set message in CI environment', async () => {
+    mockIsCi.mockReturnValue(true)
+
+    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'granted'})
+
+    const {stdout} = await testCommand(Disable, [])
+
+    expect(stdout).toContain('Cannot set telemetry consent in CI environment')
+    mockIsCi.mockRestore()
+  })
+
   test('shows login required message when user is not authenticated', async () => {
     // User is not authenticated
     mockGetCliToken.mockResolvedValue(undefined)
@@ -132,11 +134,7 @@ describe('telemetry disable', () => {
     mockGetCliToken.mockResolvedValue('test-token')
 
     // Mock current status as granted
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'granted'})
+    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'granted'})
 
     // Mock disable API call to fail with 403
     mockApi({
@@ -157,11 +155,7 @@ describe('telemetry disable', () => {
     mockGetCliToken.mockResolvedValue('test-token')
 
     // Mock current status as granted
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'granted'})
+    mockFetchTelemetryConsent.mockResolvedValueOnce({status: 'granted'})
 
     // Mock disable API call to fail with 500
     mockApi({
@@ -175,23 +169,5 @@ describe('telemetry disable', () => {
     expect(result.error).toMatchObject({
       message: 'Failed to disable telemetry: Internal server error',
     })
-  })
-
-  test('shows cannot set message in CI environment', async () => {
-    // Mock isCi as true for this test
-    vi.doMock('../../../../../cli-core/src/util/isCi.js', () => ({
-      isCi: true,
-    }))
-
-    // Re-import modules to use the mocked isCi value
-    vi.resetModules()
-    const {setConsent} = await import('../../../actions/telemetry/setConsent.js')
-
-    const result = await setConsent({
-      env: process.env,
-      status: 'denied',
-    })
-
-    expect(result.message).toContain('Cannot set telemetry consent in CI environment')
   })
 })

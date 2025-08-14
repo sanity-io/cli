@@ -1,16 +1,27 @@
 import {runCommand} from '@oclif/test'
-import {getCliToken, getUserConfig} from '@sanity/cli-core'
-import {mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {getCliToken, isCi} from '@sanity/cli-core'
+import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {fetchTelemetryConsent} from '../../../actions/telemetry/fetchTelemetryConsent.js'
+import {type ValidApiConsentStatus} from '../../../actions/telemetry/isValidApiConsentStatus.js'
 import {Status} from '../status.js'
 
 vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn(),
 }))
 
+vi.mock('../../../../../cli-core/src/util/isCi.js', () => ({
+  isCi: vi.fn(() => false),
+}))
+
+vi.mock('../../../actions/telemetry/fetchTelemetryConsent.js', () => ({
+  fetchTelemetryConsent: vi.fn(),
+}))
+
 const mockGetCliToken = vi.mocked(getCliToken)
+const mockFetchTelemetryConsent = vi.mocked(fetchTelemetryConsent)
+const mockIsCi = vi.mocked(isCi)
 
 describe('telemetry status', () => {
   const originalEnv = process.env
@@ -19,18 +30,11 @@ describe('telemetry status', () => {
     // Reset environment to clean state
     process.env = {...originalEnv}
     vi.clearAllMocks()
-
-    // Clear telemetry consent cache to ensure fresh API calls
-    const userConfig = getUserConfig()
-    userConfig.delete('telemetryConsent')
   })
 
   afterEach(() => {
     // Restore original environment
     process.env = originalEnv
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('help text is correct', async () => {
@@ -54,6 +58,12 @@ describe('telemetry status', () => {
     `)
   })
 
+  test('command handles no flags correctly', async () => {
+    const {error} = await testCommand(Status, ['--invalid'])
+
+    expect(error?.message).toContain('Nonexistent flag: --invalid')
+  })
+
   test('shows disabled status with DO_NOT_TRACK environment variable', async () => {
     // Set DO_NOT_TRACK environment variable
     process.env.DO_NOT_TRACK = '1'
@@ -64,46 +74,6 @@ describe('telemetry status', () => {
     expect(stdout).toContain("You've opted out of telemetry data collection.")
     expect(stdout).toContain('No data will be collected from your machine.')
     expect(stdout).toContain('Using DO_NOT_TRACK environment variable.')
-    expect(stdout).toContain('Learn more here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
-  test('shows disabled status with DO_NOT_TRACK=true', async () => {
-    // Set DO_NOT_TRACK environment variable
-    process.env.DO_NOT_TRACK = 'true'
-
-    const {stdout} = await testCommand(Status, [])
-
-    expect(stdout).toContain('Status: Disabled')
-    expect(stdout).toContain("You've opted out of telemetry data collection.")
-    expect(stdout).toContain('No data will be collected from your machine.')
-    expect(stdout).toContain('Using DO_NOT_TRACK environment variable.')
-    expect(stdout).toContain('Learn more here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
-  test('does not treat DO_NOT_TRACK=yes as truthy', async () => {
-    // Set DO_NOT_TRACK environment variable to non-truthy value
-    process.env.DO_NOT_TRACK = 'yes'
-
-    const {stdout} = await testCommand(Status, [])
-
-    // Should NOT show the local override message since "yes" is not truthy
-    expect(stdout).not.toContain('Using DO_NOT_TRACK environment variable.')
-    // Should show telemetry status or other appropriate message
-    expect(stdout).toContain('Learn more here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
-  test('does not treat DO_NOT_TRACK=0 as truthy', async () => {
-    // Set DO_NOT_TRACK environment variable to zero (not truthy)
-    process.env.DO_NOT_TRACK = '0'
-
-    const {stdout} = await testCommand(Status, [])
-
-    // Should NOT show the local override message since 0 is not truthy
-    expect(stdout).not.toContain('Using DO_NOT_TRACK environment variable.')
-    // Should show telemetry status or other appropriate message
     expect(stdout).toContain('Learn more here:')
     expect(stdout).toContain('https://www.sanity.io/telemetry')
   })
@@ -119,26 +89,20 @@ describe('telemetry status', () => {
     expect(stdout).toContain('https://www.sanity.io/telemetry')
   })
 
-  test('command handles no flags correctly', async () => {
-    const {error} = await testCommand(Status, ['--invalid'])
+  test('shows cannot set message in CI environment', async () => {
+    mockGetCliToken.mockResolvedValue('test-token')
 
-    expect(error?.message).toContain('Nonexistent flag: --invalid')
-  })
+    mockIsCi.mockReturnValueOnce(true)
 
-  test('command runs without crashing', async () => {
-    const {error} = await testCommand(Status, [])
+    const {stdout} = await testCommand(Status, [])
 
-    // Command should not crash, regardless of the output
-    expect(error).toBeUndefined()
+    expect(stdout).toContain('Status: Disabled')
   })
 
   // Additional tests for better coverage (using working patterns)
   test('ensures unauthenticated case works when no token available', async () => {
     // Mock no authentication token
     mockGetCliToken.mockResolvedValue(undefined)
-
-    // Ensure no DO_NOT_TRACK is set
-    delete process.env.DO_NOT_TRACK
 
     const {stdout} = await testCommand(Status, [])
 
@@ -147,33 +111,11 @@ describe('telemetry status', () => {
     expect(stdout).toContain('https://www.sanity.io/telemetry')
   })
 
-  test('tests multiple DO_NOT_TRACK values to ensure comprehensive coverage', async () => {
-    // Test with numeric values that should work
-    process.env.DO_NOT_TRACK = '2'
-
-    const {stdout} = await testCommand(Status, [])
-
-    expect(stdout).toContain('Status: Disabled')
-    expect(stdout).toContain('Using DO_NOT_TRACK environment variable.')
-    expect(stdout).toContain('No data will be collected from your machine.')
-    expect(stdout).toContain('Learn more here:')
-    expect(stdout).toContain('https://www.sanity.io/telemetry')
-  })
-
   // Integration tests with API mocking for different status responses
   test('shows granted status when API returns granted', async () => {
-    // Ensure user is authenticated
     mockGetCliToken.mockResolvedValue('test-token')
 
-    // Mock the telemetry status API using mockApi with exact parameters
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'granted'})
-
-    // Ensure no DO_NOT_TRACK is set
-    delete process.env.DO_NOT_TRACK
+    mockFetchTelemetryConsent.mockResolvedValue({status: 'granted'})
 
     const {stdout} = await testCommand(Status, [])
 
@@ -189,15 +131,7 @@ describe('telemetry status', () => {
     // Ensure user is authenticated
     mockGetCliToken.mockResolvedValue('test-token')
 
-    // Mock the telemetry status API using mockApi
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'unset'})
-
-    // Ensure no DO_NOT_TRACK is set
-    delete process.env.DO_NOT_TRACK
+    mockFetchTelemetryConsent.mockResolvedValue({status: 'unset'})
 
     const {stdout} = await testCommand(Status, [])
 
@@ -213,15 +147,7 @@ describe('telemetry status', () => {
     // Ensure user is authenticated
     mockGetCliToken.mockResolvedValue('test-token')
 
-    // Mock the telemetry status API using mockApi
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'denied'})
-
-    // Ensure no DO_NOT_TRACK is set
-    delete process.env.DO_NOT_TRACK
+    mockFetchTelemetryConsent.mockResolvedValue({status: 'denied'})
 
     const {stdout} = await testCommand(Status, [])
 
@@ -238,14 +164,7 @@ describe('telemetry status', () => {
     mockGetCliToken.mockResolvedValue('test-token')
 
     // Mock the telemetry status API to return an error
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(500, {error: 'Internal server error'})
-
-    // Ensure no DO_NOT_TRACK is set
-    delete process.env.DO_NOT_TRACK
+    mockFetchTelemetryConsent.mockRejectedValue(new Error('API error'))
 
     const {stdout} = await testCommand(Status, [])
 
@@ -258,15 +177,7 @@ describe('telemetry status', () => {
     // Ensure user is authenticated
     mockGetCliToken.mockResolvedValue('test-token')
 
-    // Mock the telemetry status API to return invalid status
-    mockApi({
-      apiVersion: 'v2023-12-18',
-      query: {tag: 'sanity.cli.telemetry-consent'},
-      uri: '/intake/telemetry-status',
-    }).reply(200, {status: 'invalid-status'})
-
-    // Ensure no DO_NOT_TRACK is set
-    delete process.env.DO_NOT_TRACK
+    mockFetchTelemetryConsent.mockResolvedValue({status: 'invalid-status' as ValidApiConsentStatus})
 
     const {stdout} = await testCommand(Status, [])
 

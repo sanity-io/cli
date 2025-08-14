@@ -1,12 +1,6 @@
-import {
-  createExpiringConfig,
-  getCliToken,
-  getGlobalCliClient,
-  getUserConfig,
-  isCi,
-  isTrueish,
-} from '@sanity/cli-core'
+import {getCliToken, isCi, isTrueish} from '@sanity/cli-core'
 
+import {fetchTelemetryConsent} from './fetchTelemetryConsent.js'
 import {
   isValidApiConsentStatus,
   VALID_API_STATUSES,
@@ -14,8 +8,6 @@ import {
 } from './isValidApiConsentStatus.js'
 import {telemetryDebug} from './telemetryDebug.js'
 import {type ConsentInformation} from './types.js'
-
-const FIVE_MINUTES = 1000 * 60 * 5
 
 interface Env {
   DO_NOT_TRACK?: string
@@ -26,8 +18,6 @@ interface Options {
   env: Env | NodeJS.ProcessEnv
 }
 
-const TELEMETRY_CONSENT_CONFIG_KEY = 'telemetryConsent'
-
 function parseApiConsentStatus(value: unknown): ValidApiConsentStatus {
   if (typeof value === 'string' && isValidApiConsentStatus(value)) {
     return value
@@ -37,10 +27,11 @@ function parseApiConsentStatus(value: unknown): ValidApiConsentStatus {
 
 export async function resolveConsent({env}: Options): Promise<ConsentInformation> {
   telemetryDebug('Resolving consent…')
-  if (isCi) {
+  if (isCi()) {
     telemetryDebug('CI environment detected, treating telemetry consent as denied')
     return {status: 'denied'}
   }
+
   if (isTrueish(env.DO_NOT_TRACK)) {
     telemetryDebug('DO_NOT_TRACK is set, consent is denied')
     return {
@@ -58,36 +49,8 @@ export async function resolveConsent({env}: Options): Promise<ConsentInformation
     }
   }
 
-  const client = await getGlobalCliClient({
-    apiVersion: '2023-12-18',
-    requireUser: false,
-  })
-
-  function fetchConsent(): Promise<{
-    status: ValidApiConsentStatus
-  }> {
-    const telemetryConsentConfig = createExpiringConfig<{
-      status: ValidApiConsentStatus
-    }>({
-      fetchValue: () => client.request({tag: 'telemetry-consent', uri: '/intake/telemetry-status'}),
-      key: TELEMETRY_CONSENT_CONFIG_KEY,
-      onCacheHit() {
-        telemetryDebug('Retrieved telemetry consent status from cache')
-      },
-      onFetch() {
-        telemetryDebug('Fetching telemetry consent status...')
-      },
-      onRevalidate() {
-        telemetryDebug('Revalidating cached telemetry consent status...')
-      },
-      store: getUserConfig(),
-      ttl: FIVE_MINUTES,
-    })
-    return telemetryConsentConfig.get()
-  }
-
   try {
-    const response = await fetchConsent()
+    const response = await fetchTelemetryConsent()
 
     telemetryDebug('User consent status is %s', response.status)
     return {status: parseApiConsentStatus(response.status)}
