@@ -38,7 +38,7 @@ To test the specific commands you can navigate to `examples` and run `npx sanity
 | ❌      | codemod   |
 | ❌      | cors      |
 | ❌      | dataset   |
-| ❌      | debug     |
+| ✅      | debug     |
 | ❌      | deploy    |
 | ❌      | dev       |
 | ✅      | docs      |
