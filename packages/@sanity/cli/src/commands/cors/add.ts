@@ -113,6 +113,12 @@ export class Add extends SanityCommand<typeof Add> {
     }
   }
 
+  /**
+   * Prompt the user for credentials
+   *
+   * @param hasWildcard - Whether the origin contains a wildcard
+   * @returns - Whether to allow credentials
+   */
   private async promptForCredentials(hasWildcard: boolean) {
     this.log('')
     if (hasWildcard) {
@@ -144,6 +150,12 @@ export class Add extends SanityCommand<typeof Add> {
     })
   }
 
+  /**
+   * Prompt the user for wildcard confirmation
+   *
+   * @param origin - The origin to check for wildcards
+   * @returns - Whether to allow the origin
+   */
   private async promptForWildcardConfirmation(origin: string) {
     this.log('')
     this.log(chalk.yellow(`${logSymbols.warning} Warning: Examples of allowed origins:`))

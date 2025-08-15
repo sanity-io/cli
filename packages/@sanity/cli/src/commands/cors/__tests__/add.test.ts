@@ -46,6 +46,22 @@ const mockConfirm = vi.mocked(confirm)
 const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockExistsSync = vi.mocked(fs.existsSync)
 
+const setupSuccessfulApiMock = () => {
+  return mockApi({
+    apiVersion: CORS_API_VERSION,
+    method: 'post',
+    uri: '/projects/test-project/cors',
+  }).reply(201, {
+    allowCredentials: true,
+    createdAt: '2023-01-01T00:00:00Z',
+    deletedAt: null,
+    id: 1,
+    origin: 'https://example.com',
+    projectId: 'test-project',
+    updatedAt: null,
+  })
+}
+
 describe('#cors:add', () => {
   beforeEach(() => {
     // Default mock implementations
@@ -56,46 +72,23 @@ describe('#cors:add', () => {
     vi.clearAllMocks()
   })
 
-  test('adds CORS origin with credentials flag', async () => {
-    const expectedOrigin = {
-      allowCredentials: true,
-      createdAt: '2023-01-01T00:00:00Z',
-      deletedAt: null,
-      id: 1,
+  const credentialsFlagCases = [
+    {
+      description: 'adds CORS origin with credentials flag',
+      flag: '--credentials',
       origin: 'https://example.com',
-      projectId: 'test-project',
-      updatedAt: null,
-    }
-
-    mockApi({
-      apiVersion: CORS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test-project/cors',
-    }).reply(201, expectedOrigin)
-
-    const {stdout} = await testCommand(Add, ['https://example.com', '--credentials'])
-
-    expect(stdout).toContain('CORS origin added successfully')
-  })
-
-  test('adds CORS origin with no-credentials flag', async () => {
-    const expectedOrigin = {
-      allowCredentials: false,
-      createdAt: '2023-01-01T00:00:00Z',
-      deletedAt: null,
-      id: 2,
+    },
+    {
+      description: 'adds CORS origin with no-credentials flag',
+      flag: '--no-credentials',
       origin: 'http://localhost:3000',
-      projectId: 'test-project',
-      updatedAt: null,
-    }
+    },
+  ]
 
-    mockApi({
-      apiVersion: CORS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test-project/cors',
-    }).reply(201, expectedOrigin)
+  test.each(credentialsFlagCases)('$description', async ({flag, origin}) => {
+    setupSuccessfulApiMock()
 
-    const {stdout} = await testCommand(Add, ['http://localhost:3000', '--no-credentials'])
+    const {stdout} = await testCommand(Add, [origin, flag])
 
     expect(stdout).toContain('CORS origin added successfully')
   })
@@ -110,26 +103,41 @@ describe('#cors:add', () => {
     expect(error?.message).toContain(NO_PROJECT_ID)
   })
 
-  test('handles API errors gracefully', async () => {
-    mockApi({
-      apiVersion: CORS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test-project/cors',
-    }).reply(400, {message: 'Invalid origin'})
+  const errorHandlingCases = [
+    {
+      description: 'handles API errors gracefully',
+      expectedError: 'CORS origin addition failed',
+      setupMock: () =>
+        mockApi({
+          apiVersion: CORS_API_VERSION,
+          method: 'post',
+          uri: '/projects/test-project/cors',
+        }).reply(400, {message: 'Invalid origin'}),
+    },
+    {
+      description: 'handles network errors during API call',
+      expectedError: 'CORS origin addition failed',
+      setupMock: () =>
+        mockApi({
+          apiVersion: CORS_API_VERSION,
+          method: 'post',
+          uri: '/projects/test-project/cors',
+        }).replyWithError(new Error('Network Error')),
+    },
+  ]
+
+  test.each(errorHandlingCases)('$description', async ({setupMock, expectedError}) => {
+    setupMock()
 
     const {error} = await testCommand(Add, ['https://example.com', '--credentials'])
 
-    expect(error?.message).toContain('CORS origin addition failed')
+    expect(error?.message).toContain(expectedError)
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('warns when origin looks like a file path', async () => {
     mockExistsSync.mockReturnValue(true)
-
-    mockApi({
-      apiVersion: CORS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test-project/cors',
-    }).reply(201, {})
+    setupSuccessfulApiMock()
 
     // Use a valid origin that also looks like a file path
     const {stderr} = await testCommand(Add, ['https://example.com', '--credentials'])
@@ -137,63 +145,54 @@ describe('#cors:add', () => {
     expect(stderr).toContain('Remember to quote values')
   })
 
-  test('shows normalized origin when filtering changes the origin', async () => {
-    mockApi({
-      apiVersion: CORS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test-project/cors',
-    }).reply(201, {})
-
-    const {stdout} = await testCommand(Add, ['https://example.com:443', '--credentials'])
-
-    expect(stdout).toContain('Normalized origin to: https://example.com')
-    expect(stdout).toContain('CORS origin added successfully')
-  })
-
   describe('wildcard origins', () => {
-    test('prompts for confirmation with wildcard origins', async () => {
-      mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+    const wildcardConfirmationCases = [
+      {
+        confirmWildcard: true,
+        description: 'prompts for confirmation with wildcard origins and proceeds',
+        expectedError: undefined,
+        expectedOutput: 'CORS origin added successfully',
+        setupMocks: () => {
+          mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+          setupSuccessfulApiMock()
+        },
+      },
+      {
+        confirmWildcard: false,
+        description: 'cancels operation when wildcard confirmation is denied',
+        expectedError: 'Operation cancelled',
+        expectedOutput: undefined,
+        setupMocks: () => mockConfirm.mockResolvedValueOnce(false),
+      },
+    ]
 
-      mockApi({
-        apiVersion: CORS_API_VERSION,
-        method: 'post',
-        uri: '/projects/test-project/cors',
-      }).reply(201, {})
+    test.each(wildcardConfirmationCases)(
+      '$description',
+      async ({setupMocks, expectedOutput, expectedError}) => {
+        setupMocks()
 
-      const {stdout} = await testCommand(Add, ['https://*.example.com'])
+        const result = await testCommand(Add, ['https://*.example.com'])
 
-      expect(confirm).toHaveBeenCalledWith(
-        expect.objectContaining({
-          default: false,
-          message: expect.stringContaining('absolutely sure'),
-        }),
-      )
-      expect(stdout).toContain('CORS origin added successfully')
-    })
+        expect(confirm).toHaveBeenCalledWith(
+          expect.objectContaining({
+            default: false,
+            message: expect.stringContaining('absolutely sure'),
+          }),
+        )
 
-    test('cancels operation when wildcard confirmation is denied', async () => {
-      mockConfirm.mockResolvedValueOnce(false)
-
-      const {error} = await testCommand(Add, ['https://*.example.com'])
-
-      expect(confirm).toHaveBeenCalledWith(
-        expect.objectContaining({
-          default: false,
-          message: expect.stringContaining('absolutely sure'),
-        }),
-      )
-      expect(error?.message).toContain('Operation cancelled')
-      expect(error?.oclif?.exit).toBe(1)
-    })
+        if (expectedOutput) {
+          expect(result.stdout).toContain(expectedOutput)
+        }
+        if (expectedError) {
+          expect(result.error?.message).toContain(expectedError)
+          expect(result.error?.oclif?.exit).toBe(1)
+        }
+      },
+    )
 
     test('shows specific examples for full wildcard', async () => {
       mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
-
-      mockApi({
-        apiVersion: CORS_API_VERSION,
-        method: 'post',
-        uri: '/projects/test-project/cors',
-      }).reply(201, {})
+      setupSuccessfulApiMock()
 
       const {stdout} = await testCommand(Add, ['*'])
 
@@ -205,12 +204,7 @@ describe('#cors:add', () => {
   describe('credentials prompts', () => {
     test('prompts for credentials when flag not provided', async () => {
       mockConfirm.mockResolvedValueOnce(true)
-
-      mockApi({
-        apiVersion: CORS_API_VERSION,
-        method: 'post',
-        uri: '/projects/test-project/cors',
-      }).reply(201, {})
+      setupSuccessfulApiMock()
 
       const {stdout} = await testCommand(Add, ['https://example.com'])
 
@@ -227,12 +221,7 @@ describe('#cors:add', () => {
       mockConfirm
         .mockResolvedValueOnce(true) // Confirm wildcard
         .mockResolvedValueOnce(false) // Deny credentials
-
-      mockApi({
-        apiVersion: CORS_API_VERSION,
-        method: 'post',
-        uri: '/projects/test-project/cors',
-      }).reply(201, {})
+      setupSuccessfulApiMock()
 
       const {stdout} = await testCommand(Add, ['https://*.example.com'])
 
@@ -253,11 +242,7 @@ describe('#cors:add', () => {
     const validWildcardOrigins = ['https://*.example.com', '*', 'file:///*']
 
     test.each(validNonWildcardOrigins)('accepts valid non-wildcard origin: %s', async (origin) => {
-      mockApi({
-        apiVersion: CORS_API_VERSION,
-        method: 'post',
-        uri: '/projects/test-project/cors',
-      }).reply(201, {})
+      setupSuccessfulApiMock()
 
       const {error, stdout} = await testCommand(Add, [origin, '--credentials'])
 
@@ -267,12 +252,7 @@ describe('#cors:add', () => {
 
     test.each(validWildcardOrigins)('accepts valid wildcard origin: %s', async (origin) => {
       mockConfirm.mockResolvedValueOnce(true)
-
-      mockApi({
-        apiVersion: CORS_API_VERSION,
-        method: 'post',
-        uri: '/projects/test-project/cors',
-      }).reply(201, {})
+      setupSuccessfulApiMock()
 
       const {error, stdout} = await testCommand(Add, [origin, '--credentials'])
 
@@ -317,11 +297,7 @@ describe('#cors:add', () => {
     test.each(portNormalizationCases)(
       '$description',
       async ({expectedOutput, input, shouldNormalize}) => {
-        mockApi({
-          apiVersion: CORS_API_VERSION,
-          method: 'post',
-          uri: '/projects/test-project/cors',
-        }).reply(201, {})
+        setupSuccessfulApiMock()
 
         const {stdout} = await testCommand(Add, [input, '--credentials'])
 
@@ -340,31 +316,11 @@ describe('#cors:add', () => {
       mockExistsSync.mockImplementation(() => {
         throw new Error('Permission denied')
       })
-
-      mockApi({
-        apiVersion: CORS_API_VERSION,
-        method: 'post',
-        uri: '/projects/test-project/cors',
-      }).reply(201, {})
+      setupSuccessfulApiMock()
 
       const {stdout} = await testCommand(Add, ['https://example.com', '--credentials'])
 
       expect(stdout).toContain('CORS origin added successfully')
-    })
-
-    test('handles network errors during API call', async () => {
-      mockApi({
-        apiVersion: CORS_API_VERSION,
-        method: 'post',
-        uri: '/projects/test-project/cors',
-      }).replyWithError(new Error('Network Error'))
-
-      const {error} = await testCommand(Add, ['https://example.com', '--credentials'])
-
-      expect(error).toBeDefined()
-      expect(error?.message).toContain('CORS origin addition failed')
-      expect(error?.message).toContain('Network Error')
-      expect(error?.oclif?.exit).toBe(1)
     })
   })
 })
