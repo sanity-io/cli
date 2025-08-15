@@ -1,6 +1,7 @@
 import {runCommand} from '@oclif/test'
+import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
-import {vi, describe, test, expect, afterEach} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Get} from '../get.js'
@@ -17,27 +18,38 @@ vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
 vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
   getCliConfig: vi.fn().mockResolvedValue({
     api: {
-      projectId: 'test-project',
       dataset: 'production',
+      projectId: 'test-project',
     },
   }),
+}))
+
+vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
+  getGlobalCliClient: vi.fn(),
+  getProjectCliClient: vi.fn(),
 }))
 
 vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-// Mock the Sanity client
+// Mock the project API client
 const mockGetDocument = vi.fn()
-vi.mock('@sanity/client', () => ({
-  createClient: vi.fn(() => ({
-    getDocument: mockGetDocument,
-  })),
-}))
+
+// Get the mocked functions
+const mockedGetCliConfig = vi.mocked(getCliConfig)
+const mockedGetProjectCliClient = vi.mocked(getProjectCliClient)
 
 describe('documents get', () => {
+  beforeEach(() => {
+    mockedGetProjectCliClient.mockResolvedValue({
+      getDocument: mockGetDocument,
+    } as never)
+  })
+
   afterEach(() => {
     vi.clearAllMocks()
+    mockGetDocument.mockReset()
   })
 
   test('--help works', async () => {
@@ -45,15 +57,15 @@ describe('documents get', () => {
 
     expect(stdout).toContain('Get and print a document by ID')
     expect(stdout).toContain('ARGUMENTS')
-    expect(stdout).toContain('documentId')
+    expect(stdout).toContain('DOCUMENTID')
   })
 
   test('retrieves and displays a document successfully', async () => {
     const mockDoc = {
       _id: 'test-doc',
       _type: 'post',
-      title: 'Test Post',
       content: 'This is a test post',
+      title: 'Test Post',
     }
 
     mockGetDocument.mockResolvedValue(mockDoc)
@@ -89,15 +101,15 @@ describe('documents get', () => {
 
     mockGetDocument.mockResolvedValue(mockDoc)
 
-    const {createClient} = await import('@sanity/client')
-    
     await testCommand(Get, ['test-doc', '--dataset', 'staging'])
 
-    expect(createClient).toHaveBeenCalledWith(
+    expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
+    // Verify that the getProjectCliClient was called with the staging dataset
+    expect(mockedGetProjectCliClient).toHaveBeenCalledWith(
       expect.objectContaining({
         dataset: 'staging',
         projectId: 'test-project',
-      })
+      }),
     )
   })
 
@@ -108,12 +120,13 @@ describe('documents get', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Document "nonexistent-doc" not found')
+    expect(mockGetDocument).toHaveBeenCalledWith('nonexistent-doc')
   })
 
   test('throws error when no project ID is configured', async () => {
-    const {getCliConfig} = await import('../../../../../cli-core/src/config/cli/getCliConfig.js')
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
+    mockedGetCliConfig.mockResolvedValue({
       api: {
+        dataset: 'production',
         projectId: undefined,
       },
     })
@@ -122,14 +135,21 @@ describe('documents get', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
+
+    // Restore the original mock for other tests
+    mockedGetCliConfig.mockResolvedValue({
+      api: {
+        dataset: 'production',
+        projectId: 'test-project',
+      },
+    })
   })
 
   test('throws error when no dataset is configured and none provided', async () => {
-    const {getCliConfig} = await import('../../../../../cli-core/src/config/cli/getCliConfig.js')
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
+    mockedGetCliConfig.mockResolvedValueOnce({
       api: {
-        projectId: 'test-project',
         dataset: undefined,
+        projectId: 'test-project',
       },
     })
 
@@ -146,6 +166,7 @@ describe('documents get', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to fetch document: Network error')
+    expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
   })
 
   test('requires document ID argument', async () => {

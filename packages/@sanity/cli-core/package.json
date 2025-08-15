@@ -45,11 +45,13 @@
   "dependencies": {
     "@oclif/core": "^4.3.0",
     "@sanity/client": "^7.5.0",
+    "chalk": "^5.4.1",
     "configstore": "^7.0.0",
     "debug": "^4.4.0",
     "get-tsconfig": "^4.10.1",
     "import-meta-resolve": "^4.1.0",
     "jsdom": "^26.0.0",
+    "json-lexer": "^1.2.0",
     "log-symbols": "^7.0.1",
     "ora": "^8.2.0",
     "tsx": "^4.20.3",

@@ -428,6 +428,9 @@ importers:
       '@sanity/client':
         specifier: ^7.0.0
         version: 7.7.0(debug@4.4.1)
+      chalk:
+        specifier: ^5.4.1
+        version: 5.4.1
       configstore:
         specifier: ^7.0.0
         version: 7.0.0
@@ -443,6 +446,9 @@ importers:
       jsdom:
         specifier: ^26.0.0
         version: 26.1.0
+      json-lexer:
+        specifier: ^1.2.0
+        version: 1.2.0
       log-symbols:
         specifier: ^7.0.1
         version: 7.0.1
