@@ -1,12 +1,10 @@
-import {join, resolve} from 'node:path'
-import {fileURLToPath} from 'node:url'
-
 import {confirm, input, select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {testExample} from '~test/helpers/testExample.js'
 
 import {buildApp} from '../../actions/build/buildApp.js'
 import {buildStudio} from '../../actions/build/buildStudio.js'
@@ -15,10 +13,6 @@ import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
 import {DeployCommand} from '../deploy.js'
-
-const __dirname = fileURLToPath(new URL('.', import.meta.url))
-const rootDir = resolve(__dirname, '../../../../../../')
-const examplesDir = resolve(rootDir, 'examples')
 
 vi.mock('../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
   getCliConfig: vi.fn(),
@@ -139,7 +133,7 @@ describe('#deploy', () => {
   })
 
   test("should prompt to confirm deleting source directory if it's not empty", async () => {
-    const cwd = join(examplesDir, 'basic-app')
+    const cwd = await testExample('basic-app')
     process.cwd = () => cwd
 
     mockConfirm.mockResolvedValue(true)
@@ -195,7 +189,7 @@ describe('#deploy', () => {
   })
 
   test("should cancel the deployment if the user doesn't want to proceed", async () => {
-    const cwd = join(examplesDir, 'basic-app')
+    const cwd = await testExample('basic-app')
     process.cwd = () => cwd
 
     mockConfirm.mockResolvedValue(false)
@@ -219,7 +213,7 @@ describe('#deploy', () => {
 
   describe('app', () => {
     test('should re-deploy app if it already exists', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const appId = 'app-id'
@@ -274,7 +268,7 @@ describe('#deploy', () => {
     })
 
     test('should handle missing @sanity/sdk-react version', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const appId = 'app-id'
@@ -297,7 +291,7 @@ describe('#deploy', () => {
     })
 
     test('should create new user application if none exists', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const organizationId = 'org-id'
@@ -367,7 +361,7 @@ describe('#deploy', () => {
     })
 
     test('should skip build when --no-build flag is used', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
@@ -420,7 +414,7 @@ describe('#deploy', () => {
     })
 
     test('should handle directory check errors', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
@@ -461,7 +455,7 @@ describe('#deploy', () => {
     })
 
     test('should handle general deployment errors', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
@@ -492,7 +486,7 @@ describe('#deploy', () => {
     })
 
     test('should handle deployment API errors', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
@@ -542,7 +536,7 @@ describe('#deploy', () => {
     })
 
     test('should handle app creation with retry when host is taken', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const organizationId = 'org-id'
@@ -623,7 +617,7 @@ describe('#deploy', () => {
     })
 
     test('should handle app creation failure with non-retryable error', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const organizationId = 'org-id'
@@ -666,7 +660,7 @@ describe('#deploy', () => {
     })
 
     test('should handle findUserApplicationForApp API errors', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
@@ -698,7 +692,7 @@ describe('#deploy', () => {
     })
 
     test('should test input validation for app title', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const organizationId = 'org-id'
@@ -766,7 +760,7 @@ describe('#deploy', () => {
     })
 
     test('should allow selecting from list of apps', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const organizationId = 'org-id'
@@ -837,7 +831,7 @@ describe('#deploy', () => {
     })
 
     test('should allow creating a new app by selecting from list of apps', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const organizationId = 'org-id'
@@ -929,7 +923,7 @@ describe('#deploy', () => {
     })
 
     test('should throw an error if organizationId is not set', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       mockGetCliConfig.mockResolvedValue({
@@ -951,7 +945,7 @@ describe('#deploy', () => {
 
   describe('studio', () => {
     test('should handle missing sanity version', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       mockReadModuleVersion.mockResolvedValue(null)
@@ -968,7 +962,7 @@ describe('#deploy', () => {
     })
 
     test('should handle directory check errors', async () => {
-      const cwd = join(examplesDir, 'basic-app')
+      const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1010,7 +1004,7 @@ describe('#deploy', () => {
     })
 
     test('should re-deploy studio if it already exists', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1066,7 +1060,7 @@ describe('#deploy', () => {
     })
 
     test('should create new studio hostname when studioHost is provided but does not exist', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       mockGetCliConfig.mockResolvedValue({
@@ -1127,7 +1121,7 @@ describe('#deploy', () => {
     })
 
     test('should handle studio hostname creation failure when name is taken', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1172,7 +1166,7 @@ describe('#deploy', () => {
     })
 
     test('should allow selecting from existing studio hostnames', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1258,7 +1252,7 @@ describe('#deploy', () => {
     })
 
     test('should allow creating new studio hostname from selection menu', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1360,7 +1354,7 @@ describe('#deploy', () => {
     })
 
     test('should handle input validation with retry for studio hostname creation', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1464,7 +1458,7 @@ describe('#deploy', () => {
     })
 
     test('should handle input validation fails with unknown error', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1534,7 +1528,7 @@ describe('#deploy', () => {
     })
 
     test('should throw error when no projectId is configured', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       mockGetCliConfig.mockResolvedValue({
@@ -1553,7 +1547,7 @@ describe('#deploy', () => {
     })
 
     test('should handle general API errors when finding user application', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1586,7 +1580,7 @@ describe('#deploy', () => {
     })
 
     test('should handle deployment API errors for studio', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1638,7 +1632,7 @@ describe('#deploy', () => {
     })
 
     test('should handle fatal errors during studio hostname creation', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1683,7 +1677,7 @@ describe('#deploy', () => {
     })
 
     test('should handle no existing studio applications scenario', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1768,7 +1762,7 @@ describe('#deploy', () => {
     })
 
     test('should skip build when --no-build flag is used for studio', async () => {
-      const cwd = join(examplesDir, 'basic-studio')
+      const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'

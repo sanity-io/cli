@@ -8,3 +8,4 @@ packages:
   - 'packages/@sanity/migrate'
   - 'packages/create-sanity'
   - 'examples/*'
+  - 'tmp/*'
