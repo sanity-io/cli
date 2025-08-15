@@ -56,7 +56,7 @@ export async function installDeclaredPackages(
   }
 
   if (packageManager === 'manual') {
-    output.log(`Manual installation selected — run 'npm ${installerArgs.npm} or equivalent'`)
+    output.log(`Manual installation selected — run 'npm ${installerArgs.npm.join(' ')}' or equivalent`)
   } else {
     await handleInstall(packageManager, installerArgs[packageManager])
   }
@@ -72,48 +72,43 @@ export async function installNewPackages(
     cwd: workDir,
     encoding: 'utf8',
     env: getPartialEnvWithNpmPath(workDir),
-    stdio: 'inherit',
+    stdio: 'pipe',
   }
 
-  const npmArgs = ['install', '--legacy-peer-deps', '--save', ...packages]
-  let result: Result<Options> | undefined
-  switch (packageManager) {
-    case 'bun': {
-      const bunArgs = ['add', ...packages]
-      output.log(`Running 'bun ${bunArgs.join(' ')}'`)
-      result = await execa('bun', bunArgs, execOptions)
+  // results of running execa with the selected package manager
+  let result: Result | undefined
 
-      break
-    }
-    case 'manual': {
-      output.log(`Manual installation selected - run 'npm ${npmArgs.join(' ')}' or equivalent`)
+  type PackageManagerLibs = Exclude<PackageManager, 'manual'>
+  type NewPackageArgs = {[key in PackageManagerLibs]: string[]}
 
-      break
-    }
-    case 'npm': {
-      output.log(`Running 'npm ${npmArgs.join(' ')}'`)
-      result = await execa('npm', npmArgs, execOptions)
-
-      break
-    }
-    case 'pnpm': {
-      const pnpmArgs = ['add', '--save-prod', ...packages]
-      output.log(`Running 'pnpm ${pnpmArgs.join(' ')}'`)
-      result = await execa('pnpm', pnpmArgs, execOptions)
-
-      break
-    }
-    case 'yarn': {
-      const yarnArgs = ['add', ...packages]
-      output.log(`Running 'yarn ${yarnArgs.join(' ')}'`)
-      result = await execa('yarn', yarnArgs, execOptions)
-
-      break
-    }
-    // No default
+  const newPackageArgs: NewPackageArgs = {
+    bun: ['add', ...packages],
+    npm: ['install', '--legacy-peer-deps', '--save', ...packages],
+    pnpm: ['add', '--save-prod', ...packages],
+    yarn: ['add', ...packages],
   }
 
-  if (result?.exitCode || result?.failed) {
-    throw new Error('Package installation failed')
+  async function handleInstallNew(cmd: PackageManager, args: NewPackageArgs[PackageManagerLibs]) {
+    // Start a spinner for the install process
+    const progress = spinner(`Running ${cmd} ${args.join(' ')}\n`).start()
+
+    // Perform the install command with execa
+    result = await execa(cmd, args, execOptions)
+
+    // If the install fails, log execa's stdout and throw…
+    if (result?.exitCode || result?.failed) {
+      progress.fail()
+      output.log(String(result.stdout))
+      throw new Error('Package installation failed')
+    } else {
+      // …otherwise, just mark the install as successful
+      progress.succeed()
+    }
+  }
+
+  if (packageManager === 'manual') {
+    output.log(`Manual installation selected - run 'npm ${newPackageArgs.npm.join(' ')}' or equivalent`)
+  } else {
+    await handleInstallNew(packageManager, newPackageArgs[packageManager])
   }
 }
