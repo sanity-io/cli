@@ -1,20 +1,16 @@
-import {chmod, readFile, rm, writeFile} from 'node:fs/promises'
-import {join, resolve} from 'node:path'
-import {fileURLToPath} from 'node:url'
+import {chmod, readFile, writeFile} from 'node:fs/promises'
+import {join} from 'node:path'
 
 import {testCommand} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
+import {testExample} from '~test/helpers/testExample.js'
 
 import {BuildCommand} from '../build.js'
 import {StartCommand} from '../start.js'
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url))
-const rootDir = resolve(__dirname, '../../../../../../')
-const examplesDir = resolve(rootDir, 'examples')
-
 describe('#start', () => {
   test('should start the "basic-studio" example', async () => {
-    const cwd = join(examplesDir, 'basic-studio')
+    const cwd = await testExample('basic-studio')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -34,7 +30,7 @@ describe('#start', () => {
   })
 
   test('should start the "basic-app" example', async () => {
-    const cwd = join(examplesDir, 'basic-app')
+    const cwd = await testExample('basic-app')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -54,12 +50,9 @@ describe('#start', () => {
   })
 
   test('should throw an error if the basic-studio example has not been built', async () => {
-    const cwd = join(examplesDir, 'basic-studio')
+    const cwd = await testExample('basic-studio')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
-
-    // Remove the dist folder
-    await rm(join(cwd, 'dist'), {recursive: true})
 
     const {error, stdout} = await testCommand(StartCommand, [], {
       config: {root: cwd},
@@ -75,12 +68,9 @@ describe('#start', () => {
   })
 
   test('should throw an error if the basic-app example has not been built', async () => {
-    const cwd = join(examplesDir, 'basic-app')
+    const cwd = await testExample('basic-app')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
-
-    // Remove the dist folder
-    await rm(join(cwd, 'dist'), {recursive: true})
 
     const {error, stdout} = await testCommand(StartCommand, [], {
       config: {root: cwd},
@@ -96,7 +86,7 @@ describe('#start', () => {
   })
 
   test('should throw an error if the basepath cannot be resolved from the index.html file', async () => {
-    const cwd = join(examplesDir, 'basic-studio')
+    const cwd = await testExample('basic-studio')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -131,7 +121,7 @@ describe('#start', () => {
   })
 
   test('should throw an error if the basepath cannot be resolved from the index.html file', async () => {
-    const cwd = join(examplesDir, 'basic-studio')
+    const cwd = await testExample('basic-studio')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -164,7 +154,7 @@ describe('#start', () => {
   })
 
   test('should throw an error if the index.html file is not found', async () => {
-    const cwd = join(examplesDir, 'basic-studio')
+    const cwd = await testExample('basic-studio')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -187,7 +177,7 @@ describe('#start', () => {
   })
 
   test('should throw an error if port is already in use', async () => {
-    const cwd = join(examplesDir, 'basic-studio')
+    const cwd = await testExample('basic-studio')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -210,7 +200,7 @@ describe('#start', () => {
   })
 
   test('should allow using vite config from sanity.cli.ts', async () => {
-    const cwd = join(examplesDir, 'basic-app')
+    const cwd = await testExample('basic-app')
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -247,8 +237,5 @@ describe('#start', () => {
     expect(stdout).toContain(`ms and running at http://localhost:1335/ (production preview mode)`)
 
     await writeFile(join(cwd, 'sanity.cli.ts'), existingSanityCli)
-
-    // Clear the dist folder
-    await rm(join(cwd, 'dist'), {recursive: true})
   })
 })
