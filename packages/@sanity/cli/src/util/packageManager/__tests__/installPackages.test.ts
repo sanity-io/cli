@@ -143,12 +143,11 @@ describe('installDeclaredPackages', () => {
     }
     mockExeca.mockResolvedValueOnce(mockResult as Result)
 
-    await expect(installDeclaredPackages(workDir, 'npm', context)).rejects.toThrow(
-      'Dependency installation failed',
-    )
+    await expect(installDeclaredPackages(workDir, 'npm', context))
 
     expect(mockSpinnerInstance.fail).toHaveBeenCalled()
     expect(mockOutput.log).toHaveBeenCalledWith('Error: Package not found')
+    expect(mockOutput.error).toHaveBeenCalledWith('Dependency installation failed', {exit: 1})
   })
 
   test('handles installation failure with failed flag', async () => {
@@ -159,12 +158,11 @@ describe('installDeclaredPackages', () => {
     }
     mockExeca.mockResolvedValueOnce(mockResult as Result)
 
-    await expect(installDeclaredPackages(workDir, 'npm', context)).rejects.toThrow(
-      'Dependency installation failed',
-    )
+    await expect(installDeclaredPackages(workDir, 'npm', context))
 
     expect(mockSpinnerInstance.fail).toHaveBeenCalled()
     expect(mockOutput.log).toHaveBeenCalledWith('Command failed')
+    expect(mockOutput.error).toHaveBeenCalledWith('Dependency installation failed', {exit: 1})
   })
 })
 
@@ -280,12 +278,11 @@ describe('installNewPackages', () => {
     }
     mockExeca.mockResolvedValueOnce(mockResult as Result)
 
-    await expect(installNewPackages(options, context)).rejects.toThrow(
-      'Package installation failed',
-    )
+    await expect(installNewPackages(options, context))
 
     expect(mockSpinnerInstance.fail).toHaveBeenCalled()
     expect(mockOutput.log).toHaveBeenCalledWith('Error: Package not found')
+    expect(mockOutput.error).toHaveBeenCalledWith('Package installation failed', {exit: 1})
   })
 
   test('handles installation failure with failed flag', async () => {
@@ -297,12 +294,11 @@ describe('installNewPackages', () => {
     }
     mockExeca.mockResolvedValueOnce(mockResult as Result)
 
-    await expect(installNewPackages(options, context)).rejects.toThrow(
-      'Package installation failed',
-    )
+    await expect(installNewPackages(options, context))
 
     expect(mockSpinnerInstance.fail).toHaveBeenCalled()
     expect(mockOutput.log).toHaveBeenCalledWith('Command execution failed')
+    expect(mockOutput.error).toHaveBeenCalledWith('Package installation failed', {exit: 1})
   })
 
   test('handles empty packages array', async () => {
