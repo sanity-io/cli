@@ -18,7 +18,7 @@ export async function filterAndValidateOrigin(
   }
 
   // Special validation for file:// protocols
-  if (/^file:\/\//.test(givenOrigin) && givenOrigin !== 'file:///*') {
+  if (/^file:\/\//.test(givenOrigin)) {
     output.error('Only a local file wildcard is currently allowed: file:///*', {exit: 1})
   }
 

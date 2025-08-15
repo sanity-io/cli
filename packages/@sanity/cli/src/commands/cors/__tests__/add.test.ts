@@ -273,6 +273,14 @@ describe('#cors:add', () => {
       expect(error?.oclif?.exit).toBe(1)
     })
 
+    test('rejects file:// origins other than file:///*', async () => {
+      const {error} = await testCommand(Add, ['file://localhost/path', '--credentials'])
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Only a local file wildcard is currently allowed: file:///*')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
     const portNormalizationCases = [
       {
         description: 'normalizes HTTPS default port',
