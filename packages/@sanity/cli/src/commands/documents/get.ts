@@ -6,7 +6,7 @@ import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const getDocumentDebug = subdebug('documents:get')
 
-export class Get extends SanityCommand<typeof Get> {
+export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand> {
   static override args = {
     documentId: Args.string({
       description: 'Document ID to retrieve',
@@ -43,7 +43,7 @@ export class Get extends SanityCommand<typeof Get> {
   }
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(Get)
+    const {args, flags} = await this.parse(GetDocumentCommand)
     const {documentId} = args
     const {dataset, pretty} = flags
 

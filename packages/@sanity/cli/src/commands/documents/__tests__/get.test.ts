@@ -4,7 +4,7 @@ import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
-import {Get} from '../get.js'
+import {GetDocumentCommand} from '../get.js'
 
 // Mock the config functions
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
@@ -25,7 +25,6 @@ vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
 }))
 
 vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
-  getGlobalCliClient: vi.fn(),
   getProjectCliClient: vi.fn(),
 }))
 
@@ -70,7 +69,7 @@ describe('documents get', () => {
 
     mockGetDocument.mockResolvedValue(mockDoc)
 
-    const {stdout} = await testCommand(Get, ['test-doc'])
+    const {stdout} = await testCommand(GetDocumentCommand, ['test-doc'])
 
     expect(stdout).toContain('"_id": "test-doc"')
     expect(stdout).toContain('"title": "Test Post"')
@@ -86,7 +85,7 @@ describe('documents get', () => {
 
     mockGetDocument.mockResolvedValue(mockDoc)
 
-    const {stdout} = await testCommand(Get, ['test-doc', '--pretty'])
+    const {stdout} = await testCommand(GetDocumentCommand, ['test-doc', '--pretty'])
 
     expect(stdout).toContain('test-doc')
     expect(stdout).toContain('Test Post')
@@ -101,7 +100,7 @@ describe('documents get', () => {
 
     mockGetDocument.mockResolvedValue(mockDoc)
 
-    await testCommand(Get, ['test-doc', '--dataset', 'staging'])
+    await testCommand(GetDocumentCommand, ['test-doc', '--dataset', 'staging'])
 
     expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
     // Verify that the getProjectCliClient was called with the staging dataset
@@ -116,7 +115,7 @@ describe('documents get', () => {
   test('throws error when document is not found', async () => {
     mockGetDocument.mockResolvedValue(null)
 
-    const {error} = await testCommand(Get, ['nonexistent-doc'])
+    const {error} = await testCommand(GetDocumentCommand, ['nonexistent-doc'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Document "nonexistent-doc" not found')
@@ -131,7 +130,7 @@ describe('documents get', () => {
       },
     })
 
-    const {error} = await testCommand(Get, ['test-doc'])
+    const {error} = await testCommand(GetDocumentCommand, ['test-doc'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -153,7 +152,7 @@ describe('documents get', () => {
       },
     })
 
-    const {error} = await testCommand(Get, ['test-doc'])
+    const {error} = await testCommand(GetDocumentCommand, ['test-doc'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('No dataset specified')
@@ -162,7 +161,7 @@ describe('documents get', () => {
   test('handles client errors gracefully', async () => {
     mockGetDocument.mockRejectedValue(new Error('Network error'))
 
-    const {error} = await testCommand(Get, ['test-doc'])
+    const {error} = await testCommand(GetDocumentCommand, ['test-doc'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to fetch document: Network error')
@@ -170,7 +169,7 @@ describe('documents get', () => {
   })
 
   test('requires document ID argument', async () => {
-    const {error} = await testCommand(Get, [])
+    const {error} = await testCommand(GetDocumentCommand, [])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Missing 1 required arg')
