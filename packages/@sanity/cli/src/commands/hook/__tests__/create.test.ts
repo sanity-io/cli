@@ -6,7 +6,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {HOOK_API_VERSION} from '../../../actions/hook/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
-import {Create} from '../create.js'
+import {CreateHookCommand} from '../create.js'
 
 vi.mock('open', () => ({
   default: vi.fn().mockResolvedValue(undefined),
@@ -32,7 +32,7 @@ vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
   }
 })
 
-describe('#create', () => {
+describe('#hook:create', () => {
   afterEach(() => {
     vi.clearAllMocks()
     const pending = nock.pendingMocks()
@@ -43,7 +43,22 @@ describe('#create', () => {
   test('--help works', async () => {
     const {stdout} = await runCommand(['hook create', '--help'])
 
-    expect(stdout).toContain('Create a new hook for the given dataset')
+    expect(stdout).toMatchInlineSnapshot(`
+      "Create a new webhook for the current project
+
+      USAGE
+        $ sanity hook create
+
+      DESCRIPTION
+        Create a new webhook for the current project
+
+      EXAMPLES
+        Create a new webhook for the current project
+
+          $ sanity hook create
+
+      "
+    `)
   })
 
   test('opens webhook creation URL for project with organization', async () => {
@@ -57,7 +72,7 @@ describe('#create', () => {
       organizationId: 'test-org',
     })
 
-    const {stdout} = await testCommand(Create)
+    const {stdout} = await testCommand(CreateHookCommand)
 
     expect(open.default).toHaveBeenCalledWith(
       'https://www.sanity.io/organizations/test-org/project/test-project/api/webhooks/new',
@@ -77,7 +92,7 @@ describe('#create', () => {
       id: 'test-project',
     })
 
-    const {stdout} = await testCommand(Create)
+    const {stdout} = await testCommand(CreateHookCommand)
 
     expect(open.default).toHaveBeenCalledWith(
       'https://www.sanity.io/organizations/personal/project/test-project/api/webhooks/new',
@@ -93,7 +108,7 @@ describe('#create', () => {
       uri: '/projects/test-project',
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(Create)
+    const {error} = await testCommand(CreateHookCommand)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to fetch project information')
@@ -106,7 +121,7 @@ describe('#create', () => {
       },
     })
 
-    const {error} = await testCommand(Create)
+    const {error} = await testCommand(CreateHookCommand)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -124,7 +139,7 @@ describe('#create', () => {
       organizationId: 'test-org',
     })
 
-    const {error} = await testCommand(Create)
+    const {error} = await testCommand(CreateHookCommand)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to open browser')

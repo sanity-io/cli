@@ -6,12 +6,12 @@ import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const createHookDebug = subdebug('hook:create')
 
-export class Create extends SanityCommand<typeof Create> {
-  static override description = 'Create a new hook for the given dataset'
+export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
+  static override description = 'Create a new webhook for the current project'
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: 'Create a new hook for the given dataset',
+      description: 'Create a new webhook for the current project',
     },
   ]
 
