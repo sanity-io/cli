@@ -1,11 +1,13 @@
+import {input, select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
+import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
-import {Add} from '../add.js'
+import {AddTokenCommand} from '../add.js'
 
 // Mock the config functions with relative paths
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
@@ -28,10 +30,11 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-vi.mock('@inquirer/prompts', () => ({
-  input: vi.fn(),
-  select: vi.fn(),
-}))
+// Mock inquirer prompts
+vi.mock('@inquirer/prompts')
+const mockedInput = vi.mocked(input)
+const mockedSelect = vi.mocked(select)
+const mockedGetCliConfig = vi.mocked(getCliConfig)
 
 vi.mock('../../../../../cli-core/src/util/isInteractive.js', () => ({
   isInteractive: true,
@@ -97,7 +100,7 @@ describe('tokens add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(200, mockToken)
 
-    const {stdout} = await testCommand(Add, ['My Test Token'])
+    const {stdout} = await testCommand(AddTokenCommand, ['My Test Token'])
 
     expect(stdout).toContain('Token created successfully!')
     expect(stdout).toContain('Label: My Test Token')
@@ -153,7 +156,7 @@ describe('tokens add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(200, mockToken)
 
-    const {stdout} = await testCommand(Add, ['Editor Token', '--role=editor'])
+    const {stdout} = await testCommand(AddTokenCommand, ['Editor Token', '--role=editor'])
 
     expect(stdout).toContain('Token created successfully!')
     expect(stdout).toContain('Label: Editor Token')
@@ -198,7 +201,7 @@ describe('tokens add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(200, mockToken)
 
-    const {stdout} = await testCommand(Add, ['JSON Token', '--json'])
+    const {stdout} = await testCommand(AddTokenCommand, ['JSON Token', '--json'])
 
     const parsedOutput = JSON.parse(stdout)
     expect(parsedOutput).toEqual(mockToken)
@@ -225,7 +228,7 @@ describe('tokens add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(200, mockToken)
 
-    const {stdout} = await testCommand(Add, ['Unattended Token', '--yes'])
+    const {stdout} = await testCommand(AddTokenCommand, ['Unattended Token', '--yes'])
 
     expect(stdout).toContain('Token created successfully!')
     expect(stdout).toContain('Label: Unattended Token')
@@ -249,11 +252,12 @@ describe('tokens add', () => {
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
-    const {error} = await testCommand(Add, ['Test Token', '--role=invalid'])
+    const {error} = await testCommand(AddTokenCommand, ['Test Token', '--role=invalid'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Invalid role "invalid"')
     expect(error?.message).toContain('Available roles: viewer')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('handles API error during token creation', async () => {
@@ -280,25 +284,26 @@ describe('tokens add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(Add, ['Failed Token'])
+    const {error} = await testCommand(AddTokenCommand, ['Failed Token'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token creation failed')
     expect(error?.message).toContain('Internal Server Error')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when no project ID is found', async () => {
-    const {getCliConfig} = await import('../../../../../cli-core/src/config/cli/getCliConfig.js')
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
+    mockedGetCliConfig.mockResolvedValueOnce({
       api: {
         projectId: undefined,
       },
     })
 
-    const {error} = await testCommand(Add, ['Test Token'])
+    const {error} = await testCommand(AddTokenCommand, ['Test Token'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('handles no roles available for tokens', async () => {
@@ -319,9 +324,125 @@ describe('tokens add', () => {
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
-    const {error} = await testCommand(Add, ['Test Token'])
+    const {error} = await testCommand(AddTokenCommand, ['Test Token'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('No roles available for tokens')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('prompts for label when not provided in interactive mode', async () => {
+    const mockRoles = [
+      {
+        appliesToRobots: true,
+        appliesToUsers: true,
+        description: 'Can read documents',
+        isCustom: false,
+        name: 'viewer',
+        projectId: 'test-project',
+        title: 'Viewer',
+      },
+    ]
+
+    const mockToken = {
+      id: 'token-prompted',
+      key: 'sk_test_prompted1234',
+      label: 'Prompted Label',
+      projectUserId: 'user-123',
+      roles: [
+        {
+          name: 'viewer',
+          title: 'Viewer',
+        },
+      ],
+    }
+
+    mockedInput.mockResolvedValueOnce('Prompted Label')
+    mockedSelect.mockResolvedValueOnce('viewer')
+
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      uri: '/projects/test-project/roles',
+    }).reply(200, mockRoles)
+
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      method: 'post',
+      uri: '/projects/test-project/tokens',
+    }).reply(200, mockToken)
+
+    const {stdout} = await testCommand(AddTokenCommand, [])
+
+    expect(mockedInput).toHaveBeenCalledWith({
+      message: 'Token label:',
+      validate: expect.any(Function),
+    })
+    expect(stdout).toContain('Token created successfully!')
+    expect(stdout).toContain('Label: Prompted Label')
+  })
+
+  test('validates label input - rejects empty label', async () => {
+    // Mock input to capture the validation function and return a valid label
+    mockedInput.mockResolvedValueOnce('Valid Label')
+    mockedSelect.mockResolvedValueOnce('viewer')
+
+    const mockRoles = [
+      {
+        appliesToRobots: true,
+        appliesToUsers: true,
+        description: 'Can read documents',
+        isCustom: false,
+        name: 'viewer',
+        projectId: 'test-project',
+        title: 'Viewer',
+      },
+    ]
+
+    const mockToken = {
+      id: 'token-validated',
+      key: 'sk_test_validated1234',
+      label: 'Valid Label',
+      projectUserId: 'user-123',
+      roles: [
+        {
+          name: 'viewer',
+          title: 'Viewer',
+        },
+      ],
+    }
+
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      uri: '/projects/test-project/roles',
+    }).reply(200, mockRoles)
+
+    mockApi({
+      apiVersion: TOKENS_API_VERSION,
+      method: 'post',
+      uri: '/projects/test-project/tokens',
+    }).reply(200, mockToken)
+
+    await testCommand(AddTokenCommand, [])
+
+    // Test that the validation function correctly rejects empty and whitespace-only strings
+    const inputCall = mockedInput.mock.calls[0]
+    expect(inputCall).toBeDefined()
+    const options = inputCall[0]
+    expect(options.validate).toBeDefined()
+
+    if (options.validate) {
+      expect(options.validate('')).toBe('Label cannot be empty')
+      expect(options.validate('   ')).toBe('Label cannot be empty')
+      expect(options.validate('Valid Label')).toBe(true)
+    }
+  })
+
+  test('throws error when no label provided in non-interactive mode with --yes flag', async () => {
+    const {error} = await testCommand(AddTokenCommand, ['--yes'])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Token label is required in non-interactive mode')
+    expect(error?.message).toContain('Provide a label as an argument')
+    expect(error?.oclif?.exit).toBe(1)
   })
 })

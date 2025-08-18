@@ -1,13 +1,17 @@
+import {input, select} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {type SanityClient} from '@sanity/client'
 
-import {addToken} from '../../actions/tokens/addToken.js'
 import {TOKENS_API_VERSION} from '../../actions/tokens/constants.js'
+import {validateRole} from '../../actions/tokens/validateRole.js'
+import {addTokenToProject} from '../../services/addTokenToProject.js'
+import {getProjectRoles} from '../../services/getProjectRoles.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const tokensAddDebug = subdebug('tokens:add')
 
-export class Add extends SanityCommand<typeof Add> {
+export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
   static override args = {
     label: Args.string({
       description: 'Label for the new token',
@@ -53,30 +57,32 @@ export class Add extends SanityCommand<typeof Add> {
   }
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(Add)
-    const {label} = args
-    const {json, role, yes} = flags
+    const {args, flags} = await this.parse(AddTokenCommand)
+    const {label: givenLabel} = args
+    const {json, role} = flags
 
     const client = await this.getGlobalApiClient({
       apiVersion: TOKENS_API_VERSION,
       requireUser: true,
     })
 
-    // Ensure we have project context
     const projectId = await this.getProjectId()
     if (!projectId) {
       this.error(NO_PROJECT_ID, {exit: 1})
     }
 
     try {
-      tokensAddDebug(`Creating token for project ${projectId}`, {label, role, unattended: yes})
+      const label = givenLabel || (await this.promptForLabel())
+      const roleName = await (role
+        ? validateRole(role, client, projectId)
+        : this.promptForRole(client, projectId))
 
-      const token = await addToken({
+      tokensAddDebug(`Creating token for project ${projectId}`, {label, roleName})
+      const token = await addTokenToProject({
         client,
         label,
         projectId,
-        role,
-        unattended: yes,
+        roleName,
       })
 
       if (json) {
@@ -97,5 +103,57 @@ export class Add extends SanityCommand<typeof Add> {
       tokensAddDebug(`Error creating token for project ${projectId}`, err)
       this.error(`Token creation failed:\n${err.message}`, {exit: 1})
     }
+  }
+
+  private async promptForLabel(): Promise<string> {
+    const unattended = this.flags.yes
+    if (unattended || !isInteractive) {
+      this.error(
+        'Token label is required in non-interactive mode. Provide a label as an argument.',
+        {
+          exit: 1,
+        },
+      )
+    }
+
+    const label = await input({
+      message: 'Token label:',
+      validate: (value) => {
+        if (!value || !value.trim()) {
+          return 'Label cannot be empty'
+        }
+        return true
+      },
+    })
+
+    return label
+  }
+
+  private async promptForRole(client: SanityClient, projectId: string): Promise<string> {
+    const unattended = this.flags.yes
+    if (unattended || !isInteractive) {
+      return 'viewer' // Default role for unattended mode
+    }
+
+    const roles = await getProjectRoles(client, projectId)
+    const robotRoles = roles.filter((role) => role.appliesToRobots)
+
+    tokensAddDebug('Robot roles', {robotRoles})
+
+    if (robotRoles.length === 0) {
+      this.error('No roles available for tokens', {exit: 1})
+    }
+
+    const selectedRoleName = await select({
+      choices: robotRoles.map((role) => ({
+        name: `${role.title} (${role.name})`,
+        short: role.title,
+        value: role.name,
+      })),
+      default: 'viewer',
+      message: 'Select role for the token:',
+    })
+
+    return selectedRoleName
   }
 }
