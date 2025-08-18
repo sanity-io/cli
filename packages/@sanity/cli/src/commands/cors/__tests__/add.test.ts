@@ -10,19 +10,16 @@ import {CORS_API_VERSION} from '../../../actions/cors/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Add} from '../add.js'
 
-// Mock inquirer prompts
 vi.mock('@inquirer/prompts', () => ({
   confirm: vi.fn(),
 }))
 
-// Mock fs for file path detection tests
 vi.mock('node:fs', () => ({
   default: {
     existsSync: vi.fn(),
   },
 }))
 
-// Mock the config functions with relative paths
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn().mockResolvedValue({
     directory: '/test/path',
@@ -65,7 +62,6 @@ const setupSuccessfulApiMock = () => {
 
 describe('#cors:add', () => {
   beforeEach(() => {
-    // Default mock implementations
     mockExistsSync.mockReturnValue(false)
   })
 
@@ -85,7 +81,6 @@ describe('#cors:add', () => {
       method: 'post',
       uri: '/projects/test-project/cors',
     }).reply(201, function (_, requestBody) {
-      // Verify the request body contains correct allowCredentials value
       expect(requestBody).toEqual({
         allowCredentials: expectedAllowCredentials,
         origin: origin,
@@ -116,7 +111,6 @@ describe('#cors:add', () => {
       method: 'post',
       uri: '/projects/test-project/cors',
     }).reply(201, function (_, requestBody) {
-      // Verify the request body contains correct allowCredentials value
       expect(requestBody).toEqual({
         allowCredentials: expectedAllowCredentials,
         origin: origin,
@@ -184,7 +178,6 @@ describe('#cors:add', () => {
     mockExistsSync.mockReturnValue(true)
     setupSuccessfulApiMock()
 
-    // Use a valid origin that also looks like a file path
     const {stderr} = await testCommand(Add, ['https://example.com', '--credentials'])
 
     expect(stderr).toContain('Remember to quote values')
