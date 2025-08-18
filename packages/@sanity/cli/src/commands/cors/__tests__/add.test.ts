@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import {confirm} from '@inquirer/prompts'
 import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
+import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {CORS_API_VERSION} from '../../../actions/cors/constants.js'
@@ -70,25 +71,69 @@ describe('#cors:add', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
   })
 
-  const credentialsFlagCases = [
-    {
-      description: 'adds CORS origin with credentials flag',
-      flag: '--credentials',
-      origin: 'https://example.com',
-    },
-    {
-      description: 'adds CORS origin with no-credentials flag',
-      flag: '--no-credentials',
-      origin: 'http://localhost:3000',
-    },
-  ]
+  test('adds CORS origin with credentials flag', async () => {
+    const origin = 'https://example.com'
+    const expectedAllowCredentials = true
 
-  test.each(credentialsFlagCases)('$description', async ({flag, origin}) => {
-    setupSuccessfulApiMock()
+    mockApi({
+      apiVersion: CORS_API_VERSION,
+      method: 'post',
+      uri: '/projects/test-project/cors',
+    }).reply(201, function (_, requestBody) {
+      // Verify the request body contains correct allowCredentials value
+      expect(requestBody).toEqual({
+        allowCredentials: expectedAllowCredentials,
+        origin: origin,
+      })
 
-    const {stdout} = await testCommand(Add, [origin, flag])
+      return {
+        allowCredentials: expectedAllowCredentials,
+        createdAt: '2023-01-01T00:00:00Z',
+        deletedAt: null,
+        id: 1,
+        origin: origin,
+        projectId: 'test-project',
+        updatedAt: null,
+      }
+    })
+
+    const {stdout} = await testCommand(Add, [origin, '--credentials'])
+
+    expect(stdout).toContain('CORS origin added successfully')
+  })
+
+  test('adds CORS origin with no-credentials flag', async () => {
+    const origin = 'http://localhost:3000'
+    const expectedAllowCredentials = false
+
+    mockApi({
+      apiVersion: CORS_API_VERSION,
+      method: 'post',
+      uri: '/projects/test-project/cors',
+    }).reply(201, function (_, requestBody) {
+      // Verify the request body contains correct allowCredentials value
+      expect(requestBody).toEqual({
+        allowCredentials: expectedAllowCredentials,
+        origin: origin,
+      })
+
+      return {
+        allowCredentials: expectedAllowCredentials,
+        createdAt: '2023-01-01T00:00:00Z',
+        deletedAt: null,
+        id: 2,
+        origin: origin,
+        projectId: 'test-project',
+        updatedAt: null,
+      }
+    })
+
+    const {stdout} = await testCommand(Add, [origin, '--no-credentials'])
 
     expect(stdout).toContain('CORS origin added successfully')
   })
@@ -126,7 +171,7 @@ describe('#cors:add', () => {
     },
   ]
 
-  test.each(errorHandlingCases)('$description', async ({setupMock, expectedError}) => {
+  test.each(errorHandlingCases)('$description', async ({expectedError, setupMock}) => {
     setupMock()
 
     const {error} = await testCommand(Add, ['https://example.com', '--credentials'])
@@ -168,7 +213,7 @@ describe('#cors:add', () => {
 
     test.each(wildcardConfirmationCases)(
       '$description',
-      async ({setupMocks, expectedOutput, expectedError}) => {
+      async ({expectedError, expectedOutput, setupMocks}) => {
         setupMocks()
 
         const result = await testCommand(Add, ['https://*.example.com'])
