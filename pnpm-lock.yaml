@@ -309,6 +309,9 @@ importers:
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
+      console-table-printer:
+        specifier: ^2.14.6
+        version: 2.14.6
       debug:
         specifier: ^4.4.0
         version: 4.4.1(supports-color@8.1.1)
