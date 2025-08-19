@@ -1,0 +1,22 @@
+interface TokenRole {
+  name: string
+  title: string
+}
+
+export interface TokenResponse {
+  id: string
+  key: string
+  label: string
+  projectUserId: string
+  roles: TokenRole[]
+}
+
+export interface ProjectRole {
+  appliesToRobots: boolean
+  appliesToUsers: boolean
+  description: string
+  isCustom: boolean
+  name: string
+  projectId: string
+  title: string
+}
