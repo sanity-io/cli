@@ -3,6 +3,14 @@ interface TokenRole {
   title: string
 }
 
+export interface Token {
+  createdAt: string
+  id: string
+  label: string
+  projectUserId: string
+  roles: TokenRole[]
+}
+
 export interface TokenResponse {
   id: string
   key: string
