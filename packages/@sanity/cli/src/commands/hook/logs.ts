@@ -1,21 +1,30 @@
+import {inspect} from 'node:util'
+
 import {select} from '@inquirer/prompts'
-import {Args} from '@oclif/core'
+import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import chalk from 'chalk'
 import {groupBy} from 'lodash-es'
 
-import {HOOK_API_VERSION} from '../../actions/hook/constants.js'
+import {formatFailure} from '../../actions/hook/formatFailure.js'
 import {type DeliveryAttempt, type Hook, type HookMessage} from '../../actions/hook/types'
+import {
+  getHookAttemptsForProject,
+  getHookMessagesForProject,
+  getHooksForProject,
+} from '../../services/hooks.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const logsHookDebug = subdebug('hook:logs')
 
-export class Logs extends SanityCommand<typeof Logs> {
+export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
   static override args = {
     name: Args.string({
       description: 'Name of the hook to show logs for',
       required: false,
     }),
   }
+
   static override description = 'List latest log entries for a given hook'
 
   static override examples = [
@@ -29,12 +38,15 @@ export class Logs extends SanityCommand<typeof Logs> {
     },
   ]
 
+  static override flags = {
+    detailed: Flags.boolean({
+      description: 'Include detailed payload and attempts',
+      required: false,
+    }),
+  }
+
   public async run() {
-    const {args} = await this.parse(Logs)
-    const client = await this.getGlobalApiClient({
-      apiVersion: HOOK_API_VERSION,
-      requireUser: true,
-    })
+    const {args, flags} = await this.parse(LogsHookCommand)
 
     // Ensure we have project context
     const projectId = await this.getProjectId()
@@ -45,7 +57,7 @@ export class Logs extends SanityCommand<typeof Logs> {
     // Get hooks for the project
     let hooks: Hook[]
     try {
-      hooks = await client.request<Hook[]>({uri: `/hooks/projects/${projectId}`})
+      hooks = await getHooksForProject(projectId)
     } catch (error) {
       const err = error as Error
       logsHookDebug(`Error fetching hooks for project ${projectId}`, err)
@@ -68,15 +80,7 @@ export class Logs extends SanityCommand<typeof Logs> {
       selectedHook = hooks[0]
     } else {
       // Otherwise prompt user to select a hook
-      const hookId = await select({
-        choices: hooks.map((hook) => ({
-          name: hook.name,
-          value: hook.id,
-        })),
-        message: 'Select hook to list logs for',
-      })
-
-      selectedHook = hooks.find((hook) => hook.id === hookId)
+      selectedHook = await this.selectHook(hooks)
     }
 
     if (!selectedHook) {
@@ -85,11 +89,15 @@ export class Logs extends SanityCommand<typeof Logs> {
 
     // Fetch messages and attempts for the selected hook
     let messages: HookMessage[]
-    let attempts: DeliveryAttempt[]
+    let attempts: DeliveryAttempt[] = []
     try {
-      messages = await client.request<HookMessage[]>({uri: `/hooks/${selectedHook.id}/messages`})
-      attempts = await client.request<DeliveryAttempt[]>({
-        uri: `/hooks/${selectedHook.id}/attempts`,
+      messages = await getHookMessagesForProject({
+        hookId: selectedHook.id,
+        projectId,
+      })
+      attempts = await getHookAttemptsForProject({
+        hookId: selectedHook.id,
+        projectId,
       })
     } catch (error) {
       const err = error as Error
@@ -100,28 +108,89 @@ export class Logs extends SanityCommand<typeof Logs> {
     // Group attempts by message ID
     const groupedAttempts = groupBy(attempts, 'messageId')
 
-    // Print logs
-    for (const message of messages) {
-      const messageAttempts = groupedAttempts[message.id] || []
-      this.printMessage(message, messageAttempts)
+    // Populate messages with attempts
+    const populated = messages.map((msg): HookMessage & {attempts: DeliveryAttempt[]} => ({
+      ...msg,
+      attempts: groupedAttempts[msg.id],
+    }))
+
+    const totalMessages = messages.length - 1
+
+    for (const [i, message] of populated.entries()) {
+      this.printMessage(message, {detailed: flags.detailed})
+      this.printSeparator(totalMessages === i)
+    }
+  }
+
+  private formatAttemptDate(dateString: string): string {
+    try {
+      return new Date(dateString).toISOString().replace(/\.\d+Z$/, 'Z')
+    } catch {
+      return dateString // fallback to original if parsing fails
+    }
+  }
+
+  private printMessage(
+    message: HookMessage & {attempts: DeliveryAttempt[]},
+    options: {detailed?: boolean},
+  ) {
+    const {detailed} = options
+
+    this.log(`Date: ${message.createdAt}`)
+    this.log(`Status: ${message.status}`)
+    this.log(`Result code: ${message.resultCode}`)
+
+    if (message.failureCount > 0) {
+      this.log(`Failures: ${message.failureCount}`)
+    }
+
+    if (detailed) {
+      this.log('Payload:')
+      try {
+        const payload = JSON.parse(message.payload)
+        this.log(inspect(payload, {colors: true}))
+      } catch (error) {
+        this.log(`Payload (raw): ${message.payload}`)
+        logsHookDebug('Failed to parse payload JSON:', error)
+      }
+    }
+
+    if (detailed && message.attempts && message.attempts.length > 0) {
+      this.log('Attempts:')
+      for (const attempt of message.attempts) {
+        const date = this.formatAttemptDate(attempt.createdAt)
+        const prefix = `  [${date}]`
+
+        if (attempt.inProgress) {
+          this.log(`${prefix} ${chalk.yellow('Pending')}`)
+        } else if (attempt.isFailure) {
+          const failure = formatFailure(attempt, {includeHelp: true})
+          this.log(`${prefix} ${chalk.yellow(`Failure: ${failure}`)}`)
+        } else {
+          this.log(`${prefix} Success: HTTP ${attempt.resultCode} (${attempt.duration}ms)`)
+        }
+      }
+    }
+
+    // Leave some empty space between messages
+    this.log('')
+  }
+
+  private printSeparator(skip: boolean) {
+    if (!skip) {
       this.log('---\n')
     }
   }
 
-  private printMessage(message: HookMessage, attempts: DeliveryAttempt[]) {
-    const latestAttempt = attempts.at(-1)
+  private async selectHook(hooks: Hook[]) {
+    const hookId = await select({
+      choices: hooks.map((hook) => ({
+        name: hook.name,
+        value: hook.id,
+      })),
+      message: 'Select hook to list logs for',
+    })
 
-    this.log(`Date: ${message.createdAt}`)
-
-    if (latestAttempt) {
-      this.log(`Status: ${latestAttempt.status}`)
-      if (latestAttempt.statusCode) {
-        this.log(`Result code: ${latestAttempt.statusCode}`)
-      }
-      if (latestAttempt.error) {
-        this.log(`Error: ${latestAttempt.error}`)
-      }
-      this.log(`Failures: ${attempts.length}`)
-    }
+    return hooks.find((hook) => hook.id === hookId)
   }
 }
