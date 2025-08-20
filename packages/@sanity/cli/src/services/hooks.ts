@@ -41,14 +41,7 @@ export async function getHookAttemptsForProject({
     requireUser: true,
   })
 
-  return (
-    client
-      // TODO: Remove once API is updated
-      .config({
-        requestTagPrefix: undefined,
-      })
-      .request<DeliveryAttempt[]>({
-        uri: `/hooks/projects/${projectId}/${hookId}/attempts`,
-      })
-  )
+  return client.request<DeliveryAttempt[]>({
+    uri: `/hooks/projects/${projectId}/${hookId}/attempts`,
+  })
 }

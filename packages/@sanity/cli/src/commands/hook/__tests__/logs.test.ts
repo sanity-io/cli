@@ -119,24 +119,25 @@ describe('#hook:logs', () => {
       },
     ])
 
-    nock('https://api.sanity.io')
-      .get(`/${HOOK_API_VERSION}/hooks/projects/test-project/hook-1/attempts`)
-      .reply(200, [
-        {
-          createdAt: '2025-08-07T09:15:36.628Z',
-          duration: 150,
-          failureReason: 'http',
-          hookId: 'hook-1',
-          id: 'attempt-1',
-          inProgress: false,
-          isFailure: true,
-          messageId: 'msg-1',
-          projectId: 'test-project',
-          resultBody: 'Not Found',
-          resultCode: 404,
-          updatedAt: null,
-        },
-      ])
+    mockApi({
+      apiVersion: HOOK_API_VERSION,
+      uri: '/hooks/projects/test-project/hook-1/attempts',
+    }).reply(200, [
+      {
+        createdAt: '2025-08-07T09:15:36.628Z',
+        duration: 150,
+        failureReason: 'http',
+        hookId: 'hook-1',
+        id: 'attempt-1',
+        inProgress: false,
+        isFailure: true,
+        messageId: 'msg-1',
+        projectId: 'test-project',
+        resultBody: 'Not Found',
+        resultCode: 404,
+        updatedAt: null,
+      },
+    ])
 
     const {stdout} = await testCommand(LogsHookCommand)
 
@@ -180,24 +181,25 @@ describe('#hook:logs', () => {
       },
     ])
 
-    nock('https://api.sanity.io')
-      .get(`/${HOOK_API_VERSION}/hooks/projects/test-project/hook-1/attempts`)
-      .reply(200, [
-        {
-          createdAt: '2025-08-07T09:15:36.628Z',
-          duration: 150,
-          failureReason: '',
-          hookId: 'hook-1',
-          id: 'attempt-1',
-          inProgress: false,
-          isFailure: false,
-          messageId: 'msg-1',
-          projectId: 'test-project',
-          resultBody: 'OK',
-          resultCode: 200,
-          updatedAt: null,
-        },
-      ])
+    mockApi({
+      apiVersion: HOOK_API_VERSION,
+      uri: '/hooks/projects/test-project/hook-1/attempts',
+    }).reply(200, [
+      {
+        createdAt: '2025-08-07T09:15:36.628Z',
+        duration: 150,
+        failureReason: '',
+        hookId: 'hook-1',
+        id: 'attempt-1',
+        inProgress: false,
+        isFailure: false,
+        messageId: 'msg-1',
+        projectId: 'test-project',
+        resultBody: 'OK',
+        resultCode: 200,
+        updatedAt: null,
+      },
+    ])
 
     const {stdout} = await testCommand(LogsHookCommand, ['test-hook'])
 
@@ -266,9 +268,10 @@ describe('#hook:logs', () => {
       },
     ])
 
-    nock('https://api.sanity.io')
-      .get(`/${HOOK_API_VERSION}/hooks/projects/test-project/hook-2/attempts`)
-      .reply(200, [])
+    mockApi({
+      apiVersion: HOOK_API_VERSION,
+      uri: '/hooks/projects/test-project/hook-2/attempts',
+    }).reply(200, [])
 
     const {stdout} = await testCommand(LogsHookCommand)
 
@@ -314,9 +317,10 @@ describe('#hook:logs', () => {
       },
     ])
 
-    nock('https://api.sanity.io')
-      .get(`/${HOOK_API_VERSION}/hooks/projects/test-project/hook-1/attempts`)
-      .reply(200, [])
+    mockApi({
+      apiVersion: HOOK_API_VERSION,
+      uri: '/hooks/projects/test-project/hook-1/attempts',
+    }).reply(200, [])
 
     const {stdout} = await testCommand(LogsHookCommand, ['test-hook'])
 
@@ -353,9 +357,10 @@ describe('#hook:logs', () => {
       },
     ])
 
-    nock('https://api.sanity.io')
-      .get(`/${HOOK_API_VERSION}/hooks/projects/test-project/hook-1/attempts`)
-      .reply(500, {message: 'Internal Server Error'})
+    mockApi({
+      apiVersion: HOOK_API_VERSION,
+      uri: '/hooks/projects/test-project/hook-1/attempts',
+    }).reply(500, {message: 'Internal Server Error'})
 
     const {error} = await testCommand(LogsHookCommand)
 
@@ -392,9 +397,10 @@ describe('#hook:logs', () => {
       },
     ])
 
-    nock('https://api.sanity.io')
-      .get(`/${HOOK_API_VERSION}/hooks/projects/test-project/hook-1/attempts`)
-      .reply(200, [
+    mockApi({
+      apiVersion: HOOK_API_VERSION,
+      uri: '/hooks/projects/test-project/hook-1/attempts',
+    }).reply(200, [
       {
         createdAt: '2025-08-07T13:00:01.000Z',
         duration: 5000,
@@ -471,9 +477,10 @@ describe('#hook:logs', () => {
       },
     ])
 
-    nock('https://api.sanity.io')
-      .get(`/${HOOK_API_VERSION}/hooks/projects/test-project/hook-1/attempts`)
-      .reply(200, [
+    mockApi({
+      apiVersion: HOOK_API_VERSION,
+      uri: '/hooks/projects/test-project/hook-1/attempts',
+    }).reply(200, [
       {
         createdAt: '2025-08-07T14:00:01.500Z',
         duration: 250,
@@ -524,9 +531,10 @@ describe('#hook:logs', () => {
       },
     ])
 
-    nock('https://api.sanity.io')
-      .get(`/${HOOK_API_VERSION}/hooks/projects/test-project/hook-1/attempts`)
-      .reply(200, [
+    mockApi({
+      apiVersion: HOOK_API_VERSION,
+      uri: '/hooks/projects/test-project/hook-1/attempts',
+    }).reply(200, [
       {
         createdAt: '2025-08-07T15:00:01.000Z',
         duration: 100,
@@ -620,9 +628,10 @@ describe('#hook:logs', () => {
       },
     ])
 
-    nock('https://api.sanity.io')
-      .get(`/${HOOK_API_VERSION}/hooks/projects/test-project/hook-1/attempts`)
-      .reply(200, [
+    mockApi({
+      apiVersion: HOOK_API_VERSION,
+      uri: '/hooks/projects/test-project/hook-1/attempts',
+    }).reply(200, [
       {
         createdAt: '2025-08-07T16:00:01.000Z',
         duration: 100,
@@ -663,7 +672,7 @@ describe('#hook:logs', () => {
     expect(stdout).toContain('Status: failure')
     expect(stdout).toContain('Result code: 500')
     expect(stdout).toContain('Failures: 1')
-    
+
     // Verify that the first message section (before "---") doesn't have failures
     const [firstSection] = stdout.split('---')
     expect(firstSection).not.toContain('Failures:')
@@ -736,9 +745,10 @@ describe('#hook:logs', () => {
       },
     ])
 
-    nock('https://api.sanity.io')
-      .get(`/${HOOK_API_VERSION}/hooks/projects/test-project/hook-1/attempts`)
-      .reply(200, [])
+    mockApi({
+      apiVersion: HOOK_API_VERSION,
+      uri: '/hooks/projects/test-project/hook-1/attempts',
+    }).reply(200, [])
 
     const {stdout} = await testCommand(LogsHookCommand, ['--detailed'])
 
