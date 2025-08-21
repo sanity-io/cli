@@ -1,23 +1,18 @@
-import {chmod, readFile, writeFile} from 'node:fs/promises'
+import {readFile, rm, writeFile} from 'node:fs/promises'
+import {createServer} from 'node:http'
 import {join} from 'node:path'
 
 import {testCommand} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
 import {testExample} from '~test/helpers/testExample.js'
 
-import {BuildCommand} from '../build.js'
 import {StartCommand} from '../start.js'
 
 describe('#start', () => {
   test('should start the "basic-studio" example', async () => {
-    const cwd = await testExample('basic-studio')
+    const cwd = await testExample('basic-studio', {shouldBuild: true})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
-
-    // First build the example
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
-    })
 
     const {error, stdout} = await testCommand(StartCommand, [], {
       config: {root: cwd},
@@ -30,14 +25,9 @@ describe('#start', () => {
   })
 
   test('should start the "basic-app" example', async () => {
-    const cwd = await testExample('basic-app')
+    const cwd = await testExample('basic-app', {shouldBuild: true})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
-
-    // First build the example
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
-    })
 
     const {error, stdout} = await testCommand(StartCommand, ['--port', '3334'], {
       config: {root: cwd},
@@ -50,7 +40,7 @@ describe('#start', () => {
   })
 
   test('should throw an error if the basic-studio example has not been built', async () => {
-    const cwd = await testExample('basic-studio')
+    const cwd = await testExample('basic-studio', {shouldBuild: false})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -68,7 +58,7 @@ describe('#start', () => {
   })
 
   test('should throw an error if the basic-app example has not been built', async () => {
-    const cwd = await testExample('basic-app')
+    const cwd = await testExample('basic-app', {shouldBuild: false})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -85,14 +75,10 @@ describe('#start', () => {
     )
   })
 
-  test('should throw an error if the basepath cannot be resolved from the index.html file', async () => {
-    const cwd = await testExample('basic-studio')
+  test('should use resolved base path from index.html file', async () => {
+    const cwd = await testExample('basic-studio', {shouldBuild: true})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
-
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
-    })
 
     // Replace the script tag in the index.html file with a script tag that does not have a src attribute
     const indexPath = join(cwd, 'dist', 'index.html')
@@ -120,14 +106,10 @@ describe('#start', () => {
     )
   })
 
-  test('should throw an error if the basepath cannot be resolved from the index.html file', async () => {
-    const cwd = await testExample('basic-studio')
+  test('should fallback to default basepath when cannot resolve from index.html', async () => {
+    const cwd = await testExample('basic-studio', {shouldBuild: true})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
-
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
-    })
 
     // Replace the script tag in the index.html file with a script tag that does not have a src attribute
     const indexPath = join(cwd, 'dist', 'index.html')
@@ -154,53 +136,49 @@ describe('#start', () => {
   })
 
   test('should throw an error if the index.html file is not found', async () => {
-    const cwd = await testExample('basic-studio')
+    const cwd = await testExample('basic-studio', {shouldBuild: true})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
-    })
-
-    // Make the index.html not readable
-    await chmod(join(cwd, 'dist', 'index.html'), 0)
+    // Remove the index.html file
+    await rm(join(cwd, 'dist', 'index.html'))
 
     const {error} = await testCommand(StartCommand, ['--port', '3337'], {
       config: {root: cwd},
     })
 
     expect(error).toBeDefined()
-    expect(error?.message).toContain(
-      'The studio server does not have access to listen to given port - do you have access to listen to the given host (localhost)',
-    )
+    expect(error?.message).toContain('Failed to start preview server')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should throw an error if port is already in use', async () => {
-    const cwd = await testExample('basic-studio')
+    const cwd = await testExample('basic-studio', {shouldBuild: true})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
-    // First build the example
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
+    // Create a server on port 3333 to block it
+    const server = createServer()
+    await new Promise<void>((resolve) => {
+      server.listen(3333, resolve)
     })
 
-    await testCommand(StartCommand, ['--port', '3333'], {
-      config: {root: cwd},
-    })
+    try {
+      const {error} = await testCommand(StartCommand, ['--port', '3333'], {
+        config: {root: cwd},
+      })
 
-    const {error} = await testCommand(StartCommand, ['--port', '3333'], {
-      config: {root: cwd},
-    })
-
-    expect(error).toBeDefined()
-    expect(error?.message).toContain('Port 3333 is already in use')
-    expect(error?.oclif?.exit).toBe(1)
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Port 3333 is already in use')
+      expect(error?.oclif?.exit).toBe(1)
+    } finally {
+      // Clean up the server
+      server.close()
+    }
   })
 
   test('should allow using vite config from sanity.cli.ts', async () => {
-    const cwd = await testExample('basic-app')
+    const cwd = await testExample('basic-app', {shouldBuild: true})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -225,10 +203,6 @@ describe('#start', () => {
       })
     `,
     )
-
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
-    })
 
     const {stdout} = await testCommand(StartCommand, [], {
       config: {root: cwd},

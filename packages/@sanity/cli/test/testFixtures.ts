@@ -3,9 +3,13 @@ import {readdir, readFile, rm, writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 import {promisify} from 'node:util'
 
+import {BuildCommand} from '../src/commands/build.js'
 import {testCopyDirectory} from './helpers/testExample.js'
 
 const exec = promisify(execNode)
+
+// Add examples to copy here
+const examplesToCopy = new Set(['basic-app', 'basic-studio'])
 
 export async function setup() {
   console.log('Initializing test environment...')
@@ -15,7 +19,7 @@ export async function setup() {
 
   const tempDir = join(process.cwd(), 'tmp')
   for (const example of examples) {
-    if (example.startsWith('.')) {
+    if (example.startsWith('.') || !examplesToCopy.has(example)) {
       continue
     }
 
@@ -42,6 +46,16 @@ export async function setup() {
         `Error installing dependencies in ${toPath}: ${execError.stderr || execError.message}`,
       )
     }
+
+    const currentCwd = process.cwd()
+    process.cwd = () => toPath
+
+    // Run build in the temp directory
+    await BuildCommand.run(['--yes'], {
+      root: toPath,
+    })
+
+    process.cwd = () => currentCwd
   }
 
   console.log('Test environment initialized')
