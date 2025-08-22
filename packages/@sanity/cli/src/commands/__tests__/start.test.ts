@@ -157,19 +157,19 @@ describe('#start', () => {
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
-    // Create a server on port 3333 to block it
+    // Create a server on port 3338 to block it
     const server = createServer()
     await new Promise<void>((resolve) => {
-      server.listen(3333, resolve)
+      server.listen(3338, 'localhost', resolve)
     })
 
     try {
-      const {error} = await testCommand(StartCommand, ['--port', '3333'], {
+      const {error} = await testCommand(StartCommand, ['--port', '3338'], {
         config: {root: cwd},
       })
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Port 3333 is already in use')
+      expect(error?.message).toContain('Port 3338 is already in use')
       expect(error?.oclif?.exit).toBe(1)
     } finally {
       // Clean up the server
