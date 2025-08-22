@@ -3,7 +3,7 @@ import path from 'node:path'
 
 import {type UserViteConfig} from '@sanity/cli-core'
 import chalk from 'chalk'
-import {type InlineConfig} from 'vite'
+import {type InlineConfig, preview} from 'vite'
 
 import {extendViteConfigWithUserConfig} from '../actions/build/getViteConfig.js'
 import {readModuleVersion} from '../util/readModuleVersion.js'
@@ -79,7 +79,6 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
   }
 
   debug('Creating vite server')
-  const {preview} = await import('vite')
   const server = await preview(previewConfig)
   const warn = server.config.logger.warn
   const info = server.config.logger.info
