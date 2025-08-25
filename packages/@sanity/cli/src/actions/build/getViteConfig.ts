@@ -5,6 +5,9 @@ import debug from 'debug'
 import {readPackageUp} from 'read-package-up'
 import {type ConfigEnv, type InlineConfig, type Rollup} from 'vite'
 
+import {sanityBuildEntries} from '../../server/vite/plugin-sanity-build-entries.js'
+import {sanityFaviconsPlugin} from '../../server/vite/plugin-sanity-favicons.js'
+import {sanityRuntimeRewritePlugin} from '../../server/vite/plugin-sanity-runtime-rewrite.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {getSanityPkgExportAliases} from './getBrowserAliases.js'
 import {
@@ -12,9 +15,6 @@ import {
   getStudioEnvironmentVariables,
 } from './getStudioEnvironmentVariables.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
-import {sanityBuildEntries} from './vite/plugin-sanity-build-entries.js'
-import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
-import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
 
 interface ViteOptions {
   /**

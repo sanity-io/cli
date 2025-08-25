@@ -44,15 +44,21 @@ export async function testCopyDirectory(
  * @hidden
  * @internal
  */
-async function copyExample(exampleName: string) {
+async function copyExample(exampleName: string, shouldBuild: boolean) {
   // Examples are cloned in the tmp directory by the setup function
   const tempExamplePath = join(rootDir, 'tmp', `example-${exampleName}`)
 
   const tempId = randomBytes(8).toString('hex')
   const tempPath = join(rootDir, 'tmp', `example-${exampleName}-${tempId}`)
 
+  let skipDirs = ['node_modules', 'dist']
+  if (shouldBuild) {
+    // If we are building, we need the dist directory to be present
+    skipDirs = ['node_modules']
+  }
+
   // Copy the example to the temp directory
-  await testCopyDirectory(tempExamplePath, tempPath, ['node_modules', 'dist'])
+  await testCopyDirectory(tempExamplePath, tempPath, skipDirs)
 
   // Symlink the node_modules directory
   await symlink(join(tempExamplePath, 'node_modules'), join(tempPath, 'node_modules'))
@@ -71,15 +77,29 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const rootDir = resolve(__dirname, '../../../../../')
 const examplesDir = resolve(rootDir, 'examples')
 
+interface TestExampleOptions {
+  /**
+   * Whether to build the example before running tests.
+   *
+   * Defaults to false.
+   */
+  shouldBuild?: boolean
+}
+
 /**
  * Clones an example directory into a temporary directory at the repo root.
  *
  * Note: Tracks which examples have been cloned to avoid cloning the same example multiple times.
  *
  * @param exampleName - The name of the example to clone
+ * @param options - The options for the example
  * @returns The path to the temporary directory
  */
-export async function testExample(exampleName: string): Promise<string> {
+export async function testExample(
+  exampleName: string,
+  options: TestExampleOptions = {},
+): Promise<string> {
+  const {shouldBuild = false} = options
   const examplePath = join(examplesDir, exampleName)
 
   // Check if the example exists
@@ -88,7 +108,7 @@ export async function testExample(exampleName: string): Promise<string> {
   }
 
   // Copy the example to the temp directory
-  const tempPath = await copyExample(exampleName)
+  const tempPath = await copyExample(exampleName, shouldBuild)
 
   return tempPath
 }

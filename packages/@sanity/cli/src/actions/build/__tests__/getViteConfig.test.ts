@@ -8,10 +8,6 @@ import {
 } from '../getViteConfig.js'
 
 // Mock all external dependencies
-vi.mock('debug', () => ({
-  default: vi.fn(() => vi.fn()),
-}))
-
 vi.mock('read-package-up', () => ({
   readPackageUp: vi.fn(),
 }))
@@ -21,7 +17,7 @@ vi.mock('@vitejs/plugin-react', () => ({
 }))
 
 vi.mock('vite', () => ({
-  mergeConfig: vi.fn((base, override) => ({...base, ...override})),
+  mergeConfig: vi.fn((base: InlineConfig, override: InlineConfig) => ({...base, ...override})),
 }))
 
 vi.mock('../createExternalFromImportMap.js', () => ({
@@ -42,18 +38,18 @@ vi.mock('../getStudioEnvironmentVariables.js', () => ({
 }))
 
 vi.mock('../normalizeBasePath.js', () => ({
-  normalizeBasePath: vi.fn((path) => `/${path}/`.replace(/^\/+/, '/').replace(/\/+$/, '/')),
+  normalizeBasePath: vi.fn((path: string) => `/${path}/`.replace(/^\/+/, '/').replace(/\/+$/, '/')),
 }))
 
-vi.mock('../vite/plugin-sanity-build-entries.js', () => ({
+vi.mock('../../../server/vite/plugin-sanity-build-entries.js', () => ({
   sanityBuildEntries: vi.fn(() => ({name: 'sanity-build-entries'})),
 }))
 
-vi.mock('../vite/plugin-sanity-favicons.js', () => ({
+vi.mock('../../../server/vite/plugin-sanity-favicons.js', () => ({
   sanityFaviconsPlugin: vi.fn(() => ({name: 'sanity-favicons'})),
 }))
 
-vi.mock('../vite/plugin-sanity-runtime-rewrite.js', () => ({
+vi.mock('../../../server/vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
@@ -257,7 +253,7 @@ describe('#getViteConfig', () => {
     }
 
     const {createExternalFromImportMap} = await import('../createExternalFromImportMap.js')
-    const {sanityBuildEntries} = await import('../vite/plugin-sanity-build-entries.js')
+    const {sanityBuildEntries} = await import('../../../server/vite/plugin-sanity-build-entries.js')
 
     await getViteConfig(options)
 
@@ -284,7 +280,7 @@ describe('#getViteConfig', () => {
   })
 
   test('should configure favicon plugin with correct paths', async () => {
-    const {sanityFaviconsPlugin} = await import('../vite/plugin-sanity-favicons.js')
+    const {sanityFaviconsPlugin} = await import('../../../server/vite/plugin-sanity-favicons.js')
 
     const options = {
       basePath: '/studio',
