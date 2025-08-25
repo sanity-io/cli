@@ -1,8 +1,3 @@
-import {PreviewCommand} from '../../commands/preview.js'
-import {StartCommand} from '../../commands/start.js'
+import {type PreviewCommand} from '../../commands/preview.js'
 
-type StartFlags = StartCommand['flags']
-type PreviewFlags = PreviewCommand['flags']
-
-// Both commands have identical flag structures, so we can use either
-export type ServerFlags = PreviewFlags | StartFlags
+export type PreviewFlags = PreviewCommand['flags']

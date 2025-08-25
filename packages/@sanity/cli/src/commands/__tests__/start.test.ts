@@ -2,20 +2,55 @@ import {readFile, rm, writeFile} from 'node:fs/promises'
 import {createServer} from 'node:http'
 import {join} from 'node:path'
 
+import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
 import {testExample} from '~test/helpers/testExample.js'
 
-import {StartCommand} from '../start.js'
+import {PreviewCommand} from '../preview.js'
 
 describe('#start', () => {
+  test('help works', async () => {
+    const {stdout} = await runCommand(['start', '--help'])
+
+    expect(stdout).toMatchInlineSnapshot(`
+      "Alias for \`sanity preview\`
+
+      USAGE
+        $ sanity start [OUTPUTDIR] [--host <value>] [--port <value>]
+
+      ARGUMENTS
+        OUTPUTDIR  Output directory
+
+      FLAGS
+        --host=<value>  [default: localhost] The local network interface at which to
+                        listen.
+        --port=<value>  [default: 3333] TCP port to start server on.
+
+      DESCRIPTION
+        Alias for \`sanity preview\`
+
+      ALIASES
+        $ sanity start
+
+      EXAMPLES
+        $ sanity start --host=0.0.0.0
+
+        $ sanity start --port=1942
+
+        $ sanity start some/build-output-dir
+
+      "
+    `)
+  })
+
   describe('basic-app', () => {
     test('should start the  example', async () => {
       const cwd = await testExample('basic-app', {shouldBuild: true})
       // Mock the process.cwd() to the example directory
       process.cwd = () => cwd
 
-      const {error, stdout} = await testCommand(StartCommand, ['--port', '3334'], {
+      const {error, stdout} = await testCommand(PreviewCommand, ['--port', '3334'], {
         config: {root: cwd},
       })
 
@@ -30,7 +65,7 @@ describe('#start', () => {
       // Mock the process.cwd() to the example directory
       process.cwd = () => cwd
 
-      const {error, stdout} = await testCommand(StartCommand, [], {
+      const {error, stdout} = await testCommand(PreviewCommand, [], {
         config: {root: cwd},
       })
 
@@ -50,7 +85,7 @@ describe('#start', () => {
       // Mock the process.cwd() to the example directory
       process.cwd = () => cwd
 
-      const {error, stdout} = await testCommand(StartCommand, [], {
+      const {error, stdout} = await testCommand(PreviewCommand, [], {
         config: {root: cwd},
       })
 
@@ -65,7 +100,7 @@ describe('#start', () => {
       // Mock the process.cwd() to the example directory
       process.cwd = () => cwd
 
-      const {error, stdout} = await testCommand(StartCommand, [], {
+      const {error, stdout} = await testCommand(PreviewCommand, [], {
         config: {root: cwd},
       })
 
@@ -97,7 +132,7 @@ describe('#start', () => {
 
     await writeFile(indexPath, newIndex)
 
-    const {error, stdout} = await testCommand(StartCommand, ['--port', '3335'], {
+    const {error, stdout} = await testCommand(PreviewCommand, ['--port', '3335'], {
       config: {root: cwd},
     })
 
@@ -128,7 +163,7 @@ describe('#start', () => {
 
     await writeFile(indexPath, newIndex)
 
-    const {error, stderr, stdout} = await testCommand(StartCommand, ['--port', '3336'], {
+    const {error, stderr, stdout} = await testCommand(PreviewCommand, ['--port', '3336'], {
       config: {root: cwd},
     })
 
@@ -147,7 +182,7 @@ describe('#start', () => {
     // Remove the index.html file
     await rm(join(cwd, 'dist', 'index.html'))
 
-    const {error} = await testCommand(StartCommand, ['--port', '3337'], {
+    const {error} = await testCommand(PreviewCommand, ['--port', '3337'], {
       config: {root: cwd},
     })
 
@@ -168,7 +203,7 @@ describe('#start', () => {
     })
 
     try {
-      const {error} = await testCommand(StartCommand, ['--port', '3338'], {
+      const {error} = await testCommand(PreviewCommand, ['--port', '3338'], {
         config: {root: cwd},
       })
 
@@ -208,7 +243,7 @@ describe('#start', () => {
     `,
     )
 
-    const {stdout} = await testCommand(StartCommand, [], {
+    const {stdout} = await testCommand(PreviewCommand, [], {
       config: {root: cwd},
     })
 

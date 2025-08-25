@@ -10,11 +10,14 @@ import {previewAction} from '../actions/preview/previewAction.js'
 export const previewDebug = subdebug('preview')
 
 export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
+  // sanity start is an alias for sanity preview
+  static override aliases: string[] = ['start']
+
   static override args = {
     outputDir: Args.directory({description: 'Output directory'}),
   }
 
-  static override description = 'Starts a server to preview a production build of Sanity Studio'
+  static override description = 'Alias for `sanity preview`'
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> --host=0.0.0.0',

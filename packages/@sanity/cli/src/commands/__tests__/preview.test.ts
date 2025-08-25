@@ -1,98 +1,123 @@
-import {chmod, readFile, writeFile} from 'node:fs/promises'
+import {readFile, rm, writeFile} from 'node:fs/promises'
+import {createServer} from 'node:http'
 import {join} from 'node:path'
 
+import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
 import {testExample} from '~test/helpers/testExample.js'
 
-import {BuildCommand} from '../build.js'
 import {PreviewCommand} from '../preview.js'
 
 describe('#preview', () => {
-  test('should start the "basic-studio" example', async () => {
-    const cwd = await testExample('basic-studio')
-    // Mock the process.cwd() to the example directory
-    process.cwd = () => cwd
+  test('help works', async () => {
+    const {stdout} = await runCommand(['preview', '--help'])
 
-    // First build the example
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
-    })
+    expect(stdout).toMatchInlineSnapshot(`
+      "Alias for \`sanity preview\`
 
-    const {error, stdout} = await testCommand(PreviewCommand, ['--port', '4444'], {
-      config: {root: cwd},
-    })
+      USAGE
+        $ sanity preview [OUTPUTDIR] [--host <value>] [--port <value>]
 
-    expect(error).toBeUndefined()
-    expect(stdout).toContain(`Sanity Studio using vite@`)
-    expect(stdout).toContain(`ready in`)
-    expect(stdout).toContain(`ms and running at http://localhost:4444/ (production preview mode)`)
+      ARGUMENTS
+        OUTPUTDIR  Output directory
+
+      FLAGS
+        --host=<value>  [default: localhost] The local network interface at which to
+                        listen.
+        --port=<value>  [default: 3333] TCP port to start server on.
+
+      DESCRIPTION
+        Alias for \`sanity preview\`
+
+      ALIASES
+        $ sanity start
+
+      EXAMPLES
+        $ sanity preview --host=0.0.0.0
+
+        $ sanity preview --port=1942
+
+        $ sanity preview some/build-output-dir
+
+      "
+    `)
   })
 
-  test('should start the "basic-app" example', async () => {
-    const cwd = await testExample('basic-app')
-    // Mock the process.cwd() to the example directory
-    process.cwd = () => cwd
+  describe('basic-app', () => {
+    test('should start the  example', async () => {
+      const cwd = await testExample('basic-app', {shouldBuild: true})
+      // Mock the process.cwd() to the example directory
+      process.cwd = () => cwd
 
-    // First build the example
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
+      const {error, stdout} = await testCommand(PreviewCommand, ['--port', '4334'], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain(`Sanity application using vite@`)
+      expect(stdout).toContain(`ready in`)
+      expect(stdout).toContain(`ms and running at http://localhost:4334/ (production preview mode)`)
     })
 
-    const {error, stdout} = await testCommand(PreviewCommand, ['--port', '4445'], {
-      config: {root: cwd},
-    })
+    test('should throw an error if the example has not been built', async () => {
+      const cwd = await testExample('basic-app', {shouldBuild: false})
+      // Mock the process.cwd() to the example directory
+      process.cwd = () => cwd
 
-    expect(error).toBeUndefined()
-    expect(stdout).toContain(`Sanity application using vite@`)
-    expect(stdout).toContain(`ready in`)
-    expect(stdout).toContain(`ms and running at http://localhost:4445/ (production preview mode)`)
+      const {error, stdout} = await testCommand(PreviewCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Failed to start preview server')
+      expect(error?.oclif?.exit).toBe(1)
+      expect(stdout).toContain(`Could not find a production build in the '${cwd}/dist' directory.`)
+      expect(stdout).toContain(
+        `Try building your application with 'sanity build' before starting the preview server.`,
+      )
+    })
   })
 
-  test('should throw an error if the basic-studio example has not been built', async () => {
-    const cwd = await testExample('basic-studio')
-    // Mock the process.cwd() to the example directory
-    process.cwd = () => cwd
+  describe('basic-studio', () => {
+    test('should start the example', async () => {
+      const cwd = await testExample('basic-studio', {shouldBuild: true})
+      // Mock the process.cwd() to the example directory
+      process.cwd = () => cwd
 
-    const {error, stdout} = await testCommand(PreviewCommand, [], {
-      config: {root: cwd},
+      const {error, stdout} = await testCommand(PreviewCommand, ['--port', '4333'], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain(`Sanity Studio using vite@`)
+      expect(stdout).toContain(`ready in`)
+      expect(stdout).toContain(`ms and running at http://localhost:4333/ (production preview mode)`)
     })
 
-    expect(error).toBeDefined()
-    expect(error?.message).toContain('Failed to start preview server')
-    expect(error?.oclif?.exit).toBe(1)
-    expect(stdout).toContain(`Could not find a production build in the '${cwd}/dist' directory.`)
-    expect(stdout).toContain(
-      `Try building your studio with 'sanity build' before starting the preview server.`,
-    )
+    test('should throw an error if the example has not been built', async () => {
+      const cwd = await testExample('basic-studio', {shouldBuild: false})
+      // Mock the process.cwd() to the example directory
+      process.cwd = () => cwd
+
+      const {error, stdout} = await testCommand(PreviewCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Failed to start preview server')
+      expect(error?.oclif?.exit).toBe(1)
+      expect(stdout).toContain(`Could not find a production build in the '${cwd}/dist' directory.`)
+      expect(stdout).toContain(
+        `Try building your studio with 'sanity build' before starting the preview server.`,
+      )
+    })
   })
 
-  test('should throw an error if the basic-app example has not been built', async () => {
-    const cwd = await testExample('basic-app')
+  test('should use resolved base path from index.html file', async () => {
+    const cwd = await testExample('basic-studio', {shouldBuild: true})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
-
-    const {error, stdout} = await testCommand(PreviewCommand, [], {
-      config: {root: cwd},
-    })
-
-    expect(error).toBeDefined()
-    expect(error?.message).toContain('Failed to start preview server')
-    expect(error?.oclif?.exit).toBe(1)
-    expect(stdout).toContain(`Could not find a production build in the '${cwd}/dist' directory.`)
-    expect(stdout).toContain(
-      `Try building your application with 'sanity build' before starting the preview server.`,
-    )
-  })
-
-  test('should resolve basepath from the index.html file', async () => {
-    const cwd = await testExample('basic-studio')
-    // Mock the process.cwd() to the example directory
-    process.cwd = () => cwd
-
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
-    })
 
     // Replace the script tag in the index.html file with a script tag that does not have a src attribute
     const indexPath = join(cwd, 'dist', 'index.html')
@@ -107,7 +132,7 @@ describe('#preview', () => {
 
     await writeFile(indexPath, newIndex)
 
-    const {error, stdout} = await testCommand(PreviewCommand, ['--port', '4446'], {
+    const {error, stdout} = await testCommand(PreviewCommand, ['--port', '4335'], {
       config: {root: cwd},
     })
 
@@ -116,18 +141,14 @@ describe('#preview', () => {
     expect(stdout).toContain(`Sanity Studio using vite@`)
     expect(stdout).toContain(`ready in`)
     expect(stdout).toContain(
-      `ms and running at http://localhost:4446/custom-base-path (production preview mode)`,
+      `ms and running at http://localhost:4335/custom-base-path (production preview mode)`,
     )
   })
 
-  test('should use default basepath when it cannot be resolved from the index.html file', async () => {
-    const cwd = await testExample('basic-studio')
+  test('should fallback to default basepath when cannot resolve from index.html', async () => {
+    const cwd = await testExample('basic-studio', {shouldBuild: true})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
-
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
-    })
 
     // Replace the script tag in the index.html file with a script tag that does not have a src attribute
     const indexPath = join(cwd, 'dist', 'index.html')
@@ -142,7 +163,7 @@ describe('#preview', () => {
 
     await writeFile(indexPath, newIndex)
 
-    const {error, stderr, stdout} = await testCommand(PreviewCommand, ['--port', '4447'], {
+    const {error, stderr, stdout} = await testCommand(PreviewCommand, ['--port', '4336'], {
       config: {root: cwd},
     })
 
@@ -150,57 +171,53 @@ describe('#preview', () => {
     expect(stderr).toContain(`Could not determine base path from index.html, using "/" as default`)
     expect(stdout).toContain(`Sanity Studio using vite@`)
     expect(stdout).toContain(`ready in`)
-    expect(stdout).toContain(`ms and running at http://localhost:4447/ (production preview mode)`)
+    expect(stdout).toContain(`ms and running at http://localhost:4336/ (production preview mode)`)
   })
 
   test('should throw an error if the index.html file is not found', async () => {
-    const cwd = await testExample('basic-studio')
+    const cwd = await testExample('basic-studio', {shouldBuild: true})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
-    })
+    // Remove the index.html file
+    await rm(join(cwd, 'dist', 'index.html'))
 
-    // Make the index.html not readable
-    await chmod(join(cwd, 'dist', 'index.html'), 0)
-
-    const {error} = await testCommand(PreviewCommand, ['--port', '4448'], {
+    const {error} = await testCommand(PreviewCommand, ['--port', '4337'], {
       config: {root: cwd},
     })
 
     expect(error).toBeDefined()
-    expect(error?.message).toContain(
-      'The studio server does not have access to listen to given port - do you have access to listen to the given host (localhost)',
-    )
+    expect(error?.message).toContain('Failed to start preview server')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should throw an error if port is already in use', async () => {
-    const cwd = await testExample('basic-studio')
+    const cwd = await testExample('basic-studio', {shouldBuild: true})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
-    // First build the example
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
+    // Create a server on port 4338 to block it
+    const server = createServer()
+    await new Promise<void>((resolve) => {
+      server.listen(4338, 'localhost', resolve)
     })
 
-    await testCommand(PreviewCommand, ['--port', '4449'], {
-      config: {root: cwd},
-    })
+    try {
+      const {error} = await testCommand(PreviewCommand, ['--port', '4338'], {
+        config: {root: cwd},
+      })
 
-    const {error} = await testCommand(PreviewCommand, ['--port', '4449'], {
-      config: {root: cwd},
-    })
-
-    expect(error).toBeDefined()
-    expect(error?.message).toContain('Port 4449 is already in use')
-    expect(error?.oclif?.exit).toBe(1)
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Port 4338 is already in use')
+      expect(error?.oclif?.exit).toBe(1)
+    } finally {
+      // Clean up the server
+      server.close()
+    }
   })
 
   test('should allow using vite config from sanity.cli.ts', async () => {
-    const cwd = await testExample('basic-app')
+    const cwd = await testExample('basic-app', {shouldBuild: true})
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
@@ -225,10 +242,6 @@ describe('#preview', () => {
       })
     `,
     )
-
-    await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
-    })
 
     const {stdout} = await testCommand(PreviewCommand, [], {
       config: {root: cwd},
