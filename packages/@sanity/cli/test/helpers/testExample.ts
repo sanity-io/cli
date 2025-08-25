@@ -1,7 +1,6 @@
 import {randomBytes} from 'node:crypto'
 import {copyFile, mkdir, readdir, readFile, stat, symlink, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
-import {fileURLToPath} from 'node:url'
 
 /**
  * Recursively copy a directory, skipping specified folders
@@ -73,8 +72,7 @@ async function copyExample(exampleName: string, shouldBuild: boolean) {
   return tempPath
 }
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url))
-const rootDir = resolve(__dirname, '../../../../../')
+const rootDir = resolve(import.meta.dirname, '../../../../../')
 const examplesDir = resolve(rootDir, 'examples')
 
 interface TestExampleOptions {

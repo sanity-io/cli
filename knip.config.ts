@@ -62,7 +62,7 @@ export const addBundlerEntries = async (config: KnipConfig): Promise<KnipConfig>
   for (const wsDir of dirs) {
     for (const configKey of Object.keys(baseConfig.workspaces)) {
       if (match([wsDir], configKey)) {
-        const manifest = await import(join(__dirname, wsDir, 'package.json'))
+        const manifest = await import(join(import.meta.dirname, wsDir, 'package.json'))
         const configEntries = (config?.workspaces?.[configKey].entry as string[]) ?? []
         const bundler = manifest?.bundler
         for (const value of Object.values(bundler ?? {})) {
