@@ -1,9 +1,8 @@
 import path from 'node:path'
 
-import {type CliConfig} from '../../config/cli/types.js'
-import {spinner} from '../../core/spinner.js'
+import {type CliConfig, type Output, spinner} from '@sanity/cli-core'
+
 import {type DevServerOptions} from '../../server/devServer.js'
-import {type Output} from '../../types.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {type DevFlags} from './types.js'
 

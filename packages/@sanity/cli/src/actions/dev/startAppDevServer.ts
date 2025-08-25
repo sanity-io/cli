@@ -1,6 +1,6 @@
+import {spinner} from '@sanity/cli-core'
 import chalk from 'chalk'
 
-import {spinner} from '../../core/spinner.js'
 import {startDevServer} from '../../server/devServer.js'
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
 import {devDebug} from './devDebug.js'

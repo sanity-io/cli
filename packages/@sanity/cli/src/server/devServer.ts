@@ -1,12 +1,12 @@
 import {createRequire} from 'node:module'
 
+import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core'
 import chalk from 'chalk'
 import {type Ora} from 'ora'
 import {type InlineConfig} from 'vite'
 
 import {extendViteConfigWithUserConfig, getViteConfig} from '../actions/build/getViteConfig.js'
 import {writeSanityRuntime} from '../actions/build/writeSanityRuntime.js'
-import {type ReactCompilerConfig, type UserViteConfig} from '../config/cli/types.js'
 import {serverDebug} from './serverDebug.js'
 
 const debug = serverDebug.extend('dev')

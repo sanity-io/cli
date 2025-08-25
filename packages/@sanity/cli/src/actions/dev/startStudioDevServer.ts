@@ -1,13 +1,11 @@
 import {confirm} from '@inquirer/prompts'
+import {isInteractive, logSymbols, spinner} from '@sanity/cli-core'
 import chalk from 'chalk'
 import semver from 'semver'
 
-import {info} from '../../core/logSymbols.js'
-import {spinner} from '../../core/spinner.js'
 import {startDevServer} from '../../server/devServer.js'
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
-import {isInteractive} from '../../util/isInteractive.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {checkRequiredDependencies} from '../build/checkRequiredDependencies.js'
@@ -37,7 +35,7 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
   const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags})
 
   if (autoUpdatesEnabled) {
-    output.log(`${info} Running with auto-updates enabled`)
+    output.log(`${logSymbols.info} Running with auto-updates enabled`)
 
     // Get the version without any tags if any
     const coercedSanityVersion = semver.coerce(installedSanityVersion)?.version

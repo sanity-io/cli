@@ -8,12 +8,8 @@ import nock from 'nock'
 import {createServer} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-<<<<<<< HEAD
-=======
-import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
->>>>>>> 7510a541 (fix: add extensive testsing for dev command)
 import {DevCommand} from '../dev.js'
 
 const require = createRequire(import.meta.url)
@@ -90,7 +86,7 @@ vi.mock(import('@inquirer/prompts'), async (importOriginal) => {
   }
 })
 
-vi.mock(import('../../util/isInteractive.js'), () => ({
+vi.mock(import('../../../../cli-core/src/util/isInteractive.js'), () => ({
   isInteractive: true,
 }))
 
