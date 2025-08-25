@@ -1,125 +1,60 @@
-import {createRequire} from 'node:module'
+import {readFile, writeFile} from 'node:fs/promises'
+import {createServer} from 'node:http'
+import {join} from 'node:path'
 
 import {confirm} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
-import {createServer} from 'vite'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
+import {testExample} from '~test/helpers/testExample.js'
 
+import {checkRequiredDependencies} from '../../actions/build/checkRequiredDependencies.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
+import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {DevCommand} from '../dev.js'
 
-const require = createRequire(import.meta.url)
-const {version} = require('vite/package.json')
+vi.mock('../../actions/build/checkRequiredDependencies.js', () => ({
+  checkRequiredDependencies: vi.fn().mockResolvedValue({
+    installedSanityVersion: '3.0.0',
+  }),
+}))
 
-vi.mock(import('../../../../cli-core/src/config/findProjectRoot.js'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    findProjectRoot: vi.fn().mockResolvedValue({
-      directory: '/test/path',
-      root: '/test/path',
-      type: 'studio',
-    }),
-  }
-})
+vi.mock('../../util/compareDependencyVersions.js', () => ({
+  compareDependencyVersions: vi.fn().mockResolvedValue([]),
+}))
 
-vi.mock(import('../../../../cli-core/src/config/cli/getCliConfig.js'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    getCliConfig: vi.fn().mockResolvedValue({}),
-  }
-})
+vi.mock('@inquirer/prompts')
 
-vi.mock(import('../../actions/build/writeSanityRuntime.js'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    writeSanityRuntime: vi.fn(),
-  }
-})
-
-vi.mock(import('../../actions/build/checkRequiredDependencies.js'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    checkRequiredDependencies: vi.fn().mockResolvedValue({
-      didInstall: false,
-      installedSanityVersion: '1.0.0',
-    }),
-  }
-})
-
-vi.mock(import('../../actions/build/checkStudioDependencyVersions.js'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    checkStudioDependencyVersions: vi.fn(),
-  }
-})
-
-vi.mock(import('../../util/compareDependencyVersions.js'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    compareDependencyVersions: vi.fn(),
-  }
-})
-
-vi.mock(import('vite'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    createServer: vi.fn(),
-  }
-})
-
-vi.mock(import('@inquirer/prompts'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    confirm: vi.fn(),
-  }
-})
-
-vi.mock(import('../../../../cli-core/src/util/isInteractive.js'), () => ({
+vi.mock('../../../../cli-core/src/util/isInteractive.js', () => ({
   isInteractive: true,
 }))
 
-vi.mock(import('../../util/packageManager/upgradePackages.js'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    upgradePackages: vi.fn(),
-  }
-})
-vi.mock(import('../../util/packageManager/packageManagerChoice.js'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    getPackageManagerChoice: vi.fn().mockResolvedValue({chosen: 'pnpm'}),
-  }
-})
+vi.mock('../../util/packageManager/upgradePackages.js')
+vi.mock('../../util/packageManager/packageManagerChoice.js')
 
-const mockViteCreateServer = vi.mocked(createServer)
-const mockGetCliConfig = vi.mocked(getCliConfig)
+const mockCheckRequiredDependencies = vi.mocked(checkRequiredDependencies)
 const mockCompareDependencyVersions = vi.mocked(compareDependencyVersions)
 const mockConfirm = vi.mocked(confirm)
 const mockUpgradePackages = vi.mocked(upgradePackages)
+const mockGetPackageManagerChoice = vi.mocked(getPackageManagerChoice)
+
+type Result = {
+  close?: () => Promise<void>
+}
 
 describe('#dev', () => {
   afterEach(() => {
-    vi.clearAllMocks()
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('help text is correct', async () => {
-    const {stdout} = await runCommand('dev --help')
+    const {stdout} = await runCommand(['dev', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
-      "Starts a local dev server for Sanity Studio with live reloading
+      "Starts a local development server for Sanity Studio with live reloading
 
       USAGE
         $ sanity dev [--auto-updates] [--host <value>]
@@ -133,7 +68,7 @@ describe('#dev', () => {
         --port=<value>            [default: 3333] TCP port to start server on.
 
       DESCRIPTION
-        Starts a local dev server for Sanity Studio with live reloading
+        Starts a local development server for Sanity Studio with live reloading
 
       EXAMPLES
         $ sanity dev --host=0.0.0.0
@@ -152,300 +87,340 @@ describe('#dev', () => {
     expect(error?.message).toContain('Nonexistent flag: --invalid')
   })
 
-  describe('app', () => {
-    test('should start the dev server', async () => {
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          id: 'test',
-          organizationId: 'test-org',
-        },
+  describe('basic-app', () => {
+    test('should start the dev server for app', async () => {
+      const cwd = await testExample('basic-app')
+      process.cwd = () => cwd
+
+      const {error, result, stderr, stdout} = await testCommand(DevCommand, ['--port', '5333'], {
+        config: {root: cwd},
       })
-
-      mockViteCreateServer.mockResolvedValue({
-        close: vi.fn(),
-        config: {
-          logger: {
-            info: vi.fn(),
-          },
-        },
-        listen: vi.fn(),
-      } as never)
-
-      const {error, stderr, stdout} = await testCommand(DevCommand, [], {})
-
-      expect(stdout).toContain('Dev server started on port 3333')
-      expect(stdout).toContain('View your app in the Sanity dashboard here:')
-      expect(stdout).toContain('https://sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A3333')
-      expect(stderr).toContain('Checking configuration files...')
-      expect(stderr).toContain(`Starting dev server`)
 
       expect(error).toBeUndefined()
-    })
-
-    test('should warn if no-load-in-dashboard is used', async () => {
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          id: 'test',
-          organizationId: 'test-org',
-        },
-      })
-
-      mockViteCreateServer.mockResolvedValue({
-        close: vi.fn(),
-        config: {
-          logger: {
-            info: vi.fn(),
-          },
-        },
-        listen: vi.fn(),
-      } as never)
-
-      const {error, stderr, stdout} = await testCommand(DevCommand, ['--no-load-in-dashboard'], {})
-
-      expect(stdout).toContain('Dev server started on port 3333')
+      expect(stdout).toContain('Dev server started on port 5333')
       expect(stdout).toContain('View your app in the Sanity dashboard here:')
-      expect(stdout).toContain('https://sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A3333')
-
-      expect(stderr).toContain('Warning: Apps cannot run without the Sanity dashboard')
-      expect(stderr).toContain('Starting dev server with the --load-in-dashboard flag set to true')
-
-      expect(error).toBeUndefined()
+      expect(stderr).toContain('Checking configuration files')
+      await (result as Result).close?.()
     })
 
-    test('throws an error if organizationId is not set', async () => {
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          id: 'test',
+    test('should warn when --no-load-in-dashboard is used with app', async () => {
+      const cwd = await testExample('basic-app')
+      process.cwd = () => cwd
+
+      const {error, result, stderr, stdout} = await testCommand(
+        DevCommand,
+        ['--no-load-in-dashboard', '--port', '5334'],
+        {
+          config: {root: cwd},
         },
-      })
-
-      const {error} = await testCommand(DevCommand, [], {})
-
-      expect(error?.message).toContain(
-        'Failed to start dev server: Apps require an organization ID (orgId) specified in your sanity.cli.ts file',
       )
-      expect(error?.oclif?.exit).toBe(1)
+
+      expect(error).toBeUndefined()
+      expect(stderr).toContain('Apps cannot run without the Sanity dashboard')
+      expect(stderr).toContain('Starting dev server with the --load-in-dashboard flag set to true')
+      expect(stdout).toContain('Dev server started on port 5334')
+      await (result as Result).close?.()
     })
 
-    test('handles error from vite', async () => {
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          id: 'test',
-          organizationId: 'test-org',
-        },
+    test('should automatically change port if conflicted', async () => {
+      const cwd = await testExample('basic-app')
+      process.cwd = () => cwd
+
+      // Create a server on port 5338 to block it
+      const server = createServer()
+      await new Promise<void>((resolve) => {
+        server.listen(5338, 'localhost', resolve)
       })
-      mockViteCreateServer.mockRejectedValue(new Error('Vite error'))
 
-      const {error} = await testCommand(DevCommand, [], {})
+      try {
+        const {error, result, stdout} = await testCommand(DevCommand, ['--port', '5338'], {
+          config: {root: cwd},
+        })
 
-      expect(error?.message).toContain('Vite error')
+        expect(error).toBeUndefined()
+        // Should automatically pick a different port
+        expect(stdout).toMatch(/Dev server started on port \d{4}/)
+        expect(stdout).not.toContain('Dev server started on port 5338')
+        await (result as Result).close?.()
+      } finally {
+        // Clean up the server
+        server.close()
+      }
+    })
+
+    test('should error when organizationId is missing from config', async () => {
+      const cwd = await testExample('basic-app')
+      process.cwd = () => cwd
+
+      // Modify the config to remove organizationId
+      const configPath = join(cwd, 'sanity.cli.ts')
+      const existingConfig = await readFile(configPath, 'utf8')
+      const modifiedConfig = existingConfig.replace(/organizationId: '[^']*',?/, '')
+      await writeFile(configPath, modifiedConfig)
+
+      const {error} = await testCommand(DevCommand, ['--port', '5341'], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Apps require an organization ID (orgId)')
+      expect(error?.oclif?.exit).toBe(1)
     })
   })
 
-  describe('studio', () => {
-    afterEach(() => {
-      vi.clearAllMocks()
-      const pending = nock.pendingMocks()
-      nock.cleanAll()
-      expect(pending, 'pending mocks').toEqual([])
-    })
+  describe('basic-studio', () => {
+    test('should start the dev server for studio', async () => {
+      const cwd = await testExample('basic-studio')
+      process.cwd = () => cwd
 
-    beforeEach(() => {
-      mockGetCliConfig.mockResolvedValue({})
-    })
-
-    test('should start the dev server', async () => {
-      mockViteCreateServer.mockResolvedValue({
-        close: vi.fn(),
-        config: {
-          logger: {
-            info: console.log,
-          },
-        },
-        listen: vi.fn(),
-      } as never)
-
-      const {error, stderr, stdout} = await testCommand(DevCommand, [], {})
-
-      expect(stdout).toContain(`Sanity Studio using vite@${version} ready in`)
-      expect(stdout).toContain('and running at http://localhost:3333')
-
-      expect(stderr).toContain('Checking configuration files...')
-      expect(stderr).toContain(`Starting dev server`)
+      const {error, result, stderr, stdout} = await testCommand(DevCommand, ['--port', '5335'], {
+        config: {root: cwd},
+      })
 
       expect(error).toBeUndefined()
+      expect(stdout).toContain('Sanity Studio using vite@')
+      expect(stdout).toContain('ready in')
+      expect(stdout).toContain('ms and running at http://localhost:5335')
+      expect(stderr).toContain('Checking configuration files')
+      await (result as Result).close?.()
     })
 
-    test('should start the dev server with load-in-dashboard', async () => {
-      mockViteCreateServer.mockResolvedValue({
-        close: vi.fn(),
-        config: {
-          logger: {
-            info: vi.fn(),
-          },
+    test('should start with custom host configuration', async () => {
+      const cwd = await testExample('basic-studio')
+      process.cwd = () => cwd
+
+      const {error, result, stdout} = await testCommand(
+        DevCommand,
+        ['--host', '127.0.0.1', '--port', '5336'],
+        {
+          config: {root: cwd},
         },
-        listen: vi.fn(),
-      } as never)
+      )
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('http://127.0.0.1:5336')
+      await (result as Result).close?.()
+    })
+
+    test('should start with load-in-dashboard', async () => {
+      const cwd = await testExample('basic-studio')
+      process.cwd = () => cwd
 
       const projectId = 'test-project'
 
+      // Need to modify the sanity config to include projectId for this test
+      const configPath = join(cwd, 'sanity.cli.ts')
+      const existingConfig = await readFile(configPath, 'utf8')
+
+      // Add projectId to the config
+      const modifiedConfig = existingConfig.replace(
+        /projectId: '.*',/,
+        `projectId: '${projectId}',`,
+      )
+
+      await writeFile(configPath, modifiedConfig)
+
       mockApi({
-        apiVersion: 'v2024-01-01',
+        apiVersion: 'v2025-08-25',
         uri: `/projects/${projectId}`,
       }).reply(200, {organizationId: 'test-org'})
 
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
+      const {error, result, stderr, stdout} = await testCommand(
+        DevCommand,
+        ['--load-in-dashboard', '--port', '5340'],
+        {
+          config: {root: cwd},
         },
-      })
-
-      const {error, stderr, stdout} = await testCommand(DevCommand, ['--load-in-dashboard'], {})
-
-      expect(stdout).toContain('Dev server started on port 3333')
-      expect(stdout).toContain('View your studio in the Sanity dashboard here:')
-      expect(stdout).toContain('https://sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A3333')
-      expect(stderr).toContain('Checking configuration files...')
-      expect(stderr).toContain(`Starting dev server`)
+      )
 
       expect(error).toBeUndefined()
+      expect(stdout).toContain('Dev server started on port 5340')
+      expect(stdout).toContain('View your studio in the Sanity dashboard here:')
+      expect(stdout).toContain('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340')
+      expect(stderr).toContain('Checking configuration files')
+
+      await (result as Result).close?.()
     })
 
-    test('throws an error if projectId is not set and load-in-dashboard is used', async () => {
-      mockGetCliConfig.mockResolvedValue({})
+    test('should error when projectId is missing with --load-in-dashboard', async () => {
+      const cwd = await testExample('basic-studio')
+      process.cwd = () => cwd
 
-      const {error} = await testCommand(DevCommand, ['--load-in-dashboard'], {})
+      // Modify config to remove projectId
+      const configPath = join(cwd, 'sanity.cli.ts')
+      const existingConfig = await readFile(configPath, 'utf8')
+      const modifiedConfig = existingConfig.replace(/projectId: '[^']*',/, '')
+      await writeFile(configPath, modifiedConfig)
 
-      expect(error?.message).toContain(
-        'Failed to start dev server: Project Id is required to load in dashboard',
-      )
+      const {error} = await testCommand(DevCommand, ['--load-in-dashboard', '--port', '5343'], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Project Id is required to load in dashboard')
       expect(error?.oclif?.exit).toBe(1)
     })
 
-    test('throws an error if organizationId is not found', async () => {
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId: 'test-project',
-        },
-      })
+    test('should error when API fails to fetch organizationId', async () => {
+      const cwd = await testExample('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project'
+      const configPath = join(cwd, 'sanity.cli.ts')
+      const existingConfig = await readFile(configPath, 'utf8')
+      const modifiedConfig = existingConfig.replace(
+        /projectId: '.*',/,
+        `projectId: '${projectId}',`,
+      )
+      await writeFile(configPath, modifiedConfig)
 
       mockApi({
-        apiVersion: 'v2024-01-01',
-        uri: `/projects/test-project`,
+        apiVersion: 'v2025-08-25',
+        uri: `/projects/${projectId}`,
       }).reply(404, {error: 'Project not found'})
 
-      const {error} = await testCommand(DevCommand, ['--load-in-dashboard'], {})
+      const {error} = await testCommand(DevCommand, ['--load-in-dashboard', '--port', '5344'], {
+        config: {root: cwd},
+      })
 
-      expect(error?.message).toContain(
-        'Failed to start dev server: Failed to get organization Id from project Id',
-      )
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Failed to get organization Id from project Id')
       expect(error?.oclif?.exit).toBe(1)
     })
 
-    test('handles error thrown from vite', async () => {
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId: 'test-project',
-        },
+    test('should error when API returns no organizationId', async () => {
+      const cwd = await testExample('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project'
+      const configPath = join(cwd, 'sanity.cli.ts')
+      const existingConfig = await readFile(configPath, 'utf8')
+      const modifiedConfig = existingConfig.replace(
+        /projectId: '.*',/,
+        `projectId: '${projectId}',`,
+      )
+      await writeFile(configPath, modifiedConfig)
+
+      mockApi({
+        apiVersion: 'v2025-08-25',
+        uri: `/projects/${projectId}`,
+      }).reply(200, {organizationId: null})
+
+      const {error} = await testCommand(DevCommand, ['--load-in-dashboard', '--port', '5345'], {
+        config: {root: cwd},
       })
 
-      mockViteCreateServer.mockRejectedValue(new Error('Vite error'))
-
-      const {error} = await testCommand(DevCommand, [], {})
-
-      expect(error?.message).toContain('Vite error')
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Organization Id not found for project')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
-    test('shows a confirmation prompt if studio dependencies are out of date for auto-updates and is interactive', async () => {
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId: 'test-project',
-        },
-      })
-      mockViteCreateServer.mockResolvedValue({
-        close: vi.fn(),
-        config: {
-          logger: {
-            info: vi.fn(),
-          },
-        },
-        listen: vi.fn(),
-      } as never)
-      mockCompareDependencyVersions.mockResolvedValue([
+    test('should handle auto-updates with version mismatch and user declines upgrade', async () => {
+      const cwd = await testExample('basic-studio')
+      process.cwd = () => cwd
+
+      mockCompareDependencyVersions.mockResolvedValueOnce([
         {
-          installed: '3.98.0',
+          installed: '3.0.0',
           pkg: 'sanity',
-          remote: '3.99.0',
-        },
-        {
-          installed: '3.98.0',
-          pkg: '@sanity/vision',
-          remote: '3.99.0',
+          remote: '3.1.0',
         },
       ])
+      mockConfirm.mockResolvedValueOnce(false) // User declines upgrade
 
-      await testCommand(DevCommand, ['--auto-updates'], {})
+      const {error, result, stderr} = await testCommand(
+        DevCommand,
+        ['--auto-updates', '--port', '5346'],
+        {
+          config: {root: cwd},
+        },
+      )
 
-      expect(mockConfirm).toHaveBeenCalledWith({
-        default: true,
-        message: `The following local package versions are different from the versions currently served at runtime.
-When using auto updates, we recommend that you run with the same versions locally as will be used when deploying.
-
- - sanity (local version: 3.98.0, runtime version: 3.99.0)
- - @sanity/vision (local version: 3.98.0, runtime version: 3.99.0)
-
-Do you want to upgrade local versions?`,
-      })
+      expect(error).toBeUndefined()
+      // Check that the server started successfully with auto-updates flag
+      expect(stderr).toContain('Checking configuration files')
+      await (result as Result).close?.()
     })
 
-    test('upgrades local versions if user confirms upgrade', async () => {
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId: 'test-project',
-        },
-      })
-      mockViteCreateServer.mockResolvedValue({
-        close: vi.fn(),
-        config: {
-          logger: {
-            info: vi.fn(),
-          },
-        },
-        listen: vi.fn(),
-      } as never)
-      mockCompareDependencyVersions.mockResolvedValue([
+    test('should handle auto-updates with version mismatch and user accepts upgrade', async () => {
+      const cwd = await testExample('basic-studio')
+      process.cwd = () => cwd
+
+      mockCompareDependencyVersions.mockResolvedValueOnce([
         {
-          installed: '3.98.0',
+          installed: '3.0.0',
           pkg: 'sanity',
-          remote: '3.99.0',
-        },
-        {
-          installed: '3.98.0',
-          pkg: '@sanity/vision',
-          remote: '3.99.0',
+          remote: '3.1.0',
         },
       ])
-      mockConfirm.mockResolvedValue(true)
+      mockConfirm.mockResolvedValueOnce(true) // User accepts upgrade
 
-      await testCommand(DevCommand, ['--auto-updates'], {})
+      mockUpgradePackages.mockResolvedValueOnce(undefined)
+      mockGetPackageManagerChoice.mockResolvedValueOnce({
+        chosen: 'npm',
+        mostOptimal: 'npm',
+      })
+
+      const {error, result, stderr} = await testCommand(
+        DevCommand,
+        ['--auto-updates', '--port', '5348'],
+        {
+          config: {root: cwd},
+        },
+      )
+
+      expect(error).toBeUndefined()
+      expect(stderr).toContain('Checking configuration files')
 
       expect(mockUpgradePackages).toHaveBeenCalledWith(
         {
-          packageManager: 'pnpm',
-          packages: [
-            ['sanity', '3.99.0'],
-            ['@sanity/vision', '3.99.0'],
-          ],
+          packageManager: 'npm',
+          packages: [['sanity', '3.1.0']],
         },
-        {
-          output: {
-            error: expect.any(Function),
-            log: expect.any(Function),
-            warn: expect.any(Function),
-          },
-          workDir: '/test/path',
-        },
+        {output: expect.any(Object), workDir: cwd},
       )
+
+      await (result as Result).close?.()
     })
+
+    test('should handle invalid Sanity version during auto-updates', async () => {
+      const cwd = await testExample('basic-studio')
+      process.cwd = () => cwd
+
+      mockCheckRequiredDependencies.mockResolvedValueOnce({
+        installedSanityVersion: 'invalid-version',
+      })
+
+      const {error} = await testCommand(DevCommand, ['--auto-updates', '--port', '5347'], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Failed to parse installed Sanity version')
+    })
+  })
+
+  test('should throw an error if port is already in use', async () => {
+    const cwd = await testExample('basic-studio')
+    process.cwd = () => cwd
+
+    // Create a server on port 5337 to block it
+    const server = createServer()
+    await new Promise<void>((resolve) => {
+      server.listen(5337, 'localhost', resolve)
+    })
+
+    try {
+      const {error} = await testCommand(DevCommand, ['--port', '5337'], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Port 5337 is already in use')
+      expect(error?.oclif?.exit).toBe(1)
+    } finally {
+      // Clean up the server
+      server.close()
+    }
   })
 })

@@ -55,7 +55,7 @@ describe('#checkRequiredDependencies', () => {
       output: mockOutput as unknown as Output,
       workDir,
     })
-    expect(result).toEqual({didInstall: false, installedSanityVersion: ''})
+    expect(result).toEqual({installedSanityVersion: ''})
     expect(mockedReadPackageManifest).not.toHaveBeenCalled()
   })
 
@@ -99,28 +99,6 @@ describe('#checkRequiredDependencies', () => {
         return null // styled-components not installed
       })
       mockedGetPackageManagerChoice.mockResolvedValue({chosen: 'pnpm', mostOptimal: 'pnpm'})
-    })
-
-    test('should install styled-components and re-run command', async () => {
-      const result = await checkRequiredDependencies({
-        cliConfig: mockCliConfig,
-        output: mockOutput as unknown as Output,
-        workDir,
-      })
-
-      expect(mockedGetPackageManagerChoice).toHaveBeenCalledWith(workDir, {interactive: true})
-      expect(mockedInstallNewPackages).toHaveBeenCalledWith(
-        {
-          packageManager: 'pnpm',
-          packages: ['styled-components@^6.1.15'],
-        },
-        {output: mockOutput as unknown as Output, workDir},
-      )
-      expect(mockedExeca).toHaveBeenCalledWith('/path/to/node', ['/path/to/sanity', 'dev'], {
-        cwd: workDir,
-        stdio: 'inherit',
-      })
-      expect(result).toEqual({didInstall: true, installedSanityVersion: '3.0.0'})
     })
   })
 
@@ -262,7 +240,7 @@ describe('#checkRequiredDependencies', () => {
       workDir,
     })
 
-    expect(result).toEqual({didInstall: false, installedSanityVersion: '3.2.0'})
+    expect(result).toEqual({installedSanityVersion: '3.2.0'})
     expect(mockOutput.warn).not.toHaveBeenCalled()
     expect(mockedInstallNewPackages).not.toHaveBeenCalled()
     expect(mockedExeca).not.toHaveBeenCalled()

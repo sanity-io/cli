@@ -36,7 +36,7 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
     }),
   }
 
-  public async run(): Promise<void> {
+  public async run(): Promise<{close?: () => Promise<void>}> {
     const {flags} = await this.parse(DevCommand)
 
     const workDir = (await this.getProjectRoot()).directory
@@ -52,7 +52,7 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
     }
 
     try {
-      await devAction({
+      const result = await devAction({
         apiClient: this.getGlobalApiClient,
         cliConfig,
         flags,
@@ -60,6 +60,7 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
         output: this.output,
         workDir,
       })
+      return result
     } catch (error) {
       devDebug(`Failed to start dev server`, error)
       this.output.error(chalk.red.bgBlack(`Failed to start dev server: ${error.message}`), {

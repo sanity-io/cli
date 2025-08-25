@@ -138,7 +138,9 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server: {
       host: server?.host,
       port: server?.port || 3333,
-      strictPort: true,
+      // Only enable strict port for studio,
+      // since apps can run on any port
+      strictPort: isApp ? false : true,
     },
   }
 

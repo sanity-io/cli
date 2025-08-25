@@ -1,4 +1,3 @@
-import {spinner} from '@sanity/cli-core'
 import chalk from 'chalk'
 
 import {startDevServer} from '../../server/devServer.js'
@@ -8,7 +7,7 @@ import {getCoreAppURL} from './getCoreAppUrl.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 import {type DevActionOptions} from './types.js'
 
-export async function startAppDevServer(options: DevActionOptions): Promise<void> {
+export async function startAppDevServer(options: DevActionOptions): Promise<{close?: () => Promise<void>}> {
   const {cliConfig, flags, output, workDir} = options
 
   if (!flags['load-in-dashboard']) {
@@ -25,28 +24,30 @@ export async function startAppDevServer(options: DevActionOptions): Promise<void
     output.error(`Apps require an organization ID (orgId) specified in your sanity.cli.ts file`, {
       exit: 1,
     })
-    return
+    return {}
   }
 
   const config = getDevServerConfig({cliConfig, flags, output, workDir})
 
   try {
-    const spin = spinner('Starting dev server').start()
-    await startDevServer({...config, isApp: true, printStartLog: false, spinner: spin})
+    output.log('Starting dev server')
 
-    output.log(`Dev server started on port ${config.httpPort}`)
+    const {close, server} = await startDevServer({...config, isApp: true})
+
+    const {port} = server.config.server
+    const httpHost = config.httpHost || 'localhost'
+
+    const coreAppUrl = await getCoreAppURL({
+      httpHost,
+      httpPort: port,
+      organizationId,
+    })
+
+    output.log(`Dev server started on port ${port}`)
     output.log(`View your app in the Sanity dashboard here:`)
-    output.log(
-      chalk.blue(
-        chalk.underline(
-          await getCoreAppURL({
-            httpHost: config.httpHost,
-            httpPort: config.httpPort,
-            organizationId,
-          }),
-        ),
-      ),
-    )
+    output.log(chalk.blue(chalk.underline(coreAppUrl)))
+
+    return {close}
   } catch (err) {
     devDebug('Error starting app dev server', err)
     throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)

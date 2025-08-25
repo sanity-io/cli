@@ -17,7 +17,6 @@ const defaultStudioManifestProps: PartialPackageManifest = {
 }
 
 interface CheckResult {
-  didInstall: boolean
   installedSanityVersion: string
 }
 
@@ -48,7 +47,7 @@ export async function checkRequiredDependencies(
   // but this should be removed once they are more mature
   const isApp = determineIsApp(cliConfig)
   if (isApp) {
-    return {didInstall: false, installedSanityVersion: ''}
+    return {installedSanityVersion: ''}
   }
 
   const [studioPackageManifest, installedStyledComponentsVersion, installedSanityVersion] =
@@ -82,7 +81,7 @@ export async function checkRequiredDependencies(
     // broken assumptions about installation paths. This is a hack, and should be
     // solved properly.
     await execa(file, args, {cwd: studioPath, stdio: 'inherit'})
-    return {didInstall: true, installedSanityVersion}
+    return {installedSanityVersion}
   }
 
   // Theoretically the version specified in package.json could be incorrect, eg `foo`
@@ -135,7 +134,7 @@ export async function checkRequiredDependencies(
     `)
   }
 
-  return {didInstall: false, installedSanityVersion}
+  return {installedSanityVersion}
 }
 
 /**

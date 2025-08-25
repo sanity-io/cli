@@ -115,7 +115,6 @@ describe('buildStudio', () => {
     // Default mocks
     mockedCheckStudioDependencyVersions.mockResolvedValue(undefined)
     mockedCheckRequiredDependencies.mockResolvedValue({
-      didInstall: false,
       installedSanityVersion: '3.0.0',
     })
     mockedShouldAutoUpdate.mockReturnValue(false)
@@ -150,21 +149,8 @@ describe('buildStudio', () => {
     expect(mockedBuildStaticFiles).toHaveBeenCalled()
   })
 
-  it('should exit early when dependencies were installed', async () => {
-    mockedCheckRequiredDependencies.mockResolvedValue({
-      didInstall: true,
-      installedSanityVersion: '3.0.0',
-    })
-
-    await buildStudio(baseBuildOptions)
-
-    expect(baseBuildOptions.exit).toHaveBeenCalledWith(1)
-    expect(mockedBuildStaticFiles).not.toHaveBeenCalled()
-  })
-
   it('should throw error when auto-updates enabled but coercedSanityVersion is invalid', async () => {
     mockedCheckRequiredDependencies.mockResolvedValue({
-      didInstall: false,
       installedSanityVersion: 'invalid-version',
     })
     mockedShouldAutoUpdate.mockReturnValue(true)

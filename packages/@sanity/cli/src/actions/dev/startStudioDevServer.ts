@@ -8,15 +8,19 @@ import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
+import {readModuleVersion} from '../../util/readModuleVersion.js'
 import {checkRequiredDependencies} from '../build/checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from '../build/checkStudioDependencyVersions.js'
 import {getStudioAutoUpdateImportMap} from '../build/getAutoUpdatesImportMap.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {devDebug} from './devDebug.js'
+import {getCoreAppURL} from './getCoreAppUrl.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 import {type DevActionOptions} from './types.js'
 
-export async function startStudioDevServer(options: DevActionOptions): Promise<void> {
+export async function startStudioDevServer(
+  options: DevActionOptions,
+): Promise<{close?: () => Promise<void>}> {
   const {apiClient, cliConfig, flags, output, workDir} = options
 
   const loadInDashboard = flags['load-in-dashboard']
@@ -24,12 +28,7 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
   // Check studio dependency versions
   await checkStudioDependencyVersions(workDir, output)
 
-  // Check required dependencies and exit early if they were installed
-  const {didInstall, installedSanityVersion} = await checkRequiredDependencies(options)
-  if (didInstall) {
-    // If dependencies were installed, the CLI command will be re-run
-    return
-  }
+  const {installedSanityVersion} = await checkRequiredDependencies(options)
 
   // Check if auto-updates are enabled
   const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags})
@@ -47,6 +46,7 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
 
     // Check the versions
     const result = await compareDependencyVersions(autoUpdatesImports, workDir)
+    console.log({result})
     const message =
       `The following local package versions are different from the versions currently served at runtime.\n` +
       `When using auto updates, we recommend that you run with the same versions locally as will be used when deploying.\n\n` +
@@ -83,11 +83,11 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
   if (loadInDashboard) {
     if (!projectId) {
       output.error('Project Id is required to load in dashboard', {exit: 1})
-      return
+      return {}
     }
 
     const client = await apiClient({
-      apiVersion: '2024-01-01',
+      apiVersion: '2025-08-25',
       requireUser: true,
     })
 
@@ -103,46 +103,53 @@ export async function startStudioDevServer(options: DevActionOptions): Promise<v
   }
 
   try {
+    const startTime = Date.now()
     const spin = spinner('Starting dev server').start()
-    await startDevServer({...config, printStartLog: !loadInDashboard, spinner: spin})
+    const {close, server} = await startDevServer(config)
+
+    const {info: loggerInfo} = server.config.logger
+    const {port} = server.config.server
+    const httpHost = config.httpHost || 'localhost'
+
+    spin.succeed()
 
     if (loadInDashboard) {
-      output.log(`Dev server started on port ${config.httpPort}`)
+      if (!organizationId) {
+        output.error('Organization Id not found for project', {exit: 1})
+        return {}
+      }
+
+      output.log(`Dev server started on port ${port}`)
       output.log(`View your studio in the Sanity dashboard here:`)
       output.log(
         chalk.blue(
           chalk.underline(
-            await getCoreStudioURL({
-              httpHost: config.httpHost,
-              httpPort: config.httpPort,
-              organizationId: organizationId!,
+            await getCoreAppURL({
+              httpHost,
+              httpPort: port,
+              organizationId,
             }),
           ),
         ),
       )
+    } else {
+      const startupDuration = Date.now() - startTime
+      const url = `http://${httpHost || 'localhost'}:${port}${config.basePath}`
+      const appType = 'Sanity Studio'
+
+      const viteVersion = await readModuleVersion(import.meta.url, 'vite')
+
+      loggerInfo(
+        `${appType} ` +
+          `using ${chalk.cyan(`vite@${viteVersion}`)} ` +
+          `ready in ${chalk.cyan(`${Math.ceil(startupDuration)}ms`)} ` +
+          `and running at ${chalk.cyan(url)}`,
+      )
     }
+
+    return {close}
   } catch (err) {
     devDebug('Error starting studio dev server', err)
     throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
   }
-}
-
-// Similar to getCoreAppURL but for studio
-async function getCoreStudioURL({
-  httpHost = 'localhost',
-  httpPort = 3333,
-  organizationId,
-}: {
-  httpHost?: string
-  httpPort?: number
-  organizationId: string
-}): Promise<string> {
-  const url = `http://${httpHost}:${httpPort}`
-  const params = new URLSearchParams({dev: url})
-
-  // Use the appropriate environment URL
-  const baseUrl =
-    process.env.SANITY_INTERNAL_ENV === 'staging' ? 'https://sanity.work' : 'https://sanity.io'
-
-  return `${baseUrl}/@${organizationId}?${params.toString()}`
 }
