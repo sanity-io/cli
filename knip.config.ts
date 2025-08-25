@@ -25,9 +25,6 @@ const baseConfig = {
       entry: ['sanity.cli.ts', './src/App.tsx'],
       project,
     },
-    'examples/basic-blueprint': {
-      entry: ['blueprint.ts'],
-    },
     'examples/worst-case-studio': {
       entry: ['sanity.cli.ts', 'sanity.config.tsx', 'src/defines.ts'],
       project,
