@@ -17,7 +17,7 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
     outputDir: Args.directory({description: 'Output directory'}),
   }
 
-  static override description = 'Alias for `sanity preview`'
+  static override description = 'Starts a server to preview a production build'
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> --host=0.0.0.0',

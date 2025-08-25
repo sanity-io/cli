@@ -14,7 +14,7 @@ describe('#start', () => {
     const {stdout} = await runCommand(['start', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
-      "Alias for \`sanity preview\`
+      "Starts a server to preview a production build
 
       USAGE
         $ sanity start [OUTPUTDIR] [--host <value>] [--port <value>]
@@ -28,7 +28,7 @@ describe('#start', () => {
         --port=<value>  [default: 3333] TCP port to start server on.
 
       DESCRIPTION
-        Alias for \`sanity preview\`
+        Starts a server to preview a production build
 
       ALIASES
         $ sanity start
