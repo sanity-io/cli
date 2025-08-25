@@ -11,7 +11,6 @@ const baseConfig = {
     'packages/@sanity/original-cli/**',
     'packages/@sanity/migrate/**',
     'packages/@sanity/codegen/**',
-    'packages/@sanity/blueprints/**',
     'packages/create-sanity/**',
 
     // See `helpClass` in `oclif.config.js`
