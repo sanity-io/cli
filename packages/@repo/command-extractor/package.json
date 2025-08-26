@@ -1,0 +1,17 @@
+{
+  "name": "@repo/command-extractor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "extract-commands": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/cli": "workspace:*",
+    "@sanity/client": "^7.9.0",
+    "dotenv": "^17.2.1",
+    "tsx": "^4.19.3"
+  }
+}
