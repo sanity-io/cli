@@ -29,6 +29,11 @@ const baseConfig = {
       entry: ['sanity.cli.ts', 'sanity.config.tsx', 'src/defines.ts'],
       project,
     },
+    'packages/@repo/command-extractor': {
+      // Needed for npx to work
+      ignoreDependencies: ['@sanity/cli'],
+      project,
+    },
     'packages/@sanity/cli': {
       entry: [
         'src/commands/**/*.ts',
