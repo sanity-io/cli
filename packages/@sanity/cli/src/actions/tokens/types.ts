@@ -5,8 +5,12 @@ interface TokenRole {
 
 export interface Token {
   createdAt: string
+  createdBy: string
   id: string
   label: string
+  lastUsedAt: string | null
+  permissions: string[]
+  projectId: string
   projectUserId: string
   roles: TokenRole[]
 }
@@ -27,16 +31,4 @@ export interface ProjectRole {
   name: string
   projectId: string
   title: string
-}
-
-export interface Token {
-  createdAt: string
-  createdBy: string
-  id: string
-  label: string
-  lastUsedAt: string | null
-  permissions: string[]
-  projectId: string
-  projectUserId: string
-  roles: TokenRole[]
 }

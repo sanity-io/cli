@@ -40,7 +40,7 @@ vi.mock('../../../../../cli-core/src/util/isInteractive.js', () => ({
   isInteractive: true,
 }))
 
-describe('tokens add', () => {
+describe('#tokens:add', () => {
   afterEach(() => {
     vi.clearAllMocks()
     const pending = nock.pendingMocks()

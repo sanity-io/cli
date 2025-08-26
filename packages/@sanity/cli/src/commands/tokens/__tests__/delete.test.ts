@@ -6,12 +6,16 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
 import {type Token} from '../../../actions/tokens/types.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
-import {DeleteTokenCommand} from '../delete.js'
+import {DeleteTokensCommand} from '../delete.js'
 
 // Test fixtures
 const createToken = (overrides: Partial<Token> & {id: string}): Token => ({
   createdAt: '2023-01-01T00:00:00Z',
+  createdBy: 'user-creator',
   label: 'Test Token',
+  lastUsedAt: null,
+  permissions: ['read', 'write'],
+  projectId: 'test-project',
   projectUserId: 'user-123',
   roles: [{name: 'editor', title: 'Editor'}],
   ...overrides,
@@ -85,7 +89,7 @@ describe('#tokens:delete', () => {
       uri: '/projects/test-project/tokens/token-api-123',
     }).reply(204)
 
-    const {stdout} = await testCommand(DeleteTokenCommand, ['token-api-123'])
+    const {stdout} = await testCommand(DeleteTokensCommand, ['token-api-123'])
     expect(stdout).toBe('Token deleted successfully\n')
     expect(confirm).toHaveBeenCalledWith({
       default: false,
@@ -100,7 +104,7 @@ describe('#tokens:delete', () => {
       uri: '/projects/test-project/tokens/token-api-123',
     }).reply(204)
 
-    const {stdout} = await testCommand(DeleteTokenCommand, ['token-api-123', '--yes'])
+    const {stdout} = await testCommand(DeleteTokensCommand, ['token-api-123', '--yes'])
     expect(stdout).toBe('Token deleted successfully\n')
   })
 
@@ -111,7 +115,7 @@ describe('#tokens:delete', () => {
       uri: '/projects/test-project/tokens/token-api-123',
     }).reply(204)
 
-    const {stdout} = await testCommand(DeleteTokenCommand, ['token-api-123', '-y'])
+    const {stdout} = await testCommand(DeleteTokensCommand, ['token-api-123', '-y'])
     expect(stdout).toBe('Token deleted successfully\n')
   })
 
@@ -119,7 +123,7 @@ describe('#tokens:delete', () => {
     const {confirm} = await import('@inquirer/prompts')
     vi.mocked(confirm).mockResolvedValue(false)
 
-    const {error} = await testCommand(DeleteTokenCommand, ['token-api-123'])
+    const {error} = await testCommand(DeleteTokensCommand, ['token-api-123'])
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Operation cancelled')
     expect(error?.oclif?.exit).toBe(1)
@@ -141,7 +145,7 @@ describe('#tokens:delete', () => {
       uri: '/projects/test-project/tokens/token-read-456',
     }).reply(204)
 
-    const {stdout} = await testCommand(DeleteTokenCommand)
+    const {stdout} = await testCommand(DeleteTokensCommand)
     expect(stdout).toBe('Token deleted successfully\n')
     expect(select).toHaveBeenCalledWith({
       choices: [
@@ -176,7 +180,7 @@ describe('#tokens:delete', () => {
       uri: '/projects/test-project/tokens/token-multi-123',
     }).reply(204)
 
-    const {stdout} = await testCommand(DeleteTokenCommand)
+    const {stdout} = await testCommand(DeleteTokensCommand)
     expect(stdout).toBe('Token deleted successfully\n')
     expect(select).toHaveBeenCalledWith({
       choices: [{name: 'Multi Role Token (Editor, Viewer)', value: 'token-multi-123'}],
@@ -205,7 +209,7 @@ describe('#tokens:delete', () => {
       uri: '/projects/test-project/tokens/token-no-role-123',
     }).reply(204)
 
-    const {stdout} = await testCommand(DeleteTokenCommand)
+    const {stdout} = await testCommand(DeleteTokensCommand)
     expect(stdout).toBe('Token deleted successfully\n')
     expect(select).toHaveBeenCalledWith({
       choices: [{name: 'No Role Token ()', value: 'token-no-role-123'}],
@@ -220,7 +224,7 @@ describe('#tokens:delete', () => {
       uri: '/projects/test-project/tokens/nonexistent-token',
     }).reply(404, {message: 'Token not found'})
 
-    const {error} = await testCommand(DeleteTokenCommand, ['nonexistent-token', '--yes'])
+    const {error} = await testCommand(DeleteTokensCommand, ['nonexistent-token', '--yes'])
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token with ID "nonexistent-token" not found')
     expect(error?.oclif?.exit).toBe(1)
@@ -232,7 +236,7 @@ describe('#tokens:delete', () => {
       uri: '/projects/test-project/tokens',
     }).reply(200, [])
 
-    const {error} = await testCommand(DeleteTokenCommand)
+    const {error} = await testCommand(DeleteTokensCommand)
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token deletion failed')
     expect(error?.message).toContain('No tokens found')
@@ -249,7 +253,7 @@ describe('#tokens:delete', () => {
       uri: '/projects/test-project/tokens/token-api-123',
     }).reply(statusCode, {message})
 
-    const {error} = await testCommand(DeleteTokenCommand, ['token-api-123', '--yes'])
+    const {error} = await testCommand(DeleteTokensCommand, ['token-api-123', '--yes'])
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token deletion failed')
     expect(error?.message).toContain(message)
@@ -262,7 +266,7 @@ describe('#tokens:delete', () => {
       uri: '/projects/test-project/tokens',
     }).reply(404, {message: 'Project not found'})
 
-    const {error} = await testCommand(DeleteTokenCommand)
+    const {error} = await testCommand(DeleteTokensCommand)
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token with ID "undefined" not found')
     expect(error?.oclif?.exit).toBe(1)
@@ -274,7 +278,7 @@ describe('#tokens:delete', () => {
       uri: '/projects/test-project/tokens',
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(DeleteTokenCommand)
+    const {error} = await testCommand(DeleteTokensCommand)
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token deletion failed')
     expect(error?.message).toContain('Internal Server Error')
@@ -290,7 +294,7 @@ describe('#tokens:delete', () => {
       api: {projectId},
     })
 
-    const {error} = await testCommand(DeleteTokenCommand, ['token-api-123'])
+    const {error} = await testCommand(DeleteTokensCommand, ['token-api-123'])
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
     expect(error?.oclif?.exit).toBe(1)
@@ -298,7 +302,7 @@ describe('#tokens:delete', () => {
 
   test('handles network errors when fetching tokens', async () => {
     // Don't set up any mock to simulate network failure
-    const {error} = await testCommand(DeleteTokenCommand)
+    const {error} = await testCommand(DeleteTokensCommand)
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token deletion failed')
     expect(error?.oclif?.exit).toBe(1)
@@ -306,7 +310,7 @@ describe('#tokens:delete', () => {
 
   test('handles network errors when deleting token', async () => {
     // Don't set up any mock to simulate network failure
-    const {error} = await testCommand(DeleteTokenCommand, ['token-api-123', '--yes'])
+    const {error} = await testCommand(DeleteTokensCommand, ['token-api-123', '--yes'])
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token deletion failed')
     expect(error?.oclif?.exit).toBe(1)

@@ -1,16 +1,14 @@
 import {confirm, select} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {ClientError, type SanityClient} from '@sanity/client'
+import {ClientError} from '@sanity/client'
 
-import {TOKENS_API_VERSION} from '../../actions/tokens/constants.js'
-import {deleteTokenFromProject} from '../../services/deleteTokenFromProject.js'
-import {getProjectTokens} from '../../services/getProjectTokens.js'
+import {deleteToken, getTokens} from '../../services/tokens.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteTokenDebug = subdebug('tokens:delete')
 
-export class DeleteTokenCommand extends SanityCommand<typeof DeleteTokenCommand> {
+export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensCommand> {
   static override args = {
     tokenId: Args.string({
       description: 'Token ID to delete (will prompt if not provided)',
@@ -43,11 +41,10 @@ export class DeleteTokenCommand extends SanityCommand<typeof DeleteTokenCommand>
     }),
   }
 
-  private client!: SanityClient
   private projectId!: string
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(DeleteTokenCommand)
+    const {args, flags} = await this.parse(DeleteTokensCommand)
 
     const unattended = flags.yes
     const {tokenId: givenTokenId} = args
@@ -58,11 +55,6 @@ export class DeleteTokenCommand extends SanityCommand<typeof DeleteTokenCommand>
         {exit: 1},
       )
     }
-
-    this.client = await this.getGlobalApiClient({
-      apiVersion: TOKENS_API_VERSION,
-      requireUser: true,
-    })
 
     // Ensure we have project context
     const projectId = await this.getProjectId()
@@ -88,8 +80,7 @@ export class DeleteTokenCommand extends SanityCommand<typeof DeleteTokenCommand>
         }
       }
 
-      await deleteTokenFromProject({
-        client: this.client,
+      await deleteToken({
         projectId: this.projectId,
         tokenId,
       })
@@ -98,7 +89,6 @@ export class DeleteTokenCommand extends SanityCommand<typeof DeleteTokenCommand>
     } catch (error) {
       if (error instanceof ClientError && error.response.statusCode === 404) {
         this.error(`Token with ID "${tokenId}" not found`, {exit: 1})
-        return
       }
 
       const err = error as Error
@@ -108,14 +98,14 @@ export class DeleteTokenCommand extends SanityCommand<typeof DeleteTokenCommand>
   }
 
   private async getTokenIdFromList() {
-    const tokens = await getProjectTokens({client: this.client, projectId: this.projectId})
+    const tokens = await getTokens(this.projectId)
 
     if (tokens.length === 0) {
-      throw new Error('No tokens found')
+      this.error('No tokens found', {exit: 1})
     }
 
     const choices = tokens.map((token) => ({
-      name: `${token.label} (${(token.roles || []).map((r: {title: string}) => r.title).join(', ')})`,
+      name: `${token.label} (${(token.roles || []).map((r) => r.title).join(', ')})`,
       value: token.id,
     }))
 

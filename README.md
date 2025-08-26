@@ -60,6 +60,7 @@ To test the specific commands you can navigate to `examples` and run `npx sanity
 | ❌      | schema    |
 | ❌      | start     |
 | ❌      | telemetry |
+| ✅      | tokens    |
 | ❌      | typegen   |
 | ❌      | undeploy  |
 | ❌      | users     |
