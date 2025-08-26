@@ -9,15 +9,15 @@ import {testExample} from '~test/helpers/testExample.js'
 
 import {PreviewCommand} from '../preview.js'
 
-describe('#start', () => {
+describe('#preview', () => {
   test('help works', async () => {
-    const {stdout} = await runCommand(['start', '--help'])
+    const {stdout} = await runCommand(['preview', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Starts a server to preview a production build
 
       USAGE
-        $ sanity start [OUTPUTDIR] [--host <value>] [--port <value>]
+        $ sanity preview [OUTPUTDIR] [--host <value>] [--port <value>]
 
       ARGUMENTS
         OUTPUTDIR  Output directory
@@ -34,11 +34,11 @@ describe('#start', () => {
         $ sanity start
 
       EXAMPLES
-        $ sanity start --host=0.0.0.0
+        $ sanity preview --host=0.0.0.0
 
-        $ sanity start --port=1942
+        $ sanity preview --port=1942
 
-        $ sanity start some/build-output-dir
+        $ sanity preview some/build-output-dir
 
       "
     `)
@@ -50,14 +50,14 @@ describe('#start', () => {
       // Mock the process.cwd() to the example directory
       process.cwd = () => cwd
 
-      const {error, stdout} = await testCommand(PreviewCommand, ['--port', '3334'], {
+      const {error, stdout} = await testCommand(PreviewCommand, ['--port', '4334'], {
         config: {root: cwd},
       })
 
       expect(error).toBeUndefined()
       expect(stdout).toContain(`Sanity application using vite@`)
       expect(stdout).toContain(`ready in`)
-      expect(stdout).toContain(`ms and running at http://localhost:3334/ (production preview mode)`)
+      expect(stdout).toContain(`ms and running at http://localhost:4334/ (production preview mode)`)
     })
 
     test('should throw an error if the example has not been built', async () => {
@@ -85,14 +85,14 @@ describe('#start', () => {
       // Mock the process.cwd() to the example directory
       process.cwd = () => cwd
 
-      const {error, stdout} = await testCommand(PreviewCommand, [], {
+      const {error, stdout} = await testCommand(PreviewCommand, ['--port', '4333'], {
         config: {root: cwd},
       })
 
       expect(error).toBeUndefined()
       expect(stdout).toContain(`Sanity Studio using vite@`)
       expect(stdout).toContain(`ready in`)
-      expect(stdout).toContain(`ms and running at http://localhost:3333/ (production preview mode)`)
+      expect(stdout).toContain(`ms and running at http://localhost:4333/ (production preview mode)`)
     })
 
     test('should throw an error if the example has not been built', async () => {
@@ -132,7 +132,7 @@ describe('#start', () => {
 
     await writeFile(indexPath, newIndex)
 
-    const {error, stdout} = await testCommand(PreviewCommand, ['--port', '3335'], {
+    const {error, stdout} = await testCommand(PreviewCommand, ['--port', '4335'], {
       config: {root: cwd},
     })
 
@@ -141,7 +141,7 @@ describe('#start', () => {
     expect(stdout).toContain(`Sanity Studio using vite@`)
     expect(stdout).toContain(`ready in`)
     expect(stdout).toContain(
-      `ms and running at http://localhost:3335/custom-base-path (production preview mode)`,
+      `ms and running at http://localhost:4335/custom-base-path (production preview mode)`,
     )
   })
 
@@ -163,7 +163,7 @@ describe('#start', () => {
 
     await writeFile(indexPath, newIndex)
 
-    const {error, stderr, stdout} = await testCommand(PreviewCommand, ['--port', '3336'], {
+    const {error, stderr, stdout} = await testCommand(PreviewCommand, ['--port', '4336'], {
       config: {root: cwd},
     })
 
@@ -171,7 +171,7 @@ describe('#start', () => {
     expect(stderr).toContain(`Could not determine base path from index.html, using "/" as default`)
     expect(stdout).toContain(`Sanity Studio using vite@`)
     expect(stdout).toContain(`ready in`)
-    expect(stdout).toContain(`ms and running at http://localhost:3336/ (production preview mode)`)
+    expect(stdout).toContain(`ms and running at http://localhost:4336/ (production preview mode)`)
   })
 
   test('should throw an error if the index.html file is not found', async () => {
@@ -182,7 +182,7 @@ describe('#start', () => {
     // Remove the index.html file
     await rm(join(cwd, 'dist', 'index.html'))
 
-    const {error} = await testCommand(PreviewCommand, ['--port', '3337'], {
+    const {error} = await testCommand(PreviewCommand, ['--port', '4337'], {
       config: {root: cwd},
     })
 
@@ -196,19 +196,19 @@ describe('#start', () => {
     // Mock the process.cwd() to the example directory
     process.cwd = () => cwd
 
-    // Create a server on port 3338 to block it
+    // Create a server on port 4338 to block it
     const server = createServer()
     await new Promise<void>((resolve) => {
-      server.listen(3338, 'localhost', resolve)
+      server.listen(4338, 'localhost', resolve)
     })
 
     try {
-      const {error} = await testCommand(PreviewCommand, ['--port', '3338'], {
+      const {error} = await testCommand(PreviewCommand, ['--port', '4338'], {
         config: {root: cwd},
       })
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Port 3338 is already in use')
+      expect(error?.message).toContain('Port 4338 is already in use')
       expect(error?.oclif?.exit).toBe(1)
     } finally {
       // Clean up the server

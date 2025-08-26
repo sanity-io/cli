@@ -7,14 +7,17 @@ import chalk from 'chalk'
 
 import {previewAction} from '../actions/preview/previewAction.js'
 
-export const startDebug = subdebug('start')
+export const previewDebug = subdebug('preview')
 
-export class StartCommand extends SanityCommand<typeof StartCommand> {
+export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
+  // sanity start is an alias for sanity preview
+  static override aliases: string[] = ['start']
+
   static override args = {
     outputDir: Args.directory({description: 'Output directory'}),
   }
 
-  static override description = 'Alias for `sanity preview`'
+  static override description = 'Starts a server to preview a production build'
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> --host=0.0.0.0',
@@ -34,7 +37,7 @@ export class StartCommand extends SanityCommand<typeof StartCommand> {
   }
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(StartCommand)
+    const {args, flags} = await this.parse(PreviewCommand)
 
     const workDir = (await this.getProjectRoot()).directory
     const cliConfig = await this.getCliConfig()
@@ -48,7 +51,7 @@ export class StartCommand extends SanityCommand<typeof StartCommand> {
       await previewAction({cliConfig, flags, outDir, workDir})
     } catch (error) {
       if (error.name !== 'BUILD_NOT_FOUND') {
-        startDebug(`Failed to start preview server`, {error})
+        previewDebug(`Failed to start preview server`, {error})
         this.output.error(error.message, {exit: 1})
       }
 

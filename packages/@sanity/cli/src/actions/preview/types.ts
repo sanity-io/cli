@@ -1,3 +1,3 @@
-import {StartCommand} from '../../commands/start.js'
+import {type PreviewCommand} from '../../commands/preview.js'
 
-export type StartFlags = StartCommand['flags']
+export type PreviewFlags = PreviewCommand['flags']

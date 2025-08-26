@@ -4,10 +4,10 @@ import {
   getSharedServerConfig,
   type GetSharedServerConfigResult,
 } from '../../util/getSharedServerConfig.js'
-import {type StartFlags} from './types.js'
+import {type PreviewFlags} from './types.js'
 
 interface GetPreviewServerConfigOptions {
-  flags: StartFlags
+  flags: PreviewFlags
   rootDir: string
   workDir: string
 
