@@ -21,7 +21,7 @@ export function formatFailure(
       return 'Request timed out'
     }
     default: {
-      return 'Unknown error'
+      return `Unknown error (${failureReason})`
     }
   }
 }

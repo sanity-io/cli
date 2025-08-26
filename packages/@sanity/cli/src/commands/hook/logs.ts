@@ -91,14 +91,16 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     let messages: HookMessage[]
     let attempts: DeliveryAttempt[] = []
     try {
-      messages = await getHookMessagesForProject({
-        hookId: selectedHook.id,
-        projectId,
-      })
-      attempts = await getHookAttemptsForProject({
-        hookId: selectedHook.id,
-        projectId,
-      })
+      ;[messages, attempts] = await Promise.all([
+        getHookMessagesForProject({
+          hookId: selectedHook.id,
+          projectId,
+        }),
+        getHookAttemptsForProject({
+          hookId: selectedHook.id,
+          projectId,
+        }),
+      ])
     } catch (error) {
       const err = error as Error
       logsHookDebug(`Error fetching logs for hook ${selectedHook.id}`, err)
@@ -111,7 +113,7 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     // Populate messages with attempts
     const populated = messages.map((msg): HookMessage & {attempts: DeliveryAttempt[]} => ({
       ...msg,
-      attempts: groupedAttempts[msg.id],
+      attempts: groupedAttempts[msg.id] || [],
     }))
 
     const totalMessages = messages.length - 1
@@ -138,7 +140,9 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
 
     this.log(`Date: ${message.createdAt}`)
     this.log(`Status: ${message.status}`)
-    this.log(`Result code: ${message.resultCode}`)
+    if (message.resultCode) {
+      this.log(`Result code: ${message.resultCode}`)
+    }
 
     if (message.failureCount > 0) {
       this.log(`Failures: ${message.failureCount}`)
