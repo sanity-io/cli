@@ -48,7 +48,7 @@ To test the specific commands you can navigate to `examples` and run `npx sanity
 | ✅      | help      |
 | ❌      | hook      |
 | ❌      | init      |
-| ❌      | install   |
+| ✅      | install   |
 | ✅      | learn     |
 | ✅      | login     |
 | ✅      | logout    |

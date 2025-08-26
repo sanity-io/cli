@@ -58,7 +58,7 @@ describe('installDeclaredPackages', () => {
 
     await installDeclaredPackages(workDir, 'npm', context)
 
-    expect(execa).toHaveBeenCalledWith('npm', ['install', '--legacy-peer-deps'], {
+    expect(execa).toHaveBeenCalledWith('npm', ['install'], {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},
@@ -131,7 +131,7 @@ describe('installDeclaredPackages', () => {
 
     expect(execa).not.toHaveBeenCalled()
     expect(mockOutput.log).toHaveBeenCalledWith(
-      "Manual installation selected — run 'npm install --legacy-peer-deps' or equivalent",
+      "Manual installation selected — run 'npm install' or equivalent",
     )
   })
 
@@ -181,16 +181,12 @@ describe('installNewPackages', () => {
 
     await installNewPackages(options, context)
 
-    expect(execa).toHaveBeenCalledWith(
-      'npm',
-      ['install', '--legacy-peer-deps', '--save', '@sanity/vision'],
-      {
-        cwd: workDir,
-        encoding: 'utf8',
-        env: {PATH: '/mock/path'},
-        stdio: 'pipe',
-      },
-    )
+    expect(execa).toHaveBeenCalledWith('npm', ['install', '--save', '@sanity/vision'], {
+      cwd: workDir,
+      encoding: 'utf8',
+      env: {PATH: '/mock/path'},
+      stdio: 'pipe',
+    })
     expect(mockSpinnerInstance.start).toHaveBeenCalled()
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
   })
@@ -265,7 +261,7 @@ describe('installNewPackages', () => {
 
     expect(execa).not.toHaveBeenCalled()
     expect(mockOutput.log).toHaveBeenCalledWith(
-      "Manual installation selected - run 'npm install --legacy-peer-deps --save some-package' or equivalent",
+      "Manual installation selected - run 'npm install --save some-package' or equivalent",
     )
   })
 
@@ -312,7 +308,7 @@ describe('installNewPackages', () => {
 
     await installNewPackages(options, context)
 
-    expect(execa).toHaveBeenCalledWith('npm', ['install', '--legacy-peer-deps', '--save'], {
+    expect(execa).toHaveBeenCalledWith('npm', ['install', '--save'], {
       cwd: workDir,
       encoding: 'utf8',
       env: {PATH: '/mock/path'},

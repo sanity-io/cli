@@ -21,13 +21,13 @@ interface PackageManagerCommands {
 const PACKAGE_MANAGER_COMMANDS: PackageManagerCommands = {
   add: {
     bun: (packages) => ['add', ...packages],
-    npm: (packages) => ['install', '--legacy-peer-deps', '--save', ...packages],
+    npm: (packages) => ['install', '--save', ...packages],
     pnpm: (packages) => ['add', '--save-prod', ...packages],
     yarn: (packages) => ['add', ...packages],
   },
   install: {
     bun: ['install'],
-    npm: ['install', '--legacy-peer-deps'],
+    npm: ['install'],
     pnpm: ['install'],
     yarn: ['install'],
   },
