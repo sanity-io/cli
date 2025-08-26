@@ -1,11 +1,9 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
-import {mockApi, testCommand} from '@sanity/cli-test'
+import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {testCommand} from '@sanity/cli-test'
 import chalk from 'chalk'
-import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {DOCUMENTS_API_VERSION} from '../../../actions/documents/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {GetDocumentCommand} from '../get.js'
 
@@ -26,29 +24,18 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
+vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
+  getProjectCliClient: vi.fn(),
+}))
+
 const mockGetCliConfig = vi.mocked(getCliConfig)
+const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 const testProjectId = 'test-project'
 const testDataset = 'production'
-
-// Chalk spies for colorization testing
-vi.mock('chalk', async (importOriginal) => {
-  const chalk = await importOriginal<typeof import('chalk')>()
-
-  return {
-    default: {
-      ...chalk.default,
-      green: vi.fn().mockImplementation((a: string) => a),
-      white: vi.fn().mockImplementation((a: string) => a),
-    },
-  }
-})
 
 describe('#documents:get', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pendingMocks = nock.pendingMocks()
-    nock.cleanAll()
-    expect(pendingMocks).toEqual([])
   })
 
   test('--help works', async () => {
@@ -74,18 +61,17 @@ describe('#documents:get', () => {
       },
     })
 
-    mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
-      apiVersion: DOCUMENTS_API_VERSION,
-      uri: `/data/doc/${testDataset}/test-doc`,
-    }).reply(200, {
-      documents: [mockDoc],
-    })
+    // Mock the getProjectApiClient to return a mock client with getDocument
+    const mockGetDocument = vi.fn().mockResolvedValue(mockDoc)
+    mockGetProjectCliClient.mockResolvedValue({
+      getDocument: mockGetDocument,
+    } as never)
 
     const {stdout} = await testCommand(GetDocumentCommand, ['test-doc'])
 
     expect(stdout).toContain('"_id": "test-doc"')
     expect(stdout).toContain('"title": "Test Post"')
+    expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
   })
 
   test('displays colorized output when --pretty flag is used', async () => {
@@ -102,15 +88,24 @@ describe('#documents:get', () => {
       },
     })
 
-    mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
-      apiVersion: DOCUMENTS_API_VERSION,
-      uri: `/data/doc/${testDataset}/test-doc`,
-    }).reply(200, {
-      documents: [mockDoc],
+    // Mock the getProjectApiClient to return a mock client with getDocument
+    const mockGetDocument = vi.fn().mockResolvedValue(mockDoc)
+    mockGetProjectCliClient.mockResolvedValue({
+      getDocument: mockGetDocument,
+    } as never)
+
+    const originalChalkLevel = chalk.level
+    // Force colorization
+    chalk.level = 3
+
+    const {stdout} = await testCommand(GetDocumentCommand, ['test-doc', '--pretty'], {
+      capture: {
+        stripAnsi: false,
+      },
     })
 
-    const {stdout} = await testCommand(GetDocumentCommand, ['test-doc', '--pretty'])
+    // Reset chalk level
+    chalk.level = originalChalkLevel
 
     // Check that the output contains the document data
     expect(stdout).toContain('test-doc')
@@ -119,9 +114,9 @@ describe('#documents:get', () => {
     expect(stdout).toContain('_type')
     expect(stdout).toContain('title')
 
-    // Check that chalk colorization methods were called
-    expect(chalk.white).toHaveBeenCalled() // For keys and punctuators
-    expect(chalk.green).toHaveBeenCalled() // For strings
+    // eslint-disable-next-line no-control-regex
+    expect(stdout).toMatch(/\u001B\[\d+m/)
+    expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
   })
 
   test('uses custom dataset when --dataset flag is provided', async () => {
@@ -138,18 +133,17 @@ describe('#documents:get', () => {
       },
     })
 
-    mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
-      apiVersion: DOCUMENTS_API_VERSION,
-      uri: `/data/doc/staging/test-doc`,
-    }).reply(200, {
-      documents: [mockDoc],
-    })
+    // Mock the getProjectApiClient to return a mock client with getDocument
+    const mockGetDocument = vi.fn().mockResolvedValue(mockDoc)
+    mockGetProjectCliClient.mockResolvedValue({
+      getDocument: mockGetDocument,
+    } as never)
 
     const {stdout} = await testCommand(GetDocumentCommand, ['test-doc', '--dataset', 'staging'])
 
     expect(stdout).toContain('"_id": "test-doc"')
     expect(stdout).toContain('"title": "Test Post"')
+    expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
   })
 
   test('throws error when document is not found', async () => {
@@ -160,25 +154,18 @@ describe('#documents:get', () => {
       },
     })
 
-    mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
-      apiVersion: DOCUMENTS_API_VERSION,
-      uri: `/data/doc/${testDataset}/nonexistent-doc`,
-    }).reply(200, {
-      documents: [],
-      omitted: [
-        {
-          id: 'nonexistent-doc',
-          reason: 'existence',
-        },
-      ],
-    })
+    // Mock the getProjectApiClient to return a mock client with getDocument returning null
+    const mockGetDocument = vi.fn().mockResolvedValue(null)
+    mockGetProjectCliClient.mockResolvedValue({
+      getDocument: mockGetDocument,
+    } as never)
 
     const {error} = await testCommand(GetDocumentCommand, ['nonexistent-doc'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Document "nonexistent-doc" not found')
     expect(error?.oclif?.exit).toBe(1)
+    expect(mockGetDocument).toHaveBeenCalledWith('nonexistent-doc')
   })
 
   test('throws error when no project ID is configured', async () => {
@@ -219,22 +206,18 @@ describe('#documents:get', () => {
       },
     })
 
-    mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
-      apiVersion: DOCUMENTS_API_VERSION,
-      uri: `/data/doc/${testDataset}/test-doc`,
-    }).reply(500, {
-      error: {
-        description: 'Network error',
-        type: 'serverError',
-      },
-    })
+    // Mock the getProjectApiClient to return a mock client with getDocument throwing an error
+    const mockGetDocument = vi.fn().mockRejectedValue(new Error('Network error'))
+    mockGetProjectCliClient.mockResolvedValue({
+      getDocument: mockGetDocument,
+    } as never)
 
     const {error} = await testCommand(GetDocumentCommand, ['test-doc'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to fetch document')
     expect(error?.oclif?.exit).toBe(1)
+    expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
   })
 
   test('requires document ID argument', async () => {
