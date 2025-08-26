@@ -2,9 +2,8 @@ import {Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {Table} from 'console-table-printer'
 
-import {TOKENS_API_VERSION} from '../../actions/tokens/constants.js'
 import {type Token} from '../../actions/tokens/types.js'
-import {getTokensForProject} from '../../services/getTokensForProject.js'
+import {getTokens} from '../../services/tokens.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 
@@ -34,11 +33,6 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     const {json} = flags
     const outputJson = json ?? false
 
-    const client = await this.getGlobalApiClient({
-      apiVersion: TOKENS_API_VERSION,
-      requireUser: true,
-    })
-
     // Ensure we have project context
     const projectId = await this.getProjectId()
     if (!projectId) {
@@ -47,7 +41,7 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
 
     let tokens: Token[]
     try {
-      tokens = await getTokensForProject({client, projectId})
+      tokens = await getTokens(projectId)
     } catch (error) {
       const message = getErrorMessage(error)
       listTokenDebug(`Error fetching tokens for project ${projectId}`, error)

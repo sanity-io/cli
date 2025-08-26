@@ -1,12 +1,9 @@
 import {input, select} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
-import {type SanityClient} from '@sanity/client'
 
-import {TOKENS_API_VERSION} from '../../actions/tokens/constants.js'
 import {validateRole} from '../../actions/tokens/validateRole.js'
-import {addTokenToProject} from '../../services/addTokenToProject.js'
-import {getProjectRoles} from '../../services/getProjectRoles.js'
+import {createToken, getTokenRoles} from '../../services/tokens.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const tokensAddDebug = subdebug('tokens:add')
@@ -61,11 +58,6 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
     const {label: givenLabel} = args
     const {json, role} = flags
 
-    const client = await this.getGlobalApiClient({
-      apiVersion: TOKENS_API_VERSION,
-      requireUser: true,
-    })
-
     const projectId = await this.getProjectId()
     if (!projectId) {
       this.error(NO_PROJECT_ID, {exit: 1})
@@ -73,13 +65,10 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
 
     try {
       const label = givenLabel || (await this.promptForLabel())
-      const roleName = await (role
-        ? validateRole(role, client, projectId)
-        : this.promptForRole(client, projectId))
+      const roleName = await (role ? validateRole(role, projectId) : this.promptForRole(projectId))
 
       tokensAddDebug(`Creating token for project ${projectId}`, {label, roleName})
-      const token = await addTokenToProject({
-        client,
+      const token = await createToken({
         label,
         projectId,
         roleName,
@@ -129,13 +118,13 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
     return label
   }
 
-  private async promptForRole(client: SanityClient, projectId: string): Promise<string> {
+  private async promptForRole(projectId: string): Promise<string> {
     const unattended = this.flags.yes
     if (unattended || !isInteractive) {
       return 'viewer' // Default role for unattended mode
     }
 
-    const roles = await getProjectRoles(client, projectId)
+    const roles = await getTokenRoles(projectId)
     const robotRoles = roles.filter((role) => role.appliesToRobots)
 
     tokensAddDebug('Robot roles', {robotRoles})
