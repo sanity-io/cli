@@ -15,6 +15,8 @@ const apiHosts: Record<string, string | undefined> = {
   staging: 'https://api.sanity.work',
 }
 
+const CLI_REQUEST_TAG_PREFIX = 'sanity.cli'
+
 /**
  * @internal
  */
@@ -58,10 +60,59 @@ export async function getGlobalCliClient({
     ...(apiHost ? {apiHost} : {}),
     apiVersion,
     requester,
-    requestTagPrefix: 'sanity.cli',
+    requestTagPrefix: CLI_REQUEST_TAG_PREFIX,
     token,
     useCdn: false,
     useProjectHostname: false,
+  })
+}
+
+/**
+ * @internal
+ */
+export interface ProjectCliClientOptions {
+  apiVersion: string
+  projectId: string
+
+  dataset?: string
+
+  requireUser?: boolean
+}
+
+/**
+ * Create a "global" (unscoped) Sanity API client.
+ *
+ * @param options - The options to use for the client.
+ * @returns Promise that resolves to a configured Sanity API client.
+ */
+export async function getProjectCliClient({
+  apiVersion,
+  dataset,
+  projectId,
+  requireUser,
+}: ProjectCliClientOptions): Promise<SanityClient> {
+  const requester = defaultRequester.clone()
+  requester.use(authErrors())
+
+  const sanityEnv = process.env.SANITY_INTERNAL_ENV || 'production'
+
+  const token = await getCliToken()
+  const apiHost = apiHosts[sanityEnv]
+
+  if (requireUser && !token) {
+    throw new Error('You must login first - run "sanity login"')
+  }
+
+  return createClient({
+    ...(apiHost ? {apiHost} : {}),
+    apiVersion,
+    dataset,
+    projectId,
+    requester,
+    requestTagPrefix: CLI_REQUEST_TAG_PREFIX,
+    token,
+    useCdn: false,
+    useProjectHostname: true,
   })
 }
 

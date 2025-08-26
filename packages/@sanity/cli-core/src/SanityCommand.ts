@@ -4,7 +4,12 @@ import {getCliConfig} from './config/cli/getCliConfig.js'
 import {type CliConfig} from './config/cli/types.js'
 import {findProjectRoot} from './config/findProjectRoot.js'
 import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
-import {getGlobalCliClient, type GlobalCliClientOptions} from './services/apiClient.js'
+import {
+  getGlobalCliClient,
+  getProjectCliClient,
+  type GlobalCliClientOptions,
+  type ProjectCliClientOptions,
+} from './services/apiClient.js'
 import {type Output} from './types.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
@@ -24,6 +29,14 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    * @returns The global API client.
    */
   protected getGlobalApiClient = (args: GlobalCliClientOptions) => getGlobalCliClient(args)
+
+  /**
+   * Get the project API client.
+   *
+   * @param args - The project API client options.
+   * @returns The project API client.
+   */
+  protected getProjectApiClient = (args: ProjectCliClientOptions) => getProjectCliClient(args)
 
   /**
    * Helper for outputting to the console.

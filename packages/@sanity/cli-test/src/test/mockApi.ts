@@ -44,7 +44,9 @@ export function mockApi({
   query = {},
   uri,
 }: MockApiOptions) {
+  const version = apiVersion.startsWith('v') ? apiVersion : `v${apiVersion}`
+
   return nock(apiHost)
-    [method](`/${apiVersion}${uri}`)
+    [method](`/${version}${uri}`)
     .query({tag: 'sanity.cli', ...query})
 }

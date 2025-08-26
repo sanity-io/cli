@@ -1,23 +1,26 @@
-import {type CliCommandContext} from '@sanity/cli'
+import chalk from 'chalk'
 import tokenize, {type LexerToken} from 'json-lexer'
 
 interface KeyToken {
+  raw: string
   type: 'key'
   value: string
-  raw: string
 }
 
-type ExtendedLexerToken = LexerToken | KeyToken
+type ExtendedLexerToken = KeyToken | LexerToken
 
+/**
+ * Colorize JSON output for better readability using simple regex patterns
+ */
 const identity = (inp: string): string => inp
 
-export function colorizeJson(input: unknown, chalk: CliCommandContext['chalk']): string {
+export function colorizeJson(input: unknown): string {
   const formatters: Record<ExtendedLexerToken['type'], (str: string) => string> = {
-    punctuator: chalk.white,
     key: chalk.white,
-    string: chalk.green,
-    number: chalk.yellow,
     literal: chalk.bold,
+    number: chalk.yellow,
+    punctuator: chalk.white,
+    string: chalk.green,
     whitespace: identity,
   }
 
