@@ -182,6 +182,27 @@ importers:
         specifier: ^6.3.5
         version: 6.3.5(@types/node@24.0.14)(jiti@2.4.2)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.0)
 
+  packages/@repo/command-extractor:
+    dependencies:
+      '@repo/eslint-config':
+        specifier: workspace:*
+        version: link:../eslint-config
+      '@repo/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@sanity/cli':
+        specifier: workspace:*
+        version: link:../../@sanity/cli
+      '@sanity/client':
+        specifier: ^7.0.0
+        version: 7.7.0(debug@4.4.1)
+      dotenv:
+        specifier: ^17.2.1
+        version: 17.2.1
+      tsx:
+        specifier: ^4.19.3
+        version: 4.20.3
+
   packages/@repo/eslint-config:
     dependencies:
       '@eslint/js':
@@ -4577,6 +4598,10 @@ packages:
   dot-prop@9.0.0:
     resolution: {integrity: sha512-1gxPBJpI/pcjQhKgIU91II6Wkay+dLcN3M6rf2uwP8hRur3HtQXjVrdAK3sjC0piaEuxzMwjXChcETiJl47lAQ==}
     engines: {node: '>=18'}
+
+  dotenv@17.2.1:
+    resolution: {integrity: sha512-kQhDYKZecqnM0fCnzI5eIv5L4cAe/iRI+HqMbO/hbRdTAeXDG+M9FjipUxNfbARuEg4iHIbhnhs78BCHNbSxEQ==}
+    engines: {node: '>=12'}
 
   dts-resolver@2.1.1:
     resolution: {integrity: sha512-3BiGFhB6mj5Kv+W2vdJseQUYW+SKVzAFJL6YNP6ursbrwy1fXHRotfHi3xLNxe4wZl/K8qbAFeCDjZLjzqxxRw==}
@@ -13056,6 +13081,8 @@ snapshots:
   dot-prop@9.0.0:
     dependencies:
       type-fest: 4.41.0
+
+  dotenv@17.2.1: {}
 
   dts-resolver@2.1.1(oxc-resolver@11.5.0):
     optionalDependencies:
