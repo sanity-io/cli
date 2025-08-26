@@ -3,11 +3,11 @@ import {testCommand} from '@sanity/cli-test'
 import open from 'open'
 import {describe, expect, test} from 'vitest'
 
-import {DocsCommand} from '../docs.js'
+import {DocsBrowseCommand} from '../browse.js'
 
-describe('#docs', () => {
-  test('command runs', async () => {
-    const {stdout} = await testCommand(DocsCommand)
+describe('#docs:browse', () => {
+  test('command runs and opens docs URL', async () => {
+    const {stdout} = await testCommand(DocsBrowseCommand)
 
     expect(stdout).toContain('Opening https://www.sanity.io/docs')
     // Mocked in test setup
@@ -15,15 +15,15 @@ describe('#docs', () => {
   })
 
   test('help text is correct', async () => {
-    const {stdout} = await runCommand('docs --help')
+    const {stdout} = await runCommand('docs browse --help')
     expect(stdout).toMatchInlineSnapshot(`
-      "Opens Sanity Studio documentation in your web browser
+      "Open Sanity docs in a web browser
 
       USAGE
-        $ sanity docs
+        $ sanity docs browse
 
       DESCRIPTION
-        Opens Sanity Studio documentation in your web browser
+        Open Sanity docs in a web browser
 
       "
     `)
