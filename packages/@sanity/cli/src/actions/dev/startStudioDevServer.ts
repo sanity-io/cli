@@ -46,7 +46,7 @@ export async function startStudioDevServer(
 
     // Check the versions
     const result = await compareDependencyVersions(autoUpdatesImports, workDir)
-    console.log({result})
+
     const message =
       `The following local package versions are different from the versions currently served at runtime.\n` +
       `When using auto updates, we recommend that you run with the same versions locally as will be used when deploying.\n\n` +

@@ -144,7 +144,12 @@ describe('#dev', () => {
         await (result as Result).close?.()
       } finally {
         // Clean up the server
-        server.close()
+        await new Promise<void>((resolve, reject) => {
+          server.close((err) => {
+            if (err) reject(err)
+            else resolve()
+          })
+        })
       }
     })
 
@@ -315,7 +320,7 @@ describe('#dev', () => {
       expect(error?.oclif?.exit).toBe(1)
     })
 
-    test('should handle auto-updates with version mismatch and user declines upgrade', async () => {
+    test('should start dev server successfully when user declines auto-updates', async () => {
       const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
@@ -420,7 +425,12 @@ describe('#dev', () => {
       expect(error?.oclif?.exit).toBe(1)
     } finally {
       // Clean up the server
-      server.close()
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => {
+          if (err) reject(err)
+          else resolve()
+        })
+      })
     }
   })
 })
