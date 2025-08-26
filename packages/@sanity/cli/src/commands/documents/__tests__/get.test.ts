@@ -1,8 +1,11 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
-import {testCommand} from '@sanity/cli-test'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {getCliConfig} from '@sanity/cli-core'
+import {mockApi, testCommand} from '@sanity/cli-test'
+import chalk from 'chalk'
+import nock from 'nock'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {DOCUMENTS_API_VERSION} from '../../../actions/documents/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {GetDocumentCommand} from '../get.js'
 
@@ -16,39 +19,36 @@ vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
 }))
 
 vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      dataset: 'production',
-      projectId: 'test-project',
-    },
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
-  getProjectCliClient: vi.fn(),
+  getCliConfig: vi.fn(),
 }))
 
 vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-// Mock the project API client
-const mockGetDocument = vi.fn()
+const mockGetCliConfig = vi.mocked(getCliConfig)
+const testProjectId = 'test-project'
+const testDataset = 'production'
 
-// Get the mocked functions
-const mockedGetCliConfig = vi.mocked(getCliConfig)
-const mockedGetProjectCliClient = vi.mocked(getProjectCliClient)
+// Chalk spies for colorization testing
+vi.mock('chalk', async (importOriginal) => {
+  const chalk = await importOriginal<typeof import('chalk')>()
 
-describe('documents get', () => {
-  beforeEach(() => {
-    mockedGetProjectCliClient.mockResolvedValue({
-      getDocument: mockGetDocument,
-    } as never)
-  })
+  return {
+    default: {
+      ...chalk.default,
+      green: vi.fn().mockImplementation((a: string) => a),
+      white: vi.fn().mockImplementation((a: string) => a),
+    },
+  }
+})
 
+describe('#documents:get', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    mockGetDocument.mockReset()
+    const pendingMocks = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pendingMocks).toEqual([])
   })
 
   test('--help works', async () => {
@@ -67,13 +67,25 @@ describe('documents get', () => {
       title: 'Test Post',
     }
 
-    mockGetDocument.mockResolvedValue(mockDoc)
+    mockGetCliConfig.mockResolvedValue({
+      api: {
+        dataset: testDataset,
+        projectId: testProjectId,
+      },
+    })
+
+    mockApi({
+      apiHost: `https://${testProjectId}.api.sanity.io`,
+      apiVersion: DOCUMENTS_API_VERSION,
+      uri: `/data/doc/${testDataset}/test-doc`,
+    }).reply(200, {
+      documents: [mockDoc],
+    })
 
     const {stdout} = await testCommand(GetDocumentCommand, ['test-doc'])
 
     expect(stdout).toContain('"_id": "test-doc"')
     expect(stdout).toContain('"title": "Test Post"')
-    expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
   })
 
   test('displays colorized output when --pretty flag is used', async () => {
@@ -83,47 +95,94 @@ describe('documents get', () => {
       title: 'Test Post',
     }
 
-    mockGetDocument.mockResolvedValue(mockDoc)
+    mockGetCliConfig.mockResolvedValue({
+      api: {
+        dataset: testDataset,
+        projectId: testProjectId,
+      },
+    })
+
+    mockApi({
+      apiHost: `https://${testProjectId}.api.sanity.io`,
+      apiVersion: DOCUMENTS_API_VERSION,
+      uri: `/data/doc/${testDataset}/test-doc`,
+    }).reply(200, {
+      documents: [mockDoc],
+    })
 
     const {stdout} = await testCommand(GetDocumentCommand, ['test-doc', '--pretty'])
 
+    // Check that the output contains the document data
     expect(stdout).toContain('test-doc')
     expect(stdout).toContain('Test Post')
-    expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
+    expect(stdout).toContain('_id')
+    expect(stdout).toContain('_type')
+    expect(stdout).toContain('title')
+
+    // Check that chalk colorization methods were called
+    expect(chalk.white).toHaveBeenCalled() // For keys and punctuators
+    expect(chalk.green).toHaveBeenCalled() // For strings
   })
 
   test('uses custom dataset when --dataset flag is provided', async () => {
     const mockDoc = {
       _id: 'test-doc',
       _type: 'post',
+      title: 'Test Post',
     }
 
-    mockGetDocument.mockResolvedValue(mockDoc)
+    mockGetCliConfig.mockResolvedValue({
+      api: {
+        dataset: testDataset,
+        projectId: testProjectId,
+      },
+    })
 
-    await testCommand(GetDocumentCommand, ['test-doc', '--dataset', 'staging'])
+    mockApi({
+      apiHost: `https://${testProjectId}.api.sanity.io`,
+      apiVersion: DOCUMENTS_API_VERSION,
+      uri: `/data/doc/staging/test-doc`,
+    }).reply(200, {
+      documents: [mockDoc],
+    })
 
-    expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
-    // Verify that the getProjectCliClient was called with the staging dataset
-    expect(mockedGetProjectCliClient).toHaveBeenCalledWith(
-      expect.objectContaining({
-        dataset: 'staging',
-        projectId: 'test-project',
-      }),
-    )
+    const {stdout} = await testCommand(GetDocumentCommand, ['test-doc', '--dataset', 'staging'])
+
+    expect(stdout).toContain('"_id": "test-doc"')
+    expect(stdout).toContain('"title": "Test Post"')
   })
 
   test('throws error when document is not found', async () => {
-    mockGetDocument.mockResolvedValue(null)
+    mockGetCliConfig.mockResolvedValue({
+      api: {
+        dataset: testDataset,
+        projectId: testProjectId,
+      },
+    })
+
+    mockApi({
+      apiHost: `https://${testProjectId}.api.sanity.io`,
+      apiVersion: DOCUMENTS_API_VERSION,
+      uri: `/data/doc/${testDataset}/nonexistent-doc`,
+    }).reply(200, {
+      documents: [],
+      omitted: [
+        {
+          id: 'nonexistent-doc',
+          reason: 'existence',
+        },
+      ],
+    })
 
     const {error} = await testCommand(GetDocumentCommand, ['nonexistent-doc'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Document "nonexistent-doc" not found')
-    expect(mockGetDocument).toHaveBeenCalledWith('nonexistent-doc')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when no project ID is configured', async () => {
-    mockedGetCliConfig.mockResolvedValue({
+    mockGetCliConfig.mockResolvedValue({
       api: {
         dataset: 'production',
         projectId: undefined,
@@ -134,21 +193,14 @@ describe('documents get', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
-
-    // Restore the original mock for other tests
-    mockedGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: 'production',
-        projectId: 'test-project',
-      },
-    })
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when no dataset is configured and none provided', async () => {
-    mockedGetCliConfig.mockResolvedValueOnce({
+    mockGetCliConfig.mockResolvedValue({
       api: {
         dataset: undefined,
-        projectId: 'test-project',
+        projectId: testProjectId,
       },
     })
 
@@ -156,16 +208,33 @@ describe('documents get', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('No dataset specified')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('handles client errors gracefully', async () => {
-    mockGetDocument.mockRejectedValue(new Error('Network error'))
+    mockGetCliConfig.mockResolvedValue({
+      api: {
+        dataset: testDataset,
+        projectId: testProjectId,
+      },
+    })
+
+    mockApi({
+      apiHost: `https://${testProjectId}.api.sanity.io`,
+      apiVersion: DOCUMENTS_API_VERSION,
+      uri: `/data/doc/${testDataset}/test-doc`,
+    }).reply(500, {
+      error: {
+        description: 'Network error',
+        type: 'serverError',
+      },
+    })
 
     const {error} = await testCommand(GetDocumentCommand, ['test-doc'])
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Failed to fetch document: Network error')
-    expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
+    expect(error?.message).toContain('Failed to fetch document')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('requires document ID argument', async () => {
@@ -173,5 +242,6 @@ describe('documents get', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Missing 1 required arg')
+    expect(error?.oclif?.exit).toBe(2)
   })
 })
