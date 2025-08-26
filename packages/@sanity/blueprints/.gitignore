@@ -1,9 +1,0 @@
-*-debug.log
-*-error.log
-**/.DS_Store
-/.idea
-/lib
-/node_modules
-
-yarn.lock
-package-lock.json

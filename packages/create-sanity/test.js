@@ -1,13 +1,10 @@
 #!/usr/bin/env node
 import {strict as assert} from 'node:assert'
 import {spawn} from 'node:child_process'
-import {dirname, join} from 'node:path'
+import {join} from 'node:path'
 import {test} from 'node:test'
-import {fileURLToPath} from 'node:url'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-const createSanityScript = join(__dirname, 'index.js')
+const createSanityScript = join(import.meta.dirname, 'index.js')
 
 /**
  * Helper function to run create-sanity with given arguments and return result

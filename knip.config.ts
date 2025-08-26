@@ -11,7 +11,6 @@ const baseConfig = {
     'packages/@sanity/original-cli/**',
     'packages/@sanity/migrate/**',
     'packages/@sanity/codegen/**',
-    'packages/@sanity/blueprints/**',
     'packages/create-sanity/**',
 
     // See `helpClass` in `oclif.config.js`
@@ -25,9 +24,6 @@ const baseConfig = {
     'examples/basic-app': {
       entry: ['sanity.cli.ts', './src/App.tsx'],
       project,
-    },
-    'examples/basic-blueprint': {
-      entry: ['blueprint.ts'],
     },
     'examples/worst-case-studio': {
       entry: ['sanity.cli.ts', 'sanity.config.tsx', 'src/defines.ts'],
@@ -63,7 +59,7 @@ export const addBundlerEntries = async (config: KnipConfig): Promise<KnipConfig>
   for (const wsDir of dirs) {
     for (const configKey of Object.keys(baseConfig.workspaces)) {
       if (match([wsDir], configKey)) {
-        const manifest = await import(join(__dirname, wsDir, 'package.json'))
+        const manifest = await import(join(import.meta.dirname, wsDir, 'package.json'))
         const configEntries = (config?.workspaces?.[configKey].entry as string[]) ?? []
         const bundler = manifest?.bundler
         for (const value of Object.values(bundler ?? {})) {
