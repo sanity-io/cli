@@ -625,7 +625,7 @@ export default async function initSanity(
     pkgManager = (
       await getPackageManagerChoice(outputPath, {
         prompt,
-        interactive: unattended ? false : isInteractive,
+        interactive: unattended ? false : isInteractive(),
       })
     ).chosen
 

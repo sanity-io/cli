@@ -96,7 +96,7 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
 
   private async promptForLabel(): Promise<string> {
     const unattended = this.flags.yes
-    if (unattended || !isInteractive) {
+    if (unattended || !isInteractive()) {
       this.error(
         'Token label is required in non-interactive mode. Provide a label as an argument.',
         {
@@ -120,7 +120,7 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
 
   private async promptForRole(projectId: string): Promise<string> {
     const unattended = this.flags.yes
-    if (unattended || !isInteractive) {
+    if (unattended || !isInteractive()) {
       return 'viewer' // Default role for unattended mode
     }
 

@@ -21,7 +21,7 @@ vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
     ...actual,
-    isInteractive: true,
+    isInteractive: vi.fn().mockReturnValue(true),
   }
 })
 

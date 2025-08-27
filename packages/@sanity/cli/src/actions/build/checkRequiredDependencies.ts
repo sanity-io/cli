@@ -161,7 +161,7 @@ async function installDependencies(
   }
 
   const {chosen: pkgManager, mostOptimal} = await getPackageManagerChoice(workDir, {
-    interactive: isInteractive,
+    interactive: isInteractive(),
   })
   if (mostOptimal && pkgManager !== mostOptimal) {
     output.warn(
