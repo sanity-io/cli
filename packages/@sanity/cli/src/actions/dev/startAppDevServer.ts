@@ -7,7 +7,9 @@ import {getCoreAppURL} from './getCoreAppUrl.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 import {type DevActionOptions} from './types.js'
 
-export async function startAppDevServer(options: DevActionOptions): Promise<{close?: () => Promise<void>}> {
+export async function startAppDevServer(
+  options: DevActionOptions,
+): Promise<{close?: () => Promise<void>}> {
   const {cliConfig, flags, output, workDir} = options
 
   if (!flags['load-in-dashboard']) {

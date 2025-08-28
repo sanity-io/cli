@@ -111,13 +111,16 @@ export async function startStudioDevServer(
     const {port} = server.config.server
     const httpHost = config.httpHost || 'localhost'
 
-    spin.succeed()
-
     if (loadInDashboard) {
       if (!organizationId) {
+        // If we fail here, we need to close the server
+        await close()
+        spin.fail()
         output.error('Organization Id not found for project', {exit: 1})
         return {}
       }
+
+      spin.succeed()
 
       output.log(`Dev server started on port ${port}`)
       output.log(`View your studio in the Sanity dashboard here:`)
@@ -138,6 +141,7 @@ export async function startStudioDevServer(
       const appType = 'Sanity Studio'
 
       const viteVersion = await readModuleVersion(import.meta.url, 'vite')
+      spin.succeed()
 
       loggerInfo(
         `${appType} ` +

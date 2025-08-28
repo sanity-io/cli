@@ -51,9 +51,6 @@ describe('#dev', () => {
     expect(pending, 'pending mocks').toEqual([])
 
     vi.clearAllMocks()
-
-    // Hacky: Adds a small delay to ensure vite has time to close things or it error in afterEach
-    await new Promise((resolve) => setTimeout(resolve, 100))
   })
 
   test('help text is correct', async () => {
@@ -146,6 +143,7 @@ describe('#dev', () => {
         // Should automatically pick a different port
         expect(stdout).toMatch(/Dev server started on port \d{4}/)
         expect(stdout).not.toContain('Dev server started on port 5338')
+        expect(stdout).toContain('View your app in the Sanity dashboard here:')
         await (result as Result).close?.()
       } finally {
         // Clean up the server
@@ -338,7 +336,7 @@ describe('#dev', () => {
       ])
       mockConfirm.mockResolvedValueOnce(false) // User declines upgrade
 
-      const {error, result, stderr} = await testCommand(
+      const {error, result, stderr, stdout} = await testCommand(
         DevCommand,
         ['--auto-updates', '--port', '5346'],
         {
@@ -348,6 +346,7 @@ describe('#dev', () => {
 
       expect(error).toBeUndefined()
       // Check that the server started successfully with auto-updates flag
+      expect(stdout).toMatch(/running at http:\/\/localhost:5346/)
       expect(stderr).toContain('Checking configuration files')
       await (result as Result).close?.()
     })
@@ -371,7 +370,7 @@ describe('#dev', () => {
         mostOptimal: 'npm',
       })
 
-      const {error, result, stderr} = await testCommand(
+      const {error, result, stderr, stdout} = await testCommand(
         DevCommand,
         ['--auto-updates', '--port', '5348'],
         {
@@ -380,6 +379,7 @@ describe('#dev', () => {
       )
 
       expect(error).toBeUndefined()
+      expect(stdout).toMatch(/running at http:\/\/localhost:5348/)
       expect(stderr).toContain('Checking configuration files')
 
       expect(mockUpgradePackages).toHaveBeenCalledWith(
