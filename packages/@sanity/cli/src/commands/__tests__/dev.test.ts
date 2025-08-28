@@ -52,7 +52,7 @@ describe('#dev', () => {
 
     vi.clearAllMocks()
 
-    // HAcKy: Adds a small delay to ensure vite has time to close things or it error in afterEach
+    // Hacky: Adds a small delay to ensure vite has time to close things or it error in afterEach
     await new Promise((resolve) => setTimeout(resolve, 100))
   })
 

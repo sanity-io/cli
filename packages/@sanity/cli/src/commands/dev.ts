@@ -1,11 +1,10 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 import chalk from 'chalk'
 
 import {devAction} from '../actions/dev/devAction.js'
+import {devDebug} from '../actions/dev/devDebug.js'
 import {determineIsApp} from '../util/determineIsApp.js'
-
-const devDebug = subdebug('dev')
 
 export class DevCommand extends SanityCommand<typeof DevCommand> {
   static override description =

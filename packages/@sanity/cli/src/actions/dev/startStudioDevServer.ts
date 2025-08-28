@@ -39,7 +39,7 @@ export async function startStudioDevServer(
     // Get the version without any tags if any
     const coercedSanityVersion = semver.coerce(installedSanityVersion)?.version
     if (!coercedSanityVersion) {
-      throw new Error(`Failed to parse installed Sanity version: ${installedSanityVersion}`)
+      output.error(`Failed to parse installed Sanity version: ${installedSanityVersion}`, {exit: 1})
     }
     const version = encodeURIComponent(`^${coercedSanityVersion}`)
     const autoUpdatesImports = getStudioAutoUpdateImportMap(version)
