@@ -1,63 +1,62 @@
-import {type CliCommandDefinition} from '@sanity/cli'
+import {Args} from '@oclif/core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 
-import {type DeliveryAttempt} from './types'
+import {formatFailure} from '../../actions/hook/formatFailure.js'
+import {type DeliveryAttempt} from '../../actions/hook/types.js'
+import {getHookAttempt} from '../../services/hooks.js'
+import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
-const printHookAttemptCommand: CliCommandDefinition = {
-  name: 'attempt',
-  group: 'hook',
-  signature: 'ATTEMPT_ID',
-  helpText: '',
-  description: 'Print details of a given webhook delivery attempt',
-  action: async (args, context) => {
-    const {apiClient, output} = context
-    const [attemptId] = args.argsWithoutOptions
-    const client = apiClient()
+const attemptDebug = subdebug('hook:attempt')
 
-    let attempt
-    try {
-      attempt = await client.request<DeliveryAttempt>({uri: `/hooks/attempts/${attemptId}`})
-    } catch (err) {
-      throw new Error(`Hook attempt retrieval failed:\n${err.message}`)
+export class Attempt extends SanityCommand<typeof Attempt> {
+  static override args = {
+    attemptId: Args.string({
+      description: 'The delivery attempt ID to get details for',
+      required: true,
+    }),
+  }
+  static override description = 'Print details of a given webhook delivery attempt'
+
+  static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %> abc123',
+      description: 'Print details of webhook delivery attempt with ID abc123',
+    },
+  ]
+
+  public async run() {
+    const {args} = await this.parse(Attempt)
+    const {attemptId} = args
+
+    const projectId = await this.getProjectId()
+    if (!projectId) {
+      this.error(NO_PROJECT_ID, {exit: 1})
     }
 
-    const {createdAt, resultCode, resultBody, failureReason, inProgress} = attempt
+    let attempt: DeliveryAttempt
+    try {
+      attempt = await getHookAttempt({attemptId, projectId})
+    } catch (error) {
+      const err = error as Error
+      attemptDebug(`Error fetching hook attempt ${attemptId}`, err)
+      this.error(`Hook attempt retrieval failed:\n${err.message}`, {exit: 1})
+    }
 
-    output.print(`Date: ${createdAt}`)
-    output.print(`Status: ${getStatus(attempt)}`)
-    output.print(`Status code: ${resultCode}`)
+    const {createdAt, failureReason, inProgress, resultBody, resultCode} = attempt
+
+    this.log(`Date: ${createdAt}`)
+    this.log(`Status: ${getStatus(attempt)}`)
+    this.log(`Status code: ${resultCode}`)
 
     if (attempt.isFailure) {
-      output.print(`Failure: ${formatFailure(attempt)}`)
+      this.log(`Failure: ${formatFailure(attempt)}`)
     }
 
     if (!inProgress && (!failureReason || failureReason === 'http')) {
       const body = resultBody ? `\n---\n${resultBody}\n---\n` : '<empty>'
-      output.print(`Response body: ${body}`)
+      this.log(`Response body: ${body}`)
     }
-  },
-}
-
-export default printHookAttemptCommand
-
-export function formatFailure(
-  attempt: DeliveryAttempt,
-  options: {includeHelp?: boolean} = {},
-): string {
-  const {includeHelp} = options
-  const {id, failureReason, resultCode} = attempt
-  const help = includeHelp ? `(run \`sanity hook attempt ${id}\` for details)` : ''
-  switch (failureReason) {
-    case 'http':
-      return `HTTP ${resultCode} ${help}`
-    case 'timeout':
-      return 'Request timed out'
-    case 'network':
-      return 'Network error'
-    case 'other':
-    default:
   }
-
-  return 'Unknown error'
 }
 
 export function getStatus(attempt: DeliveryAttempt): string {
