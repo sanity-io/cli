@@ -59,7 +59,7 @@ To test the specific commands you can navigate to `examples` and run `npx sanity
 | ✅      | projects  |
 | ❌      | schema    |
 | ❌      | start     |
-| ❌      | telemetry |
+| ✅      | telemetry |
 | ✅      | tokens    |
 | ❌      | typegen   |
 | ❌      | undeploy  |

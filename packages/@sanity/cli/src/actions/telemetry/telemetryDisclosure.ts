@@ -11,7 +11,7 @@ const TELEMETRY_DISCLOSED_CONFIG_KEY = 'telemetryDisclosed'
 export function telemetryDisclosure(): void {
   const userConfig = getUserConfig()
 
-  if (isCi) {
+  if (isCi()) {
     telemetryDebug('CI environment detected, skipping telemetry disclosure')
     return
   }

@@ -1,3 +1,4 @@
+import {isCi} from '@sanity/cli-core'
 import {testHook} from '@sanity/cli-test'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -19,8 +20,10 @@ vi.mock('../../../../../cli-core/src/util/getUserConfig.js', () => ({
 }))
 
 vi.mock('../../../../../cli-core/src/util/isCi.js', () => ({
-  isCi: false,
+  isCi: vi.fn(() => false),
 }))
+
+const mockIsCi = vi.mocked(isCi)
 
 describe('#setupTelemetry', () => {
   beforeEach(() => {
@@ -62,21 +65,9 @@ describe('#setupTelemetry', () => {
   })
 
   test('does not show disclosure in CI environment', async () => {
-    // Mock isCi as true for this test
-    vi.doMock('../../../../../cli-core/src/util/isCi.js', () => ({
-      isCi: true,
-    }))
+    mockIsCi.mockReturnValueOnce(true)
 
-    // Re-import to get the mocked isCi value
-    vi.resetModules()
-    const {telemetryDisclosure} = await import('../../../actions/telemetry/telemetryDisclosure.js')
-
-    // Create a new setupTelemetry function that uses the re-imported telemetryDisclosure
-    const setupTelemetryWithCi = async function () {
-      telemetryDisclosure()
-    }
-
-    const {stderr} = await testHook<'prerun'>(setupTelemetryWithCi)
+    const {stderr} = await testHook<'prerun'>(setupTelemetry)
 
     expect(mockGet).not.toHaveBeenCalled()
     expect(mockSet).not.toHaveBeenCalled()
