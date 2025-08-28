@@ -45,10 +45,15 @@ type Result = {
 }
 
 describe('#dev', () => {
-  afterEach(() => {
+  afterEach(async () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
+
+    vi.clearAllMocks()
+
+    // HAcKy: Adds a small delay to ensure vite has time to close things or it error in afterEach
+    await new Promise((resolve) => setTimeout(resolve, 100))
   })
 
   test('help text is correct', async () => {

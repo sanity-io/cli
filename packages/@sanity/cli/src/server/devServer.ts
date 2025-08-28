@@ -1,4 +1,5 @@
 import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core'
+import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
 
 import {extendViteConfigWithUserConfig, getViteConfig} from '../actions/build/getViteConfig.js'
@@ -27,6 +28,7 @@ export interface DevServerOptions {
 interface DevServer {
   close(): Promise<void>
   server: ViteDevServer
+  watcher?: FSWatcher
 }
 
 export async function startDevServer(options: DevServerOptions): Promise<DevServer> {
@@ -43,7 +45,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   } = options
 
   debug('Writing Sanity runtime files')
-  await writeSanityRuntime({basePath, cwd, entry, isApp, reactStrictMode, watch: true})
+  const watcher = await writeSanityRuntime({basePath, cwd, entry, isApp, reactStrictMode, watch: true})
 
   debug('Resolving vite config')
   const mode = 'development'
@@ -72,5 +74,14 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   debug('Listening on specified port')
   await server.listen()
 
-  return {close: () => server.close(), server}
+  return {
+    close: async () => {
+      if (watcher) {
+        await watcher.close()
+      }
+      await server.close()
+    },
+    server,
+    watcher,
+  }
 }
