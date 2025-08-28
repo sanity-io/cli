@@ -8,7 +8,6 @@ import 'dotenv/config'
 const PACKAGE_NAME = 'newCli'
 const MAX_DISCOVERY_DEPTH = 3
 const CLI_COMMANDS_TYPE = 'cliCommands'
-const SANITY_PACKAGE_NAME = 'sanity'
 
 const QUERIES = {
   EXISTING_COMMANDS: `*[_type == $type && name == $name && version == $version][0]`,
@@ -202,14 +201,14 @@ class SanityCommandDiscovery {
 
   async loadFromSanity(): Promise<boolean> {
     try {
-      await this.getSanityVersion()
+      const version = await this.getSanityVersion()
       console.log(`🔎 Checking Sanity cache for version: ${this.version}`)
 
       // Check if a document with this name and version already exists
       const existingDoc = await client.fetch(QUERIES.EXISTING_COMMANDS, {
-        name: SANITY_PACKAGE_NAME,
+        name: PACKAGE_NAME,
         type: CLI_COMMANDS_TYPE,
-        version: this.version,
+        version,
       })
 
       if (!existingDoc) {
@@ -358,7 +357,7 @@ class SanityCommandDiscovery {
 
       // Check if a document with this name and version already exists
       const existingDoc = await client.fetch(QUERIES.EXISTING_COMMANDS, {
-        name: SANITY_PACKAGE_NAME,
+        name: PACKAGE_NAME,
         type: CLI_COMMANDS_TYPE,
         version: this.version,
       })
@@ -385,6 +384,13 @@ class SanityCommandDiscovery {
   }
 
   private extractVersion(output: string): string | null {
+    // First try to match the specific CLI output format: @sanity/cli/X.Y.Z
+    const cliVersionMatch = output.match(/@sanity\/cli\/(\d+\.\d+\.\d+)/)
+    if (cliVersionMatch) {
+      return cliVersionMatch[1]
+    }
+
+    // Fallback to any version pattern
     const versionMatch = output.match(/(\d+\.\d+\.\d+)/)
     return versionMatch ? versionMatch[1] : null
   }
