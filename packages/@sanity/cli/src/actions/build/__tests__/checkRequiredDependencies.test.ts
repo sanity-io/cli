@@ -1,4 +1,4 @@
-import {type Output} from '@sanity/cli-core'
+import {isInteractive, type Output} from '@sanity/cli-core'
 import {execa} from 'execa'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -31,6 +31,7 @@ const mockedReadModuleVersion = vi.mocked(readModuleVersion)
 const mockedReadPackageManifest = vi.mocked(readPackageManifest)
 const mockedInstallNewPackages = vi.mocked(installNewPackages)
 const mockedGetPackageManagerChoice = vi.mocked(getPackageManagerChoice)
+const mockedIsInteractive = vi.mocked(isInteractive)
 
 describe('#checkRequiredDependencies', () => {
   const workDir = '/tmp/test-studio'
@@ -43,6 +44,7 @@ describe('#checkRequiredDependencies', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
+    mockedIsInteractive.mockReturnValue(true)
     process.argv = ['/path/to/node', '/path/to/sanity', 'dev']
   })
 
