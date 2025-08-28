@@ -63,6 +63,7 @@
     "@sanity/cli-core": "workspace:*",
     "@sanity/client": "^7.9.0",
     "@sanity/generate-help-url": "^3.0.0",
+    "@sanity/runtime-cli": "^10.4.1",
     "@sanity/telemetry": "^0.8.1",
     "@vitejs/plugin-react": "^4.5.0",
     "boxen": "^8.0.1",
