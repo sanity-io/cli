@@ -7,7 +7,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {HOOK_API_VERSION} from '../../../actions/hook/constants.js'
 import {type DeliveryAttempt} from '../../../actions/hook/types.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
-import {Attempt} from '../attempt.js'
+import {AttemptHookCommand} from '../attempt.js'
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => {
   return {
@@ -41,7 +41,25 @@ describe('#attempt', () => {
     const {stdout} = await runCommand(['hook attempt', '--help'])
 
     expect(stdout).toContain('Print details of a given webhook delivery attempt')
-    expect(stdout).toContain('ATTEMPTID')
+    expect(stdout).toMatchInlineSnapshot(`
+      "Print details of a given webhook delivery attempt
+
+      USAGE
+        $ sanity hook attempt ATTEMPTID
+
+      ARGUMENTS
+        ATTEMPTID  The delivery attempt ID to get details for
+
+      DESCRIPTION
+        Print details of a given webhook delivery attempt
+
+      EXAMPLES
+        Print details of webhook delivery attempt with ID abc123
+
+          $ sanity hook attempt abc123
+
+      "
+    `)
   })
 
   test('displays successful delivery attempt details', async () => {
@@ -65,7 +83,7 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(Attempt, ['attempt123'])
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'])
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Delivered')
@@ -95,7 +113,7 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(Attempt, ['attempt123'])
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'])
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Failed')
@@ -126,7 +144,7 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(Attempt, ['attempt123'])
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'])
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Failed')
@@ -156,7 +174,7 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(Attempt, ['attempt123'])
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'])
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Failed')
@@ -186,7 +204,7 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(Attempt, ['attempt123'])
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'])
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: In progress')
@@ -216,7 +234,7 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(Attempt, ['attempt123'])
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'])
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Delivered')
@@ -230,14 +248,14 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(404, {message: 'Attempt not found'})
 
-    const {error} = await testCommand(Attempt, ['attempt123'])
+    const {error} = await testCommand(AttemptHookCommand, ['attempt123'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Hook attempt retrieval failed')
   })
 
   test('requires attempt ID argument', async () => {
-    const {error} = await testCommand(Attempt, [])
+    const {error} = await testCommand(AttemptHookCommand, [])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Missing 1 required arg')
@@ -250,7 +268,7 @@ describe('#attempt', () => {
       },
     })
 
-    const {error} = await testCommand(Attempt, ['attempt123'])
+    const {error} = await testCommand(AttemptHookCommand, ['attempt123'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)

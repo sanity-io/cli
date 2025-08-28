@@ -8,7 +8,7 @@ import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const attemptDebug = subdebug('hook:attempt')
 
-export class Attempt extends SanityCommand<typeof Attempt> {
+export class AttemptHookCommand extends SanityCommand<typeof AttemptHookCommand> {
   static override args = {
     attemptId: Args.string({
       description: 'The delivery attempt ID to get details for',
@@ -25,7 +25,7 @@ export class Attempt extends SanityCommand<typeof Attempt> {
   ]
 
   public async run() {
-    const {args} = await this.parse(Attempt)
+    const {args} = await this.parse(AttemptHookCommand)
     const {attemptId} = args
 
     const projectId = await this.getProjectId()
@@ -45,7 +45,7 @@ export class Attempt extends SanityCommand<typeof Attempt> {
     const {createdAt, failureReason, inProgress, resultBody, resultCode} = attempt
 
     this.log(`Date: ${createdAt}`)
-    this.log(`Status: ${getStatus(attempt)}`)
+    this.log(`Status: ${this.getStatus(attempt)}`)
     this.log(`Status code: ${resultCode}`)
 
     if (attempt.isFailure) {
@@ -57,16 +57,16 @@ export class Attempt extends SanityCommand<typeof Attempt> {
       this.log(`Response body: ${body}`)
     }
   }
-}
 
-export function getStatus(attempt: DeliveryAttempt): string {
-  if (attempt.isFailure) {
-    return 'Failed'
+  private getStatus(attempt: DeliveryAttempt): string {
+    if (attempt.isFailure) {
+      return 'Failed'
+    }
+
+    if (attempt.inProgress) {
+      return 'In progress'
+    }
+
+    return 'Delivered'
   }
-
-  if (attempt.inProgress) {
-    return 'In progress'
-  }
-
-  return 'Delivered'
 }
