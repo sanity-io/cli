@@ -23,5 +23,6 @@ export default defineConfig({
       provider: 'istanbul',
       reporter: ['html', 'json', 'json-summary'],
     },
+    projects: ['packages/@sanity/cli', 'packages/@sanity/cli-core'],
   },
 })
