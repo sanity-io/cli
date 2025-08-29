@@ -97,9 +97,7 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
 
       const docs = await projectClient.fetch(query)
 
-      // Explicitly check for null or undefined
-      // a count of 0 is a valid result or false is also technically valid
-      if (docs === null || docs === undefined) {
+      if (!docs) {
         this.error('Query returned no results', {exit: 1})
       }
 
