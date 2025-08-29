@@ -1,5 +1,17 @@
 const MAX_DATASET_NAME_LENGTH = 64
 
+/**
+ * Validates a dataset name according to the following rules:
+ * - Must be all lowercase characters
+ * - Must be at least two characters long
+ * - Must be at most 64 characters long
+ * - Must start with a letter or a number
+ * - Must not end with a dash or an underscore
+ * - Must only contain letters, numbers, dashes and underscores
+ *
+ * @param datasetName - The dataset name to validate
+ * @returns A string error message if the dataset name is invalid, or false if it is valid
+ */
 export function validateDatasetName(datasetName: string): false | string {
   if (!datasetName) {
     return 'Dataset name is missing'

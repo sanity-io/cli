@@ -63,8 +63,11 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
       this.error('No datasets found in this project.', {exit: 1})
     }
 
-    // If no dataset specified, prompt for one
-    if (!dataset) {
+    if (dataset) {
+      if (!datasets.some((d) => d.name === dataset)) {
+        this.error(`Dataset '${dataset}' not found...`, {exit: 1})
+      }
+    } else {
       dataset = await this.promptForDataset(datasets)
 
       if (dataset === 'new') {

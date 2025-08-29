@@ -34,7 +34,6 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-
 vi.mock(import('../../../../../cli-core/src/services/apiClient.js'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -188,14 +187,14 @@ describe('#backup:enable', () => {
     }).reply(200, {enabled: true})
 
     const mockCreate = vi.fn().mockResolvedValue({name: 'new-dataset'})
-    
+
     // First call is from listDatasets for listing datasets
     mockGetProjectCliClient.mockResolvedValueOnce({
       datasets: {
         list: vi.fn().mockResolvedValue([{name: 'production'}]),
       },
     } as never)
-    
+
     // Second call is for creating the new dataset
     mockGetProjectCliClient.mockResolvedValueOnce({
       datasets: {
@@ -219,14 +218,14 @@ describe('#backup:enable', () => {
 
   test('should handle dataset creation failure', async () => {
     const mockCreate = vi.fn().mockRejectedValue(new Error('Dataset creation failed'))
-    
+
     // First call is from listDatasets for listing datasets
     mockGetProjectCliClient.mockResolvedValueOnce({
       datasets: {
         list: vi.fn().mockResolvedValue([{name: 'production'}]),
       },
     } as never)
-    
+
     // Second call is for creating the new dataset (which fails)
     mockGetProjectCliClient.mockResolvedValueOnce({
       datasets: {
@@ -245,7 +244,6 @@ describe('#backup:enable', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-
   test('should prompt for dataset name with validation when creating new dataset', async () => {
     mockApi({
       apiVersion: BACKUP_API_VERSION,
@@ -254,14 +252,14 @@ describe('#backup:enable', () => {
     }).reply(200, {enabled: true})
 
     const mockCreate = vi.fn().mockResolvedValue({name: 'valid-dataset'})
-    
+
     // First call is from listDatasets for listing datasets
     mockGetProjectCliClient.mockResolvedValueOnce({
       datasets: {
         list: vi.fn().mockResolvedValue([{name: 'staging'}]),
       },
     } as never)
-    
+
     // Second call is for creating the new dataset
     mockGetProjectCliClient.mockResolvedValueOnce({
       datasets: {
@@ -280,5 +278,14 @@ describe('#backup:enable', () => {
       message: 'Dataset name:',
       validate: expect.any(Function),
     })
+  })
+
+  test('should fail when specified dataset does not exist', async () => {
+    setupMocksWithDatasets([{name: 'production'}, {name: 'staging'}])
+
+    const {error} = await testCommand(EnableBackupCommand, ['nonexistent'])
+
+    expect(error?.message).toContain("Dataset 'nonexistent' not found...")
+    expect(error?.oclif?.exit).toBe(1)
   })
 })
