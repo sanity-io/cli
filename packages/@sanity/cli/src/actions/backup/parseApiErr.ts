@@ -1,14 +1,14 @@
 // apiErr is a type that represents an error returned by the API
 interface ApiErr {
-  statusCode: number
   message: string
+  statusCode: number
 }
 
 // parseApiErr is a function that attempts with the best effort to parse
 // an error returned by the API since different API endpoint may end up
 // returning different error structures.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/explicit-module-boundary-types
-function parseApiErr(err: any): ApiErr {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function parseApiErr(err: any): ApiErr {
   const apiErr = {} as ApiErr
   if (err.code) {
     apiErr.statusCode = err.code
@@ -31,5 +31,3 @@ function parseApiErr(err: any): ApiErr {
 
   return apiErr
 }
-
-export default parseApiErr
