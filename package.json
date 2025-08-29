@@ -29,6 +29,7 @@
     "clean:deps": "rimraf packages/*/node_modules examples/*/node_modules node_modules",
     "depcheck": "knip",
     "dev": "turbo run dev",
+    "extract-commands": "turbo run extract-commands",
     "format": "prettier --write .",
     "pretest": "pnpm run build:cli",
     "test": "vitest run",
