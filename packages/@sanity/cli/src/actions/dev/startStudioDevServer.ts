@@ -54,7 +54,7 @@ export async function startStudioDevServer(
 
     // mismatch between local and auto-updating dependencies
     if (result?.length) {
-      if (isInteractive) {
+      if (isInteractive()) {
         const shouldUpgrade = await confirm({
           default: true,
           message: chalk.yellow(`${message}Do you want to upgrade local versions?`),

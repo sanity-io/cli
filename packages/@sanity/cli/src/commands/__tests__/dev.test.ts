@@ -28,7 +28,7 @@ vi.mock('../../util/compareDependencyVersions.js', () => ({
 vi.mock('@inquirer/prompts')
 
 vi.mock('../../../../cli-core/src/util/isInteractive.js', () => ({
-  isInteractive: true,
+  isInteractive: vi.fn().mockReturnValue(true),
 }))
 
 vi.mock('../../util/packageManager/upgradePackages.js')
@@ -45,7 +45,7 @@ type Result = {
 }
 
 describe('#dev', () => {
-  afterEach(async () => {
+  afterEach(() => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
