@@ -74,10 +74,18 @@ describe('telemetry status', () => {
   })
 
   test('shows status when DO_NOT_TRACK is not set', async () => {
+    // Store original value to restore later
+    const originalDoNotTrack = process.env.DO_NOT_TRACK
+    
     // Explicitly remove DO_NOT_TRACK to ensure it's not globally set anywhere
     delete process.env.DO_NOT_TRACK
 
     const {stdout} = await testCommand(Status, [])
+
+    // Restore original value if it existed
+    if (originalDoNotTrack !== undefined) {
+      process.env.DO_NOT_TRACK = originalDoNotTrack
+    }
 
     // Should show telemetry status or appropriate message
     expect(stdout).toContain('Learn more here:')
