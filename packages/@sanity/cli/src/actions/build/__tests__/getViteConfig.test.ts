@@ -1,5 +1,5 @@
 import {type ConfigEnv, type InlineConfig} from 'vite'
-import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
   extendViteConfigWithUserConfig,
@@ -56,7 +56,6 @@ vi.mock('../../../server/vite/plugin-sanity-runtime-rewrite.js', () => ({
 describe('#getViteConfig', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
-    delete process.env.SANITY_INTERNAL_ENV
 
     // Setup default mock for readPackageUp
     const {readPackageUp} = await import('read-package-up')
@@ -64,6 +63,10 @@ describe('#getViteConfig', () => {
       packageJson: {name: 'sanity'},
       path: '/mock/path/to/sanity/package.json',
     })
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   test('should create basic vite config with default options', async () => {
@@ -224,7 +227,7 @@ describe('#getViteConfig', () => {
   })
 
   test('should set staging flag when SANITY_INTERNAL_ENV is staging', async () => {
-    process.env.SANITY_INTERNAL_ENV = 'staging'
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
 
     const options = {
       cwd: '/test/cwd',
@@ -304,6 +307,10 @@ describe('#finalizeViteConfig', () => {
     vi.clearAllMocks()
   })
 
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   test('should merge sanity entry into existing config', async () => {
     const {mergeConfig} = await import('vite')
 
@@ -380,6 +387,10 @@ describe('#finalizeViteConfig', () => {
 describe('#extendViteConfigWithUserConfig', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+  })
+
+  afterEach(() => {
+    vi.unstubAllEnvs()
   })
 
   test('should return default config when user config is undefined', async () => {
