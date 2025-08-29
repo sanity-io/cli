@@ -74,8 +74,8 @@ describe('telemetry status', () => {
   })
 
   test('shows status when DO_NOT_TRACK is not set', async () => {
-    // Explicitly ensure DO_NOT_TRACK is not set
-    vi.stubEnv('DO_NOT_TRACK', undefined)
+    // Explicitly remove DO_NOT_TRACK to ensure it's not globally set anywhere
+    delete process.env.DO_NOT_TRACK
 
     const {stdout} = await testCommand(Status, [])
 
