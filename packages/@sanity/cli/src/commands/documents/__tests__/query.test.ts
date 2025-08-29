@@ -40,13 +40,43 @@ describe('#documents:query', () => {
   test('--help works', async () => {
     const {stdout} = await runCommand(['documents query', '--help'])
 
-    expect(stdout).toContain('Query for documents')
-    expect(stdout).toContain('ARGUMENTS')
-    expect(stdout).toContain('QUERY')
-    expect(stdout).toContain('--pretty')
-    expect(stdout).toContain('--dataset')
-    expect(stdout).toContain('--api-version')
-    expect(stdout).toContain('--anonymous')
+    expect(stdout).toMatchInlineSnapshot(`
+      "Query for documents
+
+      USAGE
+        $ sanity documents query QUERY [--anonymous] [--api-version <value>] [-d
+          <value>] [--pretty] [-p <value>]
+
+      ARGUMENTS
+        QUERY  GROQ query to run against the dataset
+
+      FLAGS
+        -d, --dataset=<value>      Dataset to query (overrides config)
+        -p, --project=<value>      Project ID to query (overrides config)
+            --anonymous            Send the query without any authorization token
+            --api-version=<value>  API version to use (defaults to 2025-08-15)
+            --pretty               Colorize JSON output
+
+      DESCRIPTION
+        Query for documents
+
+      EXAMPLES
+        Fetch 5 documents of type "movie"
+
+          $ sanity documents query '*[_type == "movie"][0..4]'
+
+        Fetch title of the oldest movie in the dataset named "staging"
+
+          $ sanity documents query '*[_type == "movie"]|order(releaseDate \\
+            asc)[0]{title}' --dataset staging
+
+        Use API version v2021-06-07 and do a query
+
+          $ sanity documents query '*[_id == "header"] { "headerText": \\
+            pt::text(body) }' --api-version v2021-06-07
+
+      "
+    `)
   })
 
   test('executes query successfully with basic options', async () => {
@@ -81,7 +111,7 @@ describe('#documents:query', () => {
     expect(stdout).toContain('"_id": "movie1"')
     expect(stdout).toContain('"title": "The Matrix"')
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
-    
+
     // Verify that getProjectCliClient was called with requireUser: true by default
     expect(mockGetProjectCliClient).toHaveBeenCalledWith({
       apiVersion: expect.any(String),
@@ -122,6 +152,8 @@ describe('#documents:query', () => {
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
     expect(stdout).toContain('"_id"')
     expect(stdout).toContain('test')
+    // eslint-disable-next-line no-control-regex
+    expect(stdout).toMatch(/\u001B\[\d+m/)
   })
 
   test('uses dataset flag to override config', async () => {
@@ -148,6 +180,12 @@ describe('#documents:query', () => {
 
     expect(stdout).toContain('"_id": "test"')
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith({
+      apiVersion: expect.any(String),
+      dataset: overrideDataset,
+      projectId: testProjectId,
+      requireUser: true,
+    })
   })
 
   test('uses project flag to override config', async () => {
@@ -174,6 +212,12 @@ describe('#documents:query', () => {
 
     expect(stdout).toContain('"_id": "test"')
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith({
+      apiVersion: expect.any(String),
+      dataset: testDataset,
+      projectId: overrideProject,
+      requireUser: true,
+    })
   })
 
   test('uses anonymous flag to skip authentication', async () => {
@@ -195,7 +239,7 @@ describe('#documents:query', () => {
 
     expect(stdout).toContain('"_id": "test"')
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
-    
+
     // Verify that getProjectCliClient was called with requireUser: false
     expect(mockGetProjectCliClient).toHaveBeenCalledWith({
       apiVersion: expect.any(String),
@@ -229,9 +273,15 @@ describe('#documents:query', () => {
 
     expect(stdout).toContain('"_id": "test"')
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith({
+      apiVersion: customApiVersion,
+      dataset: testDataset,
+      projectId: testProjectId,
+      requireUser: true,
+    })
   })
 
-  test('shows warning when API version is not specified', async () => {
+  test('shows warning and uses default API version when not specified', async () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
 
     mockGetCliConfig.mockResolvedValue({
@@ -250,6 +300,12 @@ describe('#documents:query', () => {
 
     expect(stderr).toContain('--api-version not specified, using `2025-08-15`')
     expect(stdout).toContain('"_id": "test"')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith({
+      apiVersion: '2025-08-15',
+      dataset: testDataset,
+      projectId: testProjectId,
+      requireUser: true,
+    })
   })
 
   test('fails when no project ID is configured or provided', async () => {
@@ -323,7 +379,7 @@ describe('#documents:query', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('supports environment variable for API version', async () => {
+  test('uses environment variable for API version when set', async () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
     const envApiVersion = 'v2023-01-01'
 
@@ -346,6 +402,12 @@ describe('#documents:query', () => {
 
     expect(stdout).toContain('"_id": "test"')
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith({
+      apiVersion: envApiVersion,
+      dataset: testDataset,
+      projectId: testProjectId,
+      requireUser: true,
+    })
 
     vi.unstubAllEnvs()
   })
