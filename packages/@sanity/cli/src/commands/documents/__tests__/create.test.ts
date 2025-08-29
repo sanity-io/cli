@@ -74,14 +74,21 @@ function withEditorEnv(testFn: () => Promise<void>) {
   }
 }
 
+// Base configuration used across tests
+const baseConfig = {
+  api: {
+    dataset: testDataset,
+    projectId: testProjectId,
+  },
+}
+
 // Helper functions moved to outer scope to fix linting
+const setupBaseMocks = (additionalConfig = {}) => {
+  mockGetCliConfig.mockResolvedValue({...baseConfig, ...additionalConfig})
+}
+
 const setupMocks = () => {
-  mockGetCliConfig.mockResolvedValue({
-    api: {
-      dataset: testDataset,
-      projectId: testProjectId,
-    },
-  })
+  setupBaseMocks()
   const mockClient = {
     transaction: vi.fn().mockReturnValue({
       commit: vi.fn().mockResolvedValue({
@@ -94,12 +101,7 @@ const setupMocks = () => {
 }
 
 const setupEditorMocks = () => {
-  mockGetCliConfig.mockResolvedValue({
-    api: {
-      dataset: testDataset,
-      projectId: testProjectId,
-    },
-  })
+  setupBaseMocks()
   mockOs.tmpdir.mockReturnValue('/tmp')
   mockFs.mkdir.mockResolvedValue(undefined)
   mockFs.writeFile.mockResolvedValue(undefined)
@@ -108,12 +110,7 @@ const setupEditorMocks = () => {
 }
 
 const setupWatchMocks = () => {
-  mockGetCliConfig.mockResolvedValue({
-    api: {
-      dataset: testDataset,
-      projectId: testProjectId,
-    },
-  })
+  setupBaseMocks()
   mockOs.tmpdir.mockReturnValue('/tmp')
   mockFs.mkdir.mockResolvedValue(undefined)
   mockFs.writeFile.mockResolvedValue(undefined)
@@ -178,7 +175,7 @@ describe('#documents:create', () => {
     `)
   })
 
-  test('creates document from file successfully', async () => {
+  test('creates document from JSON file and displays success message', async () => {
     const mockDoc = {
       _id: 'test-doc',
       _type: 'post',
@@ -288,7 +285,7 @@ describe('#documents:create', () => {
   })
 
   test(
-    'opens editor when no file specified',
+    'opens editor when no file specified and creates document from editor content',
     withEditorEnv(async () => {
       mockGetCliConfig.mockResolvedValue({
         api: {
@@ -327,29 +324,14 @@ describe('#documents:create', () => {
     }),
   )
 
-  test('uses custom dataset when --dataset flag is provided', async () => {
+  test('uses custom dataset from --dataset flag instead of config', async () => {
     const mockDoc = {
       _id: 'test-doc',
       _type: 'post',
       title: 'Test Post',
     }
 
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: testDataset,
-        projectId: testProjectId,
-      },
-    })
-
-    const mockClient = {
-      transaction: vi.fn().mockReturnValue({
-        commit: vi.fn().mockResolvedValue({
-          results: [{id: 'test-doc', operation: 'create'}],
-        }),
-      }),
-    }
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
-
+    setupMocks()
     mockFs.readFile.mockResolvedValue(JSON.stringify(mockDoc))
     mockJson5.parse.mockReturnValue(mockDoc)
 
@@ -368,12 +350,7 @@ describe('#documents:create', () => {
   })
 
   test('throws error when both --replace and --missing flags are used', async () => {
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: testDataset,
-        projectId: testProjectId,
-      },
-    })
+    setupBaseMocks()
 
     const {error} = await testCommand(CreateDocumentCommand, [
       'test-doc.json',
@@ -387,12 +364,7 @@ describe('#documents:create', () => {
   })
 
   test('throws error when --id and file path are both provided', async () => {
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: testDataset,
-        projectId: testProjectId,
-      },
-    })
+    setupBaseMocks()
 
     const {error} = await testCommand(CreateDocumentCommand, ['test-doc.json', '--id', 'myDocId'])
 
@@ -431,14 +403,8 @@ describe('#documents:create', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('handles file reading errors gracefully', async () => {
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: testDataset,
-        projectId: testProjectId,
-      },
-    })
-
+  test('displays error message when file cannot be read', async () => {
+    setupBaseMocks()
     mockGetProjectCliClient.mockResolvedValue({} as never)
     mockFs.readFile.mockRejectedValue(new Error('File not found'))
 
@@ -449,16 +415,10 @@ describe('#documents:create', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('validates document structure', async () => {
+  test('validates document has required _type property', async () => {
     const invalidDoc = {title: 'Test Post'} // Missing _type
 
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: testDataset,
-        projectId: testProjectId,
-      },
-    })
-
+    setupBaseMocks()
     mockGetProjectCliClient.mockResolvedValue({} as never)
     mockFs.readFile.mockResolvedValue(JSON.stringify(invalidDoc))
     mockJson5.parse.mockReturnValue(invalidDoc)
@@ -579,6 +539,50 @@ describe('#documents:create', () => {
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain(expectedErrorSubstring)
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('allows documents with reserved fields but logs debug warning', async () => {
+      const docWithReservedFields = {
+        _createdAt: '2024-01-01T00:00:00Z',
+        _id: 'test-doc',
+        _rev: 'some-revision',
+        _type: 'post',
+        _updatedAt: '2024-01-02T00:00:00Z',
+        title: 'Test Post',
+      }
+
+      setupMocks()
+      const mockClient = {
+        transaction: vi.fn().mockReturnValue({
+          commit: vi.fn().mockResolvedValue({
+            results: [{id: 'test-doc', operation: 'create'}],
+          }),
+        }),
+      }
+      mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+      mockFs.readFile.mockResolvedValue(JSON.stringify(docWithReservedFields))
+      mockJson5.parse.mockReturnValue(docWithReservedFields)
+
+      // Should not throw error, but should proceed with document creation
+      const {stdout} = await testCommand(CreateDocumentCommand, ['doc.json'])
+
+      expect(stdout).toContain('Created:')
+      expect(stdout).toContain('test-doc')
+      expect(mockClient.transaction).toHaveBeenCalledWith([{create: docWithReservedFields}])
+    })
+
+    test('validates empty document array throws error', async () => {
+      const emptyArray: unknown[] = []
+
+      setupMocks()
+      mockFs.readFile.mockResolvedValue(JSON.stringify(emptyArray))
+      mockJson5.parse.mockReturnValue(emptyArray)
+
+      const {error} = await testCommand(CreateDocumentCommand, ['empty-docs.json'])
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('No documents provided')
       expect(error?.oclif?.exit).toBe(1)
     })
   })
@@ -761,6 +765,43 @@ describe('#documents:create', () => {
         expect(error?.message).toContain('Failed to write documents: Document already exists')
         expect(error?.message).toContain('Perhaps you want to use `--replace` or `--missing`?')
         expect(error?.oclif?.exit).toBe(1)
+      }),
+    )
+
+    test(
+      'handles file cleanup errors silently',
+      withEditorEnv(async () => {
+        const mockDoc = {
+          _id: 'test-doc',
+          _type: 'post',
+          title: 'Test Post',
+        }
+
+        const mockClient = {
+          getDocument: vi.fn().mockResolvedValue(null),
+          transaction: vi.fn().mockReturnValue({
+            commit: vi.fn().mockResolvedValue({
+              results: [{id: 'test-doc', operation: 'create'}],
+            }),
+          }),
+        }
+        mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+
+        setupEditorMocks()
+        // Mock unlink to throw an error (should be caught silently)
+        mockFs.unlink.mockRejectedValue(new Error('Permission denied'))
+        mockFs.readFile.mockResolvedValue(JSON.stringify(mockDoc))
+        mockJson5.parse.mockReturnValue(mockDoc)
+        mockJson5.stringify.mockReturnValue(
+          JSON.stringify({_id: 'test-doc', _type: 'specify-me'}, null, 2),
+        )
+
+        const {stdout} = await testCommand(CreateDocumentCommand, [])
+
+        // Should still succeed despite file cleanup error
+        expect(stdout).toContain('Created:')
+        expect(stdout).toContain('test-doc')
+        expect(mockFs.unlink).toHaveBeenCalled()
       }),
     )
   })
