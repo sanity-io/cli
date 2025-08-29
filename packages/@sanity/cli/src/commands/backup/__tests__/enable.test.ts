@@ -285,7 +285,9 @@ describe('#backup:enable', () => {
 
     const {error} = await testCommand(EnableBackupCommand, ['nonexistent'])
 
-    expect(error?.message).toContain("Dataset 'nonexistent' not found...")
+    expect(error?.message).toContain(
+      "Dataset 'nonexistent' not found in this project. Available datasets: production, staging",
+    )
     expect(error?.oclif?.exit).toBe(1)
   })
 })

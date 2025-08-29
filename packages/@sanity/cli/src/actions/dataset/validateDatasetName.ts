@@ -17,7 +17,7 @@ export function validateDatasetName(datasetName: string): false | string {
     return 'Dataset name is missing'
   }
 
-  const name = `${datasetName}`
+  const name = datasetName
 
   if (name.toLowerCase() !== name) {
     return 'Dataset name must be all lowercase characters'

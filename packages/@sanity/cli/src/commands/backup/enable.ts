@@ -64,8 +64,12 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
     }
 
     if (dataset) {
+      // Validate that the specified dataset exists
       if (!datasets.some((d) => d.name === dataset)) {
-        this.error(`Dataset '${dataset}' not found...`, {exit: 1})
+        this.error(
+          `Dataset '${dataset}' not found in this project. Available datasets: ${datasets.map((d) => d.name).join(', ')}`,
+          {exit: 1},
+        )
       }
     } else {
       dataset = await this.promptForDataset(datasets)
@@ -79,6 +83,7 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
             projectId,
             requireUser: true,
           })
+          // Datasets methods are only available on the project client
           await projectClient.datasets.create(newDatasetName)
           dataset = newDatasetName
         } catch (error) {
