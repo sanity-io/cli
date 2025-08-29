@@ -34,6 +34,7 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
+
 vi.mock(import('../../../../../cli-core/src/services/apiClient.js'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -187,15 +188,20 @@ describe('#backup:enable', () => {
     }).reply(200, {enabled: true})
 
     const mockCreate = vi.fn().mockResolvedValue({name: 'new-dataset'})
-    setupMocksWithDatasets([{name: 'production'}])
-    mockGetProjectCliClient.mockImplementationOnce(() =>
-      Promise.resolve({
-        datasets: {
-          create: mockCreate,
-          list: vi.fn().mockResolvedValue([{name: 'production'}]),
-        },
-      } as never),
-    )
+    
+    // First call is from listDatasets for listing datasets
+    mockGetProjectCliClient.mockResolvedValueOnce({
+      datasets: {
+        list: vi.fn().mockResolvedValue([{name: 'production'}]),
+      },
+    } as never)
+    
+    // Second call is for creating the new dataset
+    mockGetProjectCliClient.mockResolvedValueOnce({
+      datasets: {
+        create: mockCreate,
+      },
+    } as never)
 
     mockSelect.mockResolvedValue('new')
     mockInput.mockResolvedValue('new-dataset')
@@ -213,15 +219,20 @@ describe('#backup:enable', () => {
 
   test('should handle dataset creation failure', async () => {
     const mockCreate = vi.fn().mockRejectedValue(new Error('Dataset creation failed'))
-    setupMocksWithDatasets([{name: 'production'}])
-    mockGetProjectCliClient.mockImplementationOnce(() =>
-      Promise.resolve({
-        datasets: {
-          create: mockCreate,
-          list: vi.fn().mockResolvedValue([{name: 'production'}]),
-        },
-      } as never),
-    )
+    
+    // First call is from listDatasets for listing datasets
+    mockGetProjectCliClient.mockResolvedValueOnce({
+      datasets: {
+        list: vi.fn().mockResolvedValue([{name: 'production'}]),
+      },
+    } as never)
+    
+    // Second call is for creating the new dataset (which fails)
+    mockGetProjectCliClient.mockResolvedValueOnce({
+      datasets: {
+        create: mockCreate,
+      },
+    } as never)
 
     mockSelect.mockResolvedValue('new')
     mockInput.mockResolvedValue('invalid-dataset')
@@ -243,15 +254,20 @@ describe('#backup:enable', () => {
     }).reply(200, {enabled: true})
 
     const mockCreate = vi.fn().mockResolvedValue({name: 'valid-dataset'})
-    setupMocksWithDatasets([{name: 'staging'}])
-    mockGetProjectCliClient.mockImplementationOnce(() =>
-      Promise.resolve({
-        datasets: {
-          create: mockCreate,
-          list: vi.fn().mockResolvedValue([{name: 'staging'}]),
-        },
-      } as never),
-    )
+    
+    // First call is from listDatasets for listing datasets
+    mockGetProjectCliClient.mockResolvedValueOnce({
+      datasets: {
+        list: vi.fn().mockResolvedValue([{name: 'staging'}]),
+      },
+    } as never)
+    
+    // Second call is for creating the new dataset
+    mockGetProjectCliClient.mockResolvedValueOnce({
+      datasets: {
+        create: mockCreate,
+      },
+    } as never)
 
     mockSelect.mockResolvedValue('new')
     mockInput.mockResolvedValue('valid-dataset')

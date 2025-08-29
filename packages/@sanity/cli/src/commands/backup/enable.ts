@@ -5,6 +5,7 @@ import {type DatasetsResponse} from '@sanity/client'
 import chalk from 'chalk'
 
 import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'
+import {listDatasets} from '../../actions/backup/listDatasets.js'
 import {parseApiErr} from '../../actions/backup/parseApiErr.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
@@ -46,16 +47,10 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
       requireUser: true,
     })
 
-    const projectClient = await this.getProjectApiClient({
-      apiVersion: BACKUP_API_VERSION,
-      projectId,
-      requireUser: true,
-    })
-
     let datasets: DatasetsResponse
 
     try {
-      datasets = await projectClient.datasets.list()
+      datasets = await listDatasets({projectId})
     } catch (error) {
       const {message} = parseApiErr(error)
       enableBackupDebug(`Failed to list datasets: ${message}`, error)
@@ -76,6 +71,11 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
         const newDatasetName = await this.promptForDatasetName(hasProduction)
 
         try {
+          const projectClient = await this.getProjectApiClient({
+            apiVersion: BACKUP_API_VERSION,
+            projectId,
+            requireUser: true,
+          })
           await projectClient.datasets.create(newDatasetName)
           dataset = newDatasetName
         } catch (error) {
