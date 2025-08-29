@@ -6,7 +6,7 @@ import {createClient} from '@sanity/client'
 import 'dotenv/config'
 
 const PACKAGE_NAME = 'newCli'
-const MAX_DISCOVERY_DEPTH = 3
+const MAX_DISCOVERY_DEPTH = 4
 const CLI_COMMANDS_TYPE = 'cliCommands'
 
 const QUERIES = {
@@ -95,6 +95,33 @@ class SanityCommandDiscovery {
 
       // Process all commands at this level and collect topics for further discovery
       const newTopics = this.processCommands(commands, commandPath, depth)
+
+      // For non-main commands, check if any "commands" are actually topics with subcommands
+      if (!isMainCommands) {
+        for (const cmd of commands.filter((c) => c.type === 'command')) {
+          const fullPath = [...commandPath, cmd.name]
+          const helpCommand = `npx sanity help ${fullPath.join(' ')}`
+
+          try {
+            console.log(`  🔍 Checking if "${fullPath.join(' ')}" has subcommands...`)
+            const result = await this.executeCommand(helpCommand)
+
+            if (result.code === 0 && result.stdout.includes('Commands')) {
+              console.log(`  ✨ Found hidden topic: ${fullPath.join(' ')}`)
+              newTopics.push(fullPath)
+
+              // Update the command type to reflect that it's a topic
+              const pathKey = fullPath.join(' ')
+              const existingCommand = this.commands.get(pathKey)
+              if (existingCommand) {
+                existingCommand.type = 'topic'
+              }
+            }
+          } catch {
+            // Ignore errors when checking for subcommands
+          }
+        }
+      }
 
       // Then discover subcommands only for topics in parallel
       if (newTopics.length > 0) {
@@ -294,32 +321,88 @@ class SanityCommandDiscovery {
     const subcommands: Command[] = []
     const lines = helpText.split('\n')
     let inCommandsSection = false
+    let currentSection: 'commands' | 'topics' | null = null
+    let currentCommand: {description: string; name: string} | null = null
 
     for (const line of lines) {
-      if (line.includes('COMMANDS')) {
+      if (line.includes('TOPICS') || line.includes('Topics')) {
         inCommandsSection = true
+        currentSection = 'topics'
+        continue
+      }
+
+      if (line.includes('COMMANDS') || line.includes('Commands')) {
+        inCommandsSection = true
+        currentSection = 'commands'
         continue
       }
 
       if (!inCommandsSection) continue
 
-      const trimmedLine = line.trim()
-
       // Stop if we see the help footer
       if (this.isEndOfSection(line)) break
 
-      // Skip empty lines
-      if (trimmedLine === '') continue
+      const trimmedLine = line.trim()
 
-      // Match lines like "  cors add     Allow a new origin..."
-      // We want to extract "add" from "cors add"
-      const match = line.match(/^\s+\w+\s+(\w+)\s+(.+)$/)
+      // Skip empty lines
+      if (trimmedLine === '') {
+        // If we have a current command, add it to subcommands
+        if (currentCommand) {
+          const commandWords = currentCommand.name.split(/\s+/)
+          const subCommand = commandWords.at(-1) // Get the last word as the subcommand
+
+          if (subCommand) {
+            subcommands.push({
+              description: currentCommand.description.trim(),
+              name: subCommand.trim(),
+              type: currentSection === 'topics' ? 'topic' : 'command',
+            })
+          }
+          currentCommand = null
+        }
+        continue
+      }
+
+      // Check if this line starts a new command (has command name at the beginning)
+      // Pattern: spaces + (one or more words) + spaces + description
+      const match = line.match(/^\s+([\w\s]+?)\s{2,}(.+)$/)
       if (match) {
-        const [, subCommand, description] = match
-        subcommands.push({
+        // If we have a previous command, save it first
+        if (currentCommand) {
+          const commandWords = currentCommand.name.split(/\s+/)
+          const subCommand = commandWords.at(-1) // Get the last word as the subcommand
+
+          if (subCommand) {
+            subcommands.push({
+              description: currentCommand.description.trim(),
+              name: subCommand.trim(),
+              type: currentSection === 'topics' ? 'topic' : 'command',
+            })
+          }
+        }
+
+        // Start a new command
+        const [, fullCommand, description] = match
+        currentCommand = {
           description: description.trim(),
+          name: fullCommand.trim(),
+        }
+      } else if (currentCommand && trimmedLine) {
+        // This is a continuation of the previous command's description
+        currentCommand.description += ' ' + trimmedLine
+      }
+    }
+
+    // Don't forget the last command if there is one
+    if (currentCommand) {
+      const commandWords = currentCommand.name.split(/\s+/)
+      const subCommand = commandWords.at(-1) // Get the last word as the subcommand
+
+      if (subCommand) {
+        subcommands.push({
+          description: currentCommand.description.trim(),
           name: subCommand.trim(),
-          type: 'command', // Subcommands are always commands, not topics
+          type: currentSection === 'topics' ? 'topic' : 'command',
         })
       }
     }
