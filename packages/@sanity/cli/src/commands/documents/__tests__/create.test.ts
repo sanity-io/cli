@@ -14,7 +14,6 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {CreateDocumentCommand} from '../create.js'
 
-// Mock external dependencies
 vi.mock('node:fs/promises')
 vi.mock('node:os')
 vi.mock('chokidar', () => ({
@@ -23,12 +22,10 @@ vi.mock('chokidar', () => ({
 vi.mock('execa')
 vi.mock('json5')
 
-// Mock @sanity/uuid
 vi.mock('@sanity/uuid', () => ({
   uuid: vi.fn(),
 }))
 
-// Mock the config functions
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn().mockResolvedValue({
     directory: '/test/path',
