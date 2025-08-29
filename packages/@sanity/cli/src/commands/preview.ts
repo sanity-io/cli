@@ -59,7 +59,7 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
       this.output.log(chalk.red.bgBlack('\n'))
 
       const shouldRunDevServer =
-        isInteractive &&
+        isInteractive() &&
         (await confirm({
           message: 'Do you want to start a development server instead?',
         }))

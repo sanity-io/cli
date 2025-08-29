@@ -37,7 +37,7 @@ const mockedSelect = vi.mocked(select)
 const mockedGetCliConfig = vi.mocked(getCliConfig)
 
 vi.mock('../../../../../cli-core/src/util/isInteractive.js', () => ({
-  isInteractive: true,
+  isInteractive: vi.fn().mockReturnValue(true),
 }))
 
 describe('#tokens:add', () => {

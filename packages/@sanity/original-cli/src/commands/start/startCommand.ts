@@ -58,7 +58,7 @@ const startCommand: CliCommandDefinition = {
       error('\n')
 
       const shouldRunDevServer =
-        isInteractive &&
+        isInteractive() &&
         (await prompt.single({
           message: 'Do you want to start a development server instead?',
           type: 'confirm',

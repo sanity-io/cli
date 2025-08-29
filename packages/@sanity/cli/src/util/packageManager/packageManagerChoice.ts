@@ -43,7 +43,7 @@ export async function getPackageManagerChoice(
   }
 
   const mostLikelyPM = await getMostLikelyInstalledPackageManager(rootDir)
-  const interactive = typeof options.interactive === 'boolean' ? options.interactive : isInteractive
+  const interactive = typeof options.interactive === 'boolean' ? options.interactive : isInteractive()
   if (!interactive) {
     // We can't ask the user for their preference, so fall back to either the one that is being run
     // or whatever is installed on the system (npm being the preferred choice).
