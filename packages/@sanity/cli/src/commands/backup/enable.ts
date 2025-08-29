@@ -5,6 +5,7 @@ import {type DatasetsResponse} from '@sanity/client'
 import chalk from 'chalk'
 
 import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'
+import {doesDatasetExist} from '../../actions/backup/doesDatasetExist.js'
 import {listDatasets} from '../../actions/backup/listDatasets.js'
 import {parseApiErr} from '../../actions/backup/parseApiErr.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
@@ -64,13 +65,7 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
     }
 
     if (dataset) {
-      // Validate that the specified dataset exists
-      if (!datasets.some((d) => d.name === dataset)) {
-        this.error(
-          `Dataset '${dataset}' not found in this project. Available datasets: ${datasets.map((d) => d.name).join(', ')}`,
-          {exit: 1},
-        )
-      }
+      doesDatasetExist(datasets, dataset)
     } else {
       dataset = await this.promptForDataset(datasets)
 
