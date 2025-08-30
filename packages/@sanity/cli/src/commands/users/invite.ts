@@ -58,9 +58,15 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
       this.error(NO_PROJECT_ID, {exit: 1})
     }
 
-    const roles = (await client.request<Role[]>({uri: `/projects/${projectId}/roles`})).filter(
-      (role) => role.appliesToUsers,
-    )
+    let roles: Role[]
+    try {
+      roles = (await client.request<Role[]>({uri: `/projects/${projectId}/roles`})).filter(
+        (role) => role.appliesToUsers,
+      )
+    } catch (error) {
+      usersInviteDebug('Error fetching roles', error)
+      this.error('Error fetching roles', {exit: 1})
+    }
 
     const email = selectedEmail || (await this.promptForEmail())
     const roleSelection = selectedRole || (await this.promptForRole(roles))

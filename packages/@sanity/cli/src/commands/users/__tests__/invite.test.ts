@@ -207,7 +207,7 @@ describe('#invite', () => {
       apiVersion: USERS_API_VERSION,
       method: 'post',
       uri: '/invitations/project/test-project',
-    }).replyWithError('Internal server error')
+    }).reply(500, {message: 'Internal server error'})
 
     const {error} = await testCommand(UsersInviteCommand, [
       'test@example.com',
@@ -224,7 +224,7 @@ describe('#invite', () => {
     mockApi({
       apiVersion: USERS_API_VERSION,
       uri: '/projects/test-project/roles',
-    }).replyWithError('Internal server error')
+    }).reply(500, {message: 'Internal server error'})
 
     const {error} = await testCommand(UsersInviteCommand, [
       'test@example.com',
@@ -233,6 +233,8 @@ describe('#invite', () => {
     ])
 
     expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Error fetching roles')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('exits when trying to assign role that does not apply to users', async () => {

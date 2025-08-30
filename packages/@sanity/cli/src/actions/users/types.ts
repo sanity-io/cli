@@ -48,7 +48,7 @@ export interface Role {
   description?: string
 }
 
-export interface Grant {
+interface Grant {
   grants: unknown[]
   id: string
   isCustom: boolean
