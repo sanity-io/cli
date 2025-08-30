@@ -4,7 +4,7 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {LIST_USERS_API_VERSION} from '../../../actions/users/apiVersion.js'
+import {USERS_API_VERSION} from '../../../actions/users/apiVersion.js'
 import {List} from '../list.js'
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => {
@@ -43,7 +43,7 @@ describe('#list', () => {
 
   test('displays users correctly', async () => {
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       query: {includeFeatures: 'false'},
       uri: '/projects/test-project',
     }).reply(200, {
@@ -53,12 +53,12 @@ describe('#list', () => {
       ],
     })
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       uri: '/invitations/project/test-project',
     }).reply(200, [])
 
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       uri: '/users/user1,user2',
     }).reply(200, [
       {createdAt: '2023-01-01', displayName: 'User One', id: 'user1'},
@@ -72,7 +72,7 @@ describe('#list', () => {
 
   test('displays pending invitations correctly', async () => {
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       query: {includeFeatures: 'false'},
       uri: '/projects/test-project',
     }).reply(200, {
@@ -82,7 +82,7 @@ describe('#list', () => {
       ],
     })
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       uri: '/invitations/project/test-project',
     }).reply(200, [
       {
@@ -94,7 +94,7 @@ describe('#list', () => {
       },
     ])
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       uri: '/users/user1,user2',
     }).reply(200, [
       {createdAt: '2023-01-01', displayName: 'User One', id: 'user1'},
@@ -108,13 +108,13 @@ describe('#list', () => {
 
   test('displays an error if the API request fails', async () => {
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       query: {includeFeatures: 'false'},
       uri: '/projects/test-project',
     }).reply(500, {message: 'Internal Server Error'})
 
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       uri: '/invitations/project/test-project',
     }).reply(200, [])
 
@@ -126,7 +126,7 @@ describe('#list', () => {
 
   test('sorts by role when --sort role is specified', async () => {
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       query: {includeFeatures: 'false'},
       uri: '/projects/test-project',
     }).reply(200, {
@@ -137,12 +137,12 @@ describe('#list', () => {
       ],
     })
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       uri: '/invitations/project/test-project',
     }).reply(200, [])
 
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       uri: '/users/user1,user2,user3',
     }).reply(200, [
       {createdAt: '2023-01-01', displayName: 'User One', id: 'user1'},
@@ -175,7 +175,7 @@ describe('#list', () => {
 
   test('sorts in descending order when --order desc is specified', async () => {
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       query: {includeFeatures: 'false'},
       uri: '/projects/test-project',
     }).reply(200, {
@@ -187,12 +187,12 @@ describe('#list', () => {
     })
 
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       uri: '/invitations/project/test-project',
     }).reply(200, [])
 
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       uri: '/users/user1,user2,user3',
     }).reply(200, [
       {createdAt: '2023-01-01', displayName: 'User One', id: 'user1'},
@@ -225,7 +225,7 @@ describe('#list', () => {
 
   test('excludes invitations when --no-invitations is specified', async () => {
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       query: {includeFeatures: 'false'},
       uri: '/projects/test-project',
     }).reply(200, {
@@ -236,7 +236,7 @@ describe('#list', () => {
     })
 
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       uri: '/users/user1,user2',
     }).reply(200, [
       {createdAt: '2023-01-01', displayName: 'User One', id: 'user1'},
@@ -252,7 +252,7 @@ describe('#list', () => {
 
   test('excludes robots when --no-robots is specified', async () => {
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       query: {includeFeatures: 'false'},
       uri: '/projects/test-project',
     }).reply(200, {
@@ -263,12 +263,12 @@ describe('#list', () => {
       ],
     })
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       uri: '/invitations/project/test-project',
     }).reply(200, [])
 
     mockApi({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       uri: '/users/user1,user2',
     }).reply(200, [
       {createdAt: '2023-01-01', displayName: 'User One', id: 'user1'},

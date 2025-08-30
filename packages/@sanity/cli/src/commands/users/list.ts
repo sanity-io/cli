@@ -3,7 +3,7 @@ import {SanityCommand} from '@sanity/cli-core'
 import chalk from 'chalk'
 import {size, sortBy} from 'lodash-es'
 
-import {LIST_USERS_API_VERSION} from '../../actions/users/apiVersion.js'
+import {USERS_API_VERSION} from '../../actions/users/apiVersion.js'
 import {getMembersForProject} from '../../actions/users/getMembersForProject.js'
 
 export class List extends SanityCommand<typeof List> {
@@ -51,7 +51,7 @@ export class List extends SanityCommand<typeof List> {
     const {invitations, order, robots, sort} = this.flags
 
     const client = await this.getGlobalApiClient({
-      apiVersion: LIST_USERS_API_VERSION,
+      apiVersion: USERS_API_VERSION,
       requireUser: true,
     })
 
