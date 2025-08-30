@@ -4,6 +4,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {USERS_API_VERSION} from '../../actions/users/apiVersion.js'
 import {type Role} from '../../actions/users/types.js'
+import {validateEmail} from '../../actions/users/validateEmail.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const QUOTA_ERROR_MESSAGE =
@@ -89,9 +90,9 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
       })
 
       this.log(`Invitation sent to ${email}`)
-    } catch (error: (Error & {statusCode: number}) | unknown) {
+    } catch (error) {
       usersInviteDebug(`Error inviting user`, error)
-      if (error instanceof Error && (error as Error & {statusCode: number}).statusCode === 402) {
+      if ((error as Error & {statusCode: number}).statusCode === 402) {
         this.error(QUOTA_ERROR_MESSAGE, {exit: 1})
       }
 
@@ -103,16 +104,7 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
     return input({
       message: 'Email to invite:',
       transformer: (val: string) => val.trim(),
-      validate: (email: string) => {
-        if (!email?.trim()) {
-          return 'Email is required'
-        }
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!emailRegex.test(email.trim())) {
-          return 'Please enter a valid email address'
-        }
-        return true
-      },
+      validate: validateEmail,
     })
   }
 
