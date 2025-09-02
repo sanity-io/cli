@@ -1,7 +1,6 @@
 {
   "name": "@sanity/cli-core",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.0.0-alpha.0",
   "description": "Sanity CLI core package",
   "keywords": [
     "sanity",
@@ -75,5 +74,8 @@
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

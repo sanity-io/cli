@@ -1,7 +1,6 @@
 {
   "name": "@sanity/cli-test",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.0.0-alpha.0",
   "description": "Sanity CLI test helpers and utilities",
   "keywords": [
     "sanity",
@@ -61,5 +60,8 @@
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
