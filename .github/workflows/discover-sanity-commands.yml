@@ -22,7 +22,10 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions/setup
         with:
-          node-version: 20
+          node-version: 22
+
+      - name: Build
+        run: pnpm build:cli
 
       - name: Run extract-commands
         run: pnpm run extract-commands -- --force
