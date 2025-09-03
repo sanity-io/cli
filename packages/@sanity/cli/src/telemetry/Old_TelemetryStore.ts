@@ -23,7 +23,7 @@ import {
 import {resolveConsent} from '../actions/telemetry/resolveConsent.js'
 import {telemetryDebug} from '../actions/telemetry/telemetryDebug.js'
 import {CliCommandTelemetry, type CLITraceData} from './cli.telemetry.js'
-import {type UserProperties} from './types.js'
+import {type UserProperties} from './old_types.js'
 
 const LOG_FILE_NAME = 'telemetry-events.ndjson'
 

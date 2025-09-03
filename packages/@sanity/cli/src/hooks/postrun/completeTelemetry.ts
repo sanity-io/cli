@@ -1,7 +1,7 @@
 import {type Hook} from '@oclif/core'
 
 import {telemetryDebug} from '../../actions/telemetry/telemetryDebug.js'
-import {TelemetryStore} from '../../telemetry/TelemetryStore.js'
+import {TelemetryStore} from '../../telemetry/Old_TelemetryStore.js'
 
 /**
  * Complete the telemetry trace for the command

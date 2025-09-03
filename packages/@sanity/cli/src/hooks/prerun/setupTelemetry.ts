@@ -3,11 +3,11 @@ import {type Hook} from '@oclif/core'
 import {telemetryDebug} from '../../actions/telemetry/telemetryDebug.js'
 import {telemetryDisclosure} from '../../actions/telemetry/telemetryDisclosure.js'
 import {type CLITraceData} from '../../telemetry/cli.telemetry.js'
-import {TelemetryStore} from '../../telemetry/TelemetryStore.js'
+import {TelemetryStore} from '../../telemetry/Old_TelemetryStore.js'
 import {detectRuntime} from '../../util/detectRuntime.js'
 import {parseArguments} from '../../util/parseArguments.js'
 
-export const setupTelemetry: Hook.Prerun = async function ({argv, Command, config, context}) {
+export const setupTelemetry: Hook.Prerun = async function ({config}) {
   // Show telemetry disclosure
   telemetryDisclosure()
 
@@ -41,7 +41,8 @@ export const setupTelemetry: Hook.Prerun = async function ({argv, Command, confi
   telemetryDebug('Starting command trace', traceOptions)
 
   // Start the command trace
-  const trace = telemetryStore._startCommandTrace(traceOptions)
-  config.telemetry = trace
+  telemetryStore._startCommandTrace(traceOptions)
+  // TODO: Fix config type augmentation for telemetry property
+  // config.telemetry = _trace
   telemetryStore._setContext(args.groupOrCommand)
 }

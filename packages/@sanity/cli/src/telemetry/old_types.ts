@@ -1,9 +1,4 @@
-import {
-  
-  
-  
-  type TelemetryLogger as SanityTelemetryLogger,
-} from '@sanity/telemetry'
+import {type TelemetryLogger as SanityTelemetryLogger} from '@sanity/telemetry'
 
 export interface TelemetryOptions {
   env: NodeJS.ProcessEnv
@@ -21,7 +16,6 @@ export interface UserProperties {
   runtimeVersion?: string
 }
 
-
 export type TelemetryLogger = SanityTelemetryLogger<UserProperties>
 
 export interface TelemetryTrace {
@@ -30,6 +24,5 @@ export interface TelemetryTrace {
   log(data?: unknown): void
   start(): void
 }
-
 
 export {type ConsentStatus} from '@sanity/telemetry'
