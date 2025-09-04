@@ -23,7 +23,7 @@ export interface TelemetryBaseInfo {
 
 /**
  * Gets the base telemetry information needed for file operations.
- * 
+ *
  * This shared utility extracts common logic used by:
  * - `generateTelemetryFilePath` - for generating session-specific file paths
  * - `findTelemetryFiles` - for discovering all telemetry files via glob patterns
