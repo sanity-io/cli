@@ -1,10 +1,11 @@
-import {appendFile, mkdir, readFile, rm} from 'node:fs/promises'
+import {appendFile, mkdir, rm} from 'node:fs/promises'
 import {dirname} from 'node:path'
 
 import {type TelemetryEvent, type TelemetryStore} from '@sanity/telemetry'
-import {catchError, EMPTY, from, lastValueFrom, mergeMap, of, reduce, switchMap, tap} from 'rxjs'
+import {catchError, from, lastValueFrom, mergeMap, of, reduce, switchMap, tap} from 'rxjs'
 
 import {type ConsentInformation} from '../../actions/telemetry/types.js'
+import {readNDJSON} from '../utils/readNDJSON.js'
 import {cleanupOldTelemetryFiles} from './cleanupOldTelemetryFiles.js'
 import {telemetryStoreDebug} from './debug.js'
 import {findTelemetryFiles} from './findTelemetryFiles.js'
@@ -31,6 +32,11 @@ import {createLogger} from './logger.js'
  *    - Prevents disk space accumulation from abandoned sessions
  */
 
+interface CreateTelemetryStoreOptions {
+  resolveConsent: () => Promise<ConsentInformation>
+  sendEvents: (events: TelemetryEvent[]) => Promise<void>
+}
+
 /**
  * Creates a file-based telemetry store with cached consent and non-blocking async I/O.
  *
@@ -46,10 +52,7 @@ import {createLogger} from './logger.js'
  */
 export function createTelemetryStore<UserProperties>(
   sessionId: string,
-  options: {
-    resolveConsent: () => Promise<ConsentInformation>
-    sendEvents: (events: TelemetryEvent[]) => Promise<void>
-  },
+  options: CreateTelemetryStoreOptions,
 ): TelemetryStore<UserProperties> {
   telemetryStoreDebug('Creating telemetry store with sessionId: %s', sessionId)
 
@@ -143,7 +146,7 @@ export function createTelemetryStore<UserProperties>(
         }),
         switchMap((filePaths) => {
           if (filePaths.length === 0) {
-            return EMPTY
+            return of({allEvents: [], filesToDelete: []})
           }
 
           return from(filePaths).pipe(
@@ -152,20 +155,9 @@ export function createTelemetryStore<UserProperties>(
                 Promise.resolve().then(async () => {
                   try {
                     telemetryStoreDebug('Reading events from file: %s', filePath)
-                    const content = await readFile(filePath, 'utf8')
-
-                    if (content.trim()) {
-                      const events = content
-                        .split('\n')
-                        .filter(Boolean)
-                        .map((line) => JSON.parse(line) as TelemetryEvent)
-
-                      telemetryStoreDebug('Read %d events from %s', events.length, filePath)
-                      return {events, filePath}
-                    } else {
-                      telemetryStoreDebug('File %s is empty, marking for deletion', filePath)
-                      return {events: [], filePath}
-                    }
+                    const events = await readNDJSON<TelemetryEvent>(filePath)
+                    telemetryStoreDebug('Read %d events from %s', events.length, filePath)
+                    return {events, filePath}
                   } catch (error) {
                     if ((error as {code?: string}).code === 'ENOENT') {
                       telemetryStoreDebug('File %s no longer exists, skipping', filePath)
@@ -204,6 +196,9 @@ export function createTelemetryStore<UserProperties>(
             )
 
             // Clean up files without sending
+            if (filesToDelete.length === 0) {
+              return of(null) // Ensure stream emits at least one value
+            }
             return from(filesToDelete).pipe(
               mergeMap((filePath) =>
                 from(rm(filePath, {force: true})).pipe(
@@ -223,6 +218,9 @@ export function createTelemetryStore<UserProperties>(
             telemetryStoreDebug('No events to send, cleaning up empty files')
 
             // Clean up empty files
+            if (filesToDelete.length === 0) {
+              return of(null) // Ensure stream emits at least one value
+            }
             return from(filesToDelete).pipe(
               mergeMap((filePath) =>
                 from(rm(filePath, {force: true})).pipe(
@@ -250,6 +248,9 @@ export function createTelemetryStore<UserProperties>(
             }),
             switchMap(() => {
               // Delete files after successful send
+              if (filesToDelete.length === 0) {
+                return of(null) // Ensure stream emits at least one value
+              }
               return from(filesToDelete).pipe(
                 mergeMap((filePath) =>
                   from(rm(filePath, {force: true})).pipe(

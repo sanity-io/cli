@@ -3,7 +3,7 @@ import {join} from 'node:path'
 import {glob} from 'glob'
 
 import {telemetryStoreDebug} from './debug.js'
-import {getTelemetryFilesPattern} from './getTelemetryFilesPattern.js'
+import {getTelemetryBaseInfo} from './getTelemetryBaseInfo.js'
 
 /**
  * Discovers and returns paths to all telemetry files for the current user/environment.
@@ -19,7 +19,8 @@ import {getTelemetryFilesPattern} from './getTelemetryFilesPattern.js'
  */
 export async function findTelemetryFiles(): Promise<string[]> {
   try {
-    const {directory, pattern} = await getTelemetryFilesPattern()
+    const {basePattern, directory} = await getTelemetryBaseInfo()
+    const pattern = `${basePattern}-*.ndjson`
     const fullPattern = join(directory, pattern)
     telemetryStoreDebug('Looking for files matching pattern: %s', fullPattern)
 

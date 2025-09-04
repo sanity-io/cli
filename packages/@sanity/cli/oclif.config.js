@@ -4,7 +4,6 @@ export default {
   dirname: 'sanity',
   helpClass: './dist/SanityHelp',
   hooks: {
-    postrun: ['./dist/hooks/postrun/completeTelemetry.js'],
     prerun: ['./dist/hooks/prerun/setupTelemetry.js'],
   },
   plugins: [

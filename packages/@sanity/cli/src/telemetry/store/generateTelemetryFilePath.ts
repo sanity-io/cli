@@ -1,10 +1,7 @@
-import {createHash} from 'node:crypto'
-import {homedir} from 'node:os'
 import {join} from 'node:path'
 
-import {getCliToken} from '@sanity/cli-core'
-
 import {telemetryStoreDebug} from './debug.js'
+import {getTelemetryBaseInfo} from './getTelemetryBaseInfo.js'
 
 /**
  * Generates a unique telemetry file path for a specific CLI session.
@@ -25,23 +22,13 @@ import {telemetryStoreDebug} from './debug.js'
 export async function generateTelemetryFilePath(sessionId: string): Promise<string> {
   telemetryStoreDebug('Generating telemetry file path for sessionId: %s', sessionId)
 
-  const token = await getCliToken()
-  if (!token) {
-    telemetryStoreDebug('No auth token found - user must be logged in for telemetry')
-    throw new Error('No auth token found - user must be logged in for telemetry')
-  }
+  const {basePattern, directory, environment, hashedToken} = await getTelemetryBaseInfo()
 
-  // Hash token for privacy (first 8 chars of SHA256)
-  const hashedToken = createHash('sha256').update(token).digest('hex').slice(0, 8)
   telemetryStoreDebug('Generated token hash: %s', hashedToken)
+  telemetryStoreDebug('Detected environment: %s', environment)
 
-  // Detect environment
-  const isStaging = process.env.SANITY_STUDIO_API_HOST?.includes('staging') ?? false
-  const env = isStaging ? 'staging' : 'production'
-  telemetryStoreDebug('Detected environment: %s', env)
-
-  const fileName = `telemetry-${hashedToken}-${env}-${sessionId}.ndjson`
-  const filePath = join(homedir(), '.config', 'sanity', fileName)
+  const fileName = `${basePattern}-${sessionId}.ndjson`
+  const filePath = join(directory, fileName)
   telemetryStoreDebug('Telemetry file path: %s', filePath)
 
   return filePath
