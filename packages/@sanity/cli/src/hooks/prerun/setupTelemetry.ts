@@ -2,7 +2,7 @@ import {type Hook} from '@oclif/core'
 
 import {telemetryDisclosure} from '../../actions/telemetry/telemetryDisclosure.js'
 
-export const setupTelemetry: Hook.Prerun = async function ({config}) {
+export const setupTelemetry: Hook.Prerun = async function ({config: _config}) {
   // Show telemetry disclosure
   telemetryDisclosure()
 

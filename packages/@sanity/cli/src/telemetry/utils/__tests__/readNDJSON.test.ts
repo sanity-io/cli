@@ -45,6 +45,7 @@ describe('readNDJSON', () => {
         version: 1,
       },
       {
+        context: {},
         createdAt: '2023-01-01T00:01:00.000Z',
         name: 'trace-1',
         sessionId: 'test-2',
@@ -134,7 +135,6 @@ describe('readNDJSON', () => {
       properties: {platform: 'test'},
       sessionId: 'test',
       type: 'userProperties',
-      version: 1,
     }
 
     await writeFile(filePath, JSON.stringify(event), 'utf8')

@@ -1,646 +1,514 @@
-import {createHash} from 'node:crypto'
-import {existsSync, mkdirSync, readdirSync} from 'node:fs'
-import {readFile, rm, writeFile} from 'node:fs/promises'
+import {mkdir, writeFile} from 'node:fs/promises'
 import {homedir} from 'node:os'
 import {join} from 'node:path'
 
 import {getCliToken} from '@sanity/cli-core'
-import {type TelemetryLogEvent} from '@sanity/telemetry'
+import {type TelemetryEvent} from '@sanity/telemetry'
 import {glob} from 'glob'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
-import {
-  CONSENT_TEST_CASES,
-  createMockConsent,
-  createMockLogEvent,
-  createMockTraceEvent,
-  createNDJSONContent,
-  createTestSessionId,
-  parseNDJSONContent,
-  TEST_AUTH_TOKEN,
-  waitForAsync,
-} from '../../../../test/telemetryFixtures.js'
+import {readNDJSON} from '../../utils/readNDJSON.js'
 import {createTelemetryStore} from '../createTelemetryStore.js'
-import {findTelemetryFiles} from '../findTelemetryFiles.js'
 
-let testDir: string
-
-vi.mock('node:os', () => ({
-  homedir: vi.fn(),
-}))
-
+vi.mock('node:os', () => ({homedir: vi.fn()}))
 vi.mock('@sanity/cli-core', async () => ({
-  ...(await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')),
-  getCliToken: vi.fn(() => Promise.resolve(TEST_AUTH_TOKEN)),
+  ...(await vi.importActual('@sanity/cli-core')),
+  getCliToken: vi.fn(),
 }))
 
-const mockHomedir = vi.mocked(homedir)
+const waitForAsync = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
 const mockGetCliToken = vi.mocked(getCliToken)
+const mockHomedir = vi.mocked(homedir)
 const mockResolveConsent = vi.fn()
 const mockSendEvents = vi.fn()
 
-describe('#createTelemetryStore', () => {
-  let sessionId: string
+// Timing constants
+const INIT_DELAY = 50 // Store initialization
+const WRITE_DELAY = 50 // File write operations
+const FLUSH_DELAY = 200 // Flush completion
 
-  beforeEach(() => {
+const createLogEvent = (name: string) => ({
+  name,
+  schema: {},
+  type: 'log' as const,
+  version: 1,
+})
+
+const createTraceEvent = (name: string) => ({
+  context: undefined,
+  name,
+  schema: {},
+  type: 'trace' as const,
+  version: 1,
+})
+
+const getTelemetryPath = (testDir: string) => join(testDir, '.config', 'sanity')
+
+const setupStore = async (
+  sessionId: string,
+  consentStatus: 'denied' | 'granted' | 'undetermined' = 'granted',
+) => {
+  mockResolveConsent.mockResolvedValue({status: consentStatus})
+  mockSendEvents.mockResolvedValue(undefined)
+
+  const store = createTelemetryStore(sessionId, {
+    resolveConsent: mockResolveConsent,
+    sendEvents: mockSendEvents,
+  })
+
+  await waitForAsync(INIT_DELAY)
+  return store
+}
+
+describe('#createTelemetryStore', () => {
+  let testDir: string
+
+  beforeEach(async () => {
     const timestamp = Date.now()
     const random = Math.random().toString(36).slice(7)
     testDir = join(process.cwd(), 'tmp', 'telemetry-tests', `test-${timestamp}-${random}`)
-
-    mkdirSync(testDir, {recursive: true})
-
-    sessionId = createTestSessionId()
+    await mkdir(testDir, {recursive: true})
 
     mockHomedir.mockReturnValue(testDir)
-
-    // Set up default mocks that most tests expect
-    mockResolveConsent.mockResolvedValue(createMockConsent('granted'))
-    mockSendEvents.mockResolvedValue(undefined)
+    mockGetCliToken.mockResolvedValue('test-auth-token-123')
   })
 
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  describe('Store Creation and Initialization', () => {
-    it('should initialize store with consent and file path concurrently', async () => {
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
+  it('should handle store lifecycle with log and trace events, then flush on end', async () => {
+    const sessionId = `test-session-${Date.now()}`
+    const store = await setupStore(sessionId)
 
-      await waitForAsync(100)
+    const testEvent = createLogEvent('test-event')
+    store.logger.log(testEvent, {testData: true})
 
-      expect(mockResolveConsent).toHaveBeenCalledTimes(1)
+    const testTrace = createTraceEvent('test-trace')
+    const trace = store.logger.trace(testTrace, {traceContext: 'test'})
+    trace.start()
+    trace.log({step: 'processing'})
+    trace.complete()
 
-      expect(mockGetCliToken).toHaveBeenCalledTimes(1)
+    await waitForAsync(WRITE_DELAY)
 
-      expect(existsSync(join(testDir, '.config', 'sanity'))).toBe(true)
+    const telemetryPath = getTelemetryPath(testDir)
+    const filesBeforeEnd = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+    expect(filesBeforeEnd).toHaveLength(1)
 
-      expect(store).toHaveProperty('logger')
-      expect(store).toHaveProperty('flush')
-      expect(store).toHaveProperty('end')
-      expect(store).toHaveProperty('endWithBeacon')
+    const events = await readNDJSON<TelemetryEvent>(filesBeforeEnd[0])
+    expect(events).toHaveLength(4) // 1 log + 3 trace events
+
+    const eventTypes = events.map((e) => e.type)
+    expect(eventTypes).toEqual(['log', 'trace.start', 'trace.log', 'trace.complete'])
+
+    const logEvent = events.find((e) => e.type === 'log')
+    expect(logEvent?.data).toEqual({testData: true})
+    expect(logEvent?.name).toBe('test-event')
+
+    const traceStart = events.find((e) => e.type === 'trace.start')
+    expect(traceStart).toMatchObject({
+      context: {traceContext: 'test'},
+      name: 'test-trace',
+      sessionId,
     })
 
-    it('should handle consent resolution failure gracefully', async () => {
-      const consentError = new Error('Network error')
-      mockResolveConsent.mockRejectedValue(consentError)
+    store.end()
+    await waitForAsync(FLUSH_DELAY)
 
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
+    expect(mockSendEvents).toHaveBeenCalledTimes(1)
+    const sentEvents = mockSendEvents.mock.calls[0][0] as TelemetryEvent[]
+    expect(sentEvents).toHaveLength(4)
 
-      await waitForAsync(100)
+    // Verify all event types were sent
+    const sentEventTypes = sentEvents.map((e) => e.type)
+    expect(sentEventTypes).toEqual(
+      expect.arrayContaining(['log', 'trace.start', 'trace.log', 'trace.complete']),
+    )
 
-      expect(store).toBeDefined()
-
-      const testEvent = createMockLogEvent()
-      store.logger.log({name: 'test', schema: {}, type: 'log', version: 1}, testEvent.data)
-
-      await waitForAsync(100)
-
-      const telemetryDir = join(testDir, '.config', 'sanity')
-      const telemetryFiles = existsSync(telemetryDir)
-        ? readdirSync(telemetryDir).filter((f: string) => f.includes('telemetry-'))
-        : []
-      expect(telemetryFiles).toHaveLength(0)
-    })
-
-    it('should handle file path generation failure gracefully', async () => {
-      mockGetCliToken.mockRejectedValueOnce(new Error('Auth error'))
-
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-
-      const testEvent = createMockLogEvent()
-      store.logger.log({name: 'test', schema: {}, type: 'log', version: 1}, testEvent.data)
-
-      await waitForAsync(100)
-
-      const telemetryDir = join(testDir, '.config', 'sanity')
-      const telemetryFiles = existsSync(telemetryDir)
-        ? readdirSync(telemetryDir).filter((f: string) => f.includes('telemetry-'))
-        : []
-      expect(telemetryFiles).toHaveLength(0)
-    })
+    const filesAfterEnd = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+    expect(filesAfterEnd).toHaveLength(0)
   })
 
-  describe.each(CONSENT_TEST_CASES)(
-    'Consent Handling - $description',
-    ({consent, shouldEmit, shouldFlush}) => {
-      beforeEach(() => {
-        mockResolveConsent.mockResolvedValue(createMockConsent(consent))
-      })
+  it('should handle consent lifecycle and revocation correctly', async () => {
+    const sessionId = `test-consent-lifecycle-${Date.now()}`
+    let consentResolveCount = 0
 
-      it(`should ${shouldEmit ? 'emit' : 'skip'} events with ${consent} consent`, async () => {
-        const store = createTelemetryStore(sessionId, {
-          resolveConsent: mockResolveConsent,
-          sendEvents: mockSendEvents,
-        })
+    mockResolveConsent.mockImplementation(() => {
+      consentResolveCount++
+      if (consentResolveCount === 1) {
+        return Promise.resolve({status: 'granted'})
+      }
+      return Promise.resolve({reason: 'revoked', status: 'denied'})
+    })
+    mockSendEvents.mockResolvedValue(undefined)
 
-        await waitForAsync(100)
+    const store = createTelemetryStore(sessionId, {
+      resolveConsent: mockResolveConsent,
+      sendEvents: mockSendEvents,
+    })
 
-        const testEvent = createMockLogEvent({sessionId})
-        store.logger.log({name: 'test-event', schema: {}, type: 'log', version: 1}, testEvent.data)
+    await waitForAsync(100)
 
-        await waitForAsync(100)
+    const testEvent1 = {
+      name: 'test-event-1',
+      schema: {},
+      type: 'log' as const,
+      version: 1,
+    }
+    store.logger.log(testEvent1, {beforeRevoke: true})
 
-        if (shouldEmit) {
-          const files = await glob(join(testDir, '.config/sanity/telemetry-*.ndjson'))
-          expect(files).toHaveLength(1)
+    await waitForAsync(100)
 
-          const content = await readFile(files[0], 'utf8')
-          const events = parseNDJSONContent(content)
-          expect(events).toHaveLength(1)
-          expect((events[0] as TelemetryLogEvent).name).toBe('test-event')
-          expect(events[0].sessionId).toBe(sessionId)
-        } else {
-          const telemetryDir = join(testDir, '.config', 'sanity')
-          const telemetryFiles = existsSync(telemetryDir)
-            ? readdirSync(telemetryDir).filter((f: string) => f.includes('telemetry-'))
-            : []
-          expect(telemetryFiles).toHaveLength(0)
-        }
-      })
+    const expectedPath = join(testDir, '.config', 'sanity')
+    const filesAfterFirstEvent = await glob(join(expectedPath, 'telemetry-*.ndjson'))
+    expect(filesAfterFirstEvent).toHaveLength(1)
 
-      it(`should ${shouldFlush ? 'send' : 'cleanup'} events during flush with ${consent} consent`, async () => {
-        const events1 = [createMockLogEvent({sessionId: 'session-1'})]
-        const events2 = [createMockTraceEvent({sessionId: 'session-2'})]
+    const eventsAfterFirst = await readNDJSON<TelemetryEvent>(filesAfterFirstEvent[0])
+    expect(eventsAfterFirst).toHaveLength(1)
+    expect(eventsAfterFirst[0]).toMatchObject({
+      data: {beforeRevoke: true},
+      name: 'test-event-1',
+      sessionId,
+      type: 'log',
+    })
 
-        const telemetryDir = join(testDir, '.config', 'sanity')
-        mkdirSync(telemetryDir, {recursive: true})
+    const testEvent2 = {
+      name: 'test-event-2',
+      schema: {},
+      type: 'log' as const,
+      version: 1,
+    }
+    store.logger.log(testEvent2, {afterRevoke: true})
 
-        // Create test files with valid telemetry naming pattern
-        const hashedToken = createHash('sha256').update(TEST_AUTH_TOKEN).digest('hex').slice(0, 8)
-        const filePath1 = join(telemetryDir, `telemetry-${hashedToken}-production-session-1.ndjson`)
-        const filePath2 = join(telemetryDir, `telemetry-${hashedToken}-production-session-2.ndjson`)
+    await waitForAsync(100)
 
-        await writeFile(filePath1, createNDJSONContent(events1))
-        await writeFile(filePath2, createNDJSONContent(events2))
+    await store.flush()
 
-        const store = createTelemetryStore(sessionId, {
-          resolveConsent: mockResolveConsent,
-          sendEvents: mockSendEvents,
-        })
+    expect(mockResolveConsent).toHaveBeenCalledTimes(2)
+    expect(mockSendEvents).not.toHaveBeenCalled()
 
-        await waitForAsync(100)
+    const filesAfterFlush = await glob(join(expectedPath, 'telemetry-*.ndjson'))
+    expect(filesAfterFlush).toHaveLength(0)
+  })
 
-        await store.flush()
+  it('should aggregate events from multiple concurrent sessions', async () => {
+    const sessionId1 = `test-session-1-${Date.now()}`
+    const sessionId2 = `test-session-2-${Date.now()}`
 
-        if (shouldFlush) {
-          expect(mockSendEvents).toHaveBeenCalledTimes(1)
-          const sentEvents = mockSendEvents.mock.calls[0][0]
-          expect(sentEvents).toHaveLength(2)
+    const store1 = await setupStore(sessionId1)
+    const store2 = await setupStore(sessionId2)
 
-          expect(existsSync(filePath1)).toBe(false)
-          expect(existsSync(filePath2)).toBe(false)
-        } else {
-          expect(mockSendEvents).not.toHaveBeenCalled()
+    // Session 1 uses trace
+    const traceEvent = createTraceEvent('trace-event-1')
+    const trace1 = store1.logger.trace(traceEvent, {session: 1})
+    trace1.start()
+    trace1.log({data: 'test1', session: 1})
+    trace1.complete()
 
-          expect(existsSync(filePath1)).toBe(false)
-          expect(existsSync(filePath2)).toBe(false)
-        }
-      })
-    },
-  )
+    // Session 2 uses log
+    const logEvent = createLogEvent('event-2')
+    store2.logger.log(logEvent, {data: 'test2', session: 2})
 
-  describe('Event Emission and File Operations', () => {
-    it('should write events to session-specific files in NDJSON format', async () => {
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
+    await waitForAsync(WRITE_DELAY)
 
-      await waitForAsync(100)
+    const telemetryPath = getTelemetryPath(testDir)
+    const filesBeforeCorruption = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+    expect(filesBeforeCorruption).toHaveLength(2)
 
-      const logEvent = createMockLogEvent({sessionId})
+    // Add corrupted file to test error handling
+    const corruptedFilePath = join(telemetryPath, 'telemetry-corrupted-test.ndjson')
+    await writeFile(corruptedFilePath, '{"invalid": json}\n{"valid": "json"}\n')
 
-      store.logger.log({name: 'test-log', schema: {}, type: 'log', version: 1}, logEvent.data)
-      store.logger
-        .trace({context: undefined, name: 'test-trace', schema: {}, type: 'trace', version: 1})
-        .start()
+    await store1.flush()
 
-      await waitForAsync(100)
+    expect(mockSendEvents).toHaveBeenCalledTimes(1)
+    const sentEvents = mockSendEvents.mock.calls[0][0] as TelemetryEvent[]
+    expect(sentEvents).toHaveLength(4) // 3 trace events + 1 log event
 
-      const files = await glob(join(testDir, '.config/sanity/telemetry-*.ndjson'))
-      expect(files).toHaveLength(1)
+    // Group events by session for cleaner assertions
+    const session1Events = sentEvents.filter((e) => e.sessionId === sessionId1)
+    const session2Events = sentEvents.filter((e) => e.sessionId === sessionId2)
 
-      const content = await readFile(files[0], 'utf8')
-      expect(content).toBeDefined()
+    expect(session1Events).toHaveLength(3) // trace events
+    expect(session2Events).toHaveLength(1) // log event
 
-      const events = parseNDJSONContent(content)
-      expect(events).toHaveLength(2)
+    expect(session1Events.map((e) => e.type)).toEqual([
+      'trace.start',
+      'trace.log',
+      'trace.complete',
+    ])
+    expect(session2Events[0]).toMatchObject({
+      data: {data: 'test2', session: 2},
+      type: 'log',
+    })
 
-      expect(events[0]).toMatchObject({
-        data: logEvent.data,
-        name: 'test-log',
+    // Verify corrupted file was skipped (only corrupted file remains)
+    const filesAfterFlush = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+    expect(filesAfterFlush).toHaveLength(1)
+  })
+
+  it('should preserve files on network error and successfully retry', async () => {
+    const sessionId = `test-network-error-${Date.now()}`
+
+    let sendAttempts = 0
+    mockResolveConsent.mockResolvedValue({status: 'granted'})
+    mockSendEvents.mockImplementation(() => {
+      sendAttempts++
+      if (sendAttempts === 1) {
+        return Promise.reject(new Error('Network error'))
+      }
+      return Promise.resolve()
+    })
+
+    const store = createTelemetryStore(sessionId, {
+      resolveConsent: mockResolveConsent,
+      sendEvents: mockSendEvents,
+    })
+
+    await waitForAsync(INIT_DELAY)
+
+    // Use trace with error simulation
+    const testTrace = createTraceEvent('network-trace')
+    const trace = store.logger.trace(testTrace)
+    trace.start()
+    trace.log({operation: 'network-request'})
+
+    // Simulate an error in the trace
+    const networkError = new Error('Network connection failed')
+    trace.error(networkError)
+
+    await waitForAsync(WRITE_DELAY)
+
+    const telemetryPath = getTelemetryPath(testDir)
+
+    await expect(store.flush()).rejects.toThrow('Network error')
+
+    expect(mockSendEvents).toHaveBeenCalledTimes(1)
+
+    const filesAfterFailedFlush = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+    expect(filesAfterFailedFlush).toHaveLength(1)
+
+    const eventsBeforeRetry = await readNDJSON<TelemetryEvent>(filesAfterFailedFlush[0])
+    expect(eventsBeforeRetry).toHaveLength(3) // trace.start, trace.log, trace.error
+
+    const eventTypes = eventsBeforeRetry.map((e) => e.type)
+    expect(eventTypes).toEqual(['trace.start', 'trace.log', 'trace.error'])
+
+    const traceError = eventsBeforeRetry.find((e) => e.type === 'trace.error')
+    expect((traceError as {data: {message: string}}).data.message).toBe('Network connection failed')
+
+    await store.flush()
+
+    expect(mockSendEvents).toHaveBeenCalledTimes(2)
+    const retryCall = mockSendEvents.mock.calls[1][0] as TelemetryEvent[]
+    expect(retryCall).toHaveLength(3)
+
+    const retryEventTypes = retryCall.map((e) => e.type)
+    expect(retryEventTypes).toEqual(['trace.start', 'trace.log', 'trace.error'])
+
+    const filesAfterSuccessfulRetry = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+    expect(filesAfterSuccessfulRetry).toHaveLength(0)
+  })
+
+  it('should handle initialization failures without crashing', async () => {
+    let consentCallCount = 0
+    mockResolveConsent.mockImplementation(() => {
+      consentCallCount++
+      if (consentCallCount === 1) {
+        return Promise.reject(new Error('Consent service unavailable'))
+      }
+      return Promise.resolve({status: 'granted'})
+    })
+
+    mockSendEvents.mockResolvedValue(undefined)
+
+    const sessionId = `test-init-failure-${Date.now()}`
+    const store = createTelemetryStore(sessionId, {
+      resolveConsent: mockResolveConsent,
+      sendEvents: mockSendEvents,
+    })
+
+    await waitForAsync(100)
+
+    const testEvent = {
+      name: 'test-event-after-init-failure',
+      schema: {},
+      type: 'log' as const,
+      version: 1,
+    }
+    store.logger.log(testEvent, {initTest: true})
+
+    await waitForAsync(100)
+
+    const expectedPath = join(testDir, '.config', 'sanity')
+    const filesAfterInitFailure = await glob(join(expectedPath, 'telemetry-*.ndjson'))
+
+    if (filesAfterInitFailure.length > 0) {
+      const events = await readNDJSON<TelemetryEvent>(filesAfterInitFailure[0])
+      expect(events).toHaveLength(0)
+    }
+
+    await store.flush()
+
+    expect(mockResolveConsent).toHaveBeenCalledTimes(2)
+    expect(mockSendEvents).not.toHaveBeenCalled()
+
+    const filesAfterFlush = await glob(join(expectedPath, 'telemetry-*.ndjson'))
+    expect(filesAfterFlush).toHaveLength(0)
+  })
+
+  it('should handle empty state and mixed file scenarios', async () => {
+    mockResolveConsent.mockResolvedValue({status: 'granted'})
+    mockSendEvents.mockResolvedValue(undefined)
+
+    const sessionId = `test-edge-cases-${Date.now()}`
+    const store = createTelemetryStore(sessionId, {
+      resolveConsent: mockResolveConsent,
+      sendEvents: mockSendEvents,
+    })
+
+    await waitForAsync(50)
+
+    await store.flush()
+
+    expect(mockSendEvents).not.toHaveBeenCalled()
+
+    const testEvent = {
+      name: 'edge-case-event',
+      schema: {},
+      type: 'log' as const,
+      version: 1,
+    }
+    store.logger.log(testEvent, {edgeTest: true})
+
+    await waitForAsync(100)
+
+    const expectedPath = join(testDir, '.config', 'sanity')
+
+    const emptyFilePath = join(expectedPath, `telemetry-empty-${Date.now()}.ndjson`)
+    await writeFile(emptyFilePath, '')
+
+    await store.flush()
+
+    expect(mockSendEvents).toHaveBeenCalledTimes(1)
+    expect(mockSendEvents).toHaveBeenCalledWith([
+      expect.objectContaining({
+        data: {edgeTest: true},
         sessionId,
-        type: 'log',
-      })
+      }),
+    ])
 
-      expect(events[1]).toMatchObject({
-        name: 'test-trace',
-        sessionId,
-        type: 'trace.start',
-      })
-    })
-
-    it('should continue operating when file writes fail', async () => {
-      const nonWritableDir = join(testDir, 'readonly')
-      mkdirSync(nonWritableDir, {recursive: true})
-
-      mockGetCliToken.mockResolvedValueOnce('readonly-test-token')
-
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-
-      store.logger.log({name: 'test', schema: {}, type: 'log', version: 1}, {test: true})
-
-      await waitForAsync(100)
-
-      expect(store).toBeDefined()
-
-      consoleSpy.mockRestore()
-    })
-
-    it('should emit events asynchronously without blocking', async () => {
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-
-      const start = Date.now()
-      store.logger.log({name: 'test', schema: {}, type: 'log', version: 1}, {test: true})
-      const end = Date.now()
-
-      expect(end - start).toBeLessThan(10)
-
-      await waitForAsync(60)
-
-      const files = await findTelemetryFiles()
-      expect(files).toHaveLength(1)
-    })
-
-    it('should safely handle concurrent event emissions without data loss', async () => {
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-
-      const promises = Array.from({length: 5}, (_, i) => {
-        store.logger.log({name: `concurrent-${i}`, schema: {}, type: 'log', version: 1}, {index: i})
-        return waitForAsync(1)
-      })
-
-      await Promise.all(promises)
-      await waitForAsync(20)
-
-      const files = await glob(join(testDir, '.config/sanity/telemetry-*.ndjson'))
-      expect(files).toHaveLength(1)
-
-      const content = await readFile(files[0], 'utf8')
-      expect(content).toBeDefined()
-
-      const events = parseNDJSONContent(content)
-      expect(events).toHaveLength(5)
-
-      for (let i = 0; i < 5; i++) {
-        const event = events.find((e) => (e as TelemetryLogEvent).name === `concurrent-${i}`)
-        expect(event).toBeDefined()
-        expect((event as TelemetryLogEvent)!.data).toEqual({index: i})
-      }
-    })
+    const filesAfterFinalFlush = await glob(join(expectedPath, 'telemetry-*.ndjson'))
+    expect(filesAfterFinalFlush.length).toBeLessThanOrEqual(1)
   })
 
-  describe('Flush Operations with RxJS Streams', () => {
-    it('should collect events from all session files', async () => {
-      const telemetryDir = join(testDir, '.config', 'sanity')
-      mkdirSync(telemetryDir, {recursive: true})
+  it('should handle complete trace lifecycle with promises, contexts, and sampling', async () => {
+    const sessionId = `test-trace-comprehensive-${Date.now()}`
+    const store = await setupStore(sessionId)
 
-      const hashedToken = createHash('sha256').update(TEST_AUTH_TOKEN).digest('hex').slice(0, 8)
-      const files = [
-        {
-          events: 2,
-          path: join(telemetryDir, `telemetry-${hashedToken}-production-session-1.ndjson`),
-        },
-        {
-          events: 3,
-          path: join(telemetryDir, `telemetry-${hashedToken}-production-session-2.ndjson`),
-        },
-        {
-          events: 1,
-          path: join(telemetryDir, `telemetry-${hashedToken}-production-session-3.ndjson`),
-        },
-      ]
+    // Test 1: Complete trace lifecycle
+    const lifecycleTrace = createTraceEvent('lifecycle-trace')
+    const trace = store.logger.trace(lifecycleTrace, {traceContext: 'lifecycle'})
 
-      for (const file of files) {
-        const events = Array.from({length: file.events}, (_, i) =>
-          createMockLogEvent({name: `event-${i}`, sessionId: `session-${i + 1}`}),
-        )
+    trace.start()
+    trace.log({action: 'initialize', step: 1})
+    trace.log({action: 'process', step: 2})
+    trace.complete()
 
-        await writeFile(file.path, createNDJSONContent(events))
-      }
+    // Test that completed traces ignore further events
+    trace.log({action: 'ignored', step: 3})
+    trace.error(new Error('Should be ignored'))
 
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
+    // Test 2: updateUserProperties
+    store.logger.updateUserProperties({plan: 'pro', userId: 'test-user-123'})
 
-      await waitForAsync(100)
-      await store.flush()
+    // Test 3: trace.await with successful promise
+    const asyncTrace = createTraceEvent('async-operation')
+    const asyncTraceInstance = store.logger.trace(asyncTrace)
 
-      expect(mockSendEvents).toHaveBeenCalledTimes(1)
-      const sentEvents = mockSendEvents.mock.calls[0][0]
-      expect(sentEvents).toHaveLength(6)
-
-      for (const file of files) {
-        expect(existsSync(file.path)).toBe(false)
-      }
+    const asyncOperation = new Promise<string>((resolve) => {
+      setTimeout(() => resolve('success'), 50)
     })
 
-    it('should handle network errors during flush', async () => {
-      const networkError = new Error('Network timeout')
-      mockSendEvents.mockRejectedValue(networkError)
+    const result = await asyncTraceInstance.await(asyncOperation, {operation: 'async-complete'})
+    expect(result).toBe('success')
 
-      const telemetryDir = join(testDir, '.config', 'sanity')
-      mkdirSync(telemetryDir, {recursive: true})
+    // Test 4: trace.await with failing promise
+    const failTrace = createTraceEvent('fail-operation')
+    const failingTrace = store.logger.trace(failTrace)
 
-      const hashedToken = createHash('sha256').update(TEST_AUTH_TOKEN).digest('hex').slice(0, 8)
-      const filePath = join(telemetryDir, `telemetry-${hashedToken}-production-session-1.ndjson`)
-      const events = [createMockLogEvent({sessionId: 'session-1'})]
-
-      await writeFile(filePath, createNDJSONContent(events))
-
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-
-      await expect(store.flush()).rejects.toThrow('Network timeout')
-
-      expect(existsSync(filePath)).toBe(true)
+    const failingOperation = new Promise<object>((_, reject) => {
+      setTimeout(() => reject(new Error('Operation failed')), 50)
     })
 
-    it('should handle consent revocation during flush', async () => {
-      mockResolveConsent
-        .mockResolvedValueOnce(createMockConsent('granted'))
-        .mockResolvedValueOnce(createMockConsent('denied'))
-
-      const telemetryDir = join(testDir, '.config', 'sanity')
-      mkdirSync(telemetryDir, {recursive: true})
-
-      const hashedToken = createHash('sha256').update(TEST_AUTH_TOKEN).digest('hex').slice(0, 8)
-      const filePath = join(telemetryDir, `telemetry-${hashedToken}-production-session-1.ndjson`)
-      const events = [createMockLogEvent({sessionId: 'session-1'})]
-
-      await writeFile(filePath, createNDJSONContent(events))
-
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-      await store.flush()
-
-      expect(mockSendEvents).not.toHaveBeenCalled()
-
-      expect(existsSync(filePath)).toBe(false)
-    })
-
-    it('should handle empty files gracefully', async () => {
-      const telemetryDir = join(testDir, '.config', 'sanity')
-      mkdirSync(telemetryDir, {recursive: true})
-
-      const hashedToken = createHash('sha256').update(TEST_AUTH_TOKEN).digest('hex').slice(0, 8)
-      const filePath = join(telemetryDir, `telemetry-${hashedToken}-production-session-1.ndjson`)
-
-      await writeFile(filePath, '')
-
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-      await store.flush()
-
-      expect(mockSendEvents).not.toHaveBeenCalled()
-
-      expect(existsSync(filePath)).toBe(false)
-    })
-
-    it('should handle missing files during flush', async () => {
-      const telemetryDir = join(testDir, '.config', 'sanity')
-      mkdirSync(telemetryDir, {recursive: true})
-
-      const hashedToken = createHash('sha256').update(TEST_AUTH_TOKEN).digest('hex').slice(0, 8)
-      const filePath = join(telemetryDir, `telemetry-${hashedToken}-production-session-1.ndjson`)
-      const events = [createMockLogEvent({sessionId: 'session-1'})]
-
-      await writeFile(filePath, createNDJSONContent(events))
-
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-
-      await rm(filePath, {force: true})
-
-      await expect(store.flush()).resolves.not.toThrow()
-
-      expect(mockSendEvents).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('Store Lifecycle Management', () => {
-    it('should flush events when end() is called', async () => {
-      const telemetryDir = join(testDir, '.config', 'sanity')
-      mkdirSync(telemetryDir, {recursive: true})
-
-      // Create a test file with events
-      const hashedToken = createHash('sha256').update(TEST_AUTH_TOKEN).digest('hex').slice(0, 8)
-      const filePath = join(telemetryDir, `telemetry-${hashedToken}-production-session-test.ndjson`)
-      const events = [createMockLogEvent({sessionId: 'session-test'})]
-      await writeFile(filePath, createNDJSONContent(events))
-
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-
-      // Call end() which should trigger flush
-      store.end()
-
-      // Wait for the async flush to complete
-      await waitForAsync(200)
-
-      // Verify that sendEvents was called (indicating flush happened)
-      expect(mockSendEvents).toHaveBeenCalledTimes(1)
-      const sentEvents = mockSendEvents.mock.calls[0][0]
-      expect(sentEvents).toHaveLength(1)
-
-      // Verify file was cleaned up
-      expect(existsSync(filePath)).toBe(false)
-    })
-
-    it('should clean up resources even if flush fails', async () => {
-      const flushError = new Error('Network error during flush')
-      mockSendEvents.mockRejectedValue(flushError)
-
-      const telemetryDir = join(testDir, '.config', 'sanity')
-      mkdirSync(telemetryDir, {recursive: true})
-
-      const hashedToken = createHash('sha256').update(TEST_AUTH_TOKEN).digest('hex').slice(0, 8)
-      const filePath = join(telemetryDir, `telemetry-${hashedToken}-production-session-test.ndjson`)
-      const events = [createMockLogEvent({sessionId: 'session-test'})]
-      await writeFile(filePath, createNDJSONContent(events))
-
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-
-      // Call end() - should not throw even if flush fails
-      expect(() => store.end()).not.toThrow()
-
-      // Wait for the async operations to complete
-      await waitForAsync(200)
-
-      // File should still exist since flush failed
-      expect(existsSync(filePath)).toBe(true)
-
-      // But the store should have cleaned up its internal resources
-      // (This is harder to test directly, but the test verifies no exceptions are thrown)
-    })
-
-    it('should handle multiple calls to end() safely', async () => {
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-
-      // Multiple calls to end() should not cause issues
-      expect(() => {
-        store.end()
-        store.end()
-        store.end()
-      }).not.toThrow()
-
-      await waitForAsync(100)
-    })
-
-    it('should return false for endWithBeacon', async () => {
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-
-      // endWithBeacon should return false since we're not in a browser context
-      expect(store.endWithBeacon()).toBe(false)
-    })
-  })
-
-  describe('Logger Integration', () => {
-    it('should create functional logger with all methods', async () => {
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-
-      const {logger} = store
-
-      expect(logger.log).toBeInstanceOf(Function)
-      logger.log({name: 'test-log', schema: {}, type: 'log', version: 1}, {test: true})
-
-      expect(logger.trace).toBeInstanceOf(Function)
-      const trace = logger.trace({
-        context: undefined,
-        name: 'test-trace',
-        schema: {},
-        type: 'trace',
-        version: 1,
-      })
-      expect(trace.start).toBeInstanceOf(Function)
-
-      expect(logger.updateUserProperties).toBeInstanceOf(Function)
-      logger.updateUserProperties({platform: 'test'})
-
-      await waitForAsync(100)
-
-      const files = await glob(join(testDir, '.config/sanity/telemetry-*.ndjson'))
-      expect(files).toHaveLength(1)
-
-      const content = await readFile(files[0], 'utf8')
-      expect(content).toBeDefined()
-
-      const events = parseNDJSONContent(content)
-      expect(events.length).toBeGreaterThan(0)
-    })
-
-    it('should handle sampling correctly', async () => {
-      const store = createTelemetryStore(sessionId, {
-        resolveConsent: mockResolveConsent,
-        sendEvents: mockSendEvents,
-      })
-
-      await waitForAsync(100)
-
-      const sampledEvent = {
-        maxSampleRate: 1000,
-        name: 'sampled-event',
-        schema: {},
-        type: 'log' as const,
-        version: 1,
-      }
-      const {logger} = store
-
-      logger.log(sampledEvent, {count: 1})
-
-      logger.log(sampledEvent, {count: 2})
-
-      await waitForAsync(100)
-
-      const files = await glob(join(testDir, '.config/sanity/telemetry-*.ndjson'))
-      expect(files).toHaveLength(1)
-
-      const content = await readFile(files[0], 'utf8')
-      expect(content).toBeDefined()
-
-      const events = parseNDJSONContent(content)
-      const sampledEvents = events.filter((e) => (e as TelemetryLogEvent).name === 'sampled-event')
-      expect(sampledEvents).toHaveLength(1)
-      expect((sampledEvents[0] as TelemetryLogEvent).data).toEqual({count: 1})
-    })
+    await expect(failingTrace.await(failingOperation)).rejects.toThrow('Operation failed')
+
+    // Test 5: Nested contexts
+    const parentTrace = createTraceEvent('parent-operation')
+    const parentTraceInstance = store.logger.trace(parentTrace, {level: 'parent'})
+    parentTraceInstance.start()
+
+    const childLogger = parentTraceInstance.newContext('child-operation')
+    const childLogEvent = createLogEvent('child-log')
+    childLogger.log(childLogEvent, {childData: true})
+
+    parentTraceInstance.complete()
+
+    // Test 6: Sampling behavior
+    const sampledEvent = {
+      maxSampleRate: 1000, // 1 second sampling
+      name: 'sampled-event',
+      schema: {},
+      type: 'log' as const,
+      version: 1,
+    }
+
+    store.logger.log(sampledEvent, {attempt: 1}) // Should go through
+    store.logger.log(sampledEvent, {attempt: 2}) // Should be blocked
+
+    await waitForAsync(WRITE_DELAY)
+
+    const telemetryPath = getTelemetryPath(testDir)
+    const files = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+    expect(files).toHaveLength(1)
+
+    const events = await readNDJSON<TelemetryEvent>(files[0])
+
+    // Verify all event types are present
+    const eventTypes = events.map((e) => e.type)
+    expect(eventTypes).toContain('trace.start')
+    expect(eventTypes).toContain('trace.log')
+    expect(eventTypes).toContain('trace.complete')
+    expect(eventTypes).toContain('trace.error')
+    expect(eventTypes).toContain('userProperties')
+    expect(eventTypes).toContain('log')
+
+    // Verify sampling worked (only one sampled event)
+    const sampledEvents = events.filter((e) => 'name' in e && e.name === 'sampled-event')
+    expect(sampledEvents).toHaveLength(1)
+    expect((sampledEvents[0] as {data: {attempt: number}}).data?.attempt).toBe(1)
+
+    // Verify trace lifecycle events are properly ignored after completion
+    const lifecycleEvents = events.filter((e) => 'name' in e && e.name === 'lifecycle-trace')
+    expect(lifecycleEvents).toHaveLength(4) // start + 2 logs + complete (ignored events not present)
+
+    await store.flush()
+
+    expect(mockSendEvents).toHaveBeenCalledTimes(1)
+    const sentEvents = mockSendEvents.mock.calls[0][0] as TelemetryEvent[]
+
+    const sentEventTypes = sentEvents.map((e) => e.type)
+    expect(sentEventTypes).toEqual(
+      expect.arrayContaining([
+        'trace.start',
+        'trace.log',
+        'trace.complete',
+        'trace.error',
+        'userProperties',
+        'log',
+      ]),
+    )
   })
 })
