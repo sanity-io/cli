@@ -634,7 +634,7 @@ describe('#hook:logs', () => {
     expect(stdout).toContain('Status: failure')
     expect(stdout).toContain('Failures: 4')
     expect(stdout).toContain('Payload:')
-    expect(stdout).toContain('{ failures: \'test\' }')
+    expect(stdout).toContain("{ failures: 'test' }")
     expect(stdout).toContain('Attempts:')
     expect(stdout).toContain(
       `Failure: HTTP 404 (run \`sanity hook attempt ${ATTEMPT_HTTP_ID}\` for details)`,
