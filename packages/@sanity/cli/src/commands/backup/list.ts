@@ -1,24 +1,23 @@
-import {type CliCommandDefinition} from '@sanity/cli'
+import {select} from '@inquirer/prompts'
+import {Args, Flags} from '@oclif/core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {type DatasetsResponse} from '@sanity/client'
 import {Table} from 'console-table-printer'
 import {isAfter, isValid, lightFormat, parse} from 'date-fns'
-import {hideBin} from 'yargs/helpers'
-import yargs from 'yargs/yargs'
 
-import parseApiErr from '../../actions/backup/parseApiErr'
-import resolveApiClient from '../../actions/backup/resolveApiClient'
-import {defaultApiVersion} from './backupGroup'
+import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'
+import {doesDatasetExist} from '../../actions/backup/doesDatasetExist.js'
+import {listDatasets} from '../../actions/backup/listDatasets.js'
+import {parseApiErr} from '../../actions/backup/parseApiErr.js'
+import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+
+const listBackupDebug = subdebug('backup:list')
 
 const DEFAULT_LIST_BACKUP_LIMIT = 30
 
-interface ListDatasetBackupFlags {
-  before?: string
-  after?: string
-  limit?: string
-}
-
 type ListBackupRequestQueryParams = {
-  before?: string
   after?: string
+  before?: string
   limit: string
 }
 
@@ -27,123 +26,184 @@ type ListBackupResponse = {
 }
 
 type ListBackupResponseItem = {
-  id: string
   createdAt: string
+  id: string
 }
 
-const helpText = `
-Options
-  --limit <int>     Maximum number of backups returned. Default 30.
-  --after <string>  Only return backups after this date (inclusive)
-  --before <string> Only return backups before this date (exclusive). Cannot be younger than <after> if specified.
+export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
+  static override args = {
+    dataset: Args.string({
+      description: 'Dataset name to list backups for',
+      required: false,
+    }),
+  }
 
-Examples
-  sanity backup list DATASET_NAME
-  sanity backup list DATASET_NAME --limit 50
-  sanity backup list DATASET_NAME --after 2024-01-31 --limit 10
-  sanity backup list DATASET_NAME --after 2024-01-31 --before 2024-01-10
-`
+  static override description = 'List available backups for a dataset.'
 
-function parseCliFlags(args: {argv?: string[]}) {
-  return yargs(hideBin(args.argv || process.argv).slice(2))
-    .options('after', {type: 'string'})
-    .options('before', {type: 'string'})
-    .options('limit', {type: 'number', default: DEFAULT_LIST_BACKUP_LIMIT, alias: 'l'}).argv
-}
+  static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %>',
+      description: 'List backups for a dataset interactively',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> production',
+      description: 'List backups for the production dataset',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> production --limit 50',
+      description: 'List up to 50 backups for the production dataset',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> production --after 2024-01-31 --limit 10',
+      description: 'List up to 10 backups created after 2024-01-31',
+    },
+  ]
 
-const listDatasetBackupCommand: CliCommandDefinition<ListDatasetBackupFlags> = {
-  name: 'list',
-  group: 'backup',
-  signature: '[DATASET_NAME]',
-  description: 'List available backups for a dataset.',
-  helpText,
-  action: async (args, context) => {
-    const {output, chalk} = context
-    const flags = await parseCliFlags(args)
-    const [dataset] = args.argsWithoutOptions
+  static override flags = {
+    after: Flags.string({
+      description: 'Only return backups after this date (inclusive, YYYY-MM-DD format)',
+    }),
+    before: Flags.string({
+      description: 'Only return backups before this date (exclusive, YYYY-MM-DD format)',
+    }),
+    limit: Flags.integer({
+      char: 'l',
+      default: DEFAULT_LIST_BACKUP_LIMIT,
+      description: 'Maximum number of backups returned',
+    }),
+  }
 
-    const {projectId, datasetName, token, client} = await resolveApiClient(
-      context,
-      dataset,
-      defaultApiVersion,
-    )
+  public async run(): Promise<void> {
+    const {args, flags} = await this.parse(ListBackupCommand)
+    let {dataset} = args
 
-    const query: ListBackupRequestQueryParams = {limit: DEFAULT_LIST_BACKUP_LIMIT.toString()}
-    if (flags.limit) {
-      // We allow limit up to Number.MAX_SAFE_INTEGER to leave it for server-side validation,
-      //  while still sending sensible value in limit string.
-      if (flags.limit < 1 || flags.limit > Number.MAX_SAFE_INTEGER) {
-        throw new Error(
-          `Parsing --limit: must be an integer between 1 and ${Number.MAX_SAFE_INTEGER}`,
-        )
-      }
-      query.limit = flags.limit.toString()
+    const projectId = await this.getProjectId()
+    if (!projectId) {
+      this.error(NO_PROJECT_ID, {exit: 1})
     }
 
-    if (flags.before || flags.after) {
-      try {
-        const parsedBefore = processDateFlags(flags.before)
-        const parsedAfter = processDateFlags(flags.after)
+    const client = await this.getGlobalApiClient({
+      apiVersion: BACKUP_API_VERSION,
+      requireUser: true,
+    })
 
-        if (parsedAfter && parsedBefore && isAfter(parsedAfter, parsedBefore)) {
-          throw new Error('--after date must be before --before')
-        }
+    let datasets: DatasetsResponse
 
-        query.before = flags.before
-        query.after = flags.after
-      } catch (err) {
-        throw new Error(`Parsing date flags: ${err}`)
-      }
-    }
-
-    let response
     try {
-      response = await client.request<ListBackupResponse>({
-        headers: {Authorization: `Bearer ${token}`},
-        uri: `/projects/${projectId}/datasets/${datasetName}/backups`,
-        query: {...query},
-      })
+      datasets = await listDatasets({projectId})
     } catch (error) {
       const {message} = parseApiErr(error)
-      output.error(`${chalk.red(`List dataset backup failed: ${message}`)}\n`)
+      listBackupDebug(`Failed to list datasets: ${message}`, error)
+      this.error(`Failed to list datasets: ${message}`, {exit: 1})
     }
 
-    if (response && response.backups) {
+    if (datasets.length === 0) {
+      this.error('No datasets found in this project.', {exit: 1})
+    }
+
+    if (dataset) {
+      doesDatasetExist(datasets, dataset)
+    } else {
+      dataset = await this.promptForDataset(datasets)
+    }
+
+    // Validate date flags
+    if (flags.before || flags.after) {
+      try {
+        const parsedBefore = this.processDateFlags(flags.before)
+        const parsedAfter = this.processDateFlags(flags.after)
+
+        if (parsedAfter && parsedBefore && isAfter(parsedAfter, parsedBefore)) {
+          this.error('--after date must be before --before')
+        }
+      } catch (err) {
+        const error = err as Error
+        this.error(`Parsing date flags: ${error.message}`)
+      }
+    }
+
+    // Validate limit flag
+    if (flags.limit < 1 || flags.limit > Number.MAX_SAFE_INTEGER) {
+      this.error(`Parsing --limit: must be an integer between 1 and ${Number.MAX_SAFE_INTEGER}`)
+    }
+
+    const query: ListBackupRequestQueryParams = {
+      limit: flags.limit.toString(),
+    }
+
+    if (flags.after) {
+      query.after = flags.after
+    }
+
+    if (flags.before) {
+      query.before = flags.before
+    }
+
+    try {
+      const response = await client.request<ListBackupResponse>({
+        query,
+        uri: `/projects/${projectId}/datasets/${dataset}/backups`,
+      })
+
       if (response.backups.length === 0) {
-        output.print('No backups found.')
+        this.log('No backups found.')
         return
       }
 
       const table = new Table({
         columns: [
-          {name: 'resource', title: 'RESOURCE', alignment: 'left'},
-          {name: 'createdAt', title: 'CREATED AT', alignment: 'left'},
-          {name: 'backupId', title: 'BACKUP ID', alignment: 'left'},
+          {alignment: 'left', name: 'resource', title: 'RESOURCE'},
+          {alignment: 'left', name: 'createdAt', title: 'CREATED AT'},
+          {alignment: 'left', name: 'backupId', title: 'BACKUP ID'},
         ],
       })
 
-      response.backups.forEach((backup: ListBackupResponseItem) => {
-        const {id, createdAt} = backup
+      for (const backup of response.backups) {
+        const {createdAt, id} = backup
         table.addRow({
-          resource: 'Dataset',
-          createdAt: lightFormat(Date.parse(createdAt), 'yyyy-MM-dd HH:mm:ss'),
           backupId: id,
+          createdAt: lightFormat(Date.parse(createdAt), 'yyyy-MM-dd HH:mm:ss'),
+          resource: 'Dataset',
         })
-      })
+      }
 
       table.printTable()
-    }
-  },
-}
 
-function processDateFlags(date: string | undefined): Date | undefined {
-  if (!date) return undefined
-  const parsedDate = parse(date, 'yyyy-MM-dd', new Date())
-  if (isValid(parsedDate)) {
-    return parsedDate
+      listBackupDebug(
+        `Successfully listed ${response.backups.length} backups for dataset ${dataset}`,
+      )
+    } catch (error) {
+      const {message} = parseApiErr(error)
+      listBackupDebug(`Failed to list backups for dataset ${dataset}:`, error)
+      this.error(`List dataset backup failed: ${message}`, {exit: 1})
+    }
   }
 
-  throw new Error(`Invalid ${date} date format. Use YYYY-MM-DD`)
-}
+  private processDateFlags(date: string | undefined): Date | undefined {
+    if (!date) return undefined
+    const parsedDate = parse(date, 'yyyy-MM-dd', new Date())
+    if (isValid(parsedDate)) {
+      return parsedDate
+    }
 
-export default listDatasetBackupCommand
+    throw new Error(`Invalid ${date} date format. Use YYYY-MM-DD`)
+  }
+
+  private async promptForDataset(datasets: DatasetsResponse): Promise<string> {
+    try {
+      const choices = datasets.map((dataset) => ({
+        name: dataset.name,
+        value: dataset.name,
+      }))
+
+      return select({
+        choices,
+        message: 'Select the dataset name:',
+      })
+    } catch (error) {
+      const err = error as Error
+      listBackupDebug(`Error selecting dataset`, err)
+      this.error(`Failed to select dataset:\n${err.message}`, {exit: 1})
+    }
+  }
+}
