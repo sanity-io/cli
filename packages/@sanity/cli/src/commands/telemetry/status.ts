@@ -22,7 +22,7 @@ export class Status extends SanityCommand<typeof Status> {
     // Parse to ensure no invalid flags are passed
     await this.parse(Status)
 
-    const consentInfo = await resolveConsent({env: process.env})
+    const consentInfo = await resolveConsent()
 
     const statusMessage = getStatusMessage(consentInfo)
     const learnMoreMessage = getLearnMoreMessage(consentInfo.status)

@@ -23,7 +23,6 @@ export class Enable extends SanityCommand<typeof Enable> {
 
     try {
       const result = await setConsent({
-        env: process.env,
         status: 'granted',
       })
 

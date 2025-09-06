@@ -1,6 +1,6 @@
 import minimist from 'minimist'
 
-export interface ParsedArguments<F = Record<string, string>> {
+interface ParsedArguments<F = Record<string, string>> {
   /**
    * Command arguments, eg any arguments after `sanity <command>` (no flags)
    */

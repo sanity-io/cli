@@ -10,7 +10,7 @@ import {isStaging} from '../../util/isStaging.js'
  * Base information needed for telemetry file operations.
  * Contains common data used by both file path generation and pattern matching.
  */
-export interface TelemetryBaseInfo {
+interface TelemetryBaseInfo {
   /** Base filename pattern without sessionId suffix */
   basePattern: string
   /** Base directory where telemetry files are stored */
