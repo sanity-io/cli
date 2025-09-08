@@ -12,3 +12,6 @@ CHANGELOG.md
 .release-please-manifest.json
 **/tsconfig.json
 **/__snapshots__/**
+.claude
+**/dist/**
+**/lib/**

@@ -5,6 +5,7 @@ Code for sanity cli
 # Usage
 
   <!-- usage -->
+
 ```sh-session
 $ npm install -g @sanity/cli
 $ sanity COMMAND
@@ -16,22 +17,24 @@ USAGE
   $ sanity COMMAND
 ...
 ```
+
 <!-- usagestop -->
 
 # Commands
 
   <!-- commands -->
-* [`sanity build [OUTPUTDIR]`](#sanity-build-outputdir)
-* [`sanity dev`](#sanity-dev)
-* [`sanity docs`](#sanity-docs)
-* [`sanity help [COMMAND]`](#sanity-help-command)
-* [`sanity learn`](#sanity-learn)
-* [`sanity login`](#sanity-login)
-* [`sanity logout`](#sanity-logout)
-* [`sanity manage`](#sanity-manage)
-* [`sanity projects list`](#sanity-projects-list)
-* [`sanity users list`](#sanity-users-list)
-* [`sanity versions`](#sanity-versions)
+
+- [`sanity build [OUTPUTDIR]`](#sanity-build-outputdir)
+- [`sanity dev`](#sanity-dev)
+- [`sanity docs`](#sanity-docs)
+- [`sanity help [COMMAND]`](#sanity-help-command)
+- [`sanity learn`](#sanity-learn)
+- [`sanity login`](#sanity-login)
+- [`sanity logout`](#sanity-logout)
+- [`sanity manage`](#sanity-manage)
+- [`sanity projects list`](#sanity-projects-list)
+- [`sanity users list`](#sanity-users-list)
+- [`sanity versions`](#sanity-versions)
 
 ## `sanity build [OUTPUTDIR]`
 
@@ -272,13 +275,15 @@ EXAMPLES
 ```
 
 _See code: [src/commands/versions.ts](https://github.com/sanity-io/cli/blob/v0.0.0/src/commands/versions.ts)_
+
 <!-- commandsstop -->
 
 # Table of contents
 
   <!-- toc -->
-* [@sanity/cli](#sanitycli)
-* [Usage](#usage)
-* [Commands](#commands)
-* [Table of contents](#table-of-contents)
+
+- [@sanity/cli](#sanitycli)
+- [Usage](#usage)
+- [Commands](#commands)
+- [Table of contents](#table-of-contents)
 <!-- tocstop -->
