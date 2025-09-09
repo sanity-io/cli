@@ -45,3 +45,20 @@ export async function getHookAttemptsForProject({
     uri: `/hooks/projects/${projectId}/${hookId}/attempts`,
   })
 }
+
+export async function getHookAttempt({
+  attemptId,
+  projectId,
+}: {
+  attemptId: string
+  projectId: string
+}): Promise<DeliveryAttempt> {
+  const client = await getGlobalCliClient({
+    apiVersion: HOOK_API_VERSION,
+    requireUser: true,
+  })
+
+  return client.request<DeliveryAttempt>({
+    uri: `/hooks/projects/${projectId}/attempts/${attemptId}`,
+  })
+}
