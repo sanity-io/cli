@@ -1,6 +1,5 @@
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import pluralize from 'pluralize-esm'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
@@ -97,19 +96,22 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
       const notFound = ids.filter((id) => !deleted.includes(id))
 
       if (deleted.length > 0) {
-        this.log(`Deleted ${deleted.length} ${pluralize('document', deleted.length)}`)
+        this.log(`Deleted ${deleted.length} ${deleted.length === 1 ? 'document' : 'documents'}`)
       }
 
       if (notFound.length > 0) {
-        this.error(`${pluralize('Document', notFound.length)} not found: ${notFound.join(', ')}`, {
-          exit: 1,
-        })
+        this.error(
+          `${notFound.length === 1 ? 'Document' : 'Documents'} not found: ${notFound.join(', ')}`,
+          {
+            exit: 1,
+          },
+        )
       }
     } catch (error) {
       const err = error as Error
       deleteDocumentDebug(`Error deleting documents ${ids.join(', ')}`, err)
       this.error(
-        `Failed to delete ${ids.length} ${pluralize('document', ids.length)}: ${err.message}`,
+        `Failed to delete ${ids.length} ${ids.length === 1 ? 'document' : 'documents'}: ${err.message}`,
         {
           exit: 1,
         },

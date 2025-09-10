@@ -334,9 +334,6 @@ importers:
       pkg-dir:
         specifier: ^8.0.0
         version: 8.0.0
-      pluralize-esm:
-        specifier: ^9.0.5
-        version: 9.0.5
       preferred-pm:
         specifier: ^4.1.1
         version: 4.1.1
