@@ -1,9 +1,11 @@
 import {select} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
-import {isInteractive, SanityCommand} from '@sanity/cli-core'
+import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
 import chalk from 'chalk'
 
 import {readDoc, searchDocs, type SearchResult} from '../../services/docs.js'
+
+const searchDebug = subdebug('docs:search')
 
 export class DocsSearchCommand extends SanityCommand<typeof DocsSearchCommand> {
   static override args = {
@@ -56,8 +58,13 @@ export class DocsSearchCommand extends SanityCommand<typeof DocsSearchCommand> {
         this.log('No results found. Try a different search term.')
         return
       }
-    } catch {
-      this.error('The documentation search API is currently unavailable. Please try again later.', {
+    } catch (error) {
+      searchDebug('error fetching results', error)
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'The documentation search API is currently unavailable. Please try again later.'
+      this.error(message, {
         exit: 1,
       })
     }
@@ -74,7 +81,7 @@ export class DocsSearchCommand extends SanityCommand<typeof DocsSearchCommand> {
     }
 
     // Show usage hint in non-interactive mode
-    if (!isInteractive) {
+    if (!isInteractive()) {
       this.log('Use `sanity docs read <url>` to read an article in terminal.')
       this.log('Use `sanity docs read <path>` to follow links found within articles.')
       this.log('')

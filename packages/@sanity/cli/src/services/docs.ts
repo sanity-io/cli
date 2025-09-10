@@ -32,58 +32,40 @@ function isSearchResult(obj: unknown): obj is SearchResult {
 }
 
 export async function readDoc(options: ReadDocOptions): Promise<string> {
-  try {
-    const url = `${getSanityUrl()}${options.path}.md`
+  const url = `${getSanityUrl()}${options.path}.md`
 
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), DOCS_API_TIMEOUT)
+  const response = await fetch(url, {
+    headers: {
+      Accept: 'text/plain',
+    },
+    method: 'GET',
+    signal: AbortSignal.timeout(DOCS_API_TIMEOUT),
+  })
 
-    const response = await fetch(url, {
-      headers: {
-        Accept: 'text/plain',
-      },
-      method: 'GET',
-      signal: controller.signal,
-    })
-
-    clearTimeout(timeoutId)
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        throw new Error(`Article not found: ${options.path}`)
-      }
-      throw new Error('The article API is currently unavailable. Please try again later.')
-    }
-
-    const markdownContent = await response.text()
-    return markdownContent
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error(`Article not found: ${options.path}`)
     }
     throw new Error('The article API is currently unavailable. Please try again later.')
   }
+
+  return response.text()
 }
 
 export async function searchDocs(options: SearchDocsOptions): Promise<SearchResult[]> {
-  const {limit = 10} = options
+  const {limit = 10, query} = options
 
   const baseUrl = `${getSanityUrl()}/docs/api/search/semantic`
   const url = new URL(baseUrl)
-  url.searchParams.set('query', options.query)
-
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), DOCS_API_TIMEOUT)
+  url.searchParams.set('query', query)
 
   const response = await fetch(url.toString(), {
     headers: {
       Accept: 'application/json',
     },
     method: 'GET',
-    signal: controller.signal,
+    signal: AbortSignal.timeout(DOCS_API_TIMEOUT),
   })
-
-  clearTimeout(timeoutId)
 
   if (!response.ok) {
     throw new Error(
