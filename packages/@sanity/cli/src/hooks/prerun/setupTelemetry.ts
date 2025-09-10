@@ -1,7 +1,7 @@
-import {appendFile} from 'node:fs/promises'
+import {fileURLToPath} from 'node:url'
 
-import {type Hook, ux} from '@oclif/core'
-import {findProjectRoot, getCliConfig, getGlobalCliClient, isTrueish} from '@sanity/cli-core'
+import {type Hook} from '@oclif/core'
+import {findProjectRoot, getCliConfig} from '@sanity/cli-core'
 import {createSessionId} from '@sanity/telemetry'
 
 import {resolveConsent} from '../../actions/telemetry/resolveConsent.js'
@@ -12,8 +12,6 @@ import {createTelemetryStore} from '../../telemetry/store/createTelemetryStore.j
 import {detectRuntime} from '../../util/detectRuntime.js'
 import {parseArguments} from '../../util/parseArguments.js'
 
-const LOG_FILE_NAME = 'telemetry-events.ndjson'
-
 export const setupTelemetry: Hook.Prerun = async function ({config}) {
   // Show telemetry disclosure
   telemetryDisclosure()
@@ -22,41 +20,6 @@ export const setupTelemetry: Hook.Prerun = async function ({config}) {
 
   const store = createTelemetryStore(sessionId, {
     resolveConsent,
-    sendEvents: async (batch) => {
-      const inspectEvents = isTrueish(process.env.SANITY_TELEMETRY_INSPECT)
-      if (inspectEvents) {
-        ux.stdout(`SANITY_TELEMETRY_INSPECT is set, appending events to "${LOG_FILE_NAME}"`)
-        await appendFile(
-          LOG_FILE_NAME,
-          `${batch.map((entry) => JSON.stringify(entry)).join('\n')}\n`,
-        )
-      }
-
-      telemetryDebug('Submitting %s telemetry events', batch.length)
-
-      const client = await getGlobalCliClient({
-        apiVersion: '2023-12-18',
-        requireUser: true,
-      })
-
-      try {
-        return await client.request({
-          body: {batch, projectId: cliConfig.api?.projectId},
-          json: true,
-          method: 'POST',
-          uri: '/intake/batch',
-        })
-      } catch (err) {
-        const statusCode = err.response && err.response.statusCode
-        telemetryDebug(
-          'Failed to send telemetry events%s: %s',
-          statusCode ? ` (HTTP ${statusCode})` : '',
-          err.stack,
-        )
-        // note: we want to throw - the telemetry store implements error handling already
-        throw err
-      }
-    },
   })
 
   const projectRoot = await findProjectRoot(process.cwd())
@@ -90,11 +53,23 @@ export const setupTelemetry: Hook.Prerun = async function ({config}) {
   const cliCommandTrace = store.logger.trace(CliCommandTelemetry, traceOptions)
   cliCommandTrace.start()
 
-  // TODO: Change to exit
-  process.once('beforeExit', () => {
-    // TODO: Fix this implementation, it is not complete
+  // Handle process exit - complete trace and spawn worker to flush all telemetry
+  process.once('exit', (status) => {
+    console.log('exit', status)
+    // Spawn detached worker to flush all telemetry files
+    const workerPath = fileURLToPath(new URL('flushTelemetry.worker.js', import.meta.url))
+
+    telemetryDebug(`Spawning "${process.execPath} ${workerPath}"`)
     cliCommandTrace.complete()
 
-    store.end()
+    // spawn(process.execPath, [workerPath], {
+    //   detached: true,
+    //   env: {
+    //     ...process.env,
+    //     SANITY_TELEMETRY_DATASET: cliConfig?.api?.dataset || '',
+    //     SANITY_TELEMETRY_PROJECT_ID: cliConfig?.api?.projectId || '',
+    //   },
+    //   stdio: process.env.SANITY_TELEMETRY_INSPECT ? 'inherit' : 'ignore',
+    // }).unref()
   })
 }
