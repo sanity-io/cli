@@ -1,7 +1,8 @@
+import {spawn} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 
 import {type Hook} from '@oclif/core'
-import {findProjectRoot, getCliConfig} from '@sanity/cli-core'
+import {debug, findProjectRoot, getCliConfig} from '@sanity/cli-core'
 import {createSessionId} from '@sanity/telemetry'
 
 import {resolveConsent} from '../../actions/telemetry/resolveConsent.js'
@@ -55,21 +56,29 @@ export const setupTelemetry: Hook.Prerun = async function ({config}) {
 
   // Handle process exit - complete trace and spawn worker to flush all telemetry
   process.once('exit', (status) => {
-    console.log('exit', status)
+    if (status === 0) {
+      cliCommandTrace.complete()
+    } else {
+      // TODO: Properly handle errors
+      // https://oclif.io/docs/error_handling/#error-handling-in-the-catch-method
+      cliCommandTrace.error(new Error('Process exited with status ' + status))
+    }
+
     // Spawn detached worker to flush all telemetry files
     const workerPath = fileURLToPath(new URL('flushTelemetry.worker.js', import.meta.url))
 
     telemetryDebug(`Spawning "${process.execPath} ${workerPath}"`)
-    cliCommandTrace.complete()
 
-    // spawn(process.execPath, [workerPath], {
-    //   detached: true,
-    //   env: {
-    //     ...process.env,
-    //     SANITY_TELEMETRY_DATASET: cliConfig?.api?.dataset || '',
-    //     SANITY_TELEMETRY_PROJECT_ID: cliConfig?.api?.projectId || '',
-    //   },
-    //   stdio: process.env.SANITY_TELEMETRY_INSPECT ? 'inherit' : 'ignore',
-    // }).unref()
+    // Spawn detached worker to flush all telemetry files
+    // unref will ensure the child process can keep doing work even after the parent process exits
+    spawn(process.execPath, [workerPath], {
+      detached: true,
+      env: {
+        ...process.env,
+        SANITY_TELEMETRY_PROJECT_ID: cliConfig?.api?.projectId || '',
+      },
+      // If debug is enabled, spawn the worker with stdio inherit to see the output
+      stdio: debug.enabled ? 'inherit' : 'ignore',
+    }).unref()
   })
 }
