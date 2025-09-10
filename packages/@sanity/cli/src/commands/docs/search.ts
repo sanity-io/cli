@@ -96,31 +96,27 @@ export class DocsSearchCommand extends SanityCommand<typeof DocsSearchCommand> {
         value: index,
       }))
 
-      try {
-        const selectedIndex = await select({
-          choices: [...choices, {description: 'Exit without reading', name: 'Exit', value: -1}],
-          message: 'Select an article to read in terminal:',
-        })
+      const selectedIndex = await select({
+        choices: [...choices, {description: 'Exit without reading', name: 'Exit', value: -1}],
+        message: 'Select an article to read in terminal:',
+      })
 
-        if (typeof selectedIndex === 'number' && selectedIndex >= 0) {
-          const selected = results[selectedIndex]
+      if (typeof selectedIndex === 'number' && selectedIndex >= 0) {
+        const selected = results[selectedIndex]
 
-          try {
-            // Read and display the article
-            const content = await readDoc({path: selected.path})
-            this.log('\n---\n')
-            this.log(content)
-          } catch (error) {
-            this.error(
-              `Failed to read article: ${error instanceof Error ? error.message : 'Unknown error'}`,
-              {
-                exit: 1,
-              },
-            )
-          }
+        try {
+          // Read and display the article
+          const content = await readDoc({path: selected.path})
+          this.log('\n---\n')
+          this.log(content)
+        } catch (error) {
+          this.error(
+            `Failed to read article: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            {
+              exit: 1,
+            },
+          )
         }
-      } catch {
-        this.error('Failed to read article', {exit: 1})
       }
     }
   }
