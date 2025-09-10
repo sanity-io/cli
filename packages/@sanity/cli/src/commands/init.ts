@@ -10,6 +10,7 @@ import {
 } from '@sanity/client'
 
 import {getProviderName} from '../actions/auth/getProviderName.js'
+import {login} from '../actions/auth/login.js'
 
 const debug = subdebug('init')
 
@@ -190,7 +191,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     const plan = await this.getPlan()
 
     // If the user isn't already autenticated, make it so
-    this.ensureAuthenticated()
+    await this.ensureAuthenticated()
 
     // @todo
     //const trace = telemetry.trace(CLIInitStepCompleted)
@@ -198,33 +199,49 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
   // @todo do we actually need to be authenticated for init? check flags and determine.
   private async ensureAuthenticated(): Promise<{user: CurrentSanityUser}> {
-    const isAuthenticated = getCliToken() !== undefined
+    let isAuthenticated = getCliToken() !== undefined
     debug(isAuthenticated ? 'User already has a token' : 'User has no token')
 
-    let user: SanityUser | undefined
+    let user: CurrentSanityUser | undefined
     if (isAuthenticated) {
-      // @todo
-      //trace.log({step: 'login', alreadyLoggedIn: true})
-      const client = await this.getGlobalApiClient({apiVersion: INIT_API_VERSION})
-      const user = await client.users.getById('me')
-      this.log('You are logged in as %s using %s', user.email, getProviderName(user.provider))
-      return {user}
+      // It _appears_ we are authenticated, but the token might be invalid/expired,
+      // so we need to verify that we can actually make an authenticated request.
+      const client = await this.getGlobalApiClient({
+        apiVersion: INIT_API_VERSION,
+        requireUser: true,
+      })
+
+      try {
+        user = await client.users.getById('me')
+      } catch {
+        // assume that any error means that the token is invalid
+        isAuthenticated = false
+      }
     }
 
-    if (this.isUnattended()) {
-      throw new Error(
-        'Must be logged in to run this command in unattended mode, run `sanity login`',
-      )
+    if (isAuthenticated) {
+      // @todo telemetry
+      // trace.log({ step: 'login', alreadyLoggedIn: true })
+    } else {
+      if (this.isUnattended()) {
+        throw new Error(
+          'Must be logged in to run this command in unattended mode, run `sanity login`',
+        )
+      }
+
+      // @todo telemetry
+      //trace.log({step: 'login'})
+
+      // @todo trigger login action, then get and return user info
+      await login({output: this.output})
     }
 
-    // @todo telemetry
-    //trace.log({step: 'login'})
+    // @todo
+    const client = await this.getGlobalApiClient({apiVersion: INIT_API_VERSION, requireUser: true})
+    user = await client.users.getById('me')
 
-    // @todo trigger login action, then get and return user info
-    await this.config.runCommand('login')
-
-    // const user = await getOrCreateUser()
-    // return {user}
+    this.log('You are logged in as %s using %s', user.email, getProviderName(user.provider))
+    return {user}
   }
 
   private async getPlan(): Promise<string | undefined> {
