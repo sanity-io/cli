@@ -42,11 +42,11 @@ jobs:
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
         uses: ./.github/actions/setup
         with:
-          node-version: '20'
+          node-version: 20
 
       - name: Build packages
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
-        run: pnpm run build
+        run: pnpm run build:cli
 
       - name: Build types
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
@@ -67,6 +67,5 @@ jobs:
         run: |
           echo "## Published Packages 🚀" >> $GITHUB_STEP_SUMMARY
           echo "All CLI packages published:" >> $GITHUB_STEP_SUMMARY
-          echo "- @sanity/cli" >> $GITHUB_STEP_SUMMARY
           echo "- @sanity/cli-core" >> $GITHUB_STEP_SUMMARY
           echo "- @sanity/cli-test" >> $GITHUB_STEP_SUMMARY
