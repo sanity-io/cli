@@ -2,13 +2,12 @@ import {ux} from '@oclif/core'
 import {type DatasetsResponse} from '@sanity/client'
 
 /**
- * Checks if a dataset exists in a list of datasets
+ * Asserts that a dataset exists in a list of datasets, exits if not found
  *
  * @param datasets - The list of datasets to check
  * @param datasetName - The name of the dataset to check for
- * @returns True if the dataset exists, false otherwise
  */
-export function doesDatasetExist(datasets: DatasetsResponse, datasetName: string): boolean {
+export function assertDatasetExists(datasets: DatasetsResponse, datasetName: string): void {
   const exists = datasets.some((d) => d.name === datasetName)
   if (!exists) {
     ux.error(
@@ -16,6 +15,4 @@ export function doesDatasetExist(datasets: DatasetsResponse, datasetName: string
       {exit: 1},
     )
   }
-
-  return exists
 }

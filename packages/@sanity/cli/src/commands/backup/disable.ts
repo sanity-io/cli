@@ -4,10 +4,9 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
 import chalk from 'chalk'
 
+import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'
-import {doesDatasetExist} from '../../actions/backup/doesDatasetExist.js'
 import {listDatasets} from '../../actions/backup/listDatasets.js'
-import {parseApiErr} from '../../actions/backup/parseApiErr.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const disableBackupDebug = subdebug('backup:disable')
@@ -52,7 +51,7 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
     try {
       datasets = await listDatasets({projectId})
     } catch (error) {
-      const {message} = parseApiErr(error)
+      const message = error instanceof Error ? error.message : String(error)
       disableBackupDebug(`Failed to list datasets: ${message}`, error)
       this.error(`Failed to list datasets: ${message}`, {exit: 1})
     }
@@ -62,7 +61,7 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
     }
 
     if (dataset) {
-      doesDatasetExist(datasets, dataset)
+      assertDatasetExists(datasets, dataset)
     } else {
       dataset = await this.promptForDataset(datasets)
     }
@@ -83,7 +82,7 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
 
       disableBackupDebug(`Successfully disabled backup for dataset ${dataset}`)
     } catch (error) {
-      const {message} = parseApiErr(error)
+      const message = error instanceof Error ? error.message : String(error)
       disableBackupDebug(`Failed to disable backup for dataset`, error)
       this.error(`Disabling dataset backup failed: ${message}`, {exit: 1})
     }

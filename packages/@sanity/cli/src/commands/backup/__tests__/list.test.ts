@@ -184,7 +184,10 @@ describe('#backup:list', () => {
     const {stdout} = await testCommand(ListBackupCommand, [])
 
     expect(mockSelect).toHaveBeenCalledWith({
-      choices: [{name: 'production', value: 'production'}, {name: 'staging', value: 'staging'}],
+      choices: [
+        {name: 'production', value: 'production'},
+        {name: 'staging', value: 'staging'},
+      ],
       message: 'Select the dataset name:',
     })
     expect(stdout).toContain('backup-1')
@@ -194,8 +197,8 @@ describe('#backup:list', () => {
     setupMocksWithDatasets([{name: 'production'}])
 
     const {error} = await testCommand(ListBackupCommand, ['production', '--after', 'invalid-date'])
-    expect(error?.message).toContain('Invalid invalid-date date format')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.message).toContain("Invalid date format for '--after' flag")
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should fail when after date is after before date', async () => {
@@ -209,7 +212,7 @@ describe('#backup:list', () => {
       '2024-01-01',
     ])
     expect(error?.message).toBe('Parsing date flags: --after date must be before --before')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should fail with invalid limit', async () => {
@@ -217,7 +220,7 @@ describe('#backup:list', () => {
 
     const {error} = await testCommand(ListBackupCommand, ['production', '--limit', '0'])
     expect(error?.message).toContain('must be an integer between 1 and')
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should fail when dataset does not exist', async () => {

@@ -5,10 +5,9 @@ import {type DatasetsResponse} from '@sanity/client'
 import {Table} from 'console-table-printer'
 import {isAfter, isValid, lightFormat, parse} from 'date-fns'
 
+import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'
-import {doesDatasetExist} from '../../actions/backup/doesDatasetExist.js'
 import {listDatasets} from '../../actions/backup/listDatasets.js'
-import {parseApiErr} from '../../actions/backup/parseApiErr.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const listBackupDebug = subdebug('backup:list')
@@ -92,7 +91,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     try {
       datasets = await listDatasets({projectId})
     } catch (error) {
-      const {message} = parseApiErr(error)
+      const message = error instanceof Error ? error.message : String(error)
       listBackupDebug(`Failed to list datasets: ${message}`, error)
       this.error(`Failed to list datasets: ${message}`, {exit: 1})
     }
@@ -102,7 +101,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     }
 
     if (dataset) {
-      doesDatasetExist(datasets, dataset)
+      assertDatasetExists(datasets, dataset)
     } else {
       dataset = await this.promptForDataset(datasets)
     }
@@ -110,21 +109,22 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     // Validate date flags
     if (flags.before || flags.after) {
       try {
-        const parsedBefore = this.processDateFlags(flags.before)
-        const parsedAfter = this.processDateFlags(flags.after)
+        const parsedBefore = this.processDateFlag(flags.before, 'before')
+        const parsedAfter = this.processDateFlag(flags.after, 'after')
 
         if (parsedAfter && parsedBefore && isAfter(parsedAfter, parsedBefore)) {
-          this.error('--after date must be before --before')
+          this.error('--after date must be before --before', {exit: 1})
         }
       } catch (err) {
-        const error = err as Error
-        this.error(`Parsing date flags: ${error.message}`)
+        this.error(`Parsing date flags: ${err instanceof Error ? err.message : err}`, {exit: 1})
       }
     }
 
     // Validate limit flag
     if (flags.limit < 1 || flags.limit > Number.MAX_SAFE_INTEGER) {
-      this.error(`Parsing --limit: must be an integer between 1 and ${Number.MAX_SAFE_INTEGER}`)
+      this.error(`Parsing --limit: must be an integer between 1 and ${Number.MAX_SAFE_INTEGER}`, {
+        exit: 1,
+      })
     }
 
     const query: ListBackupRequestQueryParams = {
@@ -173,20 +173,20 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
         `Successfully listed ${response.backups.length} backups for dataset ${dataset}`,
       )
     } catch (error) {
-      const {message} = parseApiErr(error)
+      const message = error instanceof Error ? error.message : String(error)
       listBackupDebug(`Failed to list backups for dataset ${dataset}:`, error)
       this.error(`List dataset backup failed: ${message}`, {exit: 1})
     }
   }
 
-  private processDateFlags(date: string | undefined): Date | undefined {
+  private processDateFlag(date: string | undefined, flagName: string): Date | undefined {
     if (!date) return undefined
     const parsedDate = parse(date, 'yyyy-MM-dd', new Date())
     if (isValid(parsedDate)) {
       return parsedDate
     }
 
-    throw new Error(`Invalid ${date} date format. Use YYYY-MM-DD`)
+    throw new Error(`Invalid date format for '--${flagName}' flag. Use YYYY-MM-DD`)
   }
 
   private async promptForDataset(datasets: DatasetsResponse): Promise<string> {
@@ -201,9 +201,10 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
         message: 'Select the dataset name:',
       })
     } catch (error) {
-      const err = error as Error
-      listBackupDebug(`Error selecting dataset`, err)
-      this.error(`Failed to select dataset:\n${err.message}`, {exit: 1})
+      listBackupDebug(`Error selecting dataset`, error)
+      this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
+        exit: 1,
+      })
     }
   }
 }
