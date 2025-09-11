@@ -1,3 +1,4 @@
+import {randomUUID} from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -5,7 +6,6 @@ import path from 'node:path'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {type MultipleMutationResult, type Mutation} from '@sanity/client'
-import {uuid} from '@sanity/uuid'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
 import json5 from 'json5'
@@ -131,10 +131,10 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
 
     try {
       // Create a temporary file and use that as source, opening an editor on it
-      const docId = id || uuid()
+      const docId = id || randomUUID()
       const ext = useJson5 ? 'json5' : 'json'
       // Add UUID prefix to prevent predictable file names and potential conflicts
-      const tmpFile = path.join(os.tmpdir(), 'sanity-cli', `${uuid()}-${docId}.${ext}`)
+      const tmpFile = path.join(os.tmpdir(), 'sanity-cli', `${randomUUID()}-${docId}.${ext}`)
       const stringify = useJson5 ? json5.stringify : JSON.stringify
       const defaultValue = (id && (await client.getDocument(id))) || {
         _id: docId,

@@ -1,3 +1,4 @@
+import {randomUUID} from 'node:crypto'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -5,7 +6,6 @@ import path from 'node:path'
 import {runCommand} from '@oclif/test'
 import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
-import {uuid} from '@sanity/uuid'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
 import json5 from 'json5'
@@ -22,9 +22,11 @@ vi.mock('chokidar', () => ({
 vi.mock('execa')
 vi.mock('json5')
 
-vi.mock('@sanity/uuid', () => ({
-  uuid: vi.fn(),
-}))
+vi.mock('node:crypto', async () => {
+  return {
+    randomUUID: vi.fn(),
+  }
+})
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn().mockResolvedValue({
@@ -48,13 +50,13 @@ vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
 
 const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
-const mockUuid = vi.mocked(uuid)
 const mockFs = vi.mocked(fs)
 const mockOs = vi.mocked(os)
 const mockChokidarWatch = vi.mocked(chokidarWatch)
 const mockExeca = vi.mocked(execa)
 const mockExecaSync = vi.mocked(execaSync)
 const mockJson5 = vi.mocked(json5)
+const mockRandomUUID = vi.mocked(randomUUID)
 
 const testProjectId = 'test-project'
 const testDataset = 'production'
@@ -708,11 +710,12 @@ describe('#documents:create', () => {
 
         setupEditorMocks()
 
-        // Set up predictable UUID
-        mockUuid.mockReturnValue('test-doc')
+        // Set up a predictable UUID so the test can verify no changes were made
+        const testUuid = '123e4567-e89b-12d3-a456-426614174000'
+        mockRandomUUID.mockReturnValue(testUuid)
 
         const defaultDoc = {
-          _id: 'test-doc',
+          _id: testUuid,
           _type: 'specify-me',
         }
 
