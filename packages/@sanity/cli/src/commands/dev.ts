@@ -27,7 +27,7 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
     }),
     'load-in-dashboard': Flags.boolean({
       allowNo: true,
-      description: 'Load the dev server in the Sanity dashboard.',
+      description: 'Load the app/studio in the Sanity dashboard.',
     }),
     port: Flags.string({
       default: '3333',

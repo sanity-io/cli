@@ -39,7 +39,7 @@ export async function startAppDevServer(
     const {port} = server.config.server
     const httpHost = config.httpHost || 'localhost'
 
-    const coreAppUrl = await getCoreAppURL({
+    const coreAppUrl = getCoreAppURL({
       httpHost,
       httpPort: port,
       organizationId,

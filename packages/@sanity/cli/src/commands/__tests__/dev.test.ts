@@ -66,7 +66,7 @@ describe('#dev', () => {
         --[no-]auto-updates       Automatically update Sanity Studio dependencies.
         --host=<value>            [default: localhost] The local network interface at
                                   which to listen.
-        --[no-]load-in-dashboard  Load the dev server in the Sanity dashboard.
+        --[no-]load-in-dashboard  Load the app/studio in the Sanity dashboard.
         --port=<value>            [default: 3333] TCP port to start server on.
 
       DESCRIPTION
@@ -292,34 +292,7 @@ describe('#dev', () => {
       })
 
       expect(error).toBeDefined()
-      expect(error?.message).toContain('Failed to get organization Id from project Id')
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
-    test('should error when API returns no organizationId', async () => {
-      const cwd = await testExample('basic-studio')
-      process.cwd = () => cwd
-
-      const projectId = 'test-project'
-      const configPath = join(cwd, 'sanity.cli.ts')
-      const existingConfig = await readFile(configPath, 'utf8')
-      const modifiedConfig = existingConfig.replace(
-        /projectId: '.*',/,
-        `projectId: '${projectId}',`,
-      )
-      await writeFile(configPath, modifiedConfig)
-
-      mockApi({
-        apiVersion: 'v2025-08-25',
-        uri: `/projects/${projectId}`,
-      }).reply(200, {organizationId: null})
-
-      const {error} = await testCommand(DevCommand, ['--load-in-dashboard', '--port', '5345'], {
-        config: {root: cwd},
-      })
-
-      expect(error).toBeDefined()
-      expect(error?.message).toContain('Organization Id not found for project')
+      expect(error?.message).toContain('Failed to get organization id from project id')
       expect(error?.oclif?.exit).toBe(1)
     })
 

@@ -1,6 +1,6 @@
 import {getSanityUrl} from '@sanity/cli-core'
 
-export async function getCoreAppURL({
+export function getCoreAppURL({
   httpHost = 'localhost',
   httpPort = 3333,
   organizationId,
@@ -8,7 +8,7 @@ export async function getCoreAppURL({
   httpHost?: string
   httpPort?: number
   organizationId: string
-}): Promise<string> {
+}): string {
   const url = `http://${httpHost}:${httpPort}`
   const params = new URLSearchParams({dev: url})
 

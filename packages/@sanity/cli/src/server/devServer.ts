@@ -28,6 +28,7 @@ export interface DevServerOptions {
 interface DevServer {
   close(): Promise<void>
   server: ViteDevServer
+
   watcher?: FSWatcher
 }
 
@@ -45,7 +46,14 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   } = options
 
   debug('Writing Sanity runtime files')
-  const watcher = await writeSanityRuntime({basePath, cwd, entry, isApp, reactStrictMode, watch: true})
+  const watcher = await writeSanityRuntime({
+    basePath,
+    cwd,
+    entry,
+    isApp,
+    reactStrictMode,
+    watch: true,
+  })
 
   debug('Resolving vite config')
   const mode = 'development'

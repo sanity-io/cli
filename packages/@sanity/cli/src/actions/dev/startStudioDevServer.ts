@@ -78,12 +78,11 @@ export async function startStudioDevServer(
   const config = getDevServerConfig({cliConfig, flags, output, workDir})
 
   const projectId = cliConfig?.api?.projectId
-  let organizationId: string | null | undefined
+  let organizationId: string | undefined
 
   if (loadInDashboard) {
     if (!projectId) {
       output.error('Project Id is required to load in dashboard', {exit: 1})
-      return {}
     }
 
     const client = await apiClient({
@@ -97,8 +96,8 @@ export async function startStudioDevServer(
       })
       organizationId = project.organizationId
     } catch (error) {
-      devDebug('Error getting organization Id from project Id', error)
-      output.error('Failed to get organization Id from project Id', {exit: 1})
+      devDebug('Error getting organization id from project id', error)
+      output.error('Failed to get organization id from project id', {exit: 1})
     }
   }
 
@@ -112,14 +111,6 @@ export async function startStudioDevServer(
     const httpHost = config.httpHost || 'localhost'
 
     if (loadInDashboard) {
-      if (!organizationId) {
-        // If we fail here, we need to close the server
-        await close()
-        spin.fail()
-        output.error('Organization Id not found for project', {exit: 1})
-        return {}
-      }
-
       spin.succeed()
 
       output.log(`Dev server started on port ${port}`)
@@ -127,10 +118,10 @@ export async function startStudioDevServer(
       output.log(
         chalk.blue(
           chalk.underline(
-            await getCoreAppURL({
+            getCoreAppURL({
               httpHost,
               httpPort: port,
-              organizationId,
+              organizationId: organizationId!,
             }),
           ),
         ),

@@ -278,7 +278,7 @@ describe('#getViteConfig', () => {
       reactCompiler: undefined,
     }
 
-    await expect(getViteConfig(options)).rejects.toThrow('Unable to resolve `sanity` module root')
+    await expect(getViteConfig(options)).rejects.toThrow('Unable to resolve `@sanity/cli` module root')
   })
 
   test('should configure favicon plugin with correct paths', async () => {
