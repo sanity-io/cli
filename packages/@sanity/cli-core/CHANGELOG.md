@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.2-alpha.0](https://github.com/sanity-io/cli/compare/cli-core-v0.0.1-alpha.0...cli-core-v0.0.2-alpha.0) (2025-09-11)
+
+
+### Bug Fixes
+
+* **deps:** update oclif-tooling ([#116](https://github.com/sanity-io/cli/issues/116)) ([26a92ee](https://github.com/sanity-io/cli/commit/26a92eeeccbf6b92ab91fa08fedd09f2823cd8a3))
+
 ## [0.0.1-alpha.0](https://github.com/sanity-io/cli/compare/cli-core-v0.0.0-alpha.0...cli-core-v0.0.1-alpha.0) (2025-09-11)
 
 
