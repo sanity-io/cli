@@ -212,7 +212,12 @@ describe('#preview', () => {
       expect(error?.oclif?.exit).toBe(1)
     } finally {
       // Clean up the server
-      server.close()
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => {
+          if (err) reject(err)
+          else resolve()
+        })
+      })
     }
   })
 
@@ -236,7 +241,7 @@ describe('#preview', () => {
         },
         vite: {
           preview: {
-            port: 1335,
+            port: 4339,
           },
         },
       })
@@ -247,7 +252,7 @@ describe('#preview', () => {
       config: {root: cwd},
     })
 
-    expect(stdout).toContain(`ms and running at http://localhost:1335/ (production preview mode)`)
+    expect(stdout).toContain(`ms and running at http://localhost:4339/ (production preview mode)`)
 
     await writeFile(join(cwd, 'sanity.cli.ts'), existingSanityCli)
   })

@@ -1,65 +1,47 @@
-import {isInteractive, type Output} from '@sanity/cli-core'
-import {execa} from 'execa'
+import {type CliConfig, type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 // Imported mocks
 import {determineIsApp} from '../../../util/determineIsApp'
-import {installNewPackages} from '../../../util/packageManager/installPackages'
-import {getPackageManagerChoice} from '../../../util/packageManager/packageManagerChoice'
 import {readModuleVersion} from '../../../util/readModuleVersion'
 import {readPackageManifest} from '../../../util/readPackageManifest'
 import {checkRequiredDependencies} from '../checkRequiredDependencies'
 
 // Mocks
-vi.mock('execa')
 vi.mock('../../../util/determineIsApp')
 vi.mock('../../../util/readModuleVersion')
 vi.mock('../../../util/readPackageManifest')
-vi.mock('../../../util/packageManager/installPackages')
-vi.mock('../../../util/packageManager/packageManagerChoice')
-vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    isInteractive: vi.fn().mockReturnValue(true),
-  }
-})
 
-const mockedExeca = vi.mocked(execa)
 const mockedDetermineIsApp = vi.mocked(determineIsApp)
 const mockedReadModuleVersion = vi.mocked(readModuleVersion)
 const mockedReadPackageManifest = vi.mocked(readPackageManifest)
-const mockedInstallNewPackages = vi.mocked(installNewPackages)
-const mockedGetPackageManagerChoice = vi.mocked(getPackageManagerChoice)
-const mockedIsInteractive = vi.mocked(isInteractive)
 
 describe('#checkRequiredDependencies', () => {
   const workDir = '/tmp/test-studio'
   const mockOutput = {
     error: vi.fn(),
     log: vi.fn(),
+    print: vi.fn(),
     warn: vi.fn(),
-  }
-  const mockCliConfig = {} as never
+  } as unknown as Output
+  const mockCliConfig: Partial<CliConfig> = {}
 
   beforeEach(() => {
     vi.resetAllMocks()
-    mockedIsInteractive.mockReturnValue(true)
-    process.argv = ['/path/to/node', '/path/to/sanity', 'dev']
   })
 
   test('should return early if the project is an app', async () => {
     mockedDetermineIsApp.mockReturnValue(true)
     const result = await checkRequiredDependencies({
-      cliConfig: mockCliConfig,
-      output: mockOutput as unknown as Output,
+      cliConfig: mockCliConfig as CliConfig,
+      output: mockOutput,
       workDir,
     })
-    expect(result).toEqual({didInstall: false, installedSanityVersion: ''})
+    expect(result).toEqual({installedSanityVersion: ''})
     expect(mockedReadPackageManifest).not.toHaveBeenCalled()
   })
 
-  test('should throw an error if sanity is not installed', async () => {
+  test('should call output.error and return empty string if sanity is not installed', async () => {
     mockedDetermineIsApp.mockReturnValue(false)
     mockedReadPackageManifest.mockResolvedValue({
       dependencies: {},
@@ -74,57 +56,47 @@ describe('#checkRequiredDependencies', () => {
       return '6.1.15'
     })
 
-    await expect(
-      checkRequiredDependencies({
-        cliConfig: mockCliConfig,
-        output: mockOutput as unknown as Output,
-        workDir,
-      }),
-    ).rejects.toThrow('Failed to read the installed sanity version.')
-  })
-
-  describe('when styled-components is not declared', () => {
-    beforeEach(() => {
-      mockedDetermineIsApp.mockReturnValue(false)
-      mockedReadPackageManifest.mockResolvedValue({
-        dependencies: {},
-        devDependencies: {},
-        name: 'test-studio',
-        version: '1.0.0',
-      })
-      mockedReadModuleVersion.mockImplementation(async (dir: string, module: string) => {
-        if (module === 'sanity') {
-          return '3.0.0'
-        }
-        return null // styled-components not installed
-      })
-      mockedGetPackageManagerChoice.mockResolvedValue({chosen: 'pnpm', mostOptimal: 'pnpm'})
+    const result = await checkRequiredDependencies({
+      cliConfig: mockCliConfig as CliConfig,
+      output: mockOutput,
+      workDir,
     })
 
-    test('should install styled-components and re-run command', async () => {
-      const result = await checkRequiredDependencies({
-        cliConfig: mockCliConfig,
-        output: mockOutput as unknown as Output,
-        workDir,
-      })
-
-      expect(mockedGetPackageManagerChoice).toHaveBeenCalledWith(workDir, {interactive: true})
-      expect(mockedInstallNewPackages).toHaveBeenCalledWith(
-        {
-          packageManager: 'pnpm',
-          packages: ['styled-components@^6.1.15'],
-        },
-        {output: mockOutput as unknown as Output, workDir},
-      )
-      expect(mockedExeca).toHaveBeenCalledWith('/path/to/node', ['/path/to/sanity', 'dev'], {
-        cwd: workDir,
-        stdio: 'inherit',
-      })
-      expect(result).toEqual({didInstall: true, installedSanityVersion: '3.0.0'})
+    expect(mockOutput.error).toHaveBeenCalledWith('Failed to read the installed sanity version.', {
+      exit: 1,
     })
+    expect(result).toEqual({installedSanityVersion: ''})
   })
 
-  test('should throw an error for invalid styled-components version range', async () => {
+  test('should call output.error and return sanity version if styled-components is not declared', async () => {
+    mockedDetermineIsApp.mockReturnValue(false)
+    mockedReadPackageManifest.mockResolvedValue({
+      dependencies: {},
+      devDependencies: {},
+      name: 'test-studio',
+      version: '1.0.0',
+    })
+    mockedReadModuleVersion.mockImplementation(async (dir: string, module: string) => {
+      if (module === 'sanity') {
+        return '3.0.0'
+      }
+      return null // styled-components not installed
+    })
+
+    const result = await checkRequiredDependencies({
+      cliConfig: mockCliConfig as CliConfig,
+      output: mockOutput,
+      workDir,
+    })
+
+    expect(mockOutput.error).toHaveBeenCalledWith(
+      expect.stringContaining('Declared dependency `styled-components` is not installed'),
+      {exit: 1},
+    )
+    expect(result).toEqual({installedSanityVersion: '3.0.0'})
+  })
+
+  test('should call output.error and return sanity version for invalid styled-components version range', async () => {
     mockedDetermineIsApp.mockReturnValue(false)
     mockedReadPackageManifest.mockResolvedValue({
       dependencies: {'styled-components': 'some-invalid-range'},
@@ -134,15 +106,19 @@ describe('#checkRequiredDependencies', () => {
     })
     mockedReadModuleVersion.mockResolvedValue('3.0.0') // for sanity
 
-    await expect(
-      checkRequiredDependencies({
-        cliConfig: mockCliConfig,
-        output: mockOutput as unknown as Output,
-        workDir,
-      }),
-    ).rejects.toThrow(
-      /Declared dependency `styled-components` has an invalid version range: `some-invalid-range`/,
+    const result = await checkRequiredDependencies({
+      cliConfig: mockCliConfig as CliConfig,
+      output: mockOutput,
+      workDir,
+    })
+
+    expect(mockOutput.error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Declared dependency `styled-components` has an invalid version range: `some-invalid-range`',
+      ),
+      {exit: 1},
     )
+    expect(result).toEqual({installedSanityVersion: '3.0.0'})
   })
 
   test('should warn on incompatible declared styled-components version', async () => {
@@ -158,8 +134,8 @@ describe('#checkRequiredDependencies', () => {
     })
 
     await checkRequiredDependencies({
-      cliConfig: mockCliConfig,
-      output: mockOutput as unknown as Output,
+      cliConfig: mockCliConfig as CliConfig,
+      output: mockOutput,
       workDir,
     })
 
@@ -181,15 +157,15 @@ describe('#checkRequiredDependencies', () => {
     mockedReadModuleVersion.mockResolvedValue('6.1.15')
 
     await checkRequiredDependencies({
-      cliConfig: mockCliConfig,
-      output: mockOutput as unknown as Output,
+      cliConfig: mockCliConfig as CliConfig,
+      output: mockOutput,
       workDir,
     })
 
     expect(mockOutput.warn).not.toHaveBeenCalled()
   })
 
-  test('should throw an error if styled-components is declared but not installed', async () => {
+  test('should call output.error and return sanity version if styled-components is declared but not installed', async () => {
     mockedDetermineIsApp.mockReturnValue(false)
     mockedReadPackageManifest.mockResolvedValue({
       dependencies: {'styled-components': '^6.1.15'},
@@ -204,13 +180,17 @@ describe('#checkRequiredDependencies', () => {
       return '3.0.0' // sanity version
     })
 
-    await expect(
-      checkRequiredDependencies({
-        cliConfig: mockCliConfig,
-        output: mockOutput as unknown as Output,
-        workDir,
-      }),
-    ).rejects.toThrow(/Declared dependency `styled-components` is not installed/)
+    const result = await checkRequiredDependencies({
+      cliConfig: mockCliConfig as CliConfig,
+      output: mockOutput,
+      workDir,
+    })
+
+    expect(mockOutput.error).toHaveBeenCalledWith(
+      expect.stringContaining('Declared dependency `styled-components` is not installed'),
+      {exit: 1},
+    )
+    expect(result).toEqual({installedSanityVersion: '3.0.0'})
   })
 
   test('should warn on incompatible installed styled-components version', async () => {
@@ -229,8 +209,8 @@ describe('#checkRequiredDependencies', () => {
     })
 
     await checkRequiredDependencies({
-      cliConfig: mockCliConfig,
-      output: mockOutput as unknown as Output,
+      cliConfig: mockCliConfig as CliConfig,
+      output: mockOutput,
       workDir,
     })
 
@@ -257,41 +237,12 @@ describe('#checkRequiredDependencies', () => {
     })
 
     const result = await checkRequiredDependencies({
-      cliConfig: mockCliConfig,
-      output: mockOutput as unknown as Output,
+      cliConfig: mockCliConfig as CliConfig,
+      output: mockOutput,
       workDir,
     })
 
-    expect(result).toEqual({didInstall: false, installedSanityVersion: '3.2.0'})
+    expect(result).toEqual({installedSanityVersion: '3.2.0'})
     expect(mockOutput.warn).not.toHaveBeenCalled()
-    expect(mockedInstallNewPackages).not.toHaveBeenCalled()
-    expect(mockedExeca).not.toHaveBeenCalled()
-  })
-
-  test('should warn if a different package manager is chosen than the optimal one', async () => {
-    mockedDetermineIsApp.mockReturnValue(false)
-    mockedReadPackageManifest.mockResolvedValue({
-      dependencies: {},
-      devDependencies: {},
-      name: 'test-studio',
-      version: '1.0.0',
-    })
-    mockedReadModuleVersion.mockImplementation(async (dir: string, module: string) => {
-      if (module === 'sanity') {
-        return '3.0.0'
-      }
-      return null
-    })
-    mockedGetPackageManagerChoice.mockResolvedValue({chosen: 'npm', mostOptimal: 'pnpm'})
-
-    await checkRequiredDependencies({
-      cliConfig: mockCliConfig,
-      output: mockOutput as unknown as Output,
-      workDir,
-    })
-
-    expect(mockOutput.warn).toHaveBeenCalledWith(
-      'WARN: This project appears to be installed with or using pnpm - using a different package manager _may_ result in errors.',
-    )
   })
 })

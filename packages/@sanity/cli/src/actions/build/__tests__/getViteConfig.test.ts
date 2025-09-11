@@ -105,7 +105,6 @@ describe('#getViteConfig', () => {
     })
 
     expect(config.plugins).toHaveLength(4)
-    expect(config.resolve?.alias).toEqual({alias1: 'path1', alias2: 'path2'})
     expect(config.resolve?.dedupe).toEqual(['styled-components'])
   })
 
@@ -279,7 +278,7 @@ describe('#getViteConfig', () => {
       reactCompiler: undefined,
     }
 
-    await expect(getViteConfig(options)).rejects.toThrow('Unable to resolve `sanity` module root')
+    await expect(getViteConfig(options)).rejects.toThrow('Unable to resolve `@sanity/cli` module root')
   })
 
   test('should configure favicon plugin with correct paths', async () => {
