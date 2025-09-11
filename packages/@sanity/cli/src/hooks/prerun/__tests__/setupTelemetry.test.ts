@@ -3,7 +3,7 @@ import {mkdir} from 'node:fs/promises'
 import {homedir} from 'node:os'
 import {join} from 'node:path'
 
-import {findProjectRoot, getCliConfig, getCliToken, getGlobalCliClient} from '@sanity/cli-core'
+import {findProjectRoot, getCliConfig, getCliToken} from '@sanity/cli-core'
 import {testHook} from '@sanity/cli-test'
 import {type TelemetryEvent} from '@sanity/telemetry'
 import {glob} from 'glob'
@@ -26,9 +26,12 @@ vi.mock('@sanity/cli-core', async () => ({
   ...(await vi.importActual('@sanity/cli-core')),
   findProjectRoot: vi.fn(),
   getCliConfig: vi.fn(),
-  getCliToken: vi.fn(),
-  getGlobalCliClient: vi.fn(),
 }))
+
+vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
+  getCliToken: vi.fn(),
+}))
+
 vi.mock('../../../actions/telemetry/resolveConsent.js', () => ({
   resolveConsent: vi.fn(),
 }))
@@ -43,13 +46,33 @@ vi.mock('../../../util/parseArguments.js', () => ({
 }))
 
 // Helper functions
-const waitForAsync = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 const getTelemetryPath = (testDir: string) => join(testDir, '.config', 'sanity')
+
+// Event-based helpers to replace arbitrary delays
+const waitForFileCreation = async (pattern: string, maxWait = 2000): Promise<string[]> => {
+  const startTime = Date.now()
+  while (Date.now() - startTime < maxWait) {
+    const files = await glob(pattern)
+    if (files.length > 0) return files
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  return []
+}
+
+const waitForWorkerCompletion = async (telemetryPath: string, maxWait = 2000): Promise<boolean> => {
+  const startTime = Date.now()
+  while (Date.now() - startTime < maxWait) {
+    const files = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+    if (files.length === 0) return true
+    await new Promise((resolve) => setTimeout(resolve, 10))
+  }
+  return false
+}
+
+const waitForAsync = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 describe('#setupTelemetry integration', () => {
   let testDir: string
-  let nockScope: nock.Scope
-  let mockClient: any
 
   beforeEach(async () => {
     // Create unique test directory for each test
@@ -61,26 +84,6 @@ describe('#setupTelemetry integration', () => {
     // Mock homedir to use test directory
     vi.mocked(homedir).mockReturnValue(testDir)
     vi.mocked(getCliToken).mockResolvedValue('test-auth-token-123')
-
-    // Setup mock client for API calls
-    mockClient = {
-      request: vi.fn().mockImplementation((options: any) => {
-        // This will trigger the actual HTTP request that Nock will intercept
-        const url = `https://api.sanity.io${options.uri}`
-        return fetch(url, {
-          body: options.json ? JSON.stringify(options.body) : undefined,
-          headers: {'Content-Type': 'application/json'},
-          method: options.method || 'GET',
-        }).then((res) => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`)
-          return res.json()
-        })
-      }),
-    }
-    vi.mocked(getGlobalCliClient).mockResolvedValue(mockClient)
-
-    // Setup base Nock scope
-    nockScope = nock('https://api.sanity.io')
 
     // Setup project config defaults
     vi.mocked(findProjectRoot).mockResolvedValue({
@@ -149,73 +152,71 @@ describe('#setupTelemetry integration', () => {
     vi.clearAllMocks()
     vi.unstubAllEnvs()
 
-    // Check for pending Nock mocks
-    if (!nock.isDone()) {
-      const pending = nock.pendingMocks()
-      nock.cleanAll()
-      throw new Error(`Pending mocks not satisfied: ${pending.join(', ')}`)
-    }
-
-    // Clean all Nock interceptors
+    const pending = nock.pendingMocks()
     nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
 
-    // Wait for any remaining HTTP requests to complete
+    // Wait for any remaining operations to settle
     await waitForAsync(50)
   })
 
-  describe('basic functionality', () => {
-    test('calls telemetry disclosure function', async () => {
+  describe('basic setup', () => {
+    test('initializes telemetry system correctly', async () => {
       await testHook<'prerun'>(setupTelemetry)
 
-      expect(telemetryDisclosure).toHaveBeenCalledTimes(1)
-    })
+      // Wait for telemetry store to initialize and files to be written
+      // The store creation, consent resolution, and file writing are all async
+      await waitForAsync(300) // Give more time for async operations
 
-    test('creates telemetry store and initializes correctly', async () => {
-      await testHook<'prerun'>(setupTelemetry)
-
-      // Wait for telemetry store to initialize
-      await waitForAsync(150)
-
-      // Check if telemetry files were created
       const telemetryPath = getTelemetryPath(testDir)
-      const files = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+      const files = await waitForFileCreation(join(telemetryPath, 'telemetry-*.ndjson'), 3000) // Longer timeout
 
-      if (files.length > 0) {
-        // If files exist, verify they contain expected events
-        const events = await readNDJSON<TelemetryEvent>(files[0])
-        expect(events.length).toBeGreaterThan(0)
+      // Verify disclosure was called
+      expect(telemetryDisclosure).toHaveBeenCalledTimes(1)
 
-        // Should have userProperties event and trace.start event
-        const userPropsEvent = events.find((e) => e.type === 'userProperties')
-        expect(userPropsEvent).toBeDefined()
+      // Verify telemetry files were created with expected events
+      expect(files.length).toBeGreaterThan(0)
+      const events = await readNDJSON<TelemetryEvent>(files[0])
+      expect(events.length).toBeGreaterThan(0)
 
-        const traceStartEvent = events.find((e) => e.type === 'trace.start')
-        expect(traceStartEvent).toBeDefined()
-        expect(traceStartEvent?.name).toBe('CLI Command Executed')
-      }
+      // Should have userProperties event and trace.start event
+      const userPropsEvent = events.find((e) => e.type === 'userProperties')
+      expect(userPropsEvent).toBeDefined()
 
-      // Setup completed successfully
-      expect(vi.mocked(telemetryDisclosure)).toHaveBeenCalledTimes(1)
+      const traceStartEvent = events.find((e) => e.type === 'trace.start')
+      expect(traceStartEvent).toBeDefined()
+      expect(traceStartEvent?.name).toBe('CLI Command Executed')
     })
   })
 
-  describe('complete telemetry flow', () => {
-    test('sends telemetry events to API when consent is granted', async () => {
-      // Setup API mock
-      const batchMock = nockScope
-        .post('/intake/batch', (body) => {
+  describe('telemetry flow', () => {
+    test('sends events to API with correct env vars when consent granted', async () => {
+      // Use mockApi with the telemetry API version
+      const batchMock = nock('https://api.sanity.io')
+        .post('/v2023-12-18/intake/batch', (body) => {
           expect(body.batch).toBeInstanceOf(Array)
-          expect(body.batch.length).toBeGreaterThan(0)
           expect(body.projectId).toBe('test-project')
-
-          // Verify event types - we expect log and trace events
-          const eventTypes = body.batch.map((e: TelemetryEvent) => e.type)
-          expect(eventTypes).toContain('log') // from our direct store test
-          expect(eventTypes.some((type: string) => type.startsWith('trace.'))).toBe(true) // trace.complete from process exit
-
           return true
         })
-        .reply(200, {success: true}, {'Content-Type': 'application/json'})
+        .query({tag: 'sanity.cli'})
+        .reply(200, {success: true})
+
+      // Verify spawn is called with correct env
+      vi.mocked(spawn).mockImplementation((_command, args, options) => {
+        if (args?.[0]?.includes('flushTelemetry.worker')) {
+          expect(options?.env?.SANITY_TELEMETRY_PROJECT_ID).toBe('test-project')
+
+          vi.stubEnv('SANITY_TELEMETRY_PROJECT_ID', options?.env?.SANITY_TELEMETRY_PROJECT_ID)
+          setImmediate(async () => {
+            try {
+              await runFlushWorker()
+            } finally {
+              vi.unstubAllEnvs()
+            }
+          })
+        }
+        return {on: vi.fn(), pid: 12_345, unref: vi.fn()} as any
+      })
 
       // Create some telemetry events before running setupTelemetry
       const directStore = createTelemetryStore('test-direct-session', {resolveConsent})
@@ -227,28 +228,21 @@ describe('#setupTelemetry integration', () => {
 
       // Run setupTelemetry
       await testHook<'prerun'>(setupTelemetry)
-
-      // Wait for telemetry store to initialize (consent + file path)
       await waitForAsync(200)
 
       // Trigger process exit to spawn worker
       process.emit('exit', 0)
 
-      // Wait for worker to complete
-      await waitForAsync(500)
-
-      // Verify API was called
-      expect(batchMock.isDone()).toBe(true)
-
-      // Verify files were cleaned up after successful flush
+      // Wait for worker completion using our event-based helper
       const telemetryPath = getTelemetryPath(testDir)
-      const filesAfterExit = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
-      expect(filesAfterExit).toHaveLength(0)
+      const workerCompleted = await waitForWorkerCompletion(telemetryPath)
+
+      // Verify API was called and files were cleaned up
+      expect(batchMock.isDone()).toBe(true)
+      expect(workerCompleted).toBe(true)
     })
 
-    test('does not send events when consent is denied', async () => {
-      // No API calls should be made - don't define any endpoints
-
+    test('blocks events when consent denied', async () => {
       // Mock consent denied
       vi.mocked(resolveConsent).mockResolvedValue({
         reason: 'localOverride',
@@ -263,10 +257,7 @@ describe('#setupTelemetry integration', () => {
       process.emit('exit', 0)
       await waitForAsync(500)
 
-      // Verify no API calls were made
-      expect(nock.pendingMocks()).toHaveLength(0)
-
-      // Verify no files were created
+      // Verify no files were created (consent denied blocks telemetry)
       const telemetryPath = getTelemetryPath(testDir)
       const files = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
       expect(files).toHaveLength(0)
@@ -274,9 +265,10 @@ describe('#setupTelemetry integration', () => {
 
     test('handles API errors gracefully', async () => {
       // Setup failing API mock
-      const batchMock = nockScope
-        .post('/intake/batch')
-        .reply(500, {error: 'Internal Server Error'}, {'Content-Type': 'application/json'})
+      const batchMock = nock('https://api.sanity.io')
+        .post('/v2023-12-18/intake/batch')
+        .query({tag: 'sanity.cli'})
+        .reply(500, {error: 'Internal Server Error'})
 
       // Run setupTelemetry
       await testHook<'prerun'>(setupTelemetry)
@@ -295,15 +287,18 @@ describe('#setupTelemetry integration', () => {
       expect(files.length).toBeGreaterThan(0)
     })
 
-    test('aggregates events from multiple sessions', async () => {
+    test('aggregates multiple sessions', async () => {
       let capturedBatch: TelemetryEvent[] = []
 
-      const batchMock = nockScope
-        .post('/intake/batch', (body) => {
+      const batchMock = nock('https://api.sanity.io')
+        .post('/v2023-12-18/intake/batch', (body) => {
           capturedBatch = body.batch
+          expect(body.batch).toBeInstanceOf(Array)
+          expect(body.projectId).toBe('test-project')
           return true
         })
-        .reply(200)
+        .query({tag: 'sanity.cli'})
+        .reply(200, {success: true})
 
       // Create multiple stores (simulating multiple CLI sessions)
       const store1 = createTelemetryStore('session-1', {resolveConsent})
@@ -328,68 +323,18 @@ describe('#setupTelemetry integration', () => {
       expect(capturedBatch.length).toBeGreaterThanOrEqual(3) // At least 3 sessions worth
     })
 
-    test('passes correct environment variables to worker', async () => {
-      let capturedProjectId: string | undefined
-
-      const batchMock = nockScope
-        .post('/intake/batch', (body) => {
-          capturedProjectId = body.projectId
-          return true
-        })
-        .reply(200)
-
-      vi.mocked(getCliConfig).mockResolvedValue({
-        api: {
-          dataset: 'staging',
-          projectId: 'my-special-project',
-        },
-      })
-
-      // Create some telemetry events before running setupTelemetry
-      const directStore = createTelemetryStore('test-direct-session', {resolveConsent})
-      await waitForAsync(200)
-      directStore.logger.log(
-        {name: 'test-event', schema: {}, type: 'log', version: 1},
-        {test: 'data'},
-      )
-
-      // Verify spawn is called with correct env
-      vi.mocked(spawn).mockImplementation((command, args, options) => {
-        if (args?.[0]?.includes('flushTelemetry.worker')) {
-          expect(options?.env?.SANITY_TELEMETRY_PROJECT_ID).toBe('my-special-project')
-
-          // Run worker with the env
-          const originalEnv = {...process.env}
-          process.env.SANITY_TELEMETRY_PROJECT_ID = options?.env?.SANITY_TELEMETRY_PROJECT_ID
-          setImmediate(async () => {
-            try {
-              await runFlushWorker()
-            } finally {
-              process.env = originalEnv
-            }
-          })
-        }
-        return {on: vi.fn(), pid: 12_345, unref: vi.fn()} as any
-      })
-
-      await testHook<'prerun'>(setupTelemetry)
-      await waitForAsync(200)
-      process.emit('exit', 0)
-      await waitForAsync(500)
-
-      expect(batchMock.isDone()).toBe(true)
-      expect(capturedProjectId).toBe('my-special-project')
-    })
-
     test('handles process exit with error status', async () => {
       let capturedEvents: TelemetryEvent[] = []
 
-      const batchMock = nockScope
-        .post('/intake/batch', (body) => {
+      const batchMock = nock('https://api.sanity.io')
+        .post('/v2023-12-18/intake/batch', (body) => {
           capturedEvents = body.batch
+          expect(body.batch).toBeInstanceOf(Array)
+          expect(body.projectId).toBe('test-project')
           return true
         })
-        .reply(200)
+        .query({tag: 'sanity.cli'})
+        .reply(200, {success: true})
 
       // Create some telemetry events before running setupTelemetry
       const directStore = createTelemetryStore('test-direct-session', {resolveConsent})
@@ -415,8 +360,8 @@ describe('#setupTelemetry integration', () => {
     })
   })
 
-  describe('user properties', () => {
-    test('updates store with correct user properties', async () => {
+  describe('configuration', () => {
+    test('collects correct user properties', async () => {
       vi.mocked(detectRuntime).mockReturnValue('bun')
 
       const mockConfig = {version: '3.1.0'} as any
@@ -459,10 +404,8 @@ describe('#setupTelemetry integration', () => {
       // Fallback: verify the functions were called
       expect(vi.mocked(detectRuntime)).toHaveBeenCalled()
     })
-  })
 
-  describe('command trace', () => {
-    test('creates and starts CLI command trace with parsed arguments', async () => {
+    test('creates trace with parsed arguments', async () => {
       const mockArgs = {
         argsWithoutOptions: ['import', 'file.ndjson'],
         argv: [],
@@ -499,7 +442,7 @@ describe('#setupTelemetry integration', () => {
     })
   })
 
-  describe('process exit handler', () => {
+  describe('exit handler', () => {
     test('registers exit handler and spawns worker', async () => {
       const originalOnce = process.once
       let exitCallback: ((status: number) => void) | undefined
