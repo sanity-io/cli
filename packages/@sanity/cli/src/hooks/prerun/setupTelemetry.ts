@@ -64,9 +64,7 @@ export const setupTelemetry: Hook.Prerun = async function ({config}) {
       cliCommandTrace.error(new Error('Process exited with status ' + status))
     }
 
-    // Spawn detached worker to flush all telemetry files
     const workerPath = fileURLToPath(new URL('flushTelemetry.worker.js', import.meta.url))
-
     telemetryDebug(`Spawning "${process.execPath} ${workerPath}"`)
 
     // Spawn detached worker to flush all telemetry files

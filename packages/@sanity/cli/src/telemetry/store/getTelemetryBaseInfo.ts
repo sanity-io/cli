@@ -40,6 +40,7 @@ export async function getTelemetryBaseInfo(): Promise<TelemetryBaseInfo> {
 
   const hashedToken = createHash('sha256').update(token).digest('hex').slice(0, 8)
   const environment = isStaging() ? 'staging' : 'production'
+  // TODO: Change to use temp directory
   const directory = join(homedir(), '.config', 'sanity')
   const basePattern = `telemetry-${hashedToken}-${environment}`
 
