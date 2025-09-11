@@ -42,7 +42,7 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
-    "@oclif/core": "^4.3.0",
+    "@oclif/core": "^4.5.3",
     "@sanity/client": "^7.9.0",
     "chalk": "^5.4.1",
     "configstore": "^7.0.0",
