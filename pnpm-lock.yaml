@@ -286,8 +286,11 @@ importers:
       '@sanity/id-utils':
         specifier: ^1.0.0
         version: 1.0.0
+      '@sanity/import':
+        specifier: ^3.38.3
+        version: 3.38.3(@types/react@18.3.23)
       '@sanity/runtime-cli':
-        specifier: ^10.9.0
+        specifier: ^10.4.1
         version: 10.9.0(@types/node@20.19.23)(debug@4.4.3)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.1)
       '@sanity/telemetry':
         specifier: ^0.8.1
