@@ -1,64 +1,82 @@
-import {type CliCommandDefinition} from '@sanity/cli'
-import {hideBin} from 'yargs/helpers'
-import yargs from 'yargs/yargs'
+import {input} from '@inquirer/prompts'
+import {Args, Flags} from '@oclif/core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 
-import {validateDatasetName} from '../../actions/dataset/validateDatasetName'
+import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
+import {deleteDataset} from '../../services/datasets.js'
+import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
-const helpText = `
-Options
-  --force Do not prompt for delete confirmation - forcefully delete
+const deleteDatasetDebug = subdebug('dataset:delete')
 
-Examples
-  sanity dataset delete
-  sanity dataset delete my-dataset
-  sanity dataset delete my-dataset --force
-`
+export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetCommand> {
+  static override args = {
+    datasetName: Args.string({
+      description: 'Dataset name to delete',
+      required: true,
+    }),
+  }
 
-function parseCliFlags(args: {argv?: string[]}) {
-  return yargs(hideBin(args.argv || process.argv).slice(2)).option('force', {type: 'boolean'}).argv
-}
+  static override description = 'Delete a dataset within your project'
 
-interface DeleteDatasetFlags {
-  force?: boolean
-}
+  static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %> my-dataset',
+      description: 'Delete a specific dataset',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> my-dataset --force',
+      description: 'Delete a specific dataset without confirmation',
+    },
+  ]
 
-const deleteDatasetCommand: CliCommandDefinition<DeleteDatasetFlags> = {
-  name: 'delete',
-  group: 'dataset',
-  helpText,
-  signature: '[datasetName]',
-  description: 'Delete a dataset within your project',
-  action: async (args, context) => {
-    const {apiClient, prompt, output} = context
-    const {force} = await parseCliFlags(args)
-    const [ds] = args.argsWithoutOptions
-    if (!ds) {
-      throw new Error('Dataset name must be provided')
+  static override flags = {
+    force: Flags.boolean({
+      description: 'Do not prompt for delete confirmation - forcefully delete',
+      required: false,
+    }),
+  }
+
+  public async run(): Promise<void> {
+    const {args, flags} = await this.parse(DeleteDatasetCommand)
+    const {force} = flags
+
+    // Ensure we have project context
+    const projectId = await this.getProjectId()
+    if (!projectId) {
+      this.error(NO_PROJECT_ID, {exit: 1})
     }
 
-    const dataset = `${ds}`
-    const dsError = validateDatasetName(dataset)
+    // Get the dataset name to delete (now required)
+    const datasetName = args.datasetName
+
+    // Validate dataset name
+    const dsError = validateDatasetName(datasetName)
     if (dsError) {
-      throw dsError
+      this.error(dsError, {exit: 1})
     }
 
+    // Confirmation logic
     if (force) {
-      output.warn(`'--force' used: skipping confirmation, deleting dataset "${dataset}"`)
+      this.warn(`'--force' used: skipping confirmation, deleting dataset "${datasetName}"`)
     } else {
-      await prompt.single({
-        type: 'input',
+      await input({
         message:
           'Are you ABSOLUTELY sure you want to delete this dataset?\n  Type the name of the dataset to confirm delete:',
-        filter: (input) => `${input}`.trim(),
         validate: (input) => {
-          return input === dataset || 'Incorrect dataset name. Ctrl + C to cancel delete.'
+          const trimmed = input.trim()
+          return trimmed === datasetName || 'Incorrect dataset name. Ctrl + C to cancel delete.'
         },
       })
     }
 
-    await apiClient().datasets.delete(dataset)
-    output.print('Dataset deleted successfully')
-  },
+    // Delete the dataset
+    try {
+      await deleteDataset({datasetName, projectId})
+      this.log('Dataset deleted successfully')
+    } catch (error) {
+      const err = error as Error
+      deleteDatasetDebug(`Error deleting dataset ${datasetName}`, err)
+      this.error(`Dataset deletion failed: ${err.message}`, {exit: 1})
+    }
+  }
 }
-
-export default deleteDatasetCommand

@@ -6,7 +6,7 @@ import chalk from 'chalk'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'
-import {listDatasets} from '../../actions/backup/listDatasets.js'
+import {listDatasets} from '../../services/datasets.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const disableBackupDebug = subdebug('backup:disable')
@@ -49,7 +49,7 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
     let datasets: DatasetsResponse
 
     try {
-      datasets = await listDatasets({projectId})
+      datasets = await listDatasets(projectId)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       disableBackupDebug(`Failed to list datasets: ${message}`, error)
