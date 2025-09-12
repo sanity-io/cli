@@ -59,7 +59,8 @@
       "component": "cli-core",
       "prerelease": true,
       "prerelease-type": "alpha",
-      "release-type": "node"
+      "release-type": "node",
+      "versioning": "prerelease"
     },
     "packages/@sanity/cli-test": {
       "bump-minor-pre-major": true,
@@ -67,7 +68,8 @@
       "component": "cli-test",
       "prerelease": true,
       "prerelease-type": "alpha",
-      "release-type": "node"
+      "release-type": "node",
+      "versioning": "prerelease"
     }
   },
   "plugins": [
@@ -76,6 +78,5 @@
       "updateAllPackages": false
     }
   ],
-  "prerelease": true,
   "release-type": "node"
 }
