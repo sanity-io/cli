@@ -135,7 +135,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
           dataset = defaultDataset
           this.log(`Using default dataset: ${dataset}`)
         } else {
-          dataset = await promptForDataset({allowCreation: false, datasets, projectId})
+          dataset = await promptForDataset({allowCreation: false, datasets})
         }
       }
     } catch (error) {
@@ -239,7 +239,23 @@ dataset: ${dataset.padEnd(46)}`,
 
     if (!dstStats) {
       const createPath = looksLikeFile ? path.dirname(dstPath) : dstPath
-      await fs.mkdir(createPath, {recursive: true})
+      try {
+        await fs.mkdir(createPath, {recursive: true})
+      } catch (error) {
+        const err = error as Error & {code?: string}
+        if (err.code === 'EACCES') {
+          this.error(
+            `Permission denied: Cannot create directory "${createPath}". Please check write permissions.`,
+            {
+              exit: 1,
+            },
+          )
+        } else {
+          this.error(`Failed to create directory "${createPath}": ${err.message}`, {
+            exit: 1,
+          })
+        }
+      }
     }
 
     const finalPath = looksLikeFile ? dstPath : path.join(dstPath, `${dataset}.tar.gz`)

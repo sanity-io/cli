@@ -233,7 +233,6 @@ describe('#dataset:export', () => {
 
       const {error} = await testCommand(DatasetExportCommand, ['staging', TEST_OUTPUTS.TAR_GZ])
 
-      expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain(`${ERROR_MESSAGES.DATASET_NOT_FOUND} "staging" not found`)
       expect(error?.oclif?.exit).toBe(1)
     })
@@ -258,7 +257,6 @@ describe('#dataset:export', () => {
 
       const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.EXISTING])
 
-      expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain(ERROR_MESSAGES.ALREADY_EXISTS)
       expect(error?.message).toContain(ERROR_MESSAGES.USE_OVERWRITE)
       expect(error?.oclif?.exit).toBe(1)
@@ -273,6 +271,35 @@ describe('#dataset:export', () => {
       await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.EXISTING, '--overwrite'])
 
       expect(mockExportDataset).toHaveBeenCalled()
+    })
+
+    test('handles directory creation errors gracefully', async () => {
+      createTestContext({datasets: [{name: 'production'}]})
+
+      // Mock mkdir to throw a permission error
+      const permissionError = new Error('Permission denied') as Error & {code: string}
+      permissionError.code = 'EACCES'
+      mockFs.mkdir.mockRejectedValueOnce(permissionError)
+
+      const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.SUBDIR])
+
+      expect(error?.message).toContain('Permission denied: Cannot create directory')
+      expect(error?.message).toContain('Please check write permissions')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('handles other directory creation errors gracefully', async () => {
+      createTestContext({datasets: [{name: 'production'}]})
+
+      // Mock mkdir to throw a generic error
+      const genericError = new Error('Disk full')
+      mockFs.mkdir.mockRejectedValueOnce(genericError)
+
+      const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.SUBDIR])
+
+      expect(error?.message).toContain('Failed to create directory')
+      expect(error?.message).toContain('Disk full')
+      expect(error?.oclif?.exit).toBe(1)
     })
   })
 
@@ -342,7 +369,6 @@ describe('#dataset:export', () => {
 
       const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.TAR_GZ])
 
-      expect(error).toBeInstanceOf(Error)
       expect(error?.message).toEqual(NO_PROJECT_ID)
       expect(error?.oclif?.exit).toBe(1)
     })
@@ -357,7 +383,6 @@ describe('#dataset:export', () => {
 
       const {error} = await testCommand(DatasetExportCommand, [])
 
-      expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('User cancelled')
       expect(error?.oclif?.exit).toBe(1)
     })
@@ -369,7 +394,6 @@ describe('#dataset:export', () => {
 
       const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.TAR_GZ])
 
-      expect(error).toBeInstanceOf(Error)
       expect(error?.message).toBe(`${ERROR_MESSAGES.EXPORT_FAILED}: Network timeout during export`)
       expect(error?.oclif?.exit).toBe(1)
     })
@@ -382,8 +406,25 @@ describe('#dataset:export', () => {
         TEST_OUTPUTS.TAR_GZ,
       ])
 
-      expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('lowercase')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('handles dataset listing errors gracefully', async () => {
+      // Setup basic context but override the datasets.list to throw an error
+      createTestContext({datasets: [{name: 'production'}]})
+
+      const listError = new Error('Network error: Unable to connect to API')
+      mockGetProjectCliClient.mockResolvedValue({
+        datasets: {
+          list: vi.fn().mockRejectedValue(listError),
+        },
+      } as never)
+
+      const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.TAR_GZ])
+
+      expect(error?.message).toContain('Failed to list datasets:')
+      expect(error?.message).toContain('Network error: Unable to connect to API')
       expect(error?.oclif?.exit).toBe(1)
     })
 
