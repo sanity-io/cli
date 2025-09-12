@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises'
 
-import {select} from '@inquirer/prompts'
+import {input, select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {type CliConfig, getCliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
@@ -15,6 +15,7 @@ vi.mock('@sanity/export', () => ({
 }))
 
 vi.mock('@inquirer/prompts', () => ({
+  input: vi.fn(),
   select: vi.fn(),
 }))
 
@@ -46,6 +47,7 @@ vi.mock('node:fs/promises', () => ({
 }))
 
 const mockExportDataset = vi.mocked(exportDataset)
+const mockInput = vi.mocked(input)
 const mockSelect = vi.mocked(select)
 const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
@@ -75,6 +77,7 @@ const createTestContext = (
     dataset?: string | null
     datasets?: Array<{name: string}>
     fileExists?: boolean
+    inputValue?: string
     isFile?: boolean
     projectId?: string
     selectValue?: string
@@ -117,6 +120,11 @@ const createTestContext = (
     mockSelect.mockResolvedValueOnce(context.selectValue)
   }
 
+  // Setup input if provided
+  if (context.inputValue) {
+    mockInput.mockResolvedValueOnce(context.inputValue)
+  }
+
   return context
 }
 
@@ -144,37 +152,41 @@ describe('#dataset:export', () => {
       },
       {
         args: ['production'],
-        description: 'with auto-generated filename',
-        expectedPathPattern: /production\.tar\.gz$/,
+        description: 'with auto-generated filename when no destination provided via prompt',
+        expectedPathPattern: /custom-output\.tar\.gz$/,
+        inputValue: 'custom-output.tar.gz',
         shouldShowDetails: false,
       },
-    ])('exports dataset $description', async ({args, expectedPathPattern, shouldShowDetails}) => {
-      createTestContext({datasets: [{name: 'production'}]})
+    ])(
+      'exports dataset $description',
+      async ({args, expectedPathPattern, inputValue, shouldShowDetails}) => {
+        createTestContext({datasets: [{name: 'production'}], inputValue})
 
-      const {stdout} = await testCommand(DatasetExportCommand, args)
+        const {stdout} = await testCommand(DatasetExportCommand, args)
 
-      expect(mockExportDataset).toHaveBeenCalledWith(
-        expect.objectContaining({
-          assetConcurrency: 8,
-          assets: true,
-          client: expect.any(Object),
-          compress: true,
-          dataset: 'production',
-          drafts: true,
-          mode: 'stream',
-          onProgress: expect.any(Function),
-          outputPath: expect.stringMatching(expectedPathPattern),
-          raw: false,
-          types: undefined,
-        }),
-      )
+        expect(mockExportDataset).toHaveBeenCalledWith(
+          expect.objectContaining({
+            assetConcurrency: 8,
+            assets: true,
+            client: expect.any(Object),
+            compress: true,
+            dataset: 'production',
+            drafts: true,
+            mode: 'stream',
+            onProgress: expect.any(Function),
+            outputPath: expect.stringMatching(expectedPathPattern),
+            raw: false,
+            types: undefined,
+          }),
+        )
 
-      if (shouldShowDetails) {
-        expect(stdout).toContain('projectId: test-project')
-        expect(stdout).toContain('dataset: production')
-        expect(stdout).toContain('Export finished')
-      }
-    })
+        if (shouldShowDetails) {
+          expect(stdout).toContain('projectId: test-project')
+          expect(stdout).toContain('dataset: production')
+          expect(stdout).toContain('Export finished')
+        }
+      },
+    )
 
     test('exports to stdout with dash', async () => {
       createTestContext({datasets: [{name: 'production'}]})
@@ -187,12 +199,35 @@ describe('#dataset:export', () => {
         }),
       )
     })
+
+    test('prompts for destination when not provided as argument', async () => {
+      createTestContext({
+        datasets: [{name: 'production'}],
+        inputValue: '/custom/path/export.tar.gz',
+      })
+
+      await testCommand(DatasetExportCommand, ['production'])
+
+      expect(mockInput).toHaveBeenCalledWith({
+        default: expect.stringMatching(/production\.tar\.gz$/),
+        message: 'Output path:',
+        transformer: expect.any(Function),
+        validate: expect.any(Function),
+      })
+
+      expect(mockExportDataset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          outputPath: '/custom/path/export.tar.gz',
+        }),
+      )
+    })
   })
 
   describe('dataset selection', () => {
     test('prompts for dataset selection when none specified', async () => {
       createTestContext({
         dataset: null, // No default dataset
+        inputValue: 'staging.tar.gz', // Mock destination input
         selectValue: 'staging',
       })
 
@@ -216,6 +251,7 @@ describe('#dataset:export', () => {
       createTestContext({
         dataset: 'staging',
         datasets: [{name: 'staging'}],
+        inputValue: 'staging.tar.gz', // Mock destination input
       })
 
       const {stdout} = await testCommand(DatasetExportCommand, [])

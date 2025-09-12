@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+import {input} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, spinner, subdebug} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
@@ -10,6 +11,7 @@ import prettyMs from 'pretty-ms'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDataset} from '../../prompts/promptForDataset.js'
+import {absolutify} from '../../util/absolutify.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const noop = () => null
@@ -171,8 +173,7 @@ dataset: ${dataset.padEnd(46)}`,
     // Determine output path
     let destinationPath = targetDestination
     if (!destinationPath) {
-      destinationPath = path.join(process.cwd(), `${dataset}.tar.gz`)
-      this.log(`No destination specified, using: ${destinationPath}`)
+      destinationPath = await this.promptForDestination({dataset})
     }
 
     const outputPath = await this.getOutputPath(destinationPath, dataset, flags)
@@ -181,6 +182,7 @@ dataset: ${dataset.padEnd(46)}`,
     }
 
     // Prepare export options
+    const {fail, onProgress, succeed} = this.createProgressHandler()
     const exportOptions = {
       assetConcurrency: flags['asset-concurrency'],
       assets: !flags['no-assets'],
@@ -189,7 +191,7 @@ dataset: ${dataset.padEnd(46)}`,
       dataset,
       drafts: !flags['no-drafts'],
       mode: flags.mode,
-      onProgress: this.createProgressHandler(),
+      onProgress,
       outputPath,
       raw: flags.raw,
       types: flags.types ? flags.types.split(',') : undefined,
@@ -198,8 +200,10 @@ dataset: ${dataset.padEnd(46)}`,
     const start = Date.now()
     try {
       await exportDataset(exportOptions)
+      succeed()
       this.log(`Export finished (${prettyMs(Date.now() - start)})`)
     } catch (error) {
+      fail()
       const err = error instanceof Error ? error : new Error(String(error))
       exportDebug('Export failed', err)
       this.error(`Export failed: ${err.message}`, {exit: 1})
@@ -210,12 +214,10 @@ dataset: ${dataset.padEnd(46)}`,
     let currentSpinner: ReturnType<typeof spinner> | null = null
     let currentStep = ''
 
-    return (progress: ProgressEvent) => {
+    const onProgress = (progress: ProgressEvent) => {
       if (progress.step !== currentStep) {
         // Complete previous step
-        if (currentSpinner) {
-          currentSpinner.succeed()
-        }
+        succeed()
 
         // Start new step
         currentStep = progress.step
@@ -225,6 +227,16 @@ dataset: ${dataset.padEnd(46)}`,
         currentSpinner.text = `${progress.step} (${progress.current}/${progress.total})`
       }
     }
+
+    const succeed = () => {
+      currentSpinner?.succeed()
+    }
+
+    const fail = () => {
+      currentSpinner?.fail()
+    }
+
+    return {fail, onProgress, succeed}
   }
 
   private async getOutputPath(
@@ -275,5 +287,24 @@ dataset: ${dataset.padEnd(46)}`,
     }
 
     return finalPath
+  }
+
+  private promptForDestination(options: {dataset: string; workDir?: string}): Promise<string> {
+    const {dataset, workDir = process.cwd()} = options
+
+    const defaultPath = path.join(workDir, `${dataset}.tar.gz`)
+
+    return input({
+      default: defaultPath,
+      message: 'Output path:',
+      transformer: (value: string) => absolutify(value.trim()),
+      validate: (value: string) => {
+        const trimmed = value.trim()
+        if (!trimmed) {
+          return 'Please provide a valid output path'
+        }
+        return true
+      },
+    })
   }
 }
