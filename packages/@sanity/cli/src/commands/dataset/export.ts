@@ -1,234 +1,256 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {type CliCommandDefinition, type CliPrompter} from '@sanity/cli'
+import {Args, Flags} from '@oclif/core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {type DatasetsResponse} from '@sanity/client'
 import exportDataset from '@sanity/export'
-import {absolutify} from '@sanity/util/fs'
+import boxen from 'boxen'
 import prettyMs from 'pretty-ms'
 
-import {chooseDatasetPrompt} from '../../actions/dataset/chooseDatasetPrompt'
-import {validateDatasetName} from '../../actions/dataset/validateDatasetName'
+import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
+import {promptForDataset} from '../../prompts/promptForDataset.js'
+import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const noop = () => null
-
-const helpText = `
-Options
-  --raw                     Extract only documents, without rewriting asset references
-  --no-assets               Export only non-asset documents and remove references to image assets
-  --no-drafts               Export only published versions of documents
-  --no-compress             Skips compressing tarball entries (still generates a gzip file)
-  --types                   Defines which document types to export
-  --overwrite               Overwrite any file with the same name
-  --asset-concurrency <num> Concurrent number of asset downloads
-  --mode <stream|cursor>    Uses a cursor when exporting, this might be more performant for larger datasets, but might not be as accurate if the dataset is being modified during export. Defaults to stream
-
-Examples
-  sanity dataset export moviedb localPath.tar.gz
-  sanity dataset export moviedb assetless.tar.gz --no-assets
-  sanity dataset export staging staging.tar.gz --raw
-  sanity dataset export staging staging.tar.gz --types products,shops
-`
-
-interface ExportFlags {
-  raw?: boolean
-  assets?: boolean
-  drafts?: boolean
-  compress?: boolean
-  overwrite?: boolean
-  types?: string
-  'asset-concurrency'?: string
-  mode?: string
-}
-
-interface ParsedExportFlags {
-  raw?: boolean
-  assets?: boolean
-  drafts?: boolean
-  compress?: boolean
-  overwrite?: boolean
-  types?: string[]
-  assetConcurrency?: number
-  mode?: string
-}
-
-function parseFlags(rawFlags: ExportFlags): ParsedExportFlags {
-  const flags: ParsedExportFlags = {}
-  if (rawFlags.types) {
-    flags.types = `${rawFlags.types}`.split(',')
-  }
-
-  if (rawFlags['asset-concurrency']) {
-    flags.assetConcurrency = parseInt(rawFlags['asset-concurrency'], 10)
-  }
-
-  if (typeof rawFlags.raw !== 'undefined') {
-    flags.raw = Boolean(rawFlags.raw)
-  }
-
-  if (typeof rawFlags.assets !== 'undefined') {
-    flags.assets = Boolean(rawFlags.assets)
-  }
-
-  if (typeof rawFlags.drafts !== 'undefined') {
-    flags.drafts = Boolean(rawFlags.drafts)
-  }
-
-  if (typeof rawFlags.compress !== 'undefined') {
-    flags.compress = Boolean(rawFlags.compress)
-  }
-
-  if (typeof rawFlags.overwrite !== 'undefined') {
-    flags.overwrite = Boolean(rawFlags.overwrite)
-  }
-
-  if (typeof rawFlags.mode !== 'undefined') {
-    flags.mode = rawFlags.mode
-  }
-
-  return flags
-}
+const exportDebug = subdebug('dataset:export')
 
 interface ProgressEvent {
-  step: string
-  update?: boolean
   current: number
+  step: string
   total: number
+
+  update?: boolean
 }
 
-const exportDatasetCommand: CliCommandDefinition<ExportFlags> = {
-  name: 'export',
-  group: 'dataset',
-  signature: '[NAME] [DESTINATION]',
-  description: `Export dataset to local filesystem as a gzipped tarball.
-      Assets failing with HTTP status codes 401, 403 and 404 upon download are ignored and excluded from export.`,
-  helpText,
-  action: async (args, context) => {
-    const {apiClient, output, chalk, workDir, prompt} = context
-    const client = apiClient()
-    const [targetDataset, targetDestination] = args.argsWithoutOptions
-    const flags = parseFlags(args.extOptions)
+export class DatasetExportCommand extends SanityCommand<typeof DatasetExportCommand> {
+  static override args = {
+    name: Args.string({
+      description: 'Name of the dataset to export',
+    }),
+    // Args are order dependent
+    // eslint-disable-next-line perfectionist/sort-objects
+    destination: Args.string({
+      description: 'Output destination file path',
+    }),
+  }
 
-    let dataset = targetDataset ? `${targetDataset}` : null
-    if (!dataset) {
-      dataset = await chooseDatasetPrompt(context, {message: 'Select dataset to export'})
-    }
+  static override description =
+    'Export dataset to local filesystem as a gzipped tarball. Assets failing with HTTP status codes 401, 403 and 404 upon download are ignored and excluded from export.'
 
-    const dsError = validateDatasetName(dataset)
-    if (dsError) {
-      throw dsError
-    }
+  static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %> moviedb localPath.tar.gz',
+      description: 'Export dataset "moviedb" to localPath.tar.gz',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> moviedb assetless.tar.gz --no-assets',
+      description: 'Export dataset without assets',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> staging staging.tar.gz --raw',
+      description: 'Export raw documents without asset reference rewriting',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> staging staging.tar.gz --types products,shops',
+      description: 'Export specific document types',
+    },
+  ]
 
-    // Verify existence of dataset before trying to export from it
-    const datasets = await client.datasets.list()
-    if (!datasets.find((set) => set.name === dataset)) {
-      throw new Error(`Dataset with name "${dataset}" not found`)
-    }
+  static override flags = {
+    'asset-concurrency': Flags.integer({
+      default: 8,
+      description: 'Concurrent number of asset downloads',
+    }),
+    mode: Flags.string({
+      default: 'stream',
+      description:
+        'Uses a cursor when exporting, this might be more performant for larger datasets, but might not be as accurate if the dataset is being modified during export',
+      options: ['stream', 'cursor'],
+    }),
+    'no-assets': Flags.boolean({
+      default: false,
+      description: 'Export only non-asset documents and remove references to image assets',
+    }),
+    'no-compress': Flags.boolean({
+      default: false,
+      description: 'Skips compressing tarball entries (still generates a gzip file)',
+    }),
+    'no-drafts': Flags.boolean({
+      default: false,
+      description: 'Export only published versions of documents',
+    }),
+    overwrite: Flags.boolean({
+      default: false,
+      description: 'Overwrite any file with the same name',
+    }),
+    raw: Flags.boolean({
+      default: false,
+      description: 'Extract only documents, without rewriting asset references',
+    }),
+    types: Flags.string({
+      description: 'Defines which document types to export (comma-separated)',
+    }),
+  }
 
-    // Print information about what projectId and dataset it is being exported from
-    const {projectId} = client.config()
+  public async run(): Promise<void> {
+    const {args, flags} = await this.parse(DatasetExportCommand)
+    const {destination: targetDestination, name: targetDataset} = args
 
-    output.print('╭───────────────────────────────────────────────╮')
-    output.print('│                                               │')
-    output.print('│ Exporting from:                               │')
-    output.print(`│ ${chalk.bold('projectId')}: ${chalk.cyan(projectId).padEnd(44)} │`)
-    output.print(`│ ${chalk.bold('dataset')}: ${chalk.cyan(dataset).padEnd(46)} │`)
-    output.print('│                                               │')
-    output.print('╰───────────────────────────────────────────────╯')
-    output.print('')
+    // Get project configuration
+    const cliConfig = await this.getCliConfig()
+    const projectId = await this.getProjectId()
 
-    let destinationPath = targetDestination
-    if (!destinationPath) {
-      destinationPath = await prompt.single({
-        type: 'input',
-        message: 'Output path:',
-        default: path.join(workDir, `${dataset}.tar.gz`),
-        filter: absolutify,
+    if (!projectId) {
+      this.error(NO_PROJECT_ID, {
+        exit: 1,
       })
     }
 
-    const outputPath = await getOutputPath(destinationPath, dataset, prompt, flags)
-    if (!outputPath) {
-      output.print('Cancelled')
-      return
+    // Get the project API client
+    const projectClient = await this.getProjectApiClient({
+      apiVersion: '2023-05-26',
+      projectId,
+      requireUser: true,
+    })
+
+    let datasets: DatasetsResponse
+
+    try {
+      datasets = await projectClient.datasets.list()
+    } catch (error) {
+      exportDebug('Error listing datasets', error)
+      this.error(`Failed to list datasets:\n${error instanceof Error ? error.message : error}`, {
+        exit: 1,
+      })
     }
 
-    // If we are dumping to a file, let the user know where it's at
-    if (outputPath !== '-') {
-      output.print(`Exporting dataset "${chalk.cyan(dataset)}" to "${chalk.cyan(outputPath)}"`)
-    }
-
-    let currentStep = 'Exporting documents...'
-    let spinner = output.spinner(currentStep).start()
-    const onProgress = (progress: ProgressEvent) => {
-      if (progress.step !== currentStep) {
-        spinner.succeed()
-        spinner = output.spinner(progress.step).start()
-      } else if (progress.step === currentStep && progress.update) {
-        spinner.text = `${progress.step} (${progress.current}/${progress.total})`
+    // Determine dataset name
+    let dataset = targetDataset
+    try {
+      if (!dataset) {
+        // Get default dataset from config
+        const defaultDataset = cliConfig.api?.dataset
+        if (defaultDataset) {
+          dataset = defaultDataset
+          this.log(`Using default dataset: ${dataset}`)
+        } else {
+          dataset = await promptForDataset({allowCreation: false, datasets, projectId})
+        }
       }
+    } catch (error) {
+      exportDebug('Error selecting dataset', error)
+      this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
+        exit: 1,
+      })
+    }
 
-      currentStep = progress.step
+    // Validate dataset name
+    const dsError = validateDatasetName(dataset)
+    if (dsError) {
+      this.error(dsError, {exit: 1})
+    }
+
+    // Verify existence of dataset before trying to export from it
+    if (!datasets.some((set) => set.name === dataset)) {
+      this.error(`Dataset with name "${dataset}" not found`, {exit: 1})
+    }
+
+    this.log(
+      boxen(
+        `Exporting from:
+projectId: ${projectId.padEnd(44)}
+dataset: ${dataset.padEnd(46)}`,
+        {
+          borderColor: 'yellow',
+          borderStyle: 'round',
+        },
+      ),
+    )
+
+    // Determine output path
+    let destinationPath = targetDestination
+    if (!destinationPath) {
+      destinationPath = path.join(process.cwd(), `${dataset}.tar.gz`)
+      this.log(`No destination specified, using: ${destinationPath}`)
+    }
+
+    const outputPath = await this.getOutputPath(destinationPath, dataset, flags)
+    if (!outputPath) {
+      this.error('Cancelled', {exit: 1})
+    }
+
+    // Prepare export options
+    const exportOptions = {
+      assetConcurrency: flags['asset-concurrency'],
+      assets: !flags['no-assets'],
+      client: projectClient,
+      compress: !flags['no-compress'],
+      dataset,
+      drafts: !flags['no-drafts'],
+      mode: flags.mode,
+      onProgress: this.createProgressHandler(),
+      outputPath,
+      raw: flags.raw,
+      types: flags.types ? flags.types.split(',') : undefined,
     }
 
     const start = Date.now()
     try {
-      await exportDataset({
-        client,
-        dataset,
-        outputPath,
-        onProgress,
-        ...flags,
+      await exportDataset(exportOptions)
+      this.log(`Export finished (${prettyMs(Date.now() - start)})`)
+    } catch (error) {
+      const err = error as Error
+      exportDebug('Export failed', err)
+      this.error(`Export failed: ${err.message}`, {exit: 1})
+    }
+  }
+
+  private createProgressHandler() {
+    let currentStep = 'Exporting documents...'
+    // Since we don't have the spinner from the original CLI context, we'll use simple logging
+    return (progress: ProgressEvent) => {
+      if (progress.step !== currentStep) {
+        this.log(`✓ ${currentStep}`)
+        currentStep = progress.step
+        this.log(`⏳ ${progress.step}`)
+      } else if (progress.step === currentStep && progress.update) {
+        // Update progress inline
+        this.log(`\r⏳ ${progress.step} (${progress.current}/${progress.total})`)
+      }
+    }
+  }
+
+  private async getOutputPath(
+    destination: string,
+    dataset: string,
+    flags: {overwrite?: boolean},
+  ): Promise<false | string> {
+    if (destination === '-') {
+      return '-'
+    }
+
+    const dstPath = path.isAbsolute(destination)
+      ? destination
+      : path.resolve(process.cwd(), destination)
+
+    let dstStats = await fs.stat(dstPath).catch(noop)
+    const looksLikeFile = dstStats ? dstStats.isFile() : path.basename(dstPath).includes('.')
+
+    if (!dstStats) {
+      const createPath = looksLikeFile ? path.dirname(dstPath) : dstPath
+      await fs.mkdir(createPath, {recursive: true})
+    }
+
+    const finalPath = looksLikeFile ? dstPath : path.join(dstPath, `${dataset}.tar.gz`)
+    dstStats = await fs.stat(finalPath).catch(noop)
+
+    if (!flags.overwrite && dstStats && dstStats.isFile()) {
+      this.error(`File "${finalPath}" already exists. Use --overwrite flag to overwrite it.`, {
+        exit: 1,
       })
-      spinner.succeed()
-    } catch (err) {
-      spinner.fail()
-      throw err
     }
 
-    output.print(`Export finished (${prettyMs(Date.now() - start)})`)
-  },
+    return finalPath
+  }
 }
-
-// eslint-disable-next-line complexity
-async function getOutputPath(
-  destination: string,
-  dataset: string,
-  prompt: CliPrompter,
-  flags: ParsedExportFlags,
-) {
-  if (destination === '-') {
-    return '-'
-  }
-
-  const dstPath = path.isAbsolute(destination)
-    ? destination
-    : path.resolve(process.cwd(), destination)
-
-  let dstStats = await fs.stat(dstPath).catch(noop)
-  const looksLikeFile = dstStats ? dstStats.isFile() : path.basename(dstPath).indexOf('.') !== -1
-
-  if (!dstStats) {
-    const createPath = looksLikeFile ? path.dirname(dstPath) : dstPath
-
-    await fs.mkdir(createPath, {recursive: true})
-  }
-
-  const finalPath = looksLikeFile ? dstPath : path.join(dstPath, `${dataset}.tar.gz`)
-  dstStats = await fs.stat(finalPath).catch(noop)
-
-  if (!flags.overwrite && dstStats && dstStats.isFile()) {
-    const shouldOverwrite = await prompt.single({
-      type: 'confirm',
-      message: `File "${finalPath}" already exists, would you like to overwrite it?`,
-      default: false,
-    })
-
-    if (!shouldOverwrite) {
-      return false
-    }
-  }
-
-  return finalPath
-}
-
-export default exportDatasetCommand
