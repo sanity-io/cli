@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand, spinner, subdebug} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
 import exportDataset from '@sanity/export'
 import boxen from 'boxen'
@@ -200,23 +200,29 @@ dataset: ${dataset.padEnd(46)}`,
       await exportDataset(exportOptions)
       this.log(`Export finished (${prettyMs(Date.now() - start)})`)
     } catch (error) {
-      const err = error as Error
+      const err = error instanceof Error ? error : new Error(String(error))
       exportDebug('Export failed', err)
       this.error(`Export failed: ${err.message}`, {exit: 1})
     }
   }
 
   private createProgressHandler() {
-    let currentStep = 'Exporting documents...'
-    // Since we don't have the spinner from the original CLI context, we'll use simple logging
+    let currentSpinner: ReturnType<typeof spinner> | null = null
+    let currentStep = ''
+
     return (progress: ProgressEvent) => {
       if (progress.step !== currentStep) {
-        this.log(`✓ ${currentStep}`)
+        // Complete previous step
+        if (currentSpinner) {
+          currentSpinner.succeed()
+        }
+
+        // Start new step
         currentStep = progress.step
-        this.log(`⏳ ${progress.step}`)
-      } else if (progress.step === currentStep && progress.update) {
-        // Update progress inline
-        this.log(`\r⏳ ${progress.step} (${progress.current}/${progress.total})`)
+        currentSpinner = spinner(progress.step).start()
+      } else if (progress.step === currentStep && progress.update && currentSpinner) {
+        // Update current step with progress info
+        currentSpinner.text = `${progress.step} (${progress.current}/${progress.total})`
       }
     }
   }
@@ -234,7 +240,7 @@ dataset: ${dataset.padEnd(46)}`,
       ? destination
       : path.resolve(process.cwd(), destination)
 
-    let dstStats = await fs.stat(dstPath).catch(noop)
+    const dstStats = await fs.stat(dstPath).catch(noop)
     const looksLikeFile = dstStats ? dstStats.isFile() : path.basename(dstPath).includes('.')
 
     if (!dstStats) {
@@ -242,8 +248,9 @@ dataset: ${dataset.padEnd(46)}`,
       try {
         await fs.mkdir(createPath, {recursive: true})
       } catch (error) {
-        const err = error as Error & {code?: string}
-        if (err.code === 'EACCES') {
+        const err = error instanceof Error ? error : new Error(String(error))
+        const errorWithCode = err as Error & {code?: string}
+        if (errorWithCode.code === 'EACCES') {
           this.error(
             `Permission denied: Cannot create directory "${createPath}". Please check write permissions.`,
             {
@@ -259,9 +266,9 @@ dataset: ${dataset.padEnd(46)}`,
     }
 
     const finalPath = looksLikeFile ? dstPath : path.join(dstPath, `${dataset}.tar.gz`)
-    dstStats = await fs.stat(finalPath).catch(noop)
+    const finalPathStats = await fs.stat(finalPath).catch(noop)
 
-    if (!flags.overwrite && dstStats && dstStats.isFile()) {
+    if (!flags.overwrite && finalPathStats && finalPathStats.isFile()) {
       this.error(`File "${finalPath}" already exists. Use --overwrite flag to overwrite it.`, {
         exit: 1,
       })
