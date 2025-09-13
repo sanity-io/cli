@@ -3,11 +3,6 @@ import {type CliCommandDefinition} from '@sanity/cli'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName'
 
 const datasetVisibilityCommand: CliCommandDefinition = {
-  name: 'visibility',
-  group: 'dataset',
-  helpText: '',
-  signature: 'get/set [dataset] [mode]',
-  description: 'Set visibility of a dataset',
   action: async (args, context) => {
     const {apiClient, output} = context
     const [action, ds, aclMode] = args.argsWithoutOptions
@@ -21,7 +16,7 @@ const datasetVisibilityCommand: CliCommandDefinition = {
       throw new Error('Action must be provided (get/set)')
     }
 
-    if (!['set', 'get'].includes(action)) {
+    if (!['get', 'set'].includes(action)) {
       throw new Error('Invalid action (only get/set allowed)')
     }
 
@@ -61,9 +56,14 @@ const datasetVisibilityCommand: CliCommandDefinition = {
       )
     }
 
-    await client.datasets.edit(dataset, {aclMode: aclMode as 'public' | 'private'})
+    await client.datasets.edit(dataset, {aclMode: aclMode as 'private' | 'public'})
     output.print('Dataset visibility changed')
   },
+  description: 'Set visibility of a dataset',
+  group: 'dataset',
+  helpText: '',
+  name: 'visibility',
+  signature: 'get/set [dataset] [mode]',
 }
 
 export default datasetVisibilityCommand
