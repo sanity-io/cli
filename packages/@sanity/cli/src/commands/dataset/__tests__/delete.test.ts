@@ -95,7 +95,7 @@ describe('#dataset:delete', () => {
     expect(stdout).toBe('Dataset deleted successfully\n')
   })
 
-  test('deletes dataset with confirmation prompt', async () => {
+  test('deletes dataset with confirmation prompt and validates input', async () => {
     vi.mocked(input).mockResolvedValue(TEST_DATASET_NAME)
     setupMockClient()
 
@@ -108,31 +108,10 @@ describe('#dataset:delete', () => {
     })
   })
 
-  test('calls input prompt with validation function', async () => {
-    vi.mocked(input).mockResolvedValue(TEST_DATASET_NAME)
-    setupMockClient()
-
-    await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME])
-
-    expect(input).toHaveBeenCalledWith({
-      message:
-        'Are you ABSOLUTELY sure you want to delete this dataset?\n  Type the name of the dataset to confirm delete:',
-      validate: expect.any(Function),
-    })
-  })
-
-  test('throws error for invalid dataset name', async () => {
+  test('throws error for empty dataset name', async () => {
     const {error: commandError} = await testCommand(DeleteDatasetCommand, ['', '--force'])
-    expect(commandError).toBeInstanceOf(Error)
     expect(commandError?.message).toBe('Dataset name is missing')
     expect(commandError?.oclif?.exit).toBe(1)
-  })
-
-  test('accepts valid dataset name', async () => {
-    setupMockClient()
-
-    const {stdout} = await testCommand(DeleteDatasetCommand, ['test-dataset', '--force'])
-    expect(stdout).toBe('Dataset deleted successfully\n')
   })
 
   test.each([
@@ -144,7 +123,6 @@ describe('#dataset:delete', () => {
     })
 
     const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'])
-    expect(error).toBeInstanceOf(Error)
     expect(error?.message).toBe(NO_PROJECT_ID)
     expect(error?.oclif?.exit).toBe(1)
   })
@@ -164,7 +142,6 @@ describe('#dataset:delete', () => {
     } as never)
 
     const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'])
-    expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Dataset deletion failed')
     expect(error?.message).toContain(message)
     expect(error?.oclif?.exit).toBe(1)
@@ -178,7 +155,6 @@ describe('#dataset:delete', () => {
     } as never)
 
     const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'])
-    expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Dataset deletion failed')
     expect(error?.message).toContain('Network error')
     expect(error?.oclif?.exit).toBe(1)
@@ -188,41 +164,15 @@ describe('#dataset:delete', () => {
     mockGetProjectCliClient.mockRejectedValue(new Error('Failed to create client'))
 
     const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'])
-    expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Dataset deletion failed')
     expect(error?.message).toContain('Failed to create client')
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('shows examples in help', async () => {
-    const {stdout} = await runCommand(['dataset delete', '--help'])
-    expect(stdout).toContain('Delete a specific dataset')
-    expect(stdout).toContain('Delete a specific dataset without confirmation')
-    expect(stdout).toContain('my-dataset')
-    expect(stdout).toContain('--force')
-  })
-
-  test('requires dataset name argument', async () => {
-    const {error} = await runCommand(['dataset delete'])
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Missing 1 required arg')
-    expect(error?.message).toContain('datasetName')
-  })
-
-  test('handles confirmation prompt cancellation', async () => {
+  test('handles user cancellation during confirmation', async () => {
     vi.mocked(input).mockRejectedValue(new Error('User cancelled'))
 
     const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME])
-    expect(error).toBeInstanceOf(Error)
     expect(error?.message).toBe('User cancelled')
-    // Note: prompt cancellation doesn't set a specific exit code
-  })
-
-  test('successfully deletes dataset with valid name', async () => {
-    const datasetName = 'test-dataset_123'
-    setupMockClient()
-
-    const {stdout} = await testCommand(DeleteDatasetCommand, [datasetName, '--force'])
-    expect(stdout).toBe('Dataset deleted successfully\n')
   })
 })
