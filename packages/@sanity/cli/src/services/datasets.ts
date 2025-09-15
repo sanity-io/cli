@@ -15,6 +15,16 @@ export async function listDatasets(projectId: string) {
   return client.datasets.list()
 }
 
+export interface DatasetAliasDefinition {
+  datasetName: string | null
+  name: string
+}
+
+export async function listDatasetAliases(projectId: string): Promise<DatasetAliasDefinition[]> {
+  const client = await getDatasetClient(projectId)
+  return client.request<DatasetAliasDefinition[]>({uri: '/aliases'})
+}
+
 interface DeleteDatasetOptions {
   datasetName: string
   projectId: string
