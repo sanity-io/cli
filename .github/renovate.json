@@ -6,7 +6,15 @@
   "prConcurrentLimit": 3,
   "automerge": true,
   "dependencyDashboardApproval": false,
-  "ignorePaths": ["**/node_modules/**", "**/bower_components/**", "**/tests/**", "**/fixtures/**"],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/tests/**",
+    "**/fixtures/**",
+    "packages/@sanity/codegen/**",
+    "packages/@sanity/migrate/**",
+    "packages/@sanity/original-cli/**"
+  ],
   "packageRules": [
     {
       "matchDepTypes": ["devDependencies"],
