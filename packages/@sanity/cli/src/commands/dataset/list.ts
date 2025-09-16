@@ -21,42 +21,33 @@ export class ListDatasetCommand extends SanityCommand<typeof ListDatasetCommand>
       this.error(NO_PROJECT_ID, {exit: 1})
     }
 
-    try {
-      const [datasets, aliases] = await Promise.allSettled([
-        listDatasets(projectId),
-        listDatasetAliases(projectId),
-      ])
+    const [datasets, aliases] = await Promise.allSettled([
+      listDatasets(projectId),
+      listDatasetAliases(projectId),
+    ])
 
-      if (datasets.status === 'rejected') {
-        const err = datasets.reason as Error
-        listDatasetDebug(`Error listing datasets for project ${projectId}`, err)
-        this.error(`Dataset list retrieval failed: ${err.message}`, {exit: 1})
-      }
+    if (datasets.status === 'rejected') {
+      const err = datasets.reason as Error
+      listDatasetDebug(`Error listing datasets for project ${projectId}`, err)
+      this.error(`Dataset list retrieval failed: ${err.message}`, {exit: 1})
+    }
 
-      const datasetList = datasets.value
-      if (datasetList.length === 0) {
-        this.log('No datasets found for this project.')
-      } else {
-        for (const dataset of datasetList) {
-          this.log(dataset.name)
-        }
+    const datasetList = datasets.value
+    if (datasetList.length === 0) {
+      this.log('No datasets found for this project.')
+    } else {
+      for (const dataset of datasetList) {
+        this.log(dataset.name)
       }
+    }
 
-      if (aliases.status === 'fulfilled' && aliases.value.length > 0) {
-        for (const alias of aliases.value) {
-          const targetDataset = alias.datasetName || '<unlinked>'
-          this.log(`~${alias.name} -> ${targetDataset}`)
-        }
-      } else if (aliases.status === 'rejected') {
-        listDatasetDebug(
-          `Warning: Could not fetch aliases for project ${projectId}`,
-          aliases.reason,
-        )
+    if (aliases.status === 'fulfilled' && aliases.value.length > 0) {
+      for (const alias of aliases.value) {
+        const targetDataset = alias.datasetName || '<unlinked>'
+        this.log(`~${alias.name} -> ${targetDataset}`)
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      listDatasetDebug(`Error listing datasets for project ${projectId}`, error)
-      this.error(`Dataset list retrieval failed: ${message}`, {exit: 1})
+    } else if (aliases.status === 'rejected') {
+      listDatasetDebug(`Warning: Could not fetch aliases for project ${projectId}`, aliases.reason)
     }
   }
 }
