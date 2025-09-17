@@ -1,0 +1,40 @@
+import {getProjectCliClient} from '@sanity/cli-core'
+
+const DATASET_ALIASES_API_VERSION = 'v2025-09-16'
+export const ALIAS_PREFIX = '~'
+
+interface DatasetAliasDefinition {
+  datasetName: string | null
+  name: string
+}
+
+interface DatasetModificationResponse {
+  aliasName: string
+  datasetName: string | null
+}
+
+const getAliasClient = async (projectId: string) => {
+  return getProjectCliClient({
+    apiVersion: DATASET_ALIASES_API_VERSION,
+    projectId,
+    requireUser: true,
+  })
+}
+
+export async function listAliases(projectId: string): Promise<DatasetAliasDefinition[]> {
+  const client = await getAliasClient(projectId)
+  return client.request<DatasetAliasDefinition[]>({uri: '/aliases'})
+}
+
+export async function createAlias(
+  projectId: string,
+  aliasName: string,
+  datasetName: string | null,
+): Promise<DatasetModificationResponse> {
+  const client = await getAliasClient(projectId)
+  return client.request({
+    body: datasetName ? {datasetName} : undefined,
+    method: 'PUT',
+    uri: `/aliases/${aliasName}`,
+  })
+}
