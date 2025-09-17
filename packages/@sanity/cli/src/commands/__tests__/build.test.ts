@@ -49,8 +49,7 @@ describe('#build', () => {
 
   test('should build the "basic-studio" example', async () => {
     const cwd = await testExample('basic-studio')
-    // Mock the process.cwd() to the example directory
-    process.cwd = () => cwd
+    process.chdir(cwd)
 
     const {error, stderr, stdout} = await testCommand(BuildCommand, ['--yes'], {
       config: {root: cwd},
@@ -70,8 +69,7 @@ describe('#build', () => {
 
   test('should build the "basic-app" example', async () => {
     const cwd = await testExample('basic-app')
-    // Mock the process.cwd() to the example directory
-    process.cwd = () => cwd
+    process.chdir(cwd)
 
     const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
       config: {root: cwd},
@@ -89,8 +87,7 @@ describe('#build', () => {
 
   test('should build the "basic-app" example with auto-updates', async () => {
     const cwd = await testExample('basic-app')
-    // Mock the process.cwd() to the example directory
-    process.cwd = () => cwd
+    process.chdir(cwd)
 
     const {error, stderr, stdout} = await testCommand(BuildCommand, ['--auto-updates', '--yes'], {
       config: {root: cwd},
@@ -108,5 +105,24 @@ describe('#build', () => {
 
     const indexHtml = await readFile(join(outputFolder, 'index.html'), 'utf8')
     expect(indexHtml).toContain('importmap')
+  })
+
+  // worst-case-studio example takes a long time to build
+  test("should build the 'worst-case-studio' example", {timeout: 12_000}, async () => {
+    const cwd = await testExample('worst-case-studio')
+    process.chdir(cwd)
+
+    const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
+      config: {root: cwd},
+    })
+
+    expect(error).toBeUndefined()
+    expect(stderr).toContain('Clean output folder')
+    expect(stderr).toContain(`Build Sanity Studio`)
+
+    const outputFolder = join(cwd, 'dist')
+    const files = await readdir(outputFolder)
+    expect(files).toContain('index.html')
+    expect(files).toContain('static')
   })
 })

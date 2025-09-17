@@ -1,6 +1,7 @@
 import path from 'node:path'
 
 import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core'
+import {build} from 'vite'
 
 import {copyDir} from '../../util/copyDir.js'
 import {buildDebug} from './buildDebug.js'
@@ -99,7 +100,6 @@ export async function buildStaticFiles(
   await writeFavicons(faviconBasePath, staticPath)
 
   buildDebug('Bundling using vite')
-  const {build} = await import('vite')
   const bundle = await build(viteConfig)
   buildDebug('Bundling complete')
 

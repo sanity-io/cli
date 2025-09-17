@@ -183,7 +183,8 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     }
   } catch (error) {
     spin.fail()
+    const message = error instanceof Error ? error.message : String(error)
     buildDebug(`Failed to build Sanity Studio`, {error})
-    output.error(`Failed to build Sanity Studio`, {exit: 1})
+    output.error(`Failed to build Sanity Studio: ${message}`, {exit: 1})
   }
 }
