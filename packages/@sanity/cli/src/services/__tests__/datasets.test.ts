@@ -1,7 +1,7 @@
 import {getProjectCliClient} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {deleteDataset, listDatasets} from '../datasets.js'
+import {DATASET_API_VERSION, deleteDataset, listDatasets} from '../datasets.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
   const actual = await importOriginal()
@@ -36,7 +36,7 @@ describe('#listDatasets', () => {
     const result = await listDatasets('test-project')
 
     expect(mockGetProjectCliClient).toHaveBeenCalledWith({
-      apiVersion: 'v2025-09-12',
+      apiVersion: DATASET_API_VERSION,
       projectId: 'test-project',
       requireUser: true,
     })
@@ -52,7 +52,7 @@ describe('#deleteDataset', () => {
     await deleteDataset({datasetName: 'test-dataset', projectId: 'test-project'})
 
     expect(mockGetProjectCliClient).toHaveBeenCalledWith({
-      apiVersion: 'v2025-09-12',
+      apiVersion: DATASET_API_VERSION,
       projectId: 'test-project',
       requireUser: true,
     })

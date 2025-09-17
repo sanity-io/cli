@@ -1,6 +1,6 @@
 import {getProjectCliClient} from '@sanity/cli-core'
 
-const DATASET_API_VERSION = 'v2025-09-16'
+export const DATASET_API_VERSION = 'v2025-09-16'
 
 const getDatasetClient = async (projectId: string) => {
   return getProjectCliClient({
