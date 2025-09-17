@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.2-alpha.1](https://github.com/sanity-io/cli/compare/cli-core-v0.0.2-alpha.0...cli-core-v0.0.2-alpha.1) (2025-09-17)
+
+
+### Bug Fixes
+
+* allow passing more client options to methods ([#120](https://github.com/sanity-io/cli/issues/120)) ([5c131aa](https://github.com/sanity-io/cli/commit/5c131aa50ea24f017d74db89bf9675a52bf0b3a1))
+
 ## [0.0.2-alpha.0](https://github.com/sanity-io/cli/compare/cli-core-v0.0.1-alpha.0...cli-core-v0.0.2-alpha.0) (2025-09-11)
 
 
