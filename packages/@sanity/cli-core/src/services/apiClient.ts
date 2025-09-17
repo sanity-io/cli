@@ -1,5 +1,6 @@
 import {ux} from '@oclif/core'
 import {
+  type ClientConfig,
   type ClientError,
   createClient,
   requester as defaultRequester,
@@ -20,7 +21,7 @@ const CLI_REQUEST_TAG_PREFIX = 'sanity.cli'
 /**
  * @internal
  */
-export interface GlobalCliClientOptions {
+export interface GlobalCliClientOptions extends ClientConfig {
   /**
    * The API version to use for this client.
    */
@@ -41,8 +42,8 @@ export interface GlobalCliClientOptions {
  * @returns Promise that resolves to a configured Sanity API client.
  */
 export async function getGlobalCliClient({
-  apiVersion,
   requireUser,
+  ...config
 }: GlobalCliClientOptions): Promise<SanityClient> {
   const requester = defaultRequester.clone()
   requester.use(authErrors())
@@ -58,24 +59,39 @@ export async function getGlobalCliClient({
 
   return createClient({
     ...(apiHost ? {apiHost} : {}),
-    apiVersion,
     requester,
     requestTagPrefix: CLI_REQUEST_TAG_PREFIX,
     token,
     useCdn: false,
     useProjectHostname: false,
+    ...config,
   })
 }
 
 /**
  * @internal
  */
-export interface ProjectCliClientOptions {
+export interface ProjectCliClientOptions extends ClientConfig {
+  /**
+   * The API version to use for this client.
+   */
   apiVersion: string
+
+  /**
+   * The project ID to use for this client.
+   */
   projectId: string
 
+  /**
+   * The dataset to use for this client.
+   */
   dataset?: string
 
+  /**
+   * Whether to require a user to be authenticated to use this client.
+   * Default: `false`.
+   * Throws an error if `true` and user is not authenticated.
+   */
   requireUser?: boolean
 }
 
@@ -86,10 +102,8 @@ export interface ProjectCliClientOptions {
  * @returns Promise that resolves to a configured Sanity API client.
  */
 export async function getProjectCliClient({
-  apiVersion,
-  dataset,
-  projectId,
   requireUser,
+  ...config
 }: ProjectCliClientOptions): Promise<SanityClient> {
   const requester = defaultRequester.clone()
   requester.use(authErrors())
@@ -105,14 +119,12 @@ export async function getProjectCliClient({
 
   return createClient({
     ...(apiHost ? {apiHost} : {}),
-    apiVersion,
-    dataset,
-    projectId,
     requester,
     requestTagPrefix: CLI_REQUEST_TAG_PREFIX,
     token,
     useCdn: false,
     useProjectHostname: true,
+    ...config,
   })
 }
 
