@@ -1,4 +1,4 @@
-import {input, select} from '@inquirer/prompts'
+import {select} from '@inquirer/prompts'
 import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
@@ -6,8 +6,8 @@ import chalk from 'chalk'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'
-import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
-import {listDatasets} from '../../services/datasets.js'
+import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
+import {createDataset, listDatasets} from '../../services/datasets.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const enableBackupDebug = subdebug('backup:enable')
@@ -69,16 +69,15 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
       dataset = await this.promptForDataset(datasets)
 
       if (dataset === 'new') {
-        const newDatasetName = await this.promptForDatasetName(hasProduction)
+        const newDatasetName = await promptForDatasetName({
+          default: hasProduction ? 'production' : undefined,
+        })
 
         try {
-          const projectClient = await this.getProjectApiClient({
-            apiVersion: BACKUP_API_VERSION,
+          await createDataset({
+            datasetName: newDatasetName,
             projectId,
-            requireUser: true,
           })
-          // Datasets methods are only available on the project client
-          await projectClient.datasets.create(newDatasetName)
           dataset = newDatasetName
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error)
@@ -131,20 +130,5 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
       enableBackupDebug(`Error fetching datasets`, err)
       this.error(`Failed to fetch datasets:\n${err.message}`, {exit: 1})
     }
-  }
-
-  private async promptForDatasetName(hasProduction?: boolean): Promise<string> {
-    return input({
-      default: hasProduction ? 'production' : undefined,
-      message: 'Dataset name:',
-      validate: (name) => {
-        const err = validateDatasetName(name)
-        if (err) {
-          return err
-        }
-
-        return true
-      },
-    })
   }
 }

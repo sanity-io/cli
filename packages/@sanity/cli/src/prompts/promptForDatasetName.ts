@@ -1,14 +1,13 @@
-import {type CliPrompter} from '@sanity/cli'
+import {input} from '@inquirer/prompts'
 
-import {validateDatasetName} from './validateDatasetName'
+import {validateDatasetName} from '../actions/dataset/validateDatasetName.js'
 
 export function promptForDatasetName(
-  prompt: CliPrompter,
-  options: {message?: string; default?: string} = {},
+  options: {default?: string; message?: string} = {},
 ): Promise<string> {
-  return prompt.single({
-    type: 'input',
-    message: 'Dataset name:',
+  return input({
+    default: options.default,
+    message: options.message || 'Dataset name:',
     validate: (name) => {
       const err = validateDatasetName(name)
       if (err) {
@@ -17,6 +16,5 @@ export function promptForDatasetName(
 
       return true
     },
-    ...options,
   })
 }

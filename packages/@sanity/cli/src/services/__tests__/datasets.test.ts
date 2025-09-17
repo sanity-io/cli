@@ -2,6 +2,7 @@ import {getProjectCliClient} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
+  createDataset,
   DATASET_API_VERSION,
   deleteDataset,
   editDatasetAcl,
@@ -19,6 +20,7 @@ vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
 
 const mockClient = {
   datasets: {
+    create: vi.fn(),
     delete: vi.fn(),
     edit: vi.fn(),
     list: vi.fn(),
@@ -131,5 +133,37 @@ describe('#listDatasetAliases', () => {
     })
     expect(mockClient.request).toHaveBeenCalledWith({uri: '/aliases'})
     expect(result).toBe(mockAliases)
+  })
+})
+
+describe('#createDataset', () => {
+  test('calls client.datasets.create with correct parameters', async () => {
+    mockClient.datasets.create.mockResolvedValue(undefined)
+
+    await createDataset({
+      aclMode: 'private',
+      datasetName: 'test-dataset',
+      projectId: 'test-project',
+    })
+
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith({
+      apiVersion: DATASET_API_VERSION,
+      projectId: 'test-project',
+      requireUser: true,
+    })
+    expect(mockClient.datasets.create).toHaveBeenCalledWith('test-dataset', {aclMode: 'private'})
+  })
+
+  test('calls client.datasets.create without aclMode if not provided', async () => {
+    mockClient.datasets.create.mockResolvedValue(undefined)
+
+    await createDataset({datasetName: 'test-dataset', projectId: 'test-project'})
+
+    expect(mockClient.datasets.create).toHaveBeenCalledWith('test-dataset')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith({
+      apiVersion: DATASET_API_VERSION,
+      projectId: 'test-project',
+      requireUser: true,
+    })
   })
 })

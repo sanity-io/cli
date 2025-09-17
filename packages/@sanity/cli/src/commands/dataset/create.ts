@@ -1,94 +1,161 @@
-import {type CliCommandDefinition, type CliOutputter, type CliPrompter} from '@sanity/cli'
+import {select} from '@inquirer/prompts'
+import {Args, Flags} from '@oclif/core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {type DatasetAclMode} from '@sanity/client'
 
-import {promptForDatasetName} from '../../actions/dataset/datasetNamePrompt'
-import {validateDatasetName} from '../../actions/dataset/validateDatasetName'
-import {debug} from '../../debug'
+import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
+import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
+import {createDataset, listDatasets} from '../../services/datasets.js'
+import {getProjectFeatures} from '../../services/getProjectFeatures.js'
+import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
-const helpText = `
-Options
-  --visibility <mode> Set visibility for this dataset (public/private)
+const createDatasetDebug = subdebug('dataset:create')
 
-Examples
-  sanity dataset create
-  sanity dataset create <name>
-  sanity dataset create <name> --visibility private
-`
+const ALLOWED_ACL_MODES = ['custom', 'private', 'public']
 
-const allowedModes = ['private', 'public', 'custom']
+export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetCommand> {
+  static override args = {
+    name: Args.string({
+      description: 'Name of the dataset to create',
+      required: false,
+    }),
+  }
 
-interface CreateFlags {
-  visibility?: 'private' | 'public' | 'custom'
-}
+  static override description = 'Create a new dataset within your project'
 
-const createDatasetCommand: CliCommandDefinition<CreateFlags> = {
-  name: 'create',
-  group: 'dataset',
-  signature: '[NAME]',
-  helpText,
-  description: 'Create a new dataset within your project',
-  action: async (args, context) => {
-    const {apiClient, output, prompt} = context
-    const flags = args.extOptions
-    const [dataset] = args.argsWithoutOptions
-    const client = apiClient()
+  static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %>',
+      description: 'Interactively create a dataset',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> my-dataset',
+      description: 'Create a dataset named "my-dataset"',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> my-dataset --visibility private',
+      description: 'Create a private dataset named "my-dataset"',
+    },
+  ]
 
-    const nameError = dataset && validateDatasetName(dataset)
-    if (nameError) {
-      throw new Error(nameError)
+  static override flags = {
+    visibility: Flags.string({
+      description: 'Set visibility for this dataset (custom/private/public)',
+      options: ALLOWED_ACL_MODES,
+      required: false,
+    }),
+  }
+
+  public async run(): Promise<void> {
+    const {args, flags} = await this.parse(CreateDatasetCommand)
+    const {visibility} = flags
+
+    // Ensure we have project context
+    const projectId = await this.getProjectId()
+    if (!projectId) {
+      this.error(NO_PROJECT_ID, {exit: 1})
     }
 
-    const [datasets, projectFeatures] = await Promise.all([
-      client.datasets.list().then((sets) => sets.map((ds) => ds.name)),
-      client.request({uri: '/features'}),
-    ])
-
-    if (flags.visibility && !allowedModes.includes(flags.visibility)) {
-      throw new Error(`Visibility mode "${flags.visibility}" not allowed`)
+    // Get dataset name from args or prompt
+    let {name: datasetName} = args
+    if (datasetName) {
+      const nameError = validateDatasetName(datasetName)
+      if (nameError) {
+        this.error(nameError, {exit: 1})
+      }
     }
 
-    const datasetName = await (dataset || promptForDatasetName(prompt))
+    let datasets: string[]
+    let projectFeatures: string[]
+
+    try {
+      const [datasetsResponse, featuresResponse] = await Promise.all([
+        listDatasets(projectId),
+        getProjectFeatures(projectId),
+      ])
+      datasets = datasetsResponse.map((ds) => ds.name)
+      projectFeatures = featuresResponse
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      createDatasetDebug(`Failed to fetch project data: ${message}`, error)
+      this.error(`Failed to fetch project data: ${message}`, {exit: 1})
+    }
+
+    if (!datasetName) {
+      datasetName = await promptForDatasetName()
+    }
+
     if (datasets.includes(datasetName)) {
-      throw new Error(`Dataset "${datasetName}" already exists`)
+      this.error(`Dataset "${datasetName}" already exists`, {exit: 1})
     }
 
     const canCreatePrivate = projectFeatures.includes('privateDataset')
-    debug('%s create private datasets', canCreatePrivate ? 'Can' : 'Cannot')
+    createDatasetDebug('%s create private datasets', canCreatePrivate ? 'Can' : 'Cannot')
 
-    const defaultAclMode = canCreatePrivate ? flags.visibility : 'public'
-    const aclMode = await (defaultAclMode || promptForDatasetVisibility(prompt, output))
+    const aclMode = await this.determineAclMode(visibility, canCreatePrivate)
 
     try {
-      await client.datasets.create(datasetName, {aclMode})
-      output.print('Dataset created successfully')
-    } catch (err) {
-      throw new Error(`Dataset creation failed:\n${err.message}`)
+      await createDataset({aclMode, datasetName, projectId})
+      this.log('Dataset created successfully')
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      createDatasetDebug(`Error creating dataset ${datasetName}`, error)
+      this.error(`Dataset creation failed: ${message}`, {exit: 1})
     }
-  },
-}
-
-async function promptForDatasetVisibility(prompt: CliPrompter, output: CliOutputter) {
-  const mode = await prompt.single<'public' | 'private'>({
-    type: 'list',
-    message: 'Dataset visibility',
-    choices: [
-      {
-        value: 'public',
-        name: 'Public (world readable)',
-      },
-      {
-        value: 'private',
-        name: 'Private (Authenticated user or token needed)',
-      },
-    ],
-  })
-
-  if (mode === 'private') {
-    output.print(
-      'Please note that while documents are private, assets (files and images) are still public\n',
-    )
   }
 
-  return mode
-}
+  private async determineAclMode(
+    visibility: string | undefined,
+    canCreatePrivate: boolean,
+  ): Promise<DatasetAclMode> {
+    if (visibility === 'custom') {
+      return 'custom'
+    }
 
-export default createDatasetCommand
+    // Handle private visibility request
+    if (visibility === 'private') {
+      if (canCreatePrivate) {
+        return 'private'
+      }
+      // Private requested but not available
+      this.warn('Private datasets are not available for this project. Creating as public.')
+      return 'public'
+    }
+
+    // Handle explicit public visibility
+    if (visibility === 'public') {
+      return 'public'
+    }
+
+    if (canCreatePrivate) {
+      return this.promptForDatasetVisibility()
+    }
+
+    // Default to public when no flag and no private capability
+    return 'public'
+  }
+
+  private async promptForDatasetVisibility(): Promise<'private' | 'public'> {
+    const mode = await select({
+      choices: [
+        {
+          name: 'Public (world readable)',
+          value: 'public' as const,
+        },
+        {
+          name: 'Private (Authenticated user or token needed)',
+          value: 'private' as const,
+        },
+      ],
+      message: 'Dataset visibility',
+    })
+
+    if (mode === 'private') {
+      this.warn(
+        'Please note that while documents are private, assets (files and images) are still public',
+      )
+    }
+
+    return mode
+  }
+}
