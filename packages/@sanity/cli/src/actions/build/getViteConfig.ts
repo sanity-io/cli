@@ -4,7 +4,7 @@ import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import debug from 'debug'
 import {readPackageUp} from 'read-package-up'
-import {type ConfigEnv, type InlineConfig, type Rollup} from 'vite'
+import {type ConfigEnv, type InlineConfig, mergeConfig, type Rollup} from 'vite'
 
 import {sanityBuildEntries} from '../../server/vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from '../../server/vite/plugin-sanity-favicons.js'
@@ -209,7 +209,6 @@ export async function finalizeViteConfig(config: InlineConfig): Promise<InlineCo
     )
   }
 
-  const {mergeConfig} = await import('vite')
   return mergeConfig(config, {
     build: {
       rollupOptions: {
@@ -241,7 +240,6 @@ export async function extendViteConfigWithUserConfig(
     config = await userConfig(config, env)
   } else if (typeof userConfig === 'object') {
     debug('Merging vite config using user-specified object')
-    const {mergeConfig} = await import('vite')
     config = mergeConfig(config, userConfig)
   }
 

@@ -1,5 +1,5 @@
 import {getTsconfig} from 'get-tsconfig'
-import {register} from 'tsx/esm/api'
+import {tsImport} from 'tsx/esm/api'
 
 import {debug} from '../../debug.js'
 import {tsxWorkerTask} from '../../loaders/tsx/tsxWorkerTask.js'
@@ -8,6 +8,23 @@ import {NotFoundError} from '../../util/NotFoundError.js'
 import {findPathForFiles} from '../util/findConfigsPaths.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types.js'
+
+/**
+ * Try to get the default export of a module of the cli config.
+ * This can be either ESM or CJS.
+ */
+function tryGetDefaultExport(mod: unknown) {
+  // If the module is a record and has a default property, return the default property
+  if (isRecord(mod) && 'default' in mod) {
+    // If the default property is a record and has a default property, return the default property
+    // This is for CJS modules
+    if (isRecord(mod.default) && 'default' in mod.default) {
+      return mod.default.default
+    }
+    return mod.default
+  }
+  return mod
+}
 
 /**
  * Get the CLI config for a project, given the root path.
@@ -55,18 +72,13 @@ export async function getCliConfig(rootPath: string): Promise<CliConfig> {
     // Assuming that didn't work because of unseriazable properties, so we'll try the
     // main thread with tsx registered.
     const tsconfig = getTsconfig(rootPath)
-    const tsx = register({
-      namespace: 'get-cli-config',
-      tsconfig: tsconfig?.path ?? undefined,
-    })
 
     // Ensure we get the default export (sometimes we get a bit of a mixed bag)
-    cliConfig = await tsx.import(configPath, import.meta.url)
-    cliConfig = (isRecord(cliConfig) && 'default' in cliConfig ? cliConfig.default : cliConfig) as
-      | CliConfig
-      | undefined
-
-    tsx.unregister()
+    cliConfig = await tsImport(configPath, {
+      parentURL: import.meta.url,
+      tsconfig: tsconfig?.path ?? undefined,
+    })
+    cliConfig = tryGetDefaultExport(cliConfig) as CliConfig | undefined
   }
 
   const {data, error, success} = cliConfigSchema.safeParse(cliConfig)

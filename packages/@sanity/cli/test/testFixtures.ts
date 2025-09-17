@@ -9,7 +9,7 @@ import {testCopyDirectory} from './helpers/testExample.js'
 const exec = promisify(execNode)
 
 // Add examples to copy here
-const examplesToCopy = new Set(['basic-app', 'basic-studio'])
+const examplesToCopy = new Set(['basic-app', 'basic-studio', 'worst-case-studio'])
 
 export async function setup() {
   console.log('Initializing test environment...')
