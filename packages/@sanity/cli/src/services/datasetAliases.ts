@@ -59,6 +59,24 @@ export async function updateAlias(
   })
 }
 
+/**
+ * Unlinks an existing dataset alias from its dataset
+ * @param projectId - The project ID containing the alias
+ * @param aliasName - The name of the alias to unlink (without ~ prefix)
+ * @returns Promise resolving to the unlink response with dataset name that was unlinked
+ */
+export async function unlinkAlias(
+  projectId: string,
+  aliasName: string,
+): Promise<DatasetModificationResponse> {
+  const client = await getAliasClient(projectId)
+  return client.request<DatasetModificationResponse>({
+    body: {},
+    method: 'PATCH',
+    uri: `/aliases/${aliasName}/unlink`,
+  })
+}
+
 export async function removeAlias(
   projectId: string,
   aliasName: string,
