@@ -1,8 +1,10 @@
 import {input} from '@inquirer/prompts'
-import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
-import {testCommand} from '@sanity/cli-test'
+import {getCliConfig} from '@sanity/cli-core'
+import {mockApi, testCommand} from '@sanity/cli-test'
+import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {DATASET_ALIASES_API_VERSION} from '../../../../services/datasetAliases.js'
 import {NO_PROJECT_ID} from '../../../../util/errorMessages.js'
 import {UnlinkAliasCommand} from '../unlink.js'
 
@@ -26,70 +28,44 @@ vi.mock('../../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-vi.mock('../../../../../../cli-core/src/services/apiClient.js', () => ({
-  getProjectCliClient: vi.fn(),
-}))
-
 vi.mock('@inquirer/prompts', () => ({
   input: vi.fn(),
 }))
 
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockInput = vi.mocked(input)
-
-const setupMockClient = ({
-  aliases = [
-    {datasetName: 'production', name: 'staging'},
-    {datasetName: null, name: 'unlinked'},
-  ],
-  unlinkAliasResponse = {aliasName: 'staging', datasetName: 'production'},
-}: {
-  aliases?: Array<{datasetName: string | null; name: string}>
-  unlinkAliasResponse?: {aliasName: string; datasetName: string | null}
-} = {}) => {
-  const mockClient = {
-    request: vi.fn(),
-  }
-
-  mockClient.request.mockImplementation((config) => {
-    if (config.uri === '/aliases') {
-      return Promise.resolve(aliases)
-    }
-    if (config.uri?.includes('/unlink') && config.method === 'PATCH') {
-      return Promise.resolve(unlinkAliasResponse)
-    }
-    return Promise.resolve({})
-  })
-
-  mockGetProjectCliClient.mockResolvedValue(mockClient as never)
-}
 
 describe('dataset:alias:unlink', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
   })
 
-  test('unlinks alias with confirmation when alias name provided without ~ prefix', async () => {
-    setupMockClient()
+  test.each([
+    ['staging', 'without ~ prefix'],
+    ['~staging', 'with ~ prefix'],
+  ])('unlinks alias with confirmation: %s (%s)', async (aliasInput) => {
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [
+      {datasetName: 'production', name: 'staging'},
+      {datasetName: null, name: 'unlinked'},
+    ])
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'patch',
+      uri: '/aliases/staging/unlink',
+    }).reply(200, {aliasName: 'staging', datasetName: 'production'})
+
     mockInput.mockResolvedValueOnce('yes')
 
-    const {stdout} = await testCommand(UnlinkAliasCommand, ['staging'])
-
-    expect(stdout).toContain('Dataset alias ~staging unlinked from production successfully')
-    expect(mockInput).toHaveBeenCalledWith({
-      message: expect.stringContaining(
-        'Are you ABSOLUTELY sure you want to unlink this alias from the "production" dataset?',
-      ),
-      validate: expect.any(Function),
-    })
-  })
-
-  test('unlinks alias with confirmation when alias name provided with ~ prefix', async () => {
-    setupMockClient()
-    mockInput.mockResolvedValueOnce('yes')
-
-    const {stdout} = await testCommand(UnlinkAliasCommand, ['~staging'])
+    const {stdout} = await testCommand(UnlinkAliasCommand, [aliasInput])
 
     expect(stdout).toContain('Dataset alias ~staging unlinked from production successfully')
     expect(mockInput).toHaveBeenCalledWith({
@@ -101,7 +77,21 @@ describe('dataset:alias:unlink', () => {
   })
 
   test('unlinks alias with force flag (skips confirmation)', async () => {
-    setupMockClient()
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [
+      {datasetName: 'production', name: 'staging'},
+      {datasetName: null, name: 'unlinked'},
+    ])
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'patch',
+      uri: '/aliases/staging/unlink',
+    }).reply(200, {aliasName: 'staging', datasetName: 'production'})
 
     const {stderr, stdout} = await testCommand(UnlinkAliasCommand, ['staging', '--force'])
 
@@ -111,7 +101,22 @@ describe('dataset:alias:unlink', () => {
   })
 
   test('prompts for alias name when no alias provided', async () => {
-    setupMockClient()
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [
+      {datasetName: 'production', name: 'staging'},
+      {datasetName: null, name: 'unlinked'},
+    ])
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'patch',
+      uri: '/aliases/staging/unlink',
+    }).reply(200, {aliasName: 'staging', datasetName: 'production'})
+
     mockInput
       .mockResolvedValueOnce('staging') // alias name prompt
       .mockResolvedValueOnce('yes') // confirmation prompt
@@ -125,6 +130,24 @@ describe('dataset:alias:unlink', () => {
     })
   })
 
+  test('handles user cancellation during confirmation', async () => {
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [
+      {datasetName: 'production', name: 'staging'},
+      {datasetName: null, name: 'unlinked'},
+    ])
+
+    mockInput.mockRejectedValueOnce(new Error('User cancelled'))
+
+    const {error} = await testCommand(UnlinkAliasCommand, ['staging'])
+
+    expect(error?.message).toContain('Dataset alias unlink failed: User cancelled')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
   test('shows error when no project ID available', async () => {
     mockGetCliConfig.mockResolvedValueOnce({})
 
@@ -135,8 +158,6 @@ describe('dataset:alias:unlink', () => {
   })
 
   test('shows error when alias name is invalid', async () => {
-    setupMockClient()
-
     const {error} = await testCommand(UnlinkAliasCommand, ['invalid-alias!'])
 
     expect(error?.message).toContain(
@@ -146,7 +167,14 @@ describe('dataset:alias:unlink', () => {
   })
 
   test('shows error when alias does not exist', async () => {
-    setupMockClient()
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [
+      {datasetName: 'production', name: 'staging'},
+      {datasetName: null, name: 'unlinked'},
+    ])
 
     const {error} = await testCommand(UnlinkAliasCommand, ['nonexistent'])
 
@@ -155,7 +183,14 @@ describe('dataset:alias:unlink', () => {
   })
 
   test('shows error when alias exists but is not linked', async () => {
-    setupMockClient()
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [
+      {datasetName: 'production', name: 'staging'},
+      {datasetName: null, name: 'unlinked'},
+    ])
 
     const {error} = await testCommand(UnlinkAliasCommand, ['unlinked'])
 
@@ -163,33 +198,21 @@ describe('dataset:alias:unlink', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('handles user cancellation during confirmation', async () => {
-    setupMockClient()
-    mockInput.mockRejectedValueOnce(new Error('User cancelled'))
-
-    const {error} = await testCommand(UnlinkAliasCommand, ['staging'])
-
-    expect(error?.message).toContain('Dataset alias unlink failed: User cancelled')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
   test('handles API error during unlink', async () => {
-    setupMockClient()
-    mockInput.mockResolvedValueOnce('yes')
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: 'production', name: 'staging'}])
 
-    const mockClient = {
-      request: vi.fn(),
-    }
-    mockClient.request.mockImplementation((config) => {
-      if (config.uri === '/aliases') {
-        return Promise.resolve([{datasetName: 'production', name: 'staging'}])
-      }
-      if (config.uri?.includes('/unlink')) {
-        return Promise.reject(new Error('API Error'))
-      }
-      return Promise.resolve({})
-    })
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'patch',
+      uri: '/aliases/staging/unlink',
+    }).reply(500, {message: 'API Error'})
+
+    mockInput.mockResolvedValueOnce('yes')
 
     const {error} = await testCommand(UnlinkAliasCommand, ['staging'])
 

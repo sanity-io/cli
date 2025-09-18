@@ -1,7 +1,10 @@
-import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
-import {testCommand} from '@sanity/cli-test'
+import {getCliConfig} from '@sanity/cli-core'
+import {mockApi, testCommand} from '@sanity/cli-test'
+import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {DATASET_ALIASES_API_VERSION} from '../../../../services/datasetAliases.js'
+import {listDatasets} from '../../../../services/datasets.js'
 import {NO_PROJECT_ID} from '../../../../util/errorMessages.js'
 import {LinkAliasCommand} from '../link.js'
 
@@ -25,130 +28,57 @@ vi.mock('../../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-vi.mock(import('../../../../../../cli-core/src/services/apiClient.js'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    getProjectCliClient: vi.fn(),
-  }
-})
+vi.mock('../../../../services/datasets.js', () => ({
+  listDatasets: vi.fn(),
+}))
 
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
+const mockListDatasets = vi.mocked(listDatasets)
 const mockGetCliConfig = vi.mocked(getCliConfig)
 
-const setupMockClient = ({
-  aliases = [{datasetName: null, name: 'staging'}],
-  datasets = [{name: 'production'}, {name: 'development'}],
-  updateAliasResponse = {aliasName: 'staging', datasetName: 'production'},
-}: {
-  aliases?: Array<{datasetName: string | null; name: string}>
-  datasets?: Array<{name: string}>
-  updateAliasResponse?: {aliasName: string; datasetName: string | null}
-} = {}) => {
-  const mockClient = {
-    datasets: {
-      list: vi.fn().mockResolvedValue(datasets),
-    },
-    request: vi.fn(),
-  }
-
-  mockClient.request.mockImplementation((config) => {
-    if (config.uri === '/aliases') {
-      return Promise.resolve(aliases)
-    }
-    if (config.uri?.startsWith('/aliases/') && config.method === 'PATCH') {
-      return Promise.resolve(updateAliasResponse)
-    }
-    return Promise.resolve({})
-  })
-
-  mockGetProjectCliClient.mockResolvedValue(mockClient as never)
-}
-
-describe('dataset:alias:link', () => {
+describe('#dataset:alias:link', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('links alias with valid arguments', async () => {
-    setupMockClient()
+    mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'development'}] as never)
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: null, name: 'staging'}])
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'patch',
+      uri: '/aliases/staging',
+    }).reply(200, {aliasName: 'staging', datasetName: 'production'})
 
     const {stdout} = await testCommand(LinkAliasCommand, ['staging', 'production'])
 
     expect(stdout).toContain('Dataset alias ~staging linked to production successfully')
   })
 
-  test('fails when no project ID', async () => {
-    mockGetCliConfig.mockResolvedValueOnce({})
-
-    const {error} = await testCommand(LinkAliasCommand, ['staging', 'production'])
-
-    expect(error?.message).toContain(NO_PROJECT_ID)
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('fails with invalid alias name', async () => {
-    setupMockClient()
-
-    const {error} = await testCommand(LinkAliasCommand, [
-      'invalid-alias-name-that-is-way-too-long-and-exceeds-the-maximum-allowed-length',
-      'production',
-    ])
-
-    expect(error?.message).toContain('Alias name must be at most 64 characters')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('fails with invalid dataset name', async () => {
-    setupMockClient()
-
-    const {error} = await testCommand(LinkAliasCommand, ['staging', 'Invalid-Dataset'])
-
-    expect(error?.message).toContain('Dataset name must be all lowercase characters')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('fails when alias does not exist', async () => {
-    setupMockClient({aliases: [{datasetName: null, name: 'staging'}]})
-
-    const {error} = await testCommand(LinkAliasCommand, ['nonexistent', 'production'])
-
-    expect(error?.message).toContain('Dataset alias "~nonexistent" does not exist')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('fails when dataset does not exist', async () => {
-    setupMockClient({datasets: [{name: 'production'}]})
-
-    const {error} = await testCommand(LinkAliasCommand, ['staging', 'nonexistent'])
-
-    expect(error?.message).toContain('Dataset "nonexistent" does not exist')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('fails when alias already linked to same dataset', async () => {
-    setupMockClient({aliases: [{datasetName: 'production', name: 'staging'}]})
-
-    const {error} = await testCommand(LinkAliasCommand, ['staging', 'production'])
-
-    expect(error?.message).toContain('Dataset alias ~staging already linked to production')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('fails when no datasets available', async () => {
-    setupMockClient({datasets: []})
-
-    const {error} = await testCommand(LinkAliasCommand, ['staging'])
-
-    expect(error?.message).toContain('No datasets available to link to')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
   test('re-links already-linked alias when using force flag', async () => {
-    setupMockClient({
-      aliases: [{datasetName: 'development', name: 'staging'}],
-      updateAliasResponse: {aliasName: 'staging', datasetName: 'production'},
-    })
+    mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'development'}] as never)
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: 'development', name: 'staging'}])
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'patch',
+      uri: '/aliases/staging',
+    }).reply(200, {aliasName: 'staging', datasetName: 'production'})
 
     const {stderr, stdout} = await testCommand(LinkAliasCommand, [
       'staging',
@@ -161,7 +91,20 @@ describe('dataset:alias:link', () => {
   })
 
   test('links unlinked alias without requiring confirmation', async () => {
-    setupMockClient({aliases: [{datasetName: null, name: 'staging'}]})
+    mockListDatasets.mockResolvedValue([{name: 'production'}] as never)
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: null, name: 'staging'}])
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'patch',
+      uri: '/aliases/staging',
+    }).reply(200, {aliasName: 'staging', datasetName: 'production'})
 
     const {stdout} = await testCommand(LinkAliasCommand, ['staging', 'production'])
 
@@ -169,19 +112,106 @@ describe('dataset:alias:link', () => {
     expect(stdout).not.toContain('confirmation')
   })
 
-  test('handles API error gracefully', async () => {
-    setupMockClient()
+  test.each([
+    [
+      'invalid-alias-name-that-is-way-too-long-and-exceeds-the-maximum-allowed-length',
+      'production',
+      'Alias name must be at most 64 characters',
+    ],
+    ['staging', 'Invalid-Dataset', 'Dataset name must be all lowercase characters'],
+  ])('fails with invalid input: alias=%s, dataset=%s', async (alias, dataset, expectedError) => {
+    const {error} = await testCommand(LinkAliasCommand, [alias, dataset])
 
-    const mockClient = {
-      datasets: {list: vi.fn().mockResolvedValue([{name: 'production'}])},
-      request: vi.fn().mockImplementation((config) => {
-        if (config.uri === '/aliases')
-          return Promise.resolve([{datasetName: null, name: 'staging'}])
-        if (config.method === 'PATCH') throw new Error('API Error')
-        return Promise.resolve({})
-      }),
-    }
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+    expect(error?.message).toContain(expectedError)
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('fails when no project ID', async () => {
+    mockGetCliConfig.mockResolvedValueOnce({
+      api: {},
+    })
+
+    const {error} = await testCommand(LinkAliasCommand, ['staging', 'production'])
+
+    expect(error?.message).toContain(NO_PROJECT_ID)
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('fails when alias does not exist', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}] as never)
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: null, name: 'staging'}])
+
+    const {error} = await testCommand(LinkAliasCommand, ['nonexistent', 'production'])
+
+    expect(error?.message).toContain('Dataset alias "~nonexistent" does not exist')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('fails when dataset does not exist', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}] as never)
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: null, name: 'staging'}])
+
+    const {error} = await testCommand(LinkAliasCommand, ['staging', 'nonexistent'])
+
+    expect(error?.message).toContain('Dataset "nonexistent" does not exist')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('fails when alias already linked to same dataset', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}] as never)
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: 'production', name: 'staging'}])
+
+    const {error} = await testCommand(LinkAliasCommand, ['staging', 'production'])
+
+    expect(error?.message).toContain('Dataset alias ~staging already linked to production')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('fails when no datasets available', async () => {
+    mockListDatasets.mockResolvedValue([] as never)
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: null, name: 'staging'}])
+
+    const {error} = await testCommand(LinkAliasCommand, ['staging'])
+
+    expect(error?.message).toContain('No datasets available to link to')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('handles API error gracefully', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}] as never)
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: null, name: 'staging'}])
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'patch',
+      uri: '/aliases/staging',
+    }).reply(500, {message: 'API Error'})
 
     const {error} = await testCommand(LinkAliasCommand, ['staging', 'production'])
 

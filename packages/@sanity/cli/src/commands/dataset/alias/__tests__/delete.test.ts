@@ -1,8 +1,10 @@
 import {input} from '@inquirer/prompts'
-import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
-import {testCommand} from '@sanity/cli-test'
+import {getCliConfig} from '@sanity/cli-core'
+import {mockApi, testCommand} from '@sanity/cli-test'
+import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {DATASET_ALIASES_API_VERSION} from '../../../../services/datasetAliases.js'
 import {NO_PROJECT_ID} from '../../../../util/errorMessages.js'
 import {DeleteAliasCommand} from '../delete.js'
 
@@ -26,65 +28,41 @@ vi.mock('../../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-vi.mock('../../../../../../cli-core/src/services/apiClient.js', () => ({
-  getProjectCliClient: vi.fn(),
-}))
-
 vi.mock('@inquirer/prompts', () => ({
   input: vi.fn(),
 }))
 
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockInput = vi.mocked(input)
-
-const setupMockClient = ({
-  aliases = [{datasetName: 'production', name: 'test-alias'}],
-  deleteAliasResponse = {deleted: true},
-}: {
-  aliases?: Array<{datasetName: string | null; name: string}>
-  deleteAliasResponse?: {deleted: boolean}
-} = {}) => {
-  const mockClient = {
-    request: vi.fn(),
-  }
-
-  mockClient.request.mockImplementation((config) => {
-    if (config.uri === '/aliases') {
-      return Promise.resolve(aliases)
-    }
-    if (config.uri?.startsWith('/aliases/') && config.method === 'DELETE') {
-      return Promise.resolve(deleteAliasResponse)
-    }
-    return Promise.resolve({})
-  })
-
-  mockGetProjectCliClient.mockResolvedValue(mockClient as never)
-}
 
 describe('dataset:alias:delete', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
   })
 
-  test('deletes alias with confirmation when alias name provided without ~ prefix', async () => {
-    setupMockClient()
+  test.each([
+    ['test-alias', 'without ~ prefix'],
+    ['~test-alias', 'with ~ prefix'],
+  ])('deletes alias with confirmation: %s (%s)', async (aliasInput) => {
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: 'production', name: 'test-alias'}])
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'delete',
+      uri: '/aliases/test-alias',
+    }).reply(200, {deleted: true})
+
     mockInput.mockResolvedValueOnce('~test-alias')
 
-    const {stdout} = await testCommand(DeleteAliasCommand, ['test-alias'])
-
-    expect(stdout).toContain('Dataset alias deleted successfully')
-    expect(mockInput).toHaveBeenCalledWith({
-      message: expect.stringContaining('This dataset alias is linked to production'),
-      validate: expect.any(Function),
-    })
-  })
-
-  test('deletes alias with confirmation when alias name provided with ~ prefix', async () => {
-    setupMockClient()
-    mockInput.mockResolvedValueOnce('~test-alias')
-
-    const {stdout} = await testCommand(DeleteAliasCommand, ['~test-alias'])
+    const {stdout} = await testCommand(DeleteAliasCommand, [aliasInput])
 
     expect(stdout).toContain('Dataset alias deleted successfully')
     expect(mockInput).toHaveBeenCalledWith({
@@ -94,7 +72,18 @@ describe('dataset:alias:delete', () => {
   })
 
   test('deletes alias with force flag (skips confirmation)', async () => {
-    setupMockClient()
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: 'production', name: 'test-alias'}])
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'delete',
+      uri: '/aliases/test-alias',
+    }).reply(200, {deleted: true})
 
     const {stderr, stdout} = await testCommand(DeleteAliasCommand, ['test-alias', '--force'])
 
@@ -104,9 +93,19 @@ describe('dataset:alias:delete', () => {
   })
 
   test('deletes unlinked alias with confirmation (different prompt message)', async () => {
-    setupMockClient({
-      aliases: [{datasetName: null, name: 'test-alias'}],
-    })
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: null, name: 'test-alias'}])
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'delete',
+      uri: '/aliases/test-alias',
+    }).reply(200, {deleted: true})
+
     mockInput.mockResolvedValueOnce('~test-alias')
 
     const {stdout} = await testCommand(DeleteAliasCommand, ['test-alias'])
@@ -120,9 +119,11 @@ describe('dataset:alias:delete', () => {
   })
 
   test('fails when alias does not exist', async () => {
-    setupMockClient({
-      aliases: [{datasetName: 'production', name: 'other-alias'}],
-    })
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: 'production', name: 'other-alias'}])
 
     const {error} = await testCommand(DeleteAliasCommand, ['nonexistent'])
 
@@ -131,8 +132,6 @@ describe('dataset:alias:delete', () => {
   })
 
   test('fails with invalid alias name', async () => {
-    setupMockClient()
-
     const {error} = await testCommand(DeleteAliasCommand, ['a'])
 
     expect(error?.message).toContain('Alias name must be at least two characters long')
@@ -151,21 +150,19 @@ describe('dataset:alias:delete', () => {
   })
 
   test('handles API errors gracefully', async () => {
-    const mockClient = {
-      request: vi.fn(),
-    }
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: 'production', name: 'test-alias'}])
 
-    mockClient.request.mockImplementation((config) => {
-      if (config.uri === '/aliases') {
-        return Promise.resolve([{datasetName: 'production', name: 'test-alias'}])
-      }
-      if (config.uri?.startsWith('/aliases/') && config.method === 'DELETE') {
-        return Promise.reject(new Error('API Error: Network timeout'))
-      }
-      return Promise.resolve({})
-    })
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'delete',
+      uri: '/aliases/test-alias',
+    }).reply(500, {message: 'API Error: Network timeout'})
 
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
     mockInput.mockResolvedValueOnce('~test-alias')
 
     const {error} = await testCommand(DeleteAliasCommand, ['test-alias'])
@@ -174,8 +171,20 @@ describe('dataset:alias:delete', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('confirmation validation works correctly', async () => {
-    setupMockClient()
+  test('validation works correctly', async () => {
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: 'production', name: 'test-alias'}])
+
+    mockApi({
+      apiHost: 'https://test-project.api.sanity.io',
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'delete',
+      uri: '/aliases/test-alias',
+    }).reply(200, {deleted: true})
+
     mockInput.mockResolvedValueOnce('~test-alias')
 
     await testCommand(DeleteAliasCommand, ['test-alias'])

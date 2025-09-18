@@ -1,6 +1,6 @@
 import {getProjectCliClient} from '@sanity/cli-core'
 
-const PROJECT_FEATURES_API_VERSION = 'v2025-09-16'
+export const PROJECT_FEATURES_API_VERSION = 'v2025-09-16'
 
 /**
  * Get the list of features available for a project
