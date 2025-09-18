@@ -29,6 +29,6 @@
     "@sanity/color": "^3.0.6",
     "@types/react": "^18.3.23",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^7.1.6"
   }
 }
