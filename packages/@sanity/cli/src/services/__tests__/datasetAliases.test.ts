@@ -6,6 +6,7 @@ import {
   DATASET_ALIASES_API_VERSION,
   listAliases,
   removeAlias,
+  updateAlias,
 } from '../datasetAliases.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
@@ -105,6 +106,27 @@ describe('#removeAlias', () => {
     expect(mockClient.request).toHaveBeenCalledWith({
       method: 'DELETE',
       uri: '/aliases/test-alias',
+    })
+    expect(result).toBe(mockResponse)
+  })
+})
+
+describe('#updateAlias', () => {
+  test('calls client.request with correct parameters', async () => {
+    const mockResponse = {aliasName: 'prod', datasetName: 'production'}
+    mockClient.request.mockResolvedValue(mockResponse)
+
+    const result = await updateAlias('test-project', 'prod', 'production')
+
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith({
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: 'test-project',
+      requireUser: true,
+    })
+    expect(mockClient.request).toHaveBeenCalledWith({
+      body: {datasetName: 'production'},
+      method: 'PATCH',
+      uri: '/aliases/prod',
     })
     expect(result).toBe(mockResponse)
   })

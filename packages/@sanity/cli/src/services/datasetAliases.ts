@@ -39,6 +39,26 @@ export async function createAlias(
   })
 }
 
+/**
+ * Updates an existing dataset alias to link to a different dataset
+ * @param projectId - The project ID containing the alias
+ * @param aliasName - The name of the alias to update (without ~ prefix)
+ * @param datasetName - The name of the dataset to link the alias to
+ * @returns Promise resolving to the updated alias information
+ */
+export async function updateAlias(
+  projectId: string,
+  aliasName: string,
+  datasetName: string,
+): Promise<DatasetModificationResponse> {
+  const client = await getAliasClient(projectId)
+  return client.request<DatasetModificationResponse>({
+    body: {datasetName},
+    method: 'PATCH',
+    uri: `/aliases/${aliasName}`,
+  })
+}
+
 export async function removeAlias(
   projectId: string,
   aliasName: string,

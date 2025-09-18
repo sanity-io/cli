@@ -2,8 +2,9 @@ import {input} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
+import {processAliasName} from '../../../actions/dataset/processAliasName.js'
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
-import {ALIAS_PREFIX, listAliases, removeAlias} from '../../../services/datasetAliases.js'
+import {listAliases, removeAlias} from '../../../services/datasetAliases.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 
 const deleteAliasDebug = subdebug('dataset:alias:delete')
@@ -49,7 +50,7 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
       this.error(NO_PROJECT_ID, {exit: 1})
     }
 
-    const {apiName, displayName} = this.processAliasName(args.aliasName)
+    const {apiName, displayName} = processAliasName(args.aliasName)
 
     const nameError = validateDatasetAliasName(apiName)
     if (nameError) {
@@ -93,23 +94,5 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
         return trimmed === aliasName || 'Incorrect dataset alias name. Ctrl + C to cancel delete.'
       },
     })
-  }
-
-  /**
-   * Processes the alias name to handle the optional ~ prefix
-   * @param aliasName - The raw alias name from user input
-   * @returns Object containing apiName (without ~) and displayName (with ~)
-   */
-  private processAliasName(aliasName: string): {apiName: string; displayName: string} {
-    let apiName = aliasName
-    let displayName = aliasName
-
-    if (aliasName.startsWith(ALIAS_PREFIX)) {
-      apiName = aliasName.slice(1)
-    } else {
-      displayName = `${ALIAS_PREFIX}${aliasName}`
-    }
-
-    return {apiName, displayName}
   }
 }
