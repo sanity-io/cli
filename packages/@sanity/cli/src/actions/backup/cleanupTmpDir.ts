@@ -1,13 +1,17 @@
-import {rimraf} from 'rimraf'
+import {rm} from 'node:fs/promises'
 
-import debug from './debug'
+import {backupDownloadDebug} from './backupDownloadDebug.js'
 
-async function cleanupTmpDir(tmpDir: string): Promise<void> {
+/**
+ * Removes the temporary directory and all its contents
+ *
+ * @param tmpDir - Path to the temporary directory to clean up
+ */
+export async function cleanupTmpDir(tmpDir: string): Promise<void> {
   try {
-    await rimraf(tmpDir)
+    await rm(tmpDir, {force: true, recursive: true})
   } catch (err) {
-    debug(`Error cleaning up temporary files: ${err.message}`)
+    const message = err instanceof Error ? err.message : String(err)
+    backupDownloadDebug(`Error cleaning up temporary files: ${message}`)
   }
 }
-
-export default cleanupTmpDir

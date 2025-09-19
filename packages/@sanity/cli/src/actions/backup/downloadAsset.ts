@@ -3,18 +3,24 @@ import path from 'node:path'
 import {pipeline} from 'node:stream/promises'
 
 import {getIt} from 'get-it'
-// eslint-disable-next-line import/extensions
-import {keepAlive, promise} from 'get-it/middleware'
+import {httpErrors, keepAlive, promise, retry} from 'get-it/middleware'
 
-import debug from './debug'
-import withRetry from './withRetry'
+import {backupDownloadDebug} from './backupDownloadDebug.js'
 
 const CONNECTION_TIMEOUT = 15 * 1000 // 15 seconds
 const READ_TIMEOUT = 3 * 60 * 1000 // 3 minutes
 
-const request = getIt([keepAlive(), promise()])
+const request = getIt([keepAlive(), httpErrors(), retry(), promise()])
 
-async function downloadAsset(
+/**
+ * Downloads an asset (image or file) from a backup to the specified output directory
+ *
+ * @param url - The URL to download the asset from
+ * @param fileName - The original file name of the asset
+ * @param fileType - The type of asset ('image' or 'file')
+ * @param outDir - The output directory to save the asset to
+ */
+export async function downloadAsset(
   url: string,
   fileName: string,
   fileType: string,
@@ -26,18 +32,21 @@ async function downloadAsset(
   const normalizedFileName = path.basename(fileName)
 
   const assetFilePath = getAssetFilePath(normalizedFileName, fileType, outDir)
-  await withRetry(async () => {
-    const response = await request({
-      url: url,
-      maxRedirects: 5,
-      timeout: {connect: CONNECTION_TIMEOUT, socket: READ_TIMEOUT},
-      stream: true,
-    })
 
-    debug('Received asset %s with status code %d', normalizedFileName, response?.statusCode)
-
-    await pipeline(response.body, createWriteStream(assetFilePath))
+  const response = await request({
+    maxRedirects: 5,
+    stream: true,
+    timeout: {connect: CONNECTION_TIMEOUT, socket: READ_TIMEOUT},
+    url,
   })
+
+  backupDownloadDebug(
+    'Received asset %s with status code %d',
+    normalizedFileName,
+    response?.statusCode,
+  )
+
+  await pipeline(response.body, createWriteStream(assetFilePath))
 }
 
 function getAssetFilePath(fileName: string, fileType: string, outDir: string): string {
@@ -52,5 +61,3 @@ function getAssetFilePath(fileName: string, fileType: string, outDir: string): s
 
   return assetFilePath
 }
-
-export default downloadAsset

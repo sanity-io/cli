@@ -1,51 +1,59 @@
 import {createWriteStream} from 'node:fs'
-import zlib from 'node:zlib'
+import {createGzip} from 'node:zlib'
 
-import {type ProgressData} from 'archiver'
+import {pack} from 'tar-fs'
 
-import debug from './debug'
-
-const archiver = require('archiver')
+import {backupDownloadDebug} from './backupDownloadDebug.js'
 
 // ProgressCb is a callback that is called with the number of bytes processed so far.
 type ProgressCb = (processedBytes: number) => void
 
-// archiveDir creates a tarball of the given directory and writes it to the given file path.
-function archiveDir(tmpOutDir: string, outFilePath: string, progressCb: ProgressCb): Promise<void> {
+/**
+ * Creates a compressed tarball of the given directory and writes it to the specified file path
+ *
+ * @param tmpOutDir - The directory to archive
+ * @param outFilePath - The output file path for the compressed tarball
+ * @param progressCb - Callback function called with the number of bytes processed
+ */
+export function archiveDir(
+  tmpOutDir: string,
+  outFilePath: string,
+  progressCb: ProgressCb,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const archiveDestination = createWriteStream(outFilePath)
+    const gzipStream = createGzip()
+    let processedBytes = 0
+
     archiveDestination.on('error', (err: Error) => {
+      backupDownloadDebug('Archive destination error: %s', err.message)
       reject(err)
     })
 
     archiveDestination.on('close', () => {
+      backupDownloadDebug('Archive completed successfully')
       resolve()
     })
 
-    const archive = archiver('tar', {
-      gzip: true,
-      gzipOptions: {level: zlib.constants.Z_DEFAULT_COMPRESSION},
-    })
-
-    archive.on('error', (err: Error) => {
-      debug('Archiving errored!\n%s', err.stack)
+    gzipStream.on('error', (err: Error) => {
+      backupDownloadDebug('Gzip stream error: %s', err.message)
       reject(err)
     })
 
-    // Catch warnings for non-blocking errors (stat failures and others)
-    archive.on('warning', (err: Error) => {
-      debug('Archive warning: %s', err.message)
+    const tarStream = pack(tmpOutDir)
+
+    tarStream.on('error', (err: Error) => {
+      backupDownloadDebug('Tar stream error: %s', err.message)
+      reject(err)
     })
 
-    archive.on('progress', (progress: ProgressData) => {
-      progressCb(progress.fs.processedBytes)
+    // Track progress by listening to data events
+    tarStream.on('data', (chunk: Buffer) => {
+      processedBytes += chunk.length
+      progressCb(processedBytes)
     })
 
-    // Pipe archive data to the file
-    archive.pipe(archiveDestination)
-    archive.directory(tmpOutDir, false)
-    archive.finalize()
+    // Pipe tar -> gzip -> file
+    tarStream.pipe(gzipStream).pipe(archiveDestination)
   })
 }
-
-export default archiveDir
