@@ -66,7 +66,12 @@ export function sanityFaviconsPlugin({
         }
 
         const parsedUrl =
-          ((req as any)._parsedUrl as URL) || new URL(req.url || '/', 'http://localhost:3333')
+          typeof req === 'object' &&
+          req !== null &&
+          '_parsedUrl' in req &&
+          req._parsedUrl instanceof URL
+            ? req._parsedUrl
+            : new URL(req.url || '/', 'http://localhost:3333')
 
         const pathName = parsedUrl.pathname || ''
         const fileName = path.basename(pathName || '')
