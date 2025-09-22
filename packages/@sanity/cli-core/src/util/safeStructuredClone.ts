@@ -6,6 +6,7 @@
  * @internal
  */
 export function safeStructuredClone<T>(obj: T): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const seen = new WeakMap<object, any>()
 
   function clone<T>(value: T): T {
@@ -22,6 +23,7 @@ export function safeStructuredClone<T>(obj: T): T {
         return new Map([...value.entries()].map(([k, v]) => [clone(k), clone(v)])) as T
       if (ArrayBuffer.isView(value)) return new (value.constructor as any)(value) as T
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result: any = Array.isArray(value) ? [] : {}
       seen.set(value, result)
 
