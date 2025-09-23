@@ -3,10 +3,12 @@ import {existsSync} from 'node:fs'
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {codemods} from '../actions/codemods/index.js'
 import {type CodeMod} from '../actions/codemods/types.js'
+
+const codemodeDebug = subdebug('codemod')
 
 export class CodemodCommand extends SanityCommand<typeof CodemodCommand> {
   static override args = {
@@ -72,7 +74,9 @@ export class CodemodCommand extends SanityCommand<typeof CodemodCommand> {
       try {
         await mod.verify({workDir})
       } catch (error) {
-        this.error(`Verification failed: ${error}`, {exit: 1})
+        const err = error instanceof Error ? error : new Error(String(error))
+        codemodeDebug('Verification failed: %s', err.message)
+        this.error(`Verification failed: ${err.message}`, {exit: 1})
       }
     }
 
