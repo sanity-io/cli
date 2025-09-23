@@ -1,14 +1,12 @@
-import {type FlagInput} from '@oclif/core/interfaces'
-import {getCliToken, SanityCommand} from '@sanity/cli-core'
+import {getCliToken, SanityCommand, setConfig} from '@sanity/cli-core'
+import {isHttpError} from '@sanity/client'
 
-import {logout} from '../actions/auth/logout.js'
+import {logout} from '../services/auth.js'
 
 export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
   static override description = 'Logs out the CLI from the current user session'
-  static override flags = {} satisfies FlagInput
 
   public async run(): Promise<void> {
-    // Parse to ensure no invalid flags are passed
     await this.parse(LogoutCommand)
 
     const previousToken = await getCliToken()
@@ -17,7 +15,26 @@ export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
       return
     }
 
-    await logout()
+    try {
+      await logout()
+
+      this.clearConfig()
+    } catch (error) {
+      // In the case of session timeouts or missing sessions, we'll get a 401
+      // This is an acceptable situation seen from a logout perspective - all we
+      // need to do in this case is clear the session from the view of the CLI
+      if (isHttpError(error) && error.response.statusCode === 401) {
+        this.clearConfig()
+        return
+      }
+      const err = error instanceof Error ? error : new Error(`${error}`)
+      this.error(`Failed to logout: ${err.message}`, {exit: 1})
+    }
+  }
+
+  private clearConfig() {
+    setConfig('authToken', undefined)
+    setConfig('telemetryConsent', undefined)
 
     this.log('Logged out successfully')
   }
