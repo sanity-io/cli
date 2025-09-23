@@ -33,6 +33,7 @@
   },
   "files": [
     "./bin",
+    "./codemods",
     "./dist",
     "./oclif.config.js",
     "./oclif.manifest.json"
@@ -76,8 +77,8 @@
     "form-data": "^4.0.3",
     "get-latest-version": "^5.1.0",
     "glob": "^11.0.3",
-    "json5": "^2.2.3",
     "jsdom": "^26.0.0",
+    "json5": "^2.2.3",
     "lodash-es": "^4.17.21",
     "nanoid": "^5.1.5",
     "node-html-parser": "^7.0.1",

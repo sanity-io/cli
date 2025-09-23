@@ -1,4 +1,4 @@
-import {type CodeMod} from '../types'
+import {type CodeMod} from './types.js'
 
 const purpose = 'Transform `sanity/desk` imports to `sanity/structure`'
 const description = `
@@ -13,7 +13,7 @@ from: import {StructureBuilder} from 'sanity/desk'
 `.trim()
 
 export const deskRename: CodeMod = {
-  purpose,
   description,
   filename: 'deskRename.js',
+  purpose,
 }
