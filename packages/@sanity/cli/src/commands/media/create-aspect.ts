@@ -1,67 +1,84 @@
-import fs from 'node:fs/promises'
+import fs, {mkdir} from 'node:fs/promises'
 import path from 'node:path'
 
-import {type CliCommandAction} from '@sanity/cli'
+import {input} from '@inquirer/prompts'
+import {fileExists, SanityCommand, subdebug} from '@sanity/cli-core'
 import {createPublishedId} from '@sanity/id-utils'
-import {camelCase} from 'lodash'
+import chalk from 'chalk'
+import {camelCase} from 'lodash-es'
 
-import {withMediaLibraryConfig} from './lib/withMediaLibraryConfig'
+import {withMediaLibraryConfig} from '../../actions/media/withMediaLibraryConfig.js'
+import {NO_MEDIA_LIBRARY_ASPECTS_PATH} from '../../util/errorMessages.js'
 
-const createAspectAction: CliCommandAction = async (args, context) => {
-  const {output, chalk, prompt, mediaLibrary} = withMediaLibraryConfig(context)
+const createAspectDebug = subdebug('media:create-aspect')
 
-  const title = await prompt.single({
-    message: 'Title',
-    type: 'input',
-  })
+export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAspectCommand> {
+  static override description = 'Create a new aspect definition file'
 
-  const name = await prompt.single({
-    message: 'Name',
-    type: 'input',
-    default: createPublishedId(camelCase(title)),
-  })
+  static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %>',
+      description: 'Create a new aspect definition file',
+    },
+  ]
 
-  const safeName = createPublishedId(camelCase(name))
-  const destinationPath = path.resolve(mediaLibrary.aspectsPath, `${safeName}.ts`)
-  const relativeDestinationPath = path.relative(process.cwd(), destinationPath)
+  public async run(): Promise<void> {
+    const cliConfig = await this.getCliConfig()
+    const mediaLibrary = withMediaLibraryConfig(cliConfig)
+    if (mediaLibrary?.aspectsPath === undefined) {
+      this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: 1})
+    }
 
-  await fs.mkdir(path.resolve(mediaLibrary.aspectsPath), {
-    recursive: true,
-  })
+    try {
+      const title = await input({
+        message: 'Title',
+      })
 
-  const destinationPathExists = await fs
-    .stat(destinationPath)
-    .then(() => true)
-    .catch(() => false)
+      const name = await input({
+        default: createPublishedId(camelCase(title)),
+        message: 'Name',
+      })
 
-  if (destinationPathExists) {
-    output.error(`A file already exists at ${chalk.bold(relativeDestinationPath)}`)
-    return
+      const safeName = createPublishedId(camelCase(name))
+      const destinationPath = path.resolve(mediaLibrary.aspectsPath, `${safeName}.ts`)
+      const relativeDestinationPath = path.relative(process.cwd(), destinationPath)
+
+      await mkdir(path.resolve(mediaLibrary.aspectsPath), {
+        recursive: true,
+      })
+
+      const destinationPathExists = await fileExists(destinationPath)
+      if (destinationPathExists) {
+        this.error(`A file already exists at ${chalk.bold(relativeDestinationPath)}`, {exit: 1})
+      }
+
+      await fs.writeFile(
+        destinationPath,
+        template({
+          name: safeName,
+          title,
+        }),
+      )
+
+      this.log(`${chalk.green('✓')} Aspect created! ${chalk.bold(relativeDestinationPath)}`)
+      this.log()
+      this.log('Next steps:')
+      this.log(
+        `Open ${chalk.bold(relativeDestinationPath)} in your code editor and customize the aspect.`,
+      )
+      this.log()
+      this.log('Deploy this aspect by running:')
+      this.log(chalk.bold(`sanity media deploy-aspect ${safeName}`))
+      this.log()
+      this.log('Deploy all aspects by running:')
+      this.log(chalk.bold(`sanity media deploy-aspect --all`))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      createAspectDebug('Failed to create aspect', error)
+      this.error(`Failed to create aspect: ${message}`, {exit: 1})
+    }
   }
-
-  await fs.writeFile(
-    destinationPath,
-    template({
-      name: safeName,
-      title,
-    }),
-  )
-
-  output.success(`Aspect created! ${chalk.bold(relativeDestinationPath)}`)
-  output.print()
-  output.print('Next steps:')
-  output.print(
-    `Open ${chalk.bold(relativeDestinationPath)} in your code editor and customize the aspect.`,
-  )
-  output.print()
-  output.print('Deploy this aspect by running:')
-  output.print(chalk.bold(`sanity media deploy-aspect ${safeName}`))
-  output.print()
-  output.print('Deploy all aspects by running:')
-  output.print(chalk.bold(`sanity media deploy-aspect --all`))
 }
-
-export default createAspectAction
 
 function template({name, title}: {name: string; title: string}) {
   return `import {defineAssetAspect, defineField} from 'sanity'
