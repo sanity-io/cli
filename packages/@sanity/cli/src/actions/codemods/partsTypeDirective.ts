@@ -1,4 +1,4 @@
-import {type CodeMod} from '../types'
+import {type CodeMod} from './types.js'
 
 const purpose = 'Add parts types directive to all ts/tsx files that has one or more part imports'
 const description = `
@@ -22,7 +22,7 @@ import client from 'part:@sanity/base/client'
 `.trim()
 
 export const partsTypeDirective: CodeMod = {
-  purpose,
   description,
   filename: 'partsTypeDirective.js',
+  purpose,
 }

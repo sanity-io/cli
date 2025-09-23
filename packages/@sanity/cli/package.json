@@ -33,6 +33,7 @@
   },
   "files": [
     "./bin",
+    "./codemods",
     "./dist",
     "./oclif.config.js",
     "./oclif.manifest.json"

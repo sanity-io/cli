@@ -1,19 +1,16 @@
-const path = require('node:path')
+/* eslint-disable unicorn/no-array-callback-reference, unicorn/no-array-method-this-argument */
+import path from 'node:path'
 
-partsTypeDirective.parser = 'tsx'
-module.exports = partsTypeDirective
-
-const EXTS = ['.ts', '.tsx']
+const EXTS = new Set(['.ts', '.tsx'])
 
 function partsTypeDirective(fileInfo, api) {
   const j = api.jscodeshift
   const root = j(fileInfo.source)
 
-  if (!EXTS.includes(path.extname(fileInfo.path))) {
+  if (!EXTS.has(path.extname(fileInfo.path))) {
     return fileInfo.source
   }
   const partImports = root.find(api.jscodeshift.ImportDeclaration, (node) =>
-    // eslint-disable-next-line no-use-before-define
     isSanityPart(node.source.value),
   )
   if (partImports.length === 0) {
@@ -21,7 +18,6 @@ function partsTypeDirective(fileInfo, api) {
   }
 
   const existingDirectives = root.find(api.jscodeshift.Comment, (node) =>
-    // eslint-disable-next-line no-use-before-define
     isSanityTypesReferenceDirective(node),
   )
   if (existingDirectives.length > 0) {
@@ -46,3 +42,6 @@ const isSanityTypesReferenceDirective = (node) =>
   node.type === 'CommentLine' &&
   // note: the leading '/' is intentional (it's a triple-slash directive)
   node.value === '/<reference types="@sanity/types/parts" />'
+
+partsTypeDirective.parser = 'tsx'
+export default partsTypeDirective
