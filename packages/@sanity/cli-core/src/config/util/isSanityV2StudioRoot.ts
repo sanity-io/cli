@@ -12,6 +12,9 @@ import {readJsonFile} from '../../util/readJsonFile.js'
 export async function isSanityV2StudioRoot(basePath: string): Promise<boolean> {
   try {
     const sanityJson = await readJsonFile(join(basePath, 'sanity.json'))
+    if (!sanityJson || typeof sanityJson !== 'object' || Array.isArray(sanityJson)) {
+      throw new Error('Invalid sanity.json, expected an object')
+    }
     const isRoot = Boolean(sanityJson?.root)
     return isRoot
   } catch {

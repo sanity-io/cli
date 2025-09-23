@@ -1,5 +1,11 @@
 import {readFile} from 'node:fs/promises'
 
+type JSONValue = boolean | JSONArray | JSONObject | number | string | null
+
+type JSONObject = {[key: string]: JSONValue}
+
+type JSONArray = Array<JSONValue>
+
 /**
  * Read the file at the given path and parse it as JSON.
  *
@@ -7,7 +13,7 @@ import {readFile} from 'node:fs/promises'
  * @returns The parsed file
  * @internal
  */
-export async function readJsonFile(filePath: string): Promise<any> {
+export async function readJsonFile(filePath: string): Promise<JSONValue> {
   let content: string
   try {
     content = await readFile(filePath, 'utf8')
