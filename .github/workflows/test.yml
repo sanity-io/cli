@@ -21,6 +21,8 @@ jobs:
     strategy:
       matrix:
         node-version: [20, 22]
+        shardIndex: [1, 2]
+        shardTotal: [2]
       fail-fast: false
 
     steps:
@@ -34,8 +36,9 @@ jobs:
       - name: Test
         env:
           SANITY_AUTH_TOKEN: 'test-token'
+          GITHUB_SHARD_IDENTIFIER: ${{ matrix.shardIndex }}-${{ matrix.shardTotal }}
         run: |
-          ARGS="--test-timeout=60000 --retry 4"
+          ARGS="--test-timeout=60000 --retry 4 --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}"
           if [ "${{ matrix.node-version }}" == "20" ]; then
             # We only gather coverage from a single Node version.
             # We pass in `--reporter=blob` so that we can combine the results from all shards.
@@ -47,7 +50,7 @@ jobs:
         if: ${{ !cancelled() && matrix.node-version == '20' }}
         uses: actions/upload-artifact@v4
         with:
-          name: blob-report-${{ github.run_id }}-${{ matrix.node-version }}
+          name: blob-report-${{ github.run_id }}-${{ matrix.shardIndex }}
           path: '.vitest-reports/*'
           include-hidden-files: true
           retention-days: 1
