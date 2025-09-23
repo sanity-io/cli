@@ -24,3 +24,14 @@ export async function deleteDataset({datasetName, projectId}: DeleteDatasetOptio
   const client = await getDatasetClient(projectId)
   return client.datasets.delete(datasetName)
 }
+
+interface EditDatasetAclOptions {
+  aclMode: 'private' | 'public'
+  datasetName: string
+  projectId: string
+}
+
+export async function editDatasetAcl({aclMode, datasetName, projectId}: EditDatasetAclOptions) {
+  const client = await getDatasetClient(projectId)
+  return client.datasets.edit(datasetName, {aclMode})
+}
