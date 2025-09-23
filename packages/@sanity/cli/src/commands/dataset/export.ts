@@ -67,7 +67,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     mode: Flags.string({
       default: 'stream',
       description:
-        'Uses a cursor when exporting, this might be more performant for larger datasets, but might not be as accurate if the dataset is being modified during export',
+        'Mode to export documents with `cursor` might be more performant for larger datasets, but might not be as accurate if the dataset is being modified during export',
       options: ['stream', 'cursor'],
     }),
     'no-assets': Flags.boolean({

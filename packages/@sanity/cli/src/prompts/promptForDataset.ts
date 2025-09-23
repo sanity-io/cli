@@ -7,7 +7,7 @@ interface PromptForDatasetOptions {
   allowCreation?: boolean
 }
 
-const NEW_DATASET_VALUE = 'new'
+const NEW_DATASET_VALUE = '-NEW-'
 
 /**
  * Prompts the user to select a dataset from a list of datasets
