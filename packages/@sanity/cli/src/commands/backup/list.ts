@@ -7,7 +7,7 @@ import {isAfter, isValid, lightFormat, parse} from 'date-fns'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'
-import {listDatasets} from '../../actions/backup/listDatasets.js'
+import {listDatasets} from '../../services/datasets.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const listBackupDebug = subdebug('backup:list')
@@ -89,7 +89,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     let datasets: DatasetsResponse
 
     try {
-      datasets = await listDatasets({projectId})
+      datasets = await listDatasets(projectId)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       listBackupDebug(`Failed to list datasets: ${message}`, error)
