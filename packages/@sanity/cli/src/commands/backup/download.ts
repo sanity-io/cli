@@ -21,10 +21,11 @@ import {cleanupTmpDir} from '../../actions/backup/cleanupTmpDir.js'
 import {downloadAsset} from '../../actions/backup/downloadAsset.js'
 import {downloadDocument} from '../../actions/backup/downloadDocument.js'
 import {type File, PaginatedGetBackupStream} from '../../actions/backup/fetchNextBackupPage.js'
-import {listDatasets} from '../../actions/backup/listDatasets.js'
 import {newProgress} from '../../actions/backup/progressSpinner.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
+import {promptForDataset} from '../../prompts/promptForDataset.js'
 import {type BackupItem, listBackups} from '../../services/backup.js'
+import {listDatasets} from '../../services/datasets.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {humanFileSize} from '../../util/humanFileSize.js'
 import {isPathDirName} from '../../util/isPathDirName.js'
@@ -102,7 +103,7 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
     let datasets: DatasetsResponse
 
     try {
-      datasets = await listDatasets({projectId})
+      datasets = await listDatasets(projectId)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       backupDownloadDebug(`Failed to list datasets: ${message}`, error)
@@ -116,7 +117,7 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
     if (dataset) {
       assertDatasetExists(datasets, dataset)
     } else {
-      dataset = await this.promptForDataset(datasets)
+      dataset = await promptForDataset({allowCreation: false, datasets})
     }
 
     const opts = await this.prepareBackupOptions(projectId, dataset)
@@ -343,17 +344,5 @@ ${chalk.bold('backupId')}: ${chalk.cyan(opts.backupId)}`,
       backupDownloadDebug(`Failed to fetch backups for dataset ${datasetName}: ${message}`, err)
       this.error(`Failed to fetch backups for dataset ${datasetName}: ${message}`, {exit: 1})
     }
-  }
-
-  private async promptForDataset(datasets: DatasetsResponse): Promise<string> {
-    const choices = datasets.map((dataset) => ({
-      name: dataset.name,
-      value: dataset.name,
-    }))
-
-    return select({
-      choices,
-      message: 'Select the dataset name:',
-    })
   }
 }
