@@ -41,6 +41,8 @@ vi.mock('@inquirer/prompts', () => ({
 }))
 
 const TEST_DATASET_NAME = 'test-dataset'
+const TEST_PROJECT_NAME = 'Test Project'
+const TEST_PROJECT_ID = 'test-project'
 
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
@@ -48,6 +50,12 @@ const setupMockClient = () => {
   mockGetProjectCliClient.mockResolvedValue({
     datasets: {
       delete: vi.fn().mockResolvedValue(undefined),
+    },
+    projects: {
+      getById: vi.fn().mockResolvedValue({
+        displayName: TEST_PROJECT_NAME,
+        id: TEST_PROJECT_ID,
+      }),
     },
   } as never)
 }
@@ -100,7 +108,11 @@ describe('#dataset:delete', () => {
     setupMockClient()
 
     const {stdout} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME])
-    expect(stdout).toBe('Dataset deleted successfully\n')
+
+    expect(stdout).toContain(
+      `Deleting dataset "${TEST_DATASET_NAME}" from project "${TEST_PROJECT_NAME} (${TEST_PROJECT_ID})"`,
+    )
+    expect(stdout).toContain('Dataset deleted successfully\n')
     expect(input).toHaveBeenCalledWith({
       message:
         'Are you ABSOLUTELY sure you want to delete this dataset?\n  Type the name of the dataset to confirm delete:',
@@ -135,7 +147,7 @@ describe('#dataset:delete', () => {
     const deleteError = new Error(message)
     Object.assign(deleteError, {statusCode})
 
-    mockGetProjectCliClient.mockResolvedValue({
+    mockGetProjectCliClient.mockResolvedValueOnce({
       datasets: {
         delete: vi.fn().mockRejectedValue(deleteError),
       },
@@ -148,7 +160,7 @@ describe('#dataset:delete', () => {
   })
 
   test('handles network errors when deleting dataset', async () => {
-    mockGetProjectCliClient.mockResolvedValue({
+    mockGetProjectCliClient.mockResolvedValueOnce({
       datasets: {
         delete: vi.fn().mockRejectedValue(new Error('Network error')),
       },
@@ -161,7 +173,7 @@ describe('#dataset:delete', () => {
   })
 
   test('handles API client creation errors', async () => {
-    mockGetProjectCliClient.mockRejectedValue(new Error('Failed to create client'))
+    mockGetProjectCliClient.mockRejectedValueOnce(new Error('Failed to create client'))
 
     const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'])
     expect(error?.message).toContain('Dataset deletion failed')
@@ -173,6 +185,21 @@ describe('#dataset:delete', () => {
     vi.mocked(input).mockRejectedValue(new Error('User cancelled'))
 
     const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME])
+
     expect(error?.message).toBe('User cancelled')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('handles project retrieval error', async () => {
+    mockGetProjectCliClient.mockResolvedValueOnce({
+      projects: {
+        getById: vi.fn().mockRejectedValueOnce(new Error('Project Error')),
+      },
+    } as never)
+
+    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME])
+
+    expect(error?.message).toContain('Project retrieval failed: Project Error')
+    expect(error?.oclif?.exit).toBe(1)
   })
 })

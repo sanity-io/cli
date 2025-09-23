@@ -1,9 +1,11 @@
 import {input} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {logSymbols, SanityCommand, subdebug} from '@sanity/cli-core'
+import chalk from 'chalk'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {deleteDataset} from '../../services/datasets.js'
+import {getProjectById} from '../../services/projects.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteDatasetDebug = subdebug('dataset:delete')
@@ -40,41 +42,55 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
     const {args, flags} = await this.parse(DeleteDatasetCommand)
     const {force} = flags
 
-    // Ensure we have project context
     const projectId = await this.getProjectId()
     if (!projectId) {
       this.error(NO_PROJECT_ID, {exit: 1})
     }
 
-    // Get the dataset name to delete (now required)
     const datasetName = args.datasetName
 
-    // Validate dataset name
     const dsError = validateDatasetName(datasetName)
     if (dsError) {
       this.error(dsError, {exit: 1})
     }
 
-    // Confirmation logic
     if (force) {
       this.warn(`'--force' used: skipping confirmation, deleting dataset "${datasetName}"`)
     } else {
-      await input({
-        message:
-          'Are you ABSOLUTELY sure you want to delete this dataset?\n  Type the name of the dataset to confirm delete:',
-        validate: (input) => {
-          const trimmed = input.trim()
-          return trimmed === datasetName || 'Incorrect dataset name. Ctrl + C to cancel delete.'
-        },
-      })
+      try {
+        const project = await getProjectById(projectId)
+        this.log(
+          chalk.yellow(
+            `${logSymbols.warning} Deleting dataset "${chalk.bold(chalk.underline(datasetName))}" from project "${chalk.bold(chalk.underline(project.displayName))} (${chalk.bold(chalk.underline(project.id))})"\n`,
+          ),
+        )
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(`${error}`)
+        deleteDatasetDebug(`Error getting project ${projectId}`, err)
+        this.error(`Project retrieval failed: ${err.message}`, {exit: 1})
+      }
+
+      try {
+        await input({
+          message:
+            'Are you ABSOLUTELY sure you want to delete this dataset?\n  Type the name of the dataset to confirm delete:',
+          validate: (input) => {
+            const trimmed = input.trim()
+            return trimmed === datasetName || 'Incorrect dataset name. Ctrl + C to cancel delete.'
+          },
+        })
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(`${error}`)
+        deleteDatasetDebug(`User cancelled`, err)
+        this.error(`User cancelled`, {exit: 1})
+      }
     }
 
-    // Delete the dataset
     try {
       await deleteDataset({datasetName, projectId})
       this.log('Dataset deleted successfully')
     } catch (error) {
-      const err = error as Error
+      const err = error instanceof Error ? error : new Error(`${error}`)
       deleteDatasetDebug(`Error deleting dataset ${datasetName}`, err)
       this.error(`Dataset deletion failed: ${err.message}`, {exit: 1})
     }
