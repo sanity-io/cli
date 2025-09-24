@@ -1,7 +1,13 @@
 import {getProjectCliClient} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {DATASET_API_VERSION, deleteDataset, editDatasetAcl, listDatasets} from '../datasets.js'
+import {
+  DATASET_API_VERSION,
+  deleteDataset,
+  editDatasetAcl,
+  listDatasetAliases,
+  listDatasets,
+} from '../datasets.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
   const actual = await importOriginal()
@@ -17,6 +23,7 @@ const mockClient = {
     edit: vi.fn(),
     list: vi.fn(),
   },
+  request: vi.fn(),
 }
 
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
@@ -107,5 +114,22 @@ describe('#editDatasetAcl', () => {
         projectId: 'test-project',
       }),
     ).rejects.toThrow('API error')
+  })
+})
+
+describe('#listDatasetAliases', () => {
+  test('calls client.request with correct parameters', async () => {
+    const mockAliases = [{datasetName: 'test-dataset', name: 'test-alias'}]
+    mockClient.request.mockResolvedValue(mockAliases)
+
+    const result = await listDatasetAliases('test-project')
+
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith({
+      apiVersion: DATASET_API_VERSION,
+      projectId: 'test-project',
+      requireUser: true,
+    })
+    expect(mockClient.request).toHaveBeenCalledWith({uri: '/aliases'})
+    expect(result).toBe(mockAliases)
   })
 })
