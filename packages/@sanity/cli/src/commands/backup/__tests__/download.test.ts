@@ -296,26 +296,81 @@ describe('#backup:download', () => {
     })
 
     test.each([
-      ['document', 'doc1.json'],
-      ['asset', 'image1.jpg'],
-    ])('should error when %s download fails', async (type, name) => {
+      [
+        'document download fails',
+        () => {
+          const name = 'doc1.json'
+          const type = 'document'
+          mockBackupAPI({
+            files: [{name, type, url: `https://api.sanity.io/${BACKUP_API_VERSION}/${name}`}],
+          })
+          nock('https://api.sanity.io').get(`/${BACKUP_API_VERSION}/${name}`).reply(500, {
+            message: 'Internal Server Error',
+          })
+        },
+      ],
+      [
+        'asset download fails',
+        () => {
+          const name = 'image1.jpg'
+          const type = 'asset'
+          mockBackupAPI({
+            files: [{name, type, url: `https://api.sanity.io/${BACKUP_API_VERSION}/${name}`}],
+          })
+          nock('https://api.sanity.io').get(`/${BACKUP_API_VERSION}/${name}`).reply(500, {
+            message: 'Internal Server Error',
+          })
+        },
+      ],
+      [
+        'initial backup API call fails',
+        () => {
+          mockApi({
+            apiVersion: BACKUP_API_VERSION,
+            method: 'get',
+            uri: `/projects/test-project/datasets/production/backups/backup-123`,
+          }).reply(500, {
+            message: 'Backup API error',
+          })
+        },
+      ],
+      [
+        'backup API fails on subsequent pages',
+        () => {
+          // First page succeeds
+          mockApi({
+            apiVersion: BACKUP_API_VERSION,
+            method: 'get',
+            uri: `/projects/test-project/datasets/production/backups/backup-123`,
+          }).reply(200, {
+            createdAt: '2024-01-15T10:30:00Z',
+            files: [
+              {
+                name: 'doc1.json',
+                type: 'document',
+                url: `https://api.sanity.io/${BACKUP_API_VERSION}/doc1`,
+              },
+            ],
+            nextCursor: 'page2',
+            totalFiles: 2,
+          })
+
+          // Second page fails
+          mockApi({
+            apiVersion: BACKUP_API_VERSION,
+            method: 'get',
+            query: {nextCursor: 'page2'},
+            uri: `/projects/test-project/datasets/production/backups/backup-123`,
+          }).reply(500, {
+            message: 'Second page error',
+          })
+        },
+      ],
+    ])('should error when %s', async (description, setupMock) => {
       setupTestEnvironment()
+      setupMock()
 
-      mockBackupAPI({
-        files: [
-          {
-            name,
-            type,
-            url: `https://api.sanity.io/${BACKUP_API_VERSION}/${name}`,
-          },
-        ],
-      })
-
-      nock('https://api.sanity.io').get(`/${BACKUP_API_VERSION}/${name}`).reply(500, {
-        message: 'Internal Server Error',
-      })
-
-      const out = `tmp/${Date.now()}-backup-docs/backup.tar.gz`
+      const out = `tmp/${Date.now()}-backup-error/backup.tar.gz`
       const {error} = await testCommand(DownloadBackupCommand, [
         'production',
         '--backup-id',
@@ -477,6 +532,74 @@ describe('#backup:download', () => {
         default: false,
         message: `File "${fullPath}" already exists, would you like to overwrite it?`,
       })
+      expect(error).toBeUndefined()
+      expect(stderr).toContain('Backup download complete')
+      expect(existsSync(out)).toBe(true)
+    })
+
+    test('should download backup with paginated API response', async () => {
+      setupTestEnvironment()
+
+      // First page
+      mockApi({
+        apiVersion: BACKUP_API_VERSION,
+        method: 'get',
+        uri: `/projects/test-project/datasets/production/backups/backup-123`,
+      }).reply(200, {
+        createdAt: '2024-01-15T10:30:00Z',
+        files: [
+          {
+            name: 'doc1.json',
+            type: 'document',
+            url: `https://api.sanity.io/${BACKUP_API_VERSION}/doc1`,
+          },
+          {
+            name: 'image1.jpg',
+            type: 'image',
+            url: `https://api.sanity.io/${BACKUP_API_VERSION}/image1`,
+          },
+        ],
+        nextCursor: 'page2',
+        totalFiles: 3,
+      })
+
+      // Second page
+      mockApi({
+        apiVersion: BACKUP_API_VERSION,
+        method: 'get',
+        query: {nextCursor: 'page2'},
+        uri: `/projects/test-project/datasets/production/backups/backup-123`,
+      }).reply(200, {
+        createdAt: '2024-01-15T10:30:00Z',
+        files: [
+          {
+            name: 'file1.pdf',
+            type: 'file',
+            url: `https://api.sanity.io/${BACKUP_API_VERSION}/file1`,
+          },
+        ],
+        totalFiles: 3,
+      })
+
+      // Mock file downloads
+      nock('https://api.sanity.io')
+        .get(`/${BACKUP_API_VERSION}/doc1`)
+        .reply(200, '{"_id":"doc1","title":"Document 1"}')
+        .get(`/${BACKUP_API_VERSION}/image1`)
+        .reply(200, Buffer.from('fake-image-data'))
+        .get(`/${BACKUP_API_VERSION}/file1`)
+        .reply(200, Buffer.from('fake-file-data'))
+
+      const out = `tmp/${Date.now()}-backup-paginated/backup.tar.gz`
+      const {error, stderr} = await testCommand(DownloadBackupCommand, [
+        'production',
+        '--backup-id',
+        'backup-123',
+        '--out',
+        out,
+        '--overwrite',
+      ])
+
       expect(error).toBeUndefined()
       expect(stderr).toContain('Backup download complete')
       expect(existsSync(out)).toBe(true)

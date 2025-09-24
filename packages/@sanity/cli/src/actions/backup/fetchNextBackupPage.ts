@@ -56,16 +56,11 @@ export class PaginatedGetBackupStream extends Readable {
 
   // fetchNextBackupPage fetches the next page of backed up files from the backup API.
   fetchNextBackupPage(): Promise<GetBackupResponse> {
-    try {
-      return getBackupDetails({
-        backupId: this.backupId,
-        datasetName: this.datasetName,
-        nextCursor: this.cursor === '' ? undefined : this.cursor,
-        projectId: this.projectId,
-      })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      throw new Error(`Downloading dataset backup failed: ${message}`)
-    }
+    return getBackupDetails({
+      backupId: this.backupId,
+      datasetName: this.datasetName,
+      nextCursor: this.cursor === '' ? undefined : this.cursor,
+      projectId: this.projectId,
+    })
   }
 }
