@@ -8,3 +8,7 @@ packages:
   - 'packages/create-sanity'
   - 'examples/*'
   - 'tmp/*'
+
+catalog:
+  eslint: ^9.36.0
+  '@eslint/compat': ^1.4.0
