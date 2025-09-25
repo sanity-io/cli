@@ -63,6 +63,8 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
       if (nameError) {
         this.error(nameError, {exit: 1})
       }
+    } else {
+      datasetName = await promptForDatasetName()
     }
 
     let datasets: string[]
@@ -79,10 +81,6 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
       const message = error instanceof Error ? error.message : String(error)
       createDatasetDebug(`Failed to fetch project data: ${message}`, error)
       this.error(`Failed to fetch project data: ${message}`, {exit: 1})
-    }
-
-    if (!datasetName) {
-      datasetName = await promptForDatasetName()
     }
 
     if (datasets.includes(datasetName)) {
@@ -108,8 +106,8 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     visibility: string | undefined,
     canCreatePrivate: boolean,
   ): Promise<DatasetAclMode> {
-    if (visibility === 'custom') {
-      return 'custom'
+    if (visibility === 'custom' || visibility === 'public') {
+      return visibility
     }
 
     // Handle private visibility request
@@ -119,11 +117,6 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
       }
       // Private requested but not available
       this.warn('Private datasets are not available for this project. Creating as public.')
-      return 'public'
-    }
-
-    // Handle explicit public visibility
-    if (visibility === 'public') {
       return 'public'
     }
 
