@@ -10,7 +10,8 @@ import {BuildCommand} from '../build.js'
 
 describe(
   '#build',
-  {timeout: 6000}, // Higher timeout since build can be slow
+  // might help with speed of tests if not ran concurrently
+  {concurrent: false},
   () => {
     test('help text is correct', async () => {
       const {stdout} = await runCommand('build --help')
