@@ -395,7 +395,10 @@ describe('buildApp', () => {
     mockedBuildStaticFiles.mockRejectedValue(buildError)
 
     await buildApp(baseBuildOptions)
-    expect(mockOutput.error).toHaveBeenCalledWith('Failed to build Sanity application', {exit: 1})
+    expect(mockOutput.error).toHaveBeenCalledWith(
+      'Failed to build Sanity application: Build failed',
+      {exit: 1},
+    )
   })
 
   it('should handle minify flag', async () => {
