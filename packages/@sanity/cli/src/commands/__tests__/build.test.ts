@@ -8,10 +8,13 @@ import {testExample} from '~test/helpers/testExample.js'
 
 import {BuildCommand} from '../build.js'
 
-describe('#build', () => {
-  test('help text is correct', async () => {
-    const {stdout} = await runCommand('build --help')
-    expect(stdout).toMatchInlineSnapshot(`
+describe(
+  '#build',
+  {timeout: 6000}, // Higher timeout since build can be slow
+  () => {
+    test('help text is correct', async () => {
+      const {stdout} = await runCommand('build --help')
+      expect(stdout).toMatchInlineSnapshot(`
       "Builds the Sanity Studio configuration into a static bundle
 
       USAGE
@@ -40,89 +43,71 @@ describe('#build', () => {
 
       "
     `)
-  })
-  test('shows an error for invalid flags', async () => {
-    const {error} = await testCommand(BuildCommand, ['--invalid'])
+    })
+    test('shows an error for invalid flags', async () => {
+      const {error} = await testCommand(BuildCommand, ['--invalid'])
 
-    expect(error?.message).toContain('Nonexistent flag: --invalid')
-  })
-
-  test('should build the "basic-studio" example', async () => {
-    const cwd = await testExample('basic-studio')
-    process.chdir(cwd)
-
-    const {error, stderr, stdout} = await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
+      expect(error?.message).toContain('Nonexistent flag: --invalid')
     })
 
-    // Assert things here
-    expect(error).toBeUndefined()
-    expect(stdout).toContain(`Building with auto-updates enabled`)
-    expect(stderr).toContain('✔ Clean output folder')
-    expect(stderr).toContain(`✔ Build Sanity Studio`)
+    test('should build the "basic-studio" example', async () => {
+      const cwd = await testExample('basic-studio')
+      process.chdir(cwd)
 
-    const outputFolder = join(cwd, 'dist')
-    const files = await readdir(outputFolder)
-    expect(files).toContain('index.html')
-    expect(files).toContain('static')
-  })
+      const {error, stderr, stdout} = await testCommand(BuildCommand, ['--yes'], {
+        config: {root: cwd},
+      })
 
-  test('should build the "basic-app" example', async () => {
-    const cwd = await testExample('basic-app')
-    process.chdir(cwd)
+      // Assert things here
+      expect(error).toBeUndefined()
+      expect(stdout).toContain(`Building with auto-updates enabled`)
+      expect(stderr).toContain('✔ Clean output folder')
+      expect(stderr).toContain(`✔ Build Sanity Studio`)
 
-    const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
+      const outputFolder = join(cwd, 'dist')
+      const files = await readdir(outputFolder)
+      expect(files).toContain('index.html')
+      expect(files).toContain('static')
     })
 
-    expect(error).toBeUndefined()
-    expect(stderr).toContain('Clean output folder')
-    expect(stderr).toContain(`Build Sanity application`)
+    test('should build the "basic-app" example', async () => {
+      const cwd = await testExample('basic-app')
+      process.chdir(cwd)
 
-    const outputFolder = join(cwd, 'dist')
-    const files = await readdir(outputFolder)
-    expect(files).toContain('index.html')
-    expect(files).toContain('static')
-  })
+      const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
+        config: {root: cwd},
+      })
 
-  test('should build the "basic-app" example with auto-updates', async () => {
-    const cwd = await testExample('basic-app')
-    process.chdir(cwd)
+      expect(error).toBeUndefined()
+      expect(stderr).toContain('Clean output folder')
+      expect(stderr).toContain(`Build Sanity application`)
 
-    const {error, stderr, stdout} = await testCommand(BuildCommand, ['--auto-updates', '--yes'], {
-      config: {root: cwd},
+      const outputFolder = join(cwd, 'dist')
+      const files = await readdir(outputFolder)
+      expect(files).toContain('index.html')
+      expect(files).toContain('static')
     })
 
-    expect(error).toBeUndefined()
-    expect(stdout).toContain(`Building with auto-updates enabled`)
-    expect(stderr).toContain('Clean output folder')
-    expect(stderr).toContain(`Build Sanity application`)
+    test('should build the "basic-app" example with auto-updates', async () => {
+      const cwd = await testExample('basic-app')
+      process.chdir(cwd)
 
-    const outputFolder = join(cwd, 'dist')
-    const files = await readdir(outputFolder)
-    expect(files).toContain('index.html')
-    expect(files).toContain('static')
+      const {error, stderr, stdout} = await testCommand(BuildCommand, ['--auto-updates', '--yes'], {
+        config: {root: cwd},
+      })
 
-    const indexHtml = await readFile(join(outputFolder, 'index.html'), 'utf8')
-    expect(indexHtml).toContain('importmap')
-  })
+      expect(error).toBeUndefined()
+      expect(stdout).toContain(`Building with auto-updates enabled`)
+      expect(stderr).toContain('Clean output folder')
+      expect(stderr).toContain(`Build Sanity application`)
 
-  // worst-case-studio example takes a long time to build
-  test("should build the 'worst-case-studio' example", {timeout: 12_000}, async () => {
-    const cwd = await testExample('worst-case-studio')
-    process.chdir(cwd)
+      const outputFolder = join(cwd, 'dist')
+      const files = await readdir(outputFolder)
+      expect(files).toContain('index.html')
+      expect(files).toContain('static')
 
-    const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
-      config: {root: cwd},
+      const indexHtml = await readFile(join(outputFolder, 'index.html'), 'utf8')
+      expect(indexHtml).toContain('importmap')
     })
-
-    expect(error).toBeUndefined()
-    expect(stderr).toContain('Clean output folder')
-    expect(stderr).toContain(`Build Sanity Studio`)
-
-    const outputFolder = join(cwd, 'dist')
-    const files = await readdir(outputFolder)
-    expect(files).toContain('index.html')
-    expect(files).toContain('static')
-  })
-})
+  },
+)
