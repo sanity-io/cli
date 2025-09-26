@@ -110,5 +110,24 @@ describe(
       const indexHtml = await readFile(join(outputFolder, 'index.html'), 'utf8')
       expect(indexHtml).toContain('importmap')
     })
+
+    // worst-case-studio example takes a long time to build
+    test("should build the 'worst-case-studio' example", {timeout: 12_000}, async () => {
+      const cwd = await testExample('worst-case-studio')
+      process.chdir(cwd)
+
+      const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
+        config: {root: cwd},
+      })
+
+      expect(error).toBeUndefined()
+      expect(stderr).toContain('Clean output folder')
+      expect(stderr).toContain(`Build Sanity Studio`)
+
+      const outputFolder = join(cwd, 'dist')
+      const files = await readdir(outputFolder)
+      expect(files).toContain('index.html')
+      expect(files).toContain('static')
+    })
   },
 )
