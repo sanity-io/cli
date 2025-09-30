@@ -26,16 +26,16 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
       description: 'Unlink an alias with interactive selection',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> staging',
-      description: 'Unlink alias "staging" with confirmation prompt',
+      command: '<%= config.bin %> <%= command.id %> conference',
+      description: 'Unlink alias "conference" with confirmation prompt',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> ~staging',
+      command: '<%= config.bin %> <%= command.id %> ~conference',
       description: 'Unlink alias with explicit ~ prefix',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> staging --force',
-      description: 'Unlink alias "staging" without confirmation prompt',
+      command: '<%= config.bin %> <%= command.id %> conference --force',
+      description: 'Unlink alias "conference" without confirmation prompt',
     },
   ]
 

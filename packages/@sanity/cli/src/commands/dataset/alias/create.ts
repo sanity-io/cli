@@ -32,15 +32,15 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
       description: 'Create an alias with interactive prompts',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> staging',
-      description: 'Create alias "staging" with interactive dataset selection',
+      command: '<%= config.bin %> <%= command.id %> conference',
+      description: 'Create alias named "conference" with interactive dataset selection',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> staging production',
-      description: 'Create alias "staging" linked to "production" dataset',
+      command: '<%= config.bin %> <%= command.id %> conference conf-2025',
+      description: 'Create alias "conference" linked to "conf-2025" dataset',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> ~staging production',
+      command: '<%= config.bin %> <%= command.id %> ~conference conf-2025',
       description: 'Create alias with explicit ~ prefix',
     },
   ]
@@ -62,7 +62,7 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
       this.error('Failed to get project features', {exit: 1})
     }
     if (!canCreateAlias) {
-      this.error('This project cannot create a dataset alias', {exit: 1})
+      this.error('This project cannot create a dataset alias - see https://www.sanity.io/pricing', {exit: 1})
     }
 
     if (args.aliasName) {

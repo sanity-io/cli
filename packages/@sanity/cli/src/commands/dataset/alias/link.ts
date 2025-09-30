@@ -33,19 +33,19 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
       description: 'Link an alias with interactive prompts',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> staging',
-      description: 'Link alias "staging" with interactive dataset selection',
+      command: '<%= config.bin %> <%= command.id %> conference',
+      description: 'Link alias named "conference" with interactive dataset selection',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> staging production',
-      description: 'Link alias "staging" to "production" dataset',
+      command: '<%= config.bin %> <%= command.id %> conference conf-2025',
+      description: 'Link alias "conference" to "conf-2025" dataset',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> ~staging production',
+      command: '<%= config.bin %> <%= command.id %> ~conference conf-2025',
       description: 'Link alias with explicit ~ prefix',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> staging production --force',
+      command: '<%= config.bin %> <%= command.id %> conference conf-2025 --force',
       description: 'Force link without confirmation (skip relink prompt)',
     },
   ]

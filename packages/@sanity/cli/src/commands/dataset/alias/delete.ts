@@ -21,16 +21,16 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
 
   static override examples = [
     {
-      command: '<%= config.bin %> <%= command.id %> staging',
-      description: 'Delete alias "staging" with confirmation prompt',
+      command: '<%= config.bin %> <%= command.id %> conference',
+      description: 'Delete alias named "conference" with confirmation prompt',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> ~staging',
+      command: '<%= config.bin %> <%= command.id %> ~conference',
       description: 'Delete alias with explicit ~ prefix',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> staging --force',
-      description: 'Delete alias "staging" without confirmation prompt',
+      command: '<%= config.bin %> <%= command.id %> conference --force',
+      description: 'Delete alias named "conference" without confirmation prompt',
     },
   ]
 
@@ -90,7 +90,7 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
     await input({
       message,
       validate: (input) => {
-        const trimmed = input.trim()
+        const trimmed = input.trim().replace(/^~/, '')
         return trimmed === aliasName || 'Incorrect dataset alias name. Ctrl + C to cancel delete.'
       },
     })

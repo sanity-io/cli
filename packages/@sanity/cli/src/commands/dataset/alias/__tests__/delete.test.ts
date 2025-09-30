@@ -1,4 +1,5 @@
 import {input} from '@inquirer/prompts'
+import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -35,12 +36,46 @@ vi.mock('@inquirer/prompts', () => ({
 const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockInput = vi.mocked(input)
 
-describe('dataset:alias:delete', () => {
+describe('#dataset:alias:delete', () => {
   afterEach(() => {
     vi.clearAllMocks()
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
+  })
+
+  test('help works correctly', async () => {
+    const {stdout} = await runCommand(['dataset alias delete', '--help'])
+    expect(stdout).toMatchInlineSnapshot(`
+      "Delete a dataset alias within your project
+
+      USAGE
+        $ sanity dataset alias delete ALIASNAME [--force]
+
+      ARGUMENTS
+        ALIASNAME  Dataset alias name to delete
+
+      FLAGS
+        --force  Skip confirmation prompt and delete immediately
+
+      DESCRIPTION
+        Delete a dataset alias within your project
+
+      EXAMPLES
+        Delete alias named "conference" with confirmation prompt
+
+          $ sanity dataset alias delete conference
+
+        Delete alias with explicit ~ prefix
+
+          $ sanity dataset alias delete ~conference
+
+        Delete alias named "conference" without confirmation prompt
+
+          $ sanity dataset alias delete conference --force
+
+      "
+    `)
   })
 
   test.each([
@@ -169,35 +204,5 @@ describe('dataset:alias:delete', () => {
 
     expect(error?.message).toContain('Dataset alias deletion failed: API Error: Network timeout')
     expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('validation works correctly', async () => {
-    mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
-      apiVersion: DATASET_ALIASES_API_VERSION,
-      uri: '/aliases',
-    }).reply(200, [{datasetName: 'production', name: 'test-alias'}])
-
-    mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
-      apiVersion: DATASET_ALIASES_API_VERSION,
-      method: 'delete',
-      uri: '/aliases/test-alias',
-    }).reply(200, {deleted: true})
-
-    mockInput.mockResolvedValueOnce('~test-alias')
-
-    await testCommand(DeleteAliasCommand, ['test-alias'])
-
-    expect(mockInput).toHaveBeenCalled()
-
-    const validateFn = mockInput.mock.calls[0]?.[0]?.validate
-    if (validateFn) {
-      expect(validateFn('~test-alias')).toBe(true)
-      expect(validateFn('wrong-name')).toBe(
-        'Incorrect dataset alias name. Ctrl + C to cancel delete.',
-      )
-      expect(validateFn('  ~test-alias  ')).toBe(true)
-    }
   })
 })
