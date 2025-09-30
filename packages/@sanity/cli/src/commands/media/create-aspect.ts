@@ -7,7 +7,7 @@ import {createPublishedId} from '@sanity/id-utils'
 import chalk from 'chalk'
 import {camelCase} from 'lodash-es'
 
-import {withMediaLibraryConfig} from '../../actions/media/withMediaLibraryConfig.js'
+import {getMediaLibraryConfig} from '../../actions/media/getMediaLibraryConfig.js'
 import {NO_MEDIA_LIBRARY_ASPECTS_PATH} from '../../util/errorMessages.js'
 
 const createAspectDebug = subdebug('media:create-aspect')
@@ -24,7 +24,7 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
 
   public async run(): Promise<void> {
     const cliConfig = await this.getCliConfig()
-    const mediaLibrary = withMediaLibraryConfig(cliConfig)
+    const mediaLibrary = getMediaLibraryConfig(cliConfig)
     if (mediaLibrary?.aspectsPath === undefined) {
       this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: 1})
     }
