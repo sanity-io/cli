@@ -1,4 +1,3 @@
-import {input, select} from '@inquirer/prompts'
 import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
@@ -6,8 +5,9 @@ import chalk from 'chalk'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'
-import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
-import {listDatasets} from '../../services/datasets.js'
+import {NEW_DATASET_VALUE, promptForDataset} from '../../prompts/promptForDataset.js'
+import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
+import {createDataset, listDatasets} from '../../services/datasets.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const enableBackupDebug = subdebug('backup:enable')
@@ -66,19 +66,18 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
     if (dataset) {
       assertDatasetExists(datasets, dataset)
     } else {
-      dataset = await this.promptForDataset(datasets)
+      dataset = await promptForDataset({allowCreation: true, datasets})
 
-      if (dataset === 'new') {
-        const newDatasetName = await this.promptForDatasetName(hasProduction)
+      if (dataset === NEW_DATASET_VALUE) {
+        const newDatasetName = await promptForDatasetName({
+          default: hasProduction ? undefined : 'production',
+        })
 
         try {
-          const projectClient = await this.getProjectApiClient({
-            apiVersion: BACKUP_API_VERSION,
+          await createDataset({
+            datasetName: newDatasetName,
             projectId,
-            requireUser: true,
           })
-          // Datasets methods are only available on the project client
-          await projectClient.datasets.create(newDatasetName)
           dataset = newDatasetName
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error)
@@ -113,38 +112,5 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
       enableBackupDebug(`Failed to enable backup for dataset`, error)
       this.error(`Enabling dataset backup failed: ${message}`, {exit: 1})
     }
-  }
-
-  private async promptForDataset(datasets: DatasetsResponse): Promise<string> {
-    try {
-      const choices = datasets.map((dataset) => ({
-        name: dataset.name,
-        value: dataset.name,
-      }))
-
-      return select({
-        choices: [{name: 'Create new dataset', value: 'new'}, ...choices],
-        message: 'Select the dataset name:',
-      })
-    } catch (error) {
-      const err = error as Error
-      enableBackupDebug(`Error fetching datasets`, err)
-      this.error(`Failed to fetch datasets:\n${err.message}`, {exit: 1})
-    }
-  }
-
-  private async promptForDatasetName(hasProduction?: boolean): Promise<string> {
-    return input({
-      default: hasProduction ? 'production' : undefined,
-      message: 'Dataset name:',
-      validate: (name) => {
-        const err = validateDatasetName(name)
-        if (err) {
-          return err
-        }
-
-        return true
-      },
-    })
   }
 }

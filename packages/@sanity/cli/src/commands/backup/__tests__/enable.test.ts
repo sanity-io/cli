@@ -6,6 +6,7 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {BACKUP_API_VERSION} from '../../../actions/backup/constants.js'
+import {NEW_DATASET_VALUE} from '../../../prompts/promptForDataset.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {EnableBackupCommand} from '../enable.js'
 
@@ -122,7 +123,7 @@ describe('#backup:enable', () => {
     expect(stdout).toContain('Enabled backups for dataset production')
     expect(mockSelect).toHaveBeenCalledWith({
       choices: [
-        {name: 'Create new dataset', value: 'new'},
+        {name: 'Create new dataset', value: NEW_DATASET_VALUE},
         {name: 'production', value: 'production'},
         {name: 'staging', value: 'staging'},
       ],
@@ -202,7 +203,7 @@ describe('#backup:enable', () => {
       },
     } as never)
 
-    mockSelect.mockResolvedValue('new')
+    mockSelect.mockResolvedValue(NEW_DATASET_VALUE)
     mockInput.mockResolvedValue('new-dataset')
 
     const {stdout} = await testCommand(EnableBackupCommand, [])
@@ -210,7 +211,7 @@ describe('#backup:enable', () => {
     expect(mockCreate).toHaveBeenCalledWith('new-dataset')
     expect(stdout).toContain('Enabled backups for dataset new-dataset')
     expect(mockInput).toHaveBeenCalledWith({
-      default: 'production',
+      default: undefined,
       message: 'Dataset name:',
       validate: expect.any(Function),
     })
@@ -233,7 +234,7 @@ describe('#backup:enable', () => {
       },
     } as never)
 
-    mockSelect.mockResolvedValue('new')
+    mockSelect.mockResolvedValue(NEW_DATASET_VALUE)
     mockInput.mockResolvedValue('invalid-dataset')
 
     const {error} = await testCommand(EnableBackupCommand, [])
@@ -267,14 +268,14 @@ describe('#backup:enable', () => {
       },
     } as never)
 
-    mockSelect.mockResolvedValue('new')
+    mockSelect.mockResolvedValue(NEW_DATASET_VALUE)
     mockInput.mockResolvedValue('valid-dataset')
 
     const {stdout} = await testCommand(EnableBackupCommand, [])
 
     expect(stdout).toContain('Enabled backups for dataset valid-dataset')
     expect(mockInput).toHaveBeenCalledWith({
-      default: undefined,
+      default: 'production',
       message: 'Dataset name:',
       validate: expect.any(Function),
     })

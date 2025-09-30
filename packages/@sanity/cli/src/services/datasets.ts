@@ -1,8 +1,9 @@
 import {getProjectCliClient} from '@sanity/cli-core'
+import {type DatasetAclMode} from '@sanity/client'
 
 export const DATASET_API_VERSION = 'v2025-09-16'
 
-const getDatasetClient = async (projectId: string) => {
+function getDatasetClient(projectId: string) {
   return getProjectCliClient({
     apiVersion: DATASET_API_VERSION,
     projectId,
@@ -44,4 +45,21 @@ interface EditDatasetAclOptions {
 export async function editDatasetAcl({aclMode, datasetName, projectId}: EditDatasetAclOptions) {
   const client = await getDatasetClient(projectId)
   return client.datasets.edit(datasetName, {aclMode})
+}
+
+interface CreateDatasetOptions {
+  datasetName: string
+  projectId: string
+
+  aclMode?: DatasetAclMode
+}
+
+export async function createDataset({aclMode, datasetName, projectId}: CreateDatasetOptions) {
+  const client = await getDatasetClient(projectId)
+
+  if (aclMode) {
+    return client.datasets.create(datasetName, {aclMode})
+  }
+
+  return client.datasets.create(datasetName)
 }
