@@ -133,7 +133,7 @@ function getUpgradeInstructions(pkgs: PackageInfo[]) {
     .map((pkg) => {
       const [highestSupported] = pkg.supported
         .map((version) => (semver.coerce(version) || {version: ''}).version)
-        .sort(semver.rcompare)
+        .toSorted(semver.rcompare)
 
       return `"${pkg.name}@${highestSupported}"`
     })
@@ -160,7 +160,7 @@ function getDowngradeInstructions(pkgs: PackageInfo[]) {
     .map((pkg) => {
       const [highestSupported] = pkg.supported
         .map((version) => (semver.coerce(version) || {version: ''}).version)
-        .sort(semver.rcompare)
+        .toSorted(semver.rcompare)
 
       return `"${pkg.name}@${highestSupported}"`
     })

@@ -50,7 +50,7 @@ export class List extends SanityCommand<typeof List> {
         [sortFields.indexOf(sort)],
       )
 
-      const rows = order === 'asc' ? ordered : ordered.reverse()
+      const rows = order === 'asc' ? ordered : ordered.toReversed()
 
       // Initialize maxWidths with the width of each header
       const maxWidths = sortFields.map((str) => size(str))

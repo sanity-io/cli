@@ -2,6 +2,7 @@ import path from 'node:path'
 
 import {select} from '@inquirer/prompts'
 import {isInteractive} from '@sanity/cli-core'
+// eslint-disable-next-line unicorn/no-named-default
 import {default as preferredPM} from 'preferred-pm'
 import which from 'which'
 
@@ -144,7 +145,7 @@ function getPathEnvVarKey(): string {
 
   return (
     Object.keys(process.env)
-      .reverse()
+      .toReversed()
       .find((key) => key.toUpperCase() === 'PATH') || 'Path'
   )
 }
