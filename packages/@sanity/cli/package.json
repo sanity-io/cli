@@ -65,6 +65,7 @@
     "@sanity/client": "^7.11.2",
     "@sanity/export": "^3.45.3",
     "@sanity/generate-help-url": "^3.0.0",
+    "@sanity/id-utils": "^1.0.0",
     "@sanity/runtime-cli": "^10.9.0",
     "@sanity/telemetry": "^0.8.1",
     "@vitejs/plugin-react": "^4.5.0",
