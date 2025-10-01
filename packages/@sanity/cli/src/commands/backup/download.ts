@@ -8,7 +8,6 @@ import {confirm, input, select} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {fileExists, SanityCommand} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
-import {Mutex} from 'async-mutex'
 import boxen from 'boxen'
 import chalk from 'chalk'
 import pMap from 'p-map'
@@ -76,7 +75,7 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
 
   static override flags = {
     'backup-id': Flags.string({
-      description: 'The backup ID to download (required)',
+      description: 'The backup ID to download',
     }),
     concurrency: Flags.integer({
       default: DEFAULT_DOWNLOAD_CONCURRENCY,
@@ -121,12 +120,6 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
     }
 
     const opts = await this.prepareBackupOptions(projectId, dataset)
-
-    // If any of the output path or file name is empty, cancel the operation.
-    if (opts.outDir === '' || opts.outFileName === '') {
-      this.error('Operation cancelled.', {exit: 1})
-    }
-
     const outFilePath = path.join(opts.outDir, opts.outFileName)
 
     this.log(
@@ -166,9 +159,7 @@ ${chalk.bold('backupId')}: ${chalk.cyan(opts.backupId)}`,
     backupDownloadDebug('Writing to temporary directory %s', tmpOutDir)
     const tmpOutDocumentsFile = path.join(tmpOutDir, 'data.ndjson')
 
-    // Handle concurrent writes to the same file using mutex.
     const docOutStream = createWriteStream(tmpOutDocumentsFile)
-    const docWriteMutex = new Mutex()
 
     try {
       const backupFileStream = new PaginatedGetBackupStream(
@@ -198,9 +189,7 @@ ${chalk.bold('backupId')}: ${chalk.cyan(opts.backupId)}`,
             await downloadAsset(file.url, file.name, file.type, tmpOutDir)
           } else {
             const doc = await downloadDocument(file.url)
-            await docWriteMutex.runExclusive(() => {
-              docOutStream.write(`${doc}\n`)
-            })
+            docOutStream.write(`${doc}\n`)
           }
 
           totalItemsDownloaded += 1
@@ -298,10 +287,9 @@ ${chalk.bold('backupId')}: ${chalk.cyan(opts.backupId)}`,
         message: `File "${out}" already exists, would you like to overwrite it?`,
       })
 
-      // If the user does not want to overwrite the file, set the output path to an empty string.
-      // This should be handled by the caller of this function as cancel operation.
+      // If the user does not want to overwrite the file, cancel the operation.
       if (!shouldOverwrite) {
-        out = ''
+        this.error('Operation cancelled.', {exit: 1})
       }
     }
 
@@ -326,19 +314,24 @@ ${chalk.bold('backupId')}: ${chalk.cyan(opts.backupId)}`,
         projectId,
       })
 
-      if (response?.backups?.length > 0) {
-        const backupIdChoices = response.backups.map((backup: BackupItem) => ({
-          name: backup.id,
-          value: backup.id,
-        }))
-
-        return select({
-          choices: backupIdChoices,
-          message: `Select backup ID to use (only last ${maxBackupIdsShown} shown)`,
-        })
+      if (!response?.backups?.length) {
+        this.error('No backups found', {exit: 1})
       }
 
-      this.error('No backups found', {exit: 1})
+      const backupIdChoices = response.backups.map((backup: BackupItem) => ({
+        name: backup.id,
+        value: backup.id,
+      }))
+
+      const hint =
+        backupIdChoices.length === maxBackupIdsShown
+          ? ` (only last ${maxBackupIdsShown} shown)`
+          : ''
+
+      return select({
+        choices: backupIdChoices,
+        message: `Select backup ID to use${hint}`,
+      })
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       backupDownloadDebug(`Failed to fetch backups for dataset ${datasetName}: ${message}`, err)

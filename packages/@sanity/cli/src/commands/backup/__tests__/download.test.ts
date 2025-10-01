@@ -140,7 +140,7 @@ describe('#backup:download', () => {
         DATASET  Dataset name to download backup from
 
       FLAGS
-        --backup-id=<value>    The backup ID to download (required)
+        --backup-id=<value>    The backup ID to download
         --concurrency=<value>  [default: 10] Concurrent number of backup item
                                downloads (max: 24)
         --out=<value>          The file or directory path the backup should download
