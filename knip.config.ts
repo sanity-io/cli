@@ -37,6 +37,7 @@ const baseConfig = {
     'packages/@sanity/cli': {
       entry: [
         'src/commands/**/*.ts',
+        'src/commands/**/*.tsx',
         // Worker files
         'src/**/*.worker.ts',
       ],
