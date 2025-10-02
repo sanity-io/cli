@@ -24,17 +24,12 @@ const mockFetchTelemetryConsent = vi.mocked(fetchTelemetryConsent)
 const mockIsCi = vi.mocked(isCi)
 
 describe('telemetry status', () => {
-  const originalEnv = process.env
-
   beforeEach(() => {
-    // Reset environment to clean state
-    process.env = {...originalEnv}
     vi.clearAllMocks()
   })
 
   afterEach(() => {
-    // Restore original environment
-    process.env = originalEnv
+    vi.unstubAllEnvs()
   })
 
   test('help text is correct', async () => {
@@ -66,7 +61,7 @@ describe('telemetry status', () => {
 
   test('shows disabled status with DO_NOT_TRACK environment variable', async () => {
     // Set DO_NOT_TRACK environment variable
-    process.env.DO_NOT_TRACK = '1'
+    vi.stubEnv('DO_NOT_TRACK', '1')
 
     const {stdout} = await testCommand(Status, [])
 
@@ -79,8 +74,8 @@ describe('telemetry status', () => {
   })
 
   test('shows status when DO_NOT_TRACK is not set', async () => {
-    // Ensure no DO_NOT_TRACK is set
-    delete process.env.DO_NOT_TRACK
+    // Explicitly ensure DO_NOT_TRACK is not set
+    vi.stubEnv('DO_NOT_TRACK', undefined)
 
     const {stdout} = await testCommand(Status, [])
 

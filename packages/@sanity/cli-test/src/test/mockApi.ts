@@ -24,7 +24,7 @@ export interface MockApiOptions {
    *
    * Defaults to 'get'
    */
-  method?: 'delete' | 'get' | 'post' | 'put'
+  method?: 'delete' | 'get' | 'patch' | 'post' | 'put'
 
   /**
    * Query parameters to mock

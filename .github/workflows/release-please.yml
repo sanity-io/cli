@@ -1,0 +1,71 @@
+name: Release Please
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish packages to NPM'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release.outputs.releases_created }}
+    steps:
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.ECOSPARK_APP_ID }}
+          private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
+
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+
+      - name: Checkout
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        uses: actions/checkout@v5
+
+      - name: Setup Environment
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        uses: ./.github/actions/setup
+        with:
+          node-version: 20
+
+      - name: Build packages
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        run: pnpm run build:cli
+
+      - name: Build types
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        run: pnpm run build:types
+
+      - name: Set publishing config
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        run: pnpm config set '//registry.npmjs.org/:_authToken' "${NODE_AUTH_TOKEN}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+
+      - name: Publish packages
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        run: pnpm publish -r --filter="@sanity/cli*"
+
+      - name: Summary
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        run: |
+          echo "## Published Packages 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "All CLI packages published:" >> $GITHUB_STEP_SUMMARY
+          echo "- @sanity/cli-core" >> $GITHUB_STEP_SUMMARY
+          echo "- @sanity/cli-test" >> $GITHUB_STEP_SUMMARY

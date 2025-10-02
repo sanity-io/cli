@@ -10,7 +10,7 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli": "workspace:*",
-    "@sanity/client": "^7.9.0",
+    "@sanity/client": "^7.11.2",
     "dotenv": "^17.2.1",
     "tsx": "^4.19.3"
   }

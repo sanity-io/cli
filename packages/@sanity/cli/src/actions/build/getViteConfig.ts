@@ -1,6 +1,7 @@
 import path from 'node:path'
 
 import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core'
+import viteReact from '@vitejs/plugin-react'
 import debug from 'debug'
 import {readPackageUp} from 'read-package-up'
 import {type ConfigEnv, type InlineConfig, type Rollup} from 'vite'
@@ -9,7 +10,6 @@ import {sanityBuildEntries} from '../../server/vite/plugin-sanity-build-entries.
 import {sanityFaviconsPlugin} from '../../server/vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from '../../server/vite/plugin-sanity-runtime-rewrite.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
-import {getSanityPkgExportAliases} from './getBrowserAliases.js'
 import {
   getAppEnvironmentVariables,
   getStudioEnvironmentVariables,
@@ -80,16 +80,14 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
 
   const basePath = normalizeBasePath(rawBasePath)
 
-  const sanityPkgPath = (await readPackageUp({cwd}))?.path
-  if (!sanityPkgPath) {
-    throw new Error('Unable to resolve `sanity` module root')
+  const sanityCliPkgPath = (await readPackageUp({cwd: import.meta.dirname}))?.path
+  if (!sanityCliPkgPath) {
+    throw new Error('Unable to resolve `@sanity/cli` module root')
   }
 
   const customFaviconsPath = path.join(cwd, 'static')
-  const defaultFaviconsPath = path.join(path.dirname(sanityPkgPath), 'static', 'favicons')
+  const defaultFaviconsPath = path.join(path.dirname(sanityCliPkgPath), 'static', 'favicons')
   const staticPath = `${basePath}static`
-
-  const {default: viteReact} = await import('@vitejs/plugin-react')
 
   const envVars = isApp
     ? getAppEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'})
@@ -132,14 +130,15 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       sanityBuildEntries({basePath, cwd, importMap, isApp}),
     ],
     resolve: {
-      alias: await getSanityPkgExportAliases(sanityPkgPath),
       dedupe: ['styled-components'],
     },
     root: cwd,
     server: {
       host: server?.host,
       port: server?.port || 3333,
-      strictPort: true,
+      // Only enable strict port for studio,
+      // since apps can run on any port
+      strictPort: isApp ? false : true,
     },
   }
 

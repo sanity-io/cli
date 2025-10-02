@@ -1,3 +1,4 @@
+/* eslint-disable max-statements */
 import path from 'node:path'
 
 import {
@@ -8,6 +9,8 @@ import {
 } from '@sanity/cli'
 import {type SanityProject} from '@sanity/client'
 import chalk from 'chalk'
+import {info} from 'log-symbols'
+import semver from 'semver'
 import {hideBin} from 'yargs/helpers'
 import yargs from 'yargs/yargs'
 
@@ -15,13 +18,20 @@ import {debug as debugIt} from '../../debug'
 import {type DevServerOptions, startDevServer} from '../../server/devServer'
 import {checkRequiredDependencies} from '../../util/checkRequiredDependencies'
 import {checkStudioDependencyVersions} from '../../util/checkStudioDependencyVersions'
+import {compareDependencyVersions} from '../../util/compareDependencyVersions'
+import {getStudioAutoUpdateImportMap} from '../../util/getAutoUpdatesImportMap'
+import {isInteractive} from '../../util/isInteractive'
+import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice'
+import {upgradePackages} from '../../util/packageManager/upgradePackages'
 import {getSharedServerConfig, gracefulServerDeath} from '../../util/servers'
+import {shouldAutoUpdate} from '../../util/shouldAutoUpdate'
 import {getTimer} from '../../util/timing'
 
 export interface StartDevServerCommandFlags {
   host?: string
   port?: string
   'load-in-dashboard'?: boolean
+  'auto-updates'?: boolean
   force?: boolean
 }
 
@@ -115,6 +125,7 @@ function parseCliFlags(args: {argv?: string[]}) {
   return yargs(hideBin(args.argv || process.argv).slice(1))
     .options('host', {type: 'string'})
     .options('port', {type: 'number'})
+    .options('auto-updates', {type: 'boolean'})
     .option('load-in-dashboard', {type: 'boolean', default: false}).argv
 }
 
@@ -124,7 +135,7 @@ export default async function startSanityDevServer(
 ): Promise<void> {
   const timers = getTimer()
   const flags = await parseCliFlags(args)
-  const {output, apiClient, workDir, cliConfig} = context
+  const {output, apiClient, workDir, cliConfig, prompt, cliPackageManager} = context
 
   const {loadInDashboard} = flags
 
@@ -136,6 +147,56 @@ export default async function startSanityDevServer(
   // thus we want to exit early
   if ((await checkRequiredDependencies(context)).didInstall) {
     return
+  }
+
+  // If the check resulted in a dependency install, the CLI command will be re-run,
+  // thus we want to exit early
+  const {didInstall, installedSanityVersion} = await checkRequiredDependencies(context)
+  if (didInstall) {
+    return
+  }
+
+  const autoUpdatesEnabled = shouldAutoUpdate({flags, cliConfig})
+
+  // Get the version without any tags if any
+  const coercedSanityVersion = semver.coerce(installedSanityVersion)?.version
+  if (autoUpdatesEnabled && !coercedSanityVersion) {
+    throw new Error(`Failed to parse installed Sanity version: ${installedSanityVersion}`)
+  }
+  const version = encodeURIComponent(`^${coercedSanityVersion}`)
+  const autoUpdatesImports = getStudioAutoUpdateImportMap(version)
+
+  if (autoUpdatesEnabled) {
+    output.print(`${info} Running with auto-updates enabled`)
+    // Check the versions
+    const result = await compareDependencyVersions(autoUpdatesImports, workDir)
+    const message =
+      `The following local package versions are different from the versions currently served at runtime.\n` +
+      `When using auto updates, we recommend that you run with the same versions locally as will be used when deploying. \n\n` +
+      `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')} \n\n`
+
+    // mismatch between local and auto-updating dependencies
+    if (result?.length) {
+      if (isInteractive) {
+        const shouldUpgrade = await prompt.single({
+          type: 'confirm',
+          message: chalk.yellow(`${message}Do you want to upgrade local versions?`),
+          default: true,
+        })
+        if (shouldUpgrade) {
+          await upgradePackages(
+            {
+              packageManager: (await getPackageManagerChoice(workDir, {interactive: false})).chosen,
+              packages: result.map((res) => [res.pkg, res.remote]),
+            },
+            context,
+          )
+        }
+      } else {
+        // In this case we warn the user but we don't ask them if they want to upgrade because it's not interactive.
+        output.print(chalk.yellow(message))
+      }
+    }
   }
 
   // Try to load CLI configuration from sanity.cli.(js|ts)
@@ -167,8 +228,7 @@ export default async function startSanityDevServer(
 
   try {
     const spinner = output.spinner('Starting dev server').start()
-    await startDevServer({...config, skipStartLog: loadInDashboard})
-    spinner.succeed()
+    await startDevServer({...config, spinner, skipStartLog: loadInDashboard})
 
     if (loadInDashboard) {
       if (!organizationId) {
@@ -202,11 +262,11 @@ export function getDevServerConfig({
   cliConfig,
   output,
 }: {
-  flags: Awaited<ReturnType<typeof parseCliFlags>>
+  flags: {host?: string; port?: number}
   workDir: string
   cliConfig?: CliConfig
   output: CliOutputter
-}): DevServerOptions {
+}): Omit<DevServerOptions, 'spinner'> {
   const configSpinner = output.spinner('Checking configuration files...')
   const baseConfig = getSharedServerConfig({
     flags: {

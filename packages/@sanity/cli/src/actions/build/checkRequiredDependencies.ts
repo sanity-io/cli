@@ -1,13 +1,10 @@
 import path from 'node:path'
 
-import {type CliConfig, isInteractive, type Output} from '@sanity/cli-core'
-import {execa} from 'execa'
+import {type CliConfig, type Output} from '@sanity/cli-core'
 import {oneline} from 'oneline'
 import semver, {type SemVer} from 'semver'
 
 import {determineIsApp} from '../../util/determineIsApp.js'
-import {installNewPackages} from '../../util/packageManager/installPackages.js'
-import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
 import {type PartialPackageManifest, readPackageManifest} from '../../util/readPackageManifest.js'
 
@@ -17,7 +14,6 @@ const defaultStudioManifestProps: PartialPackageManifest = {
 }
 
 interface CheckResult {
-  didInstall: boolean
   installedSanityVersion: string
 }
 
@@ -35,8 +31,8 @@ const styledComponentsVersionRange = '^6.1.15'
  * dependencies in modules, there are certain dependencies that are better
  * served being peer dependencies, such as react and styled-components.
  *
- * If these dependencies are not installed/declared, we want to prompt the user
- * whether or not to add them to `package.json` and install them
+ * If these dependencies are not installed/declared, we report an error
+ * and instruct the user to install them manually.
  *
  * Additionally, returns the version of the 'sanity' dependency from the package.json.
  */
@@ -48,7 +44,7 @@ export async function checkRequiredDependencies(
   // but this should be removed once they are more mature
   const isApp = determineIsApp(cliConfig)
   if (isApp) {
-    return {didInstall: false, installedSanityVersion: ''}
+    return {installedSanityVersion: ''}
   }
 
   const [studioPackageManifest, installedStyledComponentsVersion, installedSanityVersion] =
@@ -62,7 +58,8 @@ export async function checkRequiredDependencies(
 
   // Retrieve the version of the 'sanity' dependency
   if (!installedSanityVersion) {
-    throw new Error('Failed to read the installed sanity version.')
+    output.error('Failed to read the installed sanity version.', {exit: 1})
+    return {installedSanityVersion: ''}
   }
 
   // The studio _must_ now declare `styled-components` as a dependency. If it's not there,
@@ -73,16 +70,14 @@ export async function checkRequiredDependencies(
     studioPackageManifest.devDependencies['styled-components']
 
   if (!declaredStyledComponentsVersion) {
-    const [file, ...args] = process.argv
-    const deps = {'styled-components': wantedStyledComponentsVersionRange}
-    await installDependencies(deps, options)
-
-    // Re-run the same command (sanity dev/sanity build etc) after installation,
-    // as it can have shifted the entire `node_modules` folder around, result in
-    // broken assumptions about installation paths. This is a hack, and should be
-    // solved properly.
-    await execa(file, args, {cwd: studioPath, stdio: 'inherit'})
-    return {didInstall: true, installedSanityVersion}
+    output.error(
+      oneline`
+      Declared dependency \`styled-components\` is not installed - run
+      \`npm install\`, \`yarn install\` or \`pnpm install\` to install it before re-running this command.
+    `,
+      {exit: 1},
+    )
+    return {installedSanityVersion}
   }
 
   // Theoretically the version specified in package.json could be incorrect, eg `foo`
@@ -94,10 +89,14 @@ export async function checkRequiredDependencies(
   }
 
   if (!minDeclaredStyledComponentsVersion) {
-    throw new Error(oneline`
+    output.error(
+      oneline`
       Declared dependency \`styled-components\` has an invalid version range:
       \`${declaredStyledComponentsVersion}\`.
-    `)
+    `,
+      {exit: 1},
+    )
+    return {installedSanityVersion}
   }
 
   // The declared version should be semver-compatible with the version specified as a
@@ -119,10 +118,14 @@ export async function checkRequiredDependencies(
 
   // Ensure the studio has _installed_ a version of `styled-components`
   if (!installedStyledComponentsVersion) {
-    throw new Error(oneline`
+    output.error(
+      oneline`
       Declared dependency \`styled-components\` is not installed - run
       \`npm install\`, \`yarn install\` or \`pnpm install\` to install it before re-running this command.
-    `)
+    `,
+      {exit: 1},
+    )
+    return {installedSanityVersion}
   }
 
   // The studio should have an _installed_ version of `styled-components`, and it should
@@ -135,41 +138,7 @@ export async function checkRequiredDependencies(
     `)
   }
 
-  return {didInstall: false, installedSanityVersion}
-}
-
-/**
- * Install the passed dependencies at the given version/version range,
- * prompting the user which package manager to use. We will try to detect
- * a package manager from files in the directory and show that as the default
- *
- * @param dependencies - Object of dependencies `({[package name]: version})`
- * @param context - CLI context
- */
-async function installDependencies(
-  dependencies: Record<string, string>,
-  options: CheckRequiredDependenciesOptions,
-): Promise<void> {
-  const {output, workDir} = options
-  const packages: string[] = []
-
-  output.log('The Sanity studio needs to install missing dependencies:')
-  for (const [pkgName, version] of Object.entries(dependencies)) {
-    const declaration = `${pkgName}@${version}`
-    output.log(`- ${declaration}`)
-    packages.push(declaration)
-  }
-
-  const {chosen: pkgManager, mostOptimal} = await getPackageManagerChoice(workDir, {
-    interactive: isInteractive(),
-  })
-  if (mostOptimal && pkgManager !== mostOptimal) {
-    output.warn(
-      `WARN: This project appears to be installed with or using ${mostOptimal} - using a different package manager _may_ result in errors.`,
-    )
-  }
-
-  await installNewPackages({packageManager: pkgManager, packages}, {output, workDir})
+  return {installedSanityVersion}
 }
 
 function isComparableRange(range: string): boolean {

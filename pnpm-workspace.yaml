@@ -9,4 +9,8 @@ packages:
   - 'examples/*'
   - 'tmp/*'
 
-minimumReleaseAge: 4320
+catalog:
+  eslint: ^9.36.0
+  '@eslint/compat': ^1.4.0
+  
+  minimumReleaseAge: 4320

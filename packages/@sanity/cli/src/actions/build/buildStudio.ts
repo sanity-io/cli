@@ -39,14 +39,11 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
 
   // If the check resulted in a dependency install, the CLI command will be re-run,
   // thus we want to exit early
-  const {didInstall, installedSanityVersion} = await checkRequiredDependencies({
+  const {installedSanityVersion} = await checkRequiredDependencies({
     cliConfig,
     output,
     workDir,
   })
-  if (didInstall) {
-    return exit(1)
-  }
 
   const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags})
 

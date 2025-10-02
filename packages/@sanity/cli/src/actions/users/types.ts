@@ -35,3 +35,25 @@ export interface User {
 export interface PartialProjectResponse {
   members: Member[]
 }
+
+export interface Role {
+  appliesToRobots: boolean
+  appliesToUsers: boolean
+  grants: Record<string, Grant[] | undefined>
+  isCustom: boolean
+  name: string
+  projectId: string
+  title: string
+
+  description?: string
+}
+
+interface Grant {
+  grants: unknown[]
+  id: string
+  isCustom: boolean
+  name: string
+  title: string
+
+  description?: string
+}

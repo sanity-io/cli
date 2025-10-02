@@ -3,4 +3,4 @@
  *
  * @internal
  */
-export const LIST_USERS_API_VERSION = 'v2021-05-14'
+export const USERS_API_VERSION = 'v2025-08-30'

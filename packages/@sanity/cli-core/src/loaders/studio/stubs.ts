@@ -79,7 +79,7 @@ if (dom.window.matchMedia === undefined) {
       matches: false,
       media: '',
       onchange: null,
-    }) as any
+    }) as MediaQueryList
 }
 
 // Generic jsdom 1:1

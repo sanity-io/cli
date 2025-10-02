@@ -154,7 +154,7 @@ export async function buildVendorDependencies({
     }
 
     // Sort version ranges in descending order
-    const sortedRanges = Object.keys(ranges).sort((range1, range2) => {
+    const sortedRanges = Object.keys(ranges).toSorted((range1, range2) => {
       const min1 = semver.minVersion(range1)
       const min2 = semver.minVersion(range2)
 

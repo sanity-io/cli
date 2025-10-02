@@ -79,5 +79,11 @@ export const cliConfigSchema = z.object({
 
   studioHost: z.string().optional(),
 
+  mediaLibrary: z
+    .object({
+      aspectsPath: z.string().optional(),
+    })
+    .optional(),
+
   vite: z.union([z.function(), z.object({}).passthrough()]).optional(),
 })

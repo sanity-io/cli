@@ -23,17 +23,12 @@ const mockFetchTelemetryConsent = vi.mocked(fetchTelemetryConsent)
 const mockIsCi = vi.mocked(isCi)
 
 describe('#disable', () => {
-  const originalEnv = process.env
-
   beforeEach(() => {
-    // Reset environment to clean state
-    process.env = {...originalEnv}
     vi.clearAllMocks()
   })
 
   afterEach(() => {
-    // Restore original environment
-    process.env = originalEnv
+    vi.unstubAllEnvs()
   })
 
   test('help text is correct', async () => {
@@ -100,7 +95,7 @@ describe('#disable', () => {
 
   test('shows already disabled message with DO_NOT_TRACK when local override is active', async () => {
     // Set DO_NOT_TRACK environment variable
-    process.env.DO_NOT_TRACK = '1'
+    vi.stubEnv('DO_NOT_TRACK', '1')
 
     const {stdout} = await testCommand(Disable, [])
 

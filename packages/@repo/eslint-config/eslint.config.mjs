@@ -159,7 +159,10 @@ export default [
         'n/no-missing-import': 'off',
         'n/no-process-exit': 'off',
         'n/no-unsupported-features/es-syntax': 'off',
-        'n/no-unsupported-features/node-builtins': ['error', {ignores: ['import.meta.dirname']}],
+        'n/no-unsupported-features/node-builtins': [
+          'error',
+          {ignores: ['import.meta.dirname', 'fetch', 'Response']},
+        ],
         'no-dupe-class-members': 'off',
         'no-redeclare': 'off',
         'no-unused-expressions': 'off',

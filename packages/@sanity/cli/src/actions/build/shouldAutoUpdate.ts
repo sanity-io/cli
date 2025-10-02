@@ -1,11 +1,12 @@
 import {type CliConfig} from '@sanity/cli-core'
 
 import {type DeployFlags} from '../deploy/types.js'
+import {type DevFlags} from '../dev/types.js'
 import {type BuildFlags} from './types.js'
 
 interface AutoUpdateSources {
   cliConfig: CliConfig
-  flags: BuildFlags | DeployFlags
+  flags: BuildFlags | DeployFlags | DevFlags
 }
 
 /**

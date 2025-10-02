@@ -22,17 +22,12 @@ const mockGetCliToken = vi.mocked(getCliToken)
 const mockFetchTelemetryConsent = vi.mocked(fetchTelemetryConsent)
 
 describe('#enable', () => {
-  const originalEnv = process.env
-
   beforeEach(() => {
-    // Reset environment to clean state
-    process.env = {...originalEnv}
     vi.clearAllMocks()
   })
 
   afterEach(() => {
-    // Restore original environment
-    process.env = originalEnv
+    vi.unstubAllEnvs()
   })
 
   test('help text is correct', async () => {
@@ -105,7 +100,7 @@ describe('#enable', () => {
 
   test('shows error when DO_NOT_TRACK is set and trying to enable', async () => {
     // Set DO_NOT_TRACK environment variable
-    process.env.DO_NOT_TRACK = '1'
+    vi.stubEnv('DO_NOT_TRACK', '1')
 
     const {stdout} = await testCommand(Enable, [])
 

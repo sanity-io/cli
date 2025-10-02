@@ -47,7 +47,7 @@ interface CompareDependencyVersions {
 export async function compareDependencyVersions(
   autoUpdatesImports: SanityAppAutoUpdatesImportMap | StudioAutoUpdatesImportMap,
   workDir: string,
-  // eslint-disable-next-line n/no-unsupported-features/node-builtins
+
   fetchFn = globalThis.fetch,
 ): Promise<Array<CompareDependencyVersions>> {
   const manifest = await readPackageJson(path.join(workDir, 'package.json'))

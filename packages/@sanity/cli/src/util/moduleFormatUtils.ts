@@ -19,5 +19,5 @@ function formatModuleName(modName: string): string {
 export function sortModulesBySize(chunks: ChunkStats[]): ChunkModule[] {
   return chunks
     .flatMap((chunk) => chunk.modules)
-    .sort((modA, modB) => modB.renderedLength - modA.renderedLength)
+    .toSorted((modA, modB) => modB.renderedLength - modA.renderedLength)
 }
