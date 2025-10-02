@@ -8,3 +8,5 @@ packages:
   - 'packages/create-sanity'
   - 'examples/*'
   - 'tmp/*'
+
+minimumReleaseAge: 4320
