@@ -1,84 +1,97 @@
-import {type CliCommandAction} from '@sanity/cli'
-import {MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME} from '@sanity/types'
-import {tap} from 'rxjs'
+import {confirm} from '@inquirer/prompts'
+import {Args, Flags} from '@oclif/core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
+import chalk from 'chalk'
 
-import {MINIMUM_API_VERSION} from './constants'
-import {determineTargetMediaLibrary} from './lib/determineTargetMediaLibrary'
+import {selectMediaLibrary} from '../../prompts/selectMediaLibrary.js'
+import {deleteAspect} from '../../services/mediaLibraries.js'
+import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
-interface DeleteAspectFlags {
-  'media-library-id'?: string
-  'aspect-name'?: string
-}
+const deleteAspectDebug = subdebug('media:delete-aspect')
 
-const deleteAspectAction: CliCommandAction<DeleteAspectFlags> = async (args, context) => {
-  const {output, chalk, apiClient, prompt} = context
-  const [aspectName] = args.argsWithoutOptions
-
-  if (typeof aspectName === 'undefined') {
-    output.error('Specify an aspect name.')
-    return
+export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAspectCommand> {
+  static override args = {
+    aspectName: Args.string({
+      description: 'Name of the aspect to delete',
+      required: true,
+    }),
   }
 
-  const mediaLibraryId =
-    args.extOptions['media-library-id'] ?? (await determineTargetMediaLibrary(context))
+  static override description = 'Undeploy an aspect'
 
-  const confirmedDelete = await prompt.single({
-    type: 'confirm',
-    message: `Are you absolutely sure you want to undeploy the ${aspectName} aspect from the "${mediaLibraryId}" media library?`,
-    default: false,
-  })
+  static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %> someAspect',
+      description: 'Delete the aspect named "someAspect"',
+    },
+  ]
 
-  if (!confirmedDelete) {
-    return
+  static override flags = {
+    'media-library-id': Flags.string({
+      description: 'The id of the target media library',
+      required: false,
+    }),
+    yes: Flags.boolean({
+      aliases: ['y'],
+      description: 'Skip confirmation prompt',
+      required: false,
+    }),
   }
 
-  const client = apiClient().withConfig({apiVersion: MINIMUM_API_VERSION})
+  public async run(): Promise<void> {
+    const {aspectName} = this.args
+    const {'media-library-id': mediaLibraryIdFlag, yes: skipConfirmation} = this.flags
 
-  client.observable
-    .request({
-      method: 'POST',
-      uri: `/media-libraries/${mediaLibraryId}/mutate`,
-      body: {
-        mutations: [
-          {
-            delete: {
-              query: `*[_type == $type && _id == $id]`,
-              params: {
-                id: aspectName,
-                type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME,
-              },
-            },
-          },
-        ],
-      },
-    })
-    .pipe(
-      tap({
-        error(error) {
-          output.print()
-          output.error(chalk.bold('Failed to delete aspect'))
-          output.print(`  - ${aspectName}`)
-          output.print()
-          output.print(chalk.red(error.message))
+    const projectId = await this.getProjectId()
+    if (!projectId) {
+      this.error(NO_PROJECT_ID, {exit: 1})
+    }
+
+    try {
+      let mediaLibraryId = mediaLibraryIdFlag
+      if (!mediaLibraryId) {
+        mediaLibraryId = await selectMediaLibrary(projectId)
+      }
+
+      if (!skipConfirmation) {
+        const confirmed = await confirm({
+          default: false,
+          message: `Are you absolutely sure you want to undeploy the ${aspectName} aspect from the "${mediaLibraryId}" media library?`,
+        })
+
+        if (!confirmed) {
+          this.log('Operation cancelled')
+          return
+        }
+      }
+
+      const response = await deleteAspect({
+        aspectName,
+        mediaLibraryId,
+        projectId,
+      })
+
+      if (response.results.length === 0) {
+        this.warn(chalk.bold(`There's no deployed aspect with that name`))
+        this.log(`  - ${aspectName}`)
+        return
+      }
+
+      this.log()
+      this.log(`${chalk.green('✓')} ${chalk.bold('Deleted aspect')}`)
+      this.log(`  - ${aspectName}`)
+
+      // TODO: Find existing aspect definition files matching the undeployed aspect name and offer
+      // to delete them.
+    } catch (error) {
+      const err = error as Error
+      deleteAspectDebug('Failed to delete aspect', err)
+      this.error(
+        chalk.bold('Failed to delete aspect') + `\n  - ${aspectName}\n\n${chalk.red(err.message)}`,
+        {
+          exit: 1,
         },
-        next(response) {
-          if (response.results.length === 0) {
-            output.print()
-            output.warn(chalk.bold(`There's no deployed aspect with that name`))
-            output.print(`  - ${aspectName}`)
-            return
-          }
-
-          output.print()
-          output.success(chalk.bold(`Deleted aspect`))
-          output.print(`  - ${aspectName}`)
-        },
-      }),
-    )
-    .subscribe()
-
-  // TODO: Find existing aspect definition files matching the undeployed aspect name and offer
-  // to delete them.
+      )
+    }
+  }
 }
-
-export default deleteAspectAction
