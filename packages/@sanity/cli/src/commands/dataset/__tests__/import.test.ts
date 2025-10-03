@@ -1,15 +1,15 @@
 import {runCommand} from '@oclif/test'
 import {describe, expect, test} from 'vitest'
 
-describe('#datasets:import', () => {
+describe('#dataset:import', () => {
   test('should print datasets:import help', async () => {
-    const {stdout} = await runCommand('datasets import --help')
+    const {stdout} = await runCommand('dataset import --help')
 
     expect(stdout).toMatchInlineSnapshot(`
       "Import documents to a Sanity dataset
 
       USAGE
-        $ sanity datasets import SOURCE -p <value> -d <value> [-t <value>]
+        $ sanity dataset import SOURCE -p <value> -d <value> [-t <value>]
           [--replace | --missing] [--allow-failing-assets]
           [--allow-assets-in-different-dataset] [--replace-assets]
           [--skip-cross-dataset-references] [--allow-system-documents]
@@ -39,12 +39,12 @@ describe('#datasets:import', () => {
       EXAMPLES
         Import "./my-dataset.ndjson" into dataset "staging"
 
-          $ sanity datasets import -p myPrOj -d staging -t someSecretToken \\
+          $ sanity dataset import -p myPrOj -d staging -t someSecretToken \\
             my-dataset.ndjson
 
         Import into dataset "test" from stdin, read token from env var
 
-          cat my-dataset.ndjson | sanity datasets import -p myPrOj -d test -
+          cat my-dataset.ndjson | sanity dataset import -p myPrOj -d test -
 
       "
     `)

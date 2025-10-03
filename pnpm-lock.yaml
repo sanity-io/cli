@@ -287,8 +287,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       '@sanity/import':
-        specifier: ^3.38.3
-        version: 3.38.3(@types/react@18.3.23)
+        specifier: ^4.0.0
+        version: 4.0.0(@types/node@20.19.23)(@types/react@18.3.23)(jiti@2.6.0)(lightningcss@1.30.1)(terser@5.39.0)(yaml@2.8.1)
       '@sanity/runtime-cli':
         specifier: ^10.4.1
         version: 10.9.0(@types/node@20.19.23)(debug@4.4.3)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(typescript@5.8.3)(yaml@2.8.1)
@@ -2928,6 +2928,10 @@ packages:
     resolution: {integrity: sha512-dBsZWH5X6ANcvclFRnQT9Y+NNvoWTJZIMKR5HT6hzoRpRb48p7+vWn+wi1V1wPvqgZg2ScsOQQcGXWXskbPbQQ==}
     engines: {node: '>=18'}
 
+  '@sanity/asset-utils@2.3.0':
+    resolution: {integrity: sha512-dlEmALjQ5iyQG0O8ZVmkkE3wUYCKfRmiyMvuuGN5SF9buAHxmseBOKJ/Iy2DU/8ef70mtUXlzeCRSlTN/nmZsg==}
+    engines: {node: '>=18'}
+
   '@sanity/bifur-client@0.4.1':
     resolution: {integrity: sha512-mHM8WR7pujbIw2qxuV0lzinS1izOoyLza/ejWV6quITTLpBhUoPIQGPER3Ar0SON5JV0VEEqkJGa1kjiYYgx2w==}
 
@@ -2937,6 +2941,10 @@ packages:
 
   '@sanity/browserslist-config@1.0.5':
     resolution: {integrity: sha512-so+/UtCge8t1jq509hH0otbbptRz0zM/Aa0dh5MhMD7HGT6n2igWIL2VWH/9QR9e77Jn3dJsjz23mW1WCxT+sg==}
+
+  '@sanity/cli-core@0.0.2-alpha.1':
+    resolution: {integrity: sha512-k4ZdW1prRFHRUyTOX+q8tUohIS8nfE0aSAqrc014gYWXUODWMzt9X1QKlRpOS5OWk8uPpzs7SEkSkI9YP+SuwA==}
+    engines: {node: '>=20.19.1 <22 || >=22.12'}
 
   '@sanity/client@7.7.0':
     resolution: {integrity: sha512-PzMOc0zdrpX5O83j6KBWCCj8R510m0LE1U3y7MgWa7u8koOW6kBLUQ0N0WCniMouvSvraKlJOJAJ/Ex3w6ey9Q==}
@@ -3008,6 +3016,11 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
+  '@sanity/import@4.0.0':
+    resolution: {integrity: sha512-odPgVBRcB5Zs+fAgmOe8LGB6VNzx+92MFGSpEr5sO9uKMvGf6hgCrSQQ6IhTgQauS+QIt0E/2x/L8hQ1b7tPRA==}
+    engines: {node: '>=20.19.1 <22 || >=22.12'}
+    hasBin: true
+
   '@sanity/incompatible-plugin@1.0.5':
     resolution: {integrity: sha512-9JGAacbElUPy9Chghd+sllIiM3jAcraZdD65bWYWUVKkghOsf1L/+jFLz1rcAuvrA9o2s7Y+T75BNcXuLwRcvw==}
     peerDependencies:
@@ -3033,6 +3046,9 @@ packages:
   '@sanity/media-library-types@1.0.0':
     resolution: {integrity: sha512-RwBou7SybMbHkSeCn+3L/hbaFP77at3BesP67o8D8RrFiOgHX/h4ibw4yEauC1s09U9BE1MPq9K7ji+0XU57GA==}
 
+  '@sanity/media-library-types@1.0.1':
+    resolution: {integrity: sha512-lyjDQqq0IkVMBKPsm1+IeTpOki3OeFvSCyFms8pPTYcMaH0U5S+wK553QDI4HnmmPx0SiWpOWtLlTh1qkh+IFA==}
+
   '@sanity/message-protocol@0.12.0':
     resolution: {integrity: sha512-RMRWQG5yVkCZnnBHW3qxVbZGUOeXPBzFPdD9+pynQCTVZI7zYBEzjnY8lcSYjty+0unDHqeoqMPfBXhqs0rg2g==}
     engines: {node: '>=20.0.0'}
@@ -3051,6 +3067,9 @@ packages:
 
   '@sanity/mutator@3.99.0':
     resolution: {integrity: sha512-CrX2B2OXYtjFpLQeUC971XiMeyOXyDaMK5qH150qYkg6sVuIdsPjN0kXyMhWR6LuTp96blUOUNPQhkTsfAo44w==}
+
+  '@sanity/mutator@4.10.1':
+    resolution: {integrity: sha512-TTpWVLJE8bpUxqAdRiSHGQ3pdAtPyr0U0T2e2oV4h2vFWvHdGvRkN+9ScEc4XKHcXviIod85CF+JLLJPR0jpPg==}
 
   '@sanity/pkg-utils@7.11.9':
     resolution: {integrity: sha512-3gcE2SOVe3UEVpbENuu6kSWi8HtfzpJXr+gkrFGbHZKBmtzk/SiCQ9nhPUg9VBanrAcBvgIhtuDd039fjr5f1A==}
@@ -3111,6 +3130,11 @@ packages:
 
   '@sanity/types@3.99.0':
     resolution: {integrity: sha512-a766U9VSoyOSWq+RZz9wsEo/Nnn+inDkEcdGu+rHFuygdepullB/RZpF2MxNsfUMCSPnajgG1Tm9lhwbSmlySA==}
+    peerDependencies:
+      '@types/react': 18 || 19
+
+  '@sanity/types@4.10.1':
+    resolution: {integrity: sha512-XwbZIMJvP5GQ0KQVEq2AeCxAVaFGOECtH1RQ/qKTnP+iNN5YVgbhmWKU3FsLXwnxvyjKe/sUjk2we38S+hq/qw==}
     peerDependencies:
       '@types/react': 18 || 19
 
@@ -4227,6 +4251,10 @@ packages:
     resolution: {integrity: sha512-wrH5NNqren/QMtKUEEJf7z86YjfqW/2uw3IL3/xpqZUC95SSVIFXYQeeGjL6FT/X68IROu6RMehZQS5foy2BXw==}
     hasBin: true
 
+  basic-ftp@5.0.5:
+    resolution: {integrity: sha512-4Bcg1P8xhUuqcii/S0Z9wiHIrQVPMermM1any+MX5GeGD7faD3/msQUDGLol9wOcz4/jbg/WJnGqoJF6LiBdtg==}
+    engines: {node: '>=10.0.0'}
+
   bidi-js@1.0.3:
     resolution: {integrity: sha512-RKshQI1R3YQ+n9YJz2QQ147P66ELpa1FQEg20Dk8oW9t2KgLbpDLLp9aGZ7y8WHSshDknG0bknqGw5/tyCs5tw==}
 
@@ -4628,6 +4656,10 @@ packages:
 
   data-uri-to-buffer@1.2.0:
     resolution: {integrity: sha512-vKQ9DTQPN1FLYiiEEOQ6IBGFqvjCa5rSK3cWMy/Nespm5d/x3dGFT9UBZnkLxCwua/IXBi2TYnwTEpsOvhC4UQ==}
+
+  data-uri-to-buffer@6.0.2:
+    resolution: {integrity: sha512-7hvf7/GW8e86rW0ptuwS3OcBGDjIi6SZva7hCyWC0yYry2cOPmLIjXAUHI6DK2HsnwJd9ifmt57i8eV2n4YNpw==}
+    engines: {node: '>= 14'}
 
   data-urls@5.0.0:
     resolution: {integrity: sha512-ZYP5VBHshaDAiVZxjbRVcFJpc+4xGgT0bK3vzy1HLN8jTO975HEbuYzZJcHoQEY5K1a0z8YayJkyVETa08eNTg==}
@@ -5449,6 +5481,10 @@ packages:
 
   get-uri@2.0.4:
     resolution: {integrity: sha512-v7LT/s8kVjs+Tx0ykk1I+H/rbpzkHvuIq87LmeXptcf5sNWm9uQiwjNAt94SJPA1zOlCntmnOlJvVWKmzsxG8Q==}
+
+  get-uri@6.0.5:
+    resolution: {integrity: sha512-b1O07XYq8eRuVzBNgJLstU6FYc1tS6wnMtF1I1D9lE8LxZSOGZ7LhxN54yPP6mGw5f2CkXY2BQUL9Fx41qvcIg==}
+    engines: {node: '>= 14'}
 
   git-hooks-list@3.2.0:
     resolution: {integrity: sha512-ZHG9a1gEhUMX1TvGrLdyWb9kDopCBbTnI8z4JgRMYxsijWipgjSEYoPWqBuIB0DnRnvqlQSEeVmzpeuPm7NdFQ==}
@@ -11302,6 +11338,8 @@ snapshots:
 
   '@sanity/asset-utils@2.2.1': {}
 
+  '@sanity/asset-utils@2.3.0': {}
+
   '@sanity/bifur-client@0.4.1':
     dependencies:
       nanoid: 3.3.11
@@ -11310,6 +11348,39 @@ snapshots:
   '@sanity/blueprints-parser@0.2.1': {}
 
   '@sanity/browserslist-config@1.0.5': {}
+
+  '@sanity/cli-core@0.0.2-alpha.1(@types/node@20.19.23)(jiti@2.6.0)(lightningcss@1.30.1)(terser@5.39.0)(yaml@2.8.1)':
+    dependencies:
+      '@oclif/core': 4.5.4
+      '@sanity/client': 7.7.0(debug@4.4.3)
+      chalk: 5.6.2
+      configstore: 7.0.0
+      debug: 4.4.3(supports-color@8.1.1)
+      get-tsconfig: 4.10.1
+      import-meta-resolve: 4.1.0
+      jsdom: 26.1.0
+      json-lexer: 1.2.0
+      log-symbols: 7.0.1
+      ora: 8.2.0
+      tsx: 4.20.3
+      vite: 6.3.5(@types/node@20.19.23)(jiti@2.6.0)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1)
+      vite-node: 3.2.4(@types/node@20.19.23)(jiti@2.6.0)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@types/node'
+      - bufferutil
+      - canvas
+      - jiti
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - utf-8-validate
+      - yaml
 
   '@sanity/client@7.7.0(debug@4.4.3)':
     dependencies:
@@ -11450,6 +11521,41 @@ snapshots:
       - '@types/react'
       - supports-color
 
+  '@sanity/import@4.0.0(@types/node@20.19.23)(@types/react@18.3.23)(jiti@2.6.0)(lightningcss@1.30.1)(terser@5.39.0)(yaml@2.8.1)':
+    dependencies:
+      '@oclif/core': 4.5.4
+      '@oclif/plugin-help': 6.2.33
+      '@sanity/asset-utils': 2.3.0
+      '@sanity/cli-core': 0.0.2-alpha.1(@types/node@20.19.23)(jiti@2.6.0)(lightningcss@1.30.1)(terser@5.39.0)(yaml@2.8.1)
+      '@sanity/generate-help-url': 3.0.0
+      '@sanity/mutator': 4.10.1(@types/react@18.3.23)
+      debug: 4.4.3(supports-color@8.1.1)
+      get-it: 8.6.10(debug@4.4.3)
+      get-uri: 6.0.5
+      gunzip-maybe: 1.4.2
+      lodash-es: 4.17.21
+      p-map: 7.0.3
+      pretty-ms: 9.3.0
+      split2: 4.2.0
+      tar-fs: 2.1.3
+      tinyglobby: 0.2.15
+    transitivePeerDependencies:
+      - '@types/node'
+      - '@types/react'
+      - bufferutil
+      - canvas
+      - jiti
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - utf-8-validate
+      - yaml
+
   '@sanity/incompatible-plugin@1.0.5(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       react: 18.3.1
@@ -11475,6 +11581,8 @@ snapshots:
       react: 18.3.1
 
   '@sanity/media-library-types@1.0.0': {}
+
+  '@sanity/media-library-types@1.0.1': {}
 
   '@sanity/message-protocol@0.12.0':
     dependencies:
@@ -11516,6 +11624,17 @@ snapshots:
     dependencies:
       '@sanity/diff-match-patch': 3.2.0
       '@sanity/types': 3.99.0(@types/react@18.3.23)(debug@4.4.3)
+      '@sanity/uuid': 3.0.2
+      debug: 4.4.3(supports-color@8.1.1)
+      lodash: 4.17.21
+    transitivePeerDependencies:
+      - '@types/react'
+      - supports-color
+
+  '@sanity/mutator@4.10.1(@types/react@18.3.23)':
+    dependencies:
+      '@sanity/diff-match-patch': 3.2.0
+      '@sanity/types': 4.10.1(@types/react@18.3.23)(debug@4.4.3)
       '@sanity/uuid': 3.0.2
       debug: 4.4.3(supports-color@8.1.1)
       lodash: 4.17.21
@@ -11795,6 +11914,14 @@ snapshots:
       '@sanity/client': 7.7.0(debug@4.4.3)
       '@sanity/media-library-types': 1.0.0
       '@types/react': 19.0.12
+    transitivePeerDependencies:
+      - debug
+
+  '@sanity/types@4.10.1(@types/react@18.3.23)(debug@4.4.3)':
+    dependencies:
+      '@sanity/client': 7.7.0(debug@4.4.3)
+      '@sanity/media-library-types': 1.0.1
+      '@types/react': 18.3.23
     transitivePeerDependencies:
       - debug
 
@@ -13192,6 +13319,8 @@ snapshots:
 
   baseline-browser-mapping@2.8.6: {}
 
+  basic-ftp@5.0.5: {}
+
   bidi-js@1.0.3:
     dependencies:
       require-from-string: 2.0.2
@@ -13627,6 +13756,8 @@ snapshots:
   cyclist@1.0.2: {}
 
   data-uri-to-buffer@1.2.0: {}
+
+  data-uri-to-buffer@6.0.2: {}
 
   data-urls@5.0.0:
     dependencies:
@@ -14610,6 +14741,14 @@ snapshots:
       file-uri-to-path: 1.0.0
       ftp: 0.3.10
       readable-stream: 2.3.8
+    transitivePeerDependencies:
+      - supports-color
+
+  get-uri@6.0.5:
+    dependencies:
+      basic-ftp: 5.0.5
+      data-uri-to-buffer: 6.0.2
+      debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -17786,6 +17925,23 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - typescript
+
+  vite@6.3.5(@types/node@20.19.23)(jiti@2.6.0)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1):
+    dependencies:
+      esbuild: 0.25.10
+      fdir: 6.5.0(picomatch@4.0.3)
+      picomatch: 4.0.3
+      postcss: 8.5.6
+      rollup: 4.50.2
+      tinyglobby: 0.2.15
+    optionalDependencies:
+      '@types/node': 20.19.23
+      fsevents: 2.3.3
+      jiti: 2.6.0
+      lightningcss: 1.30.1
+      terser: 5.39.0
+      tsx: 4.20.3
+      yaml: 2.8.1
 
   vite@6.3.5(@types/node@24.0.14)(jiti@2.6.0)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1):
     dependencies:
