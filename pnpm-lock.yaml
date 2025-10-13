@@ -311,7 +311,7 @@ importers:
         specifier: ^4.1.0
         version: 4.1.0
       debug:
-        specifier: ^4.4.0
+        specifier: ^4.4.3
         version: 4.4.3(supports-color@8.1.1)
       execa:
         specifier: ^9.6.0
@@ -489,7 +489,7 @@ importers:
         specifier: ^7.0.0
         version: 7.0.0
       debug:
-        specifier: ^4.4.0
+        specifier: ^4.4.3
         version: 4.4.3(supports-color@8.1.1)
       get-tsconfig:
         specifier: ^4.10.1
