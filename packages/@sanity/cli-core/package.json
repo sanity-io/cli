@@ -46,7 +46,7 @@
     "@sanity/client": "^7.11.2",
     "chalk": "^5.4.1",
     "configstore": "^7.0.0",
-    "debug": "^4.4.0",
+    "debug": "^4.4.3",
     "get-tsconfig": "^4.10.1",
     "import-meta-resolve": "^4.1.0",
     "jsdom": "^26.0.0",

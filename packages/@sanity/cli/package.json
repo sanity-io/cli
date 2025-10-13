@@ -74,7 +74,7 @@
     "chokidar": "^4.0.3",
     "console-table-printer": "^2.14.6",
     "date-fns": "^4.1.0",
-    "debug": "^4.4.0",
+    "debug": "^4.4.3",
     "execa": "^9.6.0",
     "form-data": "^4.0.3",
     "get-it": "^8.6.9",
