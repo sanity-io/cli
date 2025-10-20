@@ -166,6 +166,7 @@ export function followCopyJobProgress({
         function onError() {
           if (progressSource) {
             progressSource.close()
+            progressSource = null
           }
 
           if (stopped) {
@@ -173,16 +174,15 @@ export function followCopyJobProgress({
           }
 
           observer.next({type: 'reconnect'})
-          if (progressSource) {
-            progressSource = new EventSource(url)
-            attachListeners()
-          }
+          progressSource = new EventSource(url)
+          attachListeners()
         }
 
         function onChannelError(error: MessageEvent) {
           stopped = true
           if (progressSource) {
             progressSource.close()
+            progressSource = null
           }
           const errorMessage = error.data
             ? `Copy job failed: ${error.data}`
@@ -191,7 +191,15 @@ export function followCopyJobProgress({
         }
 
         function onMessage(event: MessageEvent) {
-          const data = JSON.parse(event.data)
+          let data
+          try {
+            data = JSON.parse(event.data)
+          } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown error'
+            observer.error(new Error(`Invalid JSON received from server: ${message}`))
+            return
+          }
+
           if (data.state === 'failed') {
             const failureReason = data.message || data.error || 'Unknown reason'
             observer.error(new Error(`Copy job failed: ${failureReason}`))
@@ -209,6 +217,7 @@ export function followCopyJobProgress({
             progressSource.removeEventListener('job', onMessage)
             progressSource.removeEventListener('done', onComplete)
             progressSource.close()
+            progressSource = null
           }
           observer.complete()
         }
@@ -229,9 +238,11 @@ export function followCopyJobProgress({
       })
 
     return () => {
+      if (stopped) return
       stopped = true
       if (progressSource) {
         progressSource.close()
+        progressSource = null
       }
     }
   })

@@ -1,4 +1,5 @@
 import {select} from '@inquirer/prompts'
+import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {of, throwError} from 'rxjs'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -63,6 +64,69 @@ function createMockDataset(name: string) {
 describe('#dataset:copy', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  test('help works', async () => {
+    const {stdout} = await runCommand(['dataset copy', '--help'])
+
+    expect(stdout).toMatchInlineSnapshot(`
+      "Manages dataset copying, including starting a new copy job, listing copy jobs and following the progress of a running copy job
+
+      USAGE
+        $ sanity dataset copy [SOURCE] [TARGET] [--attach <value> | --list |
+          --detach | --skip-history] [--limit <value> ] [--offset <value> ]
+
+      ARGUMENTS
+        SOURCE  Name of the dataset to copy from
+        TARGET  Name of the dataset to copy to
+
+      FLAGS
+        --attach=<value>  Attach to the running copy process to show progress
+        --detach          Start the copy without waiting for it to finish
+        --limit=<value>   Maximum number of jobs returned (default 10, max 1000)
+        --list            Lists all dataset copy jobs
+        --offset=<value>  Start position in the list of jobs (default 0)
+        --skip-history    Don't preserve document history on copy
+
+      DESCRIPTION
+        Manages dataset copying, including starting a new copy job, listing copy jobs
+        and following the progress of a running copy job
+
+      EXAMPLES
+        Interactively copy a dataset
+
+          $ sanity dataset copy
+
+        Copy from source-dataset (prompts for target)
+
+          $ sanity dataset copy source-dataset
+
+        Copy from source-dataset to target-dataset
+
+          $ sanity dataset copy source-dataset target-dataset
+
+        Copy without preserving document history (faster for large datasets)
+
+          $ sanity dataset copy --skip-history source target
+
+        Start copy job without waiting for completion
+
+          $ sanity dataset copy --detach source target
+
+        Attach to a running copy job to follow progress
+
+          $ sanity dataset copy --attach <job-id>
+
+        List all dataset copy jobs
+
+          $ sanity dataset copy --list
+
+        List copy jobs with pagination
+
+          $ sanity dataset copy --list --offset 2 --limit 10
+
+      "
+    `)
   })
 
   describe('list mode', () => {
@@ -158,6 +222,49 @@ describe('#dataset:copy', () => {
       const {error} = await testCommand(CopyDatasetCommand, ['--attach', 'job-123'])
 
       expect(error?.message).toContain('Failed to attach to copy job: Connection lost')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('rejects whitespace-only jobId', async () => {
+      const {error} = await testCommand(CopyDatasetCommand, ['--attach', '   '])
+
+      expect(error?.message).toContain('Please supply a valid jobId')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('handles JSON parse errors from EventSource', async () => {
+      mockFollowCopyJobProgress.mockReturnValue(
+        throwError(() => new Error('Invalid JSON received from server: Unexpected token')),
+      )
+
+      const {error} = await testCommand(CopyDatasetCommand, ['--attach', 'job-123'])
+
+      expect(error?.message).toContain('Invalid JSON received from server')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('handles EventSource reconnection', async () => {
+      mockFollowCopyJobProgress.mockReturnValue(
+        of({progress: 25, type: 'progress'}, {type: 'reconnect'}, {progress: 50, type: 'progress'}),
+      )
+
+      const {stdout} = await testCommand(CopyDatasetCommand, ['--attach', 'job-123'])
+
+      expect(mockFollowCopyJobProgress).toHaveBeenCalledWith({
+        jobId: 'job-123',
+        projectId: 'test-project',
+      })
+      expect(stdout).toContain('Job job-123 completed')
+    })
+
+    test('handles channel_error from EventSource', async () => {
+      mockFollowCopyJobProgress.mockReturnValue(
+        throwError(() => new Error('Copy job failed: Channel closed unexpectedly')),
+      )
+
+      const {error} = await testCommand(CopyDatasetCommand, ['--attach', 'job-123'])
+
+      expect(error?.message).toContain('Copy job failed')
       expect(error?.oclif?.exit).toBe(1)
     })
   })

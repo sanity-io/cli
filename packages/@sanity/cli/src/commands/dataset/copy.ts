@@ -194,8 +194,8 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
   private async handleAttachMode(jobId: string): Promise<void> {
     copyDatasetDebug('Attaching to copy job %s', jobId)
 
-    if (!jobId) {
-      this.error('Please supply a jobId', {exit: 1})
+    if (!jobId || typeof jobId !== 'string' || jobId.trim() === '') {
+      this.error('Please supply a valid jobId', {exit: 1})
     }
 
     try {
