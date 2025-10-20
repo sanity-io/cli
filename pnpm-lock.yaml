@@ -277,6 +277,9 @@ importers:
       '@sanity/client':
         specifier: ^7.0.0
         version: 7.7.0(debug@4.4.3)
+      '@sanity/eventsource':
+        specifier: ^5.0.2
+        version: 5.0.2
       '@sanity/export':
         specifier: ^3.45.3
         version: 3.45.3(@types/react@18.3.23)
@@ -382,6 +385,9 @@ importers:
       resolve-from:
         specifier: ^5.0.0
         version: 5.0.0
+      rxjs:
+        specifier: ^7.8.1
+        version: 7.8.2
       semver:
         specifier: ^7.7.2
         version: 7.7.2
