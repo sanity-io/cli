@@ -65,14 +65,16 @@ interface MediaLibrary {
  *
  * @internal
  */
-export async function getMediaLibraries(projectId: string) {
+export async function getMediaLibraries(projectId: string): Promise<MediaLibrary[]> {
   const client = await getMediaLibraryClient()
 
-  return client.request<{data: MediaLibrary[]}>({
+  const response = await client.request<MediaLibrary[]>({
     method: 'GET',
     query: {
       projectId,
     },
     uri: `/media-libraries`,
   })
+
+  return response.filter((library) => library.status === 'active')
 }

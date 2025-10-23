@@ -3,13 +3,14 @@ declare module '@sanity/export' {
 
   interface ExportOptions {
     client: SanityClient
-    dataset: string
     outputPath: string
 
     assetConcurrency?: number
     assets?: boolean
     compress?: boolean
+    dataset?: string
     drafts?: boolean
+    mediaLibraryId?: string
     mode?: string
     onProgress?: (progress: {
       current: number
