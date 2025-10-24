@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import resolveFrom from 'resolve-from'
 import semver from 'semver'
+import {build} from 'vite'
 
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 
@@ -208,7 +209,6 @@ export async function buildVendorDependencies({
   // removes the `RollupWatcher` type
   type BuildResult = Exclude<Awaited<ReturnType<typeof build>>, {close: unknown}>
 
-  const {build} = await import('vite')
   // Use Vite to build the packages into the output directory
   let buildResult = (await build({
     appType: 'custom',

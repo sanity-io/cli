@@ -45,7 +45,16 @@ export async function testCopyDirectory(
  */
 async function copyExample(exampleName: string, shouldBuild: boolean) {
   // Examples are cloned in the tmp directory by the setup function
-  const tempExamplePath = join(rootDir, 'tmp', `example-${exampleName}`)
+  let tempExamplePath = join(rootDir, 'tmp', `example-${exampleName}`)
+
+  try {
+    ;(await stat(tempExamplePath)).isDirectory()
+  } catch (e) {
+    // If the cloned example doesn't exist, copy from the examples directory
+    if (e.code === 'ENOENT') {
+      tempExamplePath = join(examplesDir, exampleName)
+    }
+  }
 
   const tempId = randomBytes(8).toString('hex')
   const tempPath = join(rootDir, 'tmp', `example-${exampleName}-${tempId}`)

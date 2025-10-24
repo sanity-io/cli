@@ -3,7 +3,8 @@ import {readdir, readFile, rm, writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 import {promisify} from 'node:util'
 
-import {BuildCommand} from '../src/commands/build.js'
+import spinner from 'ora'
+
 import {testCopyDirectory} from './helpers/testExample.js'
 
 const exec = promisify(execNode)
@@ -12,12 +13,19 @@ const exec = promisify(execNode)
 const examplesToCopy = new Set(['basic-app', 'basic-studio'])
 
 export async function setup() {
-  console.log('Initializing test environment...')
+  const spin = spinner({
+    // Without this, the watch mode input is discarded
+    discardStdin: false,
+    text: 'Initializing test environment...',
+  }).start()
   // Clone all the examples to the tmp directory
   const examplesDir = join(process.cwd(), 'examples')
   const examples = await readdir(examplesDir)
 
   const tempDir = join(process.cwd(), 'tmp')
+
+  const buildPromises = []
+
   for (const example of examples) {
     if (example.startsWith('.') || !examplesToCopy.has(example)) {
       continue
@@ -47,18 +55,20 @@ export async function setup() {
       )
     }
 
-    const currentCwd = process.cwd()
-    process.cwd = () => toPath
-
-    // Run build in the temp directory
-    await BuildCommand.run(['--yes'], {
-      root: toPath,
-    })
-
-    process.cwd = () => currentCwd
+    buildPromises.push(
+      exec('npx sanity build --yes', {
+        cwd: toPath,
+      }),
+    )
   }
 
-  console.log('Test environment initialized')
+  try {
+    await Promise.all(buildPromises)
+    spin.succeed('Test environment initialized')
+  } catch (error) {
+    spin.fail('Failed to initialize test environment')
+    throw error
+  }
 }
 
 export async function teardown() {
