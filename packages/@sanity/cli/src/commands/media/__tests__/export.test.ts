@@ -2,7 +2,7 @@ import fs from 'node:fs/promises'
 
 import {input, select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
-import {type CliConfig, getCliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {type CliConfig, getCliConfig, getGlobalCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import exportDataset from '@sanity/export'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -37,6 +37,7 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
 }))
 
 vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
+  getGlobalCliClient: vi.fn(),
   getProjectCliClient: vi.fn(),
 }))
 
@@ -51,7 +52,7 @@ const mockExportDataset = vi.mocked(exportDataset)
 const mockInput = vi.mocked(input)
 const mockSelect = vi.mocked(select)
 const mockGetCliConfig = vi.mocked(getCliConfig)
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
+const mockGetGlobalCliClient = vi.mocked(getGlobalCliClient)
 const mockFs = vi.mocked(fs)
 
 const TEST_CONFIG = {
@@ -108,7 +109,7 @@ const createTestContext = (
       data: context.mediaLibraries,
     }),
   }
-  mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+  mockGetGlobalCliClient.mockResolvedValue(mockClient as never)
 
   // Setup fs.stat mock
   if (context.fileExists) {

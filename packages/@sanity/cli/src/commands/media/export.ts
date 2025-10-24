@@ -9,7 +9,7 @@ import boxen from 'boxen'
 import prettyMs from 'pretty-ms'
 
 import {promptForMediaLibrary} from '../../prompts/promptForMediaLibrary.js'
-import {listMediaLibraries} from '../../services/mediaLibraries.js'
+import {getMediaLibraries} from '../../services/mediaLibraries.js'
 import {absolutify} from '../../util/absolutify.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
@@ -87,7 +87,7 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
 
     let mediaLibraries
     try {
-      mediaLibraries = await listMediaLibraries(projectId)
+      mediaLibraries = await getMediaLibraries(projectId)
     } catch (error) {
       exportDebug('Error listing media libraries', error)
       this.error(

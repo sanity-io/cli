@@ -15,9 +15,8 @@ export async function selectMediaLibrary(projectId: string): Promise<string> {
   const spin = spinner('Fetching available media libraries').start()
 
   try {
-    const response = await getMediaLibraries(projectId)
+    const activeLibraries = await getMediaLibraries(projectId)
 
-    const activeLibraries = response.data.filter((lib) => lib.status === 'active')
     const byOrg = groupBy(activeLibraries, 'organizationId')
 
     spin.succeed()
