@@ -1,4 +1,4 @@
-import fs from 'node:fs/promises'
+import {access, readdir} from 'node:fs/promises'
 import path from 'node:path'
 
 import {validateMediaLibraryAssetAspect} from '@sanity/schema/_internal'
@@ -79,13 +79,13 @@ export async function importAspects(options: ImportAspectsOptions): Promise<Impo
 
   // Check if directory exists
   try {
-    await fs.access(aspectsPath)
+    await access(aspectsPath)
   } catch {
     throw new Error(`Aspects directory does not exist: ${aspectsPath}`)
   }
 
   // Read directory entries
-  const entries = await fs.readdir(aspectsPath, {withFileTypes: true})
+  const entries = await readdir(aspectsPath, {withFileTypes: true})
 
   // Filter for valid aspect files
   const aspectFiles = entries.filter(
