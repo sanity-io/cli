@@ -1,8 +1,10 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
-import {type MediaLibraryAssetAspectDocument} from '@sanity/types'
+import {
+  MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME,
+  type MediaLibraryAssetAspectDocument,
+} from '@sanity/types'
 
 export const MEDIA_LIBRARY_API_VERSION = 'v2025-02-19'
-export const MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME = 'sanity.mediaLibrary.assetAspect'
 
 async function getMediaLibraryClient() {
   return getGlobalCliClient({

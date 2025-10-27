@@ -18,7 +18,7 @@ const ASPECT_FILE_EXTENSIONS = new Set(['.js', '.jsx', '.mjs', '.mts', '.ts', '.
 /**
  * Type for an aspect that has been validated
  */
-export interface ValidAspect {
+interface ValidAspect {
   aspect: MediaLibraryAssetAspectDocument
   filename: string
   status: 'valid'
@@ -28,7 +28,7 @@ export interface ValidAspect {
 /**
  * Type for an aspect that failed validation
  */
-export interface InvalidAspect {
+interface InvalidAspect {
   aspect: unknown
   filename: string
   status: 'invalid'
@@ -38,12 +38,12 @@ export interface InvalidAspect {
 /**
  * Union type for aspect containers
  */
-export type AspectContainer = InvalidAspect | ValidAspect
+type AspectContainer = InvalidAspect | ValidAspect
 
 /**
  * Options for importing aspects
  */
-export interface ImportAspectsOptions {
+interface ImportAspectsOptions {
   /**
    * Path to the directory containing aspect definition files
    */
@@ -58,7 +58,7 @@ export interface ImportAspectsOptions {
 /**
  * Result of importing aspects, grouped by validation status
  */
-export interface ImportAspectsResult {
+interface ImportAspectsResult {
   invalid: InvalidAspect[]
   valid: ValidAspect[]
 }
