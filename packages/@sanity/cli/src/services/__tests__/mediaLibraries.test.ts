@@ -1,4 +1,5 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
+import {MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME} from '@sanity/types'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {deleteAspect, getMediaLibraries, MEDIA_LIBRARY_API_VERSION} from '../mediaLibraries.js'
@@ -48,7 +49,7 @@ describe('#deleteAspect', () => {
             delete: {
               params: {
                 id: 'myAspect',
-                type: 'sanity.mediaLibrary.assetAspect',
+                type: MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME,
               },
               query: `*[_type == $type && _id == $id]`,
             },
