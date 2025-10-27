@@ -147,13 +147,19 @@ export async function importAspects(options: ImportAspectsOptions): Promise<Impo
         status: 'valid',
         validationErrors: [],
       })
-    } catch {
-      // Handle import errors
+    } catch (error) {
       aspects.push({
         aspect: null,
         filename,
         status: 'invalid',
-        validationErrors: [],
+        validationErrors: [
+          [
+            {
+              message: `Failed to import file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              severity: 'error',
+            },
+          ],
+        ],
       })
     }
   }
