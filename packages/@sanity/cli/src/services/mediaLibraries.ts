@@ -1,8 +1,8 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
+import {type MediaLibraryAssetAspectDocument} from '@sanity/types'
 
 export const MEDIA_LIBRARY_API_VERSION = 'v2025-02-19'
-
-const MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME = 'sanity.mediaLibrary.assetAspect'
+export const MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME = 'sanity.mediaLibrary.assetAspect'
 
 async function getMediaLibraryClient() {
   return getGlobalCliClient({
@@ -81,4 +81,36 @@ export async function getMediaLibraries(projectId: string): Promise<MediaLibrary
   })
 
   return response.data.filter((library) => library.status === 'active')
+}
+
+interface DeployAspectsOptions {
+  aspects: MediaLibraryAssetAspectDocument[]
+  mediaLibraryId: string
+}
+
+interface DeployAspectsResponse {
+  results: Array<{id: string; operation: string}>
+}
+
+/**
+ * Deploy one or more aspects to a media library
+ * @param options - The options for deploying aspects
+ * @returns A promise that resolves to the deployment response
+ *
+ * @internal
+ */
+export async function deployAspects(options: DeployAspectsOptions): Promise<DeployAspectsResponse> {
+  const {aspects, mediaLibraryId} = options
+
+  const client = await getMediaLibraryClient()
+
+  return client.request<DeployAspectsResponse>({
+    body: {
+      mutations: aspects.map((aspect) => ({
+        createOrReplace: aspect,
+      })),
+    },
+    method: 'POST',
+    uri: `/media-libraries/${mediaLibraryId}/mutate`,
+  })
 }
