@@ -1,6 +1,6 @@
 import {getProjectCliClient} from '@sanity/cli-core'
 import {type DatasetAclMode} from '@sanity/client'
-import EventSource from '@sanity/eventsource'
+import {EventSource} from 'eventsource'
 import {Observable} from 'rxjs'
 
 export const DATASET_API_VERSION = 'v2025-09-16'

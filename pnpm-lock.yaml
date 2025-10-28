@@ -277,9 +277,6 @@ importers:
       '@sanity/client':
         specifier: ^7.0.0
         version: 7.7.0(debug@4.4.3)
-      '@sanity/eventsource':
-        specifier: ^5.0.2
-        version: 5.0.2
       '@sanity/export':
         specifier: ^3.45.3
         version: 3.45.3(@types/react@18.3.23)
@@ -319,6 +316,9 @@ importers:
       debug:
         specifier: ^4.4.3
         version: 4.4.3(supports-color@8.1.1)
+      eventsource:
+        specifier: ^4.0.0
+        version: 4.0.0
       execa:
         specifier: ^9.6.0
         version: 9.6.0

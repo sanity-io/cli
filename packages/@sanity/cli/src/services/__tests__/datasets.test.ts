@@ -1,5 +1,5 @@
 import {getProjectCliClient} from '@sanity/cli-core'
-import EventSource from '@sanity/eventsource'
+import {EventSource} from 'eventsource'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -12,9 +12,9 @@ import {
   listDatasets,
 } from '../datasets.js'
 
-vi.mock('@sanity/eventsource', () => {
+vi.mock('eventsource', () => {
   return {
-    default: vi.fn(),
+    EventSource: vi.fn(),
   }
 })
 

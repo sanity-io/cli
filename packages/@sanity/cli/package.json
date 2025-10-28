@@ -63,7 +63,7 @@
     "@oclif/plugin-not-found": "^3.2.67",
     "@sanity/cli-core": "workspace:*",
     "@sanity/client": "^7.11.2",
-    "@sanity/eventsource": "^5.0.2",
+    "eventsource": "^4.0.0",
     "@sanity/export": "^3.45.3",
     "@sanity/generate-help-url": "^3.0.0",
     "@sanity/id-utils": "^1.0.0",
