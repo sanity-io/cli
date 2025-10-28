@@ -64,7 +64,7 @@ describe('#deleteAspect', () => {
 
 describe('#getMediaLibraries', () => {
   test('calls client.request with correct parameters', async () => {
-    const mockResponse = {data: [{id: 'myAspect'}]}
+    const mockResponse = {data: [{id: 'myAspect', status: 'active'}]}
     mockClient.request.mockResolvedValue(mockResponse)
 
     const result = await getMediaLibraries('test-project')
@@ -77,6 +77,6 @@ describe('#getMediaLibraries', () => {
       query: {projectId: 'test-project'},
       uri: '/media-libraries',
     })
-    expect(result).toBe(mockResponse)
+    expect(result).toStrictEqual(mockResponse.data)
   })
 })

@@ -52,10 +52,14 @@ export async function deleteAspect(options: DeleteAspectOptions): Promise<Delete
   })
 }
 
-interface MediaLibrary {
+export interface MediaLibrary {
   id: string
   organizationId: string
-  status: 'active'
+  status: 'active' | 'inactive'
+}
+
+interface MediaLibrariesResponse {
+  data: MediaLibrary[]
 }
 
 /**
@@ -65,14 +69,16 @@ interface MediaLibrary {
  *
  * @internal
  */
-export async function getMediaLibraries(projectId: string) {
+export async function getMediaLibraries(projectId: string): Promise<MediaLibrary[]> {
   const client = await getMediaLibraryClient()
 
-  return client.request<{data: MediaLibrary[]}>({
+  const response = await client.request<MediaLibrariesResponse>({
     method: 'GET',
     query: {
       projectId,
     },
     uri: `/media-libraries`,
   })
+
+  return response.data.filter((library) => library.status === 'active')
 }
