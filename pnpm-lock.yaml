@@ -316,6 +316,9 @@ importers:
       debug:
         specifier: ^4.4.3
         version: 4.4.3(supports-color@8.1.1)
+      eventsource:
+        specifier: ^4.0.0
+        version: 4.0.0
       execa:
         specifier: ^9.6.0
         version: 9.6.0
@@ -382,6 +385,9 @@ importers:
       resolve-from:
         specifier: ^5.0.0
         version: 5.0.0
+      rxjs:
+        specifier: ^7.8.1
+        version: 7.8.2
       semver:
         specifier: ^7.7.2
         version: 7.7.2
