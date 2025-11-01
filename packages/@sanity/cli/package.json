@@ -126,7 +126,7 @@
     "@types/semver-compare": "^1.0.3",
     "@types/tar-fs": "^2.0.4",
     "@types/which": "^3.0.4",
-    "@vitest/coverage-istanbul": "^3.1.3",
+    "@vitest/coverage-istanbul": "^3.2.4",
     "chokidar": "^4.0.3",
     "eslint": "catalog:",
     "glob": "^11.0.3",
@@ -134,7 +134,7 @@
     "oclif": "^4.22.18",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3",
-    "vitest": "^3.1.3"
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"

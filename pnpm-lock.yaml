@@ -46,7 +46,7 @@ importers:
         specifier: workspace:*
         version: link:packages/@repo/eslint-config
       '@vitest/coverage-istanbul':
-        specifier: ^3.1.3
+        specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.23)(jiti@2.6.0)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1))
       eslint:
         specifier: 'catalog:'
@@ -73,7 +73,7 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
       vitest:
-        specifier: ^3.1.3
+        specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.23)(jiti@2.6.0)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1)
 
   examples/basic-app:
@@ -462,7 +462,7 @@ importers:
         specifier: ^3.0.4
         version: 3.0.4
       '@vitest/coverage-istanbul':
-        specifier: ^3.1.3
+        specifier: ^3.2.4
         version: 3.2.4(vitest@3.2.4(@types/debug@4.1.12)(@types/node@20.19.23)(jiti@2.6.0)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1))
       eslint:
         specifier: 'catalog:'
@@ -480,7 +480,7 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
       vitest:
-        specifier: ^3.1.3
+        specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.23)(jiti@2.6.0)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1)
 
   packages/@sanity/cli-core:
@@ -565,7 +565,7 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
       vitest:
-        specifier: ^3.1.3
+        specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.23)(jiti@2.6.0)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1)
 
   packages/@sanity/cli-test:
@@ -608,7 +608,7 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
       vitest:
-        specifier: ^3.1.3
+        specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@20.19.23)(jiti@2.6.0)(jsdom@26.1.0)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1)
 
   packages/@sanity/codegen:
@@ -2930,10 +2930,6 @@ packages:
   '@rushstack/ts-command-line@5.0.2':
     resolution: {integrity: sha512-+AkJDbu1GFMPIU8Sb7TLVXDv/Q7Mkvx+wAjEl8XiXVVq+p1FmWW6M3LYpJMmoHNckSofeMecgWg5lfMwNAAsEQ==}
 
-  '@sanity/asset-utils@2.2.1':
-    resolution: {integrity: sha512-dBsZWH5X6ANcvclFRnQT9Y+NNvoWTJZIMKR5HT6hzoRpRb48p7+vWn+wi1V1wPvqgZg2ScsOQQcGXWXskbPbQQ==}
-    engines: {node: '>=18'}
-
   '@sanity/asset-utils@2.3.0':
     resolution: {integrity: sha512-dlEmALjQ5iyQG0O8ZVmkkE3wUYCKfRmiyMvuuGN5SF9buAHxmseBOKJ/Iy2DU/8ef70mtUXlzeCRSlTN/nmZsg==}
     engines: {node: '>=18'}
@@ -3048,9 +3044,6 @@ packages:
     peerDependencies:
       '@sanity/color': ^2.0 || ^3.0 || ^3.0.0-beta
       react: ^18.3 || ^19.0.0-0
-
-  '@sanity/media-library-types@1.0.0':
-    resolution: {integrity: sha512-RwBou7SybMbHkSeCn+3L/hbaFP77at3BesP67o8D8RrFiOgHX/h4ibw4yEauC1s09U9BE1MPq9K7ji+0XU57GA==}
 
   '@sanity/media-library-types@1.0.1':
     resolution: {integrity: sha512-lyjDQqq0IkVMBKPsm1+IeTpOki3OeFvSCyFms8pPTYcMaH0U5S+wK553QDI4HnmmPx0SiWpOWtLlTh1qkh+IFA==}
@@ -11342,8 +11335,6 @@ snapshots:
     transitivePeerDependencies:
       - '@types/node'
 
-  '@sanity/asset-utils@2.2.1': {}
-
   '@sanity/asset-utils@2.3.0': {}
 
   '@sanity/bifur-client@0.4.1':
@@ -11502,7 +11493,7 @@ snapshots:
 
   '@sanity/import@3.38.3(@types/react@18.3.23)':
     dependencies:
-      '@sanity/asset-utils': 2.2.1
+      '@sanity/asset-utils': 2.3.0
       '@sanity/generate-help-url': 3.0.0
       '@sanity/mutator': 3.99.0(@types/react@18.3.23)
       '@sanity/uuid': 3.0.2
@@ -11585,8 +11576,6 @@ snapshots:
     dependencies:
       '@sanity/color': 3.0.6
       react: 18.3.1
-
-  '@sanity/media-library-types@1.0.0': {}
 
   '@sanity/media-library-types@1.0.1': {}
 
@@ -11910,7 +11899,7 @@ snapshots:
   '@sanity/types@3.99.0(@types/react@18.3.23)(debug@4.4.3)':
     dependencies:
       '@sanity/client': 7.7.0(debug@4.4.3)
-      '@sanity/media-library-types': 1.0.0
+      '@sanity/media-library-types': 1.0.1
       '@types/react': 18.3.23
     transitivePeerDependencies:
       - debug
@@ -11918,7 +11907,7 @@ snapshots:
   '@sanity/types@3.99.0(@types/react@19.0.12)(debug@4.4.3)':
     dependencies:
       '@sanity/client': 7.7.0(debug@4.4.3)
-      '@sanity/media-library-types': 1.0.0
+      '@sanity/media-library-types': 1.0.1
       '@types/react': 19.0.12
     transitivePeerDependencies:
       - debug
@@ -16849,7 +16838,7 @@ snapshots:
       '@portabletext/react': 3.2.1(react@18.3.1)
       '@portabletext/toolkit': 2.0.17
       '@rexxars/react-json-inspector': 9.0.1(react@18.3.1)
-      '@sanity/asset-utils': 2.2.1
+      '@sanity/asset-utils': 2.3.0
       '@sanity/bifur-client': 0.4.1
       '@sanity/cli': link:packages/@sanity/cli
       '@sanity/client': 7.7.0(debug@4.4.3)
@@ -16866,7 +16855,7 @@ snapshots:
       '@sanity/import': 3.38.3(@types/react@18.3.23)
       '@sanity/insert-menu': 1.1.12(@emotion/is-prop-valid@1.2.2)(@sanity/types@3.99.0(@types/react@18.3.23)(debug@4.4.3))(react-dom@18.3.1(react@18.3.1))(react-is@18.3.1)(react@18.3.1)(styled-components@6.1.19(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       '@sanity/logos': 2.2.1(@sanity/color@3.0.6)(react@18.3.1)
-      '@sanity/media-library-types': 1.0.0
+      '@sanity/media-library-types': 1.0.1
       '@sanity/message-protocol': 0.13.3
       '@sanity/migrate': 3.99.0(@types/react@18.3.23)
       '@sanity/mutator': 3.99.0(@types/react@18.3.23)
