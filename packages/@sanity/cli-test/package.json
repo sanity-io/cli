@@ -51,9 +51,9 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@swc/cli": "^0.7.8",
-    "@swc/core": "^1.13.2",
+    "@swc/core": "^1.14.0",
     "@types/debug": "^4.1.12",
-    "@types/node": "^20.17.23",
+    "@types/node": "^20.19.24",
     "eslint": "catalog:",
     "typescript": "^5.8.3",
     "vitest": "^3.2.4"
