@@ -292,9 +292,15 @@ importers:
       '@sanity/runtime-cli':
         specifier: ^10.4.1
         version: 10.9.0(@types/node@20.19.24)(debug@4.4.3)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(typescript@5.9.3)(yaml@2.8.1)
+      '@sanity/schema':
+        specifier: ^4.11.0
+        version: 4.11.0(@types/react@18.3.26)(debug@4.4.3)
       '@sanity/telemetry':
         specifier: ^0.8.1
         version: 0.8.1(react@18.3.1)
+      '@sanity/types':
+        specifier: ^4.11.0
+        version: 4.11.0(@types/react@18.3.26)(debug@4.4.3)
       '@vitejs/plugin-react':
         specifier: ^4.5.0
         version: 4.6.0(vite@7.1.7(@types/node@20.19.24)(jiti@2.6.0)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1))
@@ -331,6 +337,9 @@ importers:
       get-latest-version:
         specifier: ^5.1.0
         version: 5.1.0(debug@4.4.3)
+      get-tsconfig:
+        specifier: ^4.10.1
+        version: 4.10.1
       glob:
         specifier: ^11.0.3
         version: 11.0.3
@@ -3137,6 +3146,9 @@ packages:
   '@sanity/schema@3.99.0':
     resolution: {integrity: sha512-L0b0Tl3RfoVZM5gYdG8WSLOjlGcJ/xWALz5dkx2bPgnCDVYt3YZDrVO/mzRiSor0cO8i4iU35CKS3tBuXbeZTA==}
 
+  '@sanity/schema@4.11.0':
+    resolution: {integrity: sha512-YpROqwl7nzpow5F+b6skZDlDtcql2l7wKxd9U0MzpvU+jrGScuRqnMS9tuE8lY3RonuAog5nni3bAuuEVp0sXA==}
+
   '@sanity/sdk-react@1.0.0':
     resolution: {integrity: sha512-gZ4p5gh+2TaR22HZbrvXvPlR90onRyIVP84FRIgXcd2SDyPmqOfoCuZ/rpgYNhtU88ZwLPDWAh1+rMYJXxUNqg==}
     engines: {node: '>=20.0.0'}
@@ -3170,6 +3182,11 @@ packages:
 
   '@sanity/types@4.10.1':
     resolution: {integrity: sha512-XwbZIMJvP5GQ0KQVEq2AeCxAVaFGOECtH1RQ/qKTnP+iNN5YVgbhmWKU3FsLXwnxvyjKe/sUjk2we38S+hq/qw==}
+    peerDependencies:
+      '@types/react': 18 || 19
+
+  '@sanity/types@4.11.0':
+    resolution: {integrity: sha512-VfheyQJN3fS57fmibQWxMAy+dn3QGkRTHoN/v3nek8BwbhDsvhzq3O0DQoYYTLaN+QHXdFOX9tDEwqfdgK02nQ==}
     peerDependencies:
       '@types/react': 18 || 19
 
@@ -5607,6 +5624,10 @@ packages:
 
   groq-js@1.18.0:
     resolution: {integrity: sha512-24Tn7L9YrVeZxJVfAj5StrOVV1TJoOlY3oetLk/uo/BogWah8WBI7ChYGEidMXZ0gbU9Ydy3NhhO/fwisumcXg==}
+    engines: {node: '>= 14'}
+
+  groq-js@1.20.0:
+    resolution: {integrity: sha512-hMY8SLk/BK60NpH4aqGWm67NxPcD8PV0gdXUI42wTNvoSevvLH2VOJ4BdgFs/RqcU2hm7zcCa8HiZWMBcfWGiQ==}
     engines: {node: '>= 14'}
 
   groq@3.88.1-typegen-experimental.0:
@@ -11841,7 +11862,7 @@ snapshots:
       eventsource: 4.0.0
       find-up: 8.0.0
       get-folder-size: 5.0.0
-      groq-js: 1.18.0
+      groq-js: 1.20.0
       inquirer: 12.9.6(@types/node@20.19.24)
       jiti: 2.6.0
       mime-types: 3.0.1
@@ -11875,6 +11896,22 @@ snapshots:
       '@sanity/types': 3.99.0(@types/react@18.3.26)(debug@4.4.3)
       arrify: 2.0.1
       groq-js: 1.18.0
+      humanize-list: 1.0.1
+      leven: 3.1.0
+      lodash: 4.17.21
+      object-inspect: 1.13.4
+    transitivePeerDependencies:
+      - '@types/react'
+      - debug
+      - supports-color
+
+  '@sanity/schema@4.11.0(@types/react@18.3.26)(debug@4.4.3)':
+    dependencies:
+      '@sanity/descriptors': 1.1.1
+      '@sanity/generate-help-url': 3.0.0
+      '@sanity/types': 4.11.0(@types/react@18.3.26)(debug@4.4.3)
+      arrify: 2.0.1
+      groq-js: 1.20.0
       humanize-list: 1.0.1
       leven: 3.1.0
       lodash: 4.17.21
@@ -11975,6 +12012,14 @@ snapshots:
       - debug
 
   '@sanity/types@4.10.1(@types/react@18.3.26)(debug@4.4.3)':
+    dependencies:
+      '@sanity/client': 7.7.0(debug@4.4.3)
+      '@sanity/media-library-types': 1.0.1
+      '@types/react': 18.3.26
+    transitivePeerDependencies:
+      - debug
+
+  '@sanity/types@4.11.0(@types/react@18.3.26)(debug@4.4.3)':
     dependencies:
       '@sanity/client': 7.7.0(debug@4.4.3)
       '@sanity/media-library-types': 1.0.1
@@ -14914,6 +14959,12 @@ snapshots:
   graphemer@1.4.0: {}
 
   groq-js@1.18.0:
+    dependencies:
+      debug: 4.4.3(supports-color@8.1.1)
+    transitivePeerDependencies:
+      - supports-color
+
+  groq-js@1.20.0:
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
