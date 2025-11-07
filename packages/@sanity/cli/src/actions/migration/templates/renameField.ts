@@ -1,9 +1,9 @@
 export const renameField = ({
-  migrationName,
   documentTypes,
+  migrationName,
 }: {
-  migrationName: string
   documentTypes: string[]
+  migrationName: string
 }) => `import {defineMigration, at, setIfMissing, unset} from 'sanity/migrate'
 
 const from = 'oldFieldName'

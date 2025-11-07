@@ -1,9 +1,9 @@
 export const minimalAdvanced = ({
-  migrationName,
   documentTypes,
+  migrationName,
 }: {
-  migrationName: string
   documentTypes: string[]
+  migrationName: string
 }) => `import {defineMigration, patch, at, setIfMissing} from 'sanity/migrate'
 
 /**

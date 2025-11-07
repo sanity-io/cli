@@ -1,9 +1,9 @@
 export const renameType = ({
-  migrationName,
   documentTypes,
+  migrationName,
 }: {
-  migrationName: string
   documentTypes: string[]
+  migrationName: string
 }) => `import {defineMigration, at, set} from 'sanity/migrate'
 
 const oldType = 'old'

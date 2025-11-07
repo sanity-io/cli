@@ -1,9 +1,9 @@
 export const stringToPTE = ({
-  migrationName,
   documentTypes,
+  migrationName,
 }: {
-  migrationName: string
   documentTypes: string[]
+  migrationName: string
 }) => `import {pathsAreEqual, stringToPath} from 'sanity'
 import {defineMigration, set} from 'sanity/migrate'
 
