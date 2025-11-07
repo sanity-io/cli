@@ -1,25 +1,28 @@
 import path from 'node:path'
 
+import {fileExists} from '@sanity/cli-core'
 import {type Migration} from '@sanity/migrate'
-import {isPlainObject} from 'lodash'
+import {getTsconfig} from 'get-tsconfig'
+import {isPlainObject} from 'lodash-es'
+import {tsImport} from 'tsx/esm/api'
 
-import {MIGRATION_SCRIPT_EXTENSIONS, MIGRATIONS_DIRECTORY} from '../constants'
+import {MIGRATION_SCRIPT_EXTENSIONS, MIGRATIONS_DIRECTORY} from '../../util/migration/constants.js'
 
 interface ResolvedMigrationScript {
-  /**
-   * Relative path from the working directory to the migration script
-   */
-  relativePath: string
-
   /**
    * Absolute path to the migration script
    */
   absolutePath: string
 
   /**
+   * Relative path from the working directory to the migration script
+   */
+  relativePath: string
+
+  /**
    * The migration module, if it could be resolved - otherwise `undefined`
    */
-  mod?: {default: Migration; up?: unknown; down?: unknown}
+  mod?: {default: Migration; down?: unknown; up?: unknown}
 }
 
 /**
@@ -37,26 +40,48 @@ interface ResolvedMigrationScript {
  * @returns An array of potential migration scripts
  * @internal
  */
-export function resolveMigrationScript(
+export async function resolveMigrationScript(
   workDir: string,
   migrationName: string,
-): ResolvedMigrationScript[] {
-  return [migrationName, path.join(migrationName, 'index')].flatMap((location) =>
-    MIGRATION_SCRIPT_EXTENSIONS.map((ext) => {
+): Promise<ResolvedMigrationScript[]> {
+  const tsconfig = getTsconfig(workDir)
+  const locations = [migrationName, path.join(migrationName, 'index')]
+  const results: ResolvedMigrationScript[] = []
+
+  for (const location of locations) {
+    for (const ext of MIGRATION_SCRIPT_EXTENSIONS) {
       const relativePath = path.join(MIGRATIONS_DIRECTORY, `${location}.${ext}`)
       const absolutePath = path.resolve(workDir, relativePath)
-      let mod
+      let mod: {default: Migration; down?: unknown; up?: unknown} | undefined
+
+      // Check if the file exists before trying to import it
+      const exists = await fileExists(absolutePath)
+      if (!exists) {
+        continue
+      }
+
       try {
-        // eslint-disable-next-line import/no-dynamic-require
-        mod = require(absolutePath)
+        const imported = await tsImport(absolutePath, {
+          parentURL: import.meta.url,
+          tsconfig: tsconfig?.path,
+        })
+        // Handle both ESM and CJS default exports
+        mod = imported as {default: Migration; down?: unknown; up?: unknown}
       } catch (err) {
-        if (err.code !== 'MODULE_NOT_FOUND') {
-          throw new Error(`Error: ${err.message}"`)
+        // Ignore MODULE_NOT_FOUND errors, but throw others
+        if (
+          (err as NodeJS.ErrnoException).code !== 'MODULE_NOT_FOUND' &&
+          (err as NodeJS.ErrnoException).code !== 'ERR_MODULE_NOT_FOUND'
+        ) {
+          throw new Error(`Error loading migration: ${(err as Error).message}`)
         }
       }
-      return {relativePath, absolutePath, mod}
-    }),
-  )
+
+      results.push({absolutePath, mod, relativePath})
+    }
+  }
+
+  return results
 }
 
 /**
@@ -69,7 +94,7 @@ export function resolveMigrationScript(
 export function isLoadableMigrationScript(
   script: ResolvedMigrationScript,
 ): script is Required<ResolvedMigrationScript> {
-  if (typeof script.mod === 'undefined' || !isPlainObject(script.mod.default)) {
+  if (script.mod === undefined || !isPlainObject(script.mod.default)) {
     return false
   }
 
