@@ -1,7 +1,6 @@
 import path from 'node:path'
 
 import {type Output} from '@sanity/cli-core'
-import {generateHelpUrl} from '@sanity/generate-help-url'
 import resolveFrom from 'resolve-from'
 import semver, {type SemVer} from 'semver'
 
@@ -152,7 +151,7 @@ function getUpgradeInstructions(pkgs: PackageInfo[]) {
   pnpm add ${inst}
 
 
-Read more at ${generateHelpUrl('upgrade-packages')}`
+Read more at https://www.sanity.io/docs/help/upgrade-packages`
 }
 
 function getDowngradeInstructions(pkgs: PackageInfo[]) {

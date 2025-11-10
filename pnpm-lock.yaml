@@ -280,9 +280,6 @@ importers:
       '@sanity/export':
         specifier: ^3.45.3
         version: 3.45.3(@types/react@18.3.26)
-      '@sanity/generate-help-url':
-        specifier: ^3.0.0
-        version: 3.0.0
       '@sanity/id-utils':
         specifier: ^1.0.0
         version: 1.0.0
