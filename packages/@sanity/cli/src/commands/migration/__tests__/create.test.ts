@@ -1,5 +1,5 @@
-import {existsSync, mkdirSync} from 'node:fs'
-import {writeFile} from 'node:fs/promises'
+import {existsSync} from 'node:fs'
+import {mkdir, writeFile} from 'node:fs/promises'
 
 import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
@@ -13,9 +13,18 @@ const mocks = vi.hoisted(() => ({
   select: vi.fn(),
 }))
 
+const mockTemplates = vi.hoisted(() => ({
+  minimalAdvanced: vi.fn(),
+  minimalSimple: vi.fn(),
+  renameField: vi.fn(),
+  renameType: vi.fn(),
+  stringToPTE: vi.fn(),
+}))
+
 vi.mock('node:fs')
 
 vi.mock('node:fs/promises', () => ({
+  mkdir: vi.fn(),
   writeFile: vi.fn(),
 }))
 
@@ -33,14 +42,16 @@ vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   }),
 }))
 
+vi.mock('../../../actions/migration/templates/index.js', () => mockTemplates)
+
 const mockConfirm = mocks.confirm
 const mockInput = mocks.input
 const mockSelect = mocks.select
 const mockExistsSync = vi.mocked(existsSync)
-const mockMkdirSync = vi.mocked(mkdirSync)
+const mockMkdir = vi.mocked(mkdir)
 const mockWriteFile = vi.mocked(writeFile)
 
-describe('migration:create', () => {
+describe('#migration:create', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
@@ -136,12 +147,12 @@ describe('migration:create', () => {
 
   test('creates directory when it does not exist', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
-    mockSelect.mockResolvedValueOnce('Rename a field')
+    mockSelect.mockResolvedValue('Rename a field')
     mockExistsSync.mockReturnValue(false)
 
     await testCommand(CreateMigrationCommand, ['Migration Title'])
 
-    expect(mockMkdirSync).toHaveBeenCalledWith(
+    expect(mockMkdir).toHaveBeenCalledWith(
       expect.stringContaining('/test/path/migrations/migration-title'),
       {
         recursive: true,
@@ -152,7 +163,7 @@ describe('migration:create', () => {
 
   test('prompts the user to overwrite when directory already exists', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
-    mockSelect.mockResolvedValueOnce('Rename a field')
+    mockSelect.mockResolvedValue('Rename a field')
     mockExistsSync.mockReturnValue(true)
     mockConfirm.mockResolvedValue(true)
 
@@ -164,31 +175,31 @@ describe('migration:create', () => {
         'Migration directory /test/path/migrations/my-migration already exists. Overwrite?',
       ),
     })
-    expect(mockMkdirSync).toHaveBeenCalled()
+    expect(mockMkdir).toHaveBeenCalled()
   })
 
   test('does not create directory when user declines overwrite', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
-    mockSelect.mockResolvedValueOnce('Rename a field')
+    mockSelect.mockResolvedValue('Rename a field')
     mockExistsSync.mockReturnValue(true)
     mockConfirm.mockResolvedValue(false)
 
     await testCommand(CreateMigrationCommand, ['My Migration'])
 
     expect(mockConfirm).toHaveBeenCalled()
-    expect(mockMkdirSync).not.toHaveBeenCalled()
+    expect(mockMkdir).not.toHaveBeenCalled()
   })
 
   test('creates directory after user confirms overwrite', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
-    mockSelect.mockResolvedValueOnce('Rename a field')
+    mockSelect.mockResolvedValue('Rename a field')
     mockExistsSync.mockReturnValue(true)
     mockConfirm.mockResolvedValue(true)
 
     await testCommand(CreateMigrationCommand, ['My Migration'])
 
     expect(mockConfirm).toHaveBeenCalled()
-    expect(mockMkdirSync).toHaveBeenCalledWith(
+    expect(mockMkdir).toHaveBeenCalledWith(
       expect.stringContaining('test/path/migrations/my-migration'),
       {
         recursive: true,
@@ -196,10 +207,24 @@ describe('migration:create', () => {
     )
   })
 
+  test('exits gracefully when directory creation fails', async () => {
+    mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
+    mockSelect.mockResolvedValue('Rename a field')
+    mockExistsSync.mockReturnValue(false)
+    mockMkdir.mockRejectedValue(new Error('Permission denied'))
+
+    const {error} = await testCommand(CreateMigrationCommand, ['My Migration'])
+
+    expect(error).toBeDefined()
+    expect(error?.message).toContain('Failed to create migration directory: Permission denied')
+    expect(mockWriteFile).not.toHaveBeenCalled()
+  })
+
   test('output migration instructions after migrations folder has been created', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
-    mockSelect.mockResolvedValueOnce('Rename a field')
+    mockSelect.mockResolvedValue('Rename a field')
     mockExistsSync.mockReturnValue(false)
+    mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
 
     const {stdout} = await testCommand(CreateMigrationCommand, ['My Migration'])
 
@@ -219,5 +244,78 @@ describe('migration:create', () => {
       👉 Learn more about schema and content migrations at https://www.sanity.io/docs/schema-and-content-migrations
       "
     `)
+  })
+
+  test('creates minimalSimple template in migration folder when user selects it', async () => {
+    mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
+    mockSelect.mockResolvedValue('Minimalistic migration to get you started')
+    mockExistsSync.mockReturnValue(false)
+    mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
+
+    await testCommand(CreateMigrationCommand, ['My Migration'])
+
+    expect(mockTemplates.minimalSimple).toHaveBeenCalled()
+  })
+
+  test('creates renameType template in migration folder when user selects it', async () => {
+    mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
+    mockSelect.mockResolvedValue('Rename an object type')
+    mockExistsSync.mockReturnValue(false)
+    mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
+
+    await testCommand(CreateMigrationCommand, ['My Migration'])
+
+    expect(mockTemplates.renameType).toHaveBeenCalled()
+  })
+
+  test('creates renameField template in migration folder when user selects it', async () => {
+    mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
+    mockSelect.mockResolvedValue('Rename a field')
+    mockExistsSync.mockReturnValue(false)
+    mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
+
+    await testCommand(CreateMigrationCommand, ['My Migration'])
+
+    expect(mockTemplates.renameField).toHaveBeenCalled()
+  })
+
+  test('creates stringToPTE template in migration folder when user selects it', async () => {
+    mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
+    mockSelect.mockResolvedValue('Convert string field to Portable Text')
+    mockExistsSync.mockReturnValue(false)
+    mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
+
+    await testCommand(CreateMigrationCommand, ['My Migration'])
+
+    expect(mockTemplates.stringToPTE).toHaveBeenCalled()
+  })
+
+  test('creates minimalAdvanced template in migration folder when user selects it', async () => {
+    mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
+    mockSelect.mockResolvedValue(
+      'Advanced template using async iterators providing more fine grained control',
+    )
+    mockExistsSync.mockReturnValue(false)
+    mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
+
+    await testCommand(CreateMigrationCommand, ['My Migration'])
+
+    expect(mockTemplates.minimalAdvanced).toHaveBeenCalled()
+  })
+
+  test('exits gracefully when writing the template to the directory fails', async () => {
+    mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
+    mockSelect.mockResolvedValue(
+      'Advanced template using async iterators providing more fine grained control',
+    )
+    mockExistsSync.mockReturnValue(false)
+    mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
+    mockWriteFile.mockRejectedValue(new Error('Permission denied'))
+
+    const {error, stdout} = await testCommand(CreateMigrationCommand, ['My Migration'])
+
+    expect(error).toBeDefined()
+    expect(error?.message).toContain('Failed to create migration file: Permission denied')
+    expect(stdout).toBe('')
   })
 })
