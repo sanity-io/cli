@@ -1,14 +1,14 @@
-import {existsSync} from 'node:fs'
-import {mkdir, writeFile} from 'node:fs/promises'
+import {access, mkdir, writeFile} from 'node:fs/promises'
 
 import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {CreateMigrationCommand} from '../create.js'
 
 const mocks = vi.hoisted(() => ({
   confirm: vi.fn(),
+  findProjectRoot: vi.fn(),
   input: vi.fn(),
   select: vi.fn(),
 }))
@@ -24,6 +24,7 @@ const mockTemplates = vi.hoisted(() => ({
 vi.mock('node:fs')
 
 vi.mock('node:fs/promises', () => ({
+  access: vi.fn(),
   mkdir: vi.fn(),
   writeFile: vi.fn(),
 }))
@@ -35,23 +36,27 @@ vi.mock('@inquirer/prompts', () => ({
 }))
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
+  findProjectRoot: mocks.findProjectRoot,
 }))
 
 vi.mock('../../../actions/migration/templates/index.js', () => mockTemplates)
 
 const mockConfirm = mocks.confirm
+const mockFindProjectRoot = mocks.findProjectRoot
 const mockInput = mocks.input
 const mockSelect = mocks.select
-const mockExistsSync = vi.mocked(existsSync)
+const mockAccess = vi.mocked(access)
 const mockMkdir = vi.mocked(mkdir)
 const mockWriteFile = vi.mocked(writeFile)
 
 describe('#migration:create', () => {
+  beforeEach(() => {
+    mockFindProjectRoot.mockResolvedValue({
+      directory: '/test/path',
+      root: '/test/path',
+      type: 'studio',
+    })
+  })
   afterEach(() => {
     vi.clearAllMocks()
   })
@@ -102,6 +107,14 @@ describe('#migration:create', () => {
     })
   })
 
+  test('errors gracefully if findProjectRoot fails', async () => {
+    mockFindProjectRoot.mockRejectedValue(new Error('No project root found'))
+
+    const {error} = await testCommand(CreateMigrationCommand, ['Migration Title'])
+
+    expect(error?.message).toContain('No project root found')
+  })
+
   test('prompts user for type of documents for migration after a valid migration name has been entered', async () => {
     mockInput.mockResolvedValueOnce('Migration Title')
 
@@ -148,7 +161,7 @@ describe('#migration:create', () => {
   test('creates directory when it does not exist', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
     mockSelect.mockResolvedValue('Rename a field')
-    mockExistsSync.mockReturnValue(false)
+    mockAccess.mockRejectedValue(new Error('ENOENT: no such file or directory'))
 
     await testCommand(CreateMigrationCommand, ['Migration Title'])
 
@@ -164,7 +177,7 @@ describe('#migration:create', () => {
   test('prompts the user to overwrite when directory already exists', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
     mockSelect.mockResolvedValue('Rename a field')
-    mockExistsSync.mockReturnValue(true)
+    mockAccess.mockResolvedValue()
     mockConfirm.mockResolvedValue(true)
 
     await testCommand(CreateMigrationCommand, ['My Migration'])
@@ -181,7 +194,7 @@ describe('#migration:create', () => {
   test('does not create directory when user declines overwrite', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
     mockSelect.mockResolvedValue('Rename a field')
-    mockExistsSync.mockReturnValue(true)
+    mockAccess.mockResolvedValue()
     mockConfirm.mockResolvedValue(false)
 
     await testCommand(CreateMigrationCommand, ['My Migration'])
@@ -193,7 +206,7 @@ describe('#migration:create', () => {
   test('creates directory after user confirms overwrite', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
     mockSelect.mockResolvedValue('Rename a field')
-    mockExistsSync.mockReturnValue(true)
+    mockAccess.mockResolvedValue()
     mockConfirm.mockResolvedValue(true)
 
     await testCommand(CreateMigrationCommand, ['My Migration'])
@@ -210,7 +223,7 @@ describe('#migration:create', () => {
   test('exits gracefully when directory creation fails', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
     mockSelect.mockResolvedValue('Rename a field')
-    mockExistsSync.mockReturnValue(false)
+    mockAccess.mockResolvedValue()
     mockMkdir.mockRejectedValue(new Error('Permission denied'))
 
     const {error} = await testCommand(CreateMigrationCommand, ['My Migration'])
@@ -223,7 +236,7 @@ describe('#migration:create', () => {
   test('output migration instructions after migrations folder has been created', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
     mockSelect.mockResolvedValue('Rename a field')
-    mockExistsSync.mockReturnValue(false)
+    mockAccess.mockResolvedValue()
     mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
 
     const {stdout} = await testCommand(CreateMigrationCommand, ['My Migration'])
@@ -249,7 +262,7 @@ describe('#migration:create', () => {
   test('creates minimalSimple template in migration folder when user selects it', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
     mockSelect.mockResolvedValue('Minimalistic migration to get you started')
-    mockExistsSync.mockReturnValue(false)
+    mockAccess.mockResolvedValue()
     mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
 
     await testCommand(CreateMigrationCommand, ['My Migration'])
@@ -260,7 +273,7 @@ describe('#migration:create', () => {
   test('creates renameType template in migration folder when user selects it', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
     mockSelect.mockResolvedValue('Rename an object type')
-    mockExistsSync.mockReturnValue(false)
+    mockAccess.mockResolvedValue()
     mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
 
     await testCommand(CreateMigrationCommand, ['My Migration'])
@@ -271,7 +284,7 @@ describe('#migration:create', () => {
   test('creates renameField template in migration folder when user selects it', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
     mockSelect.mockResolvedValue('Rename a field')
-    mockExistsSync.mockReturnValue(false)
+    mockAccess.mockResolvedValue()
     mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
 
     await testCommand(CreateMigrationCommand, ['My Migration'])
@@ -282,7 +295,7 @@ describe('#migration:create', () => {
   test('creates stringToPTE template in migration folder when user selects it', async () => {
     mockInput.mockResolvedValueOnce('document-1, document-2, document-3')
     mockSelect.mockResolvedValue('Convert string field to Portable Text')
-    mockExistsSync.mockReturnValue(false)
+    mockAccess.mockResolvedValue()
     mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
 
     await testCommand(CreateMigrationCommand, ['My Migration'])
@@ -295,7 +308,7 @@ describe('#migration:create', () => {
     mockSelect.mockResolvedValue(
       'Advanced template using async iterators providing more fine grained control',
     )
-    mockExistsSync.mockReturnValue(false)
+    mockAccess.mockResolvedValue()
     mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
 
     await testCommand(CreateMigrationCommand, ['My Migration'])
@@ -308,7 +321,7 @@ describe('#migration:create', () => {
     mockSelect.mockResolvedValue(
       'Advanced template using async iterators providing more fine grained control',
     )
-    mockExistsSync.mockReturnValue(false)
+    mockAccess.mockResolvedValue()
     mockMkdir.mockResolvedValue('test/path/migrations/my-migration')
     mockWriteFile.mockRejectedValue(new Error('Permission denied'))
 

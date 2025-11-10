@@ -1,5 +1,4 @@
-import {existsSync} from 'node:fs'
-import {mkdir, writeFile} from 'node:fs/promises'
+import {access, mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
 import {confirm, input, select} from '@inquirer/prompts'
@@ -51,8 +50,7 @@ export class CreateMigrationCommand extends SanityCommand<typeof CreateMigration
 
   public async run(): Promise<void> {
     const {args} = await this.parse(CreateMigrationCommand)
-    const projectRoot = await findProjectRoot(process.cwd())
-    const workDir = projectRoot.directory
+    const workDir = await this.getMigrationRootDirectory()
 
     const title = await this.promptForTitle(args.title)
     const types = await this.promptForDocumentTypes()
@@ -69,6 +67,7 @@ export class CreateMigrationCommand extends SanityCommand<typeof CreateMigration
     const sluggedName = deburr(title.toLowerCase())
       .replaceAll(/\s+/g, '-')
       .replaceAll(/[^a-z0-9-]/g, '')
+
     const destDir = path.join(workDir, MIGRATIONS_DIRECTORY, sluggedName)
     const definitionFile = path.join(destDir, 'index.ts')
 
@@ -108,7 +107,11 @@ export class CreateMigrationCommand extends SanityCommand<typeof CreateMigration
     definitionFile: string,
     renderedTemplate: string,
   ): Promise<boolean> {
-    if (existsSync(destDir)) {
+    const dirExists = await access(destDir)
+      .then(() => true)
+      .catch(() => false)
+
+    if (dirExists) {
       const shouldOverwrite = await this.promptForOverwrite(destDir)
       if (!shouldOverwrite) return false
     }
@@ -128,6 +131,16 @@ export class CreateMigrationCommand extends SanityCommand<typeof CreateMigration
     }
 
     return true
+  }
+
+  private async getMigrationRootDirectory(): Promise<string> {
+    try {
+      const projectRoot = await findProjectRoot(process.cwd())
+      return projectRoot.directory
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not find Sanity project root'
+      this.error(message, {exit: 1})
+    }
   }
 
   private async promptForDocumentTypes(): Promise<string> {
@@ -171,6 +184,7 @@ export class CreateMigrationCommand extends SanityCommand<typeof CreateMigration
         if (!value.trim()) {
           return 'Title cannot be empty'
         }
+
         return true
       },
     })
