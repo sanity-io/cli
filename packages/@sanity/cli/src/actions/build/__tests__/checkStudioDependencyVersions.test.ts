@@ -1,7 +1,6 @@
 import path from 'node:path'
 
 import {type Output} from '@sanity/cli-core'
-import {generateHelpUrl} from '@sanity/generate-help-url'
 import resolveFrom from 'resolve-from'
 import semver from 'semver'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
@@ -11,12 +10,10 @@ import {checkStudioDependencyVersions} from '../checkStudioDependencyVersions'
 
 // Mock dependencies
 vi.mock('node:path')
-vi.mock('@sanity/generate-help-url')
 vi.mock('resolve-from')
 vi.mock('../../../util/readPackageJson')
 
 const mockedPath = vi.mocked(path)
-const mockedGenerateHelpUrl = vi.mocked(generateHelpUrl)
 const mockedResolveFrom = vi.mocked(resolveFrom)
 const mockedResolveFromSilent = vi.fn().mockReturnValue(null)
 const mockedReadPackageJson = vi.mocked(readPackageJson)
@@ -49,7 +46,6 @@ describe('checkStudioDependencyVersions', () => {
 
     // Setup default mocks
     mockedPath.join.mockReturnValue(packageJsonPath)
-    mockedGenerateHelpUrl.mockReturnValue('https://help.sanity.io/upgrade-packages')
     mockedResolveFromSilent.mockReturnValue(null)
     mockedResolveFrom.silent = mockedResolveFromSilent
   })
@@ -378,7 +374,6 @@ Read more at https://help.sanity.io/upgrade-packages
         expect.stringContaining('pnpm add "react@18.0.0"'),
         {exit: 1},
       )
-      expect(mockedGenerateHelpUrl).toHaveBeenCalledWith('upgrade-packages')
     })
 
     test('should generate correct downgrade instructions', async () => {
