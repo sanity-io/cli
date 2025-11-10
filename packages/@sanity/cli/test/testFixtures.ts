@@ -48,10 +48,10 @@ export async function setup() {
         cwd: toPath,
       })
     } catch (error) {
-      const execError = error as {message: string; stderr?: string}
-      console.error(execError.stderr || execError.message)
+      const execError = error as {message: string; stderr?: string; stdout?: string}
+      console.error(execError.stderr || execError.stdout || execError.message)
       throw new Error(
-        `Error installing dependencies in ${toPath}: ${execError.stderr || execError.message}`,
+        `Error installing dependencies in ${toPath}: ${execError.stderr || execError.stdout || execError.message}`,
       )
     }
 
