@@ -10,7 +10,7 @@ import {defineMigration, set} from 'sanity/migrate'
 const targetPath = stringToPath('some.path')
 
 export default defineMigration({
-  title: '${JSON.stringify(migrationName)}',
+  title: ${JSON.stringify(migrationName)},
 ${
   documentTypes.length > 0
     ? `  documentTypes: [${documentTypes.map((t) => JSON.stringify(t)).join(', ')}],\n`
