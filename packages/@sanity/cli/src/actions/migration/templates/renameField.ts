@@ -10,7 +10,7 @@ const from = 'oldFieldName'
 const to = 'newFieldName'
 
 export default defineMigration({
-  title: '${migrationName}',
+  title: '${JSON.stringify(migrationName)}',
 ${
   documentTypes.length > 0
     ? `  documentTypes: [${documentTypes.map((t) => JSON.stringify(t)).join(', ')}],\n`

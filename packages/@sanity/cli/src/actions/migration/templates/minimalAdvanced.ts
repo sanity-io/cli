@@ -11,7 +11,7 @@ export const minimalAdvanced = ({
  * and make \`true\` the default value for the \`enabled\` field
  */
 export default defineMigration({
-  title: '${migrationName}',
+  title: '${JSON.stringify(migrationName)}',
 ${
   documentTypes.length > 0
     ? `  documentTypes: [${documentTypes.map((t) => JSON.stringify(t)).join(', ')}],\n`
