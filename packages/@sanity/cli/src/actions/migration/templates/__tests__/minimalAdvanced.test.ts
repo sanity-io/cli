@@ -17,7 +17,7 @@ describe('#minimalAdvanced', () => {
        * and make \`true\` the default value for the \`enabled\` field
        */
       export default defineMigration({
-        title: 'My Migration',
+        title: "My Migration",
 
         async *migrate(documents, context) {
           for await (const document of documents()) {
@@ -46,7 +46,7 @@ describe('#minimalAdvanced', () => {
        * and make \`true\` the default value for the \`enabled\` field
        */
       export default defineMigration({
-        title: 'My Migration',
+        title: "My Migration",
         documentTypes: ["document-1", "document-2", "document-3"],
 
         async *migrate(documents, context) {

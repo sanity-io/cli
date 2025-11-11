@@ -13,7 +13,7 @@ describe('#minimalSimple', () => {
       "import {at, defineMigration, setIfMissing, unset} from 'sanity/migrate'
 
       export default defineMigration({
-        title: 'My Migration',
+        title: "My Migration",
 
         migrate: {
           document(doc, context) {
@@ -82,7 +82,7 @@ describe('#minimalSimple', () => {
       "import {at, defineMigration, setIfMissing, unset} from 'sanity/migrate'
 
       export default defineMigration({
-        title: 'My Migration',
+        title: "My Migration",
         documentTypes: ["document-1", "document-2", "document-3"],
 
         migrate: {

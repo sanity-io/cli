@@ -16,7 +16,7 @@ describe('#stringToPTE', () => {
       const targetPath = stringToPath('some.path')
 
       export default defineMigration({
-        title: 'My Migration',
+        title: "My Migration",
 
         migrate: {
           string(node, path, ctx) {
@@ -56,7 +56,7 @@ describe('#stringToPTE', () => {
       const targetPath = stringToPath('some.path')
 
       export default defineMigration({
-        title: 'My Migration',
+        title: "My Migration",
         documentTypes: ["document-1", "document-2", "document-3"],
 
         migrate: {

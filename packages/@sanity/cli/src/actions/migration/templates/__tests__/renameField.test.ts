@@ -16,7 +16,7 @@ describe('#renameField', () => {
       const to = 'newFieldName'
 
       export default defineMigration({
-        title: 'My Migration',
+        title: "My Migration",
 
         migrate: {
           document(doc, context) {
@@ -44,7 +44,7 @@ describe('#renameField', () => {
       const to = 'newFieldName'
 
       export default defineMigration({
-        title: 'My Migration',
+        title: "My Migration",
         documentTypes: ["document-1", "document-2", "document-3"],
 
         migrate: {
