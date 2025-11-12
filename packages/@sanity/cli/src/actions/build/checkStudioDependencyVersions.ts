@@ -22,7 +22,7 @@ const PACKAGES = [
   {deprecatedBelow: null, name: 'react', supported: ['^18 || ^19']},
   {deprecatedBelow: null, name: 'react-dom', supported: ['^18 || ^19']},
   {deprecatedBelow: null, name: 'styled-components', supported: ['^6']},
-  {deprecatedBelow: '1.4.0', name: '@sanity/ui', supported: ['^1.4.0']},
+  {deprecatedBelow: null, name: '@sanity/ui', supported: ['^2', '^3']},
 ]
 
 export async function checkStudioDependencyVersions(
