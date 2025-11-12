@@ -493,12 +493,12 @@ Read more at https://help.sanity.io/upgrade-packages
       mockedReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
-            '@sanity/ui': '^1.4.0',
+            '@sanity/ui': '^2.0.0',
           },
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: '@sanity/ui', version: '1.4.5'})
+        .mockResolvedValueOnce({name: '@sanity/ui', version: '2.0.0'})
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/@sanity/ui/package.json')
 
