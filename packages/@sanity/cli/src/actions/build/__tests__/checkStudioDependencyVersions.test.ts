@@ -374,6 +374,10 @@ Read more at https://help.sanity.io/upgrade-packages
         expect.stringContaining('pnpm add "react@18.0.0"'),
         {exit: 1},
       )
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('Read more at https://www.sanity.io/docs/help/upgrade-packages'),
+        {exit: 1},
+      )
     })
 
     test('should generate correct downgrade instructions', async () => {
