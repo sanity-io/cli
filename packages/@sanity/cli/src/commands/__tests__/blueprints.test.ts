@@ -16,6 +16,7 @@ describe('#blueprints', () => {
         blueprints deploy   Deploy a Blueprint
         blueprints destroy  Destroy a Blueprint deployment (will not delete local
                             files)
+        blueprints doctor   Diagnose potential issues with Blueprint configuration
         blueprints info     Show information about a Blueprint deployment
         blueprints init     Initialize a new Blueprint
         blueprints logs     Display logs for a Blueprint deployment
@@ -42,6 +43,7 @@ describe('#functions', () => {
                        function
 
       COMMANDS
+        functions add   Add a Function to your Blueprint
         functions dev   Start the Sanity Function emulator
         functions logs  Retrieve or delete logs for a Sanity Function
         functions test  Invoke a local Sanity Function
