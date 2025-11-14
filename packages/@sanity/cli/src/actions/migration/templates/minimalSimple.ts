@@ -1,13 +1,13 @@
 export const minimalSimple = ({
-  migrationName,
   documentTypes,
+  migrationName,
 }: {
-  migrationName: string
   documentTypes: string[]
+  migrationName: string
 }) => `import {at, defineMigration, setIfMissing, unset} from 'sanity/migrate'
 
 export default defineMigration({
-  title: '${migrationName}',
+  title: ${JSON.stringify(migrationName)},
 ${
   documentTypes.length > 0
     ? `  documentTypes: [${documentTypes.map((t) => JSON.stringify(t)).join(', ')}],\n`
