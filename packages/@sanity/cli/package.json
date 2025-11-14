@@ -67,7 +67,7 @@
     "@sanity/id-utils": "^1.0.0",
     "@sanity/import": "^4.0.0",
     "@sanity/migrate": "^4.11.0",
-    "@sanity/runtime-cli": "^10.4.1",
+    "@sanity/runtime-cli": "^11.1.3",
     "@sanity/schema": "^4.11.0",
     "@sanity/telemetry": "^0.8.1",
     "@sanity/types": "^4.11.0",
