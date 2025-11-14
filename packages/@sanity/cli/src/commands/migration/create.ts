@@ -7,7 +7,6 @@ import {findProjectRoot, SanityCommand} from '@sanity/cli-core'
 import chalk from 'chalk'
 import {deburr} from 'lodash-es'
 
-import {MIGRATIONS_DIRECTORY} from '../../actions/migration/constants.js'
 import {
   minimalAdvanced,
   minimalSimple,
@@ -15,6 +14,7 @@ import {
   renameType,
   stringToPTE,
 } from '../../actions/migration/templates/index.js'
+import {MIGRATIONS_DIRECTORY} from '../../util/migration/constants.js'
 
 const TEMPLATES = [
   {name: 'Minimalistic migration to get you started', template: minimalSimple},
