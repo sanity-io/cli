@@ -1,6 +1,9 @@
+import {CliConfig} from '@sanity/cli-core'
 import {type SanityDocumentLike} from '@sanity/types'
 
-export const SANITY_WORKSPACE_SCHEMA_TYPE = 'sanity.workspace.schema'
+export const SANITY_WORKSPACE_SCHEMA_ID_PREFIX = '_.schemas'
+export const SANITY_WORKSPACE_SCHEMA_TYPE = 'system.schema'
+export const CURRENT_WORKSPACE_SCHEMA_VERSION = '2025-05-01'
 
 export type ManifestSerializable =
   | boolean
@@ -11,6 +14,7 @@ export type ManifestSerializable =
 
 export interface CreateManifest {
   createdAt: string
+  studioVersion: string | null
   version: number
   workspaces: ManifestWorkspaceFile[]
 }
@@ -32,6 +36,7 @@ export interface CreateWorkspaceManifest {
   schema: ManifestSchemaType[]
   tools: ManifestTool[]
 
+  mediaLibrary?: CliConfig['mediaLibrary']
   subtitle?: string
   title?: string
 }
@@ -108,18 +113,24 @@ export interface ManifestTool {
   type: string | null
 }
 
-export type DefaultWorkspaceSchemaId = `${typeof SANITY_WORKSPACE_SCHEMA_TYPE}.${string}`
-export type PrefixedWorkspaceSchemaId = `${string}.${DefaultWorkspaceSchemaId}`
+export type DefaultWorkspaceSchemaId = `${typeof SANITY_WORKSPACE_SCHEMA_ID_PREFIX}.${string}`
+export type PrefixedWorkspaceSchemaId = `${DefaultWorkspaceSchemaId}.${string}`
 export type WorkspaceSchemaId = DefaultWorkspaceSchemaId | PrefixedWorkspaceSchemaId
 
 export interface StoredWorkspaceSchema extends SanityDocumentLike {
   _id: WorkspaceSchemaId
   _type: typeof SANITY_WORKSPACE_SCHEMA_TYPE
   /**
-   * JSON.stringify version of ManifestSchemaType[] to save on attribute paths.
-   * Consumers must use JSON.parse on the value.
+   * The API expects JSON coming in, but will store a string to save on attribute paths.
+   * Consumers must use JSON.parse on the value, put we deploy to the API using ManifestSchemaType[]
    */
-  schema: string
-  workspace: ManifestWorkspaceFile
-  //schema: ManifestSchemaType[]
+  schema: ManifestSchemaType[] | string
+  /* api-like version string: date at which the format had a meaningful change */
+  version: typeof CURRENT_WORKSPACE_SCHEMA_VERSION | undefined
+  workspace: {
+    name: string
+    title?: string
+  }
+
+  tag?: string
 }
