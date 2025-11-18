@@ -1,35 +1,36 @@
-import {type CliCommandDefinition} from '@sanity/cli'
+import {Flags} from '@oclif/core'
+import {SanityCommand} from '@sanity/cli-core'
 
-const description = 'Extracts the studio configuration as one or more JSON manifest files.'
+const description = `
+Extracts the studio configuration as one or more JSON manifest files.
 
-const helpText = `
 **Note**: This command is experimental and subject to change. It is currently intended for use with Create only.
+`.trim()
 
-Options
-  --path Optional path to specify destination directory of the manifest files. Default: /dist/static
+export class ExtractManifestCommand extends SanityCommand<typeof ExtractManifestCommand> {
+  static override description = description
 
-Examples
-  # Extracts manifests
-  sanity manifest extract
+  static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %>',
+      description: 'Extracts manifests',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> --path /public/static',
+      description: 'Extracts manifests into /public/static',
+    },
+  ]
 
-  # Extracts manifests into /public/static
-  sanity manifest extract --path /public/static
-`
+  static override flags = {
+    path: Flags.string({
+      default: '/dist/static',
+      description: 'Optional path to specify destination directory of the manifest files',
+    }),
+  }
 
-const extractManifestCommand: CliCommandDefinition = {
-  name: 'extract',
-  group: 'manifest',
-  signature: '',
-  description,
-  helpText,
-  action: async (args, context) => {
-    const {extractManifestSafe} = await import('../../actions/manifest/extractManifestAction')
-    const extractError = await extractManifestSafe(args, context)
-    if (extractError) {
-      throw extractError
-    }
-    return extractError
-  },
+  public async run(): Promise<void> {
+    const {flags} = await this.parse(ExtractManifestCommand)
+
+    this.log(JSON.stringify(flags))
+  }
 }
-
-export default extractManifestCommand
