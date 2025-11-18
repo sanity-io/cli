@@ -4,7 +4,6 @@ import {dirname, join, resolve} from 'node:path'
 import {Worker} from 'node:worker_threads'
 
 import {type CliCommandArguments, type CliCommandContext} from '@sanity/cli'
-import chalk from 'chalk'
 import {minutesToMilliseconds} from 'date-fns'
 import readPkgUp from 'read-pkg-up'
 
@@ -14,8 +13,8 @@ import {
   type ManifestWorkspaceFile,
 } from '../../../manifest/manifestTypes'
 import {type ExtractManifestWorkerData} from '../../threads/extractManifest'
+import {readModuleVersion} from '../../util/readModuleVersion'
 import {getTimer} from '../../util/timing'
-import {SCHEMA_STORE_FEATURE_ENABLED} from '../schema/schemaStoreConstants'
 
 export const MANIFEST_FILENAME = 'create-manifest.json'
 const SCHEMA_FILENAME_SUFFIX = '.create-schema.json'
@@ -54,15 +53,6 @@ export async function extractManifestSafe(
     await extractManifest(args, context)
     return undefined
   } catch (err) {
-    if (!SCHEMA_STORE_FEATURE_ENABLED) {
-      // preserves current behavior while schema store is disabled
-      context.output.print(
-        chalk.gray(
-          "↳ Couldn't extract manifest file. Sanity Create will not be available for the studio.\n" +
-            `  Disable this message with ${FEATURE_ENABLED_ENV_NAME}=false`,
-        ),
-      )
-    }
     if (EXTRACT_MANIFEST_LOG_ERRORS) {
       context.output.error(err)
     }
@@ -106,10 +96,12 @@ async function extractManifest(
        * Version history:
        * 1: Initial release.
        * 2: Added tools file.
+       * 3. Added studioVersion field.
        */
-      version: 2,
+      version: 3,
       createdAt: new Date().toISOString(),
       workspaces: workspaceFiles,
+      studioVersion: await readModuleVersion(workDir, 'sanity'),
     }
 
     await writeFile(path, JSON.stringify(manifest, null, 2))
@@ -140,14 +132,13 @@ async function getWorkspaceManifests({
 
   const worker = new Worker(workerPath, {
     workerData: {workDir} satisfies ExtractManifestWorkerData,
-    // eslint-disable-next-line no-process-env
     env: process.env,
   })
 
   let timeout = false
   const timeoutId = setTimeout(() => {
     timeout = true
-    worker.terminate()
+    void worker.terminate()
   }, EXTRACT_TASK_TIMEOUT_MS)
 
   try {
