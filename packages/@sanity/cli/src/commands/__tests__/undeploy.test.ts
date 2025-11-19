@@ -230,7 +230,10 @@ describe('#undeploy', () => {
     expect(stdout).toContain('Application undeploy scheduled')
     expect(confirm).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('This will undeploy core-id'),
+        message:
+          expect.stringContaining('This will undeploy the following application:') &&
+          expect.stringContaining('ID:') &&
+          expect.stringContaining('core-id'),
       }),
     )
   })
