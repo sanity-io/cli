@@ -1,7 +1,7 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 
-import {extractManifestSafe} from '../../actions/manifest/extractManifestAction.js'
+import {extractManifestSafe} from '../../actions/manifest/extractManifest.js'
 
 const description = `
 Extracts the studio configuration as one or more JSON manifest files.
