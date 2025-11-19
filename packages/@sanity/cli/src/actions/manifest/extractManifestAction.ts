@@ -63,8 +63,8 @@ async function extractManifest(options: ExtractManifestOptions): Promise<void> {
   const defaultStaticPath = join(outputDir, 'static')
   const staticPath = flags.path ?? defaultStaticPath
   const path = join(staticPath, MANIFEST_FILENAME)
-  const rootPkgPath = (await readPackageUp({cwd: __dirname}))?.path
 
+  const rootPkgPath = (await readPackageUp({cwd: import.meta.url}))?.path
   if (!rootPkgPath) {
     throw new Error('Could not find root directory for `sanity` package')
   }

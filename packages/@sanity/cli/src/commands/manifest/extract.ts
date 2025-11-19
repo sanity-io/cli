@@ -41,7 +41,7 @@ export class ExtractManifestCommand extends SanityCommand<typeof ExtractManifest
         workDir,
       })
     } catch (error) {
-      this.error(error)
+      this.error(`Failed to extract manifest:\n${error}`, {exit: 1})
     }
   }
 }
