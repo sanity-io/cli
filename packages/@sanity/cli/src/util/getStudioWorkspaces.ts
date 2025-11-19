@@ -1,4 +1,3 @@
-/* eslint-disable no-sync */
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -49,9 +48,9 @@ export function getStudioConfig({
       const mod = require(configPath)
       config = mod.__esModule && mod.default ? mod.default : mod
     } catch (err) {
-      const message = `Failed to load configuration file "${configPath}":\n${err.message}`
-      // this helps preserve the stack trace
-      throw Object.assign(err, {message})
+      throw new Error(`Failed to load configuration file "${configPath}"`, {
+        cause: err,
+      })
     }
 
     if (!config) throw new Error('Configuration did not export expected config shape')
