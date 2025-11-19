@@ -4,30 +4,28 @@ import {isIndexSegment, isIndexTuple, isKeySegment, type Path} from '@sanity/typ
 // copy/paste of `pathToString` from 'sanity' to prevent circular imports
 function pathToString(path: Path): string {
   if (!Array.isArray(path)) {
-    throw new Error('Path is not an array')
+    throw new TypeError('Path is not an array')
   }
 
-  return path.reduce<string>((target, segment, i) => {
+  let target = ''
+  let i = 0
+  for (const segment of path) {
     if (isIndexSegment(segment)) {
-      return `${target}[${segment}]`
-    }
-
-    if (isKeySegment(segment) && segment._key) {
-      return `${target}[_key=="${segment._key}"]`
-    }
-
-    if (isIndexTuple(segment)) {
+      target = `${target}[${segment}]`
+    } else if (isKeySegment(segment) && segment._key) {
+      target = `${target}[_key=="${segment._key}"]`
+    } else if (isIndexTuple(segment)) {
       const [from, to] = segment
-      return `${target}[${from}:${to}]`
-    }
-
-    if (typeof segment === 'string') {
+      target = `${target}[${from}:${to}]`
+    } else if (typeof segment === 'string') {
       const separator = i === 0 ? '' : '.'
-      return `${target}${separator}${segment}`
+      target = `${target}${separator}${segment}`
+    } else {
+      throw new TypeError(`Unsupported path segment \`${JSON.stringify(segment)}\``)
     }
-
-    throw new Error(`Unsupported path segment \`${JSON.stringify(segment)}\``)
-  }, '')
+    i++
+  }
+  return target
 }
 
 interface BaseNode {
@@ -35,8 +33,8 @@ interface BaseNode {
 }
 
 export interface Tree<Node extends BaseNode> {
-  nodes?: Node[]
   children?: Record<string, Tree<Node>>
+  nodes?: Node[]
 }
 
 /**
@@ -45,30 +43,32 @@ export interface Tree<Node extends BaseNode> {
  * padding for the rest of the tree.
  */
 export const maxKeyLength = (children: Record<string, Tree<BaseNode>> = {}, depth = 0): number => {
-  return Object.entries(children)
-    .map(([key, child]) =>
-      Math.max(key.length + depth * 2, maxKeyLength(child.children, depth + 1)),
-    )
-    .reduce((max, next) => (next > max ? next : max), 0)
+  let max = 0
+  for (const [key, child] of Object.entries(children)) {
+    const currentMax = Math.max(key.length + depth * 2, maxKeyLength(child.children, depth + 1))
+    max = Math.max(max, currentMax)
+  }
+  return max
 }
 
 interface Options<Node extends BaseNode> {
-  node?: Record<string, Tree<Node>>
-  paddingLength: number
-  indent?: string
-  getNodes?: (node: Tree<Node>) => Node[] | undefined
   getMessage: (node: Node) => string
+  paddingLength: number
+
+  getNodes?: (node: Tree<Node>) => Node[] | undefined
+  indent?: string
+  node?: Record<string, Tree<Node>>
 }
 
 /**
  * Recursively formats a given tree into a printed user-friendly tree structure
  */
 export const formatTree = <Node extends BaseNode>({
+  getMessage,
+  getNodes: getLeaves = ({nodes}) => nodes,
+  indent = '',
   node = {},
   paddingLength,
-  indent = '',
-  getNodes: getLeaves = ({nodes}) => nodes,
-  getMessage,
 }: Options<Node>): string => {
   const entries = Object.entries(node)
 
@@ -79,11 +79,11 @@ export const formatTree = <Node extends BaseNode>({
       const leaves = getLeaves(child)
 
       const nested = formatTree({
+        getMessage,
+        getNodes: getLeaves,
+        indent: nextIndent,
         node: child.children,
         paddingLength,
-        indent: nextIndent,
-        getNodes: getLeaves,
-        getMessage,
       })
 
       if (!leaves?.length) {
@@ -117,7 +117,7 @@ export function convertToTree<const Node extends BaseNode>(nodes: Node[]): Tree<
   // add the markers to the tree
   function addNode(node: Node, tree: Tree<Node> = root) {
     // if we've traversed the whole path
-    if (!node.path.length) {
+    if (node.path.length === 0) {
       if (!tree.nodes) tree.nodes = [] // ensure markers is defined
 
       // then add the marker to the front
