@@ -1,6 +1,8 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 
+import {extractManifestSafe} from '../../actions/manifest/extractManifestAction.js'
+
 const description = `
 Extracts the studio configuration as one or more JSON manifest files.
 
@@ -30,7 +32,16 @@ export class ExtractManifestCommand extends SanityCommand<typeof ExtractManifest
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(ExtractManifestCommand)
+    const workDir = (await this.getProjectRoot()).directory
 
-    this.log(JSON.stringify(flags))
+    try {
+      await extractManifestSafe({
+        flags,
+        output: this.output,
+        workDir,
+      })
+    } catch (error) {
+      this.error(error)
+    }
   }
 }

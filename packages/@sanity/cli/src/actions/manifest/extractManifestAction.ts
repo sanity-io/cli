@@ -3,18 +3,17 @@ import {mkdir, writeFile} from 'node:fs/promises'
 import {dirname, join, resolve} from 'node:path'
 import {Worker} from 'node:worker_threads'
 
-import {type CliCommandArguments, type CliCommandContext} from '@sanity/cli'
+import {getTimer, Output, spinner} from '@sanity/cli-core'
 import {minutesToMilliseconds} from 'date-fns'
-import readPkgUp from 'read-pkg-up'
+import {readPackageUp} from 'read-package-up'
 
+import {type ExtractManifestCommand} from '../../commands/manifest/extract'
+import {readModuleVersion} from '../../util/readModuleVersion.js'
 import {
   type CreateManifest,
   type CreateWorkspaceManifest,
   type ManifestWorkspaceFile,
-} from '../../../manifest/manifestTypes'
-import {type ExtractManifestWorkerData} from '../../threads/extractManifest'
-import {readModuleVersion} from '../../util/readModuleVersion'
-import {getTimer} from '../../util/timing'
+} from './types'
 
 export const MANIFEST_FILENAME = 'create-manifest.json'
 const SCHEMA_FILENAME_SUFFIX = '.create-schema.json'
@@ -26,15 +25,12 @@ const EXTRACT_MANIFEST_ENABLED = process.env[FEATURE_ENABLED_ENV_NAME] !== 'fals
 const EXTRACT_MANIFEST_LOG_ERRORS = process.env.SANITY_CLI_EXTRACT_MANIFEST_LOG_ERRORS === 'true'
 
 const CREATE_TIMER = 'create-manifest'
-
 const EXTRACT_TASK_TIMEOUT_MS = minutesToMilliseconds(2)
 
-const EXTRACT_FAILURE_MESSAGE =
-  "↳ Couldn't extract manifest file. Sanity Create will not be available for the studio.\n" +
-  `  Disable this message with ${FEATURE_ENABLED_ENV_NAME}=false`
-
-export interface ExtractManifestFlags {
-  path?: string
+interface ExtractManifestOptions {
+  flags: ExtractManifestCommand['flags']
+  output: Output
+  workDir: string
 }
 
 /**
@@ -42,48 +38,40 @@ export interface ExtractManifestFlags {
  * @returns `undefined` if extract succeeded - caught error if it failed
  */
 export async function extractManifestSafe(
-  args: CliCommandArguments<ExtractManifestFlags>,
-  context: CliCommandContext,
+  options: ExtractManifestOptions,
 ): Promise<Error | undefined> {
   if (!EXTRACT_MANIFEST_ENABLED) {
     return undefined
   }
 
   try {
-    await extractManifest(args, context)
+    await extractManifest(options)
     return undefined
   } catch (err) {
     if (EXTRACT_MANIFEST_LOG_ERRORS) {
-      context.output.error(err)
+      options.output.error(err)
     }
-    return err
+    throw err
   }
 }
 
-async function extractManifest(
-  args: CliCommandArguments<ExtractManifestFlags>,
-  context: CliCommandContext,
-): Promise<void> {
-  const {output, workDir} = context
+async function extractManifest(options: ExtractManifestOptions): Promise<void> {
+  const {flags, workDir} = options
 
-  const flags = args.extOptions
   const defaultOutputDir = resolve(join(workDir, 'dist'))
-
   const outputDir = resolve(defaultOutputDir)
   const defaultStaticPath = join(outputDir, 'static')
-
   const staticPath = flags.path ?? defaultStaticPath
-
   const path = join(staticPath, MANIFEST_FILENAME)
+  const rootPkgPath = (await readPackageUp({cwd: __dirname}))?.path
 
-  const rootPkgPath = readPkgUp.sync({cwd: __dirname})?.path
   if (!rootPkgPath) {
     throw new Error('Could not find root directory for `sanity` package')
   }
 
   const timer = getTimer()
   timer.start(CREATE_TIMER)
-  const spinner = output.spinner({}).start('Extracting manifest')
+  const spin = spinner('Extracting manifest').start()
 
   try {
     const workspaceManifests = await getWorkspaceManifests({rootPkgPath, workDir})
@@ -98,18 +86,18 @@ async function extractManifest(
        * 2: Added tools file.
        * 3. Added studioVersion field.
        */
-      version: 3,
       createdAt: new Date().toISOString(),
-      workspaces: workspaceFiles,
       studioVersion: await readModuleVersion(workDir, 'sanity'),
+      version: 3,
+      workspaces: workspaceFiles,
     }
 
     await writeFile(path, JSON.stringify(manifest, null, 2))
     const manifestDuration = timer.end(CREATE_TIMER)
 
-    spinner.succeed(`Extracted manifest (${manifestDuration.toFixed()}ms)`)
+    spin.succeed(`Extracted manifest (${manifestDuration.toFixed(0)}ms)`)
   } catch (err) {
-    spinner.fail(err.message)
+    spin.fail(err.message)
     throw err
   }
 }
@@ -131,8 +119,8 @@ async function getWorkspaceManifests({
   )
 
   const worker = new Worker(workerPath, {
-    workerData: {workDir} satisfies ExtractManifestWorkerData,
     env: process.env,
+    workerData: {workDir} satisfies {workDir: string},
   })
 
   let timeout = false
@@ -163,12 +151,8 @@ function writeWorkspaceFiles(
   manifestWorkspaces: CreateWorkspaceManifest[],
   staticPath: string,
 ): Promise<ManifestWorkspaceFile[]> {
-  const output = manifestWorkspaces.reduce<Promise<ManifestWorkspaceFile>[]>(
-    (workspaces, workspace) => {
-      return [...workspaces, writeWorkspaceFile(workspace, staticPath)]
-    },
-    [],
-  )
+  const output = manifestWorkspaces.map((workspace) => writeWorkspaceFile(workspace, staticPath))
+
   return Promise.all(output)
 }
 
@@ -188,7 +172,7 @@ async function writeWorkspaceFile(
   }
 }
 
-const createFile = async (path: string, content: any, filenameSuffix: string) => {
+const createFile = async (path: string, content: unknown, filenameSuffix: string) => {
   const stringifiedContent = JSON.stringify(content, null, 2)
   const hash = createHash('sha1').update(stringifiedContent).digest('hex')
   const filename = `${hash.slice(0, 8)}${filenameSuffix}`
