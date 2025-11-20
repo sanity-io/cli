@@ -1,12 +1,7 @@
-import DOMPurify from 'isomorphic-dompurify'
-import startCase from 'lodash-es/startCase'
-import {renderToString} from 'react-dom/server'
 import {
   type ArraySchemaType,
   type BlockDefinition,
   type BooleanSchemaType,
-  ConcreteRuleClass,
-  createSchema,
   type CrossDatasetReferenceSchemaType,
   type FileSchemaType,
   type GlobalDocumentReferenceSchemaType,
@@ -22,6 +17,13 @@ import {
   type SchemaValidationValue,
   type SpanSchemaType,
   type StringSchemaType,
+} from '@sanity/types'
+import DOMPurify from 'isomorphic-dompurify'
+import startCase from 'lodash-es/startCase'
+import {renderToString} from 'react-dom/server'
+import {
+  ConcreteRuleClass,
+  createSchema,
   type Workspace,
 } from 'sanity'
 import {ServerStyleSheet} from 'styled-components'
@@ -77,7 +79,7 @@ type ValidationRuleTransformer = (rule: RuleSpec) => ManifestValidationRule | un
 const MAX_CUSTOM_PROPERTY_DEPTH = 5
 
 export function extractCreateWorkspaceManifest(workspace: Workspace): CreateWorkspaceManifest {
-  const serializedSchema = extractManifestSchemaTypes(workspace.schema)
+  const serializedSchema = extractManifestSchemaTypes(workspace.schema as Schema)
   const serializedTools = extractManifestTools(workspace.tools)
 
   return {
