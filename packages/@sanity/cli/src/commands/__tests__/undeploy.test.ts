@@ -215,6 +215,7 @@ describe('#undeploy', () => {
     }).reply(200, {
       appHost: 'core-host',
       id: 'core-id',
+      title: 'core-app',
     })
 
     mockUserApplicationsApi({
@@ -230,7 +231,42 @@ describe('#undeploy', () => {
     expect(stdout).toContain('Application undeploy scheduled')
     expect(confirm).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining('This will undeploy core-id'),
+        message: expect.stringMatching(
+          /This will undeploy the following application:.*Title:.*core-app.*ID:.*core-id/s,
+        ),
+      }),
+    )
+  })
+
+  test('undeploys app with missing title and reports using fallback value', async () => {
+    vi.mocked(getCliConfig).mockResolvedValueOnce({
+      app: {id: 'core-id'},
+    })
+
+    mockUserApplicationsApi({
+      query: {appType: 'coreApp'},
+      uri: '/user-applications/core-id',
+    }).reply(200, {
+      appHost: 'core-host',
+      id: 'core-id',
+      // title missing
+    })
+
+    mockUserApplicationsApi({
+      method: 'DELETE',
+      query: {appType: 'coreApp'},
+      uri: '/user-applications/core-id',
+    }).reply(200)
+
+    vi.mocked(confirm).mockResolvedValueOnce(true)
+
+    const {stdout} = await testCommand(UndeployCommand, [])
+
+    expect(stdout).toContain('Application undeploy scheduled')
+    expect(stdout).toContain('your application')
+    expect(confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringMatching(/\(untitled application\)/),
       }),
     )
   })

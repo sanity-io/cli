@@ -55,11 +55,14 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
         )} you want to undeploy?`
 
         if (isApp) {
-          message = `This will undeploy ${chalk.yellow(
-            userApplication.id,
-          )} and make it unavailable for your users.\nAre you ${chalk.red(
-            'sure',
-          )} you want to undeploy?`
+          message = `This will undeploy the following application:
+
+    Title: ${chalk.yellow(userApplication.title || '(untitled application)')}
+    ID:    ${chalk.yellow(userApplication.id)}
+
+The application will no longer be available for any of your users if you proceed.
+
+Are you ${chalk.red('sure')} you want to undeploy?`
         }
 
         const shouldUndeploy = await confirm({
@@ -82,13 +85,13 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
 
       if (isApp) {
         this.log(
-          `Application undeploy scheduled. It might take a few minutes before ${chalk.yellow(
-            userApplication.id,
-          )} is unavailable.`,
+          `\nApplication undeploy scheduled. It might be a few minutes until ${
+            userApplication.title ? chalk.yellow(userApplication.title) : 'your application'
+          } is unavailable.`,
         )
       } else {
         this.log(
-          `Studio undeploy scheduled. It might take a few minutes before ${url} is unavailable.`,
+          `\nStudio undeploy scheduled. It might be a few minutes until ${url} is unavailable.`,
         )
       }
     } catch (error) {
