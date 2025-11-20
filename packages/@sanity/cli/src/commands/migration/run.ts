@@ -228,16 +228,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
     )
 
     if (flags.confirm) {
-      const response = await confirm({
-        message: `This migration will run on the ${chalk.yellow(
-          chalk.bold(apiConfig.dataset),
-        )} dataset in ${chalk.yellow(chalk.bold(apiConfig.projectId))} project. Are you sure?`,
-      })
-
-      if (!response) {
-        runMigrationDebug('User aborted migration')
-        this.exit(1)
-      }
+      await this.promptConfirmMigrate(apiConfig)
     }
 
     const spin = spinner(`Running migration "${id}"`).start()
@@ -324,6 +315,19 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
           subject: mutation,
         }),
       )
+    }
+  }
+
+  private async promptConfirmMigrate(apiConfig: APIConfig) {
+    const response = await confirm({
+      message: `This migration will run on the ${chalk.yellow(
+        chalk.bold(apiConfig.dataset),
+      )} dataset in ${chalk.yellow(chalk.bold(apiConfig.projectId))} project. Are you sure?`,
+    })
+
+    if (!response) {
+      runMigrationDebug('User aborted migration')
+      this.exit(1)
     }
   }
 }
