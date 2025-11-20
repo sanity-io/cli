@@ -7,12 +7,13 @@ import {createDefaultIcon} from 'sanity'
 const theme = buildTheme()
 
 interface SchemaIconProps {
-  icon?: ComponentType | ReactNode
   title: string
+
+  icon?: ComponentType | ReactNode
   subtitle?: string
 }
 
-const SchemaIcon = ({icon, title, subtitle}: SchemaIconProps): React.JSX.Element => {
+const SchemaIcon = ({icon, subtitle, title}: SchemaIconProps): React.JSX.Element => {
   return <ThemeProvider theme={theme}>{normalizeIcon(icon, title, subtitle)}</ThemeProvider>
 }
 

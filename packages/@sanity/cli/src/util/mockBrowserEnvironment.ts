@@ -4,7 +4,7 @@ import jsdomGlobal from 'jsdom-global'
 import {addHook} from 'pirates'
 import resolveFrom from 'resolve-from'
 
-import {getStudioEnvironmentVariables} from '../server/getStudioEnvironmentVariables'
+import {getStudioEnvironmentVariables} from '../actions/build/getStudioEnvironmentVariables'
 
 const jsdomDefaultHtml = `<!doctype html>
 <html>
@@ -14,35 +14,35 @@ const jsdomDefaultHtml = `<!doctype html>
 
 export function mockBrowserEnvironment(basePath: string): () => void {
   // Guard against double-registering
-  if (global && global.window && '__mockedBySanity' in global.window) {
+  if (globalThis && globalThis.window && '__mockedBySanity' in globalThis.window) {
     return () => {
       /* intentional noop */
     }
   }
 
   const domCleanup = jsdomGlobal(jsdomDefaultHtml, {url: 'http://localhost:3333/'})
-  const windowCleanup = () => global.window.close()
+  const windowCleanup = () => globalThis.window.close()
   const globalCleanup = provideFakeGlobals(basePath)
   const cleanupFileLoader = addHook(
     (code, filename) => `module.exports = ${JSON.stringify(filename)}`,
     {
-      ignoreNodeModules: false,
       exts: getFileExtensions(),
+      ignoreNodeModules: false,
     },
   )
 
   const {unregister: unregisterESBuild} = registerESBuild({
-    target: 'node18',
-    supported: {'dynamic-import': true},
-    format: 'cjs',
-    extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs'],
-    jsx: 'automatic',
     define: {
       // define the `process.env` global
-      ...getStudioEnvironmentVariables({prefix: 'process.env.', jsonEncode: true}),
+      ...getStudioEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'}),
       // define the `import.meta.env` global
-      ...getStudioEnvironmentVariables({prefix: 'import.meta.env.', jsonEncode: true}),
+      ...getStudioEnvironmentVariables({jsonEncode: true, prefix: 'import.meta.env.'}),
     },
+    extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs'],
+    format: 'cjs',
+    jsx: 'automatic',
+    supported: {'dynamic-import': true},
+    target: 'node18',
   })
 
   return function cleanupBrowserEnvironment() {
@@ -56,21 +56,21 @@ export function mockBrowserEnvironment(basePath: string): () => void {
 
 const getFakeGlobals = (basePath: string) => ({
   __mockedBySanity: true,
-  requestAnimationFrame: setImmediate,
-  cancelAnimationFrame: clearImmediate,
-  requestIdleCallback: setImmediate,
-  cancelIdleCallback: clearImmediate,
   ace: tryGetAceGlobal(basePath),
-  InputEvent: global.window?.InputEvent,
-  customElements: global.window?.customElements,
-  ResizeObserver: global.window?.ResizeObserver || ResizeObserver,
+  cancelAnimationFrame: clearImmediate,
+  cancelIdleCallback: clearImmediate,
+  customElements: globalThis.window?.customElements,
+  InputEvent: globalThis.window?.InputEvent,
   matchMedia:
-    global.window?.matchMedia ||
+    globalThis.window?.matchMedia ||
     (() => ({
       matches: false,
       media: '',
       onchange: null,
     })),
+  requestAnimationFrame: setImmediate,
+  requestIdleCallback: setImmediate,
+  ResizeObserver: globalThis.window?.ResizeObserver || ResizeObserver,
 })
 
 const getFakeDocumentProps = () => ({
@@ -86,9 +86,12 @@ const getFakeDocumentProps = () => ({
 })
 
 function provideFakeGlobals(basePath: string): () => void {
-  const globalEnv = global as any as Record<string, unknown>
-  const globalWindow = global.window as Record<string, any>
-  const globalDocument = (global.document || document || {}) as Record<string, any>
+  const globalEnv = globalThis as unknown as Record<string, unknown>
+  const globalWindow = globalThis.window as unknown as Record<string, unknown>
+  const globalDocument = (globalThis.document || document || {}) as unknown as Record<
+    string,
+    unknown
+  >
 
   const fakeGlobals = getFakeGlobals(basePath)
   const fakeDocumentProps = getFakeDocumentProps()
@@ -98,7 +101,7 @@ function provideFakeGlobals(basePath: string): () => void {
   const stubbedDocumentKeys: string[] = []
 
   for (const [rawKey, value] of Object.entries(fakeGlobals)) {
-    if (typeof value === 'undefined') {
+    if (value === undefined) {
       continue
     }
 
@@ -109,14 +112,14 @@ function provideFakeGlobals(basePath: string): () => void {
       stubbedGlobalKeys.push(key)
     }
 
-    if (!(key in global.window)) {
+    if (!(key in globalThis.window)) {
       globalWindow[key] = fakeGlobals[key]
       stubbedWindowKeys.push(key)
     }
   }
 
   for (const [rawKey, value] of Object.entries(fakeDocumentProps)) {
-    if (typeof value === 'undefined') {
+    if (value === undefined) {
       continue
     }
 
@@ -128,17 +131,17 @@ function provideFakeGlobals(basePath: string): () => void {
   }
 
   return () => {
-    stubbedGlobalKeys.forEach((key) => {
+    for (const key of stubbedGlobalKeys) {
       delete globalEnv[key]
-    })
+    }
 
-    stubbedWindowKeys.forEach((key) => {
+    for (const key of stubbedWindowKeys) {
       delete globalWindow[key]
-    })
+    }
 
-    stubbedDocumentKeys.forEach((key) => {
+    for (const key of stubbedDocumentKeys) {
       delete globalDocument[key]
-    })
+    }
   }
 }
 
@@ -147,14 +150,14 @@ function tryGetAceGlobal(basePath: string) {
   // due to `ace` not being defined on the global due to odd bundling stategy.
   const acePath = resolveFrom.silent(basePath, 'ace-builds')
   if (!acePath) {
-    return undefined
+    return
   }
 
   try {
-    // eslint-disable-next-line import/no-dynamic-require
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require(acePath)
-  } catch (err) {
-    return undefined
+  } catch {
+    return
   }
 }
 

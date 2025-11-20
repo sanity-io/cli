@@ -1,6 +1,6 @@
-import {isMainThread, parentPort, workerData as _workerData} from 'node:worker_threads'
+import {workerData as _workerData, isMainThread, parentPort} from 'node:worker_threads'
 
-import {extractCreateWorkspaceManifest} from '../../manifest/extractWorkspaceManifest'
+import {extractCreateWorkspaceManifest} from '../actions/manifest/extractWorkspaceManifest'
 import {getStudioWorkspaces} from '../util/getStudioWorkspaces'
 import {mockBrowserEnvironment} from '../util/mockBrowserEnvironment'
 
@@ -30,4 +30,5 @@ async function main() {
   }
 }
 
-void main().then(() => process.exit())
+await main()
+process.exit()

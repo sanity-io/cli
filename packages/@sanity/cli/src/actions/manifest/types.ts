@@ -1,5 +1,5 @@
-import {CliConfig} from '@sanity/cli-core'
 import {type SanityDocumentLike} from '@sanity/types'
+import {type MediaLibraryConfig} from 'sanity'
 
 export const SANITY_WORKSPACE_SCHEMA_ID_PREFIX = '_.schemas'
 export const SANITY_WORKSPACE_SCHEMA_TYPE = 'system.schema'
@@ -36,7 +36,7 @@ export interface CreateWorkspaceManifest {
   schema: ManifestSchemaType[]
   tools: ManifestTool[]
 
-  mediaLibrary?: CliConfig['mediaLibrary']
+  mediaLibrary?: MediaLibraryConfig
   subtitle?: string
   title?: string
 }

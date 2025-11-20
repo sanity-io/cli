@@ -14,17 +14,18 @@ const candidates = [
 ]
 
 interface GetStudioWorkspacesOptions {
-  configPath?: string
   basePath: string
+
+  configPath?: string
 }
 
 /**
  * Note: Don't run this on the main thread, use it a forked process
  */
-export function getStudioConfig({
+export async function getStudioConfig({
   basePath,
   configPath: cfgPath,
-}: GetStudioWorkspacesOptions): WorkspaceOptions[] {
+}: GetStudioWorkspacesOptions): Promise<WorkspaceOptions[]> {
   let cleanup
   try {
     cleanup = mockBrowserEnvironment(basePath)
@@ -44,8 +45,7 @@ export function getStudioConfig({
 
     let config: Config | undefined
     try {
-      // eslint-disable-next-line import/no-dynamic-require
-      const mod = require(configPath)
+      const mod = await import(configPath)
       config = mod.__esModule && mod.default ? mod.default : mod
     } catch (err) {
       throw new Error(`Failed to load configuration file "${configPath}"`, {
@@ -56,7 +56,7 @@ export function getStudioConfig({
     if (!config) throw new Error('Configuration did not export expected config shape')
     const normalized = Array.isArray(config)
       ? config
-      : [{...config, name: config.name || 'default', basePath: config.basePath || '/'}]
+      : [{...config, basePath: config.basePath || '/', name: config.name || 'default'}]
 
     return normalized
   } finally {
@@ -74,7 +74,7 @@ export async function getStudioWorkspaces(
 
   try {
     cleanup = mockBrowserEnvironment(options.basePath)
-    const config = getStudioConfig(options)
+    const config = await getStudioConfig(options)
     const workspaces = await firstValueFrom(resolveConfig(config))
     if (!workspaces) throw new Error('Failed to resolve configuration')
     return workspaces

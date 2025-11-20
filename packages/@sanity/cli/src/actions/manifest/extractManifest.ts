@@ -109,14 +109,7 @@ async function getWorkspaceManifests({
   rootPkgPath: string
   workDir: string
 }): Promise<CreateWorkspaceManifest[]> {
-  const workerPath = join(
-    dirname(rootPkgPath),
-    'lib',
-    '_internal',
-    'cli',
-    'threads',
-    'extractManifest.js',
-  )
+  const workerPath = join(dirname(rootPkgPath), 'dist', 'threads', 'extractManifest.js')
 
   const worker = new Worker(workerPath, {
     env: process.env,
