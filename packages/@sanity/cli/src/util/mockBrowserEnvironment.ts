@@ -4,7 +4,7 @@ import jsdomGlobal from 'jsdom-global'
 import {addHook} from 'pirates'
 import resolveFrom from 'resolve-from'
 
-import {getStudioEnvironmentVariables} from '../actions/build/getStudioEnvironmentVariables'
+import {getStudioEnvironmentVariables} from '../actions/build/getStudioEnvironmentVariables.js'
 
 const jsdomDefaultHtml = `<!doctype html>
 <html>

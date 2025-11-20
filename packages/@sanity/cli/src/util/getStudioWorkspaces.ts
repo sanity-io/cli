@@ -1,10 +1,13 @@
 import fs from 'node:fs'
+import {createRequire} from 'node:module'
 import path from 'node:path'
 
 import {firstValueFrom} from 'rxjs'
 import {type Config, resolveConfig, type Workspace, type WorkspaceOptions} from 'sanity'
 
-import {mockBrowserEnvironment} from './mockBrowserEnvironment'
+import {mockBrowserEnvironment} from './mockBrowserEnvironment.js'
+
+const require = createRequire(import.meta.url)
 
 const candidates = [
   'sanity.config.js',
@@ -45,7 +48,7 @@ export async function getStudioConfig({
 
     let config: Config | undefined
     try {
-      const mod = await import(configPath)
+      const mod = require(configPath)
       config = mod.__esModule && mod.default ? mod.default : mod
     } catch (err) {
       throw new Error(`Failed to load configuration file "${configPath}"`, {

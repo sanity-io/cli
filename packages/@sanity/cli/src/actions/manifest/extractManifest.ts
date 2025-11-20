@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto'
 import {mkdir, writeFile} from 'node:fs/promises'
 import {dirname, join, resolve} from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {Worker} from 'node:worker_threads'
 
 import {getTimer, Output, spinner} from '@sanity/cli-core'
@@ -61,10 +62,11 @@ async function extractManifest(options: ExtractManifestOptions): Promise<void> {
   const defaultOutputDir = resolve(join(workDir, 'dist'))
   const outputDir = resolve(defaultOutputDir)
   const defaultStaticPath = join(outputDir, 'static')
-  const staticPath = flags.path ?? defaultStaticPath
+  const staticPath = `.${flags.path ?? defaultStaticPath}`
   const path = join(staticPath, MANIFEST_FILENAME)
+  const cwd = dirname(fileURLToPath(import.meta.url))
 
-  const rootPkgPath = (await readPackageUp({cwd: import.meta.url}))?.path
+  const rootPkgPath = (await readPackageUp({cwd}))?.path
   if (!rootPkgPath) {
     throw new Error('Could not find root directory for `sanity` package')
   }

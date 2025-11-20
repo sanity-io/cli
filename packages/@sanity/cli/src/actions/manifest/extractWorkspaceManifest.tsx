@@ -19,7 +19,7 @@ import {
   type StringSchemaType,
 } from '@sanity/types'
 import DOMPurify from 'isomorphic-dompurify'
-import startCase from 'lodash-es/startCase'
+import startCase from 'lodash-es/startCase.js'
 import {renderToString} from 'react-dom/server'
 import {
   ConcreteRuleClass,
@@ -28,8 +28,8 @@ import {
 } from 'sanity'
 import {ServerStyleSheet} from 'styled-components'
 
-import {config} from './purifyConfig'
-import {SchemaIcon, type SchemaIconProps} from './SchemaIcon'
+import {config} from './purifyConfig.js'
+import {SchemaIcon, type SchemaIconProps} from './SchemaIcon.js'
 import {
   getCustomFields,
   getDefinedTypeName,
@@ -42,7 +42,7 @@ import {
   isReference,
   isString,
   isType,
-} from './typeHelpers'
+} from './typeHelpers.js'
 import {
   type CreateWorkspaceManifest,
   type ManifestField,
