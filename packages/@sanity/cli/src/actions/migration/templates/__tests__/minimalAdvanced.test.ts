@@ -10,7 +10,7 @@ describe('#minimalAdvanced', () => {
     })
 
     expect(minimalAdvancedTemplate).toMatchInlineSnapshot(`
-      "import {defineMigration, patch, at, setIfMissing} from 'sanity/migrate'
+      "import {defineMigration, patch, at, setIfMissing} from '@sanity/migrate'
 
       /**
        * this migration will set \`Default title\` on all documents that are missing a title
@@ -39,7 +39,7 @@ describe('#minimalAdvanced', () => {
     })
 
     expect(minimalAdvancedTemplate).toMatchInlineSnapshot(`
-      "import {defineMigration, patch, at, setIfMissing} from 'sanity/migrate'
+      "import {defineMigration, patch, at, setIfMissing} from '@sanity/migrate'
 
       /**
        * this migration will set \`Default title\` on all documents that are missing a title

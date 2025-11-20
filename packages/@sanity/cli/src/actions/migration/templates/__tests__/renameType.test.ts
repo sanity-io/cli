@@ -10,7 +10,7 @@ describe('#renameType', () => {
     })
 
     expect(renameTypeTemplate).toMatchInlineSnapshot(`
-      "import {defineMigration, at, set} from 'sanity/migrate'
+      "import {defineMigration, at, set} from '@sanity/migrate'
 
       const oldType = 'old'
       const newType = 'new'
@@ -37,7 +37,7 @@ describe('#renameType', () => {
     })
 
     expect(renameTypeTemplate).toMatchInlineSnapshot(`
-      "import {defineMigration, at, set} from 'sanity/migrate'
+      "import {defineMigration, at, set} from '@sanity/migrate'
 
       const oldType = 'old'
       const newType = 'new'

@@ -68,7 +68,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       allowNo: true,
       default: true,
       description:
-        "Skip the confirmation prompt before running the migration. Make sure you know what you're doing before using this flag.",
+        'Prompt for confirmation before running the migration (default: true). Use --no-confirm to skip.',
     }),
     dataset: Flags.string({
       description:
@@ -78,7 +78,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       allowNo: true,
       default: true,
       description:
-        'By default the migration runs in dry mode. Pass this option to migrate dataset.',
+        'By default the migration runs in dry mode. Use --no-dry-run to migrate dataset.',
     }),
     'from-export': Flags.string({
       description:
@@ -88,7 +88,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       allowNo: true,
       default: true,
       description:
-        "Don't output progress. Useful if you want debug your migration script and see the output of console.log() statements.",
+        'Display progress during migration (default: true). Use --no-progress to hide output.',
     }),
     project: Flags.string({
       description:
@@ -98,6 +98,9 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(RunMigrationCommand)
+    const cliConfig = await this.getCliConfig()
+    const projectId = await this.getProjectId()
+    const datasetFromConfig = cliConfig.api?.dataset
 
     const workDir = await getMigrationRootDirectory(this.output)
     const id = args.id
@@ -111,6 +114,20 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
 
     if ((dataset && !project) || (project && !dataset)) {
       this.error('If either --dataset or --project is provided, both must be provided', {exit: 1})
+    }
+
+    if (!project && !projectId) {
+      this.error(
+        'sanity.cli.js does not contain a project identifier ("api.projectId") and no --project option was provided.',
+        {exit: 1},
+      )
+    }
+
+    if (!dataset && !datasetFromConfig) {
+      this.error(
+        'sanity.cli.js does not contain a dataset identifier ("api.dataset") and no --dataset option was provided.',
+        {exit: 1},
+      )
     }
 
     if (!id) {
@@ -186,15 +203,6 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
       }
     }
 
-    const projectId = await this.getProjectId()
-
-    if (!project && !projectId) {
-      this.error(
-        'sanity.cli.js does not contain a project identifier ("api.projectId") and no --project option was provided.',
-        {exit: 1},
-      )
-    }
-
     const projectClient = await this.getProjectApiClient({
       apiVersion: apiVersion,
       projectId: (project ?? projectId)!,
@@ -205,8 +213,8 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
     const apiConfig: APIConfig = {
       apiHost: projectConfig.apiHost,
       apiVersion: apiVersion,
-      dataset: dataset ?? projectConfig.dataset!,
-      projectId: project ?? projectConfig.projectId!,
+      dataset: (dataset ?? datasetFromConfig)!,
+      projectId: (project ?? projectId)!,
       token: projectConfig.token!,
     } as const
     if (dry) {
