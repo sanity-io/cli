@@ -57,7 +57,7 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
         if (isApp) {
           message = `This will undeploy the following application:
 
-    Title: ${chalk.yellow(userApplication.title)}
+    Title: ${chalk.yellow(userApplication.title || '(untitled application)')}
     ID:    ${chalk.yellow(userApplication.id)}
 
 The application will no longer be available for any of your users if you proceed.
@@ -85,9 +85,9 @@ Are you ${chalk.red('sure')} you want to undeploy?`
 
       if (isApp) {
         this.log(
-          `\nApplication undeploy scheduled. It might be a few minutes until ${chalk.yellow(
-            userApplication.title,
-          )} is unavailable.`,
+          `\nApplication undeploy scheduled. It might be a few minutes until ${
+            userApplication.title ? chalk.yellow(userApplication.title) : 'your application'
+          } is unavailable.`,
         )
       } else {
         this.log(
