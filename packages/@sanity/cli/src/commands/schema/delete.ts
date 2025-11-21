@@ -27,49 +27,66 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
   ]
 
   static override flags = {
+    dataset: Flags.string({
+      description: 'Delete schemas from a specific dataset',
+    }),
+    'extract-manifest': Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Generate manifest file (use --no-extract-manifest to disable)',
+    }),
     ids: Flags.string({
       description: 'Comma-separated list of schema ids to delete',
       required: true,
     }),
-    dataset: Flags.string({
-      description: 'Delete schemas from a specific dataset',
-    }),
     'manifest-dir': Flags.string({
-      description: 'Directory containing manifest file',
       default: './dist/static',
-    }),
-    'extract-manifest': Flags.boolean({
-      description: 'Generate manifest file (use --no-extract-manifest to disable)',
-      default: true,
-      allowNo: true,
+      description: 'Directory containing manifest file',
     }),
     verbose: Flags.boolean({
-      description: 'Enable verbose output',
       default: false,
+      description: 'Enable verbose output',
     }),
   }
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeleteSchemaCommand)
-    const workDir = await this.getWorkDir()
+    const workDir = (await this.getProjectRoot()).directory
+
+    // Get the project ID upfront
+    const projectId = await this.getProjectId()
+    if (!projectId) {
+      this.error('No project ID found. Please run this command from a Sanity project directory.', {
+        exit: 1,
+      })
+    }
+
+    // Get the CLI config to find the dataset
+    const cliConfig = await this.getCliConfig()
+    const dataset = cliConfig.api?.dataset
+
+    // Pre-fetch the client so we can use it synchronously in the adapter
+    const baseClient = await this.getProjectApiClient({
+      apiVersion: 'v2025-03-01',
+      projectId,
+      requireUser: true,
+    })
 
     // Create CLI output adapter
     const output: CliOutputter = {
-      print: (...args: unknown[]) => this.log(String(args.join(' '))),
-      success: (...args: unknown[]) => this.log(`✔ ${args.join(' ')}`),
-      warn: (...args: unknown[]) => this.warn(String(args.join(' '))),
-      error: (...args: unknown[]) => this.error(String(args.join(' ')), {exit: false}),
       clear: () => {
         // no-op for now
       },
+      error: (...args: unknown[]) => this.error(String(args.join(' ')), {exit: false}),
+      print: (...args: unknown[]) => this.log(String(args.join(' '))),
       spinner: (options) => {
         // For now, return a simple mock spinner
         // In a real implementation, this would use ora
         const spinner = {
+          fail: () => spinner,
           start: () => spinner,
           stop: () => spinner,
           succeed: () => spinner,
-          fail: () => spinner,
           text: '',
         }
         if (typeof options === 'string') {
@@ -77,25 +94,28 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
         }
         return spinner as ReturnType<CliOutputter['spinner']>
       },
+      success: (...args: unknown[]) => this.log(`✔ ${args.join(' ')}`),
+      warn: (...args: unknown[]) => this.warn(String(args.join(' '))),
     }
 
-    // Create API client adapter
-    const apiClient: CliApiClient = (options) => {
-      return this.getProjectApiClient({
-        requireUser: options?.requireUser ?? false,
-        requireProject: options?.requireProject ?? false,
-      })
+    // Create API client adapter that returns the pre-fetched client
+    const apiClient: CliApiClient = (_options) => {
+      // Return the pre-configured client with default dataset if available
+      if (dataset) {
+        return baseClient.withConfig({dataset})
+      }
+      return baseClient
     }
 
     try {
       const result = await deleteSchemaAction(flags, {
-        output,
         apiClient,
-        workDir,
         jsonReader: undefined,
         manifestExtractor: async () => {
           // Manifest extractor will be called by the action
         },
+        output,
+        workDir,
       })
 
       if (result === 'failure') {
