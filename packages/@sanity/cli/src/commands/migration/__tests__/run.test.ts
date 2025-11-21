@@ -89,6 +89,7 @@ describe('#migration:run', () => {
         absolutePath: '/test/project/migrations/my-migration.js',
         mod: {
           default: {
+            documentTypes: ['article'],
             migrate: vi.fn(),
             title: 'My Migration',
           } as Migration,
@@ -377,9 +378,9 @@ describe('#migration:run', () => {
     expect(stdout).toContain('Running migration "my-migration" in dry mode')
     expect(stdout).toContain('Project id:  test-project')
     expect(stdout).toContain('Dataset:     production')
-    expect(stdout).toContain(`[patch] RDP0avd8MWK480sF2ok0FJ`)
+    expect(stdout).toContain(`[patch] [article] RDP0avd8MWK480sF2ok0FJ`)
     expect(stdout).toContain(`creator ....................... setIfMissing(undefined)`)
-    expect(stdout).toContain(`[patch] RDP0avd8MWK480sF2ok0FJ`)
+    expect(stdout).toContain(`[patch] [article] RDP0avd8MWK480sF2ok0FJ`)
     expect(stdout).toContain(`author ........................ unset()`)
   })
 
@@ -440,9 +441,51 @@ describe('#migration:run', () => {
     expect(mockSpinner).toHaveBeenCalledWith('Running migration "my-migration"')
     expect(mockSpinnerInstance.stopAndPersist).toHaveBeenCalled()
     expect(mockSpinnerInstance.text).toContain('Migration "my-migration" completed')
+    expect(mockSpinnerInstance.text).toContain('Project id:  test-project')
+    expect(mockSpinnerInstance.text).toContain('Dataset:     production')
     expect(mockSpinnerInstance.text).toContain('100 documents processed')
     expect(mockSpinnerInstance.text).toContain('50 mutations generated')
     expect(mockSpinnerInstance.text).toContain('1 transactions committed')
     expect(mockSpinnerInstance.stop).toHaveBeenCalled()
+  })
+
+  test('shows progress updates while migration is running', async () => {
+    mockConfirm.mockResolvedValueOnce(true)
+
+    const mockSpinnerInstance = {
+      start: vi.fn().mockReturnThis(),
+      stop: vi.fn().mockReturnThis(),
+      stopAndPersist: vi.fn().mockReturnThis(),
+      text: '',
+    }
+    mockSpinner.mockReturnValue(mockSpinnerInstance as never)
+
+    mockRun.mockImplementation(async (config) => {
+      if (config.onProgress) {
+        config.onProgress({
+          completedTransactions: [],
+          currentTransactions: [{id: 'tx-1', mutations: [], type: 'transaction'}],
+          documents: 50,
+          done: false,
+          mutations: 25,
+          pending: 5,
+        })
+      }
+    })
+
+    await testCommand(RunMigrationCommand, ['my-migration', '--no-dry-run'])
+
+    expect(mockSpinner).toHaveBeenCalledWith('Running migration "my-migration"')
+    expect(mockSpinnerInstance.text).toContain('Project id:')
+    expect(mockSpinnerInstance.text).toContain('test-project')
+    expect(mockSpinnerInstance.text).toContain('Dataset:')
+    expect(mockSpinnerInstance.text).toContain('production')
+    expect(mockSpinnerInstance.text).toContain('Document type:')
+    expect(mockSpinnerInstance.text).toContain('article')
+    expect(mockSpinnerInstance.text).toContain('50 documents processed…')
+    expect(mockSpinnerInstance.text).toContain('25 mutations generated…')
+    expect(mockSpinnerInstance.text).toContain('5 requests pending…')
+    expect(mockSpinnerInstance.text).toContain('0 transactions committed.')
+    expect(mockSpinnerInstance.text).toContain('» [transaction] tx-1')
   })
 })
