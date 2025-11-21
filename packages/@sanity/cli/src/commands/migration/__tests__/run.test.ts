@@ -76,7 +76,7 @@ const mockResolveMigrationScript = mocks.resolveMigrationScript
 const mockRun = mocks.run
 const mockSpinner = mocks.spinner
 
-describe('#migration:list', () => {
+describe('#migration:run', () => {
   beforeAll(() => {
     mockReaddir.mockResolvedValue([
       {isDirectory: () => false, name: 'my-migration.js'} as unknown as Awaited<

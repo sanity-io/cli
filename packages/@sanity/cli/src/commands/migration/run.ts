@@ -198,7 +198,7 @@ export class RunMigrationCommand extends SanityCommand<typeof RunMigrationComman
         })
       }
 
-      if (concurrency === 0) {
+      if (concurrency < 1) {
         this.error(`Concurrency must be a positive number, got ${concurrency}`, {exit: 1})
       }
     }

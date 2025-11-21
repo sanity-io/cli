@@ -118,7 +118,7 @@ function mutationHeader(mutation: Mutation, migration: Migration): string {
     .join(' ')
 }
 
-export function prettyFormatMutation({
+function prettyFormatMutation({
   indentSize = 0,
   migration,
   subject,

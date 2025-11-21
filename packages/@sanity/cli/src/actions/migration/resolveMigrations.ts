@@ -26,7 +26,7 @@ interface ResolvedMigration {
  * @returns The filename without the extension
  * @internal
  */
-export function removeMigrationScriptExtension(fileName: string): string {
+function removeMigrationScriptExtension(fileName: string): string {
   // Remove `.ts`, `.js` etc from the end of a filename
   const ext = MIGRATION_SCRIPT_EXTENSIONS.find((e) => fileName.endsWith(`.${e}`))
   return ext ? path.basename(fileName, `.${ext}`) : fileName
