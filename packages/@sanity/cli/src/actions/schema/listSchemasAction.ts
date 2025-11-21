@@ -72,7 +72,7 @@ export async function listSchemasAction(
   const datasets = uniq(workspaces.map((w) => w.dataset))
 
   const schemaResults = await Promise.allSettled(
-    datasets.map(async (dataset) => {
+    datasets.map(async (dataset: string) => {
       try {
         const datasetClient = client.withConfig({dataset})
         return id
@@ -87,21 +87,31 @@ export async function listSchemasAction(
   )
 
   const schemas = schemaResults
-    .map((result) => {
-      if (result.status === 'fulfilled') return result.value
+    .map(
+      (
+        result: PromiseSettledResult<
+          never[] | StoredWorkspaceSchema | StoredWorkspaceSchema[] | null | undefined
+        >,
+      ): never[] | StoredWorkspaceSchema | StoredWorkspaceSchema[] | null | undefined => {
+        if (result.status === 'fulfilled') return result.value
 
-      if (result.reason instanceof DatasetError) {
-        const message = chalk.red(
-          `↳ Failed to fetch schema from dataset "${result.reason.dataset}":\n  ${result.reason.message}`,
-        )
-        output.error(message)
-      } else {
-        //hubris inc: given the try-catch wrapping all the full promise "this should never happen"
-        throw result.reason
-      }
-      return []
-    })
-    .filter((item) => isDefined(item))
+        if (result.reason instanceof DatasetError) {
+          const message = chalk.red(
+            `↳ Failed to fetch schema from dataset "${result.reason.dataset}":\n  ${result.reason.message}`,
+          )
+          output.error(message)
+        } else {
+          //hubris inc: given the try-catch wrapping all the full promise "this should never happen"
+          throw result.reason
+        }
+        return []
+      },
+    )
+    .filter(
+      (
+        item: never[] | StoredWorkspaceSchema | StoredWorkspaceSchema[] | null | undefined,
+      ): item is StoredWorkspaceSchema | StoredWorkspaceSchema[] => isDefined(item),
+    )
     .flat()
 
   if (schemas.length === 0) {
@@ -141,8 +151,8 @@ function printSchemaList({
   // Calculate max widths for each column
   const maxWidths = headings.map((str) => str.length)
   for (const row of rows) {
-    for (let i = 0; i < row.length; i++) {
-      maxWidths[i] = Math.max(maxWidths[i], row[i].length)
+    for (const [i, element] of row.entries()) {
+      maxWidths[i] = Math.max(maxWidths[i], element.length)
     }
   }
 
