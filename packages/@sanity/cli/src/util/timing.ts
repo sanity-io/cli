@@ -1,9 +1,9 @@
 import {performance} from 'node:perf_hooks'
 
 export interface TimeMeasurer {
-  start: (name: string) => void
   end: (name: string) => number
   getTimings: () => Record<string, number>
+  start: (name: string) => void
 }
 
 export function getTimer(): TimeMeasurer {
@@ -11,21 +11,21 @@ export function getTimer(): TimeMeasurer {
   const startTimes: Record<string, number> = {}
 
   function start(name: string): void {
-    if (typeof startTimes[name] !== 'undefined') {
-      throw new Error(`Timer "${name}" already started, cannot overwrite`)
+    if (startTimes[name] !== undefined) {
+      throw new TypeError(`Timer "${name}" already started, cannot overwrite`)
     }
 
     startTimes[name] = performance.now()
   }
 
   function end(name: string): number {
-    if (typeof startTimes[name] === 'undefined') {
-      throw new Error(`Timer "${name}" never started, cannot end`)
+    if (startTimes[name] === undefined) {
+      throw new TypeError(`Timer "${name}" never started, cannot end`)
     }
 
     timings[name] = performance.now() - startTimes[name]
     return timings[name]
   }
 
-  return {start, end, getTimings: () => timings}
+  return {end, getTimings: () => timings, start}
 }

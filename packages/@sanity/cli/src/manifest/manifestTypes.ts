@@ -3,15 +3,15 @@ import {type SanityDocumentLike} from '@sanity/types'
 export const SANITY_WORKSPACE_SCHEMA_TYPE = 'sanity.workspace.schema'
 
 export type ManifestSerializable =
-  | string
-  | number
   | boolean
-  | {[k: string]: ManifestSerializable}
   | ManifestSerializable[]
+  | number
+  | string
+  | {[k: string]: ManifestSerializable}
 
 export interface CreateManifest {
-  version: number
   createdAt: string
+  version: number
   workspaces: ManifestWorkspaceFile[]
 }
 
@@ -21,45 +21,47 @@ export interface ManifestWorkspaceFile extends Omit<CreateWorkspaceManifest, 'sc
 }
 
 export interface CreateWorkspaceManifest {
-  name: string
-  title?: string
-  subtitle?: string
   basePath: string
   dataset: string
-  projectId: string
-  schema: ManifestSchemaType[]
-  tools: ManifestTool[]
   /**
    * returns null in the case of the icon not being able to be stringified
    */
   icon: string | null
+  name: string
+  projectId: string
+  schema: ManifestSchemaType[]
+  tools: ManifestTool[]
+
+  subtitle?: string
+  title?: string
 }
 
 export interface ManifestSchemaType {
-  type: string
   name: string
-  title?: string
+  type: string
+
   deprecated?: {
     reason: string
   }
-  readOnly?: boolean | 'conditional'
-  hidden?: boolean | 'conditional'
-  validation?: ManifestValidationGroup[]
   fields?: ManifestField[]
-  to?: ManifestReferenceMember[]
-  of?: ManifestArrayMember[]
-  preview?: {
-    select: Record<string, string>
-  }
   fieldsets?: ManifestFieldset[]
-  options?: Record<string, ManifestSerializable>
+  hidden?: 'conditional' | boolean
+  lists?: ManifestTitledValue[]
   //portable text
   marks?: {
     annotations?: ManifestArrayMember[]
     decorators?: ManifestTitledValue[]
   }
-  lists?: ManifestTitledValue[]
+  of?: ManifestArrayMember[]
+  options?: Record<string, ManifestSerializable>
+  preview?: {
+    select: Record<string, string>
+  }
+  readOnly?: 'conditional' | boolean
   styles?: ManifestTitledValue[]
+  title?: string
+  to?: ManifestReferenceMember[]
+  validation?: ManifestValidationGroup[]
 
   // userland (assignable to ManifestSerializable | undefined)
   // not included to add some typesafty to extractManifest
@@ -67,13 +69,15 @@ export interface ManifestSchemaType {
 }
 
 export interface ManifestFieldset {
-  name: string
-  title?: string
   [index: string]: ManifestSerializable | undefined
+  name: string
+
+  title?: string
 }
 
 export interface ManifestTitledValue {
   value: string
+
   title?: string
 }
 
@@ -83,23 +87,24 @@ export type ManifestReferenceMember = Omit<ManifestSchemaType, 'name'> & {name?:
 
 export interface ManifestValidationGroup {
   rules: ManifestValidationRule[]
+
+  level?: 'error' | 'info' | 'warning'
   message?: string
-  level?: 'error' | 'warning' | 'info'
 }
 
 export type ManifestValidationRule = {
-  flag: string
-  constraint?: ManifestSerializable
   [index: string]: ManifestSerializable | undefined
+  constraint?: ManifestSerializable
+  flag: string
 }
 
 export interface ManifestTool {
-  name: string
-  title: string
   /**
    * returns null in the case of the icon not being able to be stringified
    */
   icon: string | null
+  name: string
+  title: string
   type: string | null
 }
 
@@ -108,13 +113,13 @@ export type PrefixedWorkspaceSchemaId = `${string}.${DefaultWorkspaceSchemaId}`
 export type WorkspaceSchemaId = DefaultWorkspaceSchemaId | PrefixedWorkspaceSchemaId
 
 export interface StoredWorkspaceSchema extends SanityDocumentLike {
-  _type: typeof SANITY_WORKSPACE_SCHEMA_TYPE
   _id: WorkspaceSchemaId
-  workspace: ManifestWorkspaceFile
+  _type: typeof SANITY_WORKSPACE_SCHEMA_TYPE
   /**
    * JSON.stringify version of ManifestSchemaType[] to save on attribute paths.
    * Consumers must use JSON.parse on the value.
    */
   schema: string
+  workspace: ManifestWorkspaceFile
   //schema: ManifestSchemaType[]
 }

@@ -7,16 +7,16 @@ import chalk from 'chalk'
 import {minutesToMilliseconds} from 'date-fns'
 import readPkgUp from 'read-pkg-up'
 
-import {type CliCommandContext} from '../../types.js'
-import {type CliCommandArguments} from '../schema/utils/mainfestExtractor.js'
 import {
   type CreateManifest,
   type CreateWorkspaceManifest,
   type ManifestWorkspaceFile,
 } from '../../manifest/manifestTypes.js'
 import {type ExtractManifestWorkerData} from '../../threads/extractManifest.js'
+import {type CliCommandContext} from '../../types.js'
 import {getTimer} from '../../util/timing.js'
 import {SCHEMA_STORE_FEATURE_ENABLED} from '../schema/schemaStoreConstants.js'
+import {type CliCommandArguments} from '../schema/utils/mainfestExtractor.js'
 
 export const MANIFEST_FILENAME = 'create-manifest.json'
 const SCHEMA_FILENAME_SUFFIX = '.create-schema.json'
@@ -104,20 +104,20 @@ async function extractManifest(
     const workspaceFiles = await writeWorkspaceFiles(workspaceManifests, staticPath)
 
     const manifest: CreateManifest = {
+      createdAt: new Date().toISOString(),
       /**
        * Version history:
        * 1: Initial release.
        * 2: Added tools file.
        */
       version: 2,
-      createdAt: new Date().toISOString(),
       workspaces: workspaceFiles,
     }
 
     await writeFile(path, JSON.stringify(manifest, null, 2))
     const manifestDuration = timer.end(CREATE_TIMER)
 
-    spinner.succeed(`Extracted manifest (${manifestDuration.toFixed()}ms)`)
+    spinner.succeed(`Extracted manifest (${manifestDuration.toFixed(0)}ms)`)
   } catch (err) {
     spinner.fail(err.message)
     throw err
@@ -141,9 +141,9 @@ async function getWorkspaceManifests({
   )
 
   const worker = new Worker(workerPath, {
-    workerData: {workDir} satisfies ExtractManifestWorkerData,
-    // eslint-disable-next-line no-process-env
+     
     env: process.env,
+    workerData: {workDir} satisfies ExtractManifestWorkerData,
   })
 
   let timeout = false

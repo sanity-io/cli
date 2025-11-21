@@ -128,4 +128,3 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
     }
   }
 }
-
