@@ -482,7 +482,7 @@ describe('#deploy', () => {
         config: {root: cwd},
       })
 
-      expect(error?.message).toContain('Failed to find user application for app')
+      expect(error?.message).toContain('Error deploying application')
     })
 
     test('should handle deployment API errors', async () => {
@@ -687,7 +687,7 @@ describe('#deploy', () => {
         config: {root: cwd},
       })
 
-      expect(error?.message).toContain('Failed to find user application for app')
+      expect(error?.message).toContain('Error deploying application')
       expect(error?.oclif?.exit).toBe(1)
     })
 
@@ -827,7 +827,6 @@ describe('#deploy', () => {
       expect(stdout).toContain('Success! Application deployed')
       expect(stdout).toContain(`Add id: '${existingAppId2}'`)
       expect(stdout).toContain('to `app` in sanity.cli.js or sanity.cli.ts')
-      expect(stdout).toContain('to avoid prompting on next deploy.')
     })
 
     test('should allow creating a new app by selecting from list of apps', async () => {
@@ -919,7 +918,6 @@ describe('#deploy', () => {
       expect(stdout).toContain('Success! Application deployed')
       expect(stdout).toContain(`Add id: '${newAppId}'`)
       expect(stdout).toContain('to `app` in sanity.cli.js or sanity.cli.ts')
-      expect(stdout).toContain('to avoid prompting on next deploy.')
     })
 
     test('should throw an error if organizationId is not set', async () => {

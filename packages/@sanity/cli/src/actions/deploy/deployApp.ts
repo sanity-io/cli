@@ -40,7 +40,7 @@ export async function deployApp(options: DeployAppOptions) {
     return
   }
 
-  let spin = spinner('Verifying local content')
+  let spin = spinner('Verifying local content...')
 
   try {
     let userApplication = await findUserApplicationForApp({
@@ -101,17 +101,22 @@ export async function deployApp(options: DeployAppOptions) {
     spin.succeed()
 
     // And let the user know we're done
-    output.log(`\nSuccess! Application deployed`)
+    output.log(`\n🚀 ${chalk.bold('Success!')} Application deployed`)
 
     if (!appId) {
-      output.log(`\nAdd ${chalk.cyan(`id: '${userApplication.id}'`)}`)
-      output.log('to `app` in sanity.cli.js or sanity.cli.ts')
-      output.log(`to avoid prompting on next deploy.`)
+      output.log(`\n════ ${chalk.bold('Next step:')} ════`)
+      output.log(chalk.bold(`\nAdd ${chalk.cyan(`id: '${userApplication.id}'`)}`))
+      output.log(chalk.bold('to `app` in sanity.cli.js or sanity.cli.ts'))
     }
   } catch (error) {
-    // if the error is a CLIError, we can just output the message and exit
+    // Don't throw generic error if user cancels
+    if (error.name === 'ExitPromptError') {
+      output.error('Deployment cancelled by user', {exit: 1})
+    }
+    // If the error is a CLIError, we can just output the message & error options (if any), while ensuring we exit
     if (error instanceof CLIError) {
-      output.error(error.message, {exit: 1})
+      const {message, ...errorOptions} = error
+      output.error(message, {...errorOptions, exit: 1})
       return
     }
 
