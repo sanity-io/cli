@@ -1,27 +1,27 @@
-import {type CliCommandContext, type CliOutputter} from '@sanity/cli'
 import chalk from 'chalk'
 import sortBy from 'lodash/sortBy'
 import uniq from 'lodash/uniq'
 
-import {isDefined} from '../../../manifest/manifestTypeHelpers'
+import {isDefined} from '../../manifest/manifestTypeHelpers.js'
 import {
   SANITY_WORKSPACE_SCHEMA_TYPE,
   type StoredWorkspaceSchema,
-} from '../../../manifest/manifestTypes'
-import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes'
-import {createManifestExtractor, ensureManifestExtractSatisfied} from './utils/mainfestExtractor'
-import {createManifestReader} from './utils/manifestReader'
-import {createSchemaApiClient} from './utils/schemaApiClient'
-import {getDatasetsOutString} from './utils/schemaStoreOutStrings'
+} from '../../manifest/manifestTypes.js'
+import {type CliCommandContext, type CliOutputter} from '../../types.js'
+import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
+import {createManifestExtractor, ensureManifestExtractSatisfied} from './utils/mainfestExtractor.js'
+import {createManifestReader} from './utils/manifestReader.js'
+import {createSchemaApiClient} from './utils/schemaApiClient.js'
+import {getDatasetsOutString} from './utils/schemaStoreOutStrings.js'
 import {
   filterLogReadProjectIdMismatch,
   parseListSchemasConfig,
   type SchemaStoreCommonFlags,
-} from './utils/schemaStoreValidation'
+} from './utils/schemaStoreValidation.js'
 
 export interface SchemaListFlags extends SchemaStoreCommonFlags {
-  json?: boolean
   id?: string
+  json?: boolean
 }
 
 class DatasetError extends Error {
@@ -55,16 +55,16 @@ export async function listSchemasAction(
   flags: SchemaListFlags,
   context: SchemaStoreContext,
 ): Promise<SchemaStoreActionResult> {
-  const {json, id, manifestDir, extractManifest} = parseListSchemasConfig(flags, context)
-  const {output, apiClient, jsonReader, manifestExtractor} = context
+  const {extractManifest, id, json, manifestDir} = parseListSchemasConfig(flags, context)
+  const {apiClient, jsonReader, manifestExtractor, output} = context
 
   // prettier-ignore
-  if (!(await ensureManifestExtractSatisfied({schemaRequired: true, extractManifest, manifestDir,  manifestExtractor, output,}))) {
+  if (!(await ensureManifestExtractSatisfied({extractManifest, manifestDir, manifestExtractor,  output, schemaRequired: true,}))) {
     return 'failure'
   }
   const {client, projectId} = createSchemaApiClient(apiClient)
 
-  const manifest = await createManifestReader({manifestDir, output, jsonReader}).getManifest()
+  const manifest = await createManifestReader({jsonReader, manifestDir, output}).getManifest()
   const workspaces = manifest.workspaces.filter((workspace) =>
     filterLogReadProjectIdMismatch(workspace, projectId, output),
   )
@@ -87,7 +87,7 @@ export async function listSchemasAction(
   )
 
   const schemas = schemaResults
-    .map((result, index) => {
+    .map((result) => {
       if (result.status === 'fulfilled') return result.value
 
       if (result.reason instanceof DatasetError) {
@@ -101,7 +101,7 @@ export async function listSchemasAction(
       }
       return []
     })
-    .filter(isDefined)
+    .filter((item) => isDefined(item))
     .flat()
 
   if (schemas.length === 0) {
@@ -117,17 +117,17 @@ export async function listSchemasAction(
   if (json) {
     output.print(`${JSON.stringify(id ? schemas[0] : schemas, null, 2)}`)
   } else {
-    printSchemaList({schemas, output})
+    printSchemaList({output, schemas})
   }
   return 'success'
 }
 
 function printSchemaList({
-  schemas,
   output,
+  schemas,
 }: {
-  schemas: StoredWorkspaceSchema[]
   output: CliOutputter
+  schemas: StoredWorkspaceSchema[]
 }) {
   const ordered = sortBy(
     schemas.map(({_createdAt: createdAt, _id: id, workspace}) => {
@@ -136,16 +136,19 @@ function printSchemaList({
     ['createdAt'],
   )
   const headings = ['Id', 'Workspace', 'Dataset', 'ProjectId', 'CreatedAt']
-  const rows = ordered.reverse()
+  const rows = ordered.toReversed()
 
-  const maxWidths = rows.reduce(
-    (max, row) => row.map((current, index) => Math.max(current.length, max[index])),
-    headings.map((str) => str.length),
-  )
+  // Calculate max widths for each column
+  const maxWidths = headings.map((str) => str.length)
+  for (const row of rows) {
+    for (let i = 0; i < row.length; i++) {
+      maxWidths[i] = Math.max(maxWidths[i], row[i].length)
+    }
+  }
 
   const rowToString = (row: string[]) =>
     row.map((col, i) => `${col}`.padEnd(maxWidths[i])).join('   ')
 
   output.print(chalk.cyan(rowToString(headings)))
-  rows.forEach((row) => output.print(rowToString(row)))
+  for (const row of rows) output.print(rowToString(row))
 }

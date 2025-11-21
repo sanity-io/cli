@@ -1,4 +1,3 @@
-import {type CliCommandContext, type CliOutputter} from '@sanity/cli'
 import {type SanityClient} from '@sanity/client'
 import chalk from 'chalk'
 import partition from 'lodash/partition'
@@ -7,23 +6,24 @@ import {
   type ManifestWorkspaceFile,
   SANITY_WORKSPACE_SCHEMA_TYPE,
   type StoredWorkspaceSchema,
-} from '../../../manifest/manifestTypes'
-import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes'
-import {createManifestExtractor, ensureManifestExtractSatisfied} from './utils/mainfestExtractor'
-import {type CreateManifestReader, createManifestReader} from './utils/manifestReader'
-import {createSchemaApiClient} from './utils/schemaApiClient'
+} from '../../manifest/manifestTypes.js'
+import {type CliCommandContext, type CliOutputter} from '../../types.js'
+import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
+import {createManifestExtractor, ensureManifestExtractSatisfied} from './utils/mainfestExtractor.js'
+import {type CreateManifestReader, createManifestReader} from './utils/manifestReader.js'
+import {createSchemaApiClient} from './utils/schemaApiClient.js'
 import {
   FlagValidationError,
   parseDeploySchemasConfig,
   type SchemaStoreCommonFlags,
   throwWriteProjectIdMismatch,
-} from './utils/schemaStoreValidation'
-import {getWorkspaceSchemaId} from './utils/workspaceSchemaId'
+} from './utils/schemaStoreValidation.js'
+import {getWorkspaceSchemaId} from './utils/workspaceSchemaId.js'
 
 export interface DeploySchemasFlags extends SchemaStoreCommonFlags {
-  workspace?: string
   'id-prefix'?: string
   'schema-required'?: boolean
+  workspace?: string
 }
 
 export default function deploySchemasActionForCommand(
@@ -56,40 +56,39 @@ export async function deploySchemasAction(
   flags: DeploySchemasFlags,
   context: SchemaStoreContext,
 ): Promise<SchemaStoreActionResult> {
-  const {workspaceName, verbose, idPrefix, manifestDir, extractManifest, schemaRequired} =
+  const {extractManifest, idPrefix, manifestDir, schemaRequired, verbose, workspaceName} =
     parseDeploySchemasConfig(flags, context)
 
-  const {output, apiClient, jsonReader, manifestExtractor} = context
+  const {apiClient, jsonReader, manifestExtractor, output} = context
 
   // prettier-ignore
-  if (!(await ensureManifestExtractSatisfied({schemaRequired, extractManifest, manifestDir, manifestExtractor, output,}))) {
+  if (!(await ensureManifestExtractSatisfied({extractManifest, manifestDir, manifestExtractor, output, schemaRequired,}))) {
     return 'failure'
   }
 
   try {
     const {client, projectId} = createSchemaApiClient(apiClient)
-    const manifestReader = createManifestReader({manifestDir, output, jsonReader})
+    const manifestReader = createManifestReader({jsonReader, manifestDir, output})
     const manifest = await manifestReader.getManifest()
 
     const storeWorkspaceSchema = createStoreWorkspaceSchema({
+      client,
       idPrefix,
+      manifestReader,
+      output,
       projectId,
       verbose,
-      client,
-      output,
-      manifestReader,
     })
 
     const targetWorkspaces = manifest.workspaces.filter(
       (workspace) => !workspaceName || workspace.name === workspaceName,
     )
 
-    if (!targetWorkspaces.length) {
-      if (workspaceName) {
-        throw new FlagValidationError(`Found no workspaces named "${workspaceName}"`)
-      } else {
-        throw new Error(`Workspace array in manifest is empty.`)
-      }
+    if (targetWorkspaces.length === 0) {
+      const error = workspaceName
+        ? new FlagValidationError(`Found no workspaces named "${workspaceName}"`)
+        : new Error(`Workspace array in manifest is empty.`)
+      throw error
     }
 
     //known caveat: we _dont_ rollback failed operations or partial success
@@ -100,7 +99,7 @@ export async function deploySchemasAction(
     )
 
     const [successes, failures] = partition(results, (result) => result.status === 'fulfilled')
-    if (failures.length) {
+    if (failures.length > 0) {
       throw new Error(
         `Failed to deploy ${failures.length}/${targetWorkspaces.length} schemas. Successfully deployed ${successes.length}/${targetWorkspaces.length} schemas.`,
       )
@@ -123,17 +122,17 @@ export async function deploySchemasAction(
 }
 
 function createStoreWorkspaceSchema(args: {
+  client: SanityClient
   idPrefix?: string
+  manifestReader: CreateManifestReader
+  output: CliOutputter
   projectId: string
   verbose: boolean
-  client: SanityClient
-  output: CliOutputter
-  manifestReader: CreateManifestReader
 }): (workspace: ManifestWorkspaceFile) => Promise<void> {
-  const {idPrefix, projectId, verbose, client, output, manifestReader} = args
+  const {client, idPrefix, manifestReader, output, projectId, verbose} = args
 
   return async (workspace) => {
-    const {safeId: id, idWarning} = getWorkspaceSchemaId({workspaceName: workspace.name, idPrefix})
+    const {idWarning, safeId: id} = getWorkspaceSchemaId({idPrefix, workspaceName: workspace.name})
     if (idWarning) output.warn(idWarning)
 
     try {
@@ -141,11 +140,11 @@ function createStoreWorkspaceSchema(args: {
       const schema = await manifestReader.getWorkspaceSchema(workspace.name)
 
       const storedWorkspaceSchema: StoredWorkspaceSchema = {
-        _type: SANITY_WORKSPACE_SCHEMA_TYPE,
         _id: id,
-        workspace,
+        _type: SANITY_WORKSPACE_SCHEMA_TYPE,
         // we have to stringify the schema to save on attribute paths
         schema: JSON.stringify(schema),
+        workspace,
       }
 
       await client

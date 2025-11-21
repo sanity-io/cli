@@ -3,19 +3,20 @@ import {mkdir, writeFile} from 'node:fs/promises'
 import {dirname, join, resolve} from 'node:path'
 import {Worker} from 'node:worker_threads'
 
-import {type CliCommandArguments, type CliCommandContext} from '@sanity/cli'
 import chalk from 'chalk'
 import {minutesToMilliseconds} from 'date-fns'
 import readPkgUp from 'read-pkg-up'
 
+import {type CliCommandContext} from '../../types.js'
+import {type CliCommandArguments} from '../schema/utils/mainfestExtractor.js'
 import {
   type CreateManifest,
   type CreateWorkspaceManifest,
   type ManifestWorkspaceFile,
-} from '../../../manifest/manifestTypes'
-import {type ExtractManifestWorkerData} from '../../threads/extractManifest'
-import {getTimer} from '../../util/timing'
-import {SCHEMA_STORE_FEATURE_ENABLED} from '../schema/schemaStoreConstants'
+} from '../../manifest/manifestTypes.js'
+import {type ExtractManifestWorkerData} from '../../threads/extractManifest.js'
+import {getTimer} from '../../util/timing.js'
+import {SCHEMA_STORE_FEATURE_ENABLED} from '../schema/schemaStoreConstants.js'
 
 export const MANIFEST_FILENAME = 'create-manifest.json'
 const SCHEMA_FILENAME_SUFFIX = '.create-schema.json'
@@ -30,9 +31,10 @@ const CREATE_TIMER = 'create-manifest'
 
 const EXTRACT_TASK_TIMEOUT_MS = minutesToMilliseconds(2)
 
-const EXTRACT_FAILURE_MESSAGE =
-  "↳ Couldn't extract manifest file. Sanity Create will not be available for the studio.\n" +
-  `  Disable this message with ${FEATURE_ENABLED_ENV_NAME}=false`
+// Reserved for future use
+// const EXTRACT_FAILURE_MESSAGE =
+//   "↳ Couldn't extract manifest file. Sanity Create will not be available for the studio.\n" +
+//   `  Disable this message with ${FEATURE_ENABLED_ENV_NAME}=false`
 
 export interface ExtractManifestFlags {
   path?: string
@@ -172,12 +174,10 @@ function writeWorkspaceFiles(
   manifestWorkspaces: CreateWorkspaceManifest[],
   staticPath: string,
 ): Promise<ManifestWorkspaceFile[]> {
-  const output = manifestWorkspaces.reduce<Promise<ManifestWorkspaceFile>[]>(
-    (workspaces, workspace) => {
-      return [...workspaces, writeWorkspaceFile(workspace, staticPath)]
-    },
-    [],
-  )
+  const output: Promise<ManifestWorkspaceFile>[] = []
+  for (const workspace of manifestWorkspaces) {
+    output.push(writeWorkspaceFile(workspace, staticPath))
+  }
   return Promise.all(output)
 }
 
@@ -197,7 +197,7 @@ async function writeWorkspaceFile(
   }
 }
 
-const createFile = async (path: string, content: any, filenameSuffix: string) => {
+const createFile = async (path: string, content: unknown, filenameSuffix: string) => {
   const stringifiedContent = JSON.stringify(content, null, 2)
   const hash = createHash('sha1').update(stringifiedContent).digest('hex')
   const filename = `${hash.slice(0, 8)}${filenameSuffix}`

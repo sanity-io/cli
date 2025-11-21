@@ -6,10 +6,10 @@ import {
   type SchemaType,
 } from '@sanity/types'
 
-const DEFAULT_IMAGE_FIELDS = ['asset', 'hotspot', 'crop', 'media']
-const DEFAULT_FILE_FIELDS = ['asset', 'media']
-const DEFAULT_GEOPOINT_FIELDS = ['lat', 'lng', 'alt']
-const DEFAULT_SLUG_FIELDS = ['current', 'source']
+const DEFAULT_IMAGE_FIELDS = new Set(['asset', 'crop', 'hotspot', 'media'])
+const DEFAULT_FILE_FIELDS = new Set(['asset', 'media'])
+const DEFAULT_GEOPOINT_FIELDS = new Set(['alt', 'lat', 'lng'])
+const DEFAULT_SLUG_FIELDS = new Set(['current', 'source'])
 
 export function getCustomFields(type: ObjectSchemaType): (ObjectField & {fieldset?: string})[] {
   const fields = type.fieldsets
@@ -28,16 +28,16 @@ export function getCustomFields(type: ObjectSchemaType): (ObjectField & {fieldse
     return []
   }
   if (isType(type, 'slug')) {
-    return fields.filter((f) => !DEFAULT_SLUG_FIELDS.includes(f.name))
+    return fields.filter((field) => !DEFAULT_SLUG_FIELDS.has(field.name))
   }
   if (isType(type, 'geopoint')) {
-    return fields.filter((f) => !DEFAULT_GEOPOINT_FIELDS.includes(f.name))
+    return fields.filter((field) => !DEFAULT_GEOPOINT_FIELDS.has(field.name))
   }
   if (isType(type, 'image')) {
-    return fields.filter((f) => !DEFAULT_IMAGE_FIELDS.includes(f.name))
+    return fields.filter((field) => !DEFAULT_IMAGE_FIELDS.has(field.name))
   }
   if (isType(type, 'file')) {
-    return fields.filter((f) => !DEFAULT_FILE_FIELDS.includes(f.name))
+    return fields.filter((field) => !DEFAULT_FILE_FIELDS.has(field.name))
   }
   return fields
 }
@@ -69,7 +69,7 @@ export function isCustomized(maybeCustomized: SchemaType): boolean {
   }
 
   const fields = getCustomFields(maybeCustomized)
-  return !!fields.length
+  return fields.length > 0
 }
 
 export function isType(schemaType: SchemaType, typeName: string): boolean {
@@ -90,7 +90,7 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object'
 }
 
-export function isPrimitive(value: unknown): value is string | boolean | number {
+export function isPrimitive(value: unknown): value is boolean | number | string {
   return isString(value) || isBoolean(value) || isNumber(value)
 }
 

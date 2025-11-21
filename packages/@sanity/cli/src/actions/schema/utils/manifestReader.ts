@@ -2,21 +2,21 @@ import {type Stats} from 'node:fs'
 import {readFile, stat} from 'node:fs/promises'
 import path, {join, resolve} from 'node:path'
 
-import {type CliOutputter} from '@sanity/cli'
 import chalk from 'chalk'
 
-import {type CreateManifest, type ManifestSchemaType} from '../../../../manifest/manifestTypes'
-import {MANIFEST_FILENAME} from '../../manifest/extractManifestAction'
-import {type DeploySchemasFlags} from '../deploySchemasAction'
+import {MANIFEST_FILENAME} from '../../../actions/manifest/extractManifestAction.js'
+import {type CreateManifest, type ManifestSchemaType} from '../../../manifest/manifestTypes.js'
+import {type CliOutputter} from '../../../types.js'
+import {type DeploySchemasFlags} from '../deploySchemasAction.js'
 
 export type ManifestJsonReader = <T>(
   filePath: string,
 ) => Promise<JsonFileParseSuccess<T> | undefined>
 
 export type CreateManifestReaderFactory = (args: {
+  jsonReader?: <T>(filePath: string) => Promise<JsonFileParseSuccess<T> | undefined>
   manifestDir: string
   output: CliOutputter
-  jsonReader?: <T>(filePath: string) => Promise<JsonFileParseSuccess<T> | undefined>
 }) => CreateManifestReader
 
 export interface CreateManifestReader {
@@ -25,9 +25,9 @@ export interface CreateManifestReader {
 }
 
 interface JsonFileParseSuccess<T> {
+  lastModified: string
   parsedJson: T
   path: string
-  lastModified: string
 }
 
 /**
@@ -35,9 +35,9 @@ interface JsonFileParseSuccess<T> {
  * If you need to re-read the manifest from disk, create a new instance.
  */
 export const createManifestReader: CreateManifestReaderFactory = ({
+  jsonReader = parseJsonFile,
   manifestDir,
   output,
-  jsonReader = parseJsonFile,
 }) => {
   let parsedManifest: JsonFileParseSuccess<CreateManifest>
   const parsedWorkspaces: Record<string, JsonFileParseSuccess<ManifestSchemaType[]> | undefined> =
@@ -71,7 +71,7 @@ export const createManifestReader: CreateManifestReaderFactory = ({
     }
     const manifest = await getManifest()
     if (!manifest) {
-      throw Error('Manifest is required to read workspace schema.')
+      throw new Error('Manifest is required to read workspace schema.')
     }
 
     const workspaceManifest = manifest.workspaces.find(
@@ -79,13 +79,13 @@ export const createManifestReader: CreateManifestReaderFactory = ({
     )
 
     if (!workspaceManifest) {
-      throw Error(`No workspace named "${workspaceName}" found in manifest.`)
+      throw new Error(`No workspace named "${workspaceName}" found in manifest.`)
     }
 
     const workspaceSchemaFile = path.join(manifestDir, workspaceManifest.schema)
     const result = await jsonReader<ManifestSchemaType[]>(workspaceSchemaFile)
     if (!result) {
-      throw Error(`Workspace schema file at "${workspaceSchemaFile}" does not exist.`)
+      throw new Error(`Workspace schema file at "${workspaceSchemaFile}" does not exist.`)
     }
     parsedWorkspaces[workspaceName] = result
     return result.parsedJson
@@ -110,19 +110,19 @@ async function parseJsonFile<T>(filePath: string): Promise<JsonFileParseSuccess<
   let stats: Stats
   try {
     stats = await stat(filePath)
-  } catch (err) {
+  } catch {
     // file does not exist
     return undefined
   }
-  const content = await readFile(filePath, 'utf-8')
+  const content = await readFile(filePath, 'utf8')
   const lastModified = stats.mtime.toISOString()
   const json = JSON.parse(content) as T
   if (!json) {
     throw new Error(`JSON file "${filePath}" was empty.`)
   }
   return {
+    lastModified,
     parsedJson: json,
     path: filePath,
-    lastModified,
   }
 }

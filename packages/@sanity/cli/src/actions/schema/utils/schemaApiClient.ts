@@ -1,9 +1,9 @@
-import {type CliApiClient} from '@sanity/cli'
+import {type CliApiClient} from '../../../types.js'
 
 export function createSchemaApiClient(apiClient: CliApiClient) {
   const client = apiClient({
-    requireUser: true,
     requireProject: true,
+    requireUser: true,
   }).withConfig({apiVersion: 'v2025-03-01', useCdn: false})
 
   const projectId = client.config().projectId
@@ -13,7 +13,7 @@ export function createSchemaApiClient(apiClient: CliApiClient) {
 
   return {
     client,
-    projectId,
     dataset,
+    projectId,
   }
 }

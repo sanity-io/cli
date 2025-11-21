@@ -1,19 +1,30 @@
-import {type CliCommandArguments, type CliCommandContext, type CliOutputter} from '@sanity/cli'
 import chalk from 'chalk'
 
-import {type ExtractManifestFlags, extractManifestSafe} from '../../manifest/extractManifestAction'
-import {FlagValidationError} from './schemaStoreValidation'
+import {type CliCommandContext, type CliOutputter} from '../../../types.js'
+import {
+  type ExtractManifestFlags,
+  extractManifestSafe,
+} from '../../manifest/extractManifestAction.js'
+import {FlagValidationError} from './schemaStoreValidation.js'
+
+export interface CliCommandArguments<F = Record<string, unknown>> {
+  argsWithoutOptions: string[]
+  argv: string[]
+  extOptions: F
+  extraArguments: string[]
+  groupOrCommand: string
+}
 
 export type ManifestExtractor = (manifestDir: string) => Promise<void>
 
 export async function ensureManifestExtractSatisfied(args: {
-  schemaRequired: boolean
   extractManifest: boolean
   manifestDir: string
   manifestExtractor: (manifestDir: string) => Promise<void>
   output: CliOutputter
+  schemaRequired: boolean
 }) {
-  const {schemaRequired, extractManifest, manifestDir, manifestExtractor, output} = args
+  const {extractManifest, manifestDir, manifestExtractor, output, schemaRequired} = args
   if (!extractManifest) {
     return true
   }
@@ -35,11 +46,11 @@ export function createManifestExtractor(context: CliCommandContext & {safe?: boo
   return async (manifestDir: string) => {
     const error = await extractManifestSafe(
       {
-        extOptions: {path: manifestDir},
-        groupOrCommand: 'extract',
-        argv: [],
         argsWithoutOptions: [],
+        argv: [],
+        extOptions: {path: manifestDir},
         extraArguments: [],
+        groupOrCommand: 'extract',
       } as CliCommandArguments<ExtractManifestFlags>,
       context,
     )
