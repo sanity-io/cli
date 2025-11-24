@@ -4,31 +4,46 @@ import {z} from 'zod'
 
 import {studioWorkerTask} from '../../loaders/studio/studioWorkerTask.js'
 
-const schemaSchema = z.object({
+const mediaLibrarySchema = z.object({
+  enabled: z.boolean().optional(),
+  libraryId: z.string().optional(),
+})
+
+const toolSchema = z.object({
+  icon: z.unknown().optional(),
   name: z.string().optional(),
-  types: z.array(z.object({}).passthrough()),
+  title: z.string().optional(),
+  type: z.string().nullable().optional(),
 })
 
 const singleStudioWorkspaceSchema = z
   .object({
     basePath: z.string().optional(),
     dataset: z.string(),
+    icon: z.unknown().optional(),
+    mediaLibrary: mediaLibrarySchema.optional(),
     name: z.string().optional(),
     plugins: z.array(z.unknown()).optional(),
     projectId: z.string(),
-    schema: schemaSchema.optional(),
+    schema: z.unknown().optional(),
+    subtitle: z.string().optional(),
     title: z.string().optional(),
+    tools: z.array(toolSchema).optional(),
   })
   .passthrough()
 
 const studioWorkspaceSchema = z.object({
   basePath: z.string(),
   dataset: z.string(),
+  icon: z.unknown().optional(),
+  mediaLibrary: mediaLibrarySchema.optional(),
   name: z.string(),
   plugins: z.array(z.unknown()).optional(),
   projectId: z.string(),
-  schema: z.object({_original: schemaSchema}),
+  schema: z.unknown().optional(),
+  subtitle: z.string().optional(),
   title: z.string(),
+  tools: z.array(toolSchema).optional(),
 })
 
 const rawConfigSchema = z.union([z.array(studioWorkspaceSchema), singleStudioWorkspaceSchema])
@@ -53,16 +68,20 @@ export interface ReadStudioConfigOptions {
    * loaded as the plugins are resolved.
    */
   resolvePlugins: boolean
+
+  callback?: {
+    path: string
+  }
 }
 
 export async function readStudioConfig(
   configPath: string,
-  options: {resolvePlugins: true},
+  options: {callback?: {path: string}; resolvePlugins: true},
 ): Promise<ResolvedStudioConfig>
 
 export async function readStudioConfig(
   configPath: string,
-  options: {resolvePlugins: false},
+  options: {callback?: {path: string}; resolvePlugins: false},
 ): Promise<RawStudioConfig>
 
 export async function readStudioConfig(
@@ -72,7 +91,7 @@ export async function readStudioConfig(
   const result = await studioWorkerTask(new URL('readStudioConfig.worker.js', import.meta.url), {
     name: 'studioConfig',
     studioRootPath: dirname(configPath),
-    workerData: {configPath, resolvePlugins: options.resolvePlugins},
+    workerData: {callback: options.callback, configPath, resolvePlugins: options.resolvePlugins},
   })
 
   return options.resolvePlugins ? resolvedConfigSchema.parse(result) : rawConfigSchema.parse(result)

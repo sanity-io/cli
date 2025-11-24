@@ -15,12 +15,12 @@ import {
  */
 export async function getStudioConfig(
   rootPath: string,
-  options: {resolvePlugins: true},
+  options: {callback?: {path: string}; resolvePlugins: true},
 ): Promise<ResolvedStudioConfig>
 
 export async function getStudioConfig(
   rootPath: string,
-  options: {resolvePlugins: false},
+  options: {callback?: {path: string}; resolvePlugins: false},
 ): Promise<RawStudioConfig>
 
 export async function getStudioConfig(
@@ -34,6 +34,6 @@ export async function getStudioConfig(
 
   // TypeScript is not being very clever with our overloads :(
   return options.resolvePlugins
-    ? readStudioConfig(studioConfigPath, {resolvePlugins: true})
-    : readStudioConfig(studioConfigPath, {resolvePlugins: false})
+    ? readStudioConfig(studioConfigPath, {callback: options.callback, resolvePlugins: true})
+    : readStudioConfig(studioConfigPath, {callback: options.callback, resolvePlugins: false})
 }

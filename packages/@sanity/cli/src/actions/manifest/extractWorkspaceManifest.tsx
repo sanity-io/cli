@@ -78,6 +78,32 @@ type ValidationRuleTransformer = (rule: RuleSpec) => ManifestValidationRule | un
 
 const MAX_CUSTOM_PROPERTY_DEPTH = 5
 
+export default function extractWorkspaceManifest(workspace: Workspace | Workspace[]): CreateWorkspaceManifest[] {
+  const workspaces = Array.isArray(workspace) ? workspace : [workspace]
+
+  return workspaces.map((workspace) => {
+    const serializedSchema = extractManifestSchemaTypes(workspace.schema as Schema)
+    const serializedTools = extractManifestTools(workspace.tools)
+
+    return {
+      basePath: workspace.basePath,
+      dataset: workspace.dataset,
+      icon: resolveIcon({
+        icon: workspace.icon,
+        subtitle: workspace.subtitle,
+        title: workspace.title,
+      }),
+      mediaLibrary: workspace.mediaLibrary,
+      name: workspace.name,
+      projectId: workspace.projectId,
+      schema: serializedSchema,
+      subtitle: workspace.subtitle,
+      title: workspace.title,
+      tools: serializedTools,
+    }
+  })
+}
+
 export function extractCreateWorkspaceManifest(workspace: Workspace): CreateWorkspaceManifest {
   const serializedSchema = extractManifestSchemaTypes(workspace.schema as Schema)
   const serializedTools = extractManifestTools(workspace.tools)
@@ -104,7 +130,7 @@ export function extractCreateWorkspaceManifest(workspace: Workspace): CreateWork
  * Extracts all serializable properties from userland schema types,
  * so they best-effort can be used as definitions for Schema.compile
 . */
-export function extractManifestSchemaTypes(schema: Schema): ManifestSchemaType[] {
+function extractManifestSchemaTypes(schema: Schema): ManifestSchemaType[] {
   const typeNames = schema.getTypeNames()
   const context = {schema}
 
@@ -468,7 +494,7 @@ function ensureConditional<const Key extends string>(key: Key, value: unknown) {
   return {}
 }
 
-export function transformBlockType(
+function transformBlockType(
   blockType: SchemaType,
   context: Context,
 ): Pick<ManifestSchemaType, 'lists' | 'marks' | 'of' | 'styles'> | Record<string, never> {
@@ -562,6 +588,8 @@ const extractManifestTools = (tools: Workspace['tools']): ManifestTool[] =>
   })
 
 const resolveIcon = (props: SchemaIconProps): string | null => {
+  return JSON.stringify(props.icon)
+
   const sheet = new ServerStyleSheet()
 
   try {

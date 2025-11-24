@@ -4,7 +4,7 @@ import {dirname, join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {Worker} from 'node:worker_threads'
 
-import {getTimer, Output, spinner} from '@sanity/cli-core'
+import {getStudioConfig, getTimer, Output, spinner} from '@sanity/cli-core'
 import {minutesToMilliseconds} from 'date-fns'
 import {readPackageUp} from 'read-package-up'
 
@@ -76,7 +76,13 @@ async function extractManifest(options: ExtractManifestOptions): Promise<void> {
   const spin = spinner('Extracting manifest').start()
 
   try {
-    const workspaceManifests = await getWorkspaceManifests({rootPkgPath, workDir})
+    const workspaceManifests = await getWorkspaceManifests({
+      rootPkgPath,
+      useNewWorker: true,
+      workDir,
+    })
+    options.output.log(JSON.stringify(workspaceManifests))
+
     await mkdir(staticPath, {recursive: true})
 
     const workspaceFiles = await writeWorkspaceFiles(workspaceManifests, staticPath)
@@ -106,11 +112,30 @@ async function extractManifest(options: ExtractManifestOptions): Promise<void> {
 
 async function getWorkspaceManifests({
   rootPkgPath,
+  useNewWorker,
   workDir,
 }: {
   rootPkgPath: string
+  useNewWorker?: boolean
   workDir: string
 }): Promise<CreateWorkspaceManifest[]> {
+  if (useNewWorker) {
+    const workspaces = await getStudioConfig(workDir, {
+      callback: {
+        path: join(
+          dirname(rootPkgPath),
+          'dist',
+          'actions',
+          'manifest',
+          'extractWorkspaceManifest.js',
+        ),
+      },
+      resolvePlugins: true,
+    })
+
+    return workspaces as unknown as CreateWorkspaceManifest[]
+  }
+
   const workerPath = join(dirname(rootPkgPath), 'dist', 'threads', 'extractManifest.js')
 
   const worker = new Worker(workerPath, {

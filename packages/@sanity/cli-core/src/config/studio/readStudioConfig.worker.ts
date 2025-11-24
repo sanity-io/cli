@@ -17,8 +17,12 @@ const EMPTY_AUTH_STATE = {
   currentUser: null,
 }
 
-const {configPath, resolvePlugins} = z
-  .object({configPath: z.string(), resolvePlugins: z.boolean()})
+const {callback, configPath, resolvePlugins} = z
+  .object({
+    callback: z.object({path: z.string()}).optional(),
+    configPath: z.string(),
+    resolvePlugins: z.boolean(),
+  })
   .parse(workerData)
 
 let {default: config} = await import(configPath)
@@ -52,7 +56,13 @@ if (resolvePlugins) {
   config = await firstValueFrom(resolveConfig(config))
 }
 
-parentPort.postMessage(safeStructuredClone(config))
+if (callback) {
+  const callbackUrl = pathToFileURL(callback.path)
+  const callbackFunction = await import(callbackUrl.href)
+  parentPort?.postMessage(safeStructuredClone(callbackFunction.default(config)))
+} else {
+  parentPort.postMessage(safeStructuredClone(config))
+}
 
 // Explicitly exit the process to avoid any dangling references from keeping
 // the process alive after resolving it's main task
