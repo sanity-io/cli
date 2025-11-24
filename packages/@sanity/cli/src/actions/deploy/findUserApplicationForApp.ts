@@ -42,7 +42,14 @@ export async function findUserApplicationForApp(
     // then the provided application ID doesn’t exist in the org
     if (cliConfig?.app?.id) {
       spin.fail()
-      output.error('The app.id provided in your configuration cannot be found in your organization')
+      output.error(
+        'The app.id provided in your configuration cannot be found in your organization',
+        {
+          exit: 1,
+          suggestions: ['Verify the app.id in your configuration matches an existing application'],
+        },
+      )
+      return null
     }
 
     // Done checking local application info
@@ -112,15 +119,16 @@ export async function findUserApplicationForApp(
     }
 
     // We've failed for some other reason
-    // spin.fail()
-    // deployDebug('Failed to find user application for app', error)
-    // output.error('Failed to find user application for app', {exit: 1})
+    spin.fail()
+    deployDebug('Error finding user application for app', error)
     output.error(error)
     return null
   }
 }
 
-function findUserApplication(options: FindUserApplicationForAppOptions) {
+function findUserApplication(
+  options: FindUserApplicationForAppOptions,
+): Promise<UserApplication | null> | null {
   const {cliConfig} = options
 
   const appId = cliConfig.app?.id

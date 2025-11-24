@@ -146,6 +146,7 @@ export async function getUserApplications(
       throw error
     }
 
+    debug('Error finding user applications', error)
     return null
   }
 }

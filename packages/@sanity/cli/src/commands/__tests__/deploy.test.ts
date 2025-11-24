@@ -454,7 +454,41 @@ describe('#deploy', () => {
       expect(error?.message).toContain('Error checking directory')
     })
 
-    test('should handle general deployment errors', async () => {
+    test('should error when fetching user applications if user doesn’t have org access', async () => {
+      const cwd = await testExample('basic-app')
+      process.cwd = () => cwd
+
+      const appId = 'some-app-id'
+      const organizationId = 'org-without-access'
+
+      mockGetCliConfig.mockResolvedValue({
+        app: {
+          id: appId,
+          organizationId,
+        },
+      })
+
+      // Simulate API returning 403 Forbidden for the given org
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appType: 'coreApp',
+        },
+        uri: `/user-applications/${appId}`,
+      }).reply(403, {
+        error: 'Forbidden',
+      })
+
+      const {error} = await testCommand(DeployCommand, ['--no-build'], {
+        config: {root: cwd},
+      })
+
+      expect(error?.message).toContain(
+        `You don’t have permission to view applications for the configured organization ID ("${organizationId}")`,
+      )
+    })
+
+    test('should handle user-applications endpoint errors', async () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
@@ -533,6 +567,40 @@ describe('#deploy', () => {
       })
 
       expect(error?.message).toContain('Error deploying application')
+    })
+
+    test('should show an error if app.id is configured but the application does not exist', async () => {
+      const cwd = await testExample('basic-app')
+      process.cwd = () => cwd
+
+      const nonExistentAppId = 'non-existent-app-id'
+      const organizationId = 'org-id'
+
+      mockGetCliConfig.mockResolvedValue({
+        app: {
+          id: nonExistentAppId,
+          organizationId,
+        },
+      })
+
+      // Simulate API returning no user application for the given app.id
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appType: 'coreApp',
+        },
+        uri: `/user-applications/${nonExistentAppId}`,
+      }).reply(404, {
+        error: 'Not found',
+      })
+
+      const {error} = await testCommand(DeployCommand, ['--no-build'], {
+        config: {root: cwd},
+      })
+
+      expect(error?.message).toContain(
+        'The app.id provided in your configuration cannot be found in your organization',
+      )
     })
 
     test('should handle app creation with retry when host is taken', async () => {

@@ -82,6 +82,7 @@ export async function deployApp(options: DeployAppOptions) {
       spin.fail()
       deployDebug('Error checking directory', err)
       output.error('Error checking directory', {exit: 1})
+      return
     }
 
     // Create a tarball of the given directory
@@ -112,6 +113,7 @@ export async function deployApp(options: DeployAppOptions) {
     // Don't throw generic error if user cancels
     if (error.name === 'ExitPromptError') {
       output.error('Deployment cancelled by user', {exit: 1})
+      return
     }
     // If the error is a CLIError, we can just output the message & error options (if any), while ensuring we exit
     if (error instanceof CLIError) {
