@@ -78,9 +78,7 @@ type ValidationRuleTransformer = (rule: RuleSpec) => ManifestValidationRule | un
 
 const MAX_CUSTOM_PROPERTY_DEPTH = 5
 
-export default function extractWorkspaceManifest(workspace: Workspace | Workspace[]): CreateWorkspaceManifest[] {
-  const workspaces = Array.isArray(workspace) ? workspace : [workspace]
-
+export default function extractWorkspaceManifest(workspaces: Workspace[]): CreateWorkspaceManifest[] {
   return workspaces.map((workspace) => {
     const serializedSchema = extractManifestSchemaTypes(workspace.schema as Schema)
     const serializedTools = extractManifestTools(workspace.tools)
@@ -578,7 +576,7 @@ const extractManifestTools = (tools: Workspace['tools']): ManifestTool[] =>
     } = tool as Workspace['tools'][number] & {__internalApplicationType: string}
     return {
       icon: resolveIcon({
-        icon,
+        icon: icon as SchemaIconProps['icon'],
         title,
       }),
       name,
@@ -588,8 +586,6 @@ const extractManifestTools = (tools: Workspace['tools']): ManifestTool[] =>
   })
 
 const resolveIcon = (props: SchemaIconProps): string | null => {
-  return JSON.stringify(props.icon)
-
   const sheet = new ServerStyleSheet()
 
   try {
