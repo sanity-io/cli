@@ -69,19 +69,17 @@ export interface ReadStudioConfigOptions {
    */
   resolvePlugins: boolean
 
-  callback?: {
-    path: string
-  }
+  callbackPath?: string
 }
 
 export async function readStudioConfig(
   configPath: string,
-  options: {callback?: {path: string}; resolvePlugins: true},
+  options: {callbackPath?: string; resolvePlugins: true},
 ): Promise<ResolvedStudioConfig>
 
 export async function readStudioConfig(
   configPath: string,
-  options: {callback?: {path: string}; resolvePlugins: false},
+  options: {callbackPath?: string; resolvePlugins: false},
 ): Promise<RawStudioConfig>
 
 export async function readStudioConfig(
@@ -91,7 +89,11 @@ export async function readStudioConfig(
   const result = await studioWorkerTask(new URL('readStudioConfig.worker.js', import.meta.url), {
     name: 'studioConfig',
     studioRootPath: dirname(configPath),
-    workerData: {callback: options.callback, configPath, resolvePlugins: options.resolvePlugins},
+    workerData: {
+      callbackPath: options.callbackPath,
+      configPath,
+      resolvePlugins: options.resolvePlugins,
+    },
   })
 
   return options.resolvePlugins ? resolvedConfigSchema.parse(result) : rawConfigSchema.parse(result)

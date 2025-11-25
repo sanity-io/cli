@@ -17,9 +17,9 @@ const EMPTY_AUTH_STATE = {
   currentUser: null,
 }
 
-const {callback, configPath, resolvePlugins} = z
+const {callbackPath, configPath, resolvePlugins} = z
   .object({
-    callback: z.object({path: z.string()}).optional(),
+    callbackPath: z.string().optional(),
     configPath: z.string(),
     resolvePlugins: z.boolean(),
   })
@@ -48,18 +48,21 @@ if (resolvePlugins) {
 
   // We will also want to stub out some configuration - we don't need to resolve the
   // users' logged in state, for instance - so let's disable the auth implementation.
-  const workspaces = Array.isArray(config) ? config : [config]
-  workspaces.map((workspace) => {
-    workspace.auth = {state: of(EMPTY_AUTH_STATE)}
-  })
+  const workspaces = Array.isArray(config)
+    ? config
+    : [{...config, basePath: config.basePath || '/', name: config.name || 'default'}]
+  config = workspaces.map((workspace) => ({
+    ...workspace,
+    auth: {state: of(EMPTY_AUTH_STATE)},
+  }))
 
   config = await firstValueFrom(resolveConfig(config))
 }
 
-if (callback) {
-  const callbackUrl = pathToFileURL(callback.path)
-  const callbackFunction = await import(callbackUrl.href)
-  parentPort?.postMessage(safeStructuredClone(callbackFunction.default(config)))
+if (callbackPath) {
+  const callbackUrl = pathToFileURL(callbackPath)
+  const callback = await import(callbackUrl.href)
+  parentPort?.postMessage(safeStructuredClone(callback.default(config)))
 } else {
   parentPort.postMessage(safeStructuredClone(config))
 }

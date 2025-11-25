@@ -81,7 +81,6 @@ async function extractManifest(options: ExtractManifestOptions): Promise<void> {
       useNewWorker: true,
       workDir,
     })
-    options.output.log(JSON.stringify(workspaceManifests))
 
     await mkdir(staticPath, {recursive: true})
 
@@ -121,15 +120,13 @@ async function getWorkspaceManifests({
 }): Promise<CreateWorkspaceManifest[]> {
   if (useNewWorker) {
     const workspaces = await getStudioConfig(workDir, {
-      callback: {
-        path: join(
-          dirname(rootPkgPath),
-          'dist',
-          'actions',
-          'manifest',
-          'extractWorkspaceManifest.js',
-        ),
-      },
+      callbackPath: join(
+        dirname(rootPkgPath),
+        'dist',
+        'actions',
+        'manifest',
+        'extractWorkspaceManifest.js',
+      ),
       resolvePlugins: true,
     })
 
