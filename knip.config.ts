@@ -41,6 +41,8 @@ const baseConfig = {
         'src/**/*.worker.ts',
         // temporary until exec is implemented
         'src/threads/registerBrowserEnv.ts',
+        // used via loader, not import
+        'src/threads/configClient.ts',
       ],
       // temporarily ignore unused exports until schema work is done
       ignore: ['src/actions/manifest/extractManifest.ts', 'src/actions/manifest/types.ts'],
