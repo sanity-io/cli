@@ -14,17 +14,37 @@ import {setupBrowserStubs} from './setupBrowserStubs.js'
  * If your code can run in a worker thread, you should use the `studioWorkerTask` function instead.
  *
  * @param basePath - The root path of the Sanity Studio project
+ * @returns A cleanup function that removes the injected globals and environment variables
  * @internal
  */
-export async function mockBrowserEnvironment(basePath: string): Promise<void> {
+export async function mockBrowserEnvironment(basePath: string): Promise<() => void> {
   // 1. Setup browser globals
-  await setupBrowserStubs()
+  const cleanupBrowserStubs = await setupBrowserStubs()
 
   // 2. Load and set environment variables into process.env
   const envVars = await getStudioEnvironmentVariables(basePath)
+  const setEnvKeys: string[] = []
+  const originalEnvValues: Record<string, string | undefined> = {}
+
   for (const [key, value] of Object.entries(envVars)) {
-    if (typeof value === 'string') {
-      process.env[key] = value
+    // Store original value (if any) so we can restore it
+    originalEnvValues[key] = process.env[key]
+    process.env[key] = value
+    setEnvKeys.push(key)
+  }
+
+  // Return cleanup function
+  return () => {
+    // Restore or delete environment variables
+    for (const key of setEnvKeys) {
+      if (originalEnvValues[key] === undefined) {
+        delete process.env[key]
+      } else {
+        process.env[key] = originalEnvValues[key]
+      }
     }
+
+    // Clean up browser stubs
+    cleanupBrowserStubs()
   }
 }

@@ -24,14 +24,18 @@ export async function getStudioEnvironmentVariables(
   // relative to where the studio is located, instead of resolving from where this CLI is
   // running, in order to ensure we're using the same version as the studio would.
   const sanityCliUrl = moduleResolve('sanity/cli', fakeConfigUrl)
-  const {getStudioEnvironmentVariables: getEnvVars} = await import(sanityCliUrl.href)
-
-  if (typeof getEnvVars !== 'function') {
-    throw new TypeError(
-      'Expected `getStudioEnvironmentVariables` from `sanity/cli` to be a function',
+  try {
+    const {getStudioEnvironmentVariables: getEnvVars} = await import(sanityCliUrl.href)
+    if (typeof getEnvVars !== 'function') {
+      throw new TypeError(
+        'Expected `getStudioEnvironmentVariables` from `sanity/cli` to be a function',
+      )
+    }
+    return getEnvVars(rootPath)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    throw new Error(
+      `Failed to import getStudioEnvironmentVariables from sanity/cli module: ${message}`,
     )
   }
-
-  // Get the environment variables for development mode
-  return getEnvVars({cwd: rootPath, env: 'development'})
 }

@@ -26,13 +26,10 @@ if (!workerScriptPath) {
   throw new Error('Missing `STUDIO_WORKER_TASK_FILE` environment variable')
 }
 
-// 1. Setup browser globals
 await setupBrowserStubs()
 
-// 2. Get studio environment variables for Vite's define config
 const studioEnvVars = await getStudioEnvironmentVariables(rootPath)
 
-// 3. Setup Vite configuration
 const defaultViteConfig: InlineConfig = {
   build: {target: 'node'},
   configFile: false, // @todo Should use `vite` prop from `sanity.cli.ts` (if any)

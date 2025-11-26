@@ -6,4 +6,8 @@ import {mockBrowserEnvironment} from '@sanity/cli-core'
 
 const rootPath = process.env.SANITY_BASE_PATH || process.cwd()
 
-await mockBrowserEnvironment(rootPath)
+const cleanup = await mockBrowserEnvironment(rootPath)
+const signals = ['exit', 'beforeExit', 'SIGINT', 'SIGTERM'] as const
+for (const signal of signals) {
+  process.on(signal, cleanup)
+}
