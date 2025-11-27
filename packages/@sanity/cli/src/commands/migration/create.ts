@@ -3,10 +3,11 @@ import path from 'node:path'
 
 import {confirm, input, select} from '@inquirer/prompts'
 import {Args} from '@oclif/core'
-import {findProjectRoot, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 import chalk from 'chalk'
 import {deburr} from 'lodash-es'
 
+import {getMigrationRootDirectory} from '../../actions/migration/getMigrationRootDirectory.js'
 import {
   minimalAdvanced,
   minimalSimple,
@@ -50,7 +51,7 @@ export class CreateMigrationCommand extends SanityCommand<typeof CreateMigration
 
   public async run(): Promise<void> {
     const {args} = await this.parse(CreateMigrationCommand)
-    const workDir = await this.getMigrationRootDirectory()
+    const workDir = await getMigrationRootDirectory(this.output)
 
     const title = await this.promptForTitle(args.title)
     const types = await this.promptForDocumentTypes()
@@ -131,16 +132,6 @@ export class CreateMigrationCommand extends SanityCommand<typeof CreateMigration
     }
 
     return true
-  }
-
-  private async getMigrationRootDirectory(): Promise<string> {
-    try {
-      const projectRoot = await findProjectRoot(process.cwd())
-      return projectRoot.directory
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Could not find Sanity project root'
-      this.error(message, {exit: 1})
-    }
   }
 
   private async promptForDocumentTypes(): Promise<string> {
