@@ -1,4 +1,4 @@
-import {type BuiltInValidationReporter} from '../validateAction'
+import {type BuiltInValidationReporter} from '../../../../commands/documents/validate.js'
 
 // TODO: replace with Array.fromAsync when it's out of stage3
 async function arrayFromAsync<T>(iterable: AsyncIterable<T>) {
@@ -13,13 +13,13 @@ export const json: BuiltInValidationReporter = async ({output, worker}) => {
     // report out only documents with some markers
     .filter(({markers}) => markers.length)
     // remove validatedCount from the results
-    .map(({validatedCount, ...result}) => result)
+    .map(({validatedCount: _, ...result}) => result)
 
   await worker.dispose()
 
-  output.print(JSON.stringify(formatted))
+  output.log(JSON.stringify(formatted))
 
-  let overallLevel: 'error' | 'warning' | 'info' = 'info'
+  let overallLevel: 'error' | 'info' | 'warning' = 'info'
 
   for (const {level} of formatted) {
     if (level === 'error') overallLevel = 'error'

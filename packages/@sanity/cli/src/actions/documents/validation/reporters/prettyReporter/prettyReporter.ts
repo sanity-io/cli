@@ -1,5 +1,7 @@
-import {type BuiltInValidationReporter} from '../../validateAction'
-import {formatDocumentValidation} from './formatDocumentValidation'
+import {spinner} from '@sanity/cli-core'
+
+import {type BuiltInValidationReporter} from '../../../../../commands/documents/validate.js'
+import {formatDocumentValidation} from './formatDocumentValidation.js'
 import {
   count,
   type DocumentValidationResult,
@@ -8,21 +10,20 @@ import {
   percent,
   seconds,
   summary,
-} from './util'
+} from './util.js'
 
 /**
  * Represents the default stylish/pretty reporter
  */
-// eslint-disable-next-line max-statements
-export const pretty: BuiltInValidationReporter = async ({output, worker, flags}) => {
+export const pretty: BuiltInValidationReporter = async ({flags, output, worker}) => {
   const workspaceLoadStart = Date.now()
   // Report workspace loaded
-  const spinner = output
-    .spinner(flags.workspace ? `Loading workspace '${flags.workspace}'…` : 'Loading workspace…')
-    .start()
+  const spin = spinner(
+    flags.workspace ? `Loading workspace '${flags.workspace}'…` : 'Loading workspace…',
+  ).start()
 
   const workspace = await worker.event.loadedWorkspace()
-  spinner.succeed(
+  spin.succeed(
     `Loaded workspace '${workspace.name}' using project '${workspace.projectId}' and dataset '${
       flags.dataset || workspace.dataset
     }' ${seconds(workspaceLoadStart)}`,
@@ -30,43 +31,43 @@ export const pretty: BuiltInValidationReporter = async ({output, worker, flags})
 
   if (!flags.file) {
     // Report document count
-    spinner.start('Calculating documents to be validated…')
+    spin.start('Calculating documents to be validated…')
     const {documentCount} = await worker.event.loadedDocumentCount()
 
     // Report export progress
     const downloadStart = Date.now()
-    spinner.text = `Downloading ${count(documentCount, 'documents')}…`
+    spin.text = `Downloading ${count(documentCount, 'documents')}…`
     for await (const {downloadedCount} of worker.stream.exportProgress()) {
       const percentage = percent(downloadedCount / documentCount)
-      spinner.text = `Downloading ${count(documentCount, 'documents')}… ${percentage}`
+      spin.text = `Downloading ${count(documentCount, 'documents')}… ${percentage}`
     }
-    spinner.succeed(`Downloaded ${count(documentCount, 'documents')} ${seconds(downloadStart)}`)
+    spin.succeed(`Downloaded ${count(documentCount, 'documents')} ${seconds(downloadStart)}`)
   }
 
   const {totalDocumentsToValidate} = await worker.event.exportFinished()
 
   const referenceIntegrityStart = Date.now()
-  spinner.start(`Checking reference existence…`)
+  spin.start(`Checking reference existence…`)
   await worker.event.loadedReferenceIntegrity()
-  spinner.succeed(`Checked all references ${seconds(referenceIntegrityStart)}`)
+  spin.succeed(`Checked all references ${seconds(referenceIntegrityStart)}`)
 
   // Report validation progress
   const validationStart = Date.now()
-  spinner.start(`Validating ${count(totalDocumentsToValidate, 'documents')}…`)
+  spin.start(`Validating ${count(totalDocumentsToValidate, 'documents')}…`)
 
   const results: DocumentValidationResult[] = []
 
   const totals = {
-    valid: {documents: 0},
     errors: {documents: 0, markers: 0},
-    warnings: {documents: 0, markers: 0},
     infos: {documents: 0, markers: 0},
+    valid: {documents: 0},
+    warnings: {documents: 0, markers: 0},
   }
 
   for await (const {validatedCount, ...result} of worker.stream.validation()) {
     const {markers} = result
 
-    if (markers.length) {
+    if (markers.length > 0) {
       results.push(result)
     }
 
@@ -74,36 +75,36 @@ export const pretty: BuiltInValidationReporter = async ({output, worker, flags})
     const warnings = markers.filter((marker) => marker.level === 'warning')
     const infos = markers.filter((marker) => marker.level === 'info')
 
-    if (!markers.length) {
+    if (markers.length === 0) {
       totals.valid.documents += 1
     }
 
-    if (errors.length) {
+    if (errors.length > 0) {
       totals.errors.documents += 1
       totals.errors.markers += errors.length
     }
 
-    if (warnings.length) {
+    if (warnings.length > 0) {
       totals.warnings.documents += 1
       totals.warnings.markers += warnings.length
     }
 
-    if (infos.length) {
+    if (infos.length > 0) {
       totals.infos.documents += 1
       totals.infos.markers += infos.length
     }
 
-    spinner.text =
+    spin.text =
       `Validating ${count(totalDocumentsToValidate, 'documents')}…\n\n` +
       `Processed ${count(validatedCount, 'documents')} (${percent(
         validatedCount / totalDocumentsToValidate,
       )}):\n${summary(totals, flags.level)}`
   }
 
-  spinner.succeed(
+  spin.succeed(
     `Validated ${count(totalDocumentsToValidate, 'documents')} ${seconds(validationStart)}`,
   )
-  output.print(`\nValidation results:\n${summary(totals, flags.level)}`)
+  output.log(`\nValidation results:\n${summary(totals, flags.level)}`)
 
   results.sort((a, b) => {
     if (a.level === b.level) return a.documentType.localeCompare(b.documentType)
@@ -116,7 +117,7 @@ export const pretty: BuiltInValidationReporter = async ({output, worker, flags})
     if (result.level === 'error') overallLevel = 'error'
     if (result.level === 'warning' && overallLevel !== 'error') overallLevel = 'warning'
 
-    output.print(`${formatDocumentValidation(result)}\n`)
+    output.log(`${formatDocumentValidation(result)}\n`)
   }
 
   await worker.dispose()

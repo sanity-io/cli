@@ -1,21 +1,22 @@
 import {isatty} from 'node:tty'
 
+import {logSymbols} from '@sanity/cli-core'
 import {type ValidationMarker} from '@sanity/types'
-import logSymbols from 'log-symbols'
 
 export type Level = ValidationMarker['level']
 
 export interface DocumentValidationResult {
-  revision: string
   documentId: string
   documentType: string
-  intentUrl?: string
   level: ValidationMarker['level']
   markers: ValidationMarker[]
+  revision: string
+
+  intentUrl?: string
 }
 
 export const isTty = isatty(1)
-export const levelValues = {error: 0, warning: 1, info: 2} as const
+export const levelValues = {error: 0, info: 2, warning: 1} as const
 
 /**
  * Generates a formatted string that includes a numerical amount and a subject
@@ -27,9 +28,9 @@ export const count = (amount: number, subject: string): string =>
   }`
 
 const percentageFormatter = new Intl.NumberFormat('en-US', {
-  style: 'percent',
-  minimumFractionDigits: 1,
   maximumFractionDigits: 1,
+  minimumFractionDigits: 1,
+  style: 'percent',
 })
 
 /**
@@ -38,8 +39,8 @@ const percentageFormatter = new Intl.NumberFormat('en-US', {
 export const percent = (value: number): string => percentageFormatter.format(Math.min(value, 1))
 
 const secondFormatter = new Intl.NumberFormat('en-US', {
-  minimumFractionDigits: 1,
   maximumFractionDigits: 1,
+  minimumFractionDigits: 1,
 })
 
 /**
@@ -52,10 +53,10 @@ export const seconds = (startTime: number): string => {
 }
 
 interface ValidationTotals {
-  valid: {documents: number}
   errors: {documents: number; markers: number}
-  warnings: {documents: number; markers: number}
   infos: {documents: number; markers: number}
+  valid: {documents: number}
+  warnings: {documents: number; markers: number}
 }
 
 /**

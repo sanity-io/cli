@@ -1,14 +1,15 @@
-import {type BuiltInValidationReporter} from '../validateAction'
+import {type BuiltInValidationReporter} from '../../../../commands/documents/validate.js'
 
 export const ndjson: BuiltInValidationReporter = async ({output, worker}) => {
-  let overallLevel: 'error' | 'warning' | 'info' = 'info'
+  let overallLevel: 'error' | 'info' | 'warning' = 'info'
 
-  for await (const {validatedCount, ...result} of worker.stream.validation()) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  for await (const {validatedCount: _validatedCount, ...result} of worker.stream.validation()) {
     if (result.level === 'error') overallLevel = 'error'
     if (result.level === 'warning' && overallLevel !== 'error') overallLevel = 'warning'
 
-    if (result.markers.length) {
-      output.print(JSON.stringify(result))
+    if (result.markers.length > 0) {
+      output.log(JSON.stringify(result))
     }
   }
 

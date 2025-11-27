@@ -1,1 +1,1 @@
-export {pretty} from './prettyReporter'
+export {pretty} from './prettyReporter.js'
