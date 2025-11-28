@@ -48,8 +48,8 @@ export function shouldAutoUpdate({cliConfig, flags, output}: AutoUpdateSources):
     // Show how to move if autoUpdates has a value
     if (cliConfig.autoUpdates) {
       output.warn(`Please update sanity.cli.ts or sanity.cli.js and make the following change:
-      ${chalk.red(`-  autoUpdates: ${cliConfig.autoUpdates},`)}
-      ${chalk.green(`+  deployment: {autoUpdates: ${cliConfig.autoUpdates}}}`)}
+  ${chalk.red(`-  autoUpdates: ${cliConfig.autoUpdates},`)}
+  ${chalk.green(`+  deployment: {autoUpdates: ${cliConfig.autoUpdates}}}`)}
 `)
     }
   }
