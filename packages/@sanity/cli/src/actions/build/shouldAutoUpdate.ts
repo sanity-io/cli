@@ -43,13 +43,15 @@ export function shouldAutoUpdate({cliConfig, flags, output}: AutoUpdateSources):
   }
 
   if (hasOldConfig) {
-    output.warn(
-      `The autoUpdates config has moved to deployment.autoUpdates.
-Please update sanity.cli.ts or sanity.cli.js and make the following change:
-${chalk.red(`-  autoUpdates: ${cliConfig.autoUpdates},`)}
-${chalk.green(`+  deployment: {autoUpdates: ${cliConfig.autoUpdates}}}`)}
-`,
-    )
+    output.warn('The autoUpdates config has moved to deployment.autoUpdates.')
+
+    // Show how to move if autoUpdates has a value
+    if (cliConfig.autoUpdates) {
+      output.warn(`Please update sanity.cli.ts or sanity.cli.js and make the following change:
+      ${chalk.red(`-  autoUpdates: ${cliConfig.autoUpdates},`)}
+      ${chalk.green(`+  deployment: {autoUpdates: ${cliConfig.autoUpdates}}}`)}
+`)
+    }
   }
 
   if (hasNewConfig) {

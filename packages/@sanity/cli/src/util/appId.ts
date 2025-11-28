@@ -7,12 +7,12 @@ interface Options {
 }
 
 function _getAppId(cliConfig: CliConfig): string | undefined {
-  const id = cliConfig?.deployment?.appId || undefined
+  const id = cliConfig?.deployment?.appId
   return id
 }
 
 function _getDeprecatedAppId(cliConfig: CliConfig): string | undefined {
-  const id = cliConfig?.app?.id || undefined
+  const id = cliConfig?.app?.id
   return id
 }
 

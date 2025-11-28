@@ -53,7 +53,7 @@ export async function deployApp(options: DeployAppOptions) {
     deployDebug(`User application found`, userApplication)
 
     if (!userApplication) {
-      deployDebug(`No user application found or selecting. Creating a new one`)
+      deployDebug(`No user application found. Creating a new one`)
 
       userApplication = await createUserApplicationForApp(organizationId)
       deployDebug(`User application created`, userApplication)
