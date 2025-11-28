@@ -53,7 +53,7 @@ Please remove app.id from your sanity.cli.js or sanity.cli.ts file.`,
 Please update \`sanity.cli.ts\` or \`sanity.cli.js\` and move:
 ${chalk.red(`app: {id: "${_getDeprecatedAppId(cliConfig)}", ... }`)}
 to
-${chalk.green(`deployment: {appId: "${_getDeprecatedAppId(cliConfig)}", ... }}`)})
+${chalk.green(`deployment: {appId: "${_getDeprecatedAppId(cliConfig)}", ... }`)}
 `,
     )
   }
