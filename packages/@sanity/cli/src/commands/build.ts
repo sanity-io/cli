@@ -55,7 +55,9 @@ export class BuildCommand extends SanityCommand<typeof BuildCommand> {
 
     const workDir = (await this.getProjectRoot()).directory
 
-    const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags})
+    const output = this.output
+
+    const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
     const exit = this.exit.bind(this)
 
     if (isApp) {

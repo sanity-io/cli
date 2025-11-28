@@ -143,8 +143,10 @@ describe('#deploy', () => {
 
     mockGetCliConfig.mockResolvedValue({
       app: {
-        id: appId,
         organizationId: 'org-id',
+      },
+      deployment: {
+        appId,
       },
     })
 
@@ -198,8 +200,10 @@ describe('#deploy', () => {
 
     mockGetCliConfig.mockResolvedValue({
       app: {
-        id: appId,
         organizationId: 'org-id',
+      },
+      deployment: {
+        appId,
       },
     })
 
@@ -220,8 +224,10 @@ describe('#deploy', () => {
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: appId,
           organizationId: 'org-id',
+        },
+        deployment: {
+          appId,
         },
       })
 
@@ -278,8 +284,10 @@ describe('#deploy', () => {
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: appId,
           organizationId,
+        },
+        deployment: {
+          appId,
         },
       })
 
@@ -352,8 +360,11 @@ describe('#deploy', () => {
 
       expect(error).toBeUndefined()
       expect(stdout).toContain('Success! Application deployed')
-      expect(stdout).toContain(`Add id: '${newAppId}'`)
-      expect(stdout).toContain('to `app` in sanity.cli.js or sanity.cli.ts')
+      expect(stdout).toContain(
+        `Add the deployment.appId to your sanity.cli.js or sanity.cli.ts file:`,
+      )
+      expect(stdout).toContain(`deployment: {
+  appId: '${newAppId}',`)
       expect(mockInput).toHaveBeenCalledWith({
         message: 'Enter a title for your application:',
         validate: expect.any(Function),
@@ -370,8 +381,10 @@ describe('#deploy', () => {
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: existingAppId,
           organizationId,
+        },
+        deployment: {
+          appId: existingAppId,
         },
       })
 
@@ -424,8 +437,10 @@ describe('#deploy', () => {
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: existingAppId,
           organizationId,
+        },
+        deployment: {
+          appId: existingAppId,
         },
       })
 
@@ -463,8 +478,10 @@ describe('#deploy', () => {
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: appId,
           organizationId,
+        },
+        deployment: {
+          appId,
         },
       })
 
@@ -497,8 +514,10 @@ describe('#deploy', () => {
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: existingAppId,
           organizationId,
+        },
+        deployment: {
+          appId: existingAppId,
         },
       })
 
@@ -528,8 +547,10 @@ describe('#deploy', () => {
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: existingAppId,
           organizationId,
+        },
+        deployment: {
+          appId: existingAppId,
         },
       })
 
@@ -569,7 +590,7 @@ describe('#deploy', () => {
       expect(error?.message).toContain('Error deploying application')
     })
 
-    test('should show an error if app.id is configured but the application does not exist', async () => {
+    test('should show an error if deployment.appId is configured but the application does not exist', async () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
@@ -578,8 +599,10 @@ describe('#deploy', () => {
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: nonExistentAppId,
           organizationId,
+        },
+        deployment: {
+          appId: nonExistentAppId,
         },
       })
 
@@ -599,8 +622,55 @@ describe('#deploy', () => {
       })
 
       expect(error?.message).toContain(
-        'The app.id provided in your configuration cannot be found in your organization',
+        'The `appId` provided in your configuration’s `deployment` object cannot be found in your organization',
       )
+    })
+
+    test('should show an error if deployment.appId and app.id (deprecated) are both in use', async () => {
+      const cwd = await testExample('basic-app')
+      process.cwd = () => cwd
+
+      const appId = 'app-id'
+      const organizationId = 'org-id'
+
+      mockGetCliConfig.mockResolvedValue({
+        app: {
+          id: appId,
+          organizationId,
+        },
+        deployment: {
+          appId: appId,
+        },
+      })
+
+      const {error} = await testCommand(DeployCommand, ['--no-build'], {
+        config: {root: cwd},
+      })
+
+      expect(error?.message).toContain(
+        'Found both app.id (deprecated) and deployment.appId in your application configuration.\n\nPlease remove app.id from your sanity.cli.js or sanity.cli.ts file.',
+      )
+    })
+
+    test('should show a warning if app.id (deprecated) is used', async () => {
+      const cwd = await testExample('basic-app')
+      process.cwd = () => cwd
+
+      const appId = 'app-id'
+      const organizationId = 'org-id'
+
+      mockGetCliConfig.mockResolvedValue({
+        app: {
+          id: appId,
+          organizationId,
+        },
+      })
+
+      const {stderr} = await testCommand(DeployCommand, ['--no-build'], {
+        config: {root: cwd},
+      })
+
+      expect(stderr).toContain('The `app.id` config has moved to `deployment.appId`.')
     })
 
     test('should handle app creation with retry when host is taken', async () => {
@@ -736,8 +806,10 @@ describe('#deploy', () => {
 
       mockGetCliConfig.mockResolvedValue({
         app: {
-          id: existingAppId,
           organizationId,
+        },
+        deployment: {
+          appId: existingAppId,
         },
       })
 
@@ -893,8 +965,11 @@ describe('#deploy', () => {
 
       expect(error).toBeUndefined()
       expect(stdout).toContain('Success! Application deployed')
-      expect(stdout).toContain(`Add id: '${existingAppId2}'`)
-      expect(stdout).toContain('to `app` in sanity.cli.js or sanity.cli.ts')
+      expect(stdout).toContain(
+        `Add the deployment.appId to your sanity.cli.js or sanity.cli.ts file:`,
+      )
+      expect(stdout).toContain(`deployment: {
+  appId: '${existingAppId2}',`)
     })
 
     test('should allow creating a new app by selecting from list of apps', async () => {
@@ -984,8 +1059,11 @@ describe('#deploy', () => {
 
       expect(error).toBeUndefined()
       expect(stdout).toContain('Success! Application deployed')
-      expect(stdout).toContain(`Add id: '${newAppId}'`)
-      expect(stdout).toContain('to `app` in sanity.cli.js or sanity.cli.ts')
+      expect(stdout).toContain(
+        `Add the deployment.appId to your sanity.cli.js or sanity.cli.ts file:`,
+      )
+      expect(stdout).toContain(`deployment: {
+  appId: '${newAppId}',`)
     })
 
     test('should throw an error if organizationId is not set', async () => {
@@ -1608,6 +1686,38 @@ describe('#deploy', () => {
 
       expect(error?.message).toContain(
         'sanity.cli.ts does not contain a project identifier ("api.projectId"), which is required for the Sanity CLI to communicate with the Sanity API',
+      )
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should log a warning if the deprecated auto-updates flag is used', async () => {
+      const cwd = await testExample('basic-studio')
+      process.cwd = () => cwd
+
+      const {stderr} = await testCommand(DeployCommand, ['--auto-updates'], {
+        config: {root: cwd},
+      })
+
+      expect(stderr).toContain('Warning: The --auto-updates flag is deprecated')
+    })
+
+    test('should throw an error when both the current and deprecated autoUpdates config are used', async () => {
+      const cwd = await testExample('basic-studio')
+      process.cwd = () => cwd
+
+      mockGetCliConfig.mockResolvedValue({
+        autoUpdates: true,
+        deployment: {
+          autoUpdates: true,
+        },
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+      })
+
+      expect(error?.message).toContain(
+        'Found both `autoUpdates` (deprecated) and `deployment.autoUpdates` in sanity.cli.',
       )
       expect(error?.oclif?.exit).toBe(1)
     })

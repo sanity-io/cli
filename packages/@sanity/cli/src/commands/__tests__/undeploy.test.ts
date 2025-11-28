@@ -80,7 +80,8 @@ describe('#undeploy', () => {
 
   test('undeploys application when app id is configured', async () => {
     vi.mocked(getCliConfig).mockResolvedValueOnce({
-      app: {id: 'core-id'},
+      app: {},
+      deployment: {appId: 'core-id'},
     })
 
     mockUserApplicationsApi({
@@ -120,7 +121,8 @@ describe('#undeploy', () => {
 
   test('does nothing if no application found (app config)', async () => {
     vi.mocked(getCliConfig).mockResolvedValueOnce({
-      app: {id: 'core-id'},
+      app: {},
+      deployment: {appId: 'core-id'},
     })
 
     mockUserApplicationsApi({
@@ -206,7 +208,8 @@ describe('#undeploy', () => {
 
   test('undeploys app if prompt is accepted (app config)', async () => {
     vi.mocked(getCliConfig).mockResolvedValueOnce({
-      app: {id: 'core-id'},
+      app: {},
+      deployment: {appId: 'core-id'},
     })
 
     mockUserApplicationsApi({
@@ -240,7 +243,8 @@ describe('#undeploy', () => {
 
   test('undeploys app with missing title and reports using fallback value', async () => {
     vi.mocked(getCliConfig).mockResolvedValueOnce({
-      app: {id: 'core-id'},
+      app: {},
+      deployment: {appId: 'core-id'},
     })
 
     mockUserApplicationsApi({

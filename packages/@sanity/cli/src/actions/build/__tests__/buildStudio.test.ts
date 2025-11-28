@@ -165,6 +165,22 @@ describe('buildStudio', () => {
     )
   })
 
+  it('should warn when auto updates are enabled but an appId has not been configured', async () => {
+    mockedShouldAutoUpdate.mockReturnValue(true)
+
+    const options = {
+      ...baseBuildOptions,
+      autoUpdatesEnabled: true,
+    }
+
+    await buildStudio(options)
+
+    expect(mockOutput.warn).toHaveBeenCalledWith(expect.stringContaining('No appId configured'))
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining('This studio will auto-update to the latest channel'),
+    )
+  })
+
   it('should handle auto-updates enabled with valid version', async () => {
     mockedShouldAutoUpdate.mockReturnValue(true)
 

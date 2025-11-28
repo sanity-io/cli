@@ -38,12 +38,21 @@ export const cliConfigSchema = z.object({
   app: z
     .object({
       entry: z.string().optional(),
+      /** @deprecated Use deployment.appId */
       id: z.string().optional(),
       organizationId: z.string().optional(),
     })
     .optional(),
 
+  /** @deprecated Use deployment.autoUpdates */
   autoUpdates: z.boolean().optional(),
+
+  deployment: z
+    .object({
+      appId: z.string().optional(),
+      autoUpdates: z.boolean().optional(),
+    })
+    .optional(),
 
   graphql: z
     .array(
@@ -77,6 +86,7 @@ export const cliConfigSchema = z.object({
     })
     .optional(),
 
+  /** @deprecated Use deployment.appId */
   studioHost: z.string().optional(),
 
   mediaLibrary: z

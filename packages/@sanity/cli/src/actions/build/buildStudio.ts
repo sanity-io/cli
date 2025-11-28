@@ -7,10 +7,12 @@ import chalk from 'chalk'
 import {type Ora} from 'ora'
 import semver from 'semver'
 
+import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
+import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'
@@ -45,7 +47,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     workDir,
   })
 
-  const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags})
+  const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
 
   // Get the version without any tags if any
   const coercedSanityVersion = semver.coerce(installedSanityVersion)?.version
@@ -57,6 +59,13 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
 
   if (autoUpdatesEnabled) {
     output.log(`${logSymbols.info} Building with auto-updates enabled`)
+
+    // Warn if auto updates enabled but no appId configured
+    const projectId = cliConfig?.api?.projectId
+    const appId = getAppId(cliConfig)
+    if (!appId) {
+      warnAboutMissingAppId({output, projectId})
+    }
 
     // Check the versions
     const result = await compareDependencyVersions(autoUpdatesImports, workDir)
