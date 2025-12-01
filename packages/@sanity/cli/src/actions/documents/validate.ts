@@ -11,7 +11,7 @@ import {
 } from '../../util/validation/validateDocuments.js'
 import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels.js'
 
-export interface ValidateDocumentsOptions<TReturn = unknown> {
+interface ValidateDocumentsOptions<TReturn = unknown> {
   clientConfig: ClientConfig
 
   dataset?: string // override
@@ -26,7 +26,7 @@ export interface ValidateDocumentsOptions<TReturn = unknown> {
   workspace?: string
 }
 
-export interface DocumentValidationResult {
+interface DocumentValidationResult {
   documentId: string
   documentType: string
   level: ValidationMarker['level']
@@ -81,16 +81,19 @@ export async function validateDocuments(options: ValidateDocumentsOptions): Prom
     throw new Error('Could not find root directory for `sanity` package')
   }
 
-  const workerPath = path.join(path.dirname(rootPkgPath), 'dist', 'threads', 'validateDocuments.js')
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const {requester: _, ...serializableClientConfig} = clientConfig
+  const workerPath = path.join(
+    path.dirname(rootPkgPath),
+    'dist',
+    'util',
+    'validation',
+    'validateDocuments.js',
+  )
 
   const worker = new Worker(workerPath, {
     env: process.env,
     workerData: {
       // removes props in the config that make this object fail to serialize
-      clientConfig: structuredClone(serializableClientConfig),
+      clientConfig: structuredClone(clientConfig),
       dataset,
       level,
       maxCustomValidationConcurrency,

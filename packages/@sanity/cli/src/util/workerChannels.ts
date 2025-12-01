@@ -39,7 +39,7 @@ export type WorkerChannelStream<TPayload = void> = {
   type: 'stream'
 }
 
-export interface WorkerChannelReporter<TWorkerChannel extends WorkerChannel> {
+interface WorkerChannelReporter<TWorkerChannel extends WorkerChannel> {
   event: {
     [K in EventKeys<TWorkerChannel>]: TWorkerChannel[K] extends WorkerChannelEvent<infer TPayload>
       ? EventReporter<TPayload>

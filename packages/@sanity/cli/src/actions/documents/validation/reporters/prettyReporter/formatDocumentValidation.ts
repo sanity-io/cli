@@ -5,7 +5,7 @@ import chalk from 'chalk'
 import {convertToTree, formatTree, maxKeyLength, type Tree} from '../../../../../util/tree.js'
 import {type DocumentValidationResult, isTty, type Level, levelValues} from './util.js'
 
-export interface FormatDocumentValidationOptions extends DocumentValidationResult {
+interface FormatDocumentValidationOptions extends DocumentValidationResult {
   basePath?: string
   studioHost?: string
 }
