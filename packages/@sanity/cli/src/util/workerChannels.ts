@@ -6,15 +6,17 @@ type EventReceiver<TPayload = unknown> = () => Promise<TPayload>
 type StreamReceiver<TPayload = unknown> = () => AsyncIterable<TPayload>
 
 type EventKeys<TWorkerChannel extends WorkerChannel> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [K in keyof TWorkerChannel]: TWorkerChannel[K] extends WorkerChannelEvent<any> ? K : never
 }[keyof TWorkerChannel]
 type StreamKeys<TWorkerChannel extends WorkerChannel> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [K in keyof TWorkerChannel]: TWorkerChannel[K] extends WorkerChannelStream<any> ? K : never
 }[keyof TWorkerChannel]
 
-type EventMessage<TPayload = unknown> = {type: 'event'; name: string; payload: TPayload}
-type StreamEmissionMessage<TPayload = unknown> = {type: 'emission'; name: string; payload: TPayload}
-type StreamEndMessage = {type: 'end'; name: string}
+type EventMessage<TPayload = unknown> = {name: string; payload: TPayload; type: 'event'}
+type StreamEmissionMessage<TPayload = unknown> = {name: string; payload: TPayload; type: 'emission'}
+type StreamEndMessage = {name: string; type: 'end'}
 type WorkerChannelMessage = EventMessage | StreamEmissionMessage | StreamEndMessage
 
 /**
@@ -31,8 +33,11 @@ export type WorkerChannel<
   > = Record<string, WorkerChannelEvent<unknown> | WorkerChannelStream<unknown>>,
 > = TWorkerChannel
 
-export type WorkerChannelEvent<TPayload = void> = {type: 'event'; payload: TPayload}
-export type WorkerChannelStream<TPayload = void> = {type: 'stream'; payload: TPayload}
+export type WorkerChannelEvent<TPayload = void> = {payload: TPayload; type: 'event'}
+export type WorkerChannelStream<TPayload = void> = {
+  payload: TPayload
+  type: 'stream'
+}
 
 export interface WorkerChannelReporter<TWorkerChannel extends WorkerChannel> {
   event: {
@@ -48,6 +53,8 @@ export interface WorkerChannelReporter<TWorkerChannel extends WorkerChannel> {
 }
 
 export interface WorkerChannelReceiver<TWorkerChannel extends WorkerChannel> {
+  // TODO: good candidate for [Symbol.asyncDispose] when our tooling better supports it
+  dispose: () => Promise<number>
   event: {
     [K in EventKeys<TWorkerChannel>]: TWorkerChannel[K] extends WorkerChannelEvent<infer TPayload>
       ? EventReceiver<TPayload>
@@ -58,8 +65,6 @@ export interface WorkerChannelReceiver<TWorkerChannel extends WorkerChannel> {
       ? StreamReceiver<TPayload>
       : void
   }
-  // TODO: good candidate for [Symbol.asyncDispose] when our tooling better supports it
-  dispose: () => Promise<number>
 }
 
 /**
@@ -70,29 +75,29 @@ export interface WorkerChannelReceiver<TWorkerChannel extends WorkerChannel> {
  * no message yet in the queue when the parent awaits `next()`.
  */
 class MessageQueue<T> {
-  resolver: ((result: IteratorResult<T>) => void) | null = null
   queue: T[] = []
+  resolver: ((result: IteratorResult<T>) => void) | null = null
 
-  push(message: T) {
+  end() {
     if (this.resolver) {
-      this.resolver({value: message, done: false})
-      this.resolver = null
-    } else {
-      this.queue.push(message)
+      this.resolver({done: true, value: undefined})
     }
   }
 
   next(): Promise<IteratorResult<T>> {
-    if (this.queue.length) {
-      return Promise.resolve({value: this.queue.shift()!, done: false})
+    if (this.queue.length > 0) {
+      return Promise.resolve({done: false, value: this.queue.shift()!})
     }
 
     return new Promise((resolve) => (this.resolver = resolve))
   }
 
-  end() {
+  push(message: T) {
     if (this.resolver) {
-      this.resolver({value: undefined, done: true})
+      this.resolver({done: false, value: message})
+      this.resolver = null
+    } else {
+      this.queue.push(message)
     }
   }
 }
@@ -116,7 +121,7 @@ export function createReceiver<TWorkerChannel extends WorkerChannel>(
 ): WorkerChannelReceiver<TWorkerChannel> {
   const _events = new Map<string, MessageQueue<EventMessage>>()
   const _streams = new Map<string, MessageQueue<StreamEmissionMessage>>()
-  const errors = new MessageQueue<{type: 'error'; error: unknown}>()
+  const errors = new MessageQueue<{error: unknown; type: 'error'}>()
 
   const eventQueue = (name: string) => {
     const queue = _events.get(name) ?? new MessageQueue()
@@ -138,13 +143,18 @@ export function createReceiver<TWorkerChannel extends WorkerChannel>(
   }
 
   const handleError = (error: unknown) => {
-    errors.push({type: 'error', error})
+    errors.push({error, type: 'error'})
   }
 
   worker.addListener('message', handleMessage)
   worker.addListener('error', handleError)
 
   return {
+    dispose: () => {
+      worker.removeListener('message', handleMessage)
+      worker.removeListener('error', handleError)
+      return worker.terminate()
+    },
     event: new Proxy({} as WorkerChannelReceiver<TWorkerChannel>['event'], {
       get: (target, name) => {
         if (typeof name !== 'string') return target[name as keyof typeof target]
@@ -165,7 +175,7 @@ export function createReceiver<TWorkerChannel extends WorkerChannel>(
 
         async function* streamReceiver() {
           while (true) {
-            const {value, done} = await Promise.race([streamQueue(name).next(), errors.next()])
+            const {done, value} = await Promise.race([streamQueue(name).next(), errors.next()])
             if (done) return
             if (value.type === 'error') throw value.error
             yield value.payload
@@ -175,11 +185,6 @@ export function createReceiver<TWorkerChannel extends WorkerChannel>(
         return streamReceiver satisfies StreamReceiver
       },
     }),
-    dispose: () => {
-      worker.removeListener('message', handleMessage)
-      worker.removeListener('error', handleError)
-      return worker.terminate()
-    },
   }
 }
 
@@ -200,7 +205,7 @@ export function createReporter<TWorkerChannel extends WorkerChannel>(
         if (typeof name !== 'string') return target[name as keyof typeof target]
 
         const eventReporter: EventReporter = (payload) => {
-          const message: EventMessage = {type: 'event', name, payload}
+          const message: EventMessage = {name, payload, type: 'event'}
           parentPort.postMessage(message)
         }
 
@@ -213,11 +218,11 @@ export function createReporter<TWorkerChannel extends WorkerChannel>(
 
         const streamReporter: StreamReporter = {
           emit: (payload) => {
-            const message: StreamEmissionMessage = {type: 'emission', name, payload}
+            const message: StreamEmissionMessage = {name, payload, type: 'emission'}
             parentPort.postMessage(message)
           },
           end: () => {
-            const message: StreamEndMessage = {type: 'end', name}
+            const message: StreamEndMessage = {name, type: 'end'}
             parentPort.postMessage(message)
           },
         }

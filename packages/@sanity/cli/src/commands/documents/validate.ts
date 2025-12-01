@@ -149,31 +149,11 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       )
     }
 
-    const level = flags.level || 'warning'
-
-    if (level !== 'error' && level !== 'warning' && level !== 'info') {
-      throw new Error(`Invalid level. Available levels are 'error', 'warning', and 'info'.`)
-    }
-
+    const level = flags.level
     const maxCustomValidationConcurrency = flags['max-custom-validation-concurrency']
-    if (
-      maxCustomValidationConcurrency &&
-      typeof maxCustomValidationConcurrency !== 'number' &&
-      !Number.isInteger(maxCustomValidationConcurrency)
-    ) {
-      throw new Error(`'--max-custom-validation-concurrency' must be an integer.`)
-    }
-
     const maxFetchConcurrency = flags['max-fetch-concurrency']
-    if (
-      maxFetchConcurrency &&
-      typeof maxFetchConcurrency !== 'number' &&
-      !Number.isInteger(maxFetchConcurrency)
-    ) {
-      throw new Error(`'--max-fetch-concurrency' must be an integer.`)
-    }
 
-    const clientConfig: Partial<ClientConfig> = {
+    const clientConfig: ClientConfig = {
       ...apiClient.config(),
       // we set this explictly to true because we pass in a token via the
       // `clientConfiguration` object and also mock a browser environment in
@@ -187,9 +167,6 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
 
     let ndjsonFilePath
     if (flags.file) {
-      if (typeof flags.file !== 'string') {
-        this.error(`'--file' must be a string`, {exit: 1})
-      }
       const filePath = path.resolve(workDir, flags.file)
 
       const stat = await fs.promises.stat(filePath)
@@ -220,6 +197,8 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       workspace: flags.workspace,
     })
 
-    process.exitCode = overallLevel === 'error' ? 1 : 0
+    if (overallLevel === 'error') {
+      this.exit(1)
+    }
   }
 }

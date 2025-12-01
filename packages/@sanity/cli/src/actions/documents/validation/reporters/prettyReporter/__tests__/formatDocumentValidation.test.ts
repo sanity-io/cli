@@ -17,7 +17,6 @@ describe('formatDocumentValidation', () => {
       documentId: 'my-document-id',
       documentType: 'person',
       level: 'error',
-      revision: 'rev',
       markers: [
         {level: 'error', message: 'Top-level marker', path: []},
         {level: 'error', message: '2nd top-level marker', path: []},
@@ -28,21 +27,23 @@ describe('formatDocumentValidation', () => {
         {level: 'warning', message: 'Warning', path: ['beep', 'boop']},
         {level: 'error', message: 'Errors sorted first', path: ['beep', 'boop']},
       ],
+      revision: 'rev',
     })
 
-    expect(result).toEqual(
+    expect(result).toMatchInlineSnapshot(
       `
-[ERROR] [person] my-document-id
-│  (root) ........................ ✖ Top-level marker
-│                                  ✖ 2nd top-level marker
-├─ foo ........................... ✖ Property marker
-├─ bar
-│ └─ title ....................... ✖ Nested marker
-│                                  ✖ 2nd nested marker
-├─ baz ........................... ✖ 2nd property marker
-└─ beep
-  └─ boop ........................ ✖ Errors sorted first
-                                   ⚠ Warning`.trim(),
+      "[ERROR] [person] my-document-id
+      │  (root) ........................ [31m✖[39m Top-level marker
+      │                                  [31m✖[39m 2nd top-level marker
+      ├─ foo ........................... [31m✖[39m Property marker
+      ├─ bar
+      │ └─ title ....................... [31m✖[39m Nested marker
+      │                                  [31m✖[39m 2nd nested marker
+      ├─ baz ........................... [31m✖[39m 2nd property marker
+      └─ beep
+        └─ boop ........................ [31m✖[39m Errors sorted first
+                                         [33m⚠[39m Warning"
+    `,
     )
   })
 
@@ -51,21 +52,21 @@ describe('formatDocumentValidation', () => {
       documentId: 'my-document-id',
       documentType: 'person',
       level: 'error',
-      revision: 'rev',
       markers: [
         {level: 'info', message: '2nd top-level marker (should come last)', path: []},
         {level: 'error', message: 'Lone top-level marker (should get elbow)', path: []},
         {level: 'warning', message: 'Warning, should come second', path: []},
       ],
+      revision: 'rev',
     })
 
-    expect(result).toEqual(
+    expect(result).toMatchInlineSnapshot(
       `
-[ERROR] [person] my-document-id
-└─ (root) ........................ ✖ Lone top-level marker (should get elbow)
-                                   ⚠ Warning, should come second
-                                   ℹ 2nd top-level marker (should come last)
-`.trim(),
+      "[ERROR] [person] my-document-id
+      └─ (root) ........................ [31m✖[39m Lone top-level marker (should get elbow)
+                                         [33m⚠[39m Warning, should come second
+                                         [34mℹ[39m 2nd top-level marker (should come last)"
+    `,
     )
   })
 })
