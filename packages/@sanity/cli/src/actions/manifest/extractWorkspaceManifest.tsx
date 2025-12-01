@@ -102,28 +102,6 @@ export default function extractWorkspaceManifest(workspaces: Workspace[]): Creat
   })
 }
 
-export function extractCreateWorkspaceManifest(workspace: Workspace): CreateWorkspaceManifest {
-  const serializedSchema = extractManifestSchemaTypes(workspace.schema as Schema)
-  const serializedTools = extractManifestTools(workspace.tools)
-
-  return {
-    basePath: workspace.basePath,
-    dataset: workspace.dataset,
-    icon: resolveIcon({
-      icon: workspace.icon,
-      subtitle: workspace.subtitle,
-      title: workspace.title,
-    }),
-    mediaLibrary: workspace.mediaLibrary,
-    name: workspace.name,
-    projectId: workspace.projectId,
-    schema: serializedSchema,
-    subtitle: workspace.subtitle,
-    title: workspace.title,
-    tools: serializedTools,
-  }
-}
-
 /**
  * Extracts all serializable properties from userland schema types,
  * so they best-effort can be used as definitions for Schema.compile
