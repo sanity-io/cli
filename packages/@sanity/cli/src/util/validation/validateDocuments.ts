@@ -12,7 +12,7 @@ import {
   type SanityClient,
   type SanityDocument,
 } from '@sanity/client'
-import {isReference, type ValidationContext, type ValidationMarker} from '@sanity/types'
+import {type ValidationContext, type ValidationMarker} from '@sanity/types'
 import pMap from 'p-map'
 import {createSchema, isRecord, validateDocument, Workspace} from 'sanity'
 
@@ -23,6 +23,15 @@ import {
   type WorkerChannelEvent,
   type WorkerChannelStream,
 } from '../workerChannels.js'
+import {
+  DOCUMENT_VALIDATION_TIMEOUT,
+  getReferenceIds,
+  isValidId,
+  levelValues,
+  MAX_VALIDATION_CONCURRENCY,
+  REFERENCE_INTEGRITY_BATCH_SIZE,
+  shouldIncludeDocument,
+} from './validateDocumentsUtils.js'
 
 const mockStubs = stubs as Record<string, unknown>
 const mockedGlobalThis: Record<string, unknown> = globalThis
@@ -31,10 +40,6 @@ for (const key in stubs) {
     mockedGlobalThis[key] = mockStubs[key]
   }
 }
-
-const MAX_VALIDATION_CONCURRENCY = 100
-const DOCUMENT_VALIDATION_TIMEOUT = 30_000
-const REFERENCE_INTEGRITY_BATCH_SIZE = 100
 
 interface AvailabilityResponse {
   omitted: {id: string; reason: 'existence' | 'permission'}[]
@@ -95,38 +100,7 @@ if (isMainThread || !parentPort) {
   throw new Error('This module must be run as a worker thread')
 }
 
-const levelValues = {error: 0, info: 2, warning: 1} as const
-
 const report = createReporter<ValidationWorkerChannel>(parentPort)
-
-export const getReferenceIds = (value: unknown) => {
-  const ids = new Set<string>()
-
-  function traverse(node: unknown) {
-    if (isReference(node)) {
-      ids.add(node._ref)
-      return
-    }
-
-    if (typeof node === 'object' && node) {
-      // Note: this works for arrays too
-      for (const item of Object.values(node)) traverse(item)
-    }
-  }
-
-  traverse(value)
-
-  return ids
-}
-
-const idRegex = /^[^-][A-Z0-9._-]*$/i
-
-// during testing, the `doc` endpoint 502'ed if given an invalid ID
-const isValidId = (id: unknown) => typeof id === 'string' && idRegex.test(id)
-const shouldIncludeDocument = (document: SanityDocument) => {
-  // Filter out system documents and sanity documents
-  return !document._type.startsWith('system.') && !document._type.startsWith('sanity.')
-}
 
 // eslint-disable-next-line n/no-unsupported-features/node-builtins
 async function* readerToGenerator(reader: ReadableStreamDefaultReader<Uint8Array>) {

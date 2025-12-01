@@ -8,7 +8,7 @@ import {readPackageUp} from 'read-package-up'
 import {
   type ValidateDocumentsWorkerData,
   type ValidationWorkerChannel,
-} from '../../threads/validateDocuments.js'
+} from '../../util/validation/validateDocuments.js'
 import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels.js'
 
 export interface ValidateDocumentsOptions<TReturn = unknown> {
