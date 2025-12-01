@@ -16,13 +16,13 @@ import {isReference, type ValidationContext, type ValidationMarker} from '@sanit
 import pMap from 'p-map'
 import {createSchema, isRecord, validateDocument, Workspace} from 'sanity'
 
-import {extractDocumentsFromNdjsonOrTarball} from '../util/extractDocumentsFromNdjsonOrTarball.js'
+import {extractDocumentsFromNdjsonOrTarball} from '../extractDocumentsFromNdjsonOrTarball.js'
 import {
   createReporter,
   type WorkerChannel,
   type WorkerChannelEvent,
   type WorkerChannelStream,
-} from '../util/workerChannels.js'
+} from '../workerChannels.js'
 
 const mockStubs = stubs as Record<string, unknown>
 const mockedGlobalThis: Record<string, unknown> = globalThis
