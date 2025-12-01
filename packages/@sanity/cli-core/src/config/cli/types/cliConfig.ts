@@ -1,0 +1,84 @@
+import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
+
+import {type UserViteConfig} from './userViteConfig'
+
+export interface CliConfig {
+  /** The project ID and dataset the Sanity CLI should use to run its commands */
+  api?: {
+    dataset?: string
+    projectId?: string
+  }
+
+  /** Configuration for custom Sanity apps built with the App SDK */
+  app?: {
+    /** The entrypoint for your custom app. By default, `src/App.tsx` */
+    entry?: string
+    /** @deprecated Use deployment.appId */
+    id?: string
+    /** The ID for the Sanity organization that manages this application */
+    organizationId?: string
+  }
+
+  /** @deprecated Use deployment.autoUpdates */
+  autoUpdates?: boolean
+
+  /** Options for custom app and Studio deployments */
+  deployment?: {
+    /**
+     * The ID for your custom app or Studio. Generated when deploying your app or Studio for the first time.
+     * Get your app ID by either:
+     * 1. Checking the output of `sanity deploy`, or
+     * 2. Checking your project’s Studio tab at https://sanity.io/manage
+     *
+     * @remarks This is required for all custom app deployments, and for Studios opting in to fine grained version control.
+     * {@link https://www.sanity.io/docs/studio/latest-version-of-sanity#k0896ed4574b7}
+     */
+    appId?: string
+    /**
+     * Enable automatic updates for your Studio or custom app’s Sanity dependencies.
+     * {@link https://www.sanity.io/docs/studio/latest-version-of-sanity}
+     */
+    autoUpdates?: boolean
+  }
+
+  /** Define the GraphQL APIs that the CLI can deploy and interact with */
+  graphql?: Array<{
+    filterSuffix?: string
+    generation?: 'gen1' | 'gen2' | 'gen3'
+    id?: string
+    nonNullDocumentFields?: boolean
+    playground?: boolean
+    source?: string
+    tag?: string
+    workspace?: string
+  }>
+
+  /** Configuration for the Media Library */
+  mediaLibrary?: {
+    /** The path to the Media Library aspects directory. When using the CLI to manage aspects, this is the directory they will be read from and written to. */
+    aspectsPath?: string
+  }
+
+  /** Contains the property `basePath` which lets you change the top-level slug for the Studio. You typically need to set this if you embed the Studio in another application where it is one of many routes. Defaults to an empty string. */
+  project?: {
+    basePath?: string
+  }
+
+  /** Configuration options for React Compiler */
+  reactCompiler?: ReactCompilerConfig
+
+  /** Wraps the Studio in \<React.StrictMode\> root to aid in flagging potential problems related to concurrent features (startTransition, useTransition, useDeferredValue, Suspense). Can also be enabled by setting SANITY_STUDIO_REACT_STRICT_MODE="true"|"false". It only applies to sanity dev in development mode and is ignored in sanity build and in production. Defaults to false. */
+  reactStrictMode?: boolean
+
+  /** Defines the hostname and port that the development server should run on. hostname defaults to localhost, and port to 3333. */
+  server?: {
+    hostname?: string
+    port?: number
+  }
+
+  /** @deprecated Use deployment.appId */
+  studioHost?: string
+
+  /** Exposes the default Vite configuration for custom apps and the Studio so it can be changed and extended. */
+  vite?: UserViteConfig
+}
