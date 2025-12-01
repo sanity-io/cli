@@ -2,70 +2,55 @@ import {spawn} from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {type CliCommandAction, type CliCommandArguments} from '@sanity/cli'
-import readPkgUp from 'read-pkg-up'
-import {hideBin} from 'yargs/helpers'
-import yargs from 'yargs/yargs'
+import {packageDirectory} from 'pkg-dir'
 
-interface ExecFlags {
-  'with-user-token'?: boolean
-  'mock-browser-env'?: boolean
+interface ExecScriptOptions {
+  extraArguments: string[]
+  flags: {
+    'mock-browser-env': boolean
+    'with-user-token': boolean
+  }
+  scriptPath: string
+  workDir: string
 }
 
-async function parseCliFlags(args: CliCommandArguments<ExecFlags>) {
-  const flags = await yargs(hideBin(args.argv || process.argv).slice(2))
-    .option('with-user-token', {type: 'boolean', default: false})
-    .option('mock-browser-env', {type: 'boolean', default: false}).argv
+export async function execScript(options: ExecScriptOptions): Promise<void> {
+  const {extraArguments, flags, scriptPath, workDir} = options
+  const mockBrowserEnv = flags['mock-browser-env']
+  const withUserToken = flags['with-user-token']
 
-  return {
-    ...flags,
-    script: args.argsWithoutOptions[0],
-  }
-}
+  const resolvedScriptPath = path.resolve(scriptPath)
 
-const execScript: CliCommandAction<ExecFlags> = async function execScript(args, context) {
-  // Reparsing CLI flags for better control of binary flags
-  const {withUserToken, mockBrowserEnv, script} = await parseCliFlags(args)
-  const {workDir} = context
-
-  const scriptPath = path.resolve(script || '')
-  if (!script) {
-    throw new Error('SCRIPT must be provided. `sanity exec <script>`')
+  if (!(await fs.stat(resolvedScriptPath).catch(() => false))) {
+    throw new Error(`${resolvedScriptPath} does not exist`)
   }
 
-  if (!(await fs.stat(scriptPath).catch(() => false))) {
-    throw new Error(`${scriptPath} does not exist`)
+  const cliPkgDir = await packageDirectory({cwd: __dirname})
+  if (!cliPkgDir) {
+    throw new Error('Unable to resolve @sanity/cli module root')
   }
 
-  const sanityPkgPath = (await readPkgUp({cwd: __dirname}))?.path
-  if (!sanityPkgPath) {
-    throw new Error('Unable to resolve `sanity` module root')
-  }
-
-  const sanityDir = path.dirname(sanityPkgPath)
-  const threadsDir = path.join(sanityDir, 'lib', '_internal', 'cli', 'threads')
-  const esbuildPath = path.join(threadsDir, 'esbuild.js')
+  const threadsDir = path.join(cliPkgDir, 'dist', 'threads')
   const browserEnvPath = path.join(threadsDir, 'registerBrowserEnv.js')
   const configClientPath = path.join(threadsDir, 'configClient.js')
 
-  if (!(await fs.stat(esbuildPath).catch(() => false))) {
-    throw new Error('`sanity` module build error: missing threads')
+  // Verify threads directory exists
+  if (!(await fs.stat(threadsDir).catch(() => false))) {
+    throw new Error('@sanity/cli module build error: missing threads directory')
   }
 
-  const baseArgs = mockBrowserEnv ? ['-r', browserEnvPath] : ['-r', esbuildPath]
+  // Use tsx/register for TypeScript support instead of separate esbuild thread
+  const baseArgs = mockBrowserEnv ? ['--import', browserEnvPath] : ['-r', 'tsx/register']
   const tokenArgs = withUserToken ? ['-r', configClientPath] : []
 
-  const nodeArgs = [...baseArgs, ...tokenArgs, scriptPath, ...args.extraArguments]
+  const nodeArgs = [...baseArgs, ...tokenArgs, resolvedScriptPath, ...extraArguments]
 
   const proc = spawn(process.argv[0], nodeArgs, {
-    stdio: 'inherit',
     env: {
-      // eslint-disable-next-line no-process-env
       ...process.env,
       SANITY_BASE_PATH: workDir,
     },
+    stdio: 'inherit',
   })
   proc.on('close', process.exit)
 }
-
-export default execScript
