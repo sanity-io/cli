@@ -1,3 +1,5 @@
+import {z} from 'zod'
+
 import {findStudioConfigPath} from '../util/findStudioConfigPath.js'
 import {
   type RawStudioConfig,
@@ -13,19 +15,24 @@ import {
  * @returns The studio config (some properties may be missing)
  * @internal
  */
-export async function getStudioConfig(
+export async function getStudioConfig<T extends z.ZodTypeAny>(
   rootPath: string,
-  options: {callbackPath?: string; resolvePlugins: true},
+  options: {callback?: {path: string; zodSchema?: T}; resolvePlugins: true},
 ): Promise<ResolvedStudioConfig>
 
-export async function getStudioConfig(
+export async function getStudioConfig<T extends z.ZodTypeAny>(
   rootPath: string,
-  options: {callbackPath?: string; resolvePlugins: false},
+  options: {callback?: {path: string; zodSchema?: T}; resolvePlugins: false},
 ): Promise<RawStudioConfig>
 
-export async function getStudioConfig(
+export async function getStudioConfig<T extends z.ZodTypeAny>(
   rootPath: string,
-  options: ReadStudioConfigOptions,
+  options: ReadStudioConfigOptions & {
+    callback?: {
+      path: string
+      zodSchema?: T
+    }
+  },
 ): Promise<RawStudioConfig | ResolvedStudioConfig> {
   const studioConfigPath = await findStudioConfigPath(rootPath)
   if (!studioConfigPath) {
@@ -34,9 +41,9 @@ export async function getStudioConfig(
 
   // TypeScript is not being very clever with our overloads :(
   return options.resolvePlugins
-    ? readStudioConfig(studioConfigPath, {callbackPath: options.callbackPath, resolvePlugins: true})
+    ? readStudioConfig(studioConfigPath, {callback: options.callback, resolvePlugins: true})
     : readStudioConfig(studioConfigPath, {
-        callbackPath: options.callbackPath,
+        callback: options.callback,
         resolvePlugins: false,
       })
 }

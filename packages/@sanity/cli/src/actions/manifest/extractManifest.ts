@@ -5,6 +5,7 @@ import {fileURLToPath} from 'node:url'
 
 import {getStudioConfig, getTimer, Output, spinner} from '@sanity/cli-core'
 import {readPackageUp} from 'read-package-up'
+import {z} from 'zod'
 
 import {type ExtractManifestCommand} from '../../commands/manifest/extract'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
@@ -113,13 +114,43 @@ async function getWorkspaceManifests({
   workDir: string
 }): Promise<CreateWorkspaceManifest[]> {
   const workspaces = await getStudioConfig(workDir, {
-    callbackPath: join(
-      dirname(rootPkgPath),
-      'dist',
-      'actions',
-      'manifest',
-      'extractWorkspaceManifest.js',
-    ),
+    callback: {
+      path: join(
+        dirname(rootPkgPath),
+        'dist',
+        'actions',
+        'manifest',
+        'extractWorkspaceManifest.js',
+      ),
+      zodSchema: z.array(
+        z.object({
+          basePath: z.string(),
+          dataset: z.string(),
+          icon: z.string().optional(),
+          mediaLibrary: z
+            .object({
+              enabled: z.boolean().optional(),
+              libraryId: z.string().optional(),
+            })
+            .optional(),
+          name: z.string(),
+          projectId: z.string(),
+          schema: z.unknown().optional(),
+          subtitle: z.string().optional(),
+          title: z.string(),
+          tools: z
+            .array(
+              z.object({
+                icon: z.string().optional(),
+                name: z.string().optional(),
+                title: z.string().optional(),
+                type: z.string().nullable().optional(),
+              }),
+            )
+            .optional(),
+        }),
+      ),
+    },
     resolvePlugins: true,
   })
 

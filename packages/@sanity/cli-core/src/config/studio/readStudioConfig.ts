@@ -4,46 +4,31 @@ import {z} from 'zod'
 
 import {studioWorkerTask} from '../../loaders/studio/studioWorkerTask.js'
 
-const mediaLibrarySchema = z.object({
-  enabled: z.boolean().optional(),
-  libraryId: z.string().optional(),
-})
-
-const toolSchema = z.object({
-  icon: z.unknown().optional(),
+const schemaSchema = z.object({
   name: z.string().optional(),
-  title: z.string().optional(),
-  type: z.string().nullable().optional(),
+  types: z.array(z.object({}).passthrough()),
 })
 
 const singleStudioWorkspaceSchema = z
   .object({
     basePath: z.string().optional(),
     dataset: z.string(),
-    icon: z.unknown().optional(),
-    mediaLibrary: mediaLibrarySchema.optional(),
     name: z.string().optional(),
     plugins: z.array(z.unknown()).optional(),
     projectId: z.string(),
-    schema: z.unknown().optional(),
-    subtitle: z.string().optional(),
+    schema: schemaSchema.optional(),
     title: z.string().optional(),
-    tools: z.array(toolSchema).optional(),
   })
   .passthrough()
 
 const studioWorkspaceSchema = z.object({
   basePath: z.string(),
   dataset: z.string(),
-  icon: z.unknown().optional(),
-  mediaLibrary: mediaLibrarySchema.optional(),
   name: z.string(),
   plugins: z.array(z.unknown()).optional(),
   projectId: z.string(),
-  schema: z.unknown().optional(),
-  subtitle: z.string().optional(),
+  schema: z.object({_original: schemaSchema}),
   title: z.string(),
-  tools: z.array(toolSchema).optional(),
 })
 
 const rawConfigSchema = z.union([z.array(studioWorkspaceSchema), singleStudioWorkspaceSchema])
@@ -68,33 +53,40 @@ export interface ReadStudioConfigOptions {
    * loaded as the plugins are resolved.
    */
   resolvePlugins: boolean
-
-  callbackPath?: string
 }
 
-export async function readStudioConfig(
+export async function readStudioConfig<T extends z.ZodTypeAny>(
   configPath: string,
-  options: {callbackPath?: string; resolvePlugins: true},
+  options: {callback?: {path: string; zodSchema?: T}; resolvePlugins: true},
 ): Promise<ResolvedStudioConfig>
 
-export async function readStudioConfig(
+export async function readStudioConfig<T extends z.ZodTypeAny>(
   configPath: string,
-  options: {callbackPath?: string; resolvePlugins: false},
+  options: {callback?: {path: string; zodSchema?: T}; resolvePlugins: false},
 ): Promise<RawStudioConfig>
 
-export async function readStudioConfig(
+export async function readStudioConfig<T extends z.ZodTypeAny>(
   configPath: string,
-  options: ReadStudioConfigOptions,
-): Promise<RawStudioConfig | ResolvedStudioConfig> {
+  options: ReadStudioConfigOptions & {
+    callback?: {
+      path: string
+      zodSchema?: T
+    }
+  },
+): Promise<RawStudioConfig | ResolvedStudioConfig | T> {
   const result = await studioWorkerTask(new URL('readStudioConfig.worker.js', import.meta.url), {
     name: 'studioConfig',
     studioRootPath: dirname(configPath),
     workerData: {
-      callbackPath: options.callbackPath,
+      callbackPath: options.callback?.path,
       configPath,
       resolvePlugins: options.resolvePlugins,
     },
   })
+
+  if (options.callback?.zodSchema) {
+    return options.callback.zodSchema.parse(result)
+  }
 
   return options.resolvePlugins ? resolvedConfigSchema.parse(result) : rawConfigSchema.parse(result)
 }
