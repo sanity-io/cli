@@ -2,7 +2,7 @@ import {type Output} from '@sanity/cli-core'
 import chalk from 'chalk'
 
 const baseUrl =
-  process.env.SANITY_INTERNAL_ENV === 'staging' ? 'https://sanity.work' : 'https://sanity.io'
+  process.env.SANITY_INTERNAL_ENV === 'staging' ? 'https://sanity.work' : 'https://www.sanity.io'
 
 export function warnAboutMissingAppId({
   output,

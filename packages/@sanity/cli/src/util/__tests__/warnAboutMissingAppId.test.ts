@@ -18,7 +18,7 @@ describe('warnAboutMissingAppId', () => {
 
     expect(mockOutput.warn).toBeCalledWith(expect.stringContaining('No appId configured'))
     expect(mockOutput.warn).toBeCalledWith(
-      expect.stringContaining('https://sanity.io/manage/project/project-id/studios'),
+      expect.stringContaining('https://www.sanity.io/manage/project/project-id/studios'),
     )
   })
 
@@ -29,6 +29,6 @@ describe('warnAboutMissingAppId', () => {
     })
 
     expect(mockOutput.warn).toBeCalledWith(expect.stringContaining('No appId configured'))
-    expect(mockOutput.warn).toBeCalledWith(expect.stringContaining('https://sanity.io/manage'))
+    expect(mockOutput.warn).toBeCalledWith(expect.stringContaining('https://www.sanity.io/manage'))
   })
 })
