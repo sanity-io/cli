@@ -2,80 +2,77 @@ import {isatty} from 'node:tty'
 
 import {type Migration, type Mutation, type NodePatch, type Transaction} from '@sanity/migrate'
 import {type KeyedSegment} from '@sanity/types'
-import {type Chalk} from 'chalk'
+import chalk from 'chalk'
 
-import {convertToTree, formatTree, maxKeyLength} from '../../util/tree'
+import {convertToTree, formatTree, maxKeyLength} from '../tree.js'
 
-type ItemRef = string | number
-type Impact = 'destructive' | 'maybeDestructive' | 'incremental'
-type Variant = Impact | 'info'
+type ItemRef = number | string
+type Impact = 'destructive' | 'incremental' | 'maybeDestructive'
+type Variant = 'info' | Impact
 
 const isTty = isatty(1)
 
 interface FormatterOptions<Subject> {
-  chalk: Chalk
-  subject: Subject
   migration: Migration
+  subject: Subject
+
   indentSize?: number
 }
 
 export function prettyFormat({
-  chalk,
-  subject,
-  migration,
   indentSize = 0,
-}: FormatterOptions<Mutation | Transaction | (Mutation | Transaction)[]>): string {
+  migration,
+  subject,
+}: FormatterOptions<(Mutation | Transaction)[] | Mutation | Transaction>): string {
   return (Array.isArray(subject) ? subject : [subject])
     .map((subjectEntry) => {
       if (subjectEntry.type === 'transaction') {
         return [
           [
-            badge('transaction', 'info', chalk),
-            typeof subjectEntry.id === 'undefined' ? null : chalk.underline(subjectEntry.id),
+            badge('transaction', 'info'),
+            subjectEntry.id === undefined ? null : chalk.underline(subjectEntry.id),
           ]
             .filter(Boolean)
             .join(' '),
           indent(
             prettyFormat({
-              chalk,
-              subject: subjectEntry.mutations,
-              migration,
               indentSize: indentSize,
+              migration,
+              subject: subjectEntry.mutations,
             }),
           ),
         ].join('\n\n')
       }
       return prettyFormatMutation({
-        chalk,
-        subject: subjectEntry,
-        migration,
         indentSize,
+        migration,
+        subject: subjectEntry,
       })
     })
     .join('\n\n')
 }
 
-function encodeItemRef(ref: number | KeyedSegment): ItemRef {
+function encodeItemRef(ref: KeyedSegment | number): ItemRef {
   return typeof ref === 'number' ? ref : ref._key
 }
 
-function badgeStyle(chalk: Chalk, variant: Variant): Chalk {
-  const styles: Record<Variant, Chalk> = {
-    info: chalk.bgWhite.black,
-    incremental: chalk.bgGreen.black.bold,
-    maybeDestructive: chalk.bgYellow.black.bold,
+function badgeStyle(variant: Variant): typeof chalk {
+  const styles: Record<Variant, typeof chalk> = {
     destructive: chalk.bgRed.black.bold,
+    incremental: chalk.bgGreen.black.bold,
+    info: chalk.bgWhite.black,
+    maybeDestructive: chalk.bgYellow.black.bold,
   }
 
   return styles[variant]
 }
 
-function badge(label: string, variant: Variant, chalk: Chalk): string {
+function badge(label: string, variant: Variant): string {
   if (!isTty) {
     return `[${label}]`
   }
 
-  return badgeStyle(chalk, variant)(` ${label} `)
+  return badgeStyle(variant)(` ${label} `)
 }
 
 const mutationImpact: Record<Mutation['type'], Impact> = {
@@ -102,8 +99,8 @@ const listFormatter = new Intl.ListFormat('en-US', {
   type: 'disjunction',
 })
 
-function mutationHeader(chalk: Chalk, mutation: Mutation, migration: Migration): string {
-  const mutationType = badge(mutation.type, mutationImpact[mutation.type], chalk)
+function mutationHeader(mutation: Mutation, migration: Migration): string {
+  const mutationType = badge(mutation.type, mutationImpact[mutation.type])
 
   const documentType =
     'document' in mutation || migration.documentTypes
@@ -112,7 +109,6 @@ function mutationHeader(chalk: Chalk, mutation: Mutation, migration: Migration):
             ? mutation.document._type
             : listFormatter.format(migration.documentTypes ?? []),
           'info',
-          chalk,
         )
       : null
 
@@ -122,15 +118,14 @@ function mutationHeader(chalk: Chalk, mutation: Mutation, migration: Migration):
     .join(' ')
 }
 
-export function prettyFormatMutation({
-  chalk,
-  subject,
-  migration,
+function prettyFormatMutation({
   indentSize = 0,
+  migration,
+  subject,
 }: FormatterOptions<Mutation>): string {
   const lock =
     'options' in subject ? chalk.cyan(`(if revision==${subject.options?.ifRevision})`) : ''
-  const header = [mutationHeader(chalk, subject, migration), lock].join(' ')
+  const header = [mutationHeader(subject, migration), lock].join(' ')
   const padding = ' '.repeat(indentSize)
 
   if (
@@ -149,10 +144,10 @@ export function prettyFormatMutation({
       header,
       '\n',
       formatTree<NodePatch>({
+        getMessage: (patch) => formatPatchMutation(patch),
+        indent: padding,
         node: tree.children,
         paddingLength,
-        indent: padding,
-        getMessage: (patch) => formatPatchMutation(chalk, patch),
       }),
     ].join('')
   }
@@ -160,7 +155,7 @@ export function prettyFormatMutation({
   return header
 }
 
-function formatPatchMutation(chalk: Chalk, patch: NodePatch): string {
+function formatPatchMutation(patch: NodePatch): string {
   const {op} = patch
   const formattedType = chalk.bold(op.type)
   if (op.type === 'unset') {

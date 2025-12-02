@@ -11,7 +11,7 @@ describe('#stringToPTE', () => {
 
     expect(stringToPTETemplate).toMatchInlineSnapshot(`
       "import {pathsAreEqual, stringToPath} from 'sanity'
-      import {defineMigration, set} from 'sanity/migrate'
+      import {defineMigration, set} from '@sanity/migrate'
 
       const targetPath = stringToPath('some.path')
 
@@ -51,7 +51,7 @@ describe('#stringToPTE', () => {
 
     expect(stringToPTETemplate).toMatchInlineSnapshot(`
       "import {pathsAreEqual, stringToPath} from 'sanity'
-      import {defineMigration, set} from 'sanity/migrate'
+      import {defineMigration, set} from '@sanity/migrate'
 
       const targetPath = stringToPath('some.path')
 

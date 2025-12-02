@@ -10,7 +10,7 @@ describe('#minimalSimple', () => {
     })
 
     expect(minimalSimpleTemplate).toMatchInlineSnapshot(`
-      "import {at, defineMigration, setIfMissing, unset} from 'sanity/migrate'
+      "import {at, defineMigration, setIfMissing, unset} from '@sanity/migrate'
 
       export default defineMigration({
         title: "My Migration",
@@ -79,7 +79,7 @@ describe('#minimalSimple', () => {
     })
 
     expect(minimalSimpleTemplate).toMatchInlineSnapshot(`
-      "import {at, defineMigration, setIfMissing, unset} from 'sanity/migrate'
+      "import {at, defineMigration, setIfMissing, unset} from '@sanity/migrate'
 
       export default defineMigration({
         title: "My Migration",
