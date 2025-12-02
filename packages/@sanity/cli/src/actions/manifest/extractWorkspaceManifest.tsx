@@ -78,26 +78,28 @@ type ValidationRuleTransformer = (rule: RuleSpec) => ManifestValidationRule | un
 
 const MAX_CUSTOM_PROPERTY_DEPTH = 5
 
-export function extractCreateWorkspaceManifest(workspace: Workspace): CreateWorkspaceManifest {
-  const serializedSchema = extractManifestSchemaTypes(workspace.schema as Schema)
-  const serializedTools = extractManifestTools(workspace.tools)
+export function extractWorkspaceManifest(workspaces: Workspace[]): CreateWorkspaceManifest[] {
+  return workspaces.map((workspace) => {
+    const serializedSchema = extractManifestSchemaTypes(workspace.schema as Schema)
+    const serializedTools = extractManifestTools(workspace.tools)
 
-  return {
-    basePath: workspace.basePath,
-    dataset: workspace.dataset,
-    icon: resolveIcon({
-      icon: workspace.icon,
+    return {
+      basePath: workspace.basePath,
+      dataset: workspace.dataset,
+      icon: resolveIcon({
+        icon: workspace.icon,
+        subtitle: workspace.subtitle,
+        title: workspace.title,
+      }),
+      mediaLibrary: workspace.mediaLibrary,
+      name: workspace.name,
+      projectId: workspace.projectId,
+      schema: serializedSchema,
       subtitle: workspace.subtitle,
       title: workspace.title,
-    }),
-    mediaLibrary: workspace.mediaLibrary,
-    name: workspace.name,
-    projectId: workspace.projectId,
-    schema: serializedSchema,
-    subtitle: workspace.subtitle,
-    title: workspace.title,
-    tools: serializedTools,
-  }
+      tools: serializedTools,
+    }
+  })
 }
 
 /**

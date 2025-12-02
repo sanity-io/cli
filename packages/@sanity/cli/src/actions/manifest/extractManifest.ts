@@ -2,14 +2,15 @@ import {createHash} from 'node:crypto'
 import {mkdir, writeFile} from 'node:fs/promises'
 import {dirname, join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
-import {Worker} from 'node:worker_threads'
 
 import {getTimer, Output, spinner} from '@sanity/cli-core'
-import {minutesToMilliseconds} from 'date-fns'
 import {readPackageUp} from 'read-package-up'
+import {type Workspace} from 'sanity'
 
 import {type ExtractManifestCommand} from '../../commands/manifest/extract'
+import {importStudioConfig} from '../../util/importStudioConfig.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
+import {extractWorkspaceManifest} from './extractWorkspaceManifest.js'
 import {
   type CreateManifest,
   type CreateWorkspaceManifest,
@@ -26,7 +27,6 @@ const EXTRACT_MANIFEST_ENABLED = process.env[FEATURE_ENABLED_ENV_NAME] !== 'fals
 const EXTRACT_MANIFEST_LOG_ERRORS = process.env.SANITY_CLI_EXTRACT_MANIFEST_LOG_ERRORS === 'true'
 
 const CREATE_TIMER = 'create-manifest'
-const EXTRACT_TASK_TIMEOUT_MS = minutesToMilliseconds(2)
 
 interface ExtractManifestOptions {
   flags: ExtractManifestCommand['flags']
@@ -76,7 +76,7 @@ async function extractManifest(options: ExtractManifestOptions): Promise<void> {
   const spin = spinner('Extracting manifest').start()
 
   try {
-    const workspaceManifests = await getWorkspaceManifests({rootPkgPath, workDir})
+    const workspaceManifests = await getWorkspaceManifests(workDir)
     await mkdir(staticPath, {recursive: true})
 
     const workspaceFiles = await writeWorkspaceFiles(workspaceManifests, staticPath)
@@ -104,42 +104,9 @@ async function extractManifest(options: ExtractManifestOptions): Promise<void> {
   }
 }
 
-async function getWorkspaceManifests({
-  rootPkgPath,
-  workDir,
-}: {
-  rootPkgPath: string
-  workDir: string
-}): Promise<CreateWorkspaceManifest[]> {
-  const workerPath = join(dirname(rootPkgPath), 'dist', 'threads', 'extractManifest.js')
-
-  const worker = new Worker(workerPath, {
-    env: process.env,
-    workerData: {workDir} satisfies {workDir: string},
-  })
-
-  let timeout = false
-  const timeoutId = setTimeout(() => {
-    timeout = true
-    void worker.terminate()
-  }, EXTRACT_TASK_TIMEOUT_MS)
-
-  try {
-    return await new Promise<CreateWorkspaceManifest[]>((resolveWorkspaces, reject) => {
-      const buffer: CreateWorkspaceManifest[] = []
-      worker.addListener('message', (message) => buffer.push(message))
-      worker.addListener('exit', (exitCode) => {
-        if (exitCode === 0) {
-          resolveWorkspaces(buffer)
-        } else if (timeout) {
-          reject(new Error(`Extract manifest was aborted after ${EXTRACT_TASK_TIMEOUT_MS}ms`))
-        }
-      })
-      worker.addListener('error', reject)
-    })
-  } finally {
-    clearTimeout(timeoutId)
-  }
+async function getWorkspaceManifests(workDir: string): Promise<CreateWorkspaceManifest[]> {
+  const workspaces = await importStudioConfig(workDir)
+  return await extractWorkspaceManifest(workspaces as unknown as Workspace[])
 }
 
 function writeWorkspaceFiles(
