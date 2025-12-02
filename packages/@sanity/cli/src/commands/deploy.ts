@@ -39,6 +39,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
   static override flags = {
     'auto-updates': Flags.boolean({
       allowNo: true,
+      deprecated: true,
       description: 'Automatically update the studio to the latest version',
     }),
     build: Flags.boolean({
