@@ -5,7 +5,7 @@ import readline from 'node:readline'
 import {Readable} from 'node:stream'
 import {workerData as _workerData, isMainThread, parentPort} from 'node:worker_threads'
 
-import {getStudioConfig, stubs} from '@sanity/cli-core'
+import {mockBrowserEnvironment} from '@sanity/cli-core'
 import {
   type ClientConfig,
   createClient,
@@ -17,6 +17,7 @@ import pMap from 'p-map'
 import {createSchema, isRecord, validateDocument, Workspace} from 'sanity'
 
 import {extractDocumentsFromNdjsonOrTarball} from '../extractDocumentsFromNdjsonOrTarball.js'
+import {importStudioConfig} from '../importStudioConfig.js'
 import {
   createReporter,
   type WorkerChannel,
@@ -32,14 +33,6 @@ import {
   REFERENCE_INTEGRITY_BATCH_SIZE,
   shouldIncludeDocument,
 } from './validateDocumentsUtils.js'
-
-const mockStubs = stubs as Record<string, unknown>
-const mockedGlobalThis: Record<string, unknown> = globalThis
-for (const key in stubs) {
-  if (!(key in mockedGlobalThis)) {
-    mockedGlobalThis[key] = mockStubs[key]
-  }
-}
 
 interface AvailabilityResponse {
   omitted: {id: string; reason: 'existence' | 'permission'}[]
@@ -115,7 +108,7 @@ await main()
 process.exit()
 
 async function loadWorkspace() {
-  const workspaces = await getStudioConfig(workDir, {resolvePlugins: true})
+  const workspaces = await importStudioConfig(workDir)
 
   if (!workspaces || workspaces.length === 0) {
     throw new Error(`Configuration did not return any workspaces.`)
@@ -285,7 +278,7 @@ async function checkReferenceExistence({
 }
 
 async function main() {
-  // const cleanupBrowserEnvironment = mockBrowserEnvironment(workDir)
+  const cleanupBrowserEnvironment = await mockBrowserEnvironment(workDir)
 
   let cleanupDownloadedDocuments: (() => Promise<void>) | undefined
 
@@ -393,6 +386,6 @@ async function main() {
     report.stream.validation.end()
   } finally {
     await cleanupDownloadedDocuments?.()
-    // cleanupBrowserEnvironment()
+    cleanupBrowserEnvironment()
   }
 }
