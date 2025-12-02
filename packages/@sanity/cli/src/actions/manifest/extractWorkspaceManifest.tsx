@@ -42,7 +42,7 @@ import {
   isReference,
   isString,
   isType,
-} from './typeHelpers.js'
+} from './schemaTypeHelpers.js'
 import {
   type CreateWorkspaceManifest,
   type ManifestField,
