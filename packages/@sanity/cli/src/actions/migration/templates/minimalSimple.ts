@@ -4,7 +4,7 @@ export const minimalSimple = ({
 }: {
   documentTypes: string[]
   migrationName: string
-}) => `import {at, defineMigration, setIfMissing, unset} from 'sanity/migrate'
+}) => `import {at, defineMigration, setIfMissing, unset} from '@sanity/migrate'
 
 export default defineMigration({
   title: ${JSON.stringify(migrationName)},
