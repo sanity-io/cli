@@ -42,6 +42,8 @@ const baseConfig = {
         // temporary until exec is implemented
         'src/threads/registerBrowserEnv.ts',
       ],
+      // temporarily ignore unused exports until schema work is done
+      ignore: ['src/actions/manifest/extractManifest.ts', 'src/actions/manifest/types.ts'],
       oclif: {
         config: ['oclif.config.js'],
       },

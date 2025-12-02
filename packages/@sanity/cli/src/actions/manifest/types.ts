@@ -1,7 +1,6 @@
 import {type SanityDocumentLike} from '@sanity/types'
 import {type MediaLibraryConfig} from 'sanity'
 
-export const SANITY_WORKSPACE_SCHEMA_ID_PREFIX = '_.schemas'
 export const SANITY_WORKSPACE_SCHEMA_TYPE = 'system.schema'
 export const CURRENT_WORKSPACE_SCHEMA_VERSION = '2025-05-01'
 
@@ -86,9 +85,9 @@ export interface ManifestTitledValue {
   title?: string
 }
 
+type ManifestArrayMember = Omit<ManifestSchemaType, 'name'> & {name?: string}
+type ManifestReferenceMember = Omit<ManifestSchemaType, 'name'> & {name?: string}
 export type ManifestField = ManifestSchemaType & {fieldset?: string}
-export type ManifestArrayMember = Omit<ManifestSchemaType, 'name'> & {name?: string}
-export type ManifestReferenceMember = Omit<ManifestSchemaType, 'name'> & {name?: string}
 
 export interface ManifestValidationGroup {
   rules: ManifestValidationRule[]
@@ -113,9 +112,9 @@ export interface ManifestTool {
   type: string | null
 }
 
-export type DefaultWorkspaceSchemaId = `${typeof SANITY_WORKSPACE_SCHEMA_ID_PREFIX}.${string}`
-export type PrefixedWorkspaceSchemaId = `${DefaultWorkspaceSchemaId}.${string}`
-export type WorkspaceSchemaId = DefaultWorkspaceSchemaId | PrefixedWorkspaceSchemaId
+type DefaultWorkspaceSchemaId = `_.schemas.${string}`
+type PrefixedWorkspaceSchemaId = `${DefaultWorkspaceSchemaId}.${string}`
+type WorkspaceSchemaId = DefaultWorkspaceSchemaId | PrefixedWorkspaceSchemaId
 
 export interface StoredWorkspaceSchema extends SanityDocumentLike {
   _id: WorkspaceSchemaId
