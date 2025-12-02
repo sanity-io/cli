@@ -1,0 +1,39 @@
+import {
+  findStudioConfigPath,
+  getDefaultExport,
+  getEmptyAuth,
+  mockBrowserEnvironment,
+} from '@sanity/cli-core'
+import {getTsconfig} from 'get-tsconfig'
+import {firstValueFrom, of} from 'rxjs'
+import {resolveConfig} from 'sanity'
+import {tsImport} from 'tsx/esm/api'
+
+export async function importStudioConfig(rootPath: string) {
+  mockBrowserEnvironment(rootPath)
+
+  const tsconfig = getTsconfig(rootPath)
+  const configPath = await findStudioConfigPath(rootPath)
+
+  if (!configPath) {
+    throw new Error(`Failed to find config at "${configPath}"`)
+  }
+
+  let config = await tsImport(configPath, {
+    parentURL: import.meta.url,
+    tsconfig: tsconfig?.path ?? undefined,
+  })
+
+  config = getDefaultExport(config)
+
+  let workspaces = Array.isArray(config)
+    ? config
+    : [{...config, basePath: config.basePath || '/', name: config.name || 'default'}]
+
+  workspaces = workspaces.map((workspace) => ({
+    ...workspace,
+    auth: {state: of(getEmptyAuth())},
+  }))
+
+  return await firstValueFrom(resolveConfig(workspaces))
+}
