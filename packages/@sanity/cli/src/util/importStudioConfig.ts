@@ -16,24 +16,28 @@ export async function importStudioConfig(rootPath: string) {
   const configPath = await findStudioConfigPath(rootPath)
 
   if (!configPath) {
-    throw new Error(`Failed to find config at "${configPath}"`)
+    throw new Error(`Failed to find config in "${rootPath}"`)
   }
 
-  let config = await tsImport(configPath, {
-    parentURL: import.meta.url,
-    tsconfig: tsconfig?.path ?? undefined,
-  })
+  try {
+    let config = await tsImport(configPath, {
+      parentURL: import.meta.url,
+      tsconfig: tsconfig?.path ?? undefined,
+    })
 
-  config = getDefaultExport(config)
+    config = getDefaultExport(config)
 
-  let workspaces = Array.isArray(config)
-    ? config
-    : [{...config, basePath: config.basePath || '/', name: config.name || 'default'}]
+    let workspaces = Array.isArray(config)
+      ? config
+      : [{...config, basePath: config.basePath || '/', name: config.name || 'default'}]
 
-  workspaces = workspaces.map((workspace) => ({
-    ...workspace,
-    auth: {state: of(getEmptyAuth())},
-  }))
+    workspaces = workspaces.map((workspace) => ({
+      ...workspace,
+      auth: {state: of(getEmptyAuth())},
+    }))
 
-  return await firstValueFrom(resolveConfig(workspaces))
+    return await firstValueFrom(resolveConfig(workspaces))
+  } catch (err) {
+    throw new Error(`Failed to import config: ${err.message}`)
+  }
 }
