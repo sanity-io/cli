@@ -21,11 +21,7 @@ export async function execScript(options: ExecScriptOptions): Promise<void> {
 
   const resolvedScriptPath = path.resolve(scriptPath)
 
-  if (!(await fs.stat(resolvedScriptPath).catch(() => false))) {
-    throw new Error(`${resolvedScriptPath} does not exist`)
-  }
-
-  const cliPkgDir = await packageDirectory({cwd: __dirname})
+  const cliPkgDir = await packageDirectory({cwd: import.meta.dirname})
   if (!cliPkgDir) {
     throw new Error('Unable to resolve @sanity/cli module root')
   }
@@ -39,9 +35,22 @@ export async function execScript(options: ExecScriptOptions): Promise<void> {
     throw new Error('@sanity/cli module build error: missing threads directory')
   }
 
-  // Use tsx/register for TypeScript support instead of separate esbuild thread
-  const baseArgs = mockBrowserEnv ? ['--import', browserEnvPath] : ['-r', 'tsx/register']
-  const tokenArgs = withUserToken ? ['-r', configClientPath] : []
+  // Use tsx loader for TypeScript support in the spawned child process
+  // We need to resolve the tsx loader path from the CLI's node_modules since the child
+  // process will run from the user's script directory where tsx may not be installed.
+  let tsxLoaderPath: string
+  try {
+    // Resolve the tsx loader using Node's module resolution relative to package.json
+    const tsxPackageUrl = import.meta.resolve('tsx/package.json', import.meta.url)
+    tsxLoaderPath = new URL('dist/loader.mjs', tsxPackageUrl).pathname
+  } catch {
+    throw new Error('@sanity/cli not able to resolve tsx loader')
+  }
+
+  const baseArgs = mockBrowserEnv
+    ? ['--import', tsxLoaderPath, '--import', browserEnvPath]
+    : ['--import', tsxLoaderPath]
+  const tokenArgs = withUserToken ? ['--import', configClientPath] : []
 
   const nodeArgs = [...baseArgs, ...tokenArgs, resolvedScriptPath, ...extraArguments]
 
@@ -52,5 +61,15 @@ export async function execScript(options: ExecScriptOptions): Promise<void> {
     },
     stdio: 'inherit',
   })
-  proc.on('close', process.exit)
+  return new Promise<void>((resolve, reject) => {
+    proc.on('exit', (code, signal) => {
+      if (signal) reject(new Error(`Script terminated by signal: ${signal}`))
+      else if (code && code !== 0) reject(new Error(`Script exited with code: ${code}`))
+      else resolve()
+    })
+    proc.on('error', reject)
+    process.on('exit', () => proc.kill())
+    process.on('SIGINT', () => proc.kill('SIGINT'))
+    process.on('SIGTERM', () => proc.kill('SIGTERM'))
+  })
 }
