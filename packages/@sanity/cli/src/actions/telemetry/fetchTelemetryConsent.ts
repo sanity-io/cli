@@ -1,6 +1,6 @@
 import {createExpiringConfig, getGlobalCliClient, getUserConfig} from '@sanity/cli-core'
 
-import {type ValidApiConsentStatus} from './isValidApiConsentStatus.js'
+import {isValidApiConsentResponse, type ValidApiConsentStatus} from './isValidApiConsentStatus.js'
 import {telemetryDebug} from './telemetryDebug.js'
 
 export const TELEMETRY_CONSENT_CONFIG_KEY = 'telemetryConsent'
@@ -37,6 +37,7 @@ export async function fetchTelemetryConsent(): Promise<{
     },
     store: getUserConfig(),
     ttl: FIVE_MINUTES,
+    validateValue: isValidApiConsentResponse,
   })
 
   return telemetryConsentConfig.get()
