@@ -1,4 +1,4 @@
-import {findProjectRoot, getCliConfig} from '@sanity/cli-core'
+import {findProjectRootSync, getCliConfigSync} from '@sanity/cli-core'
 import {createClient, type SanityClient} from '@sanity/client'
 
 export interface CliClientOptions {
@@ -11,7 +11,7 @@ export interface CliClientOptions {
   useCdn?: boolean
 }
 
-export async function getCliClient(options: CliClientOptions = {}): Promise<SanityClient> {
+export function getCliClient(options: CliClientOptions = {}): SanityClient {
   if (typeof process !== 'object') {
     throw new TypeError('getCliClient() should only be called from node.js scripts')
   }
@@ -29,8 +29,8 @@ export async function getCliClient(options: CliClientOptions = {}): Promise<Sani
     return createClient({apiVersion, dataset, projectId, token, useCdn})
   }
 
-  const projectRoot = await findProjectRoot(cwd)
-  const cliConfig = await getCliConfig(projectRoot.directory)
+  const projectRoot = findProjectRootSync(cwd)
+  const cliConfig = getCliConfigSync(projectRoot.directory)
 
   if (!cliConfig) {
     throw new Error('Unable to resolve CLI configuration')

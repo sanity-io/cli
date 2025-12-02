@@ -21,25 +21,25 @@ describe('getCliClient', () => {
     process.env = originalProcessEnv
   })
 
-  test('should throw error if not called from node.js', async () => {
+  test('should throw error if not called from node.js', () => {
     const originalProcess = globalThis.process
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ;(globalThis as any).process = undefined
 
-    await expect(getCliClient()).rejects.toThrow(
+    expect(() => getCliClient()).toThrow(
       'getCliClient() should only be called from node.js scripts',
     )
 
     globalThis.process = originalProcess
   })
 
-  test('should use default apiVersion and useCdn when not provided', async () => {
+  test('should use default apiVersion and useCdn when not provided', () => {
     const options = {
       dataset: 'test-dataset',
       projectId: 'test-project',
     }
 
-    await getCliClient(options)
+    getCliClient(options)
 
     expect(createClient).toHaveBeenCalledWith({
       apiVersion: '2022-06-06',
@@ -51,7 +51,7 @@ describe('getCliClient', () => {
   })
 
   test('should load config from project root when projectId/dataset not provided', async () => {
-    const {findProjectRoot, getCliConfig} = await import('@sanity/cli-core')
+    const {findProjectRootSync, getCliConfigSync} = await import('@sanity/cli-core')
 
     const mockProjectRoot = {
       directory: '/test/project',
@@ -66,13 +66,13 @@ describe('getCliClient', () => {
       },
     }
 
-    vi.mocked(findProjectRoot).mockResolvedValueOnce(mockProjectRoot)
-    vi.mocked(getCliConfig).mockResolvedValueOnce(mockCliConfig)
+    vi.mocked(findProjectRootSync).mockReturnValueOnce(mockProjectRoot)
+    vi.mocked(getCliConfigSync).mockReturnValueOnce(mockCliConfig)
 
-    await getCliClient()
+    getCliClient()
 
-    expect(findProjectRoot).toHaveBeenCalledWith(process.cwd())
-    expect(getCliConfig).toHaveBeenCalledWith('/test/project')
+    expect(findProjectRootSync).toHaveBeenCalledWith(process.cwd())
+    expect(getCliConfigSync).toHaveBeenCalledWith('/test/project')
     expect(createClient).toHaveBeenCalledWith({
       apiVersion: '2022-06-06',
       dataset: 'config-dataset',
@@ -83,7 +83,7 @@ describe('getCliClient', () => {
   })
 
   test('should use SANITY_BASE_PATH env var as cwd if set', async () => {
-    const {findProjectRoot, getCliConfig} = await import('@sanity/cli-core')
+    const {findProjectRootSync, getCliConfigSync} = await import('@sanity/cli-core')
 
     process.env.SANITY_BASE_PATH = '/custom/path'
 
@@ -100,16 +100,16 @@ describe('getCliClient', () => {
       },
     }
 
-    vi.mocked(findProjectRoot).mockResolvedValueOnce(mockProjectRoot)
-    vi.mocked(getCliConfig).mockResolvedValueOnce(mockCliConfig)
+    vi.mocked(findProjectRootSync).mockReturnValueOnce(mockProjectRoot)
+    vi.mocked(getCliConfigSync).mockReturnValueOnce(mockCliConfig)
 
-    await getCliClient()
+    getCliClient()
 
-    expect(findProjectRoot).toHaveBeenCalledWith('/custom/path')
+    expect(findProjectRootSync).toHaveBeenCalledWith('/custom/path')
   })
 
   test('should use provided cwd option', async () => {
-    const {findProjectRoot, getCliConfig} = await import('@sanity/cli-core')
+    const {findProjectRootSync, getCliConfigSync} = await import('@sanity/cli-core')
 
     const mockProjectRoot = {
       directory: '/provided/path',
@@ -124,16 +124,16 @@ describe('getCliClient', () => {
       },
     }
 
-    vi.mocked(findProjectRoot).mockResolvedValueOnce(mockProjectRoot)
-    vi.mocked(getCliConfig).mockResolvedValueOnce(mockCliConfig)
+    vi.mocked(findProjectRootSync).mockReturnValueOnce(mockProjectRoot)
+    vi.mocked(getCliConfigSync).mockReturnValueOnce(mockCliConfig)
 
-    await getCliClient({cwd: '/provided/path'})
+    getCliClient({cwd: '/provided/path'})
 
-    expect(findProjectRoot).toHaveBeenCalledWith('/provided/path')
+    expect(findProjectRootSync).toHaveBeenCalledWith('/provided/path')
   })
 
   test('should throw error if CLI config is not found', async () => {
-    const {findProjectRoot, getCliConfig} = await import('@sanity/cli-core')
+    const {findProjectRootSync, getCliConfigSync} = await import('@sanity/cli-core')
 
     const mockProjectRoot = {
       directory: '/test/project',
@@ -141,14 +141,14 @@ describe('getCliClient', () => {
       type: 'studio' as const,
     }
 
-    vi.mocked(findProjectRoot).mockResolvedValueOnce(mockProjectRoot)
-    vi.mocked(getCliConfig).mockResolvedValueOnce(null as unknown as CliConfig)
+    vi.mocked(findProjectRootSync).mockReturnValueOnce(mockProjectRoot)
+    vi.mocked(getCliConfigSync).mockReturnValueOnce(null as unknown as CliConfig)
 
-    await expect(getCliClient()).rejects.toThrow('Unable to resolve CLI configuration')
+    expect(() => getCliClient()).toThrow('Unable to resolve CLI configuration')
   })
 
   test('should throw error if projectId is missing from config', async () => {
-    const {findProjectRoot, getCliConfig} = await import('@sanity/cli-core')
+    const {findProjectRootSync, getCliConfigSync} = await import('@sanity/cli-core')
 
     const mockProjectRoot = {
       directory: '/test/project',
@@ -162,16 +162,16 @@ describe('getCliClient', () => {
       },
     }
 
-    vi.mocked(findProjectRoot).mockResolvedValueOnce(mockProjectRoot)
-    vi.mocked(getCliConfig).mockResolvedValueOnce(mockCliConfig)
+    vi.mocked(findProjectRootSync).mockReturnValueOnce(mockProjectRoot)
+    vi.mocked(getCliConfigSync).mockReturnValueOnce(mockCliConfig)
 
-    await expect(getCliClient()).rejects.toThrow(
+    expect(() => getCliClient()).toThrow(
       'Unable to resolve project ID/dataset from CLI configuration',
     )
   })
 
   test('should throw error if dataset is missing from config', async () => {
-    const {findProjectRoot, getCliConfig} = await import('@sanity/cli-core')
+    const {findProjectRootSync, getCliConfigSync} = await import('@sanity/cli-core')
 
     const mockProjectRoot = {
       directory: '/test/project',
@@ -185,15 +185,15 @@ describe('getCliClient', () => {
       },
     }
 
-    vi.mocked(findProjectRoot).mockResolvedValueOnce(mockProjectRoot)
-    vi.mocked(getCliConfig).mockResolvedValueOnce(mockCliConfig)
+    vi.mocked(findProjectRootSync).mockReturnValueOnce(mockProjectRoot)
+    vi.mocked(getCliConfigSync).mockReturnValueOnce(mockCliConfig)
 
-    await expect(getCliClient()).rejects.toThrow(
+    expect(() => getCliClient()).toThrow(
       'Unable to resolve project ID/dataset from CLI configuration',
     )
   })
 
-  test('should use token from __internal__getToken', async () => {
+  test('should use token from __internal__getToken', () => {
     getCliClient.__internal__getToken = () => 'internal-token'
 
     const options = {
@@ -201,7 +201,7 @@ describe('getCliClient', () => {
       projectId: 'test-project',
     }
 
-    await getCliClient(options)
+    getCliClient(options)
 
     expect(createClient).toHaveBeenCalledWith({
       apiVersion: '2022-06-06',
@@ -215,7 +215,7 @@ describe('getCliClient', () => {
     getCliClient.__internal__getToken = () => undefined
   })
 
-  test('should prioritize explicit token option over __internal__getToken', async () => {
+  test('should prioritize explicit token option over __internal__getToken', () => {
     getCliClient.__internal__getToken = () => 'internal-token'
 
     const options = {
@@ -224,7 +224,7 @@ describe('getCliClient', () => {
       token: 'explicit-token',
     }
 
-    await getCliClient(options)
+    getCliClient(options)
 
     expect(createClient).toHaveBeenCalledWith({
       apiVersion: '2022-06-06',

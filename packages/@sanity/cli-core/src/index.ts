@@ -1,6 +1,8 @@
 export * from './config/cli/getCliConfig.js'
+export * from './config/cli/getCliConfigSync.js'
 export {type CliConfig, type ReactCompilerConfig, type UserViteConfig} from './config/cli/types.js'
 export * from './config/findProjectRoot.js'
+export * from './config/findProjectRootSync.js'
 export * from './config/studio/getStudioConfig.js'
 export * from './config/util/findConfigsPaths.js'
 export * from './config/util/findStudioConfigPath.js'
