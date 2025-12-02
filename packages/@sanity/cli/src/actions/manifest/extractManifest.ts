@@ -1,10 +1,8 @@
 import {createHash} from 'node:crypto'
 import {mkdir, writeFile} from 'node:fs/promises'
-import {dirname, join, resolve} from 'node:path'
-import {fileURLToPath} from 'node:url'
+import {join, resolve} from 'node:path'
 
 import {getTimer, Output, spinner} from '@sanity/cli-core'
-import {readPackageUp} from 'read-package-up'
 import {type Workspace} from 'sanity'
 
 import {type ExtractManifestCommand} from '../../commands/manifest/extract'
@@ -58,18 +56,11 @@ export async function extractManifestSafe(
 
 async function extractManifest(options: ExtractManifestOptions): Promise<void> {
   const {flags, workDir} = options
-
   const defaultOutputDir = resolve(join(workDir, 'dist'))
   const outputDir = resolve(defaultOutputDir)
   const defaultStaticPath = join(outputDir, 'static')
   const staticPath = `.${flags.path ?? defaultStaticPath}`
   const path = join(staticPath, MANIFEST_FILENAME)
-  const cwd = dirname(fileURLToPath(import.meta.url))
-
-  const rootPkgPath = (await readPackageUp({cwd}))?.path
-  if (!rootPkgPath) {
-    throw new Error('Could not find root directory for `sanity` package')
-  }
 
   const timer = getTimer()
   timer.start(CREATE_TIMER)

@@ -106,7 +106,7 @@ export function extractWorkspaceManifest(workspaces: Workspace[]): CreateWorkspa
  * Extracts all serializable properties from userland schema types,
  * so they best-effort can be used as definitions for Schema.compile
 . */
-export function extractManifestSchemaTypes(schema: Schema): ManifestSchemaType[] {
+function extractManifestSchemaTypes(schema: Schema): ManifestSchemaType[] {
   const typeNames = schema.getTypeNames()
   const context = {schema}
 
@@ -470,7 +470,7 @@ function ensureConditional<const Key extends string>(key: Key, value: unknown) {
   return {}
 }
 
-export function transformBlockType(
+function transformBlockType(
   blockType: SchemaType,
   context: Context,
 ): Pick<ManifestSchemaType, 'lists' | 'marks' | 'of' | 'styles'> | Record<string, never> {
@@ -554,7 +554,7 @@ const extractManifestTools = (tools: Workspace['tools']): ManifestTool[] =>
     } = tool as Workspace['tools'][number] & {__internalApplicationType: string}
     return {
       icon: resolveIcon({
-        icon,
+        icon: icon as SchemaIconProps['icon'],
         title,
       }),
       name,
