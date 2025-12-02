@@ -3,8 +3,8 @@ import {tsImport} from 'tsx/esm/api'
 
 import {debug} from '../../debug.js'
 import {tsxWorkerTask} from '../../loaders/tsx/tsxWorkerTask.js'
-import {getDefaultExport} from '../../util/getDefaultExport.js'
 import {NotFoundError} from '../../util/NotFoundError.js'
+import {tryGetDefaultExport} from '../../util/tryGetDefaultExport.js'
 import {findPathForFiles} from '../util/findConfigsPaths.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types.js'
@@ -61,7 +61,11 @@ export async function getCliConfig(rootPath: string): Promise<CliConfig> {
       parentURL: import.meta.url,
       tsconfig: tsconfig?.path ?? undefined,
     })
-    cliConfig = getDefaultExport(cliConfig) as CliConfig | undefined
+    cliConfig = tryGetDefaultExport(cliConfig) as CliConfig | undefined
+
+    if (!cliConfig) {
+      throw new Error('Invalid CLI config structure')
+    }
   }
 
   const {data, error, success} = cliConfigSchema.safeParse(cliConfig)

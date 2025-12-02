@@ -1,8 +1,8 @@
 import {
   findStudioConfigPath,
-  getDefaultExport,
   getEmptyAuth,
   mockBrowserEnvironment,
+  tryGetDefaultExport,
 } from '@sanity/cli-core'
 import {getTsconfig} from 'get-tsconfig'
 import {firstValueFrom, of} from 'rxjs'
@@ -25,7 +25,11 @@ export async function importStudioConfig(rootPath: string) {
       tsconfig: tsconfig?.path ?? undefined,
     })
 
-    config = getDefaultExport(config)
+    config = tryGetDefaultExport(config)
+
+    if (!config) {
+      throw new Error('Invalid CLI config structure')
+    }
 
     let workspaces = Array.isArray(config)
       ? config
