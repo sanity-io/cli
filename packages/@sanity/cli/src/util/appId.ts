@@ -6,22 +6,22 @@ interface Options {
   output: Output
 }
 
-function _getAppId(cliConfig: CliConfig): string | undefined {
+function getDeploymentAppId(cliConfig: CliConfig): string | undefined {
   const id = cliConfig?.deployment?.appId
   return id
 }
 
-function _getDeprecatedAppId(cliConfig: CliConfig): string | undefined {
+function getDeprecatedAppId(cliConfig: CliConfig): string | undefined {
   const id = cliConfig?.app?.id
   return id
 }
 
-function _hasNewAppId(cliConfig: CliConfig) {
-  return Boolean(_getAppId(cliConfig))
+function hasNewAppId(cliConfig: CliConfig) {
+  return Boolean(getDeploymentAppId(cliConfig))
 }
 
-function _hasDeprecatedAppId(cliConfig: CliConfig) {
-  return Boolean(_getDeprecatedAppId(cliConfig))
+function hasDeprecatedAppId(cliConfig: CliConfig) {
+  return Boolean(getDeprecatedAppId(cliConfig))
 }
 
 /**
@@ -30,8 +30,8 @@ function _hasDeprecatedAppId(cliConfig: CliConfig) {
  * @internal
  */
 export function checkForDeprecatedAppId({cliConfig, output}: Options): void {
-  const hasNew = _hasNewAppId(cliConfig)
-  const hasOld = _hasDeprecatedAppId(cliConfig)
+  const hasNew = hasNewAppId(cliConfig)
+  const hasOld = hasDeprecatedAppId(cliConfig)
 
   // Throw an error if both the old and new app ID configs are found
   if (hasOld && hasNew) {
@@ -51,9 +51,9 @@ Please remove app.id from your sanity.cli.js or sanity.cli.ts file.`,
       `${chalk.bold('The `app.id` config has moved to `deployment.appId`.')}
 
 Please update \`sanity.cli.ts\` or \`sanity.cli.js\` and move:
-${chalk.red(`app: {id: "${_getDeprecatedAppId(cliConfig)}", ... }`)}
+${chalk.red(`app: {id: "${getDeprecatedAppId(cliConfig)}", ... }`)}
 to
-${chalk.green(`deployment: {appId: "${_getDeprecatedAppId(cliConfig)}", ... }`)}
+${chalk.green(`deployment: {appId: "${getDeprecatedAppId(cliConfig)}", ... }`)}
 `,
     )
   }
@@ -65,15 +65,15 @@ ${chalk.green(`deployment: {appId: "${_getDeprecatedAppId(cliConfig)}", ... }`)}
  * @internal
  */
 export function getAppId(cliConfig: CliConfig): string | undefined {
-  const hasNew = _hasNewAppId(cliConfig)
-  const hasOld = _hasDeprecatedAppId(cliConfig)
+  const hasNew = hasNewAppId(cliConfig)
+  const hasOld = hasDeprecatedAppId(cliConfig)
 
   if (hasNew) {
-    return _getAppId(cliConfig)
+    return getDeploymentAppId(cliConfig)
   }
 
   if (hasOld) {
-    return _getDeprecatedAppId(cliConfig)
+    return getDeprecatedAppId(cliConfig)
   }
 
   return undefined
