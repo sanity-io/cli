@@ -10,12 +10,13 @@ import {
   type ValidationWorkerChannel,
 } from '../../util/validation/validateDocuments.js'
 import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels.js'
+import {Level} from './types.js'
 
 interface ValidateDocumentsOptions<TReturn = unknown> {
   clientConfig: ClientConfig
 
   dataset?: string // override
-  level?: 'error' | 'info' | 'warning'
+  level?: Level
   maxCustomValidationConcurrency?: number
   maxFetchConcurrency?: number
   ndjsonFilePath?: string

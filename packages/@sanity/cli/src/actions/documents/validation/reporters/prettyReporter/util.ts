@@ -3,12 +3,12 @@ import {isatty} from 'node:tty'
 import {logSymbols} from '@sanity/cli-core'
 import {type ValidationMarker} from '@sanity/types'
 
-export type Level = ValidationMarker['level']
+import {Level} from '../../../types'
 
 export interface DocumentValidationResult {
   documentId: string
   documentType: string
-  level: ValidationMarker['level']
+  level: Level
   markers: ValidationMarker[]
   revision: string
 

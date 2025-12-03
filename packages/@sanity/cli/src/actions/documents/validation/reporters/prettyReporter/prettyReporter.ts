@@ -1,11 +1,11 @@
 import {spinner} from '@sanity/cli-core'
 
 import {type BuiltInValidationReporter} from '../../../../../commands/documents/validate.js'
+import {Level} from '../../../types'
 import {formatDocumentValidation} from './formatDocumentValidation.js'
 import {
   count,
   type DocumentValidationResult,
-  type Level,
   levelValues,
   percent,
   seconds,

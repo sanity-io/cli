@@ -3,7 +3,8 @@ import {type Path, type ValidationMarker} from '@sanity/types'
 import chalk from 'chalk'
 
 import {convertToTree, formatTree, maxKeyLength, type Tree} from '../../../../../util/tree.js'
-import {type DocumentValidationResult, isTty, type Level, levelValues} from './util.js'
+import {Level} from '../../../types'
+import {type DocumentValidationResult, isTty, levelValues} from './util.js'
 
 interface FormatDocumentValidationOptions extends DocumentValidationResult {
   basePath?: string
