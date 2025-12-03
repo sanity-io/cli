@@ -3,7 +3,7 @@ import chalk from 'chalk'
 
 import {isDefined} from '../manifest/schemaTypeHelpers.js'
 import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
-import {createManifestExtractor, ensureManifestExtractSatisfied} from './utils/mainfestExtractor.js'
+import {createManifestExtractor, ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {createManifestReader} from './utils/manifestReader.js'
 import {createSchemaApiClient} from './utils/schemaApiClient.js'
 import {getDatasetsOutString, getStringList} from './utils/schemaStoreOutStrings.js'
@@ -116,7 +116,10 @@ export async function deleteSchemaAction(
         if (error instanceof DeleteIdError) {
           output.error(
             chalk.red(
-              `Failed to delete schema "${error.id}" in dataset "${error.dataset}":\n${error.message}`,
+              [
+                `Failed to delete schema "${error.id}" in dataset "${error.dataset}":`,
+                error.message,
+              ].join('\n'),
             ),
           )
           if (verbose) output.error(error)

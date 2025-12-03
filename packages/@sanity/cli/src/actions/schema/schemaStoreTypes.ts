@@ -1,6 +1,6 @@
 import {type CliApiClient, type CliOutputter} from '@sanity/cli'
 
-import {type ManifestExtractor} from './utils/mainfestExtractor'
+import {type ManifestExtractor} from './utils/manifestExtractor'
 import {type ManifestJsonReader} from './utils/manifestReader'
 
 export interface SchemaStoreContext {

@@ -31,7 +31,7 @@ function uniqBy<T>(array: T[], key: keyof T): T[] {
 }
 
 export const validForIdChars = 'a-zA-Z0-9._-'
-export const validForIdPattern = new RegExp(`^[${validForIdChars}]+$`, 'g')
+export const validForIdPattern = new RegExp(`^[${validForIdChars}]+$`)
 
 const requiredInId = SANITY_WORKSPACE_SCHEMA_TYPE.replaceAll(/[.]/g, String.raw`\.`)
 const idPattern = new RegExp(
