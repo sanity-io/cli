@@ -5,7 +5,7 @@ export const stringToPTE = ({
   documentTypes: string[]
   migrationName: string
 }) => `import {pathsAreEqual, stringToPath} from 'sanity'
-import {defineMigration, set} from 'sanity/migrate'
+import {defineMigration, set} from '@sanity/migrate'
 
 const targetPath = stringToPath('some.path')
 

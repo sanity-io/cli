@@ -39,6 +39,10 @@ const baseConfig = {
         'src/commands/**/*.ts',
         // Worker files
         'src/**/*.worker.ts',
+        // temporary until exec is implemented
+        'src/threads/registerBrowserEnv.ts',
+        // temporary until manifest extract
+        'src/util/importStudioConfig.ts',
       ],
       oclif: {
         config: ['oclif.config.js'],

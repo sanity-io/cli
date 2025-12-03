@@ -1,20 +1,14 @@
 import {pathToFileURL} from 'node:url'
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {createClient} from '@sanity/client'
 import {moduleResolve} from 'import-meta-resolve'
 import {z} from 'zod'
 
+import {getEmptyAuth} from '../../util/getEmptyAuth.js'
 import {safeStructuredClone} from '../../util/safeStructuredClone.js'
 
 if (isMainThread || !parentPort) {
   throw new Error('Should only be run in a worker!')
-}
-
-const EMPTY_AUTH_STATE = {
-  authenticated: false,
-  client: getDummyClient(),
-  currentUser: null,
 }
 
 const {configPath, resolvePlugins} = z
@@ -46,7 +40,7 @@ if (resolvePlugins) {
   // users' logged in state, for instance - so let's disable the auth implementation.
   const workspaces = Array.isArray(config) ? config : [config]
   workspaces.map((workspace) => {
-    workspace.auth = {state: of(EMPTY_AUTH_STATE)}
+    workspace.auth = {state: of(getEmptyAuth())}
   })
 
   config = await firstValueFrom(resolveConfig(config))
@@ -59,13 +53,3 @@ parentPort.postMessage(safeStructuredClone(config))
 setImmediate(() => {
   process.exit(1)
 })
-
-function getDummyClient() {
-  return createClient({
-    apiHost: 'http://localhost',
-    apiVersion: '2025-02-01',
-    projectId: 'unused',
-    requestTagPrefix: 'sanity.cli',
-    useCdn: false,
-  })
-}

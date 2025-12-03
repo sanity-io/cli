@@ -10,7 +10,7 @@ describe('#renameField', () => {
     })
 
     expect(renameFieldTemplate).toMatchInlineSnapshot(`
-      "import {defineMigration, at, setIfMissing, unset} from 'sanity/migrate'
+      "import {defineMigration, at, setIfMissing, unset} from '@sanity/migrate'
 
       const from = 'oldFieldName'
       const to = 'newFieldName'
@@ -38,7 +38,7 @@ describe('#renameField', () => {
     })
 
     expect(renameFieldTemplate).toMatchInlineSnapshot(`
-      "import {defineMigration, at, setIfMissing, unset} from 'sanity/migrate'
+      "import {defineMigration, at, setIfMissing, unset} from '@sanity/migrate'
 
       const from = 'oldFieldName'
       const to = 'newFieldName'
