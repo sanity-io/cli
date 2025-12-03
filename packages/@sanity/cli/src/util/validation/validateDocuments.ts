@@ -14,7 +14,7 @@ import {
 } from '@sanity/client'
 import {type ValidationContext, type ValidationMarker} from '@sanity/types'
 import pMap from 'p-map'
-import {createSchema, isRecord, validateDocument, Workspace} from 'sanity'
+import {isRecord, validateDocument, Workspace} from 'sanity'
 
 import {extractDocumentsFromNdjsonOrTarball} from '../extractDocumentsFromNdjsonOrTarball.js'
 import {importStudioConfig} from '../importStudioConfig.js'
@@ -114,10 +114,10 @@ async function loadWorkspace() {
     throw new Error(`Configuration did not return any workspaces.`)
   }
 
-  let _workspace
+  let selectedWorkspace
   if (workspaceName) {
-    _workspace = workspaces.find((w) => w.name === workspaceName)
-    if (!_workspace) {
+    selectedWorkspace = workspaces.find((w) => w.name === workspaceName)
+    if (!selectedWorkspace) {
       throw new Error(`Could not find any workspaces with name \`${workspaceName}\``)
     }
   } else {
@@ -126,14 +126,10 @@ async function loadWorkspace() {
         "Multiple workspaces found. Please specify which workspace to use with '--workspace'.",
       )
     }
-    _workspace = workspaces[0]
+    selectedWorkspace = workspaces[0]
   }
 
-  const workspace = _workspace as unknown as Workspace
-  if (workspace.schema?._original) {
-    const newSchema = createSchema(workspace.schema._original)
-    workspace.schema = newSchema
-  }
+  const workspace = selectedWorkspace as unknown as Workspace
 
   const client = createClient({
     ...clientConfig,
