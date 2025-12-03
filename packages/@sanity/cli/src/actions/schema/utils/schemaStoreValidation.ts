@@ -1,17 +1,39 @@
 import {type CliOutputter} from '@sanity/cli'
-import uniqBy from 'lodash/uniqBy'
 
-import {isDefined} from '../../../../manifest/manifestTypeHelpers'
-import {SANITY_WORKSPACE_SCHEMA_TYPE} from '../../../../manifest/manifestTypes'
-import {type DeleteSchemaFlags} from '../deleteSchemaAction'
-import {type DeploySchemasFlags} from '../deploySchemasAction'
-import {type SchemaListFlags} from '../listSchemasAction'
-import {resolveManifestDirectory} from './manifestReader'
+import {isDefined} from '../../manifest/schemaTypeHelpers.js'
+import {SANITY_WORKSPACE_SCHEMA_TYPE} from '../../manifest/types.js'
+import {type DeleteSchemaFlags} from '../deleteSchemaAction.js'
+import {resolveManifestDirectory} from './manifestReader.js'
+
+// TODO: These types will be imported from their respective files when migrated
+export interface DeploySchemasFlags extends SchemaStoreCommonFlags {
+  'id-prefix'?: string
+  'schema-required'?: boolean
+  workspace?: string
+}
+
+export interface SchemaListFlags extends SchemaStoreCommonFlags {
+  id?: string
+  json?: boolean
+}
+
+// Native implementation instead of lodash/uniqBy
+function uniqBy<T>(array: T[], key: keyof T): T[] {
+  const seen = new Set()
+  return array.filter((item) => {
+    const value = item[key]
+    if (seen.has(value)) {
+      return false
+    }
+    seen.add(value)
+    return true
+  })
+}
 
 export const validForIdChars = 'a-zA-Z0-9._-'
 export const validForIdPattern = new RegExp(`^[${validForIdChars}]+$`, 'g')
 
-const requiredInId = SANITY_WORKSPACE_SCHEMA_TYPE.replace(/[.]/g, '\\.')
+const requiredInId = SANITY_WORKSPACE_SCHEMA_TYPE.replaceAll(/[.]/g, String.raw`\.`)
 const idPattern = new RegExp(
   `^(?:[${validForIdChars}]+?\\.)?${requiredInId}\\.([${validForIdChars}]+)$`,
 )
@@ -46,9 +68,9 @@ function parseCommonFlags(
 
   const fullManifestDir = resolveManifestDirectory(context.workDir, manifestDir)
   return {
+    extractManifest,
     manifestDir: fullManifestDir,
     verbose,
-    extractManifest,
   }
 }
 
@@ -61,7 +83,7 @@ export function parseDeploySchemasConfig(flags: DeploySchemasFlags, context: {wo
   const schemaRequired = !!flags['schema-required']
 
   assertNoErrors(errors)
-  return {...commonFlags, workspaceName, idPrefix, schemaRequired}
+  return {...commonFlags, idPrefix, schemaRequired, workspaceName}
 }
 
 export function parseListSchemasConfig(flags: SchemaListFlags, context: {workDir: string}) {
@@ -72,7 +94,7 @@ export function parseListSchemasConfig(flags: SchemaListFlags, context: {workDir
   const json = !!flags.json
 
   assertNoErrors(errors)
-  return {...commonFlags, json, id}
+  return {...commonFlags, id, json}
 }
 
 export function parseDeleteSchemasConfig(flags: DeleteSchemaFlags, context: {workDir: string}) {
@@ -87,7 +109,7 @@ export function parseDeleteSchemasConfig(flags: DeleteSchemaFlags, context: {wor
 }
 
 function assertNoErrors(errors: string[]) {
-  if (errors.length) {
+  if (errors.length > 0) {
     throw new FlagValidationError(
       `Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`,
     )
@@ -96,7 +118,7 @@ function assertNoErrors(errors: string[]) {
 
 export function parseIds(flags: {ids?: unknown}, errors: string[]): WorkspaceSchemaId[] {
   const parsedIds = parseNonEmptyString(flags, 'ids', errors)
-  if (errors.length) {
+  if (errors.length > 0) {
     return []
   }
 
@@ -105,13 +127,13 @@ export function parseIds(flags: {ids?: unknown}, errors: string[]): WorkspaceSch
     .map((id) => id.trim())
     .filter((id) => !!id)
     .map((id) => parseWorkspaceSchemaId(id, errors))
-    .filter(isDefined)
+    .filter((item) => isDefined(item))
 
   const uniqueIds = uniqBy(ids, 'schemaId' satisfies keyof (typeof ids)[number])
   if (uniqueIds.length < ids.length) {
     errors.push(`ids contains duplicates`)
   }
-  if (!errors.length && !uniqueIds.length) {
+  if (errors.length === 0 && uniqueIds.length === 0) {
     errors.push(`ids contains no valid id strings`)
   }
   return uniqueIds
@@ -122,25 +144,25 @@ export function parseId(flags: {id?: unknown}, errors: string[]) {
   if (id) {
     return parseWorkspaceSchemaId(id, errors)?.schemaId
   }
-  return undefined
+  return
 }
 
 export function parseWorkspaceSchemaId(id: string, errors: string[]) {
   const trimmedId = id.trim()
 
-  if (!trimmedId.match(validForIdPattern)) {
+  if (!validForIdPattern.test(trimmedId)) {
     errors.push(`id can only contain characters in [${validForIdChars}] but found: "${trimmedId}"`)
-    return undefined
+    return
   }
 
   if (trimmedId.startsWith('-')) {
     errors.push(`id cannot start with - (dash) but found: "${trimmedId}"`)
-    return undefined
+    return
   }
 
-  if (trimmedId.match(/\.\./g)) {
+  if (/\.\./g.test(trimmedId)) {
     errors.push(`id cannot have consecutive . (period) characters, but found: "${trimmedId}"`)
-    return undefined
+    return
   }
 
   const match = trimmedId.match(idPattern)
@@ -149,7 +171,7 @@ export function parseWorkspaceSchemaId(id: string, errors: string[]) {
     errors.push(
       `id must end with ${SANITY_WORKSPACE_SCHEMA_TYPE}.<workspaceName> but found: "${trimmedId}"`,
     )
-    return undefined
+    return
   }
   return {
     schemaId: trimmedId,
@@ -173,34 +195,34 @@ function parseManifestDir(flags: {'manifest-dir'?: unknown}, errors: string[]) {
 
 export function parseIdPrefix(flags: {'id-prefix'?: unknown}, errors: string[]) {
   if (flags['id-prefix'] === undefined) {
-    return undefined
+    return
   }
 
   const idPrefix = parseNonEmptyString(flags, 'id-prefix', errors)
-  if (errors.length) {
-    return undefined
+  if (errors.length > 0) {
+    return
   }
 
   if (idPrefix.endsWith('.')) {
     errors.push(`id-prefix argument cannot end with . (period), but was: "${idPrefix}"`)
-    return undefined
+    return
   }
 
-  if (!idPrefix.match(validForIdPattern)) {
+  if (!validForIdPattern.test(idPrefix)) {
     errors.push(
       `id-prefix can only contain _id compatible characters [${validForIdChars}], but was: "${idPrefix}"`,
     )
-    return undefined
+    return
   }
 
   if (idPrefix.startsWith('-')) {
     errors.push(`id-prefix cannot start with - (dash) but was: "${idPrefix}"`)
-    return undefined
+    return
   }
 
-  if (idPrefix.match(/\.\./g)) {
+  if (/\.\./g.test(idPrefix)) {
     errors.push(`id-prefix cannot have consecutive . (period) characters, but was: "${idPrefix}"`)
-    return undefined
+    return
   }
 
   return idPrefix

@@ -4,11 +4,12 @@ import {type ManifestExtractor} from './utils/mainfestExtractor'
 import {type ManifestJsonReader} from './utils/manifestReader'
 
 export interface SchemaStoreContext {
-  output: CliOutputter
   apiClient: CliApiClient
-  workDir: string
-  jsonReader?: ManifestJsonReader
   manifestExtractor: ManifestExtractor
+  output: CliOutputter
+  workDir: string
+
+  jsonReader?: ManifestJsonReader
 }
 
 /**
@@ -28,4 +29,4 @@ export interface SchemaStoreContext {
  * Invalid flags will always throw.
  *
  */
-export type SchemaStoreActionResult = 'success' | 'failure'
+export type SchemaStoreActionResult = 'failure' | 'success'
