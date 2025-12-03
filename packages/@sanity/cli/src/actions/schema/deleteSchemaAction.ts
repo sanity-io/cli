@@ -76,7 +76,7 @@ export async function deleteSchemaAction(
       return ids.map(async ({schemaId}): Promise<DeleteResult> => {
         try {
           const deletedSchema = await client.withConfig({dataset: targetDataset}).delete(schemaId)
-          return {dataset: targetDataset, deleted: deletedSchema.results.length, schemaId}
+          return {dataset: targetDataset, deleted: deletedSchema.results.length > 0, schemaId}
         } catch (err) {
           throw new DeleteIdError(schemaId, targetDataset, {cause: err})
         }
@@ -119,13 +119,15 @@ export async function deleteSchemaAction(
       }),
   )
 
-  const success = deletedIds.length === ids.length
+  // Compare unique schema IDs deleted vs requested (not total deletions across datasets)
+  const uniqueDeletedSchemaIds = uniq(deletedIds.map(({schemaId}) => schemaId))
+  const success = uniqueDeletedSchemaIds.length === ids.length
   if (success) {
-    output.log(`Successfully deleted ${deletedIds.length}/${ids.length} schemas`)
+    output.log(`Successfully deleted ${uniqueDeletedSchemaIds.length}/${ids.length} schemas`)
   } else {
     output.error(
       [
-        `Deleted ${deletedIds.length}/${ids.length} schemas.`,
+        `Deleted ${uniqueDeletedSchemaIds.length}/${ids.length} schemas.`,
         deletedIds.length > 0
           ? `Successfully deleted ids:\n${deletedIds
               .map(

@@ -45,17 +45,21 @@ describe('deleteSchemaAction', () => {
   let mockClientWithConfig: {
     config: ReturnType<typeof vi.fn>
     delete: ReturnType<typeof vi.fn>
+    withConfig: ReturnType<typeof vi.fn>
   }
 
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks()
 
-    // Setup client with config mock
+    // Setup client with config mock - needs withConfig for chaining
     mockClientWithConfig = {
       config: vi.fn().mockReturnValue({dataset: 'production', projectId: 'test-project'}),
       delete: vi.fn().mockResolvedValue({results: [{id: 'test-id'}]}),
+      withConfig: vi.fn(),
     }
+    // Make withConfig return itself for chaining
+    mockClientWithConfig.withConfig.mockReturnValue(mockClientWithConfig)
 
     // Setup API client to return a client that has withConfig
     mockApiClient.mockResolvedValue({
@@ -104,6 +108,7 @@ describe('deleteSchemaAction', () => {
     expect(result).toBe('success')
     expect(mockOutput.log).toHaveBeenCalledWith('Successfully deleted 1/1 schemas')
     expect(mockClientWithConfig.delete).toHaveBeenCalledWith('system.schema.default')
+    expect(mockClientWithConfig.delete).toHaveBeenCalledTimes(2) // Called once per dataset
   })
 
   test('successfully deletes multiple schemas', async () => {
@@ -240,18 +245,18 @@ describe('deleteSchemaAction', () => {
     expect(mockOutput.error).toHaveBeenCalledWith(expect.any(Error))
   })
 
-  test('returns failure when manifest extraction fails with schemaRequired', async () => {
+  test('throws error when manifest extraction fails with schemaRequired', async () => {
     mockManifestExtractor.mockRejectedValue(new Error('Manifest extraction failed'))
 
-    const result = await deleteSchemaAction(
-      {
-        'extract-manifest': true,
-        ids: 'system.schema.default',
-      },
-      context,
-    )
-
-    expect(result).toBe('failure')
+    await expect(
+      deleteSchemaAction(
+        {
+          'extract-manifest': true,
+          ids: 'system.schema.default',
+        },
+        context,
+      ),
+    ).rejects.toThrow('Manifest extraction failed')
   })
 
   test('filters workspaces by projectId mismatch', async () => {
