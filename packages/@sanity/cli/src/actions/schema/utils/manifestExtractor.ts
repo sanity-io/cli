@@ -1,4 +1,4 @@
-import {type CliCommandContext, type CliOutputter} from '@sanity/cli'
+import {type Output} from '@sanity/cli-core'
 import chalk from 'chalk'
 
 import {extractManifestSafe} from '../../manifest/extractManifest.js'
@@ -10,7 +10,7 @@ export async function ensureManifestExtractSatisfied(args: {
   extractManifest: boolean
   manifestDir: string
   manifestExtractor: (manifestDir: string) => Promise<void>
-  output: CliOutputter
+  output: Output
   schemaRequired: boolean
 }) {
   const {extractManifest, manifestDir, manifestExtractor, output, schemaRequired} = args
@@ -25,16 +25,20 @@ export async function ensureManifestExtractSatisfied(args: {
     if (schemaRequired || err instanceof FlagValidationError) {
       throw err
     } else {
-      output.print(chalk.gray(`↳ Failed to extract manifest:\n  ${err.message}`))
+      output.log(chalk.gray(`↳ Failed to extract manifest:\n  ${err.message}`))
       return false
     }
   }
 }
 
-export function createManifestExtractor(context: CliCommandContext & {safe?: boolean}) {
+export function createManifestExtractor(context: {
+  output: Output
+  safe?: boolean
+  workDir: string
+}) {
   return async (manifestDir: string) => {
     const error = await extractManifestSafe({
-      flags: {path: manifestDir},
+      flags: {json: false, path: manifestDir},
       output: context.output,
       workDir: context.workDir,
     })

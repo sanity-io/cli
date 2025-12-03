@@ -54,10 +54,15 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
     deleteSchemaDebug('Running schema delete with flags: %O', flags)
 
     try {
+      const workDir = (await this.getProjectRoot()).directory
       const result = await deleteSchemasActionForCommand(flags, {
-        apiClient: this.getApiClient(),
-        output: this,
-        workDir: this.getWorkDir(),
+        apiClient: () =>
+          this.getGlobalApiClient({
+            apiVersion: 'v2025-03-01',
+            requireUser: true,
+          }),
+        output: this.output,
+        workDir,
       })
 
       if (result === 'failure') {

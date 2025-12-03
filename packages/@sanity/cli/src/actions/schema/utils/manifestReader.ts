@@ -2,7 +2,7 @@ import {type Stats} from 'node:fs'
 import {readFile, stat} from 'node:fs/promises'
 import path, {join, resolve} from 'node:path'
 
-import {type CliOutputter} from '@sanity/cli'
+import {type Output} from '@sanity/cli-core'
 import chalk from 'chalk'
 
 import {MANIFEST_FILENAME} from '../../manifest/extractManifest.js'
@@ -16,7 +16,7 @@ export type ManifestJsonReader = <T>(
 export type CreateManifestReaderFactory = (args: {
   jsonReader?: <T>(filePath: string) => Promise<JsonFileParseSuccess<T> | undefined>
   manifestDir: string
-  output: CliOutputter
+  output: Output
 }) => CreateManifestReader
 
 export interface CreateManifestReader {
@@ -57,7 +57,7 @@ export const createManifestReader: CreateManifestReaderFactory = ({
       )
     }
 
-    output.print(
+    output.log(
       chalk.gray(`↳ Read manifest from ${manifestFile} (last modified: ${result.lastModified})`),
     )
 

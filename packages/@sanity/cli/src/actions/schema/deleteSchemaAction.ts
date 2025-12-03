@@ -1,4 +1,3 @@
-import {type CliCommandContext} from '@sanity/cli'
 import chalk from 'chalk'
 
 import {isDefined} from '../manifest/schemaTypeHelpers.js'
@@ -42,7 +41,7 @@ class DeleteIdError extends Error {
 
 export default function deleteSchemasActionForCommand(
   flags: DeleteSchemaFlags,
-  context: CliCommandContext,
+  context: Omit<SchemaStoreContext, 'manifestExtractor'>,
 ): Promise<SchemaStoreActionResult> {
   return deleteSchemaAction(flags, {
     ...context,
@@ -73,7 +72,7 @@ export async function deleteSchemaAction(
     return 'failure'
   }
 
-  const {client, projectId} = createSchemaApiClient(apiClient)
+  const {client, projectId} = await createSchemaApiClient(apiClient)
   const manifest = await createManifestReader({jsonReader, manifestDir, output}).getManifest()
 
   const workspaces = manifest.workspaces
@@ -132,7 +131,7 @@ export async function deleteSchemaAction(
 
   const success = deletedIds.length === ids.length
   if (success) {
-    output.success(`Successfully deleted ${deletedIds.length}/${ids.length} schemas`)
+    output.log(`Successfully deleted ${deletedIds.length}/${ids.length} schemas`)
   } else {
     output.error(
       [

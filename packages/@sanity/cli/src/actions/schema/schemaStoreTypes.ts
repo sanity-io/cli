@@ -1,12 +1,13 @@
-import {type CliApiClient, type CliOutputter} from '@sanity/cli'
+import {type Output} from '@sanity/cli-core'
+import {type SanityClient} from '@sanity/client'
 
 import {type ManifestExtractor} from './utils/manifestExtractor'
 import {type ManifestJsonReader} from './utils/manifestReader'
 
 export interface SchemaStoreContext {
-  apiClient: CliApiClient
+  apiClient: () => Promise<SanityClient>
   manifestExtractor: ManifestExtractor
-  output: CliOutputter
+  output: Output
   workDir: string
 
   jsonReader?: ManifestJsonReader

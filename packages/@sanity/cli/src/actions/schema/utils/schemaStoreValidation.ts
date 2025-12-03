@@ -1,4 +1,4 @@
-import {type CliOutputter} from '@sanity/cli'
+import {type Output} from '@sanity/cli-core'
 
 import {isDefined} from '../../manifest/schemaTypeHelpers.js'
 import {SANITY_WORKSPACE_SCHEMA_TYPE} from '../../manifest/types.js'
@@ -266,7 +266,7 @@ export function throwWriteProjectIdMismatch(
 export function filterLogReadProjectIdMismatch(
   workspace: {name: string; projectId: string},
   projectId: string,
-  output: CliOutputter,
+  output: Output,
 ) {
   const canRead = workspace.projectId === projectId
   if (!canRead) output.warn(`${getProjectIdMismatchMessage(workspace, 'read')} – ignoring it.`)

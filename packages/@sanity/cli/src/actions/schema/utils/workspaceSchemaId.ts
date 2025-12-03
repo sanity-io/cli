@@ -1,7 +1,7 @@
 import {SANITY_WORKSPACE_SCHEMA_TYPE} from '../../manifest/types.js'
 import {validForIdChars, validForIdPattern} from './schemaStoreValidation.js'
 
-type WorkspaceSchemaId = `_.schemas.${string}.${string}` | `_.schemas.${string}`
+type WorkspaceSchemaId = `${string}.system.schema.${string}` | `system.schema.${string}`
 
 export function getWorkspaceSchemaId(args: {idPrefix?: string; workspaceName: string}) {
   const {idPrefix, workspaceName: rawWorkspaceName} = args
