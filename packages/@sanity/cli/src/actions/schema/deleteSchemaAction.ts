@@ -2,7 +2,7 @@ import chalk from 'chalk'
 
 import {isDefined} from '../manifest/schemaTypeHelpers.js'
 import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
-import {createManifestExtractor, ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
+import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {createManifestReader} from './utils/manifestReader.js'
 import {createSchemaApiClient} from './utils/schemaApiClient.js'
 import {getDatasetsOutString, getStringList} from './utils/schemaStoreOutStrings.js'
@@ -37,16 +37,6 @@ class DeleteIdError extends Error {
     this.id = id
     this.dataset = dataset
   }
-}
-
-export default function deleteSchemasActionForCommand(
-  flags: DeleteSchemaFlags,
-  context: Omit<SchemaStoreContext, 'manifestExtractor'>,
-): Promise<SchemaStoreActionResult> {
-  return deleteSchemaAction(flags, {
-    ...context,
-    manifestExtractor: createManifestExtractor(context),
-  })
 }
 
 /**

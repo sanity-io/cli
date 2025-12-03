@@ -1,7 +1,8 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
-import deleteSchemasActionForCommand from '../../actions/schema/deleteSchemaAction.js'
+import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
+import {createManifestExtractor} from '../../actions/schema/utils/manifestExtractor.js'
 
 const deleteSchemaDebug = subdebug('schema:delete')
 
@@ -55,12 +56,16 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
 
     try {
       const workDir = (await this.getProjectRoot()).directory
-      const result = await deleteSchemasActionForCommand(flags, {
+      const result = await deleteSchemaAction(flags, {
         apiClient: () =>
           this.getGlobalApiClient({
             apiVersion: 'v2025-03-01',
             requireUser: true,
           }),
+        manifestExtractor: createManifestExtractor({
+          output: this.output,
+          workDir,
+        }),
         output: this.output,
         workDir,
       })

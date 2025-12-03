@@ -2,12 +2,17 @@ import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import deleteSchemasActionForCommand from '../../../actions/schema/deleteSchemaAction.js'
+import {deleteSchemaAction} from '../../../actions/schema/deleteSchemaAction.js'
 import {DeleteSchemaCommand} from '../delete.js'
 
 // Mock the delete schema action
 vi.mock('../../../actions/schema/deleteSchemaAction.js', () => ({
-  default: vi.fn(),
+  deleteSchemaAction: vi.fn(),
+}))
+
+// Mock the manifest extractor
+vi.mock('../../../actions/schema/utils/manifestExtractor.js', () => ({
+  createManifestExtractor: vi.fn(() => vi.fn()),
 }))
 
 // Mock the config functions
@@ -36,7 +41,7 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-const mockedDeleteSchemaAction = vi.mocked(deleteSchemasActionForCommand)
+const mockedDeleteSchemaAction = vi.mocked(deleteSchemaAction)
 
 describe('schema delete', () => {
   beforeEach(() => {
