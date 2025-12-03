@@ -1,4 +1,3 @@
-import {type SanityClient} from '@sanity/client'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {deleteSchemaAction} from '../deleteSchemaAction'
@@ -10,11 +9,6 @@ const mockOutput = {
   log: vi.fn(),
   warn: vi.fn(),
 }
-
-const mockClient = {
-  delete: vi.fn(),
-  withConfig: vi.fn(),
-} as unknown as SanityClient
 
 const mockApiClient = vi.fn()
 const mockJsonReader = vi.fn()
@@ -48,24 +42,25 @@ const mockManifest = {
 
 describe('deleteSchemaAction', () => {
   let context: SchemaStoreContext
+  let mockClientWithConfig: {
+    config: ReturnType<typeof vi.fn>
+    delete: ReturnType<typeof vi.fn>
+  }
 
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks()
 
-    // Setup default context
-    context = {
-      apiClient: mockApiClient as never,
-      jsonReader: mockJsonReader as never,
-      manifestExtractor: mockManifestExtractor as never,
-      output: mockOutput as never,
-      workDir: '/test/path',
+    // Setup client with config mock
+    mockClientWithConfig = {
+      config: vi.fn().mockReturnValue({dataset: 'production', projectId: 'test-project'}),
+      delete: vi.fn().mockResolvedValue({results: [{id: 'test-id'}]}),
     }
 
-    // Setup default mock returns
+    // Setup API client to return a client that has withConfig
     mockApiClient.mockResolvedValue({
       config: vi.fn().mockReturnValue({dataset: 'production', projectId: 'test-project'}),
-      withConfig: vi.fn().mockReturnThis(),
+      withConfig: vi.fn().mockReturnValue(mockClientWithConfig),
     })
 
     mockManifestExtractor.mockResolvedValue(undefined)
@@ -81,11 +76,14 @@ describe('deleteSchemaAction', () => {
       return undefined
     })
 
-    // Setup client mock chain
-    const clientWithConfig = {
-      delete: vi.fn().mockResolvedValue({results: [{id: 'test-id'}]}),
+    // Setup default context
+    context = {
+      apiClient: mockApiClient as never,
+      jsonReader: mockJsonReader as never,
+      manifestExtractor: mockManifestExtractor as never,
+      output: mockOutput as never,
+      workDir: '/test/path',
     }
-    mockClient.withConfig = vi.fn().mockReturnValue(clientWithConfig)
   })
 
   afterEach(() => {
@@ -93,10 +91,7 @@ describe('deleteSchemaAction', () => {
   })
 
   test('successfully deletes a single schema', async () => {
-    const clientWithConfig = {
-      delete: vi.fn().mockResolvedValue({results: [{id: 'system.schema.default'}]}),
-    }
-    mockClient.withConfig = vi.fn().mockReturnValue(clientWithConfig)
+    mockClientWithConfig.delete.mockResolvedValue({results: [{id: 'system.schema.default'}]})
 
     const result = await deleteSchemaAction(
       {
@@ -108,17 +103,15 @@ describe('deleteSchemaAction', () => {
 
     expect(result).toBe('success')
     expect(mockOutput.log).toHaveBeenCalledWith('Successfully deleted 1/1 schemas')
-    expect(clientWithConfig.delete).toHaveBeenCalledWith('system.schema.default')
+    expect(mockClientWithConfig.delete).toHaveBeenCalledWith('system.schema.default')
   })
 
   test('successfully deletes multiple schemas', async () => {
-    const clientWithConfig = {
-      delete: vi
-        .fn()
-        .mockResolvedValueOnce({results: [{id: 'system.schema.default'}]})
-        .mockResolvedValueOnce({results: [{id: 'system.schema.staging'}]}),
-    }
-    mockClient.withConfig = vi.fn().mockReturnValue(clientWithConfig)
+    mockClientWithConfig.delete
+      .mockResolvedValueOnce({results: [{id: 'system.schema.default'}]})
+      .mockResolvedValueOnce({results: [{id: 'system.schema.staging'}]})
+      .mockResolvedValueOnce({results: [{id: 'system.schema.default'}]})
+      .mockResolvedValueOnce({results: [{id: 'system.schema.staging'}]})
 
     const result = await deleteSchemaAction(
       {
@@ -130,14 +123,11 @@ describe('deleteSchemaAction', () => {
 
     expect(result).toBe('success')
     expect(mockOutput.log).toHaveBeenCalledWith('Successfully deleted 2/2 schemas')
-    expect(clientWithConfig.delete).toHaveBeenCalledTimes(4) // 2 schemas × 2 datasets
+    expect(mockClientWithConfig.delete).toHaveBeenCalledTimes(4) // 2 schemas × 2 datasets
   })
 
   test('filters schemas by dataset when dataset flag is provided', async () => {
-    const clientWithConfig = {
-      delete: vi.fn().mockResolvedValue({results: [{id: 'system.schema.default'}]}),
-    }
-    mockClient.withConfig = vi.fn().mockReturnValue(clientWithConfig)
+    mockClientWithConfig.delete.mockResolvedValue({results: [{id: 'system.schema.default'}]})
 
     const result = await deleteSchemaAction(
       {
@@ -149,15 +139,11 @@ describe('deleteSchemaAction', () => {
     )
 
     expect(result).toBe('success')
-    expect(mockClient.withConfig).toHaveBeenCalledWith({dataset: 'production'})
-    expect(clientWithConfig.delete).toHaveBeenCalledTimes(1) // Only production dataset
+    expect(mockClientWithConfig.delete).toHaveBeenCalledTimes(1) // Only production dataset
   })
 
   test('returns failure when schema is not found', async () => {
-    const clientWithConfig = {
-      delete: vi.fn().mockResolvedValue({results: []}), // Empty results = not found
-    }
-    mockClient.withConfig = vi.fn().mockReturnValue(clientWithConfig)
+    mockClientWithConfig.delete.mockResolvedValue({results: []}) // Empty results = not found
 
     const result = await deleteSchemaAction(
       {
@@ -174,15 +160,11 @@ describe('deleteSchemaAction', () => {
   })
 
   test('returns failure when some schemas are not found', async () => {
-    const clientWithConfig = {
-      delete: vi
-        .fn()
-        .mockResolvedValueOnce({results: [{id: 'system.schema.default'}]})
-        .mockResolvedValueOnce({results: []}) // Not found
-        .mockResolvedValueOnce({results: [{id: 'system.schema.default'}]})
-        .mockResolvedValueOnce({results: []}), // Not found
-    }
-    mockClient.withConfig = vi.fn().mockReturnValue(clientWithConfig)
+    mockClientWithConfig.delete
+      .mockResolvedValueOnce({results: [{id: 'system.schema.default'}]})
+      .mockResolvedValueOnce({results: []}) // Not found
+      .mockResolvedValueOnce({results: [{id: 'system.schema.default'}]})
+      .mockResolvedValueOnce({results: []}) // Not found
 
     const result = await deleteSchemaAction(
       {
@@ -198,10 +180,7 @@ describe('deleteSchemaAction', () => {
   })
 
   test('handles delete errors gracefully', async () => {
-    const clientWithConfig = {
-      delete: vi.fn().mockRejectedValue(new Error('Delete failed')),
-    }
-    mockClient.withConfig = vi.fn().mockReturnValue(clientWithConfig)
+    mockClientWithConfig.delete.mockRejectedValue(new Error('Delete failed'))
 
     const result = await deleteSchemaAction(
       {
@@ -218,10 +197,7 @@ describe('deleteSchemaAction', () => {
   })
 
   test('extracts manifest when extract-manifest is true', async () => {
-    const clientWithConfig = {
-      delete: vi.fn().mockResolvedValue({results: [{id: 'system.schema.default'}]}),
-    }
-    mockClient.withConfig = vi.fn().mockReturnValue(clientWithConfig)
+    mockClientWithConfig.delete.mockResolvedValue({results: [{id: 'system.schema.default'}]})
 
     await deleteSchemaAction(
       {
@@ -235,10 +211,7 @@ describe('deleteSchemaAction', () => {
   })
 
   test('skips manifest extraction when extract-manifest is false', async () => {
-    const clientWithConfig = {
-      delete: vi.fn().mockResolvedValue({results: [{id: 'system.schema.default'}]}),
-    }
-    mockClient.withConfig = vi.fn().mockReturnValue(clientWithConfig)
+    mockClientWithConfig.delete.mockResolvedValue({results: [{id: 'system.schema.default'}]})
 
     await deleteSchemaAction(
       {
@@ -252,10 +225,7 @@ describe('deleteSchemaAction', () => {
   })
 
   test('logs verbose output when verbose flag is enabled', async () => {
-    const clientWithConfig = {
-      delete: vi.fn().mockRejectedValue(new Error('Delete failed')),
-    }
-    mockClient.withConfig = vi.fn().mockReturnValue(clientWithConfig)
+    mockClientWithConfig.delete.mockRejectedValue(new Error('Delete failed'))
 
     await deleteSchemaAction(
       {
@@ -304,10 +274,7 @@ describe('deleteSchemaAction', () => {
       return undefined
     })
 
-    const clientWithConfig = {
-      delete: vi.fn().mockResolvedValue({results: [{id: 'system.schema.default'}]}),
-    }
-    mockClient.withConfig = vi.fn().mockReturnValue(clientWithConfig)
+    mockClientWithConfig.delete.mockResolvedValue({results: [{id: 'system.schema.default'}]})
 
     await deleteSchemaAction(
       {
@@ -320,6 +287,6 @@ describe('deleteSchemaAction', () => {
     // Should warn about project ID mismatch
     expect(mockOutput.warn).toHaveBeenCalled()
     // Should only delete from matching project
-    expect(clientWithConfig.delete).toHaveBeenCalledTimes(1)
+    expect(mockClientWithConfig.delete).toHaveBeenCalledTimes(1)
   })
 })
