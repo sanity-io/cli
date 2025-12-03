@@ -64,7 +64,7 @@ describe('deleteSchemaAction', () => {
 
     // Setup default mock returns
     mockApiClient.mockResolvedValue({
-      config: vi.fn().mockReturnValue({projectId: 'test-project'}),
+      config: vi.fn().mockReturnValue({dataset: 'production', projectId: 'test-project'}),
       withConfig: vi.fn().mockReturnThis(),
     })
 
