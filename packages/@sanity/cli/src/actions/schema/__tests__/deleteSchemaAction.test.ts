@@ -7,8 +7,7 @@ import {type SchemaStoreContext} from '../schemaStoreTypes'
 // Mock dependencies
 const mockOutput = {
   error: vi.fn(),
-  print: vi.fn(),
-  success: vi.fn(),
+  log: vi.fn(),
   warn: vi.fn(),
 }
 
@@ -64,7 +63,7 @@ describe('deleteSchemaAction', () => {
     }
 
     // Setup default mock returns
-    mockApiClient.mockReturnValue({
+    mockApiClient.mockResolvedValue({
       config: vi.fn().mockReturnValue({projectId: 'test-project'}),
       withConfig: vi.fn().mockReturnThis(),
     })
@@ -108,7 +107,7 @@ describe('deleteSchemaAction', () => {
     )
 
     expect(result).toBe('success')
-    expect(mockOutput.success).toHaveBeenCalledWith('Successfully deleted 1/1 schemas')
+    expect(mockOutput.log).toHaveBeenCalledWith('Successfully deleted 1/1 schemas')
     expect(clientWithConfig.delete).toHaveBeenCalledWith('system.schema.default')
   })
 
@@ -130,7 +129,7 @@ describe('deleteSchemaAction', () => {
     )
 
     expect(result).toBe('success')
-    expect(mockOutput.success).toHaveBeenCalledWith('Successfully deleted 2/2 schemas')
+    expect(mockOutput.log).toHaveBeenCalledWith('Successfully deleted 2/2 schemas')
     expect(clientWithConfig.delete).toHaveBeenCalledTimes(4) // 2 schemas × 2 datasets
   })
 
