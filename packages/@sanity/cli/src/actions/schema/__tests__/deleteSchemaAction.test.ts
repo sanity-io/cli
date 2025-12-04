@@ -95,33 +95,33 @@ describe('deleteSchemaAction', () => {
   })
 
   test('successfully deletes a single schema', async () => {
-    mockClientWithConfig.delete.mockResolvedValue({results: [{id: 'system.schema.default'}]})
+    mockClientWithConfig.delete.mockResolvedValue({results: [{id: '_.schemas.default'}]})
 
     const result = await deleteSchemaAction(
       {
         'extract-manifest': false,
-        ids: 'system.schema.default',
+        ids: '_.schemas.default',
       },
       context,
     )
 
     expect(result).toBe('success')
     expect(mockOutput.log).toHaveBeenCalledWith('Successfully deleted 1/1 schemas')
-    expect(mockClientWithConfig.delete).toHaveBeenCalledWith('system.schema.default')
+    expect(mockClientWithConfig.delete).toHaveBeenCalledWith('_.schemas.default')
     expect(mockClientWithConfig.delete).toHaveBeenCalledTimes(2) // Called once per dataset
   })
 
   test('successfully deletes multiple schemas', async () => {
     mockClientWithConfig.delete
-      .mockResolvedValueOnce({results: [{id: 'system.schema.default'}]})
-      .mockResolvedValueOnce({results: [{id: 'system.schema.staging'}]})
-      .mockResolvedValueOnce({results: [{id: 'system.schema.default'}]})
-      .mockResolvedValueOnce({results: [{id: 'system.schema.staging'}]})
+      .mockResolvedValueOnce({results: [{id: '_.schemas.default'}]})
+      .mockResolvedValueOnce({results: [{id: '_.schemas.staging'}]})
+      .mockResolvedValueOnce({results: [{id: '_.schemas.default'}]})
+      .mockResolvedValueOnce({results: [{id: '_.schemas.staging'}]})
 
     const result = await deleteSchemaAction(
       {
         'extract-manifest': false,
-        ids: 'system.schema.default,system.schema.staging',
+        ids: '_.schemas.default,_.schemas.staging',
       },
       context,
     )
@@ -132,13 +132,13 @@ describe('deleteSchemaAction', () => {
   })
 
   test('filters schemas by dataset when dataset flag is provided', async () => {
-    mockClientWithConfig.delete.mockResolvedValue({results: [{id: 'system.schema.default'}]})
+    mockClientWithConfig.delete.mockResolvedValue({results: [{id: '_.schemas.default'}]})
 
     const result = await deleteSchemaAction(
       {
         dataset: 'production',
         'extract-manifest': false,
-        ids: 'system.schema.default',
+        ids: '_.schemas.default',
       },
       context,
     )
@@ -153,7 +153,7 @@ describe('deleteSchemaAction', () => {
     const result = await deleteSchemaAction(
       {
         'extract-manifest': false,
-        ids: 'system.schema.nonexistent',
+        ids: '_.schemas.nonexistent',
       },
       context,
     )
@@ -166,15 +166,15 @@ describe('deleteSchemaAction', () => {
 
   test('returns failure when some schemas are not found', async () => {
     mockClientWithConfig.delete
-      .mockResolvedValueOnce({results: [{id: 'system.schema.default'}]})
+      .mockResolvedValueOnce({results: [{id: '_.schemas.default'}]})
       .mockResolvedValueOnce({results: []}) // Not found
-      .mockResolvedValueOnce({results: [{id: 'system.schema.default'}]})
+      .mockResolvedValueOnce({results: [{id: '_.schemas.default'}]})
       .mockResolvedValueOnce({results: []}) // Not found
 
     const result = await deleteSchemaAction(
       {
         'extract-manifest': false,
-        ids: 'system.schema.default,system.schema.nonexistent',
+        ids: '_.schemas.default,_.schemas.nonexistent',
       },
       context,
     )
@@ -190,7 +190,7 @@ describe('deleteSchemaAction', () => {
     const result = await deleteSchemaAction(
       {
         'extract-manifest': false,
-        ids: 'system.schema.default',
+        ids: '_.schemas.default',
       },
       context,
     )
@@ -202,12 +202,12 @@ describe('deleteSchemaAction', () => {
   })
 
   test('extracts manifest when extract-manifest is true', async () => {
-    mockClientWithConfig.delete.mockResolvedValue({results: [{id: 'system.schema.default'}]})
+    mockClientWithConfig.delete.mockResolvedValue({results: [{id: '_.schemas.default'}]})
 
     await deleteSchemaAction(
       {
         'extract-manifest': true,
-        ids: 'system.schema.default',
+        ids: '_.schemas.default',
       },
       context,
     )
@@ -216,12 +216,12 @@ describe('deleteSchemaAction', () => {
   })
 
   test('skips manifest extraction when extract-manifest is false', async () => {
-    mockClientWithConfig.delete.mockResolvedValue({results: [{id: 'system.schema.default'}]})
+    mockClientWithConfig.delete.mockResolvedValue({results: [{id: '_.schemas.default'}]})
 
     await deleteSchemaAction(
       {
         'extract-manifest': false,
-        ids: 'system.schema.default',
+        ids: '_.schemas.default',
       },
       context,
     )
@@ -235,7 +235,7 @@ describe('deleteSchemaAction', () => {
     await deleteSchemaAction(
       {
         'extract-manifest': false,
-        ids: 'system.schema.default',
+        ids: '_.schemas.default',
         verbose: true,
       },
       context,
@@ -252,7 +252,7 @@ describe('deleteSchemaAction', () => {
       deleteSchemaAction(
         {
           'extract-manifest': true,
-          ids: 'system.schema.default',
+          ids: '_.schemas.default',
         },
         context,
       ),
@@ -279,12 +279,12 @@ describe('deleteSchemaAction', () => {
       return undefined
     })
 
-    mockClientWithConfig.delete.mockResolvedValue({results: [{id: 'system.schema.default'}]})
+    mockClientWithConfig.delete.mockResolvedValue({results: [{id: '_.schemas.default'}]})
 
     await deleteSchemaAction(
       {
         'extract-manifest': false,
-        ids: 'system.schema.default',
+        ids: '_.schemas.default',
       },
       context,
     )

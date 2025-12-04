@@ -1,6 +1,7 @@
 import {type SanityDocumentLike} from '@sanity/types'
 import {type MediaLibraryConfig} from 'sanity'
 
+export const SANITY_WORKSPACE_SCHEMA_ID_PREFIX = '_.schemas'
 export const SANITY_WORKSPACE_SCHEMA_TYPE = 'system.schema'
 export const CURRENT_WORKSPACE_SCHEMA_VERSION = '2025-05-01'
 
