@@ -1,103 +1,86 @@
 import {writeFile} from 'node:fs/promises'
-import {dirname, join} from 'node:path'
-import {Worker} from 'node:worker_threads'
+import {join} from 'node:path'
 
-import {type CliCommandArguments, type CliCommandContext} from '@sanity/cli'
-import readPkgUp from 'read-pkg-up'
+import {spinner} from '@sanity/cli-core'
+import {extractSchema} from '@sanity/schema/_internal'
+import {type Schema} from '@sanity/types'
+import {Workspace} from 'sanity'
 
-import {
-  type ExtractSchemaWorkerData,
-  type ExtractSchemaWorkerResult,
-} from '../../threads/extractSchema'
-import {SchemaExtractedTrace} from './extractSchema.telemetry'
+import {type ExtractSchemaCommand} from '../../commands/schema/extract'
+import {importStudioConfig} from '../../util/importStudioConfig.js'
 
-interface ExtractFlags {
-  workspace?: string
-  path?: string
-  'enforce-required-fields'?: boolean
-  format?: 'groq-type-nodes' | string
+interface ExtractSchemaOptions {
+  flags: ExtractSchemaCommand['flags']
+  workDir: string
 }
 
-export type SchemaValidationFormatter = (result: ExtractSchemaWorkerResult) => string
-
-export default async function extractAction(
-  args: CliCommandArguments<ExtractFlags>,
-  {workDir, output, telemetry}: CliCommandContext,
-): Promise<void> {
-  const flags = args.extOptions
-  const formatFlag = flags.format || 'groq-type-nodes'
-  const enforceRequiredFields = flags['enforce-required-fields'] || false
-
-  const rootPkgPath = readPkgUp.sync({cwd: __dirname})?.path
-  if (!rootPkgPath) {
-    throw new Error('Could not find root directory for `sanity` package')
-  }
-
-  const workerPath = join(
-    dirname(rootPkgPath),
-    'lib',
-    '_internal',
-    'cli',
-    'threads',
-    'extractSchema.js',
-  )
-
-  const spinner = output
-    .spinner({})
-    .start(
-      enforceRequiredFields
-        ? 'Extracting schema, with enforced required fields'
-        : 'Extracting schema',
-    )
-
-  const trace = telemetry.trace(SchemaExtractedTrace)
-  trace.start()
-
-  const worker = new Worker(workerPath, {
-    workerData: {
-      workDir,
-      workspaceName: flags.workspace,
-      enforceRequiredFields,
-      format: formatFlag,
-    } satisfies ExtractSchemaWorkerData,
-    // eslint-disable-next-line no-process-env
-    env: process.env,
-  })
+export async function extract(options: ExtractSchemaOptions): Promise<void> {
+  const {flags, workDir} = options
+  const {
+    'enforce-required-fields': enforceRequiredFields,
+    format,
+    path,
+    workspace: workspaceName,
+  } = flags
+  const spin = spinner(
+    enforceRequiredFields ? 'Extracting schema with enforced required fields' : 'Extracting schema',
+  ).start()
 
   try {
-    const {schema} = await new Promise<ExtractSchemaWorkerResult>((resolve, reject) => {
-      worker.addListener('message', resolve)
-      worker.addListener('error', reject)
-    })
+    if (format !== 'groq-type-nodes') {
+      throw new Error(`Unsupported format: "${format}"`)
+    }
 
-    trace.log({
-      schemaAllTypesCount: schema.length,
-      schemaDocumentTypesCount: schema.filter((type) => type.type === 'document').length,
-      schemaTypesCount: schema.filter((type) => type.type === 'type').length,
+    const workspaces = await importStudioConfig(workDir)
+    const workspace = getWorkspace(workspaces, workspaceName)
+
+    const schema = extractSchema(workspace.schema as Schema, {
       enforceRequiredFields,
-      schemaFormat: formatFlag,
     })
 
-    const path = flags.path || join(process.cwd(), 'schema.json')
+    const outputDir = path || join(process.cwd(), 'schema.json')
 
-    spinner.text = `Writing schema to ${path}`
+    spin.text = `Writing schema to ${outputDir}`
 
-    await writeFile(path, `${JSON.stringify(schema, null, 2)}\n`)
+    await writeFile(outputDir, `${JSON.stringify(schema, null, 2)}\n`)
 
-    trace.complete()
-
-    spinner.succeed(
+    spin.succeed(
       enforceRequiredFields
-        ? `Extracted schema to ${path} with enforced required fields`
-        : `Extracted schema to ${path}`,
+        ? `Extracted schema to ${outputDir} with enforced required fields`
+        : `Extracted schema to ${outputDir}`,
     )
   } catch (err) {
-    trace.error(err)
-    spinner.fail(
+    spin.fail(
       enforceRequiredFields
-        ? 'Failed to extract schema, with enforced required fields'
+        ? 'Failed to extract schema with enforced required fields'
         : 'Failed to extract schema',
     )
+
     throw err
   }
+}
+
+function getWorkspace(workspaces: Workspace[], workspaceName?: string) {
+  if (workspaces.length === 0) {
+    throw new Error('No workspaces found')
+  }
+
+  if (workspaces.length === 1) {
+    return workspaces[0]
+  }
+
+  if (!workspaceName) {
+    throw new Error(
+      `Multiple workspaces found. Please specify which workspace to use with '--workspace'. Available workspaces: ${workspaces.map((w) => w.name).join(', ')}`,
+    )
+  }
+  const workspace = workspaces.find((w) => w.name === workspaceName)
+
+  if (!workspace) {
+    throw new Error(
+      `Could not find "${workspaceName}" workspace. Available workspaces: ${workspaces.map((w) => w.name).join(', ')}`,
+    )
+  }
+
+  return workspace
 }

@@ -1,32 +1,53 @@
-import {type CliCommandDefinition} from '@sanity/cli'
+import {Flags} from '@oclif/core'
+import {SanityCommand} from '@sanity/cli-core'
 
-const description = 'Extracts a JSON representation of a Sanity schema within a Studio context.'
+import {extract} from '../../actions/schema/extract.js'
 
-const helpText = `
+const description = `
+Extracts a JSON representation of a Sanity schema within a Studio context.
+
 **Note**: This command is experimental and subject to change.
+`.trim()
 
-Options
-  --workspace <name> The name of the workspace to generate a schema for
-  --path Optional path to specify destination of the schema file
-  --enforce-required-fields Makes the schema generated treat fields marked as required as non-optional. Defaults to false.
-  --format=[groq-type-nodes] Format the schema as GROQ type nodes. Only available format at the moment.
+export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaCommand> {
+  static override description = description
 
-Examples
-  # Extracts schema types in a Sanity project with more than one workspace
-  sanity schema extract --workspace default
-`
+  static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %> --workspace default',
+      description: 'Extracts schema types in a Sanity project with more than one workspace',
+    },
+  ]
 
-const extractSchemaCommand: CliCommandDefinition = {
-  name: 'extract',
-  group: 'schema',
-  signature: '',
-  description,
-  helpText,
-  action: async (args, context) => {
-    const mod = await import('../../actions/schema/extractAction')
+  static override flags = {
+    'enforce-required-fields': Flags.boolean({
+      default: false,
+      description: 'Makes the schema generated treat fields marked as required as non-optional',
+    }),
+    format: Flags.string({
+      description: 'Format the schema as GROQ type nodes. Only available format at the moment.',
+      helpValue: '<groq-type-nodes>',
+    }),
+    path: Flags.string({
+      description: 'Optional path to specify destination of the schema file',
+    }),
+    workspace: Flags.string({
+      description: 'The name of the workspace to generate a schema for',
+      helpValue: '<name>',
+    }),
+  }
 
-    return mod.default(args, context)
-  },
-} satisfies CliCommandDefinition
+  public async run(): Promise<void> {
+    const {flags} = await this.parse(ExtractSchemaCommand)
+    const workDir = (await this.getProjectRoot()).directory
 
-export default extractSchemaCommand
+    try {
+      await extract({
+        flags,
+        workDir,
+      })
+    } catch (error) {
+      this.error(`Failed to extract schema:\n${error}`, {exit: 1})
+    }
+  }
+}
