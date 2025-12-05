@@ -56,12 +56,33 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
 
     try {
       const workDir = (await this.getProjectRoot()).directory
+      const cliConfig = await this.getCliConfig()
+      const projectId = await this.getProjectId()
+      const dataset = cliConfig.api?.dataset
+
+      if (!projectId) {
+        this.error(
+          'No project ID found. Please run this command from a Sanity project directory.',
+          {
+            exit: 1,
+          },
+        )
+      }
+
+      if (!dataset) {
+        this.error('No dataset found. Please configure a dataset in your sanity.config.ts.', {
+          exit: 1,
+        })
+      }
+
       const result = await deleteSchemaAction(flags, {
-        apiClient: () =>
-          this.getGlobalApiClient({
+        apiClient: async () => {
+          const client = await this.getGlobalApiClient({
             apiVersion: 'v2025-03-01',
             requireUser: true,
-          }),
+          })
+          return client.withConfig({dataset, projectId})
+        },
         manifestExtractor: createManifestExtractor({
           output: this.output,
           workDir,
