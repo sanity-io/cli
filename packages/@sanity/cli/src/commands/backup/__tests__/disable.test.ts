@@ -70,7 +70,7 @@ describe('#backup:disable', () => {
         $ sanity backup disable [DATASET]
 
       ARGUMENTS
-        DATASET  Dataset name to disable backup for
+        [DATASET]  Dataset name to disable backup for
 
       DESCRIPTION
         Disable backup for a dataset.

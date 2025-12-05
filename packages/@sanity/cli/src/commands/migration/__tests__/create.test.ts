@@ -71,7 +71,7 @@ describe('#migration:create', () => {
         $ sanity migration create [TITLE]
 
       ARGUMENTS
-        TITLE  Title of migration
+        [TITLE]  Title of migration
 
       DESCRIPTION
         Create a new migration within your project

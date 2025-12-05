@@ -77,8 +77,8 @@ describe('#dataset:copy', () => {
           --detach | --skip-history] [--limit <value> ] [--offset <value> ]
 
       ARGUMENTS
-        SOURCE  Name of the dataset to copy from
-        TARGET  Name of the dataset to copy to
+        [SOURCE]  Name of the dataset to copy from
+        [TARGET]  Name of the dataset to copy to
 
       FLAGS
         --attach=<value>  Attach to the running copy process to show progress

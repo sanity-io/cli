@@ -54,7 +54,8 @@ describe('#documents:query', () => {
         -d, --dataset=<value>      Dataset to query (overrides config)
         -p, --project=<value>      Project ID to query (overrides config)
             --anonymous            Send the query without any authorization token
-            --api-version=<value>  API version to use (defaults to 2025-08-15)
+            --api-version=<value>  [env: SANITY_CLI_QUERY_API_VERSION] API version to
+                                   use (defaults to 2025-08-15)
             --pretty               Colorize JSON output
 
       DESCRIPTION

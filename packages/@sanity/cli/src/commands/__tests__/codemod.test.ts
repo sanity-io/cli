@@ -68,7 +68,7 @@ describe('#codemod', () => {
           [--no-verify]
 
       ARGUMENTS
-        CODEMODNAME  Name of the codemod to run
+        [CODEMODNAME]  Name of the codemod to run
 
       FLAGS
         --dry                 Dry run (no changes are made to files)

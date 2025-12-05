@@ -46,7 +46,7 @@ describe('#install', () => {
         $ sanity install [PACKAGES...]
 
       ARGUMENTS
-        PACKAGES...  Packages to install
+        [PACKAGES...]  Packages to install
 
       DESCRIPTION
         Installs dependencies for Sanity Studio project

@@ -54,8 +54,8 @@ describe('#dataset:alias:create', () => {
         $ sanity dataset alias create [ALIASNAME] [TARGETDATASET]
 
       ARGUMENTS
-        ALIASNAME      Dataset alias name to create
-        TARGETDATASET  Target dataset name to link the alias to
+        [ALIASNAME]      Dataset alias name to create
+        [TARGETDATASET]  Target dataset name to link the alias to
 
       DESCRIPTION
         Create a dataset alias within your project
