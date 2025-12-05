@@ -16,14 +16,8 @@ import {type ValidationContext, type ValidationMarker} from '@sanity/types'
 import pMap from 'p-map'
 import {isRecord, validateDocument, Workspace} from 'sanity'
 
-import {extractDocumentsFromNdjsonOrTarball} from '../extractDocumentsFromNdjsonOrTarball.js'
-import {importStudioConfig} from '../importStudioConfig.js'
-import {
-  createReporter,
-  type WorkerChannel,
-  type WorkerChannelEvent,
-  type WorkerChannelStream,
-} from '../workerChannels.js'
+import {extractDocumentsFromNdjsonOrTarball} from '../util/extractDocumentsFromNdjsonOrTarball.js'
+import {importStudioConfig} from '../util/importStudioConfig.js'
 import {
   DOCUMENT_VALIDATION_TIMEOUT,
   getReferenceIds,
@@ -32,7 +26,13 @@ import {
   MAX_VALIDATION_CONCURRENCY,
   REFERENCE_INTEGRITY_BATCH_SIZE,
   shouldIncludeDocument,
-} from './validateDocumentsUtils.js'
+} from '../util/validation/validateDocumentsUtils.js'
+import {
+  createReporter,
+  type WorkerChannel,
+  type WorkerChannelEvent,
+  type WorkerChannelStream,
+} from '../util/workerChannels.js'
 
 interface AvailabilityResponse {
   omitted: {id: string; reason: 'existence' | 'permission'}[]

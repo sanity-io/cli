@@ -11,7 +11,7 @@ import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {Level} from '../../actions/documents/types.js'
 import {validateDocuments} from '../../actions/documents/validate.js'
 import {reporters} from '../../actions/documents/validation/reporters/index.js'
-import {type ValidationWorkerChannel} from '../../util/validation/validateDocuments.js'
+import {type ValidationWorkerChannel} from '../../threads/validateDocuments.js'
 import {type WorkerChannelReceiver} from '../../util/workerChannels.js'
 
 type ValidateDocumentsCommandFlags = ValidateDocumentsCommand['flags']

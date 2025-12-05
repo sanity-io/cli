@@ -1,4 +1,5 @@
 import path from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {Worker} from 'node:worker_threads'
 
 import {type ClientConfig} from '@sanity/client'
@@ -8,9 +9,11 @@ import {readPackageUp} from 'read-package-up'
 import {
   type ValidateDocumentsWorkerData,
   type ValidationWorkerChannel,
-} from '../../util/validation/validateDocuments.js'
+} from '../../threads/validateDocuments.js'
 import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels.js'
 import {Level} from './types.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 interface ValidateDocumentsOptions<TReturn = unknown> {
   clientConfig: ClientConfig
@@ -76,19 +79,13 @@ export async function validateDocuments(options: ValidateDocumentsOptions): Prom
     workspace,
   } = options
 
-  const rootPkgPath = (await readPackageUp({cwd: import.meta.dirname}))?.path
+  const rootPkgPath = (await readPackageUp({cwd: __dirname}))?.path
 
   if (!rootPkgPath) {
     throw new Error('Could not find root directory for `sanity` package')
   }
 
-  const workerPath = path.join(
-    path.dirname(rootPkgPath),
-    'dist',
-    'util',
-    'validation',
-    'validateDocuments.js',
-  )
+  const workerPath = path.join(path.dirname(rootPkgPath), 'dist', 'threads', 'validateDocuments.js')
 
   const worker = new Worker(workerPath, {
     env: process.env,
