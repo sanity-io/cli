@@ -1,4 +1,5 @@
 import {runCommand} from '@oclif/test'
+import {getCliConfig} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -42,8 +43,9 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
 }))
 
 const mockedDeleteSchemaAction = vi.mocked(deleteSchemaAction)
+const mockedGetCliConfig = vi.mocked(getCliConfig)
 
-describe('schema delete', () => {
+describe('#schema:delete', () => {
   beforeEach(() => {
     mockedDeleteSchemaAction.mockResolvedValue('success')
   })
@@ -197,5 +199,53 @@ describe('schema delete', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Missing required flag ids')
+  })
+
+  test.each([
+    {desc: 'no project ID is found', projectId: undefined},
+    {desc: 'project ID is empty string', projectId: ''},
+  ])('throws error when $desc', async ({projectId}) => {
+    // Mock getCliConfig twice since it's called by both run() and getProjectId()
+    const mockConfig = {
+      api: {
+        dataset: 'production',
+        projectId,
+      },
+    }
+    mockedGetCliConfig.mockResolvedValueOnce(mockConfig).mockResolvedValueOnce(mockConfig)
+
+    const {error} = await testCommand(DeleteSchemaCommand, [
+      '--ids',
+      'sanity.workspace.schema.workspaceName',
+    ])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('No project ID found')
+    expect(error?.message).toContain('Sanity project directory')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test.each([
+    {dataset: undefined, desc: 'no dataset is found'},
+    {dataset: '', desc: 'dataset is empty string'},
+  ])('throws error when $desc', async ({dataset}) => {
+    // Mock getCliConfig twice since it's called by both run() and getProjectId()
+    const mockConfig = {
+      api: {
+        dataset,
+        projectId: 'test-project',
+      },
+    }
+    mockedGetCliConfig.mockResolvedValueOnce(mockConfig).mockResolvedValueOnce(mockConfig)
+
+    const {error} = await testCommand(DeleteSchemaCommand, [
+      '--ids',
+      'sanity.workspace.schema.workspaceName',
+    ])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('No dataset found')
+    expect(error?.message).toContain('sanity.config.ts')
+    expect(error?.oclif?.exit).toBe(1)
   })
 })
