@@ -25,8 +25,9 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
       description: 'Makes the schema generated treat fields marked as required as non-optional',
     }),
     format: Flags.string({
+      default: 'groq-type-nodes',
       description: 'Format the schema as GROQ type nodes. Only available format at the moment.',
-      helpValue: '<groq-type-nodes>',
+      helpValue: '<format>',
     }),
     path: Flags.string({
       description: 'Optional path to specify destination of the schema file',

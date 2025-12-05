@@ -4,10 +4,10 @@ import {join} from 'node:path'
 import {spinner} from '@sanity/cli-core'
 import {extractSchema} from '@sanity/schema/_internal'
 import {type Schema} from '@sanity/types'
-import {Workspace} from 'sanity'
 
 import {type ExtractSchemaCommand} from '../../commands/schema/extract'
 import {importStudioConfig} from '../../util/importStudioConfig.js'
+import {getWorkspace} from './getWorkspace.js'
 
 interface ExtractSchemaOptions {
   flags: ExtractSchemaCommand['flags']
@@ -58,29 +58,4 @@ export async function extract(options: ExtractSchemaOptions): Promise<void> {
 
     throw err
   }
-}
-
-function getWorkspace(workspaces: Workspace[], workspaceName?: string) {
-  if (workspaces.length === 0) {
-    throw new Error('No workspaces found')
-  }
-
-  if (workspaces.length === 1) {
-    return workspaces[0]
-  }
-
-  if (!workspaceName) {
-    throw new Error(
-      `Multiple workspaces found. Please specify which workspace to use with '--workspace'. Available workspaces: ${workspaces.map((w) => w.name).join(', ')}`,
-    )
-  }
-  const workspace = workspaces.find((w) => w.name === workspaceName)
-
-  if (!workspace) {
-    throw new Error(
-      `Could not find "${workspaceName}" workspace. Available workspaces: ${workspaces.map((w) => w.name).join(', ')}`,
-    )
-  }
-
-  return workspace
 }
