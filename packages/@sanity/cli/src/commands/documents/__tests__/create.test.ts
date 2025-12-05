@@ -132,7 +132,7 @@ describe('#documents:create', () => {
           [--missing] [--replace] [--watch]
 
       ARGUMENTS
-        FILE  JSON file to create document(s) from
+        [FILE]  JSON file to create document(s) from
 
       FLAGS
         -d, --dataset=<value>  Dataset to create document(s) in (overrides config)

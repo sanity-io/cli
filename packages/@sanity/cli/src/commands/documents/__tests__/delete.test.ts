@@ -75,8 +75,8 @@ describe('documents delete', () => {
         $ sanity documents delete ID... [IDS...] [--dataset <value>]
 
       ARGUMENTS
-        ID...   Document ID to delete
-        IDS...  Additional document IDs to delete
+        ID...     Document ID to delete
+        [IDS...]  Additional document IDs to delete
 
       FLAGS
         --dataset=<value>  NAME to override dataset

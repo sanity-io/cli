@@ -20,7 +20,7 @@ describe('#preview', () => {
         $ sanity preview [OUTPUTDIR] [--host <value>] [--port <value>]
 
       ARGUMENTS
-        OUTPUTDIR  Output directory
+        [OUTPUTDIR]  Output directory
 
       FLAGS
         --host=<value>  [default: localhost] The local network interface at which to
