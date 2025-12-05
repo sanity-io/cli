@@ -1,24 +1,29 @@
-import {SANITY_WORKSPACE_SCHEMA_TYPE} from '../../manifest/types.js'
-import {validForIdChars, validForIdPattern} from './schemaStoreValidation.js'
+import {
+  type DefaultWorkspaceSchemaId,
+  SANITY_WORKSPACE_SCHEMA_ID_PREFIX,
+  type WorkspaceSchemaId,
+} from '../../manifest/types.js'
+import {validForNamesChars, validForNamesPattern} from './schemaStoreValidation.js'
 
-type WorkspaceSchemaId = `${string}.system.schema.${string}` | `system.schema.${string}`
-
-export function getWorkspaceSchemaId(args: {idPrefix?: string; workspaceName: string}) {
-  const {idPrefix, workspaceName: rawWorkspaceName} = args
+export function getWorkspaceSchemaId(args: {tag?: string; workspaceName: string}) {
+  const {tag, workspaceName: rawWorkspaceName} = args
 
   let workspaceName = rawWorkspaceName
   let idWarning: string | undefined
 
-  if (!validForIdPattern.test(workspaceName)) {
-    workspaceName = workspaceName.replaceAll(new RegExp(`[^${validForIdChars}]`, 'g'), '_')
+  // The HTTP API replaces periods with _ in the workspace name, so the CLI should too
+  if (!validForNamesPattern.test(workspaceName)) {
+    workspaceName = workspaceName.replaceAll(new RegExp(`[^${validForNamesChars}]`, 'g'), '_')
     idWarning = [
-      `Workspace "${rawWorkspaceName}" contains characters unsupported by schema _id [${validForIdChars}], they will be replaced with _.`,
+      `Workspace "${rawWorkspaceName}" contains characters unsupported by schema _id [${validForNamesChars}], they will be replaced with _.`,
       'This could lead duplicate schema ids: consider renaming your workspace.',
     ].join('\n')
   }
+
+  const safeBaseId: DefaultWorkspaceSchemaId = `${SANITY_WORKSPACE_SCHEMA_ID_PREFIX}.${workspaceName}`
   return {
     idWarning,
-    safeId:
-      `${idPrefix ? (`${idPrefix}.` as const) : ''}${SANITY_WORKSPACE_SCHEMA_TYPE}.${workspaceName}` satisfies WorkspaceSchemaId,
+    safeBaseId,
+    safeTaggedId: `${safeBaseId}${tag ? `.${tag}` : ''}` satisfies WorkspaceSchemaId,
   }
 }
