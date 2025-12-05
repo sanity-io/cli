@@ -107,8 +107,8 @@ describe('#exec', () => {
 
           $ sanity exec some/script.js
 
-        Run the script at migrations/fullname.ts and configure getCliClient() to
-        include the current user token
+        Run the script at migrations/fullname.ts and configure \`getCliClient()\` from
+        \`sanity/cli\` to include the current user's token
 
           $ sanity exec migrations/fullname.ts --with-user-token
 
@@ -118,7 +118,9 @@ describe('#exec', () => {
 
         Pass arbitrary arguments to scripts by separating them with a \`--\`.
         Arguments are available in \`process.argv\` as they would in regular node
-        scripts
+        scripts (eg the following command would yield a \`process.argv\` of:
+        \`['/path/to/node', '/path/to/myscript.js', '--dry-run',
+        'positional-argument']\`)
 
           $ sanity exec --mock-browser-env myscript.js -- --dry-run \\
             positional-argument
@@ -173,7 +175,7 @@ describe('#exec', () => {
       const {cleanup} = await setupTestAuth(TEST_TOKEN)
 
       try {
-        const {exitCode, stderr, stdout} = await runExecCommand(
+        const {exitCode, stdout} = await runExecCommand(
           exampleDir,
           scriptPath,
           ['--with-user-token'],
@@ -182,11 +184,6 @@ describe('#exec', () => {
             SANITY_INTERNAL_ENV: 'staging',
           },
         )
-
-        if (exitCode !== 0) {
-          console.error('stderr:', stderr)
-          console.error('stdout:', stdout)
-        }
 
         expect(exitCode).toBe(0)
 
@@ -205,14 +202,9 @@ describe('#exec', () => {
     })
 
     test('executes script with --mock-browser-env flag', async () => {
-      const {exitCode, stderr, stdout} = await runExecCommand(exampleDir, scriptPath, [
+      const {exitCode, stdout} = await runExecCommand(exampleDir, scriptPath, [
         '--mock-browser-env',
       ])
-
-      if (exitCode !== 0) {
-        console.error('stderr:', stderr)
-        console.error('stdout:', stdout)
-      }
 
       expect(exitCode).toBe(0)
 
