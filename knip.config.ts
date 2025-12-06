@@ -43,7 +43,17 @@ const baseConfig = {
         'src/threads/registerBrowserEnv.ts',
       ],
       // temporarily ignore unused exports until schema work is done
-      ignore: ['src/actions/manifest/extractManifest.ts', 'src/actions/manifest/types.ts'],
+      ignore: [
+        'src/actions/manifest/extractManifest.ts',
+        'src/actions/manifest/types.ts',
+        // Schema utilities used by future deploy and list commands
+        'src/actions/schema/schemaStoreConstants.ts',
+        'src/actions/schema/utils/schemaActionHelpers.ts',
+        'src/actions/schema/utils/workspaceSchemaId.ts',
+        'src/actions/schema/utils/schemaStoreOutStrings.ts',
+        'src/actions/schema/utils/schemaStoreValidation.ts',
+        'src/actions/schema/utils/manifestReader.ts',
+      ],
       oclif: {
         config: ['oclif.config.js'],
       },

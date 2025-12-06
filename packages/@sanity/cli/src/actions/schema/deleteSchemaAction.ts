@@ -1,49 +1,42 @@
-import {type CliCommandContext} from '@sanity/cli'
 import chalk from 'chalk'
-import uniq from 'lodash/uniq'
 
-import {isDefined} from '../../../manifest/manifestTypeHelpers'
-import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes'
-import {createManifestExtractor, ensureManifestExtractSatisfied} from './utils/mainfestExtractor'
-import {createManifestReader} from './utils/manifestReader'
-import {createSchemaApiClient} from './utils/schemaApiClient'
-import {getDatasetsOutString, getStringList} from './utils/schemaStoreOutStrings'
+import {isDefined} from '../manifest/schemaTypeHelpers.js'
+import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
+import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
+import {createManifestReader} from './utils/manifestReader.js'
+import {createSchemaApiClient} from './utils/schemaApiClient.js'
+import {getDatasetsOutString, getStringList} from './utils/schemaStoreOutStrings.js'
 import {
   filterLogReadProjectIdMismatch,
   parseDeleteSchemasConfig,
   type SchemaStoreCommonFlags,
-} from './utils/schemaStoreValidation'
+} from './utils/schemaStoreValidation.js'
+
+// Native implementation instead of lodash/uniq
+function uniq<T>(array: T[]): T[] {
+  return [...new Set(array)]
+}
 
 export interface DeleteSchemaFlags extends SchemaStoreCommonFlags {
-  ids?: string
   dataset?: string
+  ids?: string
 }
 
 interface DeleteResult {
   dataset: string
-  schemaId: string
   deleted: boolean
+  schemaId: string
 }
 
 class DeleteIdError extends Error {
-  public id: string
   public dataset: string
+  public id: string
   constructor(id: string, dataset: string, options?: ErrorOptions) {
     super((options?.cause as {message?: string})?.message, options)
     this.name = 'DeleteIdError'
     this.id = id
     this.dataset = dataset
   }
-}
-
-export default function deleteSchemasActionForCommand(
-  flags: DeleteSchemaFlags,
-  context: CliCommandContext,
-): Promise<SchemaStoreActionResult> {
-  return deleteSchemaAction(flags, {
-    ...context,
-    manifestExtractor: createManifestExtractor(context),
-  })
 }
 
 /**
@@ -58,19 +51,19 @@ export async function deleteSchemaAction(
   flags: DeleteSchemaFlags,
   context: SchemaStoreContext,
 ): Promise<SchemaStoreActionResult> {
-  const {ids, dataset, extractManifest, manifestDir, verbose} = parseDeleteSchemasConfig(
+  const {dataset, extractManifest, ids, manifestDir, verbose} = parseDeleteSchemasConfig(
     flags,
     context,
   )
-  const {output, apiClient, jsonReader, manifestExtractor} = context
+  const {apiClient, jsonReader, manifestExtractor, output} = context
 
   // prettier-ignore
-  if (!(await ensureManifestExtractSatisfied({schemaRequired: true, extractManifest, manifestDir,  manifestExtractor, output,}))) {
+  if (!(await ensureManifestExtractSatisfied({extractManifest, manifestDir, manifestExtractor,  output, schemaRequired: true,}))) {
     return 'failure'
   }
 
-  const {client, projectId} = createSchemaApiClient(apiClient)
-  const manifest = await createManifestReader({manifestDir, output, jsonReader}).getManifest()
+  const {client, projectId} = await createSchemaApiClient(apiClient)
+  const manifest = await createManifestReader({jsonReader, manifestDir, output}).getManifest()
 
   const workspaces = manifest.workspaces
     .filter((workspace) => !dataset || workspace.dataset === dataset)
@@ -83,7 +76,7 @@ export async function deleteSchemaAction(
       return ids.map(async ({schemaId}): Promise<DeleteResult> => {
         try {
           const deletedSchema = await client.withConfig({dataset: targetDataset}).delete(schemaId)
-          return {dataset: targetDataset, schemaId, deleted: deletedSchema.results.length}
+          return {dataset: targetDataset, deleted: deletedSchema.results.length > 0, schemaId}
         } catch (err) {
           throw new DeleteIdError(schemaId, targetDataset, {cause: err})
         }
@@ -112,7 +105,10 @@ export async function deleteSchemaAction(
         if (error instanceof DeleteIdError) {
           output.error(
             chalk.red(
-              `Failed to delete schema "${error.id}" in dataset "${error.dataset}":\n${error.message}`,
+              [
+                `Failed to delete schema "${error.id}" in dataset "${error.dataset}":`,
+                error.message,
+              ].join('\n'),
             ),
           )
           if (verbose) output.error(error)
@@ -123,29 +119,31 @@ export async function deleteSchemaAction(
       }),
   )
 
-  const success = deletedIds.length === ids.length
+  // Compare unique schema IDs deleted vs requested (not total deletions across datasets)
+  const uniqueDeletedSchemaIds = uniq(deletedIds.map(({schemaId}) => schemaId))
+  const success = uniqueDeletedSchemaIds.length === ids.length
   if (success) {
-    output.success(`Successfully deleted ${deletedIds.length}/${ids.length} schemas`)
+    output.log(`Successfully deleted ${uniqueDeletedSchemaIds.length}/${ids.length} schemas`)
   } else {
     output.error(
       [
-        `Deleted ${deletedIds.length}/${ids.length} schemas.`,
-        deletedIds.length
+        `Deleted ${uniqueDeletedSchemaIds.length}/${ids.length} schemas.`,
+        deletedIds.length > 0
           ? `Successfully deleted ids:\n${deletedIds
               .map(
-                ({schemaId, dataset: targetDataset}) =>
+                ({dataset: targetDataset, schemaId}) =>
                   `- "${schemaId}" (in ${getDatasetsOutString([targetDataset])})`,
               )
               .join('\n')}`
           : undefined,
-        notFound.length
+        notFound.length > 0
           ? `Ids not found in ${getDatasetsOutString(datasets)}:\n${getStringList(notFound)}`
           : undefined,
-        ...(deleteFailureIds.length
+        ...(deleteFailureIds.length > 0
           ? [`Failed to delete ids:\n${getStringList(deleteFailureIds)}`, 'Check logs for errors.']
           : []),
       ]
-        .filter(isDefined)
+        .filter((item) => isDefined(item))
         .join('\n'),
     )
   }

@@ -1,14 +1,16 @@
-import {type CliApiClient, type CliOutputter} from '@sanity/cli'
+import {type Output} from '@sanity/cli-core'
+import {type SanityClient} from '@sanity/client'
 
-import {type ManifestExtractor} from './utils/mainfestExtractor'
+import {type ManifestExtractor} from './utils/manifestExtractor'
 import {type ManifestJsonReader} from './utils/manifestReader'
 
 export interface SchemaStoreContext {
-  output: CliOutputter
-  apiClient: CliApiClient
-  workDir: string
-  jsonReader?: ManifestJsonReader
+  apiClient: () => Promise<SanityClient>
   manifestExtractor: ManifestExtractor
+  output: Output
+  workDir: string
+
+  jsonReader?: ManifestJsonReader
 }
 
 /**
@@ -28,4 +30,4 @@ export interface SchemaStoreContext {
  * Invalid flags will always throw.
  *
  */
-export type SchemaStoreActionResult = 'success' | 'failure'
+export type SchemaStoreActionResult = 'failure' | 'success'
