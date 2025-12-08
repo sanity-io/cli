@@ -1,7 +1,7 @@
 import {Workspace} from 'sanity'
 
-export function getWorkspace(
-  workspaces: (Partial<Workspace> & Required<Pick<Workspace, 'name'>>)[],
+export function getWorkspace<T extends Required<Pick<Workspace, 'name'>>>(
+  workspaces: T[],
   workspaceName?: string,
 ) {
   if (workspaces.length === 0) {

@@ -17,7 +17,7 @@ const mockWorkspaces = [
   },
 ]
 
-describe('getWorkspace', () => {
+describe('#getWorkspace', () => {
   test('returns a default workspace if only one exists', () => {
     const workspace = getWorkspace(mockWorkspaces.slice(0, 1))
     expect(workspace).toMatchObject(mockWorkspaces[0])
