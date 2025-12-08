@@ -1,5 +1,6 @@
-import {isMainThread, parentPort, workerData as _workerData} from 'node:worker_threads'
+import {workerData as _workerData, isMainThread, parentPort} from 'node:worker_threads'
 
+import {mockBrowserEnvironment} from '@sanity/cli-core'
 import {
   type EncodableObject,
   type EncodableValue,
@@ -8,20 +9,21 @@ import {
 import {DescriptorConverter} from '@sanity/schema/_internal'
 import {type SchemaValidationProblem, type SchemaValidationProblemGroup} from '@sanity/types'
 
-import {getStudioWorkspaces} from '../util/getStudioWorkspaces'
-import {mockBrowserEnvironment} from '../util/mockBrowserEnvironment'
+import {importStudioConfig} from '../util/importStudioConfig.js'
 
 /** @internal */
 export interface ValidateSchemaWorkerData {
   workDir: string
-  workspace?: string
-  level?: SchemaValidationProblem['severity']
+
   debugSerialize?: boolean
+  level?: SchemaValidationProblem['severity']
+  workspace?: string
 }
 
 /** @internal */
 export interface ValidateSchemaWorkerResult {
   validation: SchemaValidationProblemGroup[]
+
   serializedDebug?: SeralizedSchemaDebug
 }
 
@@ -31,10 +33,10 @@ export interface ValidateSchemaWorkerResult {
  * @internal
  **/
 export type SeralizedSchemaDebug = {
-  size: number
-  parent?: SeralizedSchemaDebug
-  types: Record<string, SerializedTypeDebug>
   hoisted: Record<string, SerializedTypeDebug>
+  parent?: SeralizedSchemaDebug
+  size: number
+  types: Record<string, SerializedTypeDebug>
 }
 
 /**
@@ -43,17 +45,17 @@ export type SeralizedSchemaDebug = {
  * @internal
  **/
 export type SerializedTypeDebug = {
-  size: number
   extends: string
   fields?: Record<string, SerializedTypeDebug>
   of?: Record<string, SerializedTypeDebug>
+  size: number
 }
 
 const {
+  debugSerialize,
+  level = 'warning',
   workDir,
   workspace: workspaceName,
-  level = 'warning',
-  debugSerialize,
 } = _workerData as ValidateSchemaWorkerData
 
 async function main() {
@@ -61,12 +63,12 @@ async function main() {
     throw new Error('This module must be run as a worker thread')
   }
 
-  const cleanup = mockBrowserEnvironment(workDir)
+  const cleanup = await mockBrowserEnvironment(workDir)
 
   try {
-    const workspaces = await getStudioWorkspaces({basePath: workDir})
+    const workspaces = await importStudioConfig(workDir)
 
-    if (!workspaces.length) {
+    if (workspaces.length === 0) {
       throw new Error(`Configuration did not return any workspaces.`)
     }
 
@@ -97,6 +99,7 @@ async function main() {
     }
 
     const result: ValidateSchemaWorkerResult = {
+      serializedDebug,
       validation: validation
         .map((group) => ({
           ...group,
@@ -105,7 +108,6 @@ async function main() {
           ),
         }))
         .filter((group) => group.problems.length),
-      serializedDebug,
     }
 
     parentPort?.postMessage(result)
@@ -126,15 +128,6 @@ function getSeralizedSchemaDebug(set: SetSynchronization<string>): SeralizedSche
   for (const [id, value] of Object.entries(set.objectValues)) {
     const descType = typeof value.type === 'string' ? value.type : '<unknown>'
     switch (descType) {
-      case 'sanity.schema.namedType': {
-        const typeName = typeof value.name === 'string' ? value.name : id
-        if (isEncodableObject(value.typeDef)) {
-          const debug = getSerializedTypeDebug(value.typeDef)
-          types[typeName] = debug
-          size += debug.size
-        }
-        break
-      }
       case 'sanity.schema.hoisted': {
         const key = typeof value.key === 'string' ? value.key : id
         // The `hoisted` can technically  hoist _anything_,
@@ -146,15 +139,24 @@ function getSeralizedSchemaDebug(set: SetSynchronization<string>): SeralizedSche
         }
         break
       }
+      case 'sanity.schema.namedType': {
+        const typeName = typeof value.name === 'string' ? value.name : id
+        if (isEncodableObject(value.typeDef)) {
+          const debug = getSerializedTypeDebug(value.typeDef)
+          types[typeName] = debug
+          size += debug.size
+        }
+        break
+      }
       default:
     }
     size += JSON.stringify(value).length
   }
 
   return {
+    hoisted,
     size,
     types,
-    hoisted,
   }
 }
 
@@ -194,11 +196,12 @@ function getSerializedTypeDebug(typeDef: EncodableObject): SerializedTypeDebug {
   }
 
   return {
-    size: JSON.stringify(typeDef).length,
     extends: ext,
     fields,
     of,
+    size: JSON.stringify(typeDef).length,
   }
 }
 
-void main().then(() => process.exit())
+await main()
+process.exit()

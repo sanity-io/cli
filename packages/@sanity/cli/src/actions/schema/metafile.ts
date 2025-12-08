@@ -1,4 +1,4 @@
-import {type SeralizedSchemaDebug, type SerializedTypeDebug} from '../../threads/validateSchema'
+import {type SeralizedSchemaDebug, type SerializedTypeDebug} from '../../threads/validateSchema.js'
 
 // This implements the metafile format of ESBuild.
 type Metafile = {
@@ -7,25 +7,25 @@ type Metafile = {
 }
 
 type MetafileOutput = {
-  imports: []
-  exports: []
-  inputs: Record<string, {bytesInOutput: number}>
   bytes: number
+  exports: []
+  imports: []
+  inputs: Record<string, {bytesInOutput: number}>
 }
 
 type MetafileInput = {
   bytes: number
+  format: 'csj' | 'esm'
   imports: []
-  format: 'esm' | 'csj'
 }
 
 /** Converts the  */
 export function generateMetafile(schema: SeralizedSchemaDebug): Metafile {
   const output: MetafileOutput = {
-    imports: [],
-    exports: [],
-    inputs: {},
     bytes: 0,
+    exports: [],
+    imports: [],
+    inputs: {},
   }
 
   // Generate a esbuild metafile
@@ -52,8 +52,8 @@ export function generateMetafile(schema: SeralizedSchemaDebug): Metafile {
 
     inputs[path] = {
       bytes: selfSize,
-      imports: [],
       format: 'esm',
+      imports: [],
     }
 
     output.inputs[path] = {
@@ -73,5 +73,5 @@ export function generateMetafile(schema: SeralizedSchemaDebug): Metafile {
     processType(fakePath, entry)
   }
 
-  return {outputs: {root: output}, inputs}
+  return {inputs, outputs: {root: output}}
 }

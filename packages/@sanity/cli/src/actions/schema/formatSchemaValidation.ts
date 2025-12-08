@@ -1,8 +1,8 @@
 import {isatty} from 'node:tty'
 
+import {logSymbols} from '@sanity/cli-core'
 import {type SchemaValidationProblemGroup, type SchemaValidationProblemPath} from '@sanity/types'
 import chalk from 'chalk'
-import logSymbols from 'log-symbols'
 
 const isTty = isatty(1)
 
@@ -16,12 +16,12 @@ const severityValues = {error: 0, warning: 1}
 function formatPath(pathSegments: SchemaValidationProblemPath) {
   const format = (
     [curr, ...next]: SchemaValidationProblemPath,
-    mode: 'object' | 'array' = 'object',
+    mode: 'array' | 'object' = 'object',
   ): string => {
     if (!curr) return ''
     if (curr.kind === 'property') return format(next, curr.name === 'of' ? 'array' : 'object')
 
-    const name = curr.name ? curr.name : `<anonymous_${curr.type}>`
+    const name = curr.name || `<anonymous_${curr.type}>`
     return `${mode === 'array' ? `[${name}]` : `.${name}`}${format(next)}`
   }
 
@@ -34,32 +34,34 @@ export function getAggregatedSeverity(
   const groups = Array.isArray(groupOrGroups) ? groupOrGroups : [groupOrGroups]
   return groups
     .flatMap((group) => group.problems.map((problem) => problem.severity))
-    .find((severity) => severity === 'error')
+    .includes('error')
     ? 'error'
     : 'warning'
 }
 
 export function formatSchemaValidation(validation: SchemaValidationProblemGroup[]): string {
   let unnamedTopLevelTypeCount = 0
-  const validationByType = Object.entries(
-    validation.reduce<Record<string, SchemaValidationProblemGroup[]>>((acc, next) => {
-      const [firstSegment] = next.path
-      if (!firstSegment) return acc
-      if (firstSegment.kind !== 'type') return acc
+  const validationByTypeMap: Record<string, SchemaValidationProblemGroup[]> = {}
 
-      const topLevelType =
-        firstSegment.name || `<unnamed_${firstSegment.type}_type_${unnamedTopLevelTypeCount++}>`
-      const problems = acc[topLevelType] ?? []
+  for (const group of validation) {
+    const [firstSegment] = group.path
+    if (!firstSegment) continue
+    if (firstSegment.kind !== 'type') continue
 
-      problems.push(next)
+    const topLevelType =
+      firstSegment.name || `<unnamed_${firstSegment.type}_type_${unnamedTopLevelTypeCount++}>`
 
-      acc[topLevelType] = problems
-      return acc
-    }, {}),
-  )
+    if (!validationByTypeMap[topLevelType]) {
+      validationByTypeMap[topLevelType] = []
+    }
+
+    validationByTypeMap[topLevelType].push(group)
+  }
+
+  const validationByType = Object.entries(validationByTypeMap)
 
   const formatted = validationByType
-    .sort((a, b) => {
+    .toSorted((a, b) => {
       const [aType, aGroups] = a
       const [bType, bGroups] = b
       const aValue = severityValues[getAggregatedSeverity(aGroups)]
@@ -74,15 +76,15 @@ export function formatSchemaValidation(validation: SchemaValidationProblemGroup[
 
       const header = `${headers[getAggregatedSeverity(groups)]} ${formattedTopLevelType}`
       const body = groups
-        .sort(
+        .toSorted(
           (a, b) =>
             severityValues[getAggregatedSeverity(a)] - severityValues[getAggregatedSeverity(b)],
         )
         .map((group) => {
           const formattedPath = `  ${chalk.bold(formatPath(group.path) || '(root)')}`
           const formattedMessages = group.problems
-            .sort((a, b) => severityValues[a.severity] - severityValues[b.severity])
-            .map(({severity, message}) => `    ${logSymbols[severity]} ${message}`)
+            .toSorted((a, b) => severityValues[a.severity] - severityValues[b.severity])
+            .map(({message, severity}) => `    ${logSymbols[severity]} ${message}`)
             .join('\n')
 
           return `${formattedPath}\n${formattedMessages}`

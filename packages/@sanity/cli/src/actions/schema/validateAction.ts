@@ -3,35 +3,34 @@ import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {Worker} from 'node:worker_threads'
 
-import {type CliCommandArguments, type CliCommandContext} from '@sanity/cli'
-import logSymbols from 'log-symbols'
-import readPkgUp from 'read-pkg-up'
+import {logSymbols, Output, spinner} from '@sanity/cli-core'
+import {readPackageUp} from 'read-package-up'
 
 import {
   type ValidateSchemaWorkerData,
   type ValidateSchemaWorkerResult,
-} from '../../threads/validateSchema'
-import {formatSchemaValidation, getAggregatedSeverity} from './formatSchemaValidation'
-import {generateMetafile} from './metafile'
+} from '../../threads/validateSchema.js'
+import {formatSchemaValidation, getAggregatedSeverity} from './formatSchemaValidation.js'
+import {generateMetafile} from './metafile.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-interface ValidateFlags {
-  workspace?: string
+interface Options {
+  output: Output
+  workDir: string
+
+  debugMetafilePath?: string
   format?: string
   level?: 'error' | 'warning'
-  'debug-metafile-path'?: string
+  workspace?: string
 }
 
 export type SchemaValidationFormatter = (result: ValidateSchemaWorkerResult) => string
 
-export default async function validateAction(
-  args: CliCommandArguments<ValidateFlags>,
-  {workDir, output}: CliCommandContext,
-): Promise<void> {
-  const flags = args.extOptions
+export async function validateAction(options: Options): Promise<void> {
+  const {debugMetafilePath, format, level, output, workDir, workspace} = options
 
-  const rootPkgPath = readPkgUp.sync({cwd: __dirname})?.path
+  const rootPkgPath = (await readPackageUp({cwd: __dirname}))?.path
   if (!rootPkgPath) {
     throw new Error('Could not find root directory for `sanity` package')
   }
@@ -42,46 +41,28 @@ export default async function validateAction(
     '_internal',
     'cli',
     'threads',
-    'validateSchema.cjs',
+    'validateSchema.js',
   )
 
-  const level = flags.level || 'warning'
-
-  if (level !== 'error' && level !== 'warning') {
-    throw new Error(`Invalid level. Available levels are 'error' and 'warning'.`)
-  }
-
-  const format = flags.format || 'pretty'
-
-  if (!['pretty', 'ndjson', 'json'].includes(format)) {
-    throw new Error(
-      `Did not recognize format '${flags.format}'. Available formats are 'pretty', 'ndjson', and 'json'.`,
-    )
-  }
-
-  let spinner
+  let spin
 
   if (format === 'pretty') {
-    spinner = output
-      .spinner(
-        flags.workspace
-          ? `Validating schema from workspace '${flags.workspace}'…`
-          : 'Validating schema…',
-      )
-      .start()
+    spin = spinner(
+      workspace ? `Validating schema from workspace '${workspace}'…` : 'Validating schema…',
+    ).start()
   }
 
   const worker = new Worker(workerPath, {
-    workerData: {
-      workDir,
-      level,
-      workspace: flags.workspace,
-      debugSerialize: Boolean(flags['debug-metafile-path']),
-    } satisfies ValidateSchemaWorkerData,
     env: process.env,
+    workerData: {
+      debugSerialize: Boolean(debugMetafilePath),
+      level,
+      workDir,
+      workspace: workspace,
+    } satisfies ValidateSchemaWorkerData,
   })
 
-  const {validation, serializedDebug} = await new Promise<ValidateSchemaWorkerResult>(
+  const {serializedDebug, validation} = await new Promise<ValidateSchemaWorkerResult>(
     (resolve, reject) => {
       worker.addListener('message', resolve)
       worker.addListener('error', reject)
@@ -95,49 +76,49 @@ export default async function validateAction(
   const overallSeverity = getAggregatedSeverity(validation)
   const didFail = overallSeverity === 'error'
 
-  if (flags['debug-metafile-path'] && !didFail) {
+  if (debugMetafilePath && !didFail) {
     if (!serializedDebug) throw new Error('serializedDebug should always be produced')
     const metafile = generateMetafile(serializedDebug)
-    writeFileSync(flags['debug-metafile-path'], JSON.stringify(metafile), 'utf8')
+    writeFileSync(debugMetafilePath, JSON.stringify(metafile), 'utf8')
   }
 
   switch (format) {
+    case 'json': {
+      output.log(JSON.stringify(validation))
+      break
+    }
     case 'ndjson': {
       for (const group of validation) {
-        output.print(JSON.stringify(group))
+        output.log(JSON.stringify(group))
       }
       break
     }
-    case 'json': {
-      output.print(JSON.stringify(validation))
-      break
-    }
     default: {
-      spinner?.succeed('Validated schema')
-      output.print(`\nValidation results:`)
-      output.print(
+      spin?.succeed('Validated schema')
+      output.log(`\nValidation results:`)
+      output.log(
         `${logSymbols.error} Errors:   ${errorCount.toLocaleString('en-US')} error${
           errorCount === 1 ? '' : 's'
         }`,
       )
       if (level !== 'error') {
-        output.print(
+        output.log(
           `${logSymbols.warning} Warnings: ${warningCount.toLocaleString('en-US')} warning${
             warningCount === 1 ? '' : 's'
           }`,
         )
       }
-      output.print()
+      output.log()
 
-      output.print(formatSchemaValidation(validation))
+      output.log(formatSchemaValidation(validation))
 
-      if (flags['debug-metafile-path']) {
-        output.print()
+      if (debugMetafilePath) {
+        output.log()
         if (didFail) {
-          output.print(`${logSymbols.info} Metafile not written due to validation errors`)
+          output.log(`${logSymbols.info} Metafile not written due to validation errors`)
         } else {
-          output.print(`${logSymbols.info} Metafile written to: ${flags['debug-metafile-path']}`)
-          output.print(`  This can be analyzed at https://esbuild.github.io/analyze/`)
+          output.log(`${logSymbols.info} Metafile written to: ${debugMetafilePath}`)
+          output.log(`  This can be analyzed at https://esbuild.github.io/analyze/`)
         }
       }
     }
