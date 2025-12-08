@@ -10,8 +10,8 @@ vi.mock('node:fs/promises')
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => ({
   findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
+    directory: '/test/project',
+    root: '/test/project',
     type: 'studio',
   }),
 }))
@@ -104,9 +104,7 @@ describe('#schema:extract', () => {
     expect(stderr).toContain('Extracting schema with enforced required fields')
   })
 
-  // enforce-required-fields will set optional to false
-
-  test('should extract schame with path flag', async () => {
+  test('should extract schema with path flag', async () => {
     mockMkdir.mockResolvedValue(undefined)
     mockWriteFile.mockResolvedValue(undefined)
 
@@ -115,10 +113,10 @@ describe('#schema:extract', () => {
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('✔ Extracted schema')
 
-    expect(mockMkdir).toHaveBeenCalledWith('./test', {recursive: true})
+    expect(mockMkdir).toHaveBeenCalledWith('/test/project/test', {recursive: true})
 
     expect(mockWriteFile).toHaveBeenCalledWith(
-      'test/schema.json',
+      '/test/project/test/schema.json',
       // eslint-disable-next-line no-useless-escape
       expect.stringContaining(`\"name\": \"post\"`),
     )
