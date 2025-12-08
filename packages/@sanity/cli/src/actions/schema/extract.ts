@@ -1,5 +1,5 @@
-import {writeFile} from 'node:fs/promises'
-import {join} from 'node:path'
+import {mkdir, writeFile} from 'node:fs/promises'
+import {join, resolve} from 'node:path'
 
 import {spinner} from '@sanity/cli-core'
 import {extractSchema} from '@sanity/schema/_internal'
@@ -8,6 +8,8 @@ import {type Schema} from '@sanity/types'
 import {type ExtractSchemaCommand} from '../../commands/schema/extract'
 import {importStudioConfig} from '../../util/importStudioConfig.js'
 import {getWorkspace} from './getWorkspace.js'
+
+const FILENAME = 'schema.json'
 
 interface ExtractSchemaOptions {
   flags: ExtractSchemaCommand['flags']
@@ -38,16 +40,18 @@ export async function extract(options: ExtractSchemaOptions): Promise<void> {
       enforceRequiredFields,
     })
 
-    const outputDir = path || join(process.cwd(), 'schema.json')
+    const outputDir = `.${resolve(path || workDir)}`
+    const outputPath = join(outputDir, FILENAME)
+    await mkdir(outputDir, {recursive: true})
 
-    spin.text = `Writing schema to ${outputDir}`
+    spin.text = `Writing schema to ${outputPath}`
 
-    await writeFile(outputDir, `${JSON.stringify(schema, null, 2)}\n`)
+    await writeFile(outputPath, `${JSON.stringify(schema, null, 2)}\n`)
 
     spin.succeed(
       enforceRequiredFields
-        ? `Extracted schema to ${outputDir} with enforced required fields`
-        : `Extracted schema to ${outputDir}`,
+        ? `Extracted schema to ${outputPath} with enforced required fields`
+        : `Extracted schema to ${outputPath}`,
     )
   } catch (err) {
     spin.fail(
