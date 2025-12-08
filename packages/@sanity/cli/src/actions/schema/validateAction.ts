@@ -25,8 +25,6 @@ interface Options {
   workspace?: string
 }
 
-export type SchemaValidationFormatter = (result: ValidateSchemaWorkerResult) => string
-
 export async function validateAction(options: Options): Promise<void> {
   const {debugMetafilePath, format, level, output, workDir, workspace} = options
 
