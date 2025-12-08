@@ -1,4 +1,4 @@
-import {type SeralizedSchemaDebug, type SerializedTypeDebug} from '../../threads/validateSchema.js'
+import {type SerializedSchemaDebug, type SerializedTypeDebug} from '../../threads/validateSchema.js'
 
 // This implements the metafile format of ESBuild.
 type Metafile = {
@@ -20,7 +20,7 @@ type MetafileInput = {
 }
 
 /** Converts the  */
-export function generateMetafile(schema: SeralizedSchemaDebug): Metafile {
+export function generateMetafile(schema: SerializedSchemaDebug): Metafile {
   const output: MetafileOutput = {
     bytes: 0,
     exports: [],

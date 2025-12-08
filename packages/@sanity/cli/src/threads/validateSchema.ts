@@ -24,7 +24,7 @@ export interface ValidateSchemaWorkerData {
 export interface ValidateSchemaWorkerResult {
   validation: SchemaValidationProblemGroup[]
 
-  serializedDebug?: SeralizedSchemaDebug
+  serializedDebug?: SerializedSchemaDebug
 }
 
 /**
@@ -32,9 +32,9 @@ export interface ValidateSchemaWorkerResult {
  *
  * @internal
  **/
-export type SeralizedSchemaDebug = {
+export type SerializedSchemaDebug = {
   hoisted: Record<string, SerializedTypeDebug>
-  parent?: SeralizedSchemaDebug
+  parent?: SerializedSchemaDebug
   size: number
   types: Record<string, SerializedTypeDebug>
 }
@@ -95,7 +95,7 @@ async function main() {
     if (debugSerialize) {
       const conv = new DescriptorConverter()
       const set = await conv.get(schema)
-      serializedDebug = getSeralizedSchemaDebug(set)
+      serializedDebug = getSerializedSchemaDebug(set)
     }
 
     const result: ValidateSchemaWorkerResult = {
@@ -120,7 +120,7 @@ async function main() {
   }
 }
 
-function getSeralizedSchemaDebug(set: SetSynchronization<string>): SeralizedSchemaDebug {
+function getSerializedSchemaDebug(set: SetSynchronization<string>): SerializedSchemaDebug {
   let size = 0
   const types: Record<string, SerializedTypeDebug> = {}
   const hoisted: Record<string, SerializedTypeDebug> = {}
