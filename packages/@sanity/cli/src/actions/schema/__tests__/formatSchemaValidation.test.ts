@@ -1,3 +1,4 @@
+import {logSymbols} from '@sanity/cli-core'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {describe, expect, it, vi} from 'vitest'
 
@@ -11,82 +12,82 @@ describe('formatSchemaValidation', () => {
     const validation: SchemaValidationProblemGroup[] = [
       {
         path: [
-          {kind: 'type', type: 'document', name: 'arraysTest'},
+          {kind: 'type', name: 'arraysTest', type: 'document'},
           {kind: 'property', name: 'fields'},
-          {kind: 'type', type: 'array', name: 'imageArray'},
+          {kind: 'type', name: 'imageArray', type: 'array'},
           {kind: 'property', name: 'of'},
           {kind: 'type', type: 'image'},
           {kind: 'property', name: 'fields'},
-          {kind: 'type', type: 'string', name: '<unnamed_type_@_index_1>'},
+          {kind: 'type', name: '<unnamed_type_@_index_1>', type: 'string'},
         ],
         problems: [
           {
-            severity: 'error',
-            message: 'Missing field name',
             helpId: 'schema-object-fields-invalid',
+            message: 'Missing field name',
+            severity: 'error',
           },
         ],
       },
       {
         path: [
-          {kind: 'type', type: 'document', name: 'blocksTest'},
+          {kind: 'type', name: 'blocksTest', type: 'document'},
           {kind: 'property', name: 'fields'},
-          {kind: 'type', type: 'string', name: '<unnamed_type_@_index_1>'},
+          {kind: 'type', name: '<unnamed_type_@_index_1>', type: 'string'},
         ],
         problems: [
           {
-            severity: 'error',
-            message: 'Missing field name',
             helpId: 'schema-object-fields-invalid',
+            message: 'Missing field name',
+            severity: 'error',
           },
           {
-            severity: 'error',
-            message: 'Type is missing a type.',
             helpId: 'schema-type-missing-name-or-type',
+            message: 'Type is missing a type.',
+            severity: 'error',
           },
         ],
       },
       {
         path: [
-          {kind: 'type', type: 'document', name: 'blocksTest'},
+          {kind: 'type', name: 'blocksTest', type: 'document'},
           {kind: 'property', name: 'fields'},
-          {kind: 'type', type: 'array', name: 'defaults'},
+          {kind: 'type', name: 'defaults', type: 'array'},
         ],
         problems: [
           {
-            severity: 'warning',
+            helpId: 'schema-array-of-type-global-type-conflict',
             message:
               'Found array member declaration with the same name as the global schema type "objectWithNestedArray". It\'s recommended to use a unique name to avoid possibly incompatible data types that shares the same name.',
-            helpId: 'schema-array-of-type-global-type-conflict',
+            severity: 'warning',
           },
         ],
       },
       {
         path: [
-          {kind: 'type', type: 'document', name: 'pt_customMarkersTest'},
+          {kind: 'type', name: 'pt_customMarkersTest', type: 'document'},
           {kind: 'property', name: 'fields'},
-          {kind: 'type', type: 'array', name: 'content'},
+          {kind: 'type', name: 'content', type: 'array'},
           {kind: 'property', name: 'of'},
-          {kind: 'type', type: 'block', name: 'block'},
+          {kind: 'type', name: 'block', type: 'block'},
         ],
         problems: [
           {
-            severity: 'warning',
+            helpId: 'schema-deprecated-blockeditor-key',
             message:
               'Decorator "boost" has deprecated key "blockEditor", please refer to the documentation on how to configure the block type for version 3.',
-            helpId: 'schema-deprecated-blockeditor-key',
+            severity: 'warning',
           },
           {
-            severity: 'warning',
+            helpId: 'schema-deprecated-blockeditor-key',
             message:
               'Annotation has deprecated key "blockEditor", please refer to the documentation on how to configure the block type for version 3.',
-            helpId: 'schema-deprecated-blockeditor-key',
+            severity: 'warning',
           },
           {
-            severity: 'warning',
+            helpId: 'schema-deprecated-blockeditor-key',
             message:
               'Style has deprecated key "blockEditor", please refer to the documentation on how to configure the block type for version 3.',
-            helpId: 'schema-deprecated-blockeditor-key',
+            severity: 'warning',
           },
         ],
       },
@@ -96,20 +97,20 @@ describe('formatSchemaValidation', () => {
       `
 [ERROR] [arraysTest]
   imageArray[<anonymous_image>].<unnamed_type_@_index_1>
-    ✖ Missing field name
+    ${logSymbols.error} Missing field name
 
 [ERROR] [blocksTest]
   <unnamed_type_@_index_1>
-    ✖ Missing field name
-    ✖ Type is missing a type.
+    ${logSymbols.error} Missing field name
+    ${logSymbols.error} Type is missing a type.
   defaults
-    ⚠ Found array member declaration with the same name as the global schema type "objectWithNestedArray". It's recommended to use a unique name to avoid possibly incompatible data types that shares the same name.
+    ${logSymbols.warning} Found array member declaration with the same name as the global schema type "objectWithNestedArray". It's recommended to use a unique name to avoid possibly incompatible data types that shares the same name.
 
 [WARN] [pt_customMarkersTest]
   content[block]
-    ⚠ Decorator "boost" has deprecated key "blockEditor", please refer to the documentation on how to configure the block type for version 3.
-    ⚠ Annotation has deprecated key "blockEditor", please refer to the documentation on how to configure the block type for version 3.
-    ⚠ Style has deprecated key "blockEditor", please refer to the documentation on how to configure the block type for version 3.
+    ${logSymbols.warning} Decorator "boost" has deprecated key "blockEditor", please refer to the documentation on how to configure the block type for version 3.
+    ${logSymbols.warning} Annotation has deprecated key "blockEditor", please refer to the documentation on how to configure the block type for version 3.
+    ${logSymbols.warning} Style has deprecated key "blockEditor", please refer to the documentation on how to configure the block type for version 3.
 `.trim(),
     )
   })

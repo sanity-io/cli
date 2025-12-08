@@ -35,14 +35,7 @@ export async function validateAction(options: Options): Promise<void> {
     throw new Error('Could not find root directory for `sanity` package')
   }
 
-  const workerPath = path.join(
-    path.dirname(rootPkgPath),
-    'lib',
-    '_internal',
-    'cli',
-    'threads',
-    'validateSchema.js',
-  )
+  const workerPath = path.join(path.dirname(rootPkgPath), 'dist', 'threads', 'validateSchema.js')
 
   let spin
 
