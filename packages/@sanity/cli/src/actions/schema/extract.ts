@@ -1,5 +1,5 @@
 import {mkdir, writeFile} from 'node:fs/promises'
-import {join} from 'node:path'
+import {join, resolve} from 'node:path'
 
 import {spinner} from '@sanity/cli-core'
 import {extractSchema} from '@sanity/schema/_internal'
@@ -44,7 +44,7 @@ export async function extract(options: ExtractSchemaOptions): Promise<void> {
       enforceRequiredFields,
     })
 
-    const outputDir = path ? join(workDir, path) : workDir
+    const outputDir = path ? resolve(join(workDir, path)) : workDir
     const outputPath = join(outputDir, FILENAME)
     await mkdir(outputDir, {recursive: true})
 
