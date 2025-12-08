@@ -10,8 +10,8 @@ packages:
   - 'tmp/*'
 
 catalog:
-  eslint: ^9.36.0
-  '@eslint/compat': ^1.4.0
+  eslint: ^9.39.1
+  '@eslint/compat': ^1.4.1
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:

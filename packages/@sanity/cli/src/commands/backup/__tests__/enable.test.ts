@@ -74,7 +74,7 @@ describe('#backup:enable', () => {
         $ sanity backup enable [DATASET]
 
       ARGUMENTS
-        DATASET  Dataset name to enable backup for
+        [DATASET]  Dataset name to enable backup for
 
       DESCRIPTION
         Enable backup for a dataset.

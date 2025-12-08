@@ -144,7 +144,7 @@ describe('#migration:run', () => {
           [--progress] [--project <value>]
 
       ARGUMENTS
-        ID  ID
+        [ID]  ID
 
       FLAGS
         --api-version=<value>  API version to use when migrating. Defaults to

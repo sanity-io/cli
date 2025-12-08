@@ -21,7 +21,8 @@ describe('#dataset:import', () => {
       FLAGS
         -d, --dataset=<value>                    (required) Dataset to import to
         -p, --project=<value>                    (required) Project ID to import to
-        -t, --token=<value>                      Token to authenticate with
+        -t, --token=<value>                      [env: SANITY_IMPORT_TOKEN] Token to
+                                                 authenticate with
             --allow-assets-in-different-dataset  Allow asset documents to reference
                                                  different project/dataset
             --allow-failing-assets               Skip assets that cannot be

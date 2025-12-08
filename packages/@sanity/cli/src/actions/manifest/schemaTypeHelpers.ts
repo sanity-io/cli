@@ -1,15 +1,18 @@
 import {
   type CrossDatasetReferenceSchemaType,
+  type GlobalDocumentReferenceSchemaType,
   type ObjectField,
   type ObjectSchemaType,
   type ReferenceSchemaType,
   type SchemaType,
 } from '@sanity/types'
 
-const DEFAULT_IMAGE_FIELDS = ['asset', 'hotspot', 'crop', 'media']
-const DEFAULT_FILE_FIELDS = ['asset', 'media']
-const DEFAULT_GEOPOINT_FIELDS = ['lat', 'lng', 'alt']
-const DEFAULT_SLUG_FIELDS = ['current', 'source']
+const DEFAULT_IMAGE_FIELDS = new Set(['asset', 'crop', 'hotspot', 'media'])
+const DEFAULT_FILE_FIELDS = new Set(['asset', 'media'])
+const DEFAULT_GEOPOINT_FIELDS = new Set(['alt', 'lat', 'lng'])
+const DEFAULT_SLUG_FIELDS = new Set(['current', 'source'])
+
+type InternalOwnProps = {fields?: unknown[]; name?: string; type?: string}
 
 export function getCustomFields(type: ObjectSchemaType): (ObjectField & {fieldset?: string})[] {
   const fields = type.fieldsets
@@ -28,16 +31,16 @@ export function getCustomFields(type: ObjectSchemaType): (ObjectField & {fieldse
     return []
   }
   if (isType(type, 'slug')) {
-    return fields.filter((f) => !DEFAULT_SLUG_FIELDS.includes(f.name))
+    return fields.filter((f) => !DEFAULT_SLUG_FIELDS.has(f.name))
   }
   if (isType(type, 'geopoint')) {
-    return fields.filter((f) => !DEFAULT_GEOPOINT_FIELDS.includes(f.name))
+    return fields.filter((f) => !DEFAULT_GEOPOINT_FIELDS.has(f.name))
   }
   if (isType(type, 'image')) {
-    return fields.filter((f) => !DEFAULT_IMAGE_FIELDS.includes(f.name))
+    return fields.filter((f) => !DEFAULT_IMAGE_FIELDS.has(f.name))
   }
   if (isType(type, 'file')) {
-    return fields.filter((f) => !DEFAULT_FILE_FIELDS.includes(f.name))
+    return fields.filter((f) => !DEFAULT_FILE_FIELDS.has(f.name))
   }
   return fields
 }
@@ -50,26 +53,39 @@ export function isCrossDatasetReference(type: SchemaType): type is CrossDatasetR
   return isType(type, 'crossDatasetReference')
 }
 
-export function isObjectField(maybeOjectField: unknown): boolean {
+export function isGlobalDocumentReference(
+  type: SchemaType,
+): type is GlobalDocumentReferenceSchemaType {
+  return isType(type, 'globalDocumentReference')
+}
+
+function isObjectField(maybeOjectField: unknown): boolean {
   return (
     typeof maybeOjectField === 'object' && maybeOjectField !== null && 'name' in maybeOjectField
   )
 }
 
 export function isCustomized(maybeCustomized: SchemaType): boolean {
+  const internalOwnProps = getSchemaTypeInternalOwnProps(maybeCustomized)
+
   const hasFieldsArray =
     isObjectField(maybeCustomized) &&
-    !isType(maybeCustomized, 'reference') &&
-    !isType(maybeCustomized, 'crossDatasetReference') &&
+    !isReference(maybeCustomized) &&
+    !isCrossDatasetReference(maybeCustomized) &&
+    !isGlobalDocumentReference(maybeCustomized) &&
     'fields' in maybeCustomized &&
-    Array.isArray(maybeCustomized.fields)
+    Array.isArray(maybeCustomized.fields) &&
+    // needed to differentiate inline, named array object types from globally defined types
+    // we only consider it customized if the _definition_ has fields declared
+    // this holds for all customizable object-like types: object, document, image and file
+    internalOwnProps?.fields
 
   if (!hasFieldsArray) {
     return false
   }
 
   const fields = getCustomFields(maybeCustomized)
-  return !!fields.length
+  return fields.length > 0
 }
 
 export function isType(schemaType: SchemaType, typeName: string): boolean {
@@ -90,7 +106,7 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object'
 }
 
-export function isPrimitive(value: unknown): value is string | boolean | number {
+export function isPrimitive(value: unknown): value is boolean | number | string {
   return isString(value) || isBoolean(value) || isNumber(value)
 }
 
@@ -104,4 +120,19 @@ function isNumber(value: unknown): value is number {
 
 function isBoolean(value: unknown): value is boolean {
   return typeof value === 'number'
+}
+
+/**
+ * _internal_ownProps contains the _definition_ for the type.
+ * Without it we cannot differentiate inline array item types from globally defined types in array.of
+ */
+function getSchemaTypeInternalOwnProps(type: SchemaType): InternalOwnProps | undefined {
+  return (type as {_internal_ownProps?: InternalOwnProps})?._internal_ownProps
+}
+
+/**
+ * This allows us to differentiate inline array.of type definitions vs global type names on compiled schema types
+ */
+export function getDefinedTypeName(type: SchemaType): string | undefined {
+  return getSchemaTypeInternalOwnProps(type)?.type
 }

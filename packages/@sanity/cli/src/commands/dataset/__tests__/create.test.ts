@@ -71,7 +71,7 @@ describe('#dataset:create', () => {
         $ sanity dataset create [NAME] [--visibility custom|private|public]
 
       ARGUMENTS
-        NAME  Name of the dataset to create
+        [NAME]  Name of the dataset to create
 
       FLAGS
         --visibility=<option>  Set visibility for this dataset (custom/private/public)

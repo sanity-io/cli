@@ -91,7 +91,7 @@ describe('#deploy', () => {
           [--schema-required] [--source-maps] [--verbose] [-y]
 
       ARGUMENTS
-        SOURCEDIR  Source directory
+        [SOURCEDIR]  Source directory
 
       FLAGS
         -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt

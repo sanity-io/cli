@@ -1,14 +1,10 @@
-import DOMPurify from 'isomorphic-dompurify'
-import startCase from 'lodash/startCase'
-import {renderToString} from 'react-dom/server'
 import {
   type ArraySchemaType,
   type BlockDefinition,
   type BooleanSchemaType,
-  ConcreteRuleClass,
-  createSchema,
   type CrossDatasetReferenceSchemaType,
   type FileSchemaType,
+  type GlobalDocumentReferenceSchemaType,
   type MultiFieldSet,
   type NumberSchemaType,
   type ObjectField,
@@ -21,22 +17,32 @@ import {
   type SchemaValidationValue,
   type SpanSchemaType,
   type StringSchemaType,
+} from '@sanity/types'
+import DOMPurify from 'isomorphic-dompurify'
+import startCase from 'lodash-es/startCase.js'
+import {renderToString} from 'react-dom/server'
+import {
+  ConcreteRuleClass,
+  createSchema,
   type Workspace,
 } from 'sanity'
 import {ServerStyleSheet} from 'styled-components'
 
-import {SchemaIcon, type SchemaIconProps} from './Icon'
+import {config} from './purifyConfig.js'
+import {SchemaIcon, type SchemaIconProps} from './SchemaIcon.js'
 import {
   getCustomFields,
+  getDefinedTypeName,
   isCrossDatasetReference,
   isCustomized,
   isDefined,
+  isGlobalDocumentReference,
   isPrimitive,
   isRecord,
   isReference,
   isString,
   isType,
-} from './manifestTypeHelpers'
+} from './schemaTypeHelpers.js'
 import {
   type CreateWorkspaceManifest,
   type ManifestField,
@@ -47,59 +53,60 @@ import {
   type ManifestTool,
   type ManifestValidationGroup,
   type ManifestValidationRule,
-} from './manifestTypes'
-import {config} from './purifyConfig'
+} from './types'
 
 interface Context {
   schema: Schema
 }
 
 type SchemaTypeKey =
+  | 'group' // we strip this from fields
   | keyof ArraySchemaType
+  | keyof BlockDefinition
   | keyof BooleanSchemaType
   | keyof FileSchemaType
   | keyof NumberSchemaType
   | keyof ObjectSchemaType
-  | keyof StringSchemaType
   | keyof ReferenceSchemaType
-  | keyof BlockDefinition
-  | 'group' // we strip this from fields
+  | keyof StringSchemaType
 
-type Validation = {validation: ManifestValidationGroup[]} | Record<string, never>
-type ObjectFields = {fields: ManifestField[]} | Record<string, never>
+type Validation = Record<string, never> | {validation: ManifestValidationGroup[]}
+type ObjectFields = Record<string, never> | {fields: ManifestField[]}
 type SerializableProp = ManifestSerializable | ManifestSerializable[] | undefined
 type ManifestValidationFlag = ManifestValidationRule['flag']
 type ValidationRuleTransformer = (rule: RuleSpec) => ManifestValidationRule | undefined
 
 const MAX_CUSTOM_PROPERTY_DEPTH = 5
-const INLINE_TYPES = ['document', 'object', 'image', 'file']
 
-export function extractCreateWorkspaceManifest(workspace: Workspace): CreateWorkspaceManifest {
-  const serializedSchema = extractManifestSchemaTypes(workspace.schema)
-  const serializedTools = extractManifestTools(workspace.tools)
+export function extractWorkspaceManifest(workspaces: Workspace[]): CreateWorkspaceManifest[] {
+  return workspaces.map((workspace) => {
+    const serializedSchema = extractManifestSchemaTypes(workspace.schema as Schema)
+    const serializedTools = extractManifestTools(workspace.tools)
 
-  return {
-    name: workspace.name,
-    title: workspace.title,
-    subtitle: workspace.subtitle,
-    basePath: workspace.basePath,
-    projectId: workspace.projectId,
-    dataset: workspace.dataset,
-    icon: resolveIcon({
-      icon: workspace.icon,
-      title: workspace.title,
+    return {
+      basePath: workspace.basePath,
+      dataset: workspace.dataset,
+      icon: resolveIcon({
+        icon: workspace.icon,
+        subtitle: workspace.subtitle,
+        title: workspace.title,
+      }),
+      mediaLibrary: workspace.mediaLibrary,
+      name: workspace.name,
+      projectId: workspace.projectId,
+      schema: serializedSchema,
       subtitle: workspace.subtitle,
-    }),
-    schema: serializedSchema,
-    tools: serializedTools,
-  }
+      title: workspace.title,
+      tools: serializedTools,
+    }
+  })
 }
 
 /**
  * Extracts all serializable properties from userland schema types,
  * so they best-effort can be used as definitions for Schema.compile
 . */
-export function extractManifestSchemaTypes(schema: Schema): ManifestSchemaType[] {
+function extractManifestSchemaTypes(schema: Schema): ManifestSchemaType[] {
   const typeNames = schema.getTypeNames()
   const context = {schema}
 
@@ -108,7 +115,7 @@ export function extractManifestSchemaTypes(schema: Schema): ManifestSchemaType[]
   return typeNames
     .filter((typeName) => !studioDefaultTypeNames.includes(typeName))
     .map((typeName) => schema.get(typeName))
-    .filter((type): type is SchemaType => typeof type !== 'undefined')
+    .filter((type): type is SchemaType => type !== undefined)
     .map((type) => transformType(type, context))
 }
 
@@ -124,9 +131,12 @@ function transformCommonTypeFields(
   const crossDatasetRefProps = isCrossDatasetReference(type)
     ? transformCrossDatasetReference(type)
     : {}
+  const globalRefProps = isGlobalDocumentReference(type)
+    ? transformGlobalDocumentReference(type)
+    : {}
 
   const objectFields: ObjectFields =
-    type.jsonType === 'object' && type.type && INLINE_TYPES.includes(typeName) && isCustomized(type)
+    type.jsonType === 'object' && type.type && isCustomized(type)
       ? {
           fields: getCustomFields(type).map((objectField) => transformField(objectField, context)),
         }
@@ -140,6 +150,7 @@ function transformCommonTypeFields(
     ...arrayProps,
     ...referenceProps,
     ...crossDatasetRefProps,
+    ...globalRefProps,
     ...ensureConditional('readOnly', type.readOnly),
     ...ensureConditional('hidden', type.hidden),
     ...transformFieldsets(type),
@@ -151,7 +162,7 @@ function transformCommonTypeFields(
 
 function transformFieldsets(
   type: SchemaType,
-): {fieldsets: ManifestFieldset[]} | Record<string, never> {
+): Record<string, never> | {fieldsets: ManifestFieldset[]} {
   if (type.jsonType !== 'object') {
     return {}
   }
@@ -184,42 +195,42 @@ function transformType(type: SchemaType, context: Context): ManifestSchemaType {
 }
 
 function retainCustomTypeProps(type: SchemaType): Record<string, SerializableProp> {
-  const manuallySerializedFields: SchemaTypeKey[] = [
-    //explicitly added
-    'name',
-    'title',
-    'description',
-    'readOnly',
-    'hidden',
-    'validation',
-    'fieldsets',
-    'fields',
-    'to',
-    'of',
-    // not serialized
-    'type',
-    'jsonType',
+  const manuallySerializedFields = new Set<SchemaTypeKey>([
     '__experimental_actions',
     '__experimental_formPreviewTitle',
     '__experimental_omnisearch_visibility',
     '__experimental_search',
     'components',
-    'icon',
-    'orderings',
-    'preview',
-    'groups',
+    'description',
+    'fields',
+    'fieldsets',
     //only exists on fields
     'group',
+    'groups',
+    'hidden',
+    'icon',
+    'jsonType',
+    //explicitly added
+    'name',
+    'of',
+    'orderings',
+    'preview',
+    'readOnly',
+    'title',
+    'to',
+    // not serialized
+    'type',
+    'validation',
     // we know about these, but let them be generically handled
     // deprecated
     // rows (from text)
     // initialValue
     // options
     // crossDatasetReference props
-  ]
+  ])
   const typeWithoutManuallyHandledFields = Object.fromEntries(
     Object.entries(type).filter(
-      ([key]) => !manuallySerializedFields.includes(key as unknown as SchemaTypeKey),
+      ([key]) => !manuallySerializedFields.has(key as unknown as SchemaTypeKey),
     ),
   )
   return retainSerializableProps(typeWithoutManuallyHandledFields) as Record<
@@ -254,7 +265,7 @@ function retainSerializableProps(maybeSerializable: unknown, depth = 0): Seriali
     const arrayItems = maybeSerializable
       .map((item) => retainSerializableProps(item, depth + 1))
       .filter((item): item is ManifestSerializable => isDefined(item))
-    return arrayItems.length ? arrayItems : undefined
+    return arrayItems.length > 0 ? arrayItems : undefined
   }
 
   if (isRecord(maybeSerializable)) {
@@ -263,7 +274,7 @@ function retainSerializableProps(maybeSerializable: unknown, depth = 0): Seriali
         return [key, retainSerializableProps(value, depth + 1)]
       })
       .filter(([, value]) => isDefined(value))
-    return serializableEntries.length ? Object.fromEntries(serializableEntries) : undefined
+    return serializableEntries.length > 0 ? Object.fromEntries(serializableEntries) : undefined
   }
 
   return undefined
@@ -271,8 +282,7 @@ function retainSerializableProps(maybeSerializable: unknown, depth = 0): Seriali
 
 function transformField(field: ObjectField & {fieldset?: string}, context: Context): ManifestField {
   const fieldType = field.type
-  const typeNameExists = !!context.schema.get(fieldType.name)
-  const typeName = typeNameExists ? fieldType.name : (fieldType.type?.name ?? fieldType.name)
+  const typeName = getDefinedTypeName(fieldType) ?? fieldType.name
   return {
     ...transformCommonTypeFields(fieldType, typeName, context),
     name: field.name,
@@ -289,8 +299,7 @@ function transformArrayMember(
 ): Pick<ManifestField, 'of'> {
   return {
     of: arrayMember.of.map((type) => {
-      const typeNameExists = !!context.schema.get(type.name)
-      const typeName = typeNameExists ? type.name : (type.type?.name ?? type.name)
+      const typeName = getDefinedTypeName(type) ?? type.name
       return {
         ...transformCommonTypeFields(type, typeName, context),
         type: typeName,
@@ -314,7 +323,24 @@ function transformReference(reference: ReferenceSchemaType): Pick<ManifestSchema
 
 function transformCrossDatasetReference(
   reference: CrossDatasetReferenceSchemaType,
-): Pick<ManifestSchemaType, 'to' | 'preview'> {
+): Pick<ManifestSchemaType, 'preview' | 'to'> {
+  return {
+    to: (reference.to ?? []).map((crossDataset) => {
+      const preview = crossDataset.preview?.select
+        ? {preview: {select: crossDataset.preview.select}}
+        : {}
+      return {
+        type: crossDataset.type,
+        ...ensureCustomTitle(crossDataset.type, crossDataset.title),
+        ...preview,
+      }
+    }),
+  }
+}
+
+function transformGlobalDocumentReference(
+  reference: GlobalDocumentReferenceSchemaType,
+): Pick<ManifestSchemaType, 'preview' | 'to'> {
   return {
     to: (reference.to ?? []).map((crossDataset) => {
       const preview = crossDataset.preview?.select
@@ -352,14 +378,14 @@ function transformValidation(validation: SchemaValidationValue): Validation {
   )
 
   // we dont want type in the output as that is implicitly given by the typedef itself an will only bloat the payload
-  const disallowedFlags = ['type']
+  const disallowedFlags = new Set(['type'])
 
   // Validation rules that refer to other fields use symbols, which cannot be serialized. It would
   // be possible to transform these to a serializable type, but we haven't implemented that for now.
-  const disallowedConstraintTypes: (symbol | unknown)[] = [ConcreteRuleClass.FIELD_REF]
+  const disallowedConstraintTypes = new Set<symbol | unknown>([ConcreteRuleClass.FIELD_REF])
 
   const serializedValidation = validationArray
-    .map(({_rules, _message, _level}) => {
+    .map(({_level, _message, _rules}) => {
       const message: Partial<Pick<ManifestValidationGroup, 'message'>> =
         typeof _message === 'string' ? {message: _message} : {}
 
@@ -369,39 +395,42 @@ function transformValidation(validation: SchemaValidationValue): Validation {
             return false
           }
 
-          const {flag, constraint} = rule
+          const {constraint, flag} = rule
 
-          if (disallowedFlags.includes(flag)) {
+          if (disallowedFlags.has(flag)) {
             return false
           }
 
           return !(
             typeof constraint === 'object' &&
             'type' in constraint &&
-            disallowedConstraintTypes.includes(constraint.type)
+            disallowedConstraintTypes.has(constraint.type)
           )
         })
-        .reduce<ManifestValidationRule[]>((rules, rule) => {
+        .map((rule) => {
           const transformer: ValidationRuleTransformer =
             validationRuleTransformers[rule.flag] ??
             ((spec) => retainSerializableProps(spec) as ManifestValidationRule)
 
           const transformedRule = transformer(rule)
-          if (!transformedRule) {
-            return rules
-          }
-          return [...rules, transformedRule]
-        }, [])
 
+          if (!transformedRule) {
+            return
+          }
+
+          return transformedRule
+        })
+        .filter((rule) => rule !== undefined)
+    
       return {
-        rules: serializedRules,
         level: _level,
+        rules: serializedRules,
         ...message,
       }
     })
-    .filter((group) => !!group.rules.length)
+    .filter((group) => group.rules.length > 0)
 
-  return serializedValidation.length ? {validation: serializedValidation} : {}
+  return serializedValidation.length > 0 ? {validation: serializedValidation} : {}
 }
 
 function ensureCustomTitle(typeName: string, value: unknown) {
@@ -441,10 +470,10 @@ function ensureConditional<const Key extends string>(key: Key, value: unknown) {
   return {}
 }
 
-export function transformBlockType(
+function transformBlockType(
   blockType: SchemaType,
   context: Context,
-): Pick<ManifestSchemaType, 'marks' | 'lists' | 'styles' | 'of'> | Record<string, never> {
+): Pick<ManifestSchemaType, 'lists' | 'marks' | 'of' | 'styles'> | Record<string, never> {
   if (blockType.jsonType !== 'object' || !isType(blockType, 'block')) {
     return {}
   }
@@ -470,13 +499,13 @@ export function transformBlockType(
     []) as ObjectSchemaType[]
 
   return {
+    lists: resolveEnabledListItems(blockType),
     marks: {
       annotations: (spanType as SpanSchemaType).annotations.map((t) => transformType(t, context)),
       decorators: resolveEnabledDecorators(spanType),
     },
-    lists: resolveEnabledListItems(blockType),
-    styles: resolveEnabledStyles(blockType),
     of: inlineObjectTypes.map((t) => transformType(t, context)),
+    styles: resolveEnabledStyles(blockType),
   }
 }
 
@@ -500,7 +529,7 @@ function resolveTitleValueArray(possibleArray: unknown): ManifestTitledValue[] |
   }
   const titledValues = possibleArray
     .filter(
-      (d): d is {value: string; title?: string} => isRecord(d) && !!d.value && isString(d.value),
+      (d): d is {title?: string; value: string} => isRecord(d) && !!d.value && isString(d.value),
     )
     .map((item) => {
       return {
@@ -518,19 +547,19 @@ function resolveTitleValueArray(possibleArray: unknown): ManifestTitledValue[] |
 const extractManifestTools = (tools: Workspace['tools']): ManifestTool[] =>
   tools.map((tool) => {
     const {
-      title,
-      name,
-      icon,
       __internalApplicationType: type,
+      icon,
+      name,
+      title,
     } = tool as Workspace['tools'][number] & {__internalApplicationType: string}
     return {
-      title,
-      name,
-      type: type || null,
       icon: resolveIcon({
-        icon,
+        icon: icon as SchemaIconProps['icon'],
         title,
       }),
+      name,
+      title,
+      type: type || null,
     } satisfies ManifestTool
   })
 
@@ -553,7 +582,7 @@ const resolveIcon = (props: SchemaIconProps): string | null => {
     const html = `${styleTags}${element}`.trim()
 
     return DOMPurify.sanitize(html, config)
-  } catch (error) {
+  } catch {
     return null
   } finally {
     sheet.seal()

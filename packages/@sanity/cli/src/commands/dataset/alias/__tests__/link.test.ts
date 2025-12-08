@@ -53,8 +53,8 @@ describe('#dataset:alias:link', () => {
         $ sanity dataset alias link [ALIASNAME] [TARGETDATASET] [--force]
 
       ARGUMENTS
-        ALIASNAME      Dataset alias name to link
-        TARGETDATASET  Target dataset name to link the alias to
+        [ALIASNAME]      Dataset alias name to link
+        [TARGETDATASET]  Target dataset name to link the alias to
 
       FLAGS
         --force  Skip confirmation prompt when relinking existing alias
