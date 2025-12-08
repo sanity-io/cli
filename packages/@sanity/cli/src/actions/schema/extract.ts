@@ -28,6 +28,10 @@ export async function extract(options: ExtractSchemaOptions): Promise<void> {
     enforceRequiredFields ? 'Extracting schema with enforced required fields' : 'Extracting schema',
   ).start()
 
+  // TODO: Add telemetry
+  // const trace = telemetry.trace(ExtractSchemaTrace)
+  // trace.start()
+
   try {
     if (format !== 'groq-type-nodes') {
       throw new Error(`Unsupported format: "${format}"`)
