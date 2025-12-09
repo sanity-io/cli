@@ -27,11 +27,12 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
     const {flags} = await this.parse(UndeployCommand)
 
     const cliConfig = await this.getCliConfig()
+    const output = this.output
     const isApp = determineIsApp(cliConfig)
 
     let spin = spinner('Checking application info').start()
     try {
-      const userApplication = await getStudioOrAppUserApplication({cliConfig})
+      const userApplication = await getStudioOrAppUserApplication({cliConfig, output})
       if (!userApplication) {
         spin.fail()
         if (isApp) {
@@ -85,12 +86,12 @@ Are you ${chalk.red('sure')} you want to undeploy?`
 
       if (isApp) {
         this.log(
-          `\n${chalk.bold('Application undeploy scheduled.')} It might be a few minutes until ${
-            userApplication.title ? chalk.yellow(userApplication.title) : 'your application'
+          `\n${chalk.bold('⏱️ Application undeploy scheduled.')} It might be a few minutes until ${
+            userApplication.title ? chalk.italic(`'${userApplication.title}'`) : 'your application'
           } is unavailable.`,
         )
         this.log(
-          `\n${chalk.bold('Remember to remove `app.id` from your application configuration')} to avoid errors when redeploying.`,
+          `\n${chalk.bold('Remember to remove `deployment.appId` from your application configuration')} to avoid errors when redeploying.`,
         )
       } else {
         this.log(

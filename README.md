@@ -43,7 +43,7 @@ To test the specific commands you can navigate to `examples` and run `npx sanity
 | ✅      | dev       |
 | ✅      | docs      |
 | ❌      | documents |
-| ❌      | exec      |
+| ✅      | exec      |
 | ❌      | graphql   |
 | ✅      | help      |
 | ❌      | hook      |

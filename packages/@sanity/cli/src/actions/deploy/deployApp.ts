@@ -7,6 +7,7 @@ import chalk from 'chalk'
 import {pack} from 'tar-fs'
 
 import {createDeployment} from '../../services/userApplications.js'
+import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
 import {buildApp} from '../build/buildApp.js'
@@ -26,8 +27,8 @@ export async function deployApp(options: DeployAppOptions) {
   const {cliConfig, exit, flags, output, sourceDir, workDir} = options
 
   const organizationId = cliConfig.app?.organizationId
-  const appId = cliConfig.app?.id
-  const isAutoUpdating = shouldAutoUpdate({cliConfig, flags})
+  const appId = getAppId(cliConfig)
+  const isAutoUpdating = shouldAutoUpdate({cliConfig, flags, output})
   const installedSdkVersion = await readModuleVersion(sourceDir, '@sanity/sdk-react')
 
   if (!installedSdkVersion) {
@@ -52,7 +53,7 @@ export async function deployApp(options: DeployAppOptions) {
     deployDebug(`User application found`, userApplication)
 
     if (!userApplication) {
-      deployDebug(`No user application found or selecting. Creating a new one`)
+      deployDebug(`No user application found. Creating a new one`)
 
       userApplication = await createUserApplicationForApp(organizationId)
       deployDebug(`User application created`, userApplication)
@@ -106,10 +107,19 @@ export async function deployApp(options: DeployAppOptions) {
 
     if (!appId) {
       output.log(`\n════ ${chalk.bold('Next step:')} ════`)
-      output.log(chalk.bold(`\nAdd ${chalk.cyan(`id: '${userApplication.id}'`)}`))
-      output.log(chalk.bold('to `app` in sanity.cli.js or sanity.cli.ts'))
+      output.log(
+        chalk.bold('\nAdd the deployment.appId to your sanity.cli.js or sanity.cli.ts file:'),
+      )
+      output.log(`
+${chalk.dim(`app: {
+  // your application config here…
+}`)},
+${chalk.bold.green(`deployment: {
+  appId: '${userApplication.id}',
+}\n`)}`)
     }
   } catch (error) {
+    spin.clear()
     // Don't throw generic error if user cancels
     if (error.name === 'ExitPromptError') {
       output.error('Deployment cancelled by user', {exit: 1})
@@ -122,7 +132,6 @@ export async function deployApp(options: DeployAppOptions) {
       return
     }
 
-    spin.fail()
     deployDebug('Error deploying application', error)
     output.error('Error deploying application', {exit: 1})
   }

@@ -93,7 +93,7 @@ describe(
       const cwd = await testExample('basic-app')
       process.chdir(cwd)
 
-      const {error, stderr, stdout} = await testCommand(BuildCommand, ['--auto-updates', '--yes'], {
+      const {error, stderr, stdout} = await testCommand(BuildCommand, ['--yes'], {
         config: {root: cwd},
       })
 
