@@ -84,7 +84,7 @@ describe('#renderDocumentWorker', () => {
     // Setup default mock for renderToStaticMarkup
     mockRenderToStaticMarkup.mockImplementation((element: ReactNode) => {
       // Simple mock that returns the component's rendered output
-      const props = (element as ReactElement)?.props || {}
+      const props = (element as ReactElement<DocumentProps>)?.props || {}
       const {basePath = '', css = [], entryPath = './.sanity/runtime/app.js'} = props
       return `<html><head><title>Test Document</title>${css.map((href: string) => `<link rel="stylesheet" href="${href}" />`).join('')}</head><body><script src="${entryPath}" type="module"></script><div>Base: ${basePath || 'default'}</div></body></html>`
     })

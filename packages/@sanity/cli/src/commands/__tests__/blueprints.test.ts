@@ -5,7 +5,7 @@ describe('#blueprints', () => {
   it('should print blueprints help', async () => {
     const {stdout} = await runCommand('blueprints --help')
     expect(stdout).toMatchInlineSnapshot(`
-      "Blueprint deployment and management commands
+      "Blueprint Stack deployment and management commands
 
       USAGE
         $ sanity blueprints COMMAND
@@ -14,15 +14,15 @@ describe('#blueprints', () => {
         blueprints add      Add a Resource to a Blueprint
         blueprints config   View or edit Blueprint configuration
         blueprints deploy   Deploy a Blueprint
-        blueprints destroy  Destroy a Blueprint deployment (will not delete local
-                            files)
+        blueprints destroy  Destroy a Blueprint Stack deployment and its resources
+                            (will not delete local files)
         blueprints doctor   Diagnose potential issues with Blueprint configuration
-        blueprints info     Show information about a Blueprint deployment
-        blueprints init     Initialize a new Blueprint
-        blueprints logs     Display logs for a Blueprint deployment
+        blueprints info     Show information about a Blueprint Stack deployment
+        blueprints init     Initialize a new Blueprint Stack deployment
+        blueprints logs     Display logs for a Blueprint Stack deployment
         blueprints plan     Enumerate resources to be deployed - will not modify any
                             resources
-        blueprints stacks   List all Blueprint stacks
+        blueprints stacks   List all Blueprint Stacks
 
       "
     `)

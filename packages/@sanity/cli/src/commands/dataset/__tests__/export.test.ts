@@ -4,14 +4,14 @@ import {input, select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {type CliConfig, getCliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
-import exportDataset from '@sanity/export'
+import {exportDataset, type ExportResult} from '@sanity/export'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {DatasetExportCommand} from '../export.js'
 
 vi.mock('@sanity/export', () => ({
-  default: vi.fn().mockResolvedValue(undefined),
+  exportDataset: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@inquirer/prompts', () => ({
@@ -60,7 +60,6 @@ const TEST_CONFIG = {
 
 const TEST_OUTPUTS = {
   EXISTING: 'existing.tar.gz',
-  STDOUT: '-',
   SUBDIR: 'subdir/output.tar.gz',
   TAR_GZ: 'output.tar.gz',
 } as const
@@ -191,11 +190,11 @@ describe('#dataset:export', () => {
     test('exports to stdout with dash', async () => {
       createTestContext({datasets: [{name: 'production'}]})
 
-      await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.STDOUT])
+      await testCommand(DatasetExportCommand, ['production', '-'])
 
       expect(mockExportDataset).toHaveBeenCalledWith(
         expect.objectContaining({
-          outputPath: TEST_OUTPUTS.STDOUT,
+          outputPath: process.stdout,
         }),
       )
     })
@@ -473,13 +472,17 @@ describe('#dataset:export', () => {
         update?: boolean
       }) => void
 
-      mockExportDataset.mockImplementationOnce((options) => {
+      mockExportDataset.mockImplementationOnce(async (options): Promise<ExportResult> => {
         progressHandler = options.onProgress!
         // Simulate progress updates to test that they don't crash
         progressHandler({current: 10, step: 'Exporting documents...', total: 100})
         progressHandler({current: 5, step: 'Exporting assets...', total: 20})
         progressHandler({current: 10, step: 'Exporting assets...', total: 20, update: true})
-        return Promise.resolve()
+        return {
+          assetCount: 20,
+          documentCount: 100,
+          outputPath: '/tmp/export.tar.gz',
+        }
       })
 
       const {stdout} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.TAR_GZ])

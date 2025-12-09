@@ -1,11 +1,12 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import {type Writable} from 'node:stream'
 
 import {input} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, spinner, subdebug} from '@sanity/cli-core'
 import {type DatasetsResponse} from '@sanity/client'
-import exportDataset from '@sanity/export'
+import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
 import boxen from 'boxen'
 import prettyMs from 'pretty-ms'
 
@@ -16,14 +17,6 @@ import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const noop = () => null
 const exportDebug = subdebug('dataset:export')
-
-interface ProgressEvent {
-  current: number
-  step: string
-  total: number
-
-  update?: boolean
-}
 
 export class DatasetExportCommand extends SanityCommand<typeof DatasetExportCommand> {
   static override args = {
@@ -183,14 +176,14 @@ dataset: ${dataset.padEnd(46)}`,
 
     // Prepare export options
     const {fail, onProgress, succeed} = this.createProgressHandler()
-    const exportOptions = {
+    const exportOptions: ExportOptions = {
       assetConcurrency: flags['asset-concurrency'],
       assets: !flags['no-assets'],
       client: projectClient,
       compress: !flags['no-compress'],
       dataset,
       drafts: !flags['no-drafts'],
-      mode: flags.mode,
+      mode: flags.mode === 'cursor' || flags.mode === 'stream' ? flags.mode : undefined,
       onProgress,
       outputPath,
       raw: flags.raw,
@@ -214,7 +207,7 @@ dataset: ${dataset.padEnd(46)}`,
     let currentSpinner: ReturnType<typeof spinner> | null = null
     let currentStep = ''
 
-    const onProgress = (progress: ProgressEvent) => {
+    const onProgress = (progress: ExportProgress) => {
       if (progress.step !== currentStep) {
         // Complete previous step
         succeed()
@@ -243,9 +236,9 @@ dataset: ${dataset.padEnd(46)}`,
     destination: string,
     dataset: string,
     flags: {overwrite?: boolean},
-  ): Promise<false | string> {
+  ): Promise<string | Writable> {
     if (destination === '-') {
-      return '-'
+      return process.stdout
     }
 
     const dstPath = path.isAbsolute(destination)

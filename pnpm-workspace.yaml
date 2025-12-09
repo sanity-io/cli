@@ -15,7 +15,9 @@ catalog:
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
-  - '@sanity/*'
   - '@portabletext/*'
+  - '@sanity/*'
+  - 'groq-js'
   - 'react-rx'
+  - 'sanity'
   - 'use-effect-event'
