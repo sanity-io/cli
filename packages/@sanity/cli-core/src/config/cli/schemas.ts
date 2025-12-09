@@ -44,6 +44,12 @@ export const cliConfigSchema = z.object({
     )
     .optional(),
 
+  mediaLibrary: z
+    .object({
+      aspectsPath: z.string().optional(),
+    })
+    .optional(),
+
   project: z
     .object({
       basePath: z.string().optional(),
@@ -62,12 +68,6 @@ export const cliConfigSchema = z.object({
     .optional(),
 
   studioHost: z.string().optional(),
-
-  mediaLibrary: z
-    .object({
-      aspectsPath: z.string().optional(),
-    })
-    .optional(),
 
   vite: z.custom<UserViteConfig>().optional(),
 }) satisfies z.ZodType<CliConfig>
