@@ -14,9 +14,10 @@ import {
 } from '@sanity/client'
 import {type ValidationContext, type ValidationMarker} from '@sanity/types'
 import pMap from 'p-map'
-import {isRecord, validateDocument, Workspace} from 'sanity'
+import {isRecord, validateDocument} from 'sanity'
 
 import {extractDocumentsFromNdjsonOrTarball} from '../util/extractDocumentsFromNdjsonOrTarball.js'
+import {getWorkspace} from '../util/getWorkspace.js'
 import {importStudioConfig} from '../util/importStudioConfig.js'
 import {
   DOCUMENT_VALIDATION_TIMEOUT,
@@ -109,27 +110,7 @@ process.exit()
 
 async function loadWorkspace() {
   const workspaces = await importStudioConfig(workDir)
-
-  if (!workspaces || workspaces.length === 0) {
-    throw new Error(`Configuration did not return any workspaces.`)
-  }
-
-  let selectedWorkspace
-  if (workspaceName) {
-    selectedWorkspace = workspaces.find((w) => w.name === workspaceName)
-    if (!selectedWorkspace) {
-      throw new Error(`Could not find any workspaces with name \`${workspaceName}\``)
-    }
-  } else {
-    if (workspaces.length !== 1) {
-      throw new Error(
-        "Multiple workspaces found. Please specify which workspace to use with '--workspace'.",
-      )
-    }
-    selectedWorkspace = workspaces[0]
-  }
-
-  const workspace = selectedWorkspace as unknown as Workspace
+  const workspace = getWorkspace(workspaces, workspaceName)
 
   const client = createClient({
     ...clientConfig,

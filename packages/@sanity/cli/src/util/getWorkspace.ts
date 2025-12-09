@@ -12,6 +12,7 @@ export function getWorkspace<T extends {name: string}>(workspaces: T[], workspac
       `Multiple workspaces found. Please specify which workspace to use with "--workspace". Available workspaces: ${workspaces.map((w) => w.name).join(', ')}`,
     )
   }
+
   const workspace = workspaces.find((w) => w.name === workspaceName)
 
   if (!workspace) {
