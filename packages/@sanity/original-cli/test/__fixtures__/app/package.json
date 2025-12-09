@@ -22,7 +22,7 @@
     "@sanity/eslint-config-studio": "^5.0.2",
     "@types/react": "^19.2.7",
     "eslint": "catalog:",
-    "sanity": "^3.99.0",
+    "sanity": "^4.21.0",
     "typescript": "^5.8.3"
   }
 }
