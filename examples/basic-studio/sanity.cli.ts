@@ -5,5 +5,7 @@ export default defineCliConfig({
     dataset: 'test',
     projectId: 'ppsg7ml5',
   },
-  autoUpdates: true,
+  deployment: {
+    autoUpdates: true,
+  },
 })

@@ -1,11 +1,13 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig, type Output} from '@sanity/cli-core'
 
 import {getUserApplication} from '../../services/userApplications.js'
+import {getAppId} from '../../util/appId.js'
 import {determineIsApp} from '../../util/determineIsApp.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 interface GetStudioOrAppUserApplicationOptions {
   cliConfig: CliConfig
+  output: Output
 }
 
 export const NO_APP_ID = 'NO_APP_ID'
@@ -16,7 +18,7 @@ export async function getStudioOrAppUserApplication(options: GetStudioOrAppUserA
   const isApp = determineIsApp(cliConfig)
 
   if (isApp) {
-    const appId = 'app' in cliConfig ? cliConfig.app?.id : undefined
+    const appId = getAppId(cliConfig)
     if (!appId) {
       throw new Error(NO_APP_ID)
     }

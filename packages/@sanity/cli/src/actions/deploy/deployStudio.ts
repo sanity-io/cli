@@ -21,7 +21,7 @@ export async function deployStudio(options: DeployAppOptions) {
   const {cliConfig, exit, flags, output, sourceDir, workDir} = options
 
   const projectId = cliConfig.api?.projectId
-  const isAutoUpdating = shouldAutoUpdate({cliConfig, flags})
+  const isAutoUpdating = shouldAutoUpdate({cliConfig, flags, output})
   const installedSanityVersion = await readModuleVersion(sourceDir, 'sanity')
   const configStudioHost = cliConfig.studioHost
 

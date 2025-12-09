@@ -16,34 +16,34 @@ describe(
     test('help text is correct', async () => {
       const {stdout} = await runCommand('build --help')
       expect(stdout).toMatchInlineSnapshot(`
-      "Builds the Sanity Studio configuration into a static bundle
+        "Builds the Sanity Studio configuration into a static bundle
 
-      USAGE
-        $ sanity build [OUTPUTDIR] [--auto-updates] [--minify]
-          [--source-maps] [--stats] [-y]
+        USAGE
+          $ sanity build [OUTPUTDIR] [--auto-updates] [--minify]
+            [--source-maps] [--stats] [-y]
 
-      ARGUMENTS
-        OUTPUTDIR  Output directory
+        ARGUMENTS
+          [OUTPUTDIR]  Output directory
 
-      FLAGS
-        -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt
-                                 and otherwise uses defaults
-            --[no-]auto-updates  Enable/disable auto updates of studio versions
-            --[no-]minify        Enable/disable minifying of built bundles
-            --[no-]source-maps   Enable source maps for built bundles (increases size
-                                 of bundle)
-            --stats              Show stats about the built bundles
+        FLAGS
+          -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt
+                                   and otherwise uses defaults
+              --[no-]auto-updates  Enable/disable auto updates of studio versions
+              --[no-]minify        Enable/disable minifying of built bundles
+              --[no-]source-maps   Enable source maps for built bundles (increases size
+                                   of bundle)
+              --stats              Show stats about the built bundles
 
-      DESCRIPTION
-        Builds the Sanity Studio configuration into a static bundle
+        DESCRIPTION
+          Builds the Sanity Studio configuration into a static bundle
 
-      EXAMPLES
-        $ sanity build
+        EXAMPLES
+          $ sanity build
 
-        $ sanity build --no-minify --source-maps
+          $ sanity build --no-minify --source-maps
 
-      "
-    `)
+        "
+      `)
     })
     test('shows an error for invalid flags', async () => {
       const {error} = await testCommand(BuildCommand, ['--invalid'])
@@ -93,7 +93,7 @@ describe(
       const cwd = await testExample('basic-app')
       process.chdir(cwd)
 
-      const {error, stderr, stdout} = await testCommand(BuildCommand, ['--auto-updates', '--yes'], {
+      const {error, stderr, stdout} = await testCommand(BuildCommand, ['--yes'], {
         config: {root: cwd},
       })
 

@@ -137,7 +137,7 @@ describe('#backup:download', () => {
           <value>] [--out <value>] [--overwrite]
 
       ARGUMENTS
-        DATASET  Dataset name to download backup from
+        [DATASET]  Dataset name to download backup from
 
       FLAGS
         --backup-id=<value>    The backup ID to download

@@ -53,7 +53,7 @@ describe('#dataset:alias:unlink', () => {
         $ sanity dataset alias unlink [ALIASNAME] [--force]
 
       ARGUMENTS
-        ALIASNAME  Dataset alias name to unlink
+        [ALIASNAME]  Dataset alias name to unlink
 
       FLAGS
         --force  Skip confirmation prompt and unlink immediately

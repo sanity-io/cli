@@ -201,7 +201,7 @@ describe('#media:deploy-aspect', () => {
         $ sanity media deploy-aspect [ASPECTNAME] [--all] [--media-library-id <value>]
 
       ARGUMENTS
-        ASPECTNAME  Name of the aspect to deploy
+        [ASPECTNAME]  Name of the aspect to deploy
 
       FLAGS
         --all                       Deploy all aspects

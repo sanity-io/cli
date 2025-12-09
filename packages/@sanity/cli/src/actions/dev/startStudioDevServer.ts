@@ -31,7 +31,7 @@ export async function startStudioDevServer(
   const {installedSanityVersion} = await checkRequiredDependencies(options)
 
   // Check if auto-updates are enabled
-  const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags})
+  const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
 
   if (autoUpdatesEnabled) {
     output.log(`${logSymbols.info} Running with auto-updates enabled`)

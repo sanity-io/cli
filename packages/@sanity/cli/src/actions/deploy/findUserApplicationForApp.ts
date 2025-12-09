@@ -10,6 +10,7 @@ import {
   getUserApplications,
   type UserApplication,
 } from '../../services/userApplications.js'
+import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
 import {deployDebug} from './deployDebug.js'
 
 interface FindUserApplicationForAppOptions {
@@ -29,6 +30,8 @@ export async function findUserApplicationForApp(
   const spin = spinner('Checking application info...').start()
 
   try {
+    checkForDeprecatedAppId({cliConfig, output})
+
     deployDebug('Checking for a user application as specified in the local app config')
     const userApplication = await findUserApplication(options)
 
@@ -38,15 +41,17 @@ export async function findUserApplicationForApp(
       return userApplication
     }
 
-    // If there's an app.id in the application config but there's no userApplication,
+    const appId = getAppId(cliConfig)
+
+    // If there's an appId in the application config but there's no userApplication,
     // then the provided application ID doesn’t exist in the org
-    if (cliConfig?.app?.id) {
-      spin.fail()
+    if (appId) {
+      spin.clear()
       output.error(
-        'The app.id provided in your configuration cannot be found in your organization',
+        'The `appId` provided in your configuration’s `deployment` object cannot be found in your organization',
         {
           exit: 1,
-          suggestions: ['Verify the app.id in your configuration matches an existing application'],
+          suggestions: ['Verify the appId in your configuration matches an existing application'],
         },
       )
       return null
@@ -119,7 +124,7 @@ export async function findUserApplicationForApp(
     }
 
     // We've failed for some other reason
-    spin.fail()
+    spin.clear()
     deployDebug('Error finding user application for app', error)
     output.error(error)
     return null
@@ -131,7 +136,7 @@ function findUserApplication(
 ): Promise<UserApplication | null> | null {
   const {cliConfig} = options
 
-  const appId = cliConfig.app?.id
+  const appId = getAppId(cliConfig)
 
   if (!appId) {
     return null

@@ -147,7 +147,7 @@ describe('#media:export', () => {
           [--media-library-id <value>] [--no-compress] [--overwrite]
 
       ARGUMENTS
-        DESTINATION  Output destination file path
+        [DESTINATION]  Output destination file path
 
       FLAGS
         --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
