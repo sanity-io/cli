@@ -1,5 +1,6 @@
 import {type Output} from '@sanity/cli-core'
 
+import {uniqBy} from '../../../util/uniqBy.js'
 import {isDefined} from '../../manifest/schemaTypeHelpers.js'
 import {SANITY_WORKSPACE_SCHEMA_ID_PREFIX} from '../../manifest/types.js'
 import {type DeleteSchemaFlags} from '../deleteSchemaAction.js'
@@ -15,19 +16,6 @@ export interface DeploySchemasFlags extends SchemaStoreCommonFlags {
 export interface SchemaListFlags extends SchemaStoreCommonFlags {
   id?: string
   json?: boolean
-}
-
-// Native implementation instead of lodash/uniqBy
-function uniqBy<T>(array: T[], key: keyof T): T[] {
-  const seen = new Set()
-  return array.filter((item) => {
-    const value = item[key]
-    if (seen.has(value)) {
-      return false
-    }
-    seen.add(value)
-    return true
-  })
 }
 
 export const validForIdChars = 'a-zA-Z0-9._-'
