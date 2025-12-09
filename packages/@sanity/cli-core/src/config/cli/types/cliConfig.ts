@@ -2,6 +2,9 @@ import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-comp
 
 import {type UserViteConfig} from './userViteConfig'
 
+/**
+ * @public
+ */
 export interface CliConfig {
   /** The project ID and dataset the Sanity CLI should use to run its commands */
   api?: {
