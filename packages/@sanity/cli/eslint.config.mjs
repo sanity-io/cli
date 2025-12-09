@@ -7,4 +7,10 @@ export default [
   includeIgnoreFile(resolve(import.meta.dirname, '.gitignore')),
   ...eslintConfig,
   {rules: {'@typescript-eslint/no-explicit-any': 'warn'}},
+  {
+    files: ['test/__fixtures__/**/*.ts'],
+    rules: {
+      'import/no-unresolved': 'off',
+    },
+  },
 ]
