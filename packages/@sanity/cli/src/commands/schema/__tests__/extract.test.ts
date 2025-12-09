@@ -16,7 +16,7 @@ vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => ({
   }),
 }))
 
-vi.mock('../../../actions/schema/getWorkspace.js', () => ({
+vi.mock('../../../util/getWorkspace.js', () => ({
   getWorkspace: vi.fn().mockReturnValue({}),
 }))
 
