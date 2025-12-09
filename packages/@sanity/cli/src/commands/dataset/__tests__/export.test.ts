@@ -60,7 +60,6 @@ const TEST_CONFIG = {
 
 const TEST_OUTPUTS = {
   EXISTING: 'existing.tar.gz',
-  STDOUT: '-',
   SUBDIR: 'subdir/output.tar.gz',
   TAR_GZ: 'output.tar.gz',
 } as const
@@ -191,11 +190,11 @@ describe('#dataset:export', () => {
     test('exports to stdout with dash', async () => {
       createTestContext({datasets: [{name: 'production'}]})
 
-      await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.STDOUT])
+      await testCommand(DatasetExportCommand, ['production', '-'])
 
       expect(mockExportDataset).toHaveBeenCalledWith(
         expect.objectContaining({
-          outputPath: TEST_OUTPUTS.STDOUT,
+          outputPath: process.stdout,
         }),
       )
     })
