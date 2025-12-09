@@ -332,8 +332,8 @@ importers:
         specifier: ^9.6.0
         version: 9.6.0
       form-data:
-        specifier: ^4.0.3
-        version: 4.0.4
+        specifier: ^4.0.5
+        version: 4.0.5
       get-it:
         specifier: ^8.6.9
         version: 8.6.10(debug@4.4.3)
@@ -5428,8 +5428,8 @@ packages:
     resolution: {integrity: sha512-yDYSgNMraqvnxiEXO4hi88+YZxaHC6QKzb5N84iRCTDeRO7ZALpir/lVmf/uXUhnwUr2O4HU8s/n6x+yNjQkHw==}
     engines: {node: '>= 14.17'}
 
-  form-data@4.0.4:
-    resolution: {integrity: sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==}
+  form-data@4.0.5:
+    resolution: {integrity: sha512-8RipRLol37bNs2bhoV67fiTEvdTrbMUYcFTiy3+wuuOnUog2QBHCZWXDRijWQfAkhBj2Uf5UnVaiWwA5vdd82w==}
     engines: {node: '>= 6'}
 
   formatly@0.3.0:
@@ -15274,7 +15274,7 @@ snapshots:
 
   form-data-encoder@2.1.4: {}
 
-  form-data@4.0.4:
+  form-data@4.0.5:
     dependencies:
       asynckit: 0.4.0
       combined-stream: 1.0.8
@@ -17762,7 +17762,7 @@ snapshots:
       execa: 2.1.0
       exif-component: 1.0.1
       fast-deep-equal: 3.1.3
-      form-data: 4.0.4
+      form-data: 4.0.5
       framer-motion: 12.23.24(@emotion/is-prop-valid@1.2.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       get-it: 8.6.10(debug@4.4.3)
       groq-js: 1.20.0
@@ -17935,7 +17935,7 @@ snapshots:
       execa: 2.1.0
       exif-component: 1.0.1
       fast-deep-equal: 3.1.3
-      form-data: 4.0.4
+      form-data: 4.0.5
       framer-motion: 12.23.24(@emotion/is-prop-valid@1.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       get-it: 8.6.10(debug@4.4.3)
       groq-js: 1.20.0
@@ -18108,7 +18108,7 @@ snapshots:
       execa: 2.1.0
       exif-component: 1.0.1
       fast-deep-equal: 3.1.3
-      form-data: 4.0.4
+      form-data: 4.0.5
       framer-motion: 12.23.24(@emotion/is-prop-valid@1.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       get-it: 8.6.10(debug@4.4.3)
       groq-js: 1.20.0
