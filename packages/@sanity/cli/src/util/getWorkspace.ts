@@ -1,9 +1,4 @@
-import {Workspace} from 'sanity'
-
-export function getWorkspace<T extends Required<Pick<Workspace, 'name'>>>(
-  workspaces: T[],
-  workspaceName?: string,
-) {
+export function getWorkspace<T extends {name: string}>(workspaces: T[], workspaceName?: string) {
   if (workspaces.length === 0) {
     throw new Error('No workspaces found')
   }

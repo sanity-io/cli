@@ -6,8 +6,8 @@ import {extractSchema} from '@sanity/schema/_internal'
 import {type Schema} from '@sanity/types'
 
 import {type ExtractSchemaCommand} from '../../commands/schema/extract'
+import {getWorkspace} from '../../util/getWorkspace.js'
 import {importStudioConfig} from '../../util/importStudioConfig.js'
-import {getWorkspace} from './getWorkspace.js'
 
 const FILENAME = 'schema.json'
 
