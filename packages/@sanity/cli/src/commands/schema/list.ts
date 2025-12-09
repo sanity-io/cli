@@ -1,6 +1,9 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 
+import {listSchemas} from '../../actions/schema/list.js'
+import {createManifestExtractor} from '../../actions/schema/utils/manifestExtractor.js'
+
 const description = `
 Lists all schemas in the current dataset.
 
@@ -58,6 +61,49 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
   public async run(): Promise<void> {
     const {flags} = await this.parse(ListSchemaCommand)
 
-    this.log(JSON.stringify(flags))
+    try {
+      const workDir = (await this.getProjectRoot()).directory
+      const cliConfig = await this.getCliConfig()
+      const projectId = await this.getProjectId()
+      const dataset = cliConfig.api?.dataset
+
+      if (!projectId) {
+        this.error(
+          'No project ID found. Please run this command from a Sanity project directory.',
+          {
+            exit: 1,
+          },
+        )
+      }
+
+      if (!dataset) {
+        this.error('No dataset found. Please configure a dataset in your sanity.config.ts.', {
+          exit: 1,
+        })
+      }
+
+      const result = await listSchemas(flags, {
+        apiClient: async () => {
+          const client = await this.getGlobalApiClient({
+            apiVersion: 'v2025-03-01',
+            requireUser: true,
+          })
+
+          return client.withConfig({dataset, projectId})
+        },
+        manifestExtractor: createManifestExtractor({
+          output: this.output,
+          workDir,
+        }),
+        output: this.output,
+        workDir,
+      })
+
+      if (result === 'failure') {
+        this.error('Failed to list schemas', {exit: 1})
+      }
+    } catch (error) {
+      this.error(`Failed to list schemas:\n${error}`, {exit: 1})
+    }
   }
 }

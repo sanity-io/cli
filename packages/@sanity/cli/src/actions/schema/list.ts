@@ -1,30 +1,24 @@
-import {type CliCommandContext, type CliOutputter} from '@sanity/cli'
 import chalk from 'chalk'
-import sortBy from 'lodash/sortBy'
 
-import {isDefined} from '../../../manifest/manifestTypeHelpers'
-import {type CreateManifest, type StoredWorkspaceSchema} from '../../../manifest/manifestTypes'
-import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes'
-import {createManifestExtractor, ensureManifestExtractSatisfied} from './utils/mainfestExtractor'
-import {createManifestReader} from './utils/manifestReader'
-import {createSchemaApiClient} from './utils/schemaApiClient'
-import {getProjectIdDatasetsOutString, projectIdDatasetPair} from './utils/schemaStoreOutStrings'
+import {type ListSchemaCommand} from '../../commands/schema/list.js'
+import {isDefined} from '../manifest/schemaTypeHelpers.js'
 import {
-  parseListSchemasConfig,
-  SCHEMA_PERMISSION_HELP_TEXT,
-  type SchemaStoreCommonFlags,
-} from './utils/schemaStoreValidation'
-import {uniqueProjectIdDataset} from './utils/uniqueProjectIdDataset'
-
-export interface SchemaListFlags extends SchemaStoreCommonFlags {
-  json?: boolean
-  id?: string
-}
+  type CreateManifest,
+  type ManifestWorkspaceFile,
+  type StoredWorkspaceSchema,
+} from '../manifest/types'
+import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes'
+import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
+import {createManifestReader} from './utils/manifestReader.js'
+import {createSchemaApiClient} from './utils/schemaApiClient.js'
+import {getDatasetsOutString} from './utils/schemaStoreOutStrings.js'
+import {parseListSchemasConfig, SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
+import {uniqByProjectIdDataset} from './utils/uniqByProjectIdDataset.js'
 
 class DatasetError extends Error {
-  public projectId: string
   public dataset: string
-  constructor(args: {projectId: string; dataset: string; options?: ErrorOptions}) {
+  public projectId: string
+  constructor(args: {dataset: string; options?: ErrorOptions; projectId: string}) {
     super((args.options?.cause as {message?: string})?.message, args.options)
     this.projectId = args.projectId
     this.dataset = args.dataset
@@ -32,44 +26,67 @@ class DatasetError extends Error {
   }
 }
 
-export default function listSchemasActionForCommand(
-  flags: SchemaListFlags,
-  context: CliCommandContext,
-): Promise<SchemaStoreActionResult> {
-  return listSchemasAction(flags, {
-    ...context,
-    manifestExtractor: createManifestExtractor(context),
-  })
-}
-
-/**
- * Lists stored schemas found in workspace datasets.
- *
- * Workspaces are determined by on-disk manifest file – not directly from sanity.config.
- * All schema store actions require a manifest to exist, so we regenerate it by default.
- * Manifest generation can be optionally disabled with --no-manifest-extract.
- * In this case the command uses and existing file or throws when missing.
- */
-export async function listSchemasAction(
-  flags: SchemaListFlags,
+export async function listSchemas(
+  flags: ListSchemaCommand['flags'],
   context: SchemaStoreContext,
 ): Promise<SchemaStoreActionResult> {
-  const {json, id, manifestDir, extractManifest} = parseListSchemasConfig(flags, context)
-  const {output, apiClient, jsonReader, manifestExtractor} = context
+  const {extractManifest, id, json, manifestDir} = parseListSchemasConfig(flags, context)
+  const {apiClient, jsonReader, manifestExtractor, output} = context
 
-  // prettier-ignore
-  if (!(await ensureManifestExtractSatisfied({schemaRequired: true, extractManifest, manifestDir,  manifestExtractor, output, telemetry: context.telemetry}))) {
+  if (
+    !(await ensureManifestExtractSatisfied({
+      extractManifest,
+      manifestDir,
+      manifestExtractor,
+      output,
+      schemaRequired: true,
+    }))
+  ) {
     return 'failure'
   }
-  const {client} = createSchemaApiClient(apiClient)
 
-  const manifest = await createManifestReader({manifestDir, output, jsonReader}).getManifest()
-  const projectDatasets = uniqueProjectIdDataset(manifest.workspaces)
+  const manifest = await createManifestReader({jsonReader, manifestDir, output}).getManifest()
+  const projectDatasets = uniqByProjectIdDataset(manifest.workspaces)
+  const schemas = (await getSchemas(
+    apiClient,
+    projectDatasets,
+    id,
+  )) as unknown as StoredWorkspaceSchema[]
+  const parsedSchemas = parseSchemas(schemas, output) as unknown as StoredWorkspaceSchema[]
 
-  const schemaResults = await Promise.allSettled(
-    projectDatasets.map(async ({projectId, dataset}) => {
+  if (parsedSchemas.length === 0) {
+    const datasetString = getDatasetsOutString(projectDatasets.map((dataset) => dataset.dataset))
+
+    output.error(
+      id
+        ? `Schema for id "${id}" not found in ${datasetString}`
+        : `No schemas found in ${datasetString}`,
+    )
+
+    return 'failure'
+  }
+
+  if (json) {
+    output.log(`${JSON.stringify(id ? schemas[0] : schemas, null, 2)}`)
+  } else {
+    printSchema({manifest, output, schemas: parsedSchemas})
+  }
+
+  return 'success'
+}
+
+async function getSchemas(
+  apiClient: SchemaStoreContext['apiClient'],
+  projectDatasets: ManifestWorkspaceFile[],
+  id?: ListSchemaCommand['flags']['id'],
+) {
+  const {client} = await createSchemaApiClient(apiClient)
+
+  return await Promise.allSettled(
+    projectDatasets.map(async ({dataset, projectId}) => {
       try {
-        const datasetClient = client.withConfig({projectId, dataset})
+        const datasetClient = client.withConfig({dataset, projectId})
+
         return id
           ? await datasetClient.request<StoredWorkspaceSchema | undefined>({
               method: 'GET',
@@ -80,16 +97,22 @@ export async function listSchemasAction(
               url: `/projects/${projectId}/datasets/${dataset}/schemas`,
             })
       } catch (error) {
-        throw new DatasetError({projectId, dataset, options: {cause: error}})
+        throw new DatasetError({dataset, options: {cause: error}, projectId})
       }
     }),
   )
+}
 
-  const schemas = schemaResults
-    .map((result) => {
-      if (result.status === 'fulfilled') return result.value
+function parseSchemas(
+  schemas: StoredWorkspaceSchema[],
+  output: ListSchemaCommand['flags']['output'],
+) {
+  return schemas
+    .map((schema) => {
+      if (schema.status === 'fulfilled') return schema.value
 
-      const error = result.reason
+      const error = schema.reason
+
       if (error instanceof DatasetError) {
         if (
           'cause' in error &&
@@ -99,7 +122,7 @@ export async function listSchemasAction(
           error.cause.statusCode === 401
         ) {
           output.warn(
-            `↳ No permissions to read schema from ${projectIdDatasetPair(error)}. ${
+            `↳ No permissions to read schema from "${error.dataset}". ${
               SCHEMA_PERMISSION_HELP_TEXT
             }:\n  ${chalk.red(`${error.message}`)}`,
           )
@@ -107,7 +130,7 @@ export async function listSchemasAction(
         }
 
         const message = chalk.red(
-          `↳ Failed to fetch schema from ${projectIdDatasetPair(error)}:\n  ${error.message}`,
+          `↳ Failed to fetch schema from "${error.dataset}":\n  ${error.message}`,
         )
         output.error(message)
       } else {
@@ -116,59 +139,42 @@ export async function listSchemasAction(
       }
       return []
     })
-    .filter(isDefined)
+    .filter((schema) => isDefined(schema))
     .flat()
-
-  if (schemas.length === 0) {
-    const datasetString = getProjectIdDatasetsOutString(projectDatasets)
-    output.error(
-      id
-        ? `Schema for id "${id}" not found in ${datasetString}`
-        : `No schemas found in ${datasetString}`,
-    )
-    return 'failure'
-  }
-
-  if (json) {
-    output.print(`${JSON.stringify(id ? schemas[0] : schemas, null, 2)}`)
-  } else {
-    printSchemaList({schemas, output, manifest})
-  }
-  return 'success'
 }
 
-function printSchemaList({
-  schemas,
-  output,
+function printSchema({
   manifest,
+  output,
+  schemas,
 }: {
-  schemas: StoredWorkspaceSchema[]
-  output: CliOutputter
   manifest: CreateManifest
+  output: ListSchemaCommand['flags']['output']
+  schemas: StoredWorkspaceSchema[]
 }) {
-  const ordered = sortBy(
-    schemas
-      .map(({_createdAt: createdAt, _id: id, workspace}) => {
-        const workspaceData = manifest.workspaces.find((w) => w.name === workspace.name)
-        if (!workspaceData) return undefined
-        return [id, workspace.name, workspaceData.dataset, workspaceData.projectId, createdAt].map(
-          String,
-        )
-      })
-      .filter(isDefined),
-    ['createdAt'],
-  )
-  const headings = ['Id', 'Workspace', 'Dataset', 'ProjectId', 'CreatedAt']
-  const rows = ordered.reverse()
+  const rows = schemas
+    .toSorted((a, b) => -(a._createdAt || '').localeCompare(b._createdAt || ''))
+    .map(({_createdAt: createdAt, _id: id, workspace}) => {
+      const workspaceData = manifest.workspaces.find((w) => w.name === workspace.name)
 
-  const maxWidths = rows.reduce(
-    (max, row) => row.map((current, index) => Math.max(current.length, max[index])),
-    headings.map((str) => str.length),
-  )
+      if (!workspaceData) return
+
+      return [id, workspace.name, workspaceData.dataset, workspaceData.projectId, createdAt].map(
+        String,
+      )
+    })
+    .filter((schema) => isDefined(schema))
+
+  const headings = ['Id', 'Workspace', 'Dataset', 'ProjectId', 'CreatedAt']
+
+  const maxWidths = headings.map((heading, i) => {
+    const widths = [...rows.map((row) => row[i].length), heading.length]
+    return Math.max(...widths)
+  })
 
   const rowToString = (row: string[]) =>
     row.map((col, i) => `${col}`.padEnd(maxWidths[i])).join('   ')
 
-  output.print(chalk.cyan(rowToString(headings)))
-  rows.forEach((row) => output.print(rowToString(row)))
+  output.log(chalk.cyan(rowToString(headings)))
+  for (const row of rows) output.log(rowToString(row))
 }

@@ -1,12 +1,11 @@
 import {uniqBy} from '../../../util/uniqBy.js'
-import {CreateManifest} from '../../manifest/types'
+import {type ManifestWorkspaceFile} from '../../manifest/types'
 
-export function uniqByProjectIdDataset(workspaces: CreateManifest['workspaces']) {
+export function uniqByProjectIdDataset(workspaces: ManifestWorkspaceFile[]) {
   return uniqBy(
     workspaces.map((w) => ({
-      dataset: w.dataset,
+      ...w,
       key: `${w.projectId}-${w.dataset}`,
-      projectId: w.projectId,
     })),
     'key',
   )
