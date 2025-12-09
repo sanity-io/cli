@@ -1,7 +1,8 @@
 import path from 'node:path'
 
-import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core'
+import {type UserViteConfig} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
+import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
 import {readPackageUp} from 'read-package-up'
 import {type ConfigEnv, type InlineConfig, mergeConfig, type Rollup} from 'vite'

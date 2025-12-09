@@ -6,7 +6,7 @@ import {ViteNodeServer} from 'vite-node/server'
 import {installSourcemapsSupport} from 'vite-node/source-map'
 
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
-import {type CliConfig} from '../../config/cli/types.js'
+import {type CliConfig} from '../../config/cli/types/cliConfig.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js'
 import {isRecord} from '../../util/isRecord.js'

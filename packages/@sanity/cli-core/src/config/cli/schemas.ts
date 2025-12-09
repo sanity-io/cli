@@ -1,50 +1,28 @@
+import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {z} from 'zod'
 
-export const reactCompilerSchema = z
-  .object({
-    compilationMode: z.enum(['all', 'annotation', 'infer', 'syntax']).optional(),
-    panicThreshold: z.enum(['ALL_ERRORS', 'CRITICAL_ERRORS', 'NONE']).optional(),
-    /**
-     * @see https://react.dev/learn/react-compiler#existing-projects
-     */
-    sources: z
-      .union([z.function().args(z.string()).returns(z.boolean()), z.array(z.string()), z.null()])
-      .optional(),
-    /**
-     * The minimum major version of React that the compiler should emit code for. If the target is 19
-     * or higher, the compiler emits direct imports of React runtime APIs needed by the compiler. On
-     * versions prior to 19, an extra runtime package react-compiler-runtime is necessary to provide
-     * a userspace approximation of runtime APIs.
-     * @see https://react.dev/learn/react-compiler#using-react-compiler-with-react-17-or-18
-     */
-    target: z.enum(['18', '19']),
-  })
-  .optional()
+import {type CliConfig} from './types/cliConfig'
+import {type UserViteConfig} from './types/userViteConfig'
 
+/**
+ * @public
+ */
 export const cliConfigSchema = z.object({
-  /**
-   * API configuration
-   */
   api: z
-    .object(
-      {
-        dataset: z.string().optional(),
-        projectId: z.string().optional(),
-      },
-      {description: 'API configuration'},
-    )
+    .object({
+      dataset: z.string().optional(),
+      projectId: z.string().optional(),
+    })
     .optional(),
 
   app: z
     .object({
       entry: z.string().optional(),
-      /** @deprecated Use deployment.appId */
       id: z.string().optional(),
       organizationId: z.string().optional(),
     })
     .optional(),
 
-  /** @deprecated Use deployment.autoUpdates */
   autoUpdates: z.boolean().optional(),
 
   deployment: z
@@ -69,13 +47,19 @@ export const cliConfigSchema = z.object({
     )
     .optional(),
 
+  mediaLibrary: z
+    .object({
+      aspectsPath: z.string().optional(),
+    })
+    .optional(),
+
   project: z
     .object({
       basePath: z.string().optional(),
     })
     .optional(),
 
-  reactCompiler: reactCompilerSchema,
+  reactCompiler: z.custom<ReactCompilerConfig>().optional(),
 
   reactStrictMode: z.boolean().optional(),
 
@@ -86,14 +70,7 @@ export const cliConfigSchema = z.object({
     })
     .optional(),
 
-  /** @deprecated Use deployment.appId */
   studioHost: z.string().optional(),
 
-  mediaLibrary: z
-    .object({
-      aspectsPath: z.string().optional(),
-    })
-    .optional(),
-
-  vite: z.union([z.function(), z.object({}).passthrough()]).optional(),
-})
+  vite: z.custom<UserViteConfig>().optional(),
+}) satisfies z.ZodType<CliConfig>

@@ -144,6 +144,7 @@
     "@types/tar-stream": "^3.1.4",
     "@types/which": "^3.0.4",
     "@vitest/coverage-istanbul": "^3.2.4",
+    "babel-plugin-react-compiler": "^1.0.0",
     "chokidar": "^4.0.3",
     "eslint": "catalog:",
     "glob": "^11.0.3",

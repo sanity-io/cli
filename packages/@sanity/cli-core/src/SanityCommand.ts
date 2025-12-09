@@ -1,7 +1,7 @@
 import {Command, Interfaces} from '@oclif/core'
 
 import {getCliConfig} from './config/cli/getCliConfig.js'
-import {type CliConfig} from './config/cli/types.js'
+import {type CliConfig} from './config/cli/types/cliConfig.js'
 import {findProjectRoot} from './config/findProjectRoot.js'
 import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
 import {

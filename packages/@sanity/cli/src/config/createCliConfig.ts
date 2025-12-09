@@ -1,8 +1,8 @@
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig, cliConfigSchema} from '@sanity/cli-core'
 
 /**
  * @deprecated Use `defineCliConfig` instead
  */
-export function createCliConfig(config: CliConfig): CliConfig {
-  return config
+export function createCliConfig(config: CliConfig) {
+  return cliConfigSchema.parse(config)
 }
