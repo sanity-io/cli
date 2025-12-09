@@ -1,48 +1,52 @@
 import path from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {Worker} from 'node:worker_threads'
 
 import {type ClientConfig} from '@sanity/client'
 import {type ValidationMarker} from '@sanity/types'
-import readPkgUp from 'read-pkg-up'
+import {readPackageUp} from 'read-package-up'
 
 import {
   type ValidateDocumentsWorkerData,
   type ValidationWorkerChannel,
-} from '../../threads/validateDocuments'
-import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels'
+} from '../../threads/validateDocuments.js'
+import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels.js'
+import {Level} from './types.js'
 
-export interface ValidateDocumentsOptions<TReturn = unknown> {
-  level?: 'error' | 'warning' | 'info'
-  workspace?: string
-  workDir?: string
-  configPath?: string
-  clientConfig?: Partial<ClientConfig>
-  projectId?: string // override
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+interface ValidateDocumentsOptions<TReturn = unknown> {
+  clientConfig: ClientConfig
+
   dataset?: string // override
-  ndjsonFilePath?: string
+  level?: Level
   maxCustomValidationConcurrency?: number
   maxFetchConcurrency?: number
+  ndjsonFilePath?: string
+  projectId?: string // override
   reporter?: (worker: WorkerChannelReceiver<ValidationWorkerChannel>) => TReturn
   studioHost?: string
+  workDir?: string
+  workspace?: string
 }
 
-export interface DocumentValidationResult {
+interface DocumentValidationResult {
   documentId: string
   documentType: string
-  revision: string
   level: ValidationMarker['level']
   markers: ValidationMarker[]
+  revision: string
 }
 
-const defaultReporter = ({stream, dispose}: WorkerChannelReceiver<ValidationWorkerChannel>) => {
+const defaultReporter = ({dispose, stream}: WorkerChannelReceiver<ValidationWorkerChannel>) => {
   async function* createValidationGenerator() {
-    for await (const {documentId, documentType, markers, revision, level} of stream.validation()) {
+    for await (const {documentId, documentType, level, markers, revision} of stream.validation()) {
       const result: DocumentValidationResult = {
         documentId,
         documentType,
-        revision,
         level,
         markers,
+        revision,
       }
 
       yield result
@@ -55,58 +59,49 @@ const defaultReporter = ({stream, dispose}: WorkerChannelReceiver<ValidationWork
 }
 
 export function validateDocuments<TReturn>(
-  options: ValidateDocumentsOptions<TReturn> &
-    Required<Pick<ValidateDocumentsOptions<TReturn>, 'reporter'>>,
-): TReturn
+  options: Required<Pick<ValidateDocumentsOptions<TReturn>, 'reporter'>> &
+    ValidateDocumentsOptions<TReturn>,
+): Promise<TReturn>
 export function validateDocuments(
   options: ValidateDocumentsOptions,
-): AsyncIterable<DocumentValidationResult>
-export function validateDocuments(options: ValidateDocumentsOptions): unknown {
+): Promise<AsyncIterable<DocumentValidationResult>>
+export async function validateDocuments(options: ValidateDocumentsOptions): Promise<unknown> {
   const {
-    workspace,
     clientConfig,
-    configPath,
     dataset,
-    projectId,
-    workDir = process.cwd(),
-    reporter = defaultReporter,
     level,
     maxCustomValidationConcurrency,
     maxFetchConcurrency,
     ndjsonFilePath,
+    projectId,
+    reporter = defaultReporter,
+    workDir = process.cwd(),
+    workspace,
   } = options
 
-  const rootPkgPath = readPkgUp.sync({cwd: __dirname})?.path
+  const rootPkgPath = (await readPackageUp({cwd: __dirname}))?.path
+
   if (!rootPkgPath) {
     throw new Error('Could not find root directory for `sanity` package')
   }
 
-  const workerPath = path.join(
-    path.dirname(rootPkgPath),
-    'lib',
-    '_internal',
-    'cli',
-    'threads',
-    'validateDocuments.js',
-  )
+  const workerPath = path.join(path.dirname(rootPkgPath), 'dist', 'threads', 'validateDocuments.js')
 
   const worker = new Worker(workerPath, {
+    env: process.env,
     workerData: {
-      workDir,
       // removes props in the config that make this object fail to serialize
-      clientConfig: JSON.parse(JSON.stringify(clientConfig)),
-      configPath,
-      workspace,
+      clientConfig: structuredClone(clientConfig),
       dataset,
-      projectId,
       level,
-      ndjsonFilePath,
       maxCustomValidationConcurrency,
       maxFetchConcurrency,
+      ndjsonFilePath,
+      projectId,
       studioHost: options.studioHost,
+      workDir,
+      workspace,
     } satisfies ValidateDocumentsWorkerData,
-    // eslint-disable-next-line no-process-env
-    env: process.env,
   })
 
   return reporter(createReceiver<ValidationWorkerChannel>(worker))

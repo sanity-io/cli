@@ -27,7 +27,7 @@ const isTar = (buf: Buffer) =>
 
 async function* extract<TReturn>(
   stream: AsyncIterable<Buffer>,
-  extractor: Writable & AsyncIterable<TReturn>,
+  extractor: AsyncIterable<TReturn> & Writable,
 ) {
   // set up a task to drain the input iterable into the extractor asynchronously
   // before this function delegates to the extractor's iterable (containing the

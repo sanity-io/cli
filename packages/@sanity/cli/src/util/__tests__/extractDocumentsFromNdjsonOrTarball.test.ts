@@ -1,10 +1,13 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import {fileURLToPath} from 'node:url'
 
 import {type SanityDocument} from '@sanity/types'
 import {describe, expect, it} from 'vitest'
 
 import {extractDocumentsFromNdjsonOrTarball} from '../extractDocumentsFromNdjsonOrTarball'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 describe('extractDocumentsFromNdjsonOrTarball', () => {
   it('extracts the contents of a tarball, finds the ndjson file, parses it, and yields each document', async () => {
@@ -22,26 +25,26 @@ describe('extractDocumentsFromNdjsonOrTarball', () => {
     const [doc1, doc2, doc3] = documents
 
     expect(doc1).toEqual({
-      _id: 'doc1',
-      _type: 'example',
-      _rev: 'rev1',
       _createdAt: '2024-01-26T08:10:41.720Z',
+      _id: 'doc1',
+      _rev: 'rev1',
+      _type: 'example',
       _updatedAt: '2024-01-26T08:10:41.720Z',
     })
 
     expect(doc2).toEqual({
-      _id: 'doc2',
-      _type: 'example',
-      _rev: 'rev2',
       _createdAt: '2024-01-26T08:10:41.720Z',
+      _id: 'doc2',
+      _rev: 'rev2',
+      _type: 'example',
       _updatedAt: '2024-01-26T08:10:41.720Z',
     })
 
     expect(doc3).toEqual({
-      _id: 'doc3',
-      _type: 'example',
-      _rev: 'rev3',
       _createdAt: '2024-01-26T08:10:41.720Z',
+      _id: 'doc3',
+      _rev: 'rev3',
+      _type: 'example',
       _updatedAt: '2024-01-26T08:10:41.720Z',
     })
   })
@@ -59,26 +62,26 @@ describe('extractDocumentsFromNdjsonOrTarball', () => {
     const [doc1, doc2, doc3] = documents
 
     expect(doc1).toEqual({
-      _id: 'doc1',
-      _type: 'example',
-      _rev: 'rev1',
       _createdAt: '2024-01-26T08:10:41.720Z',
+      _id: 'doc1',
+      _rev: 'rev1',
+      _type: 'example',
       _updatedAt: '2024-01-26T08:10:41.720Z',
     })
 
     expect(doc2).toEqual({
-      _id: 'doc2',
-      _type: 'example',
-      _rev: 'rev2',
       _createdAt: '2024-01-26T08:10:41.720Z',
+      _id: 'doc2',
+      _rev: 'rev2',
+      _type: 'example',
       _updatedAt: '2024-01-26T08:10:41.720Z',
     })
 
     expect(doc3).toEqual({
-      _id: 'doc3',
-      _type: 'example',
-      _rev: 'rev3',
       _createdAt: '2024-01-26T08:10:41.720Z',
+      _id: 'doc3',
+      _rev: 'rev3',
+      _type: 'example',
       _updatedAt: '2024-01-26T08:10:41.720Z',
     })
   })
