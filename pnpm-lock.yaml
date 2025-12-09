@@ -335,7 +335,7 @@ importers:
         specifier: ^9.6.0
         version: 9.6.0
       form-data:
-        specifier: ^4.0.3
+        specifier: ^4.0.5
         version: 4.0.5
       get-it:
         specifier: ^8.6.9
