@@ -1,4 +1,4 @@
-import {workerData as _workerData, isMainThread, parentPort} from 'node:worker_threads'
+import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
 import {mockBrowserEnvironment} from '@sanity/cli-core'
 import {
@@ -56,7 +56,7 @@ const {
   level = 'warning',
   workDir,
   workspace: workspaceName,
-} = _workerData as ValidateSchemaWorkerData
+} = workerData as ValidateSchemaWorkerData
 
 async function main() {
   if (isMainThread || !parentPort) {

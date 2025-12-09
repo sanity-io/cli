@@ -19,7 +19,7 @@ type MetafileInput = {
   imports: []
 }
 
-/** Converts the  */
+/** Converts serialized schema debug data to ESBuild metafile format */
 export function generateMetafile(schema: SerializedSchemaDebug): Metafile {
   const output: MetafileOutput = {
     bytes: 0,

@@ -1,6 +1,5 @@
 import {writeFileSync} from 'node:fs'
 import path from 'node:path'
-import {fileURLToPath} from 'node:url'
 import {Worker} from 'node:worker_threads'
 
 import {logSymbols, Output, spinner} from '@sanity/cli-core'
@@ -12,8 +11,6 @@ import {
 } from '../../threads/validateSchema.js'
 import {formatSchemaValidation, getAggregatedSeverity} from './formatSchemaValidation.js'
 import {generateMetafile} from './metafile.js'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 interface Options {
   output: Output
@@ -28,7 +25,7 @@ interface Options {
 export async function validateAction(options: Options): Promise<void> {
   const {debugMetafilePath, format, level, output, workDir, workspace} = options
 
-  const rootPkgPath = (await readPackageUp({cwd: __dirname}))?.path
+  const rootPkgPath = (await readPackageUp({cwd: import.meta.dirname}))?.path
   if (!rootPkgPath) {
     throw new Error('Could not find root directory for `sanity` package')
   }
