@@ -4,6 +4,9 @@ import {z} from 'zod'
 import {type CliConfig} from './types/cliConfig'
 import {type UserViteConfig} from './types/userViteConfig'
 
+/**
+ * @public
+ */
 export const cliConfigSchema = z.object({
   api: z
     .object({
