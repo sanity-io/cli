@@ -56,7 +56,7 @@ export async function setup() {
     }
 
     buildPromises.push(
-      exec('npx sanity build --yes', {
+      exec('pnpx sanity build --yes', {
         cwd: toPath,
       }),
     )
