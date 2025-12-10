@@ -1,38 +1,51 @@
 import {isMainThread, type MessagePort, parentPort, workerData} from 'node:worker_threads'
 
-import {type CliV3CommandContext, type GraphQLAPIConfig} from '@sanity/cli'
 import {type Schema} from '@sanity/types'
-import {isPlainObject} from 'lodash'
-import oneline from 'oneline'
+import {oneline} from 'oneline'
 import {type Workspace} from 'sanity'
 
-import {type SchemaDefinitionish, type TypeResolvedGraphQLAPI} from '../actions/graphql/types'
-import {getStudioWorkspaces} from '../util/getStudioWorkspaces'
+import {
+  type GraphQLAPIConfig,
+  type SchemaDefinitionish,
+  type TypeResolvedGraphQLAPI,
+} from '../actions/graphql/types.js'
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null) {
+    return false
+  }
+  const proto = Object.getPrototypeOf(value)
+  return proto === null || proto === Object.prototype
+}
 
 async function main() {
   if (isMainThread || !parentPort) {
     throw new Error('This module must be run as a worker thread')
   }
 
-  await getGraphQLAPIsForked(parentPort)
+  await getGraphQLAPIsForked(parentPort).then(() => process.exit())
 }
 
-main().then(() => process.exit())
+await main()
 
 async function getGraphQLAPIsForked(parent: MessagePort): Promise<void> {
-  const {cliConfig, cliConfigPath, workDir} = workerData
-  const resolved = await resolveGraphQLApis({cliConfig, cliConfigPath, workDir})
+  const {cliConfig, cliConfigPath, workspaces} = workerData
+  const resolved = await resolveGraphQLApis({cliConfig, cliConfigPath, workspaces})
   parent.postMessage(resolved)
+}
+
+interface ResolveGraphQLApisOptions {
+  workspaces: Workspace[]
+
+  cliConfig?: {graphql?: GraphQLAPIConfig[]}
+  cliConfigPath?: string
 }
 
 async function resolveGraphQLApis({
   cliConfig,
   cliConfigPath,
-  workDir,
-}: Pick<CliV3CommandContext, 'cliConfig' | 'cliConfigPath' | 'workDir'>): Promise<
-  TypeResolvedGraphQLAPI[]
-> {
-  const workspaces = await getStudioWorkspaces({basePath: workDir})
+  workspaces,
+}: ResolveGraphQLApisOptions): Promise<TypeResolvedGraphQLAPI[]> {
   const numSources = workspaces.reduce(
     (count, workspace) => count + workspace.unstable_sources.length,
     0,
@@ -60,8 +73,8 @@ async function resolveGraphQLApis({
 
   // No config is defined, but we have a single workspace + source, so use that
   if (!hasGraphQLConfig) {
-    const {projectId, dataset, schema} = workspaces[0].unstable_sources[0]
-    return [{schemaTypes: getStrippedSchemaTypes(schema), projectId, dataset}]
+    const {dataset, projectId, schema} = workspaces[0].unstable_sources[0]
+    return [{dataset, projectId, schemaTypes: getStrippedSchemaTypes(schema)}]
   }
 
   // Explicity defined config
@@ -76,7 +89,7 @@ function resolveGraphQLAPIsFromConfig(
   const resolvedApis: TypeResolvedGraphQLAPI[] = []
 
   for (const apiDef of apiDefs) {
-    const {workspace: workspaceName, source: sourceName} = apiDef
+    const {source: sourceName, workspace: workspaceName} = apiDef
     if (!workspaceName && workspaces.length > 1) {
       throw new Error(
         'Must define `workspace` name in GraphQL API config when multiple workspaces are defined',
@@ -125,7 +138,7 @@ function validateCliConfig(
   configPath = 'sanity.cli.js',
 ): GraphQLAPIConfig[] {
   if (!Array.isArray(config)) {
-    throw new Error(`"graphql" key in "${configPath}" must be an array if defined`)
+    throw new TypeError(`"graphql" key in "${configPath}" must be an array if defined`)
   }
 
   if (config.length === 0) {
@@ -146,17 +159,15 @@ function stripType(input: unknown): SchemaDefinitionish {
 
 function strip(input: unknown): unknown {
   if (Array.isArray(input)) {
-    return input.map((item) => strip(item)).filter((item) => typeof item !== 'undefined')
+    return input.map((item) => strip(item)).filter((item) => item !== undefined)
   }
 
   if (isPlainishObject(input)) {
-    return Object.keys(input).reduce(
-      (stripped, key) => {
-        stripped[key] = strip(input[key])
-        return stripped
-      },
-      {} as Record<string, unknown>,
-    )
+    const stripped: Record<string, unknown> = {}
+    for (const key of Object.keys(input)) {
+      stripped[key] = strip(input[key])
+    }
+    return stripped
   }
 
   return isBasicType(input) ? input : undefined

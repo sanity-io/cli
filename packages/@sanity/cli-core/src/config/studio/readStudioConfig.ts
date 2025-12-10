@@ -9,26 +9,30 @@ const schemaSchema = z.object({
   types: z.array(z.object({}).passthrough()),
 })
 
+const sourceSchema = z.object({
+  dataset: z.string(),
+  projectId: z.string(),
+  schema: schemaSchema,
+})
+
 const singleStudioWorkspaceSchema = z
   .object({
+    ...sourceSchema.shape,
     basePath: z.string().optional(),
-    dataset: z.string(),
     name: z.string().optional(),
     plugins: z.array(z.unknown()).optional(),
-    projectId: z.string(),
-    schema: schemaSchema.optional(),
     title: z.string().optional(),
+    unstable_sources: z.array(sourceSchema),
   })
   .passthrough()
 
 const studioWorkspaceSchema = z.object({
+  ...sourceSchema.shape,
   basePath: z.string(),
-  dataset: z.string(),
   name: z.string(),
   plugins: z.array(z.unknown()).optional(),
-  projectId: z.string(),
-  schema: z.object({_original: schemaSchema}),
   title: z.string(),
+  unstable_sources: z.array(sourceSchema),
 })
 
 const rawConfigSchema = z.union([z.array(studioWorkspaceSchema), singleStudioWorkspaceSchema])

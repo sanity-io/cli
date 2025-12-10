@@ -1,8 +1,9 @@
 import path from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {isMainThread, Worker} from 'node:worker_threads'
 
-import {type CliCommandContext, type CliV3CommandContext} from '@sanity/cli'
-import readPkgUp from 'read-pkg-up'
+import {getCliConfig, getStudioConfig} from '@sanity/cli-core'
+import {packageDirectory} from 'pkg-dir'
 import {createSchema} from 'sanity'
 
 import {
@@ -10,13 +11,11 @@ import {
   type ResolvedSourceProperties,
   type SchemaDefinitionish,
   type TypeResolvedGraphQLAPI,
-} from './types'
+} from './types.js'
 
-export async function getGraphQLAPIs(cliContext: CliCommandContext): Promise<ResolvedGraphQLAPI[]> {
-  if (!isModernCliConfig(cliContext)) {
-    throw new Error('Expected Sanity studio of version 3 or above')
-  }
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+export async function getGraphQLAPIs(workDir: string): Promise<ResolvedGraphQLAPI[]> {
   if (!isMainThread) {
     throw new Error('getGraphQLAPIs() must be called from the main thread')
   }
@@ -25,10 +24,13 @@ export async function getGraphQLAPIs(cliContext: CliCommandContext): Promise<Res
   const defaultTypes = defaultSchema.getTypeNames()
   const isCustomType = (type: SchemaDefinitionish) => !defaultTypes.includes(type.name)
 
-  const apis = await getApisWithSchemaTypes(cliContext)
+  const apis = await getApisWithSchemaTypes(workDir)
   const resolved = apis.map(
     ({schemaTypes, ...api}): ResolvedSourceProperties => ({
-      schema: createSchema({name: 'default', types: schemaTypes.filter(isCustomType)}),
+      schema: createSchema({
+        name: 'default',
+        types: schemaTypes.filter((element) => isCustomType(element)),
+      }),
       ...api,
     }),
   )
@@ -36,36 +38,46 @@ export async function getGraphQLAPIs(cliContext: CliCommandContext): Promise<Res
   return resolved
 }
 
-function getApisWithSchemaTypes(cliContext: CliCommandContext): Promise<TypeResolvedGraphQLAPI[]> {
-  return new Promise<TypeResolvedGraphQLAPI[]>((resolve, reject) => {
-    const {cliConfig, cliConfigPath, workDir} = cliContext
-    const rootPkgPath = readPkgUp.sync({cwd: __dirname})?.path
-    if (!rootPkgPath) {
-      throw new Error('Could not find root directory for `sanity` package')
-    }
+async function getApisWithSchemaTypes(workDir: string): Promise<TypeResolvedGraphQLAPI[]> {
+  const cliConfig = await getCliConfig(workDir)
+  const workspaces = await getStudioConfig(workDir, {resolvePlugins: true})
 
-    const rootDir = path.dirname(rootPkgPath)
-    const workerPath = path.join(rootDir, 'lib', '_internal', 'cli', 'threads', 'getGraphQLAPIs.js')
+  const cliPkgDir = await packageDirectory({cwd: __dirname})
+  if (!cliPkgDir) {
+    throw new Error('Unable to resolve @sanity/cli module root')
+  }
+
+  const configPath = path.join(workDir, 'sanity.cli.ts')
+
+  const workerPath = path.join(cliPkgDir, 'dist', 'threads', 'getGraphQLAPIs.js')
+
+  return new Promise<TypeResolvedGraphQLAPI[]>((resolve, reject) => {
     const worker = new Worker(workerPath, {
-      workerData: {cliConfig: serialize(cliConfig || {}), cliConfigPath, workDir},
-      // eslint-disable-next-line no-process-env
       env: process.env,
+      workerData: {
+        cliConfig: serialize(cliConfig),
+        cliConfigPath: configPath,
+        workDir,
+        workspaces: serialize(workspaces),
+      },
     })
     worker.on('message', resolve)
-    worker.on('error', reject)
+    worker.on('error', (error) => {
+      worker.terminate()
+      reject(error)
+  })
     worker.on('exit', (code) => {
-      if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`))
+      if (code !== 0) {
+        worker.terminate()
+        reject(new Error(`Worker stopped with exit code ${code}`))
+      }
     })
   })
 }
 
-function isModernCliConfig(config: CliCommandContext): config is CliV3CommandContext {
-  return config.sanityMajorVersion >= 3
-}
-
 function serialize<T>(obj: T): T {
   try {
-    return JSON.parse(JSON.stringify(obj))
+    return structuredClone(obj)
   } catch (cause) {
     throw new Error(`Failed to serialize CLI configuration`, {cause})
   }
