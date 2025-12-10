@@ -311,11 +311,11 @@ importers:
         specifier: ^3.1.11
         version: 3.1.11(@emotion/is-prop-valid@1.2.2)(react-dom@19.2.1(react@19.2.1))(react-is@19.2.1)(react@19.2.1)(styled-components@6.1.19(react-dom@19.2.1(react@19.2.1))(react@19.2.1))
       '@vercel/frameworks':
-        specifier: 3.7.0
-        version: 3.7.0
+        specifier: 3.8.4
+        version: 3.8.4
       '@vercel/fs-detectors':
-        specifier: 5.4.5
-        version: 5.4.5
+        specifier: 5.5.2
+        version: 5.5.2
       '@vitejs/plugin-react':
         specifier: ^4.5.0
         version: 4.6.0(vite@7.2.6(@types/node@20.19.25)(jiti@2.6.1)(lightningcss@1.30.1)(terser@5.39.0)(tsx@4.20.3)(yaml@2.8.1))
@@ -4377,14 +4377,14 @@ packages:
   '@vercel/error-utils@2.0.3':
     resolution: {integrity: sha512-CqC01WZxbLUxoiVdh9B/poPbNpY9U+tO1N9oWHwTl5YAZxcqXmmWJ8KNMFItJCUUWdY3J3xv8LvAuQv2KZ5YdQ==}
 
-  '@vercel/frameworks@3.7.0':
-    resolution: {integrity: sha512-h1t2UYCKMbq62BISzE02Y5IkejX7fTjMtQk3MXDLxuzj8Bg8Ugnt56sD2rNom3rxvHj8Bm6yBwdkPblE13V8vA==}
+  '@vercel/frameworks@3.8.4':
+    resolution: {integrity: sha512-mJHrZM0hZftUYPvRkwb78WKG92atIx2dQ+xXWbzW13tdf1tdwqpD8Ynf7wX0a/zxjSjbC1YrHF6FmPLTF+aLDQ==}
 
-  '@vercel/fs-detectors@5.4.5':
-    resolution: {integrity: sha512-8NUv0edbgBIfaGDKrlbQRbuYwNQpxQ6UrmjDYn9WaixGLiKKse61IGunSPMKQaYZXeXMhBPqv0Abig8p46esuw==}
+  '@vercel/fs-detectors@5.5.2':
+    resolution: {integrity: sha512-u/ADdlJo3HGWli7yaeHCBJ6e9XGGNSlAyZfNUDnCiUlYJjWMcp7pL38xhu9Kfgn7rM5dqsOjGCkUlspmSBWjRA==}
 
-  '@vercel/routing-utils@5.0.8':
-    resolution: {integrity: sha512-R/lz7BqN3EY8MBM9PSUdZ0o48fN5et0e54ra3+LIHgpuf6mtVVIjC7poEp09I+vnmUYd26263opo3fb10JhUxQ==}
+  '@vercel/routing-utils@5.1.1':
+    resolution: {integrity: sha512-EyOik06V2fPXAbKY087BM7DMOQOJK+9mubwwox1TkDi21tMeJcMYwsXwepm6ZmyZ5u0j1TpJW172fP4MbzaCcg==}
 
   '@vitejs/plugin-react@4.6.0':
     resolution: {integrity: sha512-5Kgff+m8e2PB+9j51eGHEpn5kUzRKH2Ry0qGoe8ItJg7pqnkPrYPkDQZGgGmTa0EGarHrkjLvOdU3b1fzI8otQ==}
@@ -13838,24 +13838,24 @@ snapshots:
 
   '@vercel/error-utils@2.0.3': {}
 
-  '@vercel/frameworks@3.7.0':
+  '@vercel/frameworks@3.8.4':
     dependencies:
       '@iarna/toml': 2.2.3
       '@vercel/error-utils': 2.0.3
       js-yaml: 3.13.1
 
-  '@vercel/fs-detectors@5.4.5':
+  '@vercel/fs-detectors@5.5.2':
     dependencies:
       '@vercel/error-utils': 2.0.3
-      '@vercel/frameworks': 3.7.0
-      '@vercel/routing-utils': 5.0.8
+      '@vercel/frameworks': 3.8.4
+      '@vercel/routing-utils': 5.1.1
       glob: 8.0.3
       js-yaml: 4.1.0
       json5: 2.2.2
       minimatch: 3.1.2
       semver: 6.3.1
 
-  '@vercel/routing-utils@5.0.8':
+  '@vercel/routing-utils@5.1.1':
     dependencies:
       path-to-regexp: 6.1.0
       path-to-regexp-updated: path-to-regexp@6.3.0
