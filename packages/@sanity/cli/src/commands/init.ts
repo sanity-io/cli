@@ -1,6 +1,19 @@
+import {confirm} from '@inquirer/prompts'
 import {Args, Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {SanityCommand} from '@sanity/cli-core'
+import {getCliToken, SanityCommand, subdebug} from '@sanity/cli-core'
+import {
+  type CurrentSanityUser,
+  isHttpError,
+  type SanityClient,
+  type SanityUser,
+} from '@sanity/client'
+
+import {getProviderName} from '../actions/auth/getProviderName.js'
+
+const debug = subdebug('init')
+
+const INIT_API_VERSION = 'v2025-06-01'
 
 export class InitCommand extends SanityCommand<typeof InitCommand> {
   static override args = {type: Args.string({hidden: true})}
@@ -61,10 +74,15 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Set up a project with a public dataset named "production"',
     }),
     env: Flags.string({
-      default: '.env',
       description: 'Write environment variables to file',
       exclusive: ['bare'],
       helpValue: '<filename>',
+      parse: async (input) => {
+        if (!input.startsWith('.env')) {
+          throw new Error('Env filename (`--env`) must start with `.env`')
+        }
+        return input
+      },
     }),
     'from-create': Flags.boolean({
       description: 'Internal flag to indicate that the command is run from create-sanity',
@@ -113,6 +131,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Login provider to use',
       helpValue: '<provider>',
     }),
+    reconfigure: Flags.boolean({
+      deprecated: {message: 'This flag is no longer supported', version: '3.0.0'},
+      description: 'Reconfigure an existing project',
+      hidden: true,
+    }),
     template: Flags.string({
       default: 'clean',
       description: 'Project template to use [default: "clean"]',
@@ -152,6 +175,169 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       )
     }
 
-    throw new Error('Not yet implemented')
+    // Slightly more helpful message for removed flags rather than just saying the flag
+    // does not exist.
+    if (this.flags.reconfigure) {
+      this.error('--reconfigure is deprecated - manual configuration is now required', {exit: 1})
+      return
+    }
+
+    // Plan can be set through `--project-plan`, or implied through `--coupon`.
+    // As coupons can expire and project plans might change/be removed, we need to
+    // verify that the passed flags are valid. The complexity of this is hidden in the
+    // below plan methods, eventually returning a plan ID or undefined if we are told to
+    // use the default plan.
+    const plan = await this.getPlan()
+
+    // If the user isn't already autenticated, make it so
+    this.ensureAuthenticated()
+
+    // @todo
+    //const trace = telemetry.trace(CLIInitStepCompleted)
+  }
+
+  // @todo do we actually need to be authenticated for init? check flags and determine.
+  private async ensureAuthenticated(): Promise<{user: CurrentSanityUser}> {
+    const isAuthenticated = getCliToken() !== undefined
+    debug(isAuthenticated ? 'User already has a token' : 'User has no token')
+
+    let user: SanityUser | undefined
+    if (isAuthenticated) {
+      // @todo
+      //trace.log({step: 'login', alreadyLoggedIn: true})
+      const client = await this.getGlobalApiClient({apiVersion: INIT_API_VERSION})
+      const user = await client.users.getById('me')
+      this.log('You are logged in as %s using %s', user.email, getProviderName(user.provider))
+      return {user}
+    }
+
+    if (this.isUnattended()) {
+      throw new Error(
+        'Must be logged in to run this command in unattended mode, run `sanity login`',
+      )
+    }
+
+    // @todo telemetry
+    //trace.log({step: 'login'})
+
+    // @todo trigger login action, then get and return user info
+    await this.config.runCommand('login')
+
+    // const user = await getOrCreateUser()
+    // return {user}
+  }
+
+  private async getPlan(): Promise<string | undefined> {
+    const intendedPlan = this.flags['project-plan']
+    const intendedCoupon = this.flags.coupon
+
+    if (intendedCoupon) {
+      return this.getPlanFromCoupon(intendedCoupon)
+    } else if (intendedPlan) {
+      return this.verifyPlan(intendedPlan)
+    } else {
+      return undefined
+    }
+  }
+
+  private async getPlanFromCoupon(intendedCoupon: string): Promise<string | undefined> {
+    const client = await this.getGlobalApiClient({
+      apiVersion: INIT_API_VERSION,
+      requireUser: false,
+    })
+
+    try {
+      const planId = await this.getPlanIdFromCoupon(client, intendedCoupon)
+      this.log(`Coupon "${intendedCoupon}" validated!\n`)
+      return planId
+    } catch (err: unknown) {
+      if (!isHttpError(err) || err.statusCode !== 404) {
+        throw new Error(`Unable to validate coupon, please try again later:\n\n${err.message}`)
+      }
+
+      const useDefaultPlan =
+        this.isUnattended() ??
+        (await confirm({
+          default: true,
+          message: `Coupon "${intendedCoupon}" is not available, use default plan instead?`,
+        }))
+
+      if (this.isUnattended()) {
+        this.warn(`Coupon "${intendedCoupon}" is not available - using default plan`)
+      }
+
+      // @todo
+      // trace.log({
+      //   step: 'useDefaultPlanCoupon',
+      //   selectedOption: useDefaultPlan ? 'yes' : 'no',
+      //   coupon: intendedCoupon,
+      // })
+
+      if (useDefaultPlan) {
+        this.log('Using default plan.')
+      } else {
+        throw new Error(`Coupon "${intendedCoupon}" does not exist`)
+      }
+    }
+  }
+
+  private async getPlanIdFromCoupon(client: SanityClient, couponCode: string): Promise<string> {
+    const response = await client.request<{id: string}[]>({
+      uri: `plans/coupon/${encodeURIComponent(couponCode)}`,
+    })
+
+    if (!Array.isArray(response) || response.length === 0) {
+      throw new Error(`No plans found for coupon code "${couponCode}"`)
+    }
+
+    const planId = response[0].id
+    if (!planId) {
+      throw new Error('Unable to find a plan from coupon code')
+    }
+
+    return planId
+  }
+
+  private async verifyPlan(intendedPlan: string): Promise<string | undefined> {
+    const client = await this.getGlobalApiClient({
+      apiVersion: INIT_API_VERSION,
+      requireUser: false,
+    })
+
+    try {
+      const response = await client.request<{id: string}[]>({uri: `plans/${intendedPlan}`})
+      if (Array.isArray(response) && response.length > 0) {
+        return response[0].id
+      }
+
+      const useDefaultPlan =
+        this.isUnattended() ??
+        (await confirm({
+          default: true,
+          message: `Project plan "${intendedPlan}" does not exist, use default plan instead?`,
+        }))
+
+      if (this.isUnattended()) {
+        this.warn(`Project plan "${intendedPlan}" does not exist - using default plan`)
+      }
+
+      // @todo
+      // trace.log({
+      //   step: 'useDefaultPlanId',
+      //   selectedOption: useDefaultPlan ? 'yes' : 'no',
+      //   planId: intendedPlan,
+      // })
+
+      if (useDefaultPlan) {
+        this.log('Using default plan.')
+      } else {
+        throw new Error(`Plan id "${intendedPlan}" does not exist`)
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : `${err}`
+      throw new Error(`Unable to validate plan, please try again later:\n\n${message}`, {
+        cause: err,
+      })
+    }
   }
 }
