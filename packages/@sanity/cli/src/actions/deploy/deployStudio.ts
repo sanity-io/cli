@@ -119,9 +119,9 @@ export async function deployStudio(options: DeployAppOptions) {
     output.log(`\nSuccess! Studio deployed to ${chalk.cyan(location)}`)
 
     if (!appId) {
-      output.log(`\nAdd ${chalk.cyan(`appId: '${userApplication.id}'`)}`)
-      output.log(`to the deployment section in sanity.cli.js or sanity.cli.ts`)
-      output.log(`to avoid prompting for hostname on next deploy.`)
+      output.log(`\nAdd ${chalk.cyan(`deployment: { appId: '${userApplication.id}' }`)}`)
+      output.log(`to sanity.cli.js or sanity.cli.ts`)
+      output.log(`to avoid prompting on next deploy.`)
     }
   } catch (error) {
     // if the error is a CLIError, we can just output the message and exit
