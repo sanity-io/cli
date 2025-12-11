@@ -12,7 +12,7 @@ const schemaSchema = z.object({
 const sourceSchema = z.object({
   dataset: z.string(),
   projectId: z.string(),
-  schema: schemaSchema,
+  schema: z.object({_original: schemaSchema}),
 })
 
 const singleStudioWorkspaceSchema = z
@@ -21,6 +21,7 @@ const singleStudioWorkspaceSchema = z
     basePath: z.string().optional(),
     name: z.string().optional(),
     plugins: z.array(z.unknown()).optional(),
+    schema: schemaSchema.optional(),
     title: z.string().optional(),
     unstable_sources: z.array(sourceSchema),
   })

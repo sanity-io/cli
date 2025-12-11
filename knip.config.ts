@@ -39,8 +39,9 @@ const baseConfig = {
         'src/commands/**/*.ts',
         // Worker files
         'src/**/*.worker.ts',
-        // threads files are used via loader or worker, not import
-        'src/threads/**/*.ts',
+        // certain threads files are used via loader, not import
+        'src/threads/configClient.ts',
+        'src/threads/registerBrowserEnv.ts',
       ],
       // temporarily ignore unused exports until schema work is done
       ignore: [

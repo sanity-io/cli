@@ -2,7 +2,7 @@ import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {isMainThread, Worker} from 'node:worker_threads'
 
-import {getCliConfig, getStudioConfig} from '@sanity/cli-core'
+import {CliConfig, getCliConfig, getStudioConfig} from '@sanity/cli-core'
 import {packageDirectory} from 'pkg-dir'
 import {createSchema} from 'sanity'
 
@@ -49,36 +49,34 @@ async function getApisWithSchemaTypes(workDir: string): Promise<TypeResolvedGrap
 
   const configPath = path.join(workDir, 'sanity.cli.ts')
 
-  const workerPath = path.join(cliPkgDir, 'dist', 'threads', 'getGraphQLAPIs.js')
+  const workerPath = path.join(cliPkgDir, 'dist', 'threads', 'getGraphQLAPIs.worker.js')
 
   return new Promise<TypeResolvedGraphQLAPI[]>((resolve, reject) => {
     const worker = new Worker(workerPath, {
       env: process.env,
       workerData: {
-        cliConfig: serialize(cliConfig),
+        cliConfig: extractGraphQLConfig(cliConfig),
         cliConfigPath: configPath,
         workDir,
-        workspaces: serialize(workspaces),
+        workspaces,
       },
     })
     worker.on('message', resolve)
     worker.on('error', (error) => {
-      worker.terminate()
       reject(error)
-  })
+      worker.terminate()
+    })
     worker.on('exit', (code) => {
       if (code !== 0) {
-        worker.terminate()
         reject(new Error(`Worker stopped with exit code ${code}`))
       }
     })
   })
 }
 
-function serialize<T>(obj: T): T {
-  try {
-    return structuredClone(obj)
-  } catch (cause) {
-    throw new Error(`Failed to serialize CLI configuration`, {cause})
-  }
+function extractGraphQLConfig(config: CliConfig) {
+  return structuredClone({
+    api: config.api,
+    graphql: config.graphql,
+  })
 }

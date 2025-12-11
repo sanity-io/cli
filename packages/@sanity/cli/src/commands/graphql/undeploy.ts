@@ -62,7 +62,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
     const {flags} = await this.parse(Undeploy)
     const {api: apiFlag, dataset: datasetFlag, force, project: projectFlag, tag: tagFlag} = flags
 
-    let projectId = projectFlag || (await this.getProjectId())
+    let projectId = projectFlag
     let dataset = datasetFlag
     let tag = tagFlag
 

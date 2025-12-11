@@ -1,6 +1,7 @@
 import {isMainThread, type MessagePort, parentPort, workerData} from 'node:worker_threads'
 
 import {type Schema} from '@sanity/types'
+import {isPlainObject} from 'lodash-es'
 import {oneline} from 'oneline'
 import {type Workspace} from 'sanity'
 
@@ -9,14 +10,6 @@ import {
   type SchemaDefinitionish,
   type TypeResolvedGraphQLAPI,
 } from '../actions/graphql/types.js'
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  if (typeof value !== 'object' || value === null) {
-    return false
-  }
-  const proto = Object.getPrototypeOf(value)
-  return proto === null || proto === Object.prototype
-}
 
 async function main() {
   if (isMainThread || !parentPort) {
