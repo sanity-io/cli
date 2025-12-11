@@ -48,7 +48,7 @@ export async function getUserApplication({
     query = {appType: 'coreApp'}
   } else if (!appId) {
     // either request the app by host or get the default app
-    query = appHost ? {appHost} : {default: 'true'}
+    query = appHost ? {appHost, appType: 'studio'} : {default: 'true'}
   }
 
   const client = await getGlobalCliClient({

@@ -60,7 +60,7 @@ describe('#undeploy', () => {
     })
 
     mockUserApplicationsApi({
-      query: {appHost: 'my-host'},
+      query: {appHost: 'my-host', appType: 'studio'},
       uri: '/user-applications',
     }).reply(200, {
       appHost: 'my-host',
@@ -110,7 +110,7 @@ describe('#undeploy', () => {
     })
 
     mockUserApplicationsApi({
-      query: {appHost: 'my-host'},
+      query: {appHost: 'my-host', appType: 'studio'},
       uri: '/user-applications',
     }).reply(404)
 
@@ -165,7 +165,7 @@ describe('#undeploy', () => {
     })
 
     mockUserApplicationsApi({
-      query: {appHost: 'my-host'},
+      query: {appHost: 'my-host', appType: 'studio'},
       uri: '/user-applications',
     }).reply(200, {
       appHost: 'my-host',
@@ -186,7 +186,7 @@ describe('#undeploy', () => {
     })
 
     mockUserApplicationsApi({
-      query: {appHost: 'my-host'},
+      query: {appHost: 'my-host', appType: 'studio'},
       uri: '/user-applications',
     }).reply(200, {
       appHost: 'my-host',
@@ -282,7 +282,7 @@ describe('#undeploy', () => {
     })
 
     mockUserApplicationsApi({
-      query: {appHost: 'my-host'},
+      query: {appHost: 'my-host', appType: 'studio'},
       uri: '/user-applications',
     }).reply(500, {message: 'Generic error'})
 

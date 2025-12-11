@@ -1126,6 +1126,7 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appHost: studioHost,
+          appType: 'studio',
         },
         uri: `/user-applications`,
       }).reply(200, {
@@ -1166,6 +1167,7 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appHost: studioHost,
+          appType: 'studio',
         },
         uri: `/user-applications`,
       }).reply(200, {
@@ -1216,6 +1218,7 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appHost: 'new-studio-host',
+          appType: 'studio',
         },
         uri: `/user-applications`,
       }).reply(404, {
@@ -1279,6 +1282,7 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appHost: studioHost,
+          appType: 'studio',
         },
         uri: `/user-applications`,
       }).reply(404, {
@@ -1694,6 +1698,7 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appHost: studioHost,
+          appType: 'studio',
         },
         uri: `/user-applications`,
       }).reply(500, {
@@ -1727,6 +1732,7 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appHost: studioHost,
+          appType: 'studio',
         },
         uri: `/user-applications`,
       }).reply(200, {
@@ -1777,6 +1783,7 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appHost: studioHost,
+          appType: 'studio',
         },
         uri: `/user-applications`,
       }).reply(404, {
@@ -1898,6 +1905,7 @@ describe('#deploy', () => {
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
           appHost: studioHost,
+          appType: 'studio',
         },
         uri: `/user-applications`,
       }).reply(200, {

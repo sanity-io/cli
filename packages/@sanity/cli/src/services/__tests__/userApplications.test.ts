@@ -43,7 +43,7 @@ describe('getUserApplication', () => {
     const app = await getUserApplication({appHost: 'my-host'})
 
     expect(mockClient.request).toHaveBeenCalledWith({
-      query: {appHost: 'my-host'},
+      query: {appHost: 'my-host', appType: 'studio'},
       uri: '/user-applications',
     })
     expect(app).toBe(result)
