@@ -6,8 +6,8 @@ import {
   type CreateManifest,
   type ManifestWorkspaceFile,
   type StoredWorkspaceSchema,
-} from '../manifest/types'
-import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes'
+} from '../manifest/types.js'
+import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
 import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {createManifestReader} from './utils/manifestReader.js'
 import {createSchemaApiClient} from './utils/schemaApiClient.js'
@@ -32,6 +32,8 @@ export async function listSchemas(
 ): Promise<SchemaStoreActionResult> {
   const {extractManifest, id, json, manifestDir} = parseListSchemasConfig(flags, context)
   const {apiClient, jsonReader, manifestExtractor, output} = context
+
+  console.log('extractManifest', extractManifest)
 
   if (
     !(await ensureManifestExtractSatisfied({
@@ -67,9 +69,9 @@ export async function listSchemas(
   }
 
   if (json) {
-    output.log(`${JSON.stringify(id ? schemas[0] : schemas, null, 2)}`)
+    output.log(`${JSON.stringify(id ? parsedSchemas[0] : parsedSchemas, null, 2)}`)
   } else {
-    printSchema({manifest, output, schemas: parsedSchemas})
+    printSchemas({manifest, output, schemas: parsedSchemas})
   }
 
   return 'success'
@@ -143,7 +145,7 @@ function parseSchemas(
     .flat()
 }
 
-function printSchema({
+function printSchemas({
   manifest,
   output,
   schemas,

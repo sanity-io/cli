@@ -46,6 +46,7 @@ interface WorkspaceSchemaId {
 export interface SchemaStoreCommonFlags {
   'extract-manifest'?: boolean
   'manifest-dir'?: string
+  'no-extract-manifest'?: boolean
   verbose?: boolean
 }
 
@@ -57,7 +58,11 @@ function parseCommonFlags(
   const manifestDir = parseManifestDir(flags, errors)
   const verbose = !!flags.verbose
   // extract manifest by default: our CLI layer handles both --extract-manifest (true) and --no-extract-manifest (false)
-  const extractManifest = flags['extract-manifest'] ?? true
+  let extractManifest = flags['extract-manifest'] ?? true
+
+  if (flags['no-extract-manifest']) {
+    extractManifest = false
+  }
 
   const fullManifestDir = resolveManifestDirectory(context.workDir, manifestDir)
   return {

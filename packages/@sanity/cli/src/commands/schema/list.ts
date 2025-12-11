@@ -1,7 +1,7 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 
-import {listSchemas} from '../../actions/schema/list.js'
+import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {createManifestExtractor} from '../../actions/schema/utils/manifestExtractor.js'
 
 const description = `
