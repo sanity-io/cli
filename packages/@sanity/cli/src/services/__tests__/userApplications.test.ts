@@ -31,7 +31,6 @@ describe('getUserApplication', () => {
     const app = await getUserApplication({appId: '123'})
 
     expect(mockClient.request).toHaveBeenCalledWith({
-      query: {appType: 'coreApp'},
       uri: '/user-applications/123',
     })
     expect(app).toBe(result)
@@ -41,24 +40,11 @@ describe('getUserApplication', () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
-    const app = await getUserApplication({appHost: 'my-host', projectId: '123'})
+    const app = await getUserApplication({appHost: 'my-host'})
 
     expect(mockClient.request).toHaveBeenCalledWith({
-      query: {appHost: 'my-host', appType: 'studio'},
-      uri: '/projects/123/user-applications',
-    })
-    expect(app).toBe(result)
-  })
-
-  test('queries default when neither id nor host is given', async () => {
-    const result = {appHost: 'my-host', id: '123'}
-    mockClient.request.mockResolvedValueOnce(result)
-
-    const app = await getUserApplication({projectId: 'projectId'})
-
-    expect(mockClient.request).toHaveBeenCalledWith({
-      query: {default: 'true'},
-      uri: '/projects/projectId/user-applications',
+      query: {appHost: 'my-host'},
+      uri: '/user-applications',
     })
     expect(app).toBe(result)
   })

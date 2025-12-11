@@ -11,8 +11,9 @@ interface GetStudioOrAppUserApplicationOptions {
 }
 
 export const NO_APP_ID = 'NO_APP_ID'
-export const NO_STUDIO_HOST = 'NO_STUDIO_HOST'
+export const NO_APP_ID_OR_STUDIO_HOST = 'NO_APP_ID_OR_STUDIO_HOST'
 
+// Used only in undeploy flow
 export async function getStudioOrAppUserApplication(options: GetStudioOrAppUserApplicationOptions) {
   const {cliConfig} = options
   const isApp = determineIsApp(cliConfig)
@@ -23,16 +24,20 @@ export async function getStudioOrAppUserApplication(options: GetStudioOrAppUserA
       throw new Error(NO_APP_ID)
     }
 
-    return getUserApplication({appId})
+    return getUserApplication({appId, isSdkApp: true})
   }
 
-  if (!cliConfig.studioHost) {
-    throw new Error(NO_STUDIO_HOST)
+  if (!cliConfig.studioHost && !cliConfig.deployment?.appId) {
+    throw new Error(NO_APP_ID_OR_STUDIO_HOST)
   }
 
   if (!cliConfig.api?.projectId) {
     throw new Error(NO_PROJECT_ID)
   }
 
-  return getUserApplication({appHost: cliConfig.studioHost, projectId: cliConfig.api?.projectId})
+  return getUserApplication({
+    appHost: cliConfig.studioHost,
+    appId: cliConfig.deployment?.appId,
+    isSdkApp: false,
+  })
 }

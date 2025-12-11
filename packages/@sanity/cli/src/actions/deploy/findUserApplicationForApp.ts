@@ -142,5 +142,5 @@ function findUserApplication(
     return null
   }
 
-  return getUserApplication({appId})
+  return getUserApplication({appId, isSdkApp: true})
 }
