@@ -104,10 +104,10 @@ describe('#listSchema', () => {
 
     const result = await listSchemas(
       {
+        'extract-manifest': true,
         id: undefined,
         json: false,
         'manifest-dir': './dist/static',
-        'no-extract-manifest': false,
       },
       context,
     )
@@ -133,10 +133,10 @@ describe('#listSchema', () => {
 
     const result = await listSchemas(
       {
+        'extract-manifest': true,
         id: '_.schemas.staging',
         json: false,
         'manifest-dir': './dist/static',
-        'no-extract-manifest': false,
       },
       context,
     )
@@ -165,10 +165,10 @@ describe('#listSchema', () => {
 
     const result = await listSchemas(
       {
+        'extract-manifest': true,
         id: undefined,
         json: true,
         'manifest-dir': './dist/static',
-        'no-extract-manifest': false,
       },
       context,
     )
@@ -189,10 +189,10 @@ describe('#listSchema', () => {
 
     const result = await listSchemas(
       {
+        'extract-manifest': true,
         id: '_.schemas.staging',
         json: true,
         'manifest-dir': './dist/static',
-        'no-extract-manifest': false,
       },
       context,
     )
@@ -209,10 +209,10 @@ describe('#listSchema', () => {
 
     const result = await listSchemas(
       {
+        'extract-manifest': true,
         id: undefined,
         json: false,
         'manifest-dir': './dist/static',
-        'no-extract-manifest': false,
       },
       context,
     )
@@ -228,10 +228,10 @@ describe('#listSchema', () => {
 
     const result = await listSchemas(
       {
+        'extract-manifest': true,
         id: '_.schemas.staging',
         json: false,
         'manifest-dir': './dist/static',
-        'no-extract-manifest': false,
       },
       context,
     )
@@ -252,10 +252,10 @@ describe('#listSchema', () => {
 
     const result = await listSchemas(
       {
+        'extract-manifest': true,
         id: undefined,
         json: false,
         'manifest-dir': './dist/static',
-        'no-extract-manifest': false,
       },
       context,
     )
@@ -276,10 +276,10 @@ describe('#listSchema', () => {
 
     await listSchemas(
       {
+        'extract-manifest': false,
         id: undefined,
         json: false,
         'manifest-dir': './dist/static',
-        'no-extract-manifest': true,
       },
       context,
     )

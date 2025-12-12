@@ -41,6 +41,11 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
   ]
 
   static override flags = {
+    'extract-manifest': Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Disables manifest generation - the command will fail if no manifest exists',
+    }),
     id: Flags.string({
       description: 'Fetch a single schema by id',
       helpValue: '<schema_id>',
@@ -52,9 +57,6 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
       default: './dist/static',
       description: 'Directory containing manifest file',
       helpValue: '<directory>',
-    }),
-    'no-extract-manifest': Flags.boolean({
-      description: 'Disables manifest generation - the command will fail if no manifest exists',
     }),
   }
 

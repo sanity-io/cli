@@ -58,11 +58,7 @@ function parseCommonFlags(
   const manifestDir = parseManifestDir(flags, errors)
   const verbose = !!flags.verbose
   // extract manifest by default: our CLI layer handles both --extract-manifest (true) and --no-extract-manifest (false)
-  let extractManifest = flags['extract-manifest'] ?? true
-
-  if (flags['no-extract-manifest']) {
-    extractManifest = false
-  }
+  const extractManifest = flags['extract-manifest'] ?? true
 
   const fullManifestDir = resolveManifestDirectory(context.workDir, manifestDir)
   return {

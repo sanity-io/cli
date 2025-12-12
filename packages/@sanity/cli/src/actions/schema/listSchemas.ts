@@ -33,8 +33,6 @@ export async function listSchemas(
   const {extractManifest, id, json, manifestDir} = parseListSchemasConfig(flags, context)
   const {apiClient, jsonReader, manifestExtractor, output} = context
 
-  console.log('extractManifest', extractManifest)
-
   if (
     !(await ensureManifestExtractSatisfied({
       extractManifest,
