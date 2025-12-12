@@ -2,15 +2,17 @@ import {confirm} from '@inquirer/prompts'
 import {Args, Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {getCliToken, SanityCommand, subdebug} from '@sanity/cli-core'
-import {
-  type CurrentSanityUser,
-  isHttpError,
-  type SanityClient,
-  type SanityUser,
-} from '@sanity/client'
+import {CurrentSanityUser, isHttpError, type SanityClient, type SanityUser} from '@sanity/client'
+import {type Framework, frameworks} from '@vercel/frameworks'
+import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 
 import {getProviderName} from '../actions/auth/getProviderName.js'
 import {login} from '../actions/auth/login.js'
+import {
+  checkIsRemoteTemplate,
+  getGitHubRepoInfo,
+  type RepoInfo,
+} from '../actions/init/remoteTemplate.js'
 
 const debug = subdebug('init')
 
@@ -97,6 +99,29 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       helpLabel: '    --[no-]git',
       helpValue: '<message>',
     }),
+    mcp: Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Enable AI editor integration (MCP) setup',
+    }),
+    'nextjs-add-config-files': Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Add config files to Next.js project',
+      helpGroup: 'Next.js',
+    }),
+    'nextjs-append-env': Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Append project ID and dataset to .env file',
+      helpGroup: 'Next.js',
+    }),
+    'nextjs-embed-studio': Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Embed the Studio in Next.js application',
+      helpGroup: 'Next.js',
+    }),
     // oclif doesn't support a boolean/string flag combination, but listing both a
     // `--git` and a `--no-git` flag in help breaks conventions, so we hide this one,
     // but use it to "combine" the two in the actual logic.
@@ -113,6 +138,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Path to write studio project to',
       exclusive: ['bare'],
       helpValue: '<path>',
+    }),
+    'overwrite-files': Flags.boolean({
+      default: false,
+      description: 'Overwrite existing files',
     }),
     'package-manager': Flags.string({
       description: 'Specify which package manager to use [allowed: npm, yarn, pnpm]',
@@ -163,25 +192,61 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   } satisfies FlagInput
 
   public async run(): Promise<void> {
+    const {args, flags} = await this.parse(InitCommand)
     // For backwards "compatibility" - we used to allow `sanity init plugin`,
     // and no longer do - but instead of printing an error about an unknown
     // _command_, we want to acknowledge that the user is trying to do something
     // that no longer exists but might have at some point in the past.
-    if (this.args.type) {
+    if (args.type) {
       this.error(
-        this.args.type === 'plugin'
+        args.type === 'plugin'
           ? 'Initializing plugins through the CLI is no longer supported'
-          : `Unknown init type "${this.args.type}"`,
+          : `Unknown init type "${args.type}"`,
         {exit: 1},
       )
     }
+
+    // @todo
+    //const trace = telemetry.trace(CLIInitStepCompleted)
 
     // Slightly more helpful message for removed flags rather than just saying the flag
     // does not exist.
     if (this.flags.reconfigure) {
       this.error('--reconfigure is deprecated - manual configuration is now required', {exit: 1})
-      return
     }
+
+    const detectedFramework: Framework | null = await detectFrameworkRecord({
+      frameworkList: frameworks as readonly Framework[],
+      fs: new LocalFileSystemDetector(process.cwd()),
+    })
+
+    let remoteTemplateInfo: RepoInfo | undefined
+    if (flags.template && checkIsRemoteTemplate(flags.template)) {
+      remoteTemplateInfo = await getGitHubRepoInfo(flags.template, flags['template-token'])
+    }
+
+    if (detectedFramework && detectedFramework.slug !== 'sanity' && remoteTemplateInfo) {
+      this.error(
+        `A remote template cannot be used with a detected framework. Detected: ${detectedFramework.name}`,
+        {exit: 1},
+      )
+    }
+
+    // @todo
+    // trace.start()
+    // trace.log({
+    //   step: 'start',
+    //   flags: {
+    //     defaultConfig,
+    //     unattended,
+    //     plan: intendedPlan,
+    //     coupon: intendedCoupon,
+    //     reconfigure,
+    //     git: commitMessage,
+    //     bare: bareOutput,
+    //     env,
+    //   },
+    // })
 
     // Plan can be set through `--project-plan`, or implied through `--coupon`.
     // As coupons can expire and project plans might change/be removed, we need to
@@ -190,11 +255,17 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // use the default plan.
     const plan = await this.getPlan()
 
+    let envFilenameDefault = '.env'
+    if (detectedFramework && detectedFramework.slug === 'nextjs') {
+      envFilenameDefault = '.env.local'
+    }
+    const envFilename = typeof flags.env === 'string' ? flags.env : envFilenameDefault
+    if (!envFilename.startsWith('.env')) {
+      throw new Error('Env filename must start with .env')
+    }
+
     // If the user isn't already autenticated, make it so
     await this.ensureAuthenticated()
-
-    // @todo
-    //const trace = telemetry.trace(CLIInitStepCompleted)
   }
 
   // @todo do we actually need to be authenticated for init? check flags and determine.
@@ -269,7 +340,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       return planId
     } catch (err: unknown) {
       if (!isHttpError(err) || err.statusCode !== 404) {
-        throw new Error(`Unable to validate coupon, please try again later:\n\n${err.message}`)
+        const message = err instanceof Error ? err.message : `${err}`
+        throw new Error(`Unable to validate coupon, please try again later:\n\n${message}`)
       }
 
       const useDefaultPlan =

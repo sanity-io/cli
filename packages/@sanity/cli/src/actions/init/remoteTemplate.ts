@@ -3,12 +3,12 @@ import {join, posix, sep} from 'node:path'
 import {Readable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
 
+import {subdebug} from '@sanity/cli-core'
+import {type SanityClient} from '@sanity/client'
 import {ENV_TEMPLATE_FILES, REQUIRED_ENV_VAR} from '@sanity/template-validator'
 import {x} from 'tar'
 
-import {getGlobalCliClient} from '../../core/apiClient'
-import {subdebug} from '../../debug'
-import {readPackageJson} from '../../util/readPackageJson'
+import {readPackageJson} from '../../util/readPackageJson.js'
 
 const debug = subdebug('remoteTemplate')
 
@@ -290,14 +290,15 @@ export async function tryApplyPackageName(root: string, name: string): Promise<v
 }
 
 export async function generateSanityApiToken(
+  client: SanityClient,
   label: string,
   type: 'read' | 'write',
   projectId: string,
 ): Promise<string> {
-  const client = await getGlobalCliClient({
-    apiVersion: 'v2021-06-07',
-    requireUser: true,
-  })
+  // const client = await getGlobalCliClient({
+  //   apiVersion: 'v2021-06-07',
+  //   requireUser: true,
+  // })
   const response = await client.request<{key: string}>({
     body: {
       label: `${label} (${Date.now()})`,
@@ -309,12 +310,16 @@ export async function generateSanityApiToken(
   return response.key
 }
 
-export async function setCorsOrigin(origin: string, projectId: string): Promise<void> {
+export async function setCorsOrigin(
+  client: SanityClient,
+  origin: string,
+  projectId: string,
+): Promise<void> {
   try {
-    const client = await getGlobalCliClient({
-      apiVersion: 'v2021-06-07',
-      requireUser: true,
-    })
+    // const client = await getGlobalCliClient({
+    //   apiVersion: 'v2021-06-07',
+    //   requireUser: true,
+    // })
 
     await client.withConfig({projectId}).request({
       body: {allowCredentials: true, origin: origin}, // allowCredentials is true to allow for embedded studios if needed

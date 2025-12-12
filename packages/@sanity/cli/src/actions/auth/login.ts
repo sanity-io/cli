@@ -2,9 +2,9 @@ import {input, select} from '@inquirer/prompts'
 import {getCliToken, getGlobalCliClient, type Output, setConfig, spinner} from '@sanity/cli-core'
 import {type SanityClient} from '@sanity/client'
 
-import {canLaunchBrowser} from '../../util/canLaunchBrowser'
-import {startServerForTokenCallback} from './authServer'
-import {type LoginProvider, type ProvidersResponse, type SamlLoginProvider} from './types'
+import {canLaunchBrowser} from '../../util/canLaunchBrowser.js'
+import {startServerForTokenCallback} from './authServer.js'
+import {type LoginProvider, type ProvidersResponse, type SamlLoginProvider} from './types.js'
 
 const LOGIN_API_VERSION = '2024-02-01'
 
