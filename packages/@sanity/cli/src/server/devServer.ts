@@ -1,4 +1,5 @@
-import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core'
+import {type UserViteConfig} from '@sanity/cli-core'
+import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
 

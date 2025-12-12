@@ -1,6 +1,7 @@
 import path from 'node:path'
 
-import {type ReactCompilerConfig, type UserViteConfig} from '@sanity/cli-core'
+import {type UserViteConfig} from '@sanity/cli-core'
+import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build} from 'vite'
 
 import {copyDir} from '../../util/copyDir.js'

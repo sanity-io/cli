@@ -7,7 +7,7 @@ import {NotFoundError} from '../../util/NotFoundError.js'
 import {tryGetDefaultExport} from '../../util/tryGetDefaultExport.js'
 import {findPathForFiles} from '../util/findConfigsPaths.js'
 import {cliConfigSchema} from './schemas.js'
-import {type CliConfig} from './types.js'
+import {type CliConfig} from './types/cliConfig.js'
 
 /**
  * Get the CLI config for a project, given the root path.

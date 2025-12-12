@@ -18,16 +18,16 @@
   "dependencies": {
     "@sanity/cli": "workspace:*",
     "@sanity/code-input": "^6.0.3",
-    "@sanity/vision": "^4.14.2",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "sanity": "^4.14.2",
+    "@sanity/vision": "^4.21.0",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "sanity": "^4.21.0",
     "styled-components": "^6.1.19",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "devDependencies": {
     "@sanity/color": "^3.0.6",
-    "@types/react": "^19.2.0",
+    "@types/react": "^19.2.7",
     "typescript": "^5.8.3",
     "vite": "^7.1.6"
   }

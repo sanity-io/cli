@@ -4,14 +4,14 @@ import {input, select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {type CliConfig, getCliConfig, getGlobalCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
-import exportDataset from '@sanity/export'
+import {exportDataset} from '@sanity/export'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {MediaExportCommand} from '../export.js'
 
 vi.mock('@sanity/export', () => ({
-  default: vi.fn().mockResolvedValue(undefined),
+  exportDataset: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@inquirer/prompts', () => ({
@@ -296,7 +296,7 @@ describe('#media:export', () => {
 
     expect(mockExportDataset).toHaveBeenCalledWith(
       expect.objectContaining({
-        outputPath: '-',
+        outputPath: process.stdout,
       }),
     )
   })

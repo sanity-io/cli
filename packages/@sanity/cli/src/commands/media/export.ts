@@ -1,10 +1,11 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import {type Writable} from 'node:stream'
 
 import {input} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, spinner, subdebug} from '@sanity/cli-core'
-import exportDataset from '@sanity/export'
+import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
 import boxen from 'boxen'
 import prettyMs from 'pretty-ms'
 
@@ -15,14 +16,6 @@ import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const noop = () => null
 const exportDebug = subdebug('media:export')
-
-interface ProgressEvent {
-  current: number
-  step: string
-  total: number
-
-  update?: boolean
-}
 
 export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand> {
   static override args = {
@@ -144,7 +137,7 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
     }
 
     const {fail, onProgress, succeed} = this.createProgressHandler()
-    const exportOptions = {
+    const exportOptions: ExportOptions = {
       assetConcurrency: flags['asset-concurrency'],
       client: projectClient,
       compress: !flags['no-compress'],
@@ -170,7 +163,7 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
     let currentSpinner: ReturnType<typeof spinner> | null = null
     let currentStep = ''
 
-    const onProgress = (progress: ProgressEvent) => {
+    const onProgress = (progress: ExportProgress) => {
       if (progress.step !== currentStep) {
         succeed()
 
@@ -196,9 +189,9 @@ mediaLibraryId: ${mediaLibraryId.padEnd(37)}`,
     destination: string,
     mediaLibraryId: string,
     flags: {overwrite?: boolean},
-  ): Promise<false | string> {
+  ): Promise<string | Writable> {
     if (destination === '-') {
-      return '-'
+      return process.stdout
     }
 
     const dstPath = path.isAbsolute(destination)
