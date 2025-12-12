@@ -51,11 +51,8 @@ export async function deleteSchemaAction(
   flags: DeleteSchemaFlags,
   context: SchemaStoreContext,
 ): Promise<SchemaStoreActionResult> {
-  const {dataset, extractManifest, ids, manifestDir, verbose} = parseDeleteSchemasConfig(
-    flags,
-    context,
-  )
-  const {apiClient, jsonReader, manifestExtractor, output} = context
+  const {dataset, extractManifest, ids, manifestDir, verbose} = parseDeleteSchemasConfig(flags)
+  const {apiClient, jsonReader, manifestExtractor, output, workDir} = context
 
   // prettier-ignore
   if (!(await ensureManifestExtractSatisfied({extractManifest, manifestDir, manifestExtractor,  output, schemaRequired: true,}))) {
@@ -63,7 +60,12 @@ export async function deleteSchemaAction(
   }
 
   const {client, projectId} = await createSchemaApiClient(apiClient)
-  const manifest = await createManifestReader({jsonReader, manifestDir, output}).getManifest()
+  const manifest = await createManifestReader({
+    jsonReader,
+    manifestDir,
+    output,
+    workDir,
+  }).getManifest()
 
   const workspaces = manifest.workspaces
     .filter((workspace) => !dataset || workspace.dataset === dataset)

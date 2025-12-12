@@ -9,7 +9,7 @@ export type ManifestExtractor = (manifestDir: string) => Promise<void>
 export async function ensureManifestExtractSatisfied(args: {
   extractManifest: boolean
   manifestDir: string
-  manifestExtractor: (manifestDir: string) => Promise<void>
+  manifestExtractor: ManifestExtractor
   output: Output
   schemaRequired: boolean
 }) {

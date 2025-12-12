@@ -41,6 +41,7 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       required: true,
     }),
     'manifest-dir': Flags.string({
+      default: './dist/static',
       description: 'Directory containing manifest file',
     }),
     verbose: Flags.boolean({

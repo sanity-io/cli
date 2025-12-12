@@ -30,8 +30,8 @@ export async function listSchemas(
   flags: ListSchemaCommand['flags'],
   context: SchemaStoreContext,
 ): Promise<SchemaStoreActionResult> {
-  const {extractManifest, id, json, manifestDir} = parseListSchemasConfig(flags, context)
-  const {apiClient, jsonReader, manifestExtractor, output} = context
+  const {extractManifest, id, json, manifestDir} = parseListSchemasConfig(flags)
+  const {apiClient, jsonReader, manifestExtractor, output, workDir} = context
 
   if (
     !(await ensureManifestExtractSatisfied({
@@ -45,7 +45,12 @@ export async function listSchemas(
     return 'failure'
   }
 
-  const manifest = await createManifestReader({jsonReader, manifestDir, output}).getManifest()
+  const manifest = await createManifestReader({
+    jsonReader,
+    manifestDir,
+    output,
+    workDir,
+  }).getManifest()
   const projectDatasets = uniqByProjectIdDataset(manifest.workspaces)
   const schemas = (await getSchemas(
     apiClient,

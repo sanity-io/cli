@@ -56,10 +56,7 @@ export async function extractManifestSafe(
 
 async function extractManifest(options: ExtractManifestOptions): Promise<void> {
   const {flags, workDir} = options
-  const defaultOutputDir = resolve(join(workDir, 'dist'))
-  const outputDir = resolve(defaultOutputDir)
-  const defaultStaticPath = join(outputDir, 'static')
-  const staticPath = `.${flags.path ?? defaultStaticPath}`
+  const staticPath = resolve(join(workDir, flags.path))
   const path = join(staticPath, MANIFEST_FILENAME)
 
   const timer = getTimer()
