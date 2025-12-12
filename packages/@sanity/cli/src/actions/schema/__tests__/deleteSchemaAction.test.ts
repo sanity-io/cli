@@ -101,6 +101,7 @@ describe('deleteSchemaAction', () => {
       {
         'extract-manifest': false,
         ids: '_.schemas.default',
+        'manifest-dir': './dist/static',
       },
       context,
     )
@@ -122,6 +123,7 @@ describe('deleteSchemaAction', () => {
       {
         'extract-manifest': false,
         ids: '_.schemas.default,_.schemas.staging',
+        'manifest-dir': './dist/static',
       },
       context,
     )
@@ -139,6 +141,7 @@ describe('deleteSchemaAction', () => {
         dataset: 'production',
         'extract-manifest': false,
         ids: '_.schemas.default',
+        'manifest-dir': './dist/static',
       },
       context,
     )
@@ -154,6 +157,7 @@ describe('deleteSchemaAction', () => {
       {
         'extract-manifest': false,
         ids: '_.schemas.nonexistent',
+        'manifest-dir': './dist/static',
       },
       context,
     )
@@ -175,6 +179,7 @@ describe('deleteSchemaAction', () => {
       {
         'extract-manifest': false,
         ids: '_.schemas.default,_.schemas.nonexistent',
+        'manifest-dir': './dist/static',
       },
       context,
     )
@@ -191,6 +196,7 @@ describe('deleteSchemaAction', () => {
       {
         'extract-manifest': false,
         ids: '_.schemas.default',
+        'manifest-dir': './dist/static',
       },
       context,
     )
@@ -208,6 +214,7 @@ describe('deleteSchemaAction', () => {
       {
         'extract-manifest': true,
         ids: '_.schemas.default',
+        'manifest-dir': './dist/static',
       },
       context,
     )
@@ -222,6 +229,7 @@ describe('deleteSchemaAction', () => {
       {
         'extract-manifest': false,
         ids: '_.schemas.default',
+        'manifest-dir': './dist/static',
       },
       context,
     )
@@ -236,6 +244,7 @@ describe('deleteSchemaAction', () => {
       {
         'extract-manifest': false,
         ids: '_.schemas.default',
+        'manifest-dir': './dist/static',
         verbose: true,
       },
       context,
@@ -253,6 +262,7 @@ describe('deleteSchemaAction', () => {
         {
           'extract-manifest': true,
           ids: '_.schemas.default',
+          'manifest-dir': './dist/static',
         },
         context,
       ),
@@ -285,6 +295,7 @@ describe('deleteSchemaAction', () => {
       {
         'extract-manifest': false,
         ids: '_.schemas.default',
+        'manifest-dir': './dist/static',
       },
       context,
     )
