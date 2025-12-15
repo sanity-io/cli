@@ -1,10 +1,69 @@
 import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
-import {describe, expect, test} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {InitCommand} from '../init'
 
+const mocks = vi.hoisted(() => ({
+  confirm: vi.fn(),
+  detectFrameworkRecord: vi.fn(),
+  getById: vi.fn().mockResolvedValue({
+    email: 'test@example.com',
+    id: 'user-123',
+    name: 'Test User',
+    provider: 'saml-123',
+  }),
+  login: vi.fn(),
+  request: vi.fn(),
+}))
+
+vi.mock('@vercel/fs-detectors', () => ({
+  detectFrameworkRecord: mocks.detectFrameworkRecord,
+  LocalFileSystemDetector: vi.fn(),
+}))
+
+vi.mock('../../../../cli-core/src/services/apiClient.js', () => ({
+  getGlobalCliClient: vi.fn().mockResolvedValue({
+    request: mocks.request,
+    users: {
+      getById: mocks.getById,
+    },
+  }),
+}))
+
+vi.mock('../../../../cli-core/src/services/getCliToken.js', () => ({
+  getCliToken: vi.fn().mockResolvedValue('test-token'),
+}))
+
+vi.mock('@inquirer/prompts', () => ({
+  confirm: mocks.confirm,
+}))
+
+vi.mock('../../actions/auth/login.js', () => ({
+  login: mocks.login,
+}))
+
+const httpError = Object.assign(new Error('Not Found'), {
+  message: 'Coupon not found',
+  response: {
+    body: {},
+    headers: {},
+    method: '',
+    statusCode: 404,
+    url: '',
+  },
+  statusCode: 404,
+})
+
 describe('#init', () => {
+  beforeEach(() => {
+    process.stdin.isTTY = false
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
   describe('oclif command setup', () => {
     test('--help works', async () => {
       const {stdout} = await runCommand('init --help')
@@ -160,6 +219,186 @@ describe('#init', () => {
       expect(error?.message).toContain(
         '--reconfigure is deprecated - manual configuration is now required',
       )
+    })
+  })
+
+  describe('framework detection', () => {
+    test('throws error when framework and remote template are used together', async () => {
+      mocks.detectFrameworkRecord.mockResolvedValue({
+        name: 'Next.js',
+        slug: 'nextjs',
+      })
+
+      const {error} = await testCommand(InitCommand, [
+        '--template=https://github.com/sanity-io/sanity',
+      ])
+
+      expect(error?.message).toContain(
+        'A remote template cannot be used with a detected framework. Detected: Next.js',
+      )
+    })
+  })
+
+  describe('retrieving plan', () => {
+    test('returns undefined when no plan or coupon is provided', async () => {
+      const {error} = await testCommand(InitCommand)
+
+      expect(error).toBeUndefined()
+    })
+
+    describe('coupon', () => {
+      test('validates coupon when --coupon flag is provided', async () => {
+        mocks.request.mockResolvedValueOnce([{id: 'test-plan-id'}])
+
+        const {error, stdout} = await testCommand(InitCommand, ['--coupon=TESTCOUPON123', '--bare'])
+
+        expect(error).toBeUndefined()
+        expect(mocks.request).toHaveBeenCalledWith({uri: 'plans/coupon/TESTCOUPON123'})
+        expect(stdout).toContain('Coupon "TESTCOUPON123" validated!')
+      })
+
+      test('throws error if coupon not found with provided code', async () => {
+        mocks.request.mockResolvedValueOnce([])
+
+        const {error} = await testCommand(InitCommand, ['--coupon=TESTCOUPON123', '--bare'])
+
+        expect(mocks.request).toHaveBeenCalledWith({uri: 'plans/coupon/TESTCOUPON123'})
+        expect(error?.message).toContain('Unable to validate coupon, please try again later:')
+        expect(error?.message).toContain('No plans found for coupon code "TESTCOUPON123"')
+      })
+
+      test('throws error if coupon does not have attached plan id', async () => {
+        mocks.request.mockResolvedValueOnce([{id: undefined}])
+
+        const {error} = await testCommand(InitCommand, ['--coupon=TESTCOUPON123', '--bare'])
+
+        expect(mocks.request).toHaveBeenCalledWith({uri: 'plans/coupon/TESTCOUPON123'})
+        expect(error?.message).toContain('Unable to validate coupon, please try again later:')
+        expect(error?.message).toContain('Unable to find a plan from coupon code')
+      })
+
+      test('uses default plan when coupon does not exist and cli in unattended mode', async () => {
+        mocks.request.mockRejectedValueOnce(httpError)
+
+        const {error, stderr, stdout} = await testCommand(InitCommand, ['--coupon=INVALID123'])
+
+        expect(error).toBe(undefined)
+        expect(stderr).toContain(
+          'Warning: Coupon "INVALID123" is not available - using default plan',
+        )
+        expect(stdout).toContain('Using default plan.')
+      })
+
+      test('uses default plan when user says confirms yes', async () => {
+        process.stdin.isTTY = true
+        mocks.request.mockRejectedValueOnce(httpError)
+        mocks.confirm.mockResolvedValue(true)
+
+        const {error, stdout} = await testCommand(InitCommand, ['--coupon=INVALID123'])
+
+        expect(error).toBeUndefined()
+        expect(mocks.confirm).toHaveBeenCalledWith({
+          default: true,
+          message: 'Coupon "INVALID123" is not available, use default plan instead?',
+        })
+        expect(stdout).toContain('Using default plan.')
+      })
+
+      test('throws error when user confirms no to use default plans', async () => {
+        process.stdin.isTTY = true
+        mocks.request.mockRejectedValueOnce(httpError)
+        mocks.confirm.mockResolvedValue(false)
+
+        const {error} = await testCommand(InitCommand, ['--coupon=INVALID123'])
+
+        expect(error?.message).toContain('Coupon "INVALID123" does not exist')
+      })
+    })
+
+    describe('plan', () => {
+      test('returns when client request for plan is successful', async () => {
+        mocks.request.mockResolvedValueOnce([{id: 'test-plan-id'}])
+
+        const {error} = await testCommand(InitCommand, ['--project-plan=growth'])
+
+        expect(error).toBeUndefined()
+        expect(mocks.request).toHaveBeenCalledWith({uri: 'plans/growth'})
+      })
+
+      test('throw error when no plan id is returned by request', async () => {
+        mocks.request.mockResolvedValueOnce([{id: undefined}])
+
+        const {error} = await testCommand(InitCommand, ['--project-plan=growth'])
+
+        expect(error?.message).toContain('Unable to validate plan, please try again later:')
+        expect(error?.message).toContain('Unable to find a plan with id growth')
+      })
+
+      test('uses default plan when plan id does not exist and cli in unattended mode', async () => {
+        mocks.request.mockRejectedValueOnce(httpError)
+
+        const {error, stderr, stdout} = await testCommand(InitCommand, ['--project-plan=growth'])
+
+        expect(error).toBe(undefined)
+        expect(stderr).toContain(
+          'Warning: Project plan "growth" does not exist - using default plan',
+        )
+        expect(stdout).toContain('Using default plan.')
+      })
+
+      test('uses default plan when user says confirms yes', async () => {
+        process.stdin.isTTY = true
+        mocks.request.mockRejectedValueOnce(httpError)
+        mocks.confirm.mockResolvedValue(true)
+
+        const {error, stdout} = await testCommand(InitCommand, ['--project-plan=growth'])
+
+        expect(error).toBeUndefined()
+        expect(mocks.confirm).toHaveBeenCalledWith({
+          default: true,
+          message: 'Project plan "growth" does not exist, use default plan instead?',
+        })
+        expect(stdout).toContain('Using default plan.')
+      })
+
+      test('throws error when user says confirms no', async () => {
+        process.stdin.isTTY = true
+        mocks.request.mockRejectedValueOnce(httpError)
+        mocks.confirm.mockResolvedValue(false)
+
+        const {error} = await testCommand(InitCommand, ['--project-plan=growth'])
+
+        expect(error?.message).toContain('Plan id "growth" does not exist')
+      })
+    })
+  })
+
+  describe('authenticating', () => {
+    test('user is authenticated with valid token', async () => {
+      const {error, stdout} = await testCommand(InitCommand, [])
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('You are logged in as test@example.com using SAML')
+    })
+
+    test('throws error user is authenticated with invlaid token in unattended mode', async () => {
+      mocks.getById.mockRejectedValueOnce('Invalid token')
+
+      const {error} = await testCommand(InitCommand, [])
+
+      expect(error?.message).toContain(
+        'Must be logged in to run this command in unattended mode, run `sanity login`',
+      )
+    })
+
+    test('calls login when token invalid and not in unattended mode', async () => {
+      process.stdin.isTTY = true
+      mocks.getById.mockRejectedValueOnce('Invalid token')
+
+      const {error} = await testCommand(InitCommand, [])
+
+      expect(error).toBe(undefined)
+      expect(mocks.login).toHaveBeenCalled()
     })
   })
 })

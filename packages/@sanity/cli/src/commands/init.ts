@@ -1,8 +1,10 @@
+// @Todo will remove by time migration of this command si complete
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {confirm} from '@inquirer/prompts'
 import {Args, Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {getCliToken, SanityCommand, subdebug} from '@sanity/cli-core'
-import {CurrentSanityUser, isHttpError, type SanityClient, type SanityUser} from '@sanity/client'
+import {getCliToken, SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
+import {isHttpError, type SanityClient} from '@sanity/client'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 
@@ -253,27 +255,25 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // verify that the passed flags are valid. The complexity of this is hidden in the
     // below plan methods, eventually returning a plan ID or undefined if we are told to
     // use the default plan.
-    const plan = await this.getPlan()
+
+    const _plan = await this.getPlan()
 
     let envFilenameDefault = '.env'
     if (detectedFramework && detectedFramework.slug === 'nextjs') {
       envFilenameDefault = '.env.local'
     }
-    const envFilename = typeof flags.env === 'string' ? flags.env : envFilenameDefault
-    if (!envFilename.startsWith('.env')) {
-      throw new Error('Env filename must start with .env')
-    }
+    const _envFilename = typeof flags.env === 'string' ? flags.env : envFilenameDefault
 
     // If the user isn't already autenticated, make it so
     await this.ensureAuthenticated()
   }
 
   // @todo do we actually need to be authenticated for init? check flags and determine.
-  private async ensureAuthenticated(): Promise<{user: CurrentSanityUser}> {
-    let isAuthenticated = getCliToken() !== undefined
+  private async ensureAuthenticated(): Promise<{user: SanityOrgUser}> {
+    let isAuthenticated = (await getCliToken()) !== undefined
     debug(isAuthenticated ? 'User already has a token' : 'User has no token')
 
-    let user: CurrentSanityUser | undefined
+    let user: SanityOrgUser | undefined
     if (isAuthenticated) {
       // It _appears_ we are authenticated, but the token might be invalid/expired,
       // so we need to verify that we can actually make an authenticated request.
@@ -283,7 +283,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       })
 
       try {
-        user = await client.users.getById('me')
+        user = (await client.users.getById('me')) as unknown as SanityOrgUser
       } catch {
         // assume that any error means that the token is invalid
         isAuthenticated = false
@@ -309,7 +309,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     // @todo
     const client = await this.getGlobalApiClient({apiVersion: INIT_API_VERSION, requireUser: true})
-    user = await client.users.getById('me')
+    user = (await client.users.getById('me')) as unknown as SanityOrgUser
 
     this.log('You are logged in as %s using %s', user.email, getProviderName(user.provider))
     return {user}
@@ -345,7 +345,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       }
 
       const useDefaultPlan =
-        this.isUnattended() ??
+        this.isUnattended() ||
         (await confirm({
           default: true,
           message: `Coupon "${intendedCoupon}" is not available, use default plan instead?`,
@@ -396,11 +396,23 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     try {
       const response = await client.request<{id: string}[]>({uri: `plans/${intendedPlan}`})
       if (Array.isArray(response) && response.length > 0) {
+        const planId = response[0]?.id
+        if (!planId) {
+          throw new Error(`Unable to find a plan with id ${intendedPlan}`)
+        }
+
         return response[0].id
+      }
+    } catch (err: unknown) {
+      if (!isHttpError(err) || err.statusCode !== 404) {
+        const message = err instanceof Error ? err.message : `${err}`
+        throw new Error(`Unable to validate plan, please try again later:\n\n${message}`, {
+          cause: err,
+        })
       }
 
       const useDefaultPlan =
-        this.isUnattended() ??
+        this.isUnattended() ||
         (await confirm({
           default: true,
           message: `Project plan "${intendedPlan}" does not exist, use default plan instead?`,
@@ -422,11 +434,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       } else {
         throw new Error(`Plan id "${intendedPlan}" does not exist`)
       }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : `${err}`
-      throw new Error(`Unable to validate plan, please try again later:\n\n${message}`, {
-        cause: err,
-      })
     }
   }
 }
