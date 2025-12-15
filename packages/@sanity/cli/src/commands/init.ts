@@ -174,6 +174,12 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       exclusive: ['bare'],
       helpValue: '<template>',
     }),
+    // Porting over a beta flag
+    // Oclif doesn't seem to support something in beta so hiding for now
+    'template-token': Flags.string({
+      description: 'Used for accessing private GitHub repo templates',
+      hidden: true,
+    }),
     typescript: Flags.boolean({
       allowNo: true,
       default: true,
