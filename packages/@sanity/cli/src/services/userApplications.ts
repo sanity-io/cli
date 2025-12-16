@@ -35,15 +35,26 @@ export async function getUserApplication({
   appHost,
   appId,
   isSdkApp,
+  projectId,
 }: {
   appHost?: string
   appId?: string
   isSdkApp?: boolean
+  projectId?: string
 }): Promise<UserApplication | null> {
   let query: Record<string, string | string[]> | undefined
+  let uri: string
 
-  const uri = appId ? `/user-applications/${appId}` : '/user-applications'
+  // set the uri
+  if (isSdkApp) {
+    uri = appId ? `/user-applications/${appId}` : '/user-applications'
+  } else {
+    uri = appId
+      ? `/projects/${projectId}/user-applications/${appId}`
+      : `/projects/${projectId}/user-applications`
+  }
 
+  // set the query
   if (isSdkApp) {
     query = {appType: 'coreApp'}
   } else if (!appId) {

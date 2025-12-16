@@ -28,10 +28,10 @@ describe('getUserApplication', () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
-    const app = await getUserApplication({appId: '123'})
+    const app = await getUserApplication({appId: '123', projectId: 'test-project'})
 
     expect(mockClient.request).toHaveBeenCalledWith({
-      uri: '/user-applications/123',
+      uri: '/projects/test-project/user-applications/123',
     })
     expect(app).toBe(result)
   })
@@ -40,11 +40,11 @@ describe('getUserApplication', () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
-    const app = await getUserApplication({appHost: 'my-host'})
+    const app = await getUserApplication({appHost: 'my-host', projectId: 'test-project'})
 
     expect(mockClient.request).toHaveBeenCalledWith({
       query: {appHost: 'my-host', appType: 'studio'},
-      uri: '/user-applications',
+      uri: '/projects/test-project/user-applications',
     })
     expect(app).toBe(result)
   })
@@ -54,7 +54,7 @@ describe('getUserApplication', () => {
     error.statusCode = 404
     mockClient.request.mockRejectedValueOnce(error)
 
-    const app = await getUserApplication({appId: '404'})
+    const app = await getUserApplication({appId: '404', projectId: 'test-project'})
 
     expect(app).toBeNull()
   })
@@ -63,7 +63,9 @@ describe('getUserApplication', () => {
     const error = new Error('oops')
     mockClient.request.mockRejectedValueOnce(error)
 
-    await expect(getUserApplication({appId: '123'})).rejects.toThrow('oops')
+    await expect(getUserApplication({appId: '123', projectId: 'test-project'})).rejects.toThrow(
+      'oops',
+    )
   })
 })
 

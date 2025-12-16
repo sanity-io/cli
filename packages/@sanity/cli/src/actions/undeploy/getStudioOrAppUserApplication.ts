@@ -16,6 +16,7 @@ export const NO_APP_ID_OR_STUDIO_HOST = 'NO_APP_ID_OR_STUDIO_HOST'
 // Used only in undeploy flow
 export async function getStudioOrAppUserApplication(options: GetStudioOrAppUserApplicationOptions) {
   const {cliConfig} = options
+  const projectId = cliConfig.api?.projectId
   const isApp = determineIsApp(cliConfig)
 
   if (isApp) {
@@ -31,7 +32,7 @@ export async function getStudioOrAppUserApplication(options: GetStudioOrAppUserA
     throw new Error(NO_APP_ID_OR_STUDIO_HOST)
   }
 
-  if (!cliConfig.api?.projectId) {
+  if (!projectId) {
     throw new Error(NO_PROJECT_ID)
   }
 
@@ -39,5 +40,6 @@ export async function getStudioOrAppUserApplication(options: GetStudioOrAppUserA
     appHost: cliConfig.studioHost,
     appId: cliConfig.deployment?.appId,
     isSdkApp: false,
+    projectId,
   })
 }

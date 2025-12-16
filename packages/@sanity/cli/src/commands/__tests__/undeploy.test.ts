@@ -61,7 +61,7 @@ describe('#undeploy', () => {
 
     mockUserApplicationsApi({
       query: {appHost: 'my-host', appType: 'studio'},
-      uri: '/user-applications',
+      uri: '/projects/test/user-applications',
     }).reply(200, {
       appHost: 'my-host',
       id: 'app-id',
@@ -111,7 +111,7 @@ describe('#undeploy', () => {
 
     mockUserApplicationsApi({
       query: {appHost: 'my-host', appType: 'studio'},
-      uri: '/user-applications',
+      uri: '/projects/test/user-applications',
     }).reply(404)
 
     const {stdout} = await testCommand(UndeployCommand, ['--yes'])
@@ -166,7 +166,7 @@ describe('#undeploy', () => {
 
     mockUserApplicationsApi({
       query: {appHost: 'my-host', appType: 'studio'},
-      uri: '/user-applications',
+      uri: '/projects/test/user-applications',
     }).reply(200, {
       appHost: 'my-host',
       id: 'app-id',
@@ -187,7 +187,7 @@ describe('#undeploy', () => {
 
     mockUserApplicationsApi({
       query: {appHost: 'my-host', appType: 'studio'},
-      uri: '/user-applications',
+      uri: '/projects/test/user-applications',
     }).reply(200, {
       appHost: 'my-host',
       id: 'app-id',
@@ -283,7 +283,7 @@ describe('#undeploy', () => {
 
     mockUserApplicationsApi({
       query: {appHost: 'my-host', appType: 'studio'},
-      uri: '/user-applications',
+      uri: '/projects/test/user-applications',
     }).reply(500, {message: 'Generic error'})
 
     const {error, stderr} = await testCommand(UndeployCommand, ['--yes'])
@@ -301,7 +301,7 @@ describe('#undeploy', () => {
     const appHost = 'my-studio'
 
     mockUserApplicationsApi({
-      uri: '/user-applications/app-id',
+      uri: '/projects/test/user-applications/app-id',
     }).reply(200, {
       appHost,
       id: 'app-id',
@@ -329,7 +329,7 @@ describe('#undeploy', () => {
 
     // Should call by appId, NOT by appHost
     mockUserApplicationsApi({
-      uri: '/user-applications/app-id',
+      uri: '/projects/test/user-applications/app-id',
     }).reply(200, {
       appHost,
       id: 'app-id',
@@ -353,7 +353,7 @@ describe('#undeploy', () => {
     })
 
     mockUserApplicationsApi({
-      uri: '/user-applications/non-existent-app-id',
+      uri: '/projects/test/user-applications/non-existent-app-id',
     }).reply(404, {
       message: 'Application not found',
     })

@@ -1128,7 +1128,7 @@ describe('#deploy', () => {
           appHost: studioHost,
           appType: 'studio',
         },
-        uri: `/user-applications`,
+        uri: `/projects/${projectId}/user-applications`,
       }).reply(200, {
         appHost: studioHost,
         createdAt: '2024-01-01T00:00:00Z',
@@ -1169,7 +1169,7 @@ describe('#deploy', () => {
           appHost: studioHost,
           appType: 'studio',
         },
-        uri: `/user-applications`,
+        uri: `/projects/${projectId}/user-applications`,
       }).reply(200, {
         appHost: studioHost,
         createdAt: '2024-01-01T00:00:00Z',
@@ -1220,7 +1220,7 @@ describe('#deploy', () => {
           appHost: 'new-studio-host',
           appType: 'studio',
         },
-        uri: `/user-applications`,
+        uri: `/projects/test-project-id/user-applications`,
       }).reply(404, {
         message: 'Not found',
       })
@@ -1284,7 +1284,7 @@ describe('#deploy', () => {
           appHost: studioHost,
           appType: 'studio',
         },
-        uri: `/user-applications`,
+        uri: `/projects/${projectId}/user-applications`,
       }).reply(404, {
         message: 'Not found',
       })
@@ -1381,7 +1381,7 @@ describe('#deploy', () => {
           {name: 'Studio One', value: 'studio-one'},
           {name: 'Studio Two', value: 'studio-two'},
         ],
-        message: 'Select existing studio hostname',
+        message: 'Select existing studio hostname, or create a new one',
       })
     })
 
@@ -1700,7 +1700,7 @@ describe('#deploy', () => {
           appHost: studioHost,
           appType: 'studio',
         },
-        uri: `/user-applications`,
+        uri: `/projects/${projectId}/user-applications`,
       }).reply(500, {
         error: 'Internal server error',
       })
@@ -1734,7 +1734,7 @@ describe('#deploy', () => {
           appHost: studioHost,
           appType: 'studio',
         },
-        uri: `/user-applications`,
+        uri: `/projects/${projectId}/user-applications`,
       }).reply(200, {
         appHost: studioHost,
         createdAt: '2024-01-01T00:00:00Z',
@@ -1785,7 +1785,7 @@ describe('#deploy', () => {
           appHost: studioHost,
           appType: 'studio',
         },
-        uri: `/user-applications`,
+        uri: `/projects/${projectId}/user-applications`,
       }).reply(404, {
         message: 'Not found',
       })
@@ -1907,7 +1907,7 @@ describe('#deploy', () => {
           appHost: studioHost,
           appType: 'studio',
         },
-        uri: `/user-applications`,
+        uri: `/projects/${projectId}/user-applications`,
       }).reply(200, {
         appHost: studioHost,
         createdAt: '2024-01-01T00:00:00Z',
@@ -1959,7 +1959,7 @@ describe('#deploy', () => {
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
-        uri: `/user-applications/${studioAppId}`,
+        uri: `/projects/${projectId}/user-applications/${studioAppId}`,
       }).reply(200, {
         appHost,
         createdAt: '2024-01-01T00:00:00Z',
@@ -2013,7 +2013,7 @@ describe('#deploy', () => {
       // Should call by appId, NOT by appHost
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
-        uri: `/user-applications/${studioAppId}`,
+        uri: `/projects/${projectId}/user-applications/${studioAppId}`,
       }).reply(200, {
         appHost: studioHost,
         createdAt: '2024-01-01T00:00:00Z',
@@ -2063,7 +2063,7 @@ describe('#deploy', () => {
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
-        uri: `/user-applications/${studioAppId}`,
+        uri: `/projects/${projectId}/user-applications/${studioAppId}`,
       }).reply(404, {
         message: 'Application not found',
       })
@@ -2098,7 +2098,7 @@ describe('#deploy', () => {
       // appId lookup fails
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
-        uri: `/user-applications/${studioAppId}`,
+        uri: `/projects/${projectId}/user-applications/${studioAppId}`,
       }).reply(404, {
         message: 'Application not found',
       })

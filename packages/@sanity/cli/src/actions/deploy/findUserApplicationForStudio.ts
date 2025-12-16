@@ -72,7 +72,7 @@ export async function findUserApplicationForStudio(options: FindUserApplicationF
       new Separator(),
       ...choices,
     ],
-    message: 'Select existing studio hostname',
+    message: 'Select existing studio hostname, or create a new one',
   })
 
   // If the user wants to create a new deployed application, return null
@@ -105,7 +105,7 @@ async function findUserApplication(
   // If the config has an appId, check for apps with that ID
   if (appId) {
     try {
-      userApplication = await getUserApplication({appId, isSdkApp: false})
+      userApplication = await getUserApplication({appId, isSdkApp: false, projectId})
 
       if (userApplication) {
         return userApplication
@@ -123,7 +123,7 @@ async function findUserApplication(
   // As a fallback, if studioHost (deprecated) is configured, check for apps with that host
   if (appHost) {
     try {
-      userApplication = await getUserApplication({appHost})
+      userApplication = await getUserApplication({appHost, projectId})
 
       // We've found the application — return it
       if (userApplication) {
