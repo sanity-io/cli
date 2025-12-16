@@ -1,7 +1,11 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {deleteUserApplication, getUserApplication} from '../userApplications.js'
+import {
+  deleteUserApplication,
+  getUserApplication,
+  getUserApplications,
+} from '../userApplications.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
   const actual = await importOriginal()
@@ -24,7 +28,7 @@ afterEach(() => {
 })
 
 describe('getUserApplication', () => {
-  test('queries by application id', async () => {
+  test('queries by application id for studio app', async () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
@@ -36,7 +40,20 @@ describe('getUserApplication', () => {
     expect(app).toBe(result)
   })
 
-  test('queries by host when no id is given', async () => {
+  test('queries by application id for SDK app', async () => {
+    const result = {appHost: 'my-host', id: '123'}
+    mockClient.request.mockResolvedValueOnce(result)
+
+    const app = await getUserApplication({appId: '123', isSdkApp: true})
+
+    expect(mockClient.request).toHaveBeenCalledWith({
+      query: {appType: 'coreApp'},
+      uri: '/user-applications/123',
+    })
+    expect(app).toBe(result)
+  })
+
+  test('queries by host when no id is given for studio app', async () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
