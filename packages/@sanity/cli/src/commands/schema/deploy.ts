@@ -99,10 +99,10 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
       })
 
       if (result === 'failure') {
-        this.error('Failed to list schemas', {exit: 1})
+        this.error('Failed to deploy schemas', {exit: 1})
       }
     } catch (error) {
-      this.error(`Failed to list schemas:\n${error}`, {exit: 1})
+      this.error(`Failed to deploy schemas:\n${error}`, {exit: 1})
     }
   }
 }

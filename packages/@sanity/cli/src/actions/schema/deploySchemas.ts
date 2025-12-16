@@ -53,7 +53,7 @@ export async function deploySchemas(
     if (workspaces.length === 0) {
       const error = workspaceName
         ? new FlagValidationError(`Found no workspaces named "${workspaceName}"`)
-        : new Error(`Workspace array in manifest is empty.`)
+        : new Error('Workspace array in manifest is empty.')
       throw error
     }
 
