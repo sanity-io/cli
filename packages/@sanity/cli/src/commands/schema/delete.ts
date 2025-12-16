@@ -40,7 +40,7 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       description: 'Comma-separated list of schema ids to delete',
       required: true,
     }),
-    'manifest-dir': Flags.string({
+    'manifest-dir': Flags.directory({
       default: './dist/static',
       description: 'Directory containing manifest file',
     }),

@@ -53,7 +53,7 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
     json: Flags.boolean({
       description: 'Get schema as json',
     }),
-    'manifest-dir': Flags.string({
+    'manifest-dir': Flags.directory({
       default: './dist/static',
       description: 'Directory containing manifest file',
       helpValue: '<directory>',
