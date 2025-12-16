@@ -1,6 +1,6 @@
 import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {InitCommand} from '../init'
 
@@ -43,6 +43,10 @@ vi.mock('../../actions/auth/login.js', () => ({
   login: mocks.login,
 }))
 
+vi.mock('../../../../cli-core/src/util/isInteractive.js', () => ({
+  isInteractive: vi.fn().mockReturnValue(true),
+}))
+
 const httpError = Object.assign(new Error('Not Found'), {
   message: 'Coupon not found',
   response: {
@@ -56,10 +60,6 @@ const httpError = Object.assign(new Error('Not Found'), {
 })
 
 describe('#init', () => {
-  beforeEach(() => {
-    process.stdin.isTTY = false
-  })
-
   afterEach(() => {
     vi.clearAllMocks()
   })
@@ -280,7 +280,10 @@ describe('#init', () => {
       test('uses default plan when coupon does not exist and cli in unattended mode', async () => {
         mocks.request.mockRejectedValueOnce(httpError)
 
-        const {error, stderr, stdout} = await testCommand(InitCommand, ['--coupon=INVALID123'])
+        const {error, stderr, stdout} = await testCommand(InitCommand, [
+          '--coupon=INVALID123',
+          '--yes',
+        ])
 
         expect(error).toBe(undefined)
         expect(stderr).toContain(
@@ -290,7 +293,6 @@ describe('#init', () => {
       })
 
       test('uses default plan when user says confirms yes', async () => {
-        process.stdin.isTTY = true
         mocks.request.mockRejectedValueOnce(httpError)
         mocks.confirm.mockResolvedValue(true)
 
@@ -305,7 +307,6 @@ describe('#init', () => {
       })
 
       test('throws error when user confirms no to use default plans', async () => {
-        process.stdin.isTTY = true
         mocks.request.mockRejectedValueOnce(httpError)
         mocks.confirm.mockResolvedValue(false)
 
@@ -329,7 +330,6 @@ describe('#init', () => {
         mocks.request.mockResolvedValueOnce([{id: undefined}])
 
         const {error} = await testCommand(InitCommand, ['--project-plan=growth'])
-
         expect(error?.message).toContain('Unable to validate plan, please try again later:')
         expect(error?.message).toContain('Unable to find a plan with id growth')
       })
@@ -337,7 +337,10 @@ describe('#init', () => {
       test('uses default plan when plan id does not exist and cli in unattended mode', async () => {
         mocks.request.mockRejectedValueOnce(httpError)
 
-        const {error, stderr, stdout} = await testCommand(InitCommand, ['--project-plan=growth'])
+        const {error, stderr, stdout} = await testCommand(InitCommand, [
+          '--project-plan=growth',
+          '--yes',
+        ])
 
         expect(error).toBe(undefined)
         expect(stderr).toContain(
@@ -384,7 +387,7 @@ describe('#init', () => {
     test('throws error user is authenticated with invlaid token in unattended mode', async () => {
       mocks.getById.mockRejectedValueOnce('Invalid token')
 
-      const {error} = await testCommand(InitCommand, [])
+      const {error} = await testCommand(InitCommand, ['--yes'])
 
       expect(error?.message).toContain(
         'Must be logged in to run this command in unattended mode, run `sanity login`',

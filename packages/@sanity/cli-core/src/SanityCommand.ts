@@ -11,6 +11,7 @@ import {
   type ProjectCliClientOptions,
 } from './services/apiClient.js'
 import {type Output} from './types.js'
+import {isInteractive} from './util/isInteractive.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
   (typeof SanityCommand)['baseFlags'] & T['flags']
@@ -113,6 +114,6 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    * (eg when running in a CI environment).
    */
   protected isUnattended(): boolean {
-    return this.flags.yes || !process.stdin.isTTY
+    return this.flags.yes || !isInteractive()
   }
 }

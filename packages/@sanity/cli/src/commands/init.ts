@@ -4,21 +4,21 @@ import {confirm} from '@inquirer/prompts'
 import {Args, Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {getCliToken, SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
-import {isHttpError, type SanityClient} from '@sanity/client'
+import {isHttpError} from '@sanity/client'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 
 import {getProviderName} from '../actions/auth/getProviderName.js'
 import {login} from '../actions/auth/login.js'
+import {INIT_API_VERSION} from '../actions/init/constants.js'
 import {
   checkIsRemoteTemplate,
   getGitHubRepoInfo,
   type RepoInfo,
 } from '../actions/init/remoteTemplate.js'
+import {getPlanId, getPlanIdFromCoupon} from '../services/plans.js'
 
 const debug = subdebug('init')
-
-const INIT_API_VERSION = 'v2025-06-01'
 
 export class InitCommand extends SanityCommand<typeof InitCommand> {
   static override args = {type: Args.string({hidden: true})}
@@ -326,7 +326,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     const intendedCoupon = this.flags.coupon
 
     if (intendedCoupon) {
-      return this.getPlanFromCoupon(intendedCoupon)
+      return this.verifyCoupon(intendedCoupon)
     } else if (intendedPlan) {
       return this.verifyPlan(intendedPlan)
     } else {
@@ -334,14 +334,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
   }
 
-  private async getPlanFromCoupon(intendedCoupon: string): Promise<string | undefined> {
-    const client = await this.getGlobalApiClient({
-      apiVersion: INIT_API_VERSION,
-      requireUser: false,
-    })
-
+  private async verifyCoupon(intendedCoupon: string): Promise<string | undefined> {
     try {
-      const planId = await this.getPlanIdFromCoupon(client, intendedCoupon)
+      const planId = await getPlanIdFromCoupon(intendedCoupon)
       this.log(`Coupon "${intendedCoupon}" validated!\n`)
       return planId
     } catch (err: unknown) {
@@ -376,40 +371,12 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
   }
 
-  private async getPlanIdFromCoupon(client: SanityClient, couponCode: string): Promise<string> {
-    const response = await client.request<{id: string}[]>({
-      uri: `plans/coupon/${encodeURIComponent(couponCode)}`,
-    })
-
-    if (!Array.isArray(response) || response.length === 0) {
-      throw new Error(`No plans found for coupon code "${couponCode}"`)
-    }
-
-    const planId = response[0].id
-    if (!planId) {
-      throw new Error('Unable to find a plan from coupon code')
-    }
-
-    return planId
-  }
-
   private async verifyPlan(intendedPlan: string): Promise<string | undefined> {
-    const client = await this.getGlobalApiClient({
-      apiVersion: INIT_API_VERSION,
-      requireUser: false,
-    })
-
     try {
-      const response = await client.request<{id: string}[]>({uri: `plans/${intendedPlan}`})
-      if (Array.isArray(response) && response.length > 0) {
-        const planId = response[0]?.id
-        if (!planId) {
-          throw new Error(`Unable to find a plan with id ${intendedPlan}`)
-        }
-
-        return response[0].id
-      }
+      const planId = await getPlanId(intendedPlan)
+      return planId
     } catch (err: unknown) {
+      console.log(err)
       if (!isHttpError(err) || err.statusCode !== 404) {
         const message = err instanceof Error ? err.message : `${err}`
         throw new Error(`Unable to validate plan, please try again later:\n\n${message}`, {

@@ -271,7 +271,8 @@ export async function applyEnvVariables(
     }
 
     await writeFile(join(root, targetName), envContent)
-  } catch {
+  } catch (err) {
+    debug(`Error setting environment variables: ${err}`)
     throw new Error(
       'Failed to set environment variables. This could be due to file permissions or the .env file format. See https://www.sanity.io/docs/environment-variables for details on environment variable setup.',
     )
