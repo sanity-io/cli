@@ -1,300 +1,152 @@
-import {type CliCommandContext, type CliOutputter} from '@sanity/cli'
 import {type SanityClient} from '@sanity/client'
 import chalk from 'chalk'
-import {partition} from 'lodash'
 
+import {type DeploySchemaCommand} from '../../commands/schema/deploy'
 import {
   CURRENT_WORKSPACE_SCHEMA_VERSION,
   type ManifestWorkspaceFile,
   type StoredWorkspaceSchema,
-} from '../../../manifest/manifestTypes'
-import {SchemaDeploy} from './__telemetry__/schemaStore.telemetry'
-import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes'
-import {createManifestExtractor, ensureManifestExtractSatisfied} from './utils/mainfestExtractor'
-import {type CreateManifestReader, createManifestReader} from './utils/manifestReader'
-import {createSchemaApiClient} from './utils/schemaApiClient'
-import {projectIdDatasetPair} from './utils/schemaStoreOutStrings'
+} from '../manifest/types.js'
+import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
+import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
+import {type CreateManifestReader, createManifestReader} from './utils/manifestReader.js'
+import {createSchemaApiClient} from './utils/schemaApiClient.js'
 import {
   FlagValidationError,
   parseDeploySchemasConfig,
   SCHEMA_PERMISSION_HELP_TEXT,
-  type SchemaStoreCommonFlags,
-} from './utils/schemaStoreValidation'
-import {getWorkspaceSchemaId} from './utils/workspaceSchemaId'
-import { DeploySchemaCommand } from '../../commands/schema/deploy'
-
-class DatasetError extends Error {
-  public dataset: string
-  public projectId: string
-  constructor(args: {dataset: string; options?: ErrorOptions; projectId: string}) {
-    super((args.options?.cause as {message?: string})?.message, args.options)
-    this.projectId = args.projectId
-    this.dataset = args.dataset
-    this.name = 'DatasetError'
-  }
-}
+} from './utils/schemaStoreValidation.js'
+import {getWorkspaceSchemaId} from './utils/workspaceSchemaId.js'
 
 export async function deploySchemas(
   flags: DeploySchemaCommand['flags'],
   context: SchemaStoreContext,
 ): Promise<SchemaStoreActionResult> {
-  const {workspaceName, verbose, tag, manifestDir, extractManifest, schemaRequired} =
+  const {extractManifest, manifestDir, schemaRequired, tag, verbose, workspaceName} =
     parseDeploySchemasConfig(flags, context)
-  const {output, apiClient, jsonReader, manifestExtractor, workDir} = context
+  const {apiClient, jsonReader, manifestExtractor, output} = context
 
-  if (!(await ensureManifestExtractSatisfied({schemaRequired, extractManifest, manifestDir, manifestExtractor, output}))) {
+  if (
+    !(await ensureManifestExtractSatisfied({
+      extractManifest,
+      manifestDir,
+      manifestExtractor,
+      output,
+      schemaRequired,
+    }))
+  ) {
     return 'failure'
   }
-  
-  const manifestReader = await createManifestReader({
-    jsonReader,
-    manifestDir,
-    output,
-    // workDir,
-  })
-
-  const manifest = await manifestReader.getManifest()
-
-  const workspaces = manifest.workspaces.filter(
-    (workspace) => !workspaceName || workspace.name === workspaceName,
-  )
-
-  if (!workspaces.length) {
-    if (workspaceName) {
-      throw new FlagValidationError(`Found no workspaces named "${workspaceName}"`)
-    } else {
-      throw new Error(`Workspace array in manifest is empty.`)
-    }
-  }
-
-  const schemas = (await updateSchemas(
-    apiClient,
-    manifestReader,
-    workspaces,
-    flags
-  )) as unknown as StoredWorkspaceSchema[]
-}
-
-async function updateSchemas (
-  apiClient: SchemaStoreContext['apiClient'],
-  manifestReader: CreateManifestReader,
-  workspaces: ManifestWorkspaceFile[],
-  flags: DeploySchemaCommand['flags']
-) {
-  const {output, tag, verbose} = flags
-  const {client} = await createSchemaApiClient(apiClient)
-
-  const results = await Promise.allSettled(
-    workspaces.map(async (workspace: ManifestWorkspaceFile): Promise<void> => {
-      try {
-        const {safeBaseId: id, idWarning} = getWorkspaceSchemaId({
-          workspaceName: workspace.name,
-          tag,
-        })
-
-        if (idWarning) output.warn(idWarning)
-
-        const schema = await manifestReader.getWorkspaceSchema(workspace.name)
-
-        const storedWorkspaceSchema: Omit<StoredWorkspaceSchema, '_id' | '_type'> = {
-          version: CURRENT_WORKSPACE_SCHEMA_VERSION,
-          tag,
-          workspace: {
-            name: workspace.name,
-            title: workspace.title,
-          },
-          // the API will stringify the schema – we send as JSON
-          schema,
-        }
-
-        await client
-          .withConfig({dataset: workspace.dataset, projectId: workspace.projectId})
-          .request({
-            method: 'PUT',
-            url: `/projects/${workspace.projectId}/datasets/${workspace.dataset}/schemas`,
-            body: {
-              schemas: [storedWorkspaceSchema],
-            },
-          })
-
-        if (verbose) {
-          output.print(
-            chalk.gray(
-              `↳ schemaId: ${id}, projectId: ${workspace.projectId}, dataset: ${workspace.dataset}`,
-            ),
-          )
-        }
-        // await storeWorkspaceSchema(workspace)
-      } catch (error) {
-        throw new DatasetError({dataset: workspace.dataset, options: {cause: error}, projectId: workspace.projectId})
-      } 
-    }),
-  )
-}
-
-export interface DeploySchemasFlags extends SchemaStoreCommonFlags {
-  'workspace'?: string
-  'tag'?: string
-  'schema-required'?: boolean
-}
-
-export default function deploySchemasActionForCommand(
-  flags: DeploySchemasFlags,
-  context: CliCommandContext,
-): Promise<SchemaStoreActionResult> {
-  return deploySchemasAction(
-    {
-      ...flags,
-      //invoking the command through CLI implies that schema is required
-      'schema-required': true,
-    },
-    {
-      ...context,
-      manifestExtractor: createManifestExtractor(context),
-    },
-  )
-}
-
-/**
- *
- * Stores schemas for configured workspaces into workspace datasets.
- *
- * Workspaces are determined by on-disk manifest file – not directly from sanity.config.
- * All schema store actions require a manifest to exist, so we regenerate it by default.
- * Manifest generation can be optionally disabled with --no-manifest-extract.
- * In this case the command uses and existing file or throws when missing.
- */
-export async function deploySchemasAction(
-  flags: DeploySchemasFlags,
-  context: SchemaStoreContext,
-): Promise<SchemaStoreActionResult> {
-  const {workspaceName, verbose, tag, manifestDir, extractManifest, schemaRequired} =
-    parseDeploySchemasConfig(flags, context)
-
-  const {output, apiClient, jsonReader, manifestExtractor, telemetry} = context
-
-  // prettier-ignore
-  if (!(await ensureManifestExtractSatisfied({schemaRequired, extractManifest, manifestDir, manifestExtractor, output, telemetry}))) {
-    return 'failure'
-  }
-
-  const trace = context.telemetry.trace(SchemaDeploy, {
-    manifestDir,
-    schemaRequired,
-    workspaceName,
-    tag,
-    extractManifest,
-  })
 
   try {
-    trace.start()
-    const {client} = createSchemaApiClient(apiClient)
-    const manifestReader = createManifestReader({manifestDir, output, jsonReader})
-    const manifest = await manifestReader.getManifest()
-
-    const storeWorkspaceSchema = createStoreWorkspaceSchema({
-      tag,
-      verbose,
-      client,
+    const manifestReader = await createManifestReader({
+      jsonReader,
+      manifestDir,
       output,
-      manifestReader,
+      // workDir,
     })
-
-    const targetWorkspaces = manifest.workspaces.filter(
+    const manifest = await manifestReader.getManifest()
+    const workspaces = manifest.workspaces.filter(
       (workspace) => !workspaceName || workspace.name === workspaceName,
     )
 
-    if (!targetWorkspaces.length) {
-      if (workspaceName) {
-        throw new FlagValidationError(`Found no workspaces named "${workspaceName}"`)
-      } else {
-        throw new Error(`Workspace array in manifest is empty.`)
-      }
+    if (workspaces.length === 0) {
+      const error = workspaceName
+        ? new FlagValidationError(`Found no workspaces named "${workspaceName}"`)
+        : new Error(`Workspace array in manifest is empty.`)
+      throw error
     }
 
-    //known caveat: we _dont_ rollback failed operations or partial success
+    const {client} = await createSchemaApiClient(apiClient)
+
+    const updateSchema = getUpdateSchema({
+      client,
+      manifestReader,
+      output,
+      tag,
+      verbose,
+    })
+
+    /* Known caveat: we _don't_ rollback failed operations or partial success */
     const results = await Promise.allSettled(
-      targetWorkspaces.map(async (workspace: ManifestWorkspaceFile): Promise<void> => {
-        await storeWorkspaceSchema(workspace)
+      workspaces.map(async (workspace: ManifestWorkspaceFile): Promise<void> => {
+        await updateSchema(workspace)
       }),
     )
 
-    const [successes, failures] = partition(results, (result) => result.status === 'fulfilled')
-    if (failures.length) {
+    const fulfilledUpdates = results.filter((result) => result.status === 'fulfilled')
+    const rejectedUpdates = results.filter((result) => result.status === 'rejected')
+
+    if (rejectedUpdates.length > 0) {
       throw new Error(
-        `Failed to deploy ${failures.length}/${targetWorkspaces.length} schemas. Successfully deployed ${successes.length}/${targetWorkspaces.length} schemas.`,
+        `Failed to deploy ${rejectedUpdates.length}/${workspaces.length} schemas. Successfully deployed ${fulfilledUpdates.length}/${workspaces.length} schemas.`,
       )
     }
 
-    trace.complete()
-    output.success(`Deployed ${successes.length}/${targetWorkspaces.length} schemas`)
+    output.log(`Deployed ${fulfilledUpdates.length}/${workspaces.length} schemas`)
     return 'success'
   } catch (err) {
-    trace.error(err)
     if (schemaRequired || err instanceof FlagValidationError) {
       throw err
     } else {
-      output.print(`↳ Error when storing schemas:\n  ${err.message}`)
+      output.log(`↳ Error when storing schemas:\n  ${err.message}`)
       return 'failure'
     }
   } finally {
-    context.output.print(
-      `${chalk.gray('↳ List deployed schemas with:')} ${chalk.cyan('sanity schema list')}`,
-    )
+    output.log(`${chalk.gray('↳ List deployed schemas with:')} ${chalk.cyan('sanity schema list')}`)
   }
 }
 
-function createStoreWorkspaceSchema(args: {
+function getUpdateSchema(args: {
+  client: SanityClient
+  manifestReader: CreateManifestReader
+  output: DeploySchemaCommand['flags']['output']
   tag?: string
   verbose: boolean
-  client: SanityClient
-  output: CliOutputter
-  manifestReader: CreateManifestReader
 }): (workspace: ManifestWorkspaceFile) => Promise<void> {
-  const {tag, verbose, client, output, manifestReader} = args
+  const {client, manifestReader, output, tag, verbose} = args
 
   return async (workspace) => {
-    const {safeBaseId: id, idWarning} = getWorkspaceSchemaId({
-      workspaceName: workspace.name,
+    const {dataset, projectId} = workspace
+
+    const {idWarning, safeBaseId: id} = getWorkspaceSchemaId({
       tag,
+      workspaceName: workspace.name,
     })
+
     if (idWarning) output.warn(idWarning)
 
     try {
       const schema = await manifestReader.getWorkspaceSchema(workspace.name)
 
-      const storedWorkspaceSchema: Omit<StoredWorkspaceSchema, '_id' | '_type'> = {
-        version: CURRENT_WORKSPACE_SCHEMA_VERSION,
-        tag,
-        workspace: {
-          name: workspace.name,
-          title: workspace.title,
-        },
-        // the API will stringify the schema – we send as JSON
-        schema,
-      }
-
-      await client
-        .withConfig({dataset: workspace.dataset, projectId: workspace.projectId})
-        .request({
-          method: 'PUT',
-          url: `/projects/${workspace.projectId}/datasets/${workspace.dataset}/schemas`,
-          body: {
-            schemas: [storedWorkspaceSchema],
+      const schemas: Omit<StoredWorkspaceSchema, '_id' | '_type'>[] = [
+        {
+          // the API will stringify the schema – we send as JSON
+          schema,
+          tag,
+          version: CURRENT_WORKSPACE_SCHEMA_VERSION,
+          workspace: {
+            name: workspace.name,
+            title: workspace.title,
           },
-        })
+        },
+      ]
+
+      await client.withConfig({dataset, projectId}).request({
+        body: {
+          schemas,
+        },
+        method: 'PUT',
+        url: `/projects/${projectId}/datasets/${dataset}/schemas`,
+      })
 
       if (verbose) {
-        output.print(
-          chalk.gray(
-            `↳ schemaId: ${id}, projectId: ${workspace.projectId}, dataset: ${workspace.dataset}`,
-          ),
-        )
+        output.print(chalk.gray(`↳ schemaId: ${id}, projectId: ${projectId}, dataset: ${dataset}`))
       }
     } catch (err) {
       if ('statusCode' in err && err?.statusCode === 401) {
         output.error(
-          `↳ No permissions to write schema for workspace "${workspace.name}" – ${projectIdDatasetPair(workspace)}. ${
+          `↳ No permissions to write schema for workspace "${workspace.name}" in dataset "${workspace.dataset}". ${
             SCHEMA_PERMISSION_HELP_TEXT
           }:\n  ${chalk.red(`${err.message}`)}`,
         )

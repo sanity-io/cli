@@ -2,7 +2,7 @@ import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
-import { createManifestExtractor } from '../../actions/schema/utils/manifestExtractor.js'
+import {createManifestExtractor} from '../../actions/schema/utils/manifestExtractor.js'
 
 const description = `
 Deploy schema documents into workspace datasets.
@@ -27,7 +27,8 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
     },
     {
       command: '<%= config.bin %> <%= command.id %> --no-extract-manifest',
-      description: 'Runs using a pre-existing manifest file. Config changes in sanity.config will not be picked up in this case.',
+      description:
+        'Runs using a pre-existing manifest file. Config changes in sanity.config will not be picked up in this case.',
     },
   ]
 
@@ -37,7 +38,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
       default: true,
       description: 'Disables manifest generation - the command will fail if no manifest exists',
     }),
-    'manifest-dir': Flags.string({
+    'manifest-dir': Flags.directory({
       default: './dist/static',
       description: 'Directory containing manifest file',
       helpValue: '<directory>',
