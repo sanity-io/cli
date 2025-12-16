@@ -1,45 +1,107 @@
-import {type CliCommandDefinition} from '@sanity/cli'
+import {Flags} from '@oclif/core'
+import {SanityCommand} from '@sanity/cli-core'
 
-const description = 'Deploy schema documents into workspace datasets.'
+import {deploySchemas} from '../../actions/schema/deploySchemas.js'
+import { createManifestExtractor } from '../../actions/schema/utils/manifestExtractor.js'
 
-const helpText = `
+const description = `
+Deploy schema documents into workspace datasets.
+
 **Note**: This command is experimental and subject to change.
 
 This operation (re-)generates a manifest file describing the sanity config workspace by default.
 To re-use an existing manifest file, use --no-extract-manifest.
+`.trim()
 
-Options:
-  --workspace <workspace_name> deploy schema for a specific workspace
-  --tag <tag> add a tag suffix to the schema id
-  --manifest-dir <directory> directory containing manifest file (default: ./dist/static)
-  --no-extract-manifest disables manifest generation – the command will fail if no manifest exists
-  --verbose print detailed information during deployment
+export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaCommand> {
+  static override description = description
 
-Examples
-  # Deploy all workspace schemas
-  sanity schema deploy
+  static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %>',
+      description: 'Deploy all workspace schemas',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> --workspace default',
+      description: 'Deploy the schema for only the workspace "default"',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> --no-extract-manifest',
+      description: 'Runs using a pre-existing manifest file. Config changes in sanity.config will not be picked up in this case.',
+    },
+  ]
 
-  # Deploy the schema for only the workspace 'default'
-  sanity schema deploy --workspace default
+  static override flags = {
+    'extract-manifest': Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Disables manifest generation - the command will fail if no manifest exists',
+    }),
+    'manifest-dir': Flags.string({
+      default: './dist/static',
+      description: 'Directory containing manifest file',
+      helpValue: '<directory>',
+    }),
+    tag: Flags.string({
+      description: 'Add a tag suffix to the schema id',
+      helpValue: '<tag>',
+    }),
+    verbose: Flags.boolean({
+      default: false,
+      description: 'Print detailed information during deployment',
+    }),
+    workspace: Flags.string({
+      description: 'The name of the workspace to deploy a schema for',
+      helpValue: '<name>',
+    }),
+  }
 
-  # Runs using a pre-existing manifest file
-  # Config changes in sanity.config will not be picked up in this case
-  sanity schema deploy --no-extract-manifest
-`
+  public async run(): Promise<void> {
+    const {flags} = await this.parse(DeploySchemaCommand)
 
-const deploySchemaCommand = {
-  name: 'deploy',
-  group: 'schema',
-  signature: '',
-  description,
-  helpText,
-  action: async (args, context) => {
-    const mod = await import('../../actions/schema/deploySchemasAction')
+    try {
+      const workDir = (await this.getProjectRoot()).directory
+      const cliConfig = await this.getCliConfig()
+      const projectId = await this.getProjectId()
+      const dataset = cliConfig.api?.dataset
 
-    const result = await mod.default(args.extOptions, context)
-    if (result === 'failure') process.exit(1)
-    return result
-  },
-} satisfies CliCommandDefinition
+      if (!projectId) {
+        this.error(
+          'No project ID found. Please run this command from a Sanity project directory.',
+          {
+            exit: 1,
+          },
+        )
+      }
 
-export default deploySchemaCommand
+      if (!dataset) {
+        this.error('No dataset found. Please configure a dataset in your sanity.config.ts.', {
+          exit: 1,
+        })
+      }
+
+      const result = await deploySchemas(flags, {
+        apiClient: async () => {
+          const client = await this.getGlobalApiClient({
+            apiVersion: 'v2025-03-01',
+            requireUser: true,
+          })
+
+          return client.withConfig({dataset, projectId})
+        },
+        manifestExtractor: createManifestExtractor({
+          output: this.output,
+          workDir,
+        }),
+        output: this.output,
+        workDir,
+      })
+
+      if (result === 'failure') {
+        this.error('Failed to list schemas', {exit: 1})
+      }
+    } catch (error) {
+      this.error(`Failed to list schemas:\n${error}`, {exit: 1})
+    }
+  }
+}
