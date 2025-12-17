@@ -2,9 +2,8 @@ import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {isMainThread, Worker} from 'node:worker_threads'
 
-import {CliConfig, getCliConfig, getStudioConfig} from '@sanity/cli-core'
+import {CliConfig, getCliConfig, getStudioConfig, resolveLocalPackage} from '@sanity/cli-core'
 import {packageDirectory} from 'pkg-dir'
-import {createSchema} from 'sanity'
 
 import {
   type ResolvedGraphQLAPI,
@@ -19,6 +18,10 @@ export async function getGraphQLAPIs(workDir: string): Promise<ResolvedGraphQLAP
   if (!isMainThread) {
     throw new Error('getGraphQLAPIs() must be called from the main thread')
   }
+
+  // Resolve the local sanity package to avoid circular dependencies
+  const sanity = await resolveLocalPackage<typeof import('sanity')>('sanity', workDir)
+  const {createSchema} = sanity
 
   const defaultSchema = createSchema({name: 'default', types: []})
   const defaultTypes = defaultSchema.getTypeNames()

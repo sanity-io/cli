@@ -7,6 +7,7 @@ const mockWorkerConstructor = vi.hoisted(() => vi.fn())
 const mockGetCliConfig = vi.hoisted(() => vi.fn())
 const mockGetStudioConfig = vi.hoisted(() => vi.fn())
 const mockPackageDirectory = vi.hoisted(() => vi.fn())
+const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 
 // Mock dependencies
 vi.mock('node:worker_threads', () => ({
@@ -17,6 +18,7 @@ vi.mock('node:worker_threads', () => ({
 vi.mock('@sanity/cli-core', () => ({
   getCliConfig: mockGetCliConfig,
   getStudioConfig: mockGetStudioConfig,
+  resolveLocalPackage: mockResolveLocalPackage,
 }))
 
 vi.mock('pkg-dir', () => ({
@@ -60,6 +62,15 @@ describe('getGraphQLAPIs', () => {
     ])
 
     mockPackageDirectory.mockResolvedValue('/test/cli/package')
+
+    // Mock resolveLocalPackage to return a mock sanity package with createSchema
+    mockResolveLocalPackage.mockResolvedValue({
+      createSchema: vi.fn(({name, types}) => ({
+        getTypeNames: vi.fn(() => []),
+        name,
+        types,
+      })),
+    })
 
     // Default successful worker response
     testResponse = [

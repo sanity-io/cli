@@ -3,13 +3,23 @@ import {isMainThread, type MessagePort, parentPort, workerData} from 'node:worke
 import {type Schema} from '@sanity/types'
 import {isPlainObject} from 'lodash-es'
 import {oneline} from 'oneline'
-import {type Workspace} from 'sanity'
 
 import {
   type GraphQLAPIConfig,
   type SchemaDefinitionish,
   type TypeResolvedGraphQLAPI,
 } from '../actions/graphql/types.js'
+
+interface Source {
+  dataset: string
+  name: string
+  projectId: string
+  schema: Schema
+}
+
+interface Workspace extends Source {
+  unstable_sources: Source[]
+}
 
 async function main() {
   if (isMainThread || !parentPort) {
