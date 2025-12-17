@@ -7,7 +7,7 @@ import {getProvider} from './getProvider.js'
 
 const LOGIN_API_VERSION = '2024-02-01'
 
-export interface LoginOptions {
+interface LoginOptions {
   output: Output
 
   experimental?: boolean

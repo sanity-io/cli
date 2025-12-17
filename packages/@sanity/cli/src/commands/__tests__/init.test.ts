@@ -39,7 +39,7 @@ vi.mock('@inquirer/prompts', () => ({
   confirm: mocks.confirm,
 }))
 
-vi.mock('../../actions/auth/login.js', () => ({
+vi.mock('../../actions/auth/login/index.js', () => ({
   login: mocks.login,
 }))
 
