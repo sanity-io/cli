@@ -3,7 +3,7 @@ import {getGlobalCliClient} from '@sanity/cli-core'
 export const MCP_API_VERSION = '2025-12-09'
 export const MCP_SERVER_URL = 'https://mcp.sanity.io'
 
-export type EditorName = 'Claude Code' | 'Cursor' | 'VS Code'
+type EditorName = 'Claude Code' | 'Cursor' | 'VS Code'
 
 export interface Editor {
   configKey: 'mcpServers' | 'servers'
@@ -16,7 +16,7 @@ export interface MCPConfig {
   servers?: Record<string, ServerConfig>
 }
 
-export interface ServerConfig {
+interface ServerConfig {
   headers: {
     Authorization: string
   }
