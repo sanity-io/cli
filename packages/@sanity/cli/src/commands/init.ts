@@ -9,7 +9,7 @@ import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 
 import {getProviderName} from '../actions/auth/getProviderName.js'
-import {login} from '../actions/auth/login.js'
+import {login} from '../actions/auth/login/index.js'
 import {INIT_API_VERSION} from '../actions/init/constants.js'
 import {
   checkIsRemoteTemplate,
@@ -376,7 +376,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       const planId = await getPlanId(intendedPlan)
       return planId
     } catch (err: unknown) {
-      console.log(err)
       if (!isHttpError(err) || err.statusCode !== 404) {
         const message = err instanceof Error ? err.message : `${err}`
         throw new Error(`Unable to validate plan, please try again later:\n\n${message}`, {

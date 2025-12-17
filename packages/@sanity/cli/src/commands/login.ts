@@ -2,7 +2,7 @@ import {Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {SanityCommand} from '@sanity/cli-core'
 
-import {login} from '../actions/auth/login.js'
+import {login} from '../actions/auth/login/index.js'
 
 export class LoginCommand extends SanityCommand<typeof LoginCommand> {
   static override description = 'Authenticates the CLI for access to Sanity projects'
