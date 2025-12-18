@@ -32,8 +32,8 @@ async function main() {
 await main()
 
 async function getGraphQLAPIsForked(parent: MessagePort): Promise<void> {
-  const {cliConfig, cliConfigPath, workspaces} = workerData
-  const resolved = await resolveGraphQLApis({cliConfig, cliConfigPath, workspaces})
+  const {cliConfig, workspaces} = workerData
+  const resolved = await resolveGraphQLApis({cliConfig, workspaces})
   parent.postMessage(resolved)
 }
 
@@ -41,12 +41,10 @@ interface ResolveGraphQLApisOptions {
   workspaces: Workspace[]
 
   cliConfig?: {graphql?: GraphQLAPIConfig[]}
-  cliConfigPath?: string
 }
 
 async function resolveGraphQLApis({
   cliConfig,
-  cliConfigPath,
   workspaces,
 }: ResolveGraphQLApisOptions): Promise<TypeResolvedGraphQLAPI[]> {
   const numSources = workspaces.reduce(
@@ -69,7 +67,7 @@ async function resolveGraphQLApis({
   if ((multiWorkspace || multiSource) && !hasGraphQLConfig) {
     throw new Error(oneline`
       Multiple workspaces/sources configured.
-      You must define an array of GraphQL APIs in ${cliConfigPath || 'sanity.cli.js'}
+      You must define an array of GraphQL APIs in \`sanity.cli.ts\` or \`sanity.cli.js\`
       and specify which workspace/source to use.
     `)
   }

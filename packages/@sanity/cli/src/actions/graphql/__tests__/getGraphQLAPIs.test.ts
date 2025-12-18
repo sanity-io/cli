@@ -123,7 +123,6 @@ describe('getGraphQLAPIs', () => {
       expect.objectContaining({
         env: process.env,
         workerData: expect.objectContaining({
-          cliConfigPath: '/test/workdir/sanity.cli.ts',
           workDir: '/test/workdir',
         }),
       }),

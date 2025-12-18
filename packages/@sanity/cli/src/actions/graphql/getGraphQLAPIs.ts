@@ -1,4 +1,3 @@
-import path from 'node:path'
 import {isMainThread, Worker} from 'node:worker_threads'
 
 import {type CliConfig, getCliConfig, getStudioConfig, resolveLocalPackage} from '@sanity/cli-core'
@@ -46,14 +45,11 @@ async function getApisWithSchemaTypes(workDir: string): Promise<TypeResolvedGrap
     throw new Error('Unable to resolve @sanity/cli module root')
   }
 
-  const configPath = path.join(workDir, 'sanity.cli.ts')
-
   return new Promise<TypeResolvedGraphQLAPI[]>((resolve, reject) => {
     const worker = new Worker(new URL(`getGraphQLAPIs.worker.js`, import.meta.url), {
       env: process.env,
       workerData: {
         cliConfig: extractGraphQLConfig(cliConfig),
-        cliConfigPath: configPath,
         workDir,
         workspaces,
       },
