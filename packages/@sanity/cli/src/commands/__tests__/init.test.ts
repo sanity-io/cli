@@ -6,6 +6,9 @@ import {InitCommand} from '../init'
 
 const mocks = vi.hoisted(() => ({
   confirm: vi.fn(),
+  createDataset: vi.fn(),
+  createOrganization: vi.fn(),
+  createProject: vi.fn(),
   detectFrameworkRecord: vi.fn(),
   getById: vi.fn().mockResolvedValue({
     email: 'test@example.com',
@@ -13,8 +16,14 @@ const mocks = vi.hoisted(() => ({
     name: 'Test User',
     provider: 'saml-123',
   }),
+  getOrganizationChoices: vi.fn(),
+  getOrganizationsWithAttachGrantInfo: vi.fn(),
+  input: vi.fn(),
+  listOrganizations: vi.fn(),
   login: vi.fn(),
   request: vi.fn(),
+  select: vi.fn(),
+  spinner: vi.fn(),
 }))
 
 vi.mock('@vercel/fs-detectors', () => ({
@@ -37,11 +46,42 @@ vi.mock('../../../../cli-core/src/services/getCliToken.js', () => ({
 
 vi.mock('@inquirer/prompts', () => ({
   confirm: mocks.confirm,
+  input: mocks.input,
+  select: mocks.select,
 }))
 
 vi.mock('../../actions/auth/login/index.js', () => ({
   login: mocks.login,
 }))
+
+vi.mock('../../actions/organizations/getOrganizationChoices.js', () => ({
+  getOrganizationChoices: mocks.getOrganizationChoices,
+}))
+
+vi.mock('../../actions/organizations/getOrganizationsWithAttachGrantInfo.js', () => ({
+  getOrganizationsWithAttachGrantInfo: mocks.getOrganizationsWithAttachGrantInfo,
+}))
+
+vi.mock('../../services/datasets.js', () => ({
+  createDataset: mocks.createDataset,
+}))
+
+vi.mock('../../services/organizations.js', () => ({
+  createOrganization: mocks.createOrganization,
+  listOrganizations: mocks.listOrganizations,
+}))
+
+vi.mock('../../services/projects.js', () => ({
+  createProject: mocks.createProject,
+}))
+
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
+  return {
+    ...actual,
+    spinner: mocks.spinner,
+  }
+})
 
 vi.mock('../../../../cli-core/src/util/isInteractive.js', () => ({
   isInteractive: vi.fn().mockReturnValue(true),
@@ -73,12 +113,13 @@ describe('#init', () => {
 
         USAGE
           $ sanity init [--json] [--auto-updates | --bare] [--coupon
-            <code> | --project-plan <name>] [--create-project <name>] [--dataset <name>
-            | --dataset-default] [--env <filename> | ] [--git <message> | ] [--mcp]
+            <code> | --project-plan <name>] [--dataset <name> | --dataset-default]
+            [--env <filename> | ] [--git <message> | ] [--mcp]
             [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio]
             [--organization <id>] [--output-path <path> | ] [--overwrite-files]
-            [--package-manager <manager> | ] [--project <id>] [--provider <provider>]
-            [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
+            [--package-manager <manager> | ] [--project <id> | --create-project <name>]
+            [--provider <provider>] [--template <template> | ] [--typescript | ]
+            [--visibility <mode>] [-y]
 
         FLAGS
           -y, --yes                        Unattended mode, answers "yes" to any
@@ -160,6 +201,7 @@ describe('#init', () => {
       {flag1: 'package-manager=pnpm', flag2: 'bare'},
       {flag1: 'template=test', flag2: 'bare'},
       {flag1: 'typescript', flag2: 'bare'},
+      {flag1: 'project=test', flag2: 'create-project=test'},
     ])('throws error when `$flag1` and `$flag2` flags are both passed', async ({flag1, flag2}) => {
       const {error} = await testCommand(InitCommand, [`--${flag1}`, `--${flag2}`])
 
@@ -218,6 +260,60 @@ describe('#init', () => {
 
       expect(error?.message).toContain(
         '--reconfigure is deprecated - manual configuration is now required',
+      )
+    })
+
+    test('throws error when in unattended mode and `dataset` is not set', async () => {
+      const {error} = await testCommand(InitCommand, ['--yes'])
+
+      expect(error?.message).toContain('`--dataset` must be specified in unattended mode')
+    })
+
+    test('throws error when `output-path` is not used in unattended mode with non-nextjs project', async () => {
+      // Mock no framework or a non-Next.js framework
+      mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+
+      const {error} = await testCommand(InitCommand, [
+        '--yes',
+        '--dataset=production',
+        '--project=test-project',
+      ])
+
+      // Should throw output-path error for non-Next.js projects
+      expect(error?.message).toContain('`--output-path` must be specified in unattended mode')
+    })
+
+    test('throws error when in unattended mode and `project` and `create-project` not set', async () => {
+      mocks.detectFrameworkRecord.mockResolvedValueOnce({
+        name: 'Next.js',
+        slug: 'nextjs',
+      })
+
+      const {error} = await testCommand(InitCommand, [
+        '--yes',
+        '--dataset=production',
+        // Deliberately omitting --project and --create-project
+      ])
+
+      expect(error?.message).toContain(
+        '`--project <id>` or `--create-project <name>` must be specified in unattended mode',
+      )
+    })
+
+    test('throws error when in unattended mode and `create-project` not set with `organization`', async () => {
+      mocks.detectFrameworkRecord.mockResolvedValueOnce({
+        name: 'Next.js',
+        slug: 'nextjs',
+      })
+
+      const {error} = await testCommand(InitCommand, [
+        '--yes',
+        '--dataset=production',
+        '--create-project=test',
+      ])
+
+      expect(error?.message).toContain(
+        '--create-project is not supported in unattended mode without an organization, please specify an organization with `--organization <id>`',
       )
     })
   })
@@ -283,6 +379,8 @@ describe('#init', () => {
         const {error, stderr, stdout} = await testCommand(InitCommand, [
           '--coupon=INVALID123',
           '--yes',
+          '--dataset=test',
+          '--project==test',
         ])
 
         expect(error).toBe(undefined)
@@ -340,6 +438,8 @@ describe('#init', () => {
         const {error, stderr, stdout} = await testCommand(InitCommand, [
           '--project-plan=growth',
           '--yes',
+          '--dataset=test',
+          '--project==test',
         ])
 
         expect(error).toBe(undefined)
@@ -384,10 +484,10 @@ describe('#init', () => {
       expect(stdout).toContain('You are logged in as test@example.com using SAML')
     })
 
-    test('throws error user is authenticated with invlaid token in unattended mode', async () => {
+    test('throws error user is authenticated with invalid token in unattended mode', async () => {
       mocks.getById.mockRejectedValueOnce('Invalid token')
 
-      const {error} = await testCommand(InitCommand, ['--yes'])
+      const {error} = await testCommand(InitCommand, ['--yes', '--dataset=test', '--project==test'])
 
       expect(error?.message).toContain(
         'Must be logged in to run this command in unattended mode, run `sanity login`',
@@ -402,6 +502,197 @@ describe('#init', () => {
 
       expect(error).toBe(undefined)
       expect(mocks.login).toHaveBeenCalled()
+    })
+  })
+
+  describe('template', () => {
+    test('logs properly if app template flag is not valid', async () => {
+      mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+
+      const {stdout} = await testCommand(InitCommand, [
+        '--template=invalid-template-name', // Not a valid app template
+      ])
+
+      // When template is not an app template, it should log "Fetching existing projects"
+      expect(stdout).toContain('Fetching existing projects')
+    })
+  })
+
+  describe('create new project', () => {
+    test('prompts user to create new organization if they have none', async () => {
+      // Mock no framework detection
+      mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+
+      // Mock listOrganizations to return empty array (user has no organizations)
+      mocks.listOrganizations.mockResolvedValueOnce([])
+
+      // Mock input prompt for organization name
+      mocks.input.mockResolvedValueOnce('My New Organization')
+
+      // Mock createOrganization to return the created organization
+      mocks.createOrganization.mockResolvedValueOnce({
+        createdByUserId: 'user-123',
+        defaultRoleName: null,
+        features: [],
+        id: 'org-123',
+        members: [],
+        name: 'My New Organization',
+        slug: 'my-new-organization',
+      })
+
+      // Mock createProject to return the created project with correct structure
+      mocks.createProject.mockResolvedValueOnce({
+        displayName: 'Test Project',
+        projectId: 'project-123',
+      })
+
+      // Mock createDataset
+      mocks.createDataset.mockResolvedValueOnce(undefined)
+
+      // Mock spinner instance
+      const mockSpinnerInstance = {
+        fail: vi.fn().mockReturnThis(),
+        start: vi.fn().mockReturnThis(),
+        succeed: vi.fn().mockReturnThis(),
+      }
+      mocks.spinner.mockReturnValue(mockSpinnerInstance)
+
+      await testCommand(InitCommand, [
+        '--create-project=Test Project',
+        '--dataset=production',
+        '--output-path=./test-project',
+      ])
+
+      // Verify listOrganizations was called
+      expect(mocks.listOrganizations).toHaveBeenCalled()
+
+      // Verify input prompt was called with correct parameters
+      expect(mocks.input).toHaveBeenCalledWith(
+        expect.objectContaining({
+          default: 'Test User',
+          message: 'Organization name:',
+        }),
+      )
+
+      // Verify createOrganization was called with the input value
+      expect(mocks.createOrganization).toHaveBeenCalledWith('My New Organization')
+
+      // Verify createProject was called
+      expect(mocks.createProject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          displayName: 'Test Project',
+          organizationId: 'org-123',
+        }),
+      )
+
+      // Verify createDataset was called
+      expect(mocks.createDataset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          aclMode: undefined,
+          datasetName: 'production',
+          projectId: 'project-123',
+        }),
+      )
+
+      // Verify spinner was called with correct text
+      expect(mocks.spinner).toHaveBeenCalledWith('Creating organization')
+      expect(mocks.spinner).toHaveBeenCalledWith('Creating dataset')
+    })
+
+    test('prompts user to select then create a new organization', async () => {
+      // Mock no framework detection
+      mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+
+      // Mock listOrganizations to return existing organizations
+      mocks.listOrganizations.mockResolvedValueOnce([
+        {
+          id: 'existing-org-123',
+          name: 'Existing Organization',
+          slug: 'existing-organization',
+        },
+      ])
+
+      // Mock getOrganizationsWithAttachGrantInfo to return organizations with attach grant
+      mocks.getOrganizationsWithAttachGrantInfo.mockResolvedValueOnce([
+        {
+          hasAttachGrant: true,
+          organization: {
+            id: 'existing-org-123',
+            name: 'Existing Organization',
+            slug: 'existing-organization',
+          },
+        },
+      ])
+
+      // Mock getOrganizationChoices to return choices including create new option
+      mocks.getOrganizationChoices.mockReturnValueOnce([
+        {name: 'Existing Organization [existing-org-123]', value: 'existing-org-123'},
+        {name: 'Create new organization', value: '-new-'},
+      ])
+
+      // Mock select prompt - user chooses to create new organization
+      mocks.select.mockResolvedValueOnce('-new-')
+
+      // Mock input prompt for new organization name
+      mocks.input.mockResolvedValueOnce('Brand New Organization')
+
+      // Mock createOrganization to return the newly created organization
+      mocks.createOrganization.mockResolvedValueOnce({
+        createdByUserId: 'user-123',
+        defaultRoleName: null,
+        features: [],
+        id: 'new-org-456',
+        members: [],
+        name: 'Brand New Organization',
+        slug: 'brand-new-organization',
+      })
+
+      // Mock createProject to return the created project
+      mocks.createProject.mockResolvedValueOnce({
+        displayName: 'Test Project',
+        projectId: 'project-123',
+      })
+
+      // Mock createDataset
+      mocks.createDataset.mockResolvedValueOnce(undefined)
+
+      // Mock spinner instance
+      const mockSpinnerInstance = {
+        fail: vi.fn().mockReturnThis(),
+        start: vi.fn().mockReturnThis(),
+        succeed: vi.fn().mockReturnThis(),
+      }
+      mocks.spinner.mockReturnValue(mockSpinnerInstance)
+
+      await testCommand(InitCommand, [
+        '--create-project=Test Project',
+        '--dataset=production',
+        '--output-path=./test-project',
+      ])
+
+      // Verify createOrganization was called with the input value
+      expect(mocks.createOrganization).toHaveBeenCalledWith('Brand New Organization')
+
+      // Verify createProject was called
+      expect(mocks.createProject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          displayName: 'Test Project',
+          organizationId: 'new-org-456',
+        }),
+      )
+
+      // Verify createDataset was called
+      expect(mocks.createDataset).toHaveBeenCalledWith(
+        expect.objectContaining({
+          aclMode: undefined,
+          datasetName: 'production',
+          projectId: 'project-123',
+        }),
+      )
+
+      // Verify spinner was called with correct text
+      expect(mocks.spinner).toHaveBeenCalledWith('Creating organization')
+      expect(mocks.spinner).toHaveBeenCalledWith('Creating dataset')
     })
   })
 })
