@@ -117,7 +117,9 @@ describe('getGraphQLAPIs', () => {
     await getGraphQLAPIs('/test/workdir')
 
     expect(mockWorkerConstructor).toHaveBeenCalledWith(
-      '/test/cli/package/dist/threads/getGraphQLAPIs.worker.js',
+      expect.objectContaining({
+        href: expect.stringContaining('/actions/graphql/getGraphQLAPIs.worker.js'),
+      }),
       expect.objectContaining({
         env: process.env,
         workerData: expect.objectContaining({

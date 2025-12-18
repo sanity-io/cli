@@ -8,7 +8,7 @@ import {
   type GraphQLAPIConfig,
   type SchemaDefinitionish,
   type TypeResolvedGraphQLAPI,
-} from '../actions/graphql/types.js'
+} from './types.js'
 
 interface Source {
   dataset: string
