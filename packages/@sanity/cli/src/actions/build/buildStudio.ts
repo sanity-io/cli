@@ -19,7 +19,7 @@ import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {checkRequiredDependencies} from './checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from './checkStudioDependencyVersions.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getStudioAutoUpdateImportMap} from './getAutoUpdatesImportMap.js'
+import {getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getStudioEnvVars} from './getStudioEnvVars.js'
 import {shouldAutoUpdate} from './shouldAutoUpdate.js'
 import {type BuildOptions} from './types.js'
@@ -49,26 +49,33 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
 
   const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
 
-  // Get the version without any tags if any
-  const coercedSanityVersion = semver.coerce(installedSanityVersion)?.version
-  if (autoUpdatesEnabled && !coercedSanityVersion) {
-    throw new Error(`Failed to parse installed Sanity version: ${installedSanityVersion}`)
-  }
-  const version = encodeURIComponent(`^${coercedSanityVersion}`)
-  const autoUpdatesImports = getStudioAutoUpdateImportMap(version)
+  let autoUpdatesImports = {}
 
   if (autoUpdatesEnabled) {
-    output.log(`${logSymbols.info} Building with auto-updates enabled`)
-
-    // Warn if auto updates enabled but no appId configured
-    const projectId = cliConfig?.api?.projectId
-    const appId = getAppId(cliConfig)
-    if (!appId) {
-      warnAboutMissingAppId({output, projectId})
+    // Get the clean version without build metadata: https://semver.org/#spec-item-10
+    const cleanSanityVersion = semver.parse(installedSanityVersion)?.version
+    if (!cleanSanityVersion) {
+      throw new Error(`Failed to parse installed Sanity version: ${installedSanityVersion}`)
     }
 
+    output.log(`${logSymbols.info} Building with auto-updates enabled`)
+
+    const projectId = cliConfig?.api?.projectId
+    const appId = getAppId(cliConfig)
+
+    // Warn if auto updates enabled but no appId configured
+    if (!appId) {
+      warnAboutMissingAppId({appType: 'studio', output, projectId})
+    }
+
+    const sanityDependencies = [
+      {name: 'sanity', version: cleanSanityVersion},
+      {name: '@sanity/vision', version: cleanSanityVersion},
+    ]
+    autoUpdatesImports = getAutoUpdatesImportMap(sanityDependencies, {appId})
+
     // Check the versions
-    const result = await compareDependencyVersions(autoUpdatesImports, workDir)
+    const result = await compareDependencyVersions(sanityDependencies, workDir)
 
     // If it is in unattended mode, we don't want to prompt
     if (result?.length && !unattendedMode) {

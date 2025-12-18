@@ -3,19 +3,29 @@ import path from 'node:path'
 import resolveFrom from 'resolve-from'
 import semver from 'semver'
 
-import {
-  type SanityAppAutoUpdatesImportMap,
-  type StudioAutoUpdatesImportMap,
-} from '../actions/build/getAutoUpdatesImportMap.js'
-import {readPackageJson} from './readPackageJson.js'
+import {getModuleUrl} from '../actions/build/getAutoUpdatesImportMap.js'
+import {readPackageManifest} from './readPackageManifest.js'
 
-async function getRemoteResolvedVersion(fetchFn: typeof globalThis.fetch, url: string) {
-  try {
-    const res = await fetchFn(url, {method: 'HEAD', redirect: 'manual'})
-    return res.headers.get('x-resolved-version')
-  } catch (err) {
-    throw new Error(`Failed to fetch remote version for ${url}: ${err.message}`)
-  }
+function getRemoteResolvedVersion(fetchFn: typeof fetch, url: string) {
+  return fetchFn(url, {
+    method: 'HEAD',
+    redirect: 'manual',
+  }).then(
+    (res) => {
+      // 302 is expected, but lets also handle 2xx
+      if (res.ok || res.status < 400) {
+        const resolved = res.headers.get('x-resolved-version')
+        if (!resolved) {
+          throw new Error(`Missing 'x-resolved-version' header on response from HEAD ${url}`)
+        }
+        return resolved
+      }
+      throw new Error(`Unexpected HTTP response: ${res.status} ${res.statusText}`)
+    },
+    (err) => {
+      throw new Error(`Failed to fetch remote version for ${url}: ${err.message}`, {cause: err})
+    },
+  )
 }
 
 interface CompareDependencyVersions {
@@ -25,6 +35,8 @@ interface CompareDependencyVersions {
 }
 
 /**
+ * @internal
+ *
  * Compares the versions of dependencies in the studio or app with their remote versions.
  *
  * This function reads the package.json file in the provided working directory, and compares the versions of the dependencies
@@ -45,33 +57,26 @@ interface CompareDependencyVersions {
  * cannot be parsed.
  */
 export async function compareDependencyVersions(
-  autoUpdatesImports: SanityAppAutoUpdatesImportMap | StudioAutoUpdatesImportMap,
+  packages: {name: string; version: string}[],
   workDir: string,
-
-  fetchFn = globalThis.fetch,
+  {fetchFn = globalThis.fetch}: {appId?: string; fetchFn?: typeof fetch} = {},
 ): Promise<Array<CompareDependencyVersions>> {
-  const manifest = await readPackageJson(path.join(workDir, 'package.json'))
+  const manifest = await readPackageManifest(path.join(workDir, 'package.json'))
   const dependencies = {...manifest.dependencies, ...manifest.devDependencies}
 
   const failedDependencies: Array<CompareDependencyVersions> = []
 
-  // Filter out the packages that are wildcards in the import map
-  const filteredAutoUpdatesImports = Object.entries(autoUpdatesImports).filter(
-    ([pkg]) => !pkg.endsWith('/'),
-  ) as Array<[string, string]>
+  for (const pkg of packages) {
+    const resolvedVersion = await getRemoteResolvedVersion(fetchFn, getModuleUrl(pkg))
 
-  for (const [pkg, value] of filteredAutoUpdatesImports) {
-    const resolvedVersion = await getRemoteResolvedVersion(fetchFn, value)
+    const manifestPath = resolveFrom.silent(workDir, path.join(pkg.name, 'package.json'))
 
-    if (!resolvedVersion) {
-      throw new Error(`Failed to fetch remote version for ${value}`)
-    }
-
-    const dependency = dependencies[pkg]
-    const manifestPath = resolveFrom.silent(workDir, path.join(pkg, 'package.json'))
+    const manifestVersion = dependencies[pkg.name]
 
     const installed = semver.coerce(
-      manifestPath ? (await readPackageJson(manifestPath)).version : dependency,
+      manifestPath
+        ? semver.parse((await readPackageManifest(manifestPath)).version)
+        : semver.coerce(manifestVersion),
     )
 
     if (!installed) {
@@ -79,7 +84,11 @@ export async function compareDependencyVersions(
     }
 
     if (!semver.eq(resolvedVersion, installed.version)) {
-      failedDependencies.push({installed: installed.version, pkg, remote: resolvedVersion})
+      failedDependencies.push({
+        installed: installed.version,
+        pkg: pkg.name,
+        remote: resolvedVersion,
+      })
     }
   }
 

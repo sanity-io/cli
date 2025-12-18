@@ -12,6 +12,7 @@ describe('warnAboutMissingAppId', () => {
 
   test('should log the expected warning when called', () => {
     warnAboutMissingAppId({
+      appType: 'studio',
       output: mockOutput,
       projectId: 'project-id',
     })
@@ -24,8 +25,8 @@ describe('warnAboutMissingAppId', () => {
 
   test('should be resilient to missing project IDs', () => {
     warnAboutMissingAppId({
+      appType: 'app',
       output: mockOutput,
-      projectId: '',
     })
 
     expect(mockOutput.warn).toBeCalledWith(expect.stringContaining('No appId configured'))

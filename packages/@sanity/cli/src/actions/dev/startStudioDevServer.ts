@@ -5,13 +5,14 @@ import semver from 'semver'
 
 import {startDevServer} from '../../server/devServer.js'
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
+import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
+import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {checkRequiredDependencies} from '../build/checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from '../build/checkStudioDependencyVersions.js'
-import {getStudioAutoUpdateImportMap} from '../build/getAutoUpdatesImportMap.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {devDebug} from './devDebug.js'
 import {getCoreAppURL} from './getCoreAppUrl.js'
@@ -22,6 +23,8 @@ export async function startStudioDevServer(
   options: DevActionOptions,
 ): Promise<{close?: () => Promise<void>}> {
   const {apiClient, cliConfig, flags, output, workDir} = options
+  const projectId = cliConfig?.api?.projectId
+  let organizationId: string | undefined
 
   const loadInDashboard = flags['load-in-dashboard']
 
@@ -34,26 +37,45 @@ export async function startStudioDevServer(
   const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
 
   if (autoUpdatesEnabled) {
+    // Get the clean version without build metadata: https://semver.org/#spec-item-10
+    const cleanSanityVersion = semver.parse(installedSanityVersion)?.version
+    if (!cleanSanityVersion) {
+      throw new Error(`Failed to parse installed Sanity version: ${installedSanityVersion}`)
+    }
+
+    const sanityDependencies = [
+      {name: 'sanity', version: cleanSanityVersion},
+      {name: '@sanity/vision', version: cleanSanityVersion},
+    ]
+
     output.log(`${logSymbols.info} Running with auto-updates enabled`)
 
-    // Get the version without any tags if any
-    const coercedSanityVersion = semver.coerce(installedSanityVersion)?.version
-    if (!coercedSanityVersion) {
-      output.error(`Failed to parse installed Sanity version: ${installedSanityVersion}`, {exit: 1})
+    // Check local versions against deployed versions
+    let result: Awaited<ReturnType<typeof compareDependencyVersions>> | undefined
+
+    const appId = getAppId(cliConfig)
+
+    try {
+      result = await compareDependencyVersions(sanityDependencies, workDir, {appId})
+    } catch (err) {
+      output.warn(`Failed to compare local versions against auto-updating versions: ${err}`)
     }
-    const version = encodeURIComponent(`^${coercedSanityVersion}`)
-    const autoUpdatesImports = getStudioAutoUpdateImportMap(version)
 
-    // Check the versions
-    const result = await compareDependencyVersions(autoUpdatesImports, workDir)
-
-    const message =
-      `The following local package versions are different from the versions currently served at runtime.\n` +
-      `When using auto updates, we recommend that you run with the same versions locally as will be used when deploying.\n\n` +
-      `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')}\n\n`
+    if (!appId) {
+      warnAboutMissingAppId({
+        appType: 'studio',
+        output,
+        projectId,
+      })
+    }
 
     // mismatch between local and auto-updating dependencies
     if (result?.length) {
+      const message =
+        `The following local package versions are different from the versions currently served at runtime.\n` +
+        `When using auto updates, we recommend that you run with the same versions locally as will be used when deploying.\n\n` +
+        `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')}\n\n`
+
       if (isInteractive()) {
         const shouldUpgrade = await confirm({
           default: true,
@@ -76,9 +98,6 @@ export async function startStudioDevServer(
   }
 
   const config = getDevServerConfig({cliConfig, flags, output, workDir})
-
-  const projectId = cliConfig?.api?.projectId
-  let organizationId: string | undefined
 
   if (loadInDashboard) {
     if (!projectId) {
