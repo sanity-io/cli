@@ -60,7 +60,8 @@ jobs:
 
       - name: Publish packages
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
-        run: pnpm publish -r --filter="@sanity/cli*"
+        # TODO: Remove the tag once we have a proper release
+        run: pnpm publish -r --filter="@sanity/cli*" --tag beta
 
       - name: Summary
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
