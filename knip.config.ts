@@ -58,6 +58,8 @@ const baseConfig = {
         'src/actions/init/remoteTemplate.ts',
         'src/actions/init/determineAppTemplate.ts',
         'src/actions/auth/login.ts',
+        'src/services/organizations.ts',
+        'src/services/projects.ts',
       ],
       oclif: {
         config: ['oclif.config.js'],
