@@ -87,11 +87,11 @@ export async function deploySchemas(
     return 'success'
   } catch (err) {
     if (schemaRequired || err instanceof FlagValidationError) {
-      throw err
+      output.error(err.message)
     } else {
-      output.log(`↳ Error when storing schemas:\n  ${err.message}`)
-      return 'failure'
+      output.error(`↳ Error when storing schemas:\n  ${err.message}`)
     }
+    return 'failure'
   } finally {
     output.log(`${chalk.gray('↳ List deployed schemas with:')} ${chalk.cyan('sanity schema list')}`)
   }
@@ -113,6 +113,9 @@ function getUpdateSchema(args: {
       tag,
       workspaceName: workspace.name,
     })
+
+    console.log('tag', tag)
+    console.log('id', id)
 
     if (idWarning) output.warn(idWarning)
 
@@ -141,7 +144,7 @@ function getUpdateSchema(args: {
       })
 
       if (verbose) {
-        output.print(chalk.gray(`↳ schemaId: ${id}, projectId: ${projectId}, dataset: ${dataset}`))
+        output.log(chalk.gray(`↳ schemaId: ${id}, projectId: ${projectId}, dataset: ${dataset}`))
       }
     } catch (err) {
       if ('statusCode' in err && err?.statusCode === 401) {
