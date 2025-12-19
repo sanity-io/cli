@@ -125,8 +125,8 @@ describe('buildApp', () => {
     )
   })
 
-  it('should throw error when auto-updates enabled but coercedSdkVersion is invalid', async () => {
-    // Mock an invalid version that semver.coerce returns null for
+  it('should throw error when auto-updates enabled but cleanSdkVersion is invalid', async () => {
+    // Mock an invalid version that semver.parse returns null for
     mockedReadModuleVersion.mockResolvedValueOnce('invalid-version')
 
     const options = {

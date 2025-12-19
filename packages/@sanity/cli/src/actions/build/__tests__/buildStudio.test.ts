@@ -161,7 +161,7 @@ describe('buildStudio', () => {
     expect(mockedBuildStaticFiles).toHaveBeenCalled()
   })
 
-  it('should throw error when auto-updates enabled but coercedSanityVersion is invalid', async () => {
+  it('should throw error when auto-updates enabled but cleanSanityVersion is invalid', async () => {
     mockedCheckRequiredDependencies.mockResolvedValue({
       installedSanityVersion: 'invalid-version',
     })
