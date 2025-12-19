@@ -2,6 +2,7 @@ import {type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {shouldAutoUpdate} from '../shouldAutoUpdate'
+import {type BuildFlags} from '../types'
 
 describe('shouldAutoUpdate', () => {
   let mockOutput: Output
@@ -17,7 +18,7 @@ describe('shouldAutoUpdate', () => {
     it('should return false', () => {
       const result = shouldAutoUpdate({
         cliConfig: {},
-        flags: {},
+        flags: {} as BuildFlags,
         output: mockOutput,
       })
 
@@ -35,7 +36,7 @@ describe('shouldAutoUpdate', () => {
             autoUpdates: true,
           },
         },
-        flags: {},
+        flags: {} as BuildFlags,
         output: mockOutput,
       })
 
@@ -51,7 +52,7 @@ describe('shouldAutoUpdate', () => {
             autoUpdates: false,
           },
         },
-        flags: {},
+        flags: {} as BuildFlags,
         output: mockOutput,
       })
 
@@ -65,7 +66,7 @@ describe('shouldAutoUpdate', () => {
         cliConfig: {
           deployment: {},
         },
-        flags: {},
+        flags: {} as BuildFlags,
         output: mockOutput,
       })
 
@@ -81,7 +82,7 @@ describe('shouldAutoUpdate', () => {
         cliConfig: {
           autoUpdates: true,
         },
-        flags: {},
+        flags: {} as BuildFlags,
         output: mockOutput,
       })
 
@@ -101,7 +102,7 @@ describe('shouldAutoUpdate', () => {
         cliConfig: {
           autoUpdates: false,
         },
-        flags: {},
+        flags: {} as BuildFlags,
         output: mockOutput,
       })
 
@@ -126,7 +127,7 @@ describe('shouldAutoUpdate', () => {
             autoUpdates: true,
           },
         },
-        flags: {},
+        flags: {} as BuildFlags,
         output: mockOutput,
       })
 
@@ -143,7 +144,7 @@ describe('shouldAutoUpdate', () => {
         cliConfig: {},
         flags: {
           'auto-updates': true,
-        },
+        } as BuildFlags,
         output: mockOutput,
       })
 
@@ -158,7 +159,7 @@ describe('shouldAutoUpdate', () => {
         cliConfig: {},
         flags: {
           'auto-updates': false,
-        },
+        } as BuildFlags,
         output: mockOutput,
       })
 
@@ -177,7 +178,7 @@ describe('shouldAutoUpdate', () => {
         },
         flags: {
           'auto-updates': false,
-        },
+        } as BuildFlags,
         output: mockOutput,
       })
 
