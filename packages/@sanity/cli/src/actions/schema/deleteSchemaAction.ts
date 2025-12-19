@@ -77,7 +77,7 @@ export async function deleteSchemaAction(
       return ids.map(async ({schemaId}): Promise<DeleteResult> => {
         try {
           const deletedSchema = await deleteSchema(targetDataset, projectId, schemaId)
-          return {dataset: targetDataset, deleted: deletedSchema.results.length > 0, schemaId}
+          return {dataset: targetDataset, deleted: deletedSchema.deleted, schemaId}
         } catch (err) {
           throw new DeleteIdError(schemaId, targetDataset, {cause: err})
         }

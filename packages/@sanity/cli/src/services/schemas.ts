@@ -13,7 +13,7 @@ export async function getSchemas<T>(dataset: string, projectId: string, id?: str
   const client = await getSchemaClient()
 
   return id
-    ? await client.request<T | undefined>({
+    ? await client.request<T[] | undefined>({
         method: 'GET',
         uri: `/projects/${projectId}/datasets/${dataset}/schemas/${id}`,
       })
@@ -24,6 +24,14 @@ export async function getSchemas<T>(dataset: string, projectId: string, id?: str
 }
 
 export async function deleteSchema(dataset: string, projectId: string, id: string) {
+  const exists = await getSchemas(dataset, projectId, id)
+
+  if (exists?.length === 0) {
+    return {
+      deleted: false,
+    }
+  }
+
   const client = await getSchemaClient()
 
   return await client.request({
