@@ -23,6 +23,11 @@
       "require": "./dist/index.js",
       "import": "./dist/index.js"
     },
+    "./tree": {
+      "source": "./src/_exports/tree.ts",
+      "require": "./dist/_exports/tree.js",
+      "import": "./dist/_exports/tree.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "dist/index.js",

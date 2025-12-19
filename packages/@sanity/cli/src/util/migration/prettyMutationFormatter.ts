@@ -1,6 +1,6 @@
 import {isatty} from 'node:tty'
 
-import {convertToTree, formatTree, maxKeyLength} from '@sanity/cli-core'
+import {convertToTree, formatTree, maxKeyLength} from '@sanity/cli-core/tree'
 import {type Migration, type Mutation, type NodePatch, type Transaction} from '@sanity/migrate'
 import {type KeyedSegment} from '@sanity/types'
 import chalk from 'chalk'

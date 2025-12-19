@@ -1,4 +1,5 @@
-import {convertToTree, formatTree, logSymbols, maxKeyLength, type Tree} from '@sanity/cli-core'
+import {logSymbols} from '@sanity/cli-core'
+import {convertToTree, formatTree, maxKeyLength, type Tree} from '@sanity/cli-core/tree'
 import {type Path, type ValidationMarker} from '@sanity/types'
 import chalk from 'chalk'
 
