@@ -4,6 +4,13 @@
 - When migrating logic from `original-cli` to the new CLI, instead of creating a new file and duplicating the code - first use `git mv` to move it, then `git commit -m 'refactor: migrate … from original CLI` in order to maintain as much history as we can.
 - The new CLI is using oclif framework. Docs are here https://oclif.io/docs/api_reference
 
+# Architecture
+
+- **Commands** (`commands/`): Parse CLI args/flags and orchestrate flow. Keep thin - delegate to actions and services.
+- **Actions** (`actions/`): Business logic and validation. Should take options objects, not CLI flags.
+- **Services** (`services/`): API client wrappers. Abstract Sanity API requests from actions.
+- **Prompters** (`prompts/`): Reusable interactive prompts (select org/project/dataset, etc.).
+
 # Bash Commands
 
 All these commands are run from the root of the repo.
@@ -15,27 +22,37 @@ All these commands are run from the root of the repo.
 - pnpm check:lint - checks for formatting and eslint issues.
 - pnpm depcheck - Checks for any extra dependency, files or unnecessary exports
 - pnpm build:cli - builds the project
+- pnpm watch:cli - builds the project in watch mode (rebuilds on changes)
 
 # Code style
 
 - Use ES modules (import/export) syntax instead of CommonJS (require)
 - Use named exports and avoid default exports
+- Always include `.js` extension in imports (TypeScript compiles to JS)
 - Tests are written using vitest
 - Avoid using `any` type. If you need to use it, then use `unknown` type and then cast it to the type you need.
+- Use `satisfies` operator for flag definitions: `static override flags = {...} satisfies FlagInput`
+- Always prefer async/await over promise chains
 
 # Common Patterns
 
 - Command files: `src/commands/<command-name>.ts`
 - Class name for the command should follow the following rule:
-  - If it is root command, it should be `RootCommand`
-  - If the command is a subcommand, it should be `SubRootCommand`
+  - If it is root command, it should be `FeatureCommand` (e.g., `LoginCommand`)
+  - If the command is a subcommand, it should be `ActionFeatureCommand` (e.g., `ListDatasetCommand`, `GetDocumentCommand`)
 - Test files should be located in `__tests__` folder relative to the file. Example: `src/commands/__tests__/<command-name>.test.ts`
-- When migrating commands, check for existing utilities in `src/utils/`
+- When migrating commands, check for existing utilities in `src/utils/` and `@sanity/cli-core`
 - Always add tests for new commands with vitest
+- Use `testCommand` helper from `@sanity/cli-test` for testing commands
+- Always clear mocks in `afterEach()`: `vi.clearAllMocks()`
+- Use `vi.mocked()` for type-safe mocking
+- Commands should extend `SanityCommand` from `@sanity/cli-core`
+- Use `subdebug('namespace:command')` for debug logging
 
 # Debugging
 
 - To run any command first you have to build the project using `pnpm build:cli`
+- For faster iteration, use `pnpm watch:cli` in one terminal and run commands in another
 - Run single command: `npx sanity <command>`
 - Enable debug logs: `DEBUG=sanity:* npx sanity <command>`
 - Most if not all commands need to be run within one of the examples folders.
