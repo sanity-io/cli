@@ -31,17 +31,16 @@ export interface UserApplication {
   activeDeployment?: ActiveDeployment | null
 }
 
+type GetUserApplicationOptions =
+  | {appHost?: never; appId: string; isSdkApp: true; projectId?: never}
+  | {appHost?: string; appId?: string; isSdkApp: false; projectId: string}
+
 export async function getUserApplication({
   appHost,
   appId,
   isSdkApp,
   projectId,
-}: {
-  appHost?: string
-  appId?: string
-  isSdkApp?: boolean
-  projectId?: string
-}): Promise<UserApplication | null> {
+}: GetUserApplicationOptions): Promise<UserApplication | null> {
   let query: Record<string, string | string[]> | undefined
   let uri: string
 
@@ -58,7 +57,8 @@ export async function getUserApplication({
   if (isSdkApp) {
     query = {appType: 'coreApp'}
   } else if (!appId) {
-    // either request the app by host or get the default app
+    // In practice, this function isn't called if we don't have at least one of appHost or appId,
+    // so the default case won't be called. But leaving this ternary in for now (from old CLI code) just in case.
     query = appHost ? {appHost, appType: 'studio'} : {default: 'true'}
   }
 

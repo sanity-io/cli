@@ -93,7 +93,6 @@ interface FindUserApplicationFromConfigOptions {
   appId?: string
 }
 
-// formerly getOrCreateStudioFromConfig
 async function findUserApplication(
   options: FindUserApplicationFromConfigOptions,
 ): Promise<UserApplication | null> {
@@ -123,7 +122,7 @@ async function findUserApplication(
   // As a fallback, if studioHost (deprecated) is configured, check for apps with that host
   if (appHost) {
     try {
-      userApplication = await getUserApplication({appHost, projectId})
+      userApplication = await getUserApplication({appHost, isSdkApp: false, projectId})
 
       // We've found the application — return it
       if (userApplication) {

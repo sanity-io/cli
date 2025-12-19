@@ -1,11 +1,7 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {
-  deleteUserApplication,
-  getUserApplication,
-  getUserApplications,
-} from '../userApplications.js'
+import {deleteUserApplication, getUserApplication} from '../userApplications.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
   const actual = await importOriginal()
@@ -32,7 +28,7 @@ describe('getUserApplication', () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
-    const app = await getUserApplication({appId: '123', projectId: 'test-project'})
+    const app = await getUserApplication({appId: '123', isSdkApp: false, projectId: 'test-project'})
 
     expect(mockClient.request).toHaveBeenCalledWith({
       uri: '/projects/test-project/user-applications/123',
@@ -57,7 +53,11 @@ describe('getUserApplication', () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
-    const app = await getUserApplication({appHost: 'my-host', projectId: 'test-project'})
+    const app = await getUserApplication({
+      appHost: 'my-host',
+      isSdkApp: false,
+      projectId: 'test-project',
+    })
 
     expect(mockClient.request).toHaveBeenCalledWith({
       query: {appHost: 'my-host', appType: 'studio'},
@@ -71,7 +71,7 @@ describe('getUserApplication', () => {
     error.statusCode = 404
     mockClient.request.mockRejectedValueOnce(error)
 
-    const app = await getUserApplication({appId: '404', projectId: 'test-project'})
+    const app = await getUserApplication({appId: '404', isSdkApp: false, projectId: 'test-project'})
 
     expect(app).toBeNull()
   })
@@ -80,9 +80,9 @@ describe('getUserApplication', () => {
     const error = new Error('oops')
     mockClient.request.mockRejectedValueOnce(error)
 
-    await expect(getUserApplication({appId: '123', projectId: 'test-project'})).rejects.toThrow(
-      'oops',
-    )
+    await expect(
+      getUserApplication({appId: '123', isSdkApp: false, projectId: 'test-project'}),
+    ).rejects.toThrow('oops')
   })
 })
 
