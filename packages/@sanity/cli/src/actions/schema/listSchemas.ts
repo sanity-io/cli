@@ -1,6 +1,7 @@
 import chalk from 'chalk'
 
 import {type ListSchemaCommand} from '../../commands/schema/list.js'
+import {getSchemas} from '../../services/schemas.js'
 import {isDefined} from '../manifest/schemaTypeHelpers.js'
 import {
   type CreateManifest,
@@ -10,7 +11,6 @@ import {
 import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
 import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {createManifestReader} from './utils/manifestReader.js'
-import {createSchemaApiClient} from './utils/schemaApiClient.js'
 import {getDatasetsOutString} from './utils/schemaStoreOutStrings.js'
 import {parseListSchemasConfig, SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
 import {uniqByProjectIdDataset} from './utils/uniqByProjectIdDataset.js'
@@ -31,7 +31,7 @@ export async function listSchemas(
   context: SchemaStoreContext,
 ): Promise<SchemaStoreActionResult> {
   const {extractManifest, id, json, manifestDir} = parseListSchemasConfig(flags)
-  const {apiClient, jsonReader, manifestExtractor, output, workDir} = context
+  const {jsonReader, manifestExtractor, output, workDir} = context
 
   if (
     !(await ensureManifestExtractSatisfied({
@@ -52,8 +52,7 @@ export async function listSchemas(
     workDir,
   }).getManifest()
   const projectDatasets = uniqByProjectIdDataset(manifest.workspaces)
-  const schemas = (await getSchemas(
-    apiClient,
+  const schemas = (await getDatasetSchemas(
     projectDatasets,
     id,
   )) as unknown as StoredWorkspaceSchema[]
@@ -80,27 +79,14 @@ export async function listSchemas(
   return 'success'
 }
 
-async function getSchemas(
-  apiClient: SchemaStoreContext['apiClient'],
+async function getDatasetSchemas(
   projectDatasets: ManifestWorkspaceFile[],
   id?: ListSchemaCommand['flags']['id'],
 ) {
-  const {client} = await createSchemaApiClient(apiClient)
-
   return await Promise.allSettled(
     projectDatasets.map(async ({dataset, projectId}) => {
       try {
-        const datasetClient = client.withConfig({dataset, projectId})
-
-        return id
-          ? await datasetClient.request<StoredWorkspaceSchema | undefined>({
-              method: 'GET',
-              url: `/projects/${projectId}/datasets/${dataset}/schemas/${id}`,
-            })
-          : await datasetClient.request<StoredWorkspaceSchema[] | undefined>({
-              method: 'GET',
-              url: `/projects/${projectId}/datasets/${dataset}/schemas`,
-            })
+        return getSchemas<StoredWorkspaceSchema>(dataset, projectId, id)
       } catch (error) {
         throw new DatasetError({dataset, options: {cause: error}, projectId})
       }

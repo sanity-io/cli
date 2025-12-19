@@ -1,10 +1,10 @@
 import chalk from 'chalk'
 
+import {deleteSchema} from '../../services/schemas.js'
 import {isDefined} from '../manifest/schemaTypeHelpers.js'
 import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
 import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {createManifestReader} from './utils/manifestReader.js'
-import {createSchemaApiClient} from './utils/schemaApiClient.js'
 import {getDatasetsOutString, getStringList} from './utils/schemaStoreOutStrings.js'
 import {
   filterLogReadProjectIdMismatch,
@@ -52,14 +52,13 @@ export async function deleteSchemaAction(
   context: SchemaStoreContext,
 ): Promise<SchemaStoreActionResult> {
   const {dataset, extractManifest, ids, manifestDir, verbose} = parseDeleteSchemasConfig(flags)
-  const {apiClient, jsonReader, manifestExtractor, output, workDir} = context
+  const {jsonReader, manifestExtractor, output, projectId = '', workDir} = context
 
   // prettier-ignore
   if (!(await ensureManifestExtractSatisfied({extractManifest, manifestDir, manifestExtractor,  output, schemaRequired: true,}))) {
     return 'failure'
   }
 
-  const {client, projectId} = await createSchemaApiClient(apiClient)
   const manifest = await createManifestReader({
     jsonReader,
     manifestDir,
@@ -77,7 +76,7 @@ export async function deleteSchemaAction(
     datasets.flatMap((targetDataset: string) => {
       return ids.map(async ({schemaId}): Promise<DeleteResult> => {
         try {
-          const deletedSchema = await client.withConfig({dataset: targetDataset}).delete(schemaId)
+          const deletedSchema = await deleteSchema(targetDataset, projectId, schemaId)
           return {dataset: targetDataset, deleted: deletedSchema.results.length > 0, schemaId}
         } catch (err) {
           throw new DeleteIdError(schemaId, targetDataset, {cause: err})

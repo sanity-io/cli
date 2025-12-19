@@ -77,18 +77,12 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       }
 
       const result = await deleteSchemaAction(flags, {
-        apiClient: async () => {
-          const client = await this.getGlobalApiClient({
-            apiVersion: 'v2025-03-01',
-            requireUser: true,
-          })
-          return client.withConfig({dataset, projectId})
-        },
         manifestExtractor: createManifestExtractor({
           output: this.output,
           workDir,
         }),
         output: this.output,
+        projectId,
         workDir,
       })
 

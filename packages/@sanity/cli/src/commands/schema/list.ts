@@ -85,14 +85,6 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
       }
 
       const result = await listSchemas(flags, {
-        apiClient: async () => {
-          const client = await this.getGlobalApiClient({
-            apiVersion: 'v2025-03-01',
-            requireUser: true,
-          })
-
-          return client.withConfig({dataset, projectId})
-        },
         manifestExtractor: createManifestExtractor({
           output: this.output,
           workDir,
