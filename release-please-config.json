@@ -70,6 +70,15 @@
       "prerelease-type": "alpha",
       "release-type": "node",
       "versioning": "prerelease"
+    },
+    "packages/@sanity/cli": {
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "component": "cli",
+      "prerelease": true,
+      "prerelease-type": "alpha",
+      "release-type": "node",
+      "versioning": "prerelease"
     }
   },
   "plugins": [

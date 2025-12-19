@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli",
-  "version": "0.0.0",
+  "version": "6.0.0-alpha.0",
   "private": true,
   "description": "Sanity CLI tool for managing Sanity projects and organizations",
   "keywords": [
@@ -156,5 +156,8 @@
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
