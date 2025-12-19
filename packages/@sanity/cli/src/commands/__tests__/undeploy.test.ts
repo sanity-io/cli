@@ -136,14 +136,14 @@ describe('#undeploy', () => {
     expect(stdout).toContain('Nothing to undeploy.')
   })
 
-  test('does nothing if studioHost is missing', async () => {
+  test('does nothing if studioHost and app ID are missing', async () => {
     vi.mocked(getCliConfig).mockResolvedValueOnce({
       api: {projectId: 'test'},
     })
 
     const {stdout} = await testCommand(UndeployCommand, ['--yes'])
 
-    expect(stdout).toContain('No studio host provided')
+    expect(stdout).toContain('No application ID or studio host provided')
     expect(stdout).toContain('Nothing to undeploy')
   })
 
@@ -290,5 +290,77 @@ describe('#undeploy', () => {
 
     expect(error?.message).toContain('Generic error')
     expect(stderr).toContain('Checking application info')
+  })
+
+  test('undeploys studio using deployment.appId', async () => {
+    vi.mocked(getCliConfig).mockResolvedValueOnce({
+      api: {projectId: 'test'},
+      deployment: {appId: 'app-id'},
+    })
+
+    const appHost = 'my-studio'
+
+    mockUserApplicationsApi({
+      uri: '/projects/test/user-applications/app-id',
+    }).reply(200, {
+      appHost,
+      id: 'app-id',
+    })
+
+    mockUserApplicationsApi({
+      method: 'DELETE',
+      query: {appType: 'studio'},
+      uri: '/user-applications/app-id',
+    }).reply(200)
+
+    const {stdout} = await testCommand(UndeployCommand, ['--yes'])
+
+    expect(stdout).toContain('Studio undeploy scheduled')
+  })
+
+  test('prioritizes deployment.appId over studioHost when both are configured', async () => {
+    vi.mocked(getCliConfig).mockResolvedValueOnce({
+      api: {projectId: 'test'},
+      deployment: {appId: 'app-id'},
+      studioHost: 'my-host',
+    })
+
+    const appHost = 'my-host'
+
+    // Should call by appId, NOT by appHost
+    mockUserApplicationsApi({
+      uri: '/projects/test/user-applications/app-id',
+    }).reply(200, {
+      appHost,
+      id: 'app-id',
+    })
+
+    mockUserApplicationsApi({
+      method: 'DELETE',
+      query: {appType: 'studio'},
+      uri: '/user-applications/app-id',
+    }).reply(200)
+
+    const {stdout} = await testCommand(UndeployCommand, ['--yes'])
+
+    expect(stdout).toContain('Studio undeploy scheduled')
+  })
+
+  test('handles error when deployment.appId does not exist for the org', async () => {
+    vi.mocked(getCliConfig).mockResolvedValueOnce({
+      api: {projectId: 'test'},
+      deployment: {appId: 'non-existent-app-id'},
+    })
+
+    mockUserApplicationsApi({
+      uri: '/projects/test/user-applications/non-existent-app-id',
+    }).reply(404, {
+      message: 'Application not found',
+    })
+
+    const {stdout} = await testCommand(UndeployCommand, ['--yes'])
+
+    expect(stdout).toContain('Your project has not been assigned an app ID or a studio hostname')
+    expect(stdout).toContain('Nothing to undeploy')
   })
 })

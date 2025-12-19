@@ -7,6 +7,7 @@ import chalk from 'chalk'
 import {pack} from 'tar-fs'
 
 import {createDeployment} from '../../services/userApplications.js'
+import {getAppId} from '../../util/appId.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
 import {buildStudio} from '../build/buildStudio.js'
@@ -20,10 +21,11 @@ import {type DeployAppOptions} from './types.js'
 export async function deployStudio(options: DeployAppOptions) {
   const {cliConfig, exit, flags, output, sourceDir, workDir} = options
 
+  const appHost = cliConfig.studioHost
+  const appId = getAppId(cliConfig)
   const projectId = cliConfig.api?.projectId
-  const isAutoUpdating = shouldAutoUpdate({cliConfig, flags, output})
   const installedSanityVersion = await readModuleVersion(sourceDir, 'sanity')
-  const configStudioHost = cliConfig.studioHost
+  const isAutoUpdating = shouldAutoUpdate({cliConfig, flags, output})
 
   if (!installedSanityVersion) {
     output.error(`Failed to find installed sanity version`, {exit: 1})
@@ -39,7 +41,8 @@ export async function deployStudio(options: DeployAppOptions) {
 
   try {
     let userApplication = await findUserApplicationForStudio({
-      cliConfig,
+      appHost,
+      appId,
       output,
       projectId,
     })
@@ -115,10 +118,10 @@ export async function deployStudio(options: DeployAppOptions) {
     // And let the user know we're done
     output.log(`\nSuccess! Studio deployed to ${chalk.cyan(location)}`)
 
-    if (!configStudioHost) {
-      output.log(`\nAdd ${chalk.cyan(`studioHost: '${userApplication.appHost}'`)}`)
-      output.log(`to defineCliConfig root properties in sanity.cli.js or sanity.cli.ts`)
-      output.log(`to avoid prompting for hostname on next deploy.`)
+    if (!appId) {
+      output.log(`\nAdd ${chalk.cyan(`deployment: { appId: '${userApplication.id}' }`)}`)
+      output.log(`to sanity.cli.js or sanity.cli.ts`)
+      output.log(`to avoid prompting on next deploy.`)
     }
   } catch (error) {
     // if the error is a CLIError, we can just output the message and exit
