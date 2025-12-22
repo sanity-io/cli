@@ -1,3 +1,4 @@
+import {Output} from '@sanity/cli-core'
 import chalk from 'chalk'
 
 import {type ListSchemaCommand} from '../../commands/schema/list.js'
@@ -86,7 +87,7 @@ async function getDatasetSchemas(
   return await Promise.allSettled(
     projectDatasets.map(async ({dataset, projectId}) => {
       try {
-        return getSchemas<StoredWorkspaceSchema>(dataset, projectId, id)
+        return await getSchemas(dataset, projectId, id)
       } catch (error) {
         throw new DatasetError({dataset, options: {cause: error}, projectId})
       }
@@ -94,10 +95,7 @@ async function getDatasetSchemas(
   )
 }
 
-function parseSchemas(
-  schemas: StoredWorkspaceSchema[],
-  output: ListSchemaCommand['flags']['output'],
-) {
+function parseSchemas(schemas: StoredWorkspaceSchema[], output: Output) {
   return schemas
     .map((schema) => {
       if (schema.status === 'fulfilled') return schema.value
@@ -140,7 +138,7 @@ function printSchemas({
   schemas,
 }: {
   manifest: CreateManifest
-  output: ListSchemaCommand['flags']['output']
+  output: Output
   schemas: StoredWorkspaceSchema[]
 }) {
   const rows = schemas

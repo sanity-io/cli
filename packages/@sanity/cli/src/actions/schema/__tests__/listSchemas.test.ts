@@ -1,3 +1,4 @@
+import {getGlobalCliClient} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {listSchemas} from '../listSchemas'
@@ -9,9 +10,9 @@ const mockOutput = {
   warn: vi.fn(),
 }
 
-const mockApiClient = vi.fn()
 const mockJsonReader = vi.fn()
 const mockManifestExtractor = vi.fn()
+const mockGetGlobalCliClient = vi.mocked(getGlobalCliClient)
 
 const mockManifest = {
   createdAt: '2024-01-01T00:00:00.000Z',
@@ -39,30 +40,24 @@ const mockManifest = {
   ],
 }
 
+vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
+  getGlobalCliClient: vi.fn(),
+}))
+
 describe('#listSchema', () => {
   let context: SchemaStoreContext
-  let mockClientWithConfig: {
-    config: ReturnType<typeof vi.fn>
+  let mockClient: {
     request: ReturnType<typeof vi.fn>
-    withConfig: ReturnType<typeof vi.fn>
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
 
-    mockClientWithConfig = {
-      config: vi.fn().mockReturnValue({dataset: 'production', projectId: 'test-project'}),
+    mockClient = {
       request: vi.fn(),
-      withConfig: vi.fn(),
     }
 
-    mockClientWithConfig.withConfig.mockReturnValue(mockClientWithConfig)
-
-    mockApiClient.mockResolvedValue({
-      config: vi.fn().mockReturnValue({dataset: 'production', projectId: 'test-project'}),
-      withConfig: vi.fn().mockReturnValue(mockClientWithConfig),
-    })
-
+    mockGetGlobalCliClient.mockResolvedValue(mockClient as never)
     mockManifestExtractor.mockResolvedValue(undefined)
 
     mockJsonReader.mockImplementation(async (filePath: string) => {
@@ -77,7 +72,6 @@ describe('#listSchema', () => {
     })
 
     context = {
-      apiClient: mockApiClient as never,
       jsonReader: mockJsonReader as never,
       manifestExtractor: mockManifestExtractor as never,
       output: mockOutput as never,
@@ -90,7 +84,7 @@ describe('#listSchema', () => {
   })
 
   test('should list schemas', async () => {
-    mockClientWithConfig.request
+    mockClient.request
       .mockResolvedValueOnce({
         _createdAt: '2025-01-21T18:49:44Z',
         _id: '_.schemas.default',
@@ -125,7 +119,7 @@ describe('#listSchema', () => {
   })
 
   test('should list a specific schema based on id flag', async () => {
-    mockClientWithConfig.request.mockResolvedValueOnce({
+    mockClient.request.mockResolvedValueOnce({
       _createdAt: '2025-05-28T18:49:44Z',
       _id: '_.schemas.staging',
       workspace: mockManifest.workspaces[1],
@@ -151,7 +145,7 @@ describe('#listSchema', () => {
   })
 
   test('should list schemas in json', async () => {
-    mockClientWithConfig.request
+    mockClient.request
       .mockResolvedValueOnce({
         _createdAt: '2025-01-21T18:49:44Z',
         _id: '_.schemas.default',
@@ -181,7 +175,7 @@ describe('#listSchema', () => {
   })
 
   test('should list a specific schema based on id flag in json', async () => {
-    mockClientWithConfig.request.mockResolvedValueOnce({
+    mockClient.request.mockResolvedValueOnce({
       _createdAt: '2025-05-28T18:49:44Z',
       _id: '_.schemas.staging',
       workspace: mockManifest.workspaces[1],
@@ -205,7 +199,7 @@ describe('#listSchema', () => {
   })
 
   test('throws an error if no schemas are found', async () => {
-    mockClientWithConfig.request.mockResolvedValueOnce(undefined)
+    mockClient.request.mockResolvedValueOnce(undefined)
 
     const result = await listSchemas(
       {
@@ -224,7 +218,7 @@ describe('#listSchema', () => {
   })
 
   test('throws an error if a specific schema based on id flag is not found', async () => {
-    mockClientWithConfig.request.mockResolvedValueOnce(undefined)
+    mockClient.request.mockResolvedValueOnce(undefined)
 
     const result = await listSchemas(
       {
@@ -243,12 +237,7 @@ describe('#listSchema', () => {
   })
 
   test('throws an error if schema request fails', async () => {
-    interface ErrorUnauthorized extends Error {
-      statusCode: 401
-    }
-    const error = new Error('Error') as ErrorUnauthorized
-    error.statusCode = 401
-    mockClientWithConfig.request.mockRejectedValue(error)
+    mockClient.request.mockRejectedValue('↳ Failed to fetch schema')
 
     const result = await listSchemas(
       {
@@ -261,14 +250,13 @@ describe('#listSchema', () => {
     )
 
     expect(result).toBe('failure')
-    expect(mockOutput.warn).toHaveBeenCalledWith(
-      // eslint-disable-next-line no-useless-escape
-      expect.stringContaining(`↳ No permissions to read schema from \"production\"`),
+    expect(mockOutput.error).toHaveBeenCalledWith(
+      expect.stringContaining('↳ Failed to fetch schema'),
     )
   })
 
   test('skips manifest extraction with no-extract-manifest flag', async () => {
-    mockClientWithConfig.request.mockResolvedValueOnce({
+    mockClient.request.mockResolvedValueOnce({
       _createdAt: '2025-01-21T18:49:44Z',
       _id: '_.schemas.default',
       workspace: mockManifest.workspaces[0],

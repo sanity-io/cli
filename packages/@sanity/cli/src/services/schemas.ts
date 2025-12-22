@@ -9,15 +9,15 @@ async function getSchemaClient() {
   })
 }
 
-export async function getSchemas<T>(dataset: string, projectId: string, id?: string) {
+export async function getSchemas(dataset: string, projectId: string, id?: string) {
   const client = await getSchemaClient()
 
   return id
-    ? await client.request<T[] | undefined>({
+    ? await client.request({
         method: 'GET',
         uri: `/projects/${projectId}/datasets/${dataset}/schemas/${id}`,
       })
-    : await client.request<T[] | undefined>({
+    : await client.request({
         method: 'GET',
         uri: `/projects/${projectId}/datasets/${dataset}/schemas`,
       })

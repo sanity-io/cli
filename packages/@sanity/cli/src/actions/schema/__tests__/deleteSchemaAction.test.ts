@@ -1,3 +1,4 @@
+import {getGlobalCliClient} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {deleteSchemaAction} from '../deleteSchemaAction'
@@ -10,9 +11,9 @@ const mockOutput = {
   warn: vi.fn(),
 }
 
-const mockApiClient = vi.fn()
 const mockJsonReader = vi.fn()
 const mockManifestExtractor = vi.fn()
+const mockGetGlobalCliClient = vi.mocked(getGlobalCliClient)
 
 const mockManifest = {
   createdAt: '2024-01-01T00:00:00.000Z',
@@ -40,33 +41,35 @@ const mockManifest = {
   ],
 }
 
+vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
+  getGlobalCliClient: vi.fn(),
+}))
+
 describe('deleteSchemaAction', () => {
   let context: SchemaStoreContext
-  let mockClientWithConfig: {
-    config: ReturnType<typeof vi.fn>
-    delete: ReturnType<typeof vi.fn>
-    withConfig: ReturnType<typeof vi.fn>
+  let mockClient: {
+    request: ReturnType<typeof vi.fn>
   }
 
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks()
 
-    // Setup client with config mock - needs withConfig for chaining
-    mockClientWithConfig = {
-      config: vi.fn().mockReturnValue({dataset: 'production', projectId: 'test-project'}),
-      delete: vi.fn().mockResolvedValue({results: [{id: 'test-id'}]}),
-      withConfig: vi.fn(),
+    mockClient = {
+      request: vi.fn().mockImplementation(async ({method}: {method: string}) => {
+        if (method === 'DELETE') {
+          return {deleted: true}
+        }
+
+        if (method === 'GET') {
+          return {}
+        }
+
+        return undefined
+      }),
     }
-    // Make withConfig return itself for chaining
-    mockClientWithConfig.withConfig.mockReturnValue(mockClientWithConfig)
 
-    // Setup API client to return a client that has withConfig
-    mockApiClient.mockResolvedValue({
-      config: vi.fn().mockReturnValue({dataset: 'production', projectId: 'test-project'}),
-      withConfig: vi.fn().mockReturnValue(mockClientWithConfig),
-    })
-
+    mockGetGlobalCliClient.mockResolvedValue(mockClient as never)
     mockManifestExtractor.mockResolvedValue(undefined)
 
     mockJsonReader.mockImplementation(async (filePath: string) => {
@@ -82,10 +85,10 @@ describe('deleteSchemaAction', () => {
 
     // Setup default context
     context = {
-      apiClient: mockApiClient as never,
       jsonReader: mockJsonReader as never,
       manifestExtractor: mockManifestExtractor as never,
       output: mockOutput as never,
+      projectId: 'test-project',
       workDir: '/test/path',
     }
   })
@@ -95,8 +98,6 @@ describe('deleteSchemaAction', () => {
   })
 
   test('successfully deletes a single schema', async () => {
-    mockClientWithConfig.delete.mockResolvedValue({results: [{id: '_.schemas.default'}]})
-
     const result = await deleteSchemaAction(
       {
         'extract-manifest': false,
@@ -108,17 +109,17 @@ describe('deleteSchemaAction', () => {
 
     expect(result).toBe('success')
     expect(mockOutput.log).toHaveBeenCalledWith('Successfully deleted 1/1 schemas')
-    expect(mockClientWithConfig.delete).toHaveBeenCalledWith('_.schemas.default')
-    expect(mockClientWithConfig.delete).toHaveBeenCalledTimes(2) // Called once per dataset
+    expect(mockClient.request).toHaveBeenCalledWith({
+      method: 'DELETE',
+      uri: `/projects/test-project/datasets/production/schemas/_.schemas.default`,
+    })
+    expect(mockClient.request).toHaveBeenCalledWith({
+      method: 'DELETE',
+      uri: `/projects/test-project/datasets/staging/schemas/_.schemas.default`,
+    })
   })
 
   test('successfully deletes multiple schemas', async () => {
-    mockClientWithConfig.delete
-      .mockResolvedValueOnce({results: [{id: '_.schemas.default'}]})
-      .mockResolvedValueOnce({results: [{id: '_.schemas.staging'}]})
-      .mockResolvedValueOnce({results: [{id: '_.schemas.default'}]})
-      .mockResolvedValueOnce({results: [{id: '_.schemas.staging'}]})
-
     const result = await deleteSchemaAction(
       {
         'extract-manifest': false,
@@ -130,11 +131,26 @@ describe('deleteSchemaAction', () => {
 
     expect(result).toBe('success')
     expect(mockOutput.log).toHaveBeenCalledWith('Successfully deleted 2/2 schemas')
-    expect(mockClientWithConfig.delete).toHaveBeenCalledTimes(4) // 2 schemas × 2 datasets
+    expect(mockClient.request).toHaveBeenCalledWith({
+      method: 'DELETE',
+      uri: `/projects/test-project/datasets/production/schemas/_.schemas.default`,
+    })
+    expect(mockClient.request).toHaveBeenCalledWith({
+      method: 'DELETE',
+      uri: `/projects/test-project/datasets/staging/schemas/_.schemas.default`,
+    })
+    expect(mockClient.request).toHaveBeenCalledWith({
+      method: 'DELETE',
+      uri: `/projects/test-project/datasets/production/schemas/_.schemas.staging`,
+    })
+    expect(mockClient.request).toHaveBeenCalledWith({
+      method: 'DELETE',
+      uri: `/projects/test-project/datasets/staging/schemas/_.schemas.staging`,
+    })
   })
 
   test('filters schemas by dataset when dataset flag is provided', async () => {
-    mockClientWithConfig.delete.mockResolvedValue({results: [{id: '_.schemas.default'}]})
+    mockClient.request.mockResolvedValue({deleted: true})
 
     const result = await deleteSchemaAction(
       {
@@ -147,11 +163,14 @@ describe('deleteSchemaAction', () => {
     )
 
     expect(result).toBe('success')
-    expect(mockClientWithConfig.delete).toHaveBeenCalledTimes(1) // Only production dataset
+    expect(mockClient.request).toHaveBeenCalledWith({
+      method: 'DELETE',
+      uri: `/projects/test-project/datasets/production/schemas/_.schemas.default`,
+    })
   })
 
   test('returns failure when schema is not found', async () => {
-    mockClientWithConfig.delete.mockResolvedValue({results: []}) // Empty results = not found
+    mockClient.request.mockResolvedValue({deleted: false}) // Empty results = not found
 
     const result = await deleteSchemaAction(
       {
@@ -169,11 +188,17 @@ describe('deleteSchemaAction', () => {
   })
 
   test('returns failure when some schemas are not found', async () => {
-    mockClientWithConfig.delete
-      .mockResolvedValueOnce({results: [{id: '_.schemas.default'}]})
-      .mockResolvedValueOnce({results: []}) // Not found
-      .mockResolvedValueOnce({results: [{id: '_.schemas.default'}]})
-      .mockResolvedValueOnce({results: []}) // Not found
+    mockClient.request.mockImplementation(async ({method, uri}: {method: string; uri: string}) => {
+      if (method === 'DELETE') {
+        return {deleted: uri.includes('_.schemas.default')}
+      }
+
+      if (method === 'GET') {
+        return {}
+      }
+
+      return undefined
+    })
 
     const result = await deleteSchemaAction(
       {
@@ -190,7 +215,7 @@ describe('deleteSchemaAction', () => {
   })
 
   test('handles delete errors gracefully', async () => {
-    mockClientWithConfig.delete.mockRejectedValue(new Error('Delete failed'))
+    mockClient.request.mockRejectedValue(new Error('Delete failed'))
 
     const result = await deleteSchemaAction(
       {
@@ -208,8 +233,6 @@ describe('deleteSchemaAction', () => {
   })
 
   test('extracts manifest when extract-manifest is true', async () => {
-    mockClientWithConfig.delete.mockResolvedValue({results: [{id: '_.schemas.default'}]})
-
     await deleteSchemaAction(
       {
         'extract-manifest': true,
@@ -223,8 +246,6 @@ describe('deleteSchemaAction', () => {
   })
 
   test('skips manifest extraction when extract-manifest is false', async () => {
-    mockClientWithConfig.delete.mockResolvedValue({results: [{id: '_.schemas.default'}]})
-
     await deleteSchemaAction(
       {
         'extract-manifest': false,
@@ -238,7 +259,7 @@ describe('deleteSchemaAction', () => {
   })
 
   test('logs verbose output when verbose flag is enabled', async () => {
-    mockClientWithConfig.delete.mockRejectedValue(new Error('Delete failed'))
+    mockClient.request.mockRejectedValue(new Error('Delete failed'))
 
     await deleteSchemaAction(
       {
@@ -289,8 +310,6 @@ describe('deleteSchemaAction', () => {
       return undefined
     })
 
-    mockClientWithConfig.delete.mockResolvedValue({results: [{id: '_.schemas.default'}]})
-
     await deleteSchemaAction(
       {
         'extract-manifest': false,
@@ -303,6 +322,6 @@ describe('deleteSchemaAction', () => {
     // Should warn about project ID mismatch
     expect(mockOutput.warn).toHaveBeenCalled()
     // Should only delete from matching project
-    expect(mockClientWithConfig.delete).toHaveBeenCalledTimes(1)
+    expect(mockClient.request).toHaveBeenCalledTimes(2)
   })
 })
