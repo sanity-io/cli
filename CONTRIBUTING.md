@@ -532,7 +532,9 @@ In separate commits:
 
 **Never modify** `@sanity/original-cli` - it exists only as a reference for migration.
 
-### AI AI-Assisted Development
+### AI-Assisted Development
+
+We recommend using the following workflows and conventions when choosing to use AI for development and migration tasks:
 
 #### Using Claude
 
