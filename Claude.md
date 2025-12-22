@@ -6,6 +6,18 @@
 
 # Architecture
 
+## Repository Structure
+
+- **`@sanity/cli`**: Main CLI package containing all commands
+- **`@sanity/cli-core`**: Base command class and shared utilities
+  - Contains `SanityCommand` that all commands extend
+  - Provides helper methods for API clients, logging, and error handling
+  - Can be extended by external CLI modules
+- **`@sanity/cli-test`**: Testing utilities for CLI commands
+- **`@sanity/original-cli`**: Legacy CLI code moved from the monorepo (reference only)
+
+## New CLI Structure
+
 - **Commands** (`commands/`): Parse CLI args/flags and orchestrate flow. Keep thin - delegate to actions and services.
 - **Actions** (`actions/`): Business logic and validation. Should take options objects, not CLI flags.
 - **Services** (`services/`): API client wrappers. Abstract Sanity API requests from actions.

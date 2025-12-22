@@ -133,14 +133,14 @@ The CLI follows a strict layered architecture:
 
 ```
 packages/@sanity/cli/src/
-├── commands/         # oclif command definitions
 ├── actions/          # Business logic (testable, reusable)
-├── services/         # API client wrappers
-├── prompts/          # Reusable prompt components
-├── utils/            # Shared utilities
-├── hooks/            # oclif lifecycle hooks
+├── commands/         # oclif command definitions
 ├── config/           # Configuration loading
-└── types/            # Type definitions
+├── hooks/            # oclif lifecycle hooks
+├── prompts/          # Reusable prompt components
+├── services/         # API client wrappers
+├── types/            # Type definitions
+└── utils/            # Shared utilities
 ```
 
 ---
@@ -428,12 +428,31 @@ const confirmed = await confirm({
 ### Output Formatting
 
 ```typescript
-// JSON output
-this.log(JSON.stringify(data, null, 2))
-
 // Colorized JSON
 import {colorizeJson} from '@sanity/cli-core'
 this.log(colorizeJson(data))
+
+// Colors
+import chalk from 'chalk'
+this.log(chalk.green('Success!'))
+this.log(chalk.yellow('Warning:'), 'Something to note')
+this.log(chalk.red('Error:'), 'Operation failed')
+
+// JSON output
+this.log(JSON.stringify(data, null, 2))
+
+// Symbols
+import {logSymbols} from '@sanity/cli-core'
+this.log(`${logSymbols.success} Operation completed`)
+this.log(`${logSymbols.error} Operation failed`)
+this.log(`${logSymbols.info} Additional information`)
+this.log(`${logSymbols.warning} Proceed with caution`)
+
+// Spinner
+import {spinner} from '@sanity/cli-core'
+const spin = spinner('Loading...').start()
+await operation()
+spin.stop()
 
 // Tables
 import {Table} from 'console-table-printer'
@@ -445,12 +464,6 @@ const table = new Table({
 })
 datasets.forEach((d) => table.addRow(d))
 table.printTable()
-
-// Spinner
-import {spinner} from '@sanity/cli-core'
-const spin = spinner('Loading...').start()
-await operation()
-spin.stop()
 ```
 
 ---
@@ -518,6 +531,26 @@ In separate commits:
 ### 3. Reference Only
 
 **Never modify** `@sanity/original-cli` - it exists only as a reference for migration.
+
+### AI AI-Assisted Development
+
+#### Using Claude
+
+1. Initial conversion: Let Claude do first pass of OCLIF conversion
+2. Incremental changes: Convert flags, then prompts, then logic
+3. Review PR comments: Claude reviews PRs automatically
+   - Focus on OCLIF-specific patterns
+   - Ignore legacy code quality issues
+   - Don't fix existing bugs unless critical
+
+#### Recommended Prompting Strategy
+
+```
+1. "Update this to the new class-based OCLIF structure"
+2. "Convert all flags and arguments to OCLIF format"
+3. "Extract prompts to private methods"
+4. "Move business logic to actions folder"
+```
 
 ---
 
