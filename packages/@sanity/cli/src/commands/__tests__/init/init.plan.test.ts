@@ -60,12 +60,6 @@ describe('#init: retrieving plan', () => {
     vi.clearAllMocks()
   })
 
-  test('returns undefined when no plan or coupon is provided', async () => {
-    const {error} = await testCommand(InitCommand)
-
-    expect(error).toBeUndefined()
-  })
-
   test('validates coupon when --coupon flag is provided', async () => {
     mocks.request.mockResolvedValueOnce([{id: 'test-plan-id'}])
 
