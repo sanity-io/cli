@@ -5,7 +5,9 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {InitCommand} from '../../init'
 
 const mocks = vi.hoisted(() => ({
+  checkIsRemoteTemplate: vi.fn().mockReturnValue(false),
   detectFrameworkRecord: vi.fn(),
+  getGitHubRepoInfo: vi.fn(),
 }))
 
 vi.mock('@vercel/fs-detectors', () => ({
@@ -15,6 +17,24 @@ vi.mock('@vercel/fs-detectors', () => ({
 
 vi.mock('../../../../../cli-core/src/util/isInteractive.js', () => ({
   isInteractive: vi.fn().mockReturnValue(true),
+}))
+
+vi.mock('../../../actions/init/remoteTemplate.js', () => ({
+  checkIsRemoteTemplate: mocks.checkIsRemoteTemplate,
+  getGitHubRepoInfo: mocks.getGitHubRepoInfo,
+}))
+
+vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
+  getCliToken: vi.fn().mockResolvedValue('test-token'),
+}))
+
+vi.mock('../../../services/user.js', () => ({
+  getCliUser: vi.fn().mockResolvedValue({
+    email: 'test@example.com',
+    id: 'user-123',
+    name: 'Test User',
+    provider: 'saml-123',
+  }),
 }))
 
 describe('#init: oclif command setup', () => {
@@ -175,9 +195,15 @@ describe('#init: oclif command setup', () => {
   })
 
   test('throws error when framework and remote template are used together', async () => {
-    mocks.detectFrameworkRecord.mockResolvedValue({
+    mocks.detectFrameworkRecord.mockResolvedValueOnce({
       name: 'Next.js',
       slug: 'nextjs',
+    })
+    mocks.checkIsRemoteTemplate.mockReturnValueOnce(true)
+    mocks.getGitHubRepoInfo.mockResolvedValueOnce({
+      branch: 'main',
+      owner: 'sanity-io',
+      repo: 'sanity',
     })
 
     const {error} = await testCommand(InitCommand, [
