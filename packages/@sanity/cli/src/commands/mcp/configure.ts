@@ -20,12 +20,18 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
   ]
 
   public async run(): Promise<void> {
+    // const trace = telemetry.trace(MCPConfigureTrace)
     // 1. Detect available editors
     const detectedEditors = await detectAvailableEditors()
 
     if (detectedEditors.length === 0) {
       this.warn('No supported AI editors detected (Cursor, VS Code, Claude Code)')
-      this.log(`You can set up MCP manually at ${MCP_SERVER_URL}`)
+      this.log(`Visit ${MCP_SERVER_URL} for manual setup instructions.`)
+      // trace.log({
+      //   detectedEditors: [],
+      //   configuredEditors: [],
+      // })
+      // trace.complete()
       return
     }
 
@@ -79,6 +85,8 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
       mcpConfigureDebug('Error writing MCP config', error)
       this.warn(`Could not configure MCP: ${message}`)
       this.warn(`You can set up MCP manually at ${MCP_SERVER_URL}`)
+      // trace.error(error)
+      // trace.complete()
       return
     }
 
@@ -87,5 +95,10 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
     this.log(`MCP configured for ${configuredEditors}`)
 
     // TODO: Add telemetry tracking
+    // trace.log({
+    //   configuredEditors: configuredEditors,
+    //   detectedEditors: detectedEditors,
+    // })
+    // trace.complete()
   }
 }
