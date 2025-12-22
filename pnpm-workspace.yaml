@@ -11,6 +11,8 @@ packages:
 catalog:
   eslint: ^9.39.1
   '@eslint/compat': ^2.0.0
+  sanity: ^5.1.0
+  '@sanity/vision': ^5.1.0
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
