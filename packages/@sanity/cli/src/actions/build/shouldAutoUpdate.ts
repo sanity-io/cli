@@ -21,7 +21,7 @@ export function shouldAutoUpdate({cliConfig, flags, output}: AutoUpdateSources):
   if ('auto-updates' in flags) {
     const flagUsed = flags['auto-updates'] ? '--auto-updates' : '--no-auto-updates'
     output.warn(
-      `The ${flagUsed} flag is deprecated for deploy and build commands. Set the autoUpdates option in sanity.cli.ts or sanity.cli.js instead.`,
+      `The ${flagUsed} flag is deprecated for deploy and build commands. Set the autoUpdates option in the deployment section of sanity.cli.ts or sanity.cli.js instead.`,
     )
   }
 
@@ -44,14 +44,10 @@ export function shouldAutoUpdate({cliConfig, flags, output}: AutoUpdateSources):
 
   if (hasOldConfig) {
     output.warn('The autoUpdates config has moved to deployment.autoUpdates.')
-
-    // Show how to move if autoUpdates has a value
-    if (cliConfig.autoUpdates) {
-      output.warn(`Please update sanity.cli.ts or sanity.cli.js and make the following change:
+    output.warn(`Please update sanity.cli.ts or sanity.cli.js and make the following change:
   ${chalk.red(`-  autoUpdates: ${cliConfig.autoUpdates},`)}
   ${chalk.green(`+  deployment: {autoUpdates: ${cliConfig.autoUpdates}}`)}
 `)
-    }
   }
 
   if (hasNewConfig) {

@@ -37,7 +37,7 @@ const mockedReadModuleVersion = vi.hoisted(() => vi.fn())
 const mockedBuildStaticFiles = vi.hoisted(() => vi.fn())
 const mockedBuildVendorDependencies = vi.hoisted(() => vi.fn())
 const mockedGetAppEnvVars = vi.hoisted(() => vi.fn())
-const mockedGetAppAutoUpdateImportMap = vi.hoisted(() => vi.fn())
+const mockedGetAutoUpdatesImportMap = vi.hoisted(() => vi.fn())
 
 vi.mock('@inquirer/prompts', () => ({
   confirm: mockedConfirm,
@@ -64,7 +64,7 @@ vi.mock('../getAppEnvVars.js', () => ({
 }))
 
 vi.mock('../getAutoUpdatesImportMap.js', () => ({
-  getAppAutoUpdateImportMap: mockedGetAppAutoUpdateImportMap,
+  getAutoUpdatesImportMap: mockedGetAutoUpdatesImportMap,
 }))
 
 describe('buildApp', () => {
@@ -97,7 +97,7 @@ describe('buildApp', () => {
     // Default mocks
     mockedReadModuleVersion.mockResolvedValue('1.0.0')
     mockedGetAppEnvVars.mockReturnValue([])
-    mockedGetAppAutoUpdateImportMap.mockReturnValue({})
+    mockedGetAutoUpdatesImportMap.mockReturnValue({})
     mockedBuildStaticFiles.mockResolvedValue({
       chunks: [],
     })
@@ -125,8 +125,8 @@ describe('buildApp', () => {
     )
   })
 
-  it('should throw error when auto-updates enabled but coercedSdkVersion is invalid', async () => {
-    // Mock an invalid version that semver.coerce returns null for
+  it('should throw error when auto-updates enabled but cleanSdkVersion is invalid', async () => {
+    // Mock an invalid version that semver.parse returns null for
     mockedReadModuleVersion.mockResolvedValueOnce('invalid-version')
 
     const options = {
