@@ -9,8 +9,7 @@ import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 
 import {getProviderName} from '../actions/auth/getProviderName.js'
-import {login} from '../actions/auth/login/index.js'
-import {INIT_API_VERSION} from '../actions/init/constants.js'
+import {login} from '../actions/auth/login/login.js'
 import {determineAppTemplate} from '../actions/init/determineAppTemplate.js'
 import {
   checkIsRemoteTemplate,
@@ -28,6 +27,7 @@ import {
 } from '../services/organizations.js'
 import {getPlanId, getPlanIdFromCoupon} from '../services/plans.js'
 import {createProject} from '../services/projects.js'
+import {getCliUser} from '../services/user.js'
 
 const debug = subdebug('init')
 
@@ -405,13 +405,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     if (isAuthenticated) {
       // It _appears_ we are authenticated, but the token might be invalid/expired,
       // so we need to verify that we can actually make an authenticated request.
-      const client = await this.getGlobalApiClient({
-        apiVersion: INIT_API_VERSION,
-        requireUser: true,
-      })
-
       try {
-        user = (await client.users.getById('me')) as unknown as SanityOrgUser
+        user = await getCliUser()
       } catch {
         // assume that any error means that the token is invalid
         isAuthenticated = false
@@ -435,9 +430,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       await login({output: this.output})
     }
 
-    // @todo
-    const client = await this.getGlobalApiClient({apiVersion: INIT_API_VERSION, requireUser: true})
-    user = (await client.users.getById('me')) as unknown as SanityOrgUser
+    user = await getCliUser()
 
     this.log(
       `${logSymbols.success} You are logged in as ${user.email} using ${getProviderName(user.provider)}`,
