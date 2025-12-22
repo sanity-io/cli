@@ -1,6 +1,24 @@
+// @Todo will remove by time migration of this command si complete
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import {confirm} from '@inquirer/prompts'
 import {Args, Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
-import {SanityCommand} from '@sanity/cli-core'
+import {getCliToken, SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
+import {isHttpError} from '@sanity/client'
+import {type Framework, frameworks} from '@vercel/frameworks'
+import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
+
+import {getProviderName} from '../actions/auth/getProviderName.js'
+import {login} from '../actions/auth/login/index.js'
+import {INIT_API_VERSION} from '../actions/init/constants.js'
+import {
+  checkIsRemoteTemplate,
+  getGitHubRepoInfo,
+  type RepoInfo,
+} from '../actions/init/remoteTemplate.js'
+import {getPlanId, getPlanIdFromCoupon} from '../services/plans.js'
+
+const debug = subdebug('init')
 
 export class InitCommand extends SanityCommand<typeof InitCommand> {
   static override args = {type: Args.string({hidden: true})}
@@ -61,10 +79,15 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Set up a project with a public dataset named "production"',
     }),
     env: Flags.string({
-      default: '.env',
       description: 'Write environment variables to file',
       exclusive: ['bare'],
       helpValue: '<filename>',
+      parse: async (input) => {
+        if (!input.startsWith('.env')) {
+          throw new Error('Env filename (`--env`) must start with `.env`')
+        }
+        return input
+      },
     }),
     'from-create': Flags.boolean({
       description: 'Internal flag to indicate that the command is run from create-sanity',
@@ -77,6 +100,29 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       // oclif doesn't indent correctly with custom help labels, thus leading space :/
       helpLabel: '    --[no-]git',
       helpValue: '<message>',
+    }),
+    mcp: Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Enable AI editor integration (MCP) setup',
+    }),
+    'nextjs-add-config-files': Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Add config files to Next.js project',
+      helpGroup: 'Next.js',
+    }),
+    'nextjs-append-env': Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Append project ID and dataset to .env file',
+      helpGroup: 'Next.js',
+    }),
+    'nextjs-embed-studio': Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Embed the Studio in Next.js application',
+      helpGroup: 'Next.js',
     }),
     // oclif doesn't support a boolean/string flag combination, but listing both a
     // `--git` and a `--no-git` flag in help breaks conventions, so we hide this one,
@@ -94,6 +140,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Path to write studio project to',
       exclusive: ['bare'],
       helpValue: '<path>',
+    }),
+    'overwrite-files': Flags.boolean({
+      default: false,
+      description: 'Overwrite existing files',
     }),
     'package-manager': Flags.string({
       description: 'Specify which package manager to use [allowed: npm, yarn, pnpm]',
@@ -113,11 +163,22 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Login provider to use',
       helpValue: '<provider>',
     }),
+    reconfigure: Flags.boolean({
+      deprecated: {message: 'This flag is no longer supported', version: '3.0.0'},
+      description: 'Reconfigure an existing project',
+      hidden: true,
+    }),
     template: Flags.string({
       default: 'clean',
       description: 'Project template to use [default: "clean"]',
       exclusive: ['bare'],
       helpValue: '<template>',
+    }),
+    // Porting over a beta flag
+    // Oclif doesn't seem to support something in beta so hiding for now
+    'template-token': Flags.string({
+      description: 'Used for accessing private GitHub repo templates',
+      hidden: true,
     }),
     typescript: Flags.boolean({
       allowNo: true,
@@ -139,19 +200,212 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   } satisfies FlagInput
 
   public async run(): Promise<void> {
+    const {args, flags} = await this.parse(InitCommand)
     // For backwards "compatibility" - we used to allow `sanity init plugin`,
     // and no longer do - but instead of printing an error about an unknown
     // _command_, we want to acknowledge that the user is trying to do something
     // that no longer exists but might have at some point in the past.
-    if (this.args.type) {
+    if (args.type) {
       this.error(
-        this.args.type === 'plugin'
+        args.type === 'plugin'
           ? 'Initializing plugins through the CLI is no longer supported'
-          : `Unknown init type "${this.args.type}"`,
+          : `Unknown init type "${args.type}"`,
         {exit: 1},
       )
     }
 
-    throw new Error('Not yet implemented')
+    // @todo
+    //const trace = telemetry.trace(CLIInitStepCompleted)
+
+    // Slightly more helpful message for removed flags rather than just saying the flag
+    // does not exist.
+    if (this.flags.reconfigure) {
+      this.error('--reconfigure is deprecated - manual configuration is now required', {exit: 1})
+    }
+
+    const detectedFramework: Framework | null = await detectFrameworkRecord({
+      frameworkList: frameworks as readonly Framework[],
+      fs: new LocalFileSystemDetector(process.cwd()),
+    })
+
+    let remoteTemplateInfo: RepoInfo | undefined
+    if (flags.template && checkIsRemoteTemplate(flags.template)) {
+      remoteTemplateInfo = await getGitHubRepoInfo(flags.template, flags['template-token'])
+    }
+
+    if (detectedFramework && detectedFramework.slug !== 'sanity' && remoteTemplateInfo) {
+      this.error(
+        `A remote template cannot be used with a detected framework. Detected: ${detectedFramework.name}`,
+        {exit: 1},
+      )
+    }
+
+    // @todo
+    // trace.start()
+    // trace.log({
+    //   step: 'start',
+    //   flags: {
+    //     defaultConfig,
+    //     unattended,
+    //     plan: intendedPlan,
+    //     coupon: intendedCoupon,
+    //     reconfigure,
+    //     git: commitMessage,
+    //     bare: bareOutput,
+    //     env,
+    //   },
+    // })
+
+    // Plan can be set through `--project-plan`, or implied through `--coupon`.
+    // As coupons can expire and project plans might change/be removed, we need to
+    // verify that the passed flags are valid. The complexity of this is hidden in the
+    // below plan methods, eventually returning a plan ID or undefined if we are told to
+    // use the default plan.
+
+    const _plan = await this.getPlan()
+
+    let envFilenameDefault = '.env'
+    if (detectedFramework && detectedFramework.slug === 'nextjs') {
+      envFilenameDefault = '.env.local'
+    }
+    const _envFilename = typeof flags.env === 'string' ? flags.env : envFilenameDefault
+
+    // If the user isn't already autenticated, make it so
+    await this.ensureAuthenticated()
+  }
+
+  // @todo do we actually need to be authenticated for init? check flags and determine.
+  private async ensureAuthenticated(): Promise<{user: SanityOrgUser}> {
+    let isAuthenticated = (await getCliToken()) !== undefined
+    debug(isAuthenticated ? 'User already has a token' : 'User has no token')
+
+    let user: SanityOrgUser | undefined
+    if (isAuthenticated) {
+      // It _appears_ we are authenticated, but the token might be invalid/expired,
+      // so we need to verify that we can actually make an authenticated request.
+      const client = await this.getGlobalApiClient({
+        apiVersion: INIT_API_VERSION,
+        requireUser: true,
+      })
+
+      try {
+        user = (await client.users.getById('me')) as unknown as SanityOrgUser
+      } catch {
+        // assume that any error means that the token is invalid
+        isAuthenticated = false
+      }
+    }
+
+    if (isAuthenticated) {
+      // @todo telemetry
+      // trace.log({ step: 'login', alreadyLoggedIn: true })
+    } else {
+      if (this.isUnattended()) {
+        throw new Error(
+          'Must be logged in to run this command in unattended mode, run `sanity login`',
+        )
+      }
+
+      // @todo telemetry
+      //trace.log({step: 'login'})
+
+      // @todo trigger login action, then get and return user info
+      await login({output: this.output})
+    }
+
+    // @todo
+    const client = await this.getGlobalApiClient({apiVersion: INIT_API_VERSION, requireUser: true})
+    user = (await client.users.getById('me')) as unknown as SanityOrgUser
+
+    this.log('You are logged in as %s using %s', user.email, getProviderName(user.provider))
+    return {user}
+  }
+
+  private async getPlan(): Promise<string | undefined> {
+    const intendedPlan = this.flags['project-plan']
+    const intendedCoupon = this.flags.coupon
+
+    if (intendedCoupon) {
+      return this.verifyCoupon(intendedCoupon)
+    } else if (intendedPlan) {
+      return this.verifyPlan(intendedPlan)
+    } else {
+      return undefined
+    }
+  }
+
+  private async verifyCoupon(intendedCoupon: string): Promise<string | undefined> {
+    try {
+      const planId = await getPlanIdFromCoupon(intendedCoupon)
+      this.log(`Coupon "${intendedCoupon}" validated!\n`)
+      return planId
+    } catch (err: unknown) {
+      if (!isHttpError(err) || err.statusCode !== 404) {
+        const message = err instanceof Error ? err.message : `${err}`
+        throw new Error(`Unable to validate coupon, please try again later:\n\n${message}`)
+      }
+
+      const useDefaultPlan =
+        this.isUnattended() ||
+        (await confirm({
+          default: true,
+          message: `Coupon "${intendedCoupon}" is not available, use default plan instead?`,
+        }))
+
+      if (this.isUnattended()) {
+        this.warn(`Coupon "${intendedCoupon}" is not available - using default plan`)
+      }
+
+      // @todo
+      // trace.log({
+      //   step: 'useDefaultPlanCoupon',
+      //   selectedOption: useDefaultPlan ? 'yes' : 'no',
+      //   coupon: intendedCoupon,
+      // })
+
+      if (useDefaultPlan) {
+        this.log('Using default plan.')
+      } else {
+        throw new Error(`Coupon "${intendedCoupon}" does not exist`)
+      }
+    }
+  }
+
+  private async verifyPlan(intendedPlan: string): Promise<string | undefined> {
+    try {
+      const planId = await getPlanId(intendedPlan)
+      return planId
+    } catch (err: unknown) {
+      if (!isHttpError(err) || err.statusCode !== 404) {
+        const message = err instanceof Error ? err.message : `${err}`
+        throw new Error(`Unable to validate plan, please try again later:\n\n${message}`, {
+          cause: err,
+        })
+      }
+
+      const useDefaultPlan =
+        this.isUnattended() ||
+        (await confirm({
+          default: true,
+          message: `Project plan "${intendedPlan}" does not exist, use default plan instead?`,
+        }))
+
+      if (this.isUnattended()) {
+        this.warn(`Project plan "${intendedPlan}" does not exist - using default plan`)
+      }
+
+      // @todo
+      // trace.log({
+      //   step: 'useDefaultPlanId',
+      //   selectedOption: useDefaultPlan ? 'yes' : 'no',
+      //   planId: intendedPlan,
+      // })
+
+      if (useDefaultPlan) {
+        this.log('Using default plan.')
+      } else {
+        throw new Error(`Plan id "${intendedPlan}" does not exist`)
+      }
+    }
   }
 }

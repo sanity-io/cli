@@ -54,6 +54,10 @@ const baseConfig = {
         'src/actions/schema/utils/schemaStoreOutStrings.ts',
         'src/actions/schema/utils/schemaStoreValidation.ts',
         'src/actions/schema/utils/manifestReader.ts',
+        // Ignore exports until init work is done
+        'src/actions/init/remoteTemplate.ts',
+        'src/actions/init/determineAppTemplate.ts',
+        'src/actions/auth/login.ts',
       ],
       // Claude is not a dependency of the CLI, but it is used in the MCP configuration
       ignoreBinaries: ['claude'],

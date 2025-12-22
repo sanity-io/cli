@@ -1,4 +1,4 @@
-const appTemplates = ['app-quickstart', 'app-sanity-ui']
+const appTemplates = new Set(['app-quickstart', 'app-sanity-ui'])
 
 /**
  * Determine if a given template is a studio template.
@@ -9,5 +9,5 @@ const appTemplates = ['app-quickstart', 'app-sanity-ui']
  * @returns boolean indicating if the template is a studio template
  */
 export function determineAppTemplate(templateName: string): boolean {
-  return appTemplates.includes(templateName)
+  return appTemplates.has(templateName)
 }

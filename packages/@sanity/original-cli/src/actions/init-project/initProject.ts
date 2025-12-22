@@ -43,6 +43,10 @@ import {getUserConfig} from '../../util/getUserConfig'
 import {isCommandGroup} from '../../util/isCommandGroup'
 import {isInteractive} from '../../util/isInteractive'
 import {fetchJourneyConfig} from '../../util/journeyConfig'
+import {
+  type OrganizationCreateResponse,
+  type ProjectOrganization,
+} from '../../util/organizationUtils'
 import {checkIsRemoteTemplate, getGitHubRepoInfo, type RepoInfo} from '../../util/remoteTemplate'
 import {login, type LoginFlags} from '../login/login'
 import {createProject} from '../project/createProject'
@@ -61,6 +65,7 @@ import {
   promptForStudioPath,
 } from './prompts/nextjs'
 import {readPackageJson} from './readPackageJson'
+import {type Editor, setupMCP} from './setupMCP'
 import templates from './templates'
 import {
   sanityCliTemplate,
@@ -69,7 +74,6 @@ import {
   sanityStudioTemplate,
 } from './templates/nextjs'
 
-// eslint-disable-next-line no-process-env
 const isCI = Boolean(process.env.CI)
 
 /**
@@ -100,22 +104,6 @@ export interface ProjectTemplate {
   typescriptOnly?: boolean
   entry?: string
   scripts?: Record<string, string>
-}
-
-export interface ProjectOrganization {
-  id: string
-  name: string
-  slug: string
-}
-
-interface OrganizationCreateResponse {
-  id: string
-  name: string
-  createdByUserId: string
-  slug: string | null
-  defaultRoleName: string | null
-  members: unknown[]
-  features: unknown[]
 }
 
 // eslint-disable-next-line max-statements, complexity
@@ -212,10 +200,12 @@ export default async function initSanity(
         if (useDefaultPlan) {
           print(`Using default plan.`)
         } else {
-          throw new Error(`Coupon "${intendedCoupon}" does not exist`)
+          throw new Error(`Coupon "${intendedCoupon}" does not exist`, {cause: err})
         }
       } else {
-        throw new Error(`Unable to validate coupon, please try again later:\n\n${err.message}`)
+        throw new Error(`Unable to validate coupon, please try again later:\n\n${err.message}`, {
+          cause: err,
+        })
       }
     }
   } else if (intendedPlan) {
@@ -241,10 +231,12 @@ export default async function initSanity(
         if (useDefaultPlan) {
           print(`Using default plan.`)
         } else {
-          throw new Error(`Plan id "${intendedPlan}" does not exist`)
+          throw new Error(`Plan id "${intendedPlan}" does not exist`, {cause: err})
         }
       } else {
-        throw new Error(`Unable to validate plan, please try again later:\n\n${err.message}`)
+        throw new Error(`Unable to validate plan, please try again later:\n\n${err.message}`, {
+          cause: err,
+        })
       }
     }
   }
@@ -290,11 +282,49 @@ export default async function initSanity(
     print('')
   }
 
+  // Returns true if not unattended and the flag was not explicitly set
+  function shouldPromptFor(setting: keyof InitFlags) {
+    return !unattended && cliFlags[setting] === undefined
+  }
+
+  // Returns the flag value if it's a boolean, otherwise returns the defaultValue
+  function flagOrDefault(flag: keyof InitFlags, defaultValue: boolean) {
+    return typeof cliFlags[flag] === 'boolean' ? cliFlags[flag] : defaultValue
+  }
+
+  // Resolves the package manager to use, respecting CLI flags and falling back to detection
+  async function resolvePackageManager(targetDir: string): Promise<PackageManager> {
+    // If the user has specified a package manager, and it's allowed use that
+    if (packageManager && ALLOWED_PACKAGE_MANAGERS.includes(packageManager)) {
+      return packageManager
+    }
+
+    // Otherwise, try to find the most optimal package manager to use
+    const chosen = (
+      await getPackageManagerChoice(targetDir, {
+        prompt,
+        interactive: unattended ? false : isInteractive,
+      })
+    ).chosen
+
+    // only log warning if a package manager flag is passed
+    if (packageManager) {
+      output.warn(
+        chalk.yellow(
+          `Given package manager "${packageManager}" is not supported. Supported package managers are ${allowedPackageManagersString}.`,
+        ),
+      )
+      output.print(`Using ${chosen} as package manager`)
+    }
+
+    return chosen
+  }
+
   const isNextJs = detectedFramework?.slug === 'nextjs'
 
   const flags = await prepareFlags()
 
-  // We're authenticated, now lets select or create a project (for studios) or org (for core apps)
+  // We're authenticated, now lets select or create a project (for studios) or org (for custom apps)
   const {projectId, displayName, isFirstProject, datasetName, schemaUrl, organizationId} =
     await getProjectDetails()
 
@@ -314,16 +344,16 @@ export default async function initSanity(
     return
   }
 
-  let initNext = false
+  let initNext = flagOrDefault('nextjs-add-config-files', false)
   if (isNextJs) {
-    initNext =
-      unattended ||
-      (await prompt.single({
+    if (shouldPromptFor('nextjs-add-config-files')) {
+      initNext = await prompt.single({
         type: 'confirm',
         message:
           'Would you like to add configuration files for a Sanity project in this Next.js folder?',
         default: true,
-      }))
+      })
+    }
 
     trace.log({
       step: 'useDetectedFramework',
@@ -367,12 +397,20 @@ export default async function initSanity(
     }
   }
 
+  let useTypeScript = flagOrDefault('typescript', true)
+  let mcpConfigured: Editor[] | null = null
   if (initNext) {
-    const useTypeScript = unattended ? true : await promptForTypeScript(prompt)
+    if (shouldPromptFor('typescript')) {
+      useTypeScript = await promptForTypeScript(prompt)
+    }
     trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
+
     const fileExtension = useTypeScript ? 'ts' : 'js'
 
-    const embeddedStudio = unattended ? true : await promptForEmbeddedStudio(prompt)
+    let embeddedStudio = flagOrDefault('nextjs-embed-studio', true)
+    if (shouldPromptFor('nextjs-embed-studio')) {
+      embeddedStudio = await promptForEmbeddedStudio(prompt)
+    }
     let hasSrcFolder = false
 
     if (embeddedStudio) {
@@ -455,14 +493,28 @@ export default async function initSanity(
     }
 
     // ask what kind of schema setup the user wants
-    const templateToUse = unattended ? 'clean' : await promptForNextTemplate(prompt)
+    let templateToUse = flags.template ?? 'clean'
+    if (shouldPromptFor('template')) {
+      templateToUse = await promptForNextTemplate(prompt)
+    }
 
-    await writeSourceFiles(sanityFolder(useTypeScript, templateToUse), undefined, hasSrcFolder)
+    if (['clean', 'blog'].includes(templateToUse)) {
+      await writeSourceFiles(
+        sanityFolder(useTypeScript, templateToUse as 'clean' | 'blog'),
+        undefined,
+        hasSrcFolder,
+      )
+    } else {
+      throw new Error(`Invalid template for nextjs: '${templateToUse}'. Pick 'clean' or 'blog'.`)
+    }
 
-    const appendEnv = unattended ? true : await promptForAppendEnv(prompt, envFilename)
+    let appendEnv = flagOrDefault('nextjs-append-env', true)
+    if (shouldPromptFor('nextjs-append-env')) {
+      appendEnv = await promptForAppendEnv(prompt, envFilename)
+    }
 
     if (appendEnv) {
-      await createOrAppendEnvVars(envFilename, detectedFramework, {log: true})
+      await createOrAppendEnvVars(envFilename, detectedFramework, {log: true, targetDir: workDir})
     }
 
     if (embeddedStudio) {
@@ -495,9 +547,12 @@ export default async function initSanity(
       }
     }
 
-    const {chosen} = await getPackageManagerChoice(workDir, {interactive: false})
+    // Set up MCP integration
+    mcpConfigured = await setupMCP(context, {mcp: cliFlags.mcp})
+
+    const chosen = await resolvePackageManager(workDir)
     trace.log({step: 'selectPackageManager', selectedOption: chosen})
-    const packages = ['@sanity/vision@3', 'sanity@3', '@sanity/image-url@1', 'styled-components@6']
+    const packages = ['@sanity/vision@4', 'sanity@4', '@sanity/image-url@1', 'styled-components@6']
     if (templateToUse === 'blog') {
       packages.push('@sanity/icons')
     }
@@ -521,16 +576,23 @@ export default async function initSanity(
     }
 
     if (chosen === 'npm') {
-      await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@9'], execOptions)
+      await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@11'], execOptions)
     } else if (chosen === 'yarn') {
-      await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@9'], execOptions)
+      await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@11'], execOptions)
     } else if (chosen === 'pnpm') {
-      await execa('pnpm', ['install', 'next-sanity@9'], execOptions)
+      await execa('pnpm', ['install', 'next-sanity@11'], execOptions)
     }
 
     print(
       `\n${chalk.green('Success!')} Your Sanity configuration files has been added to this project`,
     )
+    if (mcpConfigured && mcpConfigured.length > 0) {
+      const editorNames = new Intl.ListFormat('en').format(mcpConfigured.map((e) => e.name))
+      print(
+        `\nSanity MCP server has been configured for ${editorNames}. You might need to restart your editor for this to take effect.`,
+      )
+      print(`Learn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+    }
 
     return
   }
@@ -543,13 +605,16 @@ export default async function initSanity(
 
   async function writeOrOverwrite(filePath: string, content: string) {
     if (existsSync(filePath)) {
-      const overwrite = await prompt.single({
-        type: 'confirm',
-        message: `File ${chalk.yellow(
-          filePath.replace(workDir, ''),
-        )} already exists. Do you want to overwrite it?`,
-        default: false,
-      })
+      let overwrite = flagOrDefault('overwrite-files', false)
+      if (shouldPromptFor('overwrite-files')) {
+        overwrite = await prompt.single({
+          type: 'confirm',
+          message: `File ${chalk.yellow(
+            filePath.replace(workDir, ''),
+          )} already exists. Do you want to overwrite it?`,
+          default: false,
+        })
+      }
 
       if (!overwrite) {
         return
@@ -583,16 +648,18 @@ export default async function initSanity(
   }
 
   // Use typescript?
-  let useTypeScript = true
   if (!remoteTemplateInfo && template) {
     const typescriptOnly = template.typescriptOnly === true
-    if (!typescriptOnly && typeof cliFlags.typescript === 'boolean') {
-      useTypeScript = cliFlags.typescript
-    } else if (!typescriptOnly && !unattended) {
+    if (typescriptOnly) {
+      useTypeScript = true
+    } else if (shouldPromptFor('typescript')) {
       useTypeScript = await promptForTypeScript(prompt)
       trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
     }
   }
+
+  // Set up MCP integration
+  mcpConfigured = await setupMCP(context, {mcp: cliFlags.mcp})
 
   // we enable auto-updates by default, but allow users to specify otherwise
   let autoUpdates = true
@@ -615,30 +682,7 @@ export default async function initSanity(
     throw bootstrapPromise.reason
   }
 
-  let pkgManager: PackageManager
-
-  // If the user has specified a package manager, and it's allowed use that
-  if (packageManager && ALLOWED_PACKAGE_MANAGERS.includes(packageManager)) {
-    pkgManager = packageManager
-  } else {
-    // Otherwise, try to find the most optimal package manager to use
-    pkgManager = (
-      await getPackageManagerChoice(outputPath, {
-        prompt,
-        interactive: unattended ? false : isInteractive(),
-      })
-    ).chosen
-
-    // only log warning if a package manager flag is passed
-    if (packageManager) {
-      output.warn(
-        chalk.yellow(
-          `Given package manager "${packageManager}" is not supported. Supported package managers are ${allowedPackageManagersString}.`,
-        ),
-      )
-      output.print(`Using ${pkgManager} as package manager`)
-    }
-  }
+  const pkgManager = await resolvePackageManager(outputPath)
 
   trace.log({step: 'selectPackageManager', selectedOption: pkgManager})
 
@@ -679,42 +723,57 @@ export default async function initSanity(
   const devCommand = devCommandMap[pkgManager]
 
   const isCurrentDir = outputPath === process.cwd()
-  if (isCurrentDir) {
-    print(`\n${chalk.green('Success!')} Now, use this command to continue:\n`)
+  const goToProjectDir = `(${chalk.cyan(`cd ${outputPath}`)} to navigate to your new project directory)`
+
+  if (isAppTemplate) {
+    //output for custom apps here
+    print(`✅ ${chalk.green.bold('Success!')} Your custom app has been scaffolded.`)
+    if (!isCurrentDir) print(goToProjectDir)
     print(
-      `${chalk.cyan(devCommand)} - to run ${isAppTemplate ? 'your Sanity application' : 'Sanity Studio'}\n`,
+      `\n${chalk.bold('Next')}, configure the project(s) and dataset(s) your app should work with.`,
     )
+    print('\nGet started in `src/App.tsx`, or refer to our documentation for a walkthrough:')
+    print(chalk.blue.underline('https://www.sanity.io/docs/app-sdk/sdk-configuration'))
+    if (mcpConfigured && mcpConfigured.length > 0) {
+      const editorNames = new Intl.ListFormat('en').format(mcpConfigured.map((e) => e.name))
+      print(
+        `\nSanity MCP server has been configured for ${editorNames}. You might need to restart your editor for this to take effect.`,
+      )
+      print(`Learn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+    }
+    print('\n')
+    print(`Other helpful commands:`)
+    print(`npx sanity docs       to open the documentation in a browser`)
+    print(`npx sanity dev        to start the development server for your app`)
+    print(`npx sanity deploy     to deploy your app`)
   } else {
-    print(`\n${chalk.green('Success!')} Now, use these commands to continue:\n`)
-    print(`First: ${chalk.cyan(`cd ${outputPath}`)} - to enter project’s directory`)
+    //output for Studios here
+    print(`✅ ${chalk.green.bold('Success!')} Your Studio has been created.`)
+    if (!isCurrentDir) print(goToProjectDir)
     print(
-      `Then: ${chalk.cyan(devCommand)} -to run ${isAppTemplate ? 'your Sanity application' : 'Sanity Studio'}\n`,
+      `Get started by running ${chalk.cyan(devCommand)} to launch your Studio’s development server`,
     )
+    if (mcpConfigured && mcpConfigured.length > 0) {
+      const editorNames = new Intl.ListFormat('en').format(mcpConfigured.map((e) => e.name))
+      print(
+        `\nSanity MCP server has been configured for ${editorNames}. You might need to restart your editor for this to take effect.`,
+      )
+      print(`Learn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+    }
+    print('\n')
+    print(`Other helpful commands:`)
+    print(`npx sanity docs     to open the documentation in a browser`)
+    print(`npx sanity manage   to open the project settings in a browser`)
+    print(`npx sanity help     to explore the CLI manual`)
   }
 
-  print(`Other helpful commands`)
-  print(`npx sanity docs - to open the documentation in a browser`)
-  print(`npx sanity manage - to open the project settings in a browser`)
-  print(`npx sanity help - to explore the CLI manual`)
+  if (isFirstProject) {
+    trace.log({step: 'sendCommunityInvite', selectedOption: 'yes'})
 
-  const sendInvite =
-    isFirstProject &&
-    (await prompt.single({
-      type: 'confirm',
-      message:
-        'We have an excellent developer community, would you like us to send you an invitation to join?',
-      default: true,
-    }))
+    const DISCORD_INVITE_LINK = 'https://www.sanity.io/community/join'
 
-  if (sendInvite) {
-    trace.log({step: 'sendCommunityInvite', selectedOption: sendInvite ? 'yes' : 'no'})
-    // Intentionally leave the promise "dangling" since we don't want to stall while waiting for this
-    apiClient({requireProject: false})
-      .request({
-        uri: '/invitations/community',
-        method: 'POST',
-      })
-      .catch(noop)
+    print(`\nJoin the Sanity community: ${chalk.cyan(DISCORD_INVITE_LINK)}`)
+    print('We look forward to seeing you there!\n')
   }
 
   trace.complete()
@@ -724,7 +783,7 @@ export default async function initSanity(
     print('')
 
     // Provide login options (`sanity login`)
-    const {extOptions, ...otherArgs} = args
+    const {extOptions: _extOptions, ...otherArgs} = args
     const loginArgs: CliCommandArguments<LoginFlags> = {...otherArgs, extOptions: {}}
     await login(loginArgs, {...context, telemetry: trace.newContext('login')})
     return getUserData(apiClient)
@@ -830,7 +889,7 @@ export default async function initSanity(
           userAction: 'select',
         }
       }
-      throw new Error(`Failed to communicate with the Sanity API:\n${err.message}`)
+      throw new Error(`Failed to communicate with the Sanity API:\n${err.message}`, {cause: err})
     }
 
     if (projects.length === 0 && unattended) {
@@ -899,7 +958,7 @@ export default async function initSanity(
 
       return createProject(apiClient, {
         displayName: projectName,
-        organizationId: await getOrganizationId(organizations),
+        organizationId: cliFlags.organization || (await getOrganizationId(organizations)),
         subscription: selectedPlan ? {planId: selectedPlan} : undefined,
         metadata: {coupon: intendedCoupon},
       }).then((response) => ({
@@ -935,7 +994,7 @@ export default async function initSanity(
           message: 'Your project name:',
           default: 'My Sanity Project',
         }),
-        organizationId: await getOrganizationId(organizations),
+        organizationId: cliFlags.organization || (await getOrganizationId(organizations)),
         subscription: selectedPlan ? {planId: selectedPlan} : undefined,
         metadata: {coupon: intendedCoupon},
       }).then((response) => ({
@@ -1128,7 +1187,7 @@ export default async function initSanity(
           body: {metadata: {cliInitializedAt: new Date().toISOString()}},
         })
       }
-    } catch (err) {
+    } catch {
       // Non-critical update
       debug('Failed to update cliInitializedAt metadata')
     }
@@ -1164,6 +1223,7 @@ export default async function initSanity(
         schemaUrl,
         useTypeScript,
         variables: bootstrapVariables,
+        overwriteFiles: flagOrDefault('overwrite-files', false),
       },
       context,
     )
@@ -1196,6 +1256,11 @@ export default async function initSanity(
 
   // eslint-disable-next-line complexity
   async function prepareFlags() {
+    // Handle --project-id alias by setting it to --project
+    if (cliFlags['project-id'] && !cliFlags.project) {
+      cliFlags.project = cliFlags['project-id']
+    }
+
     const createProjectName = cliFlags['create-project']
     if (cliFlags.dataset || cliFlags.visibility || cliFlags['dataset-default'] || unattended) {
       showDefaultConfigPrompt = false
@@ -1248,13 +1313,29 @@ export default async function initSanity(
           '`--project <id>` or `--create-project <name>` must be specified in unattended mode',
         )
       }
+
+      if (createProjectName && !cliFlags.organization) {
+        throw new Error(
+          '--create-project is not supported in unattended mode without an organization, please specify an organization with `--organization <id>`',
+        )
+      }
     }
 
     if (createProjectName) {
       debug('--create-project specified, creating a new project')
+
+      let orgForCreateProjectFlag = cliFlags.organization
+      if (!orgForCreateProjectFlag) {
+        debug('no organization specified, selecting one')
+        const client = apiClient({requireUser: true, requireProject: false})
+        const organizations = await client.request({uri: '/organizations'})
+        orgForCreateProjectFlag = await getOrganizationId(organizations)
+      }
+
+      debug('creating a new project')
       const createdProject = await createProject(apiClient, {
         displayName: createProjectName.trim(),
-        organizationId: cliFlags.organization || undefined,
+        organizationId: orgForCreateProjectFlag,
         subscription: selectedPlan ? {planId: selectedPlan} : undefined,
         metadata: {coupon: intendedCoupon},
       })
@@ -1346,13 +1427,6 @@ export default async function initSanity(
   }
 
   async function getOrganizationId(organizations: ProjectOrganization[]) {
-    // In unattended mode, if the user hasn't specified an organization, sending null as
-    // organization ID to the API will create a new organization for the user with their
-    // user name. If they _have_ specified an organization, we'll use that.
-    if (unattended || flags.organization) {
-      return flags.organization || undefined
-    }
-
     // If the user has no organizations, prompt them to create one with the same name as
     // their user, but allow them to customize it if they want
     if (organizations.length === 0) {
@@ -1408,12 +1482,24 @@ export default async function initSanity(
       .clone()
       .config({apiVersion: 'v2021-06-07'})
 
-    const grants = await client.request({uri: `organizations/${orgId}/grants`})
-    const group: {grants: {name: string}[]}[] = grants[requiredGrantGroup] || []
-    return group.some(
-      (resource) =>
-        resource.grants && resource.grants.some((grant) => grant.name === requiredGrant),
-    )
+    try {
+      const grants = await client.request({uri: `organizations/${orgId}/grants`})
+      const group: {grants: {name: string}[]}[] = grants[requiredGrantGroup] || []
+      return group.some(
+        (resource) =>
+          resource.grants && resource.grants.some((grant) => grant.name === requiredGrant),
+      )
+    } catch (err) {
+      // If we get a 401, it means we don't have access to this organization
+      // probably because of implicit membership
+      if (err.statusCode === 401) {
+        debug('No access to organization %s (401)', orgId)
+        return false
+      }
+      // For other errors, log them but still return false
+      debug('Error checking grants for organization %s: %s', orgId, err.message)
+      return false
+    }
   }
 
   function getOrganizationsWithAttachGrantInfo(organizations: ProjectOrganization[]) {
@@ -1430,7 +1516,7 @@ export default async function initSanity(
   async function createOrAppendEnvVars(
     filename: string,
     framework: Framework | null,
-    options?: {log?: boolean},
+    options?: {log?: boolean; targetDir?: string},
   ) {
     // we will prepend SANITY_ to these variables later, together with the prefix
     const envVars = {
@@ -1449,7 +1535,7 @@ export default async function initSanity(
 
       await writeEnvVarsToFile(filename, envVars, {
         framework,
-        outputPath,
+        outputPath: options?.targetDir || outputPath,
         log: options?.log,
       })
     } catch (err) {
