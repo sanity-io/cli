@@ -1,6 +1,6 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
 
-export const SCHEMA_API_VERSION = 'v2025-03-01'
+const SCHEMA_API_VERSION = 'v2025-03-01'
 
 async function getSchemaClient() {
   return await getGlobalCliClient({
