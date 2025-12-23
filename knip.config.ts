@@ -9,7 +9,6 @@ const baseConfig = {
   // For now only care about cli package
   ignore: [
     'packages/@sanity/original-cli/**',
-    'packages/@sanity/migrate/**',
     'packages/@sanity/codegen/**',
     'packages/create-sanity/**',
 
