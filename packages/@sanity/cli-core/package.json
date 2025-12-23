@@ -23,6 +23,11 @@
       "require": "./dist/index.js",
       "import": "./dist/index.js"
     },
+    "./tree": {
+      "source": "./src/_exports/tree.ts",
+      "require": "./dist/_exports/tree.js",
+      "import": "./dist/_exports/tree.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "dist/index.js",
@@ -44,6 +49,7 @@
   "dependencies": {
     "@oclif/core": "^4.8.0",
     "@sanity/client": "^7.11.2",
+    "@sanity/types": "^4.21.0",
     "babel-plugin-react-compiler": "^1.0.0",
     "chalk": "^5.4.1",
     "configstore": "^7.0.0",

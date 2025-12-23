@@ -156,6 +156,7 @@
     "oclif": "^4.22.57",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3",
+    "vite-tsconfig-paths": "^6.0.1",
     "vitest": "^3.2.4"
   },
   "engines": {
