@@ -17,10 +17,10 @@
   },
   "dependencies": {
     "@sanity/cli": "workspace:*",
-    "@sanity/vision": "^4.21.0",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "sanity": "^4.21.0",
+    "@sanity/vision": "catalog:",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "sanity": "catalog:",
     "styled-components": "^6.1.19"
   },
   "devDependencies": {

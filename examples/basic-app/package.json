@@ -14,10 +14,10 @@
   },
   "dependencies": {
     "@sanity/cli": "workspace:*",
-    "@sanity/sdk": "^1.0.0",
-    "@sanity/sdk-react": "^1.0.0",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1"
+    "@sanity/sdk": "^2.4.0",
+    "@sanity/sdk-react": "^2.4.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
     "@types/react": "^19.2.7",
