@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises'
 
-import {input, select} from '@inquirer/prompts'
+import {input, select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {type CliConfig, getCliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
@@ -14,7 +14,7 @@ vi.mock('@sanity/export', () => ({
   exportDataset: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   input: vi.fn(),
   select: vi.fn(),
 }))

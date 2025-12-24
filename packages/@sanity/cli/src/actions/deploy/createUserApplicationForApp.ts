@@ -1,5 +1,4 @@
-import {input} from '@inquirer/prompts'
-import {spinner} from '@sanity/cli-core'
+import {input, spinner} from '@sanity/cli-core/ux'
 import {customAlphabet} from 'nanoid'
 
 import {createUserApplication, type UserApplication} from '../../services/userApplications.js'

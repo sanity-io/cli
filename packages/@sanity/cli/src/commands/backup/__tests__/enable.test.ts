@@ -1,4 +1,4 @@
-import {input, select} from '@inquirer/prompts'
+import {input, select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
@@ -10,7 +10,7 @@ import {NEW_DATASET_VALUE} from '../../../prompts/promptForDataset.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {EnableBackupCommand} from '../enable.js'
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   input: vi.fn(),
   select: vi.fn(),
 }))

@@ -7,7 +7,7 @@ import {buildApp} from '../buildApp.js'
 import {type BuildOptions} from '../types.js'
 
 vi.mock('node:fs/promises')
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   confirm: vi.fn(),
 }))
 
@@ -39,7 +39,7 @@ const mockedBuildVendorDependencies = vi.hoisted(() => vi.fn())
 const mockedGetAppEnvVars = vi.hoisted(() => vi.fn())
 const mockedGetAutoUpdatesImportMap = vi.hoisted(() => vi.fn())
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   confirm: mockedConfirm,
 }))
 

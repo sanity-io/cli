@@ -1,7 +1,6 @@
-import {confirm} from '@inquirer/prompts'
 import {Flags} from '@oclif/core'
-import {SanityCommand, spinner} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {SanityCommand} from '@sanity/cli-core'
+import {chalk, confirm, spinner} from '@sanity/cli-core/ux'
 
 import {
   getStudioOrAppUserApplication,

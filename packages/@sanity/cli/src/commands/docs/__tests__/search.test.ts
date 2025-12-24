@@ -1,4 +1,4 @@
-import {select} from '@inquirer/prompts'
+import {select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {isInteractive} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
@@ -7,7 +7,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DocsSearchCommand} from '../search.js'
 
-vi.mock('@inquirer/prompts', async () => {
+vi.mock('@sanity/cli-core/ux', async () => {
   return {
     select: vi.fn(),
   }

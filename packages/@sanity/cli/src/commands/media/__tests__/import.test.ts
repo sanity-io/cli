@@ -20,7 +20,7 @@ vi.mock('../../../services/mediaLibraries.js', () => ({
   getMediaLibraries: mocks.getMediaLibraries,
 }))
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   select: mocks.select,
   Separator: vi.fn(),
 }))

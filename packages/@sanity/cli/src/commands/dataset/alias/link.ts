@@ -1,4 +1,4 @@
-import {input} from '@inquirer/prompts'
+import {input} from '@sanity/cli-core/ux'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 

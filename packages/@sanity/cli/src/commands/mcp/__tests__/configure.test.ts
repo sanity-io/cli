@@ -1,7 +1,7 @@
 import {existsSync, type PathLike} from 'node:fs'
 import fs from 'node:fs/promises'
 
-import {checkbox} from '@inquirer/prompts'
+import {checkbox} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {execa} from 'execa'
@@ -11,7 +11,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {MCP_API_VERSION} from '../../../services/mcp.js'
 import {ConfigureMcpCommand} from '../configure.js'
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   checkbox: vi.fn(),
 }))
 

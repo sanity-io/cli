@@ -1,11 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import {confirm} from '@inquirer/prompts'
 import {Flags} from '@oclif/core'
-import {logSymbols, Output, SanityCommand} from '@sanity/cli-core'
+import {Output, SanityCommand} from '@sanity/cli-core'
+import {chalk, confirm, logSymbols} from '@sanity/cli-core/ux'
 import {type ClientConfig} from '@sanity/client'
-import chalk from 'chalk'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {Level} from '../../actions/documents/types.js'

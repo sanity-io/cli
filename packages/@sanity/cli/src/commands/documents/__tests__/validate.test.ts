@@ -21,7 +21,7 @@ vi.mock('node:fs', () => ({
   },
 }))
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   confirm: mocks.confirm,
 }))
 

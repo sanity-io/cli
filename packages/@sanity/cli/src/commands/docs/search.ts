@@ -1,7 +1,6 @@
-import {select} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk, select} from '@sanity/cli-core/ux'
 
 import {readDoc, searchDocs, type SearchResult} from '../../services/docs.js'
 

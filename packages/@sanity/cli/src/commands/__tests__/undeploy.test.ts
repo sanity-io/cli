@@ -1,4 +1,4 @@
-import {confirm} from '@inquirer/prompts'
+import {confirm} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
@@ -7,7 +7,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {UndeployCommand} from '../undeploy.js'
 
-vi.mock('@inquirer/prompts')
+vi.mock('@sanity/cli-core/ux')
 
 vi.mock('../../../../cli-core/src/config/findProjectRoot.js', async () => {
   return {

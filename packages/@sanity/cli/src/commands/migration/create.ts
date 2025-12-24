@@ -1,10 +1,9 @@
 import {access, mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
-import {confirm, input, select} from '@inquirer/prompts'
 import {Args} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk, confirm, input, select} from '@sanity/cli-core/ux'
 import {deburr} from 'lodash-es'
 
 import {getMigrationRootDirectory} from '../../actions/migration/getMigrationRootDirectory.js'

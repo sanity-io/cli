@@ -1,4 +1,4 @@
-import {select} from '@inquirer/prompts'
+import {select} from '@sanity/cli-core/ux'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {type DatasetAclMode} from '@sanity/client'

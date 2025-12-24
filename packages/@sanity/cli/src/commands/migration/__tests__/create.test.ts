@@ -29,7 +29,7 @@ vi.mock('node:fs/promises', () => ({
   writeFile: vi.fn(),
 }))
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   confirm: mocks.confirm,
   input: mocks.input,
   select: mocks.select,

@@ -1,4 +1,4 @@
-import {select} from '@inquirer/prompts'
+import {select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
@@ -9,7 +9,7 @@ import {BACKUP_API_VERSION} from '../../../actions/backup/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {ListBackupCommand} from '../list.js'
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   select: vi.fn(),
 }))
 

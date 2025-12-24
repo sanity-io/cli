@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import {select} from '@inquirer/prompts'
+import {select} from '@sanity/cli-core/ux'
 import {isInteractive} from '@sanity/cli-core'
 // eslint-disable-next-line unicorn/no-named-default
 import {default as preferredPM} from 'preferred-pm'

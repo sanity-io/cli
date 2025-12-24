@@ -1,4 +1,4 @@
-import {confirm, select} from '@inquirer/prompts'
+import {confirm, select} from '@sanity/cli-core/ux'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {ClientError} from '@sanity/client'

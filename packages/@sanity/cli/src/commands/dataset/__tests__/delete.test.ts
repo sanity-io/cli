@@ -1,4 +1,4 @@
-import {input} from '@inquirer/prompts'
+import {input} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
@@ -36,7 +36,7 @@ vi.mock('../../../../../cli-core/src/services/apiClient.js', async (importOrigin
   }
 })
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   input: vi.fn(),
 }))
 

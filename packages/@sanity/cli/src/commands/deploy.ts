@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import {confirm} from '@inquirer/prompts'
+import {confirm} from '@sanity/cli-core/ux'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 

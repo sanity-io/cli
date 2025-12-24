@@ -1,4 +1,4 @@
-import {input, select} from '@inquirer/prompts'
+import {input, select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
@@ -9,7 +9,7 @@ import {USERS_API_VERSION} from '../../../actions/users/apiVersion.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {UsersInviteCommand} from '../invite.js'
 
-vi.mock('@inquirer/prompts', async () => {
+vi.mock('@sanity/cli-core/ux', async () => {
   return {
     input: vi.fn(),
     select: vi.fn(),

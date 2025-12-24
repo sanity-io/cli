@@ -1,6 +1,6 @@
 import fs from 'node:fs'
 
-import {confirm} from '@inquirer/prompts'
+import {confirm} from '@sanity/cli-core/ux'
 import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -10,7 +10,7 @@ import {CORS_API_VERSION} from '../../../actions/cors/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Add} from '../add.js'
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   confirm: vi.fn(),
 }))
 

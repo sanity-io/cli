@@ -1,5 +1,5 @@
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 import {Table} from 'console-table-printer'
 
 import {resolveMigrations} from '../../actions/migration/resolveMigrations.js'

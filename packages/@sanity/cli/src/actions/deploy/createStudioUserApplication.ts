@@ -1,4 +1,4 @@
-import {input} from '@inquirer/prompts'
+import {input} from '@sanity/cli-core/ux'
 import {CLIError} from '@oclif/core/errors'
 
 import {createUserApplication, type UserApplication} from '../../services/userApplications.js'

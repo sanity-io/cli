@@ -1,4 +1,4 @@
-import {select} from '@inquirer/prompts'
+import {select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {of, throwError} from 'rxjs'
@@ -28,7 +28,7 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   input: vi.fn(),
   select: vi.fn(),
 }))

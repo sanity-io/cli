@@ -1,4 +1,5 @@
-import {getCliToken, getGlobalCliClient, type Output, setConfig, spinner} from '@sanity/cli-core'
+import {getCliToken, getGlobalCliClient, type Output, setConfig} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import open from 'open'
 
 import {canLaunchBrowser} from '../../../util/canLaunchBrowser.js'

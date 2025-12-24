@@ -1,4 +1,4 @@
-import {select} from '@inquirer/prompts'
+import {select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
@@ -32,8 +32,8 @@ vi.mock('get-tsconfig', () => ({
   getTsconfig: mockGetTsconfig,
 }))
 
-vi.mock('@inquirer/prompts', async () => {
-  const actual = await vi.importActual<typeof import('@inquirer/prompts')>('@inquirer/prompts')
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
     ...actual,
     select: vi.fn(),

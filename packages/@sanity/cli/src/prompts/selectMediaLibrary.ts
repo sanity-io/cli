@@ -1,5 +1,5 @@
-import {select, Separator} from '@inquirer/prompts'
-import {spinner, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core'
+import {select, Separator, spinner} from '@sanity/cli-core/ux'
 import {groupBy} from 'lodash-es'
 
 import {getMediaLibraries} from '../services/mediaLibraries.js'

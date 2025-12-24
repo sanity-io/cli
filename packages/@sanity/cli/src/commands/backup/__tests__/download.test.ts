@@ -2,7 +2,7 @@ import {existsSync, mkdirSync} from 'node:fs'
 import {mkdir, mkdtemp, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
-import {confirm, input, select} from '@inquirer/prompts'
+import {confirm, input, select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
@@ -44,7 +44,7 @@ vi.mock(import('node:fs/promises'), async (importOriginal) => {
     mkdtemp: vi.fn(),
   }
 })
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   confirm: vi.fn(),
   input: vi.fn(),
   select: vi.fn(),

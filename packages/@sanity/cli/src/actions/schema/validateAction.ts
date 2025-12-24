@@ -2,7 +2,8 @@ import {writeFileSync} from 'node:fs'
 import path from 'node:path'
 import {Worker} from 'node:worker_threads'
 
-import {logSymbols, Output, spinner} from '@sanity/cli-core'
+import {Output} from '@sanity/cli-core'
+import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {readPackageUp} from 'read-package-up'
 
 import {

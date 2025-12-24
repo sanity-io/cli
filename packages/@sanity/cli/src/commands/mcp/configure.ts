@@ -1,4 +1,4 @@
-import {checkbox} from '@inquirer/prompts'
+import {checkbox} from '@sanity/cli-core/ux'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {detectAvailableEditors} from '../../actions/mcp/detectAvailableEditors.js'

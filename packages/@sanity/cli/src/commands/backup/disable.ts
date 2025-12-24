@@ -1,8 +1,7 @@
-import {select} from '@inquirer/prompts'
 import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {chalk, select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
-import chalk from 'chalk'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'

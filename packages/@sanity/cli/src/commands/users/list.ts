@@ -1,6 +1,6 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 import {size, sortBy} from 'lodash-es'
 
 import {USERS_API_VERSION} from '../../actions/users/apiVersion.js'

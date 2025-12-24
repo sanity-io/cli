@@ -43,7 +43,7 @@ const mockConfirm = vi.hoisted(() => vi.fn())
 const schema = createSchema({name: 'default', types: []})
 
 // Mock inquirer prompts
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   confirm: mockConfirm,
 }))
 

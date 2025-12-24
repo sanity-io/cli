@@ -2,7 +2,7 @@ import {readFile, writeFile} from 'node:fs/promises'
 import {createServer} from 'node:http'
 import {join} from 'node:path'
 
-import {confirm} from '@inquirer/prompts'
+import {confirm} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -25,7 +25,7 @@ vi.mock('../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue([]),
 }))
 
-vi.mock('@inquirer/prompts')
+vi.mock('@sanity/cli-core/ux')
 
 vi.mock('../../../../cli-core/src/util/isInteractive.js', () => ({
   isInteractive: vi.fn().mockReturnValue(true),

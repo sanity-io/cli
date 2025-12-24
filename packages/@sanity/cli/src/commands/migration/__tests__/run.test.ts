@@ -22,7 +22,7 @@ vi.mock('node:fs/promises', () => ({
   readdir: mocks.readdir,
 }))
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   confirm: mocks.confirm,
 }))
 

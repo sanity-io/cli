@@ -38,7 +38,7 @@ const mockedGetAutoUpdatesImportMap = vi.hoisted(() => vi.fn())
 const mockedGetStudioEnvVars = vi.hoisted(() => vi.fn())
 const mockedShouldAutoUpdate = vi.hoisted(() => vi.fn())
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   confirm: mockedConfirm,
   select: mockedSelect,
 }))
