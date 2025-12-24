@@ -8,9 +8,14 @@ const mocks = vi.hoisted(() => ({
   request: vi.fn(),
 }))
 
-vi.mock('@inquirer/prompts', () => ({
-  confirm: mocks.confirm,
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual('@sanity/cli-core/ux')
+
+  return {
+    ...actual,
+    confirm: mocks.confirm,
+  }
+})
 
 vi.mock('@vercel/fs-detectors', () => ({
   detectFrameworkRecord: vi.fn().mockResolvedValue({

@@ -21,15 +21,13 @@ vi.mock('@vercel/fs-detectors', () => ({
   LocalFileSystemDetector: vi.fn(),
 }))
 
-vi.mock('@inquirer/prompts', () => ({
-  input: mocks.input,
-  select: mocks.select,
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual('@sanity/cli-core/ux')
 
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
   return {
     ...actual,
+    input: mocks.input,
+    select: mocks.select,
     spinner: mocks.spinner,
   }
 })
