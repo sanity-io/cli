@@ -1,6 +1,6 @@
-import {input, select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
+import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -31,7 +31,14 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
 }))
 
 // Mock inquirer prompts
-vi.mock('@inquirer/prompts')
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    input: vi.fn(),
+    select: vi.fn(),
+  }
+})
 const mockedInput = vi.mocked(input)
 const mockedSelect = vi.mocked(select)
 const mockedGetCliConfig = vi.mocked(getCliConfig)

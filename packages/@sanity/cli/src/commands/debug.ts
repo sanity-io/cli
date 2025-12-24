@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import {Flags} from '@oclif/core'
 import {formatObject, printKeyValue, SanityCommand} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 import {omit, padStart} from 'lodash-es'
 
 import {gatherDebugInfo} from '../actions/debug/gatherDebugInfo.js'

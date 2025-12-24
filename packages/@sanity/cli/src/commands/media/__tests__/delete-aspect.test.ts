@@ -1,6 +1,6 @@
-import {confirm, select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
+import {confirm, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -9,8 +9,8 @@ import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {MediaDeleteAspectCommand} from '../delete-aspect.js'
 
-vi.mock('@inquirer/prompts', async () => {
-  const actual = await vi.importActual<typeof import('@inquirer/prompts')>('@inquirer/prompts')
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
     ...actual,
     confirm: vi.fn(),

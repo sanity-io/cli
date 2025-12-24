@@ -2,8 +2,8 @@
  * Helper functions to find a user application for a Sanity application.
  */
 
-import {select, Separator} from '@inquirer/prompts'
-import {type CliConfig, type Output, spinner} from '@sanity/cli-core'
+import {type CliConfig, type Output} from '@sanity/cli-core'
+import {select, Separator, spinner} from '@sanity/cli-core/ux'
 
 import {
   getUserApplication,

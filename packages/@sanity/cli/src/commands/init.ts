@@ -1,9 +1,9 @@
 // @Todo will remove by time migration of this command si complete
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import {confirm} from '@inquirer/prompts'
 import {Args, Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {getCliToken, SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
+import {confirm} from '@sanity/cli-core/ux'
 import {isHttpError} from '@sanity/client'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'

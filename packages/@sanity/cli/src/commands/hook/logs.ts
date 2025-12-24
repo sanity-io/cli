@@ -1,9 +1,8 @@
 import {inspect} from 'node:util'
 
-import {select} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk, select} from '@sanity/cli-core/ux'
 import {groupBy} from 'lodash-es'
 
 import {formatFailure} from '../../actions/hook/formatFailure.js'

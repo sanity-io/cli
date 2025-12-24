@@ -1,4 +1,4 @@
-import {select, Separator} from '@inquirer/prompts'
+import {select, Separator} from '@sanity/cli-core/ux'
 
 import {type MediaLibrary} from '../services/mediaLibraries.js'
 

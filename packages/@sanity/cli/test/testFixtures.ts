@@ -3,7 +3,7 @@ import {readdir, readFile, rm, writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 import {promisify} from 'node:util'
 
-import spinner from 'ora'
+import {spinner} from '@sanity/cli-core/ux'
 
 import {testCopyDirectory} from './helpers/testExample.js'
 

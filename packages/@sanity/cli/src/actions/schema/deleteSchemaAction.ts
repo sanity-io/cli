@@ -1,4 +1,4 @@
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 import {isDefined} from '../manifest/schemaTypeHelpers.js'
 import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'

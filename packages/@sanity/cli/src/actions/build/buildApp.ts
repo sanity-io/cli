@@ -1,10 +1,8 @@
 import {rm} from 'node:fs/promises'
 import path from 'node:path'
 
-import {confirm} from '@inquirer/prompts'
-import {getTimer, logSymbols, spinner} from '@sanity/cli-core'
-import chalk from 'chalk'
-import {type Ora} from 'ora'
+import {getTimer} from '@sanity/cli-core'
+import {chalk, confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import semver from 'semver'
 
 import {getAppId} from '../../util/appId.js'
@@ -101,7 +99,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   // Determine base path for built studio
   const basePath = determineBasePath(cliConfig, 'app')
 
-  let spin: Ora
+  let spin: SpinnerInstance
   if (shouldClean) {
     timer.start('cleanOutputFolder')
     spin = spinner('Clean output folder').start()

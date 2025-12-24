@@ -1,5 +1,4 @@
-import {input} from '@inquirer/prompts'
-import {spinner} from '@sanity/cli-core'
+import {input, spinner} from '@sanity/cli-core/ux'
 import {type SanityClient} from '@sanity/client'
 
 import {type LoginProvider, type ProvidersResponse} from '../types.js'

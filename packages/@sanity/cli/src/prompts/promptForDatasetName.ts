@@ -1,4 +1,4 @@
-import {input} from '@inquirer/prompts'
+import {input} from '@sanity/cli-core/ux'
 
 import {validateDatasetName} from '../actions/dataset/validateDatasetName.js'
 

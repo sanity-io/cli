@@ -1,7 +1,7 @@
 import path from 'node:path'
 
-import {logSymbols, type Output} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {type Output} from '@sanity/cli-core'
+import {chalk, logSymbols} from '@sanity/cli-core/ux'
 
 const baseUrl =
   process.env.SANITY_INTERNAL_ENV === 'staging' ? 'https://sanity.work' : 'https://www.sanity.io'

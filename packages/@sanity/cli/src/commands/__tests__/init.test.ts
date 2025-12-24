@@ -35,7 +35,7 @@ vi.mock('../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   confirm: mocks.confirm,
 }))
 

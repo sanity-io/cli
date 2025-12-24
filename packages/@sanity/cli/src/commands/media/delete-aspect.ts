@@ -1,7 +1,6 @@
-import {confirm} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk, confirm} from '@sanity/cli-core/ux'
 
 import {selectMediaLibrary} from '../../prompts/selectMediaLibrary.js'
 import {deleteAspect} from '../../services/mediaLibraries.js'

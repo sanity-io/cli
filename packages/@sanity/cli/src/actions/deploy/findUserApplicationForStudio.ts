@@ -2,9 +2,8 @@
  * Helper functions to find a user application for a Sanity studio.
  */
 
-import {select, Separator} from '@inquirer/prompts'
-import {type Output, spinner} from '@sanity/cli-core'
-import {type Ora} from 'ora'
+import {type Output} from '@sanity/cli-core'
+import {select, Separator, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 
 import {
   createUserApplication,
@@ -87,7 +86,7 @@ export async function findUserApplicationForStudio(options: FindUserApplicationF
 interface FindUserApplicationFromConfigOptions {
   output: Output
   projectId: string
-  spin: Ora
+  spin: SpinnerInstance
 
   appHost?: string
   appId?: string

@@ -1,10 +1,9 @@
 import fs, {mkdir} from 'node:fs/promises'
 import path from 'node:path'
 
-import {input} from '@inquirer/prompts'
 import {fileExists, SanityCommand, subdebug} from '@sanity/cli-core'
+import {chalk, input} from '@sanity/cli-core/ux'
 import {createPublishedId} from '@sanity/id-utils'
-import chalk from 'chalk'
 import {camelCase} from 'lodash-es'
 
 import {getMediaLibraryConfig} from '../../actions/media/getMediaLibraryConfig.js'

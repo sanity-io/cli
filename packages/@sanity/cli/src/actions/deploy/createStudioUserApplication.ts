@@ -1,5 +1,5 @@
-import {input} from '@inquirer/prompts'
 import {CLIError} from '@oclif/core/errors'
+import {input} from '@sanity/cli-core/ux'
 
 import {createUserApplication, type UserApplication} from '../../services/userApplications.js'
 import {deployDebug} from './deployDebug.js'

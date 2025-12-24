@@ -1,13 +1,19 @@
-import {confirm} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
+import {confirm} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {UndeployCommand} from '../undeploy.js'
 
-vi.mock('@inquirer/prompts')
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    confirm: vi.fn(),
+  }
+})
 
 vi.mock('../../../../cli-core/src/config/findProjectRoot.js', async () => {
   return {

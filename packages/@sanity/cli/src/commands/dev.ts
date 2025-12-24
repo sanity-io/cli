@@ -1,6 +1,6 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 import {devAction} from '../actions/dev/devAction.js'
 import {devDebug} from '../actions/dev/devDebug.js'

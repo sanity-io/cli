@@ -1,5 +1,5 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 import {type DeployFlags} from '../deploy/types.js'
 import {type DevFlags} from '../dev/types.js'

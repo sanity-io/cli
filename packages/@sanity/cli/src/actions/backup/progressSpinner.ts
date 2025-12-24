@@ -1,4 +1,4 @@
-import {spinner} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import prettyMs from 'pretty-ms'
 
 interface ProgressEvent {

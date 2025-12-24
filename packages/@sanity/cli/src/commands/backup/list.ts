@@ -1,6 +1,6 @@
-import {select} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import {Table} from 'console-table-printer'
 import {isAfter, isValid, lightFormat, parse} from 'date-fns'

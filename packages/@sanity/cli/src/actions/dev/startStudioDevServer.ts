@@ -1,6 +1,5 @@
-import {confirm} from '@inquirer/prompts'
-import {isInteractive, logSymbols, spinner} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {isInteractive} from '@sanity/cli-core'
+import {chalk, confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
 import semver from 'semver'
 
 import {startDevServer} from '../../server/devServer.js'

@@ -62,7 +62,9 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
       this.error('Failed to get project features', {exit: 1})
     }
     if (!canCreateAlias) {
-      this.error('This project cannot create a dataset alias - see https://www.sanity.io/pricing', {exit: 1})
+      this.error('This project cannot create a dataset alias - see https://www.sanity.io/pricing', {
+        exit: 1,
+      })
     }
 
     if (args.aliasName) {

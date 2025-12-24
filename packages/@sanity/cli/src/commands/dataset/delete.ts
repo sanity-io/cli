@@ -1,7 +1,6 @@
-import {input} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
-import {logSymbols, SanityCommand, subdebug} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {chalk, input, logSymbols} from '@sanity/cli-core/ux'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {deleteDataset} from '../../services/datasets.js'

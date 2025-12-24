@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import {spinner} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import promiseProps from 'promise-props-recursive'
 import semver from 'semver'
 import semverCompare from 'semver-compare'

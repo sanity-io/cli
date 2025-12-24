@@ -2,8 +2,7 @@ import {basename, dirname} from 'node:path'
 import {createGzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
-import {spinner} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk, spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
 import {createDeployment} from '../../services/userApplications.js'

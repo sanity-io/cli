@@ -1,5 +1,5 @@
 import {SanityCommand} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 import {padStart} from 'lodash-es'
 
 import {findSanityModulesVersions} from '../actions/versions/findSanityModulesVersions.js'

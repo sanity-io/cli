@@ -1,4 +1,4 @@
-import {select} from '@inquirer/prompts'
+import {select} from '@sanity/cli-core/ux'
 
 import {type LoginProvider} from '../types.js'
 
