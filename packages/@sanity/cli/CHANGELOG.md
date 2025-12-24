@@ -1,12 +1,5 @@
 # Changelog
 
-## [6.0.0-alpha.2](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.1...cli-v6.0.0-alpha.2) (2025-12-24)
-
-
-### Bug Fixes
-
-* **deps:** update dependency get-it to ^8.7.0 ([#221](https://github.com/sanity-io/cli/issues/221)) ([ed31a30](https://github.com/sanity-io/cli/commit/ed31a30dc6965b07651a5bfda9cd0be9d9369c73))
-
 ## [6.0.0-alpha.1](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.0...cli-v6.0.0-alpha.1) (2025-12-24)
 
 
