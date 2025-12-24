@@ -344,7 +344,7 @@ importers:
         specifier: ^4.0.5
         version: 4.0.5
       get-it:
-        specifier: ^8.6.9
+        specifier: ^8.7.0
         version: 8.7.0(debug@4.4.3)
       get-latest-version:
         specifier: ^5.1.0
