@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.0-alpha.3](https://github.com/sanity-io/cli/compare/cli-core-v0.0.2-alpha.3...cli-core-v0.1.0-alpha.3) (2025-12-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* add ux core helpers ([#219](https://github.com/sanity-io/cli/issues/219))
+
+### Features
+
+* add ux core helpers ([#219](https://github.com/sanity-io/cli/issues/219)) ([d2a7d78](https://github.com/sanity-io/cli/commit/d2a7d7858a1c83792a02abb2cd95fe44cbe3b6ed))
+* **graphql:** migrate graphql undeploy command ([#194](https://github.com/sanity-io/cli/issues/194)) ([3915139](https://github.com/sanity-io/cli/commit/39151391c3b557a53ed26e03016d9b7f7683285a))
+* **init:** migration of init command setup, plan/coupon logic, and authentication logic ([#199](https://github.com/sanity-io/cli/issues/199)) ([012168e](https://github.com/sanity-io/cli/commit/012168eb03ab7e309918206511dc60c21dea573f))
+* move tree util to core package ([#208](https://github.com/sanity-io/cli/issues/208)) ([83417a2](https://github.com/sanity-io/cli/commit/83417a2a004338e62a5f898f733c4d1732b36e9b))
+
 ## [0.0.2-alpha.3](https://github.com/sanity-io/cli/compare/cli-core-v0.0.2-alpha.2...cli-core-v0.0.2-alpha.3) (2025-12-19)
 
 
