@@ -125,9 +125,9 @@
   "devDependencies": {
     "@eslint/compat": "catalog:",
     "@oclif/test": "^4.1.15",
-    "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-test": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:*",
     "@swc/cli": "^0.7.8",
     "@swc/core": "^1.14.0",
     "@types/debug": "^4.1.12",

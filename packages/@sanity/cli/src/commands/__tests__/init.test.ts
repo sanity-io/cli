@@ -68,7 +68,7 @@ describe('#init', () => {
     test('--help works', async () => {
       const {stdout} = await runCommand('init --help')
 
-      expect(stdout).toMatchInlineSnapshot(`
+      expect(stdout).toMatchInlineSnapshot(String.raw`
         "Initialize a new Sanity Studio, project and/or app
 
         USAGE
@@ -130,19 +130,19 @@ describe('#init', () => {
 
           Initialize a project with the given project ID and dataset to the given path
 
-            $ sanity init -y --project abc123 --dataset production --output-path \\
+            $ sanity init -y --project abc123 --dataset production --output-path \
               ~/myproj
 
           Initialize a project with the given project ID and dataset using the moviedb
           template to the given path
 
-            $ sanity init -y --project abc123 --dataset staging --template moviedb \\
+            $ sanity init -y --project abc123 --dataset staging --template moviedb \
               --output-path .
 
           Create a brand new project with name "Movies Unlimited"
 
-            $ sanity init -y --create-project "Movies Unlimited" --dataset moviedb \\
-              --visibility private --template moviedb --output-path \\
+            $ sanity init -y --create-project "Movies Unlimited" --dataset moviedb \
+              --visibility private --template moviedb --output-path \
               /Users/espenh/movies-unlimited
 
         "

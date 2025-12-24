@@ -2,7 +2,7 @@ import {dirname, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
 import {includeIgnoreFile} from '@eslint/compat'
-import eslintConfig from '@repo/eslint-config'
+import eslintConfig from '@sanity/eslint-config-cli'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 export default [

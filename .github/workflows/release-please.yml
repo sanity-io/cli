@@ -61,7 +61,7 @@ jobs:
       - name: Publish packages
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
         # TODO: Remove the tag once we have a proper release
-        run: pnpm publish -r --filter="@sanity/cli" --filter="@sanity/cli*" --tag alpha
+        run: pnpm publish -r --filter="@sanity/cli" --filter="@sanity/cli*" --filter="@sanity/eslint-config-cli" --tag alpha
 
       - name: Summary
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
@@ -71,3 +71,4 @@ jobs:
           echo "- @sanity/cli-core" >> $GITHUB_STEP_SUMMARY
           echo "- @sanity/cli-test" >> $GITHUB_STEP_SUMMARY
           echo "- @sanity/cli" >> $GITHUB_STEP_SUMMARY
+          echo "- @sanity/eslint-config-cli" >> $GITHUB_STEP_SUMMARY

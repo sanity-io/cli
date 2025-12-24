@@ -68,8 +68,8 @@
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
-    "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "^7.9.9",
     "@types/babel__core": "^7.20.5",
     "@types/babel__generator": "^7.27.0",
