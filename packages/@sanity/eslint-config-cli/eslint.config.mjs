@@ -251,7 +251,7 @@ export default defineConfig(
       'import/resolver-next': [
         createTypeScriptImportResolver({
           alwaysTryTypes: true,
-          extensions: ['.js', '.jsx', '.ts', 'tsx', '.mjs', '.mts'],
+          extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts'],
 
           // use an array of glob patterns
           project: ['packages/*/tsconfig.json', 'examples/*/tsconfig.json'],
