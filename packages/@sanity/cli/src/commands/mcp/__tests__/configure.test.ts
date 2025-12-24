@@ -1,8 +1,8 @@
 import {existsSync, type PathLike} from 'node:fs'
 import fs from 'node:fs/promises'
 
-import {checkbox} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
+import {checkbox} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {execa} from 'execa'
 import nock from 'nock'
@@ -11,9 +11,13 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {MCP_API_VERSION} from '../../../services/mcp.js'
 import {ConfigureMcpCommand} from '../configure.js'
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  checkbox: vi.fn(),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    checkbox: vi.fn(),
+  }
+})
 
 vi.mock('node:fs', () => ({
   existsSync: vi.fn(),

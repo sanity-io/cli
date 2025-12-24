@@ -21,11 +21,7 @@ import {
 import DOMPurify from 'isomorphic-dompurify'
 import startCase from 'lodash-es/startCase.js'
 import {renderToString} from 'react-dom/server'
-import {
-  ConcreteRuleClass,
-  createSchema,
-  type Workspace,
-} from 'sanity'
+import {ConcreteRuleClass, createSchema, type Workspace} from 'sanity'
 import {ServerStyleSheet} from 'styled-components'
 
 import {config} from './purifyConfig.js'
@@ -421,7 +417,7 @@ function transformValidation(validation: SchemaValidationValue): Validation {
           return transformedRule
         })
         .filter((rule) => rule !== undefined)
-    
+
       return {
         level: _level,
         rules: serializedRules,

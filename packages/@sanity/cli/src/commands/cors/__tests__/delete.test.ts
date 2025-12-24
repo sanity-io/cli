@@ -54,9 +54,13 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
 }))
 
 // Mock inquirer prompts
-vi.mock('@sanity/cli-core/ux', () => ({
-  select: vi.fn(),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    select: vi.fn(),
+  }
+})
 
 describe('#cors:delete', () => {
   afterEach(() => {

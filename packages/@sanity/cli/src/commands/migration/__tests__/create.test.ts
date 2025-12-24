@@ -29,11 +29,15 @@ vi.mock('node:fs/promises', () => ({
   writeFile: vi.fn(),
 }))
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  confirm: mocks.confirm,
-  input: mocks.input,
-  select: mocks.select,
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    confirm: mocks.confirm,
+    input: mocks.input,
+    select: mocks.select,
+  }
+})
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: mocks.findProjectRoot,

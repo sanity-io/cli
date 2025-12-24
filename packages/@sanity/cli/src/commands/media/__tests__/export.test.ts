@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises'
 
-import {input, select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {type CliConfig, getCliConfig, getGlobalCliClient} from '@sanity/cli-core'
+import {input, select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {exportDataset} from '@sanity/export'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -14,11 +14,14 @@ vi.mock('@sanity/export', () => ({
   exportDataset: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  input: vi.fn(),
-  select: vi.fn(),
-  Separator: vi.fn(),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    input: vi.fn(),
+    select: vi.fn(),
+  }
+})
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn().mockResolvedValue({

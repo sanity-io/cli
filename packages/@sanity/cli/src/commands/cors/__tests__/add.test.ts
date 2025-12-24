@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 
-import {confirm} from '@sanity/cli-core/ux'
 import {getCliConfig} from '@sanity/cli-core'
+import {confirm} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -10,9 +10,13 @@ import {CORS_API_VERSION} from '../../../actions/cors/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Add} from '../add.js'
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  confirm: vi.fn(),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    confirm: vi.fn(),
+  }
+})
 
 vi.mock('node:fs', () => ({
   default: {

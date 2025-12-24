@@ -1,6 +1,6 @@
-import {input, select} from '@sanity/cli-core/ux'
 import {Args, Flags} from '@oclif/core'
 import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {input, select} from '@sanity/cli-core/ux'
 
 import {validateRole} from '../../actions/tokens/validateRole.js'
 import {createToken, getTokenRoles} from '../../services/tokens.js'

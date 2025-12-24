@@ -1,6 +1,6 @@
-import {select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
+import {select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest' // This should match the version in services/hooks.ts
@@ -29,9 +29,13 @@ vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
   }
 })
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  select: vi.fn(),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    select: vi.fn(),
+  }
+})
 
 const mockedGetCliConfig = vi.mocked(getCliConfig)
 const mockedSelect = vi.mocked(select)

@@ -1,6 +1,6 @@
-import {input, select} from '@sanity/cli-core/ux'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {input, select} from '@sanity/cli-core/ux'
 
 import {USERS_API_VERSION} from '../../actions/users/apiVersion.js'
 import {type Role} from '../../actions/users/types.js'

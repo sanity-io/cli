@@ -1,6 +1,6 @@
-import {select} from '@sanity/cli-core/ux'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {select} from '@sanity/cli-core/ux'
 import {type DatasetAclMode} from '@sanity/client'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'

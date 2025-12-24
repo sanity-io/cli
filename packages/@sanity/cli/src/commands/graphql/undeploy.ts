@@ -1,6 +1,6 @@
-import {confirm} from '@sanity/cli-core/ux'
 import {Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {confirm} from '@sanity/cli-core/ux'
 
 import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
 import {GRAPHQL_API_VERSION} from '../../services/graphql.js'

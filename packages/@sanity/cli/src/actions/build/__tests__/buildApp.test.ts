@@ -1,20 +1,19 @@
 import {rm} from 'node:fs/promises'
 
-import {logSymbols, type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
+import {logSymbols} from '@sanity/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, it, type MockedFunction, vi} from 'vitest'
 
 import {buildApp} from '../buildApp.js'
 import {type BuildOptions} from '../types.js'
 
 vi.mock('node:fs/promises')
-vi.mock('@sanity/cli-core/ux', () => ({
-  confirm: vi.fn(),
-}))
 
-vi.mock('@sanity/cli-core', async () => {
-  const original = await import('@sanity/cli-core')
+vi.mock('@sanity/cli-core/ux', async () => {
+  const original = await import('@sanity/cli-core/ux')
   return {
     ...original,
+    confirm: mockedConfirm,
     spinner: vi.fn(() => ({
       fail: vi.fn().mockReturnThis(),
       start: vi.fn().mockReturnThis(),
@@ -38,10 +37,6 @@ const mockedBuildStaticFiles = vi.hoisted(() => vi.fn())
 const mockedBuildVendorDependencies = vi.hoisted(() => vi.fn())
 const mockedGetAppEnvVars = vi.hoisted(() => vi.fn())
 const mockedGetAutoUpdatesImportMap = vi.hoisted(() => vi.fn())
-
-vi.mock('@sanity/cli-core/ux', () => ({
-  confirm: mockedConfirm,
-}))
 
 vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: mockedCompareDependencyVersions,

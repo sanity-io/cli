@@ -1,5 +1,5 @@
-import {checkbox} from '@sanity/cli-core/ux'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {checkbox} from '@sanity/cli-core/ux'
 
 import {detectAvailableEditors} from '../../actions/mcp/detectAvailableEditors.js'
 import {getEditorsWithExistingConfig} from '../../actions/mcp/getEditorsWithExistingConfig.js'

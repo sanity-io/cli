@@ -1,6 +1,6 @@
-import {input, select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -10,10 +10,14 @@ import {NEW_DATASET_VALUE} from '../../../prompts/promptForDataset.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {EnableBackupCommand} from '../enable.js'
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  input: vi.fn(),
-  select: vi.fn(),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    input: vi.fn(),
+    select: vi.fn(),
+  }
+})
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn().mockResolvedValue({

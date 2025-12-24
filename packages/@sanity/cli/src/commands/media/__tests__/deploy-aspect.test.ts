@@ -1,6 +1,6 @@
-import {select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
+import {select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {
   MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME,

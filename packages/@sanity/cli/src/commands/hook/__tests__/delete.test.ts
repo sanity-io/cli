@@ -29,7 +29,9 @@ vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
 })
 
 vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
+    ...actual,
     select: vi.fn(),
   }
 })

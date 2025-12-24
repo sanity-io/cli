@@ -1,6 +1,6 @@
-import {select} from '@sanity/cli-core/ux'
 import {runCommand} from '@oclif/test'
 import {isInteractive} from '@sanity/cli-core'
+import {select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -8,7 +8,9 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {DocsSearchCommand} from '../search.js'
 
 vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
+    ...actual,
     select: vi.fn(),
   }
 })

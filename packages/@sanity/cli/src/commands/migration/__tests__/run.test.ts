@@ -22,9 +22,14 @@ vi.mock('node:fs/promises', () => ({
   readdir: mocks.readdir,
 }))
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  confirm: mocks.confirm,
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    confirm: mocks.confirm,
+    spinner: mocks.spinner,
+  }
+})
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn().mockResolvedValue({
@@ -56,14 +61,6 @@ vi.mock('../../../utils/migration/resolveMigrationScript.js', async (importOrigi
   return {
     ...actual,
     resolveMigrationScript: mocks.resolveMigrationScript,
-  }
-})
-
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  return {
-    ...actual,
-    spinner: mocks.spinner,
   }
 })
 

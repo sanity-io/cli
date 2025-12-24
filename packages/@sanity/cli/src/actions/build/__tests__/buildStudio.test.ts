@@ -1,25 +1,14 @@
 import {rm} from 'node:fs/promises'
 import path from 'node:path'
 
-import {logSymbols, type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
+import {logSymbols} from '@sanity/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, it, type MockedFunction, vi} from 'vitest'
 
 import {buildStudio} from '../buildStudio.js'
 import {type BuildOptions} from '../types.js'
 
 vi.mock('node:fs/promises')
-vi.mock('@sanity/cli-core', async () => {
-  const original = await import('@sanity/cli-core')
-  return {
-    ...original,
-    spinner: vi.fn(() => ({
-      fail: vi.fn().mockReturnThis(),
-      start: vi.fn().mockReturnThis(),
-      succeed: vi.fn().mockReturnThis(),
-      text: '',
-    })),
-  }
-})
 
 const mockedRm = rm as MockedFunction<typeof rm>
 const mockedConfirm = vi.hoisted(() => vi.fn())
@@ -38,10 +27,20 @@ const mockedGetAutoUpdatesImportMap = vi.hoisted(() => vi.fn())
 const mockedGetStudioEnvVars = vi.hoisted(() => vi.fn())
 const mockedShouldAutoUpdate = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  confirm: mockedConfirm,
-  select: mockedSelect,
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const original = await import('@sanity/cli-core/ux')
+  return {
+    ...original,
+    confirm: mockedConfirm,
+    select: mockedSelect,
+    spinner: vi.fn(() => ({
+      fail: vi.fn().mockReturnThis(),
+      start: vi.fn().mockReturnThis(),
+      succeed: vi.fn().mockReturnThis(),
+      text: '',
+    })),
+  }
+})
 
 vi.mock('../../../util/appId.js', () => ({
   getAppId: mockedGetAppId,

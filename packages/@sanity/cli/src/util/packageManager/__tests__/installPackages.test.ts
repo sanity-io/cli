@@ -1,4 +1,5 @@
-import {type Output, spinner} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import {execa, type Result} from 'execa'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -14,13 +15,17 @@ vi.mock('../packageManagerChoice.js', () => ({
   getPartialEnvWithNpmPath: vi.fn(),
 }))
 
-vi.mock('@sanity/cli-core', () => ({
-  spinner: vi.fn(() => ({
-    fail: vi.fn().mockReturnThis(),
-    start: vi.fn().mockReturnThis(),
-    succeed: vi.fn().mockReturnThis(),
-  })),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    spinner: vi.fn(() => ({
+      fail: vi.fn().mockReturnThis(),
+      start: vi.fn().mockReturnThis(),
+      succeed: vi.fn().mockReturnThis(),
+    })),
+  }
+})
 
 const mockExeca = vi.mocked(execa)
 const mockSpinner = vi.mocked(spinner)

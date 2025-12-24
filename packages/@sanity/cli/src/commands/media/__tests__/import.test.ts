@@ -20,10 +20,14 @@ vi.mock('../../../services/mediaLibraries.js', () => ({
   getMediaLibraries: mocks.getMediaLibraries,
 }))
 
-vi.mock('@sanity/cli-core/ux', () => ({
-  select: mocks.select,
-  Separator: vi.fn(),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    select: mocks.select,
+    spinner: mocks.spinner,
+  }
+})
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn().mockResolvedValue({
@@ -36,14 +40,6 @@ vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
 vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
   getCliConfig: mocks.getCliConfig,
 }))
-
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  return {
-    ...actual,
-    spinner: mocks.spinner,
-  }
-})
 
 vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
   getProjectCliClient: mocks.getProjectCliClient,

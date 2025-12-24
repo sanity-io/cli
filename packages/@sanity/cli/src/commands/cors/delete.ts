@@ -1,6 +1,6 @@
-import {select} from '@sanity/cli-core/ux'
 import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {select} from '@sanity/cli-core/ux'
 
 import {CORS_API_VERSION} from '../../actions/cors/constants.js'
 import {type CorsOrigin} from '../../actions/cors/types.js'
