@@ -150,34 +150,28 @@ describe('#init: oclif command setup', () => {
     )
   })
 
-  test('throws error when `env` flag is passed with invalid value', async () => {
-    const {error} = await testCommand(InitCommand, ['--env=invalid.txt'])
+  test.each([
+    {flag: 'env', message: 'Env filename (`--env`) must start with `.env`', value: 'invalid.txt'},
+    {
+      flag: 'visibility',
+      message: 'Expected --visibility=opaque to be one of: public, private',
+      value: 'opaque',
+    },
+    {
+      flag: 'package-manager',
+      message: 'Expected --package-manager=pnm to be one of: npm, yarn, pnpm',
+      value: 'pnm',
+    },
+  ])('throws error when `$flag` value is invalid', async ({flag, message, value}) => {
+    const {error} = await testCommand(InitCommand, [`--${flag}=${value}`])
 
-    expect(error?.message).toContain('Env filename (`--env`) must start with `.env`')
-  })
-
-  test('throws error when `visibility` flag is passed with invalid option', async () => {
-    const {error} = await testCommand(InitCommand, ['--visibility=opaque'])
-
-    expect(error?.message).toContain('Expected --visibility=opaque to be one of: public, private')
-  })
-
-  test('throws error when `package-manager` flag is passed with invalid option', async () => {
-    const {error} = await testCommand(InitCommand, ['--package-manager=pnm'])
-
-    expect(error?.message).toContain('Expected --package-manager=pnm to be one of: npm, yarn, pnpm')
+    expect(error?.message).toContain(message)
   })
 
   test('throws error when type argument is passed', async () => {
     const {error} = await testCommand(InitCommand, ['bad-argument'])
 
     expect(error?.message).toContain('Unknown init type "bad-argument"')
-  })
-
-  test('throws deprecation error when type argument is passed with `plugin`', async () => {
-    const {error} = await testCommand(InitCommand, ['plugin'])
-
-    expect(error?.message).toContain('Initializing plugins through the CLI is no longer supported')
   })
 
   test('throws deprecation error when type argument is passed with `plugin`', async () => {

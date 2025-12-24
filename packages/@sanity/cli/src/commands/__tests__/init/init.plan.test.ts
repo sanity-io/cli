@@ -1,11 +1,10 @@
-import {testCommand} from '@sanity/cli-test'
+import {mockApi, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {InitCommand} from '../../init'
 
 const mocks = vi.hoisted(() => ({
   confirm: vi.fn(),
-  request: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -25,12 +24,6 @@ vi.mock('@vercel/fs-detectors', () => ({
   LocalFileSystemDetector: vi.fn(),
 }))
 
-vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
-  getGlobalCliClient: vi.fn().mockResolvedValue({
-    request: mocks.request,
-  }),
-}))
-
 vi.mock('../../../../../cli-core/src/util/isInteractive.js', () => ({
   isInteractive: vi.fn().mockReturnValue(true),
 }))
@@ -48,55 +41,56 @@ vi.mock('../../../services/user.js', () => ({
   }),
 }))
 
-const httpError = Object.assign(new Error('Not Found'), {
-  message: 'Coupon not found',
-  response: {
-    body: {},
-    headers: {},
-    method: '',
-    statusCode: 404,
-    url: '',
-  },
-  statusCode: 404,
-})
-
 describe('#init: retrieving plan', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
 
   test('validates coupon when --coupon flag is provided', async () => {
-    mocks.request.mockResolvedValueOnce([{id: 'test-plan-id'}])
+    mockApi({
+      apiVersion: 'v2025-06-01',
+      method: 'get',
+      uri: '/plans/coupon/TESTCOUPON123',
+    }).reply(200, [{id: 'test-plan-id'}])
 
     const {error, stdout} = await testCommand(InitCommand, ['--coupon=TESTCOUPON123'])
 
     expect(error).toBeUndefined()
-    expect(mocks.request).toHaveBeenCalledWith({uri: 'plans/coupon/TESTCOUPON123'})
     expect(stdout).toContain('Coupon "TESTCOUPON123" validated!')
   })
 
   test('throws error if coupon not found with provided code', async () => {
-    mocks.request.mockResolvedValueOnce([])
+    mockApi({
+      apiVersion: 'v2025-06-01',
+      method: 'get',
+      uri: '/plans/coupon/TESTCOUPON123',
+    }).reply(200, [])
 
     const {error} = await testCommand(InitCommand, ['--coupon=TESTCOUPON123', '--bare'])
 
-    expect(mocks.request).toHaveBeenCalledWith({uri: 'plans/coupon/TESTCOUPON123'})
     expect(error?.message).toContain('Unable to validate coupon, please try again later:')
     expect(error?.message).toContain('No plans found for coupon code "TESTCOUPON123"')
   })
 
   test('throws error if coupon does not have attached plan id', async () => {
-    mocks.request.mockResolvedValueOnce([{id: undefined}])
+    mockApi({
+      apiVersion: 'v2025-06-01',
+      method: 'get',
+      uri: '/plans/coupon/TESTCOUPON123',
+    }).reply(200, [{id: undefined}])
 
     const {error} = await testCommand(InitCommand, ['--coupon=TESTCOUPON123', '--bare'])
 
-    expect(mocks.request).toHaveBeenCalledWith({uri: 'plans/coupon/TESTCOUPON123'})
     expect(error?.message).toContain('Unable to validate coupon, please try again later:')
     expect(error?.message).toContain('Unable to find a plan from coupon code')
   })
 
   test('uses default plan when coupon does not exist and cli in unattended mode', async () => {
-    mocks.request.mockRejectedValueOnce(httpError)
+    mockApi({
+      apiVersion: 'v2025-06-01',
+      method: 'get',
+      uri: '/plans/coupon/INVALID123',
+    }).reply(404, {message: 'Coupon not found'})
 
     const {error, stderr, stdout} = await testCommand(InitCommand, [
       '--coupon=INVALID123',
@@ -111,7 +105,12 @@ describe('#init: retrieving plan', () => {
   })
 
   test('uses default plan when user says confirms yes', async () => {
-    mocks.request.mockRejectedValueOnce(httpError)
+    mockApi({
+      apiVersion: 'v2025-06-01',
+      method: 'get',
+      uri: '/plans/coupon/INVALID123',
+    }).reply(404, {message: 'Coupon not found'})
+
     mocks.confirm.mockResolvedValue(true)
 
     const {error, stdout} = await testCommand(InitCommand, ['--coupon=INVALID123'])
@@ -125,7 +124,11 @@ describe('#init: retrieving plan', () => {
   })
 
   test('throws error when user confirms no to use default plans', async () => {
-    mocks.request.mockRejectedValueOnce(httpError)
+    mockApi({
+      apiVersion: 'v2025-06-01',
+      method: 'get',
+      uri: '/plans/coupon/INVALID123',
+    }).reply(404, {message: 'Coupon not found'})
     mocks.confirm.mockResolvedValue(false)
 
     const {error} = await testCommand(InitCommand, ['--coupon=INVALID123'])
@@ -134,16 +137,23 @@ describe('#init: retrieving plan', () => {
   })
 
   test('returns when client request for plan is successful', async () => {
-    mocks.request.mockResolvedValueOnce([{id: 'test-plan-id'}])
+    mockApi({
+      apiVersion: 'v2025-06-01',
+      method: 'get',
+      uri: '/plans/growth',
+    }).reply(200, [{id: 'test-plan-id'}])
 
     const {error} = await testCommand(InitCommand, ['--project-plan=growth'])
 
     expect(error).toBeUndefined()
-    expect(mocks.request).toHaveBeenCalledWith({uri: 'plans/growth'})
   })
 
   test('throw error when no plan id is returned by request', async () => {
-    mocks.request.mockResolvedValueOnce([{id: undefined}])
+    mockApi({
+      apiVersion: 'v2025-06-01',
+      method: 'get',
+      uri: '/plans/growth',
+    }).reply(200, [{id: undefined}])
 
     const {error} = await testCommand(InitCommand, ['--project-plan=growth'])
     expect(error?.message).toContain('Unable to validate plan, please try again later:')
@@ -151,7 +161,11 @@ describe('#init: retrieving plan', () => {
   })
 
   test('uses default plan when plan id does not exist and cli in unattended mode', async () => {
-    mocks.request.mockRejectedValueOnce(httpError)
+    mockApi({
+      apiVersion: 'v2025-06-01',
+      method: 'get',
+      uri: '/plans/growth',
+    }).reply(404, {message: 'Plan not found'})
 
     const {error, stderr, stdout} = await testCommand(InitCommand, [
       '--project-plan=growth',
@@ -166,7 +180,11 @@ describe('#init: retrieving plan', () => {
   })
 
   test('uses default plan when user says confirms yes', async () => {
-    mocks.request.mockRejectedValueOnce(httpError)
+    mockApi({
+      apiVersion: 'v2025-06-01',
+      method: 'get',
+      uri: '/plans/growth',
+    }).reply(404, {message: 'Plan not found'})
     mocks.confirm.mockResolvedValue(true)
 
     const {error, stdout} = await testCommand(InitCommand, ['--project-plan=growth'])
@@ -180,7 +198,11 @@ describe('#init: retrieving plan', () => {
   })
 
   test('throws error when user says confirms no', async () => {
-    mocks.request.mockRejectedValueOnce(httpError)
+    mockApi({
+      apiVersion: 'v2025-06-01',
+      method: 'get',
+      uri: '/plans/growth',
+    }).reply(404, {message: 'Plan not found'})
     mocks.confirm.mockResolvedValue(false)
 
     const {error} = await testCommand(InitCommand, ['--project-plan=growth'])

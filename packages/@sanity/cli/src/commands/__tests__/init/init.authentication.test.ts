@@ -4,6 +4,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {InitCommand} from '../../init'
 
 const mocks = vi.hoisted(() => ({
+  getCliToken: vi.fn(),
   getCliUser: vi.fn().mockResolvedValue({
     email: 'test@example.com',
     id: 'user-123',
@@ -26,7 +27,7 @@ vi.mock('../../../../../cli-core/src/util/isInteractive.js', () => ({
 }))
 
 vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
+  getCliToken: mocks.getCliToken,
 }))
 
 vi.mock('../../../services/user.js', () => ({
@@ -43,6 +44,8 @@ describe('#init: authentication', () => {
   })
 
   test('user is authenticated with valid token', async () => {
+    mocks.getCliToken.mockResolvedValue('test-token')
+
     const {error, stdout} = await testCommand(InitCommand, [])
 
     expect(error).toBeUndefined()

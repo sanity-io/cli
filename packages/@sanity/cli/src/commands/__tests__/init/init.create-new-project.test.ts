@@ -1,3 +1,4 @@
+import * as cliUX from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -28,7 +29,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
     ...actual,
     input: mocks.input,
     select: mocks.select,
-    spinner: mocks.spinner,
+    // spinner: mocks.spinner,
   }
 })
 
@@ -105,13 +106,7 @@ describe('#init: create new project', () => {
     // Mock createDataset
     mocks.createDataset.mockResolvedValueOnce(undefined)
 
-    // Mock spinner instance
-    const mockSpinnerInstance = {
-      fail: vi.fn().mockReturnThis(),
-      start: vi.fn().mockReturnThis(),
-      succeed: vi.fn().mockReturnThis(),
-    }
-    mocks.spinner.mockReturnValue(mockSpinnerInstance)
+    const spinnerSpy = vi.spyOn(cliUX, 'spinner')
 
     await testCommand(InitCommand, [
       '--create-project=Test Project',
@@ -151,8 +146,8 @@ describe('#init: create new project', () => {
     )
 
     // Verify spinner was called with correct text
-    expect(mocks.spinner).toHaveBeenCalledWith('Creating organization')
-    expect(mocks.spinner).toHaveBeenCalledWith('Creating dataset')
+    expect(spinnerSpy).toHaveBeenCalledWith('Creating organization')
+    expect(spinnerSpy).toHaveBeenCalledWith('Creating dataset')
   })
 
   test('prompts user to select then create a new organization', async () => {
@@ -212,13 +207,7 @@ describe('#init: create new project', () => {
     // Mock createDataset
     mocks.createDataset.mockResolvedValueOnce(undefined)
 
-    // Mock spinner instance
-    const mockSpinnerInstance = {
-      fail: vi.fn().mockReturnThis(),
-      start: vi.fn().mockReturnThis(),
-      succeed: vi.fn().mockReturnThis(),
-    }
-    mocks.spinner.mockReturnValue(mockSpinnerInstance)
+    const spinnerSpy = vi.spyOn(cliUX, 'spinner')
 
     await testCommand(InitCommand, [
       '--create-project=Test Project',
@@ -247,7 +236,7 @@ describe('#init: create new project', () => {
     )
 
     // Verify spinner was called with correct text
-    expect(mocks.spinner).toHaveBeenCalledWith('Creating organization')
-    expect(mocks.spinner).toHaveBeenCalledWith('Creating dataset')
+    expect(spinnerSpy).toHaveBeenCalledWith('Creating organization')
+    expect(spinnerSpy).toHaveBeenCalledWith('Creating dataset')
   })
 })
