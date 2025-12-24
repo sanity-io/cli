@@ -79,6 +79,15 @@
       "prerelease-type": "alpha",
       "release-type": "node",
       "versioning": "prerelease"
+    },
+    "packages/@sanity/eslint-config-cli": {
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "component": "eslint-config-cli",
+      "prerelease": true,
+      "prerelease-type": "alpha",
+      "release-type": "node",
+      "versioning": "prerelease"
     }
   },
   "plugins": [

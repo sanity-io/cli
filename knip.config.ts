@@ -79,7 +79,11 @@ const baseConfig = {
 } satisfies KnipConfig
 
 export const addBundlerEntries = async (config: KnipConfig): Promise<KnipConfig> => {
-  const dirs = ['packages/@repo/eslint-config', 'packages/@repo/tsconfig', 'packages/@sanity/cli']
+  const dirs = [
+    'packages/@sanity/eslint-config-cli',
+    'packages/@repo/tsconfig',
+    'packages/@sanity/cli',
+  ]
 
   for (const wsDir of dirs) {
     for (const configKey of Object.keys(baseConfig.workspaces)) {
