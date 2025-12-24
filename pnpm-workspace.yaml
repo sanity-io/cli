@@ -3,7 +3,6 @@ packages:
   - 'packages/@sanity/cli'
   - 'packages/@sanity/cli-core'
   - 'packages/@sanity/cli-test'
-  - 'packages/@sanity/codegen'
   - 'packages/@sanity/eslint-config-cli'
   - 'packages/create-sanity'
   - 'examples/*'
