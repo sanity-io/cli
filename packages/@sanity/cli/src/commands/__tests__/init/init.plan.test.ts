@@ -104,7 +104,7 @@ describe('#init: retrieving plan', () => {
     expect(stdout).toContain('Using default plan.')
   })
 
-  test('uses default plan when user says confirms yes', async () => {
+  test('uses default plan when coupon invalid and user confirms default plan', async () => {
     mockApi({
       apiVersion: 'v2025-06-01',
       method: 'get',
@@ -123,7 +123,7 @@ describe('#init: retrieving plan', () => {
     expect(stdout).toContain('Using default plan.')
   })
 
-  test('throws error when user confirms no to use default plans', async () => {
+  test('throws error when coupon invalid and user declines the default plan', async () => {
     mockApi({
       apiVersion: 'v2025-06-01',
       method: 'get',
@@ -179,7 +179,7 @@ describe('#init: retrieving plan', () => {
     expect(stdout).toContain('Using default plan.')
   })
 
-  test('uses default plan when user says confirms yes', async () => {
+  test('uses default plan when plan ID not found and user confirms default plan', async () => {
     mockApi({
       apiVersion: 'v2025-06-01',
       method: 'get',
@@ -197,7 +197,7 @@ describe('#init: retrieving plan', () => {
     expect(stdout).toContain('Using default plan.')
   })
 
-  test('throws error when user says confirms no', async () => {
+  test('throws error when plan ID not found and user declines default plan', async () => {
     mockApi({
       apiVersion: 'v2025-06-01',
       method: 'get',

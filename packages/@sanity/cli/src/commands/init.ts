@@ -336,7 +336,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       throw new Error(`\`--dataset\` must be specified in unattended mode`)
     }
 
-    // output-path is not used in unattended mode within nextjs
+    // output-path is required in unattended mode when not using nextjs
     if (!isNextJs && !this.flags['output-path']) {
       throw new Error(`\`--output-path\` must be specified in unattended mode`)
     }
@@ -484,7 +484,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // If the user has no organizations, prompt them to create one with the same name as
     // their user, but allow them to customize it if they want
     if (organizations.length === 0) {
-      return this.promptUserForNewOrganization(user).then((org) => org.id)
+      const newOrganization = await this.promptUserForNewOrganization(user)
+      return newOrganization.id
     }
 
     // If the user has organizations, let them choose from them, but also allow them to
@@ -512,7 +513,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     })
 
     if (chosenOrg === '-new-') {
-      return this.promptUserForNewOrganization(user).then((org) => org.id)
+      const newOrganization = await this.promptUserForNewOrganization(user)
+      return newOrganization.id
     }
 
     return chosenOrg || undefined

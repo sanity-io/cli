@@ -52,7 +52,7 @@ describe('#init: authentication', () => {
     expect(stdout).toContain('You are logged in as test@example.com using SAML')
   })
 
-  test('throws error user is authenticated with invalid token in unattended mode', async () => {
+  test('throws error if user is authenticated with invalid token in unattended mode', async () => {
     mocks.getCliUser.mockRejectedValueOnce('Invalid token')
 
     const {error} = await testCommand(InitCommand, ['--yes', '--dataset=test', '--project==test'])
