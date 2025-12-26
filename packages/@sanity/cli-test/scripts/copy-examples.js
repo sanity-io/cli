@@ -3,6 +3,7 @@
  * Copies specified examples from the repo root to the cli-test package.
  * This script runs during the build process to bundle examples with the package.
  */
+// eslint-disable-next-line n/no-unsupported-features/node-builtins
 import {cp, mkdir} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
@@ -14,7 +15,12 @@ const sourceExamplesDir = join(repoRoot, 'examples')
 const targetExamplesDir = join(packageRoot, 'examples')
 
 // Copy all 4 examples
-const EXAMPLES_TO_COPY = ['basic-app', 'basic-studio', 'multi-workspace-studio', 'worst-case-studio']
+const EXAMPLES_TO_COPY = [
+  'basic-app',
+  'basic-studio',
+  'multi-workspace-studio',
+  'worst-case-studio',
+]
 
 async function copyExamples() {
   console.log('Copying examples to cli-test package...')
@@ -29,18 +35,18 @@ async function copyExamples() {
 
     // Copy the example, excluding node_modules, dist, and .turbo
     await cp(sourceDir, targetDir, {
-      recursive: true,
       filter: (src) => {
         const name = src.split('/').pop()
         return name !== 'node_modules' && name !== 'dist' && name !== '.turbo'
       },
+      recursive: true,
     })
   }
 
   console.log('Examples copied successfully!')
 }
 
-copyExamples().catch((error) => {
+await copyExamples().catch((error) => {
   console.error('Failed to copy examples:', error)
   process.exit(1)
 })
