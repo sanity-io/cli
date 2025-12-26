@@ -2,9 +2,8 @@ import {readdir, readFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
 import {runCommand} from '@oclif/test'
-import {testCommand} from '@sanity/cli-test'
+import {testCommand, testExample} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
-import {testExample} from '~test/helpers/testExample.js'
 
 import {BuildCommand} from '../build.js'
 

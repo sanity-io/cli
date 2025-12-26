@@ -4,10 +4,9 @@ import {join, resolve} from 'node:path'
 
 import {runCommand} from '@oclif/test'
 import {setConfig} from '@sanity/cli-core'
-import {testCommand} from '@sanity/cli-test'
+import {testCommand, testExample} from '@sanity/cli-test'
 import {execa} from 'execa'
 import {beforeEach, describe, expect, test} from 'vitest'
-import {testExample} from '~test/helpers/testExample.js'
 
 import {ExecCommand} from '../exec.js'
 

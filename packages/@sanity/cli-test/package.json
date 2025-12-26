@@ -28,17 +28,27 @@
       "require": "./dist/index.js",
       "import": "./dist/index.js"
     },
+    "./vitest": {
+      "source": "./src/vitest.ts",
+      "require": "./dist/vitest.js",
+      "import": "./dist/vitest.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "./dist"
+    "./dist",
+    "./examples"
   ],
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
+    "prebuild": "pnpm run clean",
+    "build": "pnpm run build:js && pnpm run copy:examples",
+    "build:js": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "build:types": "tsc --project tsconfig.lib.json",
     "check:types": "tsc --noEmit",
+    "clean": "rm -rf dist examples",
+    "copy:examples": "node scripts/copy-examples.js",
     "lint": "eslint .",
     "publint": "publint",
     "test": "vitest run",
@@ -50,7 +60,8 @@
   "dependencies": {
     "@oclif/core": "catalog:",
     "ansis": "^4.2.0",
-    "nock": "catalog:"
+    "nock": "catalog:",
+    "ora": "^8.1.1"
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",

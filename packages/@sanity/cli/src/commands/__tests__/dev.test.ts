@@ -7,7 +7,7 @@ import {getProjectCliClient} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
-import {testExample} from '~test/helpers/testExample.js'
+import {testExample} from '@sanity/cli-test'
 
 import {checkRequiredDependencies} from '../../actions/build/checkRequiredDependencies.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'

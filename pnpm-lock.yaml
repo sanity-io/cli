@@ -677,6 +677,9 @@ importers:
       nock:
         specifier: 'catalog:'
         version: 14.0.10
+      ora:
+        specifier: ^8.1.1
+        version: 8.2.0
     devDependencies:
       '@eslint/compat':
         specifier: 'catalog:'

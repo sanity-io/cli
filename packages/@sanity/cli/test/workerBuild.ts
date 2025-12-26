@@ -55,15 +55,23 @@ export async function teardown() {
 }
 
 async function setupSWC() {
-  // Find all .worker.ts files
+  // Find all .worker.ts files in both CLI and CLI-core packages
   const workerFiles = await glob('**/*.worker.ts', {
+    cwd: process.cwd(),
     ignore: ['**/node_modules/**', '**/dist/**'],
   })
 
-  console.log(`Found ${workerFiles.length} worker files to setup with SWC`)
+  // Also find worker files in cli-core package (relative to CLI package)
+  const cliCoreWorkerFiles = await glob('../cli-core/src/**/*.worker.ts', {
+    cwd: process.cwd(),
+  })
+
+  const allWorkerFiles = [...workerFiles, ...cliCoreWorkerFiles]
+
+  console.log(`Found ${allWorkerFiles.length} worker files to setup with SWC`)
 
   // Compile each worker file
-  for (const workerFile of workerFiles) {
+  for (const workerFile of allWorkerFiles) {
     try {
       await compileWorkerFile(workerFile)
       console.log(`✓ Compiled ${workerFile} with SWC`)
@@ -77,7 +85,7 @@ async function setupSWC() {
 function setupWatchMode() {
   console.log('Setting up watch mode for worker files with SWC...')
 
-  watcher = watch('**/*.worker.ts', {
+  watcher = watch(['**/*.worker.ts', '../cli-core/src/**/*.worker.ts'], {
     ignored: ['node_modules/**', 'dist/**'],
     persistent: true,
   })
