@@ -6,6 +6,7 @@ const baseConfig = {
   // For now only care about cli package
   ignore: [
     'packages/@sanity/original-cli/**',
+    'packages/@sanity/cli-test/examples/**',
 
     // See `helpClass` in `oclif.config.js`
     'packages/@sanity/cli/src/SanityHelp.ts',

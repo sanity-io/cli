@@ -53,7 +53,7 @@ export interface SetupTestExamplesOptions {
  * })
  * ```
  */
-export async function setupTestExamples(options: SetupTestExamplesOptions = {}): Promise<void> {
+export async function setup(options: SetupTestExamplesOptions = {}): Promise<void> {
   const {examples = DEFAULT_EXAMPLES, tempDir} = options
 
   const spinner = ora({
@@ -119,24 +119,10 @@ export interface TeardownTestExamplesOptions {
  *
  * @param options - Configuration options
  */
-export async function teardownTestExamples(
-  options: TeardownTestExamplesOptions = {},
-): Promise<void> {
+export async function teardown(options: TeardownTestExamplesOptions = {}): Promise<void> {
   const {tempDir} = options
   const tempDirectory = getTempPath(tempDir)
 
   // Remove the tmp directory
   await rm(tempDirectory, {force: true, recursive: true})
 }
-
-/**
- * Named export for vitest globalSetup compatibility.
- * Alias for setupTestExamples.
- */
-export const setup = setupTestExamples
-
-/**
- * Named export for vitest globalSetup compatibility.
- * Alias for teardownTestExamples.
- */
-export const teardown = teardownTestExamples
