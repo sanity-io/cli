@@ -56,6 +56,8 @@ const baseConfig = {
         'src/actions/init/remoteTemplate.ts',
         'src/actions/init/determineAppTemplate.ts',
         'src/actions/auth/login.ts',
+        'src/services/organizations.ts',
+        'src/services/projects.ts',
       ],
       // Claude is not a dependency of the CLI, but it is used in the MCP configuration
       ignoreBinaries: ['claude'],
