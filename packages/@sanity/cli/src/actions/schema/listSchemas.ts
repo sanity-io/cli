@@ -1,5 +1,5 @@
 import {Output} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 import {type ListSchemaCommand} from '../../commands/schema/list.js'
 import {getSchemas} from '../../services/schemas.js'
