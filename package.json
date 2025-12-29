@@ -42,7 +42,7 @@
     "@sanity/client": "^7.0.0"
   },
   "dependencies": {
-    "@types/node": "^20.19.25",
+    "@types/node": "^20.19.27",
     "prettier": "^3.5.3",
     "prettier-plugin-packagejson": "^2.5.19"
   },
