@@ -24,11 +24,23 @@ afterEach(() => {
 })
 
 describe('getUserApplication', () => {
-  test('queries by application id', async () => {
+  test('queries by application id for studio app', async () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
-    const app = await getUserApplication({appId: '123'})
+    const app = await getUserApplication({appId: '123', isSdkApp: false, projectId: 'test-project'})
+
+    expect(mockClient.request).toHaveBeenCalledWith({
+      uri: '/projects/test-project/user-applications/123',
+    })
+    expect(app).toBe(result)
+  })
+
+  test('queries by application id for SDK app', async () => {
+    const result = {appHost: 'my-host', id: '123'}
+    mockClient.request.mockResolvedValueOnce(result)
+
+    const app = await getUserApplication({appId: '123', isSdkApp: true})
 
     expect(mockClient.request).toHaveBeenCalledWith({
       query: {appType: 'coreApp'},
@@ -37,28 +49,19 @@ describe('getUserApplication', () => {
     expect(app).toBe(result)
   })
 
-  test('queries by host when no id is given', async () => {
+  test('queries by host when no id is given for studio app', async () => {
     const result = {appHost: 'my-host', id: '123'}
     mockClient.request.mockResolvedValueOnce(result)
 
-    const app = await getUserApplication({appHost: 'my-host', projectId: '123'})
+    const app = await getUserApplication({
+      appHost: 'my-host',
+      isSdkApp: false,
+      projectId: 'test-project',
+    })
 
     expect(mockClient.request).toHaveBeenCalledWith({
       query: {appHost: 'my-host', appType: 'studio'},
-      uri: '/projects/123/user-applications',
-    })
-    expect(app).toBe(result)
-  })
-
-  test('queries default when neither id nor host is given', async () => {
-    const result = {appHost: 'my-host', id: '123'}
-    mockClient.request.mockResolvedValueOnce(result)
-
-    const app = await getUserApplication({projectId: 'projectId'})
-
-    expect(mockClient.request).toHaveBeenCalledWith({
-      query: {default: 'true'},
-      uri: '/projects/projectId/user-applications',
+      uri: '/projects/test-project/user-applications',
     })
     expect(app).toBe(result)
   })
@@ -68,7 +71,7 @@ describe('getUserApplication', () => {
     error.statusCode = 404
     mockClient.request.mockRejectedValueOnce(error)
 
-    const app = await getUserApplication({appId: '404'})
+    const app = await getUserApplication({appId: '404', isSdkApp: false, projectId: 'test-project'})
 
     expect(app).toBeNull()
   })
@@ -77,7 +80,9 @@ describe('getUserApplication', () => {
     const error = new Error('oops')
     mockClient.request.mockRejectedValueOnce(error)
 
-    await expect(getUserApplication({appId: '123'})).rejects.toThrow('oops')
+    await expect(
+      getUserApplication({appId: '123', isSdkApp: false, projectId: 'test-project'}),
+    ).rejects.toThrow('oops')
   })
 })
 

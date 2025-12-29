@@ -17,11 +17,11 @@
   },
   "dependencies": {
     "@sanity/cli": "workspace:*",
-    "@sanity/code-input": "^6.0.3",
-    "@sanity/vision": "^4.21.0",
-    "react": "^19.2.1",
-    "react-dom": "^19.2.1",
-    "sanity": "^4.21.0",
+    "@sanity/code-input": "^7.0.2",
+    "@sanity/vision": "catalog:",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "sanity": "catalog:",
     "styled-components": "^6.1.19",
     "vite-tsconfig-paths": "^5.1.4"
   },

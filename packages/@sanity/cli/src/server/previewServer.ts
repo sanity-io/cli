@@ -2,7 +2,7 @@ import {readFile} from 'node:fs/promises'
 import path from 'node:path'
 
 import {type UserViteConfig} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 import {type InlineConfig, preview} from 'vite'
 
 import {extendViteConfigWithUserConfig} from '../actions/build/getViteConfig.js'

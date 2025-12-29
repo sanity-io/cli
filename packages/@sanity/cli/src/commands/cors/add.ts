@@ -1,10 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-import {confirm} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
-import {logSymbols, SanityCommand, subdebug} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {chalk, confirm, logSymbols} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
 import {CORS_API_VERSION} from '../../actions/cors/constants.js'

@@ -54,9 +54,13 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
 }))
 
 // Mock inquirer prompts
-vi.mock('@inquirer/prompts', () => ({
-  select: vi.fn(),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    select: vi.fn(),
+  }
+})
 
 describe('#cors:delete', () => {
   afterEach(() => {
@@ -88,7 +92,7 @@ describe('#cors:delete', () => {
   })
 
   test('prompts user to select origin when none specified', async () => {
-    const {select} = await import('@inquirer/prompts')
+    const {select} = await import('@sanity/cli-core/ux')
     vi.mocked(select).mockResolvedValue(2)
 
     mockApi({

@@ -1,7 +1,7 @@
 import {runCommand} from '@oclif/test'
 import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {chalk} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
-import chalk from 'chalk'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {QueryDocumentCommand} from '../query.js'
@@ -40,7 +40,7 @@ describe('#documents:query', () => {
   test('--help works', async () => {
     const {stdout} = await runCommand(['documents query', '--help'])
 
-    expect(stdout).toMatchInlineSnapshot(`
+    expect(stdout).toMatchInlineSnapshot(String.raw`
       "Query for documents
 
       USAGE
@@ -68,12 +68,12 @@ describe('#documents:query', () => {
 
         Fetch title of the oldest movie in the dataset named "staging"
 
-          $ sanity documents query '*[_type == "movie"]|order(releaseDate \\
+          $ sanity documents query '*[_type == "movie"]|order(releaseDate \
             asc)[0]{title}' --dataset staging
 
         Use API version v2021-06-07 and do a query
 
-          $ sanity documents query '*[_id == "header"] { "headerText": \\
+          $ sanity documents query '*[_id == "header"] { "headerText": \
             pt::text(body) }' --api-version v2021-06-07
 
       "

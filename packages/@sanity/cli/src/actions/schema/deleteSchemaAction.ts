@@ -1,4 +1,4 @@
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 import {deleteSchema} from '../../services/schemas.js'
 import {isDefined} from '../manifest/schemaTypeHelpers.js'

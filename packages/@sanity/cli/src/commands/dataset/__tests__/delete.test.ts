@@ -1,6 +1,6 @@
-import {input} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {input} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -36,9 +36,13 @@ vi.mock('../../../../../cli-core/src/services/apiClient.js', async (importOrigin
   }
 })
 
-vi.mock('@inquirer/prompts', () => ({
-  input: vi.fn(),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    input: vi.fn(),
+  }
+})
 
 const TEST_DATASET_NAME = 'test-dataset'
 const TEST_PROJECT_NAME = 'Test Project'

@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.2-alpha.2](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.1...cli-test-v0.0.2-alpha.2) (2025-12-19)
+
+
+### Bug Fixes
+
+* **deps:** update oclif-tooling ([#210](https://github.com/sanity-io/cli/issues/210)) ([66f8c47](https://github.com/sanity-io/cli/commit/66f8c47c6abac9aefbdd5d41ef0253d1ccf413b9))
+
+## [0.0.2-alpha.1](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.0...cli-test-v0.0.2-alpha.1) (2025-12-17)
+
+
+### Features
+
+* **alias:** add dataset alias commands ([#131](https://github.com/sanity-io/cli/issues/131)) ([d5b4a6e](https://github.com/sanity-io/cli/commit/d5b4a6e8eaa12f345e66db8d21375a47931b46cd))
+
 ## [0.0.2-alpha.0](https://github.com/sanity-io/cli/compare/cli-test-v0.0.1-alpha.0...cli-test-v0.0.2-alpha.0) (2025-09-11)
 
 

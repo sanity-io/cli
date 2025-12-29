@@ -61,7 +61,7 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
 }))
 
 // Mock inquirer prompts
-vi.mock('@inquirer/prompts', () => ({
+vi.mock('@sanity/cli-core/ux', () => ({
   confirm: vi.fn(),
   select: vi.fn(),
 }))
@@ -80,7 +80,7 @@ describe('#tokens:delete', () => {
   })
 
   test('deletes a specific token by ID with confirmation', async () => {
-    const {confirm} = await import('@inquirer/prompts')
+    const {confirm} = await import('@sanity/cli-core/ux')
     vi.mocked(confirm).mockResolvedValue(true)
 
     mockApi({
@@ -120,7 +120,7 @@ describe('#tokens:delete', () => {
   })
 
   test('cancels deletion when user declines confirmation', async () => {
-    const {confirm} = await import('@inquirer/prompts')
+    const {confirm} = await import('@sanity/cli-core/ux')
     vi.mocked(confirm).mockResolvedValue(false)
 
     const {error} = await testCommand(DeleteTokensCommand, ['token-api-123'])
@@ -130,7 +130,7 @@ describe('#tokens:delete', () => {
   })
 
   test('prompts user to select token when none specified', async () => {
-    const {confirm, select} = await import('@inquirer/prompts')
+    const {confirm, select} = await import('@sanity/cli-core/ux')
     vi.mocked(select).mockResolvedValue('token-read-456')
     vi.mocked(confirm).mockResolvedValue(true)
 
@@ -157,7 +157,7 @@ describe('#tokens:delete', () => {
   })
 
   test('handles tokens with multiple roles', async () => {
-    const {confirm, select} = await import('@inquirer/prompts')
+    const {confirm, select} = await import('@sanity/cli-core/ux')
     const multiRoleToken = createToken({
       id: 'token-multi-123',
       label: 'Multi Role Token',
@@ -189,7 +189,7 @@ describe('#tokens:delete', () => {
   })
 
   test('handles tokens with no roles', async () => {
-    const {confirm, select} = await import('@inquirer/prompts')
+    const {confirm, select} = await import('@sanity/cli-core/ux')
     const noRoleToken = createToken({
       id: 'token-no-role-123',
       label: 'No Role Token',

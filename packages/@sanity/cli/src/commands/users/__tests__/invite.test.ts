@@ -1,6 +1,6 @@
-import {input, select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
+import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -9,8 +9,10 @@ import {USERS_API_VERSION} from '../../../actions/users/apiVersion.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {UsersInviteCommand} from '../invite.js'
 
-vi.mock('@inquirer/prompts', async () => {
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
+    ...actual,
     input: vi.fn(),
     select: vi.fn(),
   }

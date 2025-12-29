@@ -2,7 +2,8 @@ import {createHash} from 'node:crypto'
 import {mkdir, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
-import {getTimer, Output, spinner} from '@sanity/cli-core'
+import {getTimer, Output} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import {type Workspace} from 'sanity'
 
 import {type ExtractManifestCommand} from '../../commands/manifest/extract'

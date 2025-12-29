@@ -1,9 +1,8 @@
 import path from 'node:path'
 
-import {confirm} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk, confirm} from '@sanity/cli-core/ux'
 
 import {previewAction} from '../actions/preview/previewAction.js'
 

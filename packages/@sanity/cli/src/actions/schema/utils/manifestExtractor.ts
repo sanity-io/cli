@@ -1,5 +1,5 @@
 import {type Output} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 import {extractManifestSafe} from '../../manifest/extractManifest.js'
 import {FlagValidationError} from './schemaStoreValidation.js'

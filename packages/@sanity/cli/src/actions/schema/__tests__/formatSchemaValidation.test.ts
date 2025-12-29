@@ -1,4 +1,4 @@
-import {logSymbols} from '@sanity/cli-core'
+import {logSymbols} from '@sanity/cli-core/ux'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {describe, expect, it, vi} from 'vitest'
 

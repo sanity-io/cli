@@ -1,6 +1,6 @@
-import {confirm, select} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {confirm, select} from '@sanity/cli-core/ux'
 import {ClientError} from '@sanity/client'
 
 import {deleteToken, getTokens} from '../../services/tokens.js'

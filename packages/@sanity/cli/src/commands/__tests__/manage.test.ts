@@ -72,6 +72,7 @@ describe('#manage', () => {
       schema: {
         types: [],
       },
+      unstable_sources: [],
     })
 
     const {stdout} = await testCommand(ManageCommand)
@@ -94,6 +95,7 @@ describe('#manage', () => {
           },
         },
         title: 'test-title',
+        unstable_sources: [],
       },
     ])
 

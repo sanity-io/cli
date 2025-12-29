@@ -1,4 +1,4 @@
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 /**
  * Formats bytes to kB

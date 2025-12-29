@@ -26,9 +26,11 @@ export const validForNamesPattern = new RegExp(`^[${validForNamesChars}]+$`)
 
 const requiredInId = SANITY_WORKSPACE_SCHEMA_ID_PREFIX.replaceAll(/[.]/g, String.raw`\.`)
 
-const idIdPatternString = `^${requiredInId}\\.([${validForNamesChars}]+)`
+const idIdPatternString = String.raw`^${requiredInId}\.([${validForNamesChars}]+)`
 const baseIdPattern = new RegExp(`${idIdPatternString}$`)
-const taggedIdIdPattern = new RegExp(`${idIdPatternString}\\.tag\\.([${validForNamesChars}]+)$`)
+const taggedIdIdPattern = new RegExp(
+  String.raw`${idIdPatternString}\.tag\.([${validForNamesChars}]+)$`,
+)
 
 export class FlagValidationError extends Error {
   constructor(message: string) {

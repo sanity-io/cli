@@ -1,5 +1,10 @@
 import type ConfigStore from 'configstore'
 
+interface ExpiringConfigValue {
+  updatedAt: number
+  value: unknown
+}
+
 export interface ExpiringConfigOptions<Type> {
   /** Fetch value */
   fetchValue: () => Promise<Type> | Type
@@ -16,6 +21,12 @@ export interface ExpiringConfigOptions<Type> {
   onFetch?: () => void
   /** Subscribe to revalidate event */
   onRevalidate?: () => void
+
+  /**
+   * Assert the fetched value is valid, or throw if invalid.
+   * If none is provided, it will always accept the fetched value.
+   */
+  validateValue?: (value: unknown) => value is Type
 }
 
 export interface ExpiringConfigApi<Type> {
@@ -41,16 +52,22 @@ export function createExpiringConfig<Type>({
   onRevalidate = () => null,
   store,
   ttl,
+  validateValue = (value: unknown): value is Type => true,
 }: ExpiringConfigOptions<Type>): ExpiringConfigApi<Type> {
   let currentFetch: Promise<Type> | null = null
   return {
     delete() {
       store.delete(key)
     },
-    async get() {
-      const {updatedAt, value} = store.get(key) ?? {}
+    async get(): Promise<Type> {
+      const stored = store.get(key)
 
-      if (value && updatedAt) {
+      if (isExpiringValue(stored)) {
+        const {updatedAt, value} = stored
+        if (!validateValue(value)) {
+          throw new Error('Stored value is invalid')
+        }
+
         const hasExpired = Date.now() - updatedAt > ttl
 
         if (!hasExpired) {
@@ -68,6 +85,10 @@ export function createExpiringConfig<Type>({
 
       currentFetch = Promise.resolve(fetchValue())
       const nextValue = await currentFetch
+      if (!validateValue(nextValue)) {
+        throw new Error('Fetched value is invalid')
+      }
+
       currentFetch = null
 
       store.set(key, {
@@ -78,4 +99,27 @@ export function createExpiringConfig<Type>({
       return nextValue
     },
   }
+}
+
+/**
+ * Checks if the given stored value is valid (does not check if expired, only verified shape)
+ *
+ * @param stored - The stored value to check
+ * @returns True if the stored value is valid
+ * @internal
+ */
+function isExpiringValue(stored: unknown): stored is ExpiringConfigValue {
+  if (typeof stored !== 'object' || stored === null || Array.isArray(stored)) {
+    return false
+  }
+
+  if (!('updatedAt' in stored) || typeof stored.updatedAt !== 'number') {
+    return false
+  }
+
+  if (!('value' in stored)) {
+    return false
+  }
+
+  return true
 }

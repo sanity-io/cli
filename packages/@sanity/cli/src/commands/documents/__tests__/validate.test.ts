@@ -21,9 +21,13 @@ vi.mock('node:fs', () => ({
   },
 }))
 
-vi.mock('@inquirer/prompts', () => ({
-  confirm: mocks.confirm,
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    confirm: mocks.confirm,
+  }
+})
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn().mockResolvedValue({
