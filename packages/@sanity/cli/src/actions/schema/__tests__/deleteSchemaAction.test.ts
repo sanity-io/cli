@@ -1,6 +1,7 @@
-import {getGlobalCliClient} from '@sanity/cli-core'
+import {mockApi} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {SCHEMA_API_VERSION} from '../../../services/schemas'
 import {deleteSchemaAction} from '../deleteSchemaAction'
 import {type SchemaStoreContext} from '../schemaStoreTypes'
 
@@ -13,7 +14,6 @@ const mockOutput = {
 
 const mockJsonReader = vi.fn()
 const mockManifestExtractor = vi.fn()
-const mockGetGlobalCliClient = vi.mocked(getGlobalCliClient)
 
 const mockManifest = {
   createdAt: '2024-01-01T00:00:00.000Z',
@@ -41,35 +41,26 @@ const mockManifest = {
   ],
 }
 
-vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
-  getGlobalCliClient: vi.fn(),
-}))
+const mockSchemas = ['_.schemas.default', '_.schemas.staging']
 
 describe('deleteSchemaAction', () => {
   let context: SchemaStoreContext
-  let mockClient: {
-    request: ReturnType<typeof vi.fn>
-  }
 
   beforeEach(() => {
     // Reset all mocks
     vi.clearAllMocks()
 
-    mockClient = {
-      request: vi.fn().mockImplementation(async ({method}: {method: string}) => {
-        if (method === 'DELETE') {
-          return {deleted: true}
-        }
-
-        if (method === 'GET') {
-          return {}
-        }
-
-        return undefined
-      }),
+    for (const schema of mockSchemas) {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        uri: `/projects/test-project/datasets/production/schemas/${schema}`,
+      }).reply(200, [{}])
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        uri: `/projects/test-project/datasets/staging/schemas/${schema}`,
+      }).reply(200, [{}])
     }
 
-    mockGetGlobalCliClient.mockResolvedValue(mockClient as never)
     mockManifestExtractor.mockResolvedValue(undefined)
 
     mockJsonReader.mockImplementation(async (filePath: string) => {
@@ -98,6 +89,17 @@ describe('deleteSchemaAction', () => {
   })
 
   test('successfully deletes a single schema', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'delete',
+      uri: '/projects/test-project/datasets/production/schemas/_.schemas.default',
+    }).reply(200, {deleted: true})
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'delete',
+      uri: '/projects/test-project/datasets/staging/schemas/_.schemas.default',
+    }).reply(200, {deleted: true})
+
     const result = await deleteSchemaAction(
       {
         'extract-manifest': false,
@@ -109,17 +111,23 @@ describe('deleteSchemaAction', () => {
 
     expect(result).toBe('success')
     expect(mockOutput.log).toHaveBeenCalledWith('Successfully deleted 1/1 schemas')
-    expect(mockClient.request).toHaveBeenCalledWith({
-      method: 'DELETE',
-      uri: `/projects/test-project/datasets/production/schemas/_.schemas.default`,
-    })
-    expect(mockClient.request).toHaveBeenCalledWith({
-      method: 'DELETE',
-      uri: `/projects/test-project/datasets/staging/schemas/_.schemas.default`,
-    })
+    expect(mockOutput.error).not.toHaveBeenCalled()
   })
 
   test('successfully deletes multiple schemas', async () => {
+    for (const schema of mockSchemas) {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'delete',
+        uri: `/projects/test-project/datasets/production/schemas/${schema}`,
+      }).reply(200, {deleted: true})
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'delete',
+        uri: `/projects/test-project/datasets/staging/schemas/${schema}`,
+      }).reply(200, {deleted: true})
+    }
+
     const result = await deleteSchemaAction(
       {
         'extract-manifest': false,
@@ -131,26 +139,15 @@ describe('deleteSchemaAction', () => {
 
     expect(result).toBe('success')
     expect(mockOutput.log).toHaveBeenCalledWith('Successfully deleted 2/2 schemas')
-    expect(mockClient.request).toHaveBeenCalledWith({
-      method: 'DELETE',
-      uri: `/projects/test-project/datasets/production/schemas/_.schemas.default`,
-    })
-    expect(mockClient.request).toHaveBeenCalledWith({
-      method: 'DELETE',
-      uri: `/projects/test-project/datasets/staging/schemas/_.schemas.default`,
-    })
-    expect(mockClient.request).toHaveBeenCalledWith({
-      method: 'DELETE',
-      uri: `/projects/test-project/datasets/production/schemas/_.schemas.staging`,
-    })
-    expect(mockClient.request).toHaveBeenCalledWith({
-      method: 'DELETE',
-      uri: `/projects/test-project/datasets/staging/schemas/_.schemas.staging`,
-    })
+    expect(mockOutput.error).not.toHaveBeenCalled()
   })
 
   test('filters schemas by dataset when dataset flag is provided', async () => {
-    mockClient.request.mockResolvedValue({deleted: true})
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'delete',
+      uri: '/projects/test-project/datasets/production/schemas/_.schemas.default',
+    }).reply(200, {deleted: true})
 
     const result = await deleteSchemaAction(
       {
@@ -163,14 +160,18 @@ describe('deleteSchemaAction', () => {
     )
 
     expect(result).toBe('success')
-    expect(mockClient.request).toHaveBeenCalledWith({
-      method: 'DELETE',
-      uri: `/projects/test-project/datasets/production/schemas/_.schemas.default`,
-    })
+    expect(mockOutput.error).not.toHaveBeenCalled()
   })
 
   test('returns failure when schema is not found', async () => {
-    mockClient.request.mockResolvedValue({deleted: false}) // Empty results = not found
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: `/projects/test-project/datasets/production/schemas/_.schemas.nonexistent`,
+    }).reply(200, [])
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: `/projects/test-project/datasets/staging/schemas/_.schemas.nonexistent`,
+    }).reply(200, [])
 
     const result = await deleteSchemaAction(
       {
@@ -188,17 +189,24 @@ describe('deleteSchemaAction', () => {
   })
 
   test('returns failure when some schemas are not found', async () => {
-    mockClient.request.mockImplementation(async ({method, uri}: {method: string; uri: string}) => {
-      if (method === 'DELETE') {
-        return {deleted: uri.includes('_.schemas.default')}
-      }
-
-      if (method === 'GET') {
-        return {}
-      }
-
-      return undefined
-    })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'delete',
+      uri: '/projects/test-project/datasets/production/schemas/_.schemas.default',
+    }).reply(200, {deleted: true})
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'delete',
+      uri: '/projects/test-project/datasets/staging/schemas/_.schemas.default',
+    }).reply(200, {deleted: true})
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: `/projects/test-project/datasets/production/schemas/_.schemas.nonexistent`,
+    }).reply(200, [])
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: `/projects/test-project/datasets/staging/schemas/_.schemas.nonexistent`,
+    }).reply(200, [])
 
     const result = await deleteSchemaAction(
       {
@@ -215,7 +223,20 @@ describe('deleteSchemaAction', () => {
   })
 
   test('handles delete errors gracefully', async () => {
-    mockClient.request.mockRejectedValue(new Error('Delete failed'))
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'delete',
+      uri: '/projects/test-project/datasets/production/schemas/_.schemas.default',
+    }).reply(403, {
+      error: 'Delete failed',
+    })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'delete',
+      uri: '/projects/test-project/datasets/staging/schemas/_.schemas.default',
+    }).reply(403, {
+      error: 'Delete failed',
+    })
 
     const result = await deleteSchemaAction(
       {
@@ -259,7 +280,20 @@ describe('deleteSchemaAction', () => {
   })
 
   test('logs verbose output when verbose flag is enabled', async () => {
-    mockClient.request.mockRejectedValue(new Error('Delete failed'))
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'delete',
+      uri: '/projects/test-project/datasets/production/schemas/_.schemas.default',
+    }).reply(403, {
+      error: 'Delete failed',
+    })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'delete',
+      uri: '/projects/test-project/datasets/staging/schemas/_.schemas.default',
+    }).reply(403, {
+      error: 'Delete failed',
+    })
 
     await deleteSchemaAction(
       {
@@ -291,6 +325,12 @@ describe('deleteSchemaAction', () => {
   })
 
   test('filters workspaces by projectId mismatch', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'delete',
+      uri: '/projects/test-project/datasets/production/schemas/_.schemas.default',
+    }).reply(200, {deleted: true})
+
     const mismatchManifest = {
       ...mockManifest,
       workspaces: [
@@ -322,6 +362,6 @@ describe('deleteSchemaAction', () => {
     // Should warn about project ID mismatch
     expect(mockOutput.warn).toHaveBeenCalled()
     // Should only delete from matching project
-    expect(mockClient.request).toHaveBeenCalledTimes(2)
+    expect(mockOutput.error).not.toHaveBeenCalled()
   })
 })

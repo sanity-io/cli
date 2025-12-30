@@ -1,6 +1,7 @@
-import {getGlobalCliClient} from '@sanity/cli-core'
+import {mockApi} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {SCHEMA_API_VERSION} from '../../../services/schemas'
 import {listSchemas} from '../listSchemas'
 import {type SchemaStoreContext} from '../schemaStoreTypes'
 
@@ -12,7 +13,6 @@ const mockOutput = {
 
 const mockJsonReader = vi.fn()
 const mockManifestExtractor = vi.fn()
-const mockGetGlobalCliClient = vi.mocked(getGlobalCliClient)
 
 const mockManifest = {
   createdAt: '2024-01-01T00:00:00.000Z',
@@ -40,24 +40,11 @@ const mockManifest = {
   ],
 }
 
-vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
-  getGlobalCliClient: vi.fn(),
-}))
-
 describe('#listSchema', () => {
   let context: SchemaStoreContext
-  let mockClient: {
-    request: ReturnType<typeof vi.fn>
-  }
-
   beforeEach(() => {
     vi.clearAllMocks()
 
-    mockClient = {
-      request: vi.fn(),
-    }
-
-    mockGetGlobalCliClient.mockResolvedValue(mockClient as never)
     mockManifestExtractor.mockResolvedValue(undefined)
 
     mockJsonReader.mockImplementation(async (filePath: string) => {
@@ -84,17 +71,22 @@ describe('#listSchema', () => {
   })
 
   test('should list schemas', async () => {
-    mockClient.request
-      .mockResolvedValueOnce({
-        _createdAt: '2025-01-21T18:49:44Z',
-        _id: '_.schemas.default',
-        workspace: mockManifest.workspaces[0],
-      })
-      .mockResolvedValueOnce({
-        _createdAt: '2025-05-28T18:49:44Z',
-        _id: '_.schemas.staging',
-        workspace: mockManifest.workspaces[1],
-      })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, {
+      _createdAt: '2025-01-21T18:49:44Z',
+      _id: '_.schemas.default',
+      workspace: mockManifest.workspaces[0],
+    })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, {
+      _createdAt: '2025-05-28T18:49:44Z',
+      _id: '_.schemas.staging',
+      workspace: mockManifest.workspaces[1],
+    })
 
     const result = await listSchemas(
       {
@@ -119,7 +111,10 @@ describe('#listSchema', () => {
   })
 
   test('should list a specific schema based on id flag', async () => {
-    mockClient.request.mockResolvedValueOnce({
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas/_.schemas.staging',
+    }).reply(200, {
       _createdAt: '2025-05-28T18:49:44Z',
       _id: '_.schemas.staging',
       workspace: mockManifest.workspaces[1],
@@ -145,17 +140,22 @@ describe('#listSchema', () => {
   })
 
   test('should list schemas in json', async () => {
-    mockClient.request
-      .mockResolvedValueOnce({
-        _createdAt: '2025-01-21T18:49:44Z',
-        _id: '_.schemas.default',
-        workspace: mockManifest.workspaces[0],
-      })
-      .mockResolvedValueOnce({
-        _createdAt: '2025-05-28T18:49:44Z',
-        _id: '_.schemas.staging',
-        workspace: mockManifest.workspaces[1],
-      })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, {
+      _createdAt: '2025-01-21T18:49:44Z',
+      _id: '_.schemas.default',
+      workspace: mockManifest.workspaces[0],
+    })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, {
+      _createdAt: '2025-05-28T18:49:44Z',
+      _id: '_.schemas.staging',
+      workspace: mockManifest.workspaces[1],
+    })
 
     const result = await listSchemas(
       {
@@ -175,7 +175,10 @@ describe('#listSchema', () => {
   })
 
   test('should list a specific schema based on id flag in json', async () => {
-    mockClient.request.mockResolvedValueOnce({
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas/_.schemas.staging',
+    }).reply(200, {
       _createdAt: '2025-05-28T18:49:44Z',
       _id: '_.schemas.staging',
       workspace: mockManifest.workspaces[1],
@@ -199,7 +202,14 @@ describe('#listSchema', () => {
   })
 
   test('throws an error if no schemas are found', async () => {
-    mockClient.request.mockResolvedValueOnce(undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(404, undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(404, undefined)
 
     const result = await listSchemas(
       {
@@ -218,7 +228,10 @@ describe('#listSchema', () => {
   })
 
   test('throws an error if a specific schema based on id flag is not found', async () => {
-    mockClient.request.mockResolvedValueOnce(undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas/_.schemas.staging',
+    }).reply(404, undefined)
 
     const result = await listSchemas(
       {
@@ -237,7 +250,12 @@ describe('#listSchema', () => {
   })
 
   test('throws an error if schema request fails', async () => {
-    mockClient.request.mockRejectedValue('↳ Failed to fetch schema')
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(403, {
+      error: '↳ Failed to fetch schema',
+    })
 
     const result = await listSchemas(
       {
@@ -256,10 +274,21 @@ describe('#listSchema', () => {
   })
 
   test('skips manifest extraction with no-extract-manifest flag', async () => {
-    mockClient.request.mockResolvedValueOnce({
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, {
       _createdAt: '2025-01-21T18:49:44Z',
       _id: '_.schemas.default',
       workspace: mockManifest.workspaces[0],
+    })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, {
+      _createdAt: '2025-05-28T18:49:44Z',
+      _id: '_.schemas.staging',
+      workspace: mockManifest.workspaces[1],
     })
 
     await listSchemas(
