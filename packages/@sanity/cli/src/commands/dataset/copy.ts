@@ -1,7 +1,7 @@
 import {Args, Flags} from '@oclif/core'
 import {exit} from '@oclif/core/errors'
-import {SanityCommand, spinner, subdebug} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {chalk, spinner} from '@sanity/cli-core/ux'
 import {Table} from 'console-table-printer'
 import {formatDistance, formatDistanceToNow, parseISO} from 'date-fns'
 

@@ -1,10 +1,10 @@
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
+import {deleteSchema} from '../../services/schemas.js'
 import {isDefined} from '../manifest/schemaTypeHelpers.js'
 import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
 import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {createManifestReader} from './utils/manifestReader.js'
-import {createSchemaApiClient} from './utils/schemaApiClient.js'
 import {getDatasetsOutString, getStringList} from './utils/schemaStoreOutStrings.js'
 import {
   filterLogReadProjectIdMismatch,
@@ -51,19 +51,20 @@ export async function deleteSchemaAction(
   flags: DeleteSchemaFlags,
   context: SchemaStoreContext,
 ): Promise<SchemaStoreActionResult> {
-  const {dataset, extractManifest, ids, manifestDir, verbose} = parseDeleteSchemasConfig(
-    flags,
-    context,
-  )
-  const {apiClient, jsonReader, manifestExtractor, output} = context
+  const {dataset, extractManifest, ids, manifestDir, verbose} = parseDeleteSchemasConfig(flags)
+  const {jsonReader, manifestExtractor, output, projectId = '', workDir} = context
 
   // prettier-ignore
   if (!(await ensureManifestExtractSatisfied({extractManifest, manifestDir, manifestExtractor,  output, schemaRequired: true,}))) {
     return 'failure'
   }
 
-  const {client, projectId} = await createSchemaApiClient(apiClient)
-  const manifest = await createManifestReader({jsonReader, manifestDir, output}).getManifest()
+  const manifest = await createManifestReader({
+    jsonReader,
+    manifestDir,
+    output,
+    workDir,
+  }).getManifest()
 
   const workspaces = manifest.workspaces
     .filter((workspace) => !dataset || workspace.dataset === dataset)
@@ -75,8 +76,8 @@ export async function deleteSchemaAction(
     datasets.flatMap((targetDataset: string) => {
       return ids.map(async ({schemaId}): Promise<DeleteResult> => {
         try {
-          const deletedSchema = await client.withConfig({dataset: targetDataset}).delete(schemaId)
-          return {dataset: targetDataset, deleted: deletedSchema.results.length > 0, schemaId}
+          const deletedSchema = await deleteSchema(targetDataset, projectId, schemaId)
+          return {dataset: targetDataset, deleted: deletedSchema.deleted, schemaId}
         } catch (err) {
           throw new DeleteIdError(schemaId, targetDataset, {cause: err})
         }

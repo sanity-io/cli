@@ -3,7 +3,7 @@ import {readFile, stat} from 'node:fs/promises'
 import path, {join, resolve} from 'node:path'
 
 import {type Output} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 import {MANIFEST_FILENAME} from '../../manifest/extractManifest.js'
 import {type CreateManifest, type ManifestSchemaType} from '../../manifest/types.js'
@@ -17,6 +17,7 @@ export type CreateManifestReaderFactory = (args: {
   jsonReader?: <T>(filePath: string) => Promise<JsonFileParseSuccess<T> | undefined>
   manifestDir: string
   output: Output
+  workDir: string
 }) => CreateManifestReader
 
 export interface CreateManifestReader {
@@ -38,6 +39,7 @@ export const createManifestReader: CreateManifestReaderFactory = ({
   jsonReader = parseJsonFile,
   manifestDir,
   output,
+  workDir,
 }) => {
   let parsedManifest: JsonFileParseSuccess<CreateManifest>
   const parsedWorkspaces: Record<string, JsonFileParseSuccess<ManifestSchemaType[]> | undefined> =
@@ -48,7 +50,8 @@ export const createManifestReader: CreateManifestReaderFactory = ({
       return parsedManifest?.parsedJson
     }
 
-    const manifestFile = path.join(manifestDir, MANIFEST_FILENAME)
+    const staticPath = resolve(join(workDir, manifestDir))
+    const manifestFile = path.join(staticPath, MANIFEST_FILENAME)
 
     const result = await jsonReader<CreateManifest>(manifestFile)
     if (!result) {
@@ -94,16 +97,6 @@ export const createManifestReader: CreateManifestReaderFactory = ({
     getManifest,
     getWorkspaceSchema,
   }
-}
-
-export function resolveManifestDirectory(workDir: string, customPath?: string): string {
-  const defaultOutputDir = resolve(join(workDir, 'dist'))
-
-  const outputDir = resolve(defaultOutputDir)
-  const defaultStaticPath = join(outputDir, 'static')
-
-  const staticPath = customPath ?? defaultStaticPath
-  return path.resolve(process.cwd(), staticPath)
 }
 
 async function parseJsonFile<T>(filePath: string): Promise<JsonFileParseSuccess<T> | undefined> {

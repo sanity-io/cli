@@ -4,12 +4,11 @@ import {tmpdir} from 'node:os'
 import path from 'node:path'
 import {finished} from 'node:stream/promises'
 
-import {confirm, input, select} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
 import {fileExists, SanityCommand} from '@sanity/cli-core'
+import {chalk, confirm, input, select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import boxen from 'boxen'
-import chalk from 'chalk'
 import pMap from 'p-map'
 import prettyMs from 'pretty-ms'
 

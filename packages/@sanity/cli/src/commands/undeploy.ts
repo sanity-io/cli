@@ -1,12 +1,11 @@
-import {confirm} from '@inquirer/prompts'
 import {Flags} from '@oclif/core'
-import {SanityCommand, spinner} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {SanityCommand} from '@sanity/cli-core'
+import {chalk, confirm, spinner} from '@sanity/cli-core/ux'
 
 import {
   getStudioOrAppUserApplication,
   NO_APP_ID,
-  NO_STUDIO_HOST,
+  NO_APP_ID_OR_STUDIO_HOST,
 } from '../actions/undeploy/getStudioOrAppUserApplication.js'
 import {deleteUserApplication} from '../services/userApplications.js'
 import {determineIsApp} from '../util/determineIsApp.js'
@@ -39,8 +38,8 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
           this.log('Application with the given ID does not exist.')
           this.log('Nothing to undeploy.')
         } else {
-          this.log('Your project has not been assigned a studio hostname')
-          this.log('or the `studioHost` provided does not exist.')
+          this.log('Your project has not been assigned an app ID or a studio hostname,')
+          this.log('or the `appId` or `studioHost` provided does not exist.')
           this.log('Nothing to undeploy.')
         }
 
@@ -102,14 +101,14 @@ Are you ${chalk.red('sure')} you want to undeploy?`
       spin.fail()
       if (error.message === NO_APP_ID) {
         this.log('No application ID provided.')
-        this.log('Please set id in `app` in sanity.cli.js or sanity.cli.ts.')
+        this.log('Please set id in `deployment.appId` in sanity.cli.js or sanity.cli.ts.')
         this.log('Nothing to undeploy.')
         return
       }
 
-      if (error.message === NO_STUDIO_HOST) {
-        this.log('No studio host provided.')
-        this.log('Please set `studioHost` in sanity.cli.js or sanity.cli.ts.')
+      if (error.message === NO_APP_ID_OR_STUDIO_HOST) {
+        this.log('No application ID or studio host provided.')
+        this.log('Please set id in `deployment.appId` in sanity.cli.js or sanity.cli.ts.')
         this.log('Nothing to undeploy.')
         return
       }

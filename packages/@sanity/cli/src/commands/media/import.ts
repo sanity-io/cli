@@ -1,9 +1,8 @@
-// import {input} from '@inquirer/prompts'
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, spinner} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
+import {chalk, spinner} from '@sanity/cli-core/ux'
 import {SanityClient} from '@sanity/client'
 import boxen from 'boxen'
-import chalk from 'chalk'
 import {type OperatorFunction, pipe, scan, tap} from 'rxjs'
 
 import {importer, type State} from '../../actions/media/importMedia.js'

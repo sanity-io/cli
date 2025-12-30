@@ -1,12 +1,11 @@
 import {rm} from 'node:fs/promises'
 import path from 'node:path'
 
-import {confirm} from '@inquirer/prompts'
-import {getTimer, logSymbols, spinner} from '@sanity/cli-core'
-import chalk from 'chalk'
-import {type Ora} from 'ora'
+import {getTimer} from '@sanity/cli-core'
+import {chalk, confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import semver from 'semver'
 
+import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
@@ -15,7 +14,7 @@ import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
 import {getAppEnvVars} from './getAppEnvVars.js'
-import {getAppAutoUpdateImportMap} from './getAutoUpdatesImportMap.js'
+import {getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {type BuildOptions} from './types.js'
 
 /**
@@ -31,6 +30,8 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
   const outputDir = path.resolve(outDir || defaultOutputDir)
 
+  const appId = getAppId(cliConfig)
+
   const installedSdkVersion = await readModuleVersion(outputDir, '@sanity/sdk-react')
   const installedSanityVersion = await readModuleVersion(outputDir, 'sanity')
 
@@ -38,22 +39,29 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     throw new Error(`Failed to find installed @sanity/sdk-react version`)
   }
 
-  // Get the version without any tags if any
-  const coercedSdkVersion = semver.coerce(installedSdkVersion)?.version
-  // Sanity might not be installed, but if it is we want to auto update it.
-  const coercedSanityVersion = semver.coerce(installedSanityVersion)?.version
-  if (autoUpdatesEnabled && !coercedSdkVersion) {
-    throw new Error(`Failed to parse installed SDK version: ${installedSdkVersion}`)
-  }
-  const sdkVersion = encodeURIComponent(`^${coercedSdkVersion}`)
-  const sanityVersion = coercedSanityVersion && encodeURIComponent(`^${coercedSanityVersion}`)
-  const autoUpdatesImports = getAppAutoUpdateImportMap({sanityVersion, sdkVersion})
+  let autoUpdatesImports = {}
 
   if (autoUpdatesEnabled) {
+    // Get the clean version without build metadata: https://semver.org/#spec-item-10
+    const cleanSDKVersion = semver.parse(installedSdkVersion)?.version
+    if (!cleanSDKVersion) {
+      throw new Error(`Failed to parse installed SDK version: ${installedSdkVersion}`)
+    }
+
+    // Sanity might not be installed, but if it is, we want to auto update it.
+    const cleanSanityVersion = semver.parse(installedSanityVersion)?.version
+
+    const autoUpdatedPackages = [
+      {name: '@sanity/sdk', version: cleanSDKVersion},
+      {name: '@sanity/sdk-react', version: cleanSDKVersion},
+      ...(cleanSanityVersion ? [{name: 'sanity' as const, version: cleanSanityVersion}] : []),
+    ]
+    autoUpdatesImports = getAutoUpdatesImportMap(autoUpdatedPackages, {appId})
+
     output.log(`${logSymbols.info} Building with auto-updates enabled`)
 
     // Check the versions
-    const result = await compareDependencyVersions(autoUpdatesImports, workDir)
+    const result = await compareDependencyVersions(autoUpdatedPackages, workDir, {appId})
 
     // If it is in unattended mode, we don't want to prompt
     if (result?.length && !unattendedMode) {
@@ -91,7 +99,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   // Determine base path for built studio
   const basePath = determineBasePath(cliConfig, 'app')
 
-  let spin: Ora
+  let spin: SpinnerInstance
   if (shouldClean) {
     timer.start('cleanOutputFolder')
     spin = spinner('Clean output folder').start()

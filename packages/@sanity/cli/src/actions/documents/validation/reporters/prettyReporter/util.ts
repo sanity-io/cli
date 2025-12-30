@@ -1,6 +1,6 @@
 import {isatty} from 'node:tty'
 
-import {logSymbols} from '@sanity/cli-core'
+import {logSymbols} from '@sanity/cli-core/ux'
 import {type ValidationMarker} from '@sanity/types'
 
 import {Level} from '../../../types'

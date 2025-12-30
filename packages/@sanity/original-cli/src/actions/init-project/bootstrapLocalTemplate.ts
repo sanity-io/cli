@@ -30,6 +30,7 @@ export interface BootstrapLocalOptions {
   outputPath: string
   useTypeScript: boolean
   variables: GenerateConfigOptions['variables']
+  overwriteFiles?: boolean
 }
 
 export async function bootstrapLocalTemplate(
@@ -86,8 +87,8 @@ export async function bootstrapLocalTemplate(
   const dependencyVersions = await resolveLatestVersions({
     ...(isAppTemplate ? {} : studioDependencies.dependencies),
     ...(isAppTemplate ? {} : studioDependencies.devDependencies),
-    ...(template.dependencies || {}),
-    ...(template.devDependencies || {}),
+    ...template.dependencies,
+    ...template.devDependencies,
   })
   spinner.succeed()
 
@@ -127,11 +128,12 @@ export async function bootstrapLocalTemplate(
 
   // Now create a package manifest (`package.json`) with the merged dependencies
   spinner = output.spinner('Creating default project files').start()
-  const packageManifest = await createPackageManifest({
+  const packageManifest = createPackageManifest({
     name: packageJsonName,
     dependencies,
     devDependencies,
     scripts: template.scripts,
+    isAppTemplate,
   })
 
   // ...and a studio config (`sanity.config.[ts|js]`)
@@ -163,10 +165,14 @@ export async function bootstrapLocalTemplate(
       ],
       writeFileIfNotExists(`sanity.cli.${codeExt}`, cliConfig),
       writeFileIfNotExists('package.json', packageManifest),
-      writeFileIfNotExists(
-        'eslint.config.mjs',
-        `import studio from '@sanity/eslint-config-studio'\n\nexport default [...studio]\n`,
-      ),
+      ...[
+        isAppTemplate
+          ? Promise.resolve(null)
+          : writeFileIfNotExists(
+              'eslint.config.mjs',
+              `import studio from '@sanity/eslint-config-studio'\n\nexport default [...studio]\n`,
+            ),
+      ],
     ].filter(Boolean),
   )
 
@@ -179,6 +185,13 @@ export async function bootstrapLocalTemplate(
 
   async function writeFileIfNotExists(fileName: string, content: string): Promise<void> {
     const filePath = path.join(outputPath, fileName)
+
+    if (opts.overwriteFiles) {
+      // If overwrite is enabled, just write the file
+      await fs.writeFile(filePath, content)
+      return
+    }
+
     try {
       await fs.writeFile(filePath, content, {flag: 'wx'})
     } catch (err) {

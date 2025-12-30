@@ -20,8 +20,8 @@ vi.mock('read-package-up', () => ({
   readPackageUp: mockReadPackageUp,
 }))
 
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual('@sanity/cli-core/ux')
   return {
     ...actual,
     spinner: mockSpinnerFn,

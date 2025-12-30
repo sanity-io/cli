@@ -32,7 +32,7 @@ export class ExecCommand extends SanityCommand<typeof ExecCommand> {
       command:
         '<%= config.bin %> <%= command.id %> --mock-browser-env myscript.js -- --dry-run positional-argument',
       description:
-        'Pass arbitrary arguments to scripts by separating them with a `--`. Arguments are available in `process.argv` as they would in regular node scripts (eg the following command would yield a `process.argv` of: `[\'/path/to/node\', \'/path/to/myscript.js\', \'--dry-run\', \'positional-argument\']`)',
+        "Pass arbitrary arguments to scripts by separating them with a `--`. Arguments are available in `process.argv` as they would in regular node scripts (eg the following command would yield a `process.argv` of: `['/path/to/node', '/path/to/myscript.js', '--dry-run', 'positional-argument']`)",
     },
   ]
 

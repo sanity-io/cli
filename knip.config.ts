@@ -9,8 +9,6 @@ const baseConfig = {
   // For now only care about cli package
   ignore: [
     'packages/@sanity/original-cli/**',
-    'packages/@sanity/migrate/**',
-    'packages/@sanity/codegen/**',
     'packages/create-sanity/**',
 
     // See `helpClass` in `oclif.config.js`
@@ -54,7 +52,15 @@ const baseConfig = {
         'src/actions/schema/utils/schemaStoreOutStrings.ts',
         'src/actions/schema/utils/schemaStoreValidation.ts',
         'src/actions/schema/utils/manifestReader.ts',
+        // Ignore exports until init work is done
+        'src/actions/init/remoteTemplate.ts',
+        'src/actions/init/determineAppTemplate.ts',
+        'src/actions/auth/login.ts',
+        'src/services/organizations.ts',
+        'src/services/projects.ts',
       ],
+      // Claude is not a dependency of the CLI, but it is used in the MCP configuration
+      ignoreBinaries: ['claude'],
       oclif: {
         config: ['oclif.config.js'],
       },
@@ -74,7 +80,11 @@ const baseConfig = {
 } satisfies KnipConfig
 
 export const addBundlerEntries = async (config: KnipConfig): Promise<KnipConfig> => {
-  const dirs = ['packages/@repo/eslint-config', 'packages/@repo/tsconfig', 'packages/@sanity/cli']
+  const dirs = [
+    'packages/@sanity/eslint-config-cli',
+    'packages/@repo/tsconfig',
+    'packages/@sanity/cli',
+  ]
 
   for (const wsDir of dirs) {
     for (const configKey of Object.keys(baseConfig.workspaces)) {

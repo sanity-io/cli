@@ -17,8 +17,8 @@ vi.mock('../buildDebug.js', () => ({
   buildDebug: mockBuildDebug,
 }))
 
-vi.mock('chalk', () => ({
-  default: {
+vi.mock('@sanity/cli-core/ux', () => ({
+  chalk: {
     yellow: vi.fn((str) => `[YELLOW]${str}[/YELLOW]`),
   },
 }))

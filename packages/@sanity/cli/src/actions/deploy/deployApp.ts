@@ -2,14 +2,14 @@ import {basename, dirname} from 'node:path'
 import {createGzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
-import {spinner} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk, spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
 import {createDeployment} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
+import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildApp} from '../build/buildApp.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {checkDir} from './checkDir.js'
@@ -57,6 +57,11 @@ export async function deployApp(options: DeployAppOptions) {
 
       userApplication = await createUserApplicationForApp(organizationId)
       deployDebug(`User application created`, userApplication)
+    }
+
+    // Warn about missing app ID if auto updates are enabled
+    if (isAutoUpdating && !appId) {
+      warnAboutMissingAppId({appType: 'app', output})
     }
 
     // Always build the project, unless --no-build is passed

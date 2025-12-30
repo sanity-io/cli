@@ -1,4 +1,4 @@
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 import {padEnd} from 'lodash-es'
 
 import {type ModuleVersionResult} from './types.js'

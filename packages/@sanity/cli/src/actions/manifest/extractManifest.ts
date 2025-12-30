@@ -2,7 +2,8 @@ import {createHash} from 'node:crypto'
 import {mkdir, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
-import {getTimer, Output, spinner} from '@sanity/cli-core'
+import {getTimer, Output} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import {type Workspace} from 'sanity'
 
 import {type ExtractManifestCommand} from '../../commands/manifest/extract'
@@ -56,10 +57,7 @@ export async function extractManifestSafe(
 
 async function extractManifest(options: ExtractManifestOptions): Promise<void> {
   const {flags, workDir} = options
-  const defaultOutputDir = resolve(join(workDir, 'dist'))
-  const outputDir = resolve(defaultOutputDir)
-  const defaultStaticPath = join(outputDir, 'static')
-  const staticPath = `.${flags.path ?? defaultStaticPath}`
+  const staticPath = resolve(join(workDir, flags.path))
   const path = join(staticPath, MANIFEST_FILENAME)
 
   const timer = getTimer()

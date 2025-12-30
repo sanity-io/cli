@@ -1,4 +1,4 @@
-import {select} from '@inquirer/prompts'
+import {select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 
 interface PromptForDatasetOptions {

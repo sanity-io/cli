@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-core",
-  "version": "0.0.2-alpha.1",
+  "version": "0.1.0-alpha.4",
   "description": "Sanity CLI core package",
   "keywords": [
     "sanity",
@@ -23,6 +23,16 @@
       "require": "./dist/index.js",
       "import": "./dist/index.js"
     },
+    "./tree": {
+      "source": "./src/_exports/tree.ts",
+      "require": "./dist/_exports/tree.js",
+      "import": "./dist/_exports/tree.js"
+    },
+    "./ux": {
+      "source": "./src/_exports/ux.ts",
+      "require": "./dist/_exports/ux.js",
+      "import": "./dist/_exports/ux.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "dist/index.js",
@@ -42,10 +52,12 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
-    "@oclif/core": "^4.5.3",
+    "@inquirer/prompts": "^8.1.0",
+    "@oclif/core": "^4.8.0",
     "@sanity/client": "^7.11.2",
+    "@sanity/types": "^4.21.0",
     "babel-plugin-react-compiler": "^1.0.0",
-    "chalk": "^5.4.1",
+    "chalk": "^5.6.2",
     "configstore": "^7.0.0",
     "debug": "^4.4.3",
     "get-tsconfig": "^4.10.1",
@@ -53,7 +65,7 @@
     "jsdom": "^26.0.0",
     "json-lexer": "^1.2.0",
     "log-symbols": "^7.0.1",
-    "ora": "^8.2.0",
+    "ora": "^9.0.0",
     "tsx": "^4.20.3",
     "vite": "^7.1.6",
     "vite-node": "^3.0.8",
@@ -61,11 +73,10 @@
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
-    "@repo/eslint-config": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@swc/cli": "^0.7.8",
     "@swc/core": "^1.14.0",
-    "@types/configstore": "^6.0.2",
     "@types/debug": "^4.1.12",
     "@types/jsdom": "^21.1.7",
     "@types/node": "^20.19.24",

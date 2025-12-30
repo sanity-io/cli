@@ -1,20 +1,19 @@
 import {rm} from 'node:fs/promises'
 
-import {logSymbols, type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
+import {logSymbols} from '@sanity/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, it, type MockedFunction, vi} from 'vitest'
 
 import {buildApp} from '../buildApp.js'
 import {type BuildOptions} from '../types.js'
 
 vi.mock('node:fs/promises')
-vi.mock('@inquirer/prompts', () => ({
-  confirm: vi.fn(),
-}))
 
-vi.mock('@sanity/cli-core', async () => {
-  const original = await import('@sanity/cli-core')
+vi.mock('@sanity/cli-core/ux', async () => {
+  const original = await import('@sanity/cli-core/ux')
   return {
     ...original,
+    confirm: mockedConfirm,
     spinner: vi.fn(() => ({
       fail: vi.fn().mockReturnThis(),
       start: vi.fn().mockReturnThis(),
@@ -37,11 +36,7 @@ const mockedReadModuleVersion = vi.hoisted(() => vi.fn())
 const mockedBuildStaticFiles = vi.hoisted(() => vi.fn())
 const mockedBuildVendorDependencies = vi.hoisted(() => vi.fn())
 const mockedGetAppEnvVars = vi.hoisted(() => vi.fn())
-const mockedGetAppAutoUpdateImportMap = vi.hoisted(() => vi.fn())
-
-vi.mock('@inquirer/prompts', () => ({
-  confirm: mockedConfirm,
-}))
+const mockedGetAutoUpdatesImportMap = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: mockedCompareDependencyVersions,
@@ -64,7 +59,7 @@ vi.mock('../getAppEnvVars.js', () => ({
 }))
 
 vi.mock('../getAutoUpdatesImportMap.js', () => ({
-  getAppAutoUpdateImportMap: mockedGetAppAutoUpdateImportMap,
+  getAutoUpdatesImportMap: mockedGetAutoUpdatesImportMap,
 }))
 
 describe('buildApp', () => {
@@ -97,7 +92,7 @@ describe('buildApp', () => {
     // Default mocks
     mockedReadModuleVersion.mockResolvedValue('1.0.0')
     mockedGetAppEnvVars.mockReturnValue([])
-    mockedGetAppAutoUpdateImportMap.mockReturnValue({})
+    mockedGetAutoUpdatesImportMap.mockReturnValue({})
     mockedBuildStaticFiles.mockResolvedValue({
       chunks: [],
     })
@@ -125,8 +120,8 @@ describe('buildApp', () => {
     )
   })
 
-  it('should throw error when auto-updates enabled but coercedSdkVersion is invalid', async () => {
-    // Mock an invalid version that semver.coerce returns null for
+  it('should throw error when auto-updates enabled but cleanSdkVersion is invalid', async () => {
+    // Mock an invalid version that semver.parse returns null for
     mockedReadModuleVersion.mockResolvedValueOnce('invalid-version')
 
     const options = {

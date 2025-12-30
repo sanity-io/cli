@@ -2,7 +2,7 @@ import {dirname} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
 import {tsxWorkerTask} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 import {buildDebug} from './buildDebug.js'
 

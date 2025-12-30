@@ -41,21 +41,17 @@
   "resolutions": {
     "@sanity/client": "^7.0.0"
   },
-  "dependencies": {
-    "@sanity/pkg-utils": "^7.11.9",
-    "@types/node": "^20.19.25",
-    "prettier": "^3.5.3",
-    "prettier-plugin-packagejson": "^2.5.19"
-  },
   "devDependencies": {
     "@eslint/compat": "catalog:",
-    "@repo/eslint-config": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:*",
     "@vitest/coverage-istanbul": "^3.2.4",
     "eslint": "catalog:",
     "husky": "^9.1.7",
     "knip": "^5.66.4",
     "lint-staged": "^16.2.6",
     "minimatch": "^10.1.1",
+    "prettier": "^3.5.3",
+    "prettier-plugin-packagejson": "^2.5.19",
     "rimraf": "^5.0.10",
     "turbo": "^2.6.0",
     "typescript": "^5.8.3",

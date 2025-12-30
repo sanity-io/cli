@@ -5,7 +5,7 @@ describe('#dataset:import', () => {
   test('should print datasets:import help', async () => {
     const {stdout} = await runCommand('dataset import --help')
 
-    expect(stdout).toMatchInlineSnapshot(`
+    expect(stdout).toMatchInlineSnapshot(String.raw`
       "Import documents to a Sanity dataset
 
       USAGE
@@ -40,7 +40,7 @@ describe('#dataset:import', () => {
       EXAMPLES
         Import "./my-dataset.ndjson" into dataset "staging"
 
-          $ sanity dataset import -p myPrOj -d staging -t someSecretToken \\
+          $ sanity dataset import -p myPrOj -d staging -t someSecretToken \
             my-dataset.ndjson
 
         Import into dataset "test" from stdin, read token from env var

@@ -1,17 +1,21 @@
 import {access, mkdir, writeFile} from 'node:fs/promises'
 
-import {input} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {getCliConfig} from '@sanity/cli-core'
+import {input} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {MediaCreateAspectCommand} from '../create-aspect.js'
 
 vi.mock('node:fs/promises')
-vi.mock('@inquirer/prompts', () => ({
-  input: vi.fn(),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    input: vi.fn(),
+  }
+})
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn().mockResolvedValue({

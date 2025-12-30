@@ -1,5 +1,5 @@
 import {type CliConfig, type Output} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 interface Options {
   cliConfig: CliConfig

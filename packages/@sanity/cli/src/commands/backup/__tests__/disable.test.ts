@@ -1,6 +1,6 @@
-import {select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
 import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -9,9 +9,13 @@ import {BACKUP_API_VERSION} from '../../../actions/backup/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {DisableBackupCommand} from '../disable.js'
 
-vi.mock('@inquirer/prompts', () => ({
-  select: vi.fn(),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    select: vi.fn(),
+  }
+})
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn().mockResolvedValue({

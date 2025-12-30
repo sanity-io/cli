@@ -1,7 +1,7 @@
 import {mkdir, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
-import {spinner} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 import {extractSchema} from '@sanity/schema/_internal'
 import {type Schema} from '@sanity/types'
 

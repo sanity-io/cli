@@ -3,15 +3,16 @@ packages:
   - 'packages/@sanity/cli'
   - 'packages/@sanity/cli-core'
   - 'packages/@sanity/cli-test'
-  - 'packages/@sanity/codegen'
-  - 'packages/@sanity/migrate'
+  - 'packages/@sanity/eslint-config-cli'
   - 'packages/create-sanity'
   - 'examples/*'
   - 'tmp/*'
 
 catalog:
-  eslint: ^9.39.1
-  '@eslint/compat': ^1.4.1
+  eslint: ^9.39.2
+  '@eslint/compat': ^2.0.0
+  sanity: ^5.1.0
+  '@sanity/vision': ^5.1.0
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:

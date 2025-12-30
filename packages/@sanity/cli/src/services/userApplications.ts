@@ -31,34 +31,35 @@ export interface UserApplication {
   activeDeployment?: ActiveDeployment | null
 }
 
-export async function getUserApplication(options: {appId: string}): Promise<UserApplication | null>
-export async function getUserApplication(options: {
-  appHost: string
-  projectId: string
-}): Promise<UserApplication | null>
-export async function getUserApplication(options: {
-  projectId: string
-}): Promise<UserApplication | null>
+type GetUserApplicationOptions =
+  | {appHost?: never; appId: string; isSdkApp: true; projectId?: never}
+  | {appHost?: string; appId?: string; isSdkApp: false; projectId: string}
+
 export async function getUserApplication({
   appHost,
   appId,
+  isSdkApp,
   projectId,
-}: {
-  appHost?: string
-  appId?: string
-  projectId?: string
-}): Promise<UserApplication | null> {
-  let uri = '/user-applications'
-  let query: Record<string, string | string[]>
-  if (appId) {
-    uri = `/user-applications/${appId}`
-    query = {appType: 'coreApp'}
-  } else if (appHost) {
-    uri = `/projects/${projectId}/user-applications`
-    query = {appHost, appType: 'studio'}
+}: GetUserApplicationOptions): Promise<UserApplication | null> {
+  let query: Record<string, string | string[]> | undefined
+  let uri: string
+
+  // set the uri
+  if (isSdkApp) {
+    uri = appId ? `/user-applications/${appId}` : '/user-applications'
   } else {
-    uri = `/projects/${projectId}/user-applications`
-    query = {default: 'true'}
+    uri = appId
+      ? `/projects/${projectId}/user-applications/${appId}`
+      : `/projects/${projectId}/user-applications`
+  }
+
+  // set the query
+  if (isSdkApp) {
+    query = {appType: 'coreApp'}
+  } else if (!appId) {
+    // In practice, this function isn't called if we don't have at least one of appHost or appId,
+    // so the default case won't be called. But leaving this ternary in for now (from old CLI code) just in case.
+    query = appHost ? {appHost, appType: 'studio'} : {default: 'true'}
   }
 
   const client = await getGlobalCliClient({
@@ -67,7 +68,8 @@ export async function getUserApplication({
   })
 
   try {
-    return await client.request({query, uri})
+    const options = query ? {query, uri} : {uri}
+    return await client.request(options)
   } catch (err) {
     if (err?.statusCode === 404) {
       return null

@@ -1,7 +1,7 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, spinner, subdebug} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {chalk, spinner} from '@sanity/cli-core/ux'
 import {isAssetAspect, type SchemaValidationProblem} from '@sanity/types'
-import chalk from 'chalk'
 
 import {getMediaLibraryConfig} from '../../actions/media/getMediaLibraryConfig.js'
 import {importAspects} from '../../actions/media/importAspects.js'

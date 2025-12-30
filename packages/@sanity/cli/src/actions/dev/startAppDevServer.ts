@@ -1,4 +1,4 @@
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 import {startDevServer} from '../../server/devServer.js'
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'

@@ -1,17 +1,38 @@
 import {rm} from 'node:fs/promises'
 import path from 'node:path'
 
-import {logSymbols, type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
+import {logSymbols} from '@sanity/cli-core/ux'
 import {afterEach, beforeEach, describe, expect, it, type MockedFunction, vi} from 'vitest'
 
 import {buildStudio} from '../buildStudio.js'
 import {type BuildOptions} from '../types.js'
 
 vi.mock('node:fs/promises')
-vi.mock('@sanity/cli-core', async () => {
-  const original = await import('@sanity/cli-core')
+
+const mockedRm = rm as MockedFunction<typeof rm>
+const mockedConfirm = vi.hoisted(() => vi.fn())
+const mockedSelect = vi.hoisted(() => vi.fn())
+const mockedGetAppId = vi.hoisted(() => vi.fn())
+const mockedCompareDependencyVersions = vi.hoisted(() => vi.fn())
+const mockedGetPackageManagerChoice = vi.hoisted(() => vi.fn())
+const mockedUpgradePackages = vi.hoisted(() => vi.fn())
+const mockedWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
+const mockedBuildStaticFiles = vi.hoisted(() => vi.fn())
+const mockedBuildVendorDependencies = vi.hoisted(() => vi.fn())
+const mockedCheckRequiredDependencies = vi.hoisted(() => vi.fn())
+const mockedCheckStudioDependencyVersions = vi.hoisted(() => vi.fn())
+const mockedDetermineBasePath = vi.hoisted(() => vi.fn())
+const mockedGetAutoUpdatesImportMap = vi.hoisted(() => vi.fn())
+const mockedGetStudioEnvVars = vi.hoisted(() => vi.fn())
+const mockedShouldAutoUpdate = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core/ux', async () => {
+  const original = await import('@sanity/cli-core/ux')
   return {
     ...original,
+    confirm: mockedConfirm,
+    select: mockedSelect,
     spinner: vi.fn(() => ({
       fail: vi.fn().mockReturnThis(),
       start: vi.fn().mockReturnThis(),
@@ -21,28 +42,16 @@ vi.mock('@sanity/cli-core', async () => {
   }
 })
 
-const mockedRm = rm as MockedFunction<typeof rm>
-const mockedConfirm = vi.hoisted(() => vi.fn())
-const mockedSelect = vi.hoisted(() => vi.fn())
-const mockedCompareDependencyVersions = vi.hoisted(() => vi.fn())
-const mockedGetPackageManagerChoice = vi.hoisted(() => vi.fn())
-const mockedUpgradePackages = vi.hoisted(() => vi.fn())
-const mockedBuildStaticFiles = vi.hoisted(() => vi.fn())
-const mockedBuildVendorDependencies = vi.hoisted(() => vi.fn())
-const mockedCheckRequiredDependencies = vi.hoisted(() => vi.fn())
-const mockedCheckStudioDependencyVersions = vi.hoisted(() => vi.fn())
-const mockedDetermineBasePath = vi.hoisted(() => vi.fn())
-const mockedGetStudioAutoUpdateImportMap = vi.hoisted(() => vi.fn())
-const mockedGetStudioEnvVars = vi.hoisted(() => vi.fn())
-const mockedShouldAutoUpdate = vi.hoisted(() => vi.fn())
-
-vi.mock('@inquirer/prompts', () => ({
-  confirm: mockedConfirm,
-  select: mockedSelect,
+vi.mock('../../../util/appId.js', () => ({
+  getAppId: mockedGetAppId,
 }))
 
 vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: mockedCompareDependencyVersions,
+}))
+
+vi.mock('../../../util/warnAboutMissingAppId.js', () => ({
+  warnAboutMissingAppId: mockedWarnAboutMissingAppId,
 }))
 
 vi.mock('../../../util/packageManager/packageManagerChoice.js', () => ({
@@ -74,7 +83,7 @@ vi.mock('../determineBasePath.js', () => ({
 }))
 
 vi.mock('../getAutoUpdatesImportMap.js', () => ({
-  getStudioAutoUpdateImportMap: mockedGetStudioAutoUpdateImportMap,
+  getAutoUpdatesImportMap: mockedGetAutoUpdatesImportMap,
 }))
 
 vi.mock('../getStudioEnvVars.js', () => ({
@@ -113,12 +122,14 @@ describe('buildStudio', () => {
     vi.clearAllMocks()
 
     // Default mocks
+    mockedGetAppId.mockReturnValue(undefined)
+    mockedWarnAboutMissingAppId.mockReturnValue(undefined)
     mockedCheckStudioDependencyVersions.mockResolvedValue(undefined)
     mockedCheckRequiredDependencies.mockResolvedValue({
       installedSanityVersion: '3.0.0',
     })
     mockedShouldAutoUpdate.mockReturnValue(false)
-    mockedGetStudioAutoUpdateImportMap.mockReturnValue({})
+    mockedGetAutoUpdatesImportMap.mockReturnValue({})
     mockedCompareDependencyVersions.mockResolvedValue([])
     mockedGetStudioEnvVars.mockReturnValue([])
     mockedDetermineBasePath.mockReturnValue('/studio')
@@ -149,7 +160,7 @@ describe('buildStudio', () => {
     expect(mockedBuildStaticFiles).toHaveBeenCalled()
   })
 
-  it('should throw error when auto-updates enabled but coercedSanityVersion is invalid', async () => {
+  it('should throw error when auto-updates enabled but cleanSanityVersion is invalid', async () => {
     mockedCheckRequiredDependencies.mockResolvedValue({
       installedSanityVersion: 'invalid-version',
     })
@@ -171,14 +182,20 @@ describe('buildStudio', () => {
     const options = {
       ...baseBuildOptions,
       autoUpdatesEnabled: true,
+      cliConfig: {
+        api: {
+          projectId: 'test-project',
+        },
+      },
     }
 
     await buildStudio(options)
 
-    expect(mockOutput.warn).toHaveBeenCalledWith(expect.stringContaining('No appId configured'))
-    expect(mockOutput.warn).toHaveBeenCalledWith(
-      expect.stringContaining('This studio will auto-update to the latest channel'),
-    )
+    expect(mockedWarnAboutMissingAppId).toHaveBeenCalledWith({
+      appType: 'studio',
+      output: mockOutput,
+      projectId: 'test-project',
+    })
   })
 
   it('should handle auto-updates enabled with valid version', async () => {
@@ -194,8 +211,43 @@ describe('buildStudio', () => {
     expect(mockOutput.log).toHaveBeenCalledWith(
       `${logSymbols.info} Building with auto-updates enabled`,
     )
-    expect(mockedCompareDependencyVersions).toHaveBeenCalled()
-    expect(mockedGetStudioAutoUpdateImportMap).toHaveBeenCalledWith(encodeURIComponent('^3.0.0'))
+
+    const expectedPackages = [
+      {name: 'sanity', version: '3.0.0'},
+      {name: '@sanity/vision', version: '3.0.0'},
+    ]
+
+    expect(mockedGetAutoUpdatesImportMap).toHaveBeenCalledWith(expectedPackages, {appId: undefined})
+    expect(mockedCompareDependencyVersions).toHaveBeenCalledWith(expectedPackages, '/test/work/dir')
+  })
+
+  it('should pass appId to getAutoUpdatesImportMap when configured', async () => {
+    mockedShouldAutoUpdate.mockReturnValue(true)
+    mockedGetAppId.mockReturnValue('test-app-id')
+
+    const options = {
+      ...baseBuildOptions,
+      autoUpdatesEnabled: true,
+      cliConfig: {
+        deployment: {
+          appId: 'test-app-id',
+        },
+      },
+    }
+
+    await buildStudio(options)
+
+    const expectedPackages = [
+      {name: 'sanity', version: '3.0.0'},
+      {name: '@sanity/vision', version: '3.0.0'},
+    ]
+
+    expect(mockedGetAutoUpdatesImportMap).toHaveBeenCalledWith(expectedPackages, {
+      appId: 'test-app-id',
+    })
+    expect(mockedCompareDependencyVersions).toHaveBeenCalledWith(expectedPackages, '/test/work/dir')
+    // Should not warn about missing appId when appId is configured
+    expect(mockedWarnAboutMissingAppId).not.toHaveBeenCalled()
   })
 
   it('should prompt user when version differences exist and not in unattended mode', async () => {
@@ -514,7 +566,7 @@ describe('buildStudio', () => {
 
   it('should build vendor dependencies when auto-updates enabled', async () => {
     mockedShouldAutoUpdate.mockReturnValue(true)
-    mockedGetStudioAutoUpdateImportMap.mockReturnValue({test: 'import'})
+    mockedGetAutoUpdatesImportMap.mockReturnValue({test: 'import'})
     mockedBuildVendorDependencies.mockResolvedValue({'vendor-dep': 'path'})
 
     const options = {

@@ -1,5 +1,5 @@
 import {type Output} from '@sanity/cli-core'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 import {extractManifestSafe} from '../../manifest/extractManifest.js'
 import {FlagValidationError} from './schemaStoreValidation.js'
@@ -9,7 +9,7 @@ export type ManifestExtractor = (manifestDir: string) => Promise<void>
 export async function ensureManifestExtractSatisfied(args: {
   extractManifest: boolean
   manifestDir: string
-  manifestExtractor: (manifestDir: string) => Promise<void>
+  manifestExtractor: ManifestExtractor
   output: Output
   schemaRequired: boolean
 }) {

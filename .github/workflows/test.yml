@@ -26,12 +26,16 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup Environment
         uses: ./.github/actions/setup
         with:
           node-version: ${{ matrix.node-version }}
+
+      - name: Set Turbo cache bypass on rerun
+        if: github.run_attempt > 1
+        run: echo "TURBO_FORCE=true" >> $GITHUB_ENV
 
       - name: Test
         env:
@@ -47,7 +51,7 @@ jobs:
 
       - name: Upload blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() && matrix.node-version == '20' }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: blob-report-${{ github.run_id }}-${{ matrix.shardIndex }}
           path: '.vitest-reports/*'
@@ -63,14 +67,14 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Setup Environment
         uses: ./.github/actions/setup
         with:
           node-version: 20
 
       - name: 'Download coverage artifacts'
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           path: .vitest-reports
           pattern: blob-report-${{ github.run_id }}-*

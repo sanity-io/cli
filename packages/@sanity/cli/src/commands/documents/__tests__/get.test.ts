@@ -1,7 +1,7 @@
 import {runCommand} from '@oclif/test'
 import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {chalk} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
-import chalk from 'chalk'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'

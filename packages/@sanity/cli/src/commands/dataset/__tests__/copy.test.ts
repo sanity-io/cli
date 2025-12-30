@@ -1,5 +1,5 @@
-import {select} from '@inquirer/prompts'
 import {runCommand} from '@oclif/test'
+import {select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {of, throwError} from 'rxjs'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -28,10 +28,14 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-vi.mock('@inquirer/prompts', () => ({
-  input: vi.fn(),
-  select: vi.fn(),
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    input: vi.fn(),
+    select: vi.fn(),
+  }
+})
 
 vi.mock('../../../services/datasets.js', () => ({
   copyDataset: vi.fn(),

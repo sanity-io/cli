@@ -6,10 +6,9 @@ import path from 'node:path'
 import {text} from 'node:stream/consumers'
 import {pipeline} from 'node:stream/promises'
 
-import {spinner} from '@sanity/cli-core'
+import {chalk, spinner} from '@sanity/cli-core/ux'
 import {type SanityClient} from '@sanity/client'
 import {type FileAsset, type ImageAsset, type SanityDocument} from '@sanity/types'
-import chalk from 'chalk'
 import gunzipMaybe from 'gunzip-maybe'
 // @ts-expect-error `peek-stream` module currently untyped
 import isTar from 'is-tar'

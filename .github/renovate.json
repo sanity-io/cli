@@ -11,8 +11,6 @@
     "**/bower_components/**",
     "**/tests/**",
     "**/fixtures/**",
-    "packages/@sanity/codegen/**",
-    "packages/@sanity/migrate/**",
     "packages/@sanity/original-cli/**"
   ],
   "packageRules": [
