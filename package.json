@@ -44,7 +44,7 @@
   "devDependencies": {
     "@eslint/compat": "catalog:",
     "@sanity/eslint-config-cli": "workspace:*",
-    "@vitest/coverage-istanbul": "^3.2.4",
+    "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "husky": "^9.1.7",
     "knip": "^5.66.4",
@@ -52,10 +52,10 @@
     "minimatch": "^10.1.1",
     "prettier": "^3.5.3",
     "prettier-plugin-packagejson": "^2.5.19",
-    "rimraf": "^5.0.10",
+    "rimraf": "catalog:",
     "turbo": "^2.6.0",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "packageManager": "pnpm@10.21.0",
   "engines": {

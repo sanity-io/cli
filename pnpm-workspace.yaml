@@ -9,10 +9,48 @@ packages:
   - 'tmp/*'
 
 catalog:
+  # Linting
   eslint: ^9.39.2
   '@eslint/compat': ^2.0.0
+
+  # Sanity
   sanity: ^5.1.0
   '@sanity/vision': ^5.1.0
+  '@sanity/client': ^7.11.2
+
+  # Build & Development Tools
+  typescript: ^5.8.3
+  vite: ^7.1.6
+  tsx: ^4.19.3
+  '@vitejs/plugin-react': ^4.5.0
+
+  # Testing
+  vitest: ^3.2.4
+  '@vitest/coverage-istanbul': ^3.2.4
+  nock: ^14.0.10
+
+  # CLI Framework
+  '@oclif/core': ^4.8.0
+  '@oclif/plugin-help': ^6.2.36
+  '@oclif/plugin-not-found': ^3.2.73
+  '@oclif/test': ^4.1.15
+
+  # Utilities
+  debug: ^4.4.3
+  jsdom: ^26.0.0
+  zod: ^3.24.2
+  'get-tsconfig': ^4.10.1
+  execa: ^9.6.0
+
+  # Build Tools
+  '@swc/core': ^1.14.0
+  '@swc/cli': ^0.7.8
+  rimraf: ^6.0.1
+
+  # Type Definitions
+  '@types/node': ^20.19.24
+  '@types/debug': ^4.1.12
+  '@types/jsdom': ^21.1.7
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:

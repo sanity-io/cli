@@ -3,7 +3,7 @@ import {dirname} from 'node:path'
 
 import {type Options, transform} from '@swc/core'
 import {type FSWatcher, watch} from 'chokidar'
-import {glob} from 'glob'
+import {glob} from 'tinyglobby'
 
 let watcher: FSWatcher | null = null
 const compiledFiles: Set<string> = new Set()
@@ -57,7 +57,7 @@ export async function teardown() {
 async function setupSWC() {
   // Find all .worker.ts files
   const workerFiles = await glob('**/*.worker.ts', {
-    ignore: ['node_modules/**', 'dist/**'],
+    ignore: ['**/node_modules/**', '**/dist/**'],
   })
 
   console.log(`Found ${workerFiles.length} worker files to setup with SWC`)
