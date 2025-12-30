@@ -1,7 +1,7 @@
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 
-import {packageDirectory} from 'pkg-dir'
+import {packageDirectory} from 'package-directory'
 
 import {type PackageJson, readPackageJson} from './readPackageJson.js'
 

@@ -1,10 +1,10 @@
-import {packageDirectory} from 'pkg-dir'
+import {packageDirectory} from 'package-directory'
 import {describe, expect, test, vi} from 'vitest'
 
 import {getCliVersion} from '../getCliVersion.js'
 import {readPackageJson} from '../readPackageJson.js'
 
-vi.mock('pkg-dir')
+vi.mock('package-directory')
 vi.mock(import('../readPackageJson.js'))
 
 describe('#getCliVersion', () => {
