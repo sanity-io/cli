@@ -9,7 +9,7 @@ packages:
   - 'tmp/*'
 
 catalog:
-  eslint: ^9.39.1
+  eslint: ^9.39.2
   '@eslint/compat': ^2.0.0
   sanity: ^5.1.0
   '@sanity/vision': ^5.1.0
