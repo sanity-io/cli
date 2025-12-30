@@ -26,5 +26,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Set Turbo cache bypass on rerun
+        if: github.run_attempt > 1
+        run: echo "TURBO_FORCE=true" >> $GITHUB_ENV
+
       - name: Lint
         run: pnpm check:lint
