@@ -1,9 +1,9 @@
 import {type Output} from '@sanity/cli-core'
 
+import {uniqBy} from '../../../util/uniqBy.js'
 import {isDefined} from '../../manifest/schemaTypeHelpers.js'
 import {SANITY_WORKSPACE_SCHEMA_ID_PREFIX} from '../../manifest/types.js'
 import {type DeleteSchemaFlags} from '../deleteSchemaAction.js'
-import {resolveManifestDirectory} from './manifestReader.js'
 
 // TODO: These types will be imported from their respective files when migrated
 export interface DeploySchemasFlags extends SchemaStoreCommonFlags {
@@ -15,19 +15,6 @@ export interface DeploySchemasFlags extends SchemaStoreCommonFlags {
 export interface SchemaListFlags extends SchemaStoreCommonFlags {
   id?: string
   json?: boolean
-}
-
-// Native implementation instead of lodash/uniqBy
-function uniqBy<T>(array: T[], key: keyof T): T[] {
-  const seen = new Set()
-  return array.filter((item) => {
-    const value = item[key]
-    if (seen.has(value)) {
-      return false
-    }
-    seen.add(value)
-    return true
-  })
 }
 
 export const validForIdChars = 'a-zA-Z0-9._-'
@@ -58,33 +45,29 @@ interface WorkspaceSchemaId {
 }
 
 export interface SchemaStoreCommonFlags {
+  'manifest-dir': string
+
   'extract-manifest'?: boolean
-  'manifest-dir'?: string
+  'no-extract-manifest'?: boolean
   verbose?: boolean
 }
 
-function parseCommonFlags(
-  flags: SchemaStoreCommonFlags,
-  context: {workDir: string},
-  errors: string[],
-) {
-  const manifestDir = parseManifestDir(flags, errors)
+function parseCommonFlags(flags: SchemaStoreCommonFlags) {
   const verbose = !!flags.verbose
   // extract manifest by default: our CLI layer handles both --extract-manifest (true) and --no-extract-manifest (false)
   const extractManifest = flags['extract-manifest'] ?? true
 
-  const fullManifestDir = resolveManifestDirectory(context.workDir, manifestDir)
   return {
     extractManifest,
-    manifestDir: fullManifestDir,
+    manifestDir: flags['manifest-dir'],
     verbose,
   }
 }
 
-export function parseDeploySchemasConfig(flags: DeploySchemasFlags, context: {workDir: string}) {
+export function parseDeploySchemasConfig(flags: DeploySchemasFlags) {
   const errors: string[] = []
 
-  const commonFlags = parseCommonFlags(flags, context, errors)
+  const commonFlags = parseCommonFlags(flags)
   const workspaceName = parseWorkspace(flags, errors)
   const tag = parseTag(flags, errors)
   const schemaRequired = !!flags['schema-required']
@@ -93,10 +76,10 @@ export function parseDeploySchemasConfig(flags: DeploySchemasFlags, context: {wo
   return {...commonFlags, schemaRequired, tag, workspaceName}
 }
 
-export function parseListSchemasConfig(flags: SchemaListFlags, context: {workDir: string}) {
+export function parseListSchemasConfig(flags: SchemaListFlags) {
   const errors: string[] = []
 
-  const commonFlags = parseCommonFlags(flags, context, errors)
+  const commonFlags = parseCommonFlags(flags)
   const id = parseId(flags, errors)
   const json = !!flags.json
 
@@ -104,10 +87,10 @@ export function parseListSchemasConfig(flags: SchemaListFlags, context: {workDir
   return {...commonFlags, id, json}
 }
 
-export function parseDeleteSchemasConfig(flags: DeleteSchemaFlags, context: {workDir: string}) {
+export function parseDeleteSchemasConfig(flags: DeleteSchemaFlags) {
   const errors: string[] = []
 
-  const commonFlags = parseCommonFlags(flags, context, errors)
+  const commonFlags = parseCommonFlags(flags)
   const ids = parseIds(flags, errors)
   const dataset = parseDataset(flags, errors)
 
@@ -195,12 +178,6 @@ function parseDataset(flags: {dataset?: unknown}, errors: string[]) {
 
 function parseWorkspace(flags: {workspace?: unknown}, errors: string[]) {
   return flags.workspace === undefined ? undefined : parseNonEmptyString(flags, 'workspace', errors)
-}
-
-function parseManifestDir(flags: {'manifest-dir'?: unknown}, errors: string[]) {
-  return flags['manifest-dir'] === undefined
-    ? undefined
-    : parseNonEmptyString(flags, 'manifest-dir', errors)
 }
 
 export function parseTag(flags: {tag?: unknown}, errors: string[]) {
