@@ -1,7 +1,7 @@
-import {type SanityClient} from '@sanity/client'
-import chalk from 'chalk'
+import {chalk} from '@sanity/cli-core/ux'
 
 import {type DeploySchemaCommand} from '../../commands/schema/deploy'
+import {updateSchemas} from '../../services/schemas.js'
 import {
   CURRENT_WORKSPACE_SCHEMA_VERSION,
   type ManifestWorkspaceFile,
@@ -10,7 +10,6 @@ import {
 import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
 import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {type CreateManifestReader, createManifestReader} from './utils/manifestReader.js'
-import {createSchemaApiClient} from './utils/schemaApiClient.js'
 import {
   FlagValidationError,
   parseDeploySchemasConfig,
@@ -23,8 +22,8 @@ export async function deploySchemas(
   context: SchemaStoreContext,
 ): Promise<SchemaStoreActionResult> {
   const {extractManifest, manifestDir, schemaRequired, tag, verbose, workspaceName} =
-    parseDeploySchemasConfig(flags, context)
-  const {apiClient, jsonReader, manifestExtractor, output} = context
+    parseDeploySchemasConfig(flags)
+  const {jsonReader, manifestExtractor, output, workDir} = context
 
   if (
     !(await ensureManifestExtractSatisfied({
@@ -43,7 +42,7 @@ export async function deploySchemas(
       jsonReader,
       manifestDir,
       output,
-      // workDir,
+      workDir,
     })
     const manifest = await manifestReader.getManifest()
     const workspaces = manifest.workspaces.filter(
@@ -57,10 +56,7 @@ export async function deploySchemas(
       throw error
     }
 
-    const {client} = await createSchemaApiClient(apiClient)
-
     const updateSchema = getUpdateSchema({
-      client,
       manifestReader,
       output,
       tag,
@@ -98,13 +94,12 @@ export async function deploySchemas(
 }
 
 function getUpdateSchema(args: {
-  client: SanityClient
   manifestReader: CreateManifestReader
   output: DeploySchemaCommand['flags']['output']
   tag?: string
   verbose: boolean
 }): (workspace: ManifestWorkspaceFile) => Promise<void> {
-  const {client, manifestReader, output, tag, verbose} = args
+  const {manifestReader, output, tag, verbose} = args
 
   return async (workspace) => {
     const {dataset, projectId} = workspace
@@ -114,15 +109,12 @@ function getUpdateSchema(args: {
       workspaceName: workspace.name,
     })
 
-    console.log('tag', tag)
-    console.log('id', id)
-
     if (idWarning) output.warn(idWarning)
 
     try {
       const schema = await manifestReader.getWorkspaceSchema(workspace.name)
 
-      const schemas: Omit<StoredWorkspaceSchema, '_id' | '_type'>[] = [
+      await updateSchemas<Omit<StoredWorkspaceSchema, '_id' | '_type'>[]>(dataset, projectId, [
         {
           // the API will stringify the schema – we send as JSON
           schema,
@@ -133,15 +125,7 @@ function getUpdateSchema(args: {
             title: workspace.title,
           },
         },
-      ]
-
-      await client.withConfig({dataset, projectId}).request({
-        body: {
-          schemas,
-        },
-        method: 'PUT',
-        url: `/projects/${projectId}/datasets/${dataset}/schemas`,
-      })
+      ])
 
       if (verbose) {
         output.log(chalk.gray(`↳ schemaId: ${id}, projectId: ${projectId}, dataset: ${dataset}`))

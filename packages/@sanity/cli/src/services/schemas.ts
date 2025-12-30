@@ -39,3 +39,15 @@ export async function deleteSchema(dataset: string, projectId: string, id: strin
     uri: `/projects/${projectId}/datasets/${dataset}/schemas/${id}`,
   })
 }
+
+export async function updateSchemas<T>(dataset: string, projectId: string, schemas: T) {
+  const client = await getSchemaClient()
+
+  return await client.request({
+    body: {
+      schemas: schemas,
+    },
+    method: 'PUT',
+    url: `/projects/${projectId}/datasets/${dataset}/schemas`,
+  })
+}
