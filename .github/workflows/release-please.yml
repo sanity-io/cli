@@ -61,14 +61,17 @@ jobs:
       - name: Publish packages
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
         # TODO: Remove the tag once we have a proper release
-        run: pnpm publish -r --filter="@sanity/cli" --filter="@sanity/cli*" --filter="@sanity/eslint-config-cli" --tag alpha
+        run: pnpm publish -r --filter="@sanity/cli" --filter="@sanity/cli*" --filter="@sanity/eslint-config-cli" --filter="create-sanity" --tag alpha
 
       - name: Summary
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
         run: |
           echo "## Published Packages 🚀" >> $GITHUB_STEP_SUMMARY
           echo "All CLI packages published:" >> $GITHUB_STEP_SUMMARY
-          echo "- @sanity/cli-core" >> $GITHUB_STEP_SUMMARY
-          echo "- @sanity/cli-test" >> $GITHUB_STEP_SUMMARY
-          echo "- @sanity/cli" >> $GITHUB_STEP_SUMMARY
-          echo "- @sanity/eslint-config-cli" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Version |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| @sanity/cli-core | ${{ steps.release.outputs['cli-core--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| @sanity/cli-test | ${{ steps.release.outputs['cli-test--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| @sanity/cli | ${{ steps.release.outputs['cli--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| @sanity/eslint-config-cli | ${{ steps.release.outputs['eslint-config-cli--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| create-sanity | ${{ steps.release.outputs['create-sanity--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
