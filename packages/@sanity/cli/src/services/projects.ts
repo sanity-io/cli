@@ -61,3 +61,12 @@ export async function getProjectById(projectId: string) {
 
   return client.projects.getById(projectId)
 }
+
+export async function listProjects() {
+  const client = await getGlobalCliClient({
+    apiVersion: PROJECTS_API_VERSION,
+    requireUser: true,
+  })
+
+  return client.projects.list({includeMembers: false})
+}

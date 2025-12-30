@@ -1,4 +1,5 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
+import {RawRequestOptions} from '@sanity/client'
 
 export const ORGANIZATIONS_API_VERSION = 'v2021-06-07'
 
@@ -31,16 +32,21 @@ interface OrganizationGrantsResponse {
   [key: string]: OrganizationGrant[]
 }
 
+type OrganizationRequestQuery = RawRequestOptions['query']
+
 /**
  * List all organizations the user has access to
  */
-export async function listOrganizations(): Promise<ProjectOrganization[]> {
+export async function listOrganizations(
+  query?: OrganizationRequestQuery,
+): Promise<ProjectOrganization[]> {
   const client = await getGlobalCliClient({
     apiVersion: ORGANIZATIONS_API_VERSION,
     requireUser: true,
   })
 
   return client.request<ProjectOrganization[]>({
+    query,
     uri: '/organizations',
   })
 }

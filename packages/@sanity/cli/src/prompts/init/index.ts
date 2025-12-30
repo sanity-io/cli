@@ -1,48 +1,45 @@
-import {type CliOutputter, type CliPrompter} from '../../../types'
+import {Output} from '@sanity/cli-core'
+import {confirm, select} from '@sanity/cli-core/ux'
 
-export function promptForTypeScript(prompt: CliPrompter): Promise<boolean> {
-  return prompt.single({
-    type: 'confirm',
+export function promptForTypeScript(): Promise<boolean> {
+  return confirm({
+    default: true,
     message: 'Do you want to use TypeScript?',
-    default: true,
   })
 }
 
-export function promptForDefaultConfig(prompt: CliPrompter): Promise<boolean> {
-  return prompt.single({
-    type: 'confirm',
+export function promptForDefaultConfig(): Promise<boolean> {
+  return confirm({
+    default: true,
     message: 'Use the default dataset configuration?',
-    default: true,
   })
 }
 
-export function promptImplicitReconfigure(prompt: CliPrompter): Promise<boolean> {
-  return prompt.single({
-    type: 'confirm',
+export function promptImplicitReconfigure(): Promise<boolean> {
+  return confirm({
+    default: true,
     message:
       'The current folder contains a configured Sanity studio. Would you like to reconfigure it?',
-    default: true,
   })
 }
 
-export async function promptForAclMode(prompt: CliPrompter, output: CliOutputter): Promise<string> {
-  const mode = await prompt.single({
-    type: 'list',
-    message: 'Choose dataset visibility – this can be changed later',
+export async function promptForAclMode(output: Output): Promise<string> {
+  const mode = await select({
     choices: [
       {
-        value: 'public',
         name: 'Public (world readable)',
+        value: 'public',
       },
       {
-        value: 'private',
         name: 'Private (authenticated requests only)',
+        value: 'private',
       },
     ],
+    message: 'Choose dataset visibility – this can be changed later',
   })
 
   if (mode === 'private') {
-    output.print(
+    output.log(
       'Please note that while documents are private, assets (files and images) are still public\n',
     )
   }

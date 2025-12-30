@@ -3,7 +3,7 @@
 import {Args, Command, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {getCliToken, SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
-import {confirm, input, logSymbols, select, spinner} from '@sanity/cli-core/ux'
+import {chalk, confirm, input, logSymbols, select, Separator, spinner} from '@sanity/cli-core/ux'
 import {type DatasetAclMode, isHttpError} from '@sanity/client'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
@@ -18,7 +18,11 @@ import {
 } from '../actions/init/remoteTemplate.js'
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
-import {createDataset} from '../services/datasets.js'
+import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'
+import {promptForAclMode, promptForDefaultConfig} from '../prompts/init/index.js'
+import {promptForDatasetName} from '../prompts/promptForDatasetName.js'
+import {createDataset, listDatasets} from '../services/datasets.js'
+import {getProjectFeatures} from '../services/getProjectFeatures.js'
 import {
   createOrganization,
   listOrganizations,
@@ -26,7 +30,7 @@ import {
   type ProjectOrganization,
 } from '../services/organizations.js'
 import {getPlanId, getPlanIdFromCoupon} from '../services/plans.js'
-import {createProject} from '../services/projects.js'
+import {createProject, listProjects} from '../services/projects.js'
 import {getCliUser} from '../services/user.js'
 
 const debug = subdebug('init')
@@ -245,14 +249,14 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     const defaultConfig = this.flags['dataset-default']
-    let _showDefaultConfigPrompt = !defaultConfig
+    let showDefaultConfigPrompt = !defaultConfig
     if (
       this.flags.dataset ||
       this.flags.visibility ||
       this.flags['dataset-default'] ||
       this.isUnattended()
     ) {
-      _showDefaultConfigPrompt = false
+      showDefaultConfigPrompt = false
     }
 
     const detectedFramework: Framework | null = await detectFrameworkRecord({
@@ -321,6 +325,25 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     const _newProjectId =
       createProjectName && (await this.createProject({createProjectName, planId, user}))
+
+    const {datasetName, projectId} = await this.getProjectDetails({
+      isAppTemplate,
+      planId,
+      showDefaultConfigPrompt,
+      user,
+    })
+
+    // If user doesn't want to output any template code
+    if (this.flags.bare) {
+      this.log(`${logSymbols.success} Below are your project details`)
+      this.log('')
+      this.log(`Project ID: ${chalk.cyan(projectId)}`)
+      this.log(`Dataset: ${chalk.cyan(datasetName)}`)
+      this.log(
+        `\nYou can find your project on Sanity Manage — https://www.sanity.io/manage/project/${projectId}\n`,
+      )
+      return
+    }
   }
 
   private checkFlagsInUnattendedMode({
@@ -438,6 +461,282 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     return {user}
   }
 
+  private async getOrCreateDataset(opts: {
+    displayName: string
+    projectId: string
+    showDefaultConfigPrompt: boolean
+  }): Promise<{datasetName: string; userAction: 'create' | 'none' | 'select'}> {
+    const aclMode = this.flags.visibility
+    const dataset = this.flags.dataset
+    let defaultConfig = this.flags['dataset-default']
+
+    if (dataset && this.isUnattended()) {
+      return {datasetName: dataset, userAction: 'none'}
+    }
+
+    const [datasets, projectFeatures] = await Promise.all([
+      listDatasets(opts.projectId),
+      getProjectFeatures(opts.projectId),
+    ])
+
+    const privateDatasetsAllowed = projectFeatures.includes('privateDataset')
+    const allowedModes = privateDatasetsAllowed ? ['public', 'private'] : ['public']
+
+    if (aclMode && !allowedModes.includes(aclMode)) {
+      throw new Error(`Visibility mode "${aclMode}" not allowed`)
+    }
+
+    // Getter in order to present prompts in a more logical order
+    const getAclMode = async (): Promise<string> => {
+      if (aclMode) {
+        return aclMode
+      }
+
+      if (this.isUnattended() || !privateDatasetsAllowed || defaultConfig) {
+        return 'public'
+      }
+
+      if (privateDatasetsAllowed) {
+        const mode = await promptForAclMode(this.output)
+        return mode
+      }
+
+      return 'public'
+    }
+
+    if (dataset) {
+      debug('User has specified dataset through a flag (%s)', dataset)
+      const existing = datasets.find((ds) => ds.name === dataset)
+
+      if (!existing) {
+        debug('Specified dataset not found, creating it')
+        const aclMode = await getAclMode()
+        const spin = spinner('Creating dataset').start()
+        await createDataset({
+          aclMode: aclMode as DatasetAclMode,
+          datasetName: dataset,
+          projectId: opts.projectId,
+        })
+        spin.succeed()
+      }
+
+      return {datasetName: dataset, userAction: 'none'}
+    }
+
+    const datasetInfo =
+      'Your content will be stored in a dataset that can be public or private, depending on\nwhether you want to query your content with or without authentication.\nThe default dataset configuration has a public dataset named "production".'
+
+    if (datasets.length === 0) {
+      debug('No datasets found for project, prompting for name')
+      if (opts.showDefaultConfigPrompt) {
+        this.log(datasetInfo)
+        defaultConfig = await promptForDefaultConfig()
+      }
+      const name = defaultConfig
+        ? 'production'
+        : await promptForDatasetName({
+            message: 'Name of your first dataset:',
+          })
+      const aclMode = await getAclMode()
+      const spin = spinner('Creating dataset').start()
+      await createDataset({
+        aclMode: aclMode as DatasetAclMode,
+        datasetName: name,
+        projectId: opts.projectId,
+      })
+      spin.succeed()
+      return {datasetName: name, userAction: 'create'}
+    }
+
+    debug(`User has ${datasets.length} dataset(s) already, showing list of choices`)
+    const datasetChoices = datasets.map((dataset) => ({value: dataset.name}))
+
+    const selected = await select({
+      choices: [{name: 'Create new dataset', value: 'new'}, new Separator(), ...datasetChoices],
+      message: 'Select dataset to use',
+    })
+
+    if (selected === 'new') {
+      const existingDatasetNames = datasets.map((ds) => ds.name)
+      debug('User wants to create a new dataset, prompting for name')
+      if (opts.showDefaultConfigPrompt && !existingDatasetNames.includes('production')) {
+        this.log(datasetInfo)
+        defaultConfig = await promptForDefaultConfig()
+      }
+
+      const newDatasetName = defaultConfig
+        ? 'production'
+        : await promptForDatasetName(
+            {
+              message: 'Dataset name:',
+            },
+            existingDatasetNames,
+          )
+      const aclMode = await getAclMode()
+      const spin = spinner('Creating dataset').start()
+      await createDataset({
+        aclMode: aclMode as DatasetAclMode,
+        datasetName: newDatasetName,
+        projectId: opts.projectId,
+      })
+      spin.succeed()
+      return {datasetName: newDatasetName, userAction: 'create'}
+    }
+
+    debug(`Returning selected dataset (${selected})`)
+    return {datasetName: selected, userAction: 'select'}
+  }
+
+  private async getOrCreateProject({
+    planId,
+    user,
+  }: {
+    planId: string | undefined
+    user: SanityOrgUser
+  }): Promise<{
+    displayName: string
+    isFirstProject: boolean
+    projectId: string
+    userAction: 'create' | 'select'
+  }> {
+    const projectId = this.flags.project
+    const organizationId = this.flags.organization
+    let projects
+    let organizations: ProjectOrganization[]
+
+    try {
+      const [allProjects, allOrgs] = await Promise.all([listProjects(), listOrganizations()])
+      projects = allProjects.toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
+      organizations = allOrgs
+    } catch (err) {
+      if (this.isUnattended() && projectId) {
+        return {
+          displayName: 'Unknown project',
+          isFirstProject: false,
+          projectId,
+          userAction: 'select',
+        }
+      }
+      throw new Error(`Failed to communicate with the Sanity API:\n${err.message}`, {cause: err})
+    }
+
+    if (projects.length === 0 && this.isUnattended()) {
+      throw new Error('No projects found for current user')
+    }
+
+    if (projectId) {
+      const project = projects.find((proj) => proj.id === projectId)
+      if (!project && !this.isUnattended()) {
+        throw new Error(
+          `Given project ID (${projectId}) not found, or you do not have access to it`,
+        )
+      }
+
+      return {
+        displayName: project ? project.displayName : 'Unknown project',
+        isFirstProject: false,
+        projectId,
+        userAction: 'select',
+      }
+    }
+
+    if (organizationId) {
+      const organization =
+        organizations.find((org) => org.id === organizationId) ||
+        organizations.find((org) => org.slug === organizationId)
+
+      if (!organization) {
+        throw new Error(
+          `Given organization ID (${organizationId}) not found, or you do not have access to it`,
+        )
+      }
+
+      if (!(await hasProjectAttachGrant(organizationId))) {
+        throw new Error(
+          'You lack the necessary permissions to attach a project to this organization',
+        )
+      }
+    }
+
+    // If the user has no projects or is using a coupon (which can only be applied to new projects)
+    // just ask for project details instead of showing a list of projects
+    const isUsersFirstProject = projects.length === 0
+    if (isUsersFirstProject || this.flags.coupon) {
+      debug(
+        isUsersFirstProject
+          ? 'No projects found for user, prompting for name'
+          : 'Using a coupon - skipping project selection',
+      )
+      const projectName = await input({
+        default: 'My Sanity Project',
+        message: 'Project name:',
+        validate(input) {
+          if (!input || input.trim() === '') {
+            return 'Project name cannot be empty'
+          }
+
+          if (input.length > 80) {
+            return 'Project name cannot be longer than 80 characters'
+          }
+
+          return true
+        },
+      })
+
+      const newProject = await createProject({
+        displayName: projectName,
+        metadata: {coupon: this.flags.coupon},
+        organizationId:
+          organizationId || (await this.promptUserForOrganization({organizations, user})),
+        subscription: planId ? {planId} : undefined,
+      })
+
+      return {
+        ...newProject,
+        isFirstProject: isUsersFirstProject,
+        userAction: 'create',
+      }
+    }
+
+    debug(`User has ${projects.length} project(s) already, showing list of choices`)
+
+    const projectChoices = projects.map((project) => ({
+      name: `${project.displayName} (${project.id})`,
+      value: project.id,
+    }))
+
+    const selected = await select({
+      choices: [{name: 'Create new project', value: 'new'}, new Separator(), ...projectChoices],
+      message: 'Create a new project or select an existing one',
+    })
+
+    if (selected === 'new') {
+      debug('User wants to create a new project, prompting for name')
+      return createProject({
+        displayName: await input({
+          default: 'My Sanity Project',
+          message: 'Your project name:',
+        }),
+        metadata: {coupon: this.flags.coupon},
+        organizationId:
+          organizationId || (await this.promptUserForOrganization({organizations, user})),
+        subscription: planId ? {planId} : undefined,
+      }).then((response) => ({
+        ...response,
+        isFirstProject: isUsersFirstProject,
+        userAction: 'create',
+      }))
+    }
+
+    debug(`Returning selected project (${selected})`)
+    return {
+      displayName: projects.find((proj) => proj.id === selected)?.displayName || '',
+      isFirstProject: isUsersFirstProject,
+      projectId: selected,
+      userAction: 'select',
+    }
+  }
+
   private async getPlan(): Promise<string | undefined> {
     const intendedPlan = this.flags['project-plan']
     const intendedCoupon = this.flags.coupon
@@ -448,6 +747,70 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       return this.verifyPlan(intendedPlan)
     } else {
       return undefined
+    }
+  }
+
+  private async getProjectDetails({
+    isAppTemplate,
+    planId,
+    showDefaultConfigPrompt,
+    user,
+  }: {
+    isAppTemplate: boolean
+    planId: string | undefined
+    showDefaultConfigPrompt: boolean
+    user: SanityOrgUser
+  }): Promise<{
+    datasetName: string
+    displayName: string
+    isFirstProject: boolean
+    organizationId?: string
+    projectId: string
+    schemaUrl?: string
+  }> {
+    if (isAppTemplate) {
+      const organizations = await listOrganizations({
+        includeImplicitMemberships: 'true',
+        includeMembers: 'true',
+      })
+
+      const appOrganizationId = await this.promptUserForOrganization({organizations, user})
+
+      return {
+        datasetName: '',
+        displayName: '',
+        isFirstProject: false,
+        organizationId: appOrganizationId,
+        projectId: '',
+      }
+    }
+
+    debug('Prompting user to select or create a project')
+    const project = await this.getOrCreateProject({planId, user})
+    debug(`Project with name ${project.displayName} selected`)
+
+    // Now let's pick or create a dataset
+    debug('Prompting user to select or create a dataset')
+    const dataset = await this.getOrCreateDataset({
+      displayName: project.displayName,
+      projectId: project.projectId,
+      showDefaultConfigPrompt,
+    })
+    debug(`Dataset with name ${dataset.datasetName} selected`)
+
+    // @todo
+    // trace.log({
+    //   step: 'createOrSelectDataset',
+    //   selectedOption: dataset.userAction,
+    //   datasetName: dataset.datasetName,
+    //   visibility: flags.visibility as 'private' | 'public',
+    // })
+
+    return {
+      datasetName: dataset.datasetName,
+      displayName: project.displayName,
+      isFirstProject: project.isFirstProject,
+      projectId: project.projectId,
     }
   }
 
