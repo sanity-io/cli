@@ -1,5 +1,7 @@
+import {mockApi} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {SCHEMA_API_VERSION} from '../../../services/schemas'
 import {deploySchemas} from '../deploySchemas'
 import {type SchemaStoreContext} from '../schemaStoreTypes'
 
@@ -9,7 +11,6 @@ const mockOutput = {
   warn: vi.fn(),
 }
 
-const mockApiClient = vi.fn()
 const mockJsonReader = vi.fn()
 const mockManifestExtractor = vi.fn()
 
@@ -41,27 +42,9 @@ const mockManifest = {
 
 describe('#deploySchemas', () => {
   let context: SchemaStoreContext
-  let mockClientWithConfig: {
-    config: ReturnType<typeof vi.fn>
-    request: ReturnType<typeof vi.fn>
-    withConfig: ReturnType<typeof vi.fn>
-  }
 
   beforeEach(() => {
     vi.clearAllMocks()
-
-    mockClientWithConfig = {
-      config: vi.fn().mockReturnValue({dataset: 'production', projectId: 'test-project'}),
-      request: vi.fn(),
-      withConfig: vi.fn(),
-    }
-
-    mockClientWithConfig.withConfig.mockReturnValue(mockClientWithConfig)
-
-    mockApiClient.mockResolvedValue({
-      config: vi.fn().mockReturnValue({dataset: 'production', projectId: 'test-project'}),
-      withConfig: vi.fn().mockReturnValue(mockClientWithConfig),
-    })
 
     mockManifestExtractor.mockResolvedValue(undefined)
 
@@ -84,7 +67,6 @@ describe('#deploySchemas', () => {
     })
 
     context = {
-      apiClient: mockApiClient as never,
       jsonReader: mockJsonReader as never,
       manifestExtractor: mockManifestExtractor as never,
       output: mockOutput as never,
@@ -97,7 +79,16 @@ describe('#deploySchemas', () => {
   })
 
   test('should deploy schemas', async () => {
-    mockClientWithConfig.request.mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, undefined)
 
     const result = await deploySchemas(
       {
@@ -117,7 +108,16 @@ describe('#deploySchemas', () => {
   })
 
   test('throw an error if some schemas fail to deploy', async () => {
-    mockClientWithConfig.request.mockResolvedValueOnce(undefined).mockRejectedValue(undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(404, undefined)
 
     const result = await deploySchemas(
       {
@@ -139,7 +139,11 @@ describe('#deploySchemas', () => {
   })
 
   test('should deploy a specific schema based on workspace flag', async () => {
-    mockClientWithConfig.request.mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, undefined)
 
     const result = await deploySchemas(
       {
@@ -178,7 +182,16 @@ describe('#deploySchemas', () => {
   })
 
   test('should enable verbose logging with verbose flag', async () => {
-    mockClientWithConfig.request.mockResolvedValueOnce(undefined).mockResolvedValueOnce(undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, undefined)
 
     const result = await deploySchemas(
       {
@@ -198,17 +211,28 @@ describe('#deploySchemas', () => {
     )
   })
 
-  test('should deploy a schema with a tag prefix', async () => {})
-
-  test('should throw an error if tag is invalid', async () => {})
+  test('should throw an error if tag is invalid', async () => {
+    await expect(() =>
+      deploySchemas(
+        {
+          'extract-manifest': true,
+          json: undefined,
+          'manifest-dir': './dist/static',
+          tag: 'test.tag',
+          verbose: false,
+          workspace: undefined,
+        },
+        context,
+      ),
+    ).rejects.toThrowError('tag cannot contain . (period)')
+  })
 
   test('throws an error if schema request fails', async () => {
-    interface ErrorUnauthorized extends Error {
-      statusCode: 401
-    }
-    const error = new Error('Error') as ErrorUnauthorized
-    error.statusCode = 401
-    mockClientWithConfig.request.mockRejectedValue(error)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(401, undefined)
 
     const result = await deploySchemas(
       {
@@ -231,7 +255,16 @@ describe('#deploySchemas', () => {
   })
 
   test('skips manifest extraction with no-extract-manifest flag', async () => {
-    mockClientWithConfig.request.mockResolvedValueOnce(undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, undefined)
 
     await deploySchemas(
       {

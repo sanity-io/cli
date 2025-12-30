@@ -42,6 +42,7 @@ const mockManifest = {
 
 describe('#listSchema', () => {
   let context: SchemaStoreContext
+
   beforeEach(() => {
     vi.clearAllMocks()
 
