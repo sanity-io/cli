@@ -20,7 +20,7 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build",
-    "build:cli": "turbo run build --filter=@sanity/cli && pnpm run build:types",
+    "build:cli": "turbo run build --filter=@sanity/cli --force && pnpm run build:types",
     "build:types": "turbo run build:types --filter=@sanity/cli --filter=@sanity/cli-core",
     "check": "npm run check:lint && npm run check:types",
     "check:lint": "turbo run lint -- --fix",
@@ -44,7 +44,6 @@
   "devDependencies": {
     "@eslint/compat": "catalog:",
     "@sanity/eslint-config-cli": "workspace:*",
-    "@types/node": "^20.19.27",
     "@vitest/coverage-istanbul": "^3.2.4",
     "eslint": "catalog:",
     "husky": "^9.1.7",
