@@ -18,9 +18,7 @@
     },
     "check:types": {},
     "watch": {},
-    "test": {
-      "cache": false
-    },
+    "test": {},
     "test:coverage": {},
     "test:watch": {},
     "extract-commands": {
