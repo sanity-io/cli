@@ -1,5 +1,27 @@
 # Changelog
 
+## [6.0.0-alpha.4](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.3...cli-v6.0.0-alpha.4) (2025-12-30)
+
+
+### Features
+
+* add a eslint-config-cli package ([#226](https://github.com/sanity-io/cli/issues/226)) ([2980003](https://github.com/sanity-io/cli/commit/2980003fc8d1b3935f436f7e29c00207e65db6fc))
+
+
+### Bug Fixes
+
+* **deps:** update dependency eventsource to ^4.1.0 ([#240](https://github.com/sanity-io/cli/issues/240)) ([6d3fc42](https://github.com/sanity-io/cli/commit/6d3fc42926e06af85a683bc2cbdd4c2db20a1ee3))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.4
+  * devDependencies
+    * @sanity/cli-test bumped to 0.0.2-alpha.3
+    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.1
+
 ## [6.0.0-alpha.3](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.2...cli-v6.0.0-alpha.3) (2025-12-24)
 
 

@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.0.2-alpha.3](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.2...cli-test-v0.0.2-alpha.3) (2025-12-30)
+
+
+### Features
+
+* add a eslint-config-cli package ([#226](https://github.com/sanity-io/cli/issues/226)) ([2980003](https://github.com/sanity-io/cli/commit/2980003fc8d1b3935f436f7e29c00207e65db6fc))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.1
+
 ## [0.0.2-alpha.2](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.1...cli-test-v0.0.2-alpha.2) (2025-12-19)
 
 
