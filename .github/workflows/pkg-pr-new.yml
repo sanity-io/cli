@@ -11,7 +11,7 @@ concurrency:
 jobs:
   publish-preview:
     # Only run if PR has 'trigger: preview' label
-    if: contains(github.event.pull_request.labels.*.name, 'trigger: preview')
+    if: "contains(github.event.pull_request.labels.*.name, 'trigger: preview')"
 
     runs-on: ubuntu-latest
 
