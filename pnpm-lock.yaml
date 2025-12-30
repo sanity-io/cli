@@ -49,7 +49,7 @@ importers:
         version: 9.1.7
       knip:
         specifier: ^5.66.4
-        version: 5.77.4(@types/node@22.19.3)(typescript@5.9.3)
+        version: 5.78.0(@types/node@22.19.3)(typescript@5.9.3)
       lint-staged:
         specifier: ^16.2.6
         version: 16.2.7
@@ -322,7 +322,7 @@ importers:
         version: 1.0.0
       isomorphic-dompurify:
         specifier: ^2.32.0
-        version: 2.34.0
+        version: 2.35.0
       jsdom:
         specifier: ^26.0.0
         version: 26.1.0
@@ -3997,8 +3997,8 @@ packages:
     resolution: {integrity: sha512-Sg0xJUNDU1sJNGdfGWhVHX0kkZ+HWcvmVymJbj6NSgZZmW/8S9Y2HQ5euytnIgakgxN6papOAWiwDo1ctFDcoQ==}
     hasBin: true
 
-  basic-ftp@5.0.5:
-    resolution: {integrity: sha512-4Bcg1P8xhUuqcii/S0Z9wiHIrQVPMermM1any+MX5GeGD7faD3/msQUDGLol9wOcz4/jbg/WJnGqoJF6LiBdtg==}
+  basic-ftp@5.1.0:
+    resolution: {integrity: sha512-RkaJzeJKDbaDWTIPiJwubyljaEPwpVWkm9Rt5h9Nd6h7tEXTJ3VB4qxdZBioV7JO5yLUaOKwz7vDOzlncUsegw==}
     engines: {node: '>=10.0.0'}
 
   before-after-hook@2.2.3:
@@ -5613,8 +5613,8 @@ packages:
     resolution: {integrity: sha512-nZmoK4wKdzPs5USq4JHBiimjdKSVAOm2T1KyDoadtMPNXYHxiENd19ou4iU/V4juFM6LVgYQnpxCYmxqNP4Obw==}
     engines: {node: '>=18'}
 
-  isomorphic-dompurify@2.34.0:
-    resolution: {integrity: sha512-7VeB/tDBQ8jt1+syT563hmmejY01nuwizpUIFPfM1aw3iTgLLiVP4/Nh+PKhNoa1V/H+E6ZlNcowsXLbChPCpw==}
+  isomorphic-dompurify@2.35.0:
+    resolution: {integrity: sha512-a9+LQqylQCU8f1zmsYmg2tfrbdY2YS/Hc+xntcq/mDI2MY3Q108nq8K23BWDIg6YGC5JsUMC15fj2ZMqCzt/+A==}
     engines: {node: '>=20.19.5'}
 
   istanbul-lib-coverage@3.2.2:
@@ -5765,8 +5765,8 @@ packages:
     resolution: {integrity: sha512-dcS1ul+9tmeD95T+x28/ehLgd9mENa3LsvDTtzm3vyBEO7RPptvAD+t44WVXaUjTBRcrpFeFlC8WCruUR456hw==}
     engines: {node: '>=0.10.0'}
 
-  knip@5.77.4:
-    resolution: {integrity: sha512-CmRd3UabOBqA4lDUAMA8CJeepIoQPD2qRqq0wCnLz9Z3FTlG1iucZ7puwe+i3zV0gUaIWVYgC8cXoDMZEC+DyA==}
+  knip@5.78.0:
+    resolution: {integrity: sha512-nB7i/fgiJl7WVxdv5lX4ZPfDt9/zrw/lOgZtyioy988xtFhKuFJCRdHWT1Zg9Avc0yaojvnmEuAXU8SeMblKww==}
     engines: {node: '>=18.18.0'}
     hasBin: true
     peerDependencies:
@@ -7231,8 +7231,8 @@ packages:
     resolution: {integrity: sha512-bLVMLPtstlZ4iMQHpFHTR7GAGj2jxi8Dg0s2h2MafAE4uSWF98FC/3MomU51iQAMf8/qDUbKWf5GxuvvVcXEhw==}
     engines: {node: '>=20'}
 
-  ts-api-utils@2.1.0:
-    resolution: {integrity: sha512-CUgTZL1irw8u29bzrOD/nH85jqyc74D6SshFgujOIA7osm2Rz7dYH77agkx7H4FBNxDq7Cjf+IjaX/8zwFW+ZQ==}
+  ts-api-utils@2.2.0:
+    resolution: {integrity: sha512-L6f5oQRAoLU1RwXz0Ab9mxsE7LtxeVB6AIR1lpkZMsOyg/JXeaxBaXa/FVCBZyNr9S9I4wkHrlZTklX+im+WMw==}
     engines: {node: '>=18.12'}
     peerDependencies:
       typescript: '>=4.8.4'
@@ -11402,7 +11402,7 @@ snapshots:
       eslint: 9.39.2(jiti@2.6.1)
       ignore: 7.0.5
       natural-compare: 1.4.0
-      ts-api-utils: 2.1.0(typescript@5.9.3)
+      ts-api-utils: 2.2.0(typescript@5.9.3)
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
@@ -11462,7 +11462,7 @@ snapshots:
       '@typescript-eslint/utils': 8.50.1(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
       debug: 4.4.3(supports-color@8.1.1)
       eslint: 9.39.2(jiti@2.6.1)
-      ts-api-utils: 2.1.0(typescript@5.9.3)
+      ts-api-utils: 2.2.0(typescript@5.9.3)
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
@@ -11482,7 +11482,7 @@ snapshots:
       is-glob: 4.0.3
       minimatch: 9.0.5
       semver: 7.7.3
-      ts-api-utils: 2.1.0(typescript@5.9.3)
+      ts-api-utils: 2.2.0(typescript@5.9.3)
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
@@ -11497,7 +11497,7 @@ snapshots:
       minimatch: 9.0.5
       semver: 7.7.3
       tinyglobby: 0.2.15
-      ts-api-utils: 2.1.0(typescript@5.9.3)
+      ts-api-utils: 2.2.0(typescript@5.9.3)
       typescript: 5.9.3
     transitivePeerDependencies:
       - supports-color
@@ -12105,7 +12105,7 @@ snapshots:
 
   baseline-browser-mapping@2.9.11: {}
 
-  basic-ftp@5.0.5: {}
+  basic-ftp@5.1.0: {}
 
   before-after-hook@2.2.3: {}
 
@@ -13438,7 +13438,7 @@ snapshots:
 
   get-uri@6.0.5:
     dependencies:
-      basic-ftp: 5.0.5
+      basic-ftp: 5.1.0
       data-uri-to-buffer: 6.0.2
       debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
@@ -13932,7 +13932,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  isomorphic-dompurify@2.34.0:
+  isomorphic-dompurify@2.35.0:
     dependencies:
       dompurify: 3.3.1
       jsdom: 27.4.0
@@ -14120,7 +14120,7 @@ snapshots:
 
   kind-of@6.0.3: {}
 
-  knip@5.77.4(@types/node@22.19.3)(typescript@5.9.3):
+  knip@5.78.0(@types/node@22.19.3)(typescript@5.9.3):
     dependencies:
       '@nodelib/fs.walk': 1.2.8
       '@types/node': 22.19.3
@@ -16049,7 +16049,7 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  ts-api-utils@2.1.0(typescript@5.9.3):
+  ts-api-utils@2.2.0(typescript@5.9.3):
     dependencies:
       typescript: 5.9.3
 
