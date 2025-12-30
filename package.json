@@ -44,7 +44,6 @@
   "devDependencies": {
     "@eslint/compat": "catalog:",
     "@sanity/eslint-config-cli": "workspace:*",
-    "@types/node": "^20.19.27",
     "@vitest/coverage-istanbul": "^3.2.4",
     "eslint": "catalog:",
     "husky": "^9.1.7",
