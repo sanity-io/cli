@@ -10,6 +10,7 @@ import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detecto
 
 import {getProviderName} from '../actions/auth/getProviderName.js'
 import {login} from '../actions/auth/login/login.js'
+import {createDataset} from '../actions/dataset/create.js'
 import {determineAppTemplate} from '../actions/init/determineAppTemplate.js'
 import {
   checkIsRemoteTemplate,
@@ -19,10 +20,9 @@ import {
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'
-import {promptForAclMode} from '../prompts/init/promptForAclMode.js'
 import {promptForDefaultConfig} from '../prompts/init/promptForDefaultConfig.js'
 import {promptForDatasetName} from '../prompts/promptForDatasetName.js'
-import {createDataset, listDatasets} from '../services/datasets.js'
+import {createDataset as createDatasetService, listDatasets} from '../services/datasets.js'
 import {getProjectFeatures} from '../services/getProjectFeatures.js'
 import {
   createOrganization,
@@ -409,7 +409,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     if (this.flags.dataset) {
       debug('--dataset specified, creating dataset (%s)', this.flags.dataset)
       const spin = spinner('Creating dataset').start()
-      await createDataset({
+      await createDatasetService({
         aclMode: this.flags.visibility as DatasetAclMode,
         datasetName: this.flags.dataset,
         projectId: createdProject.projectId,
@@ -467,7 +467,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     projectId: string
     showDefaultConfigPrompt: boolean
   }): Promise<{datasetName: string; userAction: 'create' | 'none' | 'select'}> {
-    const aclMode = this.flags.visibility
+    const visibility = this.flags.visibility
     const dataset = this.flags.dataset
     let defaultConfig = this.flags['dataset-default']
 
@@ -480,44 +480,20 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       getProjectFeatures(opts.projectId),
     ])
 
-    const privateDatasetsAllowed = projectFeatures.includes('privateDataset')
-    const allowedModes = privateDatasetsAllowed ? ['public', 'private'] : ['public']
-
-    if (aclMode && !allowedModes.includes(aclMode)) {
-      throw new Error(`Visibility mode "${aclMode}" not allowed`)
-    }
-
-    // Getter in order to present prompts in a more logical order
-    const getAclMode = async (): Promise<string> => {
-      if (aclMode) {
-        return aclMode
-      }
-
-      if (this.isUnattended() || !privateDatasetsAllowed || defaultConfig) {
-        return 'public'
-      }
-
-      if (privateDatasetsAllowed) {
-        const mode = await promptForAclMode(this.output)
-        return mode
-      }
-
-      return 'public'
-    }
+    const canCreatePrivate = projectFeatures.includes('privateDataset') && !defaultConfig
 
     if (dataset) {
       debug('User has specified dataset through a flag (%s)', dataset)
       const existing = datasets.find((ds) => ds.name === dataset)
       if (!existing) {
         debug('Specified dataset not found, creating it')
-        const aclMode = await getAclMode()
-        const spin = spinner('Creating dataset').start()
         await createDataset({
-          aclMode: aclMode as DatasetAclMode,
+          canCreatePrivate,
           datasetName: dataset,
+          output: this.output,
           projectId: opts.projectId,
+          visibility,
         })
-        spin.succeed()
       }
 
       return {datasetName: dataset, userAction: 'none'}
@@ -537,14 +513,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         : await promptForDatasetName({
             message: 'Name of your first dataset:',
           })
-      const aclMode = await getAclMode()
-      const spin = spinner('Creating dataset').start()
       await createDataset({
-        aclMode: aclMode as DatasetAclMode,
+        canCreatePrivate,
         datasetName: name,
+        output: this.output,
         projectId: opts.projectId,
+        visibility,
       })
-      spin.succeed()
       return {datasetName: name, userAction: 'create'}
     }
 
@@ -572,14 +547,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
             },
             existingDatasetNames,
           )
-      const aclMode = await getAclMode()
-      const spin = spinner('Creating dataset').start()
       await createDataset({
-        aclMode: aclMode as DatasetAclMode,
+        canCreatePrivate,
         datasetName: newDatasetName,
+        output: this.output,
         projectId: opts.projectId,
+        visibility,
       })
-      spin.succeed()
       return {datasetName: newDatasetName, userAction: 'create'}
     }
 

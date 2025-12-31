@@ -1,11 +1,10 @@
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {select} from '@sanity/cli-core/ux'
-import {type DatasetAclMode} from '@sanity/client'
 
+import {createDataset} from '../../actions/dataset/create.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
-import {createDataset, listDatasets} from '../../services/datasets.js'
+import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
@@ -90,65 +89,12 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     const canCreatePrivate = projectFeatures.includes('privateDataset')
     createDatasetDebug('%s create private datasets', canCreatePrivate ? 'Can' : 'Cannot')
 
-    const aclMode = await this.determineAclMode(visibility, canCreatePrivate)
-
-    try {
-      await createDataset({aclMode, datasetName, projectId})
-      this.log('Dataset created successfully')
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      createDatasetDebug(`Error creating dataset ${datasetName}`, error)
-      this.error(`Dataset creation failed: ${message}`, {exit: 1})
-    }
-  }
-
-  private async determineAclMode(
-    visibility: string | undefined,
-    canCreatePrivate: boolean,
-  ): Promise<DatasetAclMode> {
-    if (visibility === 'custom' || visibility === 'public') {
-      return visibility
-    }
-
-    // Handle private visibility request
-    if (visibility === 'private') {
-      if (canCreatePrivate) {
-        return 'private'
-      }
-      // Private requested but not available
-      this.warn('Private datasets are not available for this project. Creating as public.')
-      return 'public'
-    }
-
-    if (canCreatePrivate) {
-      return this.promptForDatasetVisibility()
-    }
-
-    // Default to public when no flag and no private capability
-    return 'public'
-  }
-
-  private async promptForDatasetVisibility(): Promise<'private' | 'public'> {
-    const mode = await select({
-      choices: [
-        {
-          name: 'Public (world readable)',
-          value: 'public' as const,
-        },
-        {
-          name: 'Private (Authenticated user or token needed)',
-          value: 'private' as const,
-        },
-      ],
-      message: 'Dataset visibility',
+    await createDataset({
+      canCreatePrivate,
+      datasetName,
+      output: this.output,
+      projectId,
+      visibility,
     })
-
-    if (mode === 'private') {
-      this.warn(
-        'Please note that while documents are private, assets (files and images) are still public',
-      )
-    }
-
-    return mode
   }
 }
