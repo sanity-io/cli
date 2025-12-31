@@ -45,7 +45,8 @@ describe('#init: oclif command setup', () => {
   test('--help works', async () => {
     const {stdout} = await runCommand('init --help')
 
-    expect(stdout).toMatchInlineSnapshot(String.raw`
+    //eslint-disable-next-line unicorn/prefer-string-raw
+    expect(stdout).toMatchInlineSnapshot(`
       "Initialize a new Sanity Studio, project and/or app
 
       USAGE
