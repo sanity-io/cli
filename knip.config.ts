@@ -9,7 +9,6 @@ const baseConfig = {
   // For now only care about cli package
   ignore: [
     'packages/@sanity/original-cli/**',
-    'packages/create-sanity/**',
 
     // See `helpClass` in `oclif.config.js`
     'packages/@sanity/cli/src/SanityHelp.ts',
@@ -75,6 +74,9 @@ const baseConfig = {
     },
     'packages/@sanity/cli-test': {
       project,
+    },
+    'packages/create-sanity': {
+      ignoreDependencies: ['@sanity/cli'],
     },
   },
 } satisfies KnipConfig
