@@ -13,7 +13,11 @@
   ],
   "homepage": "https://github.com/sanity-io/cli",
   "bugs": "https://github.com/sanity-io/cli/issues",
-  "repository": "sanity-io/cli",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanity-io/cli.git",
+    "directory": "packages/@sanity/cli-test"
+  },
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
   "type": "module",
@@ -42,21 +46,21 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
-    "@oclif/core": "^4.8.0",
+    "@oclif/core": "catalog:",
     "ansis": "^3.17.0",
-    "nock": "^14.0.5"
+    "nock": "catalog:"
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
     "@repo/tsconfig": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:*",
-    "@swc/cli": "^0.7.8",
-    "@swc/core": "^1.14.0",
-    "@types/debug": "^4.1.12",
-    "@types/node": "^20.19.24",
+    "@swc/cli": "catalog:",
+    "@swc/core": "catalog:",
+    "@types/debug": "catalog:",
+    "@types/node": "catalog:",
     "eslint": "catalog:",
-    "typescript": "^5.8.3",
-    "vitest": "^3.2.4"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"

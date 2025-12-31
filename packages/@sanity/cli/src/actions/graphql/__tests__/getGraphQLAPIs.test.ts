@@ -21,7 +21,7 @@ vi.mock('@sanity/cli-core', () => ({
   resolveLocalPackage: mockResolveLocalPackage,
 }))
 
-vi.mock('pkg-dir', () => ({
+vi.mock('package-directory', () => ({
   packageDirectory: mockPackageDirectory,
 }))
 

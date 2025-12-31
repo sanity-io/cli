@@ -1,7 +1,7 @@
 import {isMainThread, Worker} from 'node:worker_threads'
 
 import {type CliConfig, getCliConfig, getStudioConfig, resolveLocalPackage} from '@sanity/cli-core'
-import {packageDirectory} from 'pkg-dir'
+import {packageDirectory} from 'package-directory'
 
 import {
   type ResolvedGraphQLAPI,
