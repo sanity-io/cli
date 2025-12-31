@@ -47,12 +47,15 @@
   },
   "dependencies": {
     "@oclif/core": "catalog:",
-    "ansis": "^4.2.0",
+    "ansis": "^3.17.0",
     "nock": "catalog:"
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
+    "@oclif/core": "catalog:",
     "@repo/tsconfig": "workspace:*",
+    "@sanity/cli-core": "workspace:*",
+    "@sanity/client": "^7.3.0",
     "@sanity/eslint-config-cli": "workspace:*",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
@@ -61,6 +64,10 @@
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@oclif/core": "^4.0.0",
+    "@sanity/cli-core": "workspace:*"
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"

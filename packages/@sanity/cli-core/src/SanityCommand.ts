@@ -24,26 +24,6 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
   protected flags!: Flags<T>
 
   /**
-   * Get the global API client.
-   *
-   * @param args - The global API client options.
-   * @returns The global API client.
-   *
-   * @deprecated use `getGlobalCliClient` function directly instead.
-   */
-  protected getGlobalApiClient = (args: GlobalCliClientOptions) => getGlobalCliClient(args)
-
-  /**
-   * Get the project API client.
-   *
-   * @param args - The project API client options.
-   * @returns The project API client.
-   *
-   * @deprecated use `getProjectCliClient` function directly instead.
-   */
-  protected getProjectApiClient = (args: ProjectCliClientOptions) => getProjectCliClient(args)
-
-  /**
    * Helper for outputting to the console.
    *
    * @example
@@ -66,9 +46,32 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    */
   protected async getCliConfig(): Promise<CliConfig> {
     const root = await this.getProjectRoot()
-    const config = await getCliConfig(root.directory)
 
-    return config
+    return getCliConfig(root.directory)
+  }
+
+  /**
+   * Get the global API client.
+   *
+   * @param args - The global API client options.
+   * @returns The global API client.
+   *
+   * @deprecated use `getGlobalCliClient` function directly instead.
+   */
+  protected getGlobalApiClient(args: GlobalCliClientOptions) {
+    return getGlobalCliClient(args)
+  }
+
+  /**
+   * Get the project API client.
+   *
+   * @param args - The project API client options.
+   * @returns The project API client.
+   *
+   * @deprecated use `getProjectCliClient` function directly instead.
+   */
+  protected getProjectApiClient(args: ProjectCliClientOptions) {
+    return getProjectCliClient(args)
   }
 
   /**
@@ -85,7 +88,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
   /**
    * Get the project's root directory by resolving the config
    *
-   * @returns The root project root.
+   * @returns The project root result.
    */
   protected getProjectRoot(): Promise<ProjectRootResult> {
     return findProjectRoot(process.cwd())
@@ -118,6 +121,15 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    * (eg when running in a CI environment).
    */
   protected isUnattended(): boolean {
-    return this.flags.yes || !isInteractive()
+    return this.flags.yes || !this.resolveIsInteractive()
+  }
+
+  /**
+   * Resolver for checking if the terminal is interactive. Override in tests to provide mock values.
+   *
+   * @returns Whether the terminal is interactive.
+   */
+  protected resolveIsInteractive(): boolean {
+    return isInteractive()
   }
 }

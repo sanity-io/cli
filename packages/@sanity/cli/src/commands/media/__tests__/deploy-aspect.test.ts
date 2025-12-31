@@ -1,7 +1,6 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
-import {mockApi, testCommand} from '@sanity/cli-test'
+import {createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {
   MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME,
   type MediaLibraryAssetAspectDocument,
@@ -13,7 +12,6 @@ import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
 import {NO_MEDIA_LIBRARY_ASPECTS_PATH, NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {MediaDeployAspectCommand} from '../deploy-aspect.js'
 
-// Create hoisted mock functions
 const mockFsAccess = vi.hoisted(() => vi.fn())
 const mockFsReaddir = vi.hoisted(() => vi.fn())
 const mockTsImport = vi.hoisted(() => vi.fn())
@@ -40,31 +38,25 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/project',
-    root: '/test/project',
-    type: 'studio',
-  }),
-}))
+const mockSelect = vi.mocked(select)
 
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
+const defaultMocks = {
+  cliConfig: {
     api: {
       projectId: 'test-project-id',
     },
     mediaLibrary: {
       aspectsPath: '/test/project/aspects',
     },
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-
-const mockSelect = vi.mocked(select)
-const mockGetCliConfig = vi.mocked(getCliConfig)
+  },
+  projectRoot: {
+    directory: '/test/project',
+    path: '/test/project/sanity.config.ts',
+    root: '/test/project',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 /**
  * Helper to create a mock aspect definition with valid schema
@@ -172,20 +164,12 @@ function setupDefaultMocks() {
 
 describe('#media:deploy-aspect', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setupDefaultMocks()
-    // Reset getCliConfig mock to default
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        projectId: 'test-project-id',
-      },
-      mediaLibrary: {
-        aspectsPath: '/test/project/aspects',
-      },
-    })
   })
 
   afterEach(() => {
+    vi.clearAllMocks()
+    vi.unstubAllEnvs()
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
@@ -236,7 +220,7 @@ describe('#media:deploy-aspect', () => {
       expectedError: 'Specified both an aspect name and `--all`.',
     },
   ])('should error if $description', async ({args, expectedError}) => {
-    const {error} = await testCommand(MediaDeployAspectCommand, args)
+    const {error} = await testCommand(MediaDeployAspectCommand, args, {mocks: defaultMocks})
 
     expect(error?.message).toContain(expectedError)
     expect(error?.oclif?.exit).toBe(1)
@@ -262,44 +246,36 @@ describe('#media:deploy-aspect', () => {
       expectedError: NO_MEDIA_LIBRARY_ASPECTS_PATH,
     },
   ])('should error if $description', async ({config, expectedError}) => {
-    mockGetCliConfig.mockResolvedValue(config)
-
-    const {error} = await testCommand(MediaDeployAspectCommand, ['myAspect'])
+    const {error} = await testCommand(MediaDeployAspectCommand, ['myAspect'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: config,
+      },
+    })
 
     expect(error?.message).toContain(expectedError)
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should successfully deploy a single aspect', async () => {
-    // Setup filesystem to return a single aspect file
     setupFileSystemMock([{filename: 'myAspect.ts', isFile: true}])
 
-    // Setup tsImport to return the aspect definition
     setupTsImportMock({
       'myAspect.ts': {
         aspect: createMockAspect('myAspect'),
       },
     })
 
-    // Mock the media libraries API call
+    createTestToken('test-token')
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'get',
       query: {projectId: 'test-project-id'},
       uri: '/media-libraries',
     }).reply(200, {
-      data: [
-        {
-          id: 'test-library-id',
-          organizationId: 'test-org-id',
-          status: 'active',
-        },
-      ],
+      data: [{id: 'test-library-id', organizationId: 'test-org-id', status: 'active'}],
     })
 
-    mockSelect.mockResolvedValue('test-library-id')
-
-    // Mock deploy API call
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'post',
@@ -308,7 +284,11 @@ describe('#media:deploy-aspect', () => {
       results: [{id: 'myAspect', operation: 'created'}],
     })
 
-    const {stdout} = await testCommand(MediaDeployAspectCommand, ['myAspect'])
+    mockSelect.mockResolvedValue('test-library-id')
+
+    const {stdout} = await testCommand(MediaDeployAspectCommand, ['myAspect'], {
+      mocks: defaultMocks,
+    })
 
     expect(mockFsReaddir).toHaveBeenCalledWith('/test/project/aspects', {withFileTypes: true})
     expect(mockTsImport).toHaveBeenCalled()
@@ -318,13 +298,11 @@ describe('#media:deploy-aspect', () => {
   })
 
   test('should deploy all aspects with --all flag', async () => {
-    // Setup filesystem to return multiple aspect files
     setupFileSystemMock([
       {filename: 'aspect1.ts', isFile: true},
       {filename: 'aspect2.ts', isFile: true},
     ])
 
-    // Setup tsImport to return aspect definitions for both files
     setupTsImportMock({
       'aspect1.ts': {
         aspect: createMockAspect('aspect1'),
@@ -334,25 +312,16 @@ describe('#media:deploy-aspect', () => {
       },
     })
 
-    // Mock the media libraries API call
+    createTestToken('test-token')
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'get',
       query: {projectId: 'test-project-id'},
       uri: '/media-libraries',
     }).reply(200, {
-      data: [
-        {
-          id: 'test-library-id',
-          organizationId: 'test-org-id',
-          status: 'active',
-        },
-      ],
+      data: [{id: 'test-library-id', organizationId: 'test-org-id', status: 'active'}],
     })
 
-    mockSelect.mockResolvedValue('test-library-id')
-
-    // Mock deploy API call
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'post',
@@ -364,7 +333,9 @@ describe('#media:deploy-aspect', () => {
       ],
     })
 
-    const {stdout} = await testCommand(MediaDeployAspectCommand, ['--all'])
+    mockSelect.mockResolvedValue('test-library-id')
+
+    const {stdout} = await testCommand(MediaDeployAspectCommand, ['--all'], {mocks: defaultMocks})
 
     expect(stdout).toContain('✓')
     expect(stdout).toContain('Deployed 2 aspects')
@@ -373,17 +344,15 @@ describe('#media:deploy-aspect', () => {
   })
 
   test('should use --media-library-id flag when provided', async () => {
-    // Setup filesystem to return a single aspect file
     setupFileSystemMock([{filename: 'myAspect.ts', isFile: true}])
 
-    // Setup tsImport to return the aspect definition
     setupTsImportMock({
       'myAspect.ts': {
         aspect: createMockAspect('myAspect'),
       },
     })
 
-    // Mock deploy API call
+    createTestToken('test-token')
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'post',
@@ -392,23 +361,21 @@ describe('#media:deploy-aspect', () => {
       results: [{id: 'myAspect', operation: 'created'}],
     })
 
-    await testCommand(MediaDeployAspectCommand, [
-      'myAspect',
-      '--media-library-id',
-      'custom-library-id',
-    ])
+    await testCommand(
+      MediaDeployAspectCommand,
+      ['myAspect', '--media-library-id', 'custom-library-id'],
+      {mocks: defaultMocks},
+    )
 
     expect(mockSelect).not.toHaveBeenCalled()
   })
 
   test('should error if aspect is not found', async () => {
-    // Setup filesystem with aspect files that don't match the requested name
     setupFileSystemMock([
       {filename: 'someOtherAspect.ts', isFile: true},
       {filename: 'anotherAspect.ts', isFile: true},
     ])
 
-    // Setup tsImport to return aspects with different IDs
     setupTsImportMock({
       'anotherAspect.ts': {
         aspect: createMockAspect('anotherAspect'),
@@ -418,25 +385,21 @@ describe('#media:deploy-aspect', () => {
       },
     })
 
-    // Mock the media libraries API call
+    createTestToken('test-token')
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'get',
       query: {projectId: 'test-project-id'},
       uri: '/media-libraries',
     }).reply(200, {
-      data: [
-        {
-          id: 'test-library-id',
-          organizationId: 'test-org-id',
-          status: 'active',
-        },
-      ],
+      data: [{id: 'test-library-id', organizationId: 'test-org-id', status: 'active'}],
     })
 
     mockSelect.mockResolvedValue('test-library-id')
 
-    const {error} = await testCommand(MediaDeployAspectCommand, ['nonExistentAspect'])
+    const {error} = await testCommand(MediaDeployAspectCommand, ['nonExistentAspect'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Could not find aspect')
     expect(error?.message).toContain('nonExistentAspect')
@@ -444,13 +407,11 @@ describe('#media:deploy-aspect', () => {
   })
 
   test('should skip invalid aspects and deploy only valid ones', async () => {
-    // Setup filesystem with both valid and invalid aspect files
     setupFileSystemMock([
       {filename: 'invalidAspect.ts', isFile: true},
       {filename: 'validAspect.ts', isFile: true},
     ])
 
-    // Setup tsImport to return aspect definitions (one invalid, one valid)
     setupTsImportMock({
       'invalidAspect.ts': {
         aspect: createInvalidMockAspect('invalidAspect'),
@@ -460,25 +421,16 @@ describe('#media:deploy-aspect', () => {
       },
     })
 
-    // Mock the media libraries API call
+    createTestToken('test-token')
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'get',
       query: {projectId: 'test-project-id'},
       uri: '/media-libraries',
     }).reply(200, {
-      data: [
-        {
-          id: 'test-library-id',
-          organizationId: 'test-org-id',
-          status: 'active',
-        },
-      ],
+      data: [{id: 'test-library-id', organizationId: 'test-org-id', status: 'active'}],
     })
 
-    mockSelect.mockResolvedValue('test-library-id')
-
-    // Mock deploy API call
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'post',
@@ -487,7 +439,11 @@ describe('#media:deploy-aspect', () => {
       results: [{id: 'validAspect', operation: 'created'}],
     })
 
-    const {stderr, stdout} = await testCommand(MediaDeployAspectCommand, ['--all'])
+    mockSelect.mockResolvedValue('test-library-id')
+
+    const {stderr, stdout} = await testCommand(MediaDeployAspectCommand, ['--all'], {
+      mocks: defaultMocks,
+    })
 
     expect(stderr).toContain('Skipped 1 invalid aspect')
     expect(stderr).toContain('invalidAspect')
@@ -496,94 +452,79 @@ describe('#media:deploy-aspect', () => {
   })
 
   test('should warn if no valid aspects to deploy', async () => {
-    // Setup filesystem with only invalid aspect files
     setupFileSystemMock([{filename: 'invalidAspect.ts', isFile: true}])
 
-    // Setup tsImport to return an invalid aspect definition
     setupTsImportMock({
       'invalidAspect.ts': {
         aspect: createInvalidMockAspect('invalidAspect'),
       },
     })
 
-    // Mock the media libraries API call
+    createTestToken('test-token')
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'get',
       query: {projectId: 'test-project-id'},
       uri: '/media-libraries',
     }).reply(200, {
-      data: [
-        {
-          id: 'test-library-id',
-          organizationId: 'test-org-id',
-          status: 'active',
-        },
-      ],
+      data: [{id: 'test-library-id', organizationId: 'test-org-id', status: 'active'}],
     })
 
     mockSelect.mockResolvedValue('test-library-id')
 
-    const {stderr} = await testCommand(MediaDeployAspectCommand, ['--all'])
+    const {stderr} = await testCommand(MediaDeployAspectCommand, ['--all'], {mocks: defaultMocks})
 
     expect(stderr).toContain('Skipped 1 invalid aspect')
     expect(stderr).toContain('No valid aspects to deploy')
   })
 
   test('should handle API errors gracefully', async () => {
-    // Setup filesystem to return a single aspect file
     setupFileSystemMock([{filename: 'myAspect.ts', isFile: true}])
 
-    // Setup tsImport to return the aspect definition
     setupTsImportMock({
       'myAspect.ts': {
         aspect: createMockAspect('myAspect'),
       },
     })
 
-    // Mock the media libraries API call
+    createTestToken('test-token')
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'get',
       query: {projectId: 'test-project-id'},
       uri: '/media-libraries',
     }).reply(200, {
-      data: [
-        {
-          id: 'test-library-id',
-          organizationId: 'test-org-id',
-          status: 'active',
-        },
-      ],
+      data: [{id: 'test-library-id', organizationId: 'test-org-id', status: 'active'}],
     })
 
-    mockSelect.mockResolvedValue('test-library-id')
-
-    // Mock deploy API call to fail
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'post',
       uri: '/media-libraries/test-library-id/mutate',
-    }).reply(500, {message: 'Internal server error'})
+    }).reply(500, {
+      error: 'Internal server error',
+    })
 
-    const {error} = await testCommand(MediaDeployAspectCommand, ['myAspect'])
+    mockSelect.mockResolvedValue('test-library-id')
+
+    const {error} = await testCommand(MediaDeployAspectCommand, ['myAspect'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Failed to deploy aspects')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should fetch and present media libraries for selection', async () => {
-    // Setup filesystem to return a single aspect file
     setupFileSystemMock([{filename: 'myAspect.ts', isFile: true}])
 
-    // Setup tsImport to return the aspect definition
     setupTsImportMock({
       'myAspect.ts': {
         aspect: createMockAspect('myAspect'),
       },
     })
 
-    // Mock the media libraries API call
+    createTestToken('test-token')
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'get',
@@ -599,9 +540,6 @@ describe('#media:deploy-aspect', () => {
       ],
     })
 
-    mockSelect.mockResolvedValue('selected-library-id')
-
-    // Mock deploy API call
     mockApi({
       apiVersion: MEDIA_LIBRARY_API_VERSION,
       method: 'post',
@@ -610,7 +548,9 @@ describe('#media:deploy-aspect', () => {
       results: [{id: 'myAspect', operation: 'created'}],
     })
 
-    await testCommand(MediaDeployAspectCommand, ['myAspect'])
+    mockSelect.mockResolvedValue('selected-library-id')
+
+    await testCommand(MediaDeployAspectCommand, ['myAspect'], {mocks: defaultMocks})
 
     expect(mockSelect).toHaveBeenCalledWith(
       expect.objectContaining({

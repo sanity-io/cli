@@ -37,20 +37,23 @@ const mockManifest = {
 
 const mockSchemas = ['_.schemas.default', '_.schemas.staging']
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({}),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn(),
-}))
-
 vi.mock('../../../actions/manifest/extractManifest.js')
 vi.mock('../../../actions/schema/utils/manifestReader.js')
 
 const mockedGetCliConfig = vi.mocked(getCliConfig)
 const mockExtractManifestSafe = vi.mocked(extractManifestSafe)
 const mockedCreateManifestReader = vi.mocked(createManifestReader)
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {dataset: 'production', projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#schema:delete', () => {
   beforeEach(() => {
@@ -109,7 +112,11 @@ describe('#schema:delete', () => {
       uri: '/projects/test-project/datasets/staging/schemas/_.schemas.default',
     }).reply(200, {deleted: true})
 
-    const {error, stdout} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.default'])
+    const {error, stdout} = await testCommand(
+      DeleteSchemaCommand,
+      ['--ids', 'sanity.workspace.schema.workspaceName'],
+      {mocks: defaultMocks},
+    )
 
     expect(stdout).toContain('Successfully deleted 1/1 schemas')
     expect(error).toBeUndefined()
@@ -129,10 +136,11 @@ describe('#schema:delete', () => {
       }).reply(200, {deleted: true})
     }
 
-    const {error, stdout} = await testCommand(DeleteSchemaCommand, [
-      '--ids',
-      '_.schemas.default,_.schemas.staging',
-    ])
+    const {error, stdout} = await testCommand(
+      DeleteSchemaCommand,
+      ['--ids', '_.schemas.default,_.schemas.staging'],
+      {mocks: defaultMocks},
+    )
 
     expect(stdout).toContain('Successfully deleted 2/2 schemas')
     expect(error).toBeUndefined()

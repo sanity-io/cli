@@ -1,7 +1,6 @@
 import {access, mkdir, writeFile} from 'node:fs/promises'
 
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -17,27 +16,24 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/project',
-    root: '/test/project',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    mediaLibrary: {
-      aspectsPath: '/test/project/aspects',
-    },
-  }),
-}))
-
 const mockInput = vi.mocked(input)
 const mockMkdir = vi.mocked(mkdir)
 const mockAccess = vi.mocked(access)
 const mockWriteFile = vi.mocked(writeFile)
-const mockGetCliConfig = vi.mocked(getCliConfig)
+
+const defaultMocks = {
+  cliConfig: {
+    mediaLibrary: {
+      aspectsPath: '/test/project/aspects',
+    },
+  },
+  projectRoot: {
+    directory: '/test/project',
+    path: '/test/project/sanity.config.ts',
+    root: '/test/project',
+    type: 'studio' as const,
+  },
+}
 
 describe('#media:create-aspect', () => {
   afterEach(() => {
@@ -74,7 +70,7 @@ describe('#media:create-aspect', () => {
     mockAccess.mockRejectedValue(new Error('ENOENT: no such file or directory'))
     mockWriteFile.mockResolvedValue(undefined)
 
-    const {stderr, stdout} = await testCommand(MediaCreateAspectCommand, [])
+    const {stderr, stdout} = await testCommand(MediaCreateAspectCommand, [], {mocks: defaultMocks})
 
     expect(stderr).toBe('')
     expect(stdout).toContain('✓ Aspect created!')
@@ -104,7 +100,7 @@ describe('#media:create-aspect', () => {
     mockAccess.mockRejectedValue(new Error('ENOENT: no such file or directory'))
     mockWriteFile.mockResolvedValue(undefined)
 
-    await testCommand(MediaCreateAspectCommand, [])
+    await testCommand(MediaCreateAspectCommand, [], {mocks: defaultMocks})
 
     // Should have called writeFile with a safe name
     expect(mockWriteFile).toHaveBeenCalledWith(
@@ -120,7 +116,7 @@ describe('#media:create-aspect', () => {
     mockAccess.mockResolvedValue(undefined)
     mockWriteFile.mockResolvedValue(undefined)
 
-    const {error} = await testCommand(MediaCreateAspectCommand, [])
+    const {error} = await testCommand(MediaCreateAspectCommand, [], {mocks: defaultMocks})
 
     expect(error?.message).toContain('A file already exists at')
     expect(error?.oclif?.exit).toBe(1)
@@ -131,28 +127,34 @@ describe('#media:create-aspect', () => {
     ['when mediaLibrary not configured', {}],
     ['when mediaLibrary.aspectsPath is undefined', {mediaLibrary: {}}],
   ])('should throw error %s', async (_, config) => {
-    mockGetCliConfig.mockResolvedValue(config)
-
-    const {error} = await testCommand(MediaCreateAspectCommand, [])
+    const {error} = await testCommand(MediaCreateAspectCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: config,
+      },
+    })
 
     expect(error?.message).toContain('media library aspects path')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should create directory if it does not exist', async () => {
-    mockGetCliConfig.mockResolvedValue({
-      mediaLibrary: {
-        aspectsPath: '/new/aspects/path',
-      },
-    })
-
     mockInput.mockResolvedValueOnce('Test Aspect').mockResolvedValueOnce('testAspect')
 
     mockMkdir.mockResolvedValue(undefined)
     mockAccess.mockRejectedValue(new Error('ENOENT: no such file or directory'))
     mockWriteFile.mockResolvedValue(undefined)
 
-    await testCommand(MediaCreateAspectCommand, [])
+    await testCommand(MediaCreateAspectCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {
+          mediaLibrary: {
+            aspectsPath: '/new/aspects/path',
+          },
+        },
+      },
+    })
 
     expect(mockMkdir).toHaveBeenCalledWith('/new/aspects/path', {recursive: true})
   })
@@ -164,7 +166,7 @@ describe('#media:create-aspect', () => {
     mockAccess.mockRejectedValue(new Error('ENOENT: no such file or directory'))
     mockWriteFile.mockResolvedValue(undefined)
 
-    await testCommand(MediaCreateAspectCommand, [])
+    await testCommand(MediaCreateAspectCommand, [], {mocks: defaultMocks})
 
     const writeCall = mockWriteFile.mock.calls[0]
     const generatedContent = writeCall?.[1] as string

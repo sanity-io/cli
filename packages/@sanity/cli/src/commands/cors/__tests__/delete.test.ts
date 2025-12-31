@@ -30,27 +30,18 @@ const TEST_ORIGINS = {
   SPECIAL_CHARS: createCorsOrigin({id: 1, origin: 'https://café.example.com'}),
 } as const
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
     directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      projectId: 'test-project',
-    },
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-
-// Mock inquirer prompts
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
@@ -84,7 +75,7 @@ describe('#cors:delete', () => {
       uri: '/projects/test-project/cors/1',
     }).reply(204)
 
-    const {stdout} = await testCommand(Delete, ['https://example.com'])
+    const {stdout} = await testCommand(Delete, ['https://example.com'], {mocks: defaultMocks})
     expect(stdout).toBe('Origin deleted\n')
   })
 
@@ -103,7 +94,7 @@ describe('#cors:delete', () => {
       uri: '/projects/test-project/cors/2',
     }).reply(204)
 
-    const {stdout} = await testCommand(Delete)
+    const {stdout} = await testCommand(Delete, [], {mocks: defaultMocks})
     expect(stdout).toBe('Origin deleted\n')
     expect(select).toHaveBeenCalledWith({
       choices: [
@@ -126,7 +117,7 @@ describe('#cors:delete', () => {
       uri: '/projects/test-project/cors/1',
     }).reply(204)
 
-    const {stdout} = await testCommand(Delete, ['https://example.com'])
+    const {stdout} = await testCommand(Delete, ['https://example.com'], {mocks: defaultMocks})
     expect(stdout).toBe('Origin deleted\n')
   })
 
@@ -136,7 +127,7 @@ describe('#cors:delete', () => {
       uri: '/projects/test-project/cors',
     }).reply(200, [TEST_ORIGINS.EXAMPLE])
 
-    const {error} = await testCommand(Delete, ['https://nonexistent.com'])
+    const {error} = await testCommand(Delete, ['https://nonexistent.com'], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual('Origin "https://nonexistent.com" not found')
     expect(error?.oclif?.exit).toBe(1)
@@ -148,7 +139,7 @@ describe('#cors:delete', () => {
       uri: '/projects/test-project/cors',
     }).reply(200, [])
 
-    const {error} = await testCommand(Delete, ['https://example.com'])
+    const {error} = await testCommand(Delete, ['https://example.com'], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual('No CORS origins configured for this project.')
     expect(error?.oclif?.exit).toBe(1)
@@ -163,7 +154,7 @@ describe('#cors:delete', () => {
       uri: '/projects/test-project/cors',
     }).reply(statusCode, {message})
 
-    const {error} = await testCommand(Delete, ['https://example.com'])
+    const {error} = await testCommand(Delete, ['https://example.com'], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to fetch CORS origins')
     expect(error?.message).toContain(message)
@@ -185,7 +176,7 @@ describe('#cors:delete', () => {
       uri: '/projects/test-project/cors/1',
     }).reply(statusCode, {message})
 
-    const {error} = await testCommand(Delete, ['https://example.com'])
+    const {error} = await testCommand(Delete, ['https://example.com'], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Origin deletion failed')
     expect(error?.message).toContain(message)
@@ -196,12 +187,12 @@ describe('#cors:delete', () => {
     {desc: 'no project ID is found', projectId: undefined},
     {desc: 'project ID is empty string', projectId: ''},
   ])('throws error when $desc', async ({projectId}) => {
-    const {getCliConfig} = await import('../../../../../cli-core/src/config/cli/getCliConfig.js')
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {projectId},
+    const {error} = await testCommand(Delete, ['https://example.com'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId}},
+      },
     })
-
-    const {error} = await testCommand(Delete, ['https://example.com'])
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
     expect(error?.oclif?.exit).toBe(1)
@@ -209,7 +200,7 @@ describe('#cors:delete', () => {
 
   test('handles network errors when fetching origins', async () => {
     // Don't set up any mock to simulate network failure
-    const {error} = await testCommand(Delete, ['https://example.com'])
+    const {error} = await testCommand(Delete, ['https://example.com'], {mocks: defaultMocks})
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to fetch CORS origins')
     expect(error?.oclif?.exit).toBe(1)
@@ -234,7 +225,7 @@ describe('#cors:delete', () => {
       uri: '/projects/test-project/cors/1',
     }).reply(204)
 
-    const {stdout} = await testCommand(Delete, [input])
+    const {stdout} = await testCommand(Delete, [input], {mocks: defaultMocks})
     expect(stdout).toBe('Origin deleted\n')
   })
 })

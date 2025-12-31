@@ -1,6 +1,5 @@
 import fs from 'node:fs'
 
-import {getCliConfig} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -24,28 +23,17 @@ vi.mock('node:fs', () => ({
   },
 }))
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
+const defaultMocks = {
+  cliConfig: {api: {projectId: 'test-project'}},
+  projectRoot: {
     directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      projectId: 'test-project',
-    },
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 const mockConfirm = vi.mocked(confirm)
-const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockExistsSync = vi.mocked(fs.existsSync)
 
 const setupSuccessfulApiMock = () => {
@@ -101,7 +89,7 @@ describe('#cors:add', () => {
       }
     })
 
-    const {stdout} = await testCommand(Add, [origin, '--credentials'])
+    const {stdout} = await testCommand(Add, [origin, '--credentials'], {mocks: defaultMocks})
 
     expect(stdout).toContain('CORS origin added successfully')
   })
@@ -131,17 +119,22 @@ describe('#cors:add', () => {
       }
     })
 
-    const {stdout} = await testCommand(Add, [origin, '--no-credentials'])
+    const {stdout} = await testCommand(Add, [origin, '--no-credentials'], {mocks: defaultMocks})
 
     expect(stdout).toContain('CORS origin added successfully')
   })
 
   test('fails when no project ID is available', async () => {
-    mockGetCliConfig.mockResolvedValueOnce({
-      api: {},
+    const {error} = await testCommand(Add, ['https://example.com'], {
+      mocks: {
+        cliConfig: {api: {}},
+        projectRoot: {
+          directory: '/test/path',
+          path: '/test/path/sanity.config.ts',
+          type: 'studio' as const,
+        },
+      },
     })
-
-    const {error} = await testCommand(Add, ['https://example.com'])
 
     expect(error?.message).toContain(NO_PROJECT_ID)
   })
@@ -172,7 +165,9 @@ describe('#cors:add', () => {
   test.each(errorHandlingCases)('$description', async ({expectedError, setupMock}) => {
     setupMock()
 
-    const {error} = await testCommand(Add, ['https://example.com', '--credentials'])
+    const {error} = await testCommand(Add, ['https://example.com', '--credentials'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain(expectedError)
     expect(error?.oclif?.exit).toBe(1)
@@ -182,7 +177,9 @@ describe('#cors:add', () => {
     mockExistsSync.mockReturnValue(true)
     setupSuccessfulApiMock()
 
-    const {stderr} = await testCommand(Add, ['https://example.com', '--credentials'])
+    const {stderr} = await testCommand(Add, ['https://example.com', '--credentials'], {
+      mocks: defaultMocks,
+    })
 
     expect(stderr).toContain('Remember to quote values')
   })
@@ -213,7 +210,7 @@ describe('#cors:add', () => {
       async ({expectedError, expectedOutput, setupMocks}) => {
         setupMocks()
 
-        const result = await testCommand(Add, ['https://*.example.com'])
+        const result = await testCommand(Add, ['https://*.example.com'], {mocks: defaultMocks})
 
         expect(confirm).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -236,7 +233,7 @@ describe('#cors:add', () => {
       mockConfirm.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
       setupSuccessfulApiMock()
 
-      const {stdout} = await testCommand(Add, ['*'])
+      const {stdout} = await testCommand(Add, ['*'], {mocks: defaultMocks})
 
       expect(stdout).toContain('http://www.some-malicious.site')
       expect(stdout).toContain('https://not.what-you-were-expecting.com')
@@ -248,7 +245,7 @@ describe('#cors:add', () => {
       mockConfirm.mockResolvedValueOnce(true)
       setupSuccessfulApiMock()
 
-      const {stdout} = await testCommand(Add, ['https://example.com'])
+      const {stdout} = await testCommand(Add, ['https://example.com'], {mocks: defaultMocks})
 
       expect(confirm).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -265,7 +262,7 @@ describe('#cors:add', () => {
         .mockResolvedValueOnce(false) // Deny credentials
       setupSuccessfulApiMock()
 
-      const {stdout} = await testCommand(Add, ['https://*.example.com'])
+      const {stdout} = await testCommand(Add, ['https://*.example.com'], {mocks: defaultMocks})
 
       expect(stdout).toContain('HIGHLY')
       expect(stdout).toContain('recommend NOT allowing credentials')
@@ -286,7 +283,9 @@ describe('#cors:add', () => {
     test.each(validNonWildcardOrigins)('accepts valid non-wildcard origin: %s', async (origin) => {
       setupSuccessfulApiMock()
 
-      const {error, stdout} = await testCommand(Add, [origin, '--credentials'])
+      const {error, stdout} = await testCommand(Add, [origin, '--credentials'], {
+        mocks: defaultMocks,
+      })
 
       expect(error).toBeUndefined()
       expect(stdout).toContain('CORS origin added successfully')
@@ -296,7 +295,9 @@ describe('#cors:add', () => {
       mockConfirm.mockResolvedValueOnce(true)
       setupSuccessfulApiMock()
 
-      const {error, stdout} = await testCommand(Add, [origin, '--credentials'])
+      const {error, stdout} = await testCommand(Add, [origin, '--credentials'], {
+        mocks: defaultMocks,
+      })
 
       expect(error).toBeUndefined()
       expect(stdout).toContain('CORS origin added successfully')
@@ -308,7 +309,7 @@ describe('#cors:add', () => {
     ]
 
     test.each(invalidOrigins)('rejects invalid origin: %s', async (origin) => {
-      const {error} = await testCommand(Add, [origin, '--credentials'])
+      const {error} = await testCommand(Add, [origin, '--credentials'], {mocks: defaultMocks})
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Invalid origin')
@@ -316,7 +317,9 @@ describe('#cors:add', () => {
     })
 
     test('rejects file:// origins other than file:///*', async () => {
-      const {error} = await testCommand(Add, ['file://localhost/path', '--credentials'])
+      const {error} = await testCommand(Add, ['file://localhost/path', '--credentials'], {
+        mocks: defaultMocks,
+      })
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Only a local file wildcard is currently allowed: file:///*')
@@ -349,7 +352,7 @@ describe('#cors:add', () => {
       async ({expectedOutput, input, shouldNormalize}) => {
         setupSuccessfulApiMock()
 
-        const {stdout} = await testCommand(Add, [input, '--credentials'])
+        const {stdout} = await testCommand(Add, [input, '--credentials'], {mocks: defaultMocks})
 
         if (shouldNormalize) {
           expect(stdout).toContain(expectedOutput)
@@ -368,7 +371,9 @@ describe('#cors:add', () => {
       })
       setupSuccessfulApiMock()
 
-      const {stdout} = await testCommand(Add, ['https://example.com', '--credentials'])
+      const {stdout} = await testCommand(Add, ['https://example.com', '--credentials'], {
+        mocks: defaultMocks,
+      })
 
       expect(stdout).toContain('CORS origin added successfully')
     })

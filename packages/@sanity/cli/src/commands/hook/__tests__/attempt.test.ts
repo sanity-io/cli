@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -9,25 +8,17 @@ import {type DeliveryAttempt} from '../../../actions/hook/types.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {AttemptHookCommand} from '../attempt.js'
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => {
-  return {
-    findProjectRoot: vi.fn().mockResolvedValue({
-      directory: '/test/path',
-      root: '/test/path',
-      type: 'studio',
-    }),
-  }
-})
+const testProjectId = 'test-project'
 
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
-  return {
-    getCliConfig: vi.fn().mockResolvedValue({
-      api: {
-        projectId: 'test-project',
-      },
-    }),
-  }
-})
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#attempt', () => {
   afterEach(() => {
@@ -83,7 +74,7 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'])
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Delivered')
@@ -113,7 +104,7 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'])
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Failed')
@@ -144,7 +135,7 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'])
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Failed')
@@ -174,7 +165,7 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'])
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Failed')
@@ -204,7 +195,7 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'])
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: In progress')
@@ -234,7 +225,7 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(200, mockAttempt)
 
-    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'])
+    const {stdout} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2023-01-01T12:00:00Z')
     expect(stdout).toContain('Status: Delivered')
@@ -248,27 +239,26 @@ describe('#attempt', () => {
       uri: '/hooks/projects/test-project/attempts/attempt123',
     }).reply(404, {message: 'Attempt not found'})
 
-    const {error} = await testCommand(AttemptHookCommand, ['attempt123'])
+    const {error} = await testCommand(AttemptHookCommand, ['attempt123'], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Hook attempt retrieval failed')
   })
 
   test('requires attempt ID argument', async () => {
-    const {error} = await testCommand(AttemptHookCommand, [])
+    const {error} = await testCommand(AttemptHookCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Missing 1 required arg')
   })
 
   test('throws error when no project ID is found', async () => {
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(AttemptHookCommand, ['attempt123'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(AttemptHookCommand, ['attempt123'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)

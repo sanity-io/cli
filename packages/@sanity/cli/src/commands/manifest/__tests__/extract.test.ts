@@ -8,14 +8,6 @@ import {ExtractManifestCommand} from '../extract.js'
 
 vi.mock('node:fs/promises')
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
 vi.mock('../../../util/importStudioConfig.js', async () => ({
   importStudioConfig: vi.fn(),
 }))
@@ -102,7 +94,15 @@ describe('#manifest:extract', () => {
     mockAccess.mockRejectedValue(new Error('ENOENT: no such file or directory'))
     mockWriteFile.mockResolvedValue(undefined)
 
-    const {stderr} = await testCommand(ExtractManifestCommand)
+    const {stderr} = await testCommand(ExtractManifestCommand, [], {
+      mocks: {
+        projectRoot: {
+          directory: '/test/path',
+          path: '/test/path/sanity.config.ts',
+          type: 'studio',
+        },
+      },
+    })
 
     expect(stderr).toContain('Extracting manifest')
     expect(stderr).toContain('✔ Extracted manifest')
@@ -133,7 +133,15 @@ describe('#manifest:extract', () => {
     mockAccess.mockRejectedValue(new Error('ENOENT: no such file or directory'))
     mockWriteFile.mockResolvedValue(undefined)
 
-    const {stderr} = await testCommand(ExtractManifestCommand, ['--path', '/test/static'])
+    const {stderr} = await testCommand(ExtractManifestCommand, ['--path', '/test/static'], {
+      mocks: {
+        projectRoot: {
+          directory: '/test/path',
+          path: '/test/path/sanity.config.ts',
+          type: 'studio',
+        },
+      },
+    })
 
     expect(stderr).toContain('Extracting manifest')
     expect(stderr).toContain('✔ Extracted manifest')

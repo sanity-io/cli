@@ -2,6 +2,9 @@
   "extends": "@repo/tsconfig/base.json",
   "include": ["./src"],
   "compilerOptions": {
-    "rootDir": "."
+    "rootDir": ".",
+    "paths": {
+      "@sanity/cli-core": ["./node_modules/@sanity/cli-core/src/index.ts"]
+    }
   }
 }

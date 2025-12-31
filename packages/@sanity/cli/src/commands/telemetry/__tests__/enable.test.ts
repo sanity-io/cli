@@ -1,24 +1,25 @@
 import {runCommand} from '@oclif/test'
-import {getCliToken} from '@sanity/cli-core'
+import * as cliCore from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {fetchTelemetryConsent} from '../../../actions/telemetry/fetchTelemetryConsent.js'
 import {Enable} from '../enable.js'
 
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn(),
-}))
-
-vi.mock('../../../../../cli-core/src/util/isCi.js', () => ({
-  isCi: () => false,
-}))
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
+  return {
+    ...actual,
+    getCliToken: vi.fn(),
+    isCi: () => false,
+  }
+})
 
 vi.mock('../../../actions/telemetry/fetchTelemetryConsent.js', () => ({
   fetchTelemetryConsent: vi.fn(),
 }))
 
-const mockGetCliToken = vi.mocked(getCliToken)
+const mockGetCliToken = vi.mocked(cliCore.getCliToken)
 const mockFetchTelemetryConsent = vi.mocked(fetchTelemetryConsent)
 
 describe('#enable', () => {

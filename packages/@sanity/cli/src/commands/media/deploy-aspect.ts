@@ -145,6 +145,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
         results: deployResponse.results,
       })
     } catch (error) {
+      console.log(error)
       const err = error as Error
       deployAspectDebug('Failed to deploy aspects', {
         all,

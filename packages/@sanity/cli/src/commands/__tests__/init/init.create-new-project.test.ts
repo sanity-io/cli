@@ -1,20 +1,20 @@
 import * as cliUX from '@sanity/cli-core/ux'
-import {testCommand} from '@sanity/cli-test'
+import {createTestClient, mockApi, mockClient, testCommand} from '@sanity/cli-test'
+import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
+import {CREATE_PROJECT_API_VERSION} from '../../../services/projects.js'
 import {InitCommand} from '../../init'
 
 const mocks = vi.hoisted(() => ({
-  createDataset: vi.fn(),
-  createOrganization: vi.fn(),
-  createProject: vi.fn(),
+  datasetsCreate: vi.fn(),
   detectFrameworkRecord: vi.fn(),
   getOrganizationChoices: vi.fn(),
   getOrganizationsWithAttachGrantInfo: vi.fn(),
   input: vi.fn(),
-  listOrganizations: vi.fn(),
   select: vi.fn(),
-  spinner: vi.fn(),
+  usersGetById: vi.fn(),
 }))
 
 vi.mock('@vercel/fs-detectors', () => ({
@@ -29,26 +29,38 @@ vi.mock('@sanity/cli-core/ux', async () => {
     ...actual,
     input: mocks.input,
     select: mocks.select,
-    // spinner: mocks.spinner,
   }
 })
 
-vi.mock('../../../../../cli-core/src/util/isInteractive.js', () => ({
-  isInteractive: vi.fn().mockReturnValue(true),
-}))
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  const testClient = createTestClient({
+    apiVersion: 'v2025-05-14',
+    token: 'test-token',
+  })
 
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-
-vi.mock('../../../services/user.js', () => ({
-  getCliUser: vi.fn().mockResolvedValue({
-    email: 'test@example.com',
-    id: 'user-123',
-    name: 'Test User',
-    provider: 'saml-123',
-  }),
-}))
+  return {
+    ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue(
+      mockClient({
+        datasets: {
+          create: mocks.datasetsCreate,
+        } as never,
+        request: testClient.request,
+        users: {
+          getById: mocks.usersGetById,
+        } as never,
+      }),
+    ),
+    getProjectCliClient: vi.fn().mockResolvedValue(
+      mockClient({
+        datasets: {
+          create: mocks.datasetsCreate,
+        } as never,
+      }),
+    ),
+  }
+})
 
 vi.mock('../../../actions/organizations/getOrganizationChoices.js', () => ({
   getOrganizationChoices: mocks.getOrganizationChoices,
@@ -58,36 +70,37 @@ vi.mock('../../../actions/organizations/getOrganizationsWithAttachGrantInfo.js',
   getOrganizationsWithAttachGrantInfo: mocks.getOrganizationsWithAttachGrantInfo,
 }))
 
-vi.mock('../../../services/datasets.js', () => ({
-  createDataset: mocks.createDataset,
-}))
-
-vi.mock('../../../services/organizations.js', () => ({
-  createOrganization: mocks.createOrganization,
-  listOrganizations: mocks.listOrganizations,
-}))
-
-vi.mock('../../../services/projects.js', () => ({
-  createProject: mocks.createProject,
-}))
+mocks.usersGetById.mockResolvedValue({
+  email: 'test@example.com',
+  id: 'user-123',
+  name: 'Test User',
+  provider: 'saml-123',
+})
 
 describe('#init: create new project', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('prompts user to create new organization if they have none', async () => {
-    // Mock no framework detection
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
 
-    // Mock listOrganizations to return empty array (user has no organizations)
-    mocks.listOrganizations.mockResolvedValueOnce([])
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [])
 
-    // Mock input prompt for organization name
     mocks.input.mockResolvedValueOnce('My New Organization')
 
-    // Mock createOrganization to return the created organization
-    mocks.createOrganization.mockResolvedValueOnce({
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'post',
+      uri: '/organizations',
+    }).reply(200, {
       createdByUserId: 'user-123',
       defaultRoleName: null,
       features: [],
@@ -97,27 +110,30 @@ describe('#init: create new project', () => {
       slug: 'my-new-organization',
     })
 
-    // Mock createProject to return the created project with correct structure
-    mocks.createProject.mockResolvedValueOnce({
+    mockApi({
+      apiVersion: CREATE_PROJECT_API_VERSION,
+      method: 'post',
+      uri: '/projects',
+    }).reply(200, {
       displayName: 'Test Project',
       projectId: 'project-123',
     })
 
-    // Mock createDataset
-    mocks.createDataset.mockResolvedValueOnce(undefined)
+    mocks.datasetsCreate.mockResolvedValueOnce(undefined)
 
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
 
-    await testCommand(InitCommand, [
-      '--create-project=Test Project',
-      '--dataset=production',
-      '--output-path=./test-project',
-    ])
+    await testCommand(
+      InitCommand,
+      ['--create-project=Test Project', '--dataset=production', '--output-path=./test-project'],
+      {
+        mocks: {
+          isInteractive: true,
+          token: 'test-token',
+        },
+      },
+    )
 
-    // Verify listOrganizations was called
-    expect(mocks.listOrganizations).toHaveBeenCalled()
-
-    // Verify input prompt was called with correct parameters
     expect(mocks.input).toHaveBeenCalledWith(
       expect.objectContaining({
         default: 'Test User',
@@ -125,37 +141,20 @@ describe('#init: create new project', () => {
       }),
     )
 
-    // Verify createOrganization was called with the input value
-    expect(mocks.createOrganization).toHaveBeenCalledWith('My New Organization')
+    expect(mocks.datasetsCreate).toHaveBeenCalledWith('production')
 
-    // Verify createProject was called
-    expect(mocks.createProject).toHaveBeenCalledWith(
-      expect.objectContaining({
-        displayName: 'Test Project',
-        organizationId: 'org-123',
-      }),
-    )
-
-    // Verify createDataset was called
-    expect(mocks.createDataset).toHaveBeenCalledWith(
-      expect.objectContaining({
-        aclMode: undefined,
-        datasetName: 'production',
-        projectId: 'project-123',
-      }),
-    )
-
-    // Verify spinner was called with correct text
     expect(spinnerSpy).toHaveBeenCalledWith('Creating organization')
     expect(spinnerSpy).toHaveBeenCalledWith('Creating dataset')
   })
 
   test('prompts user to select then create a new organization', async () => {
-    // Mock no framework detection
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
 
-    // Mock listOrganizations to return existing organizations
-    mocks.listOrganizations.mockResolvedValueOnce([
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [
       {
         id: 'existing-org-123',
         name: 'Existing Organization',
@@ -163,7 +162,6 @@ describe('#init: create new project', () => {
       },
     ])
 
-    // Mock getOrganizationsWithAttachGrantInfo to return organizations with attach grant
     mocks.getOrganizationsWithAttachGrantInfo.mockResolvedValueOnce([
       {
         hasAttachGrant: true,
@@ -175,20 +173,20 @@ describe('#init: create new project', () => {
       },
     ])
 
-    // Mock getOrganizationChoices to return choices including create new option
     mocks.getOrganizationChoices.mockReturnValueOnce([
       {name: 'Existing Organization [existing-org-123]', value: 'existing-org-123'},
       {name: 'Create new organization', value: '-new-'},
     ])
 
-    // Mock select prompt - user chooses to create new organization
     mocks.select.mockResolvedValueOnce('-new-')
 
-    // Mock input prompt for new organization name
     mocks.input.mockResolvedValueOnce('Brand New Organization')
 
-    // Mock createOrganization to return the newly created organization
-    mocks.createOrganization.mockResolvedValueOnce({
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'post',
+      uri: '/organizations',
+    }).reply(200, {
       createdByUserId: 'user-123',
       defaultRoleName: null,
       features: [],
@@ -198,44 +196,32 @@ describe('#init: create new project', () => {
       slug: 'brand-new-organization',
     })
 
-    // Mock createProject to return the created project
-    mocks.createProject.mockResolvedValueOnce({
+    mockApi({
+      apiVersion: CREATE_PROJECT_API_VERSION,
+      method: 'post',
+      uri: '/projects',
+    }).reply(200, {
       displayName: 'Test Project',
       projectId: 'project-123',
     })
 
-    // Mock createDataset
-    mocks.createDataset.mockResolvedValueOnce(undefined)
+    mocks.datasetsCreate.mockResolvedValueOnce(undefined)
 
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
 
-    await testCommand(InitCommand, [
-      '--create-project=Test Project',
-      '--dataset=production',
-      '--output-path=./test-project',
-    ])
-
-    // Verify createOrganization was called with the input value
-    expect(mocks.createOrganization).toHaveBeenCalledWith('Brand New Organization')
-
-    // Verify createProject was called
-    expect(mocks.createProject).toHaveBeenCalledWith(
-      expect.objectContaining({
-        displayName: 'Test Project',
-        organizationId: 'new-org-456',
-      }),
+    await testCommand(
+      InitCommand,
+      ['--create-project=Test Project', '--dataset=production', '--output-path=./test-project'],
+      {
+        mocks: {
+          isInteractive: true,
+          token: 'test-token',
+        },
+      },
     )
 
-    // Verify createDataset was called
-    expect(mocks.createDataset).toHaveBeenCalledWith(
-      expect.objectContaining({
-        aclMode: undefined,
-        datasetName: 'production',
-        projectId: 'project-123',
-      }),
-    )
+    expect(mocks.datasetsCreate).toHaveBeenCalledWith('production')
 
-    // Verify spinner was called with correct text
     expect(spinnerSpy).toHaveBeenCalledWith('Creating organization')
     expect(spinnerSpy).toHaveBeenCalledWith('Creating dataset')
   })

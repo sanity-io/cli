@@ -1,32 +1,23 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {getProjectCliClient} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {PROJECTS_API_VERSION} from '../../../services/projects.js'
 import {USERS_API_VERSION} from '../../../services/user.js'
 import {List} from '../list.js'
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => {
-  return {
-    findProjectRoot: vi.fn().mockResolvedValue({
-      directory: '/test/path',
-      root: '/test/path',
-      type: 'studio',
-    }),
-  }
-})
+const testProjectId = 'test-project'
 
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
-  return {
-    getCliConfig: vi.fn().mockResolvedValue({
-      api: {
-        projectId: 'test-project',
-      },
-    }),
-  }
-})
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
@@ -64,8 +55,18 @@ describe('#list', () => {
       },
     } as never)
     mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      uri: '/invitations/project/test-project',
+      apiVersion: USERS_API_VERSION,
+      query: {includeFeatures: 'false'},
+      uri: `/projects/${testProjectId}`,
+    }).reply(200, {
+      members: [
+        {id: 'user1', isRobot: false, role: 'developer'},
+        {id: 'user2', isRobot: false, role: 'admin'},
+      ],
+    })
+    mockApi({
+      apiVersion: USERS_API_VERSION,
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(200, [])
 
     mockApi({
@@ -76,7 +77,7 @@ describe('#list', () => {
       {createdAt: '2023-01-02', displayName: 'User Two', id: 'user2'},
     ])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toMatchSnapshot()
   })
@@ -93,8 +94,18 @@ describe('#list', () => {
       },
     } as never)
     mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      uri: '/invitations/project/test-project',
+      apiVersion: USERS_API_VERSION,
+      query: {includeFeatures: 'false'},
+      uri: `/projects/${testProjectId}`,
+    }).reply(200, {
+      members: [
+        {id: 'user1', isRobot: false, role: 'developer'},
+        {id: 'user2', isRobot: false, role: 'admin'},
+      ],
+    })
+    mockApi({
+      apiVersion: USERS_API_VERSION,
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(200, [
       {
         createdAt: '2023-02-01',
@@ -112,7 +123,7 @@ describe('#list', () => {
       {createdAt: '2023-01-02', displayName: 'User Two', id: 'user2'},
     ])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toMatchSnapshot()
   })
@@ -124,14 +135,20 @@ describe('#list', () => {
       50,
     )
     mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      uri: '/invitations/project/test-project',
+      apiVersion: USERS_API_VERSION,
+      query: {includeFeatures: 'false'},
+      uri: `/projects/${testProjectId}`,
+    }).reply(500, {message: 'Internal Server Error'})
+
+    mockApi({
+      apiVersion: USERS_API_VERSION,
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(200, [])
 
-    const {error} = await testCommand(List)
+    const {error} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Error fetching members for test-project')
+    expect(error?.message).toContain(`Error fetching members for ${testProjectId}`)
   })
 
   test('sorts by role when --sort role is specified', async () => {
@@ -147,8 +164,19 @@ describe('#list', () => {
       },
     } as never)
     mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      uri: '/invitations/project/test-project',
+      apiVersion: USERS_API_VERSION,
+      query: {includeFeatures: 'false'},
+      uri: `/projects/${testProjectId}`,
+    }).reply(200, {
+      members: [
+        {id: 'user1', isRobot: false, role: 'developer'},
+        {id: 'user2', isRobot: false, role: 'admin'},
+        {id: 'user3', isRobot: false, role: 'viewer'},
+      ],
+    })
+    mockApi({
+      apiVersion: USERS_API_VERSION,
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(200, [])
 
     mockApi({
@@ -160,7 +188,7 @@ describe('#list', () => {
       {createdAt: '2023-01-03', displayName: 'User Three', id: 'user3'},
     ])
 
-    const {stdout} = await testCommand(List, ['--sort', 'role'])
+    const {stdout} = await testCommand(List, ['--sort', 'role'], {mocks: defaultMocks})
 
     // Check that we have all the roles in the output
     expect(stdout).toMatchSnapshot()
@@ -184,21 +212,21 @@ describe('#list', () => {
   })
 
   test('sorts in descending order when --order desc is specified', async () => {
-    mockGetProjectCliClient.mockResolvedValue({
-      projects: {
-        getById: vi.fn().mockResolvedValue({
-          members: [
-            {id: 'user1', isRobot: false, role: 'developer'},
-            {id: 'user2', isRobot: false, role: 'admin'},
-            {id: 'user3', isRobot: false, role: 'viewer'},
-          ],
-        }),
-      },
-    } as never)
+    mockApi({
+      apiVersion: USERS_API_VERSION,
+      query: {includeFeatures: 'false'},
+      uri: `/projects/${testProjectId}`,
+    }).reply(200, {
+      members: [
+        {id: 'user1', isRobot: false, role: 'developer'},
+        {id: 'user2', isRobot: false, role: 'admin'},
+        {id: 'user3', isRobot: false, role: 'viewer'},
+      ],
+    })
 
     mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      uri: '/invitations/project/test-project',
+      apiVersion: USERS_API_VERSION,
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(200, [])
 
     mockApi({
@@ -210,7 +238,7 @@ describe('#list', () => {
       {createdAt: '2023-01-03', displayName: 'User Three', id: 'user3'},
     ])
 
-    const {stdout} = await testCommand(List, ['--order', 'desc'])
+    const {stdout} = await testCommand(List, ['--order', 'desc'], {mocks: defaultMocks})
 
     // Check that we have all the dates in the output
     expect(stdout).toContain('2023-01-01')
@@ -234,16 +262,16 @@ describe('#list', () => {
   })
 
   test('excludes invitations when --no-invitations is specified', async () => {
-    mockGetProjectCliClient.mockResolvedValue({
-      projects: {
-        getById: vi.fn().mockResolvedValue({
-          members: [
-            {id: 'user1', isRobot: false, role: 'developer'},
-            {id: 'user2', isRobot: false, role: 'admin'},
-          ],
-        }),
-      },
-    } as never)
+    mockApi({
+      apiVersion: USERS_API_VERSION,
+      query: {includeFeatures: 'false'},
+      uri: `/projects/${testProjectId}`,
+    }).reply(200, {
+      members: [
+        {id: 'user1', isRobot: false, role: 'developer'},
+        {id: 'user2', isRobot: false, role: 'admin'},
+      ],
+    })
 
     mockApi({
       apiVersion: USERS_API_VERSION,
@@ -253,7 +281,7 @@ describe('#list', () => {
       {createdAt: '2023-01-02', displayName: 'User Two', id: 'user2'},
     ])
 
-    const {stdout} = await testCommand(List, ['--no-invitations'])
+    const {stdout} = await testCommand(List, ['--no-invitations'], {mocks: defaultMocks})
 
     // Check that pending invitation is not in the output
     expect(stdout).not.toContain('pending@example.com')
@@ -273,8 +301,19 @@ describe('#list', () => {
       },
     } as never)
     mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      uri: '/invitations/project/test-project',
+      apiVersion: USERS_API_VERSION,
+      query: {includeFeatures: 'false'},
+      uri: `/projects/${testProjectId}`,
+    }).reply(200, {
+      members: [
+        {id: 'user1', isRobot: false, role: 'developer'},
+        {id: 'user2', isRobot: false, role: 'admin'},
+        {id: 'robot1', isRobot: true, role: 'viewer'},
+      ],
+    })
+    mockApi({
+      apiVersion: USERS_API_VERSION,
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(200, [])
 
     mockApi({
@@ -285,7 +324,7 @@ describe('#list', () => {
       {createdAt: '2023-01-02', displayName: 'User Two', id: 'user2'},
     ])
 
-    const {stdout} = await testCommand(List, ['--no-robots'])
+    const {stdout} = await testCommand(List, ['--no-robots'], {mocks: defaultMocks})
 
     // Check that robot is not in the output
     expect(stdout).not.toContain('robot1')
@@ -293,13 +332,12 @@ describe('#list', () => {
   })
 
   test('throws error when no project ID is found', async () => {
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(List, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(List)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual('No project ID found')

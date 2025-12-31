@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -9,28 +8,6 @@ import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {AddTokenCommand} from '../add.js'
 
-// Mock the config functions with relative paths
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      projectId: 'test-project',
-    },
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-
-// Mock inquirer prompts
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
@@ -39,13 +16,22 @@ vi.mock('@sanity/cli-core/ux', async () => {
     select: vi.fn(),
   }
 })
+
 const mockedInput = vi.mocked(input)
 const mockedSelect = vi.mocked(select)
-const mockedGetCliConfig = vi.mocked(getCliConfig)
 
-vi.mock('../../../../../cli-core/src/util/isInteractive.js', () => ({
-  isInteractive: vi.fn().mockReturnValue(true),
-}))
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  isInteractive: true,
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#tokens:add', () => {
   afterEach(() => {
@@ -107,7 +93,7 @@ describe('#tokens:add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(200, mockToken)
 
-    const {stdout} = await testCommand(AddTokenCommand, ['My Test Token'])
+    const {stdout} = await testCommand(AddTokenCommand, ['My Test Token'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Token created successfully!')
     expect(stdout).toContain('Label: My Test Token')
@@ -163,7 +149,9 @@ describe('#tokens:add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(200, mockToken)
 
-    const {stdout} = await testCommand(AddTokenCommand, ['Editor Token', '--role=editor'])
+    const {stdout} = await testCommand(AddTokenCommand, ['Editor Token', '--role=editor'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Token created successfully!')
     expect(stdout).toContain('Label: Editor Token')
@@ -208,7 +196,9 @@ describe('#tokens:add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(200, mockToken)
 
-    const {stdout} = await testCommand(AddTokenCommand, ['JSON Token', '--json'])
+    const {stdout} = await testCommand(AddTokenCommand, ['JSON Token', '--json'], {
+      mocks: defaultMocks,
+    })
 
     const parsedOutput = JSON.parse(stdout)
     expect(parsedOutput).toEqual(mockToken)
@@ -235,7 +225,9 @@ describe('#tokens:add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(200, mockToken)
 
-    const {stdout} = await testCommand(AddTokenCommand, ['Unattended Token', '--yes'])
+    const {stdout} = await testCommand(AddTokenCommand, ['Unattended Token', '--yes'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Token created successfully!')
     expect(stdout).toContain('Label: Unattended Token')
@@ -259,7 +251,9 @@ describe('#tokens:add', () => {
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
-    const {error} = await testCommand(AddTokenCommand, ['Test Token', '--role=invalid'])
+    const {error} = await testCommand(AddTokenCommand, ['Test Token', '--role=invalid'], {
+      mocks: defaultMocks,
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Invalid role "invalid"')
@@ -291,7 +285,7 @@ describe('#tokens:add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(AddTokenCommand, ['Failed Token'])
+    const {error} = await testCommand(AddTokenCommand, ['Failed Token'], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token creation failed')
@@ -300,13 +294,12 @@ describe('#tokens:add', () => {
   })
 
   test('throws error when no project ID is found', async () => {
-    mockedGetCliConfig.mockResolvedValueOnce({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(AddTokenCommand, ['Test Token'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(AddTokenCommand, ['Test Token'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -331,7 +324,7 @@ describe('#tokens:add', () => {
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
-    const {error} = await testCommand(AddTokenCommand, ['Test Token'])
+    const {error} = await testCommand(AddTokenCommand, ['Test Token'], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('No roles available for tokens')
@@ -378,7 +371,7 @@ describe('#tokens:add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(200, mockToken)
 
-    const {stdout} = await testCommand(AddTokenCommand, [])
+    const {stdout} = await testCommand(AddTokenCommand, [], {mocks: defaultMocks})
 
     expect(mockedInput).toHaveBeenCalledWith({
       message: 'Token label:',
@@ -429,7 +422,7 @@ describe('#tokens:add', () => {
       uri: '/projects/test-project/tokens',
     }).reply(200, mockToken)
 
-    await testCommand(AddTokenCommand, [])
+    await testCommand(AddTokenCommand, [], {mocks: defaultMocks})
 
     // Test that the validation function correctly rejects empty and whitespace-only strings
     const inputCall = mockedInput.mock.calls[0]
@@ -445,7 +438,7 @@ describe('#tokens:add', () => {
   })
 
   test('throws error when no label provided in non-interactive mode with --yes flag', async () => {
-    const {error} = await testCommand(AddTokenCommand, ['--yes'])
+    const {error} = await testCommand(AddTokenCommand, ['--yes'], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token label is required in non-interactive mode')

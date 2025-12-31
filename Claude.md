@@ -61,6 +61,192 @@ All these commands are run from the root of the repo.
 - Commands should extend `SanityCommand` from `@sanity/cli-core`
 - Use `subdebug('namespace:command')` for debug logging
 
+# Testing Patterns
+
+## Client Mocking Strategy
+
+For tests that need to mock Sanity API client methods, use **module-level mocking** with `mockClient` instead of mocking individual service functions.
+
+### When to Use Module-Level Mocking
+
+Use module-level mocking when:
+
+- Tests need to mock API client methods (e.g., `client.users.getById()`, `client.datasets.list()`)
+- Services call `getGlobalCliClient` or `getProjectCliClient` directly
+- You want fail-fast behavior when unmocked methods are called
+
+### How to Mock the Client
+
+```typescript
+import {mockClient, testCommand} from '@sanity/cli-test'
+import {afterEach, describe, expect, test, vi} from 'vitest'
+
+// Create hoisted mocks for client methods
+const mockGetById = vi.hoisted(() => vi.fn())
+
+// Mock @sanity/cli-core at module level
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue(
+      mockClient({
+        users: {
+          getById: mockGetById,
+        } as never, // Use 'as never' for nested objects
+      }),
+    ),
+  }
+})
+
+describe('my command', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('success case', async () => {
+    // Configure the mock for this test
+    mockGetById.mockResolvedValue({
+      email: 'test@example.com',
+      id: 'user-123',
+      name: 'Test User',
+    })
+
+    const {stdout, error} = await testCommand(MyCommand, [])
+
+    expect(error).toBeUndefined()
+    expect(stdout).toContain('test@example.com')
+  })
+})
+```
+
+### Key Benefits
+
+1. **Mock once, use everywhere**: All services that call `getGlobalCliClient` automatically use the mock
+2. **Fail-fast**: If a test calls an unmocked client method, it throws immediately with a helpful error
+3. **Less boilerplate**: No need to mock individual service functions
+4. **More realistic**: Tests the actual client method calls that services make
+
+### Common Mock Patterns
+
+```typescript
+// Mock nested client objects (datasets, users, projects, etc.)
+mockClient({
+  datasets: {
+    list: vi.fn().mockResolvedValue([...]),
+    create: vi.fn().mockResolvedValue({...}),
+  } as never,
+  users: {
+    getById: vi.fn().mockResolvedValue({...}),
+  } as never,
+})
+
+// Mock both global and project clients
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue(mockClient({...})),
+    getProjectCliClient: vi.fn().mockResolvedValue(mockClient({...})),
+  }
+})
+```
+
+### Mocking the Request Method
+
+When tests need to mock `client.request()` for HTTP calls, use `createTestClient()` with `mockApi()`:
+
+```typescript
+import {createTestClient, mockApi, mockClient, testCommand} from '@sanity/cli-test'
+
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
+  const testClient = createTestClient({
+    apiVersion: 'v2021-06-07',
+    token: 'test-token',
+  })
+
+  return {
+    ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue(
+      mockClient({
+        request: testClient.request, // ✅ Use real test client request
+        users: {
+          getById: vi.fn().mockResolvedValue({
+            email: 'test@example.com',
+            id: 'user-123',
+            name: 'Test User',
+          }),
+        } as never,
+      }),
+    ),
+  }
+})
+
+test('with mockApi', async () => {
+  // Mock the HTTP endpoint
+  mockApi({
+    apiVersion: 'v2021-06-07',
+    method: 'post',
+    uri: '/projects',
+  }).reply(200, {
+    displayName: 'Test Project',
+    projectId: 'project-123',
+  })
+
+  const {error, stdout} = await testCommand(MyCommand, [])
+
+  expect(error).toBeUndefined()
+  expect(stdout).toContain('project-123')
+})
+```
+
+**Benefits of this approach:**
+
+- Tests the actual HTTP layer, not just mocked functions
+- More realistic integration-style testing
+- Better debugging with actual request/response details
+- Validates request formatting and response parsing
+- Consistent with other HTTP-level tests
+
+**❌ Don't mock request as a plain `vi.fn()`:**
+
+```typescript
+// Wrong: manual mocking
+const mocks = vi.hoisted(() => ({
+  request: vi.fn(),
+}))
+
+mockClient({
+  request: mocks.request,  // ❌ Wrong
+})
+
+mocks.request.mockResolvedValueOnce([...])  // ❌ Wrong
+```
+
+**Reference**: See `packages/@sanity/cli/src/commands/__tests__/init/init.plan.test.ts` for a complete example.
+
+## Alternative: HTTP Mocking with mockApi
+
+For integration-style tests that want to test the full stack including the actual client:
+
+```typescript
+import {mockApi} from '@sanity/cli-test'
+
+test('with HTTP mocking', async () => {
+  mockApi({
+    apiVersion: 'v2021-06-07',
+    uri: '/users/me',
+    method: 'GET',
+  }).reply(200, {id: 'user-123', email: 'test@example.com'})
+
+  const {stdout} = await testCommand(MyCommand, [])
+  expect(stdout).toContain('test@example.com')
+})
+```
+
+Use HTTP mocking when you want to test the entire request/response cycle, including request formatting and response parsing.
+
 # Debugging
 
 - To run any command first you have to build the project using `pnpm build:cli`

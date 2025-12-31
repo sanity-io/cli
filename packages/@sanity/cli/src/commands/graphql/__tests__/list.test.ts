@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -8,28 +7,17 @@ import {GRAPHQL_API_VERSION} from '../../../services/graphql.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {List} from '../list.js'
 
-// Mock the config functions with relative paths
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
     directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      projectId: 'test-project',
-    },
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-
-const mockGetCliConfig = vi.mocked(getCliConfig)
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#list', () => {
   afterEach(() => {
@@ -62,7 +50,7 @@ describe('#list', () => {
 
   test('displays GraphQL endpoints correctly with multiple endpoints', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
+      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       uri: '/apis/graphql',
     }).reply(200, [
@@ -70,19 +58,19 @@ describe('#list', () => {
         dataset: 'production',
         generation: 'gen2',
         playgroundEnabled: true,
-        projectId: 'test-project',
+        projectId: testProjectId,
         tag: 'default',
       },
       {
         dataset: 'staging',
         generation: 'gen3',
         playgroundEnabled: false,
-        projectId: 'test-project',
+        projectId: testProjectId,
         tag: 'latest',
       },
     ])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toMatchInlineSnapshot(`
       "Here are the GraphQL endpoints deployed for this project:
@@ -104,7 +92,7 @@ describe('#list', () => {
 
   test('displays single GraphQL endpoint correctly', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
+      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       uri: '/apis/graphql',
     }).reply(200, [
@@ -112,12 +100,12 @@ describe('#list', () => {
         dataset: 'production',
         generation: 'gen2',
         playgroundEnabled: true,
-        projectId: 'test-project',
+        projectId: testProjectId,
         tag: 'default',
       },
     ])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toMatchInlineSnapshot(`
       "Here are the GraphQL endpoints deployed for this project:
@@ -133,24 +121,24 @@ describe('#list', () => {
 
   test('handles empty GraphQL endpoints list', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
+      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       uri: '/apis/graphql',
     }).reply(200, [])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toBe("This project doesn't have any GraphQL endpoints deployed.\n")
   })
 
   test('handles null/undefined GraphQL endpoints response', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
+      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       uri: '/apis/graphql',
     }).reply(200, undefined)
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toBe("This project doesn't have any GraphQL endpoints deployed.\n")
   })
@@ -162,12 +150,12 @@ describe('#list', () => {
     'displays error when API request fails with %i status and message "%s"',
     async (status, message) => {
       mockApi({
-        apiHost: 'https://test-project.api.sanity.io',
+        apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: GRAPHQL_API_VERSION,
         uri: '/apis/graphql',
       }).reply(status, {message})
 
-      const {error} = await testCommand(List)
+      const {error} = await testCommand(List, [], {mocks: defaultMocks})
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('GraphQL endpoints list retrieval failed')
@@ -177,13 +165,12 @@ describe('#list', () => {
   )
 
   test('throws error when project ID is not defined', async () => {
-    mockGetCliConfig.mockResolvedValueOnce({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(List, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(List)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -192,7 +179,7 @@ describe('#list', () => {
 
   test('displays endpoints correctly when dataset names contain special characters', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
+      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       uri: '/apis/graphql',
     }).reply(200, [
@@ -200,19 +187,19 @@ describe('#list', () => {
         dataset: 'my-dataset-123',
         generation: 'gen2',
         playgroundEnabled: true,
-        projectId: 'test-project',
+        projectId: testProjectId,
         tag: 'v1.0.0',
       },
       {
         dataset: 'test_dataset',
         generation: 'gen3',
         playgroundEnabled: false,
-        projectId: 'test-project',
+        projectId: testProjectId,
         tag: 'beta-2',
       },
     ])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Dataset:     my-dataset-123')
     expect(stdout).toContain('Tag:         v1.0.0')
@@ -222,7 +209,7 @@ describe('#list', () => {
 
   test('displays endpoints with various generation values correctly', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
+      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       uri: '/apis/graphql',
     }).reply(200, [
@@ -230,19 +217,19 @@ describe('#list', () => {
         dataset: 'production',
         generation: 'gen1',
         playgroundEnabled: true,
-        projectId: 'test-project',
+        projectId: testProjectId,
         tag: 'default',
       },
       {
         dataset: 'staging',
         generation: 'gen3',
         playgroundEnabled: false,
-        projectId: 'test-project',
+        projectId: testProjectId,
         tag: 'default',
       },
     ])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Generation:  gen1')
     expect(stdout).toContain('Generation:  gen3')

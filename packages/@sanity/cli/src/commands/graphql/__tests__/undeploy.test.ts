@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {createSchema} from 'sanity'
@@ -10,53 +9,38 @@ import {GRAPHQL_API_VERSION} from '../../../services/graphql.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Undeploy} from '../undeploy.js'
 
-// Mock the config functions
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      dataset: 'production',
-      projectId: 'test-project',
-    },
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-
 // Mock getGraphQLAPIs
 vi.mock('../../../actions/graphql/getGraphQLAPIs.js', () => ({
   getGraphQLAPIs: vi.fn(),
 }))
 
-const mockGetCliConfig = vi.mocked(getCliConfig)
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {dataset: 'production', projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
+
 const mockGetGraphQLAPIs = vi.mocked(getGraphQLAPIs)
 const mockConfirm = vi.hoisted(() => vi.fn())
 const schema = createSchema({name: 'default', types: []})
 
-// Mock inquirer prompts
-vi.mock('@sanity/cli-core/ux', () => ({
-  confirm: mockConfirm,
-}))
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    confirm: mockConfirm,
+  }
+})
 
 describe('graphql undeploy', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Reset getCliConfig to default values for each test
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: 'production',
-        projectId: 'test-project',
-      },
-    })
   })
 
   afterEach(() => {
@@ -121,7 +105,7 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/production/default',
     }).reply(204)
 
-    const {stdout} = await testCommand(Undeploy)
+    const {stdout} = await testCommand(Undeploy, [], {mocks: defaultMocks})
 
     expect(mockConfirm).toHaveBeenCalledWith({
       default: false,
@@ -141,7 +125,7 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/production/beta',
     }).reply(204)
 
-    const {stdout} = await testCommand(Undeploy, ['--tag', 'beta'])
+    const {stdout} = await testCommand(Undeploy, ['--tag', 'beta'], {mocks: defaultMocks})
 
     expect(mockConfirm).toHaveBeenCalledWith({
       default: false,
@@ -161,7 +145,7 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/staging/default',
     }).reply(204)
 
-    const {stdout} = await testCommand(Undeploy, ['--dataset', 'staging'])
+    const {stdout} = await testCommand(Undeploy, ['--dataset', 'staging'], {mocks: defaultMocks})
 
     expect(stdout).toBe('GraphQL API deleted\n')
   })
@@ -176,7 +160,7 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/production/default',
     }).reply(204)
 
-    const {stdout} = await testCommand(Undeploy, ['--project', 'custom-project', '--force'])
+    const {stdout} = await testCommand(Undeploy, ['--project', 'custom-project', '--force'], {mocks: defaultMocks})
 
     expect(stdout).toBe('GraphQL API deleted\n')
   })
@@ -198,7 +182,7 @@ describe('graphql undeploy', () => {
       'staging',
       '--tag',
       'experimental',
-    ])
+    ], {mocks: defaultMocks})
 
     expect(stdout).toBe('GraphQL API deleted\n')
     expect(mockConfirm).toHaveBeenCalledWith({
@@ -216,7 +200,7 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/production/default',
     }).reply(204)
 
-    const {stdout} = await testCommand(Undeploy, ['--force'])
+    const {stdout} = await testCommand(Undeploy, ['--force'], {mocks: defaultMocks})
 
     expect(stdout).toBe('GraphQL API deleted\n')
     expect(mockConfirm).not.toHaveBeenCalled()
@@ -224,7 +208,7 @@ describe('graphql undeploy', () => {
 
   test('cancels deletion when user declines confirmation', async () => {
     mockConfirm.mockResolvedValue(false)
-    const {stdout} = await testCommand(Undeploy)
+    const {stdout} = await testCommand(Undeploy, [], {mocks: defaultMocks})
     expect(stdout).toBe('Operation cancelled\n')
     expect(nock.pendingMocks()).toHaveLength(0) // No API call should be made
   })
@@ -249,7 +233,7 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/ios-dataset/mobile',
     }).reply(204)
 
-    const {stdout} = await testCommand(Undeploy, ['--api', 'ios'])
+    const {stdout} = await testCommand(Undeploy, ['--api', 'ios'], {mocks: defaultMocks})
 
     expect(stdout).toBe('GraphQL API deleted\n')
     expect(mockGetGraphQLAPIs).toHaveBeenCalledWith(process.cwd())
@@ -266,7 +250,7 @@ describe('graphql undeploy', () => {
       },
     ])
 
-    const {error} = await testCommand(Undeploy, ['--api', 'ios'])
+    const {error} = await testCommand(Undeploy, ['--api', 'ios'], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('GraphQL API "ios" not found')
@@ -293,7 +277,7 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/staging/default',
     }).reply(204)
 
-    const {stderr, stdout} = await testCommand(Undeploy, ['--api', 'ios', '--dataset', 'staging'])
+    const {stderr, stdout} = await testCommand(Undeploy, ['--api', 'ios', '--dataset', 'staging'], {mocks: defaultMocks})
 
     expect(stdout).toBe('GraphQL API deleted\n')
     expect(stderr).toContain('Both --api and --dataset specified, using --dataset staging')
@@ -324,7 +308,7 @@ describe('graphql undeploy', () => {
       'ios',
       '--project',
       'test-project',
-    ])
+    ], {mocks: defaultMocks})
 
     expect(stdout).toBe('GraphQL API deleted\n')
     expect(stderr).toContain('Both --api and --project specified, using --project test-project')
@@ -350,21 +334,19 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/production/beta',
     }).reply(204)
 
-    const {stderr, stdout} = await testCommand(Undeploy, ['--api', 'ios', '--tag', 'beta'])
+    const {stderr, stdout} = await testCommand(Undeploy, ['--api', 'ios', '--tag', 'beta'], {mocks: defaultMocks})
 
     expect(stdout).toBe('GraphQL API deleted\n')
     expect(stderr).toContain('Both --api and --tag specified, using --tag beta')
   })
 
   test('throws error when project ID is not defined', async () => {
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: 'production',
-        projectId: undefined,
+    const {error} = await testCommand(Undeploy, ['--force'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {dataset: 'production', projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(Undeploy, ['--force'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -372,14 +354,12 @@ describe('graphql undeploy', () => {
   })
 
   test('throws error when dataset is not defined and not in config', async () => {
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: undefined,
-        projectId: 'test-project',
+    const {error} = await testCommand(Undeploy, ['--force'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {dataset: undefined, projectId: testProjectId}},
       },
     })
-
-    const {error} = await testCommand(Undeploy, ['--force'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain(
@@ -398,7 +378,7 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/production/default',
     }).reply(404, {message: 'GraphQL API not found'})
 
-    const {error} = await testCommand(Undeploy)
+    const {error} = await testCommand(Undeploy, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('GraphQL API deletion failed')
@@ -409,7 +389,7 @@ describe('graphql undeploy', () => {
   test('handles user cancelling confirmation prompt', async () => {
     mockConfirm.mockRejectedValue(new Error('User cancelled'))
 
-    const {error} = await testCommand(Undeploy)
+    const {error} = await testCommand(Undeploy, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toBe('Operation cancelled')

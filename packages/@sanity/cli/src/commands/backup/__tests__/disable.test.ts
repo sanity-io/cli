@@ -1,13 +1,28 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
-import {mockApi, testCommand} from '@sanity/cli-test'
+import {mockApi, mockClient, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {BACKUP_API_VERSION} from '../../../actions/backup/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {DisableBackupCommand} from '../disable.js'
+
+const mockListDatasets = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    getProjectCliClient: vi.fn().mockResolvedValue(
+      mockClient({
+        datasets: {
+          list: mockListDatasets,
+        } as never,
+      }),
+    ),
+  }
+})
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
@@ -17,45 +32,19 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
     directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      projectId: 'test-project',
-    },
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-
-vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    getProjectCliClient: vi.fn(),
-  }
-})
-
-const mockGetCliConfig = vi.mocked(getCliConfig)
-const mockSelect = vi.mocked(select)
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
-
-const setupMocksWithDatasets = (datasets = [{name: 'production'}, {name: 'staging'}]) => {
-  mockGetProjectCliClient.mockResolvedValue({
-    datasets: {
-      list: vi.fn().mockResolvedValue(datasets),
-    },
-  } as never)
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
 }
+
+const mockSelect = vi.mocked(select)
 
 describe('#backup:disable', () => {
   afterEach(() => {
@@ -93,30 +82,35 @@ describe('#backup:disable', () => {
   })
 
   test('should disable backup for specified dataset', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}])
+
     mockApi({
       apiVersion: BACKUP_API_VERSION,
       method: 'put',
-      uri: '/projects/test-project/datasets/production/settings/backups',
+      uri: `/projects/${testProjectId}/datasets/production/settings/backups`,
     }).reply(200, {enabled: false})
 
-    setupMocksWithDatasets([{name: 'production'}])
-
-    const {stdout} = await testCommand(DisableBackupCommand, ['production'])
+    const {stdout} = await testCommand(DisableBackupCommand, ['production'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Disabled daily backups for dataset production')
   })
 
   test('should prompt for dataset when none specified', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
+
     mockApi({
       apiVersion: BACKUP_API_VERSION,
       method: 'put',
-      uri: '/projects/test-project/datasets/production/settings/backups',
+      uri: `/projects/${testProjectId}/datasets/production/settings/backups`,
     }).reply(200, {enabled: false})
 
-    setupMocksWithDatasets([{name: 'production'}, {name: 'staging'}])
     mockSelect.mockResolvedValue('production')
 
-    const {stdout} = await testCommand(DisableBackupCommand, [])
+    const {stdout} = await testCommand(DisableBackupCommand, [], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Disabled daily backups for dataset production')
     expect(mockSelect).toHaveBeenCalledWith({
@@ -129,26 +123,29 @@ describe('#backup:disable', () => {
   })
 
   test('should fail when no project ID is available', async () => {
-    mockGetCliConfig.mockResolvedValueOnce({
-      api: undefined,
+    const {error} = await testCommand(DisableBackupCommand, ['production'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: undefined},
+      },
     })
-
-    const {error} = await testCommand(DisableBackupCommand, ['production'])
 
     expect(error?.message).toContain(NO_PROJECT_ID)
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should handle API errors gracefully', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}])
+
     mockApi({
       apiVersion: BACKUP_API_VERSION,
       method: 'put',
-      uri: '/projects/test-project/datasets/production/settings/backups',
+      uri: `/projects/${testProjectId}/datasets/production/settings/backups`,
     }).reply(500, 'API request failed')
 
-    setupMocksWithDatasets([{name: 'production'}])
-
-    const {error} = await testCommand(DisableBackupCommand, ['production'])
+    const {error} = await testCommand(DisableBackupCommand, ['production'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Disabling dataset backup failed:')
     expect(error?.message).toContain('API request failed')
@@ -156,31 +153,33 @@ describe('#backup:disable', () => {
   })
 
   test('should fail when no datasets are available', async () => {
-    setupMocksWithDatasets([])
+    mockListDatasets.mockResolvedValue([])
 
-    const {error} = await testCommand(DisableBackupCommand, [])
+    const {error} = await testCommand(DisableBackupCommand, [], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('No datasets found in this project')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should handle dataset list fetch errors', async () => {
-    mockGetProjectCliClient.mockResolvedValue({
-      datasets: {
-        list: vi.fn().mockRejectedValue(new Error('Failed to fetch datasets')),
-      },
-    } as never)
+    mockListDatasets.mockRejectedValue(new Error('Failed to fetch datasets'))
 
-    const {error} = await testCommand(DisableBackupCommand, [])
+    const {error} = await testCommand(DisableBackupCommand, [], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Failed to list datasets: Failed to fetch datasets')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should fail when specified dataset does not exist', async () => {
-    setupMocksWithDatasets([{name: 'production'}, {name: 'staging'}])
+    mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
 
-    const {error} = await testCommand(DisableBackupCommand, ['nonexistent'])
+    const {error} = await testCommand(DisableBackupCommand, ['nonexistent'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain("Dataset 'nonexistent' not found")
     expect(error?.message).toContain('Available datasets: production, staging')

@@ -35,20 +35,27 @@ const mockManifest = {
   ],
 }
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({}),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn(),
-}))
-
 vi.mock('../../../actions/manifest/extractManifest.js')
 vi.mock('../../../actions/schema/utils/manifestReader.js')
 
 const mockedGetCliConfig = vi.mocked(getCliConfig)
 const mockExtractManifestSafe = vi.mocked(extractManifestSafe)
 const mockedCreateManifestReader = vi.mocked(createManifestReader)
+vi.mock('../../../actions/schema/listSchemas.js', () => ({
+  listSchemas: vi.fn(),
+}))
+
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {dataset: 'production', projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#schema:list', () => {
   beforeEach(() => {
@@ -171,7 +178,9 @@ describe('#schema:list', () => {
       workspace: mockManifest.workspaces[1],
     })
 
-    const {stdout} = await testCommand(ListSchemaCommand, ['--id', '_.schemas.staging'])
+    const {stdout} = await testCommand(ListSchemaCommand, ['--id', '_.schemas.staging'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain(
       'Id                  Workspace   Dataset   ProjectId      CreatedAt           ',
@@ -386,7 +395,7 @@ describe('#schema:list', () => {
       workspace: mockManifest.workspaces[1],
     })
 
-    await testCommand(ListSchemaCommand, ['--no-extract-manifest'])
+    await testCommand(ListSchemaCommand, ['--no-extract-manifest'], {mocks: defaultMocks})
 
     expect(mockExtractManifestSafe).not.toHaveBeenCalled()
   })

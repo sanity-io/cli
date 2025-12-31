@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -9,26 +8,6 @@ import {DATASET_ALIASES_API_VERSION} from '../../../../services/datasetAliases.j
 import {NO_PROJECT_ID} from '../../../../util/errorMessages.js'
 import {UnlinkAliasCommand} from '../unlink.js'
 
-vi.mock('../../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      projectId: 'test-project',
-    },
-  }),
-}))
-
-vi.mock('../../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
@@ -37,7 +16,18 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-const mockGetCliConfig = vi.mocked(getCliConfig)
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
+
 const mockInput = vi.mocked(input)
 
 describe('#dataset:alias:unlink', () => {
@@ -108,7 +98,7 @@ describe('#dataset:alias:unlink', () => {
 
     mockInput.mockResolvedValueOnce('yes')
 
-    const {stdout} = await testCommand(UnlinkAliasCommand, [aliasInput])
+    const {stdout} = await testCommand(UnlinkAliasCommand, [aliasInput], {mocks: defaultMocks})
 
     expect(stdout).toContain('Dataset alias ~staging unlinked from production successfully')
     expect(mockInput).toHaveBeenCalledWith({
@@ -136,7 +126,9 @@ describe('#dataset:alias:unlink', () => {
       uri: '/aliases/staging/unlink',
     }).reply(200, {aliasName: 'staging', datasetName: 'production'})
 
-    const {stderr, stdout} = await testCommand(UnlinkAliasCommand, ['staging', '--force'])
+    const {stderr, stdout} = await testCommand(UnlinkAliasCommand, ['staging', '--force'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Dataset alias ~staging unlinked from production successfully')
     expect(stderr).toContain('\'--force\' used: skipping confirmation, unlinking alias "~staging"')
@@ -164,7 +156,7 @@ describe('#dataset:alias:unlink', () => {
       .mockResolvedValueOnce('staging') // alias name prompt
       .mockResolvedValueOnce('yes') // confirmation prompt
 
-    const {stdout} = await testCommand(UnlinkAliasCommand, [])
+    const {stdout} = await testCommand(UnlinkAliasCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Dataset alias ~staging unlinked from production successfully')
     expect(mockInput).toHaveBeenCalledWith({
@@ -185,23 +177,26 @@ describe('#dataset:alias:unlink', () => {
 
     mockInput.mockRejectedValueOnce(new Error('User cancelled'))
 
-    const {error} = await testCommand(UnlinkAliasCommand, ['staging'])
+    const {error} = await testCommand(UnlinkAliasCommand, ['staging'], {mocks: defaultMocks})
 
     expect(error?.message).toContain('Dataset alias unlink failed: User cancelled')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('shows error when no project ID available', async () => {
-    mockGetCliConfig.mockResolvedValueOnce({})
-
-    const {error} = await testCommand(UnlinkAliasCommand, ['staging'])
+    const {error} = await testCommand(UnlinkAliasCommand, ['staging'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {},
+      },
+    })
 
     expect(error?.message).toContain(NO_PROJECT_ID)
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('shows error when alias name is invalid', async () => {
-    const {error} = await testCommand(UnlinkAliasCommand, ['invalid-alias!'])
+    const {error} = await testCommand(UnlinkAliasCommand, ['invalid-alias!'], {mocks: defaultMocks})
 
     expect(error?.message).toContain(
       'Alias name must only contain letters, numbers, dashes and underscores',
@@ -219,7 +214,7 @@ describe('#dataset:alias:unlink', () => {
       {datasetName: null, name: 'unlinked'},
     ])
 
-    const {error} = await testCommand(UnlinkAliasCommand, ['nonexistent'])
+    const {error} = await testCommand(UnlinkAliasCommand, ['nonexistent'], {mocks: defaultMocks})
 
     expect(error?.message).toContain('Dataset alias "~nonexistent" does not exist')
     expect(error?.oclif?.exit).toBe(1)
@@ -235,7 +230,7 @@ describe('#dataset:alias:unlink', () => {
       {datasetName: null, name: 'unlinked'},
     ])
 
-    const {error} = await testCommand(UnlinkAliasCommand, ['unlinked'])
+    const {error} = await testCommand(UnlinkAliasCommand, ['unlinked'], {mocks: defaultMocks})
 
     expect(error?.message).toContain('Dataset alias "~unlinked" is not linked to a dataset')
     expect(error?.oclif?.exit).toBe(1)
@@ -257,7 +252,7 @@ describe('#dataset:alias:unlink', () => {
 
     mockInput.mockResolvedValueOnce('yes')
 
-    const {error} = await testCommand(UnlinkAliasCommand, ['staging'])
+    const {error} = await testCommand(UnlinkAliasCommand, ['staging'], {mocks: defaultMocks})
 
     expect(error?.message).toContain('Dataset alias unlink failed: API Error')
     expect(error?.oclif?.exit).toBe(1)

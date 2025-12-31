@@ -7,26 +7,17 @@ import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {TokensListCommand} from '../list.js'
 
-// Mock the config functions with relative paths
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
     directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      projectId: 'test-project',
-    },
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 const mockTokens = [
   {
@@ -36,7 +27,7 @@ const mockTokens = [
     label: 'Production API',
     lastUsedAt: '2023-12-01T00:00:00Z',
     permissions: ['read', 'write'],
-    projectId: 'test-project',
+    projectId: testProjectId,
     projectUserId: 'user-1',
     roles: [
       {name: 'admin', title: 'Administrator'},
@@ -50,7 +41,7 @@ const mockTokens = [
     label: 'Development API',
     lastUsedAt: null,
     permissions: ['read'],
-    projectId: 'test-project',
+    projectId: testProjectId,
     projectUserId: 'user-2',
     roles: [{name: 'viewer', title: 'Viewer'}],
   },
@@ -61,7 +52,7 @@ const mockTokens = [
     label: 'Analytics Token',
     lastUsedAt: '2023-11-15T00:00:00Z',
     permissions: ['read'],
-    projectId: 'test-project',
+    projectId: testProjectId,
     projectUserId: 'user-3',
     roles: [],
   },
@@ -106,10 +97,10 @@ describe('#tokens:list', () => {
   test('displays tokens in table format by default', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
+      uri: `/projects/${testProjectId}/tokens`,
     }).reply(200, mockTokens)
 
-    const {stdout} = await testCommand(TokensListCommand)
+    const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Found 3 API tokens')
     expect(stdout).toContain('Label')
@@ -129,10 +120,10 @@ describe('#tokens:list', () => {
   test('displays tokens in JSON format when requested', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
+      uri: `/projects/${testProjectId}/tokens`,
     }).reply(200, mockTokens)
 
-    const {stdout} = await testCommand(TokensListCommand, ['--json'])
+    const {stdout} = await testCommand(TokensListCommand, ['--json'], {mocks: defaultMocks})
 
     const parsed = JSON.parse(stdout)
     expect(parsed).toHaveLength(3)
@@ -150,10 +141,10 @@ describe('#tokens:list', () => {
   test('handles empty tokens list', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
+      uri: `/projects/${testProjectId}/tokens`,
     }).reply(200, [])
 
-    const {stdout} = await testCommand(TokensListCommand)
+    const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toBe('No API tokens found for this project.\n')
   })
@@ -161,10 +152,10 @@ describe('#tokens:list', () => {
   test('displays an error if the API request fails', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
+      uri: `/projects/${testProjectId}/tokens`,
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(TokensListCommand)
+    const {error} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token list retrieval failed')
@@ -173,7 +164,7 @@ describe('#tokens:list', () => {
 
   test('handles network errors gracefully', async () => {
     // Don't set up any mock to simulate network failure
-    const {error} = await testCommand(TokensListCommand)
+    const {error} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token list retrieval failed')
@@ -181,14 +172,12 @@ describe('#tokens:list', () => {
   })
 
   test('throws error when no project ID is found', async () => {
-    const {getCliConfig} = await import('../../../../../cli-core/src/config/cli/getCliConfig.js')
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(TokensListCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(TokensListCommand)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -196,14 +185,12 @@ describe('#tokens:list', () => {
   })
 
   test('throws error when project ID is null', async () => {
-    const {getCliConfig} = await import('../../../../../cli-core/src/config/cli/getCliConfig.js')
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(TokensListCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(TokensListCommand)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -211,14 +198,12 @@ describe('#tokens:list', () => {
   })
 
   test('throws error when project ID is empty string', async () => {
-    const {getCliConfig} = await import('../../../../../cli-core/src/config/cli/getCliConfig.js')
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {
-        projectId: '',
+    const {error} = await testCommand(TokensListCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: ''}},
       },
     })
-
-    const {error} = await testCommand(TokensListCommand)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -227,10 +212,10 @@ describe('#tokens:list', () => {
   test('handles 404 error gracefully', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
+      uri: `/projects/${testProjectId}/tokens`,
     }).reply(404, {message: 'Project not found'})
 
-    const {error} = await testCommand(TokensListCommand)
+    const {error} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token list retrieval failed')
@@ -241,10 +226,10 @@ describe('#tokens:list', () => {
   test('handles 403 forbidden error', async () => {
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
+      uri: `/projects/${testProjectId}/tokens`,
     }).reply(403, {message: 'Forbidden'})
 
-    const {error} = await testCommand(TokensListCommand)
+    const {error} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Token list retrieval failed')
@@ -257,10 +242,10 @@ describe('#tokens:list', () => {
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
+      uri: `/projects/${testProjectId}/tokens`,
     }).reply(200, singleToken)
 
-    const {stdout} = await testCommand(TokensListCommand)
+    const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Found 1 API tokens')
     expect(stdout).toContain('Production API')
@@ -277,7 +262,7 @@ describe('#tokens:list', () => {
         label: 'API Token (Test & Dev)',
         lastUsedAt: null,
         permissions: ['read'],
-        projectId: 'test-project',
+        projectId: testProjectId,
         projectUserId: 'user-special',
         roles: [{name: 'viewer', title: 'Viewer'}],
       },
@@ -285,10 +270,10 @@ describe('#tokens:list', () => {
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
+      uri: `/projects/${testProjectId}/tokens`,
     }).reply(200, specialTokens)
 
-    const {stdout} = await testCommand(TokensListCommand)
+    const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('API Token (Test & Dev)')
     expect(stdout).toContain('token-special')
@@ -305,7 +290,7 @@ describe('#tokens:list', () => {
           'This is a very long token label that should be truncated because it exceeds the maximum length',
         lastUsedAt: null,
         permissions: ['read'],
-        projectId: 'test-project',
+        projectId: testProjectId,
         projectUserId: 'user-long',
         roles: [{name: 'viewer', title: 'Viewer'}],
       },
@@ -313,10 +298,10 @@ describe('#tokens:list', () => {
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
+      uri: `/projects/${testProjectId}/tokens`,
     }).reply(200, longLabelTokens)
 
-    const {stdout} = await testCommand(TokensListCommand)
+    const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('This is a very long token label that ...')
     expect(stdout).not.toContain('because it exceeds the maximum length')
@@ -331,7 +316,7 @@ describe('#tokens:list', () => {
         label: 'Multi Role Token',
         lastUsedAt: null,
         permissions: ['read'],
-        projectId: 'test-project',
+        projectId: testProjectId,
         projectUserId: 'user-roles',
         roles: [
           {name: 'administrator', title: 'Administrator'},
@@ -344,10 +329,10 @@ describe('#tokens:list', () => {
 
     mockApi({
       apiVersion: TOKENS_API_VERSION,
-      uri: '/projects/test-project/tokens',
+      uri: `/projects/${testProjectId}/tokens`,
     }).reply(200, longRolesTokens)
 
-    const {stdout} = await testCommand(TokensListCommand)
+    const {stdout} = await testCommand(TokensListCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Multi Role Token')
     expect(stdout).toContain('Administrator, Editor, View...')

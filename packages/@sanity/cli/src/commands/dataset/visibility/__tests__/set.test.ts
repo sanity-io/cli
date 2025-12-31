@@ -1,37 +1,41 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
-import {testCommand} from '@sanity/cli-test'
+import {mockClient, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {NO_PROJECT_ID} from '../../../../util/errorMessages.js'
 import {DatasetVisibilitySetCommand} from '../set.js'
 
-vi.mock('../../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
+const mockListDatasets = vi.hoisted(() => vi.fn())
+const mockEditDatasetAcl = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    getProjectCliClient: vi.fn().mockResolvedValue(
+      mockClient({
+        datasets: {
+          edit: mockEditDatasetAcl,
+          list: mockListDatasets,
+        } as never,
+      }),
+    ),
+  }
+})
+
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
     directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn(),
-}))
-
-vi.mock('../../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-
-vi.mock('../../../../../../cli-core/src/services/apiClient.js', () => ({
-  getProjectCliClient: vi.fn(),
-}))
-
-const mockGetCliConfig = vi.mocked(getCliConfig)
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#dataset:visibility:set', () => {
-  const mockEdit = vi.fn()
-
   afterEach(() => {
     vi.clearAllMocks()
   })
@@ -66,169 +70,104 @@ describe('#dataset:visibility:set', () => {
   })
 
   test('sets dataset visibility to public successfully', async () => {
-    const mockDatasets = [{aclMode: 'private', name: 'my-dataset'}]
+    mockListDatasets.mockResolvedValue([{aclMode: 'private', name: 'my-dataset'}] as never)
+    mockEditDatasetAcl.mockResolvedValue(undefined as never)
 
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        projectId: 'test-project',
-      },
+    const {stdout} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'public'], {
+      mocks: defaultMocks,
     })
 
-    mockGetProjectCliClient.mockResolvedValue({
-      datasets: {
-        edit: mockEdit.mockResolvedValue({}),
-        list: vi.fn().mockResolvedValue(mockDatasets),
-      },
-    } as never)
-
-    const {stdout} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'public'])
-
     expect(stdout).toContain('Dataset visibility changed')
-    expect(mockEdit).toHaveBeenCalledWith('my-dataset', {aclMode: 'public'})
+    expect(mockEditDatasetAcl).toHaveBeenCalledWith('my-dataset', {
+      aclMode: 'public',
+    })
   })
 
   test('sets dataset visibility to private successfully with warning', async () => {
-    const mockDatasets = [{aclMode: 'public', name: 'my-dataset'}]
+    mockListDatasets.mockResolvedValue([{aclMode: 'public', name: 'my-dataset'}] as never)
+    mockEditDatasetAcl.mockResolvedValue(undefined as never)
 
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        projectId: 'test-project',
-      },
+    const {stdout} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'private'], {
+      mocks: defaultMocks,
     })
-
-    // Mock the client used by listDatasets action
-    mockGetProjectCliClient.mockResolvedValue({
-      datasets: {
-        edit: mockEdit.mockResolvedValue({}),
-        list: vi.fn().mockResolvedValue(mockDatasets),
-      },
-    } as never)
-
-    const {stdout} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'private'])
 
     expect(stdout).toContain(
       'Please note that while documents are private, assets (files and images) are still public',
     )
     expect(stdout).toContain('Dataset visibility changed')
-    expect(mockEdit).toHaveBeenCalledWith('my-dataset', {aclMode: 'private'})
+    expect(mockEditDatasetAcl).toHaveBeenCalledWith('my-dataset', {
+      aclMode: 'private',
+    })
   })
 
   test('shows message when dataset is already in the specified mode', async () => {
-    const mockDatasets = [{aclMode: 'private', name: 'my-dataset'}]
+    mockListDatasets.mockResolvedValue([{aclMode: 'private', name: 'my-dataset'}] as never)
 
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        projectId: 'test-project',
-      },
+    const {stdout} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'private'], {
+      mocks: defaultMocks,
     })
 
-    // Mock the client used by listDatasets action
-    mockGetProjectCliClient.mockResolvedValue({
-      datasets: {
-        edit: mockEdit,
-        list: vi.fn().mockResolvedValue(mockDatasets),
-      },
-    } as never)
-
-    const {stdout} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'private'])
-
     expect(stdout).toContain('Dataset already in "private" mode')
-    expect(mockEdit).not.toHaveBeenCalled()
+    expect(mockEditDatasetAcl).not.toHaveBeenCalled()
   })
 
   test('shows error when dataset is not found', async () => {
-    const mockDatasets = [{aclMode: 'public', name: 'other-dataset'}]
+    mockListDatasets.mockResolvedValue([{aclMode: 'public', name: 'other-dataset'}] as never)
 
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        projectId: 'test-project',
-      },
+    const {error} = await testCommand(DatasetVisibilitySetCommand, ['not-found', 'private'], {
+      mocks: defaultMocks,
     })
 
-    // Mock the client used by listDatasets action
-    mockGetProjectCliClient.mockResolvedValue({
-      datasets: {
-        edit: mockEdit,
-        list: vi.fn().mockResolvedValue(mockDatasets),
-      },
-    } as never)
-
-    const {error} = await testCommand(DatasetVisibilitySetCommand, ['not-found', 'private'])
-
     expect(error?.message).toContain('Dataset "not-found" not found')
-    expect(mockEdit).not.toHaveBeenCalled()
+    expect(mockEditDatasetAcl).not.toHaveBeenCalled()
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('shows error for invalid dataset name', async () => {
     const invalidDatasetName = 'invalid-dataset-name!'
 
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        projectId: 'test-project',
+    const {error} = await testCommand(
+      DatasetVisibilitySetCommand,
+      [invalidDatasetName, 'private'],
+      {
+        mocks: defaultMocks,
       },
-    })
-
-    const {error} = await testCommand(DatasetVisibilitySetCommand, [invalidDatasetName, 'private'])
+    )
 
     expect(error?.message).toContain('Dataset name must only contain')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('handles error when listing datasets fails', async () => {
-    const listError = new Error('Failed to fetch datasets')
+    mockListDatasets.mockRejectedValue(new Error('Failed to fetch datasets'))
 
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        projectId: 'test-project',
-      },
+    const {error} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'private'], {
+      mocks: defaultMocks,
     })
-
-    // Mock the client used by listDatasets action to throw an error
-    mockGetProjectCliClient.mockResolvedValue({
-      datasets: {
-        edit: mockEdit,
-        list: vi.fn().mockRejectedValue(listError),
-      },
-    } as never)
-
-    const {error} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'private'])
 
     expect(error?.message).toContain('Failed to list datasets: Failed to fetch datasets')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('handles error when editing dataset fails', async () => {
-    const mockDatasets = [{aclMode: 'public', name: 'my-dataset'}]
-    const editError = new Error('Failed to update dataset')
+    mockListDatasets.mockResolvedValue([{aclMode: 'public', name: 'my-dataset'}] as never)
+    mockEditDatasetAcl.mockRejectedValue(new Error('Failed to update dataset'))
 
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        projectId: 'test-project',
-      },
+    const {error} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'private'], {
+      mocks: defaultMocks,
     })
-
-    mockGetProjectCliClient.mockResolvedValue({
-      datasets: {
-        edit: mockEdit.mockRejectedValue(editError),
-        list: vi.fn().mockResolvedValue(mockDatasets),
-      },
-    } as never)
-
-    const {error} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'private'])
 
     expect(error?.message).toContain('Failed to edit dataset: Failed to update dataset')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('shows error when no project ID is available', async () => {
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'private'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(DatasetVisibilitySetCommand, ['my-dataset', 'private'])
 
     expect(error?.message).toContain(NO_PROJECT_ID)
     expect(error?.oclif?.exit).toBe(1)

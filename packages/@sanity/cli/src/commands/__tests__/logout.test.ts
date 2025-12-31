@@ -1,17 +1,20 @@
 import {runCommand} from '@oclif/test'
+import {getCliToken, setConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {setConfig} from '../../../../cli-core/src/services/cliUserConfig.js'
-import {getCliToken} from '../../../../cli-core/src/services/getCliToken.js'
 import {AUTH_API_VERSION} from '../../services/auth.js'
 import {LogoutCommand} from '../logout.js'
 
-vi.mock('../../../../cli-core/src/services/getCliToken.js')
-vi.mock('../../../../cli-core/src/services/cliUserConfig.js', () => ({
-  setConfig: vi.fn(),
-}))
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
+  return {
+    ...actual,
+    getCliToken: vi.fn(),
+    setConfig: vi.fn(),
+  }
+})
 
 const mockedGetCliToken = vi.mocked(getCliToken)
 const mockedSetConfig = vi.mocked(setConfig)
