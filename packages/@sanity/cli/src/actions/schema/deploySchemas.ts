@@ -8,7 +8,7 @@ import {
   type StoredWorkspaceSchema,
 } from '../manifest/types.js'
 import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
-import {schemasDeployDebug} from './utils/debug'
+import {schemasDeployDebug} from './utils/debug.js'
 import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {type CreateManifestReader, createManifestReader} from './utils/manifestReader.js'
 import {
