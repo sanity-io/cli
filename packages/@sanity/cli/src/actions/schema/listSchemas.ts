@@ -10,6 +10,7 @@ import {
   type StoredWorkspaceSchema,
 } from '../manifest/types.js'
 import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
+import {schemasListDebug} from './utils/debug.js'
 import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {createManifestReader} from './utils/manifestReader.js'
 import {getDatasetsOutString} from './utils/schemaStoreOutStrings.js'
@@ -68,6 +69,7 @@ export async function listSchemas(
         : `No schemas found in ${datasetString}`,
     )
 
+    schemasListDebug('Error finding schema')
     return 'failure'
   }
 
@@ -126,7 +128,6 @@ function parseSchemas(schemas: StoredWorkspaceSchema[], output: Output) {
         //hubris inc: given the try-catch wrapping all the full promise "this should never happen"
         throw error
       }
-      return []
     })
     .filter((schema) => isDefined(schema))
     .flat()

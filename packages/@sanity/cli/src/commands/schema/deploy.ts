@@ -1,11 +1,10 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
+import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
 import {createManifestExtractor} from '../../actions/schema/utils/manifestExtractor.js'
 import {NO_DATASET_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
-
-const deploySchemaDebug = subdebug('schema:deploy')
 
 const description = `
 Deploy schema documents into workspace datasets.
@@ -90,7 +89,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
         this.error('Failed to deploy schemas', {exit: 1})
       }
     } catch (error) {
-      deploySchemaDebug('Failed to deploy schemas', error)
+      schemasDeployDebug('Failed to deploy schemas', error)
       this.error(`Failed to deploy schemas:\n${error}`, {exit: 1})
     }
   }

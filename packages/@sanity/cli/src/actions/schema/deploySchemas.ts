@@ -8,6 +8,7 @@ import {
   type StoredWorkspaceSchema,
 } from '../manifest/types.js'
 import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
+import {schemasDeployDebug} from './utils/debug'
 import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {type CreateManifestReader, createManifestReader} from './utils/manifestReader.js'
 import {
@@ -87,6 +88,7 @@ export async function deploySchemas(
     } else {
       output.error(`↳ Error when storing schemas:\n  ${err.message}`)
     }
+    schemasDeployDebug('Error updating schemas', err.message)
     return 'failure'
   } finally {
     output.log(`${chalk.gray('↳ List deployed schemas with:')} ${chalk.cyan('sanity schema list')}`)
