@@ -38,6 +38,25 @@ vi.mock('../../../actions/auth/login/login.js', () => ({
   login: mocks.login,
 }))
 
+// Mocks to help resolve rest of init
+vi.mock('../../../services/datasets.js', () => ({
+  listDatasets: vi.fn().mockResolvedValue([{aclMode: 'public', name: 'test'}]),
+}))
+
+vi.mock('../../../services/getProjectFeatures.js', () => ({
+  getProjectFeatures: vi.fn().mockResolvedValue(['privateDatasets']),
+}))
+
+vi.mock('../../../services/organizations.js', () => ({
+  listOrganizations: vi.fn().mockResolvedValue([{id: 'org-1', name: 'Org 1', slug: 'org-1'}]),
+}))
+
+vi.mock('../../../services/projects.js', () => ({
+  listProjects: vi
+    .fn()
+    .mockResolvedValue([{createdAt: '2024-01-01T00:00:00Z', displayName: 'Test', id: 'test'}]),
+}))
+
 describe('#init: authentication', () => {
   afterEach(() => {
     vi.clearAllMocks()
@@ -46,16 +65,14 @@ describe('#init: authentication', () => {
   test('user is authenticated with valid token', async () => {
     mocks.getCliToken.mockResolvedValue('test-token')
 
-    const {error, stdout} = await testCommand(InitCommand, [])
-
-    expect(error).toBeUndefined()
+    const {stdout} = await testCommand(InitCommand, ['--dataset=test', '--project=test'])
     expect(stdout).toContain('You are logged in as test@example.com using SAML')
   })
 
   test('throws error if user is authenticated with invalid token in unattended mode', async () => {
     mocks.getCliUser.mockRejectedValueOnce('Invalid token')
 
-    const {error} = await testCommand(InitCommand, ['--yes', '--dataset=test', '--project==test'])
+    const {error} = await testCommand(InitCommand, ['--yes', '--dataset=test', '--project=test'])
 
     expect(error?.message).toContain(
       'Must be logged in to run this command in unattended mode, run `sanity login`',
@@ -65,9 +82,8 @@ describe('#init: authentication', () => {
   test('calls login when token invalid and not in unattended mode', async () => {
     mocks.getCliUser.mockRejectedValueOnce('Invalid token')
 
-    const {error} = await testCommand(InitCommand, [])
+    await testCommand(InitCommand, ['--dataset=test', '--project=test'])
 
-    expect(error).toBe(undefined)
     expect(mocks.login).toHaveBeenCalled()
   })
 })

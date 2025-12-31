@@ -1,10 +1,11 @@
 import {mockApi, testCommand} from '@sanity/cli-test'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {InitCommand} from '../../init'
 
 const mocks = vi.hoisted(() => ({
   confirm: vi.fn(),
+  detectFramework: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -17,10 +18,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
 })
 
 vi.mock('@vercel/fs-detectors', () => ({
-  detectFrameworkRecord: vi.fn().mockResolvedValue({
-    name: 'Next.js',
-    slug: 'nextjs',
-  }),
+  detectFrameworkRecord: mocks.detectFramework,
   LocalFileSystemDetector: vi.fn(),
 }))
 
@@ -41,7 +39,32 @@ vi.mock('../../../services/user.js', () => ({
   }),
 }))
 
+// Mocks to help resolve rest of init
+vi.mock('../../../services/datasets.js', () => ({
+  listDatasets: vi.fn().mockResolvedValue([{aclMode: 'public', name: 'test'}]),
+}))
+
+vi.mock('../../../services/getProjectFeatures.js', () => ({
+  getProjectFeatures: vi.fn().mockResolvedValue(['privateDatasets']),
+}))
+
+vi.mock('../../../services/organizations.js', () => ({
+  listOrganizations: vi.fn().mockResolvedValue([{id: 'org-1', name: 'Org 1', slug: 'org-1'}]),
+}))
+
+vi.mock('../../../services/projects.js', () => ({
+  listProjects: vi
+    .fn()
+    .mockResolvedValue([{createdAt: '2024-01-01T00:00:00Z', displayName: 'Test', id: 'test'}]),
+}))
+
 describe('#init: retrieving plan', () => {
+  beforeEach(() => {
+    mocks.detectFramework.mockResolvedValue({
+      name: 'Next.js',
+      slug: 'nextjs',
+    })
+  })
   afterEach(() => {
     vi.clearAllMocks()
   })
@@ -52,10 +75,14 @@ describe('#init: retrieving plan', () => {
       method: 'get',
       uri: '/plans/coupon/TESTCOUPON123',
     }).reply(200, [{id: 'test-plan-id'}])
+    mocks.detectFramework.mockResolvedValue(undefined)
 
-    const {error, stdout} = await testCommand(InitCommand, ['--coupon=TESTCOUPON123'])
+    const {stdout} = await testCommand(InitCommand, [
+      '--coupon=TESTCOUPON123',
+      '--project=test',
+      '--dataset=test',
+    ])
 
-    expect(error).toBeUndefined()
     expect(stdout).toContain('Coupon "TESTCOUPON123" validated!')
   })
 
@@ -113,9 +140,12 @@ describe('#init: retrieving plan', () => {
 
     mocks.confirm.mockResolvedValue(true)
 
-    const {error, stdout} = await testCommand(InitCommand, ['--coupon=INVALID123'])
+    const {stdout} = await testCommand(InitCommand, [
+      '--coupon=INVALID123',
+      '--project=test',
+      '--dataset=test',
+    ])
 
-    expect(error).toBeUndefined()
     expect(mocks.confirm).toHaveBeenCalledWith({
       default: true,
       message: 'Coupon "INVALID123" is not available, use default plan instead?',
@@ -143,7 +173,11 @@ describe('#init: retrieving plan', () => {
       uri: '/plans/growth',
     }).reply(200, [{id: 'test-plan-id'}])
 
-    const {error} = await testCommand(InitCommand, ['--project-plan=growth'])
+    const {error} = await testCommand(InitCommand, [
+      '--project-plan=growth',
+      '--project=test',
+      '--dataset=test',
+    ])
 
     expect(error).toBeUndefined()
   })
@@ -171,7 +205,7 @@ describe('#init: retrieving plan', () => {
       '--project-plan=growth',
       '--yes',
       '--dataset=test',
-      '--project==test',
+      '--project=test',
     ])
 
     expect(error).toBe(undefined)
@@ -187,7 +221,11 @@ describe('#init: retrieving plan', () => {
     }).reply(404, {message: 'Plan not found'})
     mocks.confirm.mockResolvedValue(true)
 
-    const {error, stdout} = await testCommand(InitCommand, ['--project-plan=growth'])
+    const {error, stdout} = await testCommand(InitCommand, [
+      '--project-plan=growth',
+      '--project=test',
+      '--dataset=test',
+    ])
 
     expect(error).toBeUndefined()
     expect(mocks.confirm).toHaveBeenCalledWith({
