@@ -1,8 +1,11 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {createManifestExtractor} from '../../actions/schema/utils/manifestExtractor.js'
+import {NO_DATASET_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
+
+const listSchemaDebug = subdebug('schema:list')
 
 const description = `
 Lists all schemas in the current dataset.
@@ -70,18 +73,11 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
       const dataset = cliConfig.api?.dataset
 
       if (!projectId) {
-        this.error(
-          'No project ID found. Please run this command from a Sanity project directory.',
-          {
-            exit: 1,
-          },
-        )
+        this.error(NO_PROJECT_ID, {exit: 1})
       }
 
       if (!dataset) {
-        this.error('No dataset found. Please configure a dataset in your sanity.config.ts.', {
-          exit: 1,
-        })
+        this.error(NO_DATASET_ID, {exit: 1})
       }
 
       const result = await listSchemas(flags, {
@@ -97,6 +93,7 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
         this.error('Failed to list schemas', {exit: 1})
       }
     } catch (error) {
+      listSchemaDebug('Failed to list schemas', error)
       this.error(`Failed to list schemas:\n${error}`, {exit: 1})
     }
   }

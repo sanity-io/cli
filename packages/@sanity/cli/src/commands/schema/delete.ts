@@ -3,6 +3,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
 import {createManifestExtractor} from '../../actions/schema/utils/manifestExtractor.js'
+import {NO_DATASET_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteSchemaDebug = subdebug('schema:delete')
 
@@ -62,18 +63,11 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       const dataset = cliConfig.api?.dataset
 
       if (!projectId) {
-        this.error(
-          'No project ID found. Please run this command from a Sanity project directory.',
-          {
-            exit: 1,
-          },
-        )
+        this.error(NO_PROJECT_ID, {exit: 1})
       }
 
       if (!dataset) {
-        this.error('No dataset found. Please configure a dataset in your sanity.config.ts.', {
-          exit: 1,
-        })
+        this.error(NO_DATASET_ID, {exit: 1})
       }
 
       const result = await deleteSchemaAction(flags, {
