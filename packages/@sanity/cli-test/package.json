@@ -61,7 +61,7 @@
     "@oclif/core": "catalog:",
     "ansis": "^4.2.0",
     "nock": "catalog:",
-    "ora": "^8.1.1"
+    "ora": "catalog:"
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",

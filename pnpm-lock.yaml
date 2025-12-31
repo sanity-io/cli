@@ -69,6 +69,9 @@ catalogs:
     nock:
       specifier: ^14.0.10
       version: 14.0.10
+    ora:
+      specifier: ^9.0.0
+      version: 9.0.0
     publint:
       specifier: ^0.3.16
       version: 0.3.16
@@ -614,7 +617,7 @@ importers:
         specifier: ^7.0.1
         version: 7.0.1
       ora:
-        specifier: ^9.0.0
+        specifier: 'catalog:'
         version: 9.0.0
       tsx:
         specifier: 'catalog:'
@@ -678,8 +681,8 @@ importers:
         specifier: 'catalog:'
         version: 14.0.10
       ora:
-        specifier: ^8.1.1
-        version: 8.2.0
+        specifier: 'catalog:'
+        version: 9.0.0
     devDependencies:
       '@eslint/compat':
         specifier: 'catalog:'
