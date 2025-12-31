@@ -478,7 +478,7 @@ describe('#init: get project details', () => {
     expect(error).toBeUndefined()
   })
 
-  test('throws error if visibility flag is provided but not available as a project feature', async () => {
+  test('throws warn if visibility flag is provided but not available as a project feature', async () => {
     // Mock listProjects to return existing project
     mocks.listProjects.mockResolvedValueOnce([
       {
@@ -494,13 +494,8 @@ describe('#init: get project details', () => {
       uri: '/organizations',
     }).reply(200, [])
 
-    // Mock listDatasets - dataset exists with private aclMode
-    mocks.listDatasets.mockResolvedValueOnce([
-      {
-        aclMode: 'private',
-        name: 'production',
-      },
-    ])
+    // Mock empty dataset
+    mocks.listDatasets.mockResolvedValueOnce([])
 
     // Mock getProjectFeatures WITHOUT privateDataset feature
     mockApi({
@@ -509,13 +504,14 @@ describe('#init: get project details', () => {
       uri: '/features',
     }).reply(200, [])
 
-    const {error} = await testCommand(InitCommand, [
+    const {error, stderr} = await testCommand(InitCommand, [
       '--project=test-project-123',
       '--dataset=production',
       '--visibility=private',
     ])
 
-    expect(error?.message).toBe('Visibility mode "private" not allowed')
+    expect(error?.message).toBeUndefined()
+    expect(stderr).toContain('Warning: Private datasets are not available for this project.')
   })
 
   test('prompts user to create dataset if dataset from flag does not exits', async () => {
@@ -616,7 +612,7 @@ describe('#init: get project details', () => {
     // Verify select was called for ACL mode
     expect(mocks.select).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: 'Choose dataset visibility – this can be changed later',
+        message: 'Dataset visibility',
       }),
     )
 
