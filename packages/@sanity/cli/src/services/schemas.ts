@@ -12,15 +12,10 @@ async function getSchemaClient() {
 export async function getSchemas(dataset: string, projectId: string, id?: string) {
   const client = await getSchemaClient()
 
-  return id
-    ? await client.request({
-        method: 'GET',
-        uri: `/projects/${projectId}/datasets/${dataset}/schemas/${id}`,
-      })
-    : await client.request({
-        method: 'GET',
-        uri: `/projects/${projectId}/datasets/${dataset}/schemas`,
-      })
+  return client.request({
+    method: 'GET',
+    uri: `/projects/${projectId}/datasets/${dataset}/schemas${id ? `/${id}` : ''}`,
+  })
 }
 
 export async function deleteSchema(dataset: string, projectId: string, id: string) {
@@ -34,7 +29,7 @@ export async function deleteSchema(dataset: string, projectId: string, id: strin
 
   const client = await getSchemaClient()
 
-  return await client.request({
+  return client.request({
     method: 'DELETE',
     uri: `/projects/${projectId}/datasets/${dataset}/schemas/${id}`,
   })
@@ -43,7 +38,7 @@ export async function deleteSchema(dataset: string, projectId: string, id: strin
 export async function updateSchemas<T>(dataset: string, projectId: string, schemas: T) {
   const client = await getSchemaClient()
 
-  return await client.request({
+  return client.request({
     body: {
       schemas: schemas,
     },
