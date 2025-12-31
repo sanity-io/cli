@@ -507,7 +507,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     if (dataset) {
       debug('User has specified dataset through a flag (%s)', dataset)
       const existing = datasets.find((ds) => ds.name === dataset)
-
       if (!existing) {
         debug('Specified dataset not found, creating it')
         const aclMode = await getAclMode()

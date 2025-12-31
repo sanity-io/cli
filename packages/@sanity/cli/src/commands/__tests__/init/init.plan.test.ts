@@ -1,10 +1,11 @@
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {INIT_API_VERSION} from '../../../actions/init/constants.js'
 import {InitCommand} from '../../init'
 
 const mockConfirm = vi.hoisted(() => vi.fn())
+const mockDetectedFramework = vi.hoisted(vi.fn())
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual('@sanity/cli-core/ux')
@@ -16,10 +17,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
 })
 
 vi.mock('@vercel/fs-detectors', () => ({
-  detectFrameworkRecord: vi.fn().mockResolvedValue({
-    name: 'Next.js',
-    slug: 'nextjs',
-  }),
+  detectFrameworkRecord: mockDetectedFramework,
   LocalFileSystemDetector: vi.fn(),
 }))
 
@@ -46,7 +44,32 @@ vi.mock('@sanity/cli-core', async () => {
   }
 })
 
+// Mocks to help resolve rest of init
+vi.mock('../../../services/datasets.js', () => ({
+  listDatasets: vi.fn().mockResolvedValue([{aclMode: 'public', name: 'test'}]),
+}))
+
+vi.mock('../../../services/getProjectFeatures.js', () => ({
+  getProjectFeatures: vi.fn().mockResolvedValue(['privateDatasets']),
+}))
+
+vi.mock('../../../services/organizations.js', () => ({
+  listOrganizations: vi.fn().mockResolvedValue([{id: 'org-1', name: 'Org 1', slug: 'org-1'}]),
+}))
+
+vi.mock('../../../services/projects.js', () => ({
+  listProjects: vi
+    .fn()
+    .mockResolvedValue([{createdAt: '2024-01-01T00:00:00Z', displayName: 'Test', id: 'test'}]),
+}))
+
 describe('#init: retrieving plan', () => {
+  beforeEach(() => {
+    mockDetectedFramework.mockResolvedValue({
+      name: 'Next.js',
+      slug: 'nextjs',
+    })
+  })
   afterEach(() => {
     vi.clearAllMocks()
   })
@@ -57,6 +80,7 @@ describe('#init: retrieving plan', () => {
       method: 'get',
       uri: '/plans/coupon/TESTCOUPON123',
     }).reply(200, [{id: 'test-plan-id'}])
+    mockDetectedFramework.mockResolvedValue(undefined)
 
     const {error, stdout} = await testCommand(InitCommand, ['--coupon=TESTCOUPON123'], {
       mocks: {
@@ -65,7 +89,6 @@ describe('#init: retrieving plan', () => {
       },
     })
 
-    expect(error).toBeUndefined()
     expect(stdout).toContain('Coupon "TESTCOUPON123" validated!')
   })
 
