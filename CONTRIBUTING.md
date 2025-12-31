@@ -631,6 +631,65 @@ const client = await this.getProjectApiClient({
 
 ---
 
+## Testing Preview Packages
+
+We use [pkg.pr.new](https://pkg.pr.new) to generate preview packages for pull requests. This allows you to test changes before they're merged and published to npm.
+
+### Requesting Preview Packages
+
+To publish preview packages for your PR:
+
+1. Add the `trigger: preview` label to your pull request
+2. Wait for the "Publish Preview Packages" workflow to complete
+3. A comment will be automatically posted with installation instructions
+
+### Installing Preview Packages
+
+Once preview packages are published, you can install them using npm or pnpm:
+
+```bash
+# Install a specific preview package
+npm install https://pkg.pr.new/@sanity/cli@<commit-sha>
+
+# Install all preview packages
+npm install \
+  https://pkg.pr.new/@sanity/cli@<commit-sha> \
+  https://pkg.pr.new/@sanity/cli-core@<commit-sha> \
+  https://pkg.pr.new/@sanity/cli-test@<commit-sha> \
+  https://pkg.pr.new/@sanity/eslint-config-cli@<commit-sha>
+```
+
+Or use pnpm:
+
+```bash
+pnpm add https://pkg.pr.new/@sanity/cli@<commit-sha>
+```
+
+### Testing the CLI
+
+You can test preview CLI packages in several ways:
+
+```bash
+# Install globally
+npm install -g https://pkg.pr.new/@sanity/cli@<commit-sha>
+sanity --help
+
+# Or use npx directly
+npx https://pkg.pr.new/@sanity/cli@<commit-sha> --help
+
+# Or test in a project
+cd my-sanity-project
+npm install https://pkg.pr.new/@sanity/cli@<commit-sha>
+npx sanity dev
+```
+
+### Preview Package Lifecycle
+
+- Preview packages are generated for each commit on labeled PRs
+- The PR comment updates with new URLs on subsequent commits
+- Preview packages remain available as long as the PR is open
+- Preview packages are automatically cleaned up after the PR is closed
+
 ## Resources
 
 - [Project README](./README.md)

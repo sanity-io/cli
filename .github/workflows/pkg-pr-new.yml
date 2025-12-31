@@ -1,0 +1,56 @@
+name: Publish Preview Packages
+
+on:
+  pull_request:
+    types: [labeled, synchronize, opened, reopened]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-preview:
+    # Only run if PR has 'trigger: preview' label
+    if: "contains(github.event.pull_request.labels.*.name, 'trigger: preview')"
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          node-version: 20
+
+      - name: Build CLI packages
+        run: pnpm build:cli
+
+      - name: Extract PR number and commit info
+        id: extract-info
+        run: |
+          echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Publish preview packages
+        run: |
+          pnpm dlx pkg-pr-new publish \
+            './packages/@sanity/cli' \
+            './packages/@sanity/cli-core' \
+            './packages/@sanity/cli-test' \
+            './packages/@sanity/eslint-config-cli' \
+            --comment=update \
+            --compact
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
