@@ -3,7 +3,7 @@ import {SanityCommand} from '@sanity/cli-core'
 
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {schemasListDebug} from '../../actions/schema/utils/debug.js'
-import {createManifestExtractor} from '../../actions/schema/utils/manifestExtractor.js'
+import {validateListFlags} from '../../actions/schema/utils/schemaStoreValidation.js'
 import {NO_DATASET_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const description = `
@@ -79,11 +79,13 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
         this.error(NO_DATASET_ID, {exit: 1})
       }
 
-      const result = await listSchemas(flags, {
-        manifestExtractor: createManifestExtractor({
-          output: this.output,
-          workDir,
-        }),
+      const {id} = validateListFlags(flags)
+
+      const result = await listSchemas({
+        extractManifest: flags['extract-manifest'],
+        id,
+        json: !!flags.json,
+        manifestDir: flags['manifest-dir'],
         output: this.output,
         workDir,
       })

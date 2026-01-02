@@ -36,7 +36,6 @@ interface JsonFileParseSuccess<T> {
  * If you need to re-read the manifest from disk, create a new instance.
  */
 export const createManifestReader: CreateManifestReaderFactory = ({
-  jsonReader = parseJsonFile,
   manifestDir,
   output,
   workDir,
@@ -53,7 +52,7 @@ export const createManifestReader: CreateManifestReaderFactory = ({
     const staticPath = resolve(join(workDir, manifestDir))
     const manifestFile = path.join(staticPath, MANIFEST_FILENAME)
 
-    const result = await jsonReader<CreateManifest>(manifestFile)
+    const result = await parseJsonFile<CreateManifest>(manifestFile)
     if (!result) {
       throw new Error(
         `Manifest does not exist at ${manifestFile}. To create the manifest file, omit --no-${'extract-manifest' satisfies keyof DeploySchemasFlags} or run "sanity manifest extract" first.`,
@@ -86,7 +85,7 @@ export const createManifestReader: CreateManifestReaderFactory = ({
     }
 
     const workspaceSchemaFile = path.join(manifestDir, workspaceManifest.schema)
-    const result = await jsonReader<ManifestSchemaType[]>(workspaceSchemaFile)
+    const result = await parseJsonFile<ManifestSchemaType[]>(workspaceSchemaFile)
     if (!result) {
       throw new Error(`Workspace schema file at "${workspaceSchemaFile}" does not exist.`)
     }

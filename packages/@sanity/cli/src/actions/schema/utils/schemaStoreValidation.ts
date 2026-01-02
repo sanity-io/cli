@@ -76,15 +76,18 @@ export function parseDeploySchemasConfig(flags: DeploySchemasFlags) {
   return {...commonFlags, schemaRequired, tag, workspaceName}
 }
 
-export function parseListSchemasConfig(flags: SchemaListFlags) {
+export function validateListFlags(flags: SchemaListFlags) {
   const errors: string[] = []
 
-  const commonFlags = parseCommonFlags(flags)
-  const id = parseId(flags, errors)
-  const json = !!flags.json
+  const id = parseWorkspaceSchemaId(errors, flags.id)?.schemaId
 
-  assertNoErrors(errors)
-  return {...commonFlags, id, json}
+  if (errors.length > 0) {
+    throw new FlagValidationError(
+      `Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`,
+    )
+  }
+
+  return {id}
 }
 
 export function parseDeleteSchemasConfig(flags: DeleteSchemaFlags) {
@@ -116,7 +119,7 @@ export function parseIds(flags: {ids?: unknown}, errors: string[]): WorkspaceSch
     .split(',')
     .map((id) => id.trim())
     .filter((id) => !!id)
-    .map((id) => parseWorkspaceSchemaId(id, errors))
+    .map((id) => parseWorkspaceSchemaId(errors, id))
     .filter((item) => isDefined(item))
 
   const uniqueIds = uniqBy(ids, 'schemaId' satisfies keyof (typeof ids)[number])
@@ -132,12 +135,21 @@ export function parseIds(flags: {ids?: unknown}, errors: string[]): WorkspaceSch
 export function parseId(flags: {id?: unknown}, errors: string[]) {
   const id = flags.id === undefined ? undefined : parseNonEmptyString(flags, 'id', errors)
   if (id) {
-    return parseWorkspaceSchemaId(id, errors)?.schemaId
+    return parseWorkspaceSchemaId(errors, id)?.schemaId
   }
   return
 }
 
-export function parseWorkspaceSchemaId(id: string, errors: string[]) {
+export function parseWorkspaceSchemaId(errors: string[], id?: string) {
+  if (id === undefined) {
+    return
+  }
+
+  if (!id) {
+    errors.push('id argument is empty')
+    return
+  }
+
   const trimmedId = id.trim()
 
   if (!validForIdPattern.test(trimmedId)) {

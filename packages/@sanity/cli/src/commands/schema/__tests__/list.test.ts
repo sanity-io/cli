@@ -1,30 +1,74 @@
 import {runCommand} from '@oclif/test'
-import {testCommand} from '@sanity/cli-test'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {getCliConfig} from '@sanity/cli-core'
+import {mockApi, testCommand} from '@sanity/cli-test'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {listSchemas} from '../../../actions/schema/listSchemas.js'
+import {extractManifestSafe} from '../../../actions/manifest/extractManifest.js'
+import {createManifestReader} from '../../../actions/schema/utils/manifestReader.js'
+import {SCHEMA_API_VERSION} from '../../../services/schemas.js'
+import {NO_DATASET_ID, NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {ListSchemaCommand} from '../list.js'
+
+const mockManifest = {
+  createdAt: '2024-01-01T00:00:00.000Z',
+  studioVersion: '3.0.0',
+  version: 3,
+  workspaces: [
+    {
+      basePath: '/',
+      dataset: 'production',
+      icon: null,
+      name: 'default',
+      projectId: 'test-project',
+      schema: 'default.create-schema.json',
+      tools: 'default.create-tools.json',
+    },
+    {
+      basePath: '/staging',
+      dataset: 'staging',
+      icon: null,
+      name: 'staging',
+      projectId: 'test-project',
+      schema: 'staging.create-schema.json',
+      tools: 'staging.create-tools.json',
+    },
+  ],
+}
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => ({
   findProjectRoot: vi.fn().mockResolvedValue({}),
 }))
 
 vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      dataset: 'production',
-      projectId: 'test-project',
-    },
-  }),
+  getCliConfig: vi.fn(),
 }))
 
-vi.mock('../../../actions/schema/listSchemas.js', () => ({
-  listSchemas: vi.fn(),
-}))
+vi.mock('../../../actions/manifest/extractManifest.js')
+vi.mock('../../../actions/schema/utils/manifestReader.js')
 
-const mockListSchemas = vi.mocked(listSchemas)
+const mockedGetCliConfig = vi.mocked(getCliConfig)
+const mockExtractManifestSafe = vi.mocked(extractManifestSafe)
+const mockedCreateManifestReader = vi.mocked(createManifestReader)
 
 describe('#schema:list', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    mockedGetCliConfig.mockResolvedValue({
+      api: {
+        dataset: 'production',
+        projectId: 'test-project',
+      },
+    })
+
+    mockedCreateManifestReader.mockReturnValue({
+      getManifest: vi.fn().mockResolvedValue(mockManifest),
+      getWorkspaceSchema: vi.fn(),
+    })
+
+    mockExtractManifestSafe.mockResolvedValue(undefined)
+  })
+
   afterEach(() => {
     vi.clearAllMocks()
   })
@@ -82,85 +126,235 @@ describe('#schema:list', () => {
     `)
   })
 
-  test('should list schemas successfully', async () => {
-    mockListSchemas.mockResolvedValue('success')
+  test('should list schemas', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, {
+      _createdAt: '2025-01-21T18:49:44Z',
+      _id: '_.schemas.default',
+      workspace: mockManifest.workspaces[0],
+    })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, {
+      _createdAt: '2025-05-28T18:49:44Z',
+      _id: '_.schemas.staging',
+      workspace: mockManifest.workspaces[1],
+    })
 
-    await testCommand(ListSchemaCommand)
+    const {stdout} = await testCommand(ListSchemaCommand)
 
-    expect(mockListSchemas).toHaveBeenCalled()
-  })
-
-  test('should list a specific schema with --id flag', async () => {
-    mockListSchemas.mockResolvedValue('success')
-
-    await testCommand(ListSchemaCommand, ['--id', '_.schemas.default'])
-
-    expect(mockListSchemas).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: '_.schemas.default',
-      }),
-      expect.any(Object),
+    expect(stdout).toContain(
+      'Id                  Workspace   Dataset      ProjectId      CreatedAt           ',
+    )
+    expect(stdout).toContain(
+      '_.schemas.staging   staging     staging      test-project   2025-05-28T18:49:44Z',
+    )
+    expect(stdout).toContain(
+      '_.schemas.default   default     production   test-project   2025-01-21T18:49:44Z',
     )
   })
 
-  test('should list schemas as json with --json flag', async () => {
-    mockListSchemas.mockResolvedValue('success')
+  test('should list a specific schema based on id flag', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas/_.schemas.staging',
+    }).reply(200, [])
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas/_.schemas.staging',
+    }).reply(200, {
+      _createdAt: '2025-05-28T18:49:44Z',
+      _id: '_.schemas.staging',
+      workspace: mockManifest.workspaces[1],
+    })
 
-    await testCommand(ListSchemaCommand, ['--json'])
+    const {stdout} = await testCommand(ListSchemaCommand, ['--id', '_.schemas.staging'])
 
-    expect(mockListSchemas).toHaveBeenCalledWith(
-      expect.objectContaining({
-        json: true,
-      }),
-      expect.any(Object),
+    expect(stdout).toContain(
+      'Id                  Workspace   Dataset   ProjectId      CreatedAt           ',
+    )
+    expect(stdout).toContain(
+      '_.schemas.staging   staging     staging   test-project   2025-05-28T18:49:44Z',
     )
   })
 
-  test('should skip manifest extraction with --no-extract-manifest flag', async () => {
-    mockListSchemas.mockResolvedValue('success')
+  test('should list schemas in json', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, {
+      _createdAt: '2025-01-21T18:49:44Z',
+      _id: '_.schemas.default',
+      workspace: mockManifest.workspaces[0],
+    })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, {
+      _createdAt: '2025-05-28T18:49:44Z',
+      _id: '_.schemas.staging',
+      workspace: mockManifest.workspaces[1],
+    })
+
+    const {stdout} = await testCommand(ListSchemaCommand, ['--json'])
+
+    // eslint-disable-next-line no-useless-escape
+    expect(stdout).toContain(`\"_id\": \"_.schemas.default\"`)
+  })
+
+  test('should list a specific schema based on id flag in json', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas/_.schemas.staging',
+    }).reply(200, [])
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas/_.schemas.staging',
+    }).reply(200, {
+      _createdAt: '2025-05-28T18:49:44Z',
+      _id: '_.schemas.staging',
+      workspace: mockManifest.workspaces[1],
+    })
+
+    const {stdout} = await testCommand(ListSchemaCommand, ['--id', '_.schemas.staging', '--json'])
+
+    // eslint-disable-next-line no-useless-escape
+    expect(stdout).toContain(`\"_id\": \"_.schemas.staging\"`)
+  })
+
+  test.each([
+    {desc: 'no project ID is found', projectId: undefined},
+    {desc: 'project ID is empty string', projectId: ''},
+  ])('throws an error if $desc', async ({projectId}) => {
+    mockedGetCliConfig.mockResolvedValue({
+      api: {
+        dataset: 'production',
+        projectId,
+      },
+    })
+
+    const {error} = await testCommand(ListSchemaCommand)
+
+    expect(error?.message).toContain(NO_PROJECT_ID)
+  })
+
+  test.each([
+    {dataset: undefined, desc: 'no dataset is found'},
+    {dataset: '', desc: 'dataset is empty string'},
+  ])('throws an error if $desc', async ({dataset}) => {
+    mockedGetCliConfig.mockResolvedValue({
+      api: {
+        dataset,
+        projectId: 'test-project',
+      },
+    })
+
+    const {error} = await testCommand(ListSchemaCommand)
+
+    expect(error?.message).toContain(NO_DATASET_ID)
+  })
+
+  test('throws an error if ID is empty string', async () => {
+    const {error} = await testCommand(ListSchemaCommand, ['--id', ''])
+
+    expect(error?.message).toContain('id argument is empty')
+  })
+
+  test('throws an error if ID is invalid', async () => {
+    const {error} = await testCommand(ListSchemaCommand, ['--id', 'test-id!!'])
+
+    expect(error?.message).toContain(
+      'id can only contain characters in [a-zA-Z0-9._-] but found: "test-id!!"',
+    )
+  })
+
+  test('throws an error if no schemas are found', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, [])
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, [])
+
+    const {error} = await testCommand(ListSchemaCommand)
+
+    expect(error?.message).toContain('No schemas found in datasets ["production","staging"]')
+  })
+
+  test('throws an error if a specific schema based on id flag is not found', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas/_.schemas.staging',
+    }).reply(200, [])
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas/_.schemas.staging',
+    }).reply(200, [])
+
+    const {error} = await testCommand(ListSchemaCommand, ['--id', '_.schemas.staging'])
+
+    expect(error?.message).toContain(
+      'Schema for id "_.schemas.staging" not found in datasets ["production","staging"]',
+    )
+  })
+
+  test('throws an error if schema request fails', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(400, {
+      error: 'Bad request',
+    })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, [])
+
+    const {error} = await testCommand(ListSchemaCommand)
+
+    expect(error?.message).toContain('↳ Failed to fetch schema from "production":\n  Bad request')
+  })
+
+  test('throws an error if schema request fails due to permissions', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(401)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, [])
+
+    const {stderr} = await testCommand(ListSchemaCommand)
+
+    expect(stderr).toContain('↳ No permissions to read schema from "production".')
+  })
+
+  test('skips manifest extraction with no-extract-manifest flag', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, {
+      _createdAt: '2025-01-21T18:49:44Z',
+      _id: '_.schemas.default',
+      workspace: mockManifest.workspaces[0],
+    })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, {
+      _createdAt: '2025-05-28T18:49:44Z',
+      _id: '_.schemas.staging',
+      workspace: mockManifest.workspaces[1],
+    })
 
     await testCommand(ListSchemaCommand, ['--no-extract-manifest'])
 
-    expect(mockListSchemas).toHaveBeenCalledWith(
-      expect.objectContaining({
-        'extract-manifest': false,
-      }),
-      expect.any(Object),
-    )
-  })
-
-  test('should use manifest directory with --manifest-dir flag', async () => {
-    mockListSchemas.mockResolvedValue('success')
-
-    await testCommand(ListSchemaCommand, ['--manifest-dir', './test'])
-
-    expect(mockListSchemas).toHaveBeenCalledWith(
-      expect.objectContaining({
-        'manifest-dir': './test',
-      }),
-      expect.any(Object),
-    )
-  })
-
-  test('handles action failure', async () => {
-    mockListSchemas.mockResolvedValue('failure')
-
-    const {error} = await testCommand(ListSchemaCommand)
-
-    expect(mockListSchemas).toHaveBeenCalled()
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Failed to list schemas')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('handles action errors gracefully', async () => {
-    mockListSchemas.mockRejectedValue(new Error('Manifest does not exist'))
-
-    const {error} = await testCommand(ListSchemaCommand)
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Failed to list schemas:\nError: Manifest does not exist')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(mockExtractManifestSafe).not.toHaveBeenCalled()
   })
 })
