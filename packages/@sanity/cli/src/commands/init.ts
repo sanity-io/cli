@@ -20,7 +20,6 @@ import {
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'
-import {promptForDefaultConfig} from '../prompts/init/promptForDefaultConfig.js'
 import {promptForDatasetName} from '../prompts/promptForDatasetName.js'
 import {createDataset as createDatasetService, listDatasets} from '../services/datasets.js'
 import {getProjectFeatures} from '../services/getProjectFeatures.js'
@@ -325,7 +324,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     const _newProjectId =
-      createProjectName && (await this.createProject({createProjectName, planId, user}))
+      createProjectName && (await this.createProjectFromName({createProjectName, planId, user}))
 
     const {datasetName, projectId} = await this.getProjectDetails({
       isAppTemplate,
@@ -378,7 +377,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
   }
 
-  private async createProject({
+  private async createProjectFromName({
     createProjectName,
     planId,
     user,
@@ -506,7 +505,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       debug('No datasets found for project, prompting for name')
       if (opts.showDefaultConfigPrompt) {
         this.log(datasetInfo)
-        defaultConfig = await promptForDefaultConfig()
+        defaultConfig = await this.promptForDefaultConfig()
       }
       const name = defaultConfig
         ? 'production'
@@ -536,7 +535,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       debug('User wants to create a new dataset, prompting for name')
       if (opts.showDefaultConfigPrompt && !existingDatasetNames.includes('production')) {
         this.log(datasetInfo)
-        defaultConfig = await promptForDefaultConfig()
+        defaultConfig = await this.promptForDefaultConfig()
       }
 
       const newDatasetName = defaultConfig
@@ -641,28 +640,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
           ? 'No projects found for user, prompting for name'
           : 'Using a coupon - skipping project selection',
       )
-      const projectName = await input({
-        default: 'My Sanity Project',
-        message: 'Project name:',
-        validate(input) {
-          if (!input || input.trim() === '') {
-            return 'Project name cannot be empty'
-          }
 
-          if (input.length > 80) {
-            return 'Project name cannot be longer than 80 characters'
-          }
-
-          return true
-        },
-      })
-
-      const newProject = await createProject({
-        displayName: projectName,
-        metadata: {coupon: this.flags.coupon},
-        organizationId:
-          organizationId || (await this.promptUserForOrganization({organizations, user})),
-        subscription: planId ? {planId} : undefined,
+      const newProject = await this.promptForProjectCreation({
+        isUsersFirstProject,
+        organizationId,
+        organizations,
+        planId,
+        user,
       })
 
       return {
@@ -686,20 +670,20 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     if (selected === 'new') {
       debug('User wants to create a new project, prompting for name')
-      return createProject({
-        displayName: await input({
-          default: 'My Sanity Project',
-          message: 'Your project name:',
-        }),
-        metadata: {coupon: this.flags.coupon},
-        organizationId:
-          organizationId || (await this.promptUserForOrganization({organizations, user})),
-        subscription: planId ? {planId} : undefined,
-      }).then((response) => ({
-        ...response,
+
+      const newProject = await this.promptForProjectCreation({
+        isUsersFirstProject,
+        organizationId,
+        organizations,
+        planId,
+        user,
+      })
+
+      return {
+        ...newProject,
         isFirstProject: isUsersFirstProject,
         userAction: 'create',
-      }))
+      }
     }
 
     debug(`Returning selected project (${selected})`)
@@ -785,6 +769,59 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       displayName: project.displayName,
       isFirstProject: project.isFirstProject,
       projectId: project.projectId,
+    }
+  }
+
+  private async promptForDefaultConfig(): Promise<boolean> {
+    return confirm({
+      default: true,
+      message: 'Use the default dataset configuration?',
+    })
+  }
+
+  private async promptForProjectCreation({
+    isUsersFirstProject,
+    organizationId,
+    organizations,
+    planId,
+    user,
+  }: {
+    isUsersFirstProject: boolean
+    organizationId: string | undefined
+    organizations: ProjectOrganization[]
+    planId: string | undefined
+    user: SanityOrgUser
+  }) {
+    const projectName = await input({
+      default: 'My Sanity Project',
+      message: 'Project name:',
+      validate(input) {
+        if (!input || input.trim() === '') {
+          return 'Project name cannot be empty'
+        }
+
+        if (input.length > 80) {
+          return 'Project name cannot be longer than 80 characters'
+        }
+
+        return true
+      },
+    })
+
+    const organization =
+      organizationId || (await this.promptUserForOrganization({organizations, user}))
+
+    const newProject = await createProject({
+      displayName: projectName,
+      metadata: {coupon: this.flags.coupon},
+      organizationId: organization,
+      subscription: planId ? {planId} : undefined,
+    })
+
+    return {
+      ...newProject,
+      isFirstProject: isUsersFirstProject,
+      userAction: 'create',
     }
   }
 

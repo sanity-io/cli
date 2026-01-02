@@ -429,7 +429,7 @@ describe('#init: get project details', () => {
     // Verify input was called for project name
     expect(mocks.input).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: 'Your project name:',
+        message: 'Project name:',
       }),
     )
 
