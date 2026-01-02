@@ -1,4 +1,4 @@
-import {Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 
 import {type ListSchemaCommand} from '../../commands/schema/list.js'
@@ -9,7 +9,7 @@ import {
   type ManifestWorkspaceFile,
   type StoredWorkspaceSchema,
 } from '../manifest/types.js'
-import {SchemaRequestResult, type SchemaStoreActionResult} from './schemaStoreTypes.js'
+import {type SchemaRequestResult, type SchemaStoreActionResult} from './schemaStoreTypes.js'
 import {schemasListDebug} from './utils/debug.js'
 import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {createManifestReader} from './utils/manifestReader.js'
@@ -59,9 +59,7 @@ export async function listSchemas(options: ListSchemasOptions): Promise<SchemaSt
     workDir,
   }).getManifest()
   const projectDatasets = uniqByProjectIdDataset(manifest.workspaces)
-
   const schemas = (await getDatasetSchemas(projectDatasets, id)) as unknown as SchemaRequestResult[]
-
   const parsedSchemas = parseSchemas(schemas, output) as unknown as StoredWorkspaceSchema[]
 
   if (parsedSchemas.length === 0) {

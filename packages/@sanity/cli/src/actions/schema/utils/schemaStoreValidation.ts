@@ -64,19 +64,22 @@ function parseCommonFlags(flags: SchemaStoreCommonFlags) {
   }
 }
 
-export function parseDeploySchemasConfig(flags: DeploySchemasFlags) {
+export function validateDeployFlags(flags: {tag?: string; workspace?: string}) {
   const errors: string[] = []
 
-  const commonFlags = parseCommonFlags(flags)
-  const workspaceName = parseWorkspace(flags, errors)
-  const tag = parseTag(flags, errors)
-  const schemaRequired = !!flags['schema-required']
+  const tag = parseTag(errors, flags.tag)
+  const workspaceName = parseWorkspace(errors, flags.workspace)
 
-  assertNoErrors(errors)
-  return {...commonFlags, schemaRequired, tag, workspaceName}
+  if (errors.length > 0) {
+    throw new FlagValidationError(
+      `Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`,
+    )
+  }
+
+  return {tag, workspaceName}
 }
 
-export function validateListFlags(flags: SchemaListFlags) {
+export function validateListFlags(flags: {id?: string}) {
   const errors: string[] = []
 
   const id = parseWorkspaceSchemaId(errors, flags.id)?.schemaId
@@ -132,14 +135,6 @@ export function parseIds(flags: {ids?: unknown}, errors: string[]): WorkspaceSch
   return uniqueIds
 }
 
-export function parseId(flags: {id?: unknown}, errors: string[]) {
-  const id = flags.id === undefined ? undefined : parseNonEmptyString(flags, 'id', errors)
-  if (id) {
-    return parseWorkspaceSchemaId(errors, id)?.schemaId
-  }
-  return
-}
-
 export function parseWorkspaceSchemaId(errors: string[], id?: string) {
   if (id === undefined) {
     return
@@ -188,17 +183,26 @@ function parseDataset(flags: {dataset?: unknown}, errors: string[]) {
   return flags.dataset === undefined ? undefined : parseNonEmptyString(flags, 'dataset', errors)
 }
 
-function parseWorkspace(flags: {workspace?: unknown}, errors: string[]) {
-  return flags.workspace === undefined ? undefined : parseNonEmptyString(flags, 'workspace', errors)
-}
-
-export function parseTag(flags: {tag?: unknown}, errors: string[]) {
-  if (flags.tag === undefined) {
+function parseWorkspace(errors: string[], workspace?: string) {
+  if (workspace === undefined) {
     return
   }
 
-  const tag = parseNonEmptyString(flags, 'tag', errors)
-  if (errors.length > 0) {
+  if (!workspace) {
+    errors.push('workspace argument is empty')
+    return
+  }
+
+  return workspace
+}
+
+export function parseTag(errors: string[], tag?: string) {
+  if (tag === undefined) {
+    return
+  }
+
+  if (!tag) {
+    errors.push('tag argument is empty')
     return
   }
 

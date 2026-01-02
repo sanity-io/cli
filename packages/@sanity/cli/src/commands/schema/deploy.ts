@@ -3,7 +3,7 @@ import {SanityCommand} from '@sanity/cli-core'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
 import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
-import {createManifestExtractor} from '../../actions/schema/utils/manifestExtractor.js'
+import {validateDeployFlags} from '../../actions/schema/utils/schemaStoreValidation.js'
 import {NO_DATASET_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const description = `
@@ -76,13 +76,16 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
         this.error(NO_DATASET_ID, {exit: 1})
       }
 
-      const result = await deploySchemas(flags, {
-        manifestExtractor: createManifestExtractor({
-          output: this.output,
-          workDir,
-        }),
+      const {tag, workspaceName} = validateDeployFlags(flags)
+
+      const result = await deploySchemas({
+        extractManifest: flags['extract-manifest'],
+        manifestDir: flags['manifest-dir'],
         output: this.output,
+        tag,
+        verbose: flags['verbose'],
         workDir,
+        workspaceName,
       })
 
       if (result === 'failure') {

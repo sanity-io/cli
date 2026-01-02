@@ -1,30 +1,74 @@
 import {runCommand} from '@oclif/test'
-import {testCommand} from '@sanity/cli-test'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {getCliConfig} from '@sanity/cli-core'
+import {mockApi, testCommand} from '@sanity/cli-test'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {deploySchemas} from '../../../actions/schema/deploySchemas.js'
+import {extractManifestSafe} from '../../../actions/manifest/extractManifest.js'
+import {createManifestReader} from '../../../actions/schema/utils/manifestReader.js'
+import {SCHEMA_API_VERSION} from '../../../services/schemas.js'
+import {NO_DATASET_ID, NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {DeploySchemaCommand} from '../deploy.js'
+
+const mockManifest = {
+  createdAt: '2024-01-01T00:00:00.000Z',
+  studioVersion: '3.0.0',
+  version: 3,
+  workspaces: [
+    {
+      basePath: '/',
+      dataset: 'production',
+      icon: null,
+      name: 'default',
+      projectId: 'test-project',
+      schema: 'default.create-schema.json',
+      tools: 'default.create-tools.json',
+    },
+    {
+      basePath: '/staging',
+      dataset: 'staging',
+      icon: null,
+      name: 'staging',
+      projectId: 'test-project',
+      schema: 'staging.create-schema.json',
+      tools: 'staging.create-tools.json',
+    },
+  ],
+}
 
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => ({
   findProjectRoot: vi.fn().mockResolvedValue({}),
 }))
 
 vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      dataset: 'production',
-      projectId: 'test-project',
-    },
-  }),
+  getCliConfig: vi.fn(),
 }))
 
-vi.mock('../../../actions/schema/deploySchemas.js', () => ({
-  deploySchemas: vi.fn(),
-}))
+vi.mock('../../../actions/manifest/extractManifest.js')
+vi.mock('../../../actions/schema/utils/manifestReader.js')
 
-const mockDeploySchemas = vi.mocked(deploySchemas)
+const mockedGetCliConfig = vi.mocked(getCliConfig)
+const mockExtractManifestSafe = vi.mocked(extractManifestSafe)
+const mockedCreateManifestReader = vi.mocked(createManifestReader)
 
 describe('#schema:deploy', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+
+    mockedGetCliConfig.mockResolvedValue({
+      api: {
+        dataset: 'production',
+        projectId: 'test-project',
+      },
+    })
+
+    mockedCreateManifestReader.mockReturnValue({
+      getManifest: vi.fn().mockResolvedValue(mockManifest),
+      getWorkspaceSchema: vi.fn(),
+    })
+
+    mockExtractManifestSafe.mockResolvedValue(undefined)
+  })
+
   afterEach(() => {
     vi.clearAllMocks()
   })
@@ -75,98 +119,181 @@ describe('#schema:deploy', () => {
     `)
   })
 
-  test('should deploy schemas successfully', async () => {
-    mockDeploySchemas.mockResolvedValue('success')
+  test('should deploy schemas', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, undefined)
 
-    await testCommand(DeploySchemaCommand)
+    const {stdout} = await testCommand(DeploySchemaCommand)
 
-    expect(mockDeploySchemas).toHaveBeenCalled()
+    expect(stdout).toContain('Deployed 2/2 schemas')
+    expect(stdout).toContain('↳ List deployed schemas with: sanity schema list')
   })
 
-  test('should deploy schema by workspace with --workspace flag', async () => {
-    mockDeploySchemas.mockResolvedValue('success')
+  test('should deploy a specific schema based on workspace flag', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, undefined)
 
-    await testCommand(DeploySchemaCommand, ['--workspace', 'default'])
+    const {stdout} = await testCommand(DeploySchemaCommand, ['--workspace', 'default'])
 
-    expect(mockDeploySchemas).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspace: 'default',
-      }),
-      expect.any(Object),
+    expect(stdout).toContain('Deployed 1/1 schemas')
+    expect(stdout).toContain('↳ List deployed schemas with: sanity schema list')
+  })
+
+  test('should enable verbose logging with verbose flag', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, undefined)
+
+    const {stdout} = await testCommand(DeploySchemaCommand, ['--verbose'])
+
+    expect(stdout).toContain(
+      '↳ schemaId: _.schemas.default, projectId: test-project, dataset: production',
     )
   })
 
-  test('should deploy schemas with ID suffix with --tag flag', async () => {
-    mockDeploySchemas.mockResolvedValue('success')
+  test.each([
+    {desc: 'no project ID is found', projectId: undefined},
+    {desc: 'project ID is empty string', projectId: ''},
+  ])('throws an error if $desc', async ({projectId}) => {
+    mockedGetCliConfig.mockResolvedValue({
+      api: {
+        dataset: 'production',
+        projectId,
+      },
+    })
 
-    await testCommand(DeploySchemaCommand, ['--tag', 'test'])
+    const {error} = await testCommand(DeploySchemaCommand)
 
-    expect(mockDeploySchemas).toHaveBeenCalledWith(
-      expect.objectContaining({
-        tag: 'test',
-      }),
-      expect.any(Object),
-    )
+    expect(error?.message).toContain(NO_PROJECT_ID)
   })
 
-  test('should enable verbose logging with --verbose flag', async () => {
-    mockDeploySchemas.mockResolvedValue('success')
+  test.each([
+    {dataset: undefined, desc: 'no dataset is found'},
+    {dataset: '', desc: 'dataset is empty string'},
+  ])('throws an error if $desc', async ({dataset}) => {
+    mockedGetCliConfig.mockResolvedValue({
+      api: {
+        dataset,
+        projectId: 'test-project',
+      },
+    })
 
-    await testCommand(DeploySchemaCommand, ['--verbose'])
+    const {error} = await testCommand(DeploySchemaCommand)
 
-    expect(mockDeploySchemas).toHaveBeenCalledWith(
-      expect.objectContaining({
-        verbose: true,
-      }),
-      expect.any(Object),
-    )
+    expect(error?.message).toContain(NO_DATASET_ID)
   })
 
-  test('should skip manifest extraction with --no-extract-manifest flag', async () => {
-    mockDeploySchemas.mockResolvedValue('success')
+  test.each([{flag: 'tag'}, {flag: 'workspace'}])(
+    'throws an error if $flag is an empty string',
+    async ({flag}) => {
+      const {error} = await testCommand(DeploySchemaCommand, [`--${flag}`, ''])
+
+      expect(error?.message).toContain(`${flag} argument is empty`)
+    },
+  )
+
+  test('should throw an error if tag is invalid', async () => {
+    const {error} = await testCommand(DeploySchemaCommand, ['--tag', 'test.tag'])
+
+    expect(error?.message).toContain('tag cannot contain . (period)')
+  })
+
+  test('throw an error if some schemas fail to deploy', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(404, undefined)
+
+    const {error, stdout} = await testCommand(DeploySchemaCommand)
+
+    expect(error?.message).toContain(
+      'Failed to deploy 1/2 schemas. Successfully deployed 1/2 schemas.',
+    )
+    expect(stdout).toContain('↳ List deployed schemas with: sanity schema list')
+  })
+
+  test('throws an error if workspace is not found', async () => {
+    const {error} = await testCommand(DeploySchemaCommand, ['--workspace', 'test'])
+
+    expect(error?.message).toContain('Found no workspaces named "test"')
+  })
+
+  test('throws an error if schema request fails', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(400, {
+      error: 'Bad request',
+    })
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(400, {
+      error: 'Bad request',
+    })
+
+    const {error} = await testCommand(DeploySchemaCommand)
+
+    expect(error?.message).toContain('↳ Error when storing schemas')
+  })
+
+  test('throws an error if schema request fails due to permissions', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(401)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, undefined)
+
+    const {stderr} = await testCommand(DeploySchemaCommand)
+
+    expect(stderr).toContain('↳ No permissions to write schema for workspace "default"')
+  })
+
+  test('skips manifest extraction with no-extract-manifest flag', async () => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, undefined)
 
     await testCommand(DeploySchemaCommand, ['--no-extract-manifest'])
 
-    expect(mockDeploySchemas).toHaveBeenCalledWith(
-      expect.objectContaining({
-        'extract-manifest': false,
-      }),
-      expect.any(Object),
-    )
-  })
-
-  test('should use manifest directory with --manifest-dir flag', async () => {
-    mockDeploySchemas.mockResolvedValue('success')
-
-    await testCommand(DeploySchemaCommand, ['--manifest-dir', './test'])
-
-    expect(mockDeploySchemas).toHaveBeenCalledWith(
-      expect.objectContaining({
-        'manifest-dir': './test',
-      }),
-      expect.any(Object),
-    )
-  })
-
-  test('handles action failure', async () => {
-    mockDeploySchemas.mockResolvedValue('failure')
-
-    const {error} = await testCommand(DeploySchemaCommand)
-
-    expect(mockDeploySchemas).toHaveBeenCalled()
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Failed to deploy schemas')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('handles action errors gracefully', async () => {
-    mockDeploySchemas.mockRejectedValue(new Error('Manifest does not exist'))
-
-    const {error} = await testCommand(DeploySchemaCommand)
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Failed to deploy schemas:\nError: Manifest does not exist')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(mockExtractManifestSafe).not.toHaveBeenCalled()
   })
 })

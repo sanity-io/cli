@@ -9,12 +9,12 @@ export type ManifestExtractor = (manifestDir: string) => Promise<void>
 export async function ensureManifestExtractSatisfied(args: {
   extractManifest: boolean
   manifestDir: string
+  manifestSafe?: boolean
   output: Output
-  safe?: boolean
-  schemaRequired: boolean
+  schemaRequired?: boolean
   workDir: string
 }) {
-  const {extractManifest, manifestDir, output, safe, schemaRequired, workDir} = args
+  const {extractManifest, manifestDir, manifestSafe, output, schemaRequired, workDir} = args
   if (!extractManifest) {
     return true
   }
@@ -22,10 +22,11 @@ export async function ensureManifestExtractSatisfied(args: {
     // a successful manifest extract will write a new manifest file, which manifestReader will then read from disk
     const error = await extractManifestSafe({
       flags: {json: false, path: manifestDir},
-      output: output,
-      workDir: workDir,
+      output,
+      workDir,
     })
-    if (!safe && error) {
+
+    if (!manifestSafe && error) {
       throw error
     }
 

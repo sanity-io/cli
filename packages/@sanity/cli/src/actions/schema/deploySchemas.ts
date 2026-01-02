@@ -1,3 +1,4 @@
+import {type Output} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 
 import {type DeploySchemaCommand} from '../../commands/schema/deploy'
@@ -7,32 +8,49 @@ import {
   type ManifestWorkspaceFile,
   type StoredWorkspaceSchema,
 } from '../manifest/types.js'
-import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
+import {type SchemaStoreActionResult} from './schemaStoreTypes.js'
 import {schemasDeployDebug} from './utils/debug.js'
 import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {type CreateManifestReader, createManifestReader} from './utils/manifestReader.js'
-import {
-  FlagValidationError,
-  parseDeploySchemasConfig,
-  SCHEMA_PERMISSION_HELP_TEXT,
-} from './utils/schemaStoreValidation.js'
+import {FlagValidationError, SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
 import {getWorkspaceSchemaId} from './utils/workspaceSchemaId.js'
 
+interface DeploySchemasOptions {
+  extractManifest: boolean
+  manifestDir: string
+  output: Output
+  verbose: boolean
+  workDir: string
+
+  manifestSafe?: boolean
+  schemaRequired?: boolean
+  tag?: string
+  workspaceName?: string
+}
+
 export async function deploySchemas(
-  flags: DeploySchemaCommand['flags'],
-  context: SchemaStoreContext,
+  options: DeploySchemasOptions,
 ): Promise<SchemaStoreActionResult> {
-  const {extractManifest, manifestDir, schemaRequired, tag, verbose, workspaceName} =
-    parseDeploySchemasConfig(flags)
-  const {jsonReader, manifestExtractor, output, workDir} = context
+  const {
+    extractManifest,
+    manifestDir,
+    manifestSafe,
+    output,
+    schemaRequired,
+    tag,
+    verbose,
+    workDir,
+    workspaceName,
+  } = options
 
   if (
     !(await ensureManifestExtractSatisfied({
       extractManifest,
       manifestDir,
-      manifestExtractor,
+      manifestSafe,
       output,
       schemaRequired,
+      workDir,
     }))
   ) {
     return 'failure'
@@ -40,7 +58,6 @@ export async function deploySchemas(
 
   try {
     const manifestReader = await createManifestReader({
-      jsonReader,
       manifestDir,
       output,
       workDir,
@@ -134,7 +151,7 @@ function getUpdateSchema(args: {
       }
     } catch (err) {
       if ('statusCode' in err && err?.statusCode === 401) {
-        output.error(
+        output.warn(
           `↳ No permissions to write schema for workspace "${workspace.name}" in dataset "${workspace.dataset}". ${
             SCHEMA_PERMISSION_HELP_TEXT
           }:\n  ${chalk.red(`${err.message}`)}`,
