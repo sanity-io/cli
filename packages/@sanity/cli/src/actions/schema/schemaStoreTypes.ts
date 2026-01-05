@@ -1,26 +1,3 @@
-import {type Output} from '@sanity/cli-core'
-
-import {type StoredWorkspaceSchema} from '../manifest/types'
-import {type ManifestExtractor} from './utils/manifestExtractor'
-import {type ManifestJsonReader} from './utils/manifestReader'
-
-export interface SchemaStoreContext {
-  output: Output
-  workDir: string
-
-  jsonReader?: ManifestJsonReader
-
-  manifestExtractor?: ManifestExtractor
-  projectId?: string
-}
-
-export interface SchemaRequestResult {
-  status: 'fulfilled' | 'rejected'
-  value: StoredWorkspaceSchema
-
-  reason?: Error
-}
-
 /**
  * There is more context locally to decide how and when to log, depending on flags;
  * we therefore let actions log as soon as possible, possibly stopping stack unwinding.

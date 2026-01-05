@@ -8,12 +8,7 @@ import {chalk} from '@sanity/cli-core/ux'
 import {MANIFEST_FILENAME} from '../../manifest/extractManifest.js'
 import {type CreateManifest, type ManifestSchemaType} from '../../manifest/types.js'
 
-export type ManifestJsonReader = <T>(
-  filePath: string,
-) => Promise<JsonFileParseSuccess<T> | undefined>
-
 export type CreateManifestReaderFactory = (args: {
-  jsonReader?: <T>(filePath: string) => Promise<JsonFileParseSuccess<T> | undefined>
   manifestDir: string
   output: Output
   workDir: string

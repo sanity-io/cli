@@ -40,20 +40,3 @@ export async function ensureManifestExtractSatisfied(args: {
     }
   }
 }
-
-export function createManifestExtractor(context: {
-  output: Output
-  safe?: boolean
-  workDir: string
-}) {
-  return async (manifestDir: string) => {
-    const error = await extractManifestSafe({
-      flags: {json: false, path: manifestDir},
-      output: context.output,
-      workDir: context.workDir,
-    })
-    if (!context.safe && error) {
-      throw error
-    }
-  }
-}
