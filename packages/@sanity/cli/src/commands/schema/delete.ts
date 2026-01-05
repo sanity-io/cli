@@ -2,7 +2,7 @@ import {Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
-import {createManifestExtractor} from '../../actions/schema/utils/manifestExtractor.js'
+import {validateDeleteFlags} from '../../actions/schema/utils/schemaStoreValidation.js'
 import {NO_DATASET_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteSchemaDebug = subdebug('schema:delete')
@@ -60,23 +60,26 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       const workDir = (await this.getProjectRoot()).directory
       const cliConfig = await this.getCliConfig()
       const projectId = await this.getProjectId()
-      const dataset = cliConfig.api?.dataset
+      const cliDataset = cliConfig.api?.dataset
 
       if (!projectId) {
         this.error(NO_PROJECT_ID, {exit: 1})
       }
 
-      if (!dataset) {
+      if (!cliDataset) {
         this.error(NO_DATASET_ID, {exit: 1})
       }
 
-      const result = await deleteSchemaAction(flags, {
-        manifestExtractor: createManifestExtractor({
-          output: this.output,
-          workDir,
-        }),
+      const {dataset, ids} = validateDeleteFlags(flags)
+
+      const result = await deleteSchemaAction({
+        dataset,
+        extractManifest: flags['extract-manifest'],
+        ids,
+        manifestDir: flags['manifest-dir'],
         output: this.output,
         projectId,
+        verbose: flags['verbose'],
         workDir,
       })
 

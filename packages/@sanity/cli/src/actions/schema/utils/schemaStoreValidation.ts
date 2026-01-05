@@ -3,19 +3,6 @@ import {type Output} from '@sanity/cli-core'
 import {uniqBy} from '../../../util/uniqBy.js'
 import {isDefined} from '../../manifest/schemaTypeHelpers.js'
 import {SANITY_WORKSPACE_SCHEMA_ID_PREFIX} from '../../manifest/types.js'
-import {type DeleteSchemaFlags} from '../deleteSchemaAction.js'
-
-// TODO: These types will be imported from their respective files when migrated
-export interface DeploySchemasFlags extends SchemaStoreCommonFlags {
-  'schema-required'?: boolean
-  tag?: string
-  workspace?: string
-}
-
-export interface SchemaListFlags extends SchemaStoreCommonFlags {
-  id?: string
-  json?: boolean
-}
 
 export const validForIdChars = 'a-zA-Z0-9._-'
 export const validForIdPattern = new RegExp(`^[${validForIdChars}]+$`)
@@ -39,29 +26,9 @@ export class FlagValidationError extends Error {
   }
 }
 
-interface WorkspaceSchemaId {
+export interface WorkspaceSchemaId {
   schemaId: string
   workspace: string
-}
-
-export interface SchemaStoreCommonFlags {
-  'manifest-dir': string
-
-  'extract-manifest'?: boolean
-  'no-extract-manifest'?: boolean
-  verbose?: boolean
-}
-
-function parseCommonFlags(flags: SchemaStoreCommonFlags) {
-  const verbose = !!flags.verbose
-  // extract manifest by default: our CLI layer handles both --extract-manifest (true) and --no-extract-manifest (false)
-  const extractManifest = flags['extract-manifest'] ?? true
-
-  return {
-    extractManifest,
-    manifestDir: flags['manifest-dir'],
-    verbose,
-  }
 }
 
 export function validateDeployFlags(flags: {tag?: string; workspace?: string}) {
@@ -93,40 +60,36 @@ export function validateListFlags(flags: {id?: string}) {
   return {id}
 }
 
-export function parseDeleteSchemasConfig(flags: DeleteSchemaFlags) {
+export function validateDeleteFlags(flags: {dataset?: string; ids?: string}) {
   const errors: string[] = []
 
-  const commonFlags = parseCommonFlags(flags)
-  const ids = parseIds(flags, errors)
-  const dataset = parseDataset(flags, errors)
+  const dataset = parseDataset(errors, flags.dataset)
+  const ids = parseIds(errors, flags.ids)
 
-  assertNoErrors(errors)
-  return {...commonFlags, dataset, ids}
-}
-
-function assertNoErrors(errors: string[]) {
   if (errors.length > 0) {
     throw new FlagValidationError(
       `Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`,
     )
   }
+
+  return {dataset, ids}
 }
 
-export function parseIds(flags: {ids?: unknown}, errors: string[]): WorkspaceSchemaId[] {
-  const parsedIds = parseNonEmptyString(flags, 'ids', errors)
-  if (errors.length > 0) {
+export function parseIds(errors: string[], ids?: string): WorkspaceSchemaId[] {
+  if (!ids) {
+    errors.push('ids argument is empty')
     return []
   }
 
-  const ids = parsedIds
+  const parsedIds = ids
     .split(',')
     .map((id) => id.trim())
     .filter((id) => !!id)
     .map((id) => parseWorkspaceSchemaId(errors, id))
     .filter((item) => isDefined(item))
 
-  const uniqueIds = uniqBy(ids, 'schemaId' satisfies keyof (typeof ids)[number])
-  if (uniqueIds.length < ids.length) {
+  const uniqueIds = uniqBy(parsedIds, 'schemaId' satisfies keyof (typeof parsedIds)[number])
+  if (uniqueIds.length < parsedIds.length) {
     errors.push(`ids contains duplicates`)
   }
   if (errors.length === 0 && uniqueIds.length === 0) {
@@ -179,8 +142,17 @@ export function parseWorkspaceSchemaId(errors: string[], id?: string) {
   }
 }
 
-function parseDataset(flags: {dataset?: unknown}, errors: string[]) {
-  return flags.dataset === undefined ? undefined : parseNonEmptyString(flags, 'dataset', errors)
+function parseDataset(errors: string[], dataset?: string) {
+  if (dataset === undefined) {
+    return
+  }
+
+  if (!dataset) {
+    errors.push('dataset argument is empty')
+    return
+  }
+
+  return dataset
 }
 
 function parseWorkspace(errors: string[], workspace?: string) {
@@ -222,22 +194,6 @@ export function parseTag(errors: string[], tag?: string) {
   }
 
   return tag
-}
-
-function parseNonEmptyString<
-  Flag extends string,
-  Flags extends Partial<Record<Flag, unknown | undefined>>,
->(flags: Flags, flagName: Flag, errors: string[]): string {
-  const flag = flags[flagName]
-  if (!isString(flag) || !flag) {
-    errors.push(`${flagName} argument is empty`)
-    return ''
-  }
-  return flag
-}
-
-function isString(flag: unknown): flag is string {
-  return typeof flag === 'string'
 }
 
 function getProjectIdMismatchMessage(

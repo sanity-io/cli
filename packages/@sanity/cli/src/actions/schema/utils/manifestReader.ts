@@ -7,7 +7,6 @@ import {chalk} from '@sanity/cli-core/ux'
 
 import {MANIFEST_FILENAME} from '../../manifest/extractManifest.js'
 import {type CreateManifest, type ManifestSchemaType} from '../../manifest/types.js'
-import {type DeploySchemasFlags} from './schemaStoreValidation.js'
 
 export type ManifestJsonReader = <T>(
   filePath: string,
@@ -55,7 +54,7 @@ export const createManifestReader: CreateManifestReaderFactory = ({
     const result = await parseJsonFile<CreateManifest>(manifestFile)
     if (!result) {
       throw new Error(
-        `Manifest does not exist at ${manifestFile}. To create the manifest file, omit --no-${'extract-manifest' satisfies keyof DeploySchemasFlags} or run "sanity manifest extract" first.`,
+        `Manifest does not exist at ${manifestFile}. To create the manifest file, omit --no-extract-manifest or run "sanity manifest extract" first.`,
       )
     }
 

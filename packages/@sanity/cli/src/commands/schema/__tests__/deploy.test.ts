@@ -210,7 +210,7 @@ describe('#schema:deploy', () => {
     },
   )
 
-  test('should throw an error if tag is invalid', async () => {
+  test('throws an error if tag is invalid', async () => {
     const {error} = await testCommand(DeploySchemaCommand, ['--tag', 'test.tag'])
 
     expect(error?.message).toContain('tag cannot contain . (period)')
