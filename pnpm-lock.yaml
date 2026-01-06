@@ -58,7 +58,7 @@ catalogs:
       specifier: ^4.13.0
       version: 4.13.0
     jsdom:
-      specifier: ^26.0.0
+      specifier: ^26.1.0
       version: 26.1.0
     nock:
       specifier: ^14.0.10
