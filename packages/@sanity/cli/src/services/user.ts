@@ -1,4 +1,4 @@
-import {getGlobalCliClient, type SanityOrgUser} from '@sanity/cli-core'
+import {getGlobalCliClient, getProjectCliClient, type SanityOrgUser} from '@sanity/cli-core'
 
 import {type User} from '../actions/users/types.js'
 
@@ -25,4 +25,18 @@ export async function getMembers(memberIds: string[]) {
   })
 
   return client.request<User | User[]>({uri: `/users/${memberIds.join(',')}`})
+}
+
+/**
+ * Get the user for a project
+ * @param projectId - The ID of the project
+ */
+export async function getProjectUser(projectId: string) {
+  const client = await getProjectCliClient({
+    apiVersion: USERS_API_VERSION,
+    projectId,
+    requireUser: true,
+  })
+
+  return client.users.getById('me')
 }

@@ -5,6 +5,8 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {findSanityModulesVersions} from '../../actions/versions/findSanityModulesVersions.js'
+import {PROJECTS_API_VERSION} from '../../services/projects.js'
+import {USERS_API_VERSION} from '../../services/user.js'
 import {Debug} from '../debug.js'
 
 vi.mock('@sanity/cli-core', async () => {
@@ -172,12 +174,10 @@ describe('#debug', () => {
       },
     })
 
-    // When not authenticated, either the command errors or shows "Not logged in" message
-    if (error) {
-      expect(error.message).toContain('Failed to gather debug information')
-    } else {
-      expect(stdout).toContain('Not logged in')
-    }
+    // When not authenticated, should show error message in user section
+    expect(error?.message).toContain('Failed to gather debug information')
+    expect(stdout).toContain('User:')
+    expect(stdout).toContain('Not logged in')
   })
 
   test('shows package versions with update information', async () => {
@@ -246,14 +246,22 @@ describe('#debug', () => {
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     // Mock the /me API endpoint to return user info
-    mockApi({apiVersion: 'v2025-08-06', uri: '/users/me'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: USERS_API_VERSION,
+      uri: '/users/me',
+    }).reply(200, {
       email: 'test@example.com',
       id: 'user123',
       name: 'Test User',
     })
 
     // Mock the project API endpoint to return no project (404)
-    mockApi({apiVersion: 'v2025-08-06', uri: '/projects/project123'}).reply(404)
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: PROJECTS_API_VERSION,
+      uri: '/projects/project123',
+    }).reply(404)
 
     const {stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
 
@@ -273,14 +281,22 @@ describe('#debug', () => {
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     // Mock the /me API endpoint to return user info
-    mockApi({apiVersion: 'v2025-08-06', uri: '/users/me'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: USERS_API_VERSION,
+      uri: '/users/me',
+    }).reply(200, {
       email: 'test@example.com',
       id: 'user123',
       name: 'Test User',
     })
 
     // Mock the project API endpoint to return project info
-    mockApi({apiVersion: 'v2025-08-06', uri: '/projects/project123'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: PROJECTS_API_VERSION,
+      uri: '/projects/project123',
+    }).reply(200, {
       displayName: 'Test Project',
       id: 'project123',
       members: [
@@ -314,12 +330,9 @@ describe('#debug', () => {
       },
     })
 
-    // When not authenticated, either the command errors or shows "Not logged in" message
-    if (error) {
-      expect(error.message).toContain('Failed to gather debug information')
-    } else {
-      expect(stdout).toContain('Not logged in')
-    }
+    expect(error?.message).toContain('Failed to gather debug information')
+    expect(stdout).toContain('User:')
+    expect(stdout).toContain('Not logged in')
   })
 
   test('handles case when no project config is present', async () => {
@@ -332,7 +345,8 @@ describe('#debug', () => {
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     // Mock the /me API endpoint to return user info
-    mockApi({apiVersion: 'v2025-08-06', uri: '/users/me'}).reply(200, {
+    // Uses global API host since there's no projectId
+    mockApi({apiVersion: USERS_API_VERSION, uri: '/users/me'}).reply(200, {
       email: 'test@example.com',
       id: 'user123',
       name: 'Test User',
@@ -367,14 +381,22 @@ describe('#debug', () => {
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     // Mock the /me API endpoint to return user info
-    mockApi({apiVersion: 'v2025-08-06', uri: '/users/me'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: USERS_API_VERSION,
+      uri: '/users/me',
+    }).reply(200, {
       email: 'test@example.com',
       id: 'user123',
       name: 'Test User',
     })
 
     // Mock the project API endpoint to return project info
-    mockApi({apiVersion: 'v2025-08-06', uri: '/projects/project123'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: PROJECTS_API_VERSION,
+      uri: '/projects/project123',
+    }).reply(200, {
       displayName: 'Test Project',
       id: 'project123',
       members: [
@@ -412,14 +434,22 @@ describe('#debug', () => {
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     // Mock the /me API endpoint to return user info
-    mockApi({apiVersion: 'v2025-08-06', uri: '/users/me'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: USERS_API_VERSION,
+      uri: '/users/me',
+    }).reply(200, {
       email: 'test@example.com',
       id: 'user123',
       name: 'Test User',
     })
 
     // Mock the project API endpoint to return project info
-    mockApi({apiVersion: 'v2025-08-06', uri: '/projects/project123'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: PROJECTS_API_VERSION,
+      uri: '/projects/project123',
+    }).reply(200, {
       displayName: 'Test Project',
       id: 'project123',
       members: [],
@@ -444,7 +474,11 @@ describe('#debug', () => {
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     // Mock the /me API endpoint to return an error
-    mockApi({apiVersion: 'v2025-08-06', uri: '/users/me'}).reply(500, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: USERS_API_VERSION,
+      uri: '/users/me',
+    }).reply(500, {
       error: 'Internal server error',
     })
 
@@ -467,14 +501,22 @@ describe('#debug', () => {
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     // Mock the /me API endpoint to return user info
-    mockApi({apiVersion: 'v2025-08-06', uri: '/users/me'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: USERS_API_VERSION,
+      uri: '/users/me',
+    }).reply(200, {
       email: 'test@example.com',
       id: 'user123',
       name: 'Test User',
     })
 
     // Mock the project API endpoint to return an error
-    mockApi({apiVersion: 'v2025-08-06', uri: '/projects/project123'}).reply(404, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: PROJECTS_API_VERSION,
+      uri: '/projects/project123',
+    }).reply(404, {
       error: 'Project not found',
     })
 
@@ -496,14 +538,22 @@ describe('#debug', () => {
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     // Mock the /me API endpoint to return user info
-    mockApi({apiVersion: 'v2025-08-06', uri: '/users/me'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: USERS_API_VERSION,
+      uri: '/users/me',
+    }).reply(200, {
       email: 'test@example.com',
       id: 'user123',
       name: 'Test User',
     })
 
     // Mock the project API endpoint to return null
-    mockApi({apiVersion: 'v2025-08-06', uri: '/projects/project123'}).reply(200, () => {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: PROJECTS_API_VERSION,
+      uri: '/projects/project123',
+    }).reply(200, () => {
       return null
     })
 
@@ -525,14 +575,22 @@ describe('#debug', () => {
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     // Mock the /me API endpoint to return user info
-    mockApi({apiVersion: 'v2025-08-06', uri: '/users/me'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: USERS_API_VERSION,
+      uri: '/users/me',
+    }).reply(200, {
       email: 'test@example.com',
       id: 'user123',
       name: 'Test User',
     })
 
     // Mock the project API endpoint to return project with no members
-    mockApi({apiVersion: 'v2025-08-06', uri: '/projects/project123'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: PROJECTS_API_VERSION,
+      uri: '/projects/project123',
+    }).reply(200, {
       displayName: 'Test Project',
       id: 'project123',
       studioHost: 'test-project',
@@ -556,14 +614,22 @@ describe('#debug', () => {
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     // Mock the /me API endpoint to return user info
-    mockApi({apiVersion: 'v2025-08-06', uri: '/users/me'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: USERS_API_VERSION,
+      uri: '/users/me',
+    }).reply(200, {
       email: 'test@example.com',
       id: 'user123',
       name: 'Test User',
     })
 
     // Mock the project API endpoint to return project with member but no roles
-    mockApi({apiVersion: 'v2025-08-06', uri: '/projects/project123'}).reply(200, {
+    mockApi({
+      apiHost: 'https://project123.api.sanity.io',
+      apiVersion: PROJECTS_API_VERSION,
+      uri: '/projects/project123',
+    }).reply(200, {
       displayName: 'Test Project',
       id: 'project123',
       members: [
