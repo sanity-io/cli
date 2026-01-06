@@ -37,7 +37,7 @@ catalogs:
       specifier: ^21.1.7
       version: 21.1.7
     '@types/node':
-      specifier: ^20.19.24
+      specifier: ^20.19.27
       version: 20.19.27
     '@vitejs/plugin-react':
       specifier: ^4.7.0
