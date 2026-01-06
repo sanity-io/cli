@@ -50,6 +50,7 @@ jobs:
             './packages/@sanity/cli-core' \
             './packages/@sanity/cli-test' \
             './packages/@sanity/eslint-config-cli' \
+            --pnpm \
             --comment=update \
             --compact
         env:
