@@ -1,9 +1,9 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {parseStringFlag, SanityCommand} from '@sanity/cli-core'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
 import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
-import {validateDeployFlags} from '../../actions/schema/utils/schemaStoreValidation.js'
+import {parseTag} from '../../actions/schema/utils/schemaStoreValidation.js'
 import {NO_DATASET_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const description = `
@@ -48,6 +48,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
     tag: Flags.string({
       description: 'Add a tag suffix to the schema id',
       helpValue: '<tag>',
+      parse: parseTag,
     }),
     verbose: Flags.boolean({
       default: false,
@@ -56,11 +57,13 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
     workspace: Flags.string({
       description: 'The name of the workspace to deploy a schema for',
       helpValue: '<name>',
+      parse: async (input) => parseStringFlag('workspace', input),
     }),
   }
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeploySchemaCommand)
+    const {tag, workspace} = flags
 
     try {
       const workDir = (await this.getProjectRoot()).directory
@@ -76,8 +79,6 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
         this.error(NO_DATASET_ID, {exit: 1})
       }
 
-      const {tag, workspaceName} = validateDeployFlags(flags)
-
       const result = await deploySchemas({
         extractManifest: flags['extract-manifest'],
         manifestDir: flags['manifest-dir'],
@@ -85,7 +86,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
         tag,
         verbose: flags['verbose'],
         workDir,
-        workspaceName,
+        workspaceName: workspace,
       })
 
       if (result === 'failure') {

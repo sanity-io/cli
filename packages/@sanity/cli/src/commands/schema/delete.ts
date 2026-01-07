@@ -1,8 +1,8 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {parseStringFlag, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
-import {validateDeleteFlags} from '../../actions/schema/utils/schemaStoreValidation.js'
+import {parseIds} from '../../actions/schema/utils/schemaStoreValidation.js'
 import {NO_DATASET_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteSchemaDebug = subdebug('schema:delete')
@@ -31,6 +31,7 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
   static override flags = {
     dataset: Flags.string({
       description: 'Delete schemas from a specific dataset',
+      parse: async (input) => parseStringFlag('dataset', input),
     }),
     'extract-manifest': Flags.boolean({
       allowNo: true,
@@ -53,8 +54,11 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeleteSchemaCommand)
+    const {dataset} = flags
 
     deleteSchemaDebug('Running schema delete with flags: %O', flags)
+
+    const ids = parseIds(flags.ids)
 
     try {
       const workDir = (await this.getProjectRoot()).directory
@@ -69,8 +73,6 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       if (!cliDataset) {
         this.error(NO_DATASET_ID, {exit: 1})
       }
-
-      const {dataset, ids} = validateDeleteFlags(flags)
 
       const result = await deleteSchemaAction({
         dataset,

@@ -257,18 +257,51 @@ describe('#schema:list', () => {
     expect(error?.message).toContain(NO_DATASET_ID)
   })
 
-  test('throws an error if ID is empty string', async () => {
-    const {error} = await testCommand(ListSchemaCommand, ['--id', ''])
+  test.each([
+    {
+      desc: 'empty string',
+      expectedError: 'id argument is empty',
+      id: '',
+    },
+    {
+      desc: 'invalid characters (!)',
+      expectedError: 'id can only contain characters in [a-zA-Z0-9._-]',
+      id: 'test-id!!',
+    },
+    {
+      desc: 'invalid characters (@)',
+      expectedError: 'id can only contain characters in [a-zA-Z0-9._-]',
+      id: '_.schemas.default@tag',
+    },
+    {
+      desc: 'starts with dash',
+      expectedError: 'id cannot start with - (dash)',
+      id: '-_.schemas.default',
+    },
+    {
+      desc: 'consecutive periods',
+      expectedError: 'id cannot have consecutive . (period) characters',
+      id: '_.schemas..default',
+    },
+    {
+      desc: 'missing required prefix',
+      expectedError: 'id must either match _.schemas.<workspaceName>',
+      id: 'schemas.default',
+    },
+    {
+      desc: 'incorrect prefix',
+      expectedError: 'id must either match _.schemas.<workspaceName>',
+      id: 'sanity.schemas.default',
+    },
+    {
+      desc: 'workspace name with invalid characters (space)',
+      expectedError: 'id can only contain characters in [a-zA-Z0-9._-]',
+      id: '_.schemas.my workspace',
+    },
+  ])('throws error when id is $desc', async ({expectedError, id}) => {
+    const {error} = await testCommand(ListSchemaCommand, ['--id', id])
 
-    expect(error?.message).toContain('id argument is empty')
-  })
-
-  test('throws an error if ID is invalid', async () => {
-    const {error} = await testCommand(ListSchemaCommand, ['--id', 'test-id!!'])
-
-    expect(error?.message).toContain(
-      'id can only contain characters in [a-zA-Z0-9._-] but found: "test-id!!"',
-    )
+    expect(error?.message).toContain(expectedError)
   })
 
   test('throws an error if no schemas are found', async () => {

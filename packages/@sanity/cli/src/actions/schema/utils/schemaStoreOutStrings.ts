@@ -4,7 +4,7 @@ export function getDatasetsOutString(datasets: string[]) {
     : `datasets ${getStringArrayOutString(datasets)}`
 }
 
-export function getStringArrayOutString(array: string[]) {
+function getStringArrayOutString(array: string[]) {
   return `[${array.map((d) => `"${d}"`).join(',')}]`
 }
 
