@@ -3,7 +3,7 @@ import {SanityCommand} from '@sanity/cli-core'
 
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {schemasListDebug} from '../../actions/schema/utils/debug.js'
-import {validateListFlags} from '../../actions/schema/utils/schemaStoreValidation.js'
+import {parseWorkspaceSchemaId} from '../../actions/schema/utils/schemaStoreValidation.js'
 import {NO_DATASET_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const description = `
@@ -79,7 +79,13 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
         this.error(NO_DATASET_ID, {exit: 1})
       }
 
-      const {id} = validateListFlags(flags)
+      const errors: string[] = []
+      const id = parseWorkspaceSchemaId(errors, flags.id)?.schemaId
+      if (errors.length > 0) {
+        this.error(`Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`, {
+          exit: 1,
+        })
+      }
 
       const result = await listSchemas({
         extractManifest: flags['extract-manifest'],

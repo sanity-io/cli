@@ -8,7 +8,7 @@ import {chalk} from '@sanity/cli-core/ux'
 import {MANIFEST_FILENAME} from '../../manifest/extractManifest.js'
 import {type CreateManifest, type ManifestSchemaType} from '../../manifest/types.js'
 
-export type CreateManifestReaderFactory = (args: {
+type CreateManifestReaderFactory = (args: {
   manifestDir: string
   output: Output
   workDir: string

@@ -196,17 +196,57 @@ describe('#schema:delete', () => {
 
   test.each([
     {
-      desc: 'id can only contain characters in [a-zA-Z0-9._-] but found: "test-id!!',
+      desc: 'ids with invalid characters (!)',
+      expectedError: 'id can only contain characters in [a-zA-Z0-9._-]',
       ids: 'test-id!!',
     },
-    {desc: 'ids contains duplicates', ids: '_.schemas.default,_.schemas.default'},
-  ])('throws an error if $desc', async ({desc, ids}) => {
+    {
+      desc: 'ids with invalid characters (@)',
+      expectedError: 'id can only contain characters in [a-zA-Z0-9._-]',
+      ids: '_.schemas.default@tag',
+    },
+    {
+      desc: 'id starts with dash',
+      expectedError: 'id cannot start with - (dash)',
+      ids: '-_.schemas.default',
+    },
+    {
+      desc: 'id has consecutive periods',
+      expectedError: 'id cannot have consecutive . (period) characters',
+      ids: '_.schemas..default',
+    },
+    {
+      desc: 'id missing required prefix',
+      expectedError: 'id must either match _.schemas.<workspaceName>',
+      ids: 'schemas.default',
+    },
+    {
+      desc: 'id has invalid workspace name (space)',
+      expectedError: 'id can only contain characters in [a-zA-Z0-9._-]',
+      ids: '_.schemas.default workspace',
+    },
+    {
+      desc: 'duplicate ids in comma-separated list',
+      expectedError: 'ids contains duplicates',
+      ids: '_.schemas.default,_.schemas.default',
+    },
+    {
+      desc: 'comma-separated with one duplicate',
+      expectedError: 'ids contains duplicates',
+      ids: '_.schemas.production,_.schemas.staging,_.schemas.production',
+    },
+    {
+      desc: 'all entries are empty after trimming',
+      expectedError: 'ids contains no valid id strings',
+      ids: ' , , ',
+    },
+  ])('throws error when $desc', async ({expectedError, ids}) => {
     const {error} = await testCommand(DeleteSchemaCommand, ['--ids', ids])
 
-    expect(error?.message).toContain(desc)
+    expect(error?.message).toContain(expectedError)
   })
 
-  test('throws an error if dataset is an empty string', async () => {
+  test('throws error when dataset flag is not provided a value', async () => {
     const {error} = await testCommand(DeleteSchemaCommand, [
       '--ids',
       '_.schemas.default',

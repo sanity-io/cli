@@ -202,7 +202,7 @@ describe('#schema:deploy', () => {
   })
 
   test.each([{flag: 'tag'}, {flag: 'workspace'}])(
-    'throws an error if $flag is an empty string',
+    'throws error when $flag flag is empty string',
     async ({flag}) => {
       const {error} = await testCommand(DeploySchemaCommand, [`--${flag}`, ''])
 
@@ -210,10 +210,75 @@ describe('#schema:deploy', () => {
     },
   )
 
-  test('throws an error if tag is invalid', async () => {
-    const {error} = await testCommand(DeploySchemaCommand, ['--tag', 'test.tag'])
+  test.each([
+    {
+      desc: 'contains period',
+      expectedError: 'tag cannot contain . (period)',
+      tag: 'test.tag',
+    },
+    {
+      desc: 'starts with dash',
+      expectedError: 'tag cannot start with - (dash)',
+      tag: '-testtag',
+    },
+    {
+      desc: 'contains invalid character (space)',
+      expectedError: 'tag can only contain characters in [a-zA-Z0-9_-]',
+      tag: 'test tag',
+    },
+    {
+      desc: 'contains invalid character (@)',
+      expectedError: 'tag can only contain characters in [a-zA-Z0-9_-]',
+      tag: 'test@tag',
+    },
+    {
+      desc: 'contains invalid character (!)',
+      expectedError: 'tag can only contain characters in [a-zA-Z0-9_-]',
+      tag: 'test!',
+    },
+    {
+      desc: 'contains multiple periods',
+      expectedError: 'tag cannot contain . (period)',
+      tag: 'test.tag.name',
+    },
+  ])('throws error when tag $desc', async ({expectedError, tag}) => {
+    const {error} = await testCommand(DeploySchemaCommand, ['--tag', tag])
 
-    expect(error?.message).toContain('tag cannot contain . (period)')
+    expect(error?.message).toContain(expectedError)
+  })
+
+  test.each([
+    {
+      desc: 'valid tag with alphanumeric',
+      tag: 'v1',
+    },
+    {
+      desc: 'valid tag with underscore',
+      tag: 'feature_branch',
+    },
+    {
+      desc: 'valid tag with dash in middle',
+      tag: 'test-tag',
+    },
+    {
+      desc: 'valid tag with mixed case',
+      tag: 'TestTag123',
+    },
+  ])('successfully parses $desc', async ({tag}) => {
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/production/schemas',
+    }).reply(200, undefined)
+    mockApi({
+      apiVersion: SCHEMA_API_VERSION,
+      method: 'put',
+      uri: '/projects/test-project/datasets/staging/schemas',
+    }).reply(200, undefined)
+
+    const {error} = await testCommand(DeploySchemaCommand, ['--tag', tag])
+
+    expect(error).toBeUndefined()
   })
 
   test('throw an error if some schemas fail to deploy', async () => {

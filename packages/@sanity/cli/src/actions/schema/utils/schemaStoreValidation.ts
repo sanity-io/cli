@@ -1,11 +1,12 @@
+import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
 
 import {uniqBy} from '../../../util/uniqBy.js'
 import {isDefined} from '../../manifest/schemaTypeHelpers.js'
 import {SANITY_WORKSPACE_SCHEMA_ID_PREFIX} from '../../manifest/types.js'
 
-export const validForIdChars = 'a-zA-Z0-9._-'
-export const validForIdPattern = new RegExp(`^[${validForIdChars}]+$`)
+const validForIdChars = 'a-zA-Z0-9._-'
+const validForIdPattern = new RegExp(`^[${validForIdChars}]+$`)
 
 //no periods allowed in workspaceName or tag in ids
 export const validForNamesChars = 'a-zA-Z0-9_-'
@@ -31,55 +32,12 @@ export interface WorkspaceSchemaId {
   workspace: string
 }
 
-export function validateDeployFlags(flags: {tag?: string; workspace?: string}) {
-  const errors: string[] = []
-
-  const tag = parseTag(errors, flags.tag)
-  const workspaceName = parseWorkspace(errors, flags.workspace)
-
-  if (errors.length > 0) {
-    throw new FlagValidationError(
-      `Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`,
-    )
-  }
-
-  return {tag, workspaceName}
-}
-
-export function validateListFlags(flags: {id?: string}) {
-  const errors: string[] = []
-
-  const id = parseWorkspaceSchemaId(errors, flags.id)?.schemaId
-
-  if (errors.length > 0) {
-    throw new FlagValidationError(
-      `Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`,
-    )
-  }
-
-  return {id}
-}
-
-export function validateDeleteFlags(flags: {dataset?: string; ids?: string}) {
-  const errors: string[] = []
-
-  const dataset = parseDataset(errors, flags.dataset)
-  const ids = parseIds(errors, flags.ids)
-
-  if (errors.length > 0) {
-    throw new FlagValidationError(
-      `Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`,
-    )
-  }
-
-  return {dataset, ids}
-}
-
-export function parseIds(errors: string[], ids?: string): WorkspaceSchemaId[] {
+export function parseIds(ids?: string): WorkspaceSchemaId[] {
   if (!ids) {
-    errors.push('ids argument is empty')
-    return []
+    throw new CLIError('ids argument is empty')
   }
+
+  const errors: string[] = []
 
   const parsedIds = ids
     .split(',')
@@ -88,13 +46,19 @@ export function parseIds(errors: string[], ids?: string): WorkspaceSchemaId[] {
     .map((id) => parseWorkspaceSchemaId(errors, id))
     .filter((item) => isDefined(item))
 
+  if (errors.length > 0) {
+    throw new CLIError(`Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`)
+  }
+
+  if (parsedIds.length === 0) {
+    throw new CLIError(`ids contains no valid id strings`)
+  }
+
   const uniqueIds = uniqBy(parsedIds, 'schemaId' satisfies keyof (typeof parsedIds)[number])
   if (uniqueIds.length < parsedIds.length) {
-    errors.push(`ids contains duplicates`)
+    throw new CLIError(`ids contains duplicates`)
   }
-  if (errors.length === 0 && uniqueIds.length === 0) {
-    errors.push(`ids contains no valid id strings`)
-  }
+
   return uniqueIds
 }
 
@@ -142,55 +106,35 @@ export function parseWorkspaceSchemaId(errors: string[], id?: string) {
   }
 }
 
-function parseDataset(errors: string[], dataset?: string) {
-  if (dataset === undefined) {
-    return
-  }
-
-  if (!dataset) {
-    errors.push('dataset argument is empty')
-    return
-  }
-
-  return dataset
-}
-
-function parseWorkspace(errors: string[], workspace?: string) {
-  if (workspace === undefined) {
-    return
-  }
-
-  if (!workspace) {
-    errors.push('workspace argument is empty')
-    return
-  }
-
-  return workspace
-}
-
-export function parseTag(errors: string[], tag?: string) {
+/**
+ *
+ * @param tag - The tag to parse
+ * Throws an error if the tag is empty
+ * Throws an error if the tag contains a period
+ * Throws an error if the tag starts with a dash
+ * Returns the parsed tag
+ */
+export async function parseTag(tag?: string) {
   if (tag === undefined) {
-    return
+    return tag
   }
 
   if (!tag) {
-    errors.push('tag argument is empty')
-    return
+    throw new CLIError('tag argument is empty')
   }
 
   if (tag.includes('.')) {
-    errors.push(`tag cannot contain . (period), but was: "${tag}"`)
-    return
+    throw new CLIError(`tag cannot contain . (period), but was: "${tag}"`)
   }
 
   if (!validForNamesPattern.test(tag)) {
-    errors.push(`tag can only contain characters in [${validForNamesChars}], but was: "${tag}"`)
-    return
+    throw new CLIError(
+      `tag can only contain characters in [${validForNamesChars}], but was: "${tag}"`,
+    )
   }
 
   if (tag.startsWith('-')) {
-    errors.push(`tag cannot start with - (dash) but was: "${tag}"`)
-    return
+    throw new CLIError(`tag cannot start with - (dash) but was: "${tag}"`)
   }
 
   return tag
@@ -201,18 +145,6 @@ function getProjectIdMismatchMessage(
   operation: 'read' | 'write',
 ) {
   return `No permissions to ${operation} schema for workspace "${workspace.name}" with projectId "${workspace.projectId}"`
-}
-
-/**
- * At the moment schema store commands does not support studios where workspaces have multiple projects
- */
-export function throwWriteProjectIdMismatch(
-  workspace: {name: string; projectId: string},
-  projectId: string,
-): void {
-  if (workspace.projectId !== projectId) {
-    throw new Error(getProjectIdMismatchMessage(workspace, 'write'))
-  }
 }
 
 export function filterLogReadProjectIdMismatch(

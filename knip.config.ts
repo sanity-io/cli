@@ -45,13 +45,6 @@ const baseConfig = {
       ignore: [
         'src/actions/manifest/extractManifest.ts',
         'src/actions/manifest/types.ts',
-        // Schema utilities used by future deploy and list commands
-        'src/actions/schema/schemaStoreConstants.ts',
-        'src/actions/schema/utils/schemaActionHelpers.ts',
-        'src/actions/schema/utils/workspaceSchemaId.ts',
-        'src/actions/schema/utils/schemaStoreOutStrings.ts',
-        'src/actions/schema/utils/schemaStoreValidation.ts',
-        'src/actions/schema/utils/manifestReader.ts',
         // Ignore exports until init work is done
         'src/actions/init/remoteTemplate.ts',
         'src/actions/init/determineAppTemplate.ts',
