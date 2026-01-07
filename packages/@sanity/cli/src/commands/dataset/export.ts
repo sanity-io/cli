@@ -3,7 +3,7 @@ import path from 'node:path'
 import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, spinner} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
@@ -12,6 +12,7 @@ import prettyMs from 'pretty-ms'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDataset} from '../../prompts/promptForDataset.js'
+import {listDatasets} from '../../services/datasets.js'
 import {absolutify} from '../../util/absolutify.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
@@ -102,8 +103,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
       })
     }
 
-    // Get the project API client
-    const projectClient = await this.getProjectApiClient({
+    const projectClient = await getProjectCliClient({
       apiVersion: '2023-05-26',
       projectId,
       requireUser: true,
@@ -112,7 +112,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     let datasets: DatasetsResponse
 
     try {
-      datasets = await projectClient.datasets.list()
+      datasets = await listDatasets(projectId)
     } catch (error) {
       exportDebug('Error listing datasets', error)
       this.error(`Failed to list datasets:\n${error instanceof Error ? error.message : error}`, {

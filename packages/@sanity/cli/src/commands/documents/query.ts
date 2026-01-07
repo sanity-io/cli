@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {colorizeJson, SanityCommand, subdebug} from '@sanity/cli-core'
+import {colorizeJson, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
@@ -87,8 +87,7 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
     }
 
     try {
-      // Get a project client and configure it for the query
-      const projectClient = await this.getProjectApiClient({
+      const projectClient = await getProjectCliClient({
         apiVersion: targetApiVersion,
         dataset: targetDataset,
         projectId: targetProject,

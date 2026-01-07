@@ -24,9 +24,13 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
-  getProjectCliClient: vi.fn(),
-}))
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
+  return {
+    ...actual,
+    getProjectCliClient: vi.fn(),
+  }
+})
 
 const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
@@ -61,7 +65,6 @@ describe('#documents:get', () => {
       },
     })
 
-    // Mock the getProjectApiClient to return a mock client with getDocument
     const mockGetDocument = vi.fn().mockResolvedValue(mockDoc)
     mockGetProjectCliClient.mockResolvedValue({
       getDocument: mockGetDocument,
@@ -88,7 +91,6 @@ describe('#documents:get', () => {
       },
     })
 
-    // Mock the getProjectApiClient to return a mock client with getDocument
     const mockGetDocument = vi.fn().mockResolvedValue(mockDoc)
     mockGetProjectCliClient.mockResolvedValue({
       getDocument: mockGetDocument,
@@ -133,7 +135,6 @@ describe('#documents:get', () => {
       },
     })
 
-    // Mock the getProjectApiClient to return a mock client with getDocument
     const mockGetDocument = vi.fn().mockResolvedValue(mockDoc)
     mockGetProjectCliClient.mockResolvedValue({
       getDocument: mockGetDocument,

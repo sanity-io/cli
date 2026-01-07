@@ -29,3 +29,22 @@ export async function listGraphQLEndpoints(projectId: string): Promise<GraphQLEn
     uri: '/apis/graphql',
   })
 }
+
+interface DeleteGraphQLAPIOptions {
+  dataset: string
+  projectId: string
+  tag: string
+}
+
+export async function deleteGraphQLAPI({dataset, projectId, tag}: DeleteGraphQLAPIOptions) {
+  const client = await getProjectCliClient({
+    apiVersion: GRAPHQL_API_VERSION,
+    projectId,
+    requireUser: true,
+  })
+
+  return client.request({
+    method: 'DELETE',
+    uri: `/apis/graphql/${dataset}/${tag}`,
+  })
+}

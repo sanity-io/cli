@@ -1,12 +1,14 @@
 import fs from 'node:fs/promises'
 
 import {runCommand} from '@oclif/test'
-import {type CliConfig, getCliConfig, getGlobalCliClient} from '@sanity/cli-core'
+import {type CliConfig, getCliConfig} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
-import {testCommand} from '@sanity/cli-test'
+import {mockApi, testCommand} from '@sanity/cli-test'
 import {exportDataset} from '@sanity/export'
+import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {MediaExportCommand} from '../export.js'
 
@@ -39,11 +41,6 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
-  getGlobalCliClient: vi.fn(),
-  getProjectCliClient: vi.fn(),
-}))
-
 vi.mock('node:fs/promises', () => ({
   default: {
     mkdir: vi.fn().mockResolvedValue(undefined),
@@ -55,7 +52,6 @@ const mockExportDataset = vi.mocked(exportDataset)
 const mockInput = vi.mocked(input)
 const mockSelect = vi.mocked(select)
 const mockGetCliConfig = vi.mocked(getCliConfig)
-const mockGetGlobalCliClient = vi.mocked(getGlobalCliClient)
 const mockFs = vi.mocked(fs)
 
 const TEST_CONFIG = {
@@ -100,21 +96,10 @@ const createTestContext = (
 
   const context = {...defaults, ...overrides}
 
-  // Setup CLI config
   const apiConfig: CliConfig['api'] = {projectId: context.projectId}
 
   mockGetCliConfig.mockResolvedValue({api: apiConfig})
 
-  // Setup client mock
-  const mockClient = {
-    config: () => ({projectId: context.projectId}),
-    request: vi.fn().mockResolvedValue({
-      data: context.mediaLibraries,
-    }),
-  }
-  mockGetGlobalCliClient.mockResolvedValue(mockClient as never)
-
-  // Setup fs.stat mock
   if (context.fileExists) {
     mockFs.stat.mockResolvedValue({
       isFile: () => context.isFile,
@@ -136,7 +121,10 @@ const createTestContext = (
 
 describe('#media:export', () => {
   afterEach(() => {
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
     vi.clearAllMocks()
+    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('should show help text correctly', async () => {
@@ -183,6 +171,17 @@ describe('#media:export', () => {
   test('should export with provided destination', async () => {
     createTestContext({selectValue: TEST_CONFIG.MEDIA_LIBRARY_ID})
 
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'test-media-library', organizationId: 'org-1', status: 'active'},
+        {id: 'another-library', organizationId: 'org-1', status: 'active'},
+      ],
+    })
+
     const {stderr, stdout} = await testCommand(MediaExportCommand, [TEST_OUTPUTS.TAR_GZ])
 
     expect(stderr).toBe('')
@@ -204,6 +203,17 @@ describe('#media:export', () => {
   test('should export with media library ID flag', async () => {
     createTestContext()
 
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'test-media-library', organizationId: 'org-1', status: 'active'},
+        {id: 'another-library', organizationId: 'org-1', status: 'active'},
+      ],
+    })
+
     const {stderr, stdout} = await testCommand(MediaExportCommand, [
       TEST_OUTPUTS.TAR_GZ,
       '--media-library-id',
@@ -224,6 +234,17 @@ describe('#media:export', () => {
   test('should prompt for media library when not provided', async () => {
     createTestContext({selectValue: TEST_CONFIG.MEDIA_LIBRARY_ID})
 
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'test-media-library', organizationId: 'org-1', status: 'active'},
+        {id: 'another-library', organizationId: 'org-1', status: 'active'},
+      ],
+    })
+
     await testCommand(MediaExportCommand, [TEST_OUTPUTS.TAR_GZ])
 
     expect(mockSelect).toHaveBeenCalledWith(
@@ -237,6 +258,17 @@ describe('#media:export', () => {
     createTestContext({
       inputValue: TEST_OUTPUTS.TAR_GZ,
       selectValue: TEST_CONFIG.MEDIA_LIBRARY_ID,
+    })
+
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'test-media-library', organizationId: 'org-1', status: 'active'},
+        {id: 'another-library', organizationId: 'org-1', status: 'active'},
+      ],
     })
 
     await testCommand(MediaExportCommand, [])
@@ -254,6 +286,17 @@ describe('#media:export', () => {
       selectValue: TEST_CONFIG.MEDIA_LIBRARY_ID,
     })
 
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'test-media-library', organizationId: 'org-1', status: 'active'},
+        {id: 'another-library', organizationId: 'org-1', status: 'active'},
+      ],
+    })
+
     const {error} = await testCommand(MediaExportCommand, [TEST_OUTPUTS.EXISTING])
 
     expect(error?.message).toContain(ERROR_MESSAGES.ALREADY_EXISTS)
@@ -265,6 +308,17 @@ describe('#media:export', () => {
     createTestContext({
       fileExists: true,
       selectValue: TEST_CONFIG.MEDIA_LIBRARY_ID,
+    })
+
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'test-media-library', organizationId: 'org-1', status: 'active'},
+        {id: 'another-library', organizationId: 'org-1', status: 'active'},
+      ],
     })
 
     const {stderr, stdout} = await testCommand(MediaExportCommand, [
@@ -283,6 +337,17 @@ describe('#media:export', () => {
       selectValue: TEST_CONFIG.MEDIA_LIBRARY_ID,
     })
 
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'test-media-library', organizationId: 'org-1', status: 'active'},
+        {id: 'another-library', organizationId: 'org-1', status: 'active'},
+      ],
+    })
+
     await testCommand(MediaExportCommand, ['some-directory'])
 
     expect(mockExportDataset).toHaveBeenCalledWith(
@@ -294,6 +359,17 @@ describe('#media:export', () => {
 
   test('should export to stdout when destination is -', async () => {
     createTestContext({selectValue: TEST_CONFIG.MEDIA_LIBRARY_ID})
+
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'test-media-library', organizationId: 'org-1', status: 'active'},
+        {id: 'another-library', organizationId: 'org-1', status: 'active'},
+      ],
+    })
 
     await testCommand(MediaExportCommand, [TEST_OUTPUTS.STDOUT])
 
@@ -325,7 +401,18 @@ describe('#media:export', () => {
       setup: {},
     },
   ])('should error when $scenario', async ({additionalCheck, args, errorMessage, setup}) => {
-    createTestContext(setup)
+    const context = createTestContext(setup)
+
+    // Add mockApi for scenarios that have a projectId
+    if (context.projectId) {
+      mockApi({
+        apiVersion: MEDIA_LIBRARY_API_VERSION,
+        query: {projectId: context.projectId},
+        uri: '/media-libraries',
+      }).reply(200, {
+        data: context.mediaLibraries,
+      })
+    }
 
     const {error} = await testCommand(MediaExportCommand, args)
 
@@ -350,6 +437,17 @@ describe('#media:export', () => {
   ])('should pass $description flag correctly', async ({args, expected}) => {
     createTestContext({selectValue: TEST_CONFIG.MEDIA_LIBRARY_ID})
 
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'test-media-library', organizationId: 'org-1', status: 'active'},
+        {id: 'another-library', organizationId: 'org-1', status: 'active'},
+      ],
+    })
+
     await testCommand(MediaExportCommand, [TEST_OUTPUTS.TAR_GZ, ...args])
 
     expect(mockExportDataset).toHaveBeenCalledWith(expect.objectContaining(expected))
@@ -357,6 +455,18 @@ describe('#media:export', () => {
 
   test('should handle export failure', async () => {
     createTestContext({selectValue: TEST_CONFIG.MEDIA_LIBRARY_ID})
+
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'test-media-library', organizationId: 'org-1', status: 'active'},
+        {id: 'another-library', organizationId: 'org-1', status: 'active'},
+      ],
+    })
+
     mockExportDataset.mockRejectedValueOnce(new Error('Export operation failed'))
 
     const {error} = await testCommand(MediaExportCommand, [TEST_OUTPUTS.TAR_GZ])
@@ -368,6 +478,17 @@ describe('#media:export', () => {
 
   test('should create subdirectories if they do not exist', async () => {
     createTestContext({selectValue: TEST_CONFIG.MEDIA_LIBRARY_ID})
+
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'test-media-library', organizationId: 'org-1', status: 'active'},
+        {id: 'another-library', organizationId: 'org-1', status: 'active'},
+      ],
+    })
 
     await testCommand(MediaExportCommand, [TEST_OUTPUTS.SUBDIR])
 
@@ -384,6 +505,17 @@ describe('#media:export', () => {
         {id: 'inactive-library', organizationId: 'org-1', status: 'inactive' as const},
       ],
       selectValue: 'active-library',
+    })
+
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      query: {projectId: TEST_CONFIG.PROJECT_ID},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'active-library', organizationId: 'org-1', status: 'active'},
+        {id: 'inactive-library', organizationId: 'org-1', status: 'inactive'},
+      ],
     })
 
     await testCommand(MediaExportCommand, [TEST_OUTPUTS.TAR_GZ])

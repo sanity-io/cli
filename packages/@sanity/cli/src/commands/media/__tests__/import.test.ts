@@ -41,9 +41,13 @@ vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
   getCliConfig: mocks.getCliConfig,
 }))
 
-vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
-  getProjectCliClient: mocks.getProjectCliClient,
-}))
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
+  return {
+    ...actual,
+    getProjectCliClient: mocks.getProjectCliClient,
+  }
+})
 
 vi.mock('../../../actions/media/importMedia.js', () => ({
   importer: mocks.importer,

@@ -27,9 +27,8 @@ vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
   getCliToken: vi.fn().mockResolvedValue('test-token'),
 }))
 
-vi.mock('../../../../../cli-core/src/services/apiClient.js', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('../../../../../cli-core/src/services/apiClient.js')>()
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
   return {
     ...actual,
     getProjectCliClient: vi.fn(),

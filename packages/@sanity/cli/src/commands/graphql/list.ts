@@ -1,4 +1,4 @@
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 
 import {
@@ -42,7 +42,7 @@ export class List extends SanityCommand<typeof List> {
       return
     }
 
-    const client = await this.getProjectApiClient({
+    const client = await getProjectCliClient({
       apiVersion: GRAPHQL_API_VERSION,
       projectId,
     })

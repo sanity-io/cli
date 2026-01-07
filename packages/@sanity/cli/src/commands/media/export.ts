@@ -3,7 +3,7 @@ import path from 'node:path'
 import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, spinner} from '@sanity/cli-core/ux'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
 import boxen from 'boxen'
@@ -72,7 +72,7 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
       })
     }
 
-    const projectClient = await this.getProjectApiClient({
+    const projectClient = await getProjectCliClient({
       apiVersion: 'v2025-02-19',
       projectId,
       requireUser: true,
