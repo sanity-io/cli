@@ -52,7 +52,6 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
 
     try {
       const result = await devAction({
-        apiClient: this.getGlobalApiClient,
         cliConfig,
         flags,
         isApp,

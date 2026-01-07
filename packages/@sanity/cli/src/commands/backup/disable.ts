@@ -4,7 +4,7 @@ import {chalk, select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
-import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'
+import {setBackup} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
@@ -40,11 +40,6 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
       this.error(NO_PROJECT_ID, {exit: 1})
     }
 
-    const client = await this.getGlobalApiClient({
-      apiVersion: BACKUP_API_VERSION,
-      requireUser: true,
-    })
-
     let datasets: DatasetsResponse
 
     try {
@@ -66,13 +61,7 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
     }
 
     try {
-      await client.request({
-        body: {
-          enabled: false,
-        },
-        method: 'PUT',
-        uri: `/projects/${projectId}/datasets/${dataset}/settings/backups`,
-      })
+      await setBackup({dataset, projectId, status: false})
 
       this.log(`${chalk.green(`Disabled daily backups for dataset ${dataset}.\n`)}`)
       this.log(

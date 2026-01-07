@@ -3,6 +3,7 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test} from 'vitest'
 
+import {PROJECTS_API_VERSION} from '../../../services/projects.js'
 import {List} from '../list.js'
 
 describe('#list', () => {
@@ -20,7 +21,7 @@ describe('#list', () => {
 
   test('displays projects correctly', async () => {
     mockApi({
-      apiVersion: 'v2025-05-15',
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects',
     }).reply(200, [
       {
@@ -44,7 +45,7 @@ describe('#list', () => {
 
   test('sorts by members when --sort members is specified', async () => {
     mockApi({
-      apiVersion: 'v2025-05-15',
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects',
     }).reply(200, [
       {
@@ -88,7 +89,7 @@ describe('#list', () => {
 
   test('sorts in ascending order when --order asc is specified', async () => {
     mockApi({
-      apiVersion: 'v2025-05-15',
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects',
     }).reply(200, [
       {
@@ -129,7 +130,7 @@ describe('#list', () => {
 
   test('displays an error if the API request fails', async () => {
     mockApi({
-      apiVersion: 'v2025-05-15',
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects',
     }).reply(500, {message: 'Internal Server Error'})
 

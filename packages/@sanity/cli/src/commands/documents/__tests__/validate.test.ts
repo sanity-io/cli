@@ -41,14 +41,18 @@ vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
   getCliConfig: vi.fn(),
 }))
 
-vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
-  getGlobalCliClient: vi.fn().mockResolvedValue({
-    config: vi.fn(() => ({
-      dataset: 'test-dataset',
-      projectId: 'test-project',
-    })),
-  }),
-}))
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
+  return {
+    ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      config: vi.fn(() => ({
+        dataset: 'test-dataset',
+        projectId: 'test-project',
+      })),
+    }),
+  }
+})
 
 vi.mock('../../../actions/documents/validate.js', () => ({
   validateDocuments: mocks.validate,

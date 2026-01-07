@@ -1,7 +1,7 @@
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
-import {HOOK_API_VERSION} from '../../actions/hook/constants.js'
 import {type Hook} from '../../actions/hook/types'
+import {listHooksForProject} from '../../services/hooks.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const listHookDebug = subdebug('hook:list')
@@ -16,11 +16,6 @@ export class List extends SanityCommand<typeof List> {
   ]
 
   public async run() {
-    const client = await this.getGlobalApiClient({
-      apiVersion: HOOK_API_VERSION,
-      requireUser: true,
-    })
-
     // Ensure we have project context
     const projectId = await this.getProjectId()
     if (!projectId) {
@@ -29,7 +24,7 @@ export class List extends SanityCommand<typeof List> {
 
     let hooks: Hook[]
     try {
-      hooks = await client.request<Hook[]>({uri: `/hooks/projects/${projectId}`})
+      hooks = await listHooksForProject(projectId)
     } catch (error) {
       const err = error as Error
 

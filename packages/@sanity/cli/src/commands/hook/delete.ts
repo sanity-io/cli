@@ -2,8 +2,8 @@ import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
-import {HOOK_API_VERSION} from '../../actions/hook/constants.js'
 import {type Hook} from '../../actions/hook/types'
+import {deleteHookForProject, listHooksForProject} from '../../services/hooks.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteHookDebug = subdebug('hook:delete')
@@ -32,26 +32,16 @@ export class Delete extends SanityCommand<typeof Delete> {
   public async run(): Promise<void> {
     const {args} = await this.parse(Delete)
 
-    const client = await this.getGlobalApiClient({
-      apiVersion: HOOK_API_VERSION,
-      requireUser: true,
-    })
-
-    // Ensure we have project context
     const projectId = await this.getProjectId()
     if (!projectId) {
       this.error(NO_PROJECT_ID, {exit: 1})
     }
 
     // Get the hook ID to delete
-    const hookId = await this.promptForHook(args.name, client, projectId)
+    const hookId = await this.promptForHook(args.name, projectId)
 
-    // Delete the hook
     try {
-      await client.request({
-        method: 'DELETE',
-        uri: `/hooks/projects/${projectId}/${hookId}`,
-      })
+      await deleteHookForProject(projectId, hookId)
 
       this.log('Hook deleted')
     } catch (error) {
@@ -63,13 +53,11 @@ export class Delete extends SanityCommand<typeof Delete> {
 
   private async promptForHook(
     specifiedName: string | undefined,
-    client: Awaited<ReturnType<typeof this.getGlobalApiClient>>,
     projectId: string,
   ): Promise<string> {
-    // Fetch all hooks for this project
     let hooks: Hook[]
     try {
-      hooks = await client.request<Hook[]>({uri: `/hooks/projects/${projectId}`})
+      hooks = await listHooksForProject(projectId)
     } catch (error) {
       const err = error as Error
       deleteHookDebug(`Error fetching hooks for project ${projectId}`, err)

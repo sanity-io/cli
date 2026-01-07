@@ -1,11 +1,10 @@
-import {type SanityClient} from '@sanity/client'
-
+import {getProjectById, getProjectInvites} from '../../services/projects.js'
+import {getMembers} from '../../services/user.js'
 import {getPendingInvitations} from './getPendingInvitations.js'
-import {type Invite, type PartialProjectResponse, type User} from './types.js'
+import {type User} from './types.js'
 import {usersDebug} from './usersDebug.js'
 
 interface GetMembersForProjectOptions {
-  client: SanityClient
   projectId: string
 
   /**
@@ -37,26 +36,14 @@ interface MemberList {
  * @returns A list of all members for a project
  */
 export async function getMembersForProject({
-  client,
   includeInvitations,
   includeRobots,
   projectId,
 }: GetMembersForProjectOptions): Promise<MemberList[]> {
   try {
-    const useGlobalApi = true
     const [pendingInvitations, project] = await Promise.all([
-      includeInvitations
-        ? client
-            .request<Invite[]>({uri: `/invitations/project/${projectId}`, useGlobalApi})
-            .then(getPendingInvitations)
-        : [],
-      client.request<PartialProjectResponse>({
-        query: {
-          includeFeatures: 'false',
-        },
-        uri: `/projects/${projectId}`,
-        useGlobalApi,
-      }),
+      includeInvitations ? getProjectInvites(projectId).then(getPendingInvitations) : [],
+      getProjectById(projectId),
     ])
 
     const memberIds = project.members
@@ -64,9 +51,7 @@ export async function getMembersForProject({
       .filter((member) => !member.isRobot || includeRobots)
       .map((member) => member.id)
 
-    const users = await client
-      .request<User | User[]>({uri: `/users/${memberIds.join(',')}`, useGlobalApi})
-      .then((user) => (Array.isArray(user) ? user : [user]))
+    const users = await getMembers(memberIds).then((user) => (Array.isArray(user) ? user : [user]))
 
     const projectMembers = project.members
       .map((member) => {

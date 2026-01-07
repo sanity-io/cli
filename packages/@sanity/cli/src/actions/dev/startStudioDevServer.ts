@@ -4,6 +4,7 @@ import semver from 'semver'
 
 import {startDevServer} from '../../server/devServer.js'
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
+import {getProjectById} from '../../services/projects.js'
 import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
@@ -21,7 +22,7 @@ import {type DevActionOptions} from './types.js'
 export async function startStudioDevServer(
   options: DevActionOptions,
 ): Promise<{close?: () => Promise<void>}> {
-  const {apiClient, cliConfig, flags, output, workDir} = options
+  const {cliConfig, flags, output, workDir} = options
   const projectId = cliConfig?.api?.projectId
   let organizationId: string | undefined
 
@@ -103,16 +104,9 @@ export async function startStudioDevServer(
       output.error('Project Id is required to load in dashboard', {exit: 1})
     }
 
-    const client = await apiClient({
-      apiVersion: '2025-08-25',
-      requireUser: true,
-    })
-
     try {
-      const project = await client.request<{organizationId: string}>({
-        uri: `/projects/${projectId}`,
-      })
-      organizationId = project.organizationId
+      const project = await getProjectById(projectId!)
+      organizationId = project.organizationId!
     } catch (error) {
       devDebug('Error getting organization id from project id', error)
       output.error('Failed to get organization id from project id', {exit: 1})

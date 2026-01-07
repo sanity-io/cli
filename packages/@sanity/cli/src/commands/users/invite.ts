@@ -2,9 +2,9 @@ import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 
-import {USERS_API_VERSION} from '../../actions/users/apiVersion.js'
 import {type Role} from '../../actions/users/types.js'
 import {validateEmail} from '../../actions/users/validateEmail.js'
+import {getProjectRoles, inviteUser} from '../../services/projects.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const QUOTA_ERROR_MESSAGE =
@@ -48,11 +48,6 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
     const {email: selectedEmail} = this.args
     const {role: selectedRole} = this.flags
 
-    const client = await this.getGlobalApiClient({
-      apiVersion: USERS_API_VERSION,
-      requireUser: true,
-    })
-
     const projectId = await this.getProjectId()
 
     if (!projectId) {
@@ -61,9 +56,7 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
 
     let roles: Role[]
     try {
-      roles = (await client.request<Role[]>({uri: `/projects/${projectId}/roles`})).filter(
-        (role) => role.appliesToUsers,
-      )
+      roles = (await getProjectRoles(projectId)).filter((role) => role.appliesToUsers)
     } catch (error) {
       usersInviteDebug('Error fetching roles', error)
       this.error('Error fetching roles', {exit: 1})
@@ -81,13 +74,7 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
     }
 
     try {
-      await client.request({
-        body: {email, role: role.name},
-        maxRedirects: 0,
-        method: 'POST',
-        uri: `/invitations/project/${projectId}`,
-        useGlobalApi: true,
-      })
+      await inviteUser({email, projectId, role: role.name})
 
       this.log(`Invitation sent to ${email}`)
     } catch (error) {

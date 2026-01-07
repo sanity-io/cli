@@ -24,6 +24,8 @@ interface BackupDetailsResponse {
 }
 
 export async function listBackups(options: {
+  after?: string
+  before?: string
   datasetName: string
   limit?: number
   projectId: string
@@ -36,6 +38,14 @@ export async function listBackups(options: {
   const query: Record<string, string> = {}
   if (options.limit) {
     query.limit = options.limit.toString()
+  }
+
+  if (options.after) {
+    query.after = options.after
+  }
+
+  if (options.before) {
+    query.before = options.before
   }
 
   return client.request({
@@ -63,5 +73,26 @@ export async function getBackupDetails(options: {
   return client.request({
     query,
     uri: `/projects/${options.projectId}/datasets/${options.datasetName}/backups/${options.backupId}`,
+  })
+}
+
+interface SetBackupOptions {
+  dataset: string
+  projectId: string
+  status: boolean
+}
+
+export async function setBackup({dataset, projectId, status}: SetBackupOptions) {
+  const client = await getGlobalCliClient({
+    apiVersion: BACKUP_API_VERSION,
+    requireUser: true,
+  })
+
+  return client.request({
+    body: {
+      enabled: status,
+    },
+    method: 'PUT',
+    uri: `/projects/${projectId}/datasets/${dataset}/settings/backups`,
   })
 }

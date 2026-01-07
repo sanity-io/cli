@@ -6,8 +6,8 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {chalk, confirm, logSymbols} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
-import {CORS_API_VERSION} from '../../actions/cors/constants.js'
 import {filterAndValidateOrigin} from '../../actions/cors/filterAndValidateOrigin.js'
+import {createCorsOrigin} from '../../services/cors.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const addCorsDebug = subdebug('cors:add')
@@ -50,11 +50,6 @@ export class Add extends SanityCommand<typeof Add> {
     const {args, flags} = await this.parse(Add)
     const {origin} = args
 
-    const client = await this.getGlobalApiClient({
-      apiVersion: CORS_API_VERSION,
-      requireUser: true,
-    })
-
     // Ensure we have project context
     const projectId = await this.getProjectId()
     if (!projectId) {
@@ -91,14 +86,10 @@ export class Add extends SanityCommand<typeof Add> {
     }
 
     try {
-      const response = await client.request({
-        body: {
-          allowCredentials,
-          origin: filteredOrigin,
-        },
-        maxRedirects: 0,
-        method: 'POST',
-        uri: `/projects/${projectId}/cors`,
+      const response = await createCorsOrigin({
+        allowCredentials,
+        origin: filteredOrigin,
+        projectId,
       })
 
       addCorsDebug(`CORS origin added successfully`, response)

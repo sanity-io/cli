@@ -1,7 +1,7 @@
 import {getSanityUrl, SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
-import {HOOK_API_VERSION} from '../../actions/hook/constants.js'
+import {getProjectById} from '../../services/projects.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const createHookDebug = subdebug('hook:create')
@@ -16,11 +16,6 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
   ]
 
   public async run() {
-    const client = await this.getGlobalApiClient({
-      apiVersion: HOOK_API_VERSION,
-      requireUser: true,
-    })
-
     const projectId = await this.getProjectId()
     if (!projectId) {
       this.error(NO_PROJECT_ID, {exit: 1})
@@ -28,7 +23,7 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
 
     let projectInfo: {organizationId?: string | null}
     try {
-      projectInfo = await client.projects.getById(projectId)
+      projectInfo = await getProjectById(projectId)
     } catch (error) {
       const err = error as Error
       createHookDebug(`Error fetching project info for project ${projectId}`, err)

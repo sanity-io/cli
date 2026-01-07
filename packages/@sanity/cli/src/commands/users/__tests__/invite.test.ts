@@ -5,7 +5,7 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {USERS_API_VERSION} from '../../../actions/users/apiVersion.js'
+import {PROJECTS_API_VERSION} from '../../../services/projects.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {UsersInviteCommand} from '../invite.js'
 
@@ -98,12 +98,12 @@ describe('#invite', () => {
 
   test('invites user with email and role provided via flags', async () => {
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       method: 'post',
       uri: '/invitations/project/test-project',
     }).reply(200, {})
@@ -119,12 +119,12 @@ describe('#invite', () => {
 
   test('invites user with email provided via args and role as flag', async () => {
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       method: 'post',
       uri: '/invitations/project/test-project',
     }).reply(200, {})
@@ -140,7 +140,7 @@ describe('#invite', () => {
 
   test('exits when role is not found', async () => {
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
@@ -176,12 +176,12 @@ describe('#invite', () => {
 
   test('handles 402 quota error', async () => {
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       method: 'post',
       uri: '/invitations/project/test-project',
     }).reply(402, {message: 'Payment required'})
@@ -201,12 +201,12 @@ describe('#invite', () => {
 
   test('handles API errors during invitation', async () => {
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       method: 'post',
       uri: '/invitations/project/test-project',
     }).reply(500, {message: 'Internal server error'})
@@ -224,7 +224,7 @@ describe('#invite', () => {
 
   test('handles API errors when fetching roles', async () => {
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects/test-project/roles',
     }).reply(500, {message: 'Internal server error'})
 
@@ -241,7 +241,7 @@ describe('#invite', () => {
 
   test('exits when trying to assign role that does not apply to users', async () => {
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
@@ -259,12 +259,12 @@ describe('#invite', () => {
 
   test('role names are case insensitive', async () => {
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       method: 'post',
       uri: '/invitations/project/test-project',
     }).reply(200, {})
@@ -282,12 +282,12 @@ describe('#invite', () => {
     vi.mocked(input).mockResolvedValueOnce('prompted@example.com')
 
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       method: 'post',
       uri: '/invitations/project/test-project',
     }).reply(200, {})
@@ -306,12 +306,12 @@ describe('#invite', () => {
     vi.mocked(select).mockResolvedValueOnce('administrator')
 
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       method: 'post',
       uri: '/invitations/project/test-project',
     }).reply(200, {})
@@ -343,12 +343,12 @@ describe('#invite', () => {
     vi.mocked(select).mockResolvedValueOnce('viewer')
 
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: '/projects/test-project/roles',
     }).reply(200, mockRoles)
 
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       method: 'post',
       uri: '/invitations/project/test-project',
     }).reply(200, {})
