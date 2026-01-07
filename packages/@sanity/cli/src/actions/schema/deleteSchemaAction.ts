@@ -1,15 +1,15 @@
+import {type Output} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 
 import {deleteSchema} from '../../services/schemas.js'
 import {isDefined} from '../manifest/schemaTypeHelpers.js'
-import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
+import {type SchemaStoreActionResult} from './schemaStoreTypes.js'
 import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {createManifestReader} from './utils/manifestReader.js'
 import {getDatasetsOutString, getStringList} from './utils/schemaStoreOutStrings.js'
 import {
   filterLogReadProjectIdMismatch,
-  parseDeleteSchemasConfig,
-  type SchemaStoreCommonFlags,
+  type WorkspaceSchemaId,
 } from './utils/schemaStoreValidation.js'
 
 // Native implementation instead of lodash/uniq
@@ -17,9 +17,16 @@ function uniq<T>(array: T[]): T[] {
   return [...new Set(array)]
 }
 
-export interface DeleteSchemaFlags extends SchemaStoreCommonFlags {
+interface DeleteSchemasOptions {
+  extractManifest: boolean
+  ids: WorkspaceSchemaId[]
+  manifestDir: string
+  output: Output
+  projectId: string
+  verbose: boolean
+  workDir: string
+
   dataset?: string
-  ids?: string
 }
 
 interface DeleteResult {
@@ -48,19 +55,23 @@ class DeleteIdError extends Error {
  * In this case the command uses and existing file or throws when missing.
  */
 export async function deleteSchemaAction(
-  flags: DeleteSchemaFlags,
-  context: SchemaStoreContext,
+  options: DeleteSchemasOptions,
 ): Promise<SchemaStoreActionResult> {
-  const {dataset, extractManifest, ids, manifestDir, verbose} = parseDeleteSchemasConfig(flags)
-  const {jsonReader, manifestExtractor, output, projectId = '', workDir} = context
+  const {dataset, extractManifest, ids, manifestDir, output, projectId, verbose, workDir} = options
 
-  // prettier-ignore
-  if (!(await ensureManifestExtractSatisfied({extractManifest, manifestDir, manifestExtractor,  output, schemaRequired: true,}))) {
+  if (
+    !(await ensureManifestExtractSatisfied({
+      extractManifest,
+      manifestDir,
+      output,
+      schemaRequired: true,
+      workDir,
+    }))
+  ) {
     return 'failure'
   }
 
   const manifest = await createManifestReader({
-    jsonReader,
     manifestDir,
     output,
     workDir,
@@ -104,7 +115,7 @@ export async function deleteSchemaAction(
       .map((result) => {
         const error = result.reason
         if (error instanceof DeleteIdError) {
-          output.error(
+          output.warn(
             chalk.red(
               [
                 `Failed to delete schema "${error.id}" in dataset "${error.dataset}":`,
@@ -112,7 +123,7 @@ export async function deleteSchemaAction(
               ].join('\n'),
             ),
           )
-          if (verbose) output.error(error)
+          if (verbose) output.warn(error)
           return error.id
         }
         //hubris inc: given the try-catch wrapping the full promise "this should never happen"

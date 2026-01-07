@@ -4,22 +4,30 @@ import {chalk} from '@sanity/cli-core/ux'
 import {extractManifestSafe} from '../../manifest/extractManifest.js'
 import {FlagValidationError} from './schemaStoreValidation.js'
 
-export type ManifestExtractor = (manifestDir: string) => Promise<void>
-
 export async function ensureManifestExtractSatisfied(args: {
   extractManifest: boolean
   manifestDir: string
-  manifestExtractor: ManifestExtractor
+  manifestSafe?: boolean
   output: Output
-  schemaRequired: boolean
+  schemaRequired?: boolean
+  workDir: string
 }) {
-  const {extractManifest, manifestDir, manifestExtractor, output, schemaRequired} = args
+  const {extractManifest, manifestDir, manifestSafe, output, schemaRequired, workDir} = args
   if (!extractManifest) {
     return true
   }
   try {
     // a successful manifest extract will write a new manifest file, which manifestReader will then read from disk
-    await manifestExtractor(manifestDir)
+    const error = await extractManifestSafe({
+      flags: {json: false, path: manifestDir},
+      output,
+      workDir,
+    })
+
+    if (!manifestSafe && error) {
+      throw error
+    }
+
     return true
   } catch (err) {
     if (schemaRequired || err instanceof FlagValidationError) {
@@ -27,23 +35,6 @@ export async function ensureManifestExtractSatisfied(args: {
     } else {
       output.log(chalk.gray(`↳ Failed to extract manifest:\n  ${err.message}`))
       return false
-    }
-  }
-}
-
-export function createManifestExtractor(context: {
-  output: Output
-  safe?: boolean
-  workDir: string
-}) {
-  return async (manifestDir: string) => {
-    const error = await extractManifestSafe({
-      flags: {json: false, path: manifestDir},
-      output: context.output,
-      workDir: context.workDir,
-    })
-    if (!context.safe && error) {
-      throw error
     }
   }
 }

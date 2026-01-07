@@ -1,24 +1,12 @@
+import {CLIError} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
 
 import {uniqBy} from '../../../util/uniqBy.js'
 import {isDefined} from '../../manifest/schemaTypeHelpers.js'
 import {SANITY_WORKSPACE_SCHEMA_ID_PREFIX} from '../../manifest/types.js'
-import {type DeleteSchemaFlags} from '../deleteSchemaAction.js'
 
-// TODO: These types will be imported from their respective files when migrated
-export interface DeploySchemasFlags extends SchemaStoreCommonFlags {
-  'schema-required'?: boolean
-  tag?: string
-  workspace?: string
-}
-
-export interface SchemaListFlags extends SchemaStoreCommonFlags {
-  id?: string
-  json?: boolean
-}
-
-export const validForIdChars = 'a-zA-Z0-9._-'
-export const validForIdPattern = new RegExp(`^[${validForIdChars}]+$`)
+const validForIdChars = 'a-zA-Z0-9._-'
+const validForIdPattern = new RegExp(`^[${validForIdChars}]+$`)
 
 //no periods allowed in workspaceName or tag in ids
 export const validForNamesChars = 'a-zA-Z0-9_-'
@@ -39,105 +27,51 @@ export class FlagValidationError extends Error {
   }
 }
 
-interface WorkspaceSchemaId {
+export interface WorkspaceSchemaId {
   schemaId: string
   workspace: string
 }
 
-export interface SchemaStoreCommonFlags {
-  'manifest-dir': string
-
-  'extract-manifest'?: boolean
-  'no-extract-manifest'?: boolean
-  verbose?: boolean
-}
-
-function parseCommonFlags(flags: SchemaStoreCommonFlags) {
-  const verbose = !!flags.verbose
-  // extract manifest by default: our CLI layer handles both --extract-manifest (true) and --no-extract-manifest (false)
-  const extractManifest = flags['extract-manifest'] ?? true
-
-  return {
-    extractManifest,
-    manifestDir: flags['manifest-dir'],
-    verbose,
-  }
-}
-
-export function parseDeploySchemasConfig(flags: DeploySchemasFlags) {
-  const errors: string[] = []
-
-  const commonFlags = parseCommonFlags(flags)
-  const workspaceName = parseWorkspace(flags, errors)
-  const tag = parseTag(flags, errors)
-  const schemaRequired = !!flags['schema-required']
-
-  assertNoErrors(errors)
-  return {...commonFlags, schemaRequired, tag, workspaceName}
-}
-
-export function parseListSchemasConfig(flags: SchemaListFlags) {
-  const errors: string[] = []
-
-  const commonFlags = parseCommonFlags(flags)
-  const id = parseId(flags, errors)
-  const json = !!flags.json
-
-  assertNoErrors(errors)
-  return {...commonFlags, id, json}
-}
-
-export function parseDeleteSchemasConfig(flags: DeleteSchemaFlags) {
-  const errors: string[] = []
-
-  const commonFlags = parseCommonFlags(flags)
-  const ids = parseIds(flags, errors)
-  const dataset = parseDataset(flags, errors)
-
-  assertNoErrors(errors)
-  return {...commonFlags, dataset, ids}
-}
-
-function assertNoErrors(errors: string[]) {
-  if (errors.length > 0) {
-    throw new FlagValidationError(
-      `Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`,
-    )
-  }
-}
-
-export function parseIds(flags: {ids?: unknown}, errors: string[]): WorkspaceSchemaId[] {
-  const parsedIds = parseNonEmptyString(flags, 'ids', errors)
-  if (errors.length > 0) {
-    return []
+export function parseIds(ids?: string): WorkspaceSchemaId[] {
+  if (!ids) {
+    throw new CLIError('ids argument is empty')
   }
 
-  const ids = parsedIds
+  const errors: string[] = []
+
+  const parsedIds = ids
     .split(',')
     .map((id) => id.trim())
     .filter((id) => !!id)
-    .map((id) => parseWorkspaceSchemaId(id, errors))
+    .map((id) => parseWorkspaceSchemaId(errors, id))
     .filter((item) => isDefined(item))
 
-  const uniqueIds = uniqBy(ids, 'schemaId' satisfies keyof (typeof ids)[number])
-  if (uniqueIds.length < ids.length) {
-    errors.push(`ids contains duplicates`)
+  if (errors.length > 0) {
+    throw new CLIError(`Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`)
   }
-  if (errors.length === 0 && uniqueIds.length === 0) {
-    errors.push(`ids contains no valid id strings`)
+
+  if (parsedIds.length === 0) {
+    throw new CLIError(`ids contains no valid id strings`)
   }
+
+  const uniqueIds = uniqBy(parsedIds, 'schemaId' satisfies keyof (typeof parsedIds)[number])
+  if (uniqueIds.length < parsedIds.length) {
+    throw new CLIError(`ids contains duplicates`)
+  }
+
   return uniqueIds
 }
 
-export function parseId(flags: {id?: unknown}, errors: string[]) {
-  const id = flags.id === undefined ? undefined : parseNonEmptyString(flags, 'id', errors)
-  if (id) {
-    return parseWorkspaceSchemaId(id, errors)?.schemaId
+export function parseWorkspaceSchemaId(errors: string[], id?: string) {
+  if (id === undefined) {
+    return
   }
-  return
-}
 
-export function parseWorkspaceSchemaId(id: string, errors: string[]) {
+  if (!id) {
+    errors.push('id argument is empty')
+    return
+  }
+
   const trimmedId = id.trim()
 
   if (!validForIdPattern.test(trimmedId)) {
@@ -172,56 +106,38 @@ export function parseWorkspaceSchemaId(id: string, errors: string[]) {
   }
 }
 
-function parseDataset(flags: {dataset?: unknown}, errors: string[]) {
-  return flags.dataset === undefined ? undefined : parseNonEmptyString(flags, 'dataset', errors)
-}
-
-function parseWorkspace(flags: {workspace?: unknown}, errors: string[]) {
-  return flags.workspace === undefined ? undefined : parseNonEmptyString(flags, 'workspace', errors)
-}
-
-export function parseTag(flags: {tag?: unknown}, errors: string[]) {
-  if (flags.tag === undefined) {
-    return
+/**
+ *
+ * @param tag - The tag to parse
+ * Throws an error if the tag is empty
+ * Throws an error if the tag contains a period
+ * Throws an error if the tag starts with a dash
+ * Returns the parsed tag
+ */
+export async function parseTag(tag?: string) {
+  if (tag === undefined) {
+    return tag
   }
 
-  const tag = parseNonEmptyString(flags, 'tag', errors)
-  if (errors.length > 0) {
-    return
+  if (!tag) {
+    throw new CLIError('tag argument is empty')
   }
 
   if (tag.includes('.')) {
-    errors.push(`tag cannot contain . (period), but was: "${tag}"`)
-    return
+    throw new CLIError(`tag cannot contain . (period), but was: "${tag}"`)
   }
 
   if (!validForNamesPattern.test(tag)) {
-    errors.push(`tag can only contain characters in [${validForNamesChars}], but was: "${tag}"`)
-    return
+    throw new CLIError(
+      `tag can only contain characters in [${validForNamesChars}], but was: "${tag}"`,
+    )
   }
 
   if (tag.startsWith('-')) {
-    errors.push(`tag cannot start with - (dash) but was: "${tag}"`)
-    return
+    throw new CLIError(`tag cannot start with - (dash) but was: "${tag}"`)
   }
 
   return tag
-}
-
-function parseNonEmptyString<
-  Flag extends string,
-  Flags extends Partial<Record<Flag, unknown | undefined>>,
->(flags: Flags, flagName: Flag, errors: string[]): string {
-  const flag = flags[flagName]
-  if (!isString(flag) || !flag) {
-    errors.push(`${flagName} argument is empty`)
-    return ''
-  }
-  return flag
-}
-
-function isString(flag: unknown): flag is string {
-  return typeof flag === 'string'
 }
 
 function getProjectIdMismatchMessage(
@@ -229,18 +145,6 @@ function getProjectIdMismatchMessage(
   operation: 'read' | 'write',
 ) {
   return `No permissions to ${operation} schema for workspace "${workspace.name}" with projectId "${workspace.projectId}"`
-}
-
-/**
- * At the moment schema store commands does not support studios where workspaces have multiple projects
- */
-export function throwWriteProjectIdMismatch(
-  workspace: {name: string; projectId: string},
-  projectId: string,
-): void {
-  if (workspace.projectId !== projectId) {
-    throw new Error(getProjectIdMismatchMessage(workspace, 'write'))
-  }
 }
 
 export function filterLogReadProjectIdMismatch(

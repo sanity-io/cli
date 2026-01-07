@@ -1,4 +1,4 @@
-import {Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 
 import {type ListSchemaCommand} from '../../commands/schema/list.js'
@@ -9,12 +9,23 @@ import {
   type ManifestWorkspaceFile,
   type StoredWorkspaceSchema,
 } from '../manifest/types.js'
-import {type SchemaStoreActionResult, type SchemaStoreContext} from './schemaStoreTypes.js'
+import {type SchemaStoreActionResult} from './schemaStoreTypes.js'
+import {schemasListDebug} from './utils/debug.js'
 import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
 import {createManifestReader} from './utils/manifestReader.js'
 import {getDatasetsOutString} from './utils/schemaStoreOutStrings.js'
-import {parseListSchemasConfig, SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
+import {SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
 import {uniqByProjectIdDataset} from './utils/uniqByProjectIdDataset.js'
+
+interface ListSchemasOptions {
+  extractManifest: boolean
+  json: boolean
+  manifestDir: string
+  output: Output
+  workDir: string
+
+  id?: string
+}
 
 class DatasetError extends Error {
   public dataset: string
@@ -27,36 +38,31 @@ class DatasetError extends Error {
   }
 }
 
-export async function listSchemas(
-  flags: ListSchemaCommand['flags'],
-  context: SchemaStoreContext,
-): Promise<SchemaStoreActionResult> {
-  const {extractManifest, id, json, manifestDir} = parseListSchemasConfig(flags)
-  const {jsonReader, manifestExtractor, output, workDir} = context
+export async function listSchemas(options: ListSchemasOptions): Promise<SchemaStoreActionResult> {
+  const {extractManifest, id, json, manifestDir, output, workDir} = options
 
   if (
     !(await ensureManifestExtractSatisfied({
       extractManifest,
       manifestDir,
-      manifestExtractor,
       output,
       schemaRequired: true,
+      workDir,
     }))
   ) {
     return 'failure'
   }
 
   const manifest = await createManifestReader({
-    jsonReader,
     manifestDir,
     output,
     workDir,
   }).getManifest()
   const projectDatasets = uniqByProjectIdDataset(manifest.workspaces)
-  const schemas = (await getDatasetSchemas(
-    projectDatasets,
-    id,
-  )) as unknown as StoredWorkspaceSchema[]
+  const schemas = (await getDatasetSchemas(projectDatasets, id)) as unknown as (
+    | PromiseFulfilledResult<StoredWorkspaceSchema>
+    | PromiseRejectedResult
+  )[]
   const parsedSchemas = parseSchemas(schemas, output) as unknown as StoredWorkspaceSchema[]
 
   if (parsedSchemas.length === 0) {
@@ -68,6 +74,7 @@ export async function listSchemas(
         : `No schemas found in ${datasetString}`,
     )
 
+    schemasListDebug('Error finding schema')
     return 'failure'
   }
 
@@ -95,7 +102,10 @@ async function getDatasetSchemas(
   )
 }
 
-function parseSchemas(schemas: StoredWorkspaceSchema[], output: Output) {
+function parseSchemas(
+  schemas: (PromiseFulfilledResult<StoredWorkspaceSchema> | PromiseRejectedResult)[],
+  output: Output,
+) {
   return schemas
     .map((schema) => {
       if (schema.status === 'fulfilled') return schema.value
@@ -126,7 +136,6 @@ function parseSchemas(schemas: StoredWorkspaceSchema[], output: Output) {
         //hubris inc: given the try-catch wrapping all the full promise "this should never happen"
         throw error
       }
-      return []
     })
     .filter((schema) => isDefined(schema))
     .flat()
