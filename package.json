@@ -39,7 +39,7 @@
     "watch:cli": "turbo run watch --filter=@sanity/cli --filter=@sanity/cli-core"
   },
   "resolutions": {
-    "@sanity/client": "^7.0.0"
+    "@sanity/client": "^7.14.0"
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",

@@ -14,9 +14,9 @@ catalog:
   '@eslint/compat': ^2.0.0
 
   # Sanity
-  sanity: ^5.1.0
-  '@sanity/vision': ^5.1.0
-  '@sanity/client': ^7.11.2
+  sanity: ^5.2.0
+  '@sanity/vision': ^5.2.0
+  '@sanity/client': ^7.14.0
 
   # Build & Development Tools
   typescript: ^5.9.3
