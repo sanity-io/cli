@@ -3,7 +3,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
-import {GRAPHQL_API_VERSION} from '../../services/graphql.js'
+import {deleteGraphQLAPI} from '../../services/graphql.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const undeployGraphqlDebug = subdebug('graphql:undeploy')
@@ -142,17 +142,11 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
       }
     }
 
-    // Delete the GraphQL API
     try {
-      const client = await this.getProjectApiClient({
-        apiVersion: GRAPHQL_API_VERSION,
+      await deleteGraphQLAPI({
+        dataset,
         projectId,
-        requireUser: true,
-      })
-
-      await client.request({
-        method: 'DELETE',
-        uri: `/apis/graphql/${dataset}/${tag}`,
+        tag,
       })
 
       this.log('GraphQL API deleted')

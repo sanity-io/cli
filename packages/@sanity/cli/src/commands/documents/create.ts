@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {type MultipleMutationResult, type Mutation} from '@sanity/client'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
@@ -75,6 +75,8 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     }),
   }
 
+  private client!: Awaited<ReturnType<typeof getProjectCliClient>>
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(CreateDocumentCommand)
     const {file} = args
@@ -95,7 +97,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
 
     const targetDataset = dataset || cliConfig.api?.dataset
 
-    const client = await this.getProjectApiClient({
+    this.client = await getProjectCliClient({
       apiVersion: DOCUMENTS_API_VERSION,
       dataset: targetDataset,
       projectId,
@@ -119,7 +121,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
       try {
         const contentPath = path.resolve(process.cwd(), file)
         const content = json5.parse(await fs.readFile(contentPath, 'utf8'))
-        const result = await this.writeDocuments(content, operation, client)
+        const result = await this.writeDocuments(content, operation)
         this.log(this.getResultMessage(result, operation))
         return
       } catch (error) {
@@ -136,7 +138,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
       // Add UUID prefix to prevent predictable file names and potential conflicts
       const tmpFile = path.join(os.tmpdir(), 'sanity-cli', `${randomUUID()}-${docId}.${ext}`)
       const stringify = useJson5 ? json5.stringify : JSON.stringify
-      const defaultValue = (id && (await client.getDocument(id))) || {
+      const defaultValue = (id && (await this.client.getDocument(id))) || {
         _id: docId,
         _type: 'specify-me',
       }
@@ -155,11 +157,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
       })
 
       const editor = getEditor()
-      const readAndPerformCreatesFromFile = this.readAndPerformCreatesFromFile.bind(
-        this,
-        operation,
-        client,
-      )
+      const readAndPerformCreatesFromFile = this.readAndPerformCreatesFromFile.bind(this, operation)
 
       if (watch) {
         // If we're in watch mode, we want to run the creation on each change (if it validates)
@@ -245,7 +243,6 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
    */
   private async readAndPerformCreatesFromFile(
     operation: MutationOperationName,
-    client: Awaited<ReturnType<typeof this.getProjectApiClient>>,
     filePath: string,
     defaultValue: unknown,
   ): Promise<void> {
@@ -266,7 +263,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     }
 
     try {
-      const writeResult = await this.writeDocuments(content, operation, client)
+      const writeResult = await this.writeDocuments(content, operation)
       this.log(this.getResultMessage(writeResult, operation))
     } catch (err) {
       const error = err as Error
@@ -360,7 +357,6 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
   private async writeDocuments(
     documents: {_id?: string; _type: string} | {_id?: string; _type: string}[],
     operation: MutationOperationName,
-    client: Awaited<ReturnType<typeof this.getProjectApiClient>>,
   ): Promise<MultipleMutationResult> {
     const docs = Array.isArray(documents) ? documents : [documents]
     if (docs.length === 0) {
@@ -392,6 +388,6 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
       throw new Error(`Unsupported operation ${operation}`)
     })
 
-    return client.transaction(mutations).commit()
+    return this.client.transaction(mutations).commit()
   }
 }

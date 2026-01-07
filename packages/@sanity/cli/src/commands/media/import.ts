@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {getProjectCliClient, SanityCommand} from '@sanity/cli-core'
 import {chalk, spinner} from '@sanity/cli-core/ux'
 import {SanityClient} from '@sanity/client'
 import boxen from 'boxen'
@@ -97,7 +97,7 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
       this.error(`Media library with id "${mediaLibraryId}" not found`, {exit: 1})
     }
 
-    const projectClient = await this.getProjectApiClient({
+    const projectClient = await getProjectCliClient({
       apiVersion: 'v2025-02-19',
       dataset,
       perspective: 'drafts',

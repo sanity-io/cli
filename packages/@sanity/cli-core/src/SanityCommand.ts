@@ -36,6 +36,8 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    *
    * @param args - The project API client options.
    * @returns The project API client.
+   *
+   * @deprecated use `getProjectCliClient` function directly instead.
    */
   protected getProjectApiClient = (args: ProjectCliClientOptions) => getProjectCliClient(args)
 
