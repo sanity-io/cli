@@ -1,4 +1,5 @@
 import {runCommand} from '@oclif/test'
+import {getProjectCliClient} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -17,6 +18,16 @@ const defaultMocks = {
   },
   token: 'test-token',
 }
+
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
+  return {
+    ...actual,
+    getProjectCliClient: vi.fn(),
+  }
+})
+
+const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
 describe('#documents:query', () => {
   afterEach(() => {
@@ -81,14 +92,10 @@ describe('#documents:query', () => {
     ]
 
     const mockFetch = vi.fn().mockResolvedValue(mockResults)
+    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
 
     const {stdout} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]'], {
-      mocks: {
-        ...defaultMocks,
-        projectApiClient: {
-          fetch: mockFetch,
-        },
-      },
+      mocks: defaultMocks,
     })
 
     expect(stdout).toContain('"_id": "movie1"')
@@ -100,6 +107,7 @@ describe('#documents:query', () => {
     const mockResults = [{_id: 'test', title: 'Test Movie'}]
 
     const mockFetch = vi.fn().mockResolvedValue(mockResults)
+    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
 
     const originalChalkLevel = chalk.level
     // Force colorization
@@ -109,12 +117,7 @@ describe('#documents:query', () => {
       capture: {
         stripAnsi: false,
       },
-      mocks: {
-        ...defaultMocks,
-        projectApiClient: {
-          fetch: mockFetch,
-        },
-      },
+      mocks: defaultMocks,
     })
 
     // Reset chalk level
@@ -132,17 +135,13 @@ describe('#documents:query', () => {
     const overrideDataset = 'staging'
 
     const mockFetch = vi.fn().mockResolvedValue(mockResults)
+    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
 
     const {stdout} = await testCommand(
       QueryDocumentCommand,
       ['*[_type == "movie"]', '--dataset', overrideDataset],
       {
-        mocks: {
-          ...defaultMocks,
-          projectApiClient: {
-            fetch: mockFetch,
-          },
-        },
+        mocks: defaultMocks,
       },
     )
 
@@ -154,17 +153,13 @@ describe('#documents:query', () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
 
     const mockFetch = vi.fn().mockResolvedValue(mockResults)
+    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
 
     const {stdout} = await testCommand(
       QueryDocumentCommand,
       ['*[_type == "movie"]', '--project', 'other-project'],
       {
-        mocks: {
-          ...defaultMocks,
-          projectApiClient: {
-            fetch: mockFetch,
-          },
-        },
+        mocks: defaultMocks,
       },
     )
 
@@ -176,17 +171,13 @@ describe('#documents:query', () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
 
     const mockFetch = vi.fn().mockResolvedValue(mockResults)
+    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
 
     const {stdout} = await testCommand(
       QueryDocumentCommand,
       ['*[_type == "movie"]', '--anonymous'],
       {
-        mocks: {
-          ...defaultMocks,
-          projectApiClient: {
-            fetch: mockFetch,
-          },
-        },
+        mocks: defaultMocks,
       },
     )
 
@@ -199,17 +190,13 @@ describe('#documents:query', () => {
     const customApiVersion = 'v2021-06-07'
 
     const mockFetch = vi.fn().mockResolvedValue(mockResults)
+    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
 
     const {stdout} = await testCommand(
       QueryDocumentCommand,
       ['*[_type == "movie"]', '--api-version', customApiVersion],
       {
-        mocks: {
-          ...defaultMocks,
-          projectApiClient: {
-            fetch: mockFetch,
-          },
-        },
+        mocks: defaultMocks,
       },
     )
 
@@ -221,14 +208,10 @@ describe('#documents:query', () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
 
     const mockFetch = vi.fn().mockResolvedValue(mockResults)
+    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
 
     const {stderr, stdout} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]'], {
-      mocks: {
-        ...defaultMocks,
-        projectApiClient: {
-          fetch: mockFetch,
-        },
-      },
+      mocks: defaultMocks,
     })
 
     expect(stderr).toContain('--api-version not specified, using `2025-08-15`')
@@ -263,14 +246,10 @@ describe('#documents:query', () => {
 
   test('fails when query returns null/undefined', async () => {
     const mockFetch = vi.fn().mockResolvedValue(null)
+    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
 
     const {error} = await testCommand(QueryDocumentCommand, ['*[_type == "nonexistent"]'], {
-      mocks: {
-        ...defaultMocks,
-        projectApiClient: {
-          fetch: mockFetch,
-        },
-      },
+      mocks: defaultMocks,
     })
 
     expect(error).toBeInstanceOf(Error)
@@ -282,14 +261,10 @@ describe('#documents:query', () => {
     const queryError = new Error('Invalid query syntax')
 
     const mockFetch = vi.fn().mockRejectedValue(queryError)
+    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
 
     const {error} = await testCommand(QueryDocumentCommand, ['invalid query'], {
-      mocks: {
-        ...defaultMocks,
-        projectApiClient: {
-          fetch: mockFetch,
-        },
-      },
+      mocks: defaultMocks,
     })
 
     expect(error).toBeInstanceOf(Error)
@@ -306,14 +281,10 @@ describe('#documents:query', () => {
     vi.stubEnv('SANITY_CLI_QUERY_API_VERSION', envApiVersion)
 
     const mockFetch = vi.fn().mockResolvedValue(mockResults)
+    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
 
     const {stdout} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]'], {
-      mocks: {
-        ...defaultMocks,
-        projectApiClient: {
-          fetch: mockFetch,
-        },
-      },
+      mocks: defaultMocks,
     })
 
     expect(stdout).toContain('"_id": "test"')

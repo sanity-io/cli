@@ -1,4 +1,5 @@
 import {runCommand} from '@oclif/test'
+import {getProjectCliClient} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -18,6 +19,16 @@ const defaultMocks = {
   },
   token: 'test-token',
 }
+
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
+  return {
+    ...actual,
+    getProjectCliClient: vi.fn(),
+  }
+})
+
+const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
 describe('#documents:get', () => {
   afterEach(() => {
@@ -42,13 +53,10 @@ describe('#documents:get', () => {
 
     const mockGetDocument = vi.fn().mockResolvedValue(mockDoc)
 
+    mockGetProjectCliClient.mockResolvedValue({getDocument: mockGetDocument} as never)
+
     const {stdout} = await testCommand(GetDocumentCommand, ['test-doc'], {
-      mocks: {
-        ...defaultMocks,
-        projectApiClient: {
-          getDocument: mockGetDocument,
-        },
-      },
+      mocks: defaultMocks,
     })
 
     expect(stdout).toContain('"_id": "test-doc"')
@@ -65,6 +73,8 @@ describe('#documents:get', () => {
 
     const mockGetDocument = vi.fn().mockResolvedValue(mockDoc)
 
+    mockGetProjectCliClient.mockResolvedValue({getDocument: mockGetDocument} as never)
+
     const originalChalkLevel = chalk.level
     // Force colorization
     chalk.level = 3
@@ -73,12 +83,7 @@ describe('#documents:get', () => {
       capture: {
         stripAnsi: false,
       },
-      mocks: {
-        ...defaultMocks,
-        projectApiClient: {
-          getDocument: mockGetDocument,
-        },
-      },
+      mocks: defaultMocks,
     })
 
     // Reset chalk level
@@ -105,13 +110,10 @@ describe('#documents:get', () => {
 
     const mockGetDocument = vi.fn().mockResolvedValue(mockDoc)
 
+    mockGetProjectCliClient.mockResolvedValue({getDocument: mockGetDocument} as never)
+
     const {stdout} = await testCommand(GetDocumentCommand, ['test-doc', '--dataset', 'staging'], {
-      mocks: {
-        ...defaultMocks,
-        projectApiClient: {
-          getDocument: mockGetDocument,
-        },
-      },
+      mocks: defaultMocks,
     })
 
     expect(stdout).toContain('"_id": "test-doc"')
@@ -122,13 +124,10 @@ describe('#documents:get', () => {
   test('throws error when document is not found', async () => {
     const mockGetDocument = vi.fn().mockResolvedValue(null)
 
+    mockGetProjectCliClient.mockResolvedValue({getDocument: mockGetDocument} as never)
+
     const {error} = await testCommand(GetDocumentCommand, ['nonexistent-doc'], {
-      mocks: {
-        ...defaultMocks,
-        projectApiClient: {
-          getDocument: mockGetDocument,
-        },
-      },
+      mocks: defaultMocks,
     })
 
     expect(error).toBeInstanceOf(Error)
@@ -166,13 +165,10 @@ describe('#documents:get', () => {
   test('handles client errors gracefully', async () => {
     const mockGetDocument = vi.fn().mockRejectedValue(new Error('Network error'))
 
+    mockGetProjectCliClient.mockResolvedValue({getDocument: mockGetDocument} as never)
+
     const {error} = await testCommand(GetDocumentCommand, ['test-doc'], {
-      mocks: {
-        ...defaultMocks,
-        projectApiClient: {
-          getDocument: mockGetDocument,
-        },
-      },
+      mocks: defaultMocks,
     })
 
     expect(error).toBeInstanceOf(Error)

@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 
 import {runCommand} from '@oclif/test'
-import {type CliConfig} from '@sanity/cli-core'
+import {type CliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {exportDataset, type ExportResult} from '@sanity/export'
@@ -30,10 +30,19 @@ vi.mock('node:fs/promises', () => ({
   },
 }))
 
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
+  return {
+    ...actual,
+    getProjectCliClient: vi.fn(),
+  }
+})
+
 const mockExportDataset = vi.mocked(exportDataset)
 const mockInput = vi.mocked(input)
 const mockSelect = vi.mocked(select)
 const mockFs = vi.mocked(fs)
+const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
 const TEST_CONFIG = {
   DATASET: 'production',
@@ -62,14 +71,6 @@ const defaultMocks = {
   },
   token: 'test-token',
 }
-
-const createMockClient = (
-  datasets: Array<{name: string}> = [{name: 'production'}, {name: 'staging'}],
-) => ({
-  datasets: {
-    list: vi.fn().mockResolvedValue(datasets),
-  },
-})
 
 interface TestContextOptions {
   dataset?: string | null
@@ -114,11 +115,16 @@ const createTestContext = (overrides: TestContextOptions = {}) => {
   const apiConfig: CliConfig['api'] = {projectId: context.projectId}
   if (context.dataset) apiConfig.dataset = context.dataset
 
+  mockGetProjectCliClient.mockResolvedValue({
+    datasets: {
+      list: vi.fn().mockResolvedValue(context.datasets),
+    },
+  } as never)
+
   return {
     mocks: {
       ...defaultMocks,
       cliConfig: {api: apiConfig},
-      projectApiClient: createMockClient(context.datasets) as never,
     },
   }
 }
@@ -463,15 +469,14 @@ describe('#dataset:export', () => {
     test('handles dataset listing errors gracefully', async () => {
       const listError = new Error('Network error: Unable to connect to API')
 
-      const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.TAR_GZ], {
-        mocks: {
-          ...defaultMocks,
-          projectApiClient: {
-            datasets: {
-              list: vi.fn().mockRejectedValue(listError),
-            },
-          } as never,
+      mockGetProjectCliClient.mockResolvedValue({
+        datasets: {
+          list: vi.fn().mockRejectedValue(listError),
         },
+      } as never)
+
+      const {error} = await testCommand(DatasetExportCommand, ['production', TEST_OUTPUTS.TAR_GZ], {
+        mocks: defaultMocks,
       })
 
       expect(error?.message).toContain('Failed to list datasets:')

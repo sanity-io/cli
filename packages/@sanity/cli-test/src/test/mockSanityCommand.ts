@@ -2,7 +2,6 @@ import {type Command} from '@oclif/core'
 import {
   type CliConfig,
   type GlobalCliClientOptions,
-  type ProjectCliClientOptions,
   type ProjectRootResult,
   SanityCommand,
 } from '@sanity/cli-core'
@@ -25,12 +24,6 @@ export interface MockSanityCommandOptions {
    * Mock whether the terminal is interactive (used by isUnattended)
    */
   isInteractive?: boolean
-  /**
-   * Mock project API client (returned by getProjectApiClient)
-   */
-  projectApiClient?:
-    | ((opts: ProjectCliClientOptions) => MockClient | Promise<MockClient>)
-    | MockClient
   /**
    * Mock project root result (required if command uses getProjectRoot)
    */
@@ -93,20 +86,6 @@ export function mockSanityCommand<T extends typeof SanityCommand<typeof Command>
       // Pass token if provided (bypasses getCliToken)
       const argsWithToken = options.token ? {...args, token: options.token} : args
       return super.getGlobalApiClient(argsWithToken)
-    }
-
-    protected getProjectApiClient(args: ProjectCliClientOptions) {
-      if (options.projectApiClient) {
-        const result =
-          typeof options.projectApiClient === 'function'
-            ? options.projectApiClient(args)
-            : options.projectApiClient
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return Promise.resolve(result) as any
-      }
-      // Pass token if provided (bypasses getCliToken)
-      const argsWithToken = options.token ? {...args, token: options.token} : args
-      return super.getProjectApiClient(argsWithToken)
     }
 
     protected getProjectRoot(): Promise<ProjectRootResult> {
