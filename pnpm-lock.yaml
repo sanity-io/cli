@@ -82,7 +82,7 @@ catalogs:
       specifier: ^3.2.4
       version: 3.2.4
     zod:
-      specifier: ^3.24.2
+      specifier: ^3.25.76
       version: 3.25.76
 
 overrides:
