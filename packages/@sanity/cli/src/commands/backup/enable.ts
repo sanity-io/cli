@@ -4,9 +4,9 @@ import {chalk} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
-import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'
 import {NEW_DATASET_VALUE, promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
+import {setBackup} from '../../services/backup.js'
 import {createDataset, listDatasets} from '../../services/datasets.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
@@ -41,11 +41,6 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
     if (!projectId) {
       this.error(NO_PROJECT_ID, {exit: 1})
     }
-
-    const client = await this.getGlobalApiClient({
-      apiVersion: BACKUP_API_VERSION,
-      requireUser: true,
-    })
 
     let datasets: DatasetsResponse
 
@@ -88,13 +83,7 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
     }
 
     try {
-      await client.request({
-        body: {
-          enabled: true,
-        },
-        method: 'PUT',
-        uri: `/projects/${projectId}/datasets/${dataset}/settings/backups`,
-      })
+      await setBackup({dataset, projectId, status: true})
 
       this.log(
         `${chalk.green(

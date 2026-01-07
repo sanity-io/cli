@@ -3,11 +3,10 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {CORS_API_VERSION} from '../../../actions/cors/constants.js'
+import {CORS_API_VERSION} from '../../../services/cors.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {List} from '../list.js'
 
-// Mock the config functions with relative paths
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn().mockResolvedValue({
     directory: '/test/path',

@@ -6,7 +6,7 @@ import {Table} from 'console-table-printer'
 import {isAfter, isValid, lightFormat, parse} from 'date-fns'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
-import {BACKUP_API_VERSION} from '../../actions/backup/constants.js'
+import {listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
@@ -18,15 +18,6 @@ type ListBackupRequestQueryParams = {
   after?: string
   before?: string
   limit: string
-}
-
-type ListBackupResponse = {
-  backups: ListBackupResponseItem[]
-}
-
-type ListBackupResponseItem = {
-  createdAt: string
-  id: string
 }
 
 export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
@@ -80,11 +71,6 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     if (!projectId) {
       this.error(NO_PROJECT_ID, {exit: 1})
     }
-
-    const client = await this.getGlobalApiClient({
-      apiVersion: BACKUP_API_VERSION,
-      requireUser: true,
-    })
 
     let datasets: DatasetsResponse
 
@@ -140,9 +126,12 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     }
 
     try {
-      const response = await client.request<ListBackupResponse>({
-        query,
-        uri: `/projects/${projectId}/datasets/${dataset}/backups`,
+      const response = await listBackups({
+        after: flags.after,
+        before: flags.before,
+        datasetName: dataset,
+        limit: flags.limit,
+        projectId,
       })
 
       if (response.backups.length === 0) {

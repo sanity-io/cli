@@ -3,9 +3,9 @@ import {createServer} from 'node:http'
 import {join} from 'node:path'
 
 import {runCommand} from '@oclif/test'
+import {getProjectCliClient} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
-import {mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 import {testExample} from '~test/helpers/testExample.js'
 
@@ -37,6 +37,14 @@ vi.mock('../../../../cli-core/src/util/isInteractive.js', () => ({
   isInteractive: vi.fn().mockReturnValue(true),
 }))
 
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
+  return {
+    ...actual,
+    getProjectCliClient: vi.fn(),
+  }
+})
+
 vi.mock('../../util/packageManager/upgradePackages.js')
 vi.mock('../../util/packageManager/packageManagerChoice.js')
 
@@ -45,6 +53,7 @@ const mockCompareDependencyVersions = vi.mocked(compareDependencyVersions)
 const mockConfirm = vi.mocked(confirm)
 const mockUpgradePackages = vi.mocked(upgradePackages)
 const mockGetPackageManagerChoice = vi.mocked(getPackageManagerChoice)
+const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
 type Result = {
   close?: () => Promise<void>
@@ -52,10 +61,6 @@ type Result = {
 
 describe('#dev', () => {
   afterEach(() => {
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-
     vi.clearAllMocks()
   })
 
@@ -234,10 +239,11 @@ describe('#dev', () => {
 
       await writeFile(configPath, modifiedConfig)
 
-      mockApi({
-        apiVersion: 'v2025-08-25',
-        uri: `/projects/${projectId}`,
-      }).reply(200, {organizationId: 'test-org'})
+      mockGetProjectCliClient.mockResolvedValue({
+        projects: {
+          getById: vi.fn().mockResolvedValue({organizationId: 'test-org'}),
+        },
+      } as never)
 
       const {error, result, stderr, stdout} = await testCommand(
         DevCommand,
@@ -288,10 +294,11 @@ describe('#dev', () => {
       )
       await writeFile(configPath, modifiedConfig)
 
-      mockApi({
-        apiVersion: 'v2025-08-25',
-        uri: `/projects/${projectId}`,
-      }).reply(404, {error: 'Project not found'})
+      mockGetProjectCliClient.mockResolvedValue({
+        projects: {
+          getById: vi.fn().mockRejectedValue(new Error('Project not found')),
+        },
+      } as never)
 
       const {error} = await testCommand(DevCommand, ['--load-in-dashboard', '--port', '5344'], {
         config: {root: cwd},

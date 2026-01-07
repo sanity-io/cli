@@ -1,12 +1,3 @@
-interface Member {
-  createdAt: string
-  id: string
-  isCurrentUser: boolean
-  isRobot: boolean
-  role: string
-  updatedAt: string | null
-}
-
 export interface Invite {
   acceptedByUserId: string | null
   createdAt: string
@@ -30,10 +21,6 @@ export interface User {
 
   provider: string
   updatedAt: string | null
-}
-
-export interface PartialProjectResponse {
-  members: Member[]
 }
 
 export interface Role {

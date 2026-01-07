@@ -3,7 +3,6 @@ import {SanityCommand} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 import {size, sortBy} from 'lodash-es'
 
-import {USERS_API_VERSION} from '../../actions/users/apiVersion.js'
 import {getMembersForProject} from '../../actions/users/getMembersForProject.js'
 
 export class List extends SanityCommand<typeof List> {
@@ -50,11 +49,6 @@ export class List extends SanityCommand<typeof List> {
   public async run(): Promise<void> {
     const {invitations, order, robots, sort} = this.flags
 
-    const client = await this.getGlobalApiClient({
-      apiVersion: USERS_API_VERSION,
-      requireUser: true,
-    })
-
     const projectId = await this.getProjectId()
 
     if (!projectId) {
@@ -62,7 +56,6 @@ export class List extends SanityCommand<typeof List> {
     }
 
     const members = await getMembersForProject({
-      client,
       includeInvitations: invitations,
       includeRobots: robots,
       projectId,

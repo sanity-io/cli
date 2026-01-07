@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import {Flags} from '@oclif/core'
-import {Output, SanityCommand} from '@sanity/cli-core'
+import {getGlobalCliClient, Output, SanityCommand} from '@sanity/cli-core'
 import {chalk, confirm, logSymbols} from '@sanity/cli-core/ux'
 import {type ClientConfig} from '@sanity/client'
 
@@ -90,7 +90,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     const {flags} = await this.parse(ValidateDocumentsCommand)
     const unattendedMode = Boolean(flags.yes)
 
-    const apiClient = await this.getGlobalApiClient({
+    const apiClient = await getGlobalCliClient({
       apiVersion: DOCUMENTS_API_VERSION,
       requireUser: true,
     })

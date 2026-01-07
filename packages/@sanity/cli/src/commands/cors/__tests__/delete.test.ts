@@ -3,12 +3,10 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {CORS_API_VERSION} from '../../../actions/cors/constants.js'
-import {type CorsOrigin} from '../../../actions/cors/types.js'
+import {CORS_API_VERSION, type CorsOrigin} from '../../../services/cors.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Delete} from '../delete.js'
 
-// Test fixtures
 const createCorsOrigin = (
   overrides: Partial<CorsOrigin> & {id: number; origin: string},
 ): CorsOrigin => ({
@@ -32,7 +30,6 @@ const TEST_ORIGINS = {
   SPECIAL_CHARS: createCorsOrigin({id: 1, origin: 'https://café.example.com'}),
 } as const
 
-// Mock the config functions with relative paths
 vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
   findProjectRoot: vi.fn().mockResolvedValue({
     directory: '/test/path',

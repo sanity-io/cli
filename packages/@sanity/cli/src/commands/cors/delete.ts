@@ -2,8 +2,7 @@ import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
-import {CORS_API_VERSION} from '../../actions/cors/constants.js'
-import {type CorsOrigin} from '../../actions/cors/types.js'
+import {type CorsOrigin, deleteCorsOrigin, listCorsOrigins} from '../../services/cors.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteCorsDebug = subdebug('cors:delete')
@@ -32,11 +31,6 @@ export class Delete extends SanityCommand<typeof Delete> {
   public async run(): Promise<void> {
     const {args} = await this.parse(Delete)
 
-    const client = await this.getGlobalApiClient({
-      apiVersion: CORS_API_VERSION,
-      requireUser: true,
-    })
-
     // Ensure we have project context
     const projectId = await this.getProjectId()
     if (!projectId) {
@@ -44,14 +38,10 @@ export class Delete extends SanityCommand<typeof Delete> {
     }
 
     // Get the origin ID to delete
-    const originId = await this.promptForOrigin(args.origin, client, projectId)
+    const originId = await this.promptForOrigin(args.origin, projectId)
 
-    // Delete the origin
     try {
-      await client.request({
-        method: 'DELETE',
-        uri: `/projects/${projectId}/cors/${originId}`,
-      })
+      await deleteCorsOrigin({originId, projectId})
 
       this.log('Origin deleted')
     } catch (error) {
@@ -63,13 +53,11 @@ export class Delete extends SanityCommand<typeof Delete> {
 
   private async promptForOrigin(
     specifiedOrigin: string | undefined,
-    client: Awaited<ReturnType<typeof this.getGlobalApiClient>>,
     projectId: string,
   ): Promise<number> {
-    // Fetch all CORS origins
     let origins: CorsOrigin[]
     try {
-      origins = await client.request<CorsOrigin[]>({uri: `/projects/${projectId}/cors`})
+      origins = await listCorsOrigins(projectId)
     } catch (error) {
       const err = error as Error
       deleteCorsDebug(`Error fetching CORS origins for project ${projectId}`, err)

@@ -6,7 +6,7 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {CORS_API_VERSION} from '../../../actions/cors/constants.js'
+import {CORS_API_VERSION} from '../../../services/cors.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Add} from '../add.js'
 

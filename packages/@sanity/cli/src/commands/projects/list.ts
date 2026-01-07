@@ -3,9 +3,10 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 import {size, sortBy} from 'lodash-es'
 
+import {listProjects} from '../../services/projects.js'
+
 const sortFields = ['id', 'members', 'name', 'url', 'created']
 
-const LIST_PROJECTS_API_VERSION = 'v2025-05-15'
 const projectsDebug = subdebug('projects')
 
 export class List extends SanityCommand<typeof List> {
@@ -35,13 +36,8 @@ export class List extends SanityCommand<typeof List> {
   public async run() {
     const {order, sort} = this.flags
 
-    const client = await this.getGlobalApiClient({
-      apiVersion: LIST_PROJECTS_API_VERSION,
-      requireUser: true,
-    })
-
     try {
-      const projects = await client.projects.list()
+      const projects = await listProjects()
       const ordered = sortBy(
         projects.map(({createdAt, displayName, id, members = []}) => {
           const manage = `https://www.sanity.io/manage/project/${id}`

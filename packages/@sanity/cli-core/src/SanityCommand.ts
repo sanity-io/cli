@@ -28,6 +28,8 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    *
    * @param args - The global API client options.
    * @returns The global API client.
+   *
+   * @deprecated use `getGlobalCliClient` function directly instead.
    */
   protected getGlobalApiClient = (args: GlobalCliClientOptions) => getGlobalCliClient(args)
 

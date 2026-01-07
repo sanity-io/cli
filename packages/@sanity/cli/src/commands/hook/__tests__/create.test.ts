@@ -1,10 +1,8 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
-import {mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {HOOK_API_VERSION} from '../../../actions/hook/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {CreateHookCommand} from '../create.js'
 
@@ -32,12 +30,19 @@ vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
   }
 })
 
+const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
+
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
+  return {
+    ...actual,
+    getProjectCliClient: vi.fn(),
+  }
+})
+
 describe('#hook:create', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('--help works', async () => {
@@ -64,13 +69,14 @@ describe('#hook:create', () => {
   test('opens webhook creation URL for project with organization', async () => {
     const open = await import('open')
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/projects/test-project',
-    }).reply(200, {
-      id: 'test-project',
-      organizationId: 'test-org',
-    })
+    mockGetProjectCliClient.mockResolvedValueOnce({
+      projects: {
+        getById: vi.fn().mockResolvedValue({
+          id: 'test-project',
+          organizationId: 'test-org',
+        }),
+      },
+    } as never)
 
     const {stdout} = await testCommand(CreateHookCommand)
 
@@ -85,12 +91,13 @@ describe('#hook:create', () => {
   test('opens webhook creation URL for project without organization (personal)', async () => {
     const open = await import('open')
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/projects/test-project',
-    }).reply(200, {
-      id: 'test-project',
-    })
+    mockGetProjectCliClient.mockResolvedValueOnce({
+      projects: {
+        getById: vi.fn().mockResolvedValue({
+          id: 'test-project',
+        }),
+      },
+    } as never)
 
     const {stdout} = await testCommand(CreateHookCommand)
 
@@ -103,10 +110,7 @@ describe('#hook:create', () => {
   })
 
   test('displays an error if the project fetch fails', async () => {
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/projects/test-project',
-    }).reply(500, {message: 'Internal Server Error'})
+    mockGetProjectCliClient.mockRejectedValueOnce(new Error('Internal Server Error'))
 
     const {error} = await testCommand(CreateHookCommand)
 
@@ -131,13 +135,14 @@ describe('#hook:create', () => {
     const open = await import('open')
     vi.mocked(open.default).mockRejectedValueOnce(new Error('Failed to open browser'))
 
-    mockApi({
-      apiVersion: HOOK_API_VERSION,
-      uri: '/projects/test-project',
-    }).reply(200, {
-      id: 'test-project',
-      organizationId: 'test-org',
-    })
+    mockGetProjectCliClient.mockResolvedValueOnce({
+      projects: {
+        getById: vi.fn().mockResolvedValue({
+          id: 'test-project',
+          organizationId: 'test-org',
+        }),
+      },
+    } as never)
 
     const {error} = await testCommand(CreateHookCommand)
 

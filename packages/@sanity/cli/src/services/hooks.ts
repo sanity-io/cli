@@ -62,3 +62,21 @@ export async function getHookAttempt({
     uri: `/hooks/projects/${projectId}/attempts/${attemptId}`,
   })
 }
+
+export async function listHooksForProject(projectId: string): Promise<Hook[]> {
+  const client = await getGlobalCliClient({
+    apiVersion: HOOK_API_VERSION,
+    requireUser: true,
+  })
+
+  return client.request<Hook[]>({uri: `/hooks/projects/${projectId}`})
+}
+
+export async function deleteHookForProject(projectId: string, hookId: string): Promise<void> {
+  const client = await getGlobalCliClient({
+    apiVersion: HOOK_API_VERSION,
+    requireUser: true,
+  })
+
+  return client.request({method: 'DELETE', uri: `/hooks/projects/${projectId}/${hookId}`})
+}

@@ -1,7 +1,6 @@
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
-import {CORS_API_VERSION} from '../../actions/cors/constants.js'
-import {type CorsOrigin} from '../../actions/cors/types.js'
+import {type CorsOrigin, listCorsOrigins} from '../../services/cors.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const listCorsDebug = subdebug('cors:list')
@@ -16,15 +15,8 @@ export class List extends SanityCommand<typeof List> {
   ]
 
   public async run(): Promise<void> {
-    // Parse to ensure no invalid flags are passed
     await this.parse(List)
 
-    const client = await this.getGlobalApiClient({
-      apiVersion: CORS_API_VERSION,
-      requireUser: true,
-    })
-
-    // Ensure we have project context
     const projectId = await this.getProjectId()
     if (!projectId) {
       this.error(NO_PROJECT_ID, {exit: 1})
@@ -32,7 +24,7 @@ export class List extends SanityCommand<typeof List> {
 
     let origins: CorsOrigin[]
     try {
-      origins = await client.request<CorsOrigin[]>({uri: `/projects/${projectId}/cors`})
+      origins = await listCorsOrigins(projectId)
     } catch (error) {
       const err = error as Error
 
