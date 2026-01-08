@@ -1,4 +1,4 @@
-import {type ProjectTemplate} from '../initProject'
+import {type ProjectTemplate} from '../types.js'
 
 const blogTemplate: ProjectTemplate = {}
 

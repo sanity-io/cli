@@ -1,4 +1,4 @@
-import {type ProjectTemplate} from '../initProject'
+import {type ProjectTemplate} from '../types.js'
 
 const configTemplate = `
 import {defineConfig} from 'sanity'
@@ -26,10 +26,10 @@ export default defineConfig({
 
 const movieTemplate: ProjectTemplate = {
   configTemplate,
-  importPrompt: 'Add a sampling of sci-fi movies to your dataset on the hosted backend?',
   datasetUrl: 'https://public.sanity.io/moviesdb-2018-03-06.tar.gz',
   dependencies: {
     'react-icons': '^3.11.0',
   },
+  importPrompt: 'Add a sampling of sci-fi movies to your dataset on the hosted backend?',
 }
 export default movieTemplate

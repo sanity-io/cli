@@ -1,26 +1,42 @@
 // @Todo will remove by time migration of this command is complete
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import {existsSync} from 'node:fs'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+
 import {Args, Command, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {type FlagInput} from '@oclif/core/interfaces'
 import {getCliToken, SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
 import {chalk, confirm, input, logSymbols, select, Separator, spinner} from '@sanity/cli-core/ux'
 import {type DatasetAclMode, isHttpError} from '@sanity/client'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
+import {deburr} from 'lodash-es'
 
 import {getProviderName} from '../actions/auth/getProviderName.js'
 import {login} from '../actions/auth/login/login.js'
 import {createDataset} from '../actions/dataset/create.js'
+import {checkNextJsReactCompatibility} from '../actions/init/checkNextJsReactCompatibility.js'
+import {countNestedFolders} from '../actions/init/countNestedFolders.js'
 import {determineAppTemplate} from '../actions/init/determineAppTemplate.js'
+import {createOrAppendEnvVars} from '../actions/init/env/createOrAppendEnvVars.js'
 import {
   checkIsRemoteTemplate,
   getGitHubRepoInfo,
   type RepoInfo,
 } from '../actions/init/remoteTemplate.js'
+import {setupMCP} from '../actions/init/setupMCP.js'
+import {
+  sanityCliTemplate,
+  sanityConfigTemplate,
+  sanityFolder,
+  sanityStudioTemplate,
+} from '../actions/init/templates/nextjs/index.js'
+import {VersionedFramework} from '../actions/init/types.js'
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'
+import {promptForStudioPath} from '../prompts/init/nextjs.js'
 import {promptForDatasetName} from '../prompts/promptForDatasetName.js'
 import {createDataset as createDatasetService, listDatasets} from '../services/datasets.js'
 import {getProjectFeatures} from '../services/getProjectFeatures.js'
@@ -33,6 +49,8 @@ import {
 import {getPlanId, getPlanIdFromCoupon} from '../services/plans.js'
 import {createProject, listProjects} from '../services/projects.js'
 import {getCliUser} from '../services/user.js'
+import {absolutify, validateEmptyPath} from '../util/fsUtils.js'
+import {getProjectDefaults} from '../util/getProjectDefaults.js'
 
 const debug = subdebug('init')
 
@@ -123,8 +141,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Enable AI editor integration (MCP) setup',
     }),
     'nextjs-add-config-files': Flags.boolean({
-      allowNo: true,
-      default: true,
+      default: undefined,
       description: 'Add config files to Next.js project',
       helpGroup: 'Next.js',
     }),
@@ -158,7 +175,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       helpValue: '<path>',
     }),
     'overwrite-files': Flags.boolean({
-      default: false,
+      default: undefined,
       description: 'Overwrite existing files',
     }),
     'package-manager': Flags.string({
@@ -191,6 +208,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Project template to use [default: "clean"]',
       exclusive: ['bare'],
       helpValue: '<template>',
+      options: ['blog', 'clean'],
     }),
     // Porting over a beta flag
     // Oclif doesn't seem to support something in beta so hiding for now
@@ -215,10 +233,12 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description:
         'Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults',
     }),
-  } satisfies FlagInput
+  }
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(InitCommand)
+    const workDir = (await this.getProjectRoot()).directory
+
     const createProjectName = this.flags['create-project']
     // For backwards "compatibility" - we used to allow `sanity init plugin`,
     // and no longer do - but instead of printing an error about an unknown
@@ -261,7 +281,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       showDefaultConfigPrompt = false
     }
 
-    const detectedFramework: Framework | null = await detectFrameworkRecord({
+    const detectedFramework = await detectFrameworkRecord({
       frameworkList: frameworks as readonly Framework[],
       fs: new LocalFileSystemDetector(process.cwd()),
     })
@@ -312,7 +332,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     if (detectedFramework && detectedFramework.slug === 'nextjs') {
       envFilenameDefault = '.env.local'
     }
-    const _envFilename = typeof flags.env === 'string' ? flags.env : envFilenameDefault
+    const envFilename = typeof flags.env === 'string' ? flags.env : envFilenameDefault
 
     // If the user isn't already autenticated, make it so
     const {user} = await this.ensureAuthenticated()
@@ -328,7 +348,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     const _newProjectId =
       createProjectName && (await this.createProjectFromName({createProjectName, planId, user}))
 
-    const {datasetName, projectId} = await this.getProjectDetails({
+    const {datasetName, displayName, projectId} = await this.getProjectDetails({
       isAppTemplate,
       planId,
       showDefaultConfigPrompt,
@@ -345,6 +365,54 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         `\nYou can find your project on Sanity Manage — https://www.sanity.io/manage/project/${projectId}\n`,
       )
       return
+    }
+
+    const initNext = this.flags['nextjs-add-config-files']
+
+    // @todo
+    // trace.log({
+    //   step: 'useDetectedFramework',
+    //   selectedOption: initNext ? 'yes' : 'no',
+    //   detectedFramework: detectedFramework?.name,
+    // })
+
+    const sluggedName = deburr(displayName.toLowerCase())
+      .replaceAll(/\s+/g, '-')
+      .replaceAll(/[^a-z0-9-]/g, '')
+
+    // add more frameworks to this as we add support for them
+    // this is used to skip the getProjectInfo prompt
+    const initFramework = initNext
+
+    // Gather project defaults based on environment
+    const _defaults = await getProjectDefaults({isPlugin: false, workDir})
+
+    // Prompt the user for required information
+    const outputPath = await this.getProjectOutputPath({
+      initFramework,
+      sluggedName,
+      workDir,
+    })
+
+    if (isNextJs) {
+      await checkNextJsReactCompatibility({
+        detectedFramework,
+        output: this.output,
+        outputPath,
+      })
+    }
+
+    if (initNext) {
+      // @todo
+      // trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
+      await this.initNextJs({
+        datasetName,
+        detectedFramework,
+        envFilename,
+        outputPath,
+        projectId,
+        workDir,
+      })
     }
   }
 
@@ -778,6 +846,232 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
   }
 
+  private async getProjectOutputPath({
+    initFramework,
+    sluggedName,
+    workDir,
+  }: {
+    initFramework: boolean
+    sluggedName: string
+    workDir: string
+  }): Promise<string> {
+    const outputPath = this.flags['output-path']
+    const specifiedPath = outputPath && path.resolve(outputPath)
+
+    if (this.isUnattended() || specifiedPath || this.flags.env || initFramework) {
+      return specifiedPath || workDir
+    }
+
+    const inputPath = await input({
+      default: path.join(workDir, sluggedName),
+      message: 'Project output path:',
+      validate: validateEmptyPath,
+    })
+
+    return absolutify(inputPath)
+  }
+
+  private async initNextJs({
+    datasetName,
+    detectedFramework,
+    envFilename,
+    outputPath,
+    projectId,
+    workDir,
+  }: {
+    datasetName: string
+    detectedFramework: VersionedFramework | null
+    envFilename: string
+    outputPath: string
+    projectId: string
+    workDir: string
+  }) {
+    const useTypeScript = this.flags.typescript
+    // @todo
+    // trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
+
+    const fileExtension = useTypeScript ? 'ts' : 'js'
+    const embeddedStudio = this.flags['nextjs-embed-studio']
+    let hasSrcFolder = false
+
+    if (embeddedStudio) {
+      // find source path (app or src/app)
+      const appDir = 'app'
+      let srcPath = path.join(workDir, appDir)
+
+      if (!existsSync(srcPath)) {
+        srcPath = path.join(workDir, 'src', appDir)
+        hasSrcFolder = true
+        if (!existsSync(srcPath)) {
+          try {
+            await fs.mkdir(srcPath, {recursive: true})
+          } catch {
+            debug('Error creating folder %s', srcPath)
+          }
+        }
+      }
+
+      const studioPath = this.isUnattended() ? '/studio' : await promptForStudioPath()
+
+      const embeddedStudioRouteFilePath = path.join(
+        srcPath,
+        `${studioPath}/`,
+        `[[...tool]]/page.${fileExtension}x`,
+      )
+
+      // this selects the correct template string based on whether the user is using the app or pages directory and
+      // replaces the ":configPath:" placeholder in the template with the correct path to the sanity.config.ts file.
+      // we account for the user-defined embeddedStudioPath (default /studio) is accounted for by creating enough "../"
+      // relative paths to reach the root level of the project
+      await this.writeOrOverwrite(
+        embeddedStudioRouteFilePath,
+        sanityStudioTemplate.replace(
+          ':configPath:',
+          `${'../'.repeat(countNestedFolders(embeddedStudioRouteFilePath.slice(workDir.length)))}sanity.config`,
+        ),
+        workDir,
+      )
+
+      const sanityConfigPath = path.join(workDir, `sanity.config.${fileExtension}`)
+      await this.writeOrOverwrite(
+        sanityConfigPath,
+        sanityConfigTemplate(hasSrcFolder)
+          .replace(':route:', embeddedStudioRouteFilePath.slice(workDir.length).replace('src/', ''))
+          .replace(':basePath:', studioPath),
+        workDir,
+      )
+    }
+
+    const sanityCliPath = path.join(workDir, `sanity.cli.${fileExtension}`)
+    await this.writeOrOverwrite(sanityCliPath, sanityCliTemplate, workDir)
+
+    const templateToUse = this.flags.template
+
+    await this.writeSourceFiles({
+      fileExtension,
+      files: sanityFolder(useTypeScript, templateToUse as 'blog' | 'clean'),
+      folderPath: undefined,
+      srcFolderPrefix: hasSrcFolder,
+      workDir,
+    })
+
+    const appendEnv = this.flags['nextjs-append-env']
+
+    if (appendEnv) {
+      // we will prepend SANITY_ to these variables later, together with the prefix
+      const envVars = {
+        DATASET: datasetName,
+        PROJECT_ID: projectId,
+      }
+
+      // await createOrAppendEnvVars(envFilename, detectedFramework, {log: true, targetDir: workDir})
+      await createOrAppendEnvVars({
+        envVars,
+        filename: envFilename,
+        framework: detectedFramework,
+        log: true,
+        output: this.output,
+        outputPath: workDir || outputPath,
+      })
+    }
+
+    if (embeddedStudio) {
+      const client = await this.getProjectApiClient({
+        apiVersion: 'v2025-08-14',
+        projectId,
+        requireUser: true,
+      })
+      const nextjsLocalDevOrigin = 'http://localhost:3000'
+      const existingCorsOrigins = await client.request({
+        method: 'GET',
+        uri: '/cors',
+      })
+      const hasExistingCorsOrigin = existingCorsOrigins.some(
+        (item: {origin: string}) => item.origin === nextjsLocalDevOrigin,
+      )
+      if (!hasExistingCorsOrigin) {
+        await client
+          .request({
+            body: {allowCredentials: true, origin: nextjsLocalDevOrigin},
+            maxRedirects: 0,
+            method: 'POST',
+            url: '/cors',
+          })
+          .then((res) => {
+            this.log(
+              res.id
+                ? `Added ${nextjsLocalDevOrigin} to CORS origins`
+                : `Failed to add ${nextjsLocalDevOrigin} to CORS origins`,
+            )
+          })
+          .catch((error) => {
+            this.error(`Failed to add ${nextjsLocalDevOrigin} to CORS origins`, error)
+          })
+      }
+    }
+
+    // Set up MCP integration
+    const mcpResult = await setupMCP({mcp: this.flags.mcp, output: this.output})
+    // @todo
+    // trace.log({
+    //   step: 'mcpSetup',
+    //   detectedEditors: mcpResult.detectedEditors,
+    //   configuredEditors: mcpResult.configuredEditors,
+    //   skipped: mcpResult.skipped,
+    // })
+    // if (mcpResult.error) {
+    //   trace.error(mcpResult.error)
+    // }
+    const _mcpConfigured = mcpResult.configuredEditors
+
+    // const chosen = await this.resolvePackageManager(workDir)
+    // // @todo
+    // // trace.log({step: 'selectPackageManager', selectedOption: chosen})
+    // const packages = ['@sanity/vision@4', 'sanity@4', '@sanity/image-url@1', 'styled-components@6']
+    // if (templateToUse === 'blog') {
+    //   packages.push('@sanity/icons')
+    // }
+    // await installNewPackages(
+    //   {
+    //     packageManager: chosen,
+    //     packages,
+    //   },
+    //   {
+    //     output: context.output,
+    //     workDir,
+    //   },
+    // )
+
+    // // will refactor this later
+    // const execOptions: CommonOptions<'utf8'> = {
+    //   encoding: 'utf8',
+    //   env: getPartialEnvWithNpmPath(workDir),
+    //   cwd: workDir,
+    //   stdio: 'inherit',
+    // }
+
+    // if (chosen === 'npm') {
+    //   await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@11'], execOptions)
+    // } else if (chosen === 'yarn') {
+    //   await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@11'], execOptions)
+    // } else if (chosen === 'pnpm') {
+    //   await execa('pnpm', ['install', 'next-sanity@11'], execOptions)
+    // }
+
+    // print(
+    //   `\n${chalk.green('Success!')} Your Sanity configuration files has been added to this project`,
+    // )
+    // if (mcpConfigured.length > 0) {
+    //   const editorNames = new Intl.ListFormat('en').format(mcpConfigured)
+    //   print(
+    //     `\nSanity MCP server has been configured for ${editorNames}. You might need to restart your editor for this to take effect.`,
+    //   )
+    //   print(`Learn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+    // }
+
+    return
+  }
+
   private async promptForDefaultConfig(): Promise<boolean> {
     return confirm({
       default: true,
@@ -900,6 +1194,36 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     return chosenOrg || undefined
   }
 
+  // Resolves the package manager to use, respecting CLI flags and falling back to detection
+  // private async resolvePackageManager(targetDir: string): Promise<PackageManager> {
+  //   const packageManager = this.flags['package-manager']
+
+  //   // If the user has specified a package manager, and it's allowed use that
+  //   if (packageManager && ALLOWED_PACKAGE_MANAGERS.includes(packageManager)) {
+  //     return packageManager
+  //   }
+
+  //   // Otherwise, try to find the most optimal package manager to use
+  //   const chosen = (
+  //     await getPackageManagerChoice(targetDir, {
+  //       prompt,
+  //       interactive: unattended ? false : isInteractive,
+  //     })
+  //   ).chosen
+
+  //   // only log warning if a package manager flag is passed
+  //   if (packageManager) {
+  //     this.warn(
+  //       chalk.yellow(
+  //         `Given package manager "${packageManager}" is not supported. Supported package managers are ${allowedPackageManagersString}.`,
+  //       ),
+  //     )
+  //     this.log(`Using ${chosen} as package manager`)
+  //   }
+
+  //   return chosen
+  // }
+
   private async verifyCoupon(intendedCoupon: string): Promise<string | undefined> {
     try {
       const planId = await getPlanIdFromCoupon(intendedCoupon)
@@ -969,6 +1293,80 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         this.log('Using default plan.')
       } else {
         this.error(`Plan id "${intendedPlan}" does not exist`, {exit: 1})
+      }
+    }
+  }
+
+  private async writeOrOverwrite(filePath: string, content: string, workDir: string) {
+    if (existsSync(filePath)) {
+      let overwrite = this.flags['overwrite-files']
+      if (overwrite === undefined && !this.isUnattended()) {
+        overwrite = await confirm({
+          default: false,
+          message: `File ${chalk.yellow(
+            filePath.replace(workDir, ''),
+          )} already exists. Do you want to overwrite it?`,
+        })
+      }
+
+      if (!overwrite) {
+        return
+      }
+    }
+
+    // make folder if not exists
+    const folderPath = path.dirname(filePath)
+
+    await fs
+      .mkdir(folderPath, {recursive: true})
+      .catch(() => debug('Error creating folder %s', folderPath))
+
+    await fs.writeFile(filePath, content, {
+      encoding: 'utf8',
+    })
+  }
+
+  // write sanity folder files
+  private async writeSourceFiles({
+    fileExtension,
+    files,
+    folderPath,
+    srcFolderPrefix,
+    workDir,
+  }: {
+    fileExtension: string
+    files: Record<string, Record<string, string> | string>
+    folderPath?: string
+    srcFolderPrefix?: boolean
+    workDir: string
+  }) {
+    for (const [filePath, content] of Object.entries(files)) {
+      // check if file ends with full stop to indicate it's file and not directory (this only works with our template tree structure)
+      if (filePath.includes('.') && typeof content === 'string') {
+        await this.writeOrOverwrite(
+          path.join(
+            workDir,
+            srcFolderPrefix ? 'src' : '',
+            'sanity',
+            folderPath || '',
+            `${filePath}${fileExtension}`,
+          ),
+          content,
+          workDir,
+        )
+      } else {
+        await fs.mkdir(path.join(workDir, srcFolderPrefix ? 'src' : '', 'sanity', filePath), {
+          recursive: true,
+        })
+        if (typeof content === 'object') {
+          await this.writeSourceFiles({
+            fileExtension,
+            files: content,
+            folderPath: filePath,
+            srcFolderPrefix,
+            workDir,
+          })
+        }
       }
     }
   }

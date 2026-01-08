@@ -1,4 +1,4 @@
-import {type ProjectTemplate} from '../initProject'
+import {type ProjectTemplate} from '../types'
 import appTemplate from './appQuickstart'
 import appSanityUiTemplate from './appSanityUi'
 import blog from './blog'
@@ -10,15 +10,15 @@ import shopify from './shopify'
 import shopifyOnline from './shopifyOnline'
 
 const templates: Record<string, ProjectTemplate | undefined> = {
-  blog,
-  clean,
   'app-quickstart': appTemplate,
   'app-sanity-ui': appSanityUiTemplate,
+  blog,
+  clean,
   'get-started': getStartedTemplate,
   moviedb,
+  quickstart, // empty project that dynamically imports its own schema
   shopify,
   'shopify-online-storefront': shopifyOnline,
-  quickstart, // empty project that dynamically imports its own schema
 }
 
 export default templates

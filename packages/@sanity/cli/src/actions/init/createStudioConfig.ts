@@ -1,4 +1,4 @@
-import {processTemplate} from './processTemplate'
+import {processTemplate} from './processTemplate.js'
 
 const defaultTemplate = `
 import {defineConfig} from 'sanity'
@@ -28,16 +28,17 @@ const defaultVariables = {
 }
 
 export interface GenerateConfigOptions {
-  template?: string | ((variables: GenerateConfigOptions['variables']) => string)
   variables: {
-    projectId: string
-    dataset: string
     autoUpdates: boolean
+    dataset: string
+    organizationId?: string
+    projectId: string
     projectName?: string
     sourceName?: string
     sourceTitle?: string
-    organizationId?: string
   }
+
+  template?: ((variables: GenerateConfigOptions['variables']) => string) | string
 }
 
 export function createStudioConfig(options: GenerateConfigOptions): string {
