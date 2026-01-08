@@ -1,4 +1,4 @@
-import {createTestClient, mockApi, mockClient, testCommand} from '@sanity/cli-test'
+import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {INIT_API_VERSION} from '../../../actions/init/constants.js'
@@ -32,19 +32,17 @@ vi.mock('@sanity/cli-core', async () => {
 
   return {
     ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue(
-      mockClient({
-        request: testClient.request,
-        users: {
-          getById: vi.fn().mockResolvedValue({
-            email: 'test@example.com',
-            id: 'user-123',
-            name: 'Test User',
-            provider: 'saml-123',
-          }),
-        } as never,
-      }),
-    ),
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      request: testClient.request,
+      users: {
+        getById: vi.fn().mockResolvedValue({
+          email: 'test@example.com',
+          id: 'user-123',
+          name: 'Test User',
+          provider: 'saml-123',
+        }),
+      } as never,
+    }),
   }
 })
 

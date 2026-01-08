@@ -1,5 +1,5 @@
 import {runCommand} from '@oclif/test'
-import {mockClient, testCommand} from '@sanity/cli-test'
+import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {InitCommand} from '../../init'
@@ -25,13 +25,11 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue(
-      mockClient({
-        users: {
-          getById: mocks.getById,
-        } as never,
-      }),
-    ),
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      users: {
+        getById: mocks.getById,
+      } as never,
+    }),
   }
 })
 

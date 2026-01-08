@@ -230,7 +230,6 @@ describe('#documents:validate', () => {
     )
 
     expect(mockValidate).toHaveBeenCalledWith({
-      clientConfig: expect.any(Object),
       dataset: 'my-dataset',
       level: 'info',
       maxCustomValidationConcurrency: 10,

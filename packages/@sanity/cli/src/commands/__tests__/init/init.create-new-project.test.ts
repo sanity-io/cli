@@ -1,5 +1,5 @@
 import * as cliUX from '@sanity/cli-core/ux'
-import {createTestClient, mockApi, mockClient, testCommand} from '@sanity/cli-test'
+import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -41,24 +41,20 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 
   return {
     ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue(
-      mockClient({
-        datasets: {
-          create: mocks.datasetsCreate,
-        } as never,
-        request: testClient.request,
-        users: {
-          getById: mocks.usersGetById,
-        } as never,
-      }),
-    ),
-    getProjectCliClient: vi.fn().mockResolvedValue(
-      mockClient({
-        datasets: {
-          create: mocks.datasetsCreate,
-        } as never,
-      }),
-    ),
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      datasets: {
+        create: mocks.datasetsCreate,
+      } as never,
+      request: testClient.request,
+      users: {
+        getById: mocks.usersGetById,
+      } as never,
+    }),
+    getProjectCliClient: vi.fn().mockResolvedValue({
+      datasets: {
+        create: mocks.datasetsCreate,
+      } as never,
+    }),
   }
 })
 

@@ -1,25 +1,11 @@
 import {type Command} from '@oclif/core'
-import {
-  type CliConfig,
-  type GlobalCliClientOptions,
-  type ProjectRootResult,
-  SanityCommand,
-} from '@sanity/cli-core'
-import {type SanityClient} from '@sanity/client'
-
-type MockClient = Partial<SanityClient> & Record<string, unknown>
+import {type CliConfig, type ProjectRootResult, SanityCommand} from '@sanity/cli-core'
 
 export interface MockSanityCommandOptions {
   /**
    * Mock CLI config (required if command uses getCliConfig or getProjectId)
    */
   cliConfig?: CliConfig
-  /**
-   * Mock global API client (returned by getGlobalApiClient)
-   */
-  globalApiClient?:
-    | ((opts: GlobalCliClientOptions) => MockClient | Promise<MockClient>)
-    | MockClient
   /**
    * Mock whether the terminal is interactive (used by isUnattended)
    */
@@ -72,20 +58,6 @@ export function mockSanityCommand<T extends typeof SanityCommand<typeof Command>
         return Promise.resolve(options.cliConfig)
       }
       return super.getCliConfig()
-    }
-
-    protected getGlobalApiClient(args: GlobalCliClientOptions) {
-      if (options.globalApiClient) {
-        const result =
-          typeof options.globalApiClient === 'function'
-            ? options.globalApiClient(args)
-            : options.globalApiClient
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        return Promise.resolve(result) as any
-      }
-      // Pass token if provided (bypasses getCliToken)
-      const argsWithToken = options.token ? {...args, token: options.token} : args
-      return super.getGlobalApiClient(argsWithToken)
     }
 
     protected getProjectRoot(): Promise<ProjectRootResult> {

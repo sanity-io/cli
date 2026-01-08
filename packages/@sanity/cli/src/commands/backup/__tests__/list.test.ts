@@ -1,6 +1,6 @@
 import {runCommand} from '@oclif/test'
 import {select} from '@sanity/cli-core/ux'
-import {mockApi, mockClient, testCommand} from '@sanity/cli-test'
+import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -14,13 +14,11 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
-    getProjectCliClient: vi.fn().mockResolvedValue(
-      mockClient({
-        datasets: {
-          list: mockListDatasets,
-        } as never,
-      }),
-    ),
+    getProjectCliClient: vi.fn().mockResolvedValue({
+      datasets: {
+        list: mockListDatasets,
+      } as never,
+    }),
   }
 })
 
