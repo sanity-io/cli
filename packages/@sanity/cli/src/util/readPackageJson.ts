@@ -54,6 +54,6 @@ export async function readPackageJson(
   }
 
   throw new Error(
-    `Invalid package.json at "${filePath}": ${error.errors.map((err) => err.message).join('\n')}`,
+    `Invalid package.json at "${filePath}": ${error.issues.map((err) => err.message).join('\n')}`,
   )
 }
