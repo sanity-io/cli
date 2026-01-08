@@ -72,7 +72,6 @@
     "ora": "^9.0.0",
     "tsx": "catalog:",
     "vite": "catalog:",
-    "vite-node": "^3.0.8",
     "zod": "catalog:"
   },
   "devDependencies": {

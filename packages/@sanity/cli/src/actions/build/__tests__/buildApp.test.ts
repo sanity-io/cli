@@ -102,7 +102,7 @@ describe('buildApp', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should build app successfully with basic options', async () => {

@@ -14,6 +14,11 @@ export default defineConfig({
         '**/*.{test,spec,stories,d}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
         'examples/**',
         'packages/@sanity/cli/test/**',
+        // Vitest 4.0 no longer auto-excludes these directories
+        '**/dist/**',
+        '**/tmp/**',
+        '**/coverage/**',
+        '**/.git/**',
       ],
       include: [
         'packages/@sanity/cli/**/*.{ts,tsx}',
@@ -23,6 +28,8 @@ export default defineConfig({
       provider: 'istanbul',
       reporter: ['html', 'json', 'json-summary'],
     },
+    // Add explicit exclude for test execution
+    exclude: ['**/node_modules/**', '**/dist/**', '**/tmp/**', '**/.git/**'],
     projects: ['packages/@sanity/cli', 'packages/@sanity/cli-core'],
   },
 })

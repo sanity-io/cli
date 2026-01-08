@@ -12,7 +12,32 @@ const mockSpinner = vi.hoisted(() => ({
 }))
 const mockSpinnerFn = vi.hoisted(() => vi.fn(() => mockSpinner))
 
-const mockWorkerConstructor = vi.hoisted(() => vi.fn())
+const {MockWorker, setMockWorkerImplementation} = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockWorkerImplementation: any = null
+  const _mockWorkerConstructor = vi.fn()
+
+  class MockWorker {
+    constructor(...args: unknown[]) {
+      // Track constructor calls
+      _mockWorkerConstructor(...args)
+
+      if (mockWorkerImplementation) {
+        return mockWorkerImplementation(...args)
+      }
+      return {
+        addListener: vi.fn(),
+      }
+    }
+  }
+
+  return {
+    MockWorker,
+    setMockWorkerImplementation: (impl: unknown) => {
+      mockWorkerImplementation = impl
+    },
+  }
+})
 
 const mockWriteFileSync = vi.hoisted(() => vi.fn())
 
@@ -29,7 +54,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
 })
 
 vi.mock('node:worker_threads', () => ({
-  Worker: mockWorkerConstructor,
+  Worker: MockWorker,
 }))
 
 vi.mock('node:fs', () => ({
@@ -57,10 +82,10 @@ describe('#validateAction', () => {
       addListener: vi.fn(),
     }
 
-    mockWorkerConstructor.mockImplementation(() => {
+    setMockWorkerImplementation(() => {
       setImmediate(() => {
         const messageListener = mockWorkerInstance.addListener.mock.calls.find(
-          (call) => call[0] === 'message',
+          (call: unknown[]) => call[0] === 'message',
         )?.[1]
 
         if (messageListener) {

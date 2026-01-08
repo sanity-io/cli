@@ -92,7 +92,7 @@ async function downloadTarStream(url: string, bearerToken?: string): Promise<Rea
     throw new Error(`Failed to download: ${url}`)
   }
 
-  // eslint-disable-next-line n/no-unsupported-features/node-builtins
+  // eslint-disable-next-line n/no-unsupported-features/node-builtins, @typescript-eslint/no-explicit-any
   return Readable.fromWeb(res.body as any)
 }
 
