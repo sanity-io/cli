@@ -51,7 +51,7 @@ export async function extractManifestSafe(
     if (EXTRACT_MANIFEST_LOG_ERRORS) {
       options.output.error(err)
     }
-    throw err
+    return err
   }
 }
 

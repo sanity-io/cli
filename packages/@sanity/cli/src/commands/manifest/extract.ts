@@ -34,14 +34,14 @@ export class ExtractManifestCommand extends SanityCommand<typeof ExtractManifest
     const {flags} = await this.parse(ExtractManifestCommand)
     const workDir = (await this.getProjectRoot()).directory
 
-    try {
-      await extractManifestSafe({
-        flags,
-        output: this.output,
-        workDir,
-      })
-    } catch (error) {
-      this.error(`Failed to extract manifest:\n${error}`, {exit: 1})
+    const error = await extractManifestSafe({
+      flags,
+      output: this.output,
+      workDir,
+    })
+
+    if (error) {
+      this.error(`Failed to extract manifest:\n${error.message}`, {exit: 1})
     }
   }
 }
