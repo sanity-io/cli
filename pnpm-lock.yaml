@@ -675,8 +675,8 @@ importers:
         specifier: workspace:*
         version: link:../cli-core
       '@sanity/client':
-        specifier: ^7.0.0
-        version: 7.13.2(debug@4.4.3)
+        specifier: ^7.14.0
+        version: 7.14.0(debug@4.4.3)
       '@sanity/eslint-config-cli':
         specifier: workspace:*
         version: link:../eslint-config-cli
