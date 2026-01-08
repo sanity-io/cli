@@ -1,9 +1,8 @@
 import {runCommand} from '@oclif/test'
 import {confirm, input, select} from '@sanity/cli-core/ux'
-import {mockApi, testCommand} from '@sanity/cli-test'
+import {mockApi, testCommand,testExample} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-import {testExample} from '@sanity/cli-test'
 
 import {buildApp} from '../../actions/build/buildApp.js'
 import {buildStudio} from '../../actions/build/buildStudio.js'

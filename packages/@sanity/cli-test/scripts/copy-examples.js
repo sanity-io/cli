@@ -3,10 +3,13 @@
  * Copies specified examples from the repo root to the cli-test package.
  * This script runs during the build process to bundle examples with the package.
  */
+
 // eslint-disable-next-line n/no-unsupported-features/node-builtins
-import {cp, mkdir} from 'node:fs/promises'
+import {cp, mkdir, readFile, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
+
+import {parse as parseYaml} from 'yaml'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const packageRoot = resolve(__dirname, '..')
@@ -22,8 +25,61 @@ const EXAMPLES_TO_COPY = [
   'worst-case-studio',
 ]
 
+/**
+ * Parses the pnpm-workspace.yaml file and extracts the catalog section.
+ * @param yamlPath - Path to the pnpm-workspace.yaml file
+ * @returns Map of package names to versions
+ */
+async function parseCatalog(yamlPath) {
+  const content = await readFile(yamlPath, 'utf8')
+  const workspace = parseYaml(content)
+
+  if (!workspace.catalog || typeof workspace.catalog !== 'object') {
+    throw new Error('Could not find catalog section in pnpm-workspace.yaml')
+  }
+
+  const catalog = new Map()
+  for (const [packageName, version] of Object.entries(workspace.catalog)) {
+    catalog.set(packageName, version)
+  }
+
+  return catalog
+}
+
+/**
+ * Transforms package.json content by replacing catalog: references with actual versions.
+ * @param content - The package.json content as a string
+ * @param catalog - Map of package names to versions from the catalog
+ * @returns Transformed package.json content
+ */
+function transformPackageJson(content, catalog) {
+  const pkg = JSON.parse(content)
+
+  function transformDeps(deps) {
+    if (!deps) return
+
+    for (const [name, version] of Object.entries(deps)) {
+      if (version === 'catalog:') {
+        const catalogVersion = catalog.get(name)
+        if (!catalogVersion) {
+          throw new Error(`Catalog version not found for package: ${name}`)
+        }
+        deps[name] = catalogVersion
+      }
+    }
+  }
+
+  transformDeps(pkg.dependencies)
+  transformDeps(pkg.devDependencies)
+
+  return JSON.stringify(pkg, null, 2) + '\n'
+}
+
 async function copyExamples() {
   console.log('Copying examples to cli-test package...')
+
+  // Load catalog once at the start
+  const catalog = await parseCatalog(join(repoRoot, 'pnpm-workspace.yaml'))
 
   await mkdir(targetExamplesDir, {recursive: true})
 
@@ -41,6 +97,12 @@ async function copyExamples() {
       },
       recursive: true,
     })
+
+    // Transform package.json to resolve catalog: references
+    const pkgJsonPath = join(targetDir, 'package.json')
+    const originalContent = await readFile(pkgJsonPath, 'utf8')
+    const transformedContent = transformPackageJson(originalContent, catalog)
+    await writeFile(pkgJsonPath, transformedContent, 'utf8')
   }
 
   console.log('Examples copied successfully!')

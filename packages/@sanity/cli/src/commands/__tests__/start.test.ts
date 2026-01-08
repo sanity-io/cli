@@ -5,9 +5,9 @@ import {join} from 'node:path'
 import {runCommand} from '@oclif/test'
 import {testCommand, testExample} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
+import {buildExample} from '~test/helpers/buildExample.js'
 
 import {PreviewCommand} from '../preview.js'
-import {buildExample} from '~test/helpers/buildExample.js'
 
 describe('#start', () => {
   test('help works', async () => {

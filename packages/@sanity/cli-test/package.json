@@ -76,7 +76,8 @@
     "eslint": "catalog:",
     "publint": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "yaml": "^2.8.2"
   },
   "peerDependencies": {
     "@oclif/core": "^4.0.0",
