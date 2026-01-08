@@ -4,6 +4,7 @@ import {chalk} from '@sanity/cli-core/ux'
 import {size, sortBy} from 'lodash-es'
 
 import {getMembersForProject} from '../../actions/users/getMembersForProject.js'
+import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 export class List extends SanityCommand<typeof List> {
   static override description = 'List all users of the project'
@@ -52,7 +53,7 @@ export class List extends SanityCommand<typeof List> {
     const projectId = await this.getProjectId()
 
     if (!projectId) {
-      throw new Error('No project ID found')
+      this.error(NO_PROJECT_ID, {exit: 1})
     }
 
     const members = await getMembersForProject({

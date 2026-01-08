@@ -4,7 +4,9 @@ import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {PROJECTS_API_VERSION} from '../../../services/projects.js'
 import {USERS_API_VERSION} from '../../../services/user.js'
+import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {List} from '../list.js'
 
 const testProjectId = 'test-project'
@@ -55,17 +57,7 @@ describe('#list', () => {
       },
     } as never)
     mockApi({
-      apiVersion: USERS_API_VERSION,
-      query: {includeFeatures: 'false'},
-      uri: `/projects/${testProjectId}`,
-    }).reply(200, {
-      members: [
-        {id: 'user1', isRobot: false, role: 'developer'},
-        {id: 'user2', isRobot: false, role: 'admin'},
-      ],
-    })
-    mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: `/invitations/project/${testProjectId}`,
     }).reply(200, [])
 
@@ -94,17 +86,7 @@ describe('#list', () => {
       },
     } as never)
     mockApi({
-      apiVersion: USERS_API_VERSION,
-      query: {includeFeatures: 'false'},
-      uri: `/projects/${testProjectId}`,
-    }).reply(200, {
-      members: [
-        {id: 'user1', isRobot: false, role: 'developer'},
-        {id: 'user2', isRobot: false, role: 'admin'},
-      ],
-    })
-    mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: `/invitations/project/${testProjectId}`,
     }).reply(200, [
       {
@@ -134,14 +116,9 @@ describe('#list', () => {
       () => mockGetProjectCliClient.mockRejectedValue(new Error('Internal server error')),
       50,
     )
-    mockApi({
-      apiVersion: USERS_API_VERSION,
-      query: {includeFeatures: 'false'},
-      uri: `/projects/${testProjectId}`,
-    }).reply(500, {message: 'Internal Server Error'})
 
     mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: `/invitations/project/${testProjectId}`,
     }).reply(200, [])
 
@@ -163,19 +140,9 @@ describe('#list', () => {
         }),
       },
     } as never)
+
     mockApi({
-      apiVersion: USERS_API_VERSION,
-      query: {includeFeatures: 'false'},
-      uri: `/projects/${testProjectId}`,
-    }).reply(200, {
-      members: [
-        {id: 'user1', isRobot: false, role: 'developer'},
-        {id: 'user2', isRobot: false, role: 'admin'},
-        {id: 'user3', isRobot: false, role: 'viewer'},
-      ],
-    })
-    mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: `/invitations/project/${testProjectId}`,
     }).reply(200, [])
 
@@ -212,20 +179,19 @@ describe('#list', () => {
   })
 
   test('sorts in descending order when --order desc is specified', async () => {
+    mockGetProjectCliClient.mockResolvedValue({
+      projects: {
+        getById: vi.fn().mockResolvedValue({
+          members: [
+            {id: 'user1', isRobot: false, role: 'developer'},
+            {id: 'user2', isRobot: false, role: 'admin'},
+            {id: 'user3', isRobot: false, role: 'viewer'},
+          ],
+        }),
+      },
+    } as never)
     mockApi({
-      apiVersion: USERS_API_VERSION,
-      query: {includeFeatures: 'false'},
-      uri: `/projects/${testProjectId}`,
-    }).reply(200, {
-      members: [
-        {id: 'user1', isRobot: false, role: 'developer'},
-        {id: 'user2', isRobot: false, role: 'admin'},
-        {id: 'user3', isRobot: false, role: 'viewer'},
-      ],
-    })
-
-    mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: `/invitations/project/${testProjectId}`,
     }).reply(200, [])
 
@@ -262,16 +228,16 @@ describe('#list', () => {
   })
 
   test('excludes invitations when --no-invitations is specified', async () => {
-    mockApi({
-      apiVersion: USERS_API_VERSION,
-      query: {includeFeatures: 'false'},
-      uri: `/projects/${testProjectId}`,
-    }).reply(200, {
-      members: [
-        {id: 'user1', isRobot: false, role: 'developer'},
-        {id: 'user2', isRobot: false, role: 'admin'},
-      ],
-    })
+    mockGetProjectCliClient.mockResolvedValue({
+      projects: {
+        getById: vi.fn().mockResolvedValue({
+          members: [
+            {id: 'user1', isRobot: false, role: 'developer'},
+            {id: 'user2', isRobot: false, role: 'admin'},
+          ],
+        }),
+      },
+    } as never)
 
     mockApi({
       apiVersion: USERS_API_VERSION,
@@ -300,19 +266,9 @@ describe('#list', () => {
         }),
       },
     } as never)
+
     mockApi({
-      apiVersion: USERS_API_VERSION,
-      query: {includeFeatures: 'false'},
-      uri: `/projects/${testProjectId}`,
-    }).reply(200, {
-      members: [
-        {id: 'user1', isRobot: false, role: 'developer'},
-        {id: 'user2', isRobot: false, role: 'admin'},
-        {id: 'robot1', isRobot: true, role: 'viewer'},
-      ],
-    })
-    mockApi({
-      apiVersion: USERS_API_VERSION,
+      apiVersion: PROJECTS_API_VERSION,
       uri: `/invitations/project/${testProjectId}`,
     }).reply(200, [])
 
@@ -340,6 +296,7 @@ describe('#list', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual('No project ID found')
+    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.oclif?.exit).toBe(1)
   })
 })

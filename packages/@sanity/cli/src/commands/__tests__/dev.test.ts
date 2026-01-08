@@ -40,6 +40,7 @@ vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
   return {
     ...actual,
+    getProjectCliClient: vi.fn(),
     isInteractive: vi.fn(() => true),
   }
 })
