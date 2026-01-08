@@ -24,6 +24,26 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
   protected flags!: Flags<T>
 
   /**
+   * Get the global API client.
+   *
+   * @param args - The global API client options.
+   * @returns The global API client.
+   *
+   * @deprecated use `getGlobalCliClient` function directly instead.
+   */
+  protected getGlobalApiClient = (args: GlobalCliClientOptions) => getGlobalCliClient(args)
+
+  /**
+   * Get the project API client.
+   *
+   * @param args - The project API client options.
+   * @returns The project API client.
+   *
+   * @deprecated use `getProjectCliClient` function directly instead.
+   */
+  protected getProjectApiClient = (args: ProjectCliClientOptions) => getProjectCliClient(args)
+
+  /**
    * Helper for outputting to the console.
    *
    * @example
@@ -48,30 +68,6 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
     const root = await this.getProjectRoot()
 
     return getCliConfig(root.directory)
-  }
-
-  /**
-   * Get the global API client.
-   *
-   * @param args - The global API client options.
-   * @returns The global API client.
-   *
-   * @deprecated use `getGlobalCliClient` function directly instead.
-   */
-  protected getGlobalApiClient(args: GlobalCliClientOptions) {
-    return getGlobalCliClient(args)
-  }
-
-  /**
-   * Get the project API client.
-   *
-   * @param args - The project API client options.
-   * @returns The project API client.
-   *
-   * @deprecated use `getProjectCliClient` function directly instead.
-   */
-  protected getProjectApiClient(args: ProjectCliClientOptions) {
-    return getProjectCliClient(args)
   }
 
   /**
