@@ -303,24 +303,22 @@ describe('feature description', () => {
 - Use `testCommand()` helper for command execution
 - Use `vi.mocked()` for type-safe mocking
 - Mock `@sanity/cli-core` functions (getCliConfig, getProjectApiClient)
-- Use `mockClient()` for module-level client mocking (preferred)
+- Use `mockApi` for HTTP mocking when testing full request/response cycle
 - Clear mocks in `afterEach()`
 - Test both success and error paths
-- Use `mockApi` for HTTP mocking when testing full request/response cycle
 
 ❌ **Don't:**
 
 - Leave mocks active between tests
 - Use `any` in mock types
 - Skip error case testing
-- Mock individual service functions when you can mock the client instead
 
-### Client Mocking with mockClient
+### Client Mocking Strategy
 
-When tests need to mock Sanity API client methods, prefer **module-level mocking** with `mockClient`:
+When tests need to mock Sanity API client methods, use **module-level mocking** by mocking the client functions directly:
 
 ```typescript
-import {mockClient, testCommand} from '@sanity/cli-test'
+import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 // Create hoisted mocks for client methods
@@ -331,13 +329,11 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue(
-      mockClient({
-        users: {
-          getById: mockGetById,
-        } as never, // Use 'as never' for nested objects
-      }),
-    ),
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      users: {
+        getById: mockGetById,
+      },
+    }),
   }
 })
 
@@ -373,17 +369,16 @@ describe('feature command', () => {
 **Benefits:**
 
 - Mock once, all services automatically use the mocked client
-- Fail-fast: unmocked methods throw immediately with helpful errors
 - Less boilerplate than mocking individual service functions
 - More realistic: tests actual client method calls
 - For `client.request()` HTTP calls, use `createTestClient()` with `mockApi()` for HTTP-level testing
 
-### Mocking the Request Method
+### Mocking HTTP Requests with mockApi
 
 When tests need to mock `client.request()` for HTTP calls, use `createTestClient()` with `mockApi()` for HTTP-level testing:
 
 ```typescript
-import {createTestClient, mockApi, mockClient, testCommand} from '@sanity/cli-test'
+import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 vi.mock('@sanity/cli-core', async () => {
@@ -395,18 +390,16 @@ vi.mock('@sanity/cli-core', async () => {
 
   return {
     ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue(
-      mockClient({
-        request: testClient.request, // Use real test client request
-        users: {
-          getById: vi.fn().mockResolvedValue({
-            email: 'test@example.com',
-            id: 'user-123',
-            name: 'Test User',
-          }),
-        } as never,
-      }),
-    ),
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      request: testClient.request, // Use real test client request
+      users: {
+        getById: vi.fn().mockResolvedValue({
+          email: 'test@example.com',
+          id: 'user-123',
+          name: 'Test User',
+        }),
+      },
+    }),
   }
 })
 
@@ -456,24 +449,173 @@ describe('feature command', () => {
 - Better debugging with actual request/response details
 - Consistent with other HTTP-level tests in the codebase
 
-**Don't mock `request` as a plain function:**
+---
+
+### Testing Hierarchy: What to Mock and When
+
+Follow this hierarchy when writing tests (prefer higher levels):
+
+#### 1. HTTP-Level Mocking (Preferred)
+
+**Pattern A: Pure HTTP Mocking (Simplest)**
+Mock HTTP endpoints directly:
 
 ```typescript
-// ❌ Wrong approach
-const mocks = vi.hoisted(() => ({
-  request: vi.fn(),
-}))
+import {mockApi} from '@sanity/cli-test'
 
-mockClient({
-  request: mocks.request,  // ❌ Manual mocking
+test('lists users successfully', async () => {
+  mockApi({
+    apiVersion: 'v2021-06-07',
+    uri: '/projects/my-project/users',
+    method: 'GET',
+  }).reply(200, [{id: 'user-1', email: 'test@example.com'}])
+
+  const {stdout} = await testCommand(UsersListCommand, ['--project', 'my-project'])
+  expect(stdout).toContain('test@example.com')
 })
-
-mocks.request.mockResolvedValueOnce([...])  // ❌ Manual configuration
 ```
 
-**Reference**: See `packages/@sanity/cli/src/commands/__tests__/init/init.plan.test.ts` for a complete example.
+**Pattern B: HTTP with Test Client**
+For commands that need both HTTP mocking and client methods:
+
+```typescript
+import {createTestClient, mockApi} from '@sanity/cli-test'
+
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
+  const testClient = createTestClient({
+    apiVersion: 'v2021-06-07',
+    token: 'test-token',
+  })
+
+  return {
+    ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      request: testClient.request, // Real HTTP request
+      users: {
+        getById: vi.fn().mockResolvedValue({...}), // Mocked convenience method
+      },
+    }),
+  }
+})
+
+test('creates project', async () => {
+  mockApi({
+    apiVersion: 'v2021-06-07',
+    method: 'POST',
+    uri: '/projects',
+  }).reply(200, {projectId: 'test-project'})
+
+  const {stdout} = await testCommand(CreateProjectCommand, ['Test Project'])
+  expect(stdout).toContain('test-project')
+})
+```
+
+**Choose HTTP mocking when:**
+
+- Testing error handling from API responses
+- Testing request formatting and response parsing
+- Integration-style tests
+- Avoiding mocking implementation details
+
+#### 2. Client-Level Mocking (Default for Unit Tests)
+
+Mock API client methods directly:
+
+```typescript
+const mockGetById = vi.hoisted(() => vi.fn())
+const mockListDatasets = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      users: {
+        getById: mockGetById,
+      },
+      datasets: {
+        list: mockListDatasets,
+      },
+    }),
+  }
+})
+
+describe('my command', () => {
+  test('fetches user and datasets', async () => {
+    mockGetById.mockResolvedValue({id: 'user-123', email: 'test@example.com'})
+    mockListDatasets.mockResolvedValue([{name: 'production'}])
+
+    const {stdout} = await testCommand(MyCommand, [])
+    expect(stdout).toContain('test@example.com')
+  })
+})
+```
+
+**Choose client mocking when:**
+
+- Testing command orchestration logic
+- Multiple client methods are called
+- Need fine-grained control over mock behavior
+- Don't need to test HTTP request/response details
+
+#### 3. Action-Level Mocking (Sometimes)
+
+Mock action functions when they have complex logic tested separately:
+
+```typescript
+vi.mock('../../actions/build/buildApp.js', () => ({
+  buildApp: vi.fn(),
+}))
+
+const mockBuildApp = vi.mocked(buildApp)
+
+test('deploy command calls build', async () => {
+  mockBuildApp.mockResolvedValue({success: true})
+
+  await testCommand(DeployCommand, [])
+
+  expect(mockBuildApp).toHaveBeenCalledWith(expect.objectContaining({...}))
+})
+```
+
+**Choose action mocking when:**
+
+- Action has complex business logic tested in its own test file
+- Action has side effects (file system operations, spawning processes)
+- Testing command orchestration without action implementation details
 
 ---
+
+### How to Choose Your Mocking Strategy
+
+Use this decision flowchart:
+
+1. **Does the command make HTTP requests that you need to test?**
+   - Yes → Use `mockApi()` (HTTP-level mocking)
+   - No → Continue to #2
+
+2. **Does the command call multiple client methods?**
+   - Yes → Use client-level mocking
+   - No → Continue to #3
+
+3. **Does the command call an action with complex logic?**
+   - Yes, and action is tested separately → Mock the action
+   - Yes, but action is NOT tested separately → Mock the client
+   - No → Mock the client
+
+---
+
+### Refactoring Tests That Mock Services
+
+If you encounter a test that mocks a service file:
+
+1. Identify what API calls the service makes
+2. Replace service mock with:
+   - `mockApi()` for HTTP-level testing (preferred)
+   - Client-level mocking if multiple client methods are needed
+3. Update assertions to verify the same behavior
+4. Run tests to ensure they still pass
 
 ## Command Implementation
 

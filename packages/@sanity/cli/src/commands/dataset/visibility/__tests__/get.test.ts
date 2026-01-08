@@ -1,5 +1,5 @@
 import {runCommand} from '@oclif/test'
-import {mockClient, testCommand} from '@sanity/cli-test'
+import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {NO_PROJECT_ID} from '../../../../util/errorMessages.js'
@@ -11,13 +11,11 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
-    getProjectCliClient: vi.fn().mockResolvedValue(
-      mockClient({
-        datasets: {
-          list: mockListDatasets,
-        } as never,
-      }),
-    ),
+    getProjectCliClient: vi.fn().mockResolvedValue({
+      datasets: {
+        list: mockListDatasets,
+      } as never,
+    }),
   }
 })
 
