@@ -9,7 +9,7 @@
   "dependencies": {
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli": "workspace:*",
-    "@sanity/client": "^7.11.2",
+    "@sanity/client": "^7.14.0",
     "@sanity/eslint-config-cli": "workspace:*",
     "dotenv": "^17.2.3",
     "tsx": "^4.19.3"
