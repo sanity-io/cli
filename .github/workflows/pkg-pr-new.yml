@@ -37,12 +37,6 @@ jobs:
       - name: Build CLI packages
         run: pnpm build:cli
 
-      - name: Extract PR number and commit info
-        id: extract-info
-        run: |
-          echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-          echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-
       - name: Publish preview packages
         run: |
           pnpm dlx pkg-pr-new publish \
@@ -52,6 +46,8 @@ jobs:
             './packages/@sanity/eslint-config-cli' \
             --pnpm \
             --comment=update \
+            --commentWithSha \
+            --packageManager=pnpm \
             --compact
         env:
           GITHUB_TOKEN: ${{ github.token }}
