@@ -55,62 +55,82 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const fs = require('fs');
+            const fs = require('node:fs');
             const output = JSON.parse(fs.readFileSync('pkg-pr-new-output.json', 'utf8'));
 
-            const commitSha = context.payload.pull_request.head.sha;
-            const shortSha = commitSha.substring(0, 7);
-            const identifier = `<!-- pkg-pr-new-commit-${commitSha} -->`;
+            const sha = context.payload.pull_request?.head?.sha;
+            const BOT_COMMENT_IDENTIFIER = `<!-- pkg-pr-new-commit-${sha} -->`;
+            const BACKTICKS = '```';
 
-            // Format package list
-            const packages = output.packages
-              .map((p) => `- **${p.name}**: \`${p.url}\``)
-              .join('\n');
+            function renderPackages(pkgs) {
+              return pkgs
+                .map(
+                  (pkg) =>
+                    `##### :package: \`${pkg.name}\`
+            ${BACKTICKS}bash
+            pnpm install ${pkg.url}
+            ${BACKTICKS}
+            `,
+                )
+                .join('\n');
+            }
 
-            // Create comment body
-            const body = `${identifier}
-            ## 📦 Preview Packages
+            const cliPackage = output.packages.find((p) => p.name === '@sanity/cli');
+            const cliUrl = cliPackage?.url || output.packages[0]?.url;
 
-            Preview packages published for commit [\`${shortSha}\`](https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${commitSha})
+            const body = `## Preview this PR with [pkg.pr.new](https://pkg.pr.new)
 
-            ### Installation
+            ### Run the Sanity CLI
 
-            \`\`\`bash
-            pnpm install ${output.packages.map(p => p.url).join(' ')}
-            \`\`\`
+            ${BACKTICKS}bash
+            npx ${cliUrl} <command>
+            ${BACKTICKS}
 
-            <details>
-            <summary>Package URLs</summary>
+            ### ...Or upgrade project dependencies
 
-            ${packages}
+            ${renderPackages(output.packages)}
 
-            </details>`;
+            [View Commit](${`https://github.com/${context.repo.owner}/${context.repo.repo}/commit/${sha}`}) (${sha})
 
-            // Find existing comment with this commit SHA
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-            });
+            ${BOT_COMMENT_IDENTIFIER}
+            `;
 
-            const existingComment = comments.find(comment =>
-              comment.body?.includes(identifier)
-            );
-
-            if (existingComment) {
-              // Update existing comment
-              await github.rest.issues.updateComment({
+            async function findBotComment(issueNumber) {
+              if (!issueNumber) return null;
+              const comments = await github.rest.issues.listComments({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                comment_id: existingComment.id,
-                body: body,
+                issue_number: issueNumber,
               });
+              return comments.data.find((comment) => comment.body?.includes(BOT_COMMENT_IDENTIFIER));
+            }
+
+            async function createOrUpdateComment(issueNumber) {
+              if (!issueNumber) {
+                console.log('No issue number provided. Cannot post or update comment.');
+                return;
+              }
+
+              const existingComment = await findBotComment(issueNumber);
+              if (existingComment) {
+                await github.rest.issues.updateComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                  body: body,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  issue_number: issueNumber,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: body,
+                });
+              }
+            }
+
+            if (context.eventName === 'pull_request') {
+              await createOrUpdateComment(context.issue.number);
             } else {
-              // Create new comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                body: body,
-              });
+              throw new Error('This job can only run for pull requests');
             }
