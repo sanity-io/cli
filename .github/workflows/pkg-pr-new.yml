@@ -76,7 +76,10 @@ jobs:
             }
 
             const cliPackage = output.packages.find((p) => p.name === '@sanity/cli');
-            const cliUrl = cliPackage?.url || output.packages[0]?.url;
+            const shortSha = sha?.substring(0, 7) || 'unknown';
+
+            // Construct the full pkg.pr.new URL with repo path
+            const cliUrl = `https://pkg.pr.new/${context.repo.owner}/${context.repo.repo}/@sanity/cli@${sha}`;
 
             const body = `## Preview this PR with [pkg.pr.new](https://pkg.pr.new)
 
