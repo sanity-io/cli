@@ -3,41 +3,42 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
-import execa from 'execa'
+import {getCliToken, getGlobalCliClient, Output, subdebug} from '@sanity/cli-core'
+import {checkbox, logSymbols} from '@sanity/cli-core/ux'
+import {execa} from 'execa'
 
-import {debug} from '../../debug'
-import {type CliApiClient, type CliCommandContext, type CliPrompter} from '../../types'
-import {getCliToken} from '../../util/clientWrapper'
+const debug = subdebug('init:setupMCP')
 
 const MCP_SERVER_URL = 'https://mcp.sanity.io'
 
 export const NO_EDITORS_DETECTED_MESSAGE = `Couldn't auto-configure Sanity MCP server for your editor. Visit ${MCP_SERVER_URL} for setup instructions.`
 
-export type EditorName = 'Cursor' | 'VS Code' | 'Claude Code'
+export type EditorName = 'Claude Code' | 'Cursor' | 'VS Code'
 
 export interface Editor {
-  name: EditorName
+  configKey: 'mcpServers' | 'servers'
   configPath: string
-  configKey: 'servers' | 'mcpServers'
+  name: EditorName
 }
 
 interface MCPConfig {
-  servers?: Record<string, ServerConfig>
   mcpServers?: Record<string, ServerConfig>
+  servers?: Record<string, ServerConfig>
 }
 
 interface ServerConfig {
-  type: 'http'
-  url: string
   headers: {
     Authorization: string
   }
+  type: 'http'
+  url: string
 }
 
 export interface MCPSetupResult {
-  detectedEditors: EditorName[]
   configuredEditors: EditorName[]
+  detectedEditors: EditorName[]
   skipped: boolean
+
   error?: Error
 }
 
@@ -52,33 +53,37 @@ export async function detectAvailableEditors(): Promise<Editor[]> {
   const cursorDir = path.join(homeDir, '.cursor')
   if (existsSync(cursorDir)) {
     editors.push({
-      name: 'Cursor',
-      configPath: path.join(cursorDir, 'mcp.json'),
       configKey: 'mcpServers',
+      configPath: path.join(cursorDir, 'mcp.json'),
+      name: 'Cursor',
     })
   }
 
   // VS Code detection (platform-specific)
   let vscodeConfigDir: string | null = null
   switch (process.platform) {
-    case 'darwin':
+    case 'darwin': {
       vscodeConfigDir = path.join(homeDir, 'Library/Application Support/Code/User')
       break
-    case 'win32':
+    }
+    case 'win32': {
       // APPDATA is required on Windows for VS Code config path
       if (process.env.APPDATA) {
         vscodeConfigDir = path.join(process.env.APPDATA, 'Code/User')
       }
       break
-    default: // linux
+    }
+    default: {
+      // linux
       vscodeConfigDir = path.join(homeDir, '.config/Code/User')
+    }
   }
 
   if (vscodeConfigDir && existsSync(vscodeConfigDir)) {
     editors.push({
-      name: 'VS Code',
-      configPath: path.join(vscodeConfigDir, 'mcp.json'),
       configKey: 'servers',
+      configPath: path.join(vscodeConfigDir, 'mcp.json'),
+      name: 'VS Code',
     })
   }
 
@@ -86,9 +91,9 @@ export async function detectAvailableEditors(): Promise<Editor[]> {
   try {
     await execa('claude', ['--version'], {stdio: 'pipe', timeout: 5000})
     editors.push({
-      name: 'Claude Code',
-      configPath: path.join(homeDir, '.claude.json'),
       configKey: 'mcpServers',
+      configPath: path.join(homeDir, '.claude.json'),
+      name: 'Claude Code',
     })
   } catch {
     // Not installed
@@ -103,7 +108,6 @@ export async function detectAvailableEditors(): Promise<Editor[]> {
  * configured editors show "(select to reconfigure)" and are not pre-selected
  */
 async function promptForMCPSetup(
-  prompt: CliPrompter,
   detectedEditors: Editor[],
   editorsWithExisting: Editor[],
 ): Promise<Editor[] | null> {
@@ -111,22 +115,18 @@ async function promptForMCPSetup(
   const editorChoices = detectedEditors.map((e) => {
     const isConfigured = editorsWithExisting.some((existing) => existing.name === e.name)
     return {
+      checked: !isConfigured, // Only pre-select if NOT already configured
       name: isConfigured ? `${e.name} (already installed)` : e.name,
       value: e.name,
-      checked: !isConfigured, // Only pre-select if NOT already configured
     }
   })
 
-  const result = await prompt<{selectedEditors: string[]}>([
-    {
-      type: 'checkbox',
-      name: 'selectedEditors',
-      message: 'Configure Sanity MCP server?',
-      choices: editorChoices,
-    },
-  ])
+  const result = await checkbox({
+    choices: editorChoices,
+    message: 'Configure Sanity MCP server?',
+  })
 
-  const selectedNames = result.selectedEditors
+  const selectedNames = result
 
   // User can deselect all to skip
   if (!selectedNames || selectedNames.length === 0) {
@@ -141,29 +141,33 @@ async function promptForMCPSetup(
  * This token is tied to the parent CLI token and will be invalidated
  * when the parent token is invalidated (e.g., on logout)
  */
-async function createMCPToken(apiClient: CliApiClient): Promise<string> {
+async function createMCPToken(): Promise<string> {
   const parentToken = getCliToken()
   if (!parentToken) {
     throw new Error('Not authenticated. Please run `sanity login` first.')
   }
 
-  const client = apiClient({requireUser: true, requireProject: false})
-    .clone()
-    .config({apiVersion: '2025-12-09'})
+  // const client = apiClient({requireUser: true, requireProject: false})
+  //   .clone()
+  //   .config({apiVersion: '2025-12-09'})
 
-  const sessionResponse = await client.request<{sid: string; id: string}>({
-    method: 'POST',
-    uri: '/auth/session/create',
+  const client = await getGlobalCliClient({
+    apiVersion: '2025-12-09',
+  })
+
+  const sessionResponse = await client.request<{id: string; sid: string}>({
     body: {
       sourceId: 'sanity-mcp',
       withStamp: false,
     },
+    method: 'POST',
+    uri: '/auth/session/create',
   })
 
-  const tokenResponse = await client.request<{token: string; label: string}>({
+  const tokenResponse = await client.request<{label: string; token: string}>({
     method: 'GET',
-    uri: '/auth/fetch',
     query: {sid: sessionResponse.sid},
+    uri: '/auth/fetch',
   })
 
   return tokenResponse.token
@@ -177,7 +181,7 @@ async function getEditorsWithExistingConfig(editors: Editor[]): Promise<Editor[]
   for (const editor of editors) {
     if (existsSync(editor.configPath)) {
       try {
-        const content = await fs.readFile(editor.configPath, 'utf-8')
+        const content = await fs.readFile(editor.configPath, 'utf8')
         const config = JSON.parse(content) as MCPConfig
         if (config[editor.configKey]?.Sanity) {
           configured.push(editor)
@@ -203,7 +207,7 @@ async function writeMCPConfig(editor: Editor, token: string): Promise<void> {
   let existingConfig: MCPConfig = {}
   if (existsSync(configPath)) {
     try {
-      const content = await fs.readFile(configPath, 'utf-8')
+      const content = await fs.readFile(configPath, 'utf8')
       existingConfig = JSON.parse(content)
     } catch {
       debug(`Warning: Could not parse ${configPath}. Creating new config.`)
@@ -218,36 +222,31 @@ async function writeMCPConfig(editor: Editor, token: string): Promise<void> {
   }
 
   existingConfig[serverKey].Sanity = {
-    type: 'http',
-    url: MCP_SERVER_URL,
     headers: {
       Authorization: `Bearer ${token}`,
     },
+    type: 'http',
+    url: MCP_SERVER_URL,
   }
 
   // 3. Ensure parent directory exists
   await fs.mkdir(path.dirname(configPath), {recursive: true})
 
   // 4. Write config
-  await fs.writeFile(configPath, JSON.stringify(existingConfig, null, 2), 'utf-8')
+  await fs.writeFile(configPath, JSON.stringify(existingConfig, null, 2), 'utf8')
 }
 
 /**
  * Main MCP setup orchestration
  * Opt-out by default: runs automatically unless skipMcp flag is set
  */
-export async function setupMCP(
-  context: CliCommandContext,
-  options: {mcp?: boolean},
-): Promise<MCPSetupResult> {
-  const {output, prompt} = context
-
+export async function setupMCP(options: {mcp?: boolean; output: Output}): Promise<MCPSetupResult> {
   // 1. Check for explicit opt-out
   if (options.mcp === false) {
-    output.warn('Skipping MCP configuration due to --no-mcp flag')
+    options.output.warn('Skipping MCP configuration due to --no-mcp flag')
     return {
-      detectedEditors: [],
       configuredEditors: [],
+      detectedEditors: [],
       skipped: true,
     }
   }
@@ -257,10 +256,10 @@ export async function setupMCP(
   const detectedEditors = detected.map((e) => e.name)
 
   if (detected.length === 0) {
-    output.warn(NO_EDITORS_DETECTED_MESSAGE)
+    options.output.warn(NO_EDITORS_DETECTED_MESSAGE)
     return {
-      detectedEditors,
       configuredEditors: [],
+      detectedEditors,
       skipped: true,
     }
   }
@@ -269,13 +268,13 @@ export async function setupMCP(
   const editorsWithExisting = await getEditorsWithExistingConfig(detected)
 
   // 4. Prompt user (shows existing config status, only pre-selects unconfigured editors)
-  const selected = await promptForMCPSetup(prompt, detected, editorsWithExisting)
+  const selected = await promptForMCPSetup(detected, editorsWithExisting)
 
   if (!selected || selected.length === 0) {
     // User deselected all editors
     return {
-      detectedEditors,
       configuredEditors: [],
+      detectedEditors,
       skipped: true,
     }
   }
@@ -283,16 +282,16 @@ export async function setupMCP(
   // 5. Create child token for MCP
   let token: string
   try {
-    token = await createMCPToken(context.apiClient)
+    token = await createMCPToken()
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
-    output.warn(`Could not configure MCP: ${err.message}`)
-    output.warn('You can set up MCP manually later using https://mcp.sanity.io')
+    options.output.warn(`Could not configure MCP: ${err.message}`)
+    options.output.warn('You can set up MCP manually later using https://mcp.sanity.io')
     return {
-      detectedEditors,
       configuredEditors: [],
-      skipped: false,
+      detectedEditors,
       error: err,
+      skipped: false,
     }
   }
 
@@ -303,22 +302,22 @@ export async function setupMCP(
     }
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
-    output.warn(`Could not configure MCP: ${err.message}`)
-    output.warn('You can set up MCP manually later using https://mcp.sanity.io')
+    options.output.warn(`Could not configure MCP: ${err.message}`)
+    options.output.warn('You can set up MCP manually later using https://mcp.sanity.io')
     return {
-      detectedEditors,
       configuredEditors: [],
-      skipped: false,
+      detectedEditors,
       error: err,
+      skipped: false,
     }
   }
 
   const configuredEditors = selected.map((e) => e.name)
-  output.success(`MCP configured for ${configuredEditors.join(', ')}`)
+  options.output.log(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
 
   return {
-    detectedEditors,
     configuredEditors,
+    detectedEditors,
     skipped: false,
   }
 }

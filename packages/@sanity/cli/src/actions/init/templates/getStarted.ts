@@ -1,4 +1,4 @@
-import {type ProjectTemplate} from '../initProject'
+import {type ProjectTemplate} from '../types.js'
 
 const configTemplate = `
 import {defineConfig, isDev} from 'sanity'
@@ -27,11 +27,11 @@ export default defineConfig({
 
 const getStartedTemplate: ProjectTemplate = {
   configTemplate,
-  typescriptOnly: true,
   dependencies: {
     '@sanity/icons': '^2.11.0',
     '@sanity/ui': '^2.0.0',
   },
+  typescriptOnly: true,
 }
 
 export default getStartedTemplate
