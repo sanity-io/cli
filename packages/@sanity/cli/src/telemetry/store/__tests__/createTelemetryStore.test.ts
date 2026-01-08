@@ -4,7 +4,7 @@ import {join} from 'node:path'
 
 import {getCliToken} from '@sanity/cli-core'
 import {type TelemetryEvent} from '@sanity/telemetry'
-import {glob} from 'glob'
+import {glob} from 'tinyglobby'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {readNDJSON} from '../../utils/readNDJSON.js'

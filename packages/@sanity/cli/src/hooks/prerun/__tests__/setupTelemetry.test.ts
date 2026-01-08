@@ -7,8 +7,8 @@ import {type Config} from '@oclif/core'
 import {findProjectRoot, getCliConfig, getCliToken, getUserConfig, isCi} from '@sanity/cli-core'
 import {testHook} from '@sanity/cli-test'
 import {type TelemetryEvent, type TelemetryLogEvent} from '@sanity/telemetry'
-import {glob} from 'glob'
 import nock from 'nock'
+import {glob} from 'tinyglobby'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createTelemetryStore} from '../../../telemetry/store/createTelemetryStore.js'
@@ -142,7 +142,7 @@ describe('setupTelemetry integration test', () => {
     mockGetUserConfig.mockReturnValue({
       get: mockGet,
       set: mockSet,
-    } as any)
+    } as never)
 
     // Reset all mocks before each test
     mockGet.mockReset()

@@ -1,6 +1,6 @@
 import {join} from 'node:path'
 
-import {glob} from 'glob'
+import {glob} from 'tinyglobby'
 
 import {telemetryStoreDebug} from './debug.js'
 import {getTelemetryBaseInfo} from './getTelemetryBaseInfo.js'
