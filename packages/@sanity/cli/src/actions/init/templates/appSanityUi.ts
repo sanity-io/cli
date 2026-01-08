@@ -1,4 +1,4 @@
-import {type ProjectTemplate} from '../initProject'
+import {type ProjectTemplate} from '../types.js'
 
 const appSanityUiTemplate: ProjectTemplate = {
   dependencies: {
@@ -23,8 +23,8 @@ const appSanityUiTemplate: ProjectTemplate = {
   },
   entry: './src/App.tsx',
   scripts: {
-    dev: 'sanity dev',
     build: 'sanity build',
+    dev: 'sanity dev',
     start: 'sanity start',
   },
 }

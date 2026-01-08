@@ -5,11 +5,12 @@ import * as parser from 'recast/parsers/typescript'
 interface TemplateOptions<T> {
   template: string
   variables: T
+
   includeBooleanTransform?: boolean
 }
 
 export function processTemplate<T extends object>(options: TemplateOptions<T>): string {
-  const {template, variables, includeBooleanTransform = false} = options
+  const {includeBooleanTransform = false, template, variables} = options
   const ast = parse(template.trimStart(), {parser})
 
   traverse(ast, {
@@ -43,7 +44,7 @@ export function processTemplate<T extends object>(options: TemplateOptions<T>): 
           }
           const value = variables[variableName]
           if (typeof value !== 'boolean') {
-            throw new Error(`Expected boolean value for '${variableName.toString()}'`)
+            throw new TypeError(`Expected boolean value for '${variableName.toString()}'`)
           }
           path.replaceWith({type: 'BooleanLiteral', value})
         },

@@ -1,4 +1,4 @@
-import {type ProjectTemplate} from '../initProject'
+import {type ProjectTemplate} from '../types.js'
 
 const configTemplate = `
 import {shopifyAssets} from 'sanity-plugin-shopify-assets'
@@ -36,7 +36,6 @@ export default defineConfig({
 
 const shopifyTemplate: ProjectTemplate = {
   configTemplate,
-  typescriptOnly: true,
   dependencies: {
     '@portabletext/toolkit': '^2.0.1',
     '@sanity/icons': '^2.11.0',
@@ -46,5 +45,6 @@ const shopifyTemplate: ProjectTemplate = {
     'pluralize-esm': '^9.0.4',
     'sanity-plugin-shopify-assets': '^1.1.0',
   },
+  typescriptOnly: true,
 }
 export default shopifyTemplate

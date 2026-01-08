@@ -2,31 +2,36 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 import getGitConfig from '@rexxars/gitconfiglocal'
+import {getCliToken, subdebug} from '@sanity/cli-core'
 import {getGitUserInfo} from 'git-user-info'
 import promiseProps from 'promise-props-recursive'
 
-import {type CliCommandContext} from '../types'
-import {getCliToken} from './clientWrapper'
+import {getCliUser} from '../services/user.js'
+
+const debug = subdebug('getProjectDefaults')
 
 export interface ProjectDefaults {
-  license: string
   author: string | undefined
-  gitRemote: string
-  projectName: string
   description: string
+  gitRemote: string
+  license: string
+  projectName: string
 }
 
-export function getProjectDefaults(
-  workDir: string,
-  {isPlugin, context}: {isPlugin: boolean; context: CliCommandContext},
-): Promise<ProjectDefaults> {
+export function getProjectDefaults({
+  isPlugin,
+  workDir,
+}: {
+  isPlugin: boolean
+  workDir: string
+}): Promise<ProjectDefaults> {
   const cwd = process.cwd()
   const isSanityRoot = workDir === cwd
 
   return promiseProps({
     license: 'UNLICENSED',
 
-    author: getUserInfo(context),
+    author: getUserInfo(),
 
     // Don't try to use git remote from main Sanity project for plugins
     gitRemote: isPlugin && isSanityRoot ? '' : resolveGitRemote(cwd),
@@ -35,7 +40,7 @@ export function getProjectDefaults(
     projectName: isPlugin && isSanityRoot ? '' : path.basename(cwd),
 
     // If we're initing a plugin, don't use description from Sanity readme
-    description: getProjectDescription({isSanityRoot, isPlugin, outputDir: cwd}),
+    description: getProjectDescription({isPlugin, isSanityRoot, outputDir: cwd}),
   })
 }
 
@@ -49,10 +54,10 @@ async function resolveGitRemote(cwd: string): Promise<string | undefined> {
   }
 }
 
-async function getUserInfo(context: CliCommandContext): Promise<string | undefined> {
+async function getUserInfo(): Promise<string | undefined> {
   const user = await getGitUserInfo()
   if (!user) {
-    return getSanityUserInfo(context)
+    return getSanityUserInfo()
   }
 
   if (user.name && user.email) {
@@ -62,15 +67,14 @@ async function getUserInfo(context: CliCommandContext): Promise<string | undefin
   return undefined
 }
 
-async function getSanityUserInfo(context: CliCommandContext): Promise<string | undefined> {
+async function getSanityUserInfo(): Promise<string | undefined> {
   const hasToken = Boolean(getCliToken())
   if (!hasToken) {
     return undefined
   }
 
-  const client = context.apiClient({requireUser: true, requireProject: false})
   try {
-    const user = await client.users.getById('me')
+    const user = await getCliUser()
     return user ? `${user.name} <${user.email}>` : undefined
   } catch {
     return undefined
@@ -78,17 +82,17 @@ async function getSanityUserInfo(context: CliCommandContext): Promise<string | u
 }
 
 async function getProjectDescription({
-  isSanityRoot,
   isPlugin,
+  isSanityRoot,
   outputDir,
 }: {
-  isSanityRoot: boolean
   isPlugin: boolean
+  isSanityRoot: boolean
   outputDir: string
 }): Promise<string> {
   const tryResolve = isSanityRoot && !isPlugin
   if (!tryResolve) {
-    return Promise.resolve('')
+    return ''
   }
 
   // Try to grab a project description from a standard GitHub-generated readme
@@ -98,6 +102,7 @@ async function getProjectDescription({
     const match = readme.match(/^# .*?\n+(\w.*?)(?:$|\n)/)
     return ((match && match[1]) || '').replace(/\.$/, '') || ''
   } catch (err) {
+    debug(`Error getting project description: ${err}`)
     return ''
   }
 }

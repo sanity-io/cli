@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-export function validateEmptyPath(dir: string): true | string {
+export function validateEmptyPath(dir: string): string | true {
   const checkPath = absolutify(dir)
   return pathIsEmpty(checkPath) ? true : 'Given path is not empty'
 }
@@ -14,7 +14,6 @@ export function absolutify(dir: string): string {
 
 function pathIsEmpty(dir: string): boolean {
   try {
-    // eslint-disable-next-line no-sync
     const content = fs.readdirSync(dir)
     return content.length === 0
   } catch (err) {
@@ -27,8 +26,8 @@ function pathIsEmpty(dir: string): boolean {
 }
 
 function expandHome(filePath: string): string {
-  if (filePath.charCodeAt(0) === 126 /* ~ */) {
-    if (filePath.charCodeAt(1) === 43 /* + */) {
+  if (filePath.codePointAt(0) === 126 /* ~ */) {
+    if (filePath.codePointAt(1) === 43 /* + */) {
       return path.join(process.cwd(), filePath.slice(2))
     }
 
