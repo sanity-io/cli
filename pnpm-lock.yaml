@@ -655,6 +655,9 @@ importers:
 
   packages/@sanity/cli-test:
     dependencies:
+      '@oclif/core':
+        specifier: 'catalog:'
+        version: 4.8.0
       ansis:
         specifier: ^4.2.0
         version: 4.2.0
@@ -665,9 +668,6 @@ importers:
       '@eslint/compat':
         specifier: 'catalog:'
         version: 2.0.0(eslint@9.39.2(jiti@2.6.1))
-      '@oclif/core':
-        specifier: 'catalog:'
-        version: 4.8.0
       '@repo/tsconfig':
         specifier: workspace:*
         version: link:../../@repo/tsconfig
