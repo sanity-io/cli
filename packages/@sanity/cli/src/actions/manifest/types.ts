@@ -19,6 +19,11 @@ export interface CreateManifest {
   workspaces: ManifestWorkspaceFile[]
 }
 
+export interface AppManifest {
+  icon?: string
+  title?: string
+}
+
 export interface ManifestWorkspaceFile extends Omit<CreateWorkspaceManifest, 'schema' | 'tools'> {
   schema: string // filename
   tools: string // filename

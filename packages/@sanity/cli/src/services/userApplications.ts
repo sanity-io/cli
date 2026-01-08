@@ -4,6 +4,9 @@ import {type Gzip} from 'node:zlib'
 import {debug, getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
 
+import {appManifestHasData} from '../actions/manifest/extractAppManifest.js'
+import {type AppManifest} from '../actions/manifest/types.js'
+
 export const USER_APPLICATIONS_API_VERSION = 'v2024-08-01'
 
 interface ActiveDeployment {
@@ -207,6 +210,8 @@ interface CreateDeploymentOptions {
 
   isApp?: boolean
 
+  manifest?: AppManifest
+
   projectId?: string
 }
 
@@ -214,6 +219,7 @@ export async function createDeployment({
   applicationId,
   isApp,
   isAutoUpdating,
+  manifest,
   projectId,
   tarball,
   version,
@@ -226,6 +232,10 @@ export async function createDeployment({
   const formData = new FormData()
   formData.append('isAutoUpdating', isAutoUpdating.toString())
   formData.append('version', version)
+  if (isApp && appManifestHasData(manifest)) {
+    formData.append('manifest', JSON.stringify(manifest))
+  }
+
   formData.append('tarball', tarball, {contentType: 'application/gzip', filename: 'app.tar.gz'})
 
   let uri

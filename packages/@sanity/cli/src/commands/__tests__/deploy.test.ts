@@ -8,6 +8,7 @@ import {testExample} from '~test/helpers/testExample.js'
 import {buildApp} from '../../actions/build/buildApp.js'
 import {buildStudio} from '../../actions/build/buildStudio.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
+import {extractAppManifest} from '../../actions/manifest/extractAppManifest.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
@@ -27,6 +28,11 @@ vi.mock('../../actions/build/buildStudio.js', () => ({
 
 vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
+}))
+
+vi.mock('../../actions/manifest/extractAppManifest.js', () => ({
+  appManifestHasData: vi.fn(),
+  extractAppManifest: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -59,6 +65,7 @@ const mockDirIsEmptyOrNonExistent = vi.mocked(dirIsEmptyOrNonExistent)
 const mockReadModuleVersion = vi.mocked(readModuleVersion)
 const mockBuildStudio = vi.mocked(buildStudio)
 const mockBuildApp = vi.mocked(buildApp)
+const mockExtractAppManifest = vi.mocked(extractAppManifest)
 
 const appId = 'app-id'
 const organizationId = 'org-id'
@@ -83,6 +90,8 @@ describe('#deploy', () => {
       return '1.0.0'
     })
     mockCheckDir.mockResolvedValue()
+    // Default to empty manifest for app deployments
+    mockExtractAppManifest.mockResolvedValue({})
   })
 
   afterEach(() => {
@@ -244,7 +253,6 @@ describe('#deploy', () => {
         config: {root: cwd},
         mocks: defaultMocks,
       })
-
       expect(error).toBeUndefined()
 
       expect(stderr).toContain('Checking application info')
@@ -1043,6 +1051,102 @@ describe('#deploy', () => {
         'sanity.cli.ts does not contain an organization identifier ("app.organizationId"), which is required for the Sanity CLI to communicate with the Sanity API',
       )
       expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should deploy app with manifest when manifest is provided', async () => {
+      const cwd = await testExample('basic-app')
+      process.cwd = () => cwd
+
+      const manifest = {
+        icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>',
+        title: 'Test App',
+      }
+
+      mockExtractAppManifest.mockResolvedValue(manifest)
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appType: 'coreApp',
+        },
+        uri: `/user-applications/${appId}`,
+      }).reply(200, {
+        appHost: 'existing-host',
+        createdAt: '2024-01-01T00:00:00Z',
+        id: appId,
+        organizationId,
+        projectId: null,
+        title: 'Existing App',
+        type: 'coreApp',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'coreApp',
+        },
+        uri: `/user-applications/${appId}/deployments`,
+      }).reply(200, {
+        location: 'https://existing-host.sanity.app/',
+      })
+
+      const {error, stdout} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+        mocks: defaultMocks,
+      })
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('Success! Application deployed')
+      expect(mockExtractAppManifest).toHaveBeenCalled()
+    })
+
+    test('should deploy app without manifest when manifest is empty', async () => {
+      const cwd = await testExample('basic-app')
+      process.cwd = () => cwd
+
+      // Return an empty manifest object
+      mockExtractAppManifest.mockResolvedValue({})
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appType: 'coreApp',
+        },
+        uri: `/user-applications/${appId}`,
+      }).reply(200, {
+        appHost: 'existing-host',
+        createdAt: '2024-01-01T00:00:00Z',
+        id: appId,
+        organizationId,
+        projectId: null,
+        title: 'Existing App',
+        type: 'coreApp',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'coreApp',
+        },
+        uri: `/user-applications/${appId}/deployments`,
+      }).reply(200, {
+        location: 'https://existing-host.sanity.app/',
+      })
+
+      const {error, stdout} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+        mocks: defaultMocks,
+      })
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('Success! Application deployed')
+      expect(mockExtractAppManifest).toHaveBeenCalled()
     })
   })
 

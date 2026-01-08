@@ -16,10 +16,14 @@ export interface CliConfig {
   app?: {
     /** The entrypoint for your custom app. By default, `src/App.tsx` */
     entry?: string
+    /** String encoding of an icon (typically an SVG) */
+    icon?: string
     /** @deprecated Use deployment.appId */
     id?: string
     /** The ID for the Sanity organization that manages this application */
     organizationId?: string
+    /** The title of the custom app. Used in Dashboard and in the browser tab */
+    title?: string
   }
 
   /** @deprecated Use deployment.autoUpdates */
