@@ -59,7 +59,7 @@ jobs:
             const output = JSON.parse(fs.readFileSync('pkg-pr-new-output.json', 'utf8'));
 
             const sha = context.payload.pull_request?.head?.sha;
-            const BOT_COMMENT_IDENTIFIER = `<!-- pkg-pr-new-commit-${sha} -->`;
+            const BOT_COMMENT_IDENTIFIER = '<!-- pkg.pr.new -->'
             const BACKTICKS = '```';
 
             function renderPackages(pkgs) {
