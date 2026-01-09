@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {isInteractive} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -15,14 +14,17 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('../../../../../cli-core/src/util/isInteractive.js', async () => {
+const mockedIsInteractive = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
   return {
-    isInteractive: vi.fn(),
+    ...actual,
+    isInteractive: mockedIsInteractive,
   }
 })
 
 const mockedSelect = vi.mocked(select)
-const mockedIsInteractive = vi.mocked(isInteractive)
 
 afterEach(() => {
   const pending = nock.pendingMocks()
@@ -200,8 +202,6 @@ describe('#docs:search', () => {
   })
 
   test('shows usage hints in non-interactive mode', async () => {
-    mockedIsInteractive.mockReturnValue(false)
-
     const searchResponse = [
       {
         description: 'Learn how to install Sanity Studio',
@@ -214,6 +214,8 @@ describe('#docs:search', () => {
       .get('/docs/api/search/semantic')
       .query({query: 'studio'})
       .reply(200, searchResponse)
+
+    mockedIsInteractive.mockReturnValue(false)
 
     const {stdout} = await testCommand(DocsSearchCommand, ['studio'])
 
@@ -236,7 +238,6 @@ describe('#docs:search', () => {
   })
 
   test('handles interactive mode article selection', async () => {
-    mockedIsInteractive.mockReturnValue(true)
     mockedSelect.mockResolvedValue(0)
 
     const searchResponse = [
@@ -256,6 +257,8 @@ describe('#docs:search', () => {
       .get('/docs/studio/installation.md')
       .reply(200, '# Studio Installation\n\nThis is how you install the studio.')
 
+    mockedIsInteractive.mockReturnValue(true)
+
     const {stdout} = await testCommand(DocsSearchCommand, ['studio'])
 
     expect(stdout).toContain('Found 1 result(s):')
@@ -265,7 +268,6 @@ describe('#docs:search', () => {
   })
 
   test('handles interactive mode exit selection', async () => {
-    mockedIsInteractive.mockReturnValue(true)
     mockedSelect.mockResolvedValue(-1) // User selects exit option
 
     const searchResponse = [
@@ -280,6 +282,8 @@ describe('#docs:search', () => {
       .get('/docs/api/search/semantic')
       .query({query: 'studio'})
       .reply(200, searchResponse)
+
+    mockedIsInteractive.mockReturnValue(true)
 
     const {stdout} = await testCommand(DocsSearchCommand, ['studio'])
 

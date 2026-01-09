@@ -8,13 +8,13 @@ import {ExtractSchemaCommand} from '../extract.js'
 
 vi.mock('node:fs/promises')
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
+const defaultMocks = {
+  projectRoot: {
     directory: '/test/project',
-    root: '/test/project',
-    type: 'studio',
-  }),
-}))
+    path: '/test/project/sanity.config.ts',
+    type: 'studio' as const,
+  },
+}
 
 vi.mock('../../../util/getWorkspace.js', () => ({
   getWorkspace: vi.fn().mockReturnValue({}),
@@ -84,7 +84,7 @@ describe('#schema:extract', () => {
   test('should extract schema', async () => {
     mockWriteFile.mockResolvedValue(undefined)
 
-    const {stderr} = await testCommand(ExtractSchemaCommand)
+    const {stderr} = await testCommand(ExtractSchemaCommand, [], {mocks: defaultMocks})
 
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('✔ Extracted schema')
@@ -99,7 +99,7 @@ describe('#schema:extract', () => {
   test('should extract schema with enforce-required-fields flag', async () => {
     mockWriteFile.mockResolvedValue(undefined)
 
-    const {stderr} = await testCommand(ExtractSchemaCommand, ['--enforce-required-fields'])
+    const {stderr} = await testCommand(ExtractSchemaCommand, ['--enforce-required-fields'], {mocks: defaultMocks})
 
     expect(stderr).toContain('Extracting schema with enforced required fields')
   })
@@ -108,7 +108,7 @@ describe('#schema:extract', () => {
     mockMkdir.mockResolvedValue(undefined)
     mockWriteFile.mockResolvedValue(undefined)
 
-    const {stderr} = await testCommand(ExtractSchemaCommand, ['--path', '/test'])
+    const {stderr} = await testCommand(ExtractSchemaCommand, ['--path', '/test'], {mocks: defaultMocks})
 
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('✔ Extracted schema')
@@ -123,7 +123,7 @@ describe('#schema:extract', () => {
   })
 
   test('throws an error if format flag is not groq-type-nodes', async () => {
-    const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--format', 'test-format'])
+    const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--format', 'test-format'], {mocks: defaultMocks})
 
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('Failed to extract schema')

@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -9,26 +8,6 @@ import {DATASET_ALIASES_API_VERSION} from '../../../../services/datasetAliases.j
 import {NO_PROJECT_ID} from '../../../../util/errorMessages.js'
 import {DeleteAliasCommand} from '../delete.js'
 
-vi.mock('../../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      projectId: 'test-project',
-    },
-  }),
-}))
-
-vi.mock('../../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
@@ -37,7 +16,18 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-const mockGetCliConfig = vi.mocked(getCliConfig)
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
+
 const mockInput = vi.mocked(input)
 
 describe('#dataset:alias:delete', () => {
@@ -101,7 +91,7 @@ describe('#dataset:alias:delete', () => {
 
     mockInput.mockResolvedValueOnce('~test-alias')
 
-    const {stdout} = await testCommand(DeleteAliasCommand, [aliasInput])
+    const {stdout} = await testCommand(DeleteAliasCommand, [aliasInput], {mocks: defaultMocks})
 
     expect(stdout).toContain('Dataset alias deleted successfully')
     expect(mockInput).toHaveBeenCalledWith({
@@ -124,7 +114,9 @@ describe('#dataset:alias:delete', () => {
       uri: '/aliases/test-alias',
     }).reply(200, {deleted: true})
 
-    const {stderr, stdout} = await testCommand(DeleteAliasCommand, ['test-alias', '--force'])
+    const {stderr, stdout} = await testCommand(DeleteAliasCommand, ['test-alias', '--force'], {
+      mocks: defaultMocks,
+    })
 
     expect(stderr).toContain("'--force' used: skipping confirmation")
     expect(stdout).toContain('Dataset alias deleted successfully')
@@ -147,7 +139,7 @@ describe('#dataset:alias:delete', () => {
 
     mockInput.mockResolvedValueOnce('~test-alias')
 
-    const {stdout} = await testCommand(DeleteAliasCommand, ['test-alias'])
+    const {stdout} = await testCommand(DeleteAliasCommand, ['test-alias'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Dataset alias deleted successfully')
     expect(mockInput).toHaveBeenCalledWith({
@@ -164,25 +156,26 @@ describe('#dataset:alias:delete', () => {
       uri: '/aliases',
     }).reply(200, [{datasetName: 'production', name: 'other-alias'}])
 
-    const {error} = await testCommand(DeleteAliasCommand, ['nonexistent'])
+    const {error} = await testCommand(DeleteAliasCommand, ['nonexistent'], {mocks: defaultMocks})
 
     expect(error?.message).toContain('Dataset alias "~nonexistent" does not exist')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('fails with invalid alias name', async () => {
-    const {error} = await testCommand(DeleteAliasCommand, ['a'])
+    const {error} = await testCommand(DeleteAliasCommand, ['a'], {mocks: defaultMocks})
 
     expect(error?.message).toContain('Alias name must be at least two characters long')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('fails when no project ID available', async () => {
-    mockGetCliConfig.mockResolvedValueOnce({
-      api: {},
+    const {error} = await testCommand(DeleteAliasCommand, ['test-alias'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {}},
+      },
     })
-
-    const {error} = await testCommand(DeleteAliasCommand, ['test-alias'])
 
     expect(error?.message).toContain(NO_PROJECT_ID)
     expect(error?.oclif?.exit).toBe(1)
@@ -204,7 +197,7 @@ describe('#dataset:alias:delete', () => {
 
     mockInput.mockResolvedValueOnce('~test-alias')
 
-    const {error} = await testCommand(DeleteAliasCommand, ['test-alias'])
+    const {error} = await testCommand(DeleteAliasCommand, ['test-alias'], {mocks: defaultMocks})
 
     expect(error?.message).toContain('Dataset alias deletion failed: API Error: Network timeout')
     expect(error?.oclif?.exit).toBe(1)

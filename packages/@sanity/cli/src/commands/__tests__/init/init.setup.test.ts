@@ -7,6 +7,7 @@ import {InitCommand} from '../../init'
 const mocks = vi.hoisted(() => ({
   checkIsRemoteTemplate: vi.fn().mockReturnValue(false),
   detectFrameworkRecord: vi.fn(),
+  getById: vi.fn(),
   getGitHubRepoInfo: vi.fn(),
 }))
 
@@ -15,27 +16,30 @@ vi.mock('@vercel/fs-detectors', () => ({
   LocalFileSystemDetector: vi.fn(),
 }))
 
-vi.mock('../../../../../cli-core/src/util/isInteractive.js', () => ({
-  isInteractive: vi.fn().mockReturnValue(true),
-}))
-
 vi.mock('../../../actions/init/remoteTemplate.js', () => ({
   checkIsRemoteTemplate: mocks.checkIsRemoteTemplate,
   getGitHubRepoInfo: mocks.getGitHubRepoInfo,
 }))
 
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      users: {
+        getById: mocks.getById,
+      } as never,
+    }),
+  }
+})
 
-vi.mock('../../../services/user.js', () => ({
-  getCliUser: vi.fn().mockResolvedValue({
-    email: 'test@example.com',
-    id: 'user-123',
-    name: 'Test User',
-    provider: 'saml-123',
-  }),
-}))
+// Set default mock behavior for getById
+mocks.getById.mockResolvedValue({
+  email: 'test@example.com',
+  id: 'user-123',
+  name: 'Test User',
+  provider: 'saml-123',
+})
 
 describe('#init: oclif command setup', () => {
   afterEach(() => {
@@ -140,7 +144,12 @@ describe('#init: oclif command setup', () => {
     {flag1: 'typescript', flag2: 'bare'},
     {flag1: 'project=test', flag2: 'create-project=test'},
   ])('throws error when `$flag1` and `$flag2` flags are both passed', async ({flag1, flag2}) => {
-    const {error} = await testCommand(InitCommand, [`--${flag1}`, `--${flag2}`])
+    const {error} = await testCommand(InitCommand, [`--${flag1}`, `--${flag2}`], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     const [name1] = flag1.split('=')
     const [name2, value2 = 'true'] = flag2.split('=')
@@ -163,25 +172,45 @@ describe('#init: oclif command setup', () => {
       value: 'pnm',
     },
   ])('throws error when `$flag` value is invalid', async ({flag, message, value}) => {
-    const {error} = await testCommand(InitCommand, [`--${flag}=${value}`])
+    const {error} = await testCommand(InitCommand, [`--${flag}=${value}`], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     expect(error?.message).toContain(message)
   })
 
   test('throws error when type argument is passed', async () => {
-    const {error} = await testCommand(InitCommand, ['bad-argument'])
+    const {error} = await testCommand(InitCommand, ['bad-argument'], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     expect(error?.message).toContain('Unknown init type "bad-argument"')
   })
 
   test('throws deprecation error when type argument is passed with `plugin`', async () => {
-    const {error} = await testCommand(InitCommand, ['plugin'])
+    const {error} = await testCommand(InitCommand, ['plugin'], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     expect(error?.message).toContain('Initializing plugins through the CLI is no longer supported')
   })
 
   test('throws error when `reconfigure` flag is passed', async () => {
-    const {error} = await testCommand(InitCommand, ['--reconfigure'])
+    const {error} = await testCommand(InitCommand, ['--reconfigure'], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     expect(error?.message).toContain(
       '--reconfigure is deprecated - manual configuration is now required',
@@ -200,9 +229,16 @@ describe('#init: oclif command setup', () => {
       repo: 'sanity',
     })
 
-    const {error} = await testCommand(InitCommand, [
-      '--template=https://github.com/sanity-io/sanity',
-    ])
+    const {error} = await testCommand(
+      InitCommand,
+      ['--template=https://github.com/sanity-io/sanity'],
+      {
+        mocks: {
+          isInteractive: true,
+          token: 'test-token',
+        },
+      },
+    )
 
     expect(error?.message).toContain(
       'A remote template cannot be used with a detected framework. Detected: Next.js',
@@ -210,7 +246,11 @@ describe('#init: oclif command setup', () => {
   })
 
   test('throws error when in unattended mode and `dataset` is not set', async () => {
-    const {error} = await testCommand(InitCommand, ['--yes'])
+    const {error} = await testCommand(InitCommand, ['--yes'], {
+      mocks: {
+        token: 'test-token',
+      },
+    })
 
     expect(error?.message).toContain('`--dataset` must be specified in unattended mode')
   })
@@ -219,11 +259,15 @@ describe('#init: oclif command setup', () => {
     // Mock no framework or a non-Next.js framework
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
 
-    const {error} = await testCommand(InitCommand, [
-      '--yes',
-      '--dataset=production',
-      '--project=test-project',
-    ])
+    const {error} = await testCommand(
+      InitCommand,
+      ['--yes', '--dataset=production', '--project=test-project'],
+      {
+        mocks: {
+          token: 'test-token',
+        },
+      },
+    )
 
     // Should throw output-path error for non-Next.js projects
     expect(error?.message).toContain('`--output-path` must be specified in unattended mode')
@@ -235,11 +279,19 @@ describe('#init: oclif command setup', () => {
       slug: 'nextjs',
     })
 
-    const {error} = await testCommand(InitCommand, [
-      '--yes',
-      '--dataset=production',
-      // Deliberately omitting --project and --create-project
-    ])
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--dataset=production',
+        // Deliberately omitting --project and --create-project
+      ],
+      {
+        mocks: {
+          token: 'test-token',
+        },
+      },
+    )
 
     expect(error?.message).toContain(
       '`--project <id>` or `--create-project <name>` must be specified in unattended mode',
@@ -252,11 +304,15 @@ describe('#init: oclif command setup', () => {
       slug: 'nextjs',
     })
 
-    const {error} = await testCommand(InitCommand, [
-      '--yes',
-      '--dataset=production',
-      '--create-project=test',
-    ])
+    const {error} = await testCommand(
+      InitCommand,
+      ['--yes', '--dataset=production', '--create-project=test'],
+      {
+        mocks: {
+          token: 'test-token',
+        },
+      },
+    )
 
     expect(error?.message).toContain(
       '--create-project is not supported in unattended mode without an organization, please specify an organization with `--organization <id>`',
@@ -266,9 +322,18 @@ describe('#init: oclif command setup', () => {
   test('logs properly if app template flag is not valid', async () => {
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
 
-    const {stdout} = await testCommand(InitCommand, [
-      '--template=invalid-template-name', // Not a valid app template
-    ])
+    const {stdout} = await testCommand(
+      InitCommand,
+      [
+        '--template=invalid-template-name', // Not a valid app template
+      ],
+      {
+        mocks: {
+          isInteractive: true,
+          token: 'test-token',
+        },
+      },
+    )
 
     // When template is not an app template, it should log "Fetching existing projects"
     expect(stdout).toContain('Fetching existing projects')

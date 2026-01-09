@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {confirm, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -18,39 +17,27 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/project',
-    root: '/test/project',
-    type: 'studio',
-  }),
-}))
+const mockConfirm = vi.mocked(confirm)
+const mockSelect = vi.mocked(select)
 
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
+const defaultMocks = {
+  cliConfig: {
     api: {
       projectId: 'test-project-id',
     },
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-
-const mockConfirm = vi.mocked(confirm)
-const mockSelect = vi.mocked(select)
-const mockGetCliConfig = vi.mocked(getCliConfig)
+  },
+  projectRoot: {
+    directory: '/test/project',
+    path: '/test/project/sanity.config.ts',
+    root: '/test/project',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#media:delete-aspect', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    // Reset getCliConfig mock to default
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        projectId: 'test-project-id',
-      },
-    })
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
@@ -85,7 +72,7 @@ describe('#media:delete-aspect', () => {
   })
 
   test('should error if aspect name is not provided', async () => {
-    const {error} = await testCommand(MediaDeleteAspectCommand, [])
+    const {error} = await testCommand(MediaDeleteAspectCommand, [], {mocks: defaultMocks})
 
     expect(error?.message).toMatchInlineSnapshot(`
       "Missing 1 required arg:
@@ -96,9 +83,12 @@ describe('#media:delete-aspect', () => {
   })
 
   test('should error if project ID is not configured', async () => {
-    mockGetCliConfig.mockResolvedValue({})
-
-    const {error} = await testCommand(MediaDeleteAspectCommand, ['myAspect'])
+    const {error} = await testCommand(MediaDeleteAspectCommand, ['myAspect'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {},
+      },
+    })
 
     expect(error?.message).toContain(NO_PROJECT_ID)
     expect(error?.oclif?.exit).toBe(1)
@@ -130,7 +120,9 @@ describe('#media:delete-aspect', () => {
       uri: '/media-libraries/test-library-id/mutate',
     }).reply(200, {results: [{id: 'myAspect'}]})
 
-    const {error, stdout} = await testCommand(MediaDeleteAspectCommand, ['myAspect'])
+    const {error, stdout} = await testCommand(MediaDeleteAspectCommand, ['myAspect'], {
+      mocks: defaultMocks,
+    })
 
     if (error) {
       console.log('ERROR:', error.message)
@@ -170,7 +162,7 @@ describe('#media:delete-aspect', () => {
       uri: '/media-libraries/test-library-id/mutate',
     }).reply(200, {results: [{id: 'myAspect'}]})
 
-    await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'])
+    await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'], {mocks: defaultMocks})
 
     expect(mockConfirm).not.toHaveBeenCalled()
   })
@@ -195,7 +187,9 @@ describe('#media:delete-aspect', () => {
     mockSelect.mockResolvedValue('test-library-id')
     mockConfirm.mockResolvedValue(false)
 
-    const {stdout} = await testCommand(MediaDeleteAspectCommand, ['myAspect'])
+    const {stdout} = await testCommand(MediaDeleteAspectCommand, ['myAspect'], {
+      mocks: defaultMocks,
+    })
 
     expect(mockConfirm).toHaveBeenCalled()
     expect(stdout).toContain('Operation cancelled')
@@ -210,12 +204,11 @@ describe('#media:delete-aspect', () => {
       uri: '/media-libraries/custom-library-id/mutate',
     }).reply(200, {results: [{id: 'myAspect'}]})
 
-    await testCommand(MediaDeleteAspectCommand, [
-      'myAspect',
-      '--media-library-id',
-      'custom-library-id',
-      '--yes',
-    ])
+    await testCommand(
+      MediaDeleteAspectCommand,
+      ['myAspect', '--media-library-id', 'custom-library-id', '--yes'],
+      {mocks: defaultMocks},
+    )
 
     expect(mockSelect).not.toHaveBeenCalled()
   })
@@ -246,10 +239,11 @@ describe('#media:delete-aspect', () => {
       uri: '/media-libraries/test-library-id/mutate',
     }).reply(200, {results: []})
 
-    const {stderr, stdout} = await testCommand(MediaDeleteAspectCommand, [
-      'nonExistentAspect',
-      '--yes',
-    ])
+    const {stderr, stdout} = await testCommand(
+      MediaDeleteAspectCommand,
+      ['nonExistentAspect', '--yes'],
+      {mocks: defaultMocks},
+    )
 
     expect(stderr).toContain("There's no deployed aspect with that name")
     expect(stdout).toContain('nonExistentAspect')
@@ -281,7 +275,9 @@ describe('#media:delete-aspect', () => {
       uri: '/media-libraries/test-library-id/mutate',
     }).reply(500, {message: 'Network timeout'})
 
-    const {error} = await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'])
+    const {error} = await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Failed to delete aspect')
     expect(error?.oclif?.exit).toBe(1)
@@ -313,7 +309,7 @@ describe('#media:delete-aspect', () => {
       uri: '/media-libraries/selected-library-id/mutate',
     }).reply(200, {results: [{id: 'myAspect'}]})
 
-    await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'])
+    await testCommand(MediaDeleteAspectCommand, ['myAspect', '--yes'], {mocks: defaultMocks})
 
     expect(mockSelect).toHaveBeenCalledWith(
       expect.objectContaining({

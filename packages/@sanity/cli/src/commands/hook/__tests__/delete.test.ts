@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -8,26 +7,6 @@ import {HOOK_API_VERSION} from '../../../actions/hook/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Delete} from '../delete.js'
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => {
-  return {
-    findProjectRoot: vi.fn().mockResolvedValue({
-      directory: '/test/path',
-      root: '/test/path',
-      type: 'studio',
-    }),
-  }
-})
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
-  return {
-    getCliConfig: vi.fn().mockResolvedValue({
-      api: {
-        projectId: 'test-project',
-      },
-    }),
-  }
-})
-
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
@@ -35,6 +14,18 @@ vi.mock('@sanity/cli-core/ux', async () => {
     select: vi.fn(),
   }
 })
+
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 const mockSelect = vi.mocked(await import('@sanity/cli-core/ux')).select
 
@@ -74,7 +65,7 @@ describe('#delete', () => {
       uri: '/hooks/projects/test-project/hook1',
     }).reply(200)
 
-    const {stdout} = await testCommand(Delete, ['test-hook'])
+    const {stdout} = await testCommand(Delete, ['test-hook'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Hook deleted')
   })
@@ -93,7 +84,7 @@ describe('#delete', () => {
       },
     ])
 
-    const {error} = await testCommand(Delete, ['nonexistent-hook'])
+    const {error} = await testCommand(Delete, ['nonexistent-hook'], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Hook with name "nonexistent-hook" not found')
@@ -105,7 +96,7 @@ describe('#delete', () => {
       uri: '/hooks/projects/test-project',
     }).reply(200, [])
 
-    const {error} = await testCommand(Delete, [])
+    const {error} = await testCommand(Delete, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('No hooks configured for this project')
@@ -142,7 +133,7 @@ describe('#delete', () => {
 
     mockSelect.mockResolvedValueOnce('hook2')
 
-    const {stdout} = await testCommand(Delete, [])
+    const {stdout} = await testCommand(Delete, [], {mocks: defaultMocks})
 
     expect(mockSelect).toHaveBeenCalledWith({
       choices: [
@@ -160,7 +151,7 @@ describe('#delete', () => {
       uri: '/hooks/projects/test-project',
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(Delete, [])
+    const {error} = await testCommand(Delete, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to fetch hooks')
@@ -186,20 +177,19 @@ describe('#delete', () => {
       uri: '/hooks/projects/test-project/hook1',
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(Delete, ['test-hook'])
+    const {error} = await testCommand(Delete, ['test-hook'], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Hook deletion failed')
   })
 
   test('throws error when no project ID is found', async () => {
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(Delete, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(Delete, [])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -225,7 +215,7 @@ describe('#delete', () => {
       uri: '/hooks/projects/test-project/hook1',
     }).reply(200)
 
-    const {stdout} = await testCommand(Delete, ['test-hook-name'])
+    const {stdout} = await testCommand(Delete, ['test-hook-name'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Hook deleted')
   })

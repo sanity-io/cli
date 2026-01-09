@@ -8,20 +8,18 @@ import {getCliVersion} from '../../util/getCliVersion.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {readPackageJson} from '../../util/readPackageJson.js'
 
-vi.mock('../../../../cli-core/src/config/findProjectRoot.js', async () => {
-  return {
-    findProjectRoot: vi.fn().mockResolvedValue({
-      directory: '/test/path',
-      root: '/test/path',
-      type: 'studio',
-    }),
-  }
-})
-
 vi.mock(import('../../util/getCliVersion.js'))
 vi.mock(import('../../util/readPackageJson.js'))
 vi.mock(import('../../util/getLocalPackageVersion.js'))
 vi.mock(import('get-latest-version'))
+
+const defaultMocks = {
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+}
 
 afterEach(() => {
   vi.clearAllMocks()
@@ -60,7 +58,7 @@ describe('#versions', () => {
     vi.mocked(getLatestVersion).mockResolvedValue('3.0.0' as never)
     vi.mocked(getLocalPackageVersion).mockResolvedValue('3.0.0')
 
-    const {stdout} = await testCommand(Versions)
+    const {stdout} = await testCommand(Versions, [], {mocks: defaultMocks})
 
     expect(stdout).toMatchInlineSnapshot(`
       "@sanity/cli (global)  3.0.0 (up to date)
@@ -83,7 +81,7 @@ describe('#versions', () => {
     vi.mocked(getLatestVersion).mockResolvedValue('3.0.0' as never)
     vi.mocked(getLocalPackageVersion).mockResolvedValue('2.0.0')
 
-    const {stdout} = await testCommand(Versions)
+    const {stdout} = await testCommand(Versions, [], {mocks: defaultMocks})
 
     expect(stdout).toMatchInlineSnapshot(`
       "@sanity/cli (global)  2.0.0 (latest: 3.0.0)
@@ -105,7 +103,7 @@ describe('#versions', () => {
     vi.mocked(getLocalPackageVersion).mockReturnValueOnce(Promise.resolve(undefined))
     vi.mocked(getLatestVersion).mockResolvedValue('3.0.0' as never)
 
-    const {stdout} = await testCommand(Versions)
+    const {stdout} = await testCommand(Versions, [], {mocks: defaultMocks})
 
     expect(stdout).toMatchInlineSnapshot(`
       "@sanity/cli (global)      3.0.0 (up to date)
@@ -125,7 +123,7 @@ describe('#versions', () => {
     })
     vi.mocked(getLatestVersion).mockResolvedValue('3.0.0' as never)
 
-    const {stdout} = await testCommand(Versions)
+    const {stdout} = await testCommand(Versions, [], {mocks: defaultMocks})
     expect(stdout).toMatchInlineSnapshot(`
       "@sanity/cli (global)  3.0.0 (up to date)
       "
@@ -141,7 +139,7 @@ describe('#versions', () => {
     })
     vi.mocked(getLatestVersion).mockRejectedValueOnce(new Error('No sanity packages found'))
 
-    const {error} = await testCommand(Versions)
+    const {error} = await testCommand(Versions, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual('Cannot find version for @sanity/cli')

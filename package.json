@@ -36,7 +36,7 @@
     "test": "vitest run",
     "pretest:watch": "pnpm run build:cli",
     "test:watch": "vitest",
-    "watch:cli": "turbo run watch --filter=@sanity/cli --filter=@sanity/cli-core"
+    "watch:cli": "turbo run watch --filter=@sanity/cli --filter=@sanity/cli*"
   },
   "resolutions": {
     "@sanity/client": "^7.14.0"

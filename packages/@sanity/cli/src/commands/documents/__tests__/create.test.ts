@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 import {runCommand} from '@oclif/test'
-import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {getProjectCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
@@ -28,22 +28,6 @@ vi.mock('node:crypto', async () => {
   }
 })
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn(),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
   return {
@@ -52,8 +36,6 @@ vi.mock('@sanity/cli-core', async () => {
   }
 })
 
-const mockGetCliConfig = vi.mocked(getCliConfig)
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 const mockFs = vi.mocked(fs)
 const mockOs = vi.mocked(os)
 const mockChokidarWatch = vi.mocked(chokidarWatch)
@@ -61,6 +43,7 @@ const mockExeca = vi.mocked(execa)
 const mockExecaSync = vi.mocked(execaSync)
 const mockJson5 = vi.mocked(json5)
 const mockRandomUUID = vi.mocked(randomUUID)
+const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
 const testProjectId = 'test-project'
 const testDataset = 'production'
@@ -85,26 +68,18 @@ const baseConfig = {
   },
 }
 
-// Helper functions moved to outer scope to fix linting
-const setupBaseMocks = (additionalConfig = {}) => {
-  mockGetCliConfig.mockResolvedValue({...baseConfig, ...additionalConfig})
+const defaultMocks = {
+  cliConfig: baseConfig,
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
 }
 
-const setupMocks = () => {
-  setupBaseMocks()
-  const mockClient = {
-    transaction: vi.fn().mockReturnValue({
-      commit: vi.fn().mockResolvedValue({
-        results: [{id: 'test-doc', operation: 'create'}],
-      }),
-    }),
-  }
-  mockGetProjectCliClient.mockResolvedValue(mockClient as never)
-  return mockClient
-}
-
+// Helper functions
 const setupEditorMocks = () => {
-  setupBaseMocks()
   mockOs.tmpdir.mockReturnValue('/tmp')
   mockFs.mkdir.mockResolvedValue(undefined)
   mockFs.writeFile.mockResolvedValue(undefined)
@@ -113,7 +88,6 @@ const setupEditorMocks = () => {
 }
 
 const setupWatchMocks = () => {
-  setupBaseMocks()
   mockOs.tmpdir.mockReturnValue('/tmp')
   mockFs.mkdir.mockResolvedValue(undefined)
   mockFs.writeFile.mockResolvedValue(undefined)
@@ -185,28 +159,24 @@ describe('#documents:create', () => {
       title: 'Test Post',
     }
 
-    const mockTransaction = {
+    const mockTransaction = vi.fn().mockReturnValue({
       commit: vi.fn().mockResolvedValue({
         results: [{id: 'test-doc', operation: 'create'}],
       }),
-    }
-
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: testDataset,
-        projectId: testProjectId,
-      },
     })
 
-    const mockClient = {
-      transaction: vi.fn().mockReturnValue(mockTransaction),
-    }
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+    mockGetProjectCliClient.mockResolvedValue({
+      transaction: mockTransaction,
+    } as never)
 
     mockFs.readFile.mockResolvedValue(JSON.stringify(mockDoc))
     mockJson5.parse.mockReturnValue(mockDoc)
 
-    const {stdout} = await testCommand(CreateDocumentCommand, ['test-doc.json'])
+    const {stdout} = await testCommand(CreateDocumentCommand, ['test-doc.json'], {
+      mocks: {
+        ...defaultMocks,
+      },
+    })
 
     expect(stdout).toContain('Created:')
     expect(stdout).toContain('test-doc')
@@ -214,7 +184,7 @@ describe('#documents:create', () => {
       path.resolve(process.cwd(), 'test-doc.json'),
       'utf8',
     )
-    expect(mockClient.transaction).toHaveBeenCalledWith([{create: mockDoc}])
+    expect(mockTransaction).toHaveBeenCalledWith([{create: mockDoc}])
   })
 
   test('creates document with replace flag', async () => {
@@ -224,32 +194,28 @@ describe('#documents:create', () => {
       title: 'Test Post',
     }
 
-    const mockTransaction = {
+    const mockTransaction = vi.fn().mockReturnValue({
       commit: vi.fn().mockResolvedValue({
         results: [{id: 'test-doc', operation: 'update'}],
       }),
-    }
-
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: testDataset,
-        projectId: testProjectId,
-      },
     })
 
-    const mockClient = {
-      transaction: vi.fn().mockReturnValue(mockTransaction),
-    }
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+    mockGetProjectCliClient.mockResolvedValue({
+      transaction: mockTransaction,
+    } as never)
 
     mockFs.readFile.mockResolvedValue(JSON.stringify(mockDoc))
     mockJson5.parse.mockReturnValue(mockDoc)
 
-    const {stdout} = await testCommand(CreateDocumentCommand, ['test-doc.json', '--replace'])
+    const {stdout} = await testCommand(CreateDocumentCommand, ['test-doc.json', '--replace'], {
+      mocks: {
+        ...defaultMocks,
+      },
+    })
 
     expect(stdout).toContain('Upserted:')
     expect(stdout).toContain('test-doc')
-    expect(mockClient.transaction).toHaveBeenCalledWith([{createOrReplace: mockDoc}])
+    expect(mockTransaction).toHaveBeenCalledWith([{createOrReplace: mockDoc}])
   })
 
   test('creates document with missing flag', async () => {
@@ -259,64 +225,54 @@ describe('#documents:create', () => {
       title: 'Test Post',
     }
 
-    const mockTransaction = {
+    const mockTransaction = vi.fn().mockReturnValue({
       commit: vi.fn().mockResolvedValue({
         results: [{id: 'test-doc', operation: 'update'}],
       }),
-    }
-
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: testDataset,
-        projectId: testProjectId,
-      },
     })
 
-    const mockClient = {
-      transaction: vi.fn().mockReturnValue(mockTransaction),
-    }
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+    mockGetProjectCliClient.mockResolvedValue({
+      transaction: mockTransaction,
+    } as never)
 
     mockFs.readFile.mockResolvedValue(JSON.stringify(mockDoc))
     mockJson5.parse.mockReturnValue(mockDoc)
 
-    const {stdout} = await testCommand(CreateDocumentCommand, ['test-doc.json', '--missing'])
+    const {stdout} = await testCommand(CreateDocumentCommand, ['test-doc.json', '--missing'], {
+      mocks: {
+        ...defaultMocks,
+      },
+    })
 
     expect(stdout).toContain('Skipped (already exists):')
     expect(stdout).toContain('test-doc')
-    expect(mockClient.transaction).toHaveBeenCalledWith([{createIfNotExists: mockDoc}])
+    expect(mockTransaction).toHaveBeenCalledWith([{createIfNotExists: mockDoc}])
   })
 
   test(
     'opens editor when no file specified and creates document from editor content',
     withEditorEnv(async () => {
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          dataset: testDataset,
-          projectId: testProjectId,
-        },
+      const mockTransaction = vi.fn().mockReturnValue({
+        commit: vi.fn().mockResolvedValue({
+          results: [{id: 'generated-id', operation: 'create'}],
+        }),
       })
 
-      const mockClient = {
+      mockGetProjectCliClient.mockResolvedValue({
         getDocument: vi.fn().mockResolvedValue(null),
-        transaction: vi.fn().mockReturnValue({
-          commit: vi.fn().mockResolvedValue({
-            results: [{id: 'generated-id', operation: 'create'}],
-          }),
-        }),
-      }
-      mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+        transaction: mockTransaction,
+      } as never)
 
-      mockOs.tmpdir.mockReturnValue('/tmp')
-      mockFs.mkdir.mockResolvedValue(undefined)
-      mockFs.writeFile.mockResolvedValue(undefined)
+      setupEditorMocks()
       mockFs.readFile.mockResolvedValue('{"_id": "generated-id", "_type": "updated-type"}')
-      mockFs.unlink.mockResolvedValue(undefined)
       mockJson5.stringify.mockReturnValue('{"_id": "generated-id", "_type": "specify-me"}')
       mockJson5.parse.mockReturnValue({_id: 'generated-id', _type: 'updated-type'})
-      mockExecaSync.mockReturnValue(undefined as never)
 
-      const {stdout} = await testCommand(CreateDocumentCommand, [])
+      const {stdout} = await testCommand(CreateDocumentCommand, [], {
+        mocks: {
+          ...defaultMocks,
+        },
+      })
 
       expect(stdout).toContain('Created:')
       expect(mockFs.mkdir).toHaveBeenCalledWith('/tmp/sanity-cli', {
@@ -334,15 +290,28 @@ describe('#documents:create', () => {
       title: 'Test Post',
     }
 
-    setupMocks()
+    const mockTransaction = vi.fn().mockReturnValue({
+      commit: vi.fn().mockResolvedValue({
+        results: [{id: 'test-doc', operation: 'create'}],
+      }),
+    })
+
+    mockGetProjectCliClient.mockResolvedValue({
+      transaction: mockTransaction,
+    } as never)
+
     mockFs.readFile.mockResolvedValue(JSON.stringify(mockDoc))
     mockJson5.parse.mockReturnValue(mockDoc)
 
-    const {stdout} = await testCommand(CreateDocumentCommand, [
-      'test-doc.json',
-      '--dataset',
-      'staging',
-    ])
+    const {stdout} = await testCommand(
+      CreateDocumentCommand,
+      ['test-doc.json', '--dataset', 'staging'],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
 
     expect(stdout).toContain('Created:')
     expect(mockGetProjectCliClient).toHaveBeenCalledWith(
@@ -353,13 +322,11 @@ describe('#documents:create', () => {
   })
 
   test('throws error when both --replace and --missing flags are used', async () => {
-    setupBaseMocks()
-
-    const {error} = await testCommand(CreateDocumentCommand, [
-      'test-doc.json',
-      '--replace',
-      '--missing',
-    ])
+    const {error} = await testCommand(
+      CreateDocumentCommand,
+      ['test-doc.json', '--replace', '--missing'],
+      {mocks: defaultMocks},
+    )
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Cannot use both --replace and --missing')
@@ -367,9 +334,9 @@ describe('#documents:create', () => {
   })
 
   test('throws error when --id and file path are both provided', async () => {
-    setupBaseMocks()
-
-    const {error} = await testCommand(CreateDocumentCommand, ['test-doc.json', '--id', 'myDocId'])
+    const {error} = await testCommand(CreateDocumentCommand, ['test-doc.json', '--id', 'myDocId'], {
+      mocks: defaultMocks,
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Cannot use --id when specifying a file path')
@@ -377,14 +344,17 @@ describe('#documents:create', () => {
   })
 
   test('throws error when no project ID is configured', async () => {
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: 'production',
-        projectId: undefined,
+    const {error} = await testCommand(CreateDocumentCommand, ['test-doc.json'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {
+          api: {
+            dataset: 'production',
+            projectId: undefined,
+          },
+        },
       },
     })
-
-    const {error} = await testCommand(CreateDocumentCommand, ['test-doc.json'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -392,14 +362,17 @@ describe('#documents:create', () => {
   })
 
   test('throws error when no dataset is configured and none provided', async () => {
-    mockGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: undefined,
-        projectId: testProjectId,
+    const {error} = await testCommand(CreateDocumentCommand, ['test-doc.json'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {
+          api: {
+            dataset: undefined,
+            projectId: testProjectId,
+          },
+        },
       },
     })
-
-    const {error} = await testCommand(CreateDocumentCommand, ['test-doc.json'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('No dataset specified')
@@ -407,11 +380,13 @@ describe('#documents:create', () => {
   })
 
   test('displays error message when file cannot be read', async () => {
-    setupBaseMocks()
-    mockGetProjectCliClient.mockResolvedValue({} as never)
     mockFs.readFile.mockRejectedValue(new Error('File not found'))
 
-    const {error} = await testCommand(CreateDocumentCommand, ['nonexistent.json'])
+    const {error} = await testCommand(CreateDocumentCommand, ['nonexistent.json'], {
+      mocks: {
+        ...defaultMocks,
+      },
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to create documents')
@@ -421,12 +396,14 @@ describe('#documents:create', () => {
   test('validates document has required _type property', async () => {
     const invalidDoc = {title: 'Test Post'} // Missing _type
 
-    setupBaseMocks()
-    mockGetProjectCliClient.mockResolvedValue({} as never)
     mockFs.readFile.mockResolvedValue(JSON.stringify(invalidDoc))
     mockJson5.parse.mockReturnValue(invalidDoc)
 
-    const {error} = await testCommand(CreateDocumentCommand, ['invalid-doc.json'])
+    const {error} = await testCommand(CreateDocumentCommand, ['invalid-doc.json'], {
+      mocks: {
+        ...defaultMocks,
+      },
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to create documents')
@@ -436,33 +413,26 @@ describe('#documents:create', () => {
   test(
     'uses JSON5 when --json5 flag is provided',
     withEditorEnv(async () => {
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          dataset: testDataset,
-          projectId: testProjectId,
-        },
-      })
-
-      const mockClient = {
-        getDocument: vi.fn().mockResolvedValue(null),
-        transaction: vi.fn().mockReturnValue({
-          commit: vi.fn().mockResolvedValue({
-            results: [{id: 'generated-id', operation: 'create'}],
-          }),
+      const mockTransaction = vi.fn().mockReturnValue({
+        commit: vi.fn().mockResolvedValue({
+          results: [{id: 'generated-id', operation: 'create'}],
         }),
-      }
-      mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+      })
+      mockGetProjectCliClient.mockResolvedValue({
+        getDocument: vi.fn().mockResolvedValue(null),
+        transaction: mockTransaction,
+      } as never)
 
-      mockOs.tmpdir.mockReturnValue('/tmp')
-      mockFs.mkdir.mockResolvedValue(undefined)
-      mockFs.writeFile.mockResolvedValue(undefined)
+      setupEditorMocks()
       mockFs.readFile.mockResolvedValue('{"_id": "generated-id", "_type": "updated-type"}')
-      mockFs.unlink.mockResolvedValue(undefined)
       mockJson5.stringify.mockReturnValue('{"_id": "generated-id", "_type": "specify-me"}')
       mockJson5.parse.mockReturnValue({_id: 'generated-id', _type: 'updated-type'})
-      mockExecaSync.mockReturnValue(undefined as never)
 
-      await testCommand(CreateDocumentCommand, ['--json5'])
+      await testCommand(CreateDocumentCommand, ['--json5'], {
+        mocks: {
+          ...defaultMocks,
+        },
+      })
 
       expect(mockJson5.stringify).toHaveBeenCalled()
       expect(mockFs.writeFile).toHaveBeenCalledWith(
@@ -511,11 +481,23 @@ describe('#documents:create', () => {
         'Document _id cannot be longer than 200 characters',
       ],
     ])('validates %s', async (description, doc, expectedErrorSubstring) => {
-      setupMocks()
+      const mockTransaction = vi.fn().mockReturnValue({
+        commit: vi.fn().mockResolvedValue({
+          results: [{id: 'test-doc', operation: 'create'}],
+        }),
+      })
+      mockGetProjectCliClient.mockResolvedValue({
+        transaction: mockTransaction,
+      } as never)
+
       mockFs.readFile.mockResolvedValue(JSON.stringify(doc))
       mockJson5.parse.mockReturnValue(doc)
 
-      const {error} = await testCommand(CreateDocumentCommand, ['invalid-doc.json'])
+      const {error} = await testCommand(CreateDocumentCommand, ['invalid-doc.json'], {
+        mocks: {
+          ...defaultMocks,
+        },
+      })
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain(expectedErrorSubstring)
@@ -534,11 +516,23 @@ describe('#documents:create', () => {
         'Document at index 1 must have a `_type` property of type string',
       ],
     ])('validates %s', async (description, docs, expectedErrorSubstring) => {
-      setupMocks()
+      const mockTransaction = vi.fn().mockReturnValue({
+        commit: vi.fn().mockResolvedValue({
+          results: [{id: 'test-doc', operation: 'create'}],
+        }),
+      })
+      mockGetProjectCliClient.mockResolvedValue({
+        transaction: mockTransaction,
+      } as never)
+
       mockFs.readFile.mockResolvedValue(JSON.stringify(docs))
       mockJson5.parse.mockReturnValue(docs)
 
-      const {error} = await testCommand(CreateDocumentCommand, ['invalid-docs.json'])
+      const {error} = await testCommand(CreateDocumentCommand, ['invalid-docs.json'], {
+        mocks: {
+          ...defaultMocks,
+        },
+      })
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain(expectedErrorSubstring)
@@ -555,34 +549,52 @@ describe('#documents:create', () => {
         title: 'Test Post',
       }
 
-      setupMocks()
-      const mockClient = {
-        transaction: vi.fn().mockReturnValue({
-          commit: vi.fn().mockResolvedValue({
-            results: [{id: 'test-doc', operation: 'create'}],
-          }),
+      const mockTransaction = vi.fn().mockReturnValue({
+        commit: vi.fn().mockResolvedValue({
+          results: [{id: 'test-doc', operation: 'create'}],
         }),
-      }
-      mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+      })
+
+      mockGetProjectCliClient.mockResolvedValue({
+        transaction: mockTransaction,
+      } as never)
+
       mockFs.readFile.mockResolvedValue(JSON.stringify(docWithReservedFields))
       mockJson5.parse.mockReturnValue(docWithReservedFields)
 
       // Should not throw error, but should proceed with document creation
-      const {stdout} = await testCommand(CreateDocumentCommand, ['doc.json'])
+      const {stdout} = await testCommand(CreateDocumentCommand, ['doc.json'], {
+        mocks: {
+          ...defaultMocks,
+        },
+      })
 
       expect(stdout).toContain('Created:')
       expect(stdout).toContain('test-doc')
-      expect(mockClient.transaction).toHaveBeenCalledWith([{create: docWithReservedFields}])
+      expect(mockTransaction).toHaveBeenCalledWith([{create: docWithReservedFields}])
     })
 
     test('validates empty document array throws error', async () => {
       const emptyArray: unknown[] = []
 
-      setupMocks()
+      const mockTransaction = vi.fn().mockReturnValue({
+        commit: vi.fn().mockResolvedValue({
+          results: [{id: 'test-doc', operation: 'create'}],
+        }),
+      })
+
+      mockGetProjectCliClient.mockResolvedValue({
+        transaction: mockTransaction,
+      } as never)
+
       mockFs.readFile.mockResolvedValue(JSON.stringify(emptyArray))
       mockJson5.parse.mockReturnValue(emptyArray)
 
-      const {error} = await testCommand(CreateDocumentCommand, ['empty-docs.json'])
+      const {error} = await testCommand(CreateDocumentCommand, ['empty-docs.json'], {
+        mocks: {
+          ...defaultMocks,
+        },
+      })
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('No documents provided')
@@ -601,34 +613,37 @@ describe('#documents:create', () => {
         {_id: 'doc2', _type: 'post', title: 'Post 2'},
       ]
 
-      const mockTransaction = {
+      const mockTransaction = vi.fn().mockReturnValue({
         commit: vi.fn().mockResolvedValue({
           results: [
             {id: 'doc1', operation: operation === 'createIfNotExists' ? 'update' : 'create'},
             {id: 'doc2', operation: operation === 'createIfNotExists' ? 'update' : 'create'},
           ],
         }),
-      }
+      })
 
-      setupMocks()
-      const mockClient = {
-        transaction: vi.fn().mockReturnValue(mockTransaction),
-      }
-      mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+      mockGetProjectCliClient.mockResolvedValue({
+        transaction: mockTransaction,
+      } as never)
+
       mockFs.readFile.mockResolvedValue(JSON.stringify(mockDocs))
       mockJson5.parse.mockReturnValue(mockDocs)
 
       const args = ['docs.json']
       if (flag !== 'create') args.push(`--${flag}`)
 
-      const {stdout} = await testCommand(CreateDocumentCommand, args)
+      const {stdout} = await testCommand(CreateDocumentCommand, args, {
+        mocks: {
+          ...defaultMocks,
+        },
+      })
 
       expect(stdout).toContain(expectedMessage)
       expect(stdout).toContain('doc1')
       expect(stdout).toContain('doc2')
 
       const expectedMutations = mockDocs.map((doc) => ({[operation]: doc}))
-      expect(mockClient.transaction).toHaveBeenCalledWith(expectedMutations)
+      expect(mockTransaction).toHaveBeenCalledWith(expectedMutations)
     })
 
     test('handles mixed results for createIfNotExists', async () => {
@@ -638,7 +653,7 @@ describe('#documents:create', () => {
         {_id: 'doc3', _type: 'post', title: 'Post 3'},
       ]
 
-      const mockTransaction = {
+      const mockTransaction = vi.fn().mockReturnValue({
         commit: vi.fn().mockResolvedValue({
           results: [
             {id: 'doc1', operation: 'create'}, // Created
@@ -646,17 +661,20 @@ describe('#documents:create', () => {
             {id: 'doc3', operation: 'create'}, // Created
           ],
         }),
-      }
+      })
 
-      setupMocks()
-      const mockClient = {
-        transaction: vi.fn().mockReturnValue(mockTransaction),
-      }
-      mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+      mockGetProjectCliClient.mockResolvedValue({
+        transaction: mockTransaction,
+      } as never)
+
       mockFs.readFile.mockResolvedValue(JSON.stringify(mockDocs))
       mockJson5.parse.mockReturnValue(mockDocs)
 
-      const {stdout} = await testCommand(CreateDocumentCommand, ['docs.json', '--missing'])
+      const {stdout} = await testCommand(CreateDocumentCommand, ['docs.json', '--missing'], {
+        mocks: {
+          ...defaultMocks,
+        },
+      })
 
       expect(stdout).toContain('Created:')
       expect(stdout).toContain('doc1')
@@ -676,24 +694,31 @@ describe('#documents:create', () => {
           title: 'Existing Post',
         }
 
-        const mockClient = {
-          getDocument: vi.fn().mockResolvedValue(existingDoc),
-          transaction: vi.fn().mockReturnValue({
-            commit: vi.fn().mockResolvedValue({
-              results: [{id: 'existing-doc', operation: 'update'}],
-            }),
+        const mockTransaction = vi.fn().mockReturnValue({
+          commit: vi.fn().mockResolvedValue({
+            results: [{id: 'existing-doc', operation: 'update'}],
           }),
-        }
-        mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+        } as never)
+
+        const mockGetDocument = vi.fn().mockResolvedValue(existingDoc)
+
+        mockGetProjectCliClient.mockResolvedValue({
+          getDocument: mockGetDocument,
+          transaction: mockTransaction,
+        } as never)
 
         setupEditorMocks()
         mockFs.readFile.mockResolvedValue(JSON.stringify({...existingDoc, title: 'Updated Post'}))
         mockJson5.parse.mockReturnValue({...existingDoc, title: 'Updated Post'})
         mockJson5.stringify.mockReturnValue(JSON.stringify(existingDoc, null, 2))
 
-        const {stdout} = await testCommand(CreateDocumentCommand, ['--id', 'existing-doc'])
+        const {stdout} = await testCommand(CreateDocumentCommand, ['--id', 'existing-doc'], {
+          mocks: {
+            ...defaultMocks,
+          },
+        })
 
-        expect(mockClient.getDocument).toHaveBeenCalledWith('existing-doc')
+        expect(mockGetDocument).toHaveBeenCalledWith('existing-doc')
         expect(mockFs.writeFile).toHaveBeenCalledWith(
           expect.stringContaining('existing-doc.json'),
           JSON.stringify(existingDoc, null, 2),
@@ -706,11 +731,12 @@ describe('#documents:create', () => {
     test(
       'handles no changes made in editor',
       withEditorEnv(async () => {
-        const mockClient = {
+        const mockTransaction = vi.fn()
+
+        mockGetProjectCliClient.mockResolvedValue({
           getDocument: vi.fn().mockResolvedValue(null),
-          transaction: vi.fn(),
-        }
-        mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+          transaction: mockTransaction,
+        } as never)
 
         setupEditorMocks()
 
@@ -732,10 +758,14 @@ describe('#documents:create', () => {
         // Return the exact same object structure that was written
         mockJson5.parse.mockReturnValue(defaultDoc)
 
-        await testCommand(CreateDocumentCommand, [])
+        await testCommand(CreateDocumentCommand, [], {
+          mocks: {
+            ...defaultMocks,
+          },
+        })
 
         // The key test - transaction should not have been called since no changes were made
-        expect(mockClient.transaction).not.toHaveBeenCalled()
+        expect(mockTransaction).not.toHaveBeenCalled()
       }),
     )
 
@@ -748,13 +778,14 @@ describe('#documents:create', () => {
           title: 'Test Post',
         }
 
-        const mockClient = {
+        const mockTransaction = vi.fn().mockReturnValue({
+          commit: vi.fn().mockRejectedValue(new Error('Document already exists')),
+        })
+
+        mockGetProjectCliClient.mockResolvedValue({
           getDocument: vi.fn().mockResolvedValue(null),
-          transaction: vi.fn().mockReturnValue({
-            commit: vi.fn().mockRejectedValue(new Error('Document already exists')),
-          }),
-        }
-        mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+          transaction: mockTransaction,
+        } as never)
 
         setupEditorMocks()
         mockFs.readFile.mockResolvedValue(JSON.stringify(mockDoc))
@@ -763,7 +794,11 @@ describe('#documents:create', () => {
           JSON.stringify({_id: 'test-doc', _type: 'specify-me'}, null, 2),
         )
 
-        const {error} = await testCommand(CreateDocumentCommand, [])
+        const {error} = await testCommand(CreateDocumentCommand, [], {
+          mocks: {
+            ...defaultMocks,
+          },
+        })
 
         expect(error).toBeInstanceOf(Error)
         expect(error?.message).toContain('Failed to write documents: Document already exists')
@@ -781,15 +816,16 @@ describe('#documents:create', () => {
           title: 'Test Post',
         }
 
-        const mockClient = {
-          getDocument: vi.fn().mockResolvedValue(null),
-          transaction: vi.fn().mockReturnValue({
-            commit: vi.fn().mockResolvedValue({
-              results: [{id: 'test-doc', operation: 'create'}],
-            }),
+        const mockTransaction = vi.fn().mockReturnValue({
+          commit: vi.fn().mockResolvedValue({
+            results: [{id: 'test-doc', operation: 'create'}],
           }),
-        }
-        mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+        })
+
+        mockGetProjectCliClient.mockResolvedValue({
+          getDocument: vi.fn().mockResolvedValue(null),
+          transaction: mockTransaction,
+        } as never)
 
         setupEditorMocks()
         // Mock unlink to throw an error (should be caught silently)
@@ -800,7 +836,11 @@ describe('#documents:create', () => {
           JSON.stringify({_id: 'test-doc', _type: 'specify-me'}, null, 2),
         )
 
-        const {stdout} = await testCommand(CreateDocumentCommand, [])
+        const {stdout} = await testCommand(CreateDocumentCommand, [], {
+          mocks: {
+            ...defaultMocks,
+          },
+        })
 
         // Should still succeed despite file cleanup error
         expect(stdout).toContain('Created:')
@@ -819,15 +859,16 @@ describe('#documents:create', () => {
         }
         mockChokidarWatch.mockReturnValue(mockWatcher as never)
 
-        const mockClient = {
-          getDocument: vi.fn().mockResolvedValue(null),
-          transaction: vi.fn().mockReturnValue({
-            commit: vi.fn().mockResolvedValue({
-              results: [{id: 'test-doc', operation: 'create'}],
-            }),
+        const mockTransaction = vi.fn().mockReturnValue({
+          commit: vi.fn().mockResolvedValue({
+            results: [{id: 'test-doc', operation: 'create'}],
           }),
-        }
-        mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+        })
+
+        mockGetProjectCliClient.mockResolvedValue({
+          getDocument: vi.fn().mockResolvedValue(null),
+          transaction: mockTransaction,
+        } as never)
 
         setupWatchMocks()
         mockJson5.stringify.mockReturnValue(
@@ -835,7 +876,11 @@ describe('#documents:create', () => {
         )
         mockExeca.mockResolvedValue({} as never)
 
-        const {stdout} = await testCommand(CreateDocumentCommand, ['--watch'])
+        const {stdout} = await testCommand(CreateDocumentCommand, ['--watch'], {
+          mocks: {
+            ...defaultMocks,
+          },
+        })
 
         expect(stdout).toContain('Watch mode:')
         expect(stdout).toContain('Will write documents on each save.')
@@ -866,15 +911,16 @@ describe('#documents:create', () => {
         }
         mockChokidarWatch.mockReturnValue(mockWatcher as never)
 
-        const mockClient = {
-          getDocument: vi.fn().mockResolvedValue(null),
-          transaction: vi.fn().mockReturnValue({
-            commit: vi.fn().mockResolvedValue({
-              results: [{id: 'test-doc', operation: 'create'}],
-            }),
+        const mockTransaction = vi.fn().mockReturnValue({
+          commit: vi.fn().mockResolvedValue({
+            results: [{id: 'test-doc', operation: 'create'}],
           }),
-        }
-        mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+        })
+
+        mockGetProjectCliClient.mockResolvedValue({
+          getDocument: vi.fn().mockResolvedValue(null),
+          transaction: mockTransaction,
+        } as never)
 
         setupWatchMocks()
         mockJson5.stringify.mockReturnValue(
@@ -886,13 +932,17 @@ describe('#documents:create', () => {
         mockFs.readFile.mockResolvedValue(JSON.stringify(mockDoc))
         mockJson5.parse.mockReturnValue(mockDoc)
 
-        await testCommand(CreateDocumentCommand, ['--watch'])
+        await testCommand(CreateDocumentCommand, ['--watch'], {
+          mocks: {
+            ...defaultMocks,
+          },
+        })
 
         // Simulate file change
         expect(changeHandler!).toBeDefined()
         await changeHandler!()
 
-        expect(mockClient.transaction).toHaveBeenCalledWith([{create: mockDoc}])
+        expect(mockTransaction).toHaveBeenCalledWith([{create: mockDoc}])
       }),
     )
   })

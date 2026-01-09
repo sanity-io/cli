@@ -3,7 +3,6 @@ import {mkdir, mkdtemp, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
 import {runCommand} from '@oclif/test'
-import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -13,30 +12,20 @@ import {BACKUP_API_VERSION} from '../../../actions/backup/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {DownloadBackupCommand} from '../download.js'
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      projectId: 'test-project',
-    },
-  }),
-}))
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
-vi.mock(import('../../../../../cli-core/src/services/apiClient.js'), async (importOriginal) => {
-  const actual = await importOriginal()
+const mockListDatasets = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
-    getProjectCliClient: vi.fn(),
+    getProjectCliClient: vi.fn().mockResolvedValue({
+      datasets: {
+        list: mockListDatasets,
+      } as never,
+    }),
   }
 })
+
 vi.mock(import('node:fs/promises'), async (importOriginal) => {
   const actual = await importOriginal()
   return {
@@ -54,31 +43,24 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 const mockMkdtemp = vi.mocked(mkdtemp)
-const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockSelect = vi.mocked(select)
 const mockInput = vi.mocked(input)
 const mockConfirm = vi.mocked(confirm)
 
-function setupTestEnvironment(datasets = ['production', 'staging']) {
-  mockGetProjectCliClient.mockResolvedValue({
-    datasets: {
-      list: vi.fn().mockResolvedValue(
-        datasets.map((name) => ({
-          aclMode: 'public',
-          addonFor: null,
-          createdAt: '2024-01-01T00:00:00Z',
-          createdByUserId: 'user-123',
-          datasetProfile: 'standard',
-          features: [],
-          name,
-          tags: [],
-        })),
-      ),
-    },
-  } as unknown as Awaited<ReturnType<typeof getProjectCliClient>>)
+const testProjectId = 'test-project'
 
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
+
+function setupTempDir() {
   mockMkdtemp.mockResolvedValue(
     (() => {
       const tmpOutDir = path.join(process.cwd(), `tmp/sanity-backup-test-${Date.now()}`)
@@ -190,9 +172,12 @@ describe('#backup:download', () => {
         'concurrency should be in 1 to 24 range',
       ],
     ])('should reject %s', async (_, flags, expectedError) => {
-      setupTestEnvironment()
+      setupTempDir()
+      mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
 
-      const {error} = await testCommand(DownloadBackupCommand, ['production', ...flags])
+      const {error} = await testCommand(DownloadBackupCommand, ['production', ...flags], {
+        mocks: defaultMocks,
+      })
 
       expect(error?.message).toContain(expectedError)
     })
@@ -200,37 +185,42 @@ describe('#backup:download', () => {
 
   describe('error handling', () => {
     test.each([
-      ['no datasets exist in project', () => setupTestEnvironment([]), 'No datasets found'],
-      ['dataset is not found', () => setupTestEnvironment(['staging']), 'not found'],
-    ])('should error when %s', async (_, setupMock, expectedError) => {
-      setupMock()
+      ['no datasets exist in project', [], 'No datasets found'],
+      ['dataset is not found', [{name: 'staging'}], 'not found'],
+    ])('should error when %s', async (_, datasets, expectedError) => {
+      setupTempDir()
+      mockListDatasets.mockResolvedValue(datasets)
 
-      const {error} = await testCommand(DownloadBackupCommand, [
-        'production',
-        '--backup-id',
-        'backup-123',
-      ])
+      const {error} = await testCommand(
+        DownloadBackupCommand,
+        ['production', '--backup-id', 'backup-123'],
+        {
+          mocks: defaultMocks,
+        },
+      )
 
       expect(error?.message).toContain(expectedError)
     })
 
     test('should error when no project ID is configured', async () => {
-      mockGetCliConfig.mockResolvedValueOnce({
-        api: {},
-      } as never)
-
-      const {error} = await testCommand(DownloadBackupCommand, [
-        'production',
-        '--backup-id',
-        'backup-123',
-      ])
+      const {error} = await testCommand(
+        DownloadBackupCommand,
+        ['production', '--backup-id', 'backup-123'],
+        {
+          mocks: {
+            ...defaultMocks,
+            cliConfig: {api: {}},
+          },
+        },
+      )
 
       expect(error?.message).toContain(NO_PROJECT_ID)
       expect(error?.oclif?.exit).toBe(1)
     })
 
     test('should error when no backups are available to select', async () => {
-      setupTestEnvironment()
+      setupTempDir()
+      mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
 
       mockApi({
         apiVersion: BACKUP_API_VERSION,
@@ -241,11 +231,13 @@ describe('#backup:download', () => {
         backups: [],
       })
 
-      const {error} = await testCommand(DownloadBackupCommand, [
-        'production',
-        '--out',
-        'backup.tar.gz',
-      ])
+      const {error} = await testCommand(
+        DownloadBackupCommand,
+        ['production', '--out', 'backup.tar.gz'],
+        {
+          mocks: defaultMocks,
+        },
+      )
 
       expect(error?.message).toContain(
         'Failed to fetch backups for dataset production: No backups found',
@@ -254,24 +246,23 @@ describe('#backup:download', () => {
     })
 
     test('should error when cannot list datasets', async () => {
-      mockGetProjectCliClient.mockResolvedValue({
-        datasets: {
-          list: vi.fn().mockRejectedValue(new Error('Failed to fetch datasets')),
-        },
-      } as unknown as Awaited<ReturnType<typeof getProjectCliClient>>)
+      mockListDatasets.mockRejectedValue(new Error('Failed to fetch datasets'))
 
-      const {error} = await testCommand(DownloadBackupCommand, [
-        'production',
-        '--backup-id',
-        'backup-123',
-      ])
+      const {error} = await testCommand(
+        DownloadBackupCommand,
+        ['production', '--backup-id', 'backup-123'],
+        {
+          mocks: defaultMocks,
+        },
+      )
 
       expect(error?.message).toContain('Failed to list datasets: Failed to fetch datasets')
       expect(error?.oclif?.exit).toBe(1)
     })
 
     test('should cancel operation when user rejects file overwrite', async () => {
-      setupTestEnvironment()
+      setupTempDir()
+      mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
 
       const out = `tmp/${Date.now()}-backup-docs/backup.tar.gz`
 
@@ -280,13 +271,13 @@ describe('#backup:download', () => {
 
       mockConfirm.mockResolvedValue(false)
 
-      const {error} = await testCommand(DownloadBackupCommand, [
-        'production',
-        '--backup-id',
-        'backup-123',
-        '--out',
-        out,
-      ])
+      const {error} = await testCommand(
+        DownloadBackupCommand,
+        ['production', '--backup-id', 'backup-123', '--out', out],
+        {
+          mocks: defaultMocks,
+        },
+      )
 
       const fullPath = path.join(process.cwd(), out)
 
@@ -371,17 +362,18 @@ describe('#backup:download', () => {
         },
       ],
     ])('should error when %s', async (description, setupMock) => {
-      setupTestEnvironment()
+      setupTempDir()
+      mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
       setupMock()
 
       const out = `tmp/${Date.now()}-backup-error/backup.tar.gz`
-      const {error} = await testCommand(DownloadBackupCommand, [
-        'production',
-        '--backup-id',
-        'backup-123',
-        '--out',
-        out,
-      ])
+      const {error} = await testCommand(
+        DownloadBackupCommand,
+        ['production', '--backup-id', 'backup-123', '--out', out],
+        {
+          mocks: defaultMocks,
+        },
+      )
 
       expect(error?.message).toContain('Downloading dataset backup failed')
       expect(error?.oclif?.exit).toBe(1)
@@ -390,7 +382,8 @@ describe('#backup:download', () => {
 
   describe('successful downloads', () => {
     test('should download backup with all flags specified', async () => {
-      setupTestEnvironment()
+      setupTempDir()
+      mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
 
       mockApi({
         apiVersion: BACKUP_API_VERSION,
@@ -427,16 +420,22 @@ describe('#backup:download', () => {
         .reply(200, Buffer.from('fake-file-data'))
 
       const out = `tmp/${Date.now()}-backup/backup.tar.gz`
-      const {error, stderr, stdout} = await testCommand(DownloadBackupCommand, [
-        'production',
-        '--backup-id',
-        'backup-123',
-        '--out',
-        out,
-        '--overwrite',
-        '--concurrency',
-        '5',
-      ])
+      const {error, stderr, stdout} = await testCommand(
+        DownloadBackupCommand,
+        [
+          'production',
+          '--backup-id',
+          'backup-123',
+          '--out',
+          out,
+          '--overwrite',
+          '--concurrency',
+          '5',
+        ],
+        {
+          mocks: defaultMocks,
+        },
+      )
 
       expect(error).toBeUndefined()
 
@@ -481,20 +480,20 @@ describe('#backup:download', () => {
         ],
       ],
     ])('should download backup with %s', async (description, files) => {
-      setupTestEnvironment()
+      setupTempDir()
+      mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
 
       mockBackupAPI({files})
       mockFileDownloads(files)
 
-      const out = `tmp/${Date.now()}-backup-${description.replaceAll(/\\s+/g, '-')}/backup.tar.gz`
-      const {error, stderr} = await testCommand(DownloadBackupCommand, [
-        'production',
-        '--backup-id',
-        'backup-123',
-        '--out',
-        out,
-        '--overwrite',
-      ])
+      const out = `tmp/${Date.now()}-backup-${description.replaceAll(/\s+/g, '-')}/backup.tar.gz`
+      const {error, stderr} = await testCommand(
+        DownloadBackupCommand,
+        ['production', '--backup-id', 'backup-123', '--out', out, '--overwrite'],
+        {
+          mocks: defaultMocks,
+        },
+      )
 
       expect(error).toBeUndefined()
       expect(stderr).toContain('Backup download complete')
@@ -502,7 +501,8 @@ describe('#backup:download', () => {
     })
 
     test('should overwrite existing file when user confirms', async () => {
-      setupTestEnvironment()
+      setupTempDir()
+      mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
 
       const files = [
         {
@@ -522,13 +522,13 @@ describe('#backup:download', () => {
 
       mockConfirm.mockResolvedValue(true)
 
-      const {error, stderr} = await testCommand(DownloadBackupCommand, [
-        'production',
-        '--backup-id',
-        'backup-123',
-        '--out',
-        out,
-      ])
+      const {error, stderr} = await testCommand(
+        DownloadBackupCommand,
+        ['production', '--backup-id', 'backup-123', '--out', out],
+        {
+          mocks: defaultMocks,
+        },
+      )
 
       const fullPath = path.join(process.cwd(), out)
 
@@ -542,7 +542,8 @@ describe('#backup:download', () => {
     })
 
     test('should download backup with paginated API response', async () => {
-      setupTestEnvironment()
+      setupTempDir()
+      mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
 
       // First page
       mockApi({
@@ -595,14 +596,13 @@ describe('#backup:download', () => {
         .reply(200, Buffer.from('fake-file-data'))
 
       const out = `tmp/${Date.now()}-backup-paginated/backup.tar.gz`
-      const {error, stderr} = await testCommand(DownloadBackupCommand, [
-        'production',
-        '--backup-id',
-        'backup-123',
-        '--out',
-        out,
-        '--overwrite',
-      ])
+      const {error, stderr} = await testCommand(
+        DownloadBackupCommand,
+        ['production', '--backup-id', 'backup-123', '--out', out, '--overwrite'],
+        {
+          mocks: defaultMocks,
+        },
+      )
 
       expect(error).toBeUndefined()
       expect(stderr).toContain('Backup download complete')
@@ -612,7 +612,8 @@ describe('#backup:download', () => {
 
   describe('interactive prompts', () => {
     test('should prompt for backup selection when backup-id is not provided', async () => {
-      setupTestEnvironment()
+      setupTempDir()
+      mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
 
       mockApi({
         apiVersion: BACKUP_API_VERSION,
@@ -648,12 +649,13 @@ describe('#backup:download', () => {
 
       const out = `tmp/${Date.now()}-backup-prompt/backup.tar.gz`
 
-      const {error, stderr} = await testCommand(DownloadBackupCommand, [
-        'production',
-        '--out',
-        out,
-        '--overwrite',
-      ])
+      const {error, stderr} = await testCommand(
+        DownloadBackupCommand,
+        ['production', '--out', out, '--overwrite'],
+        {
+          mocks: defaultMocks,
+        },
+      )
 
       expect(error).toBeUndefined()
       expect(mockSelect).toHaveBeenCalledWith(
@@ -670,14 +672,17 @@ describe('#backup:download', () => {
     })
 
     test('should prompt for dataset selection when no dataset is specified', async () => {
-      setupTestEnvironment()
+      setupTempDir()
+      mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
 
       mockBackupAPI({files: []})
       mockSelect.mockResolvedValue('production')
       const out = `tmp/${Date.now()}-backup-dataset-prompt/backup.tar.gz`
       mockInput.mockResolvedValue(out)
 
-      const {stdout} = await testCommand(DownloadBackupCommand, ['--backup-id', 'backup-123'])
+      const {stdout} = await testCommand(DownloadBackupCommand, ['--backup-id', 'backup-123'], {
+        mocks: defaultMocks,
+      })
 
       expect(mockSelect).toHaveBeenCalledWith({
         choices: [

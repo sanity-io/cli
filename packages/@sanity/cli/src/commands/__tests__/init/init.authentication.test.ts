@@ -3,16 +3,20 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {InitCommand} from '../../init'
 
-const mocks = vi.hoisted(() => ({
-  getCliToken: vi.fn(),
-  getCliUser: vi.fn().mockResolvedValue({
-    email: 'test@example.com',
-    id: 'user-123',
-    name: 'Test User',
-    provider: 'saml-123',
-  }),
-  login: vi.fn(),
-}))
+const mockGetById = vi.hoisted(() => vi.fn())
+const mockLogin = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      users: {
+        getById: mockGetById,
+      } as never,
+    }),
+  }
+})
 
 vi.mock('@vercel/fs-detectors', () => ({
   detectFrameworkRecord: vi.fn().mockResolvedValue({
@@ -22,20 +26,8 @@ vi.mock('@vercel/fs-detectors', () => ({
   LocalFileSystemDetector: vi.fn(),
 }))
 
-vi.mock('../../../../../cli-core/src/util/isInteractive.js', () => ({
-  isInteractive: vi.fn().mockReturnValue(true),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: mocks.getCliToken,
-}))
-
-vi.mock('../../../services/user.js', () => ({
-  getCliUser: mocks.getCliUser,
-}))
-
 vi.mock('../../../actions/auth/login/login.js', () => ({
-  login: mocks.login,
+  login: mockLogin,
 }))
 
 describe('#init: authentication', () => {
@@ -44,18 +36,32 @@ describe('#init: authentication', () => {
   })
 
   test('user is authenticated with valid token', async () => {
-    mocks.getCliToken.mockResolvedValue('test-token')
+    mockGetById.mockResolvedValue({
+      email: 'test@example.com',
+      id: 'user-123',
+      name: 'Test User',
+      provider: 'saml-123',
+    })
 
-    const {error, stdout} = await testCommand(InitCommand, [])
+    const {error, stdout} = await testCommand(InitCommand, [], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     expect(error).toBeUndefined()
     expect(stdout).toContain('You are logged in as test@example.com using SAML')
   })
 
   test('throws error if user is authenticated with invalid token in unattended mode', async () => {
-    mocks.getCliUser.mockRejectedValueOnce('Invalid token')
+    mockGetById.mockRejectedValueOnce(new Error('Invalid token'))
 
-    const {error} = await testCommand(InitCommand, ['--yes', '--dataset=test', '--project==test'])
+    const {error} = await testCommand(InitCommand, ['--yes', '--dataset=test', '--project==test'], {
+      mocks: {
+        token: 'test-token',
+      },
+    })
 
     expect(error?.message).toContain(
       'Must be logged in to run this command in unattended mode, run `sanity login`',
@@ -63,11 +69,16 @@ describe('#init: authentication', () => {
   })
 
   test('calls login when token invalid and not in unattended mode', async () => {
-    mocks.getCliUser.mockRejectedValueOnce('Invalid token')
+    mockGetById.mockRejectedValueOnce(new Error('Invalid token'))
 
-    const {error} = await testCommand(InitCommand, [])
+    const {error} = await testCommand(InitCommand, [], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     expect(error).toBe(undefined)
-    expect(mocks.login).toHaveBeenCalled()
+    expect(mockLogin).toHaveBeenCalled()
   })
 })

@@ -1,33 +1,12 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
-import {afterEach, describe, expect, test, vi} from 'vitest' // This should match the version in services/hooks.ts
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {HOOK_API_VERSION} from '../../../actions/hook/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {LogsHookCommand} from '../logs.js'
-
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => {
-  return {
-    findProjectRoot: vi.fn().mockResolvedValue({
-      directory: '/test/path',
-      root: '/test/path',
-      type: 'studio',
-    }),
-  }
-})
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
-  return {
-    getCliConfig: vi.fn().mockResolvedValue({
-      api: {
-        projectId: 'test-project',
-      },
-    }),
-  }
-})
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
@@ -37,7 +16,18 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-const mockedGetCliConfig = vi.mocked(getCliConfig)
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
+
 const mockedSelect = vi.mocked(select)
 
 describe('#hook:logs', () => {
@@ -55,13 +45,12 @@ describe('#hook:logs', () => {
   })
 
   test('displays error when no project ID is found', async () => {
-    mockedGetCliConfig.mockResolvedValueOnce({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(LogsHookCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(LogsHookCommand)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -74,7 +63,7 @@ describe('#hook:logs', () => {
       uri: '/hooks/projects/test-project',
     }).reply(200, [])
 
-    const {error} = await testCommand(LogsHookCommand)
+    const {error} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('No hooks currently registered')
@@ -95,7 +84,7 @@ describe('#hook:logs', () => {
       },
     ])
 
-    const {error} = await testCommand(LogsHookCommand, ['non-existent-hook'])
+    const {error} = await testCommand(LogsHookCommand, ['non-existent-hook'], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Hook with name "non-existent-hook" not found')
@@ -152,7 +141,7 @@ describe('#hook:logs', () => {
       },
     ])
 
-    const {stdout} = await testCommand(LogsHookCommand)
+    const {stdout} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2025-08-07T09:15:36.628Z')
     expect(stdout).toContain('Status: failure')
@@ -216,7 +205,7 @@ describe('#hook:logs', () => {
       },
     ])
 
-    const {stdout} = await testCommand(LogsHookCommand, ['test-hook'])
+    const {stdout} = await testCommand(LogsHookCommand, ['test-hook'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2025-08-07T09:15:36.628Z')
     expect(stdout).toContain('Status: success')
@@ -243,7 +232,7 @@ describe('#hook:logs', () => {
       uri: `/hooks/projects/test-project/${HOOK_ID}/messages`,
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(LogsHookCommand)
+    const {error} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Hook logs retrieval failed')
@@ -295,7 +284,7 @@ describe('#hook:logs', () => {
       uri: `/hooks/projects/test-project/${HOOK_ID_2}/attempts`,
     }).reply(200, [])
 
-    const {stdout} = await testCommand(LogsHookCommand)
+    const {stdout} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
 
     expect(vi.mocked(select)).toHaveBeenCalledWith({
       choices: [
@@ -348,7 +337,7 @@ describe('#hook:logs', () => {
       uri: `/hooks/projects/test-project/${HOOK_ID}/attempts`,
     }).reply(200, [])
 
-    const {stdout} = await testCommand(LogsHookCommand, ['test-hook'])
+    const {stdout} = await testCommand(LogsHookCommand, ['test-hook'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2025-08-07T11:00:00.000Z')
     expect(stdout).toContain('Status: success')
@@ -392,7 +381,7 @@ describe('#hook:logs', () => {
       uri: `/hooks/projects/test-project/${HOOK_ID}/attempts`,
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(LogsHookCommand)
+    const {error} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Hook logs retrieval failed')
@@ -467,7 +456,7 @@ describe('#hook:logs', () => {
       },
     ])
 
-    const {stdout} = await testCommand(LogsHookCommand, ['--detailed'])
+    const {stdout} = await testCommand(LogsHookCommand, ['--detailed'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2025-08-07T13:00:00.000Z')
     expect(stdout).toContain('Status: failure')
@@ -537,7 +526,7 @@ describe('#hook:logs', () => {
       },
     ])
 
-    const {stdout} = await testCommand(LogsHookCommand, ['--detailed'])
+    const {stdout} = await testCommand(LogsHookCommand, ['--detailed'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2025-08-07T14:00:00.000Z')
     expect(stdout).toContain('Status: success')
@@ -632,7 +621,7 @@ describe('#hook:logs', () => {
       },
     ])
 
-    const {stdout} = await testCommand(LogsHookCommand, ['--detailed'])
+    const {stdout} = await testCommand(LogsHookCommand, ['--detailed'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2025-08-07T15:00:00.000Z')
     expect(stdout).toContain('Status: failure')
@@ -727,7 +716,7 @@ describe('#hook:logs', () => {
       },
     ])
 
-    const {stdout} = await testCommand(LogsHookCommand)
+    const {stdout} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2025-08-07T16:00:00.000Z')
     expect(stdout).toContain('Status: success')
@@ -749,7 +738,7 @@ describe('#hook:logs', () => {
       uri: '/hooks/projects/test-project',
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(LogsHookCommand)
+    const {error} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Hook list retrieval failed')
@@ -779,7 +768,7 @@ describe('#hook:logs', () => {
       },
     ])
 
-    const {error} = await testCommand(LogsHookCommand)
+    const {error} = await testCommand(LogsHookCommand, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('No hook selected')
@@ -823,7 +812,7 @@ describe('#hook:logs', () => {
       uri: `/hooks/projects/test-project/${HOOK_ID}/attempts`,
     }).reply(200, [])
 
-    const {stdout} = await testCommand(LogsHookCommand, ['--detailed'])
+    const {stdout} = await testCommand(LogsHookCommand, ['--detailed'], {mocks: defaultMocks})
 
     expect(stdout).toContain('Date: 2025-08-07T17:00:00.000Z')
     expect(stdout).toContain('Status: queued')

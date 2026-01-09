@@ -1,6 +1,6 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
 
-export const ORGANIZATIONS_API_VERSION = 'v2021-06-07'
+export const ORGANIZATIONS_API_VERSION = 'v2025-05-14'
 
 export interface ProjectOrganization {
   id: string

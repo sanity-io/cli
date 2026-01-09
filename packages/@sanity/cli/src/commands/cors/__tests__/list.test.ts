@@ -7,25 +7,17 @@ import {CORS_API_VERSION} from '../../../services/cors.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {List} from '../list.js'
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
     directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      projectId: 'test-project',
-    },
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#list', () => {
   afterEach(() => {
@@ -44,7 +36,7 @@ describe('#list', () => {
   test('displays CORS origins correctly', async () => {
     mockApi({
       apiVersion: CORS_API_VERSION,
-      uri: '/projects/test-project/cors',
+      uri: `/projects/${testProjectId}/cors`,
     }).reply(200, [
       {
         allowCredentials: true,
@@ -52,7 +44,7 @@ describe('#list', () => {
         deletedAt: null,
         id: 1,
         origin: 'https://example.com',
-        projectId: 'test-project',
+        projectId: testProjectId,
         updatedAt: '2023-01-02T00:00:00Z',
       },
       {
@@ -61,7 +53,7 @@ describe('#list', () => {
         deletedAt: null,
         id: 2,
         origin: 'https://app.example.com',
-        projectId: 'test-project',
+        projectId: testProjectId,
         updatedAt: null,
       },
       {
@@ -70,12 +62,12 @@ describe('#list', () => {
         deletedAt: null,
         id: 3,
         origin: 'http://localhost:3000',
-        projectId: 'test-project',
+        projectId: testProjectId,
         updatedAt: null,
       },
     ])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toBe('https://example.com\nhttps://app.example.com\nhttp://localhost:3000\n')
   })
@@ -83,7 +75,7 @@ describe('#list', () => {
   test('displays single CORS origin correctly', async () => {
     mockApi({
       apiVersion: CORS_API_VERSION,
-      uri: '/projects/test-project/cors',
+      uri: `/projects/${testProjectId}/cors`,
     }).reply(200, [
       {
         allowCredentials: true,
@@ -91,12 +83,12 @@ describe('#list', () => {
         deletedAt: null,
         id: 1,
         origin: 'https://single-origin.com',
-        projectId: 'test-project',
+        projectId: testProjectId,
         updatedAt: null,
       },
     ])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toBe('https://single-origin.com\n')
   })
@@ -104,10 +96,10 @@ describe('#list', () => {
   test('handles empty CORS origins list', async () => {
     mockApi({
       apiVersion: CORS_API_VERSION,
-      uri: '/projects/test-project/cors',
+      uri: `/projects/${testProjectId}/cors`,
     }).reply(200, [])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toBe('No CORS origins configured for this project.\n')
   })
@@ -115,10 +107,10 @@ describe('#list', () => {
   test('displays an error if the API request fails', async () => {
     mockApi({
       apiVersion: CORS_API_VERSION,
-      uri: '/projects/test-project/cors',
+      uri: `/projects/${testProjectId}/cors`,
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(List)
+    const {error} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('CORS origins list retrieval failed')
@@ -127,7 +119,7 @@ describe('#list', () => {
 
   test('handles network errors gracefully', async () => {
     // Don't set up any mock to simulate network failure
-    const {error} = await testCommand(List)
+    const {error} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('CORS origins list retrieval failed')
@@ -135,42 +127,36 @@ describe('#list', () => {
   })
 
   test('throws error when no project ID is found', async () => {
-    const {getCliConfig} = await import('../../../../../cli-core/src/config/cli/getCliConfig.js')
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(List, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(List)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
   })
 
   test('throws error when project ID is null', async () => {
-    const {getCliConfig} = await import('../../../../../cli-core/src/config/cli/getCliConfig.js')
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(List, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(List)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
   })
 
   test('throws error when project ID is empty string', async () => {
-    const {getCliConfig} = await import('../../../../../cli-core/src/config/cli/getCliConfig.js')
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {
-        projectId: '',
+    const {error} = await testCommand(List, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: ''}},
       },
     })
-
-    const {error} = await testCommand(List)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -179,10 +165,10 @@ describe('#list', () => {
   test('handles non-array API response', async () => {
     mockApi({
       apiVersion: CORS_API_VERSION,
-      uri: '/projects/test-project/cors',
+      uri: `/projects/${testProjectId}/cors`,
     }).reply(200, {message: 'Not an array'})
 
-    const {error} = await testCommand(List)
+    const {error} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('origins.map is not a function')
@@ -191,10 +177,10 @@ describe('#list', () => {
   test('handles 404 error gracefully', async () => {
     mockApi({
       apiVersion: CORS_API_VERSION,
-      uri: '/projects/test-project/cors',
+      uri: `/projects/${testProjectId}/cors`,
     }).reply(404, {message: 'Project not found'})
 
-    const {error} = await testCommand(List)
+    const {error} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('CORS origins list retrieval failed')
@@ -204,10 +190,10 @@ describe('#list', () => {
   test('handles 403 forbidden error', async () => {
     mockApi({
       apiVersion: CORS_API_VERSION,
-      uri: '/projects/test-project/cors',
+      uri: `/projects/${testProjectId}/cors`,
     }).reply(403, {message: 'Forbidden'})
 
-    const {error} = await testCommand(List)
+    const {error} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('CORS origins list retrieval failed')
@@ -217,7 +203,7 @@ describe('#list', () => {
   test('handles origins with special characters', async () => {
     mockApi({
       apiVersion: CORS_API_VERSION,
-      uri: '/projects/test-project/cors',
+      uri: `/projects/${testProjectId}/cors`,
     }).reply(200, [
       {
         allowCredentials: true,
@@ -225,7 +211,7 @@ describe('#list', () => {
         deletedAt: null,
         id: 1,
         origin: 'https://café.example.com',
-        projectId: 'test-project',
+        projectId: testProjectId,
         updatedAt: null,
       },
       {
@@ -234,12 +220,12 @@ describe('#list', () => {
         deletedAt: null,
         id: 2,
         origin: 'https://example.com:8080',
-        projectId: 'test-project',
+        projectId: testProjectId,
         updatedAt: null,
       },
     ])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toBe('https://café.example.com\nhttps://example.com:8080\n')
   })

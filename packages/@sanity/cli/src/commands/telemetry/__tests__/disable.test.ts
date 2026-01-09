@@ -6,13 +6,14 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {fetchTelemetryConsent} from '../../../actions/telemetry/fetchTelemetryConsent.js'
 import {Disable} from '../disable.js'
 
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn(),
-}))
-
-vi.mock('../../../../../cli-core/src/util/isCi.js', () => ({
-  isCi: vi.fn(() => false),
-}))
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
+  return {
+    ...actual,
+    getCliToken: vi.fn(),
+    isCi: vi.fn(() => false),
+  }
+})
 
 vi.mock('../../../actions/telemetry/fetchTelemetryConsent.js', () => ({
   fetchTelemetryConsent: vi.fn(),

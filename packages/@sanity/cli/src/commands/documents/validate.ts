@@ -2,11 +2,9 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import {Flags} from '@oclif/core'
-import {getGlobalCliClient, Output, SanityCommand} from '@sanity/cli-core'
+import {Output, SanityCommand} from '@sanity/cli-core'
 import {chalk, confirm, logSymbols} from '@sanity/cli-core/ux'
-import {type ClientConfig} from '@sanity/client'
 
-import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {Level} from '../../actions/documents/types.js'
 import {validateDocuments} from '../../actions/documents/validate.js'
 import {reporters} from '../../actions/documents/validation/reporters/index.js'
@@ -90,10 +88,6 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     const {flags} = await this.parse(ValidateDocumentsCommand)
     const unattendedMode = Boolean(flags.yes)
 
-    const apiClient = await getGlobalCliClient({
-      apiVersion: DOCUMENTS_API_VERSION,
-      requireUser: true,
-    })
     const cliConfig = await this.getCliConfig()
     const workDir = (await this.getProjectRoot()).directory
 
@@ -152,21 +146,6 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     const maxCustomValidationConcurrency = flags['max-custom-validation-concurrency']
     const maxFetchConcurrency = flags['max-fetch-concurrency']
 
-    const clientConfig: ClientConfig = {
-      ...apiClient.config(),
-      // we set this explictly to true because we pass in a token via the
-      // `clientConfiguration` object and also mock a browser environment in
-      // this worker which triggers the browser warning
-      ignoreBrowserTokenWarning: true,
-      // Removing from object so config can be serialized
-      // before sent to validation worker
-      requester: undefined,
-      // we set this explictly to true because the default client configuration
-      // from the CLI comes configured with `useProjectHostname: false` when
-      // `requireProject` is set to false
-      useProjectHostname: true,
-    }
-
     let ndjsonFilePath
     if (flags.file) {
       const filePath = path.resolve(workDir, flags.file)
@@ -180,7 +159,6 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     }
 
     const overallLevel = await validateDocuments({
-      clientConfig,
       dataset: flags.dataset,
       level,
       maxCustomValidationConcurrency,

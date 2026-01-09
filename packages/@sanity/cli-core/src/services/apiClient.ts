@@ -43,6 +43,7 @@ export interface GlobalCliClientOptions extends ClientConfig {
  */
 export async function getGlobalCliClient({
   requireUser,
+  token: providedToken,
   ...config
 }: GlobalCliClientOptions): Promise<SanityClient> {
   const requester = defaultRequester.clone()
@@ -52,8 +53,8 @@ export async function getGlobalCliClient({
 
   const apiHost = apiHosts[sanityEnv]
 
-  let token: string | undefined
-  if (requireUser) {
+  let token: string | undefined = providedToken
+  if (!token && requireUser) {
     token = await getCliToken()
     if (!token) {
       throw new Error('You must login first - run "sanity login"')
@@ -106,6 +107,7 @@ export interface ProjectCliClientOptions extends ClientConfig {
  */
 export async function getProjectCliClient({
   requireUser,
+  token: providedToken,
   ...config
 }: ProjectCliClientOptions): Promise<SanityClient> {
   const requester = defaultRequester.clone()
@@ -115,8 +117,8 @@ export async function getProjectCliClient({
 
   const apiHost = apiHosts[sanityEnv]
 
-  let token: string | undefined
-  if (requireUser) {
+  let token: string | undefined = providedToken
+  if (!token && requireUser) {
     token = await getCliToken()
     if (!token) {
       throw new Error('You must login first - run "sanity login"')

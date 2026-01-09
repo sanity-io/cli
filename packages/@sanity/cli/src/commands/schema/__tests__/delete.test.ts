@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -37,20 +36,22 @@ const mockManifest = {
 
 const mockSchemas = ['_.schemas.default', '_.schemas.staging']
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({}),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn(),
-}))
-
 vi.mock('../../../actions/manifest/extractManifest.js')
 vi.mock('../../../actions/schema/utils/manifestReader.js')
 
-const mockedGetCliConfig = vi.mocked(getCliConfig)
 const mockExtractManifestSafe = vi.mocked(extractManifestSafe)
 const mockedCreateManifestReader = vi.mocked(createManifestReader)
+const testProjectId = 'test-project'
+
+const defaultMocks = {
+  cliConfig: {api: {dataset: 'production', projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#schema:delete', () => {
   beforeEach(() => {
@@ -66,13 +67,6 @@ describe('#schema:delete', () => {
         uri: `/projects/test-project/datasets/staging/schemas/${schema}`,
       }).reply(200, [{}])
     }
-
-    mockedGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: 'production',
-        projectId: 'test-project',
-      },
-    })
 
     mockedCreateManifestReader.mockReturnValue({
       getManifest: vi.fn().mockResolvedValue(mockManifest),
@@ -109,7 +103,9 @@ describe('#schema:delete', () => {
       uri: '/projects/test-project/datasets/staging/schemas/_.schemas.default',
     }).reply(200, {deleted: true})
 
-    const {error, stdout} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.default'])
+    const {error, stdout} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.default'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Successfully deleted 1/1 schemas')
     expect(error).toBeUndefined()
@@ -129,10 +125,11 @@ describe('#schema:delete', () => {
       }).reply(200, {deleted: true})
     }
 
-    const {error, stdout} = await testCommand(DeleteSchemaCommand, [
-      '--ids',
-      '_.schemas.default,_.schemas.staging',
-    ])
+    const {error, stdout} = await testCommand(
+      DeleteSchemaCommand,
+      ['--ids', '_.schemas.default,_.schemas.staging'],
+      {mocks: defaultMocks},
+    )
 
     expect(stdout).toContain('Successfully deleted 2/2 schemas')
     expect(error).toBeUndefined()
@@ -145,12 +142,11 @@ describe('#schema:delete', () => {
       uri: '/projects/test-project/datasets/production/schemas/_.schemas.default',
     }).reply(200, {deleted: true})
 
-    const {error, stdout} = await testCommand(DeleteSchemaCommand, [
-      '--ids',
-      '_.schemas.default',
-      '--dataset',
-      'production',
-    ])
+    const {error, stdout} = await testCommand(
+      DeleteSchemaCommand,
+      ['--ids', '_.schemas.default', '--dataset', 'production'],
+      {mocks: defaultMocks},
+    )
 
     expect(stdout).toContain('Successfully deleted 1/1 schemas')
     expect(error).toBeUndefined()
@@ -160,38 +156,31 @@ describe('#schema:delete', () => {
     {desc: 'no project ID is found', projectId: undefined},
     {desc: 'project ID is empty string', projectId: ''},
   ])('throws an error if $desc', async ({projectId}) => {
-    mockedGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: 'production',
-        projectId,
-      },
+    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.default'], {
+      mocks: {...defaultMocks, cliConfig: {api: {dataset: 'production', projectId}}},
     })
 
-    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.default'])
-
     expect(error?.message).toContain(NO_PROJECT_ID)
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test.each([
     {dataset: undefined, desc: 'no dataset is found'},
     {dataset: '', desc: 'dataset is empty string'},
   ])('throws an error if $desc', async ({dataset}) => {
-    mockedGetCliConfig.mockResolvedValue({
-      api: {
-        dataset,
-        projectId: 'test-project',
-      },
+    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.default'], {
+      mocks: {...defaultMocks, cliConfig: {api: {dataset, projectId: 'test-project'}}},
     })
 
-    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.default'])
-
     expect(error?.message).toContain(NO_DATASET_ID)
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws an error if ids is an empty string', async () => {
-    const {error} = await testCommand(DeleteSchemaCommand, ['--ids'])
+    const {error} = await testCommand(DeleteSchemaCommand, ['--ids'], {mocks: defaultMocks})
 
     expect(error?.message).toContain('Flag --ids expects a value')
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test.each([
@@ -241,19 +230,21 @@ describe('#schema:delete', () => {
       ids: ' , , ',
     },
   ])('throws error when $desc', async ({expectedError, ids}) => {
-    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', ids])
+    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', ids], {mocks: defaultMocks})
 
     expect(error?.message).toContain(expectedError)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('throws error when dataset flag is not provided a value', async () => {
-    const {error} = await testCommand(DeleteSchemaCommand, [
-      '--ids',
-      '_.schemas.default',
-      '--dataset',
-    ])
+    const {error} = await testCommand(
+      DeleteSchemaCommand,
+      ['--ids', '_.schemas.default', '--dataset'],
+      {mocks: defaultMocks},
+    )
 
     expect(error?.message).toContain('Flag --dataset expects a value')
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('throws an error when schema is not found', async () => {
@@ -266,10 +257,13 @@ describe('#schema:delete', () => {
       uri: `/projects/test-project/datasets/staging/schemas/_.schemas.nonexistent`,
     }).reply(200, [])
 
-    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.nonexistent'])
+    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.nonexistent'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Deleted 0/1 schemas')
     expect(error?.message).toContain('not found')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws an error when some schemas are not found', async () => {
@@ -292,12 +286,14 @@ describe('#schema:delete', () => {
       uri: `/projects/test-project/datasets/staging/schemas/_.schemas.nonexistent`,
     }).reply(200, [])
 
-    const {error} = await testCommand(DeleteSchemaCommand, [
-      '--ids',
-      '_.schemas.default,_.schemas.nonexistent',
-    ])
+    const {error} = await testCommand(
+      DeleteSchemaCommand,
+      ['--ids', '_.schemas.default,_.schemas.nonexistent'],
+      {mocks: defaultMocks},
+    )
 
     expect(error?.message).toContain('Deleted 1/2 schemas')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws an error if delete request fails', async () => {
@@ -316,9 +312,12 @@ describe('#schema:delete', () => {
       error: 'Delete failed',
     })
 
-    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.default'])
+    const {error} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.default'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Failed to delete schema')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('outputs a verbose warning when verbose flag is enabled', async () => {
@@ -337,15 +336,16 @@ describe('#schema:delete', () => {
       error: 'Delete failed',
     })
 
-    const {error, stderr} = await testCommand(DeleteSchemaCommand, [
-      '--ids',
-      '_.schemas.default',
-      '--verbose',
-    ])
+    const {error, stderr} = await testCommand(
+      DeleteSchemaCommand,
+      ['--ids', '_.schemas.default', '--verbose'],
+      {mocks: defaultMocks},
+    )
 
     expect(stderr).toContain('Failed to delete schema "_.schemas.default"')
     expect(stderr).toContain('DeleteIdError: Delete failed')
     expect(error?.message).toContain('Deleted 0/1 schemas')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('outputs a warning on projectId mismatch', async () => {
@@ -368,7 +368,11 @@ describe('#schema:delete', () => {
       getWorkspaceSchema: vi.fn(),
     })
 
-    const {stderr, stdout} = await testCommand(DeleteSchemaCommand, ['--ids', '_.schemas.default'])
+    const {stderr, stdout} = await testCommand(
+      DeleteSchemaCommand,
+      ['--ids', '_.schemas.default'],
+      {mocks: defaultMocks},
+    )
 
     expect(stderr).toContain('No permissions to read schema for workspace "staging"')
     expect(stdout).toContain('Successfully deleted 1/1 schemas')

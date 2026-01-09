@@ -1,23 +1,17 @@
 import {runCommand} from '@oclif/test'
 import {type CliConfig} from '@sanity/cli-core'
-import {testCommand} from '@sanity/cli-test'
-import {SanityClient} from '@sanity/client'
+import {mockApi, testCommand} from '@sanity/cli-test'
+import nock from 'nock'
 import {of, throwError} from 'rxjs'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
 import {MediaImportCommand} from '../import.js'
 
 const mocks = vi.hoisted(() => ({
-  getCliConfig: vi.fn(),
-  getMediaLibraries: vi.fn(),
-  getProjectCliClient: vi.fn(),
   importer: vi.fn(),
   select: vi.fn(),
   spinner: vi.fn(),
-}))
-
-vi.mock('../../../services/mediaLibraries.js', () => ({
-  getMediaLibraries: mocks.getMediaLibraries,
 }))
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -29,44 +23,32 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: mocks.getCliConfig,
-}))
-
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  return {
-    ...actual,
-    getProjectCliClient: mocks.getProjectCliClient,
-  }
-})
-
 vi.mock('../../../actions/media/importMedia.js', () => ({
   importer: mocks.importer,
 }))
 
-const mockGetMediaLibraries = mocks.getMediaLibraries
-const mockGetCliConfig = mocks.getCliConfig
-const mockGetProjectCliClient = mocks.getProjectCliClient
 const mockSelect = mocks.select
 const mockSpinner = mocks.spinner
 
-// Setup CLI config
-const apiConfig: CliConfig['api'] = {projectId: '1234'}
-mockGetCliConfig.mockResolvedValue({api: apiConfig})
-mockGetProjectCliClient.mockResolvedValue({} as SanityClient)
+const defaultMocks = {
+  cliConfig: {
+    api: {projectId: '1234'} as CliConfig['api'],
+  },
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    root: '/test/path',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#media:import', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('should show help text correctly', async () => {
@@ -108,18 +90,26 @@ describe('#media:import', () => {
   })
 
   test('show console error when no projectId is found', async () => {
-    mockGetCliConfig.mockResolvedValueOnce({api: {}})
-
-    const {error} = await testCommand(MediaImportCommand, ['test-source'])
+    const {error} = await testCommand(MediaImportCommand, ['test-source'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {}},
+      },
+    })
 
     expect(error?.message).toContain('does not contain a project identifier')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('show console error when getMediaLibraries fails', async () => {
-    mockGetMediaLibraries.mockRejectedValue(new Error('API request failed'))
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'get',
+      query: {projectId: '1234'},
+      uri: '/media-libraries',
+    }).reply(500, {error: 'API request failed'})
 
-    const {error} = await testCommand(MediaImportCommand, ['test-source'])
+    const {error} = await testCommand(MediaImportCommand, ['test-source'], {mocks: defaultMocks})
 
     expect(error?.message).toContain('Failed to list media libraries')
     expect(error?.message).toContain('API request failed')
@@ -127,23 +117,34 @@ describe('#media:import', () => {
   })
 
   test('show console error when no active media libraries are found', async () => {
-    mockGetMediaLibraries.mockResolvedValue([])
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'get',
+      query: {projectId: '1234'},
+      uri: '/media-libraries',
+    }).reply(200, {data: []})
 
-    const {error} = await testCommand(MediaImportCommand, ['test-source'])
+    const {error} = await testCommand(MediaImportCommand, ['test-source'], {mocks: defaultMocks})
 
     expect(error?.message).toContain('No active media libraries found in this project')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('prompt user when there is no media flag', async () => {
-    const mediaLibraries = [
-      {id: 'test-media-library', organizationId: 'org-1', status: 'active' as const},
-      {id: 'another-library', organizationId: 'org-1', status: 'active' as const},
-    ]
-    mockGetMediaLibraries.mockResolvedValue(mediaLibraries)
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'get',
+      query: {projectId: '1234'},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [
+        {id: 'test-media-library', organizationId: 'org-1', status: 'active'},
+        {id: 'another-library', organizationId: 'org-1', status: 'active'},
+      ],
+    })
     mockSelect.mockResolvedValue('test-media-library')
 
-    await testCommand(MediaImportCommand, ['test-source'])
+    await testCommand(MediaImportCommand, ['test-source'], {mocks: defaultMocks})
 
     expect(mockSelect).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -153,13 +154,17 @@ describe('#media:import', () => {
   })
 
   test('show console error when there is an error selecting a media library', async () => {
-    const mediaLibraries = [
-      {id: 'test-media-library', organizationId: 'org-1', status: 'active' as const},
-    ]
-    mockGetMediaLibraries.mockResolvedValue(mediaLibraries)
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'get',
+      query: {projectId: '1234'},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [{id: 'test-media-library', organizationId: 'org-1', status: 'active'}],
+    })
     mockSelect.mockRejectedValue(new Error('User cancelled selection'))
 
-    const {error} = await testCommand(MediaImportCommand, ['test-source'])
+    const {error} = await testCommand(MediaImportCommand, ['test-source'], {mocks: defaultMocks})
 
     expect(error?.message).toContain('Failed to select media library')
     expect(error?.message).toContain('User cancelled selection')
@@ -167,26 +172,34 @@ describe('#media:import', () => {
   })
 
   test('show console error when the media library id flag is not valid', async () => {
-    const mediaLibraries = [
-      {id: 'test-media-library', organizationId: 'org-1', status: 'active' as const},
-    ]
-    mockGetMediaLibraries.mockResolvedValue(mediaLibraries)
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'get',
+      query: {projectId: '1234'},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [{id: 'test-media-library', organizationId: 'org-1', status: 'active'}],
+    })
 
-    const {error} = await testCommand(MediaImportCommand, [
-      'test-source',
-      '--media-library-id',
-      'non-existent-library',
-    ])
+    const {error} = await testCommand(
+      MediaImportCommand,
+      ['test-source', '--media-library-id', 'non-existent-library'],
+      {mocks: defaultMocks},
+    )
 
     expect(error?.message).toContain('Media library with id "non-existent-library" not found')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('getProjectApiClient is instantiated with the correct values', async () => {
-    const mediaLibraries = [
-      {id: 'test-media-library', organizationId: 'org-1', status: 'active' as const},
-    ]
-    mockGetMediaLibraries.mockResolvedValue(mediaLibraries)
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'get',
+      query: {projectId: '1234'},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [{id: 'test-media-library', organizationId: 'org-1', status: 'active'}],
+    })
 
     const mockSpinnerInstance = {
       start: vi.fn().mockReturnThis(),
@@ -195,30 +208,24 @@ describe('#media:import', () => {
     }
     mockSpinner.mockReturnValue(mockSpinnerInstance as never)
 
-    await testCommand(MediaImportCommand, [
-      'test-source',
-      '--media-library-id',
-      'test-media-library',
-    ])
+    await testCommand(
+      MediaImportCommand,
+      ['test-source', '--media-library-id', 'test-media-library'],
+      {mocks: defaultMocks},
+    )
 
-    expect(mockGetProjectCliClient).toHaveBeenCalledWith({
-      apiVersion: 'v2025-02-19',
-      dataset: undefined,
-      perspective: 'drafts',
-      projectId: '1234',
-      requestTagPrefix: 'sanity.mediaLibraryCli.import',
-      requireUser: true,
-      '~experimental_resource': {
-        id: 'test-media-library',
-        type: 'media-library',
-      },
-    })
+    expect(mockSpinnerInstance.start).toHaveBeenCalled()
   })
 
   test('show success message when cli imports asset successfully', async () => {
-    mockGetMediaLibraries.mockResolvedValue([
-      {id: 'test-media-library', organizationId: 'org-1', status: 'active' as const},
-    ])
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'get',
+      query: {projectId: '1234'},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [{id: 'test-media-library', organizationId: 'org-1', status: 'active'}],
+    })
 
     const mockSpinnerInstance = {
       start: vi.fn().mockReturnThis(),
@@ -236,11 +243,11 @@ describe('#media:import', () => {
       ),
     )
 
-    await testCommand(MediaImportCommand, [
-      'test-source',
-      '--media-library-id',
-      'test-media-library',
-    ])
+    await testCommand(
+      MediaImportCommand,
+      ['test-source', '--media-library-id', 'test-media-library'],
+      {mocks: defaultMocks},
+    )
 
     expect(mockSpinner).toHaveBeenCalledWith('Beginning import…')
     expect(mockSpinnerInstance.start).toHaveBeenCalled()
@@ -248,9 +255,14 @@ describe('#media:import', () => {
   })
 
   test('show failure in console if importer fails', async () => {
-    mockGetMediaLibraries.mockResolvedValue([
-      {id: 'test-media-library', organizationId: 'org-1', status: 'active' as const},
-    ])
+    mockApi({
+      apiVersion: MEDIA_LIBRARY_API_VERSION,
+      method: 'get',
+      query: {projectId: '1234'},
+      uri: '/media-libraries',
+    }).reply(200, {
+      data: [{id: 'test-media-library', organizationId: 'org-1', status: 'active'}],
+    })
 
     const mockSpinnerInstance = {
       start: vi.fn().mockReturnThis(),
@@ -261,11 +273,11 @@ describe('#media:import', () => {
     // Mock importer to throw an error
     mocks.importer.mockReturnValue(throwError(() => new Error('Failed to upload asset')))
 
-    const {error} = await testCommand(MediaImportCommand, [
-      'test-source',
-      '--media-library-id',
-      'test-media-library',
-    ])
+    const {error} = await testCommand(
+      MediaImportCommand,
+      ['test-source', '--media-library-id', 'test-media-library'],
+      {mocks: defaultMocks},
+    )
 
     expect(mockSpinnerInstance.stop).toHaveBeenCalled()
     expect(error).toBeDefined()

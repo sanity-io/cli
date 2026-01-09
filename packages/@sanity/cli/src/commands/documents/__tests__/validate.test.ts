@@ -29,31 +29,6 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn(),
-}))
-
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  return {
-    ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue({
-      config: vi.fn(() => ({
-        dataset: 'test-dataset',
-        projectId: 'test-project',
-      })),
-    }),
-  }
-})
-
 vi.mock('../../../actions/documents/validate.js', () => ({
   validateDocuments: mocks.validate,
 }))
@@ -61,6 +36,25 @@ vi.mock('../../../actions/documents/validate.js', () => ({
 const mockConfirm = mocks.confirm
 const mockIsFile = mocks.isFile
 const mockValidate = mocks.validate
+
+const testProjectId = 'test-project'
+const testDataset = 'test-dataset'
+
+const defaultMocks = {
+  cliConfig: {api: {dataset: testDataset, projectId: testProjectId}},
+  globalApiClient: {
+    config: vi.fn(() => ({
+      dataset: testDataset,
+      projectId: testProjectId,
+    })),
+  } as never,
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#documents:validate', () => {
   afterEach(() => {
@@ -133,22 +127,29 @@ describe('#documents:validate', () => {
   })
 
   test('throws error if user enters unsupported level flag', async () => {
-    const {error} = await testCommand(ValidateDocumentsCommand, ['--level', 'critical'])
+    const {error} = await testCommand(ValidateDocumentsCommand, ['--level', 'critical'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Expected --level=critical to be one of: error, warning, info')
   })
 
   test('throws error if user enters non integer max-custom-validation-concurrency flag', async () => {
-    const {error} = await testCommand(ValidateDocumentsCommand, [
-      '--max-custom-validation-concurrency',
-      'abc',
-    ])
+    const {error} = await testCommand(
+      ValidateDocumentsCommand,
+      ['--max-custom-validation-concurrency', 'abc'],
+      {mocks: defaultMocks},
+    )
 
     expect(error?.message).toContain('Expected an integer but received: abc')
   })
 
   test('throws error if user enters non integer max-fetch-concurrency flag', async () => {
-    const {error} = await testCommand(ValidateDocumentsCommand, ['--max-fetch-concurrency', 'xyz'])
+    const {error} = await testCommand(
+      ValidateDocumentsCommand,
+      ['--max-fetch-concurrency', 'xyz'],
+      {mocks: defaultMocks},
+    )
 
     expect(error?.message).toContain('Expected an integer but received: xyz')
   })
@@ -156,7 +157,7 @@ describe('#documents:validate', () => {
   test('prompts user to confirm by default and exits if they do not want to continue', async () => {
     mockConfirm.mockResolvedValue(false)
 
-    const {stdout} = await testCommand(ValidateDocumentsCommand, [])
+    const {stdout} = await testCommand(ValidateDocumentsCommand, [], {mocks: defaultMocks})
 
     expect(stdout).toMatchInlineSnapshot(`
       "⚠ Warning: This command downloads all documents from your dataset and processes them through your local schema within a simulated browser environment.
@@ -178,13 +179,15 @@ describe('#documents:validate', () => {
   })
 
   test('skips confirm if user uses yes flag', async () => {
-    await testCommand(ValidateDocumentsCommand, ['--y'])
+    await testCommand(ValidateDocumentsCommand, ['--y'], {mocks: defaultMocks})
 
     expect(mockConfirm).not.toHaveBeenCalled()
   })
 
   test('exits if format is incorrect value', async () => {
-    const {error} = await testCommand(ValidateDocumentsCommand, ['--format', 'xml'])
+    const {error} = await testCommand(ValidateDocumentsCommand, ['--format', 'xml'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain(
       "Did not recognize format 'xml'. Available formats are 'json', 'ndjson', and 'pretty'",
@@ -194,10 +197,11 @@ describe('#documents:validate', () => {
   test('exits if user inputs invalid file path in flag', async () => {
     mockIsFile.mockReturnValue(false)
 
-    const {error} = await testCommand(ValidateDocumentsCommand, [
-      '--file',
-      '/non/existent/file.ndjson',
-    ])
+    const {error} = await testCommand(
+      ValidateDocumentsCommand,
+      ['--file', '/non/existent/file.ndjson'],
+      {mocks: defaultMocks},
+    )
 
     expect(error?.message).toContain("'--file' must point to a valid ndjson file or tarball")
   })
@@ -205,24 +209,27 @@ describe('#documents:validate', () => {
   test('validateDocuments is called with the correct params', async () => {
     mockValidate.mockResolvedValue('warning')
 
-    await testCommand(ValidateDocumentsCommand, [
-      '--yes',
-      '--dataset',
-      'my-dataset',
-      '--workspace',
-      'my-workspace',
-      '--level',
-      'info',
-      '--max-custom-validation-concurrency',
-      '10',
-      '--max-fetch-concurrency',
-      '50',
-      '--file',
-      '/path/to/file.ndjson',
-    ])
+    await testCommand(
+      ValidateDocumentsCommand,
+      [
+        '--yes',
+        '--dataset',
+        'my-dataset',
+        '--workspace',
+        'my-workspace',
+        '--level',
+        'info',
+        '--max-custom-validation-concurrency',
+        '10',
+        '--max-fetch-concurrency',
+        '50',
+        '--file',
+        '/path/to/file.ndjson',
+      ],
+      {mocks: defaultMocks},
+    )
 
     expect(mockValidate).toHaveBeenCalledWith({
-      clientConfig: expect.any(Object),
       dataset: 'my-dataset',
       level: 'info',
       maxCustomValidationConcurrency: 10,
@@ -238,7 +245,7 @@ describe('#documents:validate', () => {
   test('exits with code 1 if validateDocuments returns overall level as error', async () => {
     mockValidate.mockResolvedValue('error')
 
-    const {error} = await testCommand(ValidateDocumentsCommand, [])
+    const {error} = await testCommand(ValidateDocumentsCommand, [], {mocks: defaultMocks})
 
     expect(error?.oclif?.exit).toBe(1)
   })
@@ -246,7 +253,7 @@ describe('#documents:validate', () => {
   test('exits with code 0 if validateDocuments does not return overall level as error', async () => {
     mockValidate.mockResolvedValue('warning')
 
-    const {error} = await testCommand(ValidateDocumentsCommand, [])
+    const {error} = await testCommand(ValidateDocumentsCommand, [], {mocks: defaultMocks})
 
     expect(error).toBe(undefined)
   })

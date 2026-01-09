@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -8,25 +7,17 @@ import {HOOK_API_VERSION} from '../../../actions/hook/constants.js'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {List} from '../list.js'
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => {
-  return {
-    findProjectRoot: vi.fn().mockResolvedValue({
-      directory: '/test/path',
-      root: '/test/path',
-      type: 'studio',
-    }),
-  }
-})
+const testProjectId = 'test-project'
 
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
-  return {
-    getCliConfig: vi.fn().mockResolvedValue({
-      api: {
-        projectId: 'test-project',
-      },
-    }),
-  }
-})
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#list', () => {
   afterEach(() => {
@@ -45,7 +36,7 @@ describe('#list', () => {
   test('displays hooks correctly', async () => {
     mockApi({
       apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
+      uri: `/hooks/projects/${testProjectId}`,
     }).reply(200, [
       {
         apiVersion: '2021-10-04',
@@ -73,7 +64,7 @@ describe('#list', () => {
       },
     ])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Name: test versions')
     expect(stdout).toContain('Dataset: *')
@@ -85,7 +76,7 @@ describe('#list', () => {
   test('handles legacy hooks without description', async () => {
     mockApi({
       apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
+      uri: `/hooks/projects/${testProjectId}`,
     }).reply(200, [
       {
         createdAt: '2023-01-01',
@@ -103,7 +94,7 @@ describe('#list', () => {
       },
     ])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toContain('Name: legacy hook')
     expect(stdout).toContain('Dataset: production')
@@ -115,10 +106,10 @@ describe('#list', () => {
   test('displays an error if the API request fails', async () => {
     mockApi({
       apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
+      uri: `/hooks/projects/${testProjectId}`,
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(List)
+    const {error} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Hook list retrieval failed')
@@ -127,22 +118,21 @@ describe('#list', () => {
   test('handles empty hooks list', async () => {
     mockApi({
       apiVersion: HOOK_API_VERSION,
-      uri: '/hooks/projects/test-project',
+      uri: `/hooks/projects/${testProjectId}`,
     }).reply(200, [])
 
-    const {stdout} = await testCommand(List)
+    const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
     expect(stdout).toBe('')
   })
 
   test('throws error when no project ID is found', async () => {
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(List, [], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId: undefined}},
       },
     })
-
-    const {error} = await testCommand(List)
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)

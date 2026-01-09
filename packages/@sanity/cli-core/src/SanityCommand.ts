@@ -66,9 +66,8 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    */
   protected async getCliConfig(): Promise<CliConfig> {
     const root = await this.getProjectRoot()
-    const config = await getCliConfig(root.directory)
 
-    return config
+    return getCliConfig(root.directory)
   }
 
   /**
@@ -85,7 +84,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
   /**
    * Get the project's root directory by resolving the config
    *
-   * @returns The root project root.
+   * @returns The project root result.
    */
   protected getProjectRoot(): Promise<ProjectRootResult> {
     return findProjectRoot(process.cwd())
@@ -118,6 +117,15 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    * (eg when running in a CI environment).
    */
   protected isUnattended(): boolean {
-    return this.flags.yes || !isInteractive()
+    return this.flags.yes || !this.resolveIsInteractive()
+  }
+
+  /**
+   * Resolver for checking if the terminal is interactive. Override in tests to provide mock values.
+   *
+   * @returns Whether the terminal is interactive.
+   */
+  protected resolveIsInteractive(): boolean {
+    return isInteractive()
   }
 }

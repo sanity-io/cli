@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -13,10 +12,6 @@ import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
 import {DeployCommand} from '../deploy.js'
-
-vi.mock('../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn(),
-}))
 
 vi.mock('../../util/readModuleVersion.js', () => ({
   readModuleVersion: vi.fn(),
@@ -56,7 +51,6 @@ vi.mock('tar-fs', () => ({
   }),
 }))
 
-const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockSelect = vi.mocked(select)
 const mockConfirm = vi.mocked(confirm)
 const mockInput = vi.mocked(input)
@@ -65,6 +59,20 @@ const mockDirIsEmptyOrNonExistent = vi.mocked(dirIsEmptyOrNonExistent)
 const mockReadModuleVersion = vi.mocked(readModuleVersion)
 const mockBuildStudio = vi.mocked(buildStudio)
 const mockBuildApp = vi.mocked(buildApp)
+
+const appId = 'app-id'
+const organizationId = 'org-id'
+
+const defaultMocks = {
+  cliConfig: {
+    app: {
+      organizationId,
+    },
+    deployment: {
+      appId,
+    },
+  },
+}
 
 describe('#deploy', () => {
   beforeEach(async () => {
@@ -142,17 +150,6 @@ describe('#deploy', () => {
     mockConfirm.mockResolvedValue(true)
     mockDirIsEmptyOrNonExistent.mockResolvedValue(false)
 
-    const appId = 'app-id'
-
-    mockGetCliConfig.mockResolvedValue({
-      app: {
-        organizationId: 'org-id',
-      },
-      deployment: {
-        appId,
-      },
-    })
-
     mockApi({
       apiVersion: USER_APPLICATIONS_API_VERSION,
       query: {
@@ -184,6 +181,7 @@ describe('#deploy', () => {
 
     const {error} = await testCommand(DeployCommand, ['build'], {
       config: {root: cwd},
+      mocks: defaultMocks,
     })
 
     expect(error).toBeUndefined()
@@ -199,19 +197,9 @@ describe('#deploy', () => {
 
     mockConfirm.mockResolvedValue(false)
 
-    const appId = 'app-id'
-
-    mockGetCliConfig.mockResolvedValue({
-      app: {
-        organizationId: 'org-id',
-      },
-      deployment: {
-        appId,
-      },
-    })
-
     const {error} = await testCommand(DeployCommand, ['build'], {
       config: {root: cwd},
+      mocks: defaultMocks,
     })
 
     expect(error?.message).toContain('Cancelled.')
@@ -222,17 +210,6 @@ describe('#deploy', () => {
     test('should re-deploy app if it already exists', async () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
-
-      const appId = 'app-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId: 'org-id',
-        },
-        deployment: {
-          appId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -265,6 +242,7 @@ describe('#deploy', () => {
 
       const {error, stderr, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: defaultMocks,
       })
 
       expect(error).toBeUndefined()
@@ -280,22 +258,11 @@ describe('#deploy', () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
-      const appId = 'app-id'
-      const organizationId = 'org-id'
-
       mockReadModuleVersion.mockResolvedValue(null)
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-        deployment: {
-          appId,
-        },
-      })
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: defaultMocks,
       })
 
       expect(error?.message).toContain('Failed to find installed @sanity/sdk-react version')
@@ -305,17 +272,10 @@ describe('#deploy', () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
-      const organizationId = 'org-id'
       const newAppId = 'new-app-id'
       const deploymentId = 'deployment-id'
 
       mockInput.mockResolvedValue('Test App')
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -359,6 +319,13 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            app: {
+              organizationId,
+            },
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -379,17 +346,7 @@ describe('#deploy', () => {
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
-      const organizationId = 'org-id'
       const deploymentId = 'deployment-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-        deployment: {
-          appId: existingAppId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -422,6 +379,14 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            ...defaultMocks.cliConfig,
+            deployment: {
+              appId: existingAppId,
+            },
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -434,18 +399,8 @@ describe('#deploy', () => {
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
-      const organizationId = 'org-id'
 
       mockCheckDir.mockRejectedValue(new Error('Directory check failed'))
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-        deployment: {
-          appId: existingAppId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -467,26 +422,26 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            ...defaultMocks.cliConfig,
+            deployment: {
+              appId: existingAppId,
+            },
+          },
+        },
       })
 
       expect(error?.message).toContain('Error checking directory')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
-    test('should error when fetching user applications if user doesn’t have org access', async () => {
+    test("should error when fetching user applications if user doesn't have org access", async () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
-      const appId = 'some-app-id'
-      const organizationId = 'org-without-access'
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-        deployment: {
-          appId,
-        },
-      })
+      const anotherAppId = 'some-app-id'
+      const anotherOrganizationId = 'org-without-access'
 
       // Simulate API returning 403 Forbidden for the given org
       mockApi({
@@ -494,18 +449,29 @@ describe('#deploy', () => {
         query: {
           appType: 'coreApp',
         },
-        uri: `/user-applications/${appId}`,
+        uri: `/user-applications/${anotherAppId}`,
       }).reply(403, {
         error: 'Forbidden',
       })
 
       const {error} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            app: {
+              organizationId: anotherOrganizationId,
+            },
+            deployment: {
+              appId: anotherAppId,
+            },
+          },
+        },
       })
 
       expect(error?.message).toContain(
-        `You don’t have permission to view applications for the configured organization ID ("${organizationId}")`,
+        `You don’t have permission to view applications for the configured organization ID ("${anotherOrganizationId}")`,
       )
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('should handle user-applications endpoint errors', async () => {
@@ -513,16 +479,6 @@ describe('#deploy', () => {
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
-      const organizationId = 'org-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-        deployment: {
-          appId: existingAppId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -536,9 +492,18 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            ...defaultMocks.cliConfig,
+            deployment: {
+              appId: existingAppId,
+            },
+          },
+        },
       })
 
       expect(error?.message).toContain('Error deploying application')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('should handle deployment API errors', async () => {
@@ -546,16 +511,6 @@ describe('#deploy', () => {
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
-      const organizationId = 'org-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-        deployment: {
-          appId: existingAppId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -588,9 +543,18 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            ...defaultMocks.cliConfig,
+            deployment: {
+              appId: existingAppId,
+            },
+          },
+        },
       })
 
       expect(error?.message).toContain('Error deploying application')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('should show an error if deployment.appId is configured but the application does not exist', async () => {
@@ -598,16 +562,6 @@ describe('#deploy', () => {
       process.cwd = () => cwd
 
       const nonExistentAppId = 'non-existent-app-id'
-      const organizationId = 'org-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-        deployment: {
-          appId: nonExistentAppId,
-        },
-      })
 
       // Simulate API returning no user application for the given app.id
       mockApi({
@@ -622,55 +576,59 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            ...defaultMocks.cliConfig,
+            deployment: {
+              appId: nonExistentAppId,
+            },
+          },
+        },
       })
 
       expect(error?.message).toContain(
         'The `appId` provided in your configuration’s `deployment` object cannot be found in your organization',
       )
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('should show an error if deployment.appId and app.id (deprecated) are both in use', async () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
-      const appId = 'app-id'
-      const organizationId = 'org-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          id: appId,
-          organizationId,
-        },
-        deployment: {
-          appId: appId,
-        },
-      })
-
       const {error} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            ...defaultMocks.cliConfig,
+            app: {
+              id: appId,
+              organizationId,
+            },
+          },
+        },
       })
 
       expect(error?.message).toContain(
         'Found both app.id (deprecated) and deployment.appId in your application configuration.\n\nPlease remove app.id from your sanity.cli.js or sanity.cli.ts file.',
       )
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('should show a warning if app.id (deprecated) is used', async () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
-      const appId = 'app-id'
-      const organizationId = 'org-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          id: appId,
-          organizationId,
-        },
-      })
-
       const {stderr} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            app: {
+              id: appId,
+              organizationId,
+            },
+          },
+        },
       })
 
       expect(stderr).toContain('The `app.id` config has moved to `deployment.appId`.')
@@ -680,17 +638,10 @@ describe('#deploy', () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
-      const organizationId = 'org-id'
       const newAppId = 'new-app-id'
       const deploymentId = 'deployment-id'
 
       mockInput.mockResolvedValue('Test App')
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -751,6 +702,13 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            app: {
+              organizationId,
+            },
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -761,15 +719,7 @@ describe('#deploy', () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
-      const organizationId = 'org-id'
-
       mockInput.mockResolvedValue('Test App')
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -795,6 +745,13 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            app: {
+              organizationId,
+            },
+          },
+        },
       })
 
       expect(error?.message).toContain('Error deploying application')
@@ -805,16 +762,6 @@ describe('#deploy', () => {
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
-      const organizationId = 'org-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-        deployment: {
-          appId: existingAppId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -828,6 +775,14 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            ...defaultMocks.cliConfig,
+            deployment: {
+              appId: existingAppId,
+            },
+          },
+        },
       })
 
       expect(error?.message).toContain('Error deploying application')
@@ -838,17 +793,10 @@ describe('#deploy', () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
-      const organizationId = 'org-id'
       const newAppId = 'new-app-id'
       const deploymentId = 'deployment-id'
 
       mockInput.mockResolvedValue('Valid App Title')
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -892,6 +840,13 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            app: {
+              organizationId,
+            },
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -906,16 +861,9 @@ describe('#deploy', () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
-      const organizationId = 'org-id'
       const existingAppId1 = 'existing-app-id-1'
       const existingAppId2 = 'existing-app-id-2'
       const deploymentId = 'deployment-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -964,6 +912,13 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            app: {
+              organizationId,
+            },
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -979,17 +934,10 @@ describe('#deploy', () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
-      const organizationId = 'org-id'
       const existingAppId1 = 'existing-app-id-1'
       const existingAppId2 = 'existing-app-id-2'
       const newAppId = 'new-app-id'
       const deploymentId = 'deployment-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -1058,6 +1006,13 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            app: {
+              organizationId,
+            },
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -1073,14 +1028,15 @@ describe('#deploy', () => {
       const cwd = await testExample('basic-app')
       process.cwd = () => cwd
 
-      mockGetCliConfig.mockResolvedValue({
-        app: {
-          organizationId: undefined,
-        },
-      })
-
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            app: {
+              organizationId: undefined,
+            },
+          },
+        },
       })
 
       expect(error?.message).toContain(
@@ -1097,12 +1053,13 @@ describe('#deploy', () => {
 
       mockReadModuleVersion.mockResolvedValue(null)
 
-      mockGetCliConfig.mockResolvedValue({
-        studioHost: 'existing-studio',
-      })
-
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            studioHost: 'existing-studio',
+          },
+        },
       })
 
       expect(error?.message).toContain('Failed to find installed sanity version')
@@ -1117,13 +1074,6 @@ describe('#deploy', () => {
       const studioAppId = 'studio-app-id'
 
       mockCheckDir.mockRejectedValue(new Error('Directory check failed'))
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-        studioHost,
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -1145,6 +1095,14 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+            studioHost,
+          },
+        },
       })
 
       expect(error?.message).toContain('Error checking directory')
@@ -1158,13 +1116,6 @@ describe('#deploy', () => {
       const studioHost = 'existing-studio'
       const studioAppId = 'studio-app-id'
       const deploymentId = 'deployment-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-        studioHost,
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -1197,6 +1148,14 @@ describe('#deploy', () => {
 
       const {error, stderr, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+            studioHost,
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -1209,13 +1168,6 @@ describe('#deploy', () => {
     test('should create new studio hostname when studioHost is provided but does not exist', async () => {
       const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId: 'test-project-id',
-        },
-        studioHost: 'new-studio-host',
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -1259,6 +1211,14 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId: 'test-project-id',
+            },
+            studioHost: 'new-studio-host',
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -1273,13 +1233,6 @@ describe('#deploy', () => {
 
       const projectId = 'test-project-id'
       const studioHost = 'taken-studio-host'
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-        studioHost,
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -1306,6 +1259,14 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+            studioHost,
+          },
+        },
       })
 
       expect(error?.message).toContain('Studio hostname already taken')
@@ -1317,12 +1278,6 @@ describe('#deploy', () => {
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-      })
 
       const studioOneId = 'studio-one-id'
       const studioTwoId = 'studio-two-id'
@@ -1373,6 +1328,13 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -1396,12 +1358,6 @@ describe('#deploy', () => {
       const existingStudioId = 'existing-studio-id'
       const newStudioFromMenuId = 'new-studio-from-menu-id'
       const deploymentId = 'deployment-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -1468,6 +1424,13 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -1501,12 +1464,6 @@ describe('#deploy', () => {
 
         promise.cancel = () => {}
         return promise
-      })
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
       })
 
       mockApi({
@@ -1566,6 +1523,13 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -1595,12 +1559,6 @@ describe('#deploy', () => {
         return promise
       })
 
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-      })
-
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
@@ -1626,6 +1584,13 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+          },
+        },
       })
 
       expect(error?.message).toContain('Error creating user application')
@@ -1636,13 +1601,14 @@ describe('#deploy', () => {
       const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
-      mockGetCliConfig.mockResolvedValue({
-        api: {},
-        studioHost: 'some-studio',
-      })
-
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {},
+            studioHost: 'some-studio',
+          },
+        },
       })
 
       expect(error?.message).toContain(
@@ -1655,8 +1621,19 @@ describe('#deploy', () => {
       const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
+      const projectId = 'test-project-id'
+      const studioHost = 'test-studio'
+
       const {stderr} = await testCommand(DeployCommand, ['--auto-updates'], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+            studioHost,
+          },
+        },
       })
 
       expect(stderr).toContain('Warning: The --auto-updates flag is deprecated')
@@ -1666,15 +1643,16 @@ describe('#deploy', () => {
       const cwd = await testExample('basic-studio')
       process.cwd = () => cwd
 
-      mockGetCliConfig.mockResolvedValue({
-        autoUpdates: true,
-        deployment: {
-          autoUpdates: true,
-        },
-      })
-
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            autoUpdates: true,
+            deployment: {
+              autoUpdates: true,
+            },
+          },
+        },
       })
 
       expect(error?.message).toContain(
@@ -1690,13 +1668,6 @@ describe('#deploy', () => {
       const projectId = 'test-project-id'
       const studioHost = 'existing-studio'
 
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-        studioHost,
-      })
-
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
         query: {
@@ -1710,6 +1681,14 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+            studioHost,
+          },
+        },
       })
 
       expect(error?.message).toContain('Error finding user application')
@@ -1723,13 +1702,6 @@ describe('#deploy', () => {
       const projectId = 'test-project-id'
       const studioHost = 'existing-studio'
       const studioAppId = 'studio-app-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-        studioHost,
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -1762,6 +1734,14 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+            studioHost,
+          },
+        },
       })
 
       expect(error?.message).toContain('Error deploying studio')
@@ -1774,13 +1754,6 @@ describe('#deploy', () => {
 
       const projectId = 'test-project-id'
       const studioHost = 'new-studio-host'
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-        studioHost,
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -1807,6 +1780,14 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+            studioHost,
+          },
+        },
       })
 
       expect(error?.message).toContain('Error creating user application from config')
@@ -1831,12 +1812,6 @@ describe('#deploy', () => {
 
         promise.cancel = () => {}
         return promise
-      })
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
       })
 
       mockApi({
@@ -1878,6 +1853,13 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -1896,13 +1878,6 @@ describe('#deploy', () => {
       const studioHost = 'existing-studio'
       const studioAppId = 'studio-app-id'
       const deploymentId = 'deployment-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-        studioHost,
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -1935,6 +1910,14 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+            studioHost,
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -1950,15 +1933,6 @@ describe('#deploy', () => {
       const studioAppId = 'studio-app-id'
       const appHost = 'my-studio'
       const deploymentId = 'deployment-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-        deployment: {
-          appId: studioAppId,
-        },
-      })
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -1988,6 +1962,16 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+            deployment: {
+              appId: studioAppId,
+            },
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -2002,16 +1986,6 @@ describe('#deploy', () => {
       const studioAppId = 'studio-app-id'
       const studioHost = 'my-studio-host'
       const deploymentId = 'deployment-id'
-
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-        deployment: {
-          appId: studioAppId,
-        },
-        studioHost,
-      })
 
       // Should call by appId, NOT by appHost
       mockApi({
@@ -2042,6 +2016,17 @@ describe('#deploy', () => {
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+            deployment: {
+              appId: studioAppId,
+            },
+            studioHost,
+          },
+        },
       })
 
       expect(error).toBeUndefined()
@@ -2055,15 +2040,6 @@ describe('#deploy', () => {
       const projectId = 'test-project-id'
       const studioAppId = 'non-existent-app-id'
 
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-        deployment: {
-          appId: studioAppId,
-        },
-      })
-
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
         uri: `/projects/${projectId}/user-applications/${studioAppId}`,
@@ -2073,6 +2049,16 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+            deployment: {
+              appId: studioAppId,
+            },
+          },
+        },
       })
 
       expect(error?.message).toContain('Error finding user application')
@@ -2088,16 +2074,6 @@ describe('#deploy', () => {
       const studioAppId = 'non-existent-app-id'
       const studioHost = 'valid-studio-host'
 
-      mockGetCliConfig.mockResolvedValue({
-        api: {
-          projectId,
-        },
-        deployment: {
-          appId: studioAppId,
-        },
-        studioHost, // This should NOT be used as fallback
-      })
-
       // appId lookup fails
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -2111,6 +2087,17 @@ describe('#deploy', () => {
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {
+              projectId,
+            },
+            deployment: {
+              appId: studioAppId,
+            },
+            studioHost, // This should NOT be used as fallback
+          },
+        },
       })
 
       expect(error?.message).toContain('Error finding user application')

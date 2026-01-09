@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -7,31 +6,21 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {DeleteDatasetCommand} from '../delete.js'
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      projectId: 'test-project',
-    },
-  }),
-}))
-
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
+const mockDeleteDataset = vi.hoisted(() => vi.fn())
+const mockGetProjectById = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
   return {
     ...actual,
-    getProjectCliClient: vi.fn(),
+    getProjectCliClient: vi.fn().mockResolvedValue({
+      datasets: {
+        delete: mockDeleteDataset,
+      } as never,
+      projects: {
+        getById: mockGetProjectById,
+      } as never,
+    }),
   }
 })
 
@@ -47,21 +36,17 @@ const TEST_DATASET_NAME = 'test-dataset'
 const TEST_PROJECT_NAME = 'Test Project'
 const TEST_PROJECT_ID = 'test-project'
 
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
-
-const setupMockClient = () => {
-  mockGetProjectCliClient.mockResolvedValue({
-    datasets: {
-      delete: vi.fn().mockResolvedValue(undefined),
-    },
-    projects: {
-      getById: vi.fn().mockResolvedValue({
-        displayName: TEST_PROJECT_NAME,
-        id: TEST_PROJECT_ID,
-      }),
-    },
-  } as never)
+const defaultMocks = {
+  cliConfig: {api: {projectId: TEST_PROJECT_ID}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
 }
+
+const mockInput = vi.mocked(input)
 
 describe('#dataset:delete', () => {
   afterEach(() => {
@@ -99,24 +84,36 @@ describe('#dataset:delete', () => {
   })
 
   test('deletes dataset with --force flag', async () => {
-    setupMockClient()
+    mockDeleteDataset.mockResolvedValue(undefined)
 
-    const {stderr, stdout} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'])
+    const {stderr, stdout} = await testCommand(
+      DeleteDatasetCommand,
+      [TEST_DATASET_NAME, '--force'],
+      {
+        mocks: defaultMocks,
+      },
+    )
     expect(stderr).toContain(`--force' used: skipping confirmation, deleting dataset`)
     expect(stdout).toBe('Dataset deleted successfully\n')
   })
 
   test('deletes dataset with confirmation prompt and validates input', async () => {
-    vi.mocked(input).mockResolvedValue(TEST_DATASET_NAME)
-    setupMockClient()
+    mockInput.mockResolvedValue(TEST_DATASET_NAME)
+    mockGetProjectById.mockResolvedValue({
+      displayName: TEST_PROJECT_NAME,
+      id: TEST_PROJECT_ID,
+    } as never)
+    mockDeleteDataset.mockResolvedValue(undefined)
 
-    const {stdout} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME])
+    const {stdout} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain(
       `Deleting dataset "${TEST_DATASET_NAME}" from project "${TEST_PROJECT_NAME} (${TEST_PROJECT_ID})"`,
     )
     expect(stdout).toContain('Dataset deleted successfully\n')
-    expect(input).toHaveBeenCalledWith({
+    expect(mockInput).toHaveBeenCalledWith({
       message:
         'Are you ABSOLUTELY sure you want to delete this dataset?\n  Type the name of the dataset to confirm delete:',
       validate: expect.any(Function),
@@ -124,7 +121,9 @@ describe('#dataset:delete', () => {
   })
 
   test('throws error for empty dataset name', async () => {
-    const {error: commandError} = await testCommand(DeleteDatasetCommand, ['', '--force'])
+    const {error: commandError} = await testCommand(DeleteDatasetCommand, ['', '--force'], {
+      mocks: defaultMocks,
+    })
     expect(commandError?.message).toBe('Dataset name is missing')
     expect(commandError?.oclif?.exit).toBe(1)
   })
@@ -133,11 +132,12 @@ describe('#dataset:delete', () => {
     {desc: 'no project ID is found', projectId: undefined},
     {desc: 'project ID is empty string', projectId: ''},
   ])('throws error when $desc', async ({projectId}) => {
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {projectId},
+    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: {projectId}},
+      },
     })
-
-    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'])
     expect(error?.message).toBe(NO_PROJECT_ID)
     expect(error?.oclif?.exit).toBe(1)
   })
@@ -149,58 +149,59 @@ describe('#dataset:delete', () => {
   ])('handles API error $desc', async ({message, statusCode}) => {
     const deleteError = new Error(message)
     Object.assign(deleteError, {statusCode})
+    mockDeleteDataset.mockRejectedValue(deleteError)
 
-    mockGetProjectCliClient.mockResolvedValueOnce({
-      datasets: {
-        delete: vi.fn().mockRejectedValue(deleteError),
-      },
-    } as never)
-
-    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'])
+    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'], {
+      mocks: defaultMocks,
+    })
     expect(error?.message).toContain('Dataset deletion failed')
     expect(error?.message).toContain(message)
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('handles network errors when deleting dataset', async () => {
-    mockGetProjectCliClient.mockResolvedValueOnce({
-      datasets: {
-        delete: vi.fn().mockRejectedValue(new Error('Network error')),
-      },
-    } as never)
+    mockDeleteDataset.mockRejectedValue(new Error('Network error'))
 
-    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'])
+    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'], {
+      mocks: defaultMocks,
+    })
     expect(error?.message).toContain('Dataset deletion failed')
     expect(error?.message).toContain('Network error')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('handles API client creation errors', async () => {
-    mockGetProjectCliClient.mockRejectedValueOnce(new Error('Failed to create client'))
+    mockDeleteDataset.mockRejectedValue(new Error('Failed to create client'))
 
-    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'])
+    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME, '--force'], {
+      mocks: defaultMocks,
+    })
     expect(error?.message).toContain('Dataset deletion failed')
     expect(error?.message).toContain('Failed to create client')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('handles user cancellation during confirmation', async () => {
-    vi.mocked(input).mockRejectedValue(new Error('User cancelled'))
+    mockGetProjectById.mockResolvedValue({
+      displayName: TEST_PROJECT_NAME,
+      id: TEST_PROJECT_ID,
+    } as never)
+    mockInput.mockRejectedValue(new Error('User cancelled'))
 
-    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME])
+    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toBe('User cancelled')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('handles project retrieval error', async () => {
-    mockGetProjectCliClient.mockResolvedValueOnce({
-      projects: {
-        getById: vi.fn().mockRejectedValueOnce(new Error('Project Error')),
-      },
-    } as never)
+    mockGetProjectById.mockRejectedValue(new Error('Project Error'))
 
-    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME])
+    const {error} = await testCommand(DeleteDatasetCommand, [TEST_DATASET_NAME], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Project retrieval failed: Project Error')
     expect(error?.oclif?.exit).toBe(1)

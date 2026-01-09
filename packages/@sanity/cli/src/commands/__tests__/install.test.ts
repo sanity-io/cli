@@ -9,16 +9,6 @@ import {
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {Install} from '../install.js'
 
-vi.mock('../../../../cli-core/src/config/findProjectRoot.js', async () => {
-  return {
-    findProjectRoot: vi.fn().mockResolvedValue({
-      directory: '/test/project',
-      root: '/test/project',
-      type: 'studio',
-    }),
-  }
-})
-
 vi.mock('../../util/packageManager/packageManagerChoice.js', () => ({
   getPackageManagerChoice: vi.fn(),
 }))
@@ -31,6 +21,14 @@ vi.mock('../../util/packageManager/installPackages.js', () => ({
 const mockGetPackageManagerChoice = vi.mocked(getPackageManagerChoice)
 const mockInstallDeclaredPackages = vi.mocked(installDeclaredPackages)
 const mockInstallNewPackages = vi.mocked(installNewPackages)
+
+const defaultMocks = {
+  projectRoot: {
+    directory: '/test/project',
+    path: '/test/project/sanity.config.ts',
+    type: 'studio' as const,
+  },
+}
 
 afterEach(() => {
   vi.clearAllMocks()
@@ -70,7 +68,7 @@ describe('#install', () => {
       })
       mockInstallDeclaredPackages.mockResolvedValueOnce()
 
-      const {error} = await testCommand(Install, [])
+      const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
       expect(error).toBeUndefined()
       expect(mockGetPackageManagerChoice).toHaveBeenCalledWith('/test/project', {
@@ -93,7 +91,7 @@ describe('#install', () => {
       })
       mockInstallDeclaredPackages.mockResolvedValueOnce()
 
-      const {error} = await testCommand(Install, [])
+      const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
       expect(error).toBeUndefined()
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
@@ -112,7 +110,7 @@ describe('#install', () => {
       })
       mockInstallDeclaredPackages.mockResolvedValueOnce()
 
-      const {error} = await testCommand(Install, [])
+      const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
       expect(error).toBeUndefined()
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
@@ -131,7 +129,7 @@ describe('#install', () => {
       })
       mockInstallDeclaredPackages.mockResolvedValueOnce()
 
-      const {error} = await testCommand(Install, [])
+      const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
       expect(error).toBeUndefined()
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
@@ -150,7 +148,7 @@ describe('#install', () => {
       })
       mockInstallDeclaredPackages.mockResolvedValueOnce()
 
-      const {error} = await testCommand(Install, [])
+      const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
       expect(error).toBeUndefined()
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
@@ -171,7 +169,7 @@ describe('#install', () => {
       })
       mockInstallNewPackages.mockResolvedValueOnce()
 
-      const {error} = await testCommand(Install, ['@sanity/vision'])
+      const {error} = await testCommand(Install, ['@sanity/vision'], {mocks: defaultMocks})
 
       expect(error).toBeUndefined()
       expect(mockInstallNewPackages).toHaveBeenCalledWith(
@@ -193,7 +191,9 @@ describe('#install', () => {
       })
       mockInstallNewPackages.mockResolvedValueOnce()
 
-      const {error} = await testCommand(Install, ['@sanity/vision', 'react-icons', 'lodash'])
+      const {error} = await testCommand(Install, ['@sanity/vision', 'react-icons', 'lodash'], {
+        mocks: defaultMocks,
+      })
 
       expect(error).toBeUndefined()
       expect(mockInstallNewPackages).toHaveBeenCalledWith(
@@ -215,7 +215,7 @@ describe('#install', () => {
       })
       mockInstallNewPackages.mockResolvedValueOnce()
 
-      const {error} = await testCommand(Install, ['some-package'])
+      const {error} = await testCommand(Install, ['some-package'], {mocks: defaultMocks})
 
       expect(error).toBeUndefined()
       expect(mockInstallNewPackages).toHaveBeenCalledWith(
@@ -236,7 +236,7 @@ describe('#install', () => {
         new Error('Failed to detect package manager'),
       )
 
-      const {error} = await testCommand(Install, [])
+      const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Failed to detect package manager')
@@ -251,7 +251,7 @@ describe('#install', () => {
       })
       mockInstallDeclaredPackages.mockRejectedValueOnce(new Error('Installation failed'))
 
-      const {error} = await testCommand(Install, [])
+      const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Installation failed')
@@ -264,7 +264,7 @@ describe('#install', () => {
       })
       mockInstallNewPackages.mockRejectedValueOnce(new Error('Package not found'))
 
-      const {error} = await testCommand(Install, ['nonexistent-package'])
+      const {error} = await testCommand(Install, ['nonexistent-package'], {mocks: defaultMocks})
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Package not found')
@@ -279,7 +279,7 @@ describe('#install', () => {
       })
       mockInstallDeclaredPackages.mockResolvedValueOnce()
 
-      await testCommand(Install, [])
+      await testCommand(Install, [], {mocks: defaultMocks})
 
       expect(mockGetPackageManagerChoice).toHaveBeenCalledWith('/test/project', {
         interactive: true,
@@ -300,7 +300,7 @@ describe('#install', () => {
       })
       mockInstallNewPackages.mockResolvedValueOnce()
 
-      await testCommand(Install, ['test-package'])
+      await testCommand(Install, ['test-package'], {mocks: defaultMocks})
 
       expect(mockInstallNewPackages).toHaveBeenCalledWith(
         {

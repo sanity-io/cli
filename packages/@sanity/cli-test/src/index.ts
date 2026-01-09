@@ -1,3 +1,6 @@
+export * from './test/createTestClient.js'
+export * from './test/createTestToken.js'
 export * from './test/mockApi.js'
+export * from './test/mockSanityCommand.js'
 export * from './test/testCommand.js'
 export * from './test/testHook.js'

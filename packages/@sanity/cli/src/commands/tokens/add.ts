@@ -1,5 +1,5 @@
 import {Args, Flags} from '@oclif/core'
-import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 
 import {validateRole} from '../../actions/tokens/validateRole.js'
@@ -95,8 +95,7 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
   }
 
   private async promptForLabel(): Promise<string> {
-    const unattended = this.flags.yes
-    if (unattended || !isInteractive()) {
+    if (this.isUnattended()) {
       this.error(
         'Token label is required in non-interactive mode. Provide a label as an argument.',
         {
@@ -119,8 +118,7 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
   }
 
   private async promptForRole(projectId: string): Promise<string> {
-    const unattended = this.flags.yes
-    if (unattended || !isInteractive()) {
+    if (this.isUnattended()) {
       return 'viewer' // Default role for unattended mode
     }
 

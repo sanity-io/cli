@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getCliConfig} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -18,25 +17,17 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => {
-  return {
-    findProjectRoot: vi.fn().mockResolvedValue({
-      directory: '/test/path',
-      root: '/test/path',
-      type: 'studio',
-    }),
-  }
-})
+const testProjectId = 'test-project'
 
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', async () => {
-  return {
-    getCliConfig: vi.fn().mockResolvedValue({
-      api: {
-        projectId: 'test-project',
-      },
-    }),
-  }
-})
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 const mockRoles = [
   {
@@ -46,7 +37,7 @@ const mockRoles = [
     grants: {},
     isCustom: false,
     name: 'administrator',
-    projectId: 'test-project',
+    projectId: testProjectId,
     title: 'Administrator',
   },
   {
@@ -56,7 +47,7 @@ const mockRoles = [
     grants: {},
     isCustom: false,
     name: 'developer',
-    projectId: 'test-project',
+    projectId: testProjectId,
     title: 'Developer',
   },
   {
@@ -66,7 +57,7 @@ const mockRoles = [
     grants: {},
     isCustom: false,
     name: 'viewer',
-    projectId: 'test-project',
+    projectId: testProjectId,
     title: 'Viewer',
   },
   {
@@ -76,7 +67,7 @@ const mockRoles = [
     grants: {},
     isCustom: false,
     name: 'robot',
-    projectId: 'test-project',
+    projectId: testProjectId,
     title: 'Robot',
   },
 ]
@@ -99,20 +90,20 @@ describe('#invite', () => {
   test('invites user with email and role provided via flags', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
-      uri: '/projects/test-project/roles',
+      uri: `/projects/${testProjectId}/roles`,
     }).reply(200, mockRoles)
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
       method: 'post',
-      uri: '/invitations/project/test-project',
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(200, {})
 
-    const {stdout} = await testCommand(UsersInviteCommand, [
-      'test@example.com',
-      '--role',
-      'developer',
-    ])
+    const {stdout} = await testCommand(
+      UsersInviteCommand,
+      ['test@example.com', '--role', 'developer'],
+      {mocks: defaultMocks},
+    )
 
     expect(stdout).toContain('Invitation sent to test@example.com')
   })
@@ -120,20 +111,20 @@ describe('#invite', () => {
   test('invites user with email provided via args and role as flag', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
-      uri: '/projects/test-project/roles',
+      uri: `/projects/${testProjectId}/roles`,
     }).reply(200, mockRoles)
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
       method: 'post',
-      uri: '/invitations/project/test-project',
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(200, {})
 
-    const {stdout} = await testCommand(UsersInviteCommand, [
-      'user@example.com',
-      '--role',
-      'administrator',
-    ])
+    const {stdout} = await testCommand(
+      UsersInviteCommand,
+      ['user@example.com', '--role', 'administrator'],
+      {mocks: defaultMocks},
+    )
 
     expect(stdout).toContain('Invitation sent to user@example.com')
   })
@@ -141,14 +132,14 @@ describe('#invite', () => {
   test('exits when role is not found', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
-      uri: '/projects/test-project/roles',
+      uri: `/projects/${testProjectId}/roles`,
     }).reply(200, mockRoles)
 
-    const {error} = await testCommand(UsersInviteCommand, [
-      'test@example.com',
-      '--role',
-      'invalid-role',
-    ])
+    const {error} = await testCommand(
+      UsersInviteCommand,
+      ['test@example.com', '--role', 'invalid-role'],
+      {mocks: defaultMocks},
+    )
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Role name "invalid-role" not found')
@@ -157,17 +148,16 @@ describe('#invite', () => {
   })
 
   test('exits when project ID is not found', async () => {
-    vi.mocked(getCliConfig).mockResolvedValueOnce({
-      api: {
-        projectId: undefined,
+    const {error} = await testCommand(
+      UsersInviteCommand,
+      ['test@example.com', '--role', 'developer'],
+      {
+        mocks: {
+          ...defaultMocks,
+          cliConfig: {api: {projectId: undefined}},
+        },
       },
-    })
-
-    const {error} = await testCommand(UsersInviteCommand, [
-      'test@example.com',
-      '--role',
-      'developer',
-    ])
+    )
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toEqual(NO_PROJECT_ID)
@@ -177,20 +167,20 @@ describe('#invite', () => {
   test('handles 402 quota error', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
-      uri: '/projects/test-project/roles',
+      uri: `/projects/${testProjectId}/roles`,
     }).reply(200, mockRoles)
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
       method: 'post',
-      uri: '/invitations/project/test-project',
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(402, {message: 'Payment required'})
 
-    const {error} = await testCommand(UsersInviteCommand, [
-      'test@example.com',
-      '--role',
-      'developer',
-    ])
+    const {error} = await testCommand(
+      UsersInviteCommand,
+      ['test@example.com', '--role', 'developer'],
+      {mocks: defaultMocks},
+    )
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain(
@@ -202,20 +192,20 @@ describe('#invite', () => {
   test('handles API errors during invitation', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
-      uri: '/projects/test-project/roles',
+      uri: `/projects/${testProjectId}/roles`,
     }).reply(200, mockRoles)
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
       method: 'post',
-      uri: '/invitations/project/test-project',
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(500, {message: 'Internal server error'})
 
-    const {error} = await testCommand(UsersInviteCommand, [
-      'test@example.com',
-      '--role',
-      'developer',
-    ])
+    const {error} = await testCommand(
+      UsersInviteCommand,
+      ['test@example.com', '--role', 'developer'],
+      {mocks: defaultMocks},
+    )
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Error inviting user')
@@ -225,14 +215,14 @@ describe('#invite', () => {
   test('handles API errors when fetching roles', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
-      uri: '/projects/test-project/roles',
+      uri: `/projects/${testProjectId}/roles`,
     }).reply(500, {message: 'Internal server error'})
 
-    const {error} = await testCommand(UsersInviteCommand, [
-      'test@example.com',
-      '--role',
-      'developer',
-    ])
+    const {error} = await testCommand(
+      UsersInviteCommand,
+      ['test@example.com', '--role', 'developer'],
+      {mocks: defaultMocks},
+    )
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Error fetching roles')
@@ -242,14 +232,18 @@ describe('#invite', () => {
   test('exits when trying to assign role that does not apply to users', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
-      uri: '/projects/test-project/roles',
+      uri: `/projects/${testProjectId}/roles`,
     }).reply(200, mockRoles)
 
-    const {error} = await testCommand(UsersInviteCommand, [
-      'test@example.com',
-      '--role',
-      'robot', // This role does not apply to users
-    ])
+    const {error} = await testCommand(
+      UsersInviteCommand,
+      [
+        'test@example.com',
+        '--role',
+        'robot', // This role does not apply to users
+      ],
+      {mocks: defaultMocks},
+    )
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Role name "robot" not found')
@@ -260,20 +254,24 @@ describe('#invite', () => {
   test('role names are case insensitive', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
-      uri: '/projects/test-project/roles',
+      uri: `/projects/${testProjectId}/roles`,
     }).reply(200, mockRoles)
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
       method: 'post',
-      uri: '/invitations/project/test-project',
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(200, {})
 
-    const {stdout} = await testCommand(UsersInviteCommand, [
-      'test@example.com',
-      '--role',
-      'DEVELOPER', // Uppercase should work
-    ])
+    const {stdout} = await testCommand(
+      UsersInviteCommand,
+      [
+        'test@example.com',
+        '--role',
+        'DEVELOPER', // Uppercase should work
+      ],
+      {mocks: defaultMocks},
+    )
 
     expect(stdout).toContain('Invitation sent to test@example.com')
   })
@@ -283,16 +281,18 @@ describe('#invite', () => {
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
-      uri: '/projects/test-project/roles',
+      uri: `/projects/${testProjectId}/roles`,
     }).reply(200, mockRoles)
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
       method: 'post',
-      uri: '/invitations/project/test-project',
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(200, {})
 
-    const {stdout} = await testCommand(UsersInviteCommand, ['--role', 'developer'])
+    const {stdout} = await testCommand(UsersInviteCommand, ['--role', 'developer'], {
+      mocks: defaultMocks,
+    })
 
     expect(input).toHaveBeenCalledWith({
       message: 'Email to invite:',
@@ -307,16 +307,18 @@ describe('#invite', () => {
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
-      uri: '/projects/test-project/roles',
+      uri: `/projects/${testProjectId}/roles`,
     }).reply(200, mockRoles)
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
       method: 'post',
-      uri: '/invitations/project/test-project',
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(200, {})
 
-    const {stdout} = await testCommand(UsersInviteCommand, ['prompted@example.com'])
+    const {stdout} = await testCommand(UsersInviteCommand, ['prompted@example.com'], {
+      mocks: defaultMocks,
+    })
 
     expect(select).toHaveBeenCalledWith({
       choices: [
@@ -344,16 +346,16 @@ describe('#invite', () => {
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
-      uri: '/projects/test-project/roles',
+      uri: `/projects/${testProjectId}/roles`,
     }).reply(200, mockRoles)
 
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
       method: 'post',
-      uri: '/invitations/project/test-project',
+      uri: `/invitations/project/${testProjectId}`,
     }).reply(200, {})
 
-    const {stdout} = await testCommand(UsersInviteCommand, [])
+    const {stdout} = await testCommand(UsersInviteCommand, [], {mocks: defaultMocks})
 
     expect(input).toHaveBeenCalledWith({
       message: 'Email to invite:',

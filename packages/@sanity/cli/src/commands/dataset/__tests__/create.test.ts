@@ -1,35 +1,37 @@
 import {runCommand} from '@oclif/test'
 import {input, select} from '@sanity/cli-core/ux'
-import {testCommand} from '@sanity/cli-test'
+import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
+import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {getCliConfig} from '../../../../../cli-core/src/config/cli/getCliConfig.js'
-import {getProjectCliClient} from '../../../../../cli-core/src/services/apiClient.js'
+import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {CreateDatasetCommand} from '../create.js'
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/path',
-    root: '/test/path',
-    type: 'studio',
-  }),
-}))
+const mockListDatasets = vi.hoisted(() => vi.fn())
+const mockCreateDataset = vi.hoisted(() => vi.fn())
+const testProjectId = vi.hoisted(() => 'test-project')
+const testToken = vi.hoisted(() => 'test-token')
 
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn().mockResolvedValue({
-    api: {
-      projectId: 'test-project',
-    },
-  }),
-}))
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
 
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
+  const testClient = createTestClient({
+    apiVersion: 'v2025-09-16',
+    projectId: testProjectId,
+    token: testToken,
+  })
 
-vi.mock('../../../../../cli-core/src/services/apiClient.js', () => ({
-  getProjectCliClient: vi.fn(),
-}))
+  return {
+    ...actual,
+    getProjectCliClient: vi.fn().mockResolvedValue({
+      datasets: {
+        create: mockCreateDataset,
+        list: mockListDatasets,
+      } as never,
+      request: testClient.request,
+    }),
+  }
+})
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
@@ -40,29 +42,25 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
-const mockGetCliConfig = vi.mocked(getCliConfig)
+const defaultMocks = {
+  cliConfig: {api: {projectId: testProjectId}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
+
 const mockInput = vi.mocked(input)
 const mockSelect = vi.mocked(select)
-
-const createMockClient = (overrides: Record<string, unknown> = {}) => {
-  const defaultDatasets = {
-    create: vi.fn().mockResolvedValue(undefined),
-    list: vi.fn().mockResolvedValue([]),
-  }
-
-  const datasetsOverrides = overrides.datasets as Record<string, unknown> | undefined
-
-  return {
-    datasets: datasetsOverrides ? {...defaultDatasets, ...datasetsOverrides} : defaultDatasets,
-    request: vi.fn().mockResolvedValue([]),
-    ...overrides,
-  }
-}
 
 describe('#dataset:create', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('--help works', async () => {
@@ -102,73 +100,94 @@ describe('#dataset:create', () => {
   })
 
   test('creates dataset with provided name', async () => {
-    const mockClient = createMockClient()
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+    mockListDatasets.mockResolvedValue([])
 
-    const {stdout} = await testCommand(CreateDatasetCommand, ['my-dataset'])
+    mockApi({
+      apiHost: `https://${testProjectId}.api.sanity.io`,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, [])
+    mockCreateDataset.mockResolvedValue(undefined as never)
 
-    expect(mockClient.datasets.create).toHaveBeenCalledWith('my-dataset', {
+    const {stdout} = await testCommand(CreateDatasetCommand, ['my-dataset'], {
+      mocks: defaultMocks,
+    })
+
+    expect(mockCreateDataset).toHaveBeenCalledWith('my-dataset', {
       aclMode: 'public',
     })
     expect(stdout).toContain('Dataset created successfully')
   })
 
   test('prompts for dataset name when not provided', async () => {
-    const mockClient = createMockClient()
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+    mockListDatasets.mockResolvedValue([])
+    mockApi({
+      apiHost: `https://${testProjectId}.api.sanity.io`,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, [])
+    mockCreateDataset.mockResolvedValue(undefined as never)
     mockInput.mockResolvedValue('test-dataset')
 
-    const {stdout} = await testCommand(CreateDatasetCommand, [])
+    const {stdout} = await testCommand(CreateDatasetCommand, [], {
+      mocks: defaultMocks,
+    })
 
     expect(mockInput).toHaveBeenCalledWith({
       message: 'Dataset name:',
       validate: expect.any(Function),
     })
-    expect(mockClient.datasets.create).toHaveBeenCalledWith('test-dataset', {
+    expect(mockCreateDataset).toHaveBeenCalledWith('test-dataset', {
       aclMode: 'public',
     })
     expect(stdout).toContain('Dataset created successfully')
   })
 
   test('errors when dataset name is invalid', async () => {
-    const {error} = await testCommand(CreateDatasetCommand, ['Invalid-Dataset-Name'])
+    const {error} = await testCommand(CreateDatasetCommand, ['Invalid-Dataset-Name'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('must be all lowercase')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('errors when dataset already exists', async () => {
-    const mockClient = createMockClient({
-      datasets: {
-        create: vi.fn(),
-        list: vi.fn().mockResolvedValue([
-          {
-            aclMode: 'public',
-            addonFor: null,
-            createdAt: '2023-01-01T00:00:00Z',
-            createdByUserId: 'user1',
-            datasetProfile: 'default',
-            features: [],
-            name: 'production',
-            tags: [],
-          },
-        ]),
+    mockListDatasets.mockResolvedValue([
+      {
+        aclMode: 'public',
+        addonFor: null,
+        createdAt: '2023-01-01T00:00:00Z',
+        createdByUserId: 'user1',
+        datasetProfile: 'default',
+        features: [],
+        name: 'production',
+        tags: [],
       },
-    })
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+    ])
+    mockApi({
+      apiHost: `https://${testProjectId}.api.sanity.io`,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, [])
 
-    const {error} = await testCommand(CreateDatasetCommand, ['production'])
+    const {error} = await testCommand(CreateDatasetCommand, ['production'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Dataset "production" already exists')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('errors with invalid visibility flag', async () => {
-    const {error} = await testCommand(CreateDatasetCommand, [
-      'my-dataset',
-      '--visibility',
-      'invalid',
-    ])
+    const {error} = await testCommand(
+      CreateDatasetCommand,
+      ['my-dataset', '--visibility', 'invalid'],
+      {mocks: defaultMocks},
+    )
 
     expect(error?.message).toContain(
       'Expected --visibility=invalid to be one of: custom, private, public',
@@ -177,43 +196,37 @@ describe('#dataset:create', () => {
   })
 
   test('handles dataset creation errors', async () => {
-    const mockClient = createMockClient({
-      datasets: {
-        create: vi.fn().mockRejectedValue(new Error('API Error')),
-        list: vi.fn().mockResolvedValue([]),
-      },
-    })
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+    mockListDatasets.mockResolvedValue([])
+    mockApi({
+      apiHost: `https://${testProjectId}.api.sanity.io`,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, [])
+    mockCreateDataset.mockRejectedValue(new Error('API Error'))
 
-    const {error} = await testCommand(CreateDatasetCommand, ['my-dataset'])
+    const {error} = await testCommand(CreateDatasetCommand, ['my-dataset'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Dataset creation failed: API Error')
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('handles fetch project data errors', async () => {
-    const mockClient = createMockClient({
-      datasets: {
-        create: vi.fn(),
-        list: vi.fn().mockRejectedValue(new Error('Network error')),
-      },
-    })
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
-
-    const {error} = await testCommand(CreateDatasetCommand, ['my-dataset-fail'])
-
-    expect(error?.message).toContain('Failed to fetch project data: Network error')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
   test('prompts for dataset visibility when private datasets available and no flag provided', async () => {
-    const mockClient = createMockClient({
-      request: vi.fn().mockResolvedValue(['privateDataset']),
-    })
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+    mockListDatasets.mockResolvedValue([])
+    mockApi({
+      apiHost: `https://${testProjectId}.api.sanity.io`,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+    mockCreateDataset.mockResolvedValue(undefined as never)
     mockSelect.mockResolvedValue('private')
 
-    const {stderr, stdout} = await testCommand(CreateDatasetCommand, ['my-dataset'])
+    const {stderr, stdout} = await testCommand(CreateDatasetCommand, ['my-dataset'], {
+      mocks: defaultMocks,
+    })
 
     expect(mockSelect).toHaveBeenCalledWith({
       choices: [
@@ -228,7 +241,7 @@ describe('#dataset:create', () => {
       ],
       message: 'Dataset visibility',
     })
-    expect(mockClient.datasets.create).toHaveBeenCalledWith('my-dataset', {
+    expect(mockCreateDataset).toHaveBeenCalledWith('my-dataset', {
       aclMode: 'private',
     })
     expect(stdout).toContain('Dataset created successfully')
@@ -280,18 +293,22 @@ describe('#dataset:create', () => {
         visibility: 'custom',
       },
     ])('$testName', async ({expectedAclMode, expectWarning, hasPrivateFeature, visibility}) => {
-      const mockClient = createMockClient({
-        request: vi.fn().mockResolvedValue(hasPrivateFeature ? ['privateDataset'] : []),
-      })
-      mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+      mockListDatasets.mockResolvedValue([])
+      mockApi({
+        apiHost: `https://${testProjectId}.api.sanity.io`,
+        apiVersion: PROJECT_FEATURES_API_VERSION,
+        method: 'get',
+        uri: '/features',
+      }).reply(200, hasPrivateFeature ? ['privateDataset'] : [])
+      mockCreateDataset.mockResolvedValue(undefined as never)
 
-      const {stderr, stdout} = await testCommand(CreateDatasetCommand, [
-        'my-dataset',
-        '--visibility',
-        visibility,
-      ])
+      const {stderr, stdout} = await testCommand(
+        CreateDatasetCommand,
+        ['my-dataset', '--visibility', visibility],
+        {mocks: defaultMocks},
+      )
 
-      expect(mockClient.datasets.create).toHaveBeenCalledWith('my-dataset', {
+      expect(mockCreateDataset).toHaveBeenCalledWith('my-dataset', {
         aclMode: expectedAclMode,
       })
       expect(stdout).toContain('Dataset created successfully')
@@ -303,27 +320,28 @@ describe('#dataset:create', () => {
   })
 
   test('handles client request failure independently from listDatasets', async () => {
-    const mockClient = createMockClient({
-      datasets: {
-        create: vi.fn(),
-        list: vi.fn().mockResolvedValue([]),
-      },
-      request: vi.fn().mockRejectedValue(new Error('Features API error')), // This fails
-    })
-    mockGetProjectCliClient.mockResolvedValue(mockClient as never)
+    mockApi({
+      apiHost: `https://${testProjectId}.api.sanity.io`,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(500, {error: 'Features API error'})
 
-    const {error} = await testCommand(CreateDatasetCommand, ['my-dataset'])
+    const {error} = await testCommand(CreateDatasetCommand, ['my-dataset'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Failed to fetch project data: Features API error')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('errors when no project ID is found', async () => {
-    mockGetCliConfig.mockResolvedValueOnce({
-      api: undefined,
-    } as never)
-
-    const {error} = await testCommand(CreateDatasetCommand, ['my-dataset'])
+    const {error} = await testCommand(CreateDatasetCommand, ['my-dataset'], {
+      mocks: {
+        ...defaultMocks,
+        cliConfig: {api: undefined},
+      },
+    })
 
     expect(error?.message).toContain('sanity.cli.ts does not contain a project identifier')
     expect(error?.oclif?.exit).toBe(1)

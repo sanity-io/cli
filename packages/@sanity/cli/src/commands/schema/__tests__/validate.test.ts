@@ -9,14 +9,6 @@ vi.mock('../../../actions/schema/validateAction.js', () => ({
   validateAction: vi.fn(),
 }))
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({
-    directory: '/test/project',
-    path: '/test/project/sanity.config.ts',
-    type: 'studio',
-  }),
-}))
-
 describe('#schema:validate', () => {
   test('--help works', async () => {
     const {stdout} = await runCommand(['schema:validate', '--help'])
@@ -68,13 +60,29 @@ describe('#schema:validate', () => {
   })
 
   test('shows error when user inputs incorrect format flag', async () => {
-    const {error} = await testCommand(SchemaValidate, ['--format', 'invalid'])
+    const {error} = await testCommand(SchemaValidate, ['--format', 'invalid'], {
+      mocks: {
+        projectRoot: {
+          directory: '/test/project',
+          path: '/test/project/sanity.config.ts',
+          type: 'studio',
+        },
+      },
+    })
 
     expect(error?.message).toContain('Expected --format=invalid to be one of: pretty, ndjson, json')
   })
 
   test('shows error when user inputs incorrect level flag', async () => {
-    const {error} = await testCommand(SchemaValidate, ['--level', 'invalid'])
+    const {error} = await testCommand(SchemaValidate, ['--level', 'invalid'], {
+      mocks: {
+        projectRoot: {
+          directory: '/test/project',
+          path: '/test/project/sanity.config.ts',
+          type: 'studio',
+        },
+      },
+    })
 
     expect(error?.message).toContain('Expected --level=invalid to be one of: error, warning')
   })
@@ -82,14 +90,19 @@ describe('#schema:validate', () => {
   test('calls validate action with correct parameters', async () => {
     vi.mocked(validateAction).mockResolvedValueOnce(undefined)
 
-    const {error} = await testCommand(SchemaValidate, [
-      '--format',
-      'json',
-      '--level',
-      'error',
-      '--workspace',
-      'default',
-    ])
+    const {error} = await testCommand(
+      SchemaValidate,
+      ['--format', 'json', '--level', 'error', '--workspace', 'default'],
+      {
+        mocks: {
+          projectRoot: {
+            directory: '/test/project',
+            path: '/test/project/sanity.config.ts',
+            type: 'studio',
+          },
+        },
+      },
+    )
 
     expect(error).toBeUndefined()
     expect(validateAction).toHaveBeenCalledWith({

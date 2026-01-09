@@ -33,20 +33,17 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('../../../../cli-core/src/util/isInteractive.js', () => ({
-  isInteractive: vi.fn().mockReturnValue(true),
-}))
+vi.mock('../../util/packageManager/upgradePackages.js')
+vi.mock('../../util/packageManager/packageManagerChoice.js')
 
 vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
+  const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
   return {
     ...actual,
     getProjectCliClient: vi.fn(),
+    isInteractive: vi.fn(() => true),
   }
 })
-
-vi.mock('../../util/packageManager/upgradePackages.js')
-vi.mock('../../util/packageManager/packageManagerChoice.js')
 
 const mockCheckRequiredDependencies = vi.mocked(checkRequiredDependencies)
 const mockCompareDependencyVersions = vi.mocked(compareDependencyVersions)
@@ -95,7 +92,9 @@ describe('#dev', () => {
   })
 
   test('shows an error for invalid flags', async () => {
-    const {error} = await testCommand(DevCommand, ['--invalid'])
+    const {error} = await testCommand(DevCommand, ['--invalid'], {
+      mocks: {isInteractive: true},
+    })
 
     expect(error?.message).toContain('Nonexistent flag: --invalid')
   })
@@ -107,6 +106,7 @@ describe('#dev', () => {
 
       const {error, result, stderr, stdout} = await testCommand(DevCommand, ['--port', '5333'], {
         config: {root: cwd},
+        mocks: {isInteractive: true},
       })
 
       expect(error).toBeUndefined()
@@ -125,6 +125,7 @@ describe('#dev', () => {
         ['--no-load-in-dashboard', '--port', '5334'],
         {
           config: {root: cwd},
+          mocks: {isInteractive: true},
         },
       )
 
@@ -148,6 +149,7 @@ describe('#dev', () => {
       try {
         const {error, result, stdout} = await testCommand(DevCommand, ['--port', '5338'], {
           config: {root: cwd},
+          mocks: {isInteractive: true},
         })
 
         expect(error).toBeUndefined()
@@ -179,6 +181,7 @@ describe('#dev', () => {
 
       const {error} = await testCommand(DevCommand, ['--port', '5341'], {
         config: {root: cwd},
+        mocks: {isInteractive: true},
       })
 
       expect(error).toBeDefined()
@@ -194,6 +197,7 @@ describe('#dev', () => {
 
       const {error, result, stderr, stdout} = await testCommand(DevCommand, ['--port', '5335'], {
         config: {root: cwd},
+        mocks: {isInteractive: true},
       })
 
       expect(error).toBeUndefined()
@@ -213,6 +217,7 @@ describe('#dev', () => {
         ['--host', '127.0.0.1', '--port', '5336'],
         {
           config: {root: cwd},
+          mocks: {isInteractive: true},
         },
       )
 
@@ -250,6 +255,7 @@ describe('#dev', () => {
         ['--load-in-dashboard', '--port', '5340'],
         {
           config: {root: cwd},
+          mocks: {isInteractive: true},
         },
       )
 
@@ -274,6 +280,7 @@ describe('#dev', () => {
 
       const {error} = await testCommand(DevCommand, ['--load-in-dashboard', '--port', '5343'], {
         config: {root: cwd},
+        mocks: {isInteractive: true},
       })
 
       expect(error).toBeDefined()
@@ -302,6 +309,7 @@ describe('#dev', () => {
 
       const {error} = await testCommand(DevCommand, ['--load-in-dashboard', '--port', '5344'], {
         config: {root: cwd},
+        mocks: {isInteractive: true},
       })
 
       expect(error).toBeDefined()
@@ -361,6 +369,7 @@ describe('#dev', () => {
         ['--auto-updates', '--port', '5348'],
         {
           config: {root: cwd},
+          mocks: {isInteractive: true},
         },
       )
 
@@ -389,6 +398,7 @@ describe('#dev', () => {
 
       const {error} = await testCommand(DevCommand, ['--auto-updates', '--port', '5347'], {
         config: {root: cwd},
+        mocks: {isInteractive: true},
       })
 
       expect(error).toBeDefined()
@@ -409,6 +419,7 @@ describe('#dev', () => {
     try {
       const {error} = await testCommand(DevCommand, ['--port', '5337'], {
         config: {root: cwd},
+        mocks: {isInteractive: true},
       })
 
       expect(error).toBeDefined()
