@@ -1,5 +1,27 @@
 # Changelog
 
+## [6.0.0-alpha.5](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.4...cli-v6.0.0-alpha.5) (2026-01-09)
+
+
+### Features
+
+* migrate schema deploy ([#242](https://github.com/sanity-io/cli/issues/242)) ([268b256](https://github.com/sanity-io/cli/commit/268b2560dd189663498df40abe39f9149ccbc6b7))
+* migrate schema list ([#198](https://github.com/sanity-io/cli/issues/198)) ([62f46ac](https://github.com/sanity-io/cli/commit/62f46acf17905f9630a1540c58c724acf810a12a))
+
+
+### Bug Fixes
+
+* **deps:** update sanity-tooling ([#260](https://github.com/sanity-io/cli/issues/260)) ([c1d7c9d](https://github.com/sanity-io/cli/commit/c1d7c9d130a54f32aa85b3815a1dcecce73530af))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.5
+  * devDependencies
+    * @sanity/cli-test bumped to 0.0.2-alpha.4
+
 ## [6.0.0-alpha.4](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.3...cli-v6.0.0-alpha.4) (2025-12-30)
 
 

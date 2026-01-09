@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.0.2-alpha.4](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.3...cli-test-v0.0.2-alpha.4) (2026-01-09)
+
+
+### Bug Fixes
+
+* **deps:** update dependency ansis to v4 ([#270](https://github.com/sanity-io/cli/issues/270)) ([4a79f5b](https://github.com/sanity-io/cli/commit/4a79f5b2ea31b90efe99cd06f898a42755f97777))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.5
+  * peerDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.5
+
 ## [0.0.2-alpha.3](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.2...cli-test-v0.0.2-alpha.3) (2025-12-30)
 
 
