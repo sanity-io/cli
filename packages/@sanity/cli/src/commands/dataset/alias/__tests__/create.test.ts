@@ -4,6 +4,7 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DATASET_API_VERSION} from '../../../../services/datasets.js'
+import {PROJECT_FEATURES_API_VERSION} from '../../../../services/getProjectFeatures.js'
 import {NO_PROJECT_ID} from '../../../../util/errorMessages.js'
 import {CreateAliasCommand} from '../create.js'
 
@@ -92,7 +93,7 @@ describe('#dataset:alias:create', () => {
 
     mockApi({
       apiHost: `https://${testProjectId}.api.sanity.io`,
-      apiVersion: DATASET_API_VERSION,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
       uri: `/features`,
     }).reply(200, ['advancedDatasetManagement'])
@@ -125,7 +126,7 @@ describe('#dataset:alias:create', () => {
 
     mockApi({
       apiHost: `https://${testProjectId}.api.sanity.io`,
-      apiVersion: DATASET_API_VERSION,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
       uri: `/features`,
     }).reply(200, ['advancedDatasetManagement'])
@@ -154,7 +155,7 @@ describe('#dataset:alias:create', () => {
 
     mockApi({
       apiHost: `https://${testProjectId}.api.sanity.io`,
-      apiVersion: DATASET_API_VERSION,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
       uri: `/features`,
     }).reply(200, ['advancedDatasetManagement'])
@@ -179,7 +180,7 @@ describe('#dataset:alias:create', () => {
 
     mockApi({
       apiHost: `https://${testProjectId}.api.sanity.io`,
-      apiVersion: DATASET_API_VERSION,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
       uri: `/features`,
     }).reply(200, [])
@@ -197,7 +198,7 @@ describe('#dataset:alias:create', () => {
 
     mockApi({
       apiHost: `https://${testProjectId}.api.sanity.io`,
-      apiVersion: DATASET_API_VERSION,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
       uri: `/features`,
     }).reply(200, ['advancedDatasetManagement'])
@@ -235,7 +236,7 @@ describe('#dataset:alias:create', () => {
 
     mockApi({
       apiHost: `https://${testProjectId}.api.sanity.io`,
-      apiVersion: DATASET_API_VERSION,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
       uri: `/features`,
     }).reply(200, ['advancedDatasetManagement'])
@@ -270,7 +271,7 @@ describe('#dataset:alias:create', () => {
 
     mockApi({
       apiHost: `https://${testProjectId}.api.sanity.io`,
-      apiVersion: DATASET_API_VERSION,
+      apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
       uri: `/features`,
     }).reply(200, ['advancedDatasetManagement'])

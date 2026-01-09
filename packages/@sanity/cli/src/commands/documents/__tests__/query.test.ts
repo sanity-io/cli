@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getProjectCliClient} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -19,15 +18,17 @@ const defaultMocks = {
   token: 'test-token',
 }
 
+const mockFetch = vi.hoisted(() => vi.fn())
+
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
   return {
     ...actual,
-    getProjectCliClient: vi.fn(),
+    getProjectCliClient: vi.fn().mockResolvedValue({
+      fetch: mockFetch,
+    }),
   }
 })
-
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
 describe('#documents:query', () => {
   afterEach(() => {
@@ -91,8 +92,7 @@ describe('#documents:query', () => {
       },
     ]
 
-    const mockFetch = vi.fn().mockResolvedValue(mockResults)
-    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
+    mockFetch.mockResolvedValue(mockResults)
 
     const {stdout} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]'], {
       mocks: defaultMocks,
@@ -106,8 +106,7 @@ describe('#documents:query', () => {
   test('executes query with pretty flag for colorized output', async () => {
     const mockResults = [{_id: 'test', title: 'Test Movie'}]
 
-    const mockFetch = vi.fn().mockResolvedValue(mockResults)
-    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
+    mockFetch.mockResolvedValue(mockResults)
 
     const originalChalkLevel = chalk.level
     // Force colorization
@@ -134,8 +133,7 @@ describe('#documents:query', () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
     const overrideDataset = 'staging'
 
-    const mockFetch = vi.fn().mockResolvedValue(mockResults)
-    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
+    mockFetch.mockResolvedValue(mockResults)
 
     const {stdout} = await testCommand(
       QueryDocumentCommand,
@@ -152,8 +150,7 @@ describe('#documents:query', () => {
   test('uses project flag to override config', async () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
 
-    const mockFetch = vi.fn().mockResolvedValue(mockResults)
-    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
+    mockFetch.mockResolvedValue(mockResults)
 
     const {stdout} = await testCommand(
       QueryDocumentCommand,
@@ -170,8 +167,7 @@ describe('#documents:query', () => {
   test('uses anonymous flag to skip authentication', async () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
 
-    const mockFetch = vi.fn().mockResolvedValue(mockResults)
-    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
+    mockFetch.mockResolvedValue(mockResults)
 
     const {stdout} = await testCommand(
       QueryDocumentCommand,
@@ -189,8 +185,7 @@ describe('#documents:query', () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
     const customApiVersion = 'v2021-06-07'
 
-    const mockFetch = vi.fn().mockResolvedValue(mockResults)
-    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
+    mockFetch.mockResolvedValue(mockResults)
 
     const {stdout} = await testCommand(
       QueryDocumentCommand,
@@ -207,8 +202,7 @@ describe('#documents:query', () => {
   test('shows warning and uses default API version when not specified', async () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
 
-    const mockFetch = vi.fn().mockResolvedValue(mockResults)
-    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
+    mockFetch.mockResolvedValue(mockResults)
 
     const {stderr, stdout} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]'], {
       mocks: defaultMocks,
@@ -245,8 +239,7 @@ describe('#documents:query', () => {
   })
 
   test('fails when query returns null/undefined', async () => {
-    const mockFetch = vi.fn().mockResolvedValue(null)
-    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
+    mockFetch.mockResolvedValue(null)
 
     const {error} = await testCommand(QueryDocumentCommand, ['*[_type == "nonexistent"]'], {
       mocks: defaultMocks,
@@ -260,8 +253,7 @@ describe('#documents:query', () => {
   test('handles query execution errors', async () => {
     const queryError = new Error('Invalid query syntax')
 
-    const mockFetch = vi.fn().mockRejectedValue(queryError)
-    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
+    mockFetch.mockRejectedValue(queryError)
 
     const {error} = await testCommand(QueryDocumentCommand, ['invalid query'], {
       mocks: defaultMocks,
@@ -280,8 +272,7 @@ describe('#documents:query', () => {
     // Mock environment variable
     vi.stubEnv('SANITY_CLI_QUERY_API_VERSION', envApiVersion)
 
-    const mockFetch = vi.fn().mockResolvedValue(mockResults)
-    mockGetProjectCliClient.mockResolvedValue({fetch: mockFetch} as never)
+    mockFetch.mockResolvedValue(mockResults)
 
     const {stdout} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]'], {
       mocks: defaultMocks,

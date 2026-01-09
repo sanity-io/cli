@@ -1,5 +1,5 @@
 import {runCommand} from '@oclif/test'
-import * as cliCore from '@sanity/cli-core'
+import {getCliToken} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -19,7 +19,7 @@ vi.mock('../../../actions/telemetry/fetchTelemetryConsent.js', () => ({
   fetchTelemetryConsent: vi.fn(),
 }))
 
-const mockGetCliToken = vi.mocked(cliCore.getCliToken)
+const mockGetCliToken = vi.mocked(getCliToken)
 const mockFetchTelemetryConsent = vi.mocked(fetchTelemetryConsent)
 
 describe('#enable', () => {

@@ -1,6 +1,6 @@
 import {runCommand} from '@oclif/test'
-import {getProjectCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
+import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
@@ -22,13 +22,17 @@ const defaultMocks = {
   token: 'test-token',
 }
 
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
+const mockGetById = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
   return {
     ...actual,
-    getProjectCliClient: vi.fn(),
+    getProjectCliClient: vi.fn().mockResolvedValue({
+      projects: {
+        getById: mockGetById,
+      },
+    }),
   }
 })
 
@@ -59,20 +63,14 @@ describe('#hook:create', () => {
   })
 
   test('opens webhook creation URL for project with organization', async () => {
-    const open = await import('open')
-
-    mockGetProjectCliClient.mockResolvedValueOnce({
-      projects: {
-        getById: vi.fn().mockResolvedValue({
-          id: 'test-project',
-          organizationId: 'test-org',
-        }),
-      },
-    } as never)
+    mockGetById.mockResolvedValueOnce({
+      id: 'test-project',
+      organizationId: 'test-org',
+    })
 
     const {stdout} = await testCommand(CreateHookCommand, [], {mocks: defaultMocks})
 
-    expect(open.default).toHaveBeenCalledWith(
+    expect(open).toHaveBeenCalledWith(
       'https://www.sanity.io/organizations/test-org/project/test-project/api/webhooks/new',
     )
     expect(stdout).toContain(
@@ -81,19 +79,13 @@ describe('#hook:create', () => {
   })
 
   test('opens webhook creation URL for project without organization (personal)', async () => {
-    const open = await import('open')
-
-    mockGetProjectCliClient.mockResolvedValueOnce({
-      projects: {
-        getById: vi.fn().mockResolvedValue({
-          id: 'test-project',
-        }),
-      },
-    } as never)
+    mockGetById.mockResolvedValueOnce({
+      id: 'test-project',
+    })
 
     const {stdout} = await testCommand(CreateHookCommand, [], {mocks: defaultMocks})
 
-    expect(open.default).toHaveBeenCalledWith(
+    expect(open).toHaveBeenCalledWith(
       'https://www.sanity.io/organizations/personal/project/test-project/api/webhooks/new',
     )
     expect(stdout).toContain(
@@ -102,7 +94,7 @@ describe('#hook:create', () => {
   })
 
   test('displays an error if the project fetch fails', async () => {
-    mockGetProjectCliClient.mockRejectedValueOnce(new Error('Internal Server Error'))
+    mockGetById.mockRejectedValueOnce(new Error('Internal Server Error'))
 
     const {error} = await testCommand(CreateHookCommand, [], {mocks: defaultMocks})
 
@@ -123,17 +115,12 @@ describe('#hook:create', () => {
   })
 
   test('handles open failure gracefully', async () => {
-    const open = await import('open')
-    vi.mocked(open.default).mockRejectedValueOnce(new Error('Failed to open browser'))
+    vi.mocked(open).mockRejectedValueOnce(new Error('Failed to open browser'))
 
-    mockGetProjectCliClient.mockResolvedValueOnce({
-      projects: {
-        getById: vi.fn().mockResolvedValue({
-          id: 'test-project',
-          organizationId: 'test-org',
-        }),
-      },
-    } as never)
+    mockGetById.mockResolvedValueOnce({
+      id: 'test-project',
+      organizationId: 'test-org',
+    })
 
     const {error} = await testCommand(CreateHookCommand, [], {mocks: defaultMocks})
 

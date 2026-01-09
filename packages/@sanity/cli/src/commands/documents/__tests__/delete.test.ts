@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {getProjectCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -19,15 +18,20 @@ const defaultMocks = {
   token: 'test-token',
 }
 
+const mockTransaction = vi.hoisted(() => vi.fn())
+const mockGetProjectCliClient = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({
+    transaction: mockTransaction,
+  }),
+)
+
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
   return {
     ...actual,
-    getProjectCliClient: vi.fn(),
+    getProjectCliClient: mockGetProjectCliClient,
   }
 })
-
-const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
 describe('#documents:delete', () => {
   afterEach(() => {
@@ -80,12 +84,10 @@ describe('#documents:delete', () => {
       results: [{id: 'test-doc', operation: 'delete'}],
     })
 
-    mockGetProjectCliClient.mockResolvedValue({
-      transaction: vi.fn().mockReturnValue({
-        commit: mockCommit,
-        delete: mockDelete,
-      }),
-    } as never)
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
     const {stdout} = await testCommand(DeleteDocumentCommand, ['test-doc'], {
       mocks: defaultMocks,
@@ -106,12 +108,10 @@ describe('#documents:delete', () => {
       ],
     })
 
-    mockGetProjectCliClient.mockResolvedValue({
-      transaction: vi.fn().mockReturnValue({
-        commit: mockCommit,
-        delete: mockDelete,
-      }),
-    } as never)
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
     const {stdout} = await testCommand(DeleteDocumentCommand, ['doc1', 'doc2', 'doc3'], {
       mocks: defaultMocks,
@@ -129,12 +129,10 @@ describe('#documents:delete', () => {
     const mockCommit = vi.fn().mockResolvedValue({
       results: [{id: 'doc1', operation: 'delete'}],
     })
-    mockGetProjectCliClient.mockResolvedValue({
-      transaction: vi.fn().mockReturnValue({
-        commit: mockCommit,
-        delete: mockDelete,
-      }),
-    } as never)
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
     const {error} = await testCommand(DeleteDocumentCommand, ['doc1', 'nonexistent-doc'], {
       mocks: defaultMocks,
@@ -152,12 +150,10 @@ describe('#documents:delete', () => {
     const mockCommit = vi.fn().mockResolvedValue({
       results: [{id: 'test-doc', operation: 'delete'}],
     })
-    mockGetProjectCliClient.mockResolvedValue({
-      transaction: vi.fn().mockReturnValue({
-        commit: mockCommit,
-        delete: mockDelete,
-      }),
-    } as never)
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
     await testCommand(DeleteDocumentCommand, ['test-doc', '--dataset', 'staging'], {
       mocks: defaultMocks,
@@ -202,12 +198,10 @@ describe('#documents:delete', () => {
   test('handles transaction errors gracefully', async () => {
     const mockDelete = vi.fn()
     const mockCommit = vi.fn().mockRejectedValue(new Error('Transaction failed'))
-    mockGetProjectCliClient.mockResolvedValue({
-      transaction: vi.fn().mockReturnValue({
-        commit: mockCommit,
-        delete: mockDelete,
-      }),
-    } as never)
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
     const {error} = await testCommand(DeleteDocumentCommand, ['test-doc'], {
       mocks: defaultMocks,
@@ -231,12 +225,10 @@ describe('#documents:delete', () => {
     const mockCommit = vi.fn().mockResolvedValue({
       results: [{id: 'test-doc', operation: 'delete'}],
     })
-    mockGetProjectCliClient.mockResolvedValue({
-      transaction: vi.fn().mockReturnValue({
-        commit: mockCommit,
-        delete: mockDelete,
-      }),
-    } as never)
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
     const {stdout} = await testCommand(DeleteDocumentCommand, ['test-doc'], {
       mocks: defaultMocks,
@@ -254,12 +246,10 @@ describe('#documents:delete', () => {
         {id: 'doc2', operation: 'delete'},
       ],
     })
-    mockGetProjectCliClient.mockResolvedValue({
-      transaction: vi.fn().mockReturnValue({
-        commit: mockCommit,
-        delete: mockDelete,
-      }),
-    } as never)
+    mockTransaction.mockReturnValue({
+      commit: mockCommit,
+      delete: mockDelete,
+    })
 
     const {stdout} = await testCommand(DeleteDocumentCommand, ['doc1', 'doc2'], {
       mocks: defaultMocks,
