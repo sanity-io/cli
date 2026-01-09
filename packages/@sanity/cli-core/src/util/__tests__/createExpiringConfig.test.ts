@@ -381,8 +381,7 @@ describe('createExpiringConfig', () => {
       onRevalidate,
       store: mockStore,
       ttl,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      validateValue: validateValue as any as (value: unknown) => value is string,
+      validateValue: validateValue as unknown as (value: unknown) => value is string,
     })
 
     // Cached entry that is not expired but invalid per validateValue
@@ -407,8 +406,7 @@ describe('createExpiringConfig', () => {
       onFetch,
       store: mockStore,
       ttl: 5000,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      validateValue: validateValue as any as (value: unknown) => value is string,
+      validateValue: validateValue as unknown as (value: unknown) => value is string,
     })
 
     // Empty cache
@@ -429,8 +427,7 @@ describe('createExpiringConfig', () => {
       onCacheHit,
       store: mockStore,
       ttl: 5000,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      validateValue: validateValue as any as (value: unknown) => value is string,
+      validateValue: validateValue as unknown as (value: unknown) => value is string,
     })
 
     vi.mocked(mockStore.get).mockReturnValue({
@@ -455,8 +452,7 @@ describe('createExpiringConfig', () => {
       onRevalidate,
       store: mockStore,
       ttl: 1, // ensure expiration
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      validateValue: validateValue as any as (value: unknown) => value is string,
+      validateValue: validateValue as unknown as (value: unknown) => value is string,
     })
 
     // Cached value that has expired but is otherwise valid in shape and passes validate
