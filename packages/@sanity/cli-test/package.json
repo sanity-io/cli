@@ -81,7 +81,9 @@
   },
   "peerDependencies": {
     "@oclif/core": "^4.0.0",
-    "@sanity/cli-core": "workspace:*"
+    "@sanity/cli-core": "workspace:*",
+    "@sanity/client": "^7.0.0",
+    "vitest": ">=3.0.0 <4.0.0"
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
