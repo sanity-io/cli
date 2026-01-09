@@ -30,15 +30,18 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 
-          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          # model: "claude-opus-4-20250514"
+          # Optional: Specify model (defaults to Claude Sonnet 4.5, uncomment for Claude Opus 4.5)
+          # claude_args: --model claude-sonnet-4-5-20250929
 
           # Direct prompt for automated review (no @claude mention needed)
-          direct_prompt: |
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
             Please review this PR and identify only issues that need fixing.
             For each issue found:
             - State the problem in 1-2 sentences
@@ -65,7 +68,7 @@ jobs:
           use_sticky_comment: true
 
           # Optional: Customize review based on file types
-          # direct_prompt: |
+          # prompt: |
           #   Review this PR focusing on:
           #   - For TypeScript files: Type safety and proper interface usage
           #   - For API endpoints: Security, input validation, and error handling
@@ -73,13 +76,13 @@ jobs:
           #   - For tests: Coverage, edge cases, and test quality
 
           # Optional: Different prompts for different authors
-          # direct_prompt: |
+          # prompt: |
           #   ${{ github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' &&
           #   'Welcome! Please review this PR from a first-time contributor. Be encouraging and provide detailed explanations for any suggestions.' ||
           #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
 
           # Optional: Add specific tools for running tests or linting
-          # allowed_tools: "Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck)"
+          # claude_args: --allowedTools Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck)
           allowed_bots: 'cursor,renovate'
 
           # Optional: Skip review for certain conditions
