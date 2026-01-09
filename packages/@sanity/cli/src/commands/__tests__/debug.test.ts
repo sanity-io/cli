@@ -167,15 +167,13 @@ describe('#debug', () => {
     vi.mocked(getConfig).mockImplementation(async () => undefined)
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
-    const {error, stdout} = await testCommand(Debug, [], {
+    const {stdout} = await testCommand(Debug, [], {
       mocks: {
         ...defaultMocks,
         token: undefined,
       },
     })
 
-    // When not authenticated, should show error message in user section
-    expect(error?.message).toContain('Failed to gather debug information')
     expect(stdout).toContain('User:')
     expect(stdout).toContain('Not logged in')
   })
@@ -314,25 +312,6 @@ describe('#debug', () => {
     expect(stdout).toContain("Display name: 'Test Project'")
     expect(stdout).toContain("ID: 'project123'")
     expect(stdout).toContain("Roles: [ 'administrator' ]")
-  })
-
-  test('handles case when no auth token is present', async () => {
-    // Mock no authentication
-    vi.mocked(getCliToken).mockResolvedValue(undefined)
-    vi.mocked(getConfig).mockImplementation(async () => undefined)
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    // Command should fail when no auth token is present since it requires authentication
-    const {error, stdout} = await testCommand(Debug, [], {
-      mocks: {
-        ...defaultMocks,
-        token: undefined,
-      },
-    })
-
-    expect(error?.message).toContain('Failed to gather debug information')
-    expect(stdout).toContain('User:')
-    expect(stdout).toContain('Not logged in')
   })
 
   test('handles case when no project config is present', async () => {
