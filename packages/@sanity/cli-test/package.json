@@ -40,6 +40,7 @@
     "build:types": "tsc --project tsconfig.lib.json",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
+    "publint": "publint",
     "test": "vitest run",
     "posttest": "pnpm run lint",
     "test:coverage": "vitest run --coverage",
@@ -62,6 +63,7 @@
     "@swc/core": "catalog:",
     "@types/node": "catalog:",
     "eslint": "catalog:",
+    "publint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
