@@ -58,6 +58,20 @@ vi.mock('../../../actions/auth/login/login.js', () => ({
   login: mockLogin,
 }))
 
+const setupInitSuccessMocks = () => {
+  mockApi({
+    apiVersion: ORGANIZATIONS_API_VERSION,
+    method: 'get',
+    uri: '/organizations',
+  }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+  mockApi({
+    apiVersion: PROJECT_FEATURES_API_VERSION,
+    method: 'get',
+    uri: '/features',
+  }).reply(200, ['privateDataset'])
+}
+
 describe('#init: authentication', () => {
   afterEach(() => {
     vi.clearAllMocks()
@@ -74,19 +88,9 @@ describe('#init: authentication', () => {
       provider: 'saml-123',
     })
 
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+    setupInitSuccessMocks()
 
-    mockApi({
-      apiVersion: PROJECT_FEATURES_API_VERSION,
-      method: 'get',
-      uri: '/features',
-    }).reply(200, ['privateDatasets'])
-
-    const {error, stdout} = await testCommand(InitCommand, [], {
+    const {error, stdout} = await testCommand(InitCommand, ['--dataset=test', '--project=test'], {
       mocks: {
         isInteractive: true,
         token: 'test-token',
@@ -100,7 +104,7 @@ describe('#init: authentication', () => {
   test('throws error if user is authenticated with invalid token in unattended mode', async () => {
     mockGetById.mockRejectedValueOnce(new Error('Invalid token'))
 
-    const {error} = await testCommand(InitCommand, ['--yes', '--dataset=test', '--project==test'], {
+    const {error} = await testCommand(InitCommand, ['--yes', '--dataset=test', '--project=test'], {
       mocks: {
         token: 'test-token',
       },
@@ -114,7 +118,9 @@ describe('#init: authentication', () => {
   test('calls login when token invalid and not in unattended mode', async () => {
     mockGetById.mockRejectedValueOnce(new Error('Invalid token'))
 
-    const {error} = await testCommand(InitCommand, [], {
+    setupInitSuccessMocks()
+
+    const {error} = await testCommand(InitCommand, ['--dataset=test', '--project=test'], {
       mocks: {
         isInteractive: true,
         token: 'test-token',

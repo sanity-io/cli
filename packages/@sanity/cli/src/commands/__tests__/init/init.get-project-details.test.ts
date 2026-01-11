@@ -1,7 +1,10 @@
-import {mockApi, testCommand} from '@sanity/cli-test'
+import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures'
+import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations'
+import {CREATE_PROJECT_API_VERSION} from '../../../services/projects'
 import {InitCommand} from '../../init'
 
 const mocks = vi.hoisted(() => ({
@@ -19,32 +22,43 @@ vi.mock('@vercel/fs-detectors', () => ({
   LocalFileSystemDetector: vi.fn(),
 }))
 
-vi.mock('../../../../../cli-core/src/util/isInteractive.js', () => ({
-  isInteractive: vi.fn().mockReturnValue(true),
-}))
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  const globalTestClient = createTestClient({
+    apiVersion: 'v2025-05-14',
+    token: 'test-token',
+  })
 
-vi.mock('../../../../../cli-core/src/services/getCliToken.js', () => ({
-  getCliToken: vi.fn().mockResolvedValue('test-token'),
-}))
+  const projectTestClient = createTestClient({
+    apiVersion: 'v2025-09-16',
+    token: 'test-token',
+  })
 
-vi.mock('../../../services/user.js', () => ({
-  getCliUser: vi.fn().mockResolvedValue({
-    email: 'test@example.com',
-    id: 'user-123',
-    name: 'Test User',
-    provider: 'saml-123',
-  }),
-}))
-
-vi.mock('../../../services/datasets.js', () => ({
-  createDataset: mocks.createDataset,
-  listDatasets: mocks.listDatasets,
-}))
-
-vi.mock('../../../services/projects.js', () => ({
-  createProject: mocks.createProject,
-  listProjects: mocks.listProjects,
-}))
+  return {
+    ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      projects: {
+        list: mocks.listProjects,
+      },
+      request: globalTestClient.request,
+      users: {
+        getById: vi.fn().mockResolvedValue({
+          email: 'test@example.com',
+          id: 'user-123',
+          name: 'Test User',
+          provider: 'saml-123',
+        }),
+      } as never,
+    }),
+    getProjectCliClient: vi.fn().mockResolvedValue({
+      datasets: {
+        create: mocks.createDataset,
+        list: mocks.listDatasets,
+      } as never,
+      request: projectTestClient.request,
+    }),
+  }
+})
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual('@sanity/cli-core/ux')
@@ -60,13 +74,14 @@ vi.mock('@sanity/cli-core/ux', async () => {
 describe('#init: get project details', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    const pending = nock.pendingMocks()
     nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('prompts user for organization if provided template is app template', async () => {
-    // Mock API call for listOrganizations
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       query: {includeImplicitMemberships: 'true', includeMembers: 'true'},
       uri: '/organizations',
     }).reply(200, [
@@ -77,9 +92,8 @@ describe('#init: get project details', () => {
       },
     ])
 
-    // Mock API calls for organization grants (for attach grant check)
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations/org-123/grants',
     }).reply(200, {
       'sanity.organization.projects': [
@@ -89,12 +103,15 @@ describe('#init: get project details', () => {
       ],
     })
 
-    // Mock select - user chooses the first organization
     mocks.select.mockResolvedValueOnce('org-123')
 
-    const {error} = await testCommand(InitCommand, ['--template=app-quickstart'])
+    const {error} = await testCommand(InitCommand, ['--template=app-quickstart'], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
-    // Verify the organization selection prompt was shown
     expect(mocks.select).toHaveBeenCalledWith(
       expect.objectContaining({
         message: 'Select organization:',
@@ -105,14 +122,8 @@ describe('#init: get project details', () => {
   })
 
   test('returns `Unknown project` if project/organization call fails and in unattended mode with project id provided', async () => {
-    // Mock API calls to fail
     mockApi({
-      apiVersion: 'v2021-06-07',
-      uri: '/projects',
-    }).reply(500, {message: 'Internal Server Error'})
-
-    mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(500, {message: 'Internal Server Error'})
 
@@ -130,19 +141,17 @@ describe('#init: get project details', () => {
   })
 
   test('throws error if project/organization call fails and not in unattended mode', async () => {
-    // Mock API calls to fail
     mockApi({
-      apiVersion: 'v2021-06-07',
-      uri: '/projects',
-    }).reply(500, {message: 'Internal Server Error'})
-
-    mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(500, {message: 'Internal Server Error'})
 
-    // Not using --yes, so it's interactive mode
-    const {error} = await testCommand(InitCommand, [])
+    const {error} = await testCommand(InitCommand, [], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     // Should throw error about failing to communicate with API
     expect(error).toBeDefined()
@@ -154,7 +163,7 @@ describe('#init: get project details', () => {
     mocks.listProjects.mockResolvedValueOnce([])
 
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(200, [])
 
@@ -181,12 +190,17 @@ describe('#init: get project details', () => {
 
     // Mock listOrganizations
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(200, [])
 
     // Not in unattended mode (no --yes flag), providing a project that doesn't exist
-    const {error} = await testCommand(InitCommand, ['--project=non-existent-project'])
+    const {error} = await testCommand(InitCommand, ['--project=non-existent-project'], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     expect(error?.message).toBe(
       'Given project ID (non-existent-project) not found, or you do not have access to it',
@@ -205,7 +219,7 @@ describe('#init: get project details', () => {
 
     // Mock listOrganizations to return organizations that don't include the requested one
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(200, [
       {
@@ -216,7 +230,12 @@ describe('#init: get project details', () => {
     ])
 
     // Providing an organization that doesn't exist
-    const {error} = await testCommand(InitCommand, ['--organization=non-existent-org'])
+    const {error} = await testCommand(InitCommand, ['--organization=non-existent-org'], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     expect(error?.message).toBe(
       'Given organization ID (non-existent-org) not found, or you do not have access to it',
@@ -229,7 +248,7 @@ describe('#init: get project details', () => {
 
     // Mock listOrganizations
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(200, [
       {
@@ -239,9 +258,8 @@ describe('#init: get project details', () => {
       },
     ])
 
-    // Mock organization grants with attach grant
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations/org-123/grants',
     }).reply(200, {
       'sanity.organization.projects': [
@@ -257,9 +275,12 @@ describe('#init: get project details', () => {
     // Mock select for organization
     mocks.select.mockResolvedValueOnce('org-123')
 
-    // Mock createProject
-    mocks.createProject.mockResolvedValueOnce({
-      displayName: 'My First Project',
+    mockApi({
+      apiVersion: CREATE_PROJECT_API_VERSION,
+      method: 'post',
+      uri: '/projects',
+    }).reply(200, {
+      displayName: 'Test Project',
       projectId: 'new-project-123',
     })
 
@@ -271,15 +292,19 @@ describe('#init: get project details', () => {
       },
     ])
 
-    // Mock getProjectFeatures with project-specific apiHost
     mockApi({
-      apiHost: 'https://new-project-123.api.sanity.io',
-      apiVersion: 'v2025-09-16',
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
       uri: '/features',
-    }).reply(200, ['privateDataset'])
+    }).reply(200, ['privateDatase'])
 
     // Provide --dataset flag to skip dataset prompt
-    const {stdout} = await testCommand(InitCommand, ['--bare', '--dataset=production'])
+    const {stdout} = await testCommand(InitCommand, ['--bare', '--dataset=production'], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     // Verify input prompt was called for project name
     expect(mocks.input).toHaveBeenCalledWith(
@@ -311,7 +336,7 @@ describe('#init: get project details', () => {
 
     // Mock listOrganizations
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(200, [
       {
@@ -332,14 +357,18 @@ describe('#init: get project details', () => {
       },
     ])
 
-    // Mock getProjectFeatures
     mockApi({
-      apiHost: 'https://project-1.api.sanity.io',
-      apiVersion: 'v2025-09-16',
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
       uri: '/features',
-    }).reply(200, ['privateDataset'])
+    }).reply(200, ['privateDatase'])
 
-    const {stdout} = await testCommand(InitCommand, ['--bare', '--dataset=production'])
+    const {stdout} = await testCommand(InitCommand, ['--bare', '--dataset=production'], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     // Verify select prompt was called with project choices
     expect(mocks.select).toHaveBeenCalledWith(
@@ -363,9 +392,8 @@ describe('#init: get project details', () => {
       },
     ])
 
-    // Mock listOrganizations
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(200, [
       {
@@ -375,9 +403,8 @@ describe('#init: get project details', () => {
       },
     ])
 
-    // Mock organization grants with attach grant
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations/org-123/grants',
     }).reply(200, {
       'sanity.organization.projects': [
@@ -396,9 +423,12 @@ describe('#init: get project details', () => {
     // Mock select for organization
     mocks.select.mockResolvedValueOnce('org-123')
 
-    // Mock createProject
-    mocks.createProject.mockResolvedValueOnce({
-      displayName: 'New Project',
+    mockApi({
+      apiVersion: CREATE_PROJECT_API_VERSION,
+      method: 'post',
+      uri: '/projects',
+    }).reply(200, {
+      displayName: 'Test Project',
       projectId: 'new-project-456',
     })
 
@@ -410,14 +440,18 @@ describe('#init: get project details', () => {
       },
     ])
 
-    // Mock getProjectFeatures
     mockApi({
-      apiHost: 'https://new-project-456.api.sanity.io',
-      apiVersion: 'v2025-09-16',
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
       uri: '/features',
-    }).reply(200, ['privateDataset'])
+    }).reply(200, ['privateDatase'])
 
-    const {stdout} = await testCommand(InitCommand, ['--bare', '--dataset=production'])
+    const {stdout} = await testCommand(InitCommand, ['--bare', '--dataset=production'], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     // Verify select was called for project creation
     expect(mocks.select).toHaveBeenCalledWith(
@@ -457,16 +491,9 @@ describe('#init: get project details', () => {
 
     // Mock listOrganizations
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(200, [])
-
-    // Mock getProjectFeatures
-    mockApi({
-      apiHost: 'https://test-project-123.api.sanity.io',
-      apiVersion: 'v2025-09-16',
-      uri: '/features',
-    }).reply(200, ['privateDataset'])
 
     const {error} = await testCommand(InitCommand, [
       '--yes',
@@ -490,25 +517,29 @@ describe('#init: get project details', () => {
 
     // Mock listOrganizations
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(200, [])
 
     // Mock empty dataset
     mocks.listDatasets.mockResolvedValueOnce([])
 
-    // Mock getProjectFeatures WITHOUT privateDataset feature
     mockApi({
-      apiHost: 'https://test-project-123.api.sanity.io',
-      apiVersion: 'v2025-09-16',
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
       uri: '/features',
-    }).reply(200, [])
+    }).reply(200, ['privateDatase'])
 
-    const {error, stderr} = await testCommand(InitCommand, [
-      '--project=test-project-123',
-      '--dataset=production',
-      '--visibility=private',
-    ])
+    const {error, stderr} = await testCommand(
+      InitCommand,
+      ['--project=test-project-123', '--dataset=production', '--visibility=private'],
+      {
+        mocks: {
+          isInteractive: true,
+          token: 'test-token',
+        },
+      },
+    )
 
     expect(error?.message).toBeUndefined()
     expect(stderr).toContain('Warning: Private datasets are not available for this project.')
@@ -526,7 +557,7 @@ describe('#init: get project details', () => {
 
     // Mock listOrganizations
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(200, [])
 
@@ -538,18 +569,22 @@ describe('#init: get project details', () => {
       },
     ])
 
-    // Mock getProjectFeatures
     mockApi({
-      apiHost: 'https://test-project-123.api.sanity.io',
-      apiVersion: 'v2025-09-16',
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
       uri: '/features',
-    }).reply(200, ['privateDataset'])
+    }).reply(200, ['privateDatase'])
 
-    const {stdout} = await testCommand(InitCommand, [
-      '--project=test-project-123',
-      '--dataset=staging',
-      '--bare',
-    ])
+    const {stdout} = await testCommand(
+      InitCommand,
+      ['--project=test-project-123', '--dataset=staging', '--bare'],
+      {
+        mocks: {
+          isInteractive: true,
+          token: 'test-token',
+        },
+      },
+    )
 
     expect(stdout).toContain('Below are your project details')
     expect(stdout).toContain('Project ID: test-project-123')
@@ -568,17 +603,16 @@ describe('#init: get project details', () => {
 
     // Mock listOrganizations
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(200, [])
 
     // Mock listDatasets - no datasets exist
     mocks.listDatasets.mockResolvedValueOnce([])
 
-    // Mock getProjectFeatures
     mockApi({
-      apiHost: 'https://test-project-123.api.sanity.io',
-      apiVersion: 'v2025-09-16',
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
       uri: '/features',
     }).reply(200, ['privateDataset'])
 
@@ -594,7 +628,12 @@ describe('#init: get project details', () => {
     // Mock createDataset
     mocks.createDataset.mockResolvedValueOnce(undefined)
 
-    const {stdout} = await testCommand(InitCommand, ['--project=test-project-123', '--bare'])
+    const {stdout} = await testCommand(InitCommand, ['--project=test-project-123', '--bare'], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     // Vefity default config prompt
     expect(mocks.confirm).toHaveBeenCalledWith({
@@ -633,7 +672,7 @@ describe('#init: get project details', () => {
 
     // Mock listOrganizations
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(200, [])
 
@@ -649,17 +688,21 @@ describe('#init: get project details', () => {
       },
     ])
 
-    // Mock getProjectFeatures
     mockApi({
-      apiHost: 'https://test-project-123.api.sanity.io',
-      apiVersion: 'v2025-09-16',
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
       uri: '/features',
     }).reply(200, ['privateDataset'])
 
     // Mock select - user selects existing dataset
     mocks.select.mockResolvedValueOnce('production')
 
-    const {stdout} = await testCommand(InitCommand, ['--project=test-project-123', '--bare'])
+    const {stdout} = await testCommand(InitCommand, ['--project=test-project-123', '--bare'], {
+      mocks: {
+        isInteractive: true,
+        token: 'test-token',
+      },
+    })
 
     // Verify select was called for dataset selection
     expect(mocks.select).toHaveBeenCalledWith(
@@ -685,7 +728,7 @@ describe('#init: get project details', () => {
 
     // Mock listOrganizations
     mockApi({
-      apiVersion: 'v2021-06-07',
+      apiVersion: ORGANIZATIONS_API_VERSION,
       uri: '/organizations',
     }).reply(200, [])
 
@@ -697,10 +740,9 @@ describe('#init: get project details', () => {
       },
     ])
 
-    // Mock getProjectFeatures
     mockApi({
-      apiHost: 'https://test-project-123.api.sanity.io',
-      apiVersion: 'v2025-09-16',
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
       uri: '/features',
     }).reply(200, ['privateDataset'])
 
@@ -713,11 +755,16 @@ describe('#init: get project details', () => {
     // Mock createDataset
     mocks.createDataset.mockResolvedValueOnce(undefined)
 
-    const {stdout} = await testCommand(InitCommand, [
-      '--project=test-project-123',
-      '--bare',
-      '--visibility=public',
-    ])
+    const {stdout} = await testCommand(
+      InitCommand,
+      ['--project=test-project-123', '--bare', '--visibility=public'],
+      {
+        mocks: {
+          isInteractive: true,
+          token: 'test-token',
+        },
+      },
+    )
 
     // Verify select was called for dataset selection
     expect(mocks.select).toHaveBeenCalledWith(
