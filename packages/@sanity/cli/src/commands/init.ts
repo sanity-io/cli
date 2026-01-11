@@ -1,6 +1,7 @@
 // @Todo will remove by time migration of this command is complete
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {Args, Command, Flags} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {getCliToken, SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
 import {chalk, confirm, input, logSymbols, select, Separator, spinner} from '@sanity/cli-core/ux'
@@ -99,7 +100,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       helpValue: '<filename>',
       parse: async (input) => {
         if (!input.startsWith('.env')) {
-          throw new Error('Env filename (`--env`) must start with `.env`')
+          throw new CLIError('Env filename (`--env`) must start with `.env`')
         }
         return input
       },
@@ -243,8 +244,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     // Oclif doesn't support custom exclusive error messaging
     if (this.flags.project && this.flags.organization) {
-      throw new Error(
+      this.error(
         'You have specified both a project and an organization. To move a project to an organization please visit https://www.sanity.io/manage',
+        {exit: 1},
       )
     }
 
@@ -356,23 +358,25 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     debug('Unattended mode, validating required options')
 
     if (!this.flags['dataset']) {
-      throw new Error(`\`--dataset\` must be specified in unattended mode`)
+      this.error(`\`--dataset\` must be specified in unattended mode`, {exit: 1})
     }
 
     // output-path is required in unattended mode when not using nextjs
     if (!isNextJs && !this.flags['output-path']) {
-      throw new Error(`\`--output-path\` must be specified in unattended mode`)
+      this.error(`\`--output-path\` must be specified in unattended mode`, {exit: 1})
     }
 
     if (!this.flags.project && !createProjectName) {
-      throw new Error(
+      this.error(
         '`--project <id>` or `--create-project <name>` must be specified in unattended mode',
+        {exit: 1},
       )
     }
 
     if (createProjectName && !this.flags.organization) {
-      throw new Error(
+      this.error(
         '--create-project is not supported in unattended mode without an organization, please specify an organization with `--organization <id>`',
+        {exit: 1},
       )
     }
   }
@@ -441,9 +445,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       // trace.log({ step: 'login', alreadyLoggedIn: true })
     } else {
       if (this.isUnattended()) {
-        throw new Error(
-          'Must be logged in to run this command in unattended mode, run `sanity login`',
-        )
+        this.error('Must be logged in to run this command in unattended mode, run `sanity login`', {
+          exit: 1,
+        })
       }
 
       // @todo telemetry
@@ -479,17 +483,16 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       getProjectFeatures(opts.projectId),
     ])
 
-    const canCreatePrivate = projectFeatures.includes('privateDataset') && !defaultConfig
-
     if (dataset) {
       debug('User has specified dataset through a flag (%s)', dataset)
       const existing = datasets.find((ds) => ds.name === dataset)
       if (!existing) {
         debug('Specified dataset not found, creating it')
         await createDataset({
-          canCreatePrivate,
           datasetName: dataset,
+          forcePublic: defaultConfig,
           output: this.output,
+          projectFeatures,
           projectId: opts.projectId,
           visibility,
         })
@@ -513,9 +516,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
             message: 'Name of your first dataset:',
           })
       await createDataset({
-        canCreatePrivate,
         datasetName: name,
+        forcePublic: defaultConfig,
         output: this.output,
+        projectFeatures,
         projectId: opts.projectId,
         visibility,
       })
@@ -547,9 +551,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
             existingDatasetNames,
           )
       await createDataset({
-        canCreatePrivate,
         datasetName: newDatasetName,
+        forcePublic: defaultConfig,
         output: this.output,
+        projectFeatures,
         projectId: opts.projectId,
         visibility,
       })
@@ -590,19 +595,19 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
           userAction: 'select',
         }
       }
-      throw new Error(`Failed to communicate with the Sanity API:\n${err.message}`, {cause: err})
+      this.error(`Failed to communicate with the Sanity API:\n${err.message}`, {exit: 1})
     }
 
     if (projects.length === 0 && this.isUnattended()) {
-      throw new Error('No projects found for current user')
+      this.error('No projects found for current user', {exit: 1})
     }
 
     if (projectId) {
       const project = projects.find((proj) => proj.id === projectId)
       if (!project && !this.isUnattended()) {
-        throw new Error(
-          `Given project ID (${projectId}) not found, or you do not have access to it`,
-        )
+        this.error(`Given project ID (${projectId}) not found, or you do not have access to it`, {
+          exit: 1,
+        })
       }
 
       return {
@@ -619,15 +624,16 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         organizations.find((org) => org.slug === organizationId)
 
       if (!organization) {
-        throw new Error(
+        this.error(
           `Given organization ID (${organizationId}) not found, or you do not have access to it`,
+          {exit: 1},
         )
       }
 
       if (!(await hasProjectAttachGrant(organizationId))) {
-        throw new Error(
-          'You lack the necessary permissions to attach a project to this organization',
-        )
+        this.error('You lack the necessary permissions to attach a project to this organization', {
+          exit: 1,
+        })
       }
     }
 
@@ -902,7 +908,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     } catch (err: unknown) {
       if (!isHttpError(err) || err.statusCode !== 404) {
         const message = err instanceof Error ? err.message : `${err}`
-        throw new Error(`Unable to validate coupon, please try again later:\n\n${message}`)
+        this.error(`Unable to validate coupon, please try again later:\n\n${message}`, {exit: 1})
       }
 
       const useDefaultPlan =
@@ -926,7 +932,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       if (useDefaultPlan) {
         this.log('Using default plan.')
       } else {
-        throw new Error(`Coupon "${intendedCoupon}" does not exist`)
+        this.error(`Coupon "${intendedCoupon}" does not exist`, {exit: 1})
       }
     }
   }
@@ -938,9 +944,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     } catch (err: unknown) {
       if (!isHttpError(err) || err.statusCode !== 404) {
         const message = err instanceof Error ? err.message : `${err}`
-        throw new Error(`Unable to validate plan, please try again later:\n\n${message}`, {
-          cause: err,
-        })
+        this.error(`Unable to validate plan, please try again later:\n\n${message}`, {exit: 1})
       }
 
       const useDefaultPlan =
@@ -964,7 +968,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       if (useDefaultPlan) {
         this.log('Using default plan.')
       } else {
-        throw new Error(`Plan id "${intendedPlan}" does not exist`)
+        this.error(`Plan id "${intendedPlan}" does not exist`, {exit: 1})
       }
     }
   }

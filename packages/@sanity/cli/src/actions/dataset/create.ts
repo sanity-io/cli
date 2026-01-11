@@ -12,10 +12,6 @@ const debug = subdebug('dataset:create')
  */
 export interface CreateDatasetOptions {
   /**
-   * Whether the project has the capability to create private datasets
-   */
-  canCreatePrivate: boolean
-  /**
    * Name of the dataset to create
    */
   datasetName: string
@@ -26,9 +22,21 @@ export interface CreateDatasetOptions {
   output: Output
 
   /**
+   * Array of project features to determine capabilities
+   * Used to check if private datasets are available
+   */
+  projectFeatures: string[]
+
+  /**
    * Project ID where the dataset will be created
    */
   projectId: string
+
+  /**
+   * Whether to force disable private dataset creation
+   * Used when default config is selected (which forces public datasets)
+   */
+  forcePublic?: boolean
 
   /**
    * Whether to run in unattended mode (no prompts)
@@ -55,13 +63,16 @@ export interface CreateDatasetOptions {
  */
 export async function createDataset(options: CreateDatasetOptions): Promise<void> {
   const {
-    canCreatePrivate,
     datasetName,
+    forcePublic = false,
     isUnattended = false,
     output,
+    projectFeatures,
     projectId,
     visibility,
   } = options
+
+  const canCreatePrivate = projectFeatures.includes('privateDataset') && !forcePublic
 
   // Determine the appropriate ACL mode
   const aclMode: DatasetAclMode = await determineDatasetAclMode({

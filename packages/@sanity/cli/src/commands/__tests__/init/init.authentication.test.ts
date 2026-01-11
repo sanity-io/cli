@@ -113,6 +113,7 @@ describe('#init: authentication', () => {
     expect(error?.message).toContain(
       'Must be logged in to run this command in unattended mode, run `sanity login`',
     )
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('calls login when token invalid and not in unattended mode', async () => {

@@ -137,6 +137,7 @@ describe('#init: retrieving plan', () => {
 
     expect(error?.message).toContain('Unable to validate coupon, please try again later:')
     expect(error?.message).toContain('No plans found for coupon code "TESTCOUPON123"')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error if coupon does not have attached plan id', async () => {
@@ -155,6 +156,7 @@ describe('#init: retrieving plan', () => {
 
     expect(error?.message).toContain('Unable to validate coupon, please try again later:')
     expect(error?.message).toContain('Unable to find a plan from coupon code')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('uses default plan when coupon does not exist and cli in unattended mode', async () => {
@@ -232,6 +234,7 @@ describe('#init: retrieving plan', () => {
     })
 
     expect(error?.message).toContain('Coupon "INVALID123" does not exist')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('returns when client request for plan is successful', async () => {
@@ -273,6 +276,7 @@ describe('#init: retrieving plan', () => {
 
     expect(error?.message).toContain('Unable to validate plan, please try again later:')
     expect(error?.message).toContain('Unable to find a plan with id growth')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('uses default plan when plan id does not exist and cli in unattended mode', async () => {
@@ -349,5 +353,6 @@ describe('#init: retrieving plan', () => {
     })
 
     expect(error?.message).toContain('Plan id "growth" does not exist')
+    expect(error?.oclif?.exit).toBe(1)
   })
 })

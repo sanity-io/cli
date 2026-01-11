@@ -157,6 +157,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toContain(
       `--${name2}=${value2} cannot also be provided when using --${name1}`,
     )
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test.each([
@@ -180,6 +181,7 @@ describe('#init: oclif command setup', () => {
     })
 
     expect(error?.message).toContain(message)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('throws error when type argument is passed', async () => {
@@ -191,6 +193,7 @@ describe('#init: oclif command setup', () => {
     })
 
     expect(error?.message).toContain('Unknown init type "bad-argument"')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws deprecation error when type argument is passed with `plugin`', async () => {
@@ -202,6 +205,7 @@ describe('#init: oclif command setup', () => {
     })
 
     expect(error?.message).toContain('Initializing plugins through the CLI is no longer supported')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when `reconfigure` flag is passed', async () => {
@@ -215,6 +219,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toContain(
       '--reconfigure is deprecated - manual configuration is now required',
     )
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when framework and remote template are used together', async () => {
@@ -243,6 +248,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toContain(
       'A remote template cannot be used with a detected framework. Detected: Next.js',
     )
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when in unattended mode and `dataset` is not set', async () => {
@@ -253,6 +259,7 @@ describe('#init: oclif command setup', () => {
     })
 
     expect(error?.message).toContain('`--dataset` must be specified in unattended mode')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when `output-path` is not used in unattended mode with non-nextjs project', async () => {
@@ -271,6 +278,7 @@ describe('#init: oclif command setup', () => {
 
     // Should throw output-path error for non-Next.js projects
     expect(error?.message).toContain('`--output-path` must be specified in unattended mode')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when in unattended mode and `project` and `create-project` not set', async () => {
@@ -296,6 +304,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toContain(
       '`--project <id>` or `--create-project <name>` must be specified in unattended mode',
     )
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when in unattended mode and `create-project` not set with `organization`', async () => {
@@ -317,6 +326,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toContain(
       '--create-project is not supported in unattended mode without an organization, please specify an organization with `--organization <id>`',
     )
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('logs properly if app template flag is not valid', async () => {

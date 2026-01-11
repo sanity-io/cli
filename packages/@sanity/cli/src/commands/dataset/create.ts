@@ -90,9 +90,9 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     createDatasetDebug('%s create private datasets', canCreatePrivate ? 'Can' : 'Cannot')
 
     await createDataset({
-      canCreatePrivate,
       datasetName,
       output: this.output,
+      projectFeatures,
       projectId,
       visibility,
     })
