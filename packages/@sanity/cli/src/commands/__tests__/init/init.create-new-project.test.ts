@@ -3,6 +3,7 @@ import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {CREATE_PROJECT_API_VERSION} from '../../../services/projects.js'
 import {InitCommand} from '../../init'
@@ -13,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   getOrganizationChoices: vi.fn(),
   getOrganizationsWithAttachGrantInfo: vi.fn(),
   input: vi.fn(),
+  listDatasets: vi.fn(),
   select: vi.fn(),
   usersGetById: vi.fn(),
 }))
@@ -34,18 +36,27 @@ vi.mock('@sanity/cli-core/ux', async () => {
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  const testClient = createTestClient({
+  const globalTestClient = createTestClient({
     apiVersion: 'v2025-05-14',
+    token: 'test-token',
+  })
+
+  const projectTestClient = createTestClient({
+    apiVersion: 'v2025-09-16',
     token: 'test-token',
   })
 
   return {
     ...actual,
     getGlobalCliClient: vi.fn().mockResolvedValue({
-      datasets: {
-        create: mocks.datasetsCreate,
-      } as never,
-      request: testClient.request,
+      projects: {
+        list: vi
+          .fn()
+          .mockResolvedValue([
+            {createdAt: '2024-01-01T00:00:00Z', displayName: 'Test', id: 'test'},
+          ]),
+      },
+      request: globalTestClient.request,
       users: {
         getById: mocks.usersGetById,
       } as never,
@@ -53,7 +64,9 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
     getProjectCliClient: vi.fn().mockResolvedValue({
       datasets: {
         create: mocks.datasetsCreate,
+        list: mocks.listDatasets,
       } as never,
+      request: projectTestClient.request,
     }),
   }
 })
@@ -73,6 +86,27 @@ mocks.usersGetById.mockResolvedValue({
   provider: 'saml-123',
 })
 
+const setupInitSuccessMocks = () => {
+  mockApi({
+    apiVersion: ORGANIZATIONS_API_VERSION,
+    method: 'get',
+    uri: '/organizations',
+  }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+  mocks.select.mockResolvedValueOnce('test')
+
+  mockApi({
+    apiVersion: PROJECT_FEATURES_API_VERSION,
+    method: 'get',
+    uri: '/features',
+  }).reply(200, ['privateDataset'])
+
+  mocks.listDatasets.mockResolvedValue([
+    {aclMode: 'public', name: 'test'},
+    {aclMode: 'public', name: 'production'},
+  ])
+}
+
 describe('#init: create new project', () => {
   afterEach(() => {
     vi.clearAllMocks()
@@ -83,7 +117,9 @@ describe('#init: create new project', () => {
 
   test('prompts user to create new organization if they have none', async () => {
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    mocks.listDatasets.mockResolvedValue([{aclMode: 'public', name: 'test'}])
 
+    // Mocks for new org, project and datset creation
     mockApi({
       apiVersion: ORGANIZATIONS_API_VERSION,
       method: 'get',
@@ -117,6 +153,9 @@ describe('#init: create new project', () => {
 
     mocks.datasetsCreate.mockResolvedValueOnce(undefined)
 
+    // Mocks needed for rest of command so it resolves without error
+    setupInitSuccessMocks()
+
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
 
     await testCommand(
@@ -146,6 +185,7 @@ describe('#init: create new project', () => {
   test('prompts user to select then create a new organization', async () => {
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
 
+    // Mocks for organization selection/creation and new project/dataset creation
     mockApi({
       apiVersion: ORGANIZATIONS_API_VERSION,
       method: 'get',
@@ -202,6 +242,8 @@ describe('#init: create new project', () => {
     })
 
     mocks.datasetsCreate.mockResolvedValueOnce(undefined)
+
+    setupInitSuccessMocks()
 
     const spinnerSpy = vi.spyOn(cliUX, 'spinner')
 

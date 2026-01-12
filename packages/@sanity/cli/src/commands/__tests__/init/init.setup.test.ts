@@ -50,85 +50,85 @@ describe('#init: oclif command setup', () => {
     const {stdout} = await runCommand('init --help')
 
     expect(stdout).toMatchInlineSnapshot(String.raw`
-        "Initialize a new Sanity Studio, project and/or app
+            "Initialize a new Sanity Studio, project and/or app
 
-        USAGE
-          $ sanity init [--json] [--auto-updates | --bare] [--coupon
-            <code> | --project-plan <name>] [--dataset <name> | --dataset-default]
-            [--env <filename> | ] [--git <message> | ] [--mcp]
-            [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio]
-            [--organization <id>] [--output-path <path> | ] [--overwrite-files]
-            [--package-manager <manager> | ] [--project <id> | --create-project <name>]
-            [--provider <provider>] [--template <template> | ] [--typescript | ]
-            [--visibility <mode>] [-y]
+            USAGE
+              $ sanity init [--json] [--auto-updates | --bare] [--coupon
+                <code> | --project-plan <name>] [--dataset <name> | --dataset-default]
+                [--env <filename> | ] [--git <message> | ] [--mcp]
+                [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio]
+                [--organization <id>] [--output-path <path> | ] [--overwrite-files]
+                [--package-manager <manager> | ] [--project <id> | --create-project <name>]
+                [--provider <provider>] [--template <template> | ] [--typescript | ]
+                [--visibility <mode>] [-y]
 
-        FLAGS
-          -y, --yes                        Unattended mode, answers "yes" to any
-                                           "yes/no" prompt and otherwise uses defaults
-              --[no-]auto-updates          Enable auto updates of studio versions
-              --bare                       Skip the Studio initialization and only print
-                                           the selected project ID and dataset name to
-                                           stdout
-              --coupon=<code>              Optionally select a coupon for a new project
-                                           (cannot be used with --project-plan)
-              --create-project=<name>      Create a new project with the given name
-              --dataset=<name>             Dataset name for the studio
-              --dataset-default            Set up a project with a public dataset named
-                                           "production"
-              --env=<filename>             Write environment variables to file
-              --[no-]git=<message>         Specify a commit message for initial commit,
-                                           or disable git init
-              --[no-]mcp                   Enable AI editor integration (MCP) setup
-              --organization=<id>          Organization ID to use for the project
-              --output-path=<path>         Path to write studio project to
-              --overwrite-files            Overwrite existing files
-              --package-manager=<manager>  Specify which package manager to use
-                                           [allowed: npm, yarn, pnpm]
-              --project=<id>               Project ID to use for the studio
-              --project-plan=<name>        Optionally select a plan for a new project
-              --provider=<provider>        Login provider to use
-              --template=<template>        [default: clean] Project template to use
-                                           [default: "clean"]
-              --[no-]typescript            Enable TypeScript support
-              --visibility=<mode>          Visibility mode for dataset
+            FLAGS
+              -y, --yes                        Unattended mode, answers "yes" to any
+                                               "yes/no" prompt and otherwise uses defaults
+                  --[no-]auto-updates          Enable auto updates of studio versions
+                  --bare                       Skip the Studio initialization and only print
+                                               the selected project ID and dataset name to
+                                               stdout
+                  --coupon=<code>              Optionally select a coupon for a new project
+                                               (cannot be used with --project-plan)
+                  --create-project=<name>      Create a new project with the given name
+                  --dataset=<name>             Dataset name for the studio
+                  --dataset-default            Set up a project with a public dataset named
+                                               "production"
+                  --env=<filename>             Write environment variables to file
+                  --[no-]git=<message>         Specify a commit message for initial commit,
+                                               or disable git init
+                  --[no-]mcp                   Enable AI editor integration (MCP) setup
+                  --organization=<id>          Organization ID to use for the project
+                  --output-path=<path>         Path to write studio project to
+                  --overwrite-files            Overwrite existing files
+                  --package-manager=<manager>  Specify which package manager to use
+                                               [allowed: npm, yarn, pnpm]
+                  --project=<id>               Project ID to use for the studio
+                  --project-plan=<name>        Optionally select a plan for a new project
+                  --provider=<provider>        Login provider to use
+                  --template=<template>        [default: clean] Project template to use
+                                               [default: "clean"]
+                  --[no-]typescript            Enable TypeScript support
+                  --visibility=<mode>          Visibility mode for dataset
 
-        GLOBAL FLAGS
-          --json  Format output as json.
+            GLOBAL FLAGS
+              --json  Format output as json.
 
-        NEXT.JS FLAGS
-          --[no-]nextjs-add-config-files  Add config files to Next.js project
-          --[no-]nextjs-append-env        Append project ID and dataset to .env file
-          --[no-]nextjs-embed-studio      Embed the Studio in Next.js application
+            NEXT.JS FLAGS
+              --[no-]nextjs-add-config-files  Add config files to Next.js project
+              --[no-]nextjs-append-env        Append project ID and dataset to .env file
+              --[no-]nextjs-embed-studio      Embed the Studio in Next.js application
 
-        DESCRIPTION
-          Initialize a new Sanity Studio, project and/or app
+            DESCRIPTION
+              Initialize a new Sanity Studio, project and/or app
 
-        EXAMPLES
-          $ sanity init
+            EXAMPLES
+              $ sanity init
 
-          Initialize a new project with a public dataset named "production"
+              Initialize a new project with a public dataset named "production"
 
-            $ sanity init --dataset-default
+                $ sanity init --dataset-default
 
-          Initialize a project with the given project ID and dataset to the given path
+              Initialize a project with the given project ID and dataset to the given path
 
-            $ sanity init -y --project abc123 --dataset production --output-path \
-              ~/myproj
+                $ sanity init -y --project abc123 --dataset production --output-path \
+                  ~/myproj
 
-          Initialize a project with the given project ID and dataset using the moviedb
-          template to the given path
+              Initialize a project with the given project ID and dataset using the moviedb
+              template to the given path
 
-            $ sanity init -y --project abc123 --dataset staging --template moviedb \
-              --output-path .
+                $ sanity init -y --project abc123 --dataset staging --template moviedb \
+                  --output-path .
 
-          Create a brand new project with name "Movies Unlimited"
+              Create a brand new project with name "Movies Unlimited"
 
-            $ sanity init -y --create-project "Movies Unlimited" --dataset moviedb \
-              --visibility private --template moviedb --output-path \
-              /Users/espenh/movies-unlimited
+                $ sanity init -y --create-project "Movies Unlimited" --dataset moviedb \
+                  --visibility private --template moviedb --output-path \
+                  /Users/espenh/movies-unlimited
 
-        "
-      `)
+            "
+          `)
   })
 
   test.each([
@@ -157,6 +157,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toContain(
       `--${name2}=${value2} cannot also be provided when using --${name1}`,
     )
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test.each([
@@ -180,6 +181,7 @@ describe('#init: oclif command setup', () => {
     })
 
     expect(error?.message).toContain(message)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('throws error when type argument is passed', async () => {
@@ -191,6 +193,7 @@ describe('#init: oclif command setup', () => {
     })
 
     expect(error?.message).toContain('Unknown init type "bad-argument"')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws deprecation error when type argument is passed with `plugin`', async () => {
@@ -202,6 +205,7 @@ describe('#init: oclif command setup', () => {
     })
 
     expect(error?.message).toContain('Initializing plugins through the CLI is no longer supported')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when `reconfigure` flag is passed', async () => {
@@ -215,6 +219,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toContain(
       '--reconfigure is deprecated - manual configuration is now required',
     )
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when framework and remote template are used together', async () => {
@@ -243,6 +248,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toContain(
       'A remote template cannot be used with a detected framework. Detected: Next.js',
     )
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when in unattended mode and `dataset` is not set', async () => {
@@ -253,6 +259,7 @@ describe('#init: oclif command setup', () => {
     })
 
     expect(error?.message).toContain('`--dataset` must be specified in unattended mode')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when `output-path` is not used in unattended mode with non-nextjs project', async () => {
@@ -271,6 +278,7 @@ describe('#init: oclif command setup', () => {
 
     // Should throw output-path error for non-Next.js projects
     expect(error?.message).toContain('`--output-path` must be specified in unattended mode')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when in unattended mode and `project` and `create-project` not set', async () => {
@@ -296,6 +304,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toContain(
       '`--project <id>` or `--create-project <name>` must be specified in unattended mode',
     )
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error when in unattended mode and `create-project` not set with `organization`', async () => {
@@ -317,6 +326,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.message).toContain(
       '--create-project is not supported in unattended mode without an organization, please specify an organization with `--organization <id>`',
     )
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('logs properly if app template flag is not valid', async () => {

@@ -1,10 +1,14 @@
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import nock from 'nock'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {INIT_API_VERSION} from '../../../actions/init/constants.js'
+import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
+import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {InitCommand} from '../../init'
 
 const mockConfirm = vi.hoisted(() => vi.fn())
+const mockDetectedFramework = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual('@sanity/cli-core/ux')
@@ -16,56 +20,104 @@ vi.mock('@sanity/cli-core/ux', async () => {
 })
 
 vi.mock('@vercel/fs-detectors', () => ({
-  detectFrameworkRecord: vi.fn().mockResolvedValue({
-    name: 'Next.js',
-    slug: 'nextjs',
-  }),
+  detectFrameworkRecord: mockDetectedFramework,
   LocalFileSystemDetector: vi.fn(),
 }))
 
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  const testClient = createTestClient({
-    apiVersion: INIT_API_VERSION,
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+
+  const projectTestClient = createTestClient({
+    apiVersion: 'v2025-09-16',
     token: 'test-token',
   })
 
   return {
     ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue({
-      request: testClient.request,
-      users: {
-        getById: vi.fn().mockResolvedValue({
-          email: 'test@example.com',
-          id: 'user-123',
-          name: 'Test User',
-          provider: 'saml-123',
-        }),
-      } as never,
+    getGlobalCliClient: vi.fn().mockImplementation(async (options) => {
+      // Create a new client each time with the requested API version
+      const testClient = createTestClient({
+        apiVersion: options?.apiVersion || 'v2025-05-14',
+        token: 'test-token',
+      })
+
+      return {
+        projects: {
+          list: vi
+            .fn()
+            .mockResolvedValue([
+              {createdAt: '2024-01-01T00:00:00Z', displayName: 'Test', id: 'test'},
+            ]),
+        },
+        request: testClient.request,
+        users: {
+          getById: vi.fn().mockResolvedValue({
+            email: 'test@example.com',
+            id: 'user-123',
+            name: 'Test User',
+            provider: 'saml-123',
+          }),
+        } as never,
+      }
+    }),
+    getProjectCliClient: vi.fn().mockResolvedValue({
+      datasets: {
+        list: vi.fn().mockResolvedValue([{aclMode: 'public', name: 'test'}]),
+      },
+      request: projectTestClient.request,
     }),
   }
 })
 
+const setupInitSuccessMocks = () => {
+  mockApi({
+    apiVersion: ORGANIZATIONS_API_VERSION,
+    method: 'get',
+    uri: '/organizations',
+  }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+  mockApi({
+    apiVersion: PROJECT_FEATURES_API_VERSION,
+    method: 'get',
+    uri: '/features',
+  }).reply(200, ['privateDataset'])
+}
+
 describe('#init: retrieving plan', () => {
+  beforeEach(() => {
+    mockDetectedFramework.mockResolvedValue({
+      name: 'Next.js',
+      slug: 'nextjs',
+    })
+  })
   afterEach(() => {
     vi.clearAllMocks()
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('validates coupon when --coupon flag is provided', async () => {
     mockApi({
-      apiVersion: 'v2025-06-01',
+      apiVersion: INIT_API_VERSION,
       method: 'get',
       uri: '/plans/coupon/TESTCOUPON123',
     }).reply(200, [{id: 'test-plan-id'}])
+    mockDetectedFramework.mockResolvedValue(undefined)
 
-    const {error, stdout} = await testCommand(InitCommand, ['--coupon=TESTCOUPON123'], {
-      mocks: {
-        isInteractive: true,
-        token: 'test-token',
+    setupInitSuccessMocks()
+
+    const {stdout} = await testCommand(
+      InitCommand,
+      ['--coupon=TESTCOUPON123', '--project=test', '--dataset=test'],
+      {
+        mocks: {
+          isInteractive: true,
+          token: 'test-token',
+        },
       },
-    })
+    )
 
-    expect(error).toBeUndefined()
     expect(stdout).toContain('Coupon "TESTCOUPON123" validated!')
   })
 
@@ -85,6 +137,7 @@ describe('#init: retrieving plan', () => {
 
     expect(error?.message).toContain('Unable to validate coupon, please try again later:')
     expect(error?.message).toContain('No plans found for coupon code "TESTCOUPON123"')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('throws error if coupon does not have attached plan id', async () => {
@@ -103,6 +156,7 @@ describe('#init: retrieving plan', () => {
 
     expect(error?.message).toContain('Unable to validate coupon, please try again later:')
     expect(error?.message).toContain('Unable to find a plan from coupon code')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('uses default plan when coupon does not exist and cli in unattended mode', async () => {
@@ -111,6 +165,13 @@ describe('#init: retrieving plan', () => {
       method: 'get',
       uri: '/plans/coupon/INVALID123',
     }).reply(404, {message: 'Coupon not found'})
+
+    // Mock to resolve rest of command successfully
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
 
     const {error, stderr, stdout} = await testCommand(
       InitCommand,
@@ -136,12 +197,18 @@ describe('#init: retrieving plan', () => {
 
     mockConfirm.mockResolvedValue(true)
 
-    const {error, stdout} = await testCommand(InitCommand, ['--coupon=INVALID123'], {
-      mocks: {
-        isInteractive: true,
-        token: 'test-token',
+    setupInitSuccessMocks()
+
+    const {error, stdout} = await testCommand(
+      InitCommand,
+      ['--coupon=INVALID123', '--project=test', '--dataset=test'],
+      {
+        mocks: {
+          isInteractive: true,
+          token: 'test-token',
+        },
       },
-    })
+    )
 
     expect(error).toBeUndefined()
     expect(mockConfirm).toHaveBeenCalledWith({
@@ -167,6 +234,7 @@ describe('#init: retrieving plan', () => {
     })
 
     expect(error?.message).toContain('Coupon "INVALID123" does not exist')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('returns when client request for plan is successful', async () => {
@@ -176,12 +244,18 @@ describe('#init: retrieving plan', () => {
       uri: '/plans/growth',
     }).reply(200, [{id: 'test-plan-id'}])
 
-    const {error} = await testCommand(InitCommand, ['--project-plan=growth'], {
-      mocks: {
-        isInteractive: true,
-        token: 'test-token',
+    setupInitSuccessMocks()
+
+    const {error} = await testCommand(
+      InitCommand,
+      ['--project-plan=growth', '--project=test', '--dataset=test'],
+      {
+        mocks: {
+          isInteractive: true,
+          token: 'test-token',
+        },
       },
-    })
+    )
 
     expect(error).toBeUndefined()
   })
@@ -199,8 +273,10 @@ describe('#init: retrieving plan', () => {
         token: 'test-token',
       },
     })
+
     expect(error?.message).toContain('Unable to validate plan, please try again later:')
     expect(error?.message).toContain('Unable to find a plan with id growth')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('uses default plan when plan id does not exist and cli in unattended mode', async () => {
@@ -209,6 +285,13 @@ describe('#init: retrieving plan', () => {
       method: 'get',
       uri: '/plans/growth',
     }).reply(404, {message: 'Plan not found'})
+
+    // Mock to resolve rest of command successfully
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
 
     const {error, stderr, stdout} = await testCommand(
       InitCommand,
@@ -233,12 +316,18 @@ describe('#init: retrieving plan', () => {
     }).reply(404, {message: 'Plan not found'})
     mockConfirm.mockResolvedValue(true)
 
-    const {error, stdout} = await testCommand(InitCommand, ['--project-plan=growth'], {
-      mocks: {
-        isInteractive: true,
-        token: 'test-token',
+    setupInitSuccessMocks()
+
+    const {error, stdout} = await testCommand(
+      InitCommand,
+      ['--project-plan=growth', '--project=test', '--dataset=test'],
+      {
+        mocks: {
+          isInteractive: true,
+          token: 'test-token',
+        },
       },
-    })
+    )
 
     expect(error).toBeUndefined()
     expect(mockConfirm).toHaveBeenCalledWith({
@@ -264,5 +353,6 @@ describe('#init: retrieving plan', () => {
     })
 
     expect(error?.message).toContain('Plan id "growth" does not exist')
+    expect(error?.oclif?.exit).toBe(1)
   })
 })
