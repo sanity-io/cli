@@ -2,8 +2,35 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getGraphQLAPIs} from '../getGraphQLAPIs.js'
 
-// Hoist mocks
-const mockWorkerConstructor = vi.hoisted(() => vi.fn())
+const {MockWorker, mockWorkerConstructor, setMockWorkerImplementation} = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockWorkerImplementation: any = null
+  const mockWorkerConstructor = vi.fn()
+
+  class MockWorker {
+    constructor(...args: unknown[]) {
+      // Track constructor calls
+      mockWorkerConstructor(...args)
+
+      if (mockWorkerImplementation) {
+        return mockWorkerImplementation(...args)
+      }
+      return {
+        on: vi.fn(),
+        terminate: vi.fn(),
+      }
+    }
+  }
+
+  return {
+    MockWorker,
+    mockWorkerConstructor,
+    setMockWorkerImplementation: (impl: unknown) => {
+      mockWorkerImplementation = impl
+    },
+  }
+})
+
 const mockGetCliConfig = vi.hoisted(() => vi.fn())
 const mockGetStudioConfig = vi.hoisted(() => vi.fn())
 const mockPackageDirectory = vi.hoisted(() => vi.fn())
@@ -12,7 +39,7 @@ const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 // Mock dependencies
 vi.mock('node:worker_threads', () => ({
   isMainThread: true,
-  Worker: mockWorkerConstructor,
+  Worker: MockWorker,
 }))
 
 vi.mock('@sanity/cli-core', () => ({
@@ -26,8 +53,7 @@ vi.mock('package-directory', () => ({
 }))
 
 describe('getGraphQLAPIs', () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let testResponse: any
+  let testResponse: unknown
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -93,7 +119,7 @@ describe('getGraphQLAPIs', () => {
       terminate: vi.fn(),
     }
 
-    mockWorkerConstructor.mockImplementation(() => mockWorkerInstance)
+    setMockWorkerImplementation(() => mockWorkerInstance)
   })
 
   afterEach(() => {
@@ -157,7 +183,7 @@ describe('getGraphQLAPIs', () => {
       terminate: vi.fn(),
     }
 
-    mockWorkerConstructor.mockImplementationOnce(() => mockWorkerInstance)
+    setMockWorkerImplementation(() => mockWorkerInstance)
 
     const result = await getGraphQLAPIs('/test/workdir')
 
@@ -186,7 +212,7 @@ describe('getGraphQLAPIs', () => {
       terminate: vi.fn(),
     }
 
-    mockWorkerConstructor.mockImplementationOnce(() => mockWorkerInstance)
+    setMockWorkerImplementation(() => mockWorkerInstance)
 
     await expect(getGraphQLAPIs('/test/workdir')).rejects.toThrow('Worker failed')
   })
@@ -201,7 +227,7 @@ describe('getGraphQLAPIs', () => {
       terminate: vi.fn(),
     }
 
-    mockWorkerConstructor.mockImplementationOnce(() => mockWorkerInstance)
+    setMockWorkerImplementation(() => mockWorkerInstance)
 
     await expect(getGraphQLAPIs('/test/workdir')).rejects.toThrow('Worker stopped with exit code 1')
   })

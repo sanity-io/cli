@@ -6,10 +6,10 @@ import {createExpiringConfig} from '../createExpiringConfig.js'
 
 describe('createExpiringConfig', () => {
   let mockStore: ConfigStore
-  let fetchValue: ReturnType<typeof vi.fn>
-  let onCacheHit: ReturnType<typeof vi.fn>
-  let onFetch: ReturnType<typeof vi.fn>
-  let onRevalidate: ReturnType<typeof vi.fn>
+  let fetchValue: ReturnType<typeof vi.fn<() => unknown>>
+  let onCacheHit: ReturnType<typeof vi.fn<() => void>>
+  let onFetch: ReturnType<typeof vi.fn<() => void>>
+  let onRevalidate: ReturnType<typeof vi.fn<() => void>>
 
   beforeEach(() => {
     // Mock ConfigStore
@@ -20,10 +20,10 @@ describe('createExpiringConfig', () => {
     } as unknown as ConfigStore
 
     // Reset all mocks
-    fetchValue = vi.fn()
-    onCacheHit = vi.fn()
-    onFetch = vi.fn()
-    onRevalidate = vi.fn()
+    fetchValue = vi.fn<() => unknown>()
+    onCacheHit = vi.fn<() => void>()
+    onFetch = vi.fn<() => void>()
+    onRevalidate = vi.fn<() => void>()
   })
 
   test('returns fetched value when cache is empty', async () => {
@@ -374,15 +374,14 @@ describe('createExpiringConfig', () => {
     const validateValue = vi.fn((v: unknown): v is string => typeof v === 'string')
 
     const config = createExpiringConfig<string>({
-      fetchValue,
+      fetchValue: fetchValue as () => Promise<string>,
       key: 'test-key',
       onCacheHit,
       onFetch,
       onRevalidate,
       store: mockStore,
       ttl,
-      // @ts-expect-error vitest mocks don't jive with assertions
-      validateValue,
+      validateValue: validateValue as unknown as (value: unknown) => value is string,
     })
 
     // Cached entry that is not expired but invalid per validateValue
@@ -402,13 +401,12 @@ describe('createExpiringConfig', () => {
   test('throws when fetched value fails validateValue (cache miss)', async () => {
     const validateValue = vi.fn((v: unknown): v is string => typeof v === 'string')
     const config = createExpiringConfig<string>({
-      fetchValue: fetchValue.mockResolvedValue(42 as unknown as string),
+      fetchValue: fetchValue.mockResolvedValue(42 as unknown as string) as () => Promise<string>,
       key: 'test-key',
       onFetch,
       store: mockStore,
       ttl: 5000,
-      // @ts-expect-error vitest mocks don't jive with assertions
-      validateValue,
+      validateValue: validateValue as unknown as (value: unknown) => value is string,
     })
 
     // Empty cache
@@ -424,13 +422,12 @@ describe('createExpiringConfig', () => {
     const cachedValue = 'ok'
     const validateValue = vi.fn((v: unknown): v is string => typeof v === 'string')
     const config = createExpiringConfig<string>({
-      fetchValue,
+      fetchValue: fetchValue as () => Promise<string>,
       key: 'test-key',
       onCacheHit,
       store: mockStore,
       ttl: 5000,
-      // @ts-expect-error vitest mocks don't jive with assertions
-      validateValue,
+      validateValue: validateValue as unknown as (value: unknown) => value is string,
     })
 
     vi.mocked(mockStore.get).mockReturnValue({
@@ -449,14 +446,13 @@ describe('createExpiringConfig', () => {
   test('revalidation path validates fetched value and throws if invalid', async () => {
     const validateValue = vi.fn((v: unknown): v is string => typeof v === 'string')
     const config = createExpiringConfig<string>({
-      fetchValue: fetchValue.mockResolvedValue(99 as unknown as string),
+      fetchValue: fetchValue.mockResolvedValue(99 as unknown as string) as () => Promise<string>,
       key: 'test-key',
       onFetch,
       onRevalidate,
       store: mockStore,
       ttl: 1, // ensure expiration
-      // @ts-expect-error vitest mocks don't jive with assertions
-      validateValue,
+      validateValue: validateValue as unknown as (value: unknown) => value is string,
     })
 
     // Cached value that has expired but is otherwise valid in shape and passes validate

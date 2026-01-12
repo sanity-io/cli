@@ -1,5 +1,4 @@
 import {getProjectCliClient} from '@sanity/cli-core'
-import {EventSource} from 'eventsource'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -12,9 +11,41 @@ import {
   listDatasets,
 } from '../datasets.js'
 
+const {MockEventSource, mockEventSourceConstructor, setMockEventSourceImplementation} = vi.hoisted(
+  () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let mockEventSourceImplementation: any = null
+    const mockEventSourceConstructor = vi.fn()
+
+    class MockEventSource {
+      constructor(...args: unknown[]) {
+        // Track constructor calls
+        mockEventSourceConstructor(...args)
+
+        if (mockEventSourceImplementation) {
+          return mockEventSourceImplementation(...args)
+        }
+        return {
+          addEventListener: vi.fn(),
+          close: vi.fn(),
+          removeEventListener: vi.fn(),
+        } as never
+      }
+    }
+
+    return {
+      MockEventSource,
+      mockEventSourceConstructor,
+      setMockEventSourceImplementation: (impl: unknown) => {
+        mockEventSourceImplementation = impl
+      },
+    }
+  },
+)
+
 vi.mock('eventsource', () => {
   return {
-    EventSource: vi.fn(),
+    EventSource: MockEventSource,
   }
 })
 
@@ -190,7 +221,7 @@ describe('#followCopyJobProgress', () => {
       close: vi.fn(),
       removeEventListener: vi.fn(),
     }
-    vi.mocked(EventSource).mockImplementation(() => mockEventSource as never)
+    setMockEventSourceImplementation(() => mockEventSource as never)
     mockClient.config = vi.fn().mockReturnValue({url: 'https://api.sanity.io'})
     mockGetProjectCliClient.mockResolvedValue(mockClient as never)
   })
@@ -212,7 +243,8 @@ describe('#followCopyJobProgress', () => {
           resolve()
         },
         error: (err: Error) => {
-          context.task.result?.errors?.push(err)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          context.task.result?.errors?.push(err as any)
           resolve()
         },
         next: (event) => {
@@ -242,7 +274,8 @@ describe('#followCopyJobProgress', () => {
 
       observable.subscribe({
         complete: () => {
-          context.task.result?.errors?.push(new Error('Should not complete'))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          context.task.result?.errors?.push(new Error('Should not complete') as any)
           resolve()
         },
         error: (err: Error) => {
@@ -275,7 +308,8 @@ describe('#followCopyJobProgress', () => {
       const subscription = observable.subscribe({
         complete: () => {
           if (!errorReceived) {
-            context.task.result?.errors?.push(new Error('Should not complete before error'))
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            context.task.result?.errors?.push(new Error('Should not complete before error') as any)
           }
           resolve()
         },
@@ -324,7 +358,8 @@ describe('#followCopyJobProgress', () => {
 
       observable.subscribe({
         complete: () => {
-          context.task.result?.errors?.push(new Error('Should not complete'))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          context.task.result?.errors?.push(new Error('Should not complete') as any)
           resolve()
         },
         error: (err: Error) => {
@@ -355,7 +390,8 @@ describe('#followCopyJobProgress', () => {
 
       observable.subscribe({
         complete: () => {
-          context.task.result?.errors?.push(new Error('Should not complete'))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          context.task.result?.errors?.push(new Error('Should not complete') as any)
           resolve()
         },
         error: (err: Error) => {
@@ -385,11 +421,13 @@ describe('#followCopyJobProgress', () => {
 
       const subscription = observable.subscribe({
         complete: () => {
-          context.task.result?.errors?.push(new Error('Should not complete'))
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          context.task.result?.errors?.push(new Error('Should not complete') as any)
           resolve()
         },
         error: (err: Error) => {
-          context.task.result?.errors?.push(err)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          context.task.result?.errors?.push(err as any)
           resolve()
         },
         next: () => {},
@@ -406,13 +444,13 @@ describe('#followCopyJobProgress', () => {
         subscription.unsubscribe()
 
         // Now trigger error - should not create new EventSource
-        const eventSourceCallCount = vi.mocked(EventSource).mock.calls.length
+        const eventSourceCallCount = mockEventSourceConstructor.mock.calls.length
         if (errorHandler) {
           errorHandler({})
         }
 
         // Verify no new EventSource was created
-        expect(vi.mocked(EventSource)).toHaveBeenCalledTimes(eventSourceCallCount)
+        expect(mockEventSourceConstructor).toHaveBeenCalledTimes(eventSourceCallCount)
         expect(mockEventSource.close).toHaveBeenCalled()
         resolve()
       })

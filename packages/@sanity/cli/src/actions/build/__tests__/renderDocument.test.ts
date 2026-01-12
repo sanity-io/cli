@@ -1,16 +1,41 @@
 import {afterAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
-// Import after mocking
 import {renderDocument} from '../renderDocument.js'
 
-// Hoist mocks to the top using vi.hoisted
-const mockWorkerConstructor = vi.hoisted(() => vi.fn())
+const {MockWorker, mockWorkerConstructor, setMockWorkerImplementation} = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockWorkerImplementation: any = null
+  const mockWorkerConstructor = vi.fn()
+
+  class MockWorker {
+    constructor(...args: unknown[]) {
+      // Track constructor calls
+      mockWorkerConstructor(...args)
+
+      if (mockWorkerImplementation) {
+        return mockWorkerImplementation(...args)
+      }
+      return {
+        addListener: vi.fn(),
+        terminate: vi.fn(),
+      }
+    }
+  }
+
+  return {
+    MockWorker,
+    mockWorkerConstructor,
+    setMockWorkerImplementation: (impl: unknown) => {
+      mockWorkerImplementation = impl
+    },
+  }
+})
 
 const mockBuildDebug = vi.hoisted(() => vi.fn())
 
 // Mock the Worker constructor from node:worker_threads
 vi.mock('node:worker_threads', () => ({
-  Worker: mockWorkerConstructor,
+  Worker: MockWorker,
 }))
 
 vi.mock('../buildDebug.js', () => ({
@@ -29,6 +54,8 @@ const mockConsoleWarn = vi.fn()
 
 describe('renderDocument', () => {
   let testResponse: {html?: string; message?: string | string[]; type: string; warnKey?: string}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let mockWorkerInstance: any
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -37,18 +64,18 @@ describe('renderDocument', () => {
     testResponse = {html: '<html></html>', type: 'result'}
 
     // Create a mock worker instance
-    const mockWorkerInstance = {
+    mockWorkerInstance = {
       addListener: vi.fn(),
       terminate: vi.fn(),
     }
 
-    // Setup the Worker constructor mock
-    mockWorkerConstructor.mockImplementation(() => {
+    // Setup the Worker constructor mock implementation
+    setMockWorkerImplementation(() => {
       // Simulate async worker behavior
       setImmediate(() => {
         // Find the message listener and call it with the test response
         const messageListener = mockWorkerInstance.addListener.mock.calls.find(
-          (call) => call[0] === 'message',
+          (call: unknown[]) => call[0] === 'message',
         )?.[1]
 
         if (messageListener) {
@@ -220,7 +247,7 @@ describe('renderDocument', () => {
     const workerError = new Error('Worker failed to start')
 
     // Mock worker to trigger error event
-    const mockWorkerInstance = {
+    const errorMockWorkerInstance = {
       addListener: vi.fn((event, callback) => {
         if (event === 'error') {
           setImmediate(() => callback(workerError))
@@ -229,7 +256,8 @@ describe('renderDocument', () => {
       terminate: vi.fn(),
     }
 
-    mockWorkerConstructor.mockImplementationOnce(() => mockWorkerInstance)
+    // Override the mock implementation for this test only
+    setMockWorkerImplementation(() => errorMockWorkerInstance)
 
     const options = {
       studioRootPath: '/test/studio',

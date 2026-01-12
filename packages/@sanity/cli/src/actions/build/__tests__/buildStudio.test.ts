@@ -145,7 +145,7 @@ describe('buildStudio', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should build studio successfully with basic options', async () => {

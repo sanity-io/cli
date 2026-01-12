@@ -1,9 +1,6 @@
 import {isMainThread} from 'node:worker_threads'
 
-import {createServer, type InlineConfig, loadEnv, mergeConfig} from 'vite'
-import {ViteNodeRunner} from 'vite-node/client'
-import {ViteNodeServer} from 'vite-node/server'
-import {installSourcemapsSupport} from 'vite-node/source-map'
+import {createServer, createServerModuleRunner, type InlineConfig, loadEnv, mergeConfig} from 'vite'
 
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {type CliConfig} from '../../config/cli/types/cliConfig.js'
@@ -87,28 +84,14 @@ for (const key in env) {
   process.env[key] ??= env[key]
 }
 
-// Now we're providing the glue that ensures node-specific loading and execution works.
-const node = new ViteNodeServer(server)
-
-// Should make it easier to debug any crashes in the imported code…
-installSourcemapsSupport({
-  getSourceMap: (source) => node.getSourceMap(source),
+// Now we're using Vite's Module Runner (replaces vite-node in Vite 4+)
+const runner = await createServerModuleRunner(server.environments.ssr, {
+  hmr: false,
+  sourcemapInterceptor: 'prepareStackTrace',
 })
 
-const runner = new ViteNodeRunner({
-  base: server.config.base,
-  async fetchModule(id) {
-    return node.fetchModule(id)
-  },
-  resolveId(id, importer) {
-    return node.resolveId(id, importer)
-  },
-  root: server.config.root,
-})
+// Apply the `define` config from vite - imports environment variables
+await runner.import('/@vite/env')
 
-// Copied from `vite-node` - it appears that this applies the `define` config from
-// vite, but it also takes a surprisingly long time to execute. Not clear at this
-// point why this is, so we should investigate whether it's necessary or not.
-await runner.executeId('/@vite/env')
-
-await runner.executeId(workerScriptPath)
+// Execute the worker script
+await runner.import(workerScriptPath)
