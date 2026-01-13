@@ -59,7 +59,9 @@
   },
   "dependencies": {
     "@oclif/core": "catalog:",
+    "@swc/core": "catalog:",
     "ansis": "^4.2.0",
+    "chokidar": "^5.0.0",
     "nock": "catalog:",
     "ora": "catalog:"
   },
@@ -71,7 +73,6 @@
     "@sanity/client": "^7.14.0",
     "@sanity/eslint-config-cli": "workspace:*",
     "@swc/cli": "catalog:",
-    "@swc/core": "catalog:",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "publint": "catalog:",

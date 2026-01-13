@@ -13,8 +13,8 @@ import {defineConfig} from 'vitest/config'
 
 export default defineConfig({
   test: {
-    globalSetup: ['@sanity/cli-test/vitest']
-  }
+    globalSetup: ['@sanity/cli-test/vitest'],
+  },
 })
 ```
 
@@ -43,18 +43,21 @@ describe('my test suite', () => {
 Creates an isolated copy of a bundled example for testing. Returns the absolute path to the temporary directory containing the example.
 
 **Parameters:**
+
 - `exampleName` - Name of the example to copy (e.g., 'basic-app', 'basic-studio')
 - `options.tempDir` - Optional custom temp directory path (defaults to `process.cwd()/tmp`)
 
 **Returns:** Absolute path to the temporary example directory
 
 **Available Examples:**
+
 - `basic-app` - Basic Sanity application
 - `basic-studio` - Basic Sanity Studio
 - `multi-workspace-studio` - Multi-workspace Sanity Studio
 - `worst-case-studio` - Stress-test Sanity Studio
 
 **Example:**
+
 ```ts
 import {testExample} from '@sanity/cli-test'
 
@@ -63,22 +66,68 @@ const cwd = await testExample('basic-studio')
 // Note: Examples are NOT built by default - tests should build if needed
 ```
 
-### `setupTestExamples(options?: SetupTestExamplesOptions): Promise<void>`
+### `setup(options?: SetupTestExamplesOptions): Promise<void>`
 
-Global setup function that copies examples and installs dependencies. This is automatically called when using `@sanity/cli-test/vitest` in your vitest config.
+Vitest global setup function that copies examples and installs dependencies. This is automatically called by vitest when using `@sanity/cli-test/vitest` in your globalSetup config.
 
 **Parameters:**
+
 - `options.examples` - Array of example names to set up (defaults to all 4 examples)
 - `options.tempDir` - Custom temp directory path (defaults to `process.cwd()/tmp`)
 
 **Note:** Examples are NOT built during setup. Tests that need built output should build explicitly.
 
-### `teardownTestExamples(options?: TeardownTestExamplesOptions): Promise<void>`
+### `teardown(options?: TeardownTestExamplesOptions): Promise<void>`
 
-Global teardown function that removes the temp directory. This is automatically called when using `@sanity/cli-test/vitest`.
+Vitest global teardown function that removes the temp directory. This is automatically called by vitest when using `@sanity/cli-test/vitest`.
 
 **Parameters:**
+
 - `options.tempDir` - Custom temp directory path (defaults to `process.cwd()/tmp`)
+
+### `setupWorkerBuild(filePaths: string[]): Promise<void>`
+
+Utility function to compile TypeScript worker files (`.worker.ts`) to JavaScript for use in tests. Must be integrated into a custom vitest global setup file.
+
+**Parameters:**
+
+- `filePaths` - Array of paths to `.worker.ts` files to compile
+
+**Features:**
+
+- Compiles TypeScript to JavaScript using SWC for fast compilation
+- Generates source maps for debugging
+- Automatically watches for changes in watch mode (detects `VITEST_WATCH=true` or `--watch` flag)
+- Handles files from both `@sanity/cli` and `@sanity/cli-core` packages
+
+**Note:** This is a utility function, NOT automatically called. See the "Worker Files" section for integration examples.
+
+**Example:**
+
+```ts
+// test/workerBuild.ts
+import {setupWorkerBuild} from '@sanity/cli-test/vitest'
+import {glob} from 'tinyglobby'
+
+export async function setup() {
+  const workerFiles = await glob('**/*.worker.ts', {
+    ignore: ['**/node_modules/**', '**/dist/**'],
+  })
+  return setupWorkerBuild(workerFiles)
+}
+```
+
+### `teardownWorkerBuild(): Promise<void>`
+
+Utility function to clean up worker build artifacts and close file watchers. Must be integrated into a custom vitest global setup file.
+
+**Features:**
+
+- Closes file watchers if in watch mode
+- Deletes all compiled `.js` files that were generated from `.worker.ts` files
+- Clears internal tracking of compiled files
+
+**Note:** This is a utility function, NOT automatically called. See the "Worker Files" section for integration examples.
 
 ### `testCommand(command: Command, args?: string[])`
 
@@ -131,3 +180,53 @@ const cwd = await testExample('basic-studio')
 // Build the example before running tests that need it
 await execAsync('npx sanity build --yes', {cwd})
 ```
+
+## Worker Files
+
+Worker files (`.worker.ts`) are TypeScript files that run in separate threads or processes. This package provides utilities to compile these files for testing, but they must be integrated into a custom vitest global setup file.
+
+### Setting Up Worker Compilation
+
+**Step 1: Create a worker setup file** (e.g., `test/workerBuild.ts`):
+
+```ts
+import {setupWorkerBuild, teardownWorkerBuild} from '@sanity/cli-test/vitest'
+import {glob} from 'tinyglobby'
+
+export async function setup() {
+  // Find all .worker.ts files in your project
+  const workerFiles = await glob('**/*.worker.ts', {
+    cwd: process.cwd(),
+    ignore: ['**/node_modules/**', '**/dist/**'],
+  })
+
+  return setupWorkerBuild(workerFiles)
+}
+
+export async function teardown() {
+  return teardownWorkerBuild()
+}
+```
+
+**Step 2: Add to vitest config:**
+
+```ts
+// vitest.config.ts
+import {defineConfig} from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    globalSetup: [
+      'test/workerBuild.ts', // Your worker setup
+      '@sanity/cli-test/vitest', // Example setup
+    ],
+  },
+})
+```
+
+**Features:**
+
+- Compiles TypeScript to JavaScript using SWC for fast compilation
+- Generates source maps for debugging
+- Automatically watches for changes in watch mode (detects `VITEST_WATCH=true` or `--watch` flag)
+- Cleans up compiled `.js` files after tests complete

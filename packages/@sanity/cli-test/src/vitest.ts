@@ -17,3 +17,4 @@
  * ```
  */
 export {setup, teardown} from './test/setupExamples.js'
+export {setupWorkerBuild, teardownWorkerBuild} from './vitestWorker.js'
