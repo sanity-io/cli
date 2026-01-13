@@ -11,7 +11,7 @@ packages:
 catalog:
   # Linting
   eslint: ^9.39.2
-  '@eslint/compat': ^2.0.0
+  '@eslint/compat': ^2.0.1
 
   # Sanity
   sanity: ^5.2.0
