@@ -37,56 +37,6 @@ export async function testCopyDirectory(
   }
 }
 
-/**
- * Copies files and directories from an example, creating an isolated test copy.
- *
- * @param exampleName - The name of the example to clone
- * @param customTempDir - Optional custom temp directory
- * @returns The path to the isolated test directory
- * @internal
- */
-async function copyExample(exampleName: string, customTempDir?: string): Promise<string> {
-  const tempDirectory = getTempPath(customTempDir)
-
-  // Examples are cloned in the tmp directory by the setup function
-  let tempExamplePath = join(tempDirectory, `example-${exampleName}`)
-
-  try {
-    const stats = await stat(tempExamplePath)
-    if (!stats.isDirectory()) {
-      throw new Error(`${tempExamplePath} is not a directory`)
-    }
-  } catch (e) {
-    // If the cloned example doesn't exist, copy from the bundled examples
-    if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
-      tempExamplePath = join(getExamplesPath(), exampleName)
-    } else {
-      throw e
-    }
-  }
-
-  const tempId = randomBytes(8).toString('hex')
-  const tempPath = join(tempDirectory, `example-${exampleName}-${tempId}`)
-
-  // Always skip node_modules (will be symlinked), dist (tests build if needed), and tmp
-  const skipDirs = ['node_modules', 'dist', 'tmp']
-
-  // Copy the example to the temp directory
-  await testCopyDirectory(tempExamplePath, tempPath, skipDirs)
-
-  // Symlink the node_modules directory for performance
-  await symlink(join(tempExamplePath, 'node_modules'), join(tempPath, 'node_modules'))
-
-  // Replace the package.json name with a temp name
-  const packageJsonPath = join(tempPath, 'package.json')
-  const packageJson = await readFile(packageJsonPath, 'utf8')
-  const packageJsonData = JSON.parse(packageJson)
-  packageJsonData.name = `${packageJsonData.name}-${tempId}`
-  await writeFile(packageJsonPath, JSON.stringify(packageJsonData, null, 2))
-
-  return tempPath
-}
-
 /** Options for testExample */
 export interface TestExampleOptions {
   /**
@@ -128,24 +78,44 @@ export async function testExample(
   options: TestExampleOptions = {},
 ): Promise<string> {
   const {tempDir} = options
-  const examplesPath = getExamplesPath()
-  const examplePath = join(examplesPath, exampleName)
 
-  // Check if the example exists in bundled examples
+  const tempDirectory = getTempPath(tempDir)
+
+  // Examples are cloned in the tmp directory by the setup function
+  let tempExamplePath = join(tempDirectory, `example-${exampleName}`)
+
   try {
-    const stats = await stat(examplePath)
+    const stats = await stat(tempExamplePath)
     if (!stats.isDirectory()) {
-      throw new Error(`Example ${exampleName} is not a directory in ${examplesPath}`)
+      throw new Error(`${tempExamplePath} is not a directory`)
     }
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      throw new Error(`Example ${exampleName} does not exist in ${examplesPath}`)
+  } catch (e) {
+    // If the cloned example doesn't exist, copy from the bundled examples
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
+      tempExamplePath = join(getExamplesPath(), exampleName)
+    } else {
+      throw e
     }
-    throw error
   }
 
-  // Copy the example to an isolated temp directory
-  const tempPath = await copyExample(exampleName, tempDir)
+  const tempId = randomBytes(8).toString('hex')
+  const tempPath = join(tempDirectory, `example-${exampleName}-${tempId}`)
+
+  // Always skip node_modules (will be symlinked), dist (tests build if needed), and tmp
+  const skipDirs = ['node_modules', 'dist', 'tmp']
+
+  // Copy the example to the temp directory
+  await testCopyDirectory(tempExamplePath, tempPath, skipDirs)
+
+  // Symlink the node_modules directory for performance
+  await symlink(join(tempExamplePath, 'node_modules'), join(tempPath, 'node_modules'))
+
+  // Replace the package.json name with a temp name
+  const packageJsonPath = join(tempPath, 'package.json')
+  const packageJson = await readFile(packageJsonPath, 'utf8')
+  const packageJsonData = JSON.parse(packageJson)
+  packageJsonData.name = `${packageJsonData.name}-${tempId}`
+  await writeFile(packageJsonPath, JSON.stringify(packageJsonData, null, 2))
 
   return tempPath
 }

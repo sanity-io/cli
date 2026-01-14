@@ -689,6 +689,9 @@ importers:
       ora:
         specifier: 'catalog:'
         version: 9.0.0
+      tinyglobby:
+        specifier: ^0.2.15
+        version: 0.2.15
     devDependencies:
       '@eslint/compat':
         specifier: 'catalog:'

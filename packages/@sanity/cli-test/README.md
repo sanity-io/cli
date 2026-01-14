@@ -72,10 +72,38 @@ Vitest global setup function that copies examples and installs dependencies. Thi
 
 **Parameters:**
 
-- `options.examples` - Array of example names to set up (defaults to all 4 examples)
+- `options.additionalExamples` - Glob patterns for additional example directories from your local repo to set up alongside the default bundled examples (e.g., `['examples/*', 'dev/*']`). Only directories containing a `package.json` are included.
 - `options.tempDir` - Custom temp directory path (defaults to `process.cwd()/tmp`)
 
 **Note:** Examples are NOT built during setup. Tests that need built output should build explicitly.
+
+**Adding examples from your local repo:**
+
+If your repo has its own example directories that you want to test alongside the default bundled examples, use the `additionalExamples` option to include them:
+
+```ts
+// vitest.setup.ts
+import {setup as cliTestSetup, teardown} from '@sanity/cli-test/vitest'
+
+export {teardown}
+
+export async function setup(project) {
+  return cliTestSetup(project, {
+    additionalExamples: ['examples/*', 'dev/*'],
+  })
+}
+```
+
+```ts
+// vitest.config.ts
+import {defineConfig} from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    globalSetup: ['vitest.setup.ts'],
+  },
+})
+```
 
 ### `teardown(options?: TeardownTestExamplesOptions): Promise<void>`
 

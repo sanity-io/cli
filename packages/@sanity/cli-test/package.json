@@ -63,7 +63,8 @@
     "ansis": "^4.2.0",
     "esbuild": "^0.27.2",
     "nock": "catalog:",
-    "ora": "catalog:"
+    "ora": "catalog:",
+    "tinyglobby": "^0.2.15"
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",

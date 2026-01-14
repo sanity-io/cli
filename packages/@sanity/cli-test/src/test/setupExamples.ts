@@ -1,9 +1,12 @@
 import {exec as execNode} from 'node:child_process'
 import {readFile, rm, writeFile} from 'node:fs/promises'
-import {join} from 'node:path'
+import {basename, join} from 'node:path'
 import {promisify} from 'node:util'
 
+import {fileExists} from '@sanity/cli-core'
 import ora from 'ora'
+import {glob} from 'tinyglobby'
+import {type TestProject} from 'vitest/node'
 
 import {getExamplesPath, getTempPath} from '../utils/paths.js'
 import {testCopyDirectory} from './testExample.js'
@@ -21,9 +24,17 @@ export const DEFAULT_EXAMPLES = [
 /** Options for setupTestExamples */
 export interface SetupTestExamplesOptions {
   /**
-   * Examples to set up. Defaults to all 4 bundled examples.
+   * Glob patterns for additional example directories to set up.
+   *
+   * Each pattern is matched against directories in the current working directory.
+   * Only directories containing a `package.json` file are included.
+   *
+   * @example
+   * ```typescript
+   * ['examples/*', 'dev/*']
+   * ```
    */
-  examples?: string[]
+  additionalExamples?: string[]
 
   /**
    * Custom temp directory path. Defaults to process.cwd()/tmp
@@ -31,6 +42,31 @@ export interface SetupTestExamplesOptions {
   tempDir?: string
 }
 
+async function getAdditionalExamplePaths(examples: string[]): Promise<ExamplePath[]> {
+  const paths = await glob(examples, {
+    absolute: true,
+    ignore: ['**/node_modules/**', '**/dist/**'],
+    onlyDirectories: true,
+  })
+
+  const additionalExamples: ExamplePath[] = []
+
+  for (const path of paths) {
+    if (await fileExists(join(`${path}/package.json`))) {
+      additionalExamples.push({
+        example: basename(path),
+        fromPath: path,
+      })
+    }
+  }
+
+  return additionalExamples
+}
+
+interface ExamplePath {
+  example: string
+  fromPath: string
+}
 /**
  * Global setup function for initializing test examples.
  *
@@ -53,8 +89,8 @@ export interface SetupTestExamplesOptions {
  * })
  * ```
  */
-export async function setup(options: SetupTestExamplesOptions = {}): Promise<void> {
-  const {examples = DEFAULT_EXAMPLES, tempDir} = options
+export async function setup(_: TestProject, options: SetupTestExamplesOptions = {}): Promise<void> {
+  const {additionalExamples, tempDir} = options
 
   const spinner = ora({
     // Without this, the watch mode input is discarded
@@ -66,10 +102,31 @@ export async function setup(options: SetupTestExamplesOptions = {}): Promise<voi
     const examplesDir = getExamplesPath()
     const tempDirectory = getTempPath(tempDir)
 
-    for (const example of examples) {
-      const fromPath = join(examplesDir, example)
-      const toPath = join(tempDirectory, `example-${example}`)
+    const allExamplePaths: ExamplePath[] = []
 
+    // Add the default examples
+    for (const example of DEFAULT_EXAMPLES) {
+      allExamplePaths.push({
+        example,
+        fromPath: join(examplesDir, example),
+      })
+    }
+
+    // Add the additional examples
+    if (additionalExamples && additionalExamples.length > 0) {
+      const additionalExamplePaths = await getAdditionalExamplePaths(additionalExamples)
+
+      if (additionalExamplePaths.length > 0) {
+        allExamplePaths.push(...additionalExamplePaths)
+      } else {
+        spinner.warn(
+          `No additional examples found, check the glob pattern: ${additionalExamples.join(', ')}`,
+        )
+      }
+    }
+
+    for (const {example, fromPath} of allExamplePaths) {
+      const toPath = join(tempDirectory, `example-${example}`)
       // Copy the example, excluding node_modules and dist
       await testCopyDirectory(fromPath, toPath, ['node_modules', 'dist'])
 
