@@ -13,7 +13,13 @@
     "**/fixtures/**",
     "packages/@sanity/original-cli/**"
   ],
+  "minimumReleaseAge": "3 days",
   "packageRules": [
+    {
+      "description": "Exclude sanity & @sanity/* packages from minimumReleaseAge (no delay for internal packages)",
+      "matchPackageNames": ["@sanity/*", "@portabletext/*", "react-rx", "groq-js", "sanity"],
+      "minimumReleaseAge": "0 days"
+    },
     {
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["patch", "minor"],
