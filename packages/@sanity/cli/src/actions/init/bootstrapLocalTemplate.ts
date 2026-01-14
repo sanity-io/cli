@@ -40,7 +40,7 @@ export async function bootstrapLocalTemplate(
   opts: BootstrapLocalOptions,
 ): Promise<ProjectTemplate> {
   const {output, outputPath, packageName, schemaUrl, templateName, useTypeScript, variables} = opts
-  const cliRoot = path.resolve(import.meta.dirname, '../..')
+  const cliRoot = path.resolve(import.meta.dirname, '../../..')
   const templatesDir = path.join(cliRoot, 'templates')
   const sourceDir = path.join(templatesDir, templateName)
   const sharedDir = path.join(templatesDir, 'shared')

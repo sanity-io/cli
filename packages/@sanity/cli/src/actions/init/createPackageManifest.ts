@@ -21,10 +21,12 @@ export function createPackageManifest(
 ): string {
   const {isAppTemplate} = data
 
-  const dependencies = data.dependencies ? {dependencies: sortObject(data.dependencies)} : {}
+  const dependencies = data.dependencies
+    ? {dependencies: sortObject(data.dependencies) as Record<string, string>}
+    : {}
 
   const devDependencies = data.devDependencies
-    ? {devDependencies: sortObject(data.devDependencies)}
+    ? {devDependencies: sortObject(data.devDependencies) as Record<string, string>}
     : {}
 
   // Don't write a prettier config for SDK apps; we want to allow developers to use their own

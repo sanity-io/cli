@@ -39,11 +39,12 @@
     "./codemods",
     "./dist",
     "./oclif.config.js",
-    "./oclif.manifest.json"
+    "./oclif.manifest.json",
+    "./templates"
   ],
   "scripts": {
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
-    "postbuild": "pnpm run manifest:generate",
+    "postbuild": "pnpm run manifest:generate && cp -r templates dist/templates",
     "build:types": "tsc --project tsconfig.lib.json",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",

@@ -1,4 +1,5 @@
-import traverse from '@babel/traverse'
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import _traverse from '@babel/traverse'
 import {parse, print} from 'recast'
 import * as parser from 'recast/parsers/typescript.js'
 
@@ -9,13 +10,16 @@ interface TemplateOptions<T> {
   includeBooleanTransform?: boolean
 }
 
+// @ts-expect-error - Babel's ESM exports require accessing .default
+const traverse = _traverse.default
+
 export function processTemplate<T extends object>(options: TemplateOptions<T>): string {
   const {includeBooleanTransform = false, template, variables} = options
   const ast = parse(template.trimStart(), {parser})
 
   traverse(ast, {
     StringLiteral: {
-      enter({node}) {
+      enter({node}: {node: any}) {
         const value = node.value
         if (!value.startsWith('%') || !value.endsWith('%')) {
           return
@@ -34,7 +38,7 @@ export function processTemplate<T extends object>(options: TemplateOptions<T>): 
     },
     ...(includeBooleanTransform && {
       Identifier: {
-        enter(path) {
+        enter(path: any) {
           if (!path.node.name.startsWith('__BOOL__')) {
             return
           }
