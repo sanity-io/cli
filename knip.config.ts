@@ -1,7 +1,4 @@
-import {join} from 'node:path'
-
 import {type KnipConfig} from 'knip'
-import {match} from 'minimatch'
 
 const project = ['src/**/*.{js,jsx,ts,tsx}', '!**/docs/**']
 
@@ -40,10 +37,7 @@ const baseConfig = {
         'src/threads/configClient.ts',
         'src/threads/registerBrowserEnv.ts',
       ],
-      // temporarily ignore unused exports until schema work is done
       ignore: [
-        'src/actions/manifest/extractManifest.ts',
-        'src/actions/manifest/types.ts',
         // Ignore exports until init work is done
         'src/actions/init/remoteTemplate.ts',
         'src/actions/init/determineAppTemplate.ts',
@@ -75,34 +69,4 @@ const baseConfig = {
   },
 } satisfies KnipConfig
 
-export const addBundlerEntries = async (config: KnipConfig): Promise<KnipConfig> => {
-  const dirs = [
-    'packages/@sanity/eslint-config-cli',
-    'packages/@repo/tsconfig',
-    'packages/@sanity/cli',
-  ]
-
-  for (const wsDir of dirs) {
-    for (const configKey of Object.keys(baseConfig.workspaces)) {
-      if (match([wsDir], configKey)) {
-        const manifest = await import(join(import.meta.dirname, wsDir, 'package.json'))
-        const configEntries = (config?.workspaces?.[configKey].entry as string[]) ?? []
-        const bundler = manifest?.bundler
-        for (const value of Object.values(bundler ?? {})) {
-          if (Array.isArray(value)) {
-            configEntries.push(...value)
-          }
-        }
-        // Add package.config.ts to entry points
-        // configEntries.push('package.config.ts')
-        if (config.workspaces && config.workspaces[configKey]) {
-          config.workspaces[configKey].entry = [...new Set(configEntries)]
-        }
-      }
-    }
-  }
-
-  return config
-}
-
-export default addBundlerEntries(baseConfig)
+export default baseConfig

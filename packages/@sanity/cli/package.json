@@ -20,6 +20,7 @@
   },
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",
+  "sideEffects": false,
   "type": "module",
   "exports": {
     ".": {
@@ -71,10 +72,10 @@
     "@sanity/import": "^4.0.3",
     "@sanity/migrate": "^5.2.1",
     "@sanity/runtime-cli": "^12.4.0",
-    "@sanity/schema": "^5.2.0",
+    "@sanity/schema": "catalog:",
     "@sanity/telemetry": "^0.8.1",
     "@sanity/template-validator": "^2.4.3",
-    "@sanity/types": "^5.2.0",
+    "@sanity/types": "catalog:",
     "@sanity/ui": "^3.1.11",
     "@vercel/frameworks": "3.8.4",
     "@vercel/fs-detectors": "5.5.2",

@@ -13,7 +13,6 @@
     "start": "sanity start"
   },
   "dependencies": {
-    "@sanity/cli": "workspace:*",
     "@sanity/sdk": "^2.5.0",
     "@sanity/sdk-react": "^2.5.0",
     "react": "^19.2.3",
@@ -21,6 +20,7 @@
   },
   "devDependencies": {
     "@types/react": "^19.2.8",
+    "sanity": "catalog:",
     "typescript": "^5.9.3"
   }
 }
