@@ -1,11 +1,9 @@
 import {type CliConfig, type ProjectRootResult} from '@sanity/cli-core'
-import {type SanityClient} from '@sanity/client'
 
 import {type ModuleVersionResult} from '../versions/types.js'
 
 export interface DebugInfoOptions {
   cliConfig: CliConfig
-  client: SanityClient
   includeSecrets: boolean
   projectRoot: ProjectRootResult
 }

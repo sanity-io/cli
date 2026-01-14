@@ -1,11 +1,7 @@
-import {
-  type CliConfig,
-  getCliToken,
-  getConfig as getCliUserConfig,
-  type ProjectRootResult,
-} from '@sanity/cli-core'
-import {type SanityClient} from '@sanity/client'
+import {type CliConfig, getCliToken, getUserConfig, type ProjectRootResult} from '@sanity/cli-core'
 
+import {getProjectById} from '../../services/projects.js'
+import {getCliUser, getProjectUser} from '../../services/user.js'
 import {findSanityModulesVersions} from '../versions/findSanityModulesVersions.js'
 import {type ModuleVersionResult} from '../versions/types.js'
 import {
@@ -17,7 +13,7 @@ import {
 } from './types.js'
 
 export async function gatherDebugInfo(options: DebugInfoOptions): Promise<DebugInfo> {
-  const {cliConfig, client, includeSecrets, projectRoot} = options
+  const {cliConfig, includeSecrets, projectRoot} = options
 
   // Gather all info in parallel where possible
   const [auth, globalConfig, projectConfigResult, versions] = await Promise.all([
@@ -28,8 +24,8 @@ export async function gatherDebugInfo(options: DebugInfoOptions): Promise<DebugI
   ])
 
   // Gather user and project info that depend on auth
-  const user = await gatherUserInfo(client, auth.hasToken)
-  const project = await gatherProjectInfo(client, projectConfigResult, auth.hasToken, user)
+  const user = await gatherUserInfo(projectConfigResult, auth.hasToken)
+  const project = await gatherProjectInfo(projectConfigResult, auth.hasToken, user)
 
   return {
     auth,
@@ -52,20 +48,8 @@ async function gatherAuthInfo(includeSecrets: boolean): Promise<AuthInfo> {
   }
 }
 
-async function gatherGlobalConfig(): Promise<Record<string, unknown>> {
-  try {
-    const [authToken, telemetryConsent] = await Promise.all([
-      getCliUserConfig('authToken'),
-      getCliUserConfig('telemetryConsent'),
-    ])
-
-    return {
-      authToken,
-      telemetryConsent,
-    }
-  } catch {
-    return {}
-  }
+function gatherGlobalConfig(): Record<string, unknown> {
+  return getUserConfig().all
 }
 
 async function gatherProjectConfig(cliConfig: CliConfig): Promise<CliConfig | Error> {
@@ -91,7 +75,7 @@ async function gatherVersionsInfo(projectRoot: ProjectRootResult): Promise<Modul
 }
 
 async function gatherUserInfo(
-  client: SanityClient,
+  projectConfig: CliConfig | Error,
   hasToken: boolean,
 ): Promise<Error | UserInfo | null> {
   if (!hasToken) {
@@ -99,7 +83,14 @@ async function gatherUserInfo(
   }
 
   try {
-    const userInfo = await client.users.getById('me')
+    /**
+     * If the project config has a project ID, get the user for the project
+     * Otherwise, get the user for the global client
+     */
+    const userInfo =
+      projectConfig instanceof Error || !projectConfig.api?.projectId
+        ? await getCliUser()
+        : await getProjectUser(projectConfig.api.projectId)
 
     return {
       email: userInfo.email,
@@ -112,7 +103,6 @@ async function gatherUserInfo(
 }
 
 async function gatherProjectInfo(
-  client: SanityClient,
   projectConfig: CliConfig | Error,
   hasToken: boolean,
   user: Error | UserInfo | null,
@@ -127,7 +117,7 @@ async function gatherProjectInfo(
   }
 
   try {
-    const projectInfo = await client.projects.getById(projectId)
+    const projectInfo = await getProjectById(projectId)
 
     if (!projectInfo) {
       return new Error(`Project specified in configuration (${projectId}) does not exist in API`)

@@ -9,8 +9,6 @@ import {gatherDebugInfo} from '../actions/debug/gatherDebugInfo.js'
 import {getGlobalConfigLocation} from '../actions/debug/getGlobalConfigLocation.js'
 import {getDisplayName, getFormatters} from '../actions/versions/getFormatters.js'
 
-const DEBUG_API_VERSION = '2025-08-06'
-
 export class Debug extends SanityCommand<typeof Debug> {
   static override description = 'Provides diagnostic info for Sanity Studio troubleshooting'
 
@@ -32,14 +30,9 @@ export class Debug extends SanityCommand<typeof Debug> {
     try {
       const projectRoot = await this.getProjectRoot()
       const cliConfig = await this.getCliConfig()
-      const client = await this.getGlobalApiClient({
-        apiVersion: DEBUG_API_VERSION,
-        requireUser: true,
-      })
 
       const {auth, globalConfig, project, projectConfig, user, versions} = await gatherDebugInfo({
         cliConfig,
-        client,
         includeSecrets: flags.secrets,
         projectRoot,
       })
@@ -49,9 +42,10 @@ export class Debug extends SanityCommand<typeof Debug> {
         this.log(`  ${chalk.red(user.message)}\n`)
       } else if (user) {
         printKeyValue({
-          Email: user.email,
           ID: user.id,
           Name: user.name,
+          // eslint-disable-next-line perfectionist/sort-objects
+          Email: user.email,
           Roles: project && 'userRoles' in project ? project.userRoles : undefined,
         })
       }
@@ -60,8 +54,9 @@ export class Debug extends SanityCommand<typeof Debug> {
       if (project && 'id' in project) {
         this.log('Project:')
         printKeyValue({
-          'Display name': project.displayName,
           ID: project.id,
+          // eslint-disable-next-line perfectionist/sort-objects
+          'Display name': project.displayName,
         })
       }
 
