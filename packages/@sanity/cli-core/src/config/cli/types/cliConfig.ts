@@ -1,3 +1,4 @@
+import {type TypeGenConfig} from '@sanity/codegen'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 
 import {type UserViteConfig} from './userViteConfig'
@@ -81,6 +82,11 @@ export interface CliConfig {
 
   /** @deprecated Use deployment.appId */
   studioHost?: string
+
+  /**
+   * Configuration for Sanity typegen
+   */
+  typegen?: Partial<TypeGenConfig>
 
   /** Exposes the default Vite configuration for custom apps and the Studio so it can be changed and extended. */
   vite?: UserViteConfig

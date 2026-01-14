@@ -1,3 +1,4 @@
+import {type TypeGenConfig} from '@sanity/codegen'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {z} from 'zod'
 
@@ -73,4 +74,6 @@ export const cliConfigSchema = z.object({
   studioHost: z.string().optional(),
 
   vite: z.custom<UserViteConfig>().optional(),
+
+  typegen: z.custom<TypeGenConfig>().optional(),
 }) satisfies z.ZodType<CliConfig>
