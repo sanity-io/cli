@@ -13,6 +13,7 @@
     },
     "lint": {},
     "publint": {
+      "dependsOn": ["^build", "^build:types", "^publint"],
       "cache": false
     },
     "dev": {
