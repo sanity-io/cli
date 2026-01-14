@@ -7,6 +7,7 @@
 import {unlink} from 'node:fs/promises'
 
 import {build, type BuildContext, type BuildOptions, context} from 'esbuild'
+import {type TestProject} from 'vitest/node'
 
 const compiledFiles: Set<string> = new Set()
 let buildContexts: BuildContext[] = []
@@ -101,12 +102,8 @@ async function setupWatchMode(files: string[]) {
  * @throws If the worker files cannot be bundled
  * @throws If the watcher cannot be set up
  */
-export async function setupWorkerBuild(filePaths: string[]) {
-  // Determine if we're in watch mode
-  const isWatchMode =
-    process.env.VITEST_WATCH === 'true' ||
-    !process.argv.includes('run') ||
-    process.env.CI === 'false'
+export async function setupWorkerBuild(project: TestProject, filePaths: string[]) {
+  const isWatchMode = project.config.watch
 
   await (isWatchMode ? setupWatchMode(filePaths) : setupBundling(filePaths))
 }

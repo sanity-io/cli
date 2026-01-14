@@ -1,7 +1,8 @@
 import {setupWorkerBuild, teardownWorkerBuild} from '@sanity/cli-test/vitest'
 import {glob} from 'tinyglobby'
+import {type TestProject} from 'vitest/node'
 
-export async function setup() {
+export async function setup(project: TestProject) {
   // Find all .worker.ts files in both CLI and CLI-core packages
   const workerFiles = await glob('**/*.worker.ts', {
     cwd: process.cwd(),
@@ -14,7 +15,7 @@ export async function setup() {
   })
 
   const allWorkerFiles = [...workerFiles, ...cliCoreWorkerFiles]
-  return setupWorkerBuild(allWorkerFiles)
+  return setupWorkerBuild(project, allWorkerFiles)
 }
 
 export async function teardown() {
