@@ -3,11 +3,11 @@ import {readFile, rm, writeFile} from 'node:fs/promises'
 import {basename, join} from 'node:path'
 import {promisify} from 'node:util'
 
-import {fileExists} from '@sanity/cli-core'
 import ora from 'ora'
 import {glob} from 'tinyglobby'
 import {type TestProject} from 'vitest/node'
 
+import {fileExists} from '../utils/fileExists.js'
 import {getExamplesPath, getTempPath} from '../utils/paths.js'
 import {testCopyDirectory} from './testExample.js'
 
