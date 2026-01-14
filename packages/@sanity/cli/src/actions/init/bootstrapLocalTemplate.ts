@@ -1,45 +1,47 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import chalk from 'chalk'
+import {Output, subdebug} from '@sanity/cli-core'
+import {chalk, spinner} from '@sanity/cli-core/ux'
 import {deburr} from 'lodash-es'
 
-import {debug} from '../../debug'
-import {studioDependencies} from '../../studioDependencies'
-import {type CliCommandContext} from '../../types'
-import {copy} from '../../util/copy'
-import {getAndWriteJourneySchemaWorker} from '../../util/journeyConfig'
-import {resolveLatestVersions} from '../../util/resolveLatestVersions'
-import {createAppCliConfig} from './createAppCliConfig'
-import {createCliConfig} from './createCliConfig'
-import {createPackageManifest} from './createPackageManifest'
-import {createStudioConfig, type GenerateConfigOptions} from './createStudioConfig'
-import {determineAppTemplate} from './determineAppTemplate'
-import {type ProjectTemplate} from './initProject'
-import templates from './templates'
-import {updateInitialTemplateMetadata} from './updateInitialTemplateMetadata'
+import {studioDependencies} from '../../studioDependencies.js'
+import {copy} from '../../util/copy.js'
+import {getAndWriteJourneySchemaWorker} from '../../util/journeyConfig.js'
+import {resolveLatestVersions} from '../../util/resolveLatestVersions.js'
+import {createAppCliConfig} from './createAppCliConfig.js'
+import {createCliConfig} from './createCliConfig.js'
+import {createPackageManifest} from './createPackageManifest.js'
+import {createStudioConfig, type GenerateConfigOptions} from './createStudioConfig.js'
+import {determineAppTemplate} from './determineAppTemplate.js'
+import templates from './templates/index.js'
+import {type ProjectTemplate} from './types.js'
+import {updateInitialTemplateMetadata} from './updateInitialTemplateMetadata.js'
+
+const debug = subdebug('init:bootstrapRemoteTemplate')
 
 export interface BootstrapLocalOptions {
+  output: Output
+  outputPath: string
   packageName: string
   templateName: string
+  useTypeScript: boolean
+  variables: GenerateConfigOptions['variables']
+
+  overwriteFiles?: boolean
   /**
    * Used for initializing a project from a server schema that is saved in the Journey API
    * @beta
    */
   schemaUrl?: string
-  outputPath: string
-  useTypeScript: boolean
-  variables: GenerateConfigOptions['variables']
-  overwriteFiles?: boolean
 }
 
 export async function bootstrapLocalTemplate(
   opts: BootstrapLocalOptions,
-  context: CliCommandContext,
 ): Promise<ProjectTemplate> {
-  const {apiClient, cliRoot, output} = context
+  const {output, outputPath, packageName, schemaUrl, templateName, useTypeScript, variables} = opts
+  const cliRoot = path.resolve(import.meta.dirname, '../..')
   const templatesDir = path.join(cliRoot, 'templates')
-  const {outputPath, templateName, useTypeScript, packageName, variables} = opts
   const sourceDir = path.join(templatesDir, templateName)
   const sharedDir = path.join(templatesDir, 'shared')
   const isAppTemplate = determineAppTemplate(templateName)
@@ -52,11 +54,9 @@ export async function bootstrapLocalTemplate(
 
   // Copy template files
   debug('Copying files from template "%s" to "%s"', templateName, outputPath)
-  let spinner = output
-    .spinner(
-      opts.schemaUrl ? 'Extracting your Sanity configuration' : 'Bootstrapping files from template',
-    )
-    .start()
+  let spin = spinner(
+    schemaUrl ? 'Extracting your Sanity configuration' : 'Bootstrapping files from template',
+  ).start()
 
   await copy(sourceDir, outputPath, {
     rename: useTypeScript ? toTypeScriptPath : undefined,
@@ -73,47 +73,41 @@ export async function bootstrapLocalTemplate(
     debug('Fetching and writing remote schema "%s"', opts.schemaUrl)
     await getAndWriteJourneySchemaWorker({
       schemasPath: path.join(outputPath, 'schemaTypes'),
-      useTypeScript,
       schemaUrl: opts.schemaUrl,
+      useTypeScript,
     })
   }
 
-  spinner.succeed()
+  spin.succeed()
 
   // Merge global and template-specific plugins and dependencies
 
   // Resolve latest versions of Sanity-dependencies
-  spinner = output.spinner('Resolving latest module versions').start()
+  spin = spinner('Resolving latest module versions').start()
   const dependencyVersions = await resolveLatestVersions({
     ...(isAppTemplate ? {} : studioDependencies.dependencies),
     ...(isAppTemplate ? {} : studioDependencies.devDependencies),
     ...template.dependencies,
     ...template.devDependencies,
   })
-  spinner.succeed()
+  spin.succeed()
 
   // Use the resolved version for the given dependency
-  const dependencies = Object.keys({
+  const dependencies: Record<string, string> = {}
+  for (const dependency of Object.keys({
     ...(isAppTemplate ? {} : studioDependencies.dependencies),
     ...template.dependencies,
-  }).reduce(
-    (deps, dependency) => {
-      deps[dependency] = dependencyVersions[dependency]
-      return deps
-    },
-    {} as Record<string, string>,
-  )
+  })) {
+    dependencies[dependency] = dependencyVersions[dependency]
+  }
 
-  const devDependencies = Object.keys({
+  const devDependencies: Record<string, string> = {}
+  for (const dependency of Object.keys({
     ...(isAppTemplate ? {} : studioDependencies.devDependencies),
     ...template.devDependencies,
-  }).reduce(
-    (deps, dependency) => {
-      deps[dependency] = dependencyVersions[dependency]
-      return deps
-    },
-    {} as Record<string, string>,
-  )
+  })) {
+    devDependencies[dependency] = dependencyVersions[dependency]
+  }
 
   let packageJsonName: string = packageName
 
@@ -122,18 +116,18 @@ export async function bootstrapLocalTemplate(
    */
   if (isAppTemplate) {
     packageJsonName = deburr(path.basename(outputPath).toLowerCase())
-      .replace(/\s+/g, '-')
-      .replace(/[^a-z0-9-]/g, '')
+      .replaceAll(/\s+/g, '-')
+      .replaceAll(/[^a-z0-9-]/g, '')
   }
 
   // Now create a package manifest (`package.json`) with the merged dependencies
-  spinner = output.spinner('Creating default project files').start()
+  spin = spinner('Creating default project files').start()
   const packageManifest = createPackageManifest({
-    name: packageJsonName,
     dependencies,
     devDependencies,
-    scripts: template.scripts,
     isAppTemplate,
+    name: packageJsonName,
+    scripts: template.scripts,
   })
 
   // ...and a studio config (`sanity.config.[ts|js]`)
@@ -149,38 +143,35 @@ export async function bootstrapLocalTemplate(
         organizationId: variables.organizationId,
       })
     : createCliConfig({
-        projectId: variables.projectId,
-        dataset: variables.dataset,
         autoUpdates: variables.autoUpdates,
+        dataset: variables.dataset,
+        projectId: variables.projectId,
       })
 
   // Write non-template files to disc
   const codeExt = useTypeScript ? 'ts' : 'js'
   await Promise.all(
     [
-      ...[
-        isAppTemplate
-          ? Promise.resolve(null)
-          : writeFileIfNotExists(`sanity.config.${codeExt}`, studioConfig),
-      ],
+      isAppTemplate
+        ? Promise.resolve(null)
+        : writeFileIfNotExists(`sanity.config.${codeExt}`, studioConfig),
       writeFileIfNotExists(`sanity.cli.${codeExt}`, cliConfig),
       writeFileIfNotExists('package.json', packageManifest),
-      ...[
-        isAppTemplate
-          ? Promise.resolve(null)
-          : writeFileIfNotExists(
-              'eslint.config.mjs',
-              `import studio from '@sanity/eslint-config-studio'\n\nexport default [...studio]\n`,
-            ),
-      ],
+
+      isAppTemplate
+        ? Promise.resolve(null)
+        : writeFileIfNotExists(
+            'eslint.config.mjs',
+            `import studio from '@sanity/eslint-config-studio'\n\nexport default [...studio]\n`,
+          ),
     ].filter(Boolean),
   )
 
   debug('Updating initial template metadata')
-  await updateInitialTemplateMetadata(apiClient, variables.projectId, `cli-${templateName}`)
+  await updateInitialTemplateMetadata(variables.projectId, `cli-${templateName}`)
 
   // Finish up by providing init process with template-specific info
-  spinner.succeed()
+  spin.succeed()
   return template
 
   async function writeFileIfNotExists(fileName: string, content: string): Promise<void> {

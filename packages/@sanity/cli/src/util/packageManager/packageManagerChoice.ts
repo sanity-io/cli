@@ -10,6 +10,16 @@ export type PackageManager = 'bun' | 'manual' | 'npm' | 'pnpm' | 'yarn'
 
 const EXPERIMENTAL = new Set(['bun'])
 
+export const ALLOWED_PACKAGE_MANAGERS: readonly PackageManager[] = [
+  'npm',
+  'yarn',
+  'pnpm',
+  'bun',
+  'manual',
+] as const
+
+export const allowedPackageManagersString = ALLOWED_PACKAGE_MANAGERS.join(' | ')
+
 /**
  * Attempts to resolve the most optimal package manager to use to install/upgrade
  * packages/dependencies at a given path. It does so by looking for package manager

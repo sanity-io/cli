@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {readdirRecursive} from './readdirRecursive'
+import {readdirRecursive} from './readdirRecursive.js'
 
 interface CopyOptions {
   rename?: (originalName: string) => string
@@ -15,12 +15,12 @@ export async function copy(
   const rename = options?.rename
   const content = (await fs.stat(srcPath)).isDirectory()
     ? await readdirRecursive(srcPath)
-    : [{path: srcPath, isDir: false}]
+    : [{isDir: false, path: srcPath}]
 
   const directories = content
     .filter((entry) => entry.isDir)
-    .sort((a, b) => b.path.length - a.path.length)
-    .sort((a, b) => a.path.localeCompare(b.path))
+    .toSorted((a, b) => b.path.length - a.path.length)
+    .toSorted((a, b) => a.path.localeCompare(b.path))
     .map((entry) => entry.path)
 
   for (const subDir of directories) {
@@ -31,8 +31,8 @@ export async function copy(
 
   const files = content
     .filter((entry) => !entry.isDir)
-    .sort((a, b) => b.path.length - a.path.length)
-    .sort((a, b) => a.path.localeCompare(b.path))
+    .toSorted((a, b) => b.path.length - a.path.length)
+    .toSorted((a, b) => a.path.localeCompare(b.path))
     .map((entry) => {
       const relativePath = path.relative(srcPath, entry.path)
       const baseName = path.basename(relativePath)

@@ -6,7 +6,7 @@ import {rimrafSync} from 'rimraf'
 const defaultCommitMessage = 'feat: bootstrap sanity studio'
 
 export function tryGitInit(rootDir: string, commitMessage?: string): boolean {
-  const execOptions: ExecSyncOptions = {stdio: 'ignore', cwd: rootDir}
+  const execOptions: ExecSyncOptions = {cwd: rootDir, stdio: 'ignore'}
 
   let didInit = false
   try {
@@ -22,8 +22,8 @@ export function tryGitInit(rootDir: string, commitMessage?: string): boolean {
 
     execSync('git add -A', execOptions)
     execFileSync('git', ['commit', '-m', commitMessage || defaultCommitMessage], {
-      stdio: 'ignore',
       cwd: rootDir,
+      stdio: 'ignore',
     })
     return true
   } catch {
@@ -40,7 +40,7 @@ export function tryGitInit(rootDir: string, commitMessage?: string): boolean {
 
 function isInGitRepository(rootDir: string): boolean {
   try {
-    execSync('git rev-parse --is-inside-work-tree', {stdio: 'ignore', cwd: rootDir})
+    execSync('git rev-parse --is-inside-work-tree', {cwd: rootDir, stdio: 'ignore'})
     return true
   } catch {
     // intentional noop
@@ -50,7 +50,7 @@ function isInGitRepository(rootDir: string): boolean {
 
 function isInMercurialRepository(rootDir: string): boolean {
   try {
-    execSync('hg --cwd . root', {stdio: 'ignore', cwd: rootDir})
+    execSync('hg --cwd . root', {cwd: rootDir, stdio: 'ignore'})
     return true
   } catch {
     // intentional noop

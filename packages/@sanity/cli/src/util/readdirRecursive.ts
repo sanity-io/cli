@@ -2,8 +2,8 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 
 export interface ReaddirItem {
-  path: string
   isDir: boolean
+  path: string
 }
 
 export async function readdirRecursive(dir: string): Promise<ReaddirItem[]> {
@@ -15,10 +15,10 @@ export async function readdirRecursive(dir: string): Promise<ReaddirItem[]> {
   for (const subPath of dirContent) {
     const stat = await fs.stat(subPath)
     const isDir = stat.isDirectory()
-    content.push({path: subPath, isDir})
+    content.push({isDir, path: subPath})
 
     if (isDir) {
-      content = content.concat(await readdirRecursive(subPath))
+      content = [...content, ...(await readdirRecursive(subPath))]
     }
   }
 
