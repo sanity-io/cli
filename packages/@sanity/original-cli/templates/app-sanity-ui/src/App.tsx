@@ -1,18 +1,16 @@
 import {type SanityConfig} from '@sanity/sdk'
 import {SanityApp} from '@sanity/sdk-react'
-import {Flex, Spinner, ThemeProvider} from '@sanity/ui'
-import {buildTheme} from '@sanity/ui/theme'
+import {Flex, Spinner} from '@sanity/ui'
 import {ExampleComponent} from './ExampleComponent'
+import {SanityUI} from './SanityUI'
 
-const theme = buildTheme()
-
-export function App() {
+function App() {
   // apps can access many different projects or other sources of data
   const sanityConfigs: SanityConfig[] = [
     {
-      projectId: 'project-id',
-      dataset: 'dataset-name',
-    },
+      projectId: '',
+      dataset: '',
+    }
   ]
 
   function Loading() {
@@ -24,13 +22,13 @@ export function App() {
   }
 
   return (
-    <ThemeProvider theme={theme}>
+    <SanityUI>
       <SanityApp config={sanityConfigs} fallback={<Loading />}>
         {/* add your own components here! */}
         <ExampleComponent />
       </SanityApp>
-    </ThemeProvider>
-  )
+    </SanityUI>
+  );
 }
 
 export default App
