@@ -1,131 +1,131 @@
 /**
  * Vitest worker setup for the Sanity CLI.
  *
- * This builds the worker TS files into JS files for ease to use in the tests.
+ * This builds the worker TS files into JS files using esbuild bundling.
+ * All internal dependencies are bundled inline, while npm packages remain external.
  */
+import {unlink} from 'node:fs/promises'
 
-import {mkdir, readFile, unlink, writeFile} from 'node:fs/promises'
-import {dirname} from 'node:path'
-
-import {type Options, transform} from '@swc/core'
-import {type FSWatcher, watch} from 'chokidar'
-
-// Shared SWC configuration for worker compilation
-const swcOptions: Options = {
-  isModule: true,
-  jsc: {
-    parser: {
-      syntax: 'typescript' as const,
-      tsx: true,
-    },
-    target: 'es2023' as const,
-    transform: {
-      react: {
-        runtime: 'automatic' as const,
-      },
-    },
-  },
-  sourceMaps: true,
-}
+import {build, type BuildContext, type BuildOptions, context} from 'esbuild'
 
 const compiledFiles: Set<string> = new Set()
-let watcher: FSWatcher | null = null
+let buildContexts: BuildContext[] = []
 
-async function setupSWC(filePaths: string[]) {
-  console.log(`Found ${filePaths.length} worker files to setup with SWC`)
+/**
+ * Generate esbuild configuration for bundling worker files.
+ *
+ * @param filePath - The worker file path to bundle
+ * @param outputFile - The output file path for the bundled worker
+ * @returns esbuild configuration object
+ */
+function esbuildOptions(filePath: string, outputFile: string): BuildOptions {
+  return {
+    bundle: true,
+    conditions: ['node', 'import'],
+    entryPoints: [filePath],
+    format: 'esm',
+    loader: {'.json': 'json'},
+    logLevel: 'warning',
+    mainFields: ['module', 'main'],
+    outfile: outputFile,
+    packages: 'external',
+    platform: 'node',
+    sourcemap: false,
+    target: 'node20',
+  }
+}
 
-  // Compile each worker file
+/**
+ * Bundle a single worker file with esbuild.
+ *
+ * @param filePath - The worker file path to bundle
+ * @param external - Array of package names to keep external
+ * @returns The output file path
+ */
+async function bundleWorkerFile(filePath: string): Promise<string> {
+  const outputFile = filePath.replace(/\.ts$/, '.js')
+
+  await build(esbuildOptions(filePath, outputFile))
+
+  compiledFiles.add(outputFile)
+  return outputFile
+}
+
+/**
+ * Bundle all worker files with esbuild (non-watch mode).
+ *
+ * @param filePaths - Array of worker file paths to bundle
+ */
+async function setupBundling(filePaths: string[]) {
+  console.log(`Found ${filePaths.length} worker files to bundle`)
+
   for (const workerFile of filePaths) {
     try {
-      await compileWorkerFile(workerFile)
-      console.log(`✓ Compiled ${workerFile} with SWC`)
+      await bundleWorkerFile(workerFile)
+      console.log(`✓ Bundled ${workerFile}`)
     } catch (error) {
-      console.error(`✗ Failed to compile ${workerFile}:`, error)
+      console.error(`✗ Failed to bundle ${workerFile}:`, error)
       throw error
     }
   }
 }
 
-async function compileWorkerFile(filePath: string) {
-  const sourceCode = await readFile(filePath, 'utf8')
-  const result = await transform(sourceCode, {
-    filename: filePath,
-    ...swcOptions,
-  })
+/**
+ * Set up watch mode for worker files using esbuild's native watch API.
+ *
+ * @param files - Array of worker file paths to watch
+ */
+async function setupWatchMode(files: string[]) {
+  for (const filePath of files) {
+    const outputFile = filePath.replace(/\.ts$/, '.js')
 
-  // Write compiled file next to the source file
-  const outputFile = filePath.replace(/\.ts$/, '.js')
-  await mkdir(dirname(outputFile), {recursive: true})
-  await writeFile(outputFile, result.code)
+    const ctx = await context(esbuildOptions(filePath, outputFile))
 
-  // Track the compiled file for cleanup
-  compiledFiles.add(outputFile)
+    await ctx.watch()
+    buildContexts.push(ctx)
+    compiledFiles.add(outputFile)
 
-  return outputFile
-}
-
-function setupWatchMode() {
-  console.log('Setting up watch mode for worker files with SWC...')
-
-  watcher = watch(['**/*.worker.ts', '../cli-core/src/**/*.worker.ts'], {
-    ignored: ['node_modules/**', 'dist/**'],
-    persistent: true,
-  })
-
-  watcher.on('change', async (filePath: string) => {
-    console.log(`Worker file changed: ${filePath}`)
-    try {
-      await compileWorkerFile(filePath)
-      console.log(`✓ Recompiled ${filePath} with SWC`)
-    } catch (error) {
-      console.error(`Failed to recompile ${filePath}:`, error)
-    }
-  })
-
-  watcher.on('add', async (filePath: string) => {
-    console.log(`New worker file added: ${filePath}`)
-    try {
-      await compileWorkerFile(filePath)
-      console.log(`✓ Compiled new file ${filePath} with SWC`)
-    } catch (error) {
-      console.error(`Failed to compile new file ${filePath}:`, error)
-    }
-  })
+    console.log(`👀 Watching ${filePath}`)
+  }
 }
 
 /**
- * Setup function to build the worker files with SWC.
+ * Setup function to build the worker files with esbuild.
  *
- * Compiles the worker files with SWC and sets up watch mode if in watch mode.
+ * Bundles the worker files with esbuild and sets up watch mode if in watch mode.
+ * All npm packages are automatically marked as external (loaded from node_modules at runtime).
+ * Only internal project code is bundled inline.
  *
  * @param filePaths - The paths to the worker files to build
  * @returns A promise that resolves when the worker build is setup
- * @throws If the worker files cannot be compiled
+ * @throws If the worker files cannot be bundled
  * @throws If the watcher cannot be set up
  */
 export async function setupWorkerBuild(filePaths: string[]) {
-  console.log('Setting up worker build with SWC...')
-  await setupSWC(filePaths)
+  // Determine if we're in watch mode
+  const isWatchMode =
+    process.env.VITEST_WATCH === 'true' ||
+    !process.argv.includes('run') ||
+    process.env.CI === 'false'
 
-  // Set up watch mode if in watch mode
-  if (process.env.VITEST_WATCH === 'true' || process.argv.includes('--watch')) {
-    setupWatchMode()
-  }
+  await (isWatchMode ? setupWatchMode(filePaths) : setupBundling(filePaths))
 }
 
 /**
  * Teardown function to clean up the worker build.
  *
- * Closes the watcher and deletes the compiled JavaScript files.
+ * Closes all build contexts and deletes the compiled JavaScript files.
  *
  * @returns A promise that resolves when the worker build is teared down
- * @throws If the watcher cannot be closed
+ * @throws If the build contexts cannot be disposed
  * @throws If the compiled JavaScript files cannot be deleted
  */
 export async function teardownWorkerBuild(): Promise<void> {
-  if (watcher) {
-    await watcher.close()
+  // Dispose all build contexts (for watch mode)
+  for (const ctx of buildContexts) {
+    await ctx.dispose()
   }
+  buildContexts = []
 
   // Clean up compiled JavaScript files
   console.log('Cleaning up compiled JavaScript files...')
