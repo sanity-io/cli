@@ -58,7 +58,6 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
-    "@oclif/core": "catalog:",
     "@swc/core": "catalog:",
     "ansis": "^4.2.0",
     "esbuild": "^0.27.2",
