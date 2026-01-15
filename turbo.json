@@ -8,12 +8,12 @@
       "outputs": [".next/**", "!.next/cache/**", "dist/**", ".sanity/**", "lib/**"]
     },
     "build:types": {
-      "dependsOn": ["^build", "^build:types"],
+      "dependsOn": ["^build", "^build:types", "build"],
       "outputs": ["dist/**/*.d.ts"]
     },
     "lint": {},
     "publint": {
-      "dependsOn": ["^build", "^build:types", "^publint"],
+      "dependsOn": ["^build:types", "^publint"],
       "cache": false
     },
     "dev": {
