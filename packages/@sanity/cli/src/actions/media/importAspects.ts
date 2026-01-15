@@ -1,6 +1,7 @@
 import {access, readdir} from 'node:fs/promises'
 import path from 'node:path'
 
+import {tryGetDefaultExport} from '@sanity/cli-core'
 import {validateMediaLibraryAssetAspect} from '@sanity/schema/_internal'
 import {
   isAssetAspect,
@@ -110,7 +111,7 @@ export async function importAspects(options: ImportAspectsOptions): Promise<Impo
       })
 
       // Get the default export
-      const maybeAspect = aspectModule.default
+      const maybeAspect = tryGetDefaultExport(aspectModule)
 
       // Check if user wants to filter this aspect
       if (!filterAspects(maybeAspect)) {
