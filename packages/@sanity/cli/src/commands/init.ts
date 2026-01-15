@@ -162,19 +162,20 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Enable AI editor integration (MCP) setup',
     }),
     'nextjs-add-config-files': Flags.boolean({
+      allowNo: true,
       default: undefined,
       description: 'Add config files to Next.js project',
       helpGroup: 'Next.js',
     }),
     'nextjs-append-env': Flags.boolean({
       allowNo: true,
-      default: true,
+      default: undefined,
       description: 'Append project ID and dataset to .env file',
       helpGroup: 'Next.js',
     }),
     'nextjs-embed-studio': Flags.boolean({
       allowNo: true,
-      default: true,
+      default: undefined,
       description: 'Embed the Studio in Next.js application',
       helpGroup: 'Next.js',
     }),
@@ -196,6 +197,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       helpValue: '<path>',
     }),
     'overwrite-files': Flags.boolean({
+      allowNo: true,
       default: undefined,
       description: 'Overwrite existing files',
     }),
@@ -225,11 +227,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       hidden: true,
     }),
     template: Flags.string({
-      default: 'clean',
+      default: undefined,
       description: 'Project template to use [default: "clean"]',
       exclusive: ['bare'],
       helpValue: '<template>',
-      options: ['blog', 'clean'],
     }),
     // Porting over a beta flag
     // Oclif doesn't seem to support something in beta so hiding for now
@@ -239,7 +240,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }),
     typescript: Flags.boolean({
       allowNo: true,
-      default: true,
+      default: undefined,
       description: 'Enable TypeScript support',
       exclusive: ['bare'],
     }),
@@ -481,10 +482,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     let useTypeScript = this.flags.typescript
     if (!remoteTemplateInfo && template) {
       useTypeScript = template.typescriptOnly === true
-      // else if (shouldPromptFor('typescript')) {
-      //   useTypeScript = await promptForTypeScript(prompt)
-      //   trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
-      // }
+    } else if (this.promptForUndefinedFlag('typescript')) {
+      useTypeScript = await promptForTypeScript()
+      // @todo
+      // trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
     }
 
     // If the template has a sample dataset, prompt the user whether or not we should import it
