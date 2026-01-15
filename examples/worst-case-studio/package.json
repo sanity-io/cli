@@ -17,18 +17,18 @@
   },
   "dependencies": {
     "@sanity/cli": "workspace:*",
-    "@sanity/code-input": "^7.0.2",
+    "@sanity/code-input": "^7.0.5",
     "@sanity/vision": "catalog:",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "sanity": "catalog:",
-    "styled-components": "^6.1.19",
+    "styled-components": "^6.3.5",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "devDependencies": {
     "@sanity/color": "^3.0.6",
-    "@types/react": "^19.2.7",
-    "typescript": "^5.8.3",
-    "vite": "^7.1.6"
+    "@types/react": "^19.2.8",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
   }
 }
