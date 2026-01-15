@@ -1,5 +1,5 @@
 {
-  "$schema": "https://turbo.build/schema.json",
+  "$schema": "./node_modules/turbo/schema.json",
   "globalDependencies": ["**/.env.*local"],
   "globalEnv": ["SANITY_API_TOKEN", "NODE_VERSION"],
   "tasks": {
@@ -8,10 +8,14 @@
       "outputs": [".next/**", "!.next/cache/**", "dist/**", ".sanity/**", "lib/**"]
     },
     "build:types": {
-      "dependsOn": ["^build", "^build:types"],
+      "dependsOn": ["^build", "^build:types", "build"],
       "outputs": ["dist/**/*.d.ts"]
     },
     "lint": {},
+    "publint": {
+      "dependsOn": ["^build:types", "^publint"],
+      "cache": false
+    },
     "dev": {
       "cache": false,
       "persistent": true

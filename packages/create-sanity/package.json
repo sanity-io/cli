@@ -27,11 +27,15 @@
     "index.js"
   ],
   "scripts": {
+    "publint": "publint",
     "test": "node test.js"
   },
   "dependencies": {
     "@sanity/cli": "workspace:*",
     "import-meta-resolve": "^4.1.0"
+  },
+  "devDependencies": {
+    "publint": "catalog:"
   },
   "engines": {
     "node": ">=20"

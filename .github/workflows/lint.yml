@@ -32,3 +32,6 @@ jobs:
 
       - name: Lint
         run: pnpm check:lint
+
+      - name: Publint
+        run: pnpm publint

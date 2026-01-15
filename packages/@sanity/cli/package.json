@@ -43,7 +43,7 @@
     "./oclif.manifest.json"
   ],
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
     "postbuild": "pnpm run manifest:generate",
     "build:types": "tsc --project tsconfig.lib.json",
     "check:types": "tsc --noEmit",
@@ -52,6 +52,7 @@
     "manifest:remove": "rimraf oclif.manifest.json",
     "prepack": "pnpm run manifest:generate",
     "postpack": "rimraf oclif.manifest.json",
+    "publint": "publint",
     "test": "vitest run",
     "posttest": "pnpm run lint",
     "test:coverage": "vitest run --coverage",
@@ -150,6 +151,7 @@
     "eslint": "catalog:",
     "nock": "catalog:",
     "oclif": "^4.22.57",
+    "publint": "catalog:",
     "rimraf": "catalog:",
     "typescript": "catalog:",
     "vite-tsconfig-paths": "^6.0.3",

@@ -46,10 +46,11 @@
     "./dist"
   ],
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
     "build:types": "tsc --project tsconfig.lib.json",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
+    "publint": "publint",
     "test": "vitest run",
     "posttest": "pnpm run lint",
     "test:coverage": "vitest run --coverage",
@@ -86,6 +87,7 @@
     "@types/jsdom": "catalog:",
     "@types/node": "catalog:",
     "eslint": "catalog:",
+    "publint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
