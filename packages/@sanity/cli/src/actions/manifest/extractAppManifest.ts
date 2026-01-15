@@ -16,7 +16,7 @@ interface ExtractAppManifestOptions {
  * We don't need to parse very complicated information like schemas and tools,
  * and we submit the manifest as a multipart form field instead of writing a file.
  */
-export async function extractAppManifest(options: ExtractAppManifestOptions): Promise<AppManifest> {
+export async function extractAppManifest(options: ExtractAppManifestOptions): Promise<AppManifest | undefined> {
   const {workDir} = options
 
   const spin = spinner('Extracting manifest').start()
@@ -26,9 +26,10 @@ export async function extractAppManifest(options: ExtractAppManifestOptions): Pr
     if (!app) {
       // this is probably a problem for deployment, but not an issue for manifest extraction
       spin.succeed('No app configuration found')
-      return {}
+      return undefined
     }
     const manifest: AppManifest = {
+      version: '1',
       ...(app.icon ? {icon: app.icon} : {}),
       ...(app.title ? {title: app.title} : {}),
     }

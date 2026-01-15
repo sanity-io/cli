@@ -20,6 +20,8 @@ export interface CreateManifest {
 }
 
 export interface AppManifest {
+  version: '1'
+
   icon?: string
   title?: string
 }

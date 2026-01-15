@@ -91,7 +91,7 @@ describe('#deploy', () => {
     })
     mockCheckDir.mockResolvedValue()
     // Default to empty manifest for app deployments
-    mockExtractAppManifest.mockResolvedValue({})
+    mockExtractAppManifest.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -1060,6 +1060,7 @@ describe('#deploy', () => {
       const manifest = {
         icon: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>',
         title: 'Test App',
+        version: '1' as const,
       }
 
       mockExtractAppManifest.mockResolvedValue(manifest)
@@ -1108,7 +1109,7 @@ describe('#deploy', () => {
       process.cwd = () => cwd
 
       // Return an empty manifest object
-      mockExtractAppManifest.mockResolvedValue({})
+      mockExtractAppManifest.mockResolvedValue(undefined)
 
       mockApi({
         apiVersion: USER_APPLICATIONS_API_VERSION,
