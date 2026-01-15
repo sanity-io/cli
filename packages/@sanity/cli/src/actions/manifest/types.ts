@@ -114,7 +114,7 @@ export interface ManifestTool {
 }
 
 export type DefaultWorkspaceSchemaId = `${typeof SANITY_WORKSPACE_SCHEMA_ID_PREFIX}.${string}`
-export type PrefixedWorkspaceSchemaId = `${DefaultWorkspaceSchemaId}.${string}`
+type PrefixedWorkspaceSchemaId = `${DefaultWorkspaceSchemaId}.${string}`
 export type WorkspaceSchemaId = DefaultWorkspaceSchemaId | PrefixedWorkspaceSchemaId
 
 export interface StoredWorkspaceSchema extends SanityDocumentLike {

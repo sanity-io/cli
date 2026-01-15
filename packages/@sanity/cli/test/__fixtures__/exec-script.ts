@@ -1,7 +1,7 @@
 // Test script for `sanity exec` command
 // Tests that we can import and use getCliClient
 
-import {getCliClient} from '@sanity/cli'
+import {getCliClient} from 'sanity/cli'
 
 try {
   const client = getCliClient()

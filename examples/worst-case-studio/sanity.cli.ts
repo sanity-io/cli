@@ -1,6 +1,7 @@
-import {defines} from '@/defines'
-import {defineCliConfig} from '@sanity/cli'
+import {defineCliConfig} from 'sanity/cli'
 import tsconfigPaths from 'vite-tsconfig-paths'
+
+import {defines} from '@/defines'
 
 export default defineCliConfig({
   api: {
