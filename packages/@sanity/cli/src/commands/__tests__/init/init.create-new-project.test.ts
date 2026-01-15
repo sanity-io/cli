@@ -5,7 +5,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
-import {CREATE_PROJECT_API_VERSION} from '../../../services/projects.js'
+import {CREATE_PROJECT_API_VERSION, PROJECTS_API_VERSION} from '../../../services/projects.js'
 import {InitCommand} from '../../init'
 
 const mocks = vi.hoisted(() => ({
@@ -41,32 +41,33 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
     token: 'test-token',
   })
 
-  const projectTestClient = createTestClient({
-    apiVersion: 'v2025-09-16',
-    token: 'test-token',
-  })
-
   return {
     ...actual,
     getGlobalCliClient: vi.fn().mockResolvedValue({
       projects: {
-        list: vi
-          .fn()
-          .mockResolvedValue([
-            {createdAt: '2024-01-01T00:00:00Z', displayName: 'Test', id: 'test'},
-          ]),
+        list: vi.fn().mockResolvedValue([
+          {createdAt: '2024-01-01T00:00:00Z', displayName: 'Test', id: 'test'},
+          {createdAt: '2024-01-01T00:00:00Z', displayName: 'Project-123', id: 'project-123'},
+        ]),
       },
       request: globalTestClient.request,
       users: {
         getById: mocks.usersGetById,
       } as never,
     }),
-    getProjectCliClient: vi.fn().mockResolvedValue({
-      datasets: {
-        create: mocks.datasetsCreate,
-        list: mocks.listDatasets,
-      } as never,
-      request: projectTestClient.request,
+    getProjectCliClient: vi.fn().mockImplementation(async (options) => {
+      const client = createTestClient({
+        apiVersion: options.apiVersion,
+        token: 'test-token',
+      })
+
+      return {
+        datasets: {
+          create: mocks.datasetsCreate,
+          list: mocks.listDatasets,
+        } as never,
+        request: client.request,
+      }
     }),
   }
 })
@@ -86,14 +87,48 @@ mocks.usersGetById.mockResolvedValue({
   provider: 'saml-123',
 })
 
+// Below mocks are to make sure rest of command resolves successfully after new project logic
+vi.mock('../../../util/getProjectDefaults.js', () => ({
+  getProjectDefaults: vi.fn().mockResolvedValue({
+    author: undefined,
+    description: '',
+    gitRemote: '',
+    license: 'UNLICENSED',
+    projectName: 'test-project',
+  }),
+}))
+
+vi.mock('../../../actions/init/setupMCP.js', () => ({
+  setupMCP: vi.fn().mockResolvedValue({
+    configuredEditors: [],
+    detectedEditors: [],
+    error: undefined,
+    skipped: false,
+  }),
+}))
+
+vi.mock('../../../actions/init/checkNextJsReactCompatibility.js', () => ({
+  checkNextJsReactCompatibility: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
+  bootstrapTemplate: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../../actions/init/resolvePackageManager.js', () => ({
+  resolvePackageManager: vi.fn().mockResolvedValue('npm'),
+}))
+
+vi.mock('../../../util/packageManager/installPackages.js', () => ({
+  installDeclaredPackages: vi.fn().mockResolvedValue(undefined),
+}))
+
 const setupInitSuccessMocks = () => {
   mockApi({
     apiVersion: ORGANIZATIONS_API_VERSION,
     method: 'get',
     uri: '/organizations',
   }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-  mocks.select.mockResolvedValueOnce('test')
 
   mockApi({
     apiVersion: PROJECT_FEATURES_API_VERSION,
@@ -105,6 +140,24 @@ const setupInitSuccessMocks = () => {
     {aclMode: 'public', name: 'test'},
     {aclMode: 'public', name: 'production'},
   ])
+
+  mockApi({
+    apiVersion: PROJECTS_API_VERSION,
+    method: 'get',
+    uri: '/projects/project-123',
+  }).reply(200, {
+    id: 'test',
+    metadata: {cliInitializedAt: ''},
+  })
+}
+
+const defaultMocks = {
+  projectRoot: {
+    directory: '/test/work/dir',
+    path: '/test/work/dir',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
 }
 
 describe('#init: create new project', () => {
@@ -160,11 +213,21 @@ describe('#init: create new project', () => {
 
     await testCommand(
       InitCommand,
-      ['--create-project=Test Project', '--dataset=production', '--output-path=./test-project'],
+      [
+        '--create-project=Test Project',
+        '--dataset=production',
+        '--output-path=./test-project',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
       {
         mocks: {
+          ...defaultMocks,
           isInteractive: true,
-          token: 'test-token',
         },
       },
     )
@@ -249,11 +312,21 @@ describe('#init: create new project', () => {
 
     await testCommand(
       InitCommand,
-      ['--create-project=Test Project', '--dataset=production', '--output-path=./test-project'],
+      [
+        '--create-project=Test Project',
+        '--dataset=production',
+        '--output-path=./test-project',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
       {
         mocks: {
+          ...defaultMocks,
           isInteractive: true,
-          token: 'test-token',
         },
       },
     )

@@ -4,7 +4,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations'
-import {CREATE_PROJECT_API_VERSION} from '../../../services/projects'
+import {CREATE_PROJECT_API_VERSION, PROJECTS_API_VERSION} from '../../../services/projects'
 import {InitCommand} from '../../init'
 
 const mocks = vi.hoisted(() => ({
@@ -29,11 +29,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
     token: 'test-token',
   })
 
-  const projectTestClient = createTestClient({
-    apiVersion: 'v2025-09-16',
-    token: 'test-token',
-  })
-
   return {
     ...actual,
     getGlobalCliClient: vi.fn().mockResolvedValue({
@@ -50,12 +45,19 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
         }),
       } as never,
     }),
-    getProjectCliClient: vi.fn().mockResolvedValue({
-      datasets: {
-        create: mocks.createDataset,
-        list: mocks.listDatasets,
-      } as never,
-      request: projectTestClient.request,
+    getProjectCliClient: vi.fn().mockImplementation(async (options) => {
+      const client = createTestClient({
+        apiVersion: options.apiVersion,
+        token: 'test-token',
+      })
+
+      return {
+        datasets: {
+          create: mocks.createDataset,
+          list: mocks.listDatasets,
+        } as never,
+        request: client.request,
+      }
     }),
   }
 })
@@ -70,6 +72,62 @@ vi.mock('@sanity/cli-core/ux', async () => {
     select: mocks.select,
   }
 })
+
+// Below mocks are to make sure rest of command resolves successfully after getting project details
+vi.mock('../../../util/getProjectDefaults.js', () => ({
+  getProjectDefaults: vi.fn().mockResolvedValue({
+    author: undefined,
+    description: '',
+    gitRemote: '',
+    license: 'UNLICENSED',
+    projectName: 'test-project',
+  }),
+}))
+
+vi.mock('../../../actions/init/setupMCP.js', () => ({
+  setupMCP: vi.fn().mockResolvedValue({
+    configuredEditors: [],
+    detectedEditors: [],
+    error: undefined,
+    skipped: false,
+  }),
+}))
+
+vi.mock('../../../actions/init/checkNextJsReactCompatibility.js', () => ({
+  checkNextJsReactCompatibility: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
+  bootstrapTemplate: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../../actions/init/resolvePackageManager.js', () => ({
+  resolvePackageManager: vi.fn().mockResolvedValue('npm'),
+}))
+
+vi.mock('../../../util/packageManager/installPackages.js', () => ({
+  installDeclaredPackages: vi.fn().mockResolvedValue(undefined),
+}))
+
+const setupInitSuccessMocks = (projectId: string) => {
+  mockApi({
+    apiVersion: PROJECTS_API_VERSION,
+    method: 'get',
+    uri: `/projects/${projectId}`,
+  }).reply(200, {
+    id: 'test',
+    metadata: {cliInitializedAt: ''},
+  })
+}
+
+const defaultMocks = {
+  projectRoot: {
+    directory: '/test/work/dir',
+    path: '/test/work/dir',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#init: get project details', () => {
   afterEach(() => {
@@ -105,12 +163,23 @@ describe('#init: get project details', () => {
 
     mocks.select.mockResolvedValueOnce('org-123')
 
-    const {error} = await testCommand(InitCommand, ['--template=app-quickstart'], {
-      mocks: {
-        isInteractive: true,
-        token: 'test-token',
+    setupInitSuccessMocks('')
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--template=app-quickstart',
+        '--output-path=./test-project',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
       },
-    })
+    )
 
     expect(mocks.select).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -127,12 +196,24 @@ describe('#init: get project details', () => {
       uri: '/organizations',
     }).reply(500, {message: 'Internal Server Error'})
 
-    const {error} = await testCommand(InitCommand, [
-      '--yes',
-      '--project=test-project-123',
-      '--dataset=production',
-      '--output-path=/tmp/test',
-    ])
+    setupInitSuccessMocks('test-project-123')
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--project=test-project-123',
+        '--dataset=production',
+        '--output-path=/tmp/test',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
 
     // The command will eventually error out during setup, but that's after getProjectDetails
     // The fact it doesn't throw during getProjectDetails means "Unknown project" was returned
@@ -147,8 +228,8 @@ describe('#init: get project details', () => {
 
     const {error} = await testCommand(InitCommand, [], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -165,12 +246,15 @@ describe('#init: get project details', () => {
       uri: '/organizations',
     }).reply(200, [])
 
-    const {error} = await testCommand(InitCommand, [
-      '--yes',
-      '--project=some-project',
-      '--dataset=production',
-      '--output-path=/tmp/test',
-    ])
+    const {error} = await testCommand(
+      InitCommand,
+      ['--yes', '--project=some-project', '--dataset=production', '--output-path=/tmp/test'],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
 
     expect(error?.message).toContain('No projects found for current user')
     expect(error?.oclif?.exit).toBe(1)
@@ -192,8 +276,8 @@ describe('#init: get project details', () => {
 
     const {error} = await testCommand(InitCommand, ['--project=non-existent-project'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -225,8 +309,8 @@ describe('#init: get project details', () => {
 
     const {error} = await testCommand(InitCommand, ['--organization=non-existent-org'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -288,8 +372,8 @@ describe('#init: get project details', () => {
 
     const {stdout} = await testCommand(InitCommand, ['--bare', '--dataset=production'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -346,8 +430,8 @@ describe('#init: get project details', () => {
 
     const {stdout} = await testCommand(InitCommand, ['--bare', '--dataset=production'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -421,8 +505,8 @@ describe('#init: get project details', () => {
 
     const {stdout} = await testCommand(InitCommand, ['--bare', '--dataset=production'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -463,12 +547,15 @@ describe('#init: get project details', () => {
       uri: '/organizations',
     }).reply(200, [])
 
-    const {error} = await testCommand(InitCommand, [
-      '--yes',
-      '--project=test-project-123',
-      '--dataset=production',
-      '--output-path=/tmp/test',
-    ])
+    setupInitSuccessMocks('test-project-123')
+
+    const {error} = await testCommand(
+      InitCommand,
+      ['--yes', '--project=test-project-123', '--dataset=production', '--output-path=/tmp/test'],
+      {
+        mocks: {...defaultMocks},
+      },
+    )
 
     expect(error).toBeUndefined()
   })
@@ -495,13 +582,23 @@ describe('#init: get project details', () => {
       uri: '/features',
     }).reply(200, ['privateDatase'])
 
+    setupInitSuccessMocks('test-project-123')
+
     const {error, stderr} = await testCommand(
       InitCommand,
-      ['--project=test-project-123', '--dataset=production', '--visibility=private'],
+      [
+        '--project=test-project-123',
+        '--dataset=production',
+        '--visibility=private',
+        '--output-path=/tmp/test',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
       {
         mocks: {
+          ...defaultMocks,
           isInteractive: true,
-          token: 'test-token',
         },
       },
     )
@@ -542,8 +639,8 @@ describe('#init: get project details', () => {
       ['--project=test-project-123', '--dataset=staging', '--bare'],
       {
         mocks: {
+          ...defaultMocks,
           isInteractive: true,
-          token: 'test-token',
         },
       },
     )
@@ -582,8 +679,8 @@ describe('#init: get project details', () => {
 
     const {stdout} = await testCommand(InitCommand, ['--project=test-project-123', '--bare'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -644,8 +741,8 @@ describe('#init: get project details', () => {
 
     const {stdout} = await testCommand(InitCommand, ['--project=test-project-123', '--bare'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -696,8 +793,8 @@ describe('#init: get project details', () => {
       ['--project=test-project-123', '--bare', '--visibility=public'],
       {
         mocks: {
+          ...defaultMocks,
           isInteractive: true,
-          token: 'test-token',
         },
       },
     )
