@@ -235,8 +235,6 @@ describe('#start', () => {
     // Change to the example directory
     process.chdir(cwd)
 
-    const existingSanityCli = await readFile(join(cwd, 'sanity.cli.ts'), 'utf8')
-
     // Create a vite.config.ts file
     await writeFile(
       join(cwd, 'sanity.cli.ts'),
@@ -262,7 +260,5 @@ describe('#start', () => {
     })
 
     expect(stdout).toContain(`ms and running at http://localhost:1335/ (production preview mode)`)
-
-    await writeFile(join(cwd, 'sanity.cli.ts'), existingSanityCli)
   })
 })

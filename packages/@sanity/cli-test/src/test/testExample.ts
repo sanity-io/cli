@@ -3,6 +3,7 @@ import {copyFile, mkdir, readdir, readFile, stat, symlink, writeFile} from 'node
 import {join} from 'node:path'
 
 import {getExamplesPath, getTempPath} from '../utils/paths.js'
+import {type ExampleName} from './constants.js'
 
 /**
  * Recursively copy a directory, skipping specified folders.
@@ -74,7 +75,7 @@ export interface TestExampleOptions {
  * ```
  */
 export async function testExample(
-  exampleName: string,
+  exampleName: ExampleName | (string & {}),
   options: TestExampleOptions = {},
 ): Promise<string> {
   const {tempDir} = options

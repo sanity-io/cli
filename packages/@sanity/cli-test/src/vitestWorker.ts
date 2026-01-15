@@ -103,7 +103,9 @@ async function setupWatchMode(files: string[]) {
  * @throws If the watcher cannot be set up
  */
 export async function setupWorkerBuild(project: TestProject, filePaths: string[]) {
-  const isWatchMode = project.config.watch
+  const isWatchMode =
+    (process.env.VITEST_WATCH === 'true' || !process.argv.includes('run')) &&
+    process.env.CI !== 'true'
 
   await (isWatchMode ? setupWatchMode(filePaths) : setupBundling(filePaths))
 }

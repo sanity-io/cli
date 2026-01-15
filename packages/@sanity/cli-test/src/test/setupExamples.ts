@@ -9,17 +9,10 @@ import {type TestProject} from 'vitest/node'
 
 import {fileExists} from '../utils/fileExists.js'
 import {getExamplesPath, getTempPath} from '../utils/paths.js'
+import {DEFAULT_EXAMPLES} from './constants.js'
 import {testCopyDirectory} from './testExample.js'
 
 const exec = promisify(execNode)
-
-/** Default examples to copy and set up */
-export const DEFAULT_EXAMPLES = [
-  'basic-app',
-  'basic-studio',
-  'multi-workspace-studio',
-  'worst-case-studio',
-] as const
 
 /** Options for setupTestExamples */
 export interface SetupTestExamplesOptions {
