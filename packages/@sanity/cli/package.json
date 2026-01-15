@@ -40,7 +40,8 @@
     "./codemods",
     "./dist",
     "./oclif.config.js",
-    "./oclif.manifest.json"
+    "./oclif.manifest.json",
+    "./templates"
   ],
   "scripts": {
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
