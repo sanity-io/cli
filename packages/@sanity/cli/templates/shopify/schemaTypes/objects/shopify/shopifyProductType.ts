@@ -112,8 +112,7 @@ export const shopifyProductType = defineField({
     defineField({
       name: 'options',
       type: 'array',
-      of: [{type: 'option'},
-      ],
+      of: [{type: 'option'}],
     }),
     defineField({
       fieldset: 'variants',

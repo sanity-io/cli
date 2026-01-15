@@ -1,5 +1,5 @@
 import {DocumentsIcon} from '@sanity/icons'
-import {ListItemBuilder} from 'sanity/structure';
+import {ListItemBuilder} from 'sanity/structure'
 import defineStructure from '../utils/defineStructure'
 
 export default defineStructure<ListItemBuilder>((S) =>
@@ -7,5 +7,5 @@ export default defineStructure<ListItemBuilder>((S) =>
     .title('Pages')
     .icon(DocumentsIcon)
     .schemaType('page')
-    .child(S.documentTypeList('page'))
+    .child(S.documentTypeList('page')),
 )

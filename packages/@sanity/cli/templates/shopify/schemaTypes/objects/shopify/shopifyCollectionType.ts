@@ -68,8 +68,7 @@ export const shopifyCollectionType = defineField({
       name: 'rules',
       type: 'array',
       description: 'Include Shopify products that satisfy these conditions',
-      of: [{type: 'collectionRule'},
-      ],
+      of: [{type: 'collectionRule'}],
     }),
     defineField({
       name: 'disjunctive',

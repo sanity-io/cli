@@ -1,4 +1,3 @@
-
 import {PackageIcon} from '@sanity/icons'
 import {defineField} from 'sanity'
 

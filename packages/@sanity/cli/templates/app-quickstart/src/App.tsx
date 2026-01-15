@@ -9,7 +9,7 @@ function App() {
     {
       projectId: '',
       dataset: '',
-    }
+    },
   ]
 
   return (

@@ -10,7 +10,7 @@ function App() {
     {
       projectId: '',
       dataset: '',
-    }
+    },
   ]
 
   function Loading() {
@@ -28,7 +28,7 @@ function App() {
         <ExampleComponent />
       </SanityApp>
     </SanityUI>
-  );
+  )
 }
 
 export default App

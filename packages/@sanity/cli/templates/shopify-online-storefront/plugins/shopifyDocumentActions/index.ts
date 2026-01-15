@@ -15,7 +15,7 @@ export const resolveDocumentActions: DocumentActionsResolver = (prev, {schemaTyp
       (previousAction: DocumentActionComponent) =>
         previousAction.action === 'publish' ||
         previousAction.action === 'unpublish' ||
-        previousAction.action === 'discardChanges'
+        previousAction.action === 'discardChanges',
     )
 
     return [

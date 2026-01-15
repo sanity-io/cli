@@ -13,7 +13,7 @@ export default defineStructure<ListItemBuilder>((S) =>
           S.list()
             .title('Product')
             .canHandleIntent(
-              (intentName, params) => intentName === 'edit' && params.type === 'product'
+              (intentName, params) => intentName === 'edit' && params.type === 'product',
             )
             .items([
               // Details
@@ -35,17 +35,17 @@ export default defineStructure<ListItemBuilder>((S) =>
                       `
                       _type == "productVariant"
                       && store.productId == $productId
-                    `
+                    `,
                     )
                     .params({
                       productId: Number(id.replace('shopifyProduct-', '')),
                     })
                     .canHandleIntent(
                       (intentName, params) =>
-                        intentName === 'edit' && params.type === 'productVariant'
-                    )
+                        intentName === 'edit' && params.type === 'productVariant',
+                    ),
                 ),
-            ])
-        )
-    )
+            ]),
+        ),
+    ),
 )

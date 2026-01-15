@@ -5,7 +5,7 @@ export const getStartedPlugin = definePlugin({
   name: 'sanity-plugin-tutorial',
   studio: {
     components: {
-      layout: CustomDefaultLayout
-    }
+      layout: CustomDefaultLayout,
+    },
   },
 })

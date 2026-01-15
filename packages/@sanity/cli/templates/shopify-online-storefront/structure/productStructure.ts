@@ -27,9 +27,9 @@ export default defineStructure<ListItemBuilder>((S) =>
                   .filter(`_type == "productVariant" && store.productId == $productId`)
                   .params({
                     productId: Number(id.replace('shopifyProduct-', '')),
-                  })
+                  }),
               ),
-          ])
-      )
-    )
+          ]),
+      ),
+    ),
 )

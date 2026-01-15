@@ -49,7 +49,7 @@ export default (props: ShopifyDocumentActionProps): DocumentActionDescription | 
                 _type == "productVariant"
                 && store.productId == $productId
               ]._id`,
-            {productId}
+            {productId},
           )
         }
 

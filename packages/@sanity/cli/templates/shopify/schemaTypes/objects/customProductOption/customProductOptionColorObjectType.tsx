@@ -1,4 +1,3 @@
-
 import {defineField} from 'sanity'
 
 const ColorPreview = ({color}: {color: string}) => {

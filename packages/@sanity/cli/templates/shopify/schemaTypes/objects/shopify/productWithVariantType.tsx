@@ -69,7 +69,7 @@ export const productWithVariantType = defineField({
             {
               productId,
               productVariantId,
-            }
+            },
           )
 
           return result ? true : 'Invalid product variant'
