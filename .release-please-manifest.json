@@ -3,5 +3,5 @@
   "packages/@sanity/cli-test": "0.0.2-alpha.5",
   "packages/@sanity/cli": "6.0.0-alpha.6",
   "packages/@sanity/eslint-config-cli": "0.0.0-alpha.1",
-  "packages/create-sanity": "6.0.0-alpha.2"
+  "packages/create-sanity": "5.1.0"
 }
