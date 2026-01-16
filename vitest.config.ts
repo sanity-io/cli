@@ -30,6 +30,6 @@ export default defineConfig({
     },
     // Add explicit exclude for test execution
     exclude: ['**/node_modules/**', '**/dist/**', '**/tmp/**', '**/.git/**'],
-    projects: ['packages/@sanity/cli', 'packages/@sanity/cli-core'],
+    projects: ['packages/@sanity/cli', 'packages/@sanity/cli-core', 'packages/create-sanity'],
   },
 })
