@@ -163,6 +163,7 @@
     "@types/which": "^3.0.4",
     "@vitest/coverage-istanbul": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",
+    "dotenv": "^17.2.3",
     "eslint": "catalog:",
     "nock": "catalog:",
     "oclif": "^4.22.68",

@@ -20,6 +20,11 @@ export const injectEnvVariables: Hook.Prerun = async function ({Command}) {
   } else if (!mode) {
     mode = 'development'
   }
+  console.log({
+    isProdCmd,
+    mode,
+    nodeEnv: process.env.NODE_ENV,
+  })
 
   if (mode === 'production' && !isProdCmd) {
     warn(chalk.yellow(`Running in ${sanityEnv} environment mode\n`))

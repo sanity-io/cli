@@ -16,7 +16,8 @@ import {testHook} from '@sanity/cli-test'
 import {type TelemetryEvent, type TelemetryLogEvent} from '@sanity/telemetry'
 import nock from 'nock'
 import {glob} from 'tinyglobby'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test,vi} from 'vitest'
+import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
 import {createTelemetryStore} from '../../../telemetry/store/createTelemetryStore.js'
 import {flushTelemetryFiles} from '../../../telemetry/store/flushTelemetryFiles.js'
@@ -53,6 +54,8 @@ const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockGetCliToken = vi.mocked(getCliToken)
 const mockGetUserConfig = vi.mocked(getUserConfig)
 const mockIsCi = vi.mocked(isCi)
+
+const {config} = await getCommandAndConfig('help')
 
 // Create mock functions for getUserConfig get/set methods
 const mockGet = vi.fn()
@@ -171,7 +174,9 @@ describe('setupTelemetry integration test', () => {
   })
 
   test('shows telemetry disclosure when not previously disclosed', async () => {
-    const {stderr} = await testHook<'prerun'>(setupTelemetry)
+    const {stderr} = await testHook<'prerun'>(setupTelemetry, {
+      config,
+    })
 
     expect(mockGet).toHaveBeenCalledWith('telemetryDisclosed')
     expect(mockSet).toHaveBeenCalledWith('telemetryDisclosed', expect.any(Number))
@@ -196,7 +201,9 @@ describe('setupTelemetry integration test', () => {
   test('does not show disclosure when already disclosed', async () => {
     mockGet.mockReturnValue(1_234_567_890) // Already disclosed timestamp
 
-    const {stderr} = await testHook<'prerun'>(setupTelemetry)
+    const {stderr} = await testHook<'prerun'>(setupTelemetry, {
+      config,
+    })
 
     expect(mockGet).toHaveBeenCalledWith('telemetryDisclosed')
     expect(mockSet).not.toHaveBeenCalled()
@@ -206,7 +213,9 @@ describe('setupTelemetry integration test', () => {
   test('does not show disclosure in CI environment', async () => {
     mockIsCi.mockReturnValueOnce(true)
 
-    const {stderr} = await testHook<'prerun'>(setupTelemetry)
+    const {stderr} = await testHook<'prerun'>(setupTelemetry, {
+      config,
+    })
 
     expect(mockGet).not.toHaveBeenCalled()
     expect(mockSet).not.toHaveBeenCalled()
@@ -216,7 +225,9 @@ describe('setupTelemetry integration test', () => {
   test('sets disclosure timestamp when showing disclosure', async () => {
     const beforeTime = Date.now()
 
-    await testHook<'prerun'>(setupTelemetry)
+    await testHook<'prerun'>(setupTelemetry, {
+      config,
+    })
 
     const afterTime = Date.now()
     expect(mockSet).toHaveBeenCalledWith('telemetryDisclosed', expect.any(Number))
