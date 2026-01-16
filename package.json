@@ -20,7 +20,7 @@
   "type": "module",
   "scripts": {
     "build": "turbo run build build:types",
-    "build:cli": "turbo run build build:types --filter='./packages/*'",
+    "build:cli": "turbo run build build:types --filter='./packages/**'",
     "check": "npm run check:lint && npm run check:types",
     "check:lint": "turbo run lint -- --fix",
     "check:types": "turbo run check:types --filter=@sanity/cli --filter=@sanity/cli-core",
@@ -66,7 +66,8 @@
       "esbuild"
     ],
     "overrides": {
-      "@sanity/cli": "workspace:*"
+      "@sanity/cli": "workspace:*",
+      "create-sanity>@sanity/cli": "^5.4.0"
     },
     "patchedDependencies": {
       "sanity": "patches/sanity.patch"
