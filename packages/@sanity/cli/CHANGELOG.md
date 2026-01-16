@@ -1,5 +1,30 @@
 # Changelog
 
+## [6.0.0-alpha.6](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.5...cli-v6.0.0-alpha.6) (2026-01-16)
+
+
+### Features
+
+* **deploy:** add app manifest ([#274](https://github.com/sanity-io/cli/issues/274)) ([712650d](https://github.com/sanity-io/cli/commit/712650db1add4855dc9c849954e2b51b95b4ff3d))
+* **init:** moving project detail logic ([#243](https://github.com/sanity-io/cli/issues/243)) ([830ce32](https://github.com/sanity-io/cli/commit/830ce32981436e53330d1538fbbfce3bd31d5f5c))
+* **init:** moving templates for init to new cli ([#290](https://github.com/sanity-io/cli/issues/290)) ([fd42cd5](https://github.com/sanity-io/cli/commit/fd42cd597ef005690cd92035fce77a46be43e0a3))
+* **manifest:** make extractManifestSafe safe ([#271](https://github.com/sanity-io/cli/issues/271)) ([6ddb29c](https://github.com/sanity-io/cli/commit/6ddb29ce30338b32da88383a0f1d583113980fe4))
+
+
+### Bug Fixes
+
+* **debug:** fixes issue with debug showing incorrect info ([#253](https://github.com/sanity-io/cli/issues/253)) ([0592afd](https://github.com/sanity-io/cli/commit/0592afd53ca5719593a96a653373d4299e6057c6))
+* **ml:** fixes issues with importing aspects ([#291](https://github.com/sanity-io/cli/issues/291)) ([0f6b398](https://github.com/sanity-io/cli/commit/0f6b3985c312276195b4d92ba0fa9e3a8d3aa948))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.6
+  * devDependencies
+    * @sanity/cli-test bumped to 0.0.2-alpha.5
+
 ## [6.0.0-alpha.5](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.4...cli-v6.0.0-alpha.5) (2026-01-09)
 
 
