@@ -1,6 +1,6 @@
 {
   "name": "create-sanity",
-  "version": "6.0.0-alpha.2",
+  "version": "5.2.0",
   "description": "Initialize a new Sanity project",
   "keywords": [
     "sanity",
