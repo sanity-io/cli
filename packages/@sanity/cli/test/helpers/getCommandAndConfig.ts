@@ -14,6 +14,7 @@ export async function getCommandAndConfig(cmd: string) {
     root: resolve(import.meta.dirname, '../../'),
   })
   // Disable auto-transpile. This is injected by oclif core https://github.com/oclif/core/blob/main/src/settings.ts#L40
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ;(globalThis as any).oclif.enableAutoTranspile = false
   const res = await config.findCommand(cmd)
 
