@@ -583,9 +583,6 @@ importers:
       publint:
         specifier: 'catalog:'
         version: 0.3.16
-      rimraf:
-        specifier: 'catalog:'
-        version: 6.1.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -2838,6 +2835,10 @@ packages:
   '@publint/pack@0.1.2':
     resolution: {integrity: sha512-S+9ANAvUmjutrshV4jZjaiG8XQyuJIZ8a4utWmN/vW1sgQ9IfBnPndwkmQYw53QmouOIytT874u65HEmu6H5jw==}
     engines: {node: '>=18'}
+
+  '@rexxars/gitconfiglocal@3.0.1':
+    resolution: {integrity: sha512-+/fA3IOwEw4IWjON1FVumvemdEBsAosk1aoy+2Y6l2FqDuxOSGSxjgehLuydfNXG62s0p/z9hzvv2pv7TL3UWQ==}
+    engines: {node: '>=12.0.0'}
 
   '@rexxars/react-json-inspector@9.0.1':
     resolution: {integrity: sha512-4uZ4RnrVoOGOShIKKcPoF+qhwDCZJsPPqyoEoW/8HRdzNknN9Q2yhlbEgTX1lMZunF1fv7iHzAs+n1vgIgfg/g==}
@@ -11185,6 +11186,10 @@ snapshots:
   '@portabletext/types@4.0.1': {}
 
   '@publint/pack@0.1.2': {}
+
+  '@rexxars/gitconfiglocal@3.0.1':
+    dependencies:
+      ini: 1.3.8
 
   '@rexxars/react-json-inspector@9.0.1(react@19.2.3)':
     dependencies:
