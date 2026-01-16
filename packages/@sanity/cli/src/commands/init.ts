@@ -411,7 +411,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // add more frameworks to this as we add support for them
     // this is used to skip the getProjectInfo prompt
     const initFramework = initNext
-    let appendEnvVarsNextjs = this.flags['nextjs-append-env']
+    let appendEnvVarsNextjs = this.flagOrDefault('nextjs-append-env', true)
     if (isNextJs && this.promptForUndefinedFlag(this.flags['nextjs-append-env'])) {
       appendEnvVarsNextjs = await promptForAppendEnv(envFilename)
     }
