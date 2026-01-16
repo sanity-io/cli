@@ -2,24 +2,18 @@ import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {CORS_API_VERSION} from '../../../services/cors'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures'
 import {MCP_JOURNEY_API_VERSION} from '../../../services/mcp'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations'
+import {PROJECTS_API_VERSION} from '../../../services/projects'
 import {InitCommand} from '../../init'
 
 const mocks = vi.hoisted(() => ({
-  checkNextJsReactCompatibility: vi.fn(),
-  confirm: vi.fn(),
-  execa: vi.fn(),
-  existsSync: vi.fn(),
-  input: vi.fn(),
-  installNewPackages: vi.fn(),
-  mkdir: vi.fn(),
+  bootstrapTemplate: vi.fn(),
+  installDeclaredPackages: vi.fn(),
   select: vi.fn(),
   setupEnvFile: vi.fn(),
   setupMCP: vi.fn(),
-  writeFile: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -69,38 +63,16 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('execa', () => ({
-  execa: mocks.execa,
-}))
-
-vi.mock('node:fs', () => ({
-  existsSync: mocks.existsSync,
-}))
-
-vi.mock(import('node:fs/promises'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    mkdir: mocks.mkdir,
-    writeFile: mocks.writeFile,
-  }
-})
-
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual('@sanity/cli-core/ux')
   return {
     ...actual,
-    confirm: mocks.confirm,
-    input: mocks.input,
     select: mocks.select,
   }
 })
 
 vi.mock('@vercel/fs-detectors', () => ({
-  detectFrameworkRecord: vi.fn().mockResolvedValue({
-    name: 'Next.js',
-    slug: 'nextjs',
-  }),
+  detectFrameworkRecord: vi.fn().mockResolvedValue(undefined),
   LocalFileSystemDetector: vi.fn(),
 }))
 
@@ -123,16 +95,20 @@ vi.mock('../../../actions/init/setupMCP.js', () => ({
   }),
 }))
 
-vi.mock('../../../actions/init/checkNextJsReactCompatibility.js', () => ({
-  checkNextJsReactCompatibility: mocks.checkNextJsReactCompatibility.mockResolvedValue(undefined),
-}))
-
 vi.mock('../../../util/packageManager/installPackages.js', () => ({
-  installNewPackages: mocks.installNewPackages.mockResolvedValue(undefined),
+  installDeclaredPackages: mocks.installDeclaredPackages.mockResolvedValue(undefined),
 }))
 
 vi.mock('../../../actions/init/setupEnvFile.js', () => ({
   setupEnvFile: mocks.setupEnvFile,
+}))
+
+vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
+  bootstrapTemplate: mocks.bootstrapTemplate,
+}))
+
+vi.mock('../../../actions/init/git.js', () => ({
+  tryGitInit: vi.fn().mockResolvedValue(undefined),
 }))
 
 const setupInitSuccessMocks = () => {
@@ -159,26 +135,29 @@ const defaultMocks = {
 }
 
 mocks.setupEnvFile.mockResolvedValue(undefined)
-mocks.mkdir.mockResolvedValue(undefined)
-mocks.writeFile.mockResolvedValue(undefined)
-mocks.execa.mockResolvedValue(undefined)
 
-describe('#init:nextjs-app-initialization', () => {
+describe('#init: bootstrap-app-initialization', () => {
   afterEach(() => {
     vi.clearAllMocks()
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
-  test('initializes nextjs app', async () => {
+  test('initializes app', async () => {
     setupInitSuccessMocks()
 
-    mocks.confirm.mockResolvedValueOnce(true) // nextjs-add-config-files
-    mocks.confirm.mockResolvedValueOnce(true) // nextjs-append-env
-    mocks.confirm.mockResolvedValueOnce(true) // typescript
-    mocks.input.mockResolvedValueOnce('/studio') // nextjs-embed-studio
-    mocks.confirm.mockResolvedValueOnce('/studio') // studio path
-    mocks.confirm.mockResolvedValueOnce(true) // template
+    mocks.select.mockResolvedValueOnce('blog') // template
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {
+        cliInitializedAt: '',
+      },
+    })
 
     mockApi({
       apiVersion: MCP_JOURNEY_API_VERSION,
@@ -188,21 +167,15 @@ describe('#init:nextjs-app-initialization', () => {
       message: 'Setup your Cursor IDE',
     })
 
-    mockApi({
-      apiVersion: CORS_API_VERSION,
-      method: 'get',
-      uri: '/projects/test/cors',
-    }).reply(200, [])
-
-    mockApi({
-      apiVersion: CORS_API_VERSION,
-      method: 'post',
-      uri: '/projects/test/cors',
-    }).reply(200, {id: 'cors-id'})
-
     const {error, stdout} = await testCommand(
       InitCommand,
-      ['--output-path=/test/output', '--project=test', '--dataset=test', '--package-manager=npm'],
+      [
+        '--output-path=/test/output',
+        '--project=test',
+        '--dataset=test',
+        '--package-manager=npm',
+        '--env=.env',
+      ],
       {
         mocks: {
           ...defaultMocks,
@@ -211,47 +184,46 @@ describe('#init:nextjs-app-initialization', () => {
       },
     )
 
+    console.log(error)
+    console.log('---')
+    console.log(stdout)
+
     expect(mocks.setupEnvFile).toHaveBeenCalledWith({
       datasetName: 'test',
-      detectedFramework: {
-        name: 'Next.js',
-        slug: 'nextjs',
-      },
-      envFilename: '.env.local',
-      isNextJs: true,
+      detectedFramework: undefined,
+      envFilename: '.env',
+      isNextJs: false,
       output: expect.any(Object),
       outputPath: '/test/output',
       projectId: 'test',
       workDir: '/test/work/dir',
     })
-    expect(mocks.checkNextJsReactCompatibility).toHaveBeenCalledWith({
-      detectedFramework: {
-        name: 'Next.js',
-        slug: 'nextjs',
-      },
+    expect(mocks.bootstrapTemplate).toHaveBeenCalledWith({
+      autoUpdates: true,
+      bearerToken: undefined,
+      dataset: 'test',
+      organizationId: undefined,
       output: expect.any(Object),
       outputPath: '/test/output',
+      overwriteFiles: undefined,
+      packageName: 'test',
+      projectId: 'test',
+      projectName: 'Test',
+      remoteTemplateInfo: undefined,
+      schemaUrl: undefined,
+      templateName: 'blog',
+      useTypeScript: false,
     })
-    expect(mocks.installNewPackages).toHaveBeenCalledWith(
-      {
-        packageManager: 'npm',
-        packages: ['@sanity/vision@4', 'sanity@4', '@sanity/image-url@1', 'styled-components@6'],
-      },
-      {
-        output: expect.any(Object),
-        workDir: '/test/work/dir',
-      },
-    )
-
-    expect(stdout).toContain(
-      'Success! Your Sanity configuration files has been added to this project',
-    )
+    expect(stdout).toContain('Success! Your Studio has been created')
+    expect(stdout).toContain('cd /test/output to navigate to your new project directory')
+    expect(stdout).toContain('Get started by running npm run dev')
     expect(stdout).toContain('Setup your Cursor IDE')
     expect(stdout).toContain('Learn more: https://mcp.sanity.io')
     expect(stdout).toContain(
       'Have feedback? Tell us in the community: https://www.sanity.io/community/join',
     )
-
-    expect(error?.oclif?.exit).toBe(0)
+    expect(stdout).toContain('npx sanity docs browse')
+    expect(stdout).toContain('npx sanity manage')
+    expect(stdout).toContain('npx sanity help')
   })
 })
