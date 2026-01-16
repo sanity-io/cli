@@ -60,6 +60,7 @@ minimumReleaseAgeExclude:
   - '@portabletext/*'
   - '@sanity/*'
   - 'groq-js'
+  - 'groq'
   - 'react-rx'
   - 'sanity'
   - 'use-effect-event'
