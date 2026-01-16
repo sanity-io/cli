@@ -1,6 +1,6 @@
 // @Todo will remove by time migration of this command is complete
 import {existsSync} from 'node:fs'
-import fs from 'node:fs/promises'
+import {mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
 import {Args, Command, Flags} from '@oclif/core'
@@ -412,7 +412,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // this is used to skip the getProjectInfo prompt
     const initFramework = initNext
     let appendEnvVarsNextjs = this.flags['nextjs-append-env']
-    if (this.promptForUndefinedFlag(this.flags['nextjs-append-env'])) {
+    if (isNextJs && this.promptForUndefinedFlag(this.flags['nextjs-append-env'])) {
       appendEnvVarsNextjs = await promptForAppendEnv(envFilename)
     }
 
@@ -1132,7 +1132,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         hasSrcFolder = true
         if (!existsSync(srcPath)) {
           try {
-            await fs.mkdir(srcPath, {recursive: true})
+            await mkdir(srcPath, {recursive: true})
           } catch {
             debug('Error creating folder %s', srcPath)
           }
@@ -1534,12 +1534,12 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     const folderPath = path.dirname(filePath)
 
     try {
-      await fs.mkdir(folderPath, {recursive: true})
+      await mkdir(folderPath, {recursive: true})
     } catch {
       debug('Error creating folder %s', folderPath)
     }
 
-    await fs.writeFile(filePath, content, {
+    await writeFile(filePath, content, {
       encoding: 'utf8',
     })
   }
@@ -1573,7 +1573,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
           workDir,
         )
       } else {
-        await fs.mkdir(path.join(workDir, srcFolderPrefix ? 'src' : '', 'sanity', filePath), {
+        await mkdir(path.join(workDir, srcFolderPrefix ? 'src' : '', 'sanity', filePath), {
           recursive: true,
         })
         if (typeof content === 'object') {
