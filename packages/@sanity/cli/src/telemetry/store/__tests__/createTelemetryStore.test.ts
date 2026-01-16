@@ -6,6 +6,7 @@ import {getCliToken} from '@sanity/cli-core'
 import {type TelemetryEvent} from '@sanity/telemetry'
 import {glob} from 'tinyglobby'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {waitForAsync} from '~test/helpers/waitForAsync.js'
 
 import {readNDJSON} from '../../utils/readNDJSON.js'
 import {createTelemetryStore} from '../createTelemetryStore.js'
@@ -15,8 +16,6 @@ vi.mock('@sanity/cli-core', async () => ({
   ...(await vi.importActual('@sanity/cli-core')),
   getCliToken: vi.fn(),
 }))
-
-const waitForAsync = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 const mockGetCliToken = vi.mocked(getCliToken)
 const mockHomedir = vi.mocked(homedir)

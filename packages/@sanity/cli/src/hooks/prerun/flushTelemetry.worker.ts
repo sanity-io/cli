@@ -1,25 +1,8 @@
 #!/usr/bin/env node
 
-import {getGlobalCliClient} from '@sanity/cli-core'
-import {type TelemetryEvent} from '@sanity/telemetry'
-
 import {resolveConsent} from '../../actions/telemetry/resolveConsent.js'
+import {sendEvents} from '../../services/telemetry.js'
 import {flushTelemetryFiles} from '../../telemetry/store/flushTelemetryFiles.js'
-
-async function sendEvents(batch: TelemetryEvent[]) {
-  const client = await getGlobalCliClient({
-    apiVersion: '2023-12-18',
-    requireUser: true,
-  })
-
-  const projectId = process.env.SANITY_TELEMETRY_PROJECT_ID
-  return client.request({
-    body: {batch, projectId},
-    json: true,
-    method: 'POST',
-    uri: '/intake/batch',
-  })
-}
 
 export async function runFlushWorker() {
   await flushTelemetryFiles({resolveConsent, sendEvents})
