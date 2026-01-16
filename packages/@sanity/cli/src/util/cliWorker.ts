@@ -25,7 +25,7 @@ export async function getCliWorkerPath(workerPath: string): Promise<string> {
     throw new Error('Failed to find root @sanity/cli module directory')
   }
 
-  const resolvedPath = path.resolve(cliDir, 'lib', 'workers', workerPath)
+  const resolvedPath = path.resolve(cliDir, 'dist', 'workers', workerPath)
   try {
     return require.resolve(resolvedPath)
   } catch {

@@ -8,14 +8,14 @@ const DEFAULT_MESSAGE =
 /**
  * Applies cyan formatting to text wrapped in **markers**.
  */
-export function applyCyanFormatting(text: string): string {
+function applyCyanFormatting(text: string): string {
   return text.replaceAll(/\*\*([^*]+)\*\*/g, (_, content) => chalk.cyan(content))
 }
 
 /**
  * Interpolates the editor names into the template.
  */
-export function interpolateTemplate(template: string, editorNames: string): string {
+function interpolateTemplate(template: string, editorNames: string): string {
   return template.replaceAll('{{editorNames}}', editorNames)
 }
 

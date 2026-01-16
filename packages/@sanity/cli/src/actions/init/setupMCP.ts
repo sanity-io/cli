@@ -11,7 +11,7 @@ const debug = subdebug('init:setupMCP')
 
 const MCP_SERVER_URL = 'https://mcp.sanity.io'
 
-export const NO_EDITORS_DETECTED_MESSAGE = `Couldn't auto-configure Sanity MCP server for your editor. Visit ${MCP_SERVER_URL} for setup instructions.`
+const NO_EDITORS_DETECTED_MESSAGE = `Couldn't auto-configure Sanity MCP server for your editor. Visit ${MCP_SERVER_URL} for setup instructions.`
 
 export type EditorName = 'Claude Code' | 'Cursor' | 'VS Code'
 
@@ -45,7 +45,7 @@ export interface MCPSetupResult {
 /**
  * Detect which editors are installed on the user's machine
  */
-export async function detectAvailableEditors(): Promise<Editor[]> {
+async function detectAvailableEditors(): Promise<Editor[]> {
   const editors: Editor[] = []
   const homeDir = os.homedir()
 

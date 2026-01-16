@@ -196,7 +196,7 @@ function serialize(obj: object) {
  * @param root - Whether the schemaType is the root object
  * @returns The serialized schema type as a string
  */
-export function wrapSchemaTypeInHelpers(schemaType: SchemaObject, root: boolean = true): string {
+function wrapSchemaTypeInHelpers(schemaType: SchemaObject, root: boolean = true): string {
   if (root) {
     return generateSchemaDefinition(schemaType, 'defineType')
   } else if (schemaType.type === 'array') {

@@ -392,7 +392,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       return
     }
 
-    let initNext = this.flags['nextjs-add-config-files']
+    let initNext = this.flagOrDefault('nextjs-add-config-files', false)
     if (isNextJs && this.promptForUndefinedFlag(this.flags['nextjs-add-config-files'])) {
       initNext = await promptForConfigFiles()
     }
@@ -757,6 +757,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     return {user}
   }
 
+  private flagOrDefault(flag: keyof typeof this.flags, defaultValue: boolean): boolean {
+    return typeof this.flags[flag] === 'boolean' ? this.flags[flag] : defaultValue
+  }
+
   private async getOrCreateDataset(opts: {
     displayName: string
     projectId: string
@@ -1108,7 +1112,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     projectId: string
     workDir: string
   }) {
-    let useTypeScript = this.flags.typescript
+    let useTypeScript = this.flagOrDefault('typescript', true)
     if (this.promptForUndefinedFlag(this.flags.typescript)) {
       useTypeScript = await promptForTypeScript()
     }
@@ -1116,7 +1120,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
 
     const fileExtension = useTypeScript ? 'ts' : 'js'
-    let embeddedStudio = this.flags['nextjs-embed-studio']
+    let embeddedStudio = this.flagOrDefault('nextjs-embed-studio', true)
     if (this.promptForUndefinedFlag(this.flags['nextjs-embed-studio'])) {
       embeddedStudio = await promptForEmbeddedStudio()
     }
@@ -1173,7 +1177,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     const sanityCliPath = path.join(workDir, `sanity.cli.${fileExtension}`)
     await this.writeOrOverwrite(sanityCliPath, sanityCliTemplate, workDir)
 
-    let templateToUse = this.flags.template
+    let templateToUse = this.flags.template ?? 'clean'
     if (this.promptForUndefinedFlag(this.flags.template)) {
       templateToUse = await promptForNextTemplate()
     }
@@ -1515,7 +1519,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
   private async writeOrOverwrite(filePath: string, content: string, workDir: string) {
     if (existsSync(filePath)) {
-      let overwrite = this.flags['overwrite-files']
+      let overwrite = this.flagOrDefault('overwrite-files', false)
       if (this.promptForUndefinedFlag(this.flags['overwrite-files'])) {
         overwrite = await confirm({
           default: false,
