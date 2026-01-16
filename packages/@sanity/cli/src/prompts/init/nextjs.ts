@@ -53,3 +53,11 @@ export function promptForAppendEnv(envFilename: string): Promise<boolean> {
     message: `Would you like to add the project ID and dataset to your ${envFilename} file?`,
   })
 }
+
+export function promptForConfigFiles() {
+  return confirm({
+    default: true,
+    message:
+      'Would you like to add configuration files for a Sanity project in this Next.js folder?',
+  })
+}

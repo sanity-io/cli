@@ -147,10 +147,6 @@ async function createMCPToken(): Promise<string> {
     throw new Error('Not authenticated. Please run `sanity login` first.')
   }
 
-  // const client = apiClient({requireUser: true, requireProject: false})
-  //   .clone()
-  //   .config({apiVersion: '2025-12-09'})
-
   const client = await getGlobalCliClient({
     apiVersion: '2025-12-09',
   })

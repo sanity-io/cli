@@ -1,5 +1,4 @@
 // @Todo will remove by time migration of this command is complete
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import {existsSync} from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -42,7 +41,14 @@ import {
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'
-import {promptForStudioPath} from '../prompts/init/nextjs.js'
+import {
+  promptForAppendEnv,
+  promptForConfigFiles,
+  promptForEmbeddedStudio,
+  promptForNextTemplate,
+  promptForStudioPath,
+} from '../prompts/init/nextjs.js'
+import {promptForTypeScript} from '../prompts/init/promptForTypescript.js'
 import {promptForDatasetName} from '../prompts/promptForDatasetName.js'
 import {createCorsOrigin, listCorsOrigins} from '../services/cors.js'
 import {createDataset as createDatasetService, listDatasets} from '../services/datasets.js'
@@ -251,7 +257,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   }
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(InitCommand)
+    const {args} = await this.parse(InitCommand)
     const workDir = (await this.getProjectRoot()).directory
 
     const createProjectName = this.flags['create-project']
@@ -303,8 +309,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     const isNextJs = detectedFramework?.slug === 'nextjs'
 
     let remoteTemplateInfo: RepoInfo | undefined
-    if (flags.template && checkIsRemoteTemplate(flags.template)) {
-      remoteTemplateInfo = await getGitHubRepoInfo(flags.template, flags['template-token'])
+    if (this.flags.template && checkIsRemoteTemplate(this.flags.template)) {
+      remoteTemplateInfo = await getGitHubRepoInfo(
+        this.flags.template,
+        this.flags['template-token'],
+      )
     }
 
     if (detectedFramework && detectedFramework.slug !== 'sanity' && remoteTemplateInfo) {
@@ -347,7 +356,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     if (detectedFramework && detectedFramework.slug === 'nextjs') {
       envFilenameDefault = '.env.local'
     }
-    const envFilename = typeof flags.env === 'string' ? flags.env : envFilenameDefault
+    const envFilename = typeof this.flags.env === 'string' ? this.flags.env : envFilenameDefault
 
     // If the user isn't already autenticated, make it so
     const {user} = await this.ensureAuthenticated()
@@ -358,8 +367,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       this.log('')
     }
 
-    const _newProjectId =
-      createProjectName && (await this.createProjectFromName({createProjectName, planId, user}))
+    if (createProjectName) {
+      await this.createProjectFromName({createProjectName, planId, user})
+    }
 
     const {datasetName, displayName, isFirstProject, organizationId, projectId, schemaUrl} =
       await this.getProjectDetails({
@@ -381,7 +391,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       return
     }
 
-    const initNext = this.flags['nextjs-add-config-files']
+    let initNext = this.flags['nextjs-add-config-files']
+    if (isNextJs && this.promptForUndefinedFlag(this.flags['nextjs-add-config-files'])) {
+      initNext = await promptForConfigFiles()
+    }
 
     // @todo
     // trace.log({
@@ -397,6 +410,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // add more frameworks to this as we add support for them
     // this is used to skip the getProjectInfo prompt
     const initFramework = initNext
+    let appendEnvVarsNextjs = this.flags['nextjs-append-env']
+    if (this.promptForUndefinedFlag(this.flags['nextjs-append-env'])) {
+      appendEnvVarsNextjs = await promptForAppendEnv(envFilename)
+    }
 
     // Gather project defaults based on environment
     const defaults = await getProjectDefaults({isPlugin: false, workDir})
@@ -423,7 +440,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     const mcpConfigured = mcpResult.configuredEditors
 
     // user wants to write environment variables to file
-    if (this.flags.env || initNext) {
+    if (this.flags.env || (initNext && appendEnvVarsNextjs)) {
       await setupEnvFile({
         datasetName,
         detectedFramework,
@@ -663,7 +680,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     createProjectName: string
     planId: string | undefined
     user: SanityOrgUser
-  }): Promise<string> {
+  }) {
     debug('--create-project specified, creating a new project')
 
     let orgForCreateProjectFlag = this.flags.organization
@@ -694,7 +711,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       spin.succeed()
     }
 
-    return createdProject.projectId
+    this.flags.project = createdProject.projectId
   }
 
   // @todo do we actually need to be authenticated for init? check flags and determine.
@@ -1090,12 +1107,18 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     projectId: string
     workDir: string
   }) {
-    const useTypeScript = this.flags.typescript
+    let useTypeScript = this.flags.typescript
+    if (this.promptForUndefinedFlag(this.flags.typescript)) {
+      useTypeScript = await promptForTypeScript()
+    }
     // @todo
     // trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
 
     const fileExtension = useTypeScript ? 'ts' : 'js'
-    const embeddedStudio = this.flags['nextjs-embed-studio']
+    let embeddedStudio = this.flags['nextjs-embed-studio']
+    if (this.promptForUndefinedFlag(this.flags['nextjs-embed-studio'])) {
+      embeddedStudio = await promptForEmbeddedStudio()
+    }
     let hasSrcFolder = false
 
     if (embeddedStudio) {
@@ -1149,7 +1172,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     const sanityCliPath = path.join(workDir, `sanity.cli.${fileExtension}`)
     await this.writeOrOverwrite(sanityCliPath, sanityCliTemplate, workDir)
 
-    const templateToUse = this.flags.template
+    let templateToUse = this.flags.template
+    if (this.promptForUndefinedFlag(this.flags.template)) {
+      templateToUse = await promptForNextTemplate()
+    }
 
     await this.writeSourceFiles({
       fileExtension,
@@ -1340,6 +1366,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     })
   }
 
+  private promptForUndefinedFlag(flag: unknown) {
+    return !this.isUnattended() && flag === undefined
+  }
+
   private async promptUserForNewOrganization(
     user: SanityOrgUser,
   ): Promise<OrganizationCreateResponse> {
@@ -1485,7 +1515,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   private async writeOrOverwrite(filePath: string, content: string, workDir: string) {
     if (existsSync(filePath)) {
       let overwrite = this.flags['overwrite-files']
-      if (overwrite === undefined && !this.isUnattended()) {
+      if (this.promptForUndefinedFlag(this.flags['overwrite-files'])) {
         overwrite = await confirm({
           default: false,
           message: `File ${chalk.yellow(
