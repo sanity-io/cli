@@ -1,6 +1,6 @@
 import traverse from '@babel/traverse'
 import {parse, print} from 'recast'
-import * as parser from 'recast/parsers/typescript'
+import * as parser from 'recast/parsers/typescript.js'
 
 interface TemplateOptions<T> {
   template: string

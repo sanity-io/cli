@@ -1,4 +1,4 @@
-import {processTemplate} from './processTemplate'
+import {processTemplate} from './processTemplate.js'
 
 const defaultAppTemplate = `
 import {defineCliConfig} from 'sanity/cli'
@@ -12,8 +12,9 @@ export default defineCliConfig({
 `
 
 export interface GenerateCliConfigOptions {
-  organizationId?: string
   entry: string
+
+  organizationId?: string
 }
 
 export function createAppCliConfig(options: GenerateCliConfigOptions): string {

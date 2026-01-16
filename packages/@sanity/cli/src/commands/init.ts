@@ -9,35 +9,42 @@ import {CLIError} from '@oclif/core/errors'
 import {getCliToken, SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
 import {chalk, confirm, input, logSymbols, select, Separator, spinner} from '@sanity/cli-core/ux'
 import {type DatasetAclMode, isHttpError} from '@sanity/client'
+import {DatasetImportCommand} from '@sanity/import'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
+import {execa, type Options} from 'execa'
 import {deburr} from 'lodash-es'
 
 import {getProviderName} from '../actions/auth/getProviderName.js'
 import {login} from '../actions/auth/login/login.js'
 import {createDataset} from '../actions/dataset/create.js'
+import {bootstrapTemplate} from '../actions/init/bootstrapTemplate.js'
 import {checkNextJsReactCompatibility} from '../actions/init/checkNextJsReactCompatibility.js'
 import {countNestedFolders} from '../actions/init/countNestedFolders.js'
 import {determineAppTemplate} from '../actions/init/determineAppTemplate.js'
-import {createOrAppendEnvVars} from '../actions/init/env/createOrAppendEnvVars.js'
+import {fetchPostInitPrompt} from '../actions/init/fetchPostInitPrompt.js'
+import {tryGitInit} from '../actions/init/git.js'
 import {
   checkIsRemoteTemplate,
   getGitHubRepoInfo,
   type RepoInfo,
 } from '../actions/init/remoteTemplate.js'
-import {setupMCP} from '../actions/init/setupMCP.js'
+import {resolvePackageManager} from '../actions/init/resolvePackageManager.js'
+import {setupEnvFile} from '../actions/init/setupEnvFile.js'
+import {EditorName, setupMCP} from '../actions/init/setupMCP.js'
+import templates from '../actions/init/templates/index.js'
 import {
   sanityCliTemplate,
   sanityConfigTemplate,
   sanityFolder,
   sanityStudioTemplate,
 } from '../actions/init/templates/nextjs/index.js'
-import {VersionedFramework} from '../actions/init/types.js'
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'
 import {promptForStudioPath} from '../prompts/init/nextjs.js'
 import {promptForDatasetName} from '../prompts/promptForDatasetName.js'
+import {createCorsOrigin, listCorsOrigins} from '../services/cors.js'
 import {createDataset as createDatasetService, listDatasets} from '../services/datasets.js'
 import {getProjectFeatures} from '../services/getProjectFeatures.js'
 import {
@@ -47,10 +54,18 @@ import {
   type ProjectOrganization,
 } from '../services/organizations.js'
 import {getPlanId, getPlanIdFromCoupon} from '../services/plans.js'
-import {createProject, listProjects} from '../services/projects.js'
+import {createProject, listProjects, updateProjectInitializedAt} from '../services/projects.js'
 import {getCliUser} from '../services/user.js'
 import {absolutify, validateEmptyPath} from '../util/fsUtils.js'
 import {getProjectDefaults} from '../util/getProjectDefaults.js'
+import {
+  installDeclaredPackages,
+  installNewPackages,
+} from '../util/packageManager/installPackages.js'
+import {
+  getPartialEnvWithNpmPath,
+  PackageManager,
+} from '../util/packageManager/packageManagerChoice.js'
 
 const debug = subdebug('init')
 
@@ -337,9 +352,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // If the user isn't already autenticated, make it so
     const {user} = await this.ensureAuthenticated()
 
-    // skip project / dataset prompting
-    const template = this.flags.template
-    const isAppTemplate = template ? determineAppTemplate(template) : false // Default to false
+    const isAppTemplate = this.flags.template ? determineAppTemplate(this.flags.template) : false // Default to false
     if (!isAppTemplate) {
       this.log(`${logSymbols.success} Fetching existing projects`)
       this.log('')
@@ -348,12 +361,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     const _newProjectId =
       createProjectName && (await this.createProjectFromName({createProjectName, planId, user}))
 
-    const {datasetName, displayName, projectId} = await this.getProjectDetails({
-      isAppTemplate,
-      planId,
-      showDefaultConfigPrompt,
-      user,
-    })
+    const {datasetName, displayName, isFirstProject, organizationId, projectId, schemaUrl} =
+      await this.getProjectDetails({
+        isAppTemplate,
+        planId,
+        showDefaultConfigPrompt,
+        user,
+      })
 
     // If user doesn't want to output any template code
     if (this.flags.bare) {
@@ -385,7 +399,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     const initFramework = initNext
 
     // Gather project defaults based on environment
-    const _defaults = await getProjectDefaults({isPlugin: false, workDir})
+    const defaults = await getProjectDefaults({isPlugin: false, workDir})
 
     // Prompt the user for required information
     const outputPath = await this.getProjectOutputPath({
@@ -393,6 +407,34 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       sluggedName,
       workDir,
     })
+
+    // Set up MCP integration
+    const mcpResult = await setupMCP({mcp: this.flags.mcp, output: this.output})
+    // @todo
+    // trace.log({
+    //   step: 'mcpSetup',
+    //   detectedEditors: mcpResult.detectedEditors,
+    //   configuredEditors: mcpResult.configuredEditors,
+    //   skipped: mcpResult.skipped,
+    // })
+    // if (mcpResult.error) {
+    //   trace.error(mcpResult.error)
+    // }
+    const mcpConfigured = mcpResult.configuredEditors
+
+    // user wants to write environment variables to file
+    if (this.flags.env || initNext) {
+      await setupEnvFile({
+        datasetName,
+        detectedFramework,
+        envFilename,
+        isNextJs,
+        output: this.output,
+        outputPath,
+        projectId,
+        workDir,
+      })
+    }
 
     if (isNextJs) {
       await checkNextJsReactCompatibility({
@@ -403,17 +445,181 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     if (initNext) {
-      // @todo
-      // trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
       await this.initNextJs({
-        datasetName,
-        detectedFramework,
-        envFilename,
-        outputPath,
+        mcpConfigured,
         projectId,
         workDir,
       })
     }
+
+    // Prompt for template to use
+    const templateName = await this.promptForTemplate()
+    // @todo
+    // trace.log({step: 'selectProjectTemplate', selectedOption: templateName})
+    const template = templates[templateName]
+    if (!remoteTemplateInfo && !template) {
+      this.error(`Template "${templateName}" not found`, {exit: 1})
+    }
+
+    let useTypeScript = this.flags.typescript
+    if (!remoteTemplateInfo && template) {
+      useTypeScript = template.typescriptOnly === true
+      // else if (shouldPromptFor('typescript')) {
+      //   useTypeScript = await promptForTypeScript(prompt)
+      //   trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
+      // }
+    }
+
+    // If the template has a sample dataset, prompt the user whether or not we should import it
+    const shouldImport =
+      !this.isUnattended() &&
+      template?.datasetUrl &&
+      (await this.promptForDatasetImport(template.importPrompt))
+
+    // @todo
+    // trace.log({step: 'importTemplateDataset', selectedOption: shouldImport ? 'yes' : 'no'})
+
+    try {
+      await updateProjectInitializedAt(projectId)
+    } catch {
+      // Non-critical update
+      debug('Failed to update cliInitializedAt metadata')
+    }
+
+    try {
+      await bootstrapTemplate({
+        autoUpdates: this.flags['auto-updates'],
+        bearerToken: this.flags['template-token'],
+        dataset: datasetName,
+        organizationId,
+        output: this.output,
+        outputPath,
+        overwriteFiles: this.flags['overwrite-files'],
+        packageName: sluggedName,
+        projectId,
+        projectName: displayName || defaults.projectName,
+        remoteTemplateInfo,
+        schemaUrl,
+        templateName,
+        useTypeScript,
+      })
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error
+      }
+      throw new Error(String(error))
+    }
+
+    const pkgManager = await resolvePackageManager({
+      interactive: !this.isUnattended(),
+      output: this.output,
+      packageManager: this.flags['package-manager'] as PackageManager,
+      targetDir: outputPath,
+    })
+
+    // @todo
+    // trace.log({selectedOption: pkgManager, step: 'selectPackageManager', })
+
+    // Now for the slow part... installing dependencies
+    await installDeclaredPackages(outputPath, pkgManager, {output: this.output, workDir})
+
+    const useGit = this.flags.git === undefined || Boolean(this.flags.git)
+    const commitMessage = this.flags.git
+    // Try initializing a git repository
+    if (useGit) {
+      tryGitInit(outputPath, typeof commitMessage === 'string' ? commitMessage : undefined)
+    }
+
+    // Prompt for dataset import (if a dataset is defined)
+    if (shouldImport && template?.datasetUrl) {
+      const token = await getCliToken()
+      if (!token) {
+        this.error('Authentication required to import dataset', {exit: 1})
+      }
+      await DatasetImportCommand.run(
+        [template.datasetUrl, '--project', projectId, '--dataset', datasetName, '--token', token],
+        {
+          root: outputPath,
+        },
+      )
+
+      this.log('')
+      this.log('If you want to delete the imported data, use')
+      this.log(`  ${chalk.cyan(`npx sanity dataset delete ${datasetName}`)}`)
+      this.log('and create a new clean dataset with')
+      this.log(`  ${chalk.cyan(`npx sanity dataset create <name>`)}\n`)
+    }
+
+    const devCommandMap: Record<PackageManager, string> = {
+      bun: 'bun dev',
+      manual: 'npm run dev',
+      npm: 'npm run dev',
+      pnpm: 'pnpm dev',
+      yarn: 'yarn dev',
+    }
+    const devCommand = devCommandMap[pkgManager]
+
+    const isCurrentDir = outputPath === process.cwd()
+    const goToProjectDir = `\n(${chalk.cyan(`cd ${outputPath}`)} to navigate to your new project directory)`
+
+    if (isAppTemplate) {
+      //output for custom apps here
+      this.log(
+        `${logSymbols.success} ${chalk.green.bold('Success!')} Your custom app has been scaffolded.`,
+      )
+      if (!isCurrentDir) this.log(goToProjectDir)
+      this.log(
+        `\n${chalk.bold('Next')}, configure the project(s) and dataset(s) your app should work with.`,
+      )
+      this.log('\nGet started in `src/App.tsx`, or refer to our documentation for a walkthrough:')
+      this.log(chalk.blue.underline('https://www.sanity.io/docs/app-sdk/sdk-configuration'))
+      if (mcpConfigured && mcpConfigured.length > 0) {
+        const message = await this.getPostInitMCPPrompt(mcpConfigured)
+        this.log(`\n${message}`)
+        this.log(`\nLearn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+        this.log(
+          `\nHave feedback? Tell us in the community: ${chalk.cyan('https://www.sanity.io/community/join')}`,
+        )
+      }
+      this.log('\n')
+      this.log(`Other helpful commands:`)
+      this.log(`npx sanity docs browse     to open the documentation in a browser`)
+      this.log(`npx sanity dev             to start the development server for your app`)
+      this.log(`npx sanity deploy          to deploy your app`)
+    } else {
+      //output for Studios here
+      this.log(`✅ ${chalk.green.bold('Success!')} Your Studio has been created.`)
+      if (!isCurrentDir) this.log(goToProjectDir)
+      this.log(
+        `\nGet started by running ${chalk.cyan(devCommand)} to launch your Studio's development server`,
+      )
+      if (mcpConfigured && mcpConfigured.length > 0) {
+        const message = await this.getPostInitMCPPrompt(mcpConfigured)
+        this.log(`\n${message}`)
+        this.log(`\nLearn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+        this.log(
+          `\nHave feedback? Tell us in the community: ${chalk.cyan('https://www.sanity.io/community/join')}`,
+        )
+      }
+      this.log('\n')
+      this.log(`Other helpful commands:`)
+      this.log(`npx sanity docs browse     to open the documentation in a browser`)
+      this.log(`npx sanity manage          to open the project settings in a browser`)
+      this.log(`npx sanity help            to explore the CLI manual`)
+    }
+
+    if (isFirstProject) {
+      // @todo
+      // trace.log({step: 'sendCommunityInvite', selectedOption: 'yes'})
+
+      const DISCORD_INVITE_LINK = 'https://www.sanity.io/community/join'
+
+      this.log(`\nJoin the Sanity community: ${chalk.cyan(DISCORD_INVITE_LINK)}`)
+      this.log('We look forward to seeing you there!\n')
+    }
+
+    // @todo
+    // trace.complete()
   }
 
   private checkFlagsInUnattendedMode({
@@ -782,6 +988,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
   }
 
+  private async getPostInitMCPPrompt(editorsNames: EditorName[]): Promise<string> {
+    return fetchPostInitPrompt(new Intl.ListFormat('en').format(editorsNames))
+  }
+
   private async getProjectDetails({
     isAppTemplate,
     planId,
@@ -872,17 +1082,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   }
 
   private async initNextJs({
-    datasetName,
-    detectedFramework,
-    envFilename,
-    outputPath,
+    mcpConfigured,
     projectId,
     workDir,
   }: {
-    datasetName: string
-    detectedFramework: VersionedFramework | null
-    envFilename: string
-    outputPath: string
+    mcpConfigured: EditorName[]
     projectId: string
     workDir: string
   }) {
@@ -955,121 +1159,101 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       workDir,
     })
 
-    const appendEnv = this.flags['nextjs-append-env']
-
-    if (appendEnv) {
-      // we will prepend SANITY_ to these variables later, together with the prefix
-      const envVars = {
-        DATASET: datasetName,
-        PROJECT_ID: projectId,
-      }
-
-      // await createOrAppendEnvVars(envFilename, detectedFramework, {log: true, targetDir: workDir})
-      await createOrAppendEnvVars({
-        envVars,
-        filename: envFilename,
-        framework: detectedFramework,
-        log: true,
-        output: this.output,
-        outputPath: workDir || outputPath,
-      })
-    }
-
     if (embeddedStudio) {
-      const client = await this.getProjectApiClient({
-        apiVersion: 'v2025-08-14',
-        projectId,
-        requireUser: true,
-      })
       const nextjsLocalDevOrigin = 'http://localhost:3000'
-      const existingCorsOrigins = await client.request({
-        method: 'GET',
-        uri: '/cors',
-      })
+      const existingCorsOrigins = await listCorsOrigins(projectId)
       const hasExistingCorsOrigin = existingCorsOrigins.some(
         (item: {origin: string}) => item.origin === nextjsLocalDevOrigin,
       )
       if (!hasExistingCorsOrigin) {
-        await client
-          .request({
-            body: {allowCredentials: true, origin: nextjsLocalDevOrigin},
-            maxRedirects: 0,
-            method: 'POST',
-            url: '/cors',
+        try {
+          const createCorsRes = await createCorsOrigin({
+            allowCredentials: true,
+            origin: nextjsLocalDevOrigin,
+            projectId,
           })
-          .then((res) => {
-            this.log(
-              res.id
-                ? `Added ${nextjsLocalDevOrigin} to CORS origins`
-                : `Failed to add ${nextjsLocalDevOrigin} to CORS origins`,
-            )
-          })
-          .catch((error) => {
-            this.error(`Failed to add ${nextjsLocalDevOrigin} to CORS origins`, error)
-          })
+
+          this.log(
+            createCorsRes.id
+              ? `Added ${nextjsLocalDevOrigin} to CORS origins`
+              : `Failed to add ${nextjsLocalDevOrigin} to CORS origins`,
+          )
+        } catch (error) {
+          this.error(`Failed to add ${nextjsLocalDevOrigin} to CORS origins: ${error}`, {exit: 1})
+        }
       }
     }
 
-    // Set up MCP integration
-    const mcpResult = await setupMCP({mcp: this.flags.mcp, output: this.output})
+    const chosen = await resolvePackageManager({
+      interactive: !this.isUnattended(),
+      output: this.output,
+      packageManager: this.flags['package-manager'] as PackageManager,
+      targetDir: workDir,
+    })
     // @todo
-    // trace.log({
-    //   step: 'mcpSetup',
-    //   detectedEditors: mcpResult.detectedEditors,
-    //   configuredEditors: mcpResult.configuredEditors,
-    //   skipped: mcpResult.skipped,
-    // })
-    // if (mcpResult.error) {
-    //   trace.error(mcpResult.error)
-    // }
-    const _mcpConfigured = mcpResult.configuredEditors
+    // trace.log({step: 'selectPackageManager', selectedOption: chosen})
+    const packages = ['@sanity/vision@4', 'sanity@4', '@sanity/image-url@1', 'styled-components@6']
+    if (templateToUse === 'blog') {
+      packages.push('@sanity/icons')
+    }
+    await installNewPackages(
+      {
+        packageManager: chosen,
+        packages,
+      },
+      {
+        output: this.output,
+        workDir,
+      },
+    )
 
-    // const chosen = await this.resolvePackageManager(workDir)
-    // // @todo
-    // // trace.log({step: 'selectPackageManager', selectedOption: chosen})
-    // const packages = ['@sanity/vision@4', 'sanity@4', '@sanity/image-url@1', 'styled-components@6']
-    // if (templateToUse === 'blog') {
-    //   packages.push('@sanity/icons')
-    // }
-    // await installNewPackages(
-    //   {
-    //     packageManager: chosen,
-    //     packages,
-    //   },
-    //   {
-    //     output: context.output,
-    //     workDir,
-    //   },
-    // )
+    // will refactor this later
+    const execOptions: Options = {
+      cwd: workDir,
+      encoding: 'utf8',
+      env: getPartialEnvWithNpmPath(workDir),
+      stdio: 'inherit',
+    }
 
-    // // will refactor this later
-    // const execOptions: CommonOptions<'utf8'> = {
-    //   encoding: 'utf8',
-    //   env: getPartialEnvWithNpmPath(workDir),
-    //   cwd: workDir,
-    //   stdio: 'inherit',
-    // }
+    switch (chosen) {
+      case 'npm': {
+        await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@11'], execOptions)
+        break
+      }
+      case 'pnpm': {
+        await execa('pnpm', ['install', 'next-sanity@11'], execOptions)
+        break
+      }
+      case 'yarn': {
+        await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@11'], execOptions)
+        break
+      }
+      default: {
+        // bun and manual - do nothing or handle differently
+        break
+      }
+    }
 
-    // if (chosen === 'npm') {
-    //   await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@11'], execOptions)
-    // } else if (chosen === 'yarn') {
-    //   await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@11'], execOptions)
-    // } else if (chosen === 'pnpm') {
-    //   await execa('pnpm', ['install', 'next-sanity@11'], execOptions)
-    // }
+    this.log(
+      `\n${chalk.green('Success!')} Your Sanity configuration files has been added to this project`,
+    )
+    if (mcpConfigured && mcpConfigured.length > 0) {
+      const message = await this.getPostInitMCPPrompt(mcpConfigured)
+      this.log(`\n${message}`)
+      this.log(`\nLearn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+      this.log(
+        `\nHave feedback? Tell us in the community: ${chalk.cyan('https://www.sanity.io/community/join')}`,
+      )
+    }
 
-    // print(
-    //   `\n${chalk.green('Success!')} Your Sanity configuration files has been added to this project`,
-    // )
-    // if (mcpConfigured.length > 0) {
-    //   const editorNames = new Intl.ListFormat('en').format(mcpConfigured)
-    //   print(
-    //     `\nSanity MCP server has been configured for ${editorNames}. You might need to restart your editor for this to take effect.`,
-    //   )
-    //   print(`Learn more: ${chalk.cyan('https://mcp.sanity.io')}`)
-    // }
+    this.exit(0)
+  }
 
-    return
+  private async promptForDatasetImport(message?: string) {
+    return confirm({
+      default: true,
+      message: message || 'This template includes a sample dataset, would you like to use it?',
+    })
   }
 
   private async promptForDefaultConfig(): Promise<boolean> {
@@ -1123,6 +1307,37 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       isFirstProject: isUsersFirstProject,
       userAction: 'create',
     }
+  }
+
+  private async promptForTemplate() {
+    const template = this.flags.template
+
+    const defaultTemplate = this.isUnattended() || template ? template || 'clean' : null
+    if (defaultTemplate) {
+      return defaultTemplate
+    }
+
+    return select({
+      choices: [
+        {
+          name: 'Clean project with no predefined schema types',
+          value: 'clean',
+        },
+        {
+          name: 'Blog (schema)',
+          value: 'blog',
+        },
+        {
+          name: 'E-commerce (Shopify)',
+          value: 'shopify',
+        },
+        {
+          name: 'Movie project (schema + sample data)',
+          value: 'moviedb',
+        },
+      ],
+      message: 'Select project template',
+    })
   }
 
   private async promptUserForNewOrganization(
@@ -1193,36 +1408,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     return chosenOrg || undefined
   }
-
-  // Resolves the package manager to use, respecting CLI flags and falling back to detection
-  // private async resolvePackageManager(targetDir: string): Promise<PackageManager> {
-  //   const packageManager = this.flags['package-manager']
-
-  //   // If the user has specified a package manager, and it's allowed use that
-  //   if (packageManager && ALLOWED_PACKAGE_MANAGERS.includes(packageManager)) {
-  //     return packageManager
-  //   }
-
-  //   // Otherwise, try to find the most optimal package manager to use
-  //   const chosen = (
-  //     await getPackageManagerChoice(targetDir, {
-  //       prompt,
-  //       interactive: unattended ? false : isInteractive,
-  //     })
-  //   ).chosen
-
-  //   // only log warning if a package manager flag is passed
-  //   if (packageManager) {
-  //     this.warn(
-  //       chalk.yellow(
-  //         `Given package manager "${packageManager}" is not supported. Supported package managers are ${allowedPackageManagersString}.`,
-  //       ),
-  //     )
-  //     this.log(`Using ${chosen} as package manager`)
-  //   }
-
-  //   return chosen
-  // }
 
   private async verifyCoupon(intendedCoupon: string): Promise<string | undefined> {
     try {
@@ -1317,9 +1502,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // make folder if not exists
     const folderPath = path.dirname(filePath)
 
-    await fs
-      .mkdir(folderPath, {recursive: true})
-      .catch(() => debug('Error creating folder %s', folderPath))
+    try {
+      await fs.mkdir(folderPath, {recursive: true})
+    } catch {
+      debug('Error creating folder %s', folderPath)
+    }
 
     await fs.writeFile(filePath, content, {
       encoding: 'utf8',

@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import pkgDir from 'pkg-dir'
+import {packageDirectory} from 'package-directory'
 
 /**
  * Because we're bundling the CLI into a single file, the classic approach of
@@ -20,7 +20,7 @@ import pkgDir from 'pkg-dir'
  * @internal
  */
 export async function getCliWorkerPath(workerPath: string): Promise<string> {
-  const cliDir = await pkgDir(__dirname)
+  const cliDir = await packageDirectory({cwd: import.meta.dirname})
   if (!cliDir) {
     throw new Error('Failed to find root @sanity/cli module directory')
   }
@@ -28,7 +28,7 @@ export async function getCliWorkerPath(workerPath: string): Promise<string> {
   const resolvedPath = path.resolve(cliDir, 'lib', 'workers', workerPath)
   try {
     return require.resolve(resolvedPath)
-  } catch (err) {
+  } catch {
     throw new Error(`Unable to resolve path for worker: ${workerPath}`)
   }
 }

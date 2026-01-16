@@ -1,53 +1,55 @@
 import {mkdir} from 'node:fs/promises'
 import {join} from 'node:path'
 
+import {Output, subdebug} from '@sanity/cli-core'
+import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {getMonoRepo, GitHubFileReader, validateTemplate} from '@sanity/template-validator'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 
-import {debug} from '../../debug'
-import {type CliCommandContext} from '../../types'
-import {getDefaultPortForFramework} from '../../util/frameworkPort'
+import {createCorsOrigin} from '../../services/cors.js'
+import {createToken} from '../../services/tokens.js'
+import {getDefaultPortForFramework} from '../../util/frameworkPort.js'
+import {type GenerateConfigOptions} from './createStudioConfig.js'
+import {tryGitInit} from './git.js'
 import {
   applyEnvVariables,
   checkIfNeedsApiToken,
   downloadAndExtractRepo,
-  generateSanityApiToken,
   getGitHubRawContentUrl,
   type RepoInfo,
-  setCorsOrigin,
   tryApplyPackageName,
-} from '../../util/remoteTemplate'
-import {type GenerateConfigOptions} from './createStudioConfig'
-import {tryGitInit} from './git'
-import {updateInitialTemplateMetadata} from './updateInitialTemplateMetadata'
+} from './remoteTemplate.js'
+import {updateInitialTemplateMetadata} from './updateInitialTemplateMetadata.js'
+
+const debug = subdebug('init:bootstrapRemoteTemplate')
 
 export interface BootstrapRemoteOptions {
+  output: Output
   outputPath: string
-  repoInfo: RepoInfo
-  bearerToken?: string
   packageName: string
+  repoInfo: RepoInfo
   variables: GenerateConfigOptions['variables']
+
+  bearerToken?: string
 }
 
 const SANITY_DEFAULT_PORT = 3333
 const READ_TOKEN_LABEL = 'Live Preview API'
 const WRITE_TOKEN_LABEL = 'App Write Token'
 const INITIAL_COMMIT_MESSAGE = 'Initial commit from Sanity CLI'
+const API_READ_TOKEN_ROLE = 'viewer'
+const API_WRITE_TOKEN_ROLE = 'editor'
 
-export async function bootstrapRemoteTemplate(
-  opts: BootstrapRemoteOptions,
-  context: CliCommandContext,
-): Promise<void> {
-  const {outputPath, repoInfo, bearerToken, variables, packageName} = opts
-  const {output, apiClient} = context
+export async function bootstrapRemoteTemplate(opts: BootstrapRemoteOptions): Promise<void> {
+  const {bearerToken, output, outputPath, packageName, repoInfo, variables} = opts
   const name = [repoInfo.username, repoInfo.name, repoInfo.filePath].filter(Boolean).join('/')
   const contentsUrl = getGitHubRawContentUrl(repoInfo)
   const headers: Record<string, string> = {}
   if (bearerToken) {
     headers.Authorization = `Bearer ${bearerToken}`
   }
-  const spinner = output.spinner(`Bootstrapping files from template "${name}"`).start()
+  const spin = spinner(`Bootstrapping files from template "${name}"`).start()
   const corsAdded: number[] = [SANITY_DEFAULT_PORT]
 
   debug('Validating remote template')
@@ -74,23 +76,39 @@ export async function bootstrapRemoteTemplate(
 
   debug('Applying environment variables')
   const readToken = needsReadToken
-    ? await generateSanityApiToken(READ_TOKEN_LABEL, 'read', variables.projectId, apiClient)
+    ? (
+        await createToken({
+          label: READ_TOKEN_LABEL,
+          projectId: variables.projectId,
+          roleName: API_READ_TOKEN_ROLE,
+        })
+      ).key
     : undefined
   const writeToken = needsWriteToken
-    ? await generateSanityApiToken(WRITE_TOKEN_LABEL, 'write', variables.projectId, apiClient)
+    ? (
+        await createToken({
+          label: WRITE_TOKEN_LABEL,
+          projectId: variables.projectId,
+          roleName: API_WRITE_TOKEN_ROLE,
+        })
+      ).key
     : undefined
 
   for (const pkg of packages ?? ['']) {
     const packagePath = join(outputPath, pkg)
     const packageFramework: Framework | null = await detectFrameworkRecord({
-      fs: new LocalFileSystemDetector(packagePath),
       frameworkList: frameworks as readonly Framework[],
+      fs: new LocalFileSystemDetector(packagePath),
     })
 
     const port = getDefaultPortForFramework(packageFramework?.slug)
     if (corsAdded.includes(port)) {
       debug('Setting CORS origin to http://localhost:%d', port)
-      await setCorsOrigin(`http://localhost:${port}`, variables.projectId, apiClient)
+      await createCorsOrigin({
+        allowCredentials: true,
+        origin: `http://localhost:${port}`,
+        projectId: variables.projectId,
+      })
       corsAdded.push(port)
     }
 
@@ -107,12 +125,14 @@ export async function bootstrapRemoteTemplate(
   tryGitInit(outputPath, INITIAL_COMMIT_MESSAGE)
 
   debug('Updating initial template metadata')
-  await updateInitialTemplateMetadata(apiClient, variables.projectId, `external-${name}`)
+  await updateInitialTemplateMetadata(variables.projectId, `external-${name}`)
 
-  spinner.succeed()
-  if (corsAdded.length) {
-    output.success(`CORS origins added (${corsAdded.map((p) => `localhost:${p}`).join(', ')})`)
+  spin.succeed()
+  if (corsAdded.length > 0) {
+    output.log(
+      `${logSymbols.success} CORS origins added (${corsAdded.map((p) => `localhost:${p}`).join(', ')})`,
+    )
   }
-  if (readToken) output.success(`API token generated (${READ_TOKEN_LABEL})`)
-  if (writeToken) output.success(`API token generated (${WRITE_TOKEN_LABEL})`)
+  if (readToken) output.log(`${logSymbols.success} API token generated (${READ_TOKEN_LABEL})`)
+  if (writeToken) output.log(`${logSymbols.success} API token generated (${WRITE_TOKEN_LABEL})`)
 }

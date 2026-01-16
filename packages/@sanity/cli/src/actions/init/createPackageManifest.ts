@@ -1,6 +1,6 @@
 import sortObject from 'deep-sort-object'
 
-import {type PackageJson, type SanityJson} from '../../types'
+import {type PackageJson, type SanityJson} from '../../types.js'
 
 const manifestPropOrder = [
   'name',
@@ -32,9 +32,9 @@ export function createPackageManifest(
     ? {}
     : {
         prettier: {
-          semi: false,
-          printWidth: 100,
           bracketSpacing: false,
+          printWidth: 100,
+          semi: false,
           singleQuote: true,
         },
       }
@@ -42,14 +42,14 @@ export function createPackageManifest(
   const pkg = {
     ...getCommonManifest(data),
 
-    main: 'package.json',
     keywords: ['sanity'],
+    main: 'package.json',
     scripts: data.scripts || {
-      dev: 'sanity dev',
-      start: 'sanity start',
       build: 'sanity build',
       deploy: 'sanity deploy',
       'deploy-graphql': 'sanity graphql deploy',
+      dev: 'sanity dev',
+      start: 'sanity start',
     },
 
     ...dependencies,
@@ -62,12 +62,12 @@ export function createPackageManifest(
 
 function getCommonManifest(data: Omit<PackageJson, 'version'> & {gitRemote?: string}) {
   const pkg: PackageJson = {
+    author: data.author,
+    description: data.description,
+    devDependencies: {},
+    license: data.license || 'UNLICENSED',
     name: data.name,
     version: '1.0.0',
-    description: data.description,
-    author: data.author,
-    license: data.license || 'UNLICENSED',
-    devDependencies: {},
   }
 
   if (pkg.license === 'UNLICENSED') {
@@ -85,18 +85,14 @@ function getCommonManifest(data: Omit<PackageJson, 'version'> & {gitRemote?: str
 }
 
 function serializeManifest(src: PackageJson | SanityJson): string {
-  const props = manifestPropOrder.concat(Object.keys(src))
-  const ordered = props.reduce(
-    (target, prop) => {
-      const source = src as any
-      if (typeof source[prop] !== 'undefined' && typeof target[prop] === 'undefined') {
-        target[prop] = source[prop]
-      }
-
-      return target
-    },
-    {} as Record<string, any>,
-  )
+  const props = [...manifestPropOrder, ...Object.keys(src)]
+  const ordered: Record<string, unknown> = {}
+  for (const prop of props) {
+    const source = src as Record<string, unknown>
+    if (source[prop] !== 'undefined' && ordered[prop] === 'undefined') {
+      ordered[prop] = source[prop]
+    }
+  }
 
   return `${JSON.stringify(ordered, null, 2)}\n`
 }

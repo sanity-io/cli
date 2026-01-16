@@ -1,3 +1,4 @@
+import {CLIError} from '@oclif/core/errors'
 import {Output} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 
@@ -40,6 +41,6 @@ export async function createOrAppendEnvVars({
     })
   } catch (err) {
     output.error(err)
-    throw new Error('An error occurred while creating .env', {cause: err})
+    throw new CLIError('An error occurred while creating .env', {exit: 1})
   }
 }

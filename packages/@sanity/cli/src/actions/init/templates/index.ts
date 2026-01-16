@@ -1,13 +1,13 @@
-import {type ProjectTemplate} from '../types'
-import appTemplate from './appQuickstart'
-import appSanityUiTemplate from './appSanityUi'
-import blog from './blog'
-import clean from './clean'
-import getStartedTemplate from './getStarted'
-import moviedb from './moviedb'
-import quickstart from './quickstart'
-import shopify from './shopify'
-import shopifyOnline from './shopifyOnline'
+import {type ProjectTemplate} from '../types.js'
+import appTemplate from './appQuickstart.js'
+import appSanityUiTemplate from './appSanityUi.js'
+import blog from './blog.js'
+import clean from './clean.js'
+import getStartedTemplate from './getStarted.js'
+import moviedb from './moviedb.js'
+import quickstart from './quickstart.js'
+import shopify from './shopify.js'
+import shopifyOnline from './shopifyOnline.js'
 
 const templates: Record<string, ProjectTemplate | undefined> = {
   'app-quickstart': appTemplate,
