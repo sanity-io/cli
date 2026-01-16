@@ -93,10 +93,7 @@
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "component": "create-sanity",
-      "prerelease": true,
-      "prerelease-type": "alpha",
-      "release-type": "node",
-      "versioning": "prerelease"
+      "release-type": "node"
     }
   },
   "plugins": [
