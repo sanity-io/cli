@@ -19,8 +19,10 @@ export const cliConfigSchema = z.object({
   app: z
     .object({
       entry: z.string().optional(),
+      icon: z.string().optional(),
       id: z.string().optional(),
       organizationId: z.string().optional(),
+      title: z.string().optional(),
     })
     .optional(),
 
