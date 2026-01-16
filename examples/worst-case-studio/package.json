@@ -16,7 +16,6 @@
     "start": "sanity start"
   },
   "dependencies": {
-    "@sanity/cli": "workspace:*",
     "@sanity/code-input": "^7.0.5",
     "@sanity/vision": "catalog:",
     "react": "^19.2.3",
