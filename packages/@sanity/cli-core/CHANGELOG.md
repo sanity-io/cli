@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.0-alpha.6](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.5...cli-core-v0.1.0-alpha.6) (2026-01-16)
+
+
+### Features
+
+* **deploy:** add app manifest ([#274](https://github.com/sanity-io/cli/issues/274)) ([712650d](https://github.com/sanity-io/cli/commit/712650db1add4855dc9c849954e2b51b95b4ff3d))
+
+
+### Bug Fixes
+
+* **core:** add typegen to CLI config type ([#283](https://github.com/sanity-io/cli/issues/283)) ([11be33a](https://github.com/sanity-io/cli/commit/11be33a11fb90160dbdb0fa142275ce75f73f175))
+
 ## [0.1.0-alpha.5](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.4...cli-core-v0.1.0-alpha.5) (2026-01-09)
 
 
