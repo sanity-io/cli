@@ -761,6 +761,9 @@ importers:
       publint:
         specifier: 'catalog:'
         version: 0.3.16
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.17(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(tsx@4.21.0)(yaml@2.8.2)
 
 packages:
 
