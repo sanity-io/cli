@@ -1,1 +1,13 @@
+# Run lint-staged first
 npx lint-staged
+
+# Check if any command files changed
+if git diff --cached --name-only | grep -q "^packages/@sanity/cli/src/commands/"; then
+  echo "Command files changed, regenerating README..."
+  cd packages/@sanity/cli
+  pnpm build
+  pnpm run readme
+  npx prettier --write README.md
+  git add README.md
+  cd ../..
+fi

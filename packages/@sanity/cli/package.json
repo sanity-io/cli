@@ -54,11 +54,11 @@
     "prepack": "pnpm run manifest:generate",
     "postpack": "rimraf oclif.manifest.json",
     "publint": "publint",
+    "readme": "oclif readme --tsconfig-path tsconfig.lib.json",
     "test": "vitest run",
     "posttest": "pnpm run lint",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "version": "oclif readme && git add README.md",
     "prewatch": "pnpm run manifest:remove",
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
