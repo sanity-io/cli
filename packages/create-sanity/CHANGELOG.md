@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.2.1](https://github.com/sanity-io/cli/compare/create-sanity-v5.2.0...create-sanity-v5.2.1) (2026-01-17)
+
+
+### Bug Fixes
+
+* **create-sanity:** fixes cli bin path ([#302](https://github.com/sanity-io/cli/issues/302)) ([c145526](https://github.com/sanity-io/cli/commit/c145526c6f433a1a8882f2009653ef4c56cc0a9a))
+
 ## [5.2.0](https://github.com/sanity-io/cli/compare/create-sanity-v5.1.0...create-sanity-v5.2.0) (2026-01-16)
 
 
