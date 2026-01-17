@@ -19,7 +19,6 @@ function isHttpError(error: unknown): error is {
 }
 
 interface SetConsentOptions {
-  env: NodeJS.ProcessEnv | {[key: string]: string | undefined}
   status: SettableConsentStatus
 }
 
@@ -29,11 +28,11 @@ interface SetConsentResult {
   message: string
 }
 
-export async function setConsent({env, status}: SetConsentOptions): Promise<SetConsentResult> {
+export async function setConsent({status}: SetConsentOptions): Promise<SetConsentResult> {
   telemetryDebug('Setting telemetry consent to "%s"', status)
 
   // Check current consent status first
-  const currentConsent = await resolveConsent({env})
+  const currentConsent = await resolveConsent()
 
   // Handle various blocking conditions
   if (isCi()) {
@@ -44,7 +43,7 @@ export async function setConsent({env, status}: SetConsentOptions): Promise<SetC
     }
   }
 
-  if (isTrueish(env.DO_NOT_TRACK) && status === 'granted') {
+  if (isTrueish(process.env.DO_NOT_TRACK) && status === 'granted') {
     return {
       changed: false,
       currentStatus: currentConsent,
@@ -101,7 +100,7 @@ export async function setConsent({env, status}: SetConsentOptions): Promise<SetC
         ? "You've now enabled telemetry data collection to help us improve Sanity."
         : "You've opted out of telemetry data collection.\nNo data will be collected from your Sanity account."
 
-    const newConsent = await resolveConsent({env})
+    const newConsent = await resolveConsent()
 
     return {
       changed: true,

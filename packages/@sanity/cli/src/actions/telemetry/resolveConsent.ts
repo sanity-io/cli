@@ -9,15 +9,6 @@ import {
 import {telemetryDebug} from './telemetryDebug.js'
 import {type ConsentInformation} from './types.js'
 
-interface Env {
-  DO_NOT_TRACK?: string
-  SANITY_TELEMETRY_INSPECT?: string
-}
-
-interface Options {
-  env: Env | NodeJS.ProcessEnv
-}
-
 function parseApiConsentStatus(value: unknown): ValidApiConsentStatus {
   if (typeof value === 'string' && isValidApiConsentStatus(value)) {
     return value
@@ -25,14 +16,14 @@ function parseApiConsentStatus(value: unknown): ValidApiConsentStatus {
   throw new Error(`Invalid consent status. Must be one of: ${VALID_API_STATUSES.join(', ')}`)
 }
 
-export async function resolveConsent({env}: Options): Promise<ConsentInformation> {
+export async function resolveConsent(): Promise<ConsentInformation> {
   telemetryDebug('Resolving consent…')
   if (isCi()) {
     telemetryDebug('CI environment detected, treating telemetry consent as denied')
     return {status: 'denied'}
   }
 
-  if (isTrueish(env.DO_NOT_TRACK)) {
+  if (isTrueish(process.env.DO_NOT_TRACK)) {
     telemetryDebug('DO_NOT_TRACK is set, consent is denied')
     return {
       reason: 'localOverride',
