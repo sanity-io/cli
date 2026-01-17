@@ -12,8 +12,8 @@ describe('#dataset:import', () => {
         $ sanity dataset import SOURCE -p <value> -d <value> [-t <value>]
           [--replace | --missing] [--allow-failing-assets]
           [--allow-assets-in-different-dataset] [--replace-assets]
-          [--skip-cross-dataset-references] [--allow-system-documents]
-          [--asset-concurrency <value>]
+          [--skip-cross-dataset-references] [--allow-replacement-characters]
+          [--allow-system-documents] [--asset-concurrency <value>]
 
       ARGUMENTS
         SOURCE  Source file (use "-" for stdin)
@@ -27,6 +27,8 @@ describe('#dataset:import', () => {
                                                  different project/dataset
             --allow-failing-assets               Skip assets that cannot be
                                                  fetched/uploaded
+            --allow-replacement-characters       Allow unicode replacement characters
+                                                 in imported documents
             --allow-system-documents             Imports system documents
             --asset-concurrency=<value>          Number of parallel asset imports
             --missing                            Skip documents that already exist
