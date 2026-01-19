@@ -13,14 +13,20 @@ const baseConfig = {
   workspaces: {
     'examples/*': {
       entry: ['sanity.cli.ts', 'sanity.config.ts'],
+      // Binary is overridden by the CLI package
+      ignoreBinaries: ['sanity'],
       project: ['schemaTypes/**/*.{js,jsx,ts,tsx}'],
     },
     'examples/basic-app': {
       entry: ['sanity.cli.ts', './src/App.tsx'],
+      // Binary is overridden by the CLI package
+      ignoreBinaries: ['sanity'],
       project,
     },
     'examples/worst-case-studio': {
       entry: ['sanity.cli.ts', 'sanity.config.tsx', 'src/defines.ts'],
+      // Binary is overridden by the CLI package
+      ignoreBinaries: ['sanity'],
       project,
     },
     'packages/@repo/command-extractor': {
