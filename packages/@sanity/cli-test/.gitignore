@@ -5,6 +5,7 @@
 /dist
 /tmp
 /node_modules
+/examples
 coverage
 
 yarn.lock

@@ -28,17 +28,27 @@
       "require": "./dist/index.js",
       "import": "./dist/index.js"
     },
+    "./vitest": {
+      "source": "./src/vitest.ts",
+      "require": "./dist/vitest.js",
+      "import": "./dist/vitest.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "./dist"
+    "./dist",
+    "./examples"
   ],
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
+    "prebuild": "pnpm run clean",
+    "build": "pnpm run build:js && pnpm run copy:examples",
+    "build:js": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "build:types": "tsc --project tsconfig.lib.json",
     "check:types": "tsc --noEmit",
+    "clean": "rm -rf dist examples",
+    "copy:examples": "node scripts/copy-examples.js",
     "lint": "eslint .",
     "publint": "publint",
     "test": "vitest run",
@@ -48,9 +58,12 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
-    "@oclif/core": "catalog:",
+    "@swc/core": "catalog:",
     "ansis": "^4.2.0",
-    "nock": "catalog:"
+    "esbuild": "^0.27.2",
+    "nock": "catalog:",
+    "ora": "catalog:",
+    "tinyglobby": "^0.2.15"
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
@@ -60,16 +73,18 @@
     "@sanity/client": "^7.14.0",
     "@sanity/eslint-config-cli": "workspace:*",
     "@swc/cli": "catalog:",
-    "@swc/core": "catalog:",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "publint": "catalog:",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "yaml": "^2.8.2"
   },
   "peerDependencies": {
     "@oclif/core": "^4.0.0",
-    "@sanity/cli-core": "workspace:*"
+    "@sanity/cli-core": "workspace:*",
+    "@sanity/client": "^7.0.0",
+    "vitest": ">=3.0.0 <4.0.0"
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"

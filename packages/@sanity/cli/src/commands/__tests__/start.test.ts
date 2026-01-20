@@ -3,9 +3,9 @@ import {createServer} from 'node:http'
 import {join} from 'node:path'
 
 import {runCommand} from '@oclif/test'
-import {testCommand} from '@sanity/cli-test'
+import {testCommand, testExample} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
-import {testExample} from '~test/helpers/testExample.js'
+import {buildExample} from '~test/helpers/buildExample.js'
 
 import {PreviewCommand} from '../preview.js'
 
@@ -46,9 +46,11 @@ describe('#start', () => {
 
   describe('basic-app', () => {
     test('should start the  example', async () => {
-      const cwd = await testExample('basic-app', {shouldBuild: true})
-      // Mock the process.cwd() to the example directory
-      process.cwd = () => cwd
+      const cwd = await testExample('basic-app')
+      // Build the example
+      await buildExample(cwd)
+      // Change to the example directory
+      process.chdir(cwd)
 
       const {error, stdout} = await testCommand(PreviewCommand, ['--port', '3334'], {
         config: {root: cwd},
@@ -61,9 +63,9 @@ describe('#start', () => {
     })
 
     test('should throw an error if the example has not been built', async () => {
-      const cwd = await testExample('basic-app', {shouldBuild: false})
-      // Mock the process.cwd() to the example directory
-      process.cwd = () => cwd
+      const cwd = await testExample('basic-app')
+      // Change to the example directory
+      process.chdir(cwd)
 
       const {error, stdout} = await testCommand(PreviewCommand, [], {
         config: {root: cwd},
@@ -81,9 +83,11 @@ describe('#start', () => {
 
   describe('basic-studio', () => {
     test('should start the example', async () => {
-      const cwd = await testExample('basic-studio', {shouldBuild: true})
-      // Mock the process.cwd() to the example directory
-      process.cwd = () => cwd
+      const cwd = await testExample('basic-studio')
+      // Build the example
+      await buildExample(cwd)
+      // Change to the example directory
+      process.chdir(cwd)
 
       const {error, stdout} = await testCommand(PreviewCommand, [], {
         config: {root: cwd},
@@ -96,9 +100,9 @@ describe('#start', () => {
     })
 
     test('should throw an error if the example has not been built', async () => {
-      const cwd = await testExample('basic-studio', {shouldBuild: false})
-      // Mock the process.cwd() to the example directory
-      process.cwd = () => cwd
+      const cwd = await testExample('basic-studio')
+      // Change to the example directory
+      process.chdir(cwd)
 
       const {error, stdout} = await testCommand(PreviewCommand, [], {
         config: {root: cwd},
@@ -115,9 +119,11 @@ describe('#start', () => {
   })
 
   test('should use resolved base path from index.html file', async () => {
-    const cwd = await testExample('basic-studio', {shouldBuild: true})
-    // Mock the process.cwd() to the example directory
-    process.cwd = () => cwd
+    const cwd = await testExample('basic-studio')
+    // Build the example
+    await buildExample(cwd)
+    // Change to the example directory
+    process.chdir(cwd)
 
     // Replace the script tag in the index.html file with a script tag that does not have a src attribute
     const indexPath = join(cwd, 'dist', 'index.html')
@@ -146,9 +152,11 @@ describe('#start', () => {
   })
 
   test('should fallback to default basepath when cannot resolve from index.html', async () => {
-    const cwd = await testExample('basic-studio', {shouldBuild: true})
-    // Mock the process.cwd() to the example directory
-    process.cwd = () => cwd
+    const cwd = await testExample('basic-studio')
+    // Build the example
+    await buildExample(cwd)
+    // Change to the example directory
+    process.chdir(cwd)
 
     // Replace the script tag in the index.html file with a script tag that does not have a src attribute
     const indexPath = join(cwd, 'dist', 'index.html')
@@ -175,9 +183,11 @@ describe('#start', () => {
   })
 
   test('should throw an error if the index.html file is not found', async () => {
-    const cwd = await testExample('basic-studio', {shouldBuild: true})
-    // Mock the process.cwd() to the example directory
-    process.cwd = () => cwd
+    const cwd = await testExample('basic-studio')
+    // Build the example
+    await buildExample(cwd)
+    // Change to the example directory
+    process.chdir(cwd)
 
     // Remove the index.html file
     await rm(join(cwd, 'dist', 'index.html'))
@@ -192,9 +202,11 @@ describe('#start', () => {
   })
 
   test('should throw an error if port is already in use', async () => {
-    const cwd = await testExample('basic-studio', {shouldBuild: true})
-    // Mock the process.cwd() to the example directory
-    process.cwd = () => cwd
+    const cwd = await testExample('basic-studio')
+    // Build the example
+    await buildExample(cwd)
+    // Change to the example directory
+    process.chdir(cwd)
 
     // Create a server on port 3338 to block it
     const server = createServer()
@@ -217,11 +229,11 @@ describe('#start', () => {
   })
 
   test('should allow using vite config from sanity.cli.ts', async () => {
-    const cwd = await testExample('basic-app', {shouldBuild: true})
-    // Mock the process.cwd() to the example directory
-    process.cwd = () => cwd
-
-    const existingSanityCli = await readFile(join(cwd, 'sanity.cli.ts'), 'utf8')
+    const cwd = await testExample('basic-app')
+    // Build the example
+    await buildExample(cwd)
+    // Change to the example directory
+    process.chdir(cwd)
 
     // Create a vite.config.ts file
     await writeFile(
@@ -248,7 +260,5 @@ describe('#start', () => {
     })
 
     expect(stdout).toContain(`ms and running at http://localhost:1335/ (production preview mode)`)
-
-    await writeFile(join(cwd, 'sanity.cli.ts'), existingSanityCli)
   })
 })

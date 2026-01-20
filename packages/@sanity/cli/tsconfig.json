@@ -1,6 +1,6 @@
 {
   "extends": "@repo/tsconfig/base.json",
-  "include": ["./src"],
+  "include": ["./src", "./test"],
   "compilerOptions": {
     "rootDir": ".",
     "jsx": "react-jsx",
@@ -9,7 +9,7 @@
       "@sanity/cli-core": ["./node_modules/@sanity/cli-core/src/index.ts"],
       "@sanity/cli-core/*": ["./node_modules/@sanity/cli-core/src/_exports/*"],
       "@sanity/cli-test": ["./node_modules/@sanity/cli-test/src/index.ts"],
-      "@sanity/cli-test/*": ["./node_modules/@sanity/cli-test/src/_exports/*"]
+      "@sanity/cli-test/vitest": ["./node_modules/@sanity/cli-test/src/vitest.ts"]
     }
   }
 }

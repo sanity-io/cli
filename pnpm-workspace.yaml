@@ -44,6 +44,7 @@ catalog:
   zod: ^4.3.5
   'get-tsconfig': ^4.13.0
   execa: ^9.6.0
+  ora: ^9.0.0
 
   # Build Tools
   '@swc/core': ^1.15.8

@@ -21,7 +21,7 @@ export default defineConfig({
     environment: 'node',
     exclude: ['**/node_modules/**', '**/dist/**'],
     globals: false,
-    globalSetup: ['test/workerBuild.ts', 'test/testFixtures.ts'],
+    globalSetup: ['test/workerBuild.ts', '@sanity/cli-test/vitest'],
     setupFiles: ['test/setup.ts'],
   },
 })
