@@ -1,6 +1,6 @@
 {
   "name": "create-sanity",
-  "version": "5.2.1",
+  "version": "5.2.2",
   "description": "Initialize a new Sanity project",
   "keywords": [
     "sanity",
@@ -31,7 +31,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@sanity/cli": "^5.5.0",
+    "@sanity/cli": "^6.0.0-alpha.7",
     "import-meta-resolve": "^4.1.0"
   },
   "devDependencies": {

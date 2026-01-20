@@ -1,5 +1,27 @@
 # Changelog
 
+## [6.0.0-alpha.7](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.6...cli-v6.0.0-alpha.7) (2026-01-20)
+
+
+### Features
+
+* **telemetry:** add telemetry store ([#112](https://github.com/sanity-io/cli/issues/112)) ([01b632c](https://github.com/sanity-io/cli/commit/01b632cb7e804dcb7fe3cc75ffcad610b3a3db0a))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @sanity/runtime-cli to v13 ([#313](https://github.com/sanity-io/cli/issues/313)) ([71dd35a](https://github.com/sanity-io/cli/commit/71dd35a6ee224116f1dc6c461fd7cf452063633a))
+* **deps:** update sanity-tooling ([#292](https://github.com/sanity-io/cli/issues/292)) ([dfacca8](https://github.com/sanity-io/cli/commit/dfacca832f94a94b00e898b315e3fef567c90026))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.7
+  * devDependencies
+    * @sanity/cli-test bumped to 0.0.2-alpha.6
+
 ## [6.0.0-alpha.6](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.5...cli-v6.0.0-alpha.6) (2026-01-16)
 
 
