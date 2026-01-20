@@ -15,10 +15,10 @@ catalog:
   publint: ^0.3.16
 
   # Sanity
-  sanity: ^5.4.0
-  '@sanity/vision': ^5.4.0
-  '@sanity/types': ^5.4.0
-  '@sanity/schema': ^5.4.0
+  sanity: ^5.5.0
+  '@sanity/vision': ^5.5.0
+  '@sanity/types': ^5.5.0
+  '@sanity/schema': ^5.5.0
   '@sanity/client': ^7.14.0
 
   # Build & Development Tools
