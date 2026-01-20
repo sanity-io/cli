@@ -16,4 +16,10 @@ export default [
       'import/no-unresolved': 'off',
     },
   },
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      'unicorn/prefer-string-raw': 'off',
+    },
+  },
 ]
