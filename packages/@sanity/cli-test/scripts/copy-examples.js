@@ -6,13 +6,12 @@
 
 // eslint-disable-next-line n/no-unsupported-features/node-builtins
 import {cp, mkdir, readFile, writeFile} from 'node:fs/promises'
-import {join, resolve} from 'node:path'
-import {fileURLToPath} from 'node:url'
+import {dirname, join, resolve} from 'node:path'
 
 import {parse as parseYaml} from 'yaml'
 
-const __dirname = fileURLToPath(new URL('.', import.meta.url))
-const packageRoot = resolve(__dirname, '..')
+const packageRoot = dirname(import.meta.dirname)
+// Go up 3 levels to get to the repo root (packages/@sanity/cli-test -> packages/@sanity -> packages -> root)
 const repoRoot = resolve(packageRoot, '../../..')
 const sourceExamplesDir = join(repoRoot, 'examples')
 const targetExamplesDir = join(packageRoot, 'examples')
