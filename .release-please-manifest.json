@@ -1,7 +1,7 @@
 {
-  "packages/@sanity/cli-core": "0.1.0-alpha.6",
-  "packages/@sanity/cli-test": "0.0.2-alpha.5",
-  "packages/@sanity/cli": "6.0.0-alpha.6",
+  "packages/@sanity/cli-core": "0.1.0-alpha.7",
+  "packages/@sanity/cli-test": "0.0.2-alpha.6",
+  "packages/@sanity/cli": "6.0.0-alpha.7",
   "packages/@sanity/eslint-config-cli": "0.0.0-alpha.1",
-  "packages/create-sanity": "5.2.1"
+  "packages/create-sanity": "5.2.2"
 }
