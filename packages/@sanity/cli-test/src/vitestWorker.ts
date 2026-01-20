@@ -7,7 +7,6 @@
 import {unlink} from 'node:fs/promises'
 
 import {build, type BuildContext, type BuildOptions, context} from 'esbuild'
-import {type TestProject} from 'vitest/node'
 
 const compiledFiles: Set<string> = new Set()
 let buildContexts: BuildContext[] = []
@@ -24,6 +23,9 @@ function esbuildOptions(filePath: string, outputFile: string): BuildOptions {
     bundle: true,
     conditions: ['node', 'import'],
     entryPoints: [filePath],
+    // Marks cli-core as external to avoid bundling it inline
+    // this is mostly necessary for the monorepo.
+    external: ['@sanity/cli-core'],
     format: 'esm',
     loader: {'.json': 'json'},
     logLevel: 'warning',
@@ -102,7 +104,7 @@ async function setupWatchMode(files: string[]) {
  * @throws If the worker files cannot be bundled
  * @throws If the watcher cannot be set up
  */
-export async function setupWorkerBuild(project: TestProject, filePaths: string[]) {
+export async function setupWorkerBuild(filePaths: string[]) {
   const isWatchMode =
     (process.env.VITEST_WATCH === 'true' || !process.argv.includes('run')) &&
     process.env.CI !== 'true'
