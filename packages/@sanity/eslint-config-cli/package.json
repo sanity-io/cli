@@ -54,7 +54,7 @@
     "publint": "catalog:"
   },
   "peerDependencies": {
-    "eslint": "^9.39.2"
+    "eslint": "^9.0.0"
   },
   "publishConfig": {
     "access": "public"
