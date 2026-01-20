@@ -5,24 +5,28 @@ describe('#blueprints', () => {
   it('should print blueprints help', async () => {
     const {stdout} = await runCommand('blueprints --help')
     expect(stdout).toMatchInlineSnapshot(`
-      "Blueprint Stack deployment and management commands
+      "Local Blueprint and remote Stack management commands
 
       USAGE
         $ sanity blueprints COMMAND
 
       COMMANDS
-        blueprints add      Add a Resource to a Blueprint
-        blueprints config   View or edit Blueprint configuration
-        blueprints deploy   Deploy a Blueprint
-        blueprints destroy  Destroy a Blueprint Stack deployment and its resources
+        blueprints add      Add a function resource to a Blueprint
+        blueprints config   View or edit the local Blueprint configuration
+        blueprints deploy   Deploy the local Blueprint to the remote Stack
+        blueprints destroy  Destroy the remote Stack deployment and its resources
                             (will not delete local files)
-        blueprints doctor   Diagnose potential issues with Blueprint configuration
-        blueprints info     Show information about a Blueprint Stack deployment
-        blueprints init     Initialize a new Blueprint Stack deployment
-        blueprints logs     Display logs for a Blueprint Stack deployment
-        blueprints plan     Enumerate resources to be deployed - will not modify any
-                            resources
-        blueprints stacks   List all Blueprint Stacks
+        blueprints doctor   Diagnose potential issues with local Blueprint and remote
+                            Stack configuration
+        blueprints info     Show information about the local Blueprint's remote Stack
+                            deployment
+        blueprints init     Initialize a local Blueprint and optionally provision a
+                            remote Stack deployment
+        blueprints logs     Display logs for the current Blueprint's Stack deployment
+        blueprints plan     Enumerate resources to be deployed to the remote Stack -
+                            will not modify any resources
+        blueprints stacks   List all remote Stack deployments (defaults to the current
+                            Blueprint's project scope)
 
       "
     `)
@@ -39,8 +43,7 @@ describe('#functions', () => {
         $ sanity functions COMMAND
 
       TOPICS
-        functions env  Add or set the value of an environment variable for a Sanity
-                       function
+        functions env  Add or set an environment variable for a deployed function
 
       COMMANDS
         functions add   Add a Function to your Blueprint

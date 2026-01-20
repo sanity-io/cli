@@ -319,8 +319,8 @@ importers:
         specifier: ^5.2.2
         version: 5.2.2(@types/node@20.19.30)(@types/react@19.2.8)(jiti@2.6.1)(lightningcss@1.30.2)(yaml@2.8.2)
       '@sanity/runtime-cli':
-        specifier: ^12.4.0
-        version: 12.4.0(@types/node@20.19.30)(debug@4.4.3)(lightningcss@1.30.2)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+        specifier: ^13.0.3
+        version: 13.0.3(@types/node@20.19.30)(debug@4.4.3)(lightningcss@1.30.2)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
       '@sanity/schema':
         specifier: 'catalog:'
         version: 5.5.0(@types/react@19.2.8)(debug@4.4.3)
@@ -3135,11 +3135,6 @@ packages:
     engines: {node: '>=20.19 <22 || >=22.12'}
     peerDependencies:
       '@sanity/client': ^7.14.0
-
-  '@sanity/runtime-cli@12.4.0':
-    resolution: {integrity: sha512-PFqqdhK2VsY4NpPmxiTpVCVWfNWo3xPuy+Pyg82Kmh/GkbjXADx8VTjc3GMTmn3BOfS/LSX1Xmvn9LpLkj1rjg==}
-    engines: {node: '>=20.19'}
-    hasBin: true
 
   '@sanity/runtime-cli@13.0.3':
     resolution: {integrity: sha512-y5Pb1rxuGXxFGzRaboTJWn7OLvqMegtntEtvzhGv3jjnjs0nKdxFy1fC0Cy7EzCvLRhRlGqSVvsNipCvFXq/gw==}
@@ -11786,7 +11781,7 @@ snapshots:
       '@sanity/client': 7.14.0(debug@4.4.3)
       '@sanity/uuid': 3.0.2
 
-  '@sanity/runtime-cli@12.4.0(@types/node@20.19.30)(debug@4.4.3)(lightningcss@1.30.2)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)':
+  '@sanity/runtime-cli@13.0.3(@types/node@20.19.30)(debug@4.4.3)(lightningcss@1.30.2)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)':
     dependencies:
       '@architect/hydrate': 5.0.1
       '@architect/inventory': 5.0.0

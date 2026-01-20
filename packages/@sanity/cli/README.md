@@ -259,7 +259,7 @@ _See code: [src/commands/backup/list.ts](https://github.com/sanity-io/cli/blob/v
 
 ## `sanity blueprints add TYPE`
 
-Add a Resource to a Blueprint
+Add a function resource to a Blueprint
 
 ```
 USAGE
@@ -269,25 +269,31 @@ USAGE
     skip|npm|pnpm|yarn] [-i | ]
 
 ARGUMENTS
-  TYPE  (function) Type of Resource to add (e.g. function)
+  TYPE  (function) Type of resource to add (only "function" is supported)
 
 FLAGS
   -i, --install                Shortcut for --fn-installer npm
-  -n, --name=<value>           Name of the Resource to add
-      --example=<value>        Example to use for the Resource
-      --[no-]fn-helpers        Add helpers to the new Function
-      --fn-installer=<option>  How to install the @sanity/functions helpers
+  -n, --name=<value>           Name of the resource to add
+      --example=<value>        Example to use for the function resource. Discover examples at
+                               https://www.sanity.io/exchange/type=recipes/by=sanity
+      --[no-]fn-helpers        Add helpers to the new function
+      --fn-installer=<option>  Which package manager to use when installing the @sanity/functions helpers
                                <options: skip|npm|pnpm|yarn>
       --fn-type=<option>...    Document change event(s) that should trigger the function; you can specify multiple
                                events by specifying this flag multiple times
                                <options: document-create|document-delete|document-update|document-publish|media-library-
                                asset-create|media-library-asset-update|media-library-asset-delete>
       --javascript             Use JavaScript instead of TypeScript
-      --language=<option>      [default: ts] Language of the new Function
+      --language=<option>      [default: ts] Language of the new function
                                <options: ts|js>
 
 DESCRIPTION
-  Add a Resource to a Blueprint
+  Add a function resource to a Blueprint
+
+  Scaffolds a new Sanity Function in your Blueprint. Functions are serverless handlers triggered by document events
+  (create, update, delete, publish) or media library events.
+
+  After adding a function, use 'functions dev' to test locally, then 'blueprints deploy' to publish it.
 
 EXAMPLES
   $ sanity blueprints add function
@@ -301,24 +307,30 @@ EXAMPLES
   $ sanity blueprints add function --name my-function --fn-type document-create --fn-type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/blueprints/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/blueprints/add.ts)_
 
 ## `sanity blueprints config`
 
-View or edit Blueprint configuration
+View or edit the local Blueprint configuration
 
 ```
 USAGE
-  $ sanity blueprints config [--project-id <value> -e] [--organization-id <value> ] [--stack-id <value> ]
+  $ sanity blueprints config [--project-id <value> -e] [--stack-id <value> ]
 
 FLAGS
-  -e, --edit                     Modify the configuration interactively, or directly when combined with ID flags.
-      --organization-id=<value>  Directly set the Organization ID in the configuration. Requires --edit flag
-      --project-id=<value>       Directly set the Project ID in the configuration. Requires --edit flag
-      --stack-id=<value>         Directly set the Stack ID in the configuration. Requires --edit flag
+  -e, --edit                Modify the configuration interactively, or directly when combined with ID flags.
+      --project-id=<value>  Directly set the project ID in the configuration. Requires --edit flag
+      --stack-id=<value>    Directly set the Stack ID in the configuration. Requires --edit flag
 
 DESCRIPTION
-  View or edit Blueprint configuration
+  View or edit the local Blueprint configuration
+
+  Manages the local Blueprint configuration, which links your Blueprint to a Sanity project and Stack.
+
+  Without flags, displays the current configuration. Use --edit to interactively modify settings, or combine --edit with
+  ID flags to update values directly (useful for scripting and automation).
+
+  If you need to switch your Blueprint to a different Stack, use --edit --stack-id.
 
 EXAMPLES
   $ sanity blueprints config
@@ -330,11 +342,11 @@ EXAMPLES
   $ sanity blueprints config --edit --project-id <projectId> --stack-id <stackId>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/blueprints/config.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/blueprints/config.ts)_
 
 ## `sanity blueprints deploy`
 
-Deploy a Blueprint
+Deploy the local Blueprint to the remote Stack
 
 ```
 USAGE
@@ -344,7 +356,15 @@ FLAGS
   --no-wait  Do not wait for Stack deployment to complete
 
 DESCRIPTION
-  Deploy a Blueprint
+  Deploy the local Blueprint to the remote Stack
+
+  Pushes your local Blueprint configuration to the remote Stack; provisioning, updating, or destroying resources as
+  needed. This is the primary command for applying infrastructure changes.
+
+  Before deploying, run 'blueprints plan' to preview changes. After deployment, use 'blueprints info' to verify Stack
+  status or 'blueprints logs' to monitor activity.
+
+  Use --no-wait to queue the deployment and return immediately without waiting for completion.
 
 EXAMPLES
   $ sanity blueprints deploy
@@ -352,26 +372,31 @@ EXAMPLES
   $ sanity blueprints deploy --no-wait
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/blueprints/deploy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/blueprints/deploy.ts)_
 
 ## `sanity blueprints destroy`
 
-Destroy a Blueprint Stack deployment and its resources (will not delete local files)
+Destroy the remote Stack deployment and its resources (will not delete local files)
 
 ```
 USAGE
-  $ sanity blueprints destroy [--project-id <value> --stack-id <value> --force] [--organization-id <value>  ]
-  [--no-wait]
+  $ sanity blueprints destroy [--project-id <value> --stack-id <value> --force] [--no-wait]
 
 FLAGS
-  --force                    Force Stack destruction (skip confirmation)
-  --no-wait                  Do not wait for Stack destruction to complete
-  --organization-id=<value>  Organization associated with the Stack
-  --project-id=<value>       Project associated with the Stack
-  --stack-id=<value>         Stack ID to destroy (defaults to current Stack)
+  --force               Force Stack destruction (skip confirmation)
+  --no-wait             Do not wait for Stack destruction to complete
+  --project-id=<value>  Project associated with the Stack
+  --stack-id=<value>    Stack ID to destroy (defaults to current Stack)
 
 DESCRIPTION
-  Destroy a Blueprint Stack deployment and its resources (will not delete local files)
+  Destroy the remote Stack deployment and its resources (will not delete local files)
+
+  Permanently removes the remote Stack and all its provisioned resources. Your local Blueprint files remain untouched,
+  allowing you to redeploy later with 'blueprints init' + 'blueprints deploy'.
+
+  This is a destructive operation. You will be prompted to confirm unless --force is specified.
+
+  Use this to clean up test environments or decommission a Stack you no longer need.
 
 EXAMPLES
   $ sanity blueprints destroy
@@ -379,11 +404,11 @@ EXAMPLES
   $ sanity blueprints destroy --stack-id <stackId> --project-id <projectId> --force --no-wait
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/blueprints/destroy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/blueprints/destroy.ts)_
 
 ## `sanity blueprints doctor`
 
-Diagnose potential issues with Blueprint configuration
+Diagnose potential issues with local Blueprint and remote Stack configuration
 
 ```
 USAGE
@@ -396,24 +421,38 @@ FLAGS
   --verbose       Verbose output
 
 DESCRIPTION
-  Diagnose potential issues with Blueprint configuration
+  Diagnose potential issues with local Blueprint and remote Stack configuration
+
+  Analyzes your local Blueprint and remote Stack configuration for common issues, such as missing authentication,
+  invalid project references, or misconfigured resources.
+
+  Run this command when encountering errors with other Blueprint commands. Use --fix to interactively resolve detected
+  issues.
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/blueprints/doctor.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/blueprints/doctor.ts)_
 
 ## `sanity blueprints info`
 
-Show information about a Blueprint Stack deployment
+Show information about the local Blueprint's remote Stack deployment
 
 ```
 USAGE
   $ sanity blueprints info [--id <value>]
 
 FLAGS
-  --id=<value>  Stack ID to show info for (defaults to current Stack)
+  --id=<value>  Stack ID to show info for (defaults to the current Stack)
 
 DESCRIPTION
-  Show information about a Blueprint Stack deployment
+  Show information about the local Blueprint's remote Stack deployment
+
+  Displays the current state and metadata of your remote Stack deployment, including deployed resources, status, and
+  configuration.
+
+  Use this command to verify a deployment succeeded, check what resources are live, or confirm which Stack your local
+  Blueprint is connected to.
+
+  Run 'blueprints stacks' to see all available Stacks in your project or organization.
 
 EXAMPLES
   $ sanity blueprints info
@@ -421,33 +460,43 @@ EXAMPLES
   $ sanity blueprints info --id <stackId>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/blueprints/info.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/blueprints/info.ts)_
 
 ## `sanity blueprints init [DIR]`
 
-Initialize a new Blueprint Stack deployment
+Initialize a local Blueprint and optionally provision a remote Stack deployment
 
 ```
 USAGE
   $ sanity blueprints init [DIR] [--verbose] [--dir <value>] [--example <value> | --blueprint-type json|js|ts |
-    --stack-id <value> | --stack-name <value>] [--project-id <value>] [--organization-id <value>]
+    --stack-id <value> | --stack-name <value>] [--project-id <value>]
 
 ARGUMENTS
-  [DIR]  Directory to create the Blueprint in
+  [DIR]  Directory to create the local Blueprint in
 
 FLAGS
-  --blueprint-type=<option>  Blueprint manifest type to use for the Blueprint
+  --blueprint-type=<option>  Blueprint manifest type to use for the local Blueprint
                              <options: json|js|ts>
-  --dir=<value>              Directory to create the Blueprint in
-  --example=<value>          Example to use for the Blueprint
-  --organization-id=<value>  Sanity Organization ID to use for the Blueprint
-  --project-id=<value>       Sanity Project ID to use for the Blueprint
-  --stack-id=<value>         Existing Stack ID to use for the Blueprint
-  --stack-name=<value>       Name to use for a NEW Stack
+  --dir=<value>              Directory to create the local Blueprint in
+  --example=<value>          Example to use for the local Blueprint
+  --project-id=<value>       Sanity project ID used to scope local Blueprint and remote Stack
+  --stack-id=<value>         Existing Stack ID used to scope local Blueprint
+  --stack-name=<value>       Name to use for a new Stack provisioned during initialization
   --verbose                  Verbose output
 
 DESCRIPTION
-  Initialize a new Blueprint Stack deployment
+  Initialize a local Blueprint and optionally provision a remote Stack deployment
+
+  A Blueprint is your local infrastructure-as-code configuration that defines Sanity resources (datasets, functions,
+  etc.). A Stack is the remote deployment target where your Blueprint is applied.
+  [NOTE: Currently, accounts are limited to three (3) Stacks per project scope.]
+
+  This is typically the first command you run in a new project. It creates a local Blueprint manifest file
+  (sanity.blueprint.ts, .js, or .json) and provisions a new remote Stack.
+  Additionally, a Blueprint configuration file is created in .sanity/ containing the scope and Stack IDs. This is
+  .gitignored by default.
+
+  After initialization, use 'blueprints plan' to preview changes, then 'blueprints deploy' to apply them.
 
 EXAMPLES
   $ sanity blueprints init
@@ -461,11 +510,11 @@ EXAMPLES
   $ sanity blueprints init --blueprint-type <json|js|ts> --stack-name <stackName>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/blueprints/init.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/blueprints/init.ts)_
 
 ## `sanity blueprints logs`
 
-Display logs for a Blueprint Stack deployment
+Display logs for the current Blueprint's Stack deployment
 
 ```
 USAGE
@@ -475,7 +524,13 @@ FLAGS
   -w, --watch  Watch for new Stack logs (streaming mode)
 
 DESCRIPTION
-  Display logs for a Blueprint Stack deployment
+  Display logs for the current Blueprint's Stack deployment
+
+  Retrieves Stack deployment logs, useful for debugging and monitoring deployment activity.
+
+  Use --watch (-w) to stream logs in real-time.
+
+  If you're not seeing expected logs, verify your Stack is deployed with 'blueprints info'.
 
 EXAMPLES
   $ sanity blueprints logs
@@ -483,39 +538,49 @@ EXAMPLES
   $ sanity blueprints logs --watch
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/blueprints/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/blueprints/logs.ts)_
 
 ## `sanity blueprints plan`
 
-Enumerate resources to be deployed - will not modify any resources
+Enumerate resources to be deployed to the remote Stack - will not modify any resources
 
 ```
 USAGE
   $ sanity blueprints plan
 
 DESCRIPTION
-  Enumerate resources to be deployed - will not modify any resources
+  Enumerate resources to be deployed to the remote Stack - will not modify any resources
+
+  Use this command to preview what changes will be applied to your remote Stack before deploying. This is a safe,
+  read-only operation—no resources are created, modified, or deleted.
+
+  Run 'blueprints plan' after making local changes to your Blueprint manifest to verify the expected diff. When ready,
+  run 'blueprints deploy' to apply changes.
 
 EXAMPLES
   $ sanity blueprints plan
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/blueprints/plan.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/blueprints/plan.ts)_
 
 ## `sanity blueprints stacks`
 
-List all Blueprint Stacks
+List all remote Stack deployments (defaults to the current Blueprint's project scope)
 
 ```
 USAGE
-  $ sanity blueprints stacks [--project-id <value> | --organization-id <value>]
+  $ sanity blueprints stacks [--project-id <value> | ]
 
 FLAGS
-  --organization-id=<value>  Organization ID to show stacks for
-  --project-id=<value>       Project ID to show stacks for
+  --project-id=<value>  Project ID to show Stack deployments for
 
 DESCRIPTION
-  List all Blueprint Stacks
+  List all remote Stack deployments (defaults to the current Blueprint's project scope)
+
+  Shows all Stacks associated with a project or organization. By default, lists Stacks scoped to the local Blueprint.
+
+  Use this to discover existing Stacks you can scope a local Blueprint to (using 'blueprints config --edit'), or to
+  audit what's deployed across your project.
 
 EXAMPLES
   $ sanity blueprints stacks
@@ -525,7 +590,7 @@ EXAMPLES
   $ sanity blueprints stacks --organization-id <organizationId>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/blueprints/stacks.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/blueprints/stacks.ts)_
 
 ## `sanity build [OUTPUTDIR]`
 
@@ -1540,6 +1605,13 @@ FLAGS
 DESCRIPTION
   Add a Function to your Blueprint
 
+  Scaffolds a new Function in the functions/ folder and templates a resource for your Blueprint manifest.
+
+  Functions are serverless handlers triggered by document events (create, update, delete, publish) or media library
+  events.
+
+  After adding, use 'functions dev' to test locally, then 'blueprints deploy' to publish.
+
 EXAMPLES
   $ sanity functions add
 
@@ -1552,7 +1624,7 @@ EXAMPLES
   $ sanity functions add --name my-function --type document-create --type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/functions/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/functions/add.ts)_
 
 ## `sanity functions dev`
 
@@ -1571,15 +1643,26 @@ FLAGS
 DESCRIPTION
   Start the Sanity Function emulator
 
+  Runs a local, web-based development server to test your functions before deploying.
+
+  Open the emulator in your browser to interactively test your functions with the payload editor.
+
+  Optionally, set the host and port with the --host and --port flags. Function timeout can be configured with the
+  --timeout flag.
+
+  To invoke a function with the CLI, use 'functions test'.
+
 EXAMPLES
   $ sanity functions dev --host 127.0.0.1 --port 8974
+
+  $ sanity functions dev --timeout 60
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/functions/dev.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/functions/dev.ts)_
 
 ## `sanity functions env add NAME KEY VALUE`
 
-Add or set the value of an environment variable for a Sanity function
+Add or set an environment variable for a deployed function
 
 ```
 USAGE
@@ -1591,17 +1674,22 @@ ARGUMENTS
   VALUE  The value of the environment variable
 
 DESCRIPTION
-  Add or set the value of an environment variable for a Sanity function
+  Add or set an environment variable for a deployed function
+
+  Sets an environment variable in a deployed Sanity Function. If the variable already exists, its value is updated.
+
+  Environment variables are useful for API keys, configuration values, and other secrets that shouldn't be hardcoded.
+  Changes take effect on the next function invocation.
 
 EXAMPLES
   $ sanity functions env add MyFunction API_URL https://api.example.com/
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/functions/env/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/functions/env/add.ts)_
 
 ## `sanity functions env list NAME`
 
-List the environment variables for a Sanity function
+List environment variables for a deployed function
 
 ```
 USAGE
@@ -1611,17 +1699,21 @@ ARGUMENTS
   NAME  The name of the Sanity Function
 
 DESCRIPTION
-  List the environment variables for a Sanity function
+  List environment variables for a deployed function
+
+  Displays all environment variables (keys only) configured in a deployed Sanity Function.
+
+  Use 'functions env add' to set variables or 'functions env remove' to delete them.
 
 EXAMPLES
   $ sanity functions env list MyFunction
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/functions/env/list.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/functions/env/list.ts)_
 
 ## `sanity functions env remove NAME KEY`
 
-Remove an environment variable for a Sanity function
+Remove an environment variable from a deployed function
 
 ```
 USAGE
@@ -1632,13 +1724,18 @@ ARGUMENTS
   KEY   The name of the environment variable
 
 DESCRIPTION
-  Remove an environment variable for a Sanity function
+  Remove an environment variable from a deployed function
+
+  Deletes an environment variable from a deployed Sanity Function. The change takes effect on the next function
+  invocation.
+
+  Use 'functions env list' to see current variables before removing.
 
 EXAMPLES
   $ sanity functions env remove MyFunction API_URL
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/functions/env/remove.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/functions/env/remove.ts)_
 
 ## `sanity functions logs [NAME]`
 
@@ -1662,6 +1759,11 @@ FLAGS
 DESCRIPTION
   Retrieve or delete logs for a Sanity Function
 
+  Fetches execution logs from a deployed function, useful for debugging production issues or monitoring activity.
+
+  Use --watch (-w) to stream logs in real-time. Use --delete to clear all logs for a function (requires confirmation
+  unless --force is specified).
+
 EXAMPLES
   $ sanity functions logs <name>
 
@@ -1672,7 +1774,7 @@ EXAMPLES
   $ sanity functions logs <name> --delete
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/functions/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/functions/logs.ts)_
 
 ## `sanity functions test [NAME]`
 
@@ -1682,8 +1784,8 @@ Invoke a local Sanity Function
 USAGE
   $ sanity functions test [NAME] [--data-before <value> | [-d <value> | -f <value> | --document-id <value>] |  |  |
     --file-before <value> | --file-after <value> | --document-id-before <value> | --document-id-after <value>]
-    [--data-after <value> |  |  |  |  |  |  | ] [-e create|update|delete] [-t <value>] [-a <value>] [--organization-id
-    <value>] [--with-user-token] [--media-library-id <value> | --project-id <value> | --dataset <value>]
+    [--data-after <value> |  |  |  |  |  |  | ] [-e create|update|delete] [-t <value>] [-a <value>] [--with-user-token]
+    [--media-library-id <value> | --project-id <value> | --dataset <value>]
 
 ARGUMENTS
   [NAME]  The name of the Sanity Function
@@ -1704,12 +1806,17 @@ FLAGS
       --file-after=<value>          Current document
       --file-before=<value>         Original document
       --media-library-id=<value>    Sanity Media Library ID to use
-      --organization-id=<value>     Sanity Organization ID to use
       --project-id=<value>          Sanity Project ID to use
       --with-user-token             Prime access token from CLI config
 
 DESCRIPTION
   Invoke a local Sanity Function
+
+  Executes a function locally with the provided payload, simulating how it would run when deployed. Use this to test
+  your function logic before deploying.
+
+  Provide test data via --data (inline JSON), --file (JSON file), or --document-id (fetch from Sanity). For update
+  events, use the before/after flag pairs to simulate document changes.
 
 EXAMPLES
   $ sanity functions test <name> --data '{ "id": 1 }'
@@ -1721,7 +1828,7 @@ EXAMPLES
   $ sanity functions test <name> --event update --data-before '{ "title": "before" }' --data-after '{ "title": "after" }'
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v12.4.0/src/commands/functions/test.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/functions/test.ts)_
 
 ## `sanity graphql list`
 

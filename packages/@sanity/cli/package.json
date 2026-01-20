@@ -73,7 +73,7 @@
     "@sanity/id-utils": "^1.0.0",
     "@sanity/import": "^4.1.0",
     "@sanity/migrate": "^5.2.2",
-    "@sanity/runtime-cli": "^12.4.0",
+    "@sanity/runtime-cli": "^13.0.3",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "^0.8.1",
     "@sanity/template-validator": "^2.4.3",
