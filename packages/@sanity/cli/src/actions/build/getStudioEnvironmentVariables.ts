@@ -75,7 +75,7 @@ export function getAppEnvironmentVariables(
 ): Record<string, string> {
   const {envFile = false, jsonEncode = false, prefix = ''} = options
   const fullEnv = envFile
-    ? {...process.env, ...loadEnv(envFile.mode, envFile.envDir || process.cwd(), [envPrefix])}
+    ? {...process.env, ...loadEnv(envFile.mode, envFile.envDir || process.cwd(), [appEnvPrefix])}
     : process.env
 
   const appEnv: Record<string, string> = {}

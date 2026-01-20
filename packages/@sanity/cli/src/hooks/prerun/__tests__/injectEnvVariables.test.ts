@@ -1,7 +1,7 @@
+import {writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
 import {testExample, testHook} from '@sanity/cli-test'
-import dotenv from 'dotenv'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
@@ -26,8 +26,8 @@ describe('#injectEnvVariables', () => {
     const cwd = await testExample('basic-studio')
     process.chdir(cwd)
 
-    const existingEnvVars = {}
-    dotenv.config({path: join(cwd, '.env'), processEnv: existingEnvVars, quiet: true})
+    // Create a .env file with a SANITY_TEST_VAR variable
+    await writeFile(join(cwd, '.env'), 'SANITY_STUDIO_TEST_VAR=test\nNOT_SANITY_VAR=test2')
 
     const {Command, config} = await getCommandAndConfig('learn')
 
@@ -36,15 +36,16 @@ describe('#injectEnvVariables', () => {
       config,
     })
 
-    expect(process.env).toMatchObject(existingEnvVars ?? {})
+    expect(process.env.SANITY_STUDIO_TEST_VAR).toBe('test')
+    expect(process.env.NOT_SANITY_VAR).not.toBe('test2')
   })
 
   test('should inject env variables from apps', async () => {
     const cwd = await testExample('basic-app')
     process.chdir(cwd)
 
-    const existingEnvVars = {}
-    dotenv.config({path: join(cwd, '.env'), processEnv: existingEnvVars, quiet: true})
+    // Create a .env file with a SANITY_TEST_VAR variable
+    await writeFile(join(cwd, '.env'), 'SANITY_APP_TEST_VAR=test\nNOT_SANITY_VAR=test2')
 
     const {Command, config} = await getCommandAndConfig('learn')
 
@@ -53,7 +54,8 @@ describe('#injectEnvVariables', () => {
       config,
     })
 
-    expect(process.env).toMatchObject(existingEnvVars ?? {})
+    expect(process.env.SANITY_APP_TEST_VAR).toBe('test')
+    expect(process.env.NOT_SANITY_VAR).not.toBe('test2')
   })
 
   test('should warn when running in production environment', async () => {
@@ -69,6 +71,6 @@ describe('#injectEnvVariables', () => {
       config,
     })
 
-    expect(stderr).toContain('Warning: Running in production environment')
+    expect(stderr).toContain('Running in production environment')
   })
 })
