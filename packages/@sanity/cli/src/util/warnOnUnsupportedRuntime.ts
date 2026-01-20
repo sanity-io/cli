@@ -11,9 +11,10 @@ export function warnOnUnsupportedRuntime(cliPkg: PackageJson): void {
   }
 
   const currentNodeVersion = process.versions.node
-  if (!semver.satisfies(currentNodeVersion, engines.node))
+  if (!semver.satisfies(currentNodeVersion, engines.node)) {
     warn(
       chalk.red(`\nThe current Node.js version (${`v${currentNodeVersion}`}) is not supported
 Please upgrade to a version that satisfies the range ${chalk.green.bold(engines.node)}\n`),
     )
+  }
 }
