@@ -1,10 +1,9 @@
 import {join} from 'node:path'
 
-import {testHook} from '@sanity/cli-test'
+import {testExample, testHook} from '@sanity/cli-test'
 import dotenv from 'dotenv'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
-import {testExample} from '~test/helpers/testExample.js'
 
 import {injectEnvVariables} from '../injectEnvVariables.js'
 
