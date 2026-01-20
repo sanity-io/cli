@@ -18,7 +18,13 @@ import {setupTelemetry} from '../setupTelemetry.js'
 
 // Mock external dependencies
 vi.mock('node:os', () => ({homedir: vi.fn()}))
-vi.mock('node:child_process', () => ({spawn: vi.fn()}))
+vi.mock('node:child_process', async () => {
+  const actual = await vi.importActual('node:child_process')
+  return {
+    ...actual,
+    spawn: vi.fn(),
+  }
+})
 vi.mock('@sanity/cli-core', async () => ({
   ...(await vi.importActual('@sanity/cli-core')),
   findProjectRoot: vi.fn(),
