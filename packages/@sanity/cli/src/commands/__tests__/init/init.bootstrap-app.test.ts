@@ -167,7 +167,7 @@ describe('#init: bootstrap-app-initialization', () => {
       message: 'Setup your Cursor IDE',
     })
 
-    const {error, stdout} = await testCommand(
+    const {stdout} = await testCommand(
       InitCommand,
       [
         '--output-path=/test/output',
@@ -183,10 +183,6 @@ describe('#init: bootstrap-app-initialization', () => {
         },
       },
     )
-
-    console.log(error)
-    console.log('---')
-    console.log(stdout)
 
     expect(mocks.setupEnvFile).toHaveBeenCalledWith({
       datasetName: 'test',
@@ -218,6 +214,63 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(stdout).toContain('cd /test/output to navigate to your new project directory')
     expect(stdout).toContain('Get started by running npm run dev')
     expect(stdout).toContain('Setup your Cursor IDE')
+    expect(stdout).toContain('Learn more: https://mcp.sanity.io')
+    expect(stdout).toContain(
+      'Have feedback? Tell us in the community: https://www.sanity.io/community/join',
+    )
+    expect(stdout).toContain('npx sanity docs browse')
+    expect(stdout).toContain('npx sanity manage')
+    expect(stdout).toContain('npx sanity help')
+  })
+
+  test('initializes app in unattended mode', async () => {
+    // Mock to resolve correctly up to initializing nextjs app
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    // Mocks to resolve app initialization
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {
+        cliInitializedAt: '',
+      },
+    })
+
+    mockApi({
+      apiVersion: MCP_JOURNEY_API_VERSION,
+      method: 'get',
+      uri: '/journey/mcp/post-init-prompt',
+    }).reply(200, {})
+
+    const {stdout} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--output-path=/test/output',
+        '--project=test',
+        '--dataset=test',
+        '--package-manager=npm',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
+
+    expect(stdout).toContain('Success! Your Studio has been created')
+    expect(stdout).toContain('cd /test/output to navigate to your new project directory')
+    expect(stdout).toContain('Get started by running npm run dev')
+    expect(stdout).toContain(
+      'To set up your project with the MCP server, restart Cursor and type "Get started with Sanity" in the chat.',
+    )
     expect(stdout).toContain('Learn more: https://mcp.sanity.io')
     expect(stdout).toContain(
       'Have feedback? Tell us in the community: https://www.sanity.io/community/join',

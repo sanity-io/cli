@@ -181,14 +181,6 @@ describe('#init:nextjs-app-initialization', () => {
     mocks.confirm.mockResolvedValueOnce(true) // template
 
     mockApi({
-      apiVersion: MCP_JOURNEY_API_VERSION,
-      method: 'get',
-      uri: '/journey/mcp/post-init-prompt',
-    }).reply(200, {
-      message: 'Setup your Cursor IDE',
-    })
-
-    mockApi({
       apiVersion: CORS_API_VERSION,
       method: 'get',
       uri: '/projects/test/cors',
@@ -199,6 +191,14 @@ describe('#init:nextjs-app-initialization', () => {
       method: 'post',
       uri: '/projects/test/cors',
     }).reply(200, {id: 'cors-id'})
+
+    mockApi({
+      apiVersion: MCP_JOURNEY_API_VERSION,
+      method: 'get',
+      uri: '/journey/mcp/post-init-prompt',
+    }).reply(200, {
+      message: 'Setup your Cursor IDE',
+    })
 
     const {error, stdout} = await testCommand(
       InitCommand,
@@ -247,6 +247,84 @@ describe('#init:nextjs-app-initialization', () => {
       'Success! Your Sanity configuration files has been added to this project',
     )
     expect(stdout).toContain('Setup your Cursor IDE')
+    expect(stdout).toContain('Learn more: https://mcp.sanity.io')
+    expect(stdout).toContain(
+      'Have feedback? Tell us in the community: https://www.sanity.io/community/join',
+    )
+
+    expect(error?.oclif?.exit).toBe(0)
+  })
+
+  test('initializes nextjs app in unattended mode', async () => {
+    // Mock to resolve correctly up to initializing nextjs app
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    // Mocks for nextjs initialization
+    mockApi({
+      apiVersion: CORS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test/cors',
+    }).reply(200, [
+      {
+        allowCredentials: true,
+        createdAt: '2024-01-15T10:30:00.000Z',
+        deletedAt: null,
+        id: 1234,
+        origin: 'http://localhost:3000',
+        projectId: 'abc123xyz',
+        updatedAt: '2024-01-20T14:45:00.000Z',
+      },
+    ])
+
+    mockApi({
+      apiVersion: MCP_JOURNEY_API_VERSION,
+      method: 'get',
+      uri: '/journey/mcp/post-init-prompt',
+    }).reply(200, {})
+
+    const {error, stdout} = await testCommand(
+      InitCommand,
+      ['--yes', '--project=test', '--dataset=test', '--nextjs-add-config-files'],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
+
+    // In unattended mode the output path will resolve to the working directory
+    expect(mocks.setupEnvFile).toHaveBeenCalledWith({
+      datasetName: 'test',
+      detectedFramework: {
+        name: 'Next.js',
+        slug: 'nextjs',
+      },
+      envFilename: '.env.local',
+      isNextJs: true,
+      output: expect.any(Object),
+      outputPath: '/test/work/dir',
+      projectId: 'test',
+      workDir: '/test/work/dir',
+    })
+    expect(mocks.checkNextJsReactCompatibility).toHaveBeenCalledWith({
+      detectedFramework: {
+        name: 'Next.js',
+        slug: 'nextjs',
+      },
+      output: expect.any(Object),
+      outputPath: '/test/work/dir',
+    })
+
+    expect(stdout).toContain(
+      'Success! Your Sanity configuration files has been added to this project',
+    )
+    expect(stdout).toContain(
+      'To set up your project with the MCP server, restart Cursor and type "Get started with Sanity" in the chat.',
+    )
     expect(stdout).toContain('Learn more: https://mcp.sanity.io')
     expect(stdout).toContain(
       'Have feedback? Tell us in the community: https://www.sanity.io/community/join',
