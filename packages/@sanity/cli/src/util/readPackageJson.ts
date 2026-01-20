@@ -17,6 +17,7 @@ const packageJsonSchema = z.object({
   exports: z.record(z.string(), z.any()).optional(),
   main: z.string().optional(),
   peerDependencies: z.record(z.string(), z.string()).optional(),
+  types: z.string().optional(),
 })
 
 /**

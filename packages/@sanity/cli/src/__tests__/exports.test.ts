@@ -1,3 +1,4 @@
+import {readFile, stat} from 'node:fs/promises'
 import {join} from 'node:path'
 import {Readable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
@@ -5,6 +6,7 @@ import {pipeline} from 'node:stream/promises'
 import {getTempPath} from '@sanity/cli-test'
 import gunzipMaybe from 'gunzip-maybe'
 import {extract} from 'tar-fs'
+import ts from 'typescript'
 import {expect, test} from 'vitest'
 
 import * as newExports from '../index.js'
@@ -31,6 +33,16 @@ async function* streamToAsyncIterable(
 }
 
 async function downloadAndExtractTarball(version: string, destDir: string) {
+  try {
+    if ((await stat(join(destDir, `sanity-cli-${version}`))).isDirectory()) {
+      return
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      throw error
+    }
+  }
+
   const packageName = '@sanity/cli'
   const res = await fetch(`https://registry.npmjs.org/${packageName}/-/cli-${version}.tgz`)
 
@@ -62,8 +74,60 @@ async function getSanityPackageExports() {
   return import(join(packagePath, main))
 }
 
-test('should get the exports of the sanity package', async () => {
-  const exports = await getSanityPackageExports()
+async function extractTypes(typesPath: string) {
+  const sourceFile = ts.createSourceFile(
+    typesPath,
+    await readFile(typesPath, 'utf8'),
+    ts.ScriptTarget.Latest,
+    true,
+  )
 
-  expect(Object.keys(exports.default).toSorted()).toStrictEqual(Object.keys(newExports).toSorted())
+  const exportedTypes: string[] = []
+
+  ts.forEachChild(sourceFile, (node) => {
+    if (
+      (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) &&
+      node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
+    ) {
+      exportedTypes.push(node.name.text)
+    }
+  })
+
+  return exportedTypes
+}
+
+async function getSanityPackageTypeExports() {
+  const version = '5.5.0'
+  const tmpDir = getTempPath()
+  await downloadAndExtractTarball(version, tmpDir)
+
+  const packagePath = getPackagePath(tmpDir, version)
+
+  const packageJson = await readPackageJson(join(packagePath, 'package.json'))
+  const types = packageJson.types
+  if (!types) {
+    throw new Error('Types not found')
+  }
+  const typesPath = join(packagePath, types)
+
+  const exportedTypes = await extractTypes(typesPath)
+
+  return exportedTypes
+}
+
+test('should match exports of the current cli package', async () => {
+  const oldCliExports = await getSanityPackageExports()
+
+  expect(Object.keys(oldCliExports.default).toSorted()).toStrictEqual(
+    Object.keys(newExports).toSorted(),
+  )
+})
+
+test.skip('should match type exports of the current cli package', async () => {
+  const oldCliTypeExports = await getSanityPackageTypeExports()
+  const newCliTypeExports = await extractTypes(
+    join(import.meta.dirname, '../../dist', 'index.d.ts'),
+  )
+
+  expect(oldCliTypeExports.toSorted()).toStrictEqual(newCliTypeExports.toSorted())
 })
