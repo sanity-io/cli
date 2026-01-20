@@ -71,34 +71,34 @@ describe('#init: oclif command setup', () => {
           [--provider <provider>] [--template <template> | ] [--typescript | ]
           [--visibility <mode>] [-y]
 
-            FLAGS
-              -y, --yes                        Unattended mode, answers "yes" to any
-                                               "yes/no" prompt and otherwise uses defaults
-                  --[no-]auto-updates          Enable auto updates of studio versions
-                  --bare                       Skip the Studio initialization and only print
-                                               the selected project ID and dataset name to
-                                               stdout
-                  --coupon=<code>              Optionally select a coupon for a new project
-                                               (cannot be used with --project-plan)
-                  --create-project=<name>      Create a new project with the given name
-                  --dataset=<name>             Dataset name for the studio
-                  --dataset-default            Set up a project with a public dataset named
-                                               "production"
-                  --env=<filename>             Write environment variables to file
-                  --[no-]git=<message>         Specify a commit message for initial commit,
-                                               or disable git init
-                  --[no-]mcp                   Enable AI editor integration (MCP) setup
-                  --organization=<id>          Organization ID to use for the project
-                  --output-path=<path>         Path to write studio project to
-                  --[no-]overwrite-files       Overwrite existing files
-                  --package-manager=<manager>  Specify which package manager to use
-                                               [allowed: npm, yarn, pnpm]
-                  --project=<id>               Project ID to use for the studio
-                  --project-plan=<name>        Optionally select a plan for a new project
-                  --provider=<provider>        Login provider to use
-                  --template=<template>        Project template to use [default: "clean"]
-                  --[no-]typescript            Enable TypeScript support
-                  --visibility=<mode>          Visibility mode for dataset
+      FLAGS
+        -y, --yes                        Unattended mode, answers "yes" to any
+                                         "yes/no" prompt and otherwise uses defaults
+            --[no-]auto-updates          Enable auto updates of studio versions
+            --bare                       Skip the Studio initialization and only print
+                                         the selected project ID and dataset name to
+                                         stdout
+            --coupon=<code>              Optionally select a coupon for a new project
+                                         (cannot be used with --project-plan)
+            --create-project=<name>      Create a new project with the given name
+            --dataset=<name>             Dataset name for the studio
+            --dataset-default            Set up a project with a public dataset named
+                                         "production"
+            --env=<filename>             Write environment variables to file
+            --[no-]git=<message>         Specify a commit message for initial commit,
+                                         or disable git init
+            --[no-]mcp                   Enable AI editor integration (MCP) setup
+            --organization=<id>          Organization ID to use for the project
+            --output-path=<path>         Path to write studio project to
+            --[no-]overwrite-files       Overwrite existing files
+            --package-manager=<manager>  Specify which package manager to use
+                                         [allowed: npm, yarn, pnpm]
+            --project=<id>               Project ID to use for the studio
+            --project-plan=<name>        Optionally select a plan for a new project
+            --provider=<provider>        Login provider to use
+            --template=<template>        Project template to use [default: "clean"]
+            --[no-]typescript            Enable TypeScript support
+            --visibility=<mode>          Visibility mode for dataset
 
       GLOBAL FLAGS
         --json  Format output as json.

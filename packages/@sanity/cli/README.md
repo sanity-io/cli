@@ -18,7 +18,7 @@ $ npm install -g @sanity/cli
 $ sanity COMMAND
 running command...
 $ sanity (--version)
-@sanity/cli/6.0.0-alpha.6 darwin-arm64 node-v24.13.0
+@sanity/cli/6.0.0-alpha.6 darwin-arm64 node-v24.11.0
 $ sanity --help [COMMAND]
 USAGE
   $ sanity COMMAND
@@ -2052,12 +2052,12 @@ FLAGS
       --[no-]mcp                   Enable AI editor integration (MCP) setup
       --organization=<id>          Organization ID to use for the project
       --output-path=<path>         Path to write studio project to
-      --overwrite-files            Overwrite existing files
+      --[no-]overwrite-files       Overwrite existing files
       --package-manager=<manager>  Specify which package manager to use [allowed: npm, yarn, pnpm]
       --project=<id>               Project ID to use for the studio
       --project-plan=<name>        Optionally select a plan for a new project
       --provider=<provider>        Login provider to use
-      --template=<template>        [default: clean] Project template to use [default: "clean"]
+      --template=<template>        Project template to use [default: "clean"]
       --[no-]typescript            Enable TypeScript support
       --visibility=<mode>          Visibility mode for dataset
 
