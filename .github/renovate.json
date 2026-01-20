@@ -28,9 +28,9 @@
       "semanticCommitType": "chore"
     },
     {
-      "description": "Group TypeScript related deps in a single PR, as they often have to update together",
-      "groupName": "typescript-tooling",
-      "matchPackageNames": ["@sanity/pkg-utils", "typescript"],
+      "description": "Group swc related deps in a single PR, as they often have to update together",
+      "groupName": "swc-tooling",
+      "matchPackageNames": ["@swc/core", "@swc/cli", "@swc/helpers"],
       "group": {"semanticCommitType": "chore"},
       "semanticCommitType": "chore"
     },
@@ -53,7 +53,7 @@
     {
       "description": "Group sanity related deps in a single PR, as they often have to update together",
       "groupName": "sanity-tooling",
-      "matchPackageNames": ["@sanity/*", "sanity"],
+      "matchPackageNames": ["@sanity/*", "sanity", "groq", "groq-js"],
       "group": {"semanticCommitType": "fix"},
       "semanticCommitType": "fix"
     },
