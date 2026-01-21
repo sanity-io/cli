@@ -300,6 +300,9 @@ importers:
       '@oclif/plugin-not-found':
         specifier: 'catalog:'
         version: 3.2.73(@types/node@20.19.30)
+      '@rexxars/gitconfiglocal':
+        specifier: ^3.0.1
+        version: 3.0.1
       '@sanity/cli-core':
         specifier: workspace:*
         version: link:../cli-core

@@ -10,9 +10,9 @@ import {InitCommand} from '../../init'
 
 const mocks = vi.hoisted(() => ({
   bootstrapTemplate: vi.fn(),
+  createOrAppendEnvVars: vi.fn(),
   installDeclaredPackages: vi.fn(),
   select: vi.fn(),
-  setupEnvFile: vi.fn(),
   setupMCP: vi.fn(),
 }))
 
@@ -99,8 +99,8 @@ vi.mock('../../../util/packageManager/installPackages.js', () => ({
   installDeclaredPackages: mocks.installDeclaredPackages.mockResolvedValue(undefined),
 }))
 
-vi.mock('../../../actions/init/setupEnvFile.js', () => ({
-  setupEnvFile: mocks.setupEnvFile,
+vi.mock('../../../actions/init/env/createOrAppendEnvVars.js', () => ({
+  createOrAppendEnvVars: mocks.createOrAppendEnvVars,
 }))
 
 vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
@@ -134,7 +134,7 @@ const defaultMocks = {
   token: 'test-token',
 }
 
-mocks.setupEnvFile.mockResolvedValue(undefined)
+mocks.createOrAppendEnvVars.mockResolvedValue(undefined)
 
 describe('#init: bootstrap-app-initialization', () => {
   afterEach(() => {
@@ -143,7 +143,7 @@ describe('#init: bootstrap-app-initialization', () => {
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
-  test('initializes app', async () => {
+  test('initializes app without env files', async () => {
     setupInitSuccessMocks()
 
     mocks.select.mockResolvedValueOnce('blog') // template
@@ -174,7 +174,7 @@ describe('#init: bootstrap-app-initialization', () => {
         '--project=test',
         '--dataset=test',
         '--package-manager=npm',
-        '--env=.env',
+        '--typescript',
       ],
       {
         mocks: {
@@ -184,16 +184,6 @@ describe('#init: bootstrap-app-initialization', () => {
       },
     )
 
-    expect(mocks.setupEnvFile).toHaveBeenCalledWith({
-      datasetName: 'test',
-      detectedFramework: undefined,
-      envFilename: '.env',
-      isNextJs: false,
-      output: expect.any(Object),
-      outputPath: '/test/output',
-      projectId: 'test',
-      workDir: '/test/work/dir',
-    })
     expect(mocks.bootstrapTemplate).toHaveBeenCalledWith({
       autoUpdates: true,
       bearerToken: undefined,
@@ -208,7 +198,7 @@ describe('#init: bootstrap-app-initialization', () => {
       remoteTemplateInfo: undefined,
       schemaUrl: undefined,
       templateName: 'blog',
-      useTypeScript: false,
+      useTypeScript: true,
     })
     expect(stdout).toContain('Success! Your Studio has been created')
     expect(stdout).toContain('cd /test/output to navigate to your new project directory')
@@ -221,6 +211,26 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(stdout).toContain('npx sanity docs browse')
     expect(stdout).toContain('npx sanity manage')
     expect(stdout).toContain('npx sanity help')
+  })
+
+  test('initializes app with env file', async () => {
+    setupInitSuccessMocks()
+
+    mocks.select.mockResolvedValueOnce('blog') // template
+
+    const {error} = await testCommand(
+      InitCommand,
+      ['--output-path=/test/output', '--project=test', '--dataset=test', '--env=.env'],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+
+    // Exits early without calling rest of templating code
+    expect(error?.oclif?.exit).toBe(0)
   })
 
   test('initializes app in unattended mode', async () => {

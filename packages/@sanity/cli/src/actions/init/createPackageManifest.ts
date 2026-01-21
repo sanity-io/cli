@@ -91,7 +91,7 @@ function serializeManifest(src: PackageJson | SanityJson): string {
   const ordered: Record<string, unknown> = {}
   for (const prop of props) {
     const source = src as Record<string, unknown>
-    if (source[prop] !== 'undefined' && ordered[prop] === 'undefined') {
+    if (source[prop] !== undefined && ordered[prop] === undefined) {
       ordered[prop] = source[prop]
     }
   }

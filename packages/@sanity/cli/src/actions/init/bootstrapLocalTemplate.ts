@@ -40,6 +40,7 @@ export async function bootstrapLocalTemplate(
   opts: BootstrapLocalOptions,
 ): Promise<ProjectTemplate> {
   const {output, outputPath, packageName, schemaUrl, templateName, useTypeScript, variables} = opts
+  // packages/@sanity/cli/src/actions/init/ -> packages/@sanity/cli/src/action -> packages/@sanity/cli/src/
   const cliRoot = path.resolve(import.meta.dirname, '../../..')
   const templatesDir = path.join(cliRoot, 'templates')
   const sourceDir = path.join(templatesDir, templateName)
@@ -58,9 +59,11 @@ export async function bootstrapLocalTemplate(
     schemaUrl ? 'Extracting your Sanity configuration' : 'Bootstrapping files from template',
   ).start()
 
+  debug(`Copying template from : ${sourceDir}`)
   await copy(sourceDir, outputPath, {
     rename: useTypeScript ? toTypeScriptPath : undefined,
   })
+  debug(`Copying shared template code from : ${sharedDir}`)
   await copy(path.join(sharedDir, 'gitignore.txt'), outputPath, {rename: () => '.gitignore'})
 
   if (useTypeScript) {

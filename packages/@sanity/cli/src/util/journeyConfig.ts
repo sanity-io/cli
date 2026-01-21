@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {Worker} from 'node:worker_threads'
 
 import {
@@ -8,8 +9,6 @@ import {
   type ObjectDefinition,
 } from '@sanity/types'
 import {format} from 'prettier'
-
-import {getCliWorkerPath} from './cliWorker.js'
 
 /**
  * A Journey schema is a server schema that is saved in the Journey API
@@ -72,7 +71,9 @@ export async function getAndWriteJourneySchema(data: JourneySchemaWorkerData): P
 export async function getAndWriteJourneySchemaWorker(
   workerData: JourneySchemaWorkerData,
 ): Promise<void> {
-  const workerPath = await getCliWorkerPath('getAndWriteJourneySchema')
+  const workerPath = fileURLToPath(
+    new URL('../../actions/build/renderDocument.worker.js', import.meta.url),
+  )
   return new Promise((resolve, reject) => {
     const worker = new Worker(workerPath, {
       env: {

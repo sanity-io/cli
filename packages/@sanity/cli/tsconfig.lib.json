@@ -7,6 +7,6 @@
     "outDir": "./dist",
     "rootDir": "./src",
   },
-  "include": ["./src", "./typings"],
+  "include": ["./src"],
   "exclude": ["**/*.test.ts", "**/*.spec.ts", "test/**/*", "**/__tests__/**/*"],
 }

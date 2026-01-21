@@ -1,6 +1,6 @@
 {
   "extends": "@repo/tsconfig/base.json",
-  "include": ["./src", "./test", "./typings"],
+  "include": ["./src", "./test"],
   "compilerOptions": {
     "rootDir": ".",
     "jsx": "react-jsx",

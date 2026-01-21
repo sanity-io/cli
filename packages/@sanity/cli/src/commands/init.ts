@@ -21,6 +21,7 @@ import {bootstrapTemplate} from '../actions/init/bootstrapTemplate.js'
 import {checkNextJsReactCompatibility} from '../actions/init/checkNextJsReactCompatibility.js'
 import {countNestedFolders} from '../actions/init/countNestedFolders.js'
 import {determineAppTemplate} from '../actions/init/determineAppTemplate.js'
+import {createOrAppendEnvVars} from '../actions/init/env/createOrAppendEnvVars.js'
 import {fetchPostInitPrompt} from '../actions/init/fetchPostInitPrompt.js'
 import {tryGitInit} from '../actions/init/git.js'
 import {
@@ -29,8 +30,7 @@ import {
   type RepoInfo,
 } from '../actions/init/remoteTemplate.js'
 import {resolvePackageManager} from '../actions/init/resolvePackageManager.js'
-import {setupEnvFile} from '../actions/init/setupEnvFile.js'
-import {EditorName, setupMCP} from '../actions/init/setupMCP.js'
+import {type EditorName, setupMCP} from '../actions/init/setupMCP.js'
 import templates from '../actions/init/templates/index.js'
 import {
   sanityCliTemplate,
@@ -38,6 +38,7 @@ import {
   sanityFolder,
   sanityStudioTemplate,
 } from '../actions/init/templates/nextjs/index.js'
+import {type VersionedFramework} from '../actions/init/types.js'
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'
@@ -70,7 +71,7 @@ import {
 } from '../util/packageManager/installPackages.js'
 import {
   getPartialEnvWithNpmPath,
-  PackageManager,
+  type PackageManager,
 } from '../util/packageManager/packageManagerChoice.js'
 
 const debug = subdebug('init')
@@ -368,13 +369,15 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       this.log('')
     }
 
+    let newProject: string | undefined
     if (createProjectName) {
-      await this.createProjectFromName({createProjectName, planId, user})
+      newProject = await this.createProjectFromName({createProjectName, planId, user})
     }
 
     const {datasetName, displayName, isFirstProject, organizationId, projectId, schemaUrl} =
       await this.getProjectDetails({
         isAppTemplate,
+        newProject,
         planId,
         showDefaultConfigPrompt,
         user,
@@ -411,10 +414,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // add more frameworks to this as we add support for them
     // this is used to skip the getProjectInfo prompt
     const initFramework = initNext
-    let appendEnvVarsNextjs = this.flagOrDefault('nextjs-append-env', true)
-    if (isNextJs && this.promptForUndefinedFlag(this.flags['nextjs-append-env'])) {
-      appendEnvVarsNextjs = await promptForAppendEnv(envFilename)
-    }
 
     // Gather project defaults based on environment
     const defaults = await getProjectDefaults({isPlugin: false, workDir})
@@ -440,20 +439,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // }
     const mcpConfigured = mcpResult.configuredEditors
 
-    // user wants to write environment variables to file
-    if (this.flags.env || (initNext && appendEnvVarsNextjs)) {
-      await setupEnvFile({
-        datasetName,
-        detectedFramework,
-        envFilename,
-        isNextJs,
-        output: this.output,
-        outputPath,
-        projectId,
-        workDir,
-      })
-    }
-
     if (isNextJs) {
       await checkNextJsReactCompatibility({
         detectedFramework,
@@ -464,10 +449,29 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     if (initNext) {
       await this.initNextJs({
+        datasetName,
+        detectedFramework,
+        envFilename,
         mcpConfigured,
         projectId,
         workDir,
       })
+    }
+
+    // user wants to write environment variables to file
+    if (this.flags.env) {
+      await createOrAppendEnvVars({
+        envVars: {
+          DATASET: datasetName,
+          PROJECT_ID: projectId,
+        },
+        filename: envFilename,
+        framework: detectedFramework,
+        log: false,
+        output: this.output,
+        outputPath,
+      })
+      this.exit(0)
     }
 
     // Prompt for template to use
@@ -480,9 +484,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     let useTypeScript = this.flags.typescript
-    if (!remoteTemplateInfo && template) {
-      useTypeScript = template.typescriptOnly === true
-    } else if (this.promptForUndefinedFlag('typescript')) {
+    if (!remoteTemplateInfo && template && template.typescriptOnly === true) {
+      useTypeScript = true
+    } else if (this.promptForUndefinedFlag(this.flags.typescript)) {
       useTypeScript = await promptForTypeScript()
       // @todo
       // trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
@@ -499,9 +503,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     try {
       await updateProjectInitializedAt(projectId)
-    } catch {
+    } catch (err) {
       // Non-critical update
-      debug('Failed to update cliInitializedAt metadata')
+      debug('Failed to update cliInitializedAt metadata', err)
     }
 
     try {
@@ -712,7 +716,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       spin.succeed()
     }
 
-    this.flags.project = createdProject.projectId
+    return createdProject.projectId
   }
 
   // @todo do we actually need to be authenticated for init? check flags and determine.
@@ -862,9 +866,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   }
 
   private async getOrCreateProject({
+    newProject,
     planId,
     user,
   }: {
+    newProject: string | undefined
     planId: string | undefined
     user: SanityOrgUser
   }): Promise<{
@@ -873,7 +879,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     projectId: string
     userAction: 'create' | 'select'
   }> {
-    const projectId = this.flags.project
+    const projectId = this.flags.project || newProject
     const organizationId = this.flags.organization
     let projects
     let organizations: ProjectOrganization[]
@@ -1016,11 +1022,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
   private async getProjectDetails({
     isAppTemplate,
+    newProject,
     planId,
     showDefaultConfigPrompt,
     user,
   }: {
     isAppTemplate: boolean
+    newProject: string | undefined
     planId: string | undefined
     showDefaultConfigPrompt: boolean
     user: SanityOrgUser
@@ -1050,7 +1058,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     debug('Prompting user to select or create a project')
-    const project = await this.getOrCreateProject({planId, user})
+    const project = await this.getOrCreateProject({newProject, planId, user})
     debug(`Project with name ${project.displayName} selected`)
 
     // Now let's pick or create a dataset
@@ -1089,7 +1097,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   }): Promise<string> {
     const outputPath = this.flags['output-path']
     const specifiedPath = outputPath && path.resolve(outputPath)
-
     if (this.isUnattended() || specifiedPath || this.flags.env || initFramework) {
       return specifiedPath || workDir
     }
@@ -1104,10 +1111,16 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   }
 
   private async initNextJs({
+    datasetName,
+    detectedFramework,
+    envFilename,
     mcpConfigured,
     projectId,
     workDir,
   }: {
+    datasetName: string
+    detectedFramework: VersionedFramework | null
+    envFilename: string
     mcpConfigured: EditorName[]
     projectId: string
     workDir: string
@@ -1190,6 +1203,25 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       workDir,
     })
 
+    let appendEnv = this.flagOrDefault('nextjs-append-env', true)
+    if (this.promptForUndefinedFlag(this.flags['nextjs-append-env'])) {
+      appendEnv = await promptForAppendEnv(envFilename)
+    }
+
+    if (appendEnv) {
+      await createOrAppendEnvVars({
+        envVars: {
+          DATASET: datasetName,
+          PROJECT_ID: projectId,
+        },
+        filename: envFilename,
+        framework: detectedFramework,
+        log: true,
+        output: this.output,
+        outputPath: workDir,
+      })
+    }
+
     if (embeddedStudio) {
       const nextjsLocalDevOrigin = 'http://localhost:3000'
       const existingCorsOrigins = await listCorsOrigins(projectId)
@@ -1210,6 +1242,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
               : `Failed to add ${nextjsLocalDevOrigin} to CORS origins`,
           )
         } catch (error) {
+          debug(`Error creating new CORS Origin ${nextjsLocalDevOrigin}: ${error}`)
           this.error(`Failed to add ${nextjsLocalDevOrigin} to CORS origins: ${error}`, {exit: 1})
         }
       }
@@ -1256,7 +1289,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         break
       }
       case 'yarn': {
-        await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@11'], execOptions)
+        await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@12'], execOptions)
         break
       }
       default: {

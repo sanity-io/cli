@@ -11,13 +11,13 @@ import {InitCommand} from '../../init'
 const mocks = vi.hoisted(() => ({
   checkNextJsReactCompatibility: vi.fn(),
   confirm: vi.fn(),
+  createOrAppendEnvVars: vi.fn(),
   execa: vi.fn(),
   existsSync: vi.fn(),
   input: vi.fn(),
   installNewPackages: vi.fn(),
   mkdir: vi.fn(),
   select: vi.fn(),
-  setupEnvFile: vi.fn(),
   setupMCP: vi.fn(),
   writeFile: vi.fn(),
 }))
@@ -77,8 +77,8 @@ vi.mock('node:fs', () => ({
   existsSync: mocks.existsSync,
 }))
 
-vi.mock(import('node:fs/promises'), async (importOriginal) => {
-  const actual = await importOriginal()
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
   return {
     ...actual,
     mkdir: mocks.mkdir,
@@ -131,8 +131,8 @@ vi.mock('../../../util/packageManager/installPackages.js', () => ({
   installNewPackages: mocks.installNewPackages.mockResolvedValue(undefined),
 }))
 
-vi.mock('../../../actions/init/setupEnvFile.js', () => ({
-  setupEnvFile: mocks.setupEnvFile,
+vi.mock('../../../actions/init/env/createOrAppendEnvVars.js', () => ({
+  createOrAppendEnvVars: mocks.createOrAppendEnvVars,
 }))
 
 const setupInitSuccessMocks = () => {
@@ -158,7 +158,7 @@ const defaultMocks = {
   token: 'test-token',
 }
 
-mocks.setupEnvFile.mockResolvedValue(undefined)
+mocks.createOrAppendEnvVars.mockResolvedValue(undefined)
 mocks.mkdir.mockResolvedValue(undefined)
 mocks.writeFile.mockResolvedValue(undefined)
 mocks.execa.mockResolvedValue(undefined)
@@ -174,11 +174,11 @@ describe('#init:nextjs-app-initialization', () => {
     setupInitSuccessMocks()
 
     mocks.confirm.mockResolvedValueOnce(true) // nextjs-add-config-files
-    mocks.confirm.mockResolvedValueOnce(true) // nextjs-append-env
     mocks.confirm.mockResolvedValueOnce(true) // typescript
     mocks.input.mockResolvedValueOnce('/studio') // nextjs-embed-studio
     mocks.confirm.mockResolvedValueOnce('/studio') // studio path
     mocks.confirm.mockResolvedValueOnce(true) // template
+    mocks.confirm.mockResolvedValueOnce(true) // nextjs-append-env
 
     mockApi({
       apiVersion: CORS_API_VERSION,
@@ -211,18 +211,19 @@ describe('#init:nextjs-app-initialization', () => {
       },
     )
 
-    expect(mocks.setupEnvFile).toHaveBeenCalledWith({
-      datasetName: 'test',
-      detectedFramework: {
+    expect(mocks.createOrAppendEnvVars).toHaveBeenCalledWith({
+      envVars: {
+        DATASET: 'test',
+        PROJECT_ID: 'test',
+      },
+      filename: '.env.local',
+      framework: {
         name: 'Next.js',
         slug: 'nextjs',
       },
-      envFilename: '.env.local',
-      isNextJs: true,
+      log: true,
       output: expect.any(Object),
-      outputPath: '/test/output',
-      projectId: 'test',
-      workDir: '/test/work/dir',
+      outputPath: '/test/work/dir',
     })
     expect(mocks.checkNextJsReactCompatibility).toHaveBeenCalledWith({
       detectedFramework: {
@@ -296,19 +297,19 @@ describe('#init:nextjs-app-initialization', () => {
       },
     )
 
-    // In unattended mode the output path will resolve to the working directory
-    expect(mocks.setupEnvFile).toHaveBeenCalledWith({
-      datasetName: 'test',
-      detectedFramework: {
+    expect(mocks.createOrAppendEnvVars).toHaveBeenCalledWith({
+      envVars: {
+        DATASET: 'test',
+        PROJECT_ID: 'test',
+      },
+      filename: '.env.local',
+      framework: {
         name: 'Next.js',
         slug: 'nextjs',
       },
-      envFilename: '.env.local',
-      isNextJs: true,
+      log: true,
       output: expect.any(Object),
       outputPath: '/test/work/dir',
-      projectId: 'test',
-      workDir: '/test/work/dir',
     })
     expect(mocks.checkNextJsReactCompatibility).toHaveBeenCalledWith({
       detectedFramework: {
