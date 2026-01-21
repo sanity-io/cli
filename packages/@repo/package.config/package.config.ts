@@ -5,7 +5,7 @@ export default defineConfig({
     // We already check types with `check:types` scripts
     checkTypes: false,
     rules: {
-      // Disable rules for now
+      // Rules to disable
       'ae-internal-missing-underscore': 'off',
     },
   },

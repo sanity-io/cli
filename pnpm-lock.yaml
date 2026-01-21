@@ -333,9 +333,6 @@ importers:
       '@sanity/migrate':
         specifier: ^5.2.2
         version: 5.2.2(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)
-      '@sanity/pkg-utils':
-        specifier: 'catalog:'
-        version: 10.3.3(@types/babel__core@7.20.5)(@types/node@20.19.30)(babel-plugin-react-compiler@1.0.0)(debug@4.4.3)(oxc-resolver@11.16.2)(typescript@5.9.3)
       '@sanity/runtime-cli':
         specifier: ^13.0.3
         version: 13.0.3(@types/node@20.19.30)(debug@4.4.3)(lightningcss@1.30.2)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
@@ -538,6 +535,9 @@ importers:
       '@sanity/eslint-config-cli':
         specifier: workspace:*
         version: link:../eslint-config-cli
+      '@sanity/pkg-utils':
+        specifier: 'catalog:'
+        version: 10.3.3(@types/babel__core@7.20.5)(@types/node@20.19.30)(babel-plugin-react-compiler@1.0.0)(debug@4.4.3)(oxc-resolver@11.16.2)(typescript@5.9.3)
       '@swc/cli':
         specifier: 'catalog:'
         version: 0.7.10(@swc/core@1.15.10)(chokidar@4.0.3)

@@ -102,7 +102,7 @@ export interface ProjectCliClientOptions extends ClientConfig {
 }
 
 /**
- * Create a "global" (unscoped) Sanity API client.
+ * Create a "project" (scoped) Sanity API client.
  *
  * @public
  *
