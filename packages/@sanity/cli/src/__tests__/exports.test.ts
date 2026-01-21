@@ -123,7 +123,8 @@ test('should match exports of the current cli package', async () => {
   )
 })
 
-test.skip('should match type exports of the current cli package', async () => {
+// Note: This test is failing right now
+test('should match type exports of the current cli package', async () => {
   const oldCliTypeExports = await getSanityPackageTypeExports()
   const newCliTypeExports = await extractTypes(
     join(import.meta.dirname, '../../dist', 'index.d.ts'),
