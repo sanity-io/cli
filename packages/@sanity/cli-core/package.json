@@ -25,22 +25,19 @@
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     },
     "./tree": {
       "source": "./src/_exports/tree.ts",
-      "import": "./dist/_exports/tree.js",
-      "require": "./dist/_exports/tree.cjs"
+      "import": "./dist/_exports/tree.js"
     },
     "./ux": {
       "source": "./src/_exports/ux.ts",
-      "import": "./dist/_exports/ux.js",
-      "require": "./dist/_exports/ux.cjs"
+      "import": "./dist/_exports/ux.js"
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "./dist"
