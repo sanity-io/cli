@@ -60,8 +60,15 @@ export function getCliClient(options: CliClientOptions = {}): SanityClient {
 }
 
 /**
- * @internal
- * @deprecated This is only for INTERNAL use, and should not be relied upon outside of official Sanity modules
- * @returns A token to use when constructing a client without a `token` explicitly defined, or undefined
+ * @public
  */
-getCliClient.__internal__getToken = (): string | undefined => undefined
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace getCliClient {
+  /**
+   * @deprecated This is only for INTERNAL use, and should not be relied upon outside of official Sanity modules
+   * @returns A token to use when constructing a client without a `token` explicitly defined, or undefined
+   * @internal
+   */
+  // eslint-disable-next-line prefer-const, unicorn/no-useless-undefined
+  export let __internal__getToken: () => string | undefined = () => undefined
+}
