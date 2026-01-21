@@ -118,8 +118,8 @@ async function getSanityPackageTypeExports() {
 test('should match exports of the current cli package', async () => {
   const oldCliExports = await getSanityPackageExports()
 
-  expect(Object.keys(oldCliExports.default).toSorted()).toStrictEqual(
-    Object.keys(newExports).toSorted(),
+  expect(Object.keys(newExports).toSorted()).toStrictEqual(
+    Object.keys(oldCliExports.default).toSorted(),
   )
 })
 
@@ -130,5 +130,5 @@ test('should match type exports of the current cli package', async () => {
     join(import.meta.dirname, '../../dist', 'index.d.ts'),
   )
 
-  expect(oldCliTypeExports.toSorted()).toStrictEqual(newCliTypeExports.toSorted())
+  expect(newCliTypeExports.toSorted()).toStrictEqual(oldCliTypeExports.toSorted())
 })
