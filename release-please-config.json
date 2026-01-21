@@ -88,12 +88,6 @@
       "prerelease-type": "alpha",
       "release-type": "node",
       "versioning": "prerelease"
-    },
-    "packages/create-sanity": {
-      "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
-      "component": "create-sanity",
-      "release-type": "node"
     }
   },
   "plugins": [
