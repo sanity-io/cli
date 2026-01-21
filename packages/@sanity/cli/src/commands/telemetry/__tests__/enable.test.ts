@@ -3,7 +3,7 @@ import {getCliToken} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {fetchTelemetryConsent} from '../../../actions/telemetry/fetchTelemetryConsent.js'
+import {fetchTelemetryConsent} from '../../../services/telemetry.js'
 import {Enable} from '../enable.js'
 
 vi.mock('@sanity/cli-core', async () => {
@@ -15,7 +15,8 @@ vi.mock('@sanity/cli-core', async () => {
   }
 })
 
-vi.mock('../../../actions/telemetry/fetchTelemetryConsent.js', () => ({
+vi.mock('../../../services/telemetry.js', async () => ({
+  ...(await vi.importActual('../../../services/telemetry.js')),
   fetchTelemetryConsent: vi.fn(),
 }))
 

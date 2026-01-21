@@ -1,11 +1,11 @@
 import {getCliToken, isCi, isTrueish} from '@sanity/cli-core'
 
-import {fetchTelemetryConsent} from './fetchTelemetryConsent.js'
 import {
+  fetchTelemetryConsent,
   isValidApiConsentStatus,
   VALID_API_STATUSES,
   type ValidApiConsentStatus,
-} from './isValidApiConsentStatus.js'
+} from '../../services/telemetry.js'
 import {telemetryDebug} from './telemetryDebug.js'
 import {type ConsentInformation} from './types.js'
 

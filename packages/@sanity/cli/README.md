@@ -18,7 +18,7 @@ $ npm install -g @sanity/cli
 $ sanity COMMAND
 running command...
 $ sanity (--version)
-@sanity/cli/6.0.0-alpha.7 darwin-arm64 node-v24.11.0
+@sanity/cli/6.0.0-alpha.7 darwin-arm64 node-v24.13.0
 $ sanity --help [COMMAND]
 USAGE
   $ sanity COMMAND
