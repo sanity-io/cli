@@ -25,13 +25,13 @@
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./package.json": "./package.json"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
   "bin": {
     "sanity": "./bin/run.js"
   },
@@ -46,7 +46,7 @@
   "scripts": {
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
     "postbuild": "pnpm run manifest:generate",
-    "build:types": "tsc --project tsconfig.lib.json",
+    "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
     "manifest:generate": "oclif manifest",
@@ -75,6 +75,7 @@
     "@sanity/id-utils": "^1.0.0",
     "@sanity/import": "^4.1.0",
     "@sanity/migrate": "^5.2.2",
+    "@sanity/pkg-utils": "catalog:",
     "@sanity/runtime-cli": "^13.0.3",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "^0.8.1",
@@ -140,6 +141,7 @@
   "devDependencies": {
     "@eslint/compat": "catalog:",
     "@oclif/test": "catalog:",
+    "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:*",

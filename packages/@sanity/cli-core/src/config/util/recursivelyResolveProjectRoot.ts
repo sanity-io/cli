@@ -3,7 +3,7 @@ import {dirname, resolve} from 'node:path'
 /**
  * Result of finding a project configuration
  *
- * @internal
+ * @public
  */
 export interface ProjectRootResult {
   directory: string

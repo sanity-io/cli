@@ -43,6 +43,7 @@ const baseConfig = {
         // certain threads files are used via loader, not import
         'src/threads/configClient.ts',
         'src/threads/registerBrowserEnv.ts',
+        'package.config.ts',
       ],
       ignore: [
         // Ignore exports until init work is done
@@ -66,10 +67,12 @@ const baseConfig = {
       entry: [
         // Worker files
         'src/**/*.worker.ts',
+        'package.config.ts',
       ],
       project,
     },
     'packages/@sanity/cli-test': {
+      entry: ['package.config.ts'],
       project,
     },
     'packages/create-sanity': {

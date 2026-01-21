@@ -6,5 +6,9 @@ import eslintConfig from '@sanity/eslint-config-cli'
 export default [
   includeIgnoreFile(resolve(import.meta.dirname, '.gitignore')),
   ...eslintConfig,
-  {rules: {'@typescript-eslint/no-explicit-any': 'warn'}},
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
 ]

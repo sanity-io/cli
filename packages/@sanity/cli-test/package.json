@@ -25,18 +25,18 @@
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     },
     "./vitest": {
       "source": "./src/vitest.ts",
-      "require": "./dist/vitest.js",
-      "import": "./dist/vitest.js"
+      "import": "./dist/vitest.js",
+      "require": "./dist/vitest.cjs"
     },
     "./package.json": "./package.json"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
   "files": [
     "./dist",
     "./examples"
@@ -45,7 +45,7 @@
     "prebuild": "pnpm run clean",
     "build": "pnpm run build:js && pnpm run copy:examples",
     "build:js": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
-    "build:types": "tsc --project tsconfig.lib.json",
+    "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "clean": "rm -rf dist examples",
     "copy:examples": "node scripts/copy-examples.js",
@@ -68,10 +68,12 @@
   "devDependencies": {
     "@eslint/compat": "catalog:",
     "@oclif/core": "catalog:",
+    "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-core": "workspace:*",
     "@sanity/client": "^7.14.1",
     "@sanity/eslint-config-cli": "workspace:*",
+    "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
     "@types/node": "catalog:",
     "eslint": "catalog:",

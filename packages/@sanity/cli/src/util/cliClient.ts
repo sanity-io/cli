@@ -1,6 +1,9 @@
 import {findProjectRootSync, getCliConfigSync} from '@sanity/cli-core'
 import {createClient, type SanityClient} from '@sanity/client'
 
+/**
+ * @public
+ */
 export interface CliClientOptions {
   apiVersion?: string
 
@@ -11,6 +14,12 @@ export interface CliClientOptions {
   useCdn?: boolean
 }
 
+/**
+ * @public
+ *
+ * @param options - The options to use for the client.
+ * @returns A configured Sanity API client.
+ */
 export function getCliClient(options: CliClientOptions = {}): SanityClient {
   if (typeof process !== 'object') {
     throw new TypeError('getCliClient() should only be called from node.js scripts')
