@@ -2,7 +2,7 @@ import {rm} from 'node:fs/promises'
 
 import {type Output} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
-import {convertToSystemPath} from '@sanity/cli-test'
+import {convertToSystemPath, mockTelemetry} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, it, type MockedFunction, vi} from 'vitest'
 
 import {buildApp} from '../buildApp.js'
@@ -69,6 +69,8 @@ describe('buildApp', () => {
     log: vi.fn(),
     warn: vi.fn(),
   } as unknown as Output
+
+  mockTelemetry()
 
   const baseBuildOptions: BuildOptions = {
     autoUpdatesEnabled: false,

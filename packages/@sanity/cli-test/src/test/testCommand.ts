@@ -4,6 +4,7 @@ import {Command, Config} from '@oclif/core'
 
 import {type CaptureOptions, captureOutput, type CaptureResult} from './captureOutput.js'
 import {mockSanityCommand, type MockSanityCommandOptions} from './mockSanityCommand.js'
+import {mockTelemetry, type MockTelemetryOptions} from './mockTelemetry.js'
 
 type CommandClass = (new (argv: string[], config: Config) => Command) & typeof Command
 
@@ -23,7 +24,7 @@ export interface TestCommandOptions {
    * Mock options for SanityCommand dependencies (config, project root, API clients).
    * When provided, the command is automatically wrapped with mockSanityCommand.
    */
-  mocks?: MockSanityCommandOptions
+  mocks?: MockSanityCommandOptions & MockTelemetryOptions
 }
 
 /**
@@ -34,6 +35,9 @@ export async function testCommand(
   args?: string[],
   options?: TestCommandOptions,
 ): Promise<CaptureResult<unknown>> {
+  // Mock the global telemetry store so we don't crash.
+  mockTelemetry(options?.mocks)
+
   // If mocks provided, wrap the command with mockSanityCommand
   const CommandToRun = options?.mocks
     ? // eslint-disable-next-line @typescript-eslint/no-explicit-any

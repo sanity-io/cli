@@ -1,95 +1,109 @@
 import {defineTrace} from '@sanity/telemetry'
 
+import {type EditorName} from '../actions/mcp/editorConfigs.js'
+
 interface StartStep {
+  flags: Record<string, boolean | number | string | undefined>
   step: 'start'
-  flags: Record<string, string | number | undefined | boolean>
 }
 
 interface LoginStep {
   step: 'login'
+
   alreadyLoggedIn?: boolean
 }
 
 interface FetchJourneyConfigStep {
-  step: 'fetchJourneyConfig'
-  projectId: string
   datasetName: string
   displayName: string
   isFirstProject: boolean
+  projectId: string
+  step: 'fetchJourneyConfig'
 }
 
 interface CreateOrSelectProjectStep {
-  step: 'createOrSelectProject'
   projectId: string
-  selectedOption: 'create' | 'select' | 'none'
+  selectedOption: 'create' | 'none' | 'select'
+  step: 'createOrSelectProject'
 }
 
 interface CreateOrSelectDatasetStep {
-  step: 'createOrSelectDataset'
   datasetName: string
-  selectedOption: 'create' | 'select' | 'none'
+  selectedOption: 'create' | 'none' | 'select'
+  step: 'createOrSelectDataset'
   visibility: 'private' | 'public'
 }
 
 interface UseDefaultPlanCoupon {
+  selectedOption: 'no' | 'yes'
   step: 'useDefaultPlanCoupon'
-  selectedOption: 'yes' | 'no'
+
   coupon?: string
 }
 
 interface UseDefaultPlanId {
+  selectedOption: 'no' | 'yes'
   step: 'useDefaultPlanId'
-  selectedOption: 'yes' | 'no'
+
   planId?: string
 }
 
 interface UseDetectedFrameworkStep {
+  selectedOption: 'no' | 'yes'
   step: 'useDetectedFramework'
-  selectedOption: 'yes' | 'no'
+
   detectedFramework?: string
 }
 
 interface UseTypeScriptStep {
+  selectedOption: 'no' | 'yes'
   step: 'useTypeScript'
-  selectedOption: 'yes' | 'no'
 }
 
 interface SelectTemplateStep {
-  step: 'selectProjectTemplate'
   selectedOption: string
+  step: 'selectProjectTemplate'
 }
 interface ImportTemplateDatasetStep {
+  selectedOption: 'no' | 'yes'
   step: 'importTemplateDataset'
-  selectedOption: 'yes' | 'no'
 }
 
 interface SendCommunityInviteStep {
+  selectedOption: 'no' | 'yes'
   step: 'sendCommunityInvite'
-  selectedOption: 'yes' | 'no'
 }
 
 interface SelectPackageManagerStep {
-  step: 'selectPackageManager'
   selectedOption: string
+  step: 'selectPackageManager'
 }
 
-type InitStepResult =
-  | StartStep
-  | LoginStep
-  | FetchJourneyConfigStep
-  | CreateOrSelectProjectStep
+interface MCPSetupStep {
+  configuredEditors: EditorName[]
+  detectedEditors: EditorName[]
+  skipped: boolean
+  step: 'mcpSetup'
+}
+
+export type InitStepResult =
   | CreateOrSelectDatasetStep
-  | UseDetectedFrameworkStep
-  | UseTypeScriptStep
+  | CreateOrSelectProjectStep
+  | FetchJourneyConfigStep
   | ImportTemplateDatasetStep
-  | SendCommunityInviteStep
+  | LoginStep
+  | MCPSetupStep
   | SelectPackageManagerStep
   | SelectTemplateStep
+  | SendCommunityInviteStep
+  | StartStep
   | UseDefaultPlanCoupon
   | UseDefaultPlanId
+  | UseDetectedFrameworkStep
+  | UseTypeScriptStep
 
 export const CLIInitStepCompleted = defineTrace<InitStepResult>({
+  description: 'User completed a step in the CLI init flow',
   name: 'CLI Init Step Completed',
   version: 1,
-  description: 'User completed a step in the CLI init flow',
 })

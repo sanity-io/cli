@@ -3,6 +3,7 @@ import path from 'node:path'
 
 import {type Output} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
+import {mockTelemetry} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, it, type MockedFunction, vi} from 'vitest'
 
 import {buildStudio} from '../buildStudio.js'
@@ -100,6 +101,8 @@ describe('buildStudio', () => {
     log: vi.fn(),
     warn: vi.fn(),
   } as unknown as Output
+
+  mockTelemetry()
 
   const baseBuildOptions: BuildOptions = {
     autoUpdatesEnabled: false,
