@@ -1293,7 +1293,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         break
       }
       case 'yarn': {
-        await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@12'], execOptions)
+        await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@11'], execOptions)
         break
       }
       default: {
