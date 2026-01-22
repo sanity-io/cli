@@ -3,7 +3,7 @@ import {type TelemetryEvent} from '@sanity/telemetry'
 
 import {telemetryDebug} from '../actions/telemetry/telemetryDebug.js'
 
-export const TELEMETRY_API_VERSION = 'v2023-12-18'
+export const TELEMETRY_API_VERSION = 'v2026-01-22'
 
 export const VALID_API_STATUSES = ['granted', 'denied', 'unset'] as const
 export type ValidApiConsentStatus = (typeof VALID_API_STATUSES)[number]
@@ -29,7 +29,7 @@ async function getTelemetryConsent(): Promise<{
 }> {
   const client = await getGlobalCliClient({
     apiVersion: TELEMETRY_API_VERSION,
-    requireUser: true,
+    requireUser: false,
   })
 
   return client.request({tag: 'telemetry-consent', uri: '/intake/telemetry-status'})
