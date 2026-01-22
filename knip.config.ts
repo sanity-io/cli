@@ -56,7 +56,7 @@ const baseConfig = {
         'src/actions/init/setupMCP.ts',
       ],
       // Claude is not a dependency of the CLI, but it is used in the MCP configuration
-      ignoreBinaries: ['claude', 'install-peerdeps'],
+      ignoreBinaries: ['claude'],
       oclif: {
         config: ['oclif.config.js'],
       },
