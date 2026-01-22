@@ -17,7 +17,6 @@ export interface BootstrapTemplateOptions {
   projectId: string
   projectName: string
   remoteTemplateInfo: RepoInfo | undefined
-  schemaUrl: string | undefined
   templateName: string
   useTypeScript: boolean
 }
@@ -34,7 +33,6 @@ export async function bootstrapTemplate({
   projectId,
   projectName,
   remoteTemplateInfo,
-  schemaUrl,
   templateName,
   useTypeScript,
 }: BootstrapTemplateOptions) {
@@ -62,7 +60,6 @@ export async function bootstrapTemplate({
     outputPath,
     overwriteFiles,
     packageName,
-    schemaUrl,
     templateName,
     useTypeScript,
     variables: bootstrapVariables,

@@ -222,6 +222,12 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Login provider to use',
       helpValue: '<provider>',
     }),
+    quickstart: Flags.boolean({
+      deprecated: true,
+      description:
+        'Used for initializing a project from a server schema that is saved in the Journey API',
+      hidden: true,
+    }),
     reconfigure: Flags.boolean({
       deprecated: {message: 'This flag is no longer supported', version: '3.0.0'},
       description: 'Reconfigure an existing project',
@@ -259,19 +265,18 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   }
 
   public async run(): Promise<void> {
-    const {args} = await this.parse(InitCommand)
-    const workDir = (await this.getProjectRoot()).directory
+    const workDir = process.cwd()
 
     const createProjectName = this.flags['create-project']
     // For backwards "compatibility" - we used to allow `sanity init plugin`,
     // and no longer do - but instead of printing an error about an unknown
     // _command_, we want to acknowledge that the user is trying to do something
     // that no longer exists but might have at some point in the past.
-    if (args.type) {
+    if (this.args.type) {
       this.error(
-        args.type === 'plugin'
+        this.args.type === 'plugin'
           ? 'Initializing plugins through the CLI is no longer supported'
-          : `Unknown init type "${args.type}"`,
+          : `Unknown init type "${this.args.type}"`,
         {exit: 1},
       )
     }
@@ -374,7 +379,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       newProject = await this.createProjectFromName({createProjectName, planId, user})
     }
 
-    const {datasetName, displayName, isFirstProject, organizationId, projectId, schemaUrl} =
+    const {datasetName, displayName, isFirstProject, organizationId, projectId} =
       await this.getProjectDetails({
         isAppTemplate,
         newProject,
@@ -521,7 +526,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         projectId,
         projectName: displayName || defaults.projectName,
         remoteTemplateInfo,
-        schemaUrl,
         templateName,
         useTypeScript,
       })

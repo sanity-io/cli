@@ -7,7 +7,6 @@ import {deburr} from 'lodash-es'
 
 import {studioDependencies} from '../../studioDependencies.js'
 import {copy} from '../../util/copy.js'
-import {getAndWriteJourneySchemaWorker} from '../../util/journeyConfig.js'
 import {resolveLatestVersions} from '../../util/resolveLatestVersions.js'
 import {createAppCliConfig} from './createAppCliConfig.js'
 import {createCliConfig} from './createCliConfig.js'
@@ -29,17 +28,12 @@ export interface BootstrapLocalOptions {
   variables: GenerateConfigOptions['variables']
 
   overwriteFiles?: boolean
-  /**
-   * Used for initializing a project from a server schema that is saved in the Journey API
-   * @beta
-   */
-  schemaUrl?: string
 }
 
 export async function bootstrapLocalTemplate(
   opts: BootstrapLocalOptions,
 ): Promise<ProjectTemplate> {
-  const {output, outputPath, packageName, schemaUrl, templateName, useTypeScript, variables} = opts
+  const {output, outputPath, packageName, templateName, useTypeScript, variables} = opts
   // packages/@sanity/cli/src/actions/init/ -> packages/@sanity/cli/src/action -> packages/@sanity/cli/src/
   const cliRoot = path.resolve(import.meta.dirname, '../../..')
   const templatesDir = path.join(cliRoot, 'templates')
@@ -55,9 +49,7 @@ export async function bootstrapLocalTemplate(
 
   // Copy template files
   debug('Copying files from template "%s" to "%s"', templateName, outputPath)
-  let spin = spinner(
-    schemaUrl ? 'Extracting your Sanity configuration' : 'Bootstrapping files from template',
-  ).start()
+  let spin = spinner('Bootstrapping files from template').start()
 
   debug(`Copying template from : ${sourceDir}`)
   await copy(sourceDir, outputPath, {
@@ -68,17 +60,6 @@ export async function bootstrapLocalTemplate(
 
   if (useTypeScript) {
     await fs.copyFile(path.join(sharedDir, 'tsconfig.json'), path.join(outputPath, 'tsconfig.json'))
-  }
-
-  // If we have a schemaUrl, get the schema and write it to disk
-  // At this point the selected template should already have been forced to "clean"
-  if (opts.schemaUrl) {
-    debug('Fetching and writing remote schema "%s"', opts.schemaUrl)
-    await getAndWriteJourneySchemaWorker({
-      schemasPath: path.join(outputPath, 'schemaTypes'),
-      schemaUrl: opts.schemaUrl,
-      useTypeScript,
-    })
   }
 
   spin.succeed()

@@ -1,4 +1,4 @@
-import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
+import {createTestClient, mockApi, testCommand, testExample} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -73,19 +73,6 @@ vi.mock('execa', () => ({
   execa: mocks.execa,
 }))
 
-vi.mock('node:fs', () => ({
-  existsSync: mocks.existsSync,
-}))
-
-vi.mock('node:fs/promises', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:fs/promises')>()
-  return {
-    ...actual,
-    mkdir: mocks.mkdir,
-    writeFile: mocks.writeFile,
-  }
-})
-
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual('@sanity/cli-core/ux')
   return {
@@ -159,8 +146,6 @@ const defaultMocks = {
 }
 
 mocks.createOrAppendEnvVars.mockResolvedValue(undefined)
-mocks.mkdir.mockResolvedValue(undefined)
-mocks.writeFile.mockResolvedValue(undefined)
 mocks.execa.mockResolvedValue(undefined)
 
 describe('#init:nextjs-app-initialization', () => {
@@ -171,6 +156,8 @@ describe('#init:nextjs-app-initialization', () => {
     expect(pending, 'pending mocks').toEqual([])
   })
   test('initializes nextjs app', async () => {
+    const cwd = await testExample('basic-app')
+    process.cwd = () => cwd
     setupInitSuccessMocks()
 
     mocks.confirm.mockResolvedValueOnce(true) // nextjs-add-config-files
@@ -204,6 +191,7 @@ describe('#init:nextjs-app-initialization', () => {
       InitCommand,
       ['--output-path=/test/output', '--project=test', '--dataset=test', '--package-manager=npm'],
       {
+        config: {root: cwd},
         mocks: {
           ...defaultMocks,
           isInteractive: true,
@@ -223,7 +211,7 @@ describe('#init:nextjs-app-initialization', () => {
       },
       log: true,
       output: expect.any(Object),
-      outputPath: '/test/work/dir',
+      outputPath: cwd,
     })
     expect(mocks.checkNextJsReactCompatibility).toHaveBeenCalledWith({
       detectedFramework: {
@@ -240,7 +228,7 @@ describe('#init:nextjs-app-initialization', () => {
       },
       {
         output: expect.any(Object),
-        workDir: '/test/work/dir',
+        workDir: cwd,
       },
     )
 
@@ -257,6 +245,9 @@ describe('#init:nextjs-app-initialization', () => {
   })
 
   test('initializes nextjs app in unattended mode', async () => {
+    const cwd = await testExample('basic-app')
+    process.cwd = () => cwd
+
     // Mock to resolve correctly up to initializing nextjs app
     mockApi({
       apiVersion: ORGANIZATIONS_API_VERSION,
@@ -309,7 +300,7 @@ describe('#init:nextjs-app-initialization', () => {
       },
       log: true,
       output: expect.any(Object),
-      outputPath: '/test/work/dir',
+      outputPath: cwd,
     })
     expect(mocks.checkNextJsReactCompatibility).toHaveBeenCalledWith({
       detectedFramework: {
@@ -317,7 +308,7 @@ describe('#init:nextjs-app-initialization', () => {
         slug: 'nextjs',
       },
       output: expect.any(Object),
-      outputPath: '/test/work/dir',
+      outputPath: cwd,
     })
 
     expect(stdout).toContain(

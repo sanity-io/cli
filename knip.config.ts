@@ -53,8 +53,6 @@ const baseConfig = {
         'src/services/projects.ts',
         'src/prompts/init/index.ts',
         'src/prompts/init/promptForTypescript.ts',
-        'src/workers/getAndWriteJourneySchema.ts',
-        'src/util/journeyConfig.ts',
         'src/actions/init/setupMCP.ts',
       ],
       // Claude is not a dependency of the CLI, but it is used in the MCP configuration

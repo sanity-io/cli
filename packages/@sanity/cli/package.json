@@ -99,6 +99,7 @@
     "get-tsconfig": "catalog:",
     "git-user-info": "^2.0.3",
     "gunzip-maybe": "^1.4.2",
+    "install-peerdeps": "^3.0.7",
     "is-tar": "^1.0.0",
     "isomorphic-dompurify": "^2.32.0",
     "json5": "^2.2.3",
