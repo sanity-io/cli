@@ -3,6 +3,7 @@ import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {getTsconfig} from 'get-tsconfig'
 
+import {debug} from '../../debug.js'
 import {type RequireProps} from '../../types.js'
 import {isRecord} from '../../util/isRecord.js'
 
@@ -49,6 +50,7 @@ export function tsxWorkerTask<T = unknown>(
 
   return new Promise((resolve, reject) => {
     worker.addListener('error', function onWorkerError(err) {
+      debug(`Failed to load file through worker for: ${filePath.pathname}`, err)
       reject(new Error(`Failed to load file through worker: ${err.message}`, {cause: err}))
       cleanup()
     })
@@ -58,6 +60,7 @@ export function tsxWorkerTask<T = unknown>(
       }
     })
     worker.addListener('messageerror', function onWorkerMessageError(err) {
+      debug(`Failed to parse message from worker for: ${filePath.pathname}`, err)
       reject(new Error(`Fail to parse message from worker: ${err}`))
       cleanup()
     })

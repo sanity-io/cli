@@ -45,7 +45,7 @@
     "build:js": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
-    "clean": "rm -rf dist examples",
+    "clean": "rimraf dist examples",
     "copy:examples": "node scripts/copy-examples.js",
     "lint": "eslint .",
     "publint": "publint",
@@ -76,6 +76,7 @@
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "publint": "catalog:",
+    "rimraf": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
     "yaml": "^2.8.2"

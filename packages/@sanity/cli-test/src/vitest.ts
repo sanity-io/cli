@@ -17,4 +17,6 @@
  * ```
  */
 export {setup, teardown} from './test/setupExamples.js'
+export {snapshotSerializer} from './test/snapshotSerializer.js'
+
 export {setupWorkerBuild, teardownWorkerBuild} from './vitestWorker.js'

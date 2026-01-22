@@ -6,6 +6,15 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {readJsonFile} from '../../util/readJsonFile'
 import {findProjectRoot} from '../findProjectRoot'
 
+function createMockPath(unixPath: string): string {
+  if (process.platform === 'win32') {
+    // Convert Unix path to Windows path
+    // /mock/project/path' => C:\mock\project\path
+    return `C:${unixPath.replaceAll('/', '\\')}`
+  }
+  return unixPath
+}
+
 // Mock the fs/promises module
 vi.mock('node:fs/promises', () => ({
   access: vi.fn(),
@@ -17,7 +26,7 @@ vi.mock('../../util/readJsonFile', () => ({
 }))
 
 describe('#findProjectRoot', () => {
-  const mockCwd = '/mock/project/path'
+  const mockCwd = createMockPath('/mock/project/path')
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -86,12 +95,12 @@ describe('#findProjectRoot', () => {
     vi.mocked(readJsonFile).mockResolvedValue({root: true})
 
     await expect(findProjectRoot(mockCwd)).rejects.toThrow(
-      "Found 'sanity.json' at /mock/project/path - Sanity Studio < v3 is no longer supported",
+      `Found 'sanity.json' at ${mockCwd} - Sanity Studio < v3 is no longer supported`,
     )
   })
 
   test('recursively searches parent directories for config', async () => {
-    const parentPath = '/mock/project'
+    const parentPath = createMockPath('/mock/project')
 
     // Mock access to return true only for config in parent directory
     vi.mocked(access).mockImplementation((path) => {
@@ -123,7 +132,7 @@ describe('#findProjectRoot', () => {
     vi.mocked(readJsonFile).mockResolvedValue({root: true})
 
     await expect(findProjectRoot(mockCwd)).rejects.toThrow(
-      "Found 'sanity.json' at /mock/project/path - Sanity Studio < v3 is no longer supported",
+      `Found 'sanity.json' at ${mockCwd} - Sanity Studio < v3 is no longer supported`,
     )
   })
 

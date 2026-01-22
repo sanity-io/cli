@@ -4,7 +4,14 @@ import {homedir} from 'node:os'
 import {join} from 'node:path'
 
 import {type Config} from '@oclif/core'
-import {findProjectRoot, getCliConfig, getCliToken, getUserConfig, isCi} from '@sanity/cli-core'
+import {
+  findProjectRoot,
+  getCliConfig,
+  getCliToken,
+  getUserConfig,
+  isCi,
+  normalizePath,
+} from '@sanity/cli-core'
 import {testHook} from '@sanity/cli-test'
 import {type TelemetryEvent, type TelemetryLogEvent} from '@sanity/telemetry'
 import nock from 'nock'
@@ -268,7 +275,7 @@ describe('setupTelemetry integration test', () => {
       await new Promise((resolve) => setTimeout(resolve, 100))
 
       // Verify telemetry file was created
-      const telemetryFiles = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+      const telemetryFiles = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
       expect(telemetryFiles).toHaveLength(1)
 
       const telemetryFile = telemetryFiles[0]
@@ -322,7 +329,7 @@ describe('setupTelemetry integration test', () => {
       expect(sentEvents.length).toBeGreaterThanOrEqual(1)
 
       // Verify files were deleted after successful flush
-      const remainingFiles = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+      const remainingFiles = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
       expect(remainingFiles).toHaveLength(0)
     } finally {
       process.argv = originalArgv

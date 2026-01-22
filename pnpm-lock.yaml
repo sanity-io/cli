@@ -777,6 +777,9 @@ importers:
       publint:
         specifier: 'catalog:'
         version: 0.3.17
+      rimraf:
+        specifier: 'catalog:'
+        version: 6.1.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

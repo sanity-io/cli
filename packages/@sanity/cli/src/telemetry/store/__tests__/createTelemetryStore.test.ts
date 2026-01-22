@@ -2,7 +2,7 @@ import {mkdir} from 'node:fs/promises'
 import {homedir} from 'node:os'
 import {join} from 'node:path'
 
-import {getCliToken} from '@sanity/cli-core'
+import {getCliToken, normalizePath} from '@sanity/cli-core'
 import {type TelemetryEvent} from '@sanity/telemetry'
 import {glob} from 'tinyglobby'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -95,7 +95,7 @@ describe('#createTelemetryStore', () => {
       trace.complete()
 
       const telemetryPath = getTelemetryPath(testDir)
-      const filesBeforeEnd = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+      const filesBeforeEnd = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
       expect(filesBeforeEnd).toHaveLength(1)
 
       const events = await readNDJSON<TelemetryEvent>(filesBeforeEnd[0])
@@ -137,7 +137,7 @@ describe('#createTelemetryStore', () => {
       store1.logger.log(grantedEvent, {consentStatus: 'granted'})
 
       const expectedPath = join(testDir, '.config', 'sanity')
-      const grantedFiles = await glob(join(expectedPath, 'telemetry-*.ndjson'))
+      const grantedFiles = await glob(normalizePath(join(expectedPath, 'telemetry-*.ndjson')))
       expect(grantedFiles).toHaveLength(1)
 
       const grantedEvents = await readNDJSON<TelemetryEvent>(grantedFiles[0])
@@ -162,7 +162,7 @@ describe('#createTelemetryStore', () => {
       store2.logger.log(deniedEvent, {consentStatus: 'denied'})
 
       // No new files should be created when consent is denied
-      const finalFiles = await glob(join(expectedPath, 'telemetry-*.ndjson'))
+      const finalFiles = await glob(normalizePath(join(expectedPath, 'telemetry-*.ndjson')))
       expect(finalFiles).toHaveLength(1) // Still only the granted file
     })
 
@@ -184,7 +184,9 @@ describe('#createTelemetryStore', () => {
       await waitForAsync(WAIT_FOR_OPERATIONS)
 
       const expectedPath = join(testDir, '.config', 'sanity')
-      const filesAfterInitFailure = await glob(join(expectedPath, 'telemetry-*.ndjson'))
+      const filesAfterInitFailure = await glob(
+        normalizePath(join(expectedPath, 'telemetry-*.ndjson')),
+      )
 
       // After initialization failure, no events should be written
       expect(filesAfterInitFailure).toHaveLength(0)
@@ -211,7 +213,7 @@ describe('#createTelemetryStore', () => {
       store2.logger.log(logEvent, {data: 'test2', session: 2})
 
       const telemetryPath = getTelemetryPath(testDir)
-      const sessionFiles = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+      const sessionFiles = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
 
       // Verify each session created its own file
       expect(sessionFiles).toHaveLength(2)
@@ -260,7 +262,7 @@ describe('#createTelemetryStore', () => {
       trace.error(new Error('Should be ignored'))
 
       const telemetryPath = getTelemetryPath(testDir)
-      const files = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+      const files = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
       const events = await readNDJSON<TelemetryEvent>(files[0])
       const eventTypes = events.map((e) => e.type)
       expect(eventTypes).toEqual(['trace.start', 'trace.log', 'trace.log', 'trace.complete'])
@@ -290,7 +292,7 @@ describe('#createTelemetryStore', () => {
       expect(result).toBe('success')
 
       const telemetryPath = getTelemetryPath(testDir)
-      const files = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+      const files = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
       const events = await readNDJSON<TelemetryEvent>(files[0])
       const eventTypes = events.map((e) => e.type)
       expect(eventTypes).toEqual(['trace.start', 'trace.log', 'trace.complete'])
@@ -310,7 +312,7 @@ describe('#createTelemetryStore', () => {
       await expect(failingTrace.await(failingOperation)).rejects.toThrow('Operation failed')
 
       const telemetryPath = getTelemetryPath(testDir)
-      const files = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+      const files = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
       const events = await readNDJSON<TelemetryEvent>(files[0])
       const eventTypes = events.map((e) => e.type)
       expect(eventTypes).toEqual(['trace.start', 'trace.error'])
@@ -331,7 +333,7 @@ describe('#createTelemetryStore', () => {
       parentTraceInstance.complete()
 
       const telemetryPath = getTelemetryPath(testDir)
-      const files = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+      const files = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
       const events = await readNDJSON<TelemetryEvent>(files[0])
       const eventTypes = events.map((e) => e.type)
       expect(eventTypes).toEqual(['trace.start', 'log', 'trace.complete'])
@@ -363,7 +365,7 @@ describe('#createTelemetryStore', () => {
       store.logger.log(sampledEvent, {attempt: 2}) // Should be blocked by sampling
 
       const telemetryPath = getTelemetryPath(testDir)
-      const files = await glob(join(telemetryPath, 'telemetry-*.ndjson'))
+      const files = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
       expect(files).toHaveLength(1)
 
       const events = await readNDJSON<TelemetryEvent>(files[0])

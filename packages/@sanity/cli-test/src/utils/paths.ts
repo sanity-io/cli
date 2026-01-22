@@ -1,4 +1,4 @@
-import {resolve} from 'node:path'
+import {posix, resolve} from 'node:path'
 
 // Capture the initial working directory before any tests change it
 const INITIAL_CWD = process.cwd()
@@ -30,4 +30,34 @@ export function getExamplesPath(): string {
  */
 export function getTempPath(customTempDir?: string): string {
   return customTempDir || resolve(INITIAL_CWD, 'tmp')
+}
+
+/**
+ * Creates a platform-appropriate mock path for testing.
+ * On Windows, converts Unix-style paths to Windows paths (C:\\path\\to\\file).
+ * On Unix, keeps paths as-is (/path/to/file).
+ *
+ * @param unixPath - Unix-style path (e.g., '/mock/project/path')
+ * @returns Platform-appropriate path
+ * @internal
+ */
+export function createMockPath(unixPath: string, {windowsPrefix = 'C:\\'} = {}): string {
+  if (process.platform === 'win32') {
+    // Convert Unix path to Windows path
+    // /mock/project/path' => C:\mock\project\path
+    return `${windowsPrefix}${unixPath.replaceAll('/', '\\')}`
+  }
+  return unixPath
+}
+
+/**
+ * Joins path segments using POSIX separators (forward slashes) regardless of platform.
+ * Useful for creating expected paths in tests that should work cross-platform.
+ *
+ * @param paths - Path segments to join
+ * @returns Joined path with forward slashes
+ * @internal
+ */
+export function posixJoin(...paths: string[]): string {
+  return posix.join(...paths)
 }

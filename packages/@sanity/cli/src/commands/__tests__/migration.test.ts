@@ -68,7 +68,7 @@ describe('#migration', () => {
 
   test('should print migration run help', async () => {
     const {stdout} = await runCommand('migration run --help')
-    expect(stdout).toMatchInlineSnapshot(String.raw`
+    expect(stdout).toMatchInlineSnapshot(`
       "Run a migration against a dataset
 
       USAGE
@@ -112,7 +112,7 @@ describe('#migration', () => {
 
         execute the migration using a dataset export as the source
 
-          $ sanity migration run <id> --from-export=production.tar.gz --no-dry-run \
+          $ sanity migration run <id> --from-export=production.tar.gz --no-dry-run \\
             --project xyz --dataset staging
 
       "

@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
@@ -23,6 +23,7 @@ jobs:
         node-version: [20, 22, 24]
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
+        os: [ubuntu-latest, windows-latest]
       fail-fast: false
 
     steps:
@@ -35,9 +36,11 @@ jobs:
 
       - name: Set Turbo cache bypass on rerun
         if: github.run_attempt > 1
+        shell: bash
         run: echo "TURBO_FORCE=true" >> $GITHUB_ENV
 
-      - name: Test
+      - name: Test on ${{ matrix.os }}
+        shell: bash
         env:
           SANITY_AUTH_TOKEN: 'test-token'
         run: |
@@ -50,7 +53,7 @@ jobs:
           pnpm test $ARGS
 
       - name: Upload blob report to GitHub Actions Artifacts
-        if: ${{ !cancelled() && matrix.node-version == '20' }}
+        if: ${{ !cancelled() && matrix.node-version == '20' && matrix.os == 'ubuntu-latest' }}
         uses: actions/upload-artifact@v6
         with:
           name: blob-report-${{ github.run_id }}-${{ matrix.shardIndex }}

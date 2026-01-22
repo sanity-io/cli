@@ -1,6 +1,8 @@
 import {type Command} from '@oclif/core'
 import {type CliConfig, type ProjectRootResult, SanityCommand} from '@sanity/cli-core'
 
+import {createTestToken} from './createTestToken'
+
 /**
  * @public
  */
@@ -53,6 +55,10 @@ export function mockSanityCommand<T extends typeof SanityCommand<typeof Command>
   CommandClass: T,
   options: MockSanityCommandOptions = {},
 ): T {
+  if (options.token) {
+    createTestToken(options.token)
+  }
+
   // Create a subclass that overrides methods when mocks are provided
   // Note: we use @ts-expect-error because TypeScript can't properly infer
   // the relationship between the generic CommandClass and SanityCommand

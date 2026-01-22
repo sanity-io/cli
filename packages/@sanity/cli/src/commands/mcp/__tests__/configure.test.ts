@@ -3,7 +3,7 @@ import fs from 'node:fs/promises'
 
 import {runCommand} from '@oclif/test'
 import {checkbox} from '@sanity/cli-core/ux'
-import {mockApi, testCommand} from '@sanity/cli-test'
+import {createMockPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {execa} from 'execa'
 import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -50,6 +50,7 @@ describe('#mcp:configure', () => {
     mockExistsSync.mockReturnValue(false)
     mockWriteFile.mockResolvedValue()
     mockExeca.mockRejectedValue(new Error('Not installed'))
+    createTestToken('test-token')
   })
 
   afterEach(() => {
@@ -126,7 +127,11 @@ describe('#mcp:configure', () => {
     })
 
     expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining('.cursor/mcp.json'),
+      expect.stringContaining(
+        createMockPath('.cursor/mcp.json', {
+          windowsPrefix: '',
+        }),
+      ),
       expect.stringContaining('test-token-123'),
       'utf8',
     )
@@ -134,56 +139,113 @@ describe('#mcp:configure', () => {
     expect(stdout).toContain('MCP configured for Cursor')
   })
 
-  test('detects VS Code on macOS and configures it', async () => {
-    const originalPlatform = process.platform
-    Object.defineProperty(process, 'platform', {
-      value: 'darwin',
-    })
+  test.skipIf(process.platform !== 'darwin')(
+    'detects VS Code on macOS and configures it',
+    async () => {
+      const originalPlatform = process.platform
+      Object.defineProperty(process, 'platform', {
+        value: 'darwin',
+      })
 
-    mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('Library/Application Support/Code/User')
-    })
+      mockExistsSync.mockImplementation((path: PathLike) => {
+        return String(path).includes('Library/Application Support/Code/User')
+      })
 
-    mockCheckbox.mockResolvedValue(['VS Code'])
+      mockCheckbox.mockResolvedValue(['VS Code'])
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-456', sid: 'session-456'})
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'post',
+        uri: '/auth/session/create',
+      }).reply(200, {id: 'session-456', sid: 'session-456'})
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-456'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'test-token-456'})
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'get',
+        query: {sid: 'session-456'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'MCP Token', token: 'test-token-456'})
 
-    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+      const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    expect(mockCheckbox).toHaveBeenCalledWith({
-      choices: [
-        {
-          checked: true,
-          name: 'VS Code',
-          value: 'VS Code',
-        },
-      ],
-      message: 'Configure Sanity MCP server?',
-    })
+      expect(mockCheckbox).toHaveBeenCalledWith({
+        choices: [
+          {
+            checked: true,
+            name: 'VS Code',
+            value: 'VS Code',
+          },
+        ],
+        message: 'Configure Sanity MCP server?',
+      })
 
-    expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining('Code/User/mcp.json'),
-      expect.stringContaining('test-token-456'),
-      'utf8',
-    )
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining('Code/User/mcp.json'),
+        expect.stringContaining('test-token-456'),
+        'utf8',
+      )
 
-    expect(stdout).toContain('MCP configured for VS Code')
+      expect(stdout).toContain('MCP configured for VS Code')
 
-    Object.defineProperty(process, 'platform', {
-      value: originalPlatform,
-    })
-  })
+      Object.defineProperty(process, 'platform', {
+        value: originalPlatform,
+      })
+    },
+  )
+
+  test.skipIf(process.platform !== 'win32')(
+    'detects VS Code on Windows and configures it',
+    async () => {
+      const originalPlatform = process.platform
+      Object.defineProperty(process, 'platform', {
+        value: 'win32',
+      })
+
+      mockExistsSync.mockImplementation((path: PathLike) => {
+        return String(path).includes(String.raw`AppData\Roaming\Code\User`)
+      })
+
+      mockCheckbox.mockResolvedValue(['VS Code'])
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'post',
+        uri: '/auth/session/create',
+      }).reply(200, {id: 'session-456', sid: 'session-456'})
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'get',
+        query: {sid: 'session-456'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'MCP Token', token: 'test-token-456'})
+
+      const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+      expect(mockCheckbox).toHaveBeenCalledWith({
+        choices: [
+          {
+            checked: true,
+            name: 'VS Code',
+            value: 'VS Code',
+          },
+        ],
+        message: 'Configure Sanity MCP server?',
+      })
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining(String.raw`AppData\Roaming\Code\User\mcp.json`),
+        expect.stringContaining('test-token-456'),
+        'utf8',
+      )
+
+      expect(stdout).toContain('MCP configured for VS Code')
+
+      Object.defineProperty(process, 'platform', {
+        value: originalPlatform,
+      })
+    },
+  )
 
   test('detects Claude Code via CLI and configures it', async () => {
     mockExeca.mockResolvedValue({

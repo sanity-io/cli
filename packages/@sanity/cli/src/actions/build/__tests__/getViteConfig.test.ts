@@ -1,3 +1,6 @@
+import {join} from 'node:path'
+
+import {createMockPath} from '@sanity/cli-test'
 import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -53,6 +56,10 @@ vi.mock('../../../server/vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
+const mockTestCwd = createMockPath('/test/cwd')
+const mockSanityPath = createMockPath('/mock/path/to/sanity')
+const mockCustomOutput = createMockPath('/custom/output')
+
 describe('#getViteConfig', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
@@ -61,7 +68,7 @@ describe('#getViteConfig', () => {
     const {readPackageUp} = await import('read-package-up')
     vi.mocked(readPackageUp).mockResolvedValue({
       packageJson: {name: 'sanity'},
-      path: '/mock/path/to/sanity/package.json',
+      path: join(mockSanityPath, 'package.json'),
     })
   })
 
@@ -71,7 +78,7 @@ describe('#getViteConfig', () => {
 
   test('should create basic vite config with default options', async () => {
     const options = {
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -81,7 +88,7 @@ describe('#getViteConfig', () => {
     expect(config).toMatchObject({
       base: '/',
       build: {
-        outDir: '/test/cwd/dist',
+        outDir: join(mockTestCwd, 'dist'),
         sourcemap: true,
       },
       cacheDir: 'node_modules/.sanity/vite',
@@ -89,7 +96,7 @@ describe('#getViteConfig', () => {
       envPrefix: 'SANITY_STUDIO_',
       logLevel: 'info',
       mode: 'development',
-      root: '/test/cwd',
+      root: mockTestCwd,
       server: {
         host: undefined,
         port: 3333,
@@ -110,7 +117,7 @@ describe('#getViteConfig', () => {
 
   test('should create vite config for app mode', async () => {
     const options = {
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       isApp: true,
       mode: 'development' as const,
       reactCompiler: undefined,
@@ -126,10 +133,10 @@ describe('#getViteConfig', () => {
 
   test('should create production config with minification', async () => {
     const options = {
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       minify: true,
       mode: 'production' as const,
-      outputDir: '/custom/output',
+      outputDir: mockCustomOutput,
       reactCompiler: undefined,
       sourceMap: false,
     }
@@ -142,21 +149,21 @@ describe('#getViteConfig', () => {
       assetsDir: 'static',
       emptyOutDir: false,
       minify: 'esbuild',
-      outDir: '/custom/output',
+      outDir: mockCustomOutput,
       sourcemap: false,
     })
 
     expect(config.build?.rollupOptions).toMatchObject({
       external: ['external1', 'external2'],
       input: {
-        sanity: '/test/cwd/.sanity/runtime/app.js',
+        sanity: join(mockTestCwd, '.sanity/runtime/app.js'),
       },
     })
   })
 
   test('should create production config without minification', async () => {
     const options = {
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       minify: false,
       mode: 'production' as const,
       reactCompiler: undefined,
@@ -172,7 +179,7 @@ describe('#getViteConfig', () => {
 
     const options = {
       basePath: 'custom/path',
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -184,7 +191,7 @@ describe('#getViteConfig', () => {
 
   test('should handle custom server options', async () => {
     const options = {
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: undefined,
       server: {
@@ -211,7 +218,7 @@ describe('#getViteConfig', () => {
     }
 
     const options = {
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: reactCompilerConfig,
     }
@@ -229,7 +236,7 @@ describe('#getViteConfig', () => {
     vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
 
     const options = {
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -248,7 +255,7 @@ describe('#getViteConfig', () => {
     }
 
     const options = {
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       importMap,
       mode: 'production' as const,
       reactCompiler: undefined,
@@ -262,7 +269,7 @@ describe('#getViteConfig', () => {
     expect(createExternalFromImportMap).toHaveBeenCalledWith(importMap)
     expect(sanityBuildEntries).toHaveBeenCalledWith({
       basePath: '/',
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       importMap,
       isApp: undefined,
     })
@@ -273,7 +280,7 @@ describe('#getViteConfig', () => {
     vi.mocked(readPackageUp).mockResolvedValue(undefined)
 
     const options = {
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -288,7 +295,7 @@ describe('#getViteConfig', () => {
 
     const options = {
       basePath: '/studio',
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -296,14 +303,17 @@ describe('#getViteConfig', () => {
     await getViteConfig(options)
 
     expect(sanityFaviconsPlugin).toHaveBeenCalledWith({
-      customFaviconsPath: '/test/cwd/static',
-      defaultFaviconsPath: '/mock/path/to/sanity/static/favicons',
+      customFaviconsPath: join(mockTestCwd, 'static'),
+      defaultFaviconsPath: join(mockSanityPath, 'static/favicons'),
       staticUrlPath: '/studio/static',
     })
   })
 })
 
 describe('#finalizeViteConfig', () => {
+  const mockTestRoot = createMockPath('/test/root')
+  const mockTestMain = createMockPath('/test/main.js')
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -319,18 +329,18 @@ describe('#finalizeViteConfig', () => {
       build: {
         rollupOptions: {
           input: {
-            main: '/test/main.js',
+            main: mockTestMain,
           },
         },
       },
-      root: '/test/root',
+      root: mockTestRoot,
     }
 
     const expectedMerge = {
       build: {
         rollupOptions: {
           input: {
-            sanity: '/test/root/.sanity/runtime/app.js',
+            sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
           },
         },
       },
@@ -341,8 +351,8 @@ describe('#finalizeViteConfig', () => {
       build: {
         rollupOptions: {
           input: {
-            main: '/test/main.js',
-            sanity: '/test/root/.sanity/runtime/app.js',
+            main: mockTestMain,
+            sanity: join(mockTestRoot, '.sanity/runtime/app.js'),
           },
         },
       },
@@ -357,10 +367,10 @@ describe('#finalizeViteConfig', () => {
     const inputConfig: InlineConfig = {
       build: {
         rollupOptions: {
-          input: '/single/entry.js',
+          input: createMockPath('/single/entry.js'),
         },
       },
-      root: '/test/root',
+      root: mockTestRoot,
     }
 
     await expect(finalizeViteConfig(inputConfig)).rejects.toThrow(
@@ -373,7 +383,7 @@ describe('#finalizeViteConfig', () => {
       build: {
         rollupOptions: {
           input: {
-            main: '/test/main.js',
+            main: mockTestMain,
           },
         },
       },
@@ -386,6 +396,8 @@ describe('#finalizeViteConfig', () => {
 })
 
 describe('#extendViteConfigWithUserConfig', () => {
+  const mockTest = createMockPath('/test')
+
   beforeEach(() => {
     vi.clearAllMocks()
   })
@@ -397,7 +409,7 @@ describe('#extendViteConfigWithUserConfig', () => {
   test('should return default config when user config is undefined', async () => {
     const defaultConfig: InlineConfig = {
       mode: 'development',
-      root: '/test',
+      root: mockTest,
     }
     const env: ConfigEnv = {command: 'build', mode: 'development'}
 
@@ -411,7 +423,7 @@ describe('#extendViteConfigWithUserConfig', () => {
 
     const defaultConfig: InlineConfig = {
       mode: 'development',
-      root: '/test',
+      root: mockTest,
     }
     const userConfig = {
       define: {custom: 'value'},
@@ -434,7 +446,7 @@ describe('#extendViteConfigWithUserConfig', () => {
   test('should call user config function with default config and env', async () => {
     const defaultConfig: InlineConfig = {
       mode: 'development',
-      root: '/test',
+      root: mockTest,
     }
     const modifiedConfig = {
       ...defaultConfig,
@@ -465,7 +477,7 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
     // Access the onRollupWarn function by testing getViteConfig in production mode
     // which includes the onwarn callback
     const options = {
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       mode: 'production' as const,
       reactCompiler: undefined,
     }
@@ -494,7 +506,7 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
     }
 
     const config = await getViteConfig({
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       mode: 'production' as const,
       reactCompiler: undefined,
     })
@@ -511,12 +523,12 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
 
     const warning = {
       code: 'UNUSED_EXTERNAL_IMPORT' as const,
-      ids: ['/project/node_modules/some-lib/index.js'],
+      ids: [join(createMockPath('/project'), 'node_modules/some-lib/index.js')],
       message: 'Some warning from node_modules',
     }
 
     const config = await getViteConfig({
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       mode: 'production' as const,
       reactCompiler: undefined,
     })
@@ -537,7 +549,7 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
     }
 
     const config = await getViteConfig({
-      cwd: '/test/cwd',
+      cwd: mockTestCwd,
       mode: 'production' as const,
       reactCompiler: undefined,
     })
