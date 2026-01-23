@@ -25,15 +25,15 @@
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
     "./tree": {
       "source": "./src/_exports/tree.ts",
-      "import": "./dist/_exports/tree.js"
+      "default": "./dist/_exports/tree.js"
     },
     "./ux": {
       "source": "./src/_exports/ux.ts",
-      "import": "./dist/_exports/ux.js"
+      "default": "./dist/_exports/ux.js"
     },
     "./package.json": "./package.json"
   },

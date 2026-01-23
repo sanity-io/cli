@@ -25,11 +25,11 @@
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
     "./vitest": {
       "source": "./src/vitest.ts",
-      "import": "./dist/vitest.js"
+      "default": "./dist/vitest.js"
     },
     "./package.json": "./package.json"
   },
