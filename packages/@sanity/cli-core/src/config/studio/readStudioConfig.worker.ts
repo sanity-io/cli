@@ -4,6 +4,7 @@ import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 import {moduleResolve} from 'import-meta-resolve'
 import {z} from 'zod'
 
+import {doImport} from '../../util/doImport.js'
 import {getEmptyAuth} from '../../util/getEmptyAuth.js'
 import {safeStructuredClone} from '../../util/safeStructuredClone.js'
 
@@ -15,7 +16,7 @@ const {configPath, resolvePlugins} = z
   .object({configPath: z.string(), resolvePlugins: z.boolean()})
   .parse(workerData)
 
-let {default: config} = await import(configPath)
+let {default: config} = await doImport(configPath)
 
 if (resolvePlugins) {
   // If we need to resolve plugins, we need to import and use the `resolveConfig`
@@ -25,7 +26,7 @@ if (resolvePlugins) {
   const configUrl = pathToFileURL(configPath)
 
   const sanityUrl = await moduleResolve('sanity', configUrl)
-  const {resolveConfig} = await import(sanityUrl.href)
+  const {resolveConfig} = await doImport(sanityUrl.href)
   if (typeof resolveConfig !== 'function') {
     throw new TypeError('Expected `resolveConfig` from `sanity` to be a function')
   }
@@ -34,7 +35,7 @@ if (resolvePlugins) {
   // compatible with what the studio uses internally, thus try to load RxJS from the
   // sanity module path instead of installing it as a dependency locally.
   const rxjsPath = (await moduleResolve('rxjs', sanityUrl)).href
-  const {firstValueFrom, of} = await import(rxjsPath)
+  const {firstValueFrom, of} = await doImport(rxjsPath)
 
   // We will also want to stub out some configuration - we don't need to resolve the
   // users' logged in state, for instance - so let's disable the auth implementation.

@@ -1,5 +1,7 @@
 import fs from 'node:fs'
 
+import {doImport} from '@sanity/cli-core'
+
 import {buildDebug} from '../buildDebug.js'
 import {getPossibleDocumentComponentLocations} from '../getPossibleDocumentComponentLocations.js'
 
@@ -12,7 +14,7 @@ export async function tryLoadDocumentComponent(studioRootPath: string) {
   for (const componentPath of locations) {
     buildDebug('Trying to load document component from %s', componentPath)
     try {
-      const component = await import(componentPath)
+      const component = await doImport(componentPath)
 
       return {
         component,

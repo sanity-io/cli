@@ -3,6 +3,8 @@ import {pathToFileURL} from 'node:url'
 
 import {moduleResolve} from 'import-meta-resolve'
 
+import {doImport} from './doImport.js'
+
 /**
  * Resolves and imports a package from the local project's node_modules,
  * relative to the given working directory. This avoids circular dependencies
@@ -30,7 +32,7 @@ export async function resolveLocalPackage<T = unknown>(
 
   try {
     const packageUrl = moduleResolve(packageName, fakeCliConfigUrl)
-    const module = await import(packageUrl.href)
+    const module = await doImport(packageUrl.href)
     return module as T
   } catch (error) {
     throw new Error(

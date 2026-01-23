@@ -3,6 +3,8 @@ import {pathToFileURL} from 'node:url'
 
 import {moduleResolve} from 'import-meta-resolve'
 
+import {doImport} from '../doImport.js'
+
 /**
  * Loads the `getStudioEnvironmentVariables` function from the studio's
  * installed `sanity` package and returns the environment variables.
@@ -25,7 +27,7 @@ export async function getStudioEnvironmentVariables(
   // running, in order to ensure we're using the same version as the studio would.
   const sanityCliUrl = moduleResolve('sanity/cli', fakeConfigUrl)
   try {
-    const {getStudioEnvironmentVariables: getEnvVars} = await import(sanityCliUrl.href)
+    const {getStudioEnvironmentVariables: getEnvVars} = await doImport(sanityCliUrl.href)
     if (typeof getEnvVars !== 'function') {
       throw new TypeError(
         'Expected `getStudioEnvironmentVariables` from `sanity/cli` to be a function',
