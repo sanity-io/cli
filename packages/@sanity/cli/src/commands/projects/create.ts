@@ -1,12 +1,16 @@
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {confirm, spinner} from '@sanity/cli-core/ux'
 
-import {createProjectAction} from '../../actions/projects/createProjectAction.js'
-import {printProjectCreationSuccess} from '../../util/projectUtils.js'
-import {promptForProjectName} from '../../prompts/promptForProjectName.js'
+import {createDataset} from '../../actions/dataset/create.js'
 import {getOrganizationId} from '../../actions/organizations/getOrganizationId.js'
+import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
+import {promptForProjectName} from '../../prompts/promptForProjectName.js'
+import {getProjectFeatures} from '../../services/getProjectFeatures.js'
+import {createProject} from '../../services/projects.js'
+import {getCliUser} from '../../services/user.js'
 
-const createProjectDebug = subdebug('projects:create')
+const debug = subdebug('projects:create')
 
 export default class CreateProjectCommand extends SanityCommand<typeof CreateProjectCommand> {
   static override args = {
@@ -48,9 +52,7 @@ export default class CreateProjectCommand extends SanityCommand<typeof CreatePro
 
   static override flags = {
     dataset: Flags.string({
-      allowNo: false,
-      description: 'Create a dataset. Prompts for name/visibility unless specified or --yes used',
-      required: false,
+      description: 'Create a dataset. Prompts for visibility unless specified or --yes used',
     }),
     'dataset-visibility': Flags.string({
       description: 'Dataset visibility: public or private',
@@ -76,59 +78,61 @@ export default class CreateProjectCommand extends SanityCommand<typeof CreatePro
     const {args, flags} = await this.parse(CreateProjectCommand)
     const {projectName} = args
     const {dataset, 'dataset-visibility': datasetVisibility, json, organization, yes} = flags
-    const getCliUse
+    const user = await getCliUser()
 
     const finalProjectName =
       projectName ||
       projectName ||
       (yes || this.isUnattended() ? 'My Sanity Project' : await promptForProjectName())
 
-    // Get organization
-    const organization = await getOrganizationId()
+    debug('Creating project with options: %O', {
+      dataset,
+      datasetVisibility,
+      organizationId: organization,
+      projectName,
+      unattended: yes,
+    })
 
-    // Parse dataset options
-    let datasetName: string | undefined
-    let createDataset = false
+    const organizationId = await getOrganizationId(organization, user, this.output)
 
-    if (dataset === '') {
-      // --dataset flag without value - let action handle prompting
-      createDataset = true
-      datasetName = undefined
-    } else if (typeof dataset === 'string') {
-      // --dataset=name
-      createDataset = true
-      datasetName = dataset
+    const spin = spinner('Creating project').start()
+    const newProject = await createProject({
+      displayName: finalProjectName,
+      metadata: {
+        integration: 'cli',
+      },
+      organizationId,
+    })
+    spin.succeed('Project created successfully')
+
+    let datasetName: string | undefined = dataset
+
+    if (!datasetName && !this.isUnattended()) {
+      const wantsDataset = await confirm({
+        default: true,
+        message: 'Would you like to create a dataset?',
+      })
+      if (wantsDataset) {
+        datasetName = await promptForDatasetName()
+      }
     }
 
-    try {
-      createProjectDebug('Creating project with options: %O', {
-        createDataset,
+    // Create dataset if we have a name
+    if (datasetName) {
+      const projectFeatures = await getProjectFeatures(newProject.projectId)
+      await createDataset({
         datasetName,
-        datasetVisibility,
-        organizationId: organization,
-        projectName,
-        unattended: yes,
+        isUnattended: this.isUnattended(),
+        output: this.output,
+        projectFeatures,
+        projectId: newProject.projectId,
+        visibility: datasetVisibility,
       })
+    }
 
-      const result = await createProjectAction({
-        createDataset,
-        datasetName,
-        datasetVisibility: datasetVisibility as 'private' | 'public' | undefined,
-        organizationId: organization,
-        projectName,
-        unattended: yes,
-      })
-
-      if (json) {
-        this.log(JSON.stringify(result, null, 2))
-        return
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      createProjectDebug('Failed to create project: %s', message, error)
-      this.error(`Failed to create project: ${message}`, {exit: 1})
+    if (json) {
+      this.log(JSON.stringify(newProject, null, 2))
+      return
     }
   }
-
-  private async
 }

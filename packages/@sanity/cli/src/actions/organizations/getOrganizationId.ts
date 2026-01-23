@@ -1,19 +1,58 @@
-import {SanityOrgUser, subdebug} from '@sanity/cli-core'
-import {select} from '@sanity/cli-core/ux'
+import {CLIError} from '@oclif/core/errors'
+import {Output, type SanityOrgUser, subdebug} from '@sanity/cli-core'
+import {select, spinner} from '@sanity/cli-core/ux'
 
-import {promptForNewOrganization} from '../../prompts/promptForOrganization'
-import {ProjectOrganization} from '../../services/organizations'
-import {getOrganizationChoices} from './getOrganizationChoices'
-import {getOrganizationsWithAttachGrantInfo} from './getOrganizationsWithAttachGrantInfo'
+import {promptForOrganizationName} from '../../prompts/promptForOrganizationName.js'
+import {
+  createOrganization,
+  listOrganizations,
+  type ProjectOrganization,
+} from '../../services/organizations.js'
+import {getOrganizationChoices} from './getOrganizationChoices.js'
+import {getOrganizationsWithAttachGrantInfo} from './getOrganizationsWithAttachGrantInfo.js'
 
 const debug = subdebug('getOrganizationId')
 
-export async function getOrganizationId(organizations: ProjectOrganization[], user: SanityOrgUser) {
+const promptAndCreateNewOrganization = async (user: SanityOrgUser) => {
+  const organizationName = await promptForOrganizationName(user)
+  const spin = spinner('Creating organization').start()
+  const newOrganization = await createOrganization(organizationName)
+  spin.succeed()
+  return newOrganization.id
+}
+
+export async function getOrganizationId(
+  requestedId: string | undefined,
+  user: SanityOrgUser,
+  output: Output,
+) {
+  // Get available organizations
+  const spin = spinner('Loading organizations').start()
+  let organizations: ProjectOrganization[]
+  try {
+    organizations = await listOrganizations()
+    spin.succeed()
+  } catch (error) {
+    spin.fail()
+    debug('Error retrieving organization list', error)
+    throw error
+  }
+
+  // If organization is specified, validate it
+  if (requestedId) {
+    const org = organizations.find((o) => o.id === requestedId || o.slug === requestedId)
+    if (!org) {
+      throw new CLIError(`Organization "${requestedId}" not found or you don't have access to it`)
+    }
+
+    return org.id
+  }
+
   // If the user has no organizations, prompt them to create one with the same name as
   // their user, but allow them to customize it if they want
   if (organizations.length === 0) {
-    const newOrganization = await promptForNewOrganization(user)
-    return newOrganization.id
+    output.log('You need to create an organization to create projects.')
+    return promptAndCreateNewOrganization(user)
   }
 
   // If the user has organizations, let them choose from them, but also allow them to
@@ -41,8 +80,7 @@ export async function getOrganizationId(organizations: ProjectOrganization[], us
   })
 
   if (chosenOrg === '-new-') {
-    const newOrganization = await promptForNewOrganization(user)
-    return newOrganization.id
+    return promptAndCreateNewOrganization(user)
   }
 
   return chosenOrg || undefined

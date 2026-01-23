@@ -1,6 +1,6 @@
 import {input} from '@sanity/cli-core/ux'
 
-import {validateProjectName} from '../actions/projects/validateProjectName'
+import {validateProjectName} from '../actions/projects/validateProjectName.js'
 
 export async function promptForProjectName(): Promise<string> {
   return input({
