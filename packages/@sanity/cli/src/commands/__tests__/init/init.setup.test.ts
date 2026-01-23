@@ -2,7 +2,7 @@ import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {InitCommand} from '../../init'
+import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
   checkIsRemoteTemplate: vi.fn().mockReturnValue(false),
@@ -40,6 +40,15 @@ mocks.getById.mockResolvedValue({
   name: 'Test User',
   provider: 'saml-123',
 })
+
+const defaultMocks = {
+  projectRoot: {
+    directory: '/test/work/dir',
+    path: '/test/work/dir',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
 
 describe('#init: oclif command setup', () => {
   afterEach(() => {
@@ -81,14 +90,13 @@ describe('#init: oclif command setup', () => {
             --[no-]mcp                   Enable AI editor integration (MCP) setup
             --organization=<id>          Organization ID to use for the project
             --output-path=<path>         Path to write studio project to
-            --overwrite-files            Overwrite existing files
+            --[no-]overwrite-files       Overwrite existing files
             --package-manager=<manager>  Specify which package manager to use
                                          [allowed: npm, yarn, pnpm]
             --project=<id>               Project ID to use for the studio
             --project-plan=<name>        Optionally select a plan for a new project
             --provider=<provider>        Login provider to use
-            --template=<template>        [default: clean] Project template to use
-                                         [default: "clean"]
+            --template=<template>        Project template to use [default: "clean"]
             --[no-]typescript            Enable TypeScript support
             --visibility=<mode>          Visibility mode for dataset
 
@@ -187,8 +195,8 @@ describe('#init: oclif command setup', () => {
   test('throws error when type argument is passed', async () => {
     const {error} = await testCommand(InitCommand, ['bad-argument'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -199,8 +207,8 @@ describe('#init: oclif command setup', () => {
   test('throws deprecation error when type argument is passed with `plugin`', async () => {
     const {error} = await testCommand(InitCommand, ['plugin'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -211,8 +219,8 @@ describe('#init: oclif command setup', () => {
   test('throws error when `reconfigure` flag is passed', async () => {
     const {error} = await testCommand(InitCommand, ['--reconfigure'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -239,8 +247,8 @@ describe('#init: oclif command setup', () => {
       ['--template=https://github.com/sanity-io/sanity'],
       {
         mocks: {
+          ...defaultMocks,
           isInteractive: true,
-          token: 'test-token',
         },
       },
     )
@@ -254,7 +262,7 @@ describe('#init: oclif command setup', () => {
   test('throws error when in unattended mode and `dataset` is not set', async () => {
     const {error} = await testCommand(InitCommand, ['--yes'], {
       mocks: {
-        token: 'test-token',
+        ...defaultMocks,
       },
     })
 
@@ -271,7 +279,7 @@ describe('#init: oclif command setup', () => {
       ['--yes', '--dataset=production', '--project=test-project'],
       {
         mocks: {
-          token: 'test-token',
+          ...defaultMocks,
         },
       },
     )
@@ -296,7 +304,7 @@ describe('#init: oclif command setup', () => {
       ],
       {
         mocks: {
-          token: 'test-token',
+          ...defaultMocks,
         },
       },
     )
@@ -318,7 +326,7 @@ describe('#init: oclif command setup', () => {
       ['--yes', '--dataset=production', '--create-project=test'],
       {
         mocks: {
-          token: 'test-token',
+          ...defaultMocks,
         },
       },
     )
@@ -339,8 +347,8 @@ describe('#init: oclif command setup', () => {
       ],
       {
         mocks: {
+          ...defaultMocks,
           isInteractive: true,
-          token: 'test-token',
         },
       },
     )

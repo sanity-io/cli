@@ -4,7 +4,6 @@ import {Readable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
 
 import {subdebug} from '@sanity/cli-core'
-import {type SanityClient} from '@sanity/client'
 import {ENV_TEMPLATE_FILES, REQUIRED_ENV_VAR} from '@sanity/template-validator'
 import {x} from 'tar'
 
@@ -22,9 +21,6 @@ const ENV_VAR = {
   READ_TOKEN: 'SANITY_API_READ_TOKEN',
   WRITE_TOKEN: 'SANITY_API_WRITE_TOKEN',
 } as const
-
-const API_READ_TOKEN_ROLE = 'viewer'
-const API_WRITE_TOKEN_ROLE = 'editor'
 
 type EnvData = {
   dataset: string
@@ -62,7 +58,7 @@ function isGitHubRepoShorthand(value: string): boolean {
 }
 
 function isGitHubRepoUrl(value: string | URL): value is GitHubUrlString | URL {
-  if (URL.canParse(value) === false) {
+  if (!URL.canParse(value)) {
     return false
   }
   const url = new URL(value)
@@ -92,8 +88,8 @@ async function downloadTarStream(url: string, bearerToken?: string): Promise<Rea
     throw new Error(`Failed to download: ${url}`)
   }
 
-  // eslint-disable-next-line n/no-unsupported-features/node-builtins, @typescript-eslint/no-explicit-any
-  return Readable.fromWeb(res.body as any)
+  // eslint-disable-next-line n/no-unsupported-features/node-builtins
+  return Readable.fromWeb(res.body as Parameters<typeof Readable.fromWeb>[0])
 }
 
 export function checkIsRemoteTemplate(templateName?: string): boolean {
@@ -287,48 +283,5 @@ export async function tryApplyPackageName(root: string, name: string): Promise<v
     await writeFile(join(root, 'package.json'), JSON.stringify(pkg, null, 2))
   } catch {
     // noop
-  }
-}
-
-export async function generateSanityApiToken(
-  client: SanityClient,
-  label: string,
-  type: 'read' | 'write',
-  projectId: string,
-): Promise<string> {
-  // const client = await getGlobalCliClient({
-  //   apiVersion: 'v2021-06-07',
-  //   requireUser: true,
-  // })
-  const response = await client.request<{key: string}>({
-    body: {
-      label: `${label} (${Date.now()})`,
-      roleName: type === 'read' ? API_READ_TOKEN_ROLE : API_WRITE_TOKEN_ROLE,
-    },
-    method: 'POST',
-    uri: `/projects/${projectId}/tokens`,
-  })
-  return response.key
-}
-
-export async function setCorsOrigin(
-  client: SanityClient,
-  origin: string,
-  projectId: string,
-): Promise<void> {
-  try {
-    // const client = await getGlobalCliClient({
-    //   apiVersion: 'v2021-06-07',
-    //   requireUser: true,
-    // })
-
-    await client.withConfig({projectId}).request({
-      body: {allowCredentials: true, origin: origin}, // allowCredentials is true to allow for embedded studios if needed
-      method: 'POST',
-      url: '/cors',
-    })
-  } catch (error) {
-    // Silent fail, it most likely means that the origin is already set
-    debug('Failed to set CORS origin', error)
   }
 }

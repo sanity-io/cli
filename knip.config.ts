@@ -53,6 +53,7 @@ const baseConfig = {
         'src/services/projects.ts',
         'src/prompts/init/index.ts',
         'src/prompts/init/promptForTypescript.ts',
+        'src/actions/init/setupMCP.ts',
       ],
       // Claude is not a dependency of the CLI, but it is used in the MCP configuration
       ignoreBinaries: ['claude'],

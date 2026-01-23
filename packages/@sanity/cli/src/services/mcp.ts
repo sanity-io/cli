@@ -2,6 +2,7 @@ import {getGlobalCliClient} from '@sanity/cli-core'
 
 export const MCP_API_VERSION = '2025-12-09'
 export const MCP_SERVER_URL = 'https://mcp.sanity.io'
+export const MCP_JOURNEY_API_VERSION = 'v2024-02-23'
 
 type EditorName = 'Claude Code' | 'Cursor' | 'VS Code'
 
@@ -22,6 +23,10 @@ interface ServerConfig {
   }
   type: 'http'
   url: string
+}
+
+interface PostInitPromptResponse {
+  message?: string
 }
 
 /**
@@ -54,4 +59,18 @@ export async function createMCPToken(): Promise<string> {
   })
 
   return tokenResponse.token
+}
+
+/**
+ * Fetches the post-init MCP prompt from the Journey API and interpolates editor names.
+ * Falls back to a hardcoded default if the API call fails, times out, or returns empty.
+ * Text wrapped in **markers** will be formatted with cyan color.
+ */
+export async function getPostInitPrompt() {
+  const client = await getGlobalCliClient({apiVersion: MCP_JOURNEY_API_VERSION, requireUser: false})
+  return await client.request<PostInitPromptResponse | null>({
+    method: 'GET',
+    timeout: 1000,
+    uri: '/journey/mcp/post-init-prompt',
+  })
 }

@@ -5,7 +5,8 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {INIT_API_VERSION} from '../../../actions/init/constants.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
-import {InitCommand} from '../../init'
+import {PROJECTS_API_VERSION} from '../../../services/projects.js'
+import {InitCommand} from '../../init.js'
 
 const mockConfirm = vi.hoisted(() => vi.fn())
 const mockDetectedFramework = vi.hoisted(() => vi.fn())
@@ -26,11 +27,6 @@ vi.mock('@vercel/fs-detectors', () => ({
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-
-  const projectTestClient = createTestClient({
-    apiVersion: 'v2025-09-16',
-    token: 'test-token',
-  })
 
   return {
     ...actual,
@@ -60,14 +56,58 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
         } as never,
       }
     }),
-    getProjectCliClient: vi.fn().mockResolvedValue({
-      datasets: {
-        list: vi.fn().mockResolvedValue([{aclMode: 'public', name: 'test'}]),
-      },
-      request: projectTestClient.request,
+    getProjectCliClient: vi.fn().mockImplementation(async (options) => {
+      // Create a new client each time with the requested API version
+      const client = createTestClient({
+        apiVersion: options.apiVersion,
+        token: 'test-token',
+      })
+
+      return {
+        datasets: {
+          list: vi.fn().mockResolvedValue([{aclMode: 'public', name: 'test'}]),
+        },
+        request: client.request,
+      }
     }),
   }
 })
+
+// Below mocks are to make sure rest of command resolves successfully after plan logic
+vi.mock('../../../util/getProjectDefaults.js', () => ({
+  getProjectDefaults: vi.fn().mockResolvedValue({
+    author: undefined,
+    description: '',
+    gitRemote: '',
+    license: 'UNLICENSED',
+    projectName: 'test-project',
+  }),
+}))
+
+vi.mock('../../../actions/init/setupMCP.js', () => ({
+  setupMCP: vi.fn().mockResolvedValue({
+    configuredEditors: [],
+    detectedEditors: [],
+    error: undefined,
+    skipped: false,
+  }),
+}))
+
+vi.mock('../../../actions/init/checkNextJsReactCompatibility.js', () => ({
+  checkNextJsReactCompatibility: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
+  bootstrapTemplate: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../../actions/init/resolvePackageManager.js', () => ({
+  resolvePackageManager: vi.fn().mockResolvedValue('npm'),
+}))
+
+vi.mock('../../../util/packageManager/installPackages.js', () => ({
+  installDeclaredPackages: vi.fn().mockResolvedValue(undefined),
+}))
 
 const setupInitSuccessMocks = () => {
   mockApi({
@@ -81,6 +121,24 @@ const setupInitSuccessMocks = () => {
     method: 'get',
     uri: '/features',
   }).reply(200, ['privateDataset'])
+
+  mockApi({
+    apiVersion: PROJECTS_API_VERSION,
+    method: 'get',
+    uri: '/projects/test',
+  }).reply(200, {
+    id: 'test',
+    metadata: {cliInitializedAt: ''},
+  })
+}
+
+const defaultMocks = {
+  projectRoot: {
+    directory: '/test/work/dir',
+    path: '/test/work/dir',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
 }
 
 describe('#init: retrieving plan', () => {
@@ -109,11 +167,22 @@ describe('#init: retrieving plan', () => {
 
     const {stdout} = await testCommand(
       InitCommand,
-      ['--coupon=TESTCOUPON123', '--project=test', '--dataset=test'],
+      [
+        '--coupon=TESTCOUPON123',
+        '--project=test',
+        '--dataset=test',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--output-path=/test/output',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
       {
         mocks: {
+          ...defaultMocks,
           isInteractive: true,
-          token: 'test-token',
         },
       },
     )
@@ -130,8 +199,8 @@ describe('#init: retrieving plan', () => {
 
     const {error} = await testCommand(InitCommand, ['--coupon=TESTCOUPON123', '--bare'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -149,8 +218,8 @@ describe('#init: retrieving plan', () => {
 
     const {error} = await testCommand(InitCommand, ['--coupon=TESTCOUPON123', '--bare'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -173,12 +242,21 @@ describe('#init: retrieving plan', () => {
       uri: '/organizations',
     }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
 
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {},
+    })
+
     const {error, stderr, stdout} = await testCommand(
       InitCommand,
       ['--coupon=INVALID123', '--yes', '--dataset=test', '--project=test'],
       {
         mocks: {
-          token: 'test-token',
+          ...defaultMocks,
         },
       },
     )
@@ -201,11 +279,22 @@ describe('#init: retrieving plan', () => {
 
     const {error, stdout} = await testCommand(
       InitCommand,
-      ['--coupon=INVALID123', '--project=test', '--dataset=test'],
+      [
+        '--coupon=INVALID123',
+        '--project=test',
+        '--dataset=test',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--output-path=/test/output',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
       {
         mocks: {
+          ...defaultMocks,
           isInteractive: true,
-          token: 'test-token',
         },
       },
     )
@@ -228,8 +317,8 @@ describe('#init: retrieving plan', () => {
 
     const {error} = await testCommand(InitCommand, ['--coupon=INVALID123'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -248,11 +337,22 @@ describe('#init: retrieving plan', () => {
 
     const {error} = await testCommand(
       InitCommand,
-      ['--project-plan=growth', '--project=test', '--dataset=test'],
+      [
+        '--project-plan=growth',
+        '--project=test',
+        '--dataset=test',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--output-path=/test/output',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
       {
         mocks: {
+          ...defaultMocks,
           isInteractive: true,
-          token: 'test-token',
         },
       },
     )
@@ -269,8 +369,8 @@ describe('#init: retrieving plan', () => {
 
     const {error} = await testCommand(InitCommand, ['--project-plan=growth'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 
@@ -293,12 +393,21 @@ describe('#init: retrieving plan', () => {
       uri: '/organizations',
     }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
 
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {},
+    })
+
     const {error, stderr, stdout} = await testCommand(
       InitCommand,
-      ['--project-plan=growth', '--yes', '--dataset=test', '--project==test'],
+      ['--project-plan=growth', '--yes', '--dataset=test', '--project=test'],
       {
         mocks: {
-          token: 'test-token',
+          ...defaultMocks,
         },
       },
     )
@@ -320,11 +429,22 @@ describe('#init: retrieving plan', () => {
 
     const {error, stdout} = await testCommand(
       InitCommand,
-      ['--project-plan=growth', '--project=test', '--dataset=test'],
+      [
+        '--project-plan=growth',
+        '--project=test',
+        '--dataset=test',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--output-path=/test/output',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
       {
         mocks: {
+          ...defaultMocks,
           isInteractive: true,
-          token: 'test-token',
         },
       },
     )
@@ -347,8 +467,8 @@ describe('#init: retrieving plan', () => {
 
     const {error} = await testCommand(InitCommand, ['--project-plan=growth'], {
       mocks: {
+        ...defaultMocks,
         isInteractive: true,
-        token: 'test-token',
       },
     })
 

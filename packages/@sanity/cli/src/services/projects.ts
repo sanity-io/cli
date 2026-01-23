@@ -1,4 +1,5 @@
 import {debug, getGlobalCliClient, getProjectCliClient} from '@sanity/cli-core'
+import {SanityProject} from '@sanity/client'
 
 import {type Invite, type Role} from '../actions/users/types.js'
 
@@ -110,4 +111,36 @@ export async function getProjectInvites(projectId: string) {
   })
 
   return client.request<Invite[]>({uri: `/invitations/project/${projectId}`})
+}
+
+export async function updateProjectInitializedAt(projectId: string) {
+  const client = await getProjectCliClient({
+    apiVersion: PROJECTS_API_VERSION,
+    projectId,
+    requireUser: true,
+  })
+
+  const project = await client.request<SanityProject>({uri: `/projects/${projectId}`})
+
+  if (!project?.metadata?.cliInitializedAt) {
+    await client.request({
+      body: {metadata: {cliInitializedAt: new Date().toISOString()}},
+      method: 'PATCH',
+      uri: `/projects/${projectId}`,
+    })
+  }
+}
+
+export async function updateProjectInitalTemplate(projectId: string, templateName: string) {
+  const client = await getProjectCliClient({
+    apiVersion: PROJECTS_API_VERSION,
+    projectId,
+    requireUser: true,
+  })
+
+  await client.request({
+    body: {metadata: {initialTemplate: templateName}},
+    method: 'PATCH',
+    uri: `/projects/${projectId}`,
+  })
 }

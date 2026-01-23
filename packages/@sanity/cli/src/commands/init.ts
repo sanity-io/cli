@@ -1,27 +1,57 @@
 // @Todo will remove by time migration of this command is complete
-/* eslint-disable @typescript-eslint/no-unused-vars */
+import {existsSync} from 'node:fs'
+import {mkdir, writeFile} from 'node:fs/promises'
+import path from 'node:path'
+
 import {Args, Command, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {type FlagInput} from '@oclif/core/interfaces'
 import {getCliToken, SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
 import {chalk, confirm, input, logSymbols, select, Separator, spinner} from '@sanity/cli-core/ux'
 import {type DatasetAclMode, isHttpError} from '@sanity/client'
+import {DatasetImportCommand} from '@sanity/import'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
+import {execa, type Options} from 'execa'
+import {deburr} from 'lodash-es'
 
 import {getProviderName} from '../actions/auth/getProviderName.js'
 import {login} from '../actions/auth/login/login.js'
 import {createDataset} from '../actions/dataset/create.js'
+import {bootstrapTemplate} from '../actions/init/bootstrapTemplate.js'
+import {checkNextJsReactCompatibility} from '../actions/init/checkNextJsReactCompatibility.js'
+import {countNestedFolders} from '../actions/init/countNestedFolders.js'
 import {determineAppTemplate} from '../actions/init/determineAppTemplate.js'
+import {createOrAppendEnvVars} from '../actions/init/env/createOrAppendEnvVars.js'
+import {fetchPostInitPrompt} from '../actions/init/fetchPostInitPrompt.js'
+import {tryGitInit} from '../actions/init/git.js'
 import {
   checkIsRemoteTemplate,
   getGitHubRepoInfo,
   type RepoInfo,
 } from '../actions/init/remoteTemplate.js'
+import {resolvePackageManager} from '../actions/init/resolvePackageManager.js'
+import {type EditorName, setupMCP} from '../actions/init/setupMCP.js'
+import templates from '../actions/init/templates/index.js'
+import {
+  sanityCliTemplate,
+  sanityConfigTemplate,
+  sanityFolder,
+  sanityStudioTemplate,
+} from '../actions/init/templates/nextjs/index.js'
+import {type VersionedFramework} from '../actions/init/types.js'
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'
+import {
+  promptForAppendEnv,
+  promptForConfigFiles,
+  promptForEmbeddedStudio,
+  promptForNextTemplate,
+  promptForStudioPath,
+} from '../prompts/init/nextjs.js'
+import {promptForTypeScript} from '../prompts/init/promptForTypescript.js'
 import {promptForDatasetName} from '../prompts/promptForDatasetName.js'
+import {createCorsOrigin, listCorsOrigins} from '../services/cors.js'
 import {createDataset as createDatasetService, listDatasets} from '../services/datasets.js'
 import {getProjectFeatures} from '../services/getProjectFeatures.js'
 import {
@@ -31,8 +61,18 @@ import {
   type ProjectOrganization,
 } from '../services/organizations.js'
 import {getPlanId, getPlanIdFromCoupon} from '../services/plans.js'
-import {createProject, listProjects} from '../services/projects.js'
+import {createProject, listProjects, updateProjectInitializedAt} from '../services/projects.js'
 import {getCliUser} from '../services/user.js'
+import {absolutify, validateEmptyPath} from '../util/fsUtils.js'
+import {getProjectDefaults} from '../util/getProjectDefaults.js'
+import {
+  installDeclaredPackages,
+  installNewPackages,
+} from '../util/packageManager/installPackages.js'
+import {
+  getPartialEnvWithNpmPath,
+  type PackageManager,
+} from '../util/packageManager/packageManagerChoice.js'
 
 const debug = subdebug('init')
 
@@ -124,19 +164,19 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }),
     'nextjs-add-config-files': Flags.boolean({
       allowNo: true,
-      default: true,
+      default: undefined,
       description: 'Add config files to Next.js project',
       helpGroup: 'Next.js',
     }),
     'nextjs-append-env': Flags.boolean({
       allowNo: true,
-      default: true,
+      default: undefined,
       description: 'Append project ID and dataset to .env file',
       helpGroup: 'Next.js',
     }),
     'nextjs-embed-studio': Flags.boolean({
       allowNo: true,
-      default: true,
+      default: undefined,
       description: 'Embed the Studio in Next.js application',
       helpGroup: 'Next.js',
     }),
@@ -158,7 +198,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       helpValue: '<path>',
     }),
     'overwrite-files': Flags.boolean({
-      default: false,
+      allowNo: true,
+      default: undefined,
       description: 'Overwrite existing files',
     }),
     'package-manager': Flags.string({
@@ -181,13 +222,18 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description: 'Login provider to use',
       helpValue: '<provider>',
     }),
+    quickstart: Flags.boolean({
+      deprecated: true,
+      description:
+        'Used for initializing a project from a server schema that is saved in the Journey API',
+      hidden: true,
+    }),
     reconfigure: Flags.boolean({
       deprecated: {message: 'This flag is no longer supported', version: '3.0.0'},
       description: 'Reconfigure an existing project',
       hidden: true,
     }),
     template: Flags.string({
-      default: 'clean',
       description: 'Project template to use [default: "clean"]',
       exclusive: ['bare'],
       helpValue: '<template>',
@@ -200,7 +246,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }),
     typescript: Flags.boolean({
       allowNo: true,
-      default: true,
+      default: undefined,
       description: 'Enable TypeScript support',
       exclusive: ['bare'],
     }),
@@ -215,20 +261,21 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       description:
         'Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults',
     }),
-  } satisfies FlagInput
+  }
 
   public async run(): Promise<void> {
-    const {args, flags} = await this.parse(InitCommand)
+    const workDir = process.cwd()
+
     const createProjectName = this.flags['create-project']
     // For backwards "compatibility" - we used to allow `sanity init plugin`,
     // and no longer do - but instead of printing an error about an unknown
     // _command_, we want to acknowledge that the user is trying to do something
     // that no longer exists but might have at some point in the past.
-    if (args.type) {
+    if (this.args.type) {
       this.error(
-        args.type === 'plugin'
+        this.args.type === 'plugin'
           ? 'Initializing plugins through the CLI is no longer supported'
-          : `Unknown init type "${args.type}"`,
+          : `Unknown init type "${this.args.type}"`,
         {exit: 1},
       )
     }
@@ -261,15 +308,18 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       showDefaultConfigPrompt = false
     }
 
-    const detectedFramework: Framework | null = await detectFrameworkRecord({
+    const detectedFramework = await detectFrameworkRecord({
       frameworkList: frameworks as readonly Framework[],
       fs: new LocalFileSystemDetector(process.cwd()),
     })
     const isNextJs = detectedFramework?.slug === 'nextjs'
 
     let remoteTemplateInfo: RepoInfo | undefined
-    if (flags.template && checkIsRemoteTemplate(flags.template)) {
-      remoteTemplateInfo = await getGitHubRepoInfo(flags.template, flags['template-token'])
+    if (this.flags.template && checkIsRemoteTemplate(this.flags.template)) {
+      remoteTemplateInfo = await getGitHubRepoInfo(
+        this.flags.template,
+        this.flags['template-token'],
+      )
     }
 
     if (detectedFramework && detectedFramework.slug !== 'sanity' && remoteTemplateInfo) {
@@ -312,28 +362,30 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     if (detectedFramework && detectedFramework.slug === 'nextjs') {
       envFilenameDefault = '.env.local'
     }
-    const _envFilename = typeof flags.env === 'string' ? flags.env : envFilenameDefault
+    const envFilename = typeof this.flags.env === 'string' ? this.flags.env : envFilenameDefault
 
     // If the user isn't already autenticated, make it so
     const {user} = await this.ensureAuthenticated()
 
-    // skip project / dataset prompting
-    const template = this.flags.template
-    const isAppTemplate = template ? determineAppTemplate(template) : false // Default to false
+    const isAppTemplate = this.flags.template ? determineAppTemplate(this.flags.template) : false // Default to false
     if (!isAppTemplate) {
       this.log(`${logSymbols.success} Fetching existing projects`)
       this.log('')
     }
 
-    const _newProjectId =
-      createProjectName && (await this.createProjectFromName({createProjectName, planId, user}))
+    let newProject: string | undefined
+    if (createProjectName) {
+      newProject = await this.createProjectFromName({createProjectName, planId, user})
+    }
 
-    const {datasetName, projectId} = await this.getProjectDetails({
-      isAppTemplate,
-      planId,
-      showDefaultConfigPrompt,
-      user,
-    })
+    const {datasetName, displayName, isFirstProject, organizationId, projectId} =
+      await this.getProjectDetails({
+        isAppTemplate,
+        newProject,
+        planId,
+        showDefaultConfigPrompt,
+        user,
+      })
 
     // If user doesn't want to output any template code
     if (this.flags.bare) {
@@ -346,6 +398,253 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       )
       return
     }
+
+    let initNext = this.flagOrDefault('nextjs-add-config-files', false)
+    if (isNextJs && this.promptForUndefinedFlag(this.flags['nextjs-add-config-files'])) {
+      initNext = await promptForConfigFiles()
+    }
+
+    // @todo
+    // trace.log({
+    //   step: 'useDetectedFramework',
+    //   selectedOption: initNext ? 'yes' : 'no',
+    //   detectedFramework: detectedFramework?.name,
+    // })
+
+    const sluggedName = deburr(displayName.toLowerCase())
+      .replaceAll(/\s+/g, '-')
+      .replaceAll(/[^a-z0-9-]/g, '')
+
+    // add more frameworks to this as we add support for them
+    // this is used to skip the getProjectInfo prompt
+    const initFramework = initNext
+
+    // Gather project defaults based on environment
+    const defaults = await getProjectDefaults({isPlugin: false, workDir})
+
+    // Prompt the user for required information
+    const outputPath = await this.getProjectOutputPath({
+      initFramework,
+      sluggedName,
+      workDir,
+    })
+
+    // Set up MCP integration
+    const mcpResult = await setupMCP({mcp: this.flags.mcp, output: this.output})
+    // @todo
+    // trace.log({
+    //   step: 'mcpSetup',
+    //   detectedEditors: mcpResult.detectedEditors,
+    //   configuredEditors: mcpResult.configuredEditors,
+    //   skipped: mcpResult.skipped,
+    // })
+    // if (mcpResult.error) {
+    //   trace.error(mcpResult.error)
+    // }
+    const mcpConfigured = mcpResult.configuredEditors
+
+    if (isNextJs) {
+      await checkNextJsReactCompatibility({
+        detectedFramework,
+        output: this.output,
+        outputPath,
+      })
+    }
+
+    if (initNext) {
+      await this.initNextJs({
+        datasetName,
+        detectedFramework,
+        envFilename,
+        mcpConfigured,
+        projectId,
+        workDir,
+      })
+    }
+
+    // user wants to write environment variables to file
+    if (this.flags.env) {
+      await createOrAppendEnvVars({
+        envVars: {
+          DATASET: datasetName,
+          PROJECT_ID: projectId,
+        },
+        filename: envFilename,
+        framework: detectedFramework,
+        log: false,
+        output: this.output,
+        outputPath,
+      })
+      this.exit(0)
+    }
+
+    // Prompt for template to use
+    const templateName = await this.promptForTemplate()
+    // @todo
+    // trace.log({step: 'selectProjectTemplate', selectedOption: templateName})
+    const template = templates[templateName]
+    if (!remoteTemplateInfo && !template) {
+      this.error(`Template "${templateName}" not found`, {exit: 1})
+    }
+
+    let useTypeScript = this.flags.typescript
+    if (!remoteTemplateInfo && template && template.typescriptOnly === true) {
+      useTypeScript = true
+    } else if (this.promptForUndefinedFlag(this.flags.typescript)) {
+      useTypeScript = await promptForTypeScript()
+      // @todo
+      // trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
+    }
+
+    // If the template has a sample dataset, prompt the user whether or not we should import it
+    const shouldImport =
+      !this.isUnattended() &&
+      template?.datasetUrl &&
+      (await this.promptForDatasetImport(template.importPrompt))
+
+    // @todo
+    // trace.log({step: 'importTemplateDataset', selectedOption: shouldImport ? 'yes' : 'no'})
+
+    try {
+      await updateProjectInitializedAt(projectId)
+    } catch (err) {
+      // Non-critical update
+      debug('Failed to update cliInitializedAt metadata', err)
+    }
+
+    try {
+      await bootstrapTemplate({
+        autoUpdates: this.flags['auto-updates'],
+        bearerToken: this.flags['template-token'],
+        dataset: datasetName,
+        organizationId,
+        output: this.output,
+        outputPath,
+        overwriteFiles: this.flags['overwrite-files'],
+        packageName: sluggedName,
+        projectId,
+        projectName: displayName || defaults.projectName,
+        remoteTemplateInfo,
+        templateName,
+        useTypeScript,
+      })
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error
+      }
+      throw new Error(String(error))
+    }
+
+    const pkgManager = await resolvePackageManager({
+      interactive: !this.isUnattended(),
+      output: this.output,
+      packageManager: this.flags['package-manager'] as PackageManager,
+      targetDir: outputPath,
+    })
+
+    // @todo
+    // trace.log({selectedOption: pkgManager, step: 'selectPackageManager', })
+
+    // Now for the slow part... installing dependencies
+    await installDeclaredPackages(outputPath, pkgManager, {output: this.output, workDir})
+
+    const useGit = this.flags.git === undefined || Boolean(this.flags.git)
+    const commitMessage = this.flags.git
+    // Try initializing a git repository
+    if (useGit) {
+      tryGitInit(outputPath, typeof commitMessage === 'string' ? commitMessage : undefined)
+    }
+
+    // Prompt for dataset import (if a dataset is defined)
+    if (shouldImport && template?.datasetUrl) {
+      const token = await getCliToken()
+      if (!token) {
+        this.error('Authentication required to import dataset', {exit: 1})
+      }
+      await DatasetImportCommand.run(
+        [template.datasetUrl, '--project', projectId, '--dataset', datasetName, '--token', token],
+        {
+          root: outputPath,
+        },
+      )
+
+      this.log('')
+      this.log('If you want to delete the imported data, use')
+      this.log(`  ${chalk.cyan(`npx sanity dataset delete ${datasetName}`)}`)
+      this.log('and create a new clean dataset with')
+      this.log(`  ${chalk.cyan(`npx sanity dataset create <name>`)}\n`)
+    }
+
+    const devCommandMap: Record<PackageManager, string> = {
+      bun: 'bun dev',
+      manual: 'npm run dev',
+      npm: 'npm run dev',
+      pnpm: 'pnpm dev',
+      yarn: 'yarn dev',
+    }
+    const devCommand = devCommandMap[pkgManager]
+
+    const isCurrentDir = outputPath === process.cwd()
+    const goToProjectDir = `\n(${chalk.cyan(`cd ${outputPath}`)} to navigate to your new project directory)`
+
+    if (isAppTemplate) {
+      //output for custom apps here
+      this.log(
+        `${logSymbols.success} ${chalk.green.bold('Success!')} Your custom app has been scaffolded.`,
+      )
+      if (!isCurrentDir) this.log(goToProjectDir)
+      this.log(
+        `\n${chalk.bold('Next')}, configure the project(s) and dataset(s) your app should work with.`,
+      )
+      this.log('\nGet started in `src/App.tsx`, or refer to our documentation for a walkthrough:')
+      this.log(chalk.blue.underline('https://www.sanity.io/docs/app-sdk/sdk-configuration'))
+      if (mcpConfigured && mcpConfigured.length > 0) {
+        const message = await this.getPostInitMCPPrompt(mcpConfigured)
+        this.log(`\n${message}`)
+        this.log(`\nLearn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+        this.log(
+          `\nHave feedback? Tell us in the community: ${chalk.cyan('https://www.sanity.io/community/join')}`,
+        )
+      }
+      this.log('\n')
+      this.log(`Other helpful commands:`)
+      this.log(`npx sanity docs browse     to open the documentation in a browser`)
+      this.log(`npx sanity dev             to start the development server for your app`)
+      this.log(`npx sanity deploy          to deploy your app`)
+    } else {
+      //output for Studios here
+      this.log(`✅ ${chalk.green.bold('Success!')} Your Studio has been created.`)
+      if (!isCurrentDir) this.log(goToProjectDir)
+      this.log(
+        `\nGet started by running ${chalk.cyan(devCommand)} to launch your Studio's development server`,
+      )
+      if (mcpConfigured && mcpConfigured.length > 0) {
+        const message = await this.getPostInitMCPPrompt(mcpConfigured)
+        this.log(`\n${message}`)
+        this.log(`\nLearn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+        this.log(
+          `\nHave feedback? Tell us in the community: ${chalk.cyan('https://www.sanity.io/community/join')}`,
+        )
+      }
+      this.log('\n')
+      this.log(`Other helpful commands:`)
+      this.log(`npx sanity docs browse     to open the documentation in a browser`)
+      this.log(`npx sanity manage          to open the project settings in a browser`)
+      this.log(`npx sanity help            to explore the CLI manual`)
+    }
+
+    if (isFirstProject) {
+      // @todo
+      // trace.log({step: 'sendCommunityInvite', selectedOption: 'yes'})
+
+      const DISCORD_INVITE_LINK = 'https://www.sanity.io/community/join'
+
+      this.log(`\nJoin the Sanity community: ${chalk.cyan(DISCORD_INVITE_LINK)}`)
+      this.log('We look forward to seeing you there!\n')
+    }
+
+    // @todo
+    // trace.complete()
   }
 
   private checkFlagsInUnattendedMode({
@@ -389,7 +688,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     createProjectName: string
     planId: string | undefined
     user: SanityOrgUser
-  }): Promise<string> {
+  }) {
     debug('--create-project specified, creating a new project')
 
     let orgForCreateProjectFlag = this.flags.organization
@@ -463,6 +762,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       `${logSymbols.success} You are logged in as ${user.email} using ${getProviderName(user.provider)}`,
     )
     return {user}
+  }
+
+  private flagOrDefault(flag: keyof typeof this.flags, defaultValue: boolean): boolean {
+    return typeof this.flags[flag] === 'boolean' ? this.flags[flag] : defaultValue
   }
 
   private async getOrCreateDataset(opts: {
@@ -566,9 +869,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   }
 
   private async getOrCreateProject({
+    newProject,
     planId,
     user,
   }: {
+    newProject: string | undefined
     planId: string | undefined
     user: SanityOrgUser
   }): Promise<{
@@ -577,7 +882,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     projectId: string
     userAction: 'create' | 'select'
   }> {
-    const projectId = this.flags.project
+    const projectId = this.flags.project || newProject
     const organizationId = this.flags.organization
     let projects
     let organizations: ProjectOrganization[]
@@ -714,13 +1019,19 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
   }
 
+  private async getPostInitMCPPrompt(editorsNames: EditorName[]): Promise<string> {
+    return fetchPostInitPrompt(new Intl.ListFormat('en').format(editorsNames))
+  }
+
   private async getProjectDetails({
     isAppTemplate,
+    newProject,
     planId,
     showDefaultConfigPrompt,
     user,
   }: {
     isAppTemplate: boolean
+    newProject: string | undefined
     planId: string | undefined
     showDefaultConfigPrompt: boolean
     user: SanityOrgUser
@@ -750,7 +1061,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     debug('Prompting user to select or create a project')
-    const project = await this.getOrCreateProject({planId, user})
+    const project = await this.getOrCreateProject({newProject, planId, user})
     debug(`Project with name ${project.displayName} selected`)
 
     // Now let's pick or create a dataset
@@ -776,6 +1087,240 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       isFirstProject: project.isFirstProject,
       projectId: project.projectId,
     }
+  }
+
+  private async getProjectOutputPath({
+    initFramework,
+    sluggedName,
+    workDir,
+  }: {
+    initFramework: boolean
+    sluggedName: string
+    workDir: string
+  }): Promise<string> {
+    const outputPath = this.flags['output-path']
+    const specifiedPath = outputPath && path.resolve(outputPath)
+    if (this.isUnattended() || specifiedPath || this.flags.env || initFramework) {
+      return specifiedPath || workDir
+    }
+
+    const inputPath = await input({
+      default: path.join(workDir, sluggedName),
+      message: 'Project output path:',
+      validate: validateEmptyPath,
+    })
+
+    return absolutify(inputPath)
+  }
+
+  private async initNextJs({
+    datasetName,
+    detectedFramework,
+    envFilename,
+    mcpConfigured,
+    projectId,
+    workDir,
+  }: {
+    datasetName: string
+    detectedFramework: VersionedFramework | null
+    envFilename: string
+    mcpConfigured: EditorName[]
+    projectId: string
+    workDir: string
+  }) {
+    let useTypeScript = this.flagOrDefault('typescript', true)
+    if (this.promptForUndefinedFlag(this.flags.typescript)) {
+      useTypeScript = await promptForTypeScript()
+    }
+    // @todo
+    // trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
+
+    const fileExtension = useTypeScript ? 'ts' : 'js'
+    let embeddedStudio = this.flagOrDefault('nextjs-embed-studio', true)
+    if (this.promptForUndefinedFlag(this.flags['nextjs-embed-studio'])) {
+      embeddedStudio = await promptForEmbeddedStudio()
+    }
+    let hasSrcFolder = false
+
+    if (embeddedStudio) {
+      // find source path (app or src/app)
+      const appDir = 'app'
+      let srcPath = path.join(workDir, appDir)
+
+      if (!existsSync(srcPath)) {
+        srcPath = path.join(workDir, 'src', appDir)
+        hasSrcFolder = true
+        if (!existsSync(srcPath)) {
+          try {
+            await mkdir(srcPath, {recursive: true})
+          } catch {
+            debug('Error creating folder %s', srcPath)
+          }
+        }
+      }
+
+      const studioPath = this.isUnattended() ? '/studio' : await promptForStudioPath()
+
+      const embeddedStudioRouteFilePath = path.join(
+        srcPath,
+        `${studioPath}/`,
+        `[[...tool]]/page.${fileExtension}x`,
+      )
+
+      // this selects the correct template string based on whether the user is using the app or pages directory and
+      // replaces the ":configPath:" placeholder in the template with the correct path to the sanity.config.ts file.
+      // we account for the user-defined embeddedStudioPath (default /studio) is accounted for by creating enough "../"
+      // relative paths to reach the root level of the project
+      await this.writeOrOverwrite(
+        embeddedStudioRouteFilePath,
+        sanityStudioTemplate.replace(
+          ':configPath:',
+          `${'../'.repeat(countNestedFolders(embeddedStudioRouteFilePath.slice(workDir.length)))}sanity.config`,
+        ),
+        workDir,
+      )
+
+      const sanityConfigPath = path.join(workDir, `sanity.config.${fileExtension}`)
+      await this.writeOrOverwrite(
+        sanityConfigPath,
+        sanityConfigTemplate(hasSrcFolder)
+          .replace(':route:', embeddedStudioRouteFilePath.slice(workDir.length).replace('src/', ''))
+          .replace(':basePath:', studioPath),
+        workDir,
+      )
+    }
+
+    const sanityCliPath = path.join(workDir, `sanity.cli.${fileExtension}`)
+    await this.writeOrOverwrite(sanityCliPath, sanityCliTemplate, workDir)
+
+    let templateToUse = this.flags.template ?? 'clean'
+    if (this.promptForUndefinedFlag(this.flags.template)) {
+      templateToUse = await promptForNextTemplate()
+    }
+
+    await this.writeSourceFiles({
+      fileExtension,
+      files: sanityFolder(useTypeScript, templateToUse as 'blog' | 'clean'),
+      folderPath: undefined,
+      srcFolderPrefix: hasSrcFolder,
+      workDir,
+    })
+
+    let appendEnv = this.flagOrDefault('nextjs-append-env', true)
+    if (this.promptForUndefinedFlag(this.flags['nextjs-append-env'])) {
+      appendEnv = await promptForAppendEnv(envFilename)
+    }
+
+    if (appendEnv) {
+      await createOrAppendEnvVars({
+        envVars: {
+          DATASET: datasetName,
+          PROJECT_ID: projectId,
+        },
+        filename: envFilename,
+        framework: detectedFramework,
+        log: true,
+        output: this.output,
+        outputPath: workDir,
+      })
+    }
+
+    if (embeddedStudio) {
+      const nextjsLocalDevOrigin = 'http://localhost:3000'
+      const existingCorsOrigins = await listCorsOrigins(projectId)
+      const hasExistingCorsOrigin = existingCorsOrigins.some(
+        (item: {origin: string}) => item.origin === nextjsLocalDevOrigin,
+      )
+      if (!hasExistingCorsOrigin) {
+        try {
+          const createCorsRes = await createCorsOrigin({
+            allowCredentials: true,
+            origin: nextjsLocalDevOrigin,
+            projectId,
+          })
+
+          this.log(
+            createCorsRes.id
+              ? `Added ${nextjsLocalDevOrigin} to CORS origins`
+              : `Failed to add ${nextjsLocalDevOrigin} to CORS origins`,
+          )
+        } catch (error) {
+          debug(`Error creating new CORS Origin ${nextjsLocalDevOrigin}: ${error}`)
+          this.error(`Failed to add ${nextjsLocalDevOrigin} to CORS origins: ${error}`, {exit: 1})
+        }
+      }
+    }
+
+    const chosen = await resolvePackageManager({
+      interactive: !this.isUnattended(),
+      output: this.output,
+      packageManager: this.flags['package-manager'] as PackageManager,
+      targetDir: workDir,
+    })
+    // @todo
+    // trace.log({step: 'selectPackageManager', selectedOption: chosen})
+    const packages = ['@sanity/vision@4', 'sanity@4', '@sanity/image-url@1', 'styled-components@6']
+    if (templateToUse === 'blog') {
+      packages.push('@sanity/icons')
+    }
+    await installNewPackages(
+      {
+        packageManager: chosen,
+        packages,
+      },
+      {
+        output: this.output,
+        workDir,
+      },
+    )
+
+    // will refactor this later
+    const execOptions: Options = {
+      cwd: workDir,
+      encoding: 'utf8',
+      env: getPartialEnvWithNpmPath(workDir),
+      stdio: 'inherit',
+    }
+
+    switch (chosen) {
+      case 'npm': {
+        await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@11'], execOptions)
+        break
+      }
+      case 'pnpm': {
+        await execa('pnpm', ['install', 'next-sanity@11'], execOptions)
+        break
+      }
+      case 'yarn': {
+        await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@11'], execOptions)
+        break
+      }
+      default: {
+        // bun and manual - do nothing or handle differently
+        break
+      }
+    }
+
+    this.log(
+      `\n${chalk.green('Success!')} Your Sanity configuration files has been added to this project`,
+    )
+    if (mcpConfigured && mcpConfigured.length > 0) {
+      const message = await this.getPostInitMCPPrompt(mcpConfigured)
+      this.log(`\n${message}`)
+      this.log(`\nLearn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+      this.log(
+        `\nHave feedback? Tell us in the community: ${chalk.cyan('https://www.sanity.io/community/join')}`,
+      )
+    }
+
+    this.exit(0)
+  }
+
+  private async promptForDatasetImport(message?: string) {
+    return confirm({
+      default: true,
+      message: message || 'This template includes a sample dataset, would you like to use it?',
+    })
   }
 
   private async promptForDefaultConfig(): Promise<boolean> {
@@ -829,6 +1374,41 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       isFirstProject: isUsersFirstProject,
       userAction: 'create',
     }
+  }
+
+  private async promptForTemplate() {
+    const template = this.flags.template
+
+    const defaultTemplate = this.isUnattended() || template ? template || 'clean' : null
+    if (defaultTemplate) {
+      return defaultTemplate
+    }
+
+    return select({
+      choices: [
+        {
+          name: 'Clean project with no predefined schema types',
+          value: 'clean',
+        },
+        {
+          name: 'Blog (schema)',
+          value: 'blog',
+        },
+        {
+          name: 'E-commerce (Shopify)',
+          value: 'shopify',
+        },
+        {
+          name: 'Movie project (schema + sample data)',
+          value: 'moviedb',
+        },
+      ],
+      message: 'Select project template',
+    })
+  }
+
+  private promptForUndefinedFlag(flag: unknown) {
+    return !this.isUnattended() && flag === undefined
   }
 
   private async promptUserForNewOrganization(
@@ -969,6 +1549,82 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         this.log('Using default plan.')
       } else {
         this.error(`Plan id "${intendedPlan}" does not exist`, {exit: 1})
+      }
+    }
+  }
+
+  private async writeOrOverwrite(filePath: string, content: string, workDir: string) {
+    if (existsSync(filePath)) {
+      let overwrite = this.flagOrDefault('overwrite-files', false)
+      if (this.promptForUndefinedFlag(this.flags['overwrite-files'])) {
+        overwrite = await confirm({
+          default: false,
+          message: `File ${chalk.yellow(
+            filePath.replace(workDir, ''),
+          )} already exists. Do you want to overwrite it?`,
+        })
+      }
+
+      if (!overwrite) {
+        return
+      }
+    }
+
+    // make folder if not exists
+    const folderPath = path.dirname(filePath)
+
+    try {
+      await mkdir(folderPath, {recursive: true})
+    } catch {
+      debug('Error creating folder %s', folderPath)
+    }
+
+    await writeFile(filePath, content, {
+      encoding: 'utf8',
+    })
+  }
+
+  // write sanity folder files
+  private async writeSourceFiles({
+    fileExtension,
+    files,
+    folderPath,
+    srcFolderPrefix,
+    workDir,
+  }: {
+    fileExtension: string
+    files: Record<string, Record<string, string> | string>
+    folderPath?: string
+    srcFolderPrefix?: boolean
+    workDir: string
+  }) {
+    for (const [filePath, content] of Object.entries(files)) {
+      // check if file ends with full stop to indicate it's file and not directory (this only works with our template tree structure)
+      if (filePath.includes('.') && typeof content === 'string') {
+        await this.writeOrOverwrite(
+          path.join(
+            workDir,
+            srcFolderPrefix ? 'src' : '',
+            'sanity',
+            folderPath || '',
+            `${filePath}${fileExtension}`,
+          ),
+          content,
+          workDir,
+        )
+      } else {
+        await mkdir(path.join(workDir, srcFolderPrefix ? 'src' : '', 'sanity', filePath), {
+          recursive: true,
+        })
+        if (typeof content === 'object') {
+          await this.writeSourceFiles({
+            fileExtension,
+            files: content,
+            folderPath: filePath,
+            srcFolderPrefix,
+            workDir,
+          })
+        }
       }
     }
   }
