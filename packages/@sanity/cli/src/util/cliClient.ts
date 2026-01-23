@@ -59,7 +59,7 @@ export const getCliClient: CliClientGetter = (options: CliClientOptions = {}): S
   })
 }
 
-type CliClientGetter = ((options: CliClientOptions) => SanityClient) & {
+type CliClientGetter = ((options?: CliClientOptions) => SanityClient) & {
   /**
    * @deprecated This is only for INTERNAL use, and should not be relied upon outside of official Sanity modules
    * @returns A token to use when constructing a client without a `token` explicitly defined, or undefined
