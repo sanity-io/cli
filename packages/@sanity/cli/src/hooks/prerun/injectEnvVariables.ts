@@ -4,8 +4,6 @@ import {debug, findProjectRoot} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 import {loadEnv} from 'vite'
 
-import {maybeFixMissingWindowsEnvVar} from '../../util/maybeFixMissingWindowsEnvVar.js'
-
 const sanityEnv = process.env.SANITY_INTERNAL_ENV || 'production'
 
 export const injectEnvVariables: Hook.Prerun = async function ({Command}) {
@@ -29,7 +27,5 @@ export const injectEnvVariables: Hook.Prerun = async function ({Command}) {
   debug('Loading environment files using %s mode', mode)
 
   const studioEnv = loadEnv(mode, workDir.directory, [isApp ? 'SANITY_APP_' : 'SANITY_STUDIO_'])
-  process.env = {...process.env, ...studioEnv}
-
-  maybeFixMissingWindowsEnvVar()
+  Object.assign(process.env, studioEnv)
 }
