@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.8](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.7...cli-core-v0.1.0-alpha.8) (2026-01-23)
+
+
+### Bug Fixes
+
+* **deps:** update sanity-tooling to ^5.6.0 ([#324](https://github.com/sanity-io/cli/issues/324)) ([85d115e](https://github.com/sanity-io/cli/commit/85d115efc7e73d3a2a32dc56db23ab9422cc98cf))
+* token logic for `getCliClient()` ([#322](https://github.com/sanity-io/cli/issues/322)) ([d62eeda](https://github.com/sanity-io/cli/commit/d62eeda5004eb70db5ce0a74813fb64a1ebb114d))
+
 ## [0.1.0-alpha.7](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.6...cli-core-v0.1.0-alpha.7) (2026-01-20)
 
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## [6.0.0-alpha.8](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.7...cli-v6.0.0-alpha.8) (2026-01-23)
+
+
+### Features
+
+* **init:** migrating nextjs and templated app setup to new cli ([#300](https://github.com/sanity-io/cli/issues/300)) ([d67ec4c](https://github.com/sanity-io/cli/commit/d67ec4c1da12b87d1b786119a744198fb3af229d))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.8
+  * devDependencies
+    * @sanity/cli-test bumped to 0.0.2-alpha.7
+
 ## [6.0.0-alpha.7](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.6...cli-v6.0.0-alpha.7) (2026-01-20)
 
 
