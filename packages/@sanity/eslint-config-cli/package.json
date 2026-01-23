@@ -24,7 +24,6 @@
   "exports": {
     ".": {
       "source": "./eslint.config.mjs",
-      "require": "./eslint.config.mjs",
       "import": "./eslint.config.mjs"
     },
     "./package.json": "./package.json"

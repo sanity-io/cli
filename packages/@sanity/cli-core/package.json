@@ -25,30 +25,25 @@
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     },
     "./tree": {
       "source": "./src/_exports/tree.ts",
-      "import": "./dist/_exports/tree.js",
-      "require": "./dist/_exports/tree.cjs"
+      "import": "./dist/_exports/tree.js"
     },
     "./ux": {
       "source": "./src/_exports/ux.ts",
-      "import": "./dist/_exports/ux.js",
-      "require": "./dist/_exports/ux.cjs"
+      "import": "./dist/_exports/ux.js"
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "./dist"
   ],
   "scripts": {
-    "build": "rimraf dist && pnpm run build:esm && pnpm run build:cjs",
-    "build:cjs": "swc -C module.type=commonjs --out-file-extension cjs --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
-    "build:esm": "swc --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
