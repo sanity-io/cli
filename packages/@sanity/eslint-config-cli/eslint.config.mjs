@@ -164,6 +164,14 @@ export default defineConfig(
       ],
       'no-dupe-class-members': 'off',
       'no-redeclare': 'off',
+      'no-restricted-syntax': [
+        'error',
+        {
+          message:
+            'Dynamic imports are not allowed. Use `doImport` function from @sanity/cli-core instead.',
+          selector: 'ImportExpression',
+        },
+      ],
       'no-unused-expressions': 'off',
       'no-unused-vars': 'off',
       'no-useless-constructor': 'off',
@@ -257,6 +265,12 @@ export default defineConfig(
           project: ['packages/*/tsconfig.json', 'examples/*/tsconfig.json'],
         }),
       ],
+    },
+  },
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': 'off',
     },
   },
   prettier,
