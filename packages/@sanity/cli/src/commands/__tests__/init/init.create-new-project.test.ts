@@ -6,7 +6,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {CREATE_PROJECT_API_VERSION, PROJECTS_API_VERSION} from '../../../services/projects.js'
-import {InitCommand} from '../../init'
+import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
   datasetsCreate: vi.fn(),

@@ -2,11 +2,11 @@ import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures'
-import {MCP_JOURNEY_API_VERSION} from '../../../services/mcp'
-import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations'
-import {PROJECTS_API_VERSION} from '../../../services/projects'
-import {InitCommand} from '../../init'
+import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
+import {MCP_JOURNEY_API_VERSION} from '../../../services/mcp.js'
+import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
+import {PROJECTS_API_VERSION} from '../../../services/projects.js'
+import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
   bootstrapTemplate: vi.fn(),

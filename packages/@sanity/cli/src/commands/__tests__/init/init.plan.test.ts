@@ -6,7 +6,7 @@ import {INIT_API_VERSION} from '../../../actions/init/constants.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {PROJECTS_API_VERSION} from '../../../services/projects.js'
-import {InitCommand} from '../../init'
+import {InitCommand} from '../../init.js'
 
 const mockConfirm = vi.hoisted(() => vi.fn())
 const mockDetectedFramework = vi.hoisted(() => vi.fn())

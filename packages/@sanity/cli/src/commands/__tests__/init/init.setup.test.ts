@@ -2,7 +2,7 @@ import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {InitCommand} from '../../init'
+import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
   checkIsRemoteTemplate: vi.fn().mockReturnValue(false),

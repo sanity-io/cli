@@ -290,7 +290,7 @@ importers:
     dependencies:
       '@babel/traverse':
         specifier: ^7.28.5
-        version: 7.28.5
+        version: 7.28.6
       '@oclif/core':
         specifier: 'catalog:'
         version: 4.8.0
@@ -529,6 +529,9 @@ importers:
       '@swc/core':
         specifier: 'catalog:'
         version: 1.15.10
+      '@types/babel__traverse':
+        specifier: ^7.28.0
+        version: 7.28.0
       '@types/debug':
         specifier: 'catalog:'
         version: 4.1.12
@@ -1564,6 +1567,10 @@ packages:
     engines: {node: '>=6.9.0'}
     peerDependencies:
       '@babel/core': ^7.0.0
+
+  '@babel/polyfill@7.12.1':
+    resolution: {integrity: sha512-X0pi0V6gxLi6lFZpGmeNa4zxtwEmCs42isWLNjZZDE0Y8yVfgu0T2OAHlzBbdYlqbW/YXVvoBHpATEM+goCj8g==}
+    deprecated: 🚨 This package has been deprecated in favor of separate inclusion of a polyfill and regenerator-runtime (when needed). See the @babel/polyfill docs (https://babeljs.io/docs/en/babel-polyfill) for more information.
 
   '@babel/preset-env@7.28.6':
     resolution: {integrity: sha512-GaTI4nXDrs7l0qaJ6Rg06dtOXTBCG6TMDB44zbqofCIC4PqC7SEvmFFtpxzCDw9W5aJ7RKVshgXTLvLdBFV/qw==}
@@ -9607,6 +9614,11 @@ snapshots:
       '@babel/core': 7.28.6
       '@babel/helper-create-regexp-features-plugin': 7.28.5(@babel/core@7.28.6)
       '@babel/helper-plugin-utils': 7.28.6
+
+  '@babel/polyfill@7.12.1':
+    dependencies:
+      core-js: 2.6.12
+      regenerator-runtime: 0.13.11
 
   '@babel/preset-env@7.28.6(@babel/core@7.28.6)':
     dependencies:

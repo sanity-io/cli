@@ -2,11 +2,11 @@ import {createTestClient, mockApi, testCommand, testExample} from '@sanity/cli-t
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {CORS_API_VERSION} from '../../../services/cors'
-import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures'
-import {MCP_JOURNEY_API_VERSION} from '../../../services/mcp'
-import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations'
-import {InitCommand} from '../../init'
+import {CORS_API_VERSION} from '../../../services/cors.js'
+import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
+import {MCP_JOURNEY_API_VERSION} from '../../../services/mcp.js'
+import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
+import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
   checkNextJsReactCompatibility: vi.fn(),

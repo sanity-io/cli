@@ -234,7 +234,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       hidden: true,
     }),
     template: Flags.string({
-      default: undefined,
       description: 'Project template to use [default: "clean"]',
       exclusive: ['bare'],
       helpValue: '<template>',
