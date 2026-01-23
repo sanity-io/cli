@@ -23,7 +23,7 @@ export async function createOrAppendEnvVars({
   outputPath,
 }: CreateOrAppendEnvVarsOptions) {
   try {
-    if (framework && framework.envPrefix && !log) {
+    if (framework && framework.envPrefix && log) {
       output.log(
         `\nDetected framework ${chalk.blue(framework?.name)}, using prefix '${
           framework.envPrefix

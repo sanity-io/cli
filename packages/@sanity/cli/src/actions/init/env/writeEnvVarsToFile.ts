@@ -69,7 +69,7 @@ export async function writeEnvVarsToFile({
     encoding: 'utf8',
   })
 
-  if (!log) {
+  if (log) {
     output.log(`\n${chalk.green('Success!')} Environment variables written to ${fileOutputPath}`)
   }
 }

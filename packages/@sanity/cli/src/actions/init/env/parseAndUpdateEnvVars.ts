@@ -22,14 +22,14 @@ export function parseAndUpdateEnvVars({
     if (!existingKeys[key]) {
       updatedKeys[key] = value
 
-      if (!log) {
+      if (log) {
         output.log(`Appended ${key}="${envVars[key]}"`)
       }
 
       continue
     }
 
-    if (!log) {
+    if (log) {
       output.log(`Found existing ${key}, replacing value.`)
     }
     updatedKeys[key] = value
