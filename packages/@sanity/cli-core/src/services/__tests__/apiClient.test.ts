@@ -85,6 +85,15 @@ describe('getGlobalCliClient', () => {
     expect(mockCreateClient).not.toHaveBeenCalled()
   })
 
+  test('creates client with undefined token when requireUser=false and no token available', async () => {
+    mockGetCliToken.mockResolvedValue(undefined)
+    mockCreateClient.mockResolvedValue({} as SanityClient)
+
+    await getGlobalCliClient({apiVersion: '2021-06-07', requireUser: false})
+
+    expect(mockCreateClient).toHaveBeenCalledWith(expect.objectContaining({token: undefined}))
+  })
+
   test('uses staging apiHost when SANITY_INTERNAL_ENV=staging', async () => {
     mockCreateClient.mockResolvedValue({} as SanityClient)
     mockGetCliToken.mockResolvedValue('stored-token')
@@ -158,6 +167,19 @@ describe('getProjectCliClient', () => {
     ).rejects.toThrow('You must login first - run "sanity login"')
 
     expect(mockCreateClient).not.toHaveBeenCalled()
+  })
+
+  test('creates client with undefined token when requireUser=false and no token available', async () => {
+    mockGetCliToken.mockResolvedValue(undefined)
+    mockCreateClient.mockResolvedValue({} as SanityClient)
+
+    await getProjectCliClient({
+      apiVersion: '2021-06-07',
+      projectId: 'test-project',
+      requireUser: false,
+    })
+
+    expect(mockCreateClient).toHaveBeenCalledWith(expect.objectContaining({token: undefined}))
   })
 
   test('uses staging apiHost when SANITY_INTERNAL_ENV=staging', async () => {
