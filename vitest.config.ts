@@ -14,9 +14,12 @@ export default defineConfig({
         '**/*.{test,spec,stories,d}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
         'examples/**',
         'packages/@sanity/cli/test/**',
+        'packages/@sanity/cli/templates/**',
         // Vitest 4.0 no longer auto-excludes these directories
         '**/dist/**',
         '**/tmp/**',
+        '**/test/**',
+        '**/__tests__/**',
         '**/coverage/**',
         '**/.git/**',
       ],
