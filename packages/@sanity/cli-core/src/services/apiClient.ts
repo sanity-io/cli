@@ -53,12 +53,12 @@ export async function getGlobalCliClient({
 
   const apiHost = apiHosts[sanityEnv]
 
-  let token: string | undefined = providedToken
+  // Use the provided token if it is set, otherwise get the token from the config file
+  const token = providedToken || (await getCliToken())
+
+  // If the token is not set and requireUser is true, throw an error
   if (!token && requireUser) {
-    token = await getCliToken()
-    if (!token) {
-      throw new Error('You must login first - run "sanity login"')
-    }
+    throw new Error('You must login first - run "sanity login"')
   }
 
   return createClient({
@@ -117,12 +117,12 @@ export async function getProjectCliClient({
 
   const apiHost = apiHosts[sanityEnv]
 
-  let token: string | undefined = providedToken
+  // Use the provided token if it is set, otherwise get the token from the config file
+  const token = providedToken || (await getCliToken())
+
+  // If the token is not set and requireUser is true, throw an error
   if (!token && requireUser) {
-    token = await getCliToken()
-    if (!token) {
-      throw new Error('You must login first - run "sanity login"')
-    }
+    throw new Error('You must login first - run "sanity login"')
   }
 
   return createClient({
