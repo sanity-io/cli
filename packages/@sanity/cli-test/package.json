@@ -70,7 +70,7 @@
     "@oclif/core": "catalog:",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-core": "workspace:*",
-    "@sanity/client": "^7.14.0",
+    "@sanity/client": "^7.14.1",
     "@sanity/eslint-config-cli": "workspace:*",
     "@swc/cli": "catalog:",
     "@types/node": "catalog:",
