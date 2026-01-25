@@ -12,7 +12,7 @@ catalog:
   # Linting
   eslint: ^9.39.2
   '@eslint/compat': ^2.0.1
-  publint: ^0.3.16
+  publint: ^0.3.17
 
   # Sanity
   sanity: ^5.6.0

@@ -73,8 +73,8 @@ catalogs:
       specifier: ^9.0.0
       version: 9.0.0
     publint:
-      specifier: ^0.3.16
-      version: 0.3.16
+      specifier: ^0.3.17
+      version: 0.3.17
     rimraf:
       specifier: ^6.0.1
       version: 6.1.2
@@ -588,7 +588,7 @@ importers:
         version: 4.22.59(@types/node@20.19.30)
       publint:
         specifier: 'catalog:'
-        version: 0.3.16
+        version: 0.3.17
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -685,7 +685,7 @@ importers:
         version: 9.39.2(jiti@2.6.1)
       publint:
         specifier: 'catalog:'
-        version: 0.3.16
+        version: 0.3.17
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -743,7 +743,7 @@ importers:
         version: 9.39.2(jiti@2.6.1)
       publint:
         specifier: 'catalog:'
-        version: 0.3.16
+        version: 0.3.17
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -792,7 +792,7 @@ importers:
         version: 9.39.2(jiti@2.6.1)
       publint:
         specifier: 'catalog:'
-        version: 0.3.16
+        version: 0.3.17
 
   packages/create-sanity:
     dependencies:
@@ -805,7 +805,7 @@ importers:
     devDependencies:
       publint:
         specifier: 'catalog:'
-        version: 0.3.16
+        version: 0.3.17
       vitest:
         specifier: 'catalog:'
         version: 4.0.17(@types/node@22.19.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.30.2)(tsx@4.21.0)(yaml@2.8.2)
@@ -2842,8 +2842,8 @@ packages:
     resolution: {integrity: sha512-L8PZjVjmdKpW+82c1oNqGMqCOtQD2xORqJfr6Is7X5XXbz38eLYY79IM/1ok+Esf/iGOPtEYORdcf0ETmsWYew==}
     engines: {node: '>=20.19 <22 || >=22.12'}
 
-  '@publint/pack@0.1.2':
-    resolution: {integrity: sha512-S+9ANAvUmjutrshV4jZjaiG8XQyuJIZ8a4utWmN/vW1sgQ9IfBnPndwkmQYw53QmouOIytT874u65HEmu6H5jw==}
+  '@publint/pack@0.1.3':
+    resolution: {integrity: sha512-dHDWeutAerz+Z2wFYAce7Y51vd4rbLBfUh0BNnyul4xKoVsPUVJBrOAFsJvtvYBwGFJSqKsxyyHf/7evZ8+Q5Q==}
     engines: {node: '>=18'}
 
   '@rexxars/gitconfiglocal@3.0.1':
@@ -6968,8 +6968,8 @@ packages:
   proto-list@1.2.4:
     resolution: {integrity: sha512-vtK/94akxsTMhe0/cbfpR+syPuszcuwhqVjJq26CuNDgFGj682oRBXOP5MJpv2r7JtE8MsiepGIqvvOTBwn2vA==}
 
-  publint@0.3.16:
-    resolution: {integrity: sha512-MFqyfRLAExPVZdTQFwkAQELzA8idyXzROVOytg6nEJ/GEypXBUmMGrVaID8cTuzRS1U5L8yTOdOJtMXgFUJAeA==}
+  publint@0.3.17:
+    resolution: {integrity: sha512-Q3NLegA9XM6usW+dYQRG1g9uEHiYUzcCVBJDJ7yMcWRqVU9LYZUWdqbwMZfmTCFC5PZLQpLAmhvRcQRl3exqkw==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -11226,7 +11226,7 @@ snapshots:
 
   '@portabletext/types@4.0.1': {}
 
-  '@publint/pack@0.1.2': {}
+  '@publint/pack@0.1.3': {}
 
   '@rexxars/gitconfiglocal@3.0.1':
     dependencies:
@@ -16386,9 +16386,9 @@ snapshots:
 
   proto-list@1.2.4: {}
 
-  publint@0.3.16:
+  publint@0.3.17:
     dependencies:
-      '@publint/pack': 0.1.2
+      '@publint/pack': 0.1.3
       package-manager-detector: 1.6.0
       picocolors: 1.1.1
       sade: 1.8.1
