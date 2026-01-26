@@ -38,7 +38,9 @@ export async function testCopyDirectory(
   }
 }
 
-/** Options for testExample */
+/**
+ * @public
+ */
 export interface TestExampleOptions {
   /**
    * Custom temp directory. Defaults to process.cwd()/tmp
@@ -60,6 +62,8 @@ export interface TestExampleOptions {
  * @param exampleName - The name of the example to clone (e.g., 'basic-app', 'basic-studio')
  * @param options - Configuration options
  * @returns The absolute path to the temporary directory containing the example
+ *
+ * @public
  *
  * @example
  * ```typescript

@@ -1,6 +1,11 @@
 import {type ClientConfig, createClient} from '@sanity/client'
 import {vi} from 'vitest'
 
+/**
+ * Options for createTestClient
+ *
+ * @public
+ */
 export interface CreateTestClientOptions extends ClientConfig {
   /**
    * API version for the client
@@ -16,6 +21,8 @@ export interface CreateTestClientOptions extends ClientConfig {
 /**
  * Creates a real Sanity client instance for testing that makes actual HTTP requests.
  * Use with mockApi() to intercept and mock the HTTP calls.
+ *
+ * @public
  *
  * @example
  * ```typescript

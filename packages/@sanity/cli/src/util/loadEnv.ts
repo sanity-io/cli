@@ -1,4 +1,7 @@
 // @todo implement
+/**
+ * @public
+ */
 export function loadEnv(
   mode: string,
   envDir: string,

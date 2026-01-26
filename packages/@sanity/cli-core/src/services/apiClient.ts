@@ -19,7 +19,7 @@ const apiHosts: Record<string, string | undefined> = {
 const CLI_REQUEST_TAG_PREFIX = 'sanity.cli'
 
 /**
- * @internal
+ * @public
  */
 export interface GlobalCliClientOptions extends ClientConfig {
   /**
@@ -37,6 +37,8 @@ export interface GlobalCliClientOptions extends ClientConfig {
 
 /**
  * Create a "global" (unscoped) Sanity API client.
+ *
+ * @public
  *
  * @param options - The options to use for the client.
  * @returns Promise that resolves to a configured Sanity API client.
@@ -73,7 +75,7 @@ export async function getGlobalCliClient({
 }
 
 /**
- * @internal
+ * @public
  */
 export interface ProjectCliClientOptions extends ClientConfig {
   /**
@@ -100,7 +102,9 @@ export interface ProjectCliClientOptions extends ClientConfig {
 }
 
 /**
- * Create a "global" (unscoped) Sanity API client.
+ * Create a "project" (scoped) Sanity API client.
+ *
+ * @public
  *
  * @param options - The options to use for the client.
  * @returns Promise that resolves to a configured Sanity API client.

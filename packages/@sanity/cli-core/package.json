@@ -25,29 +25,26 @@
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
     "./tree": {
       "source": "./src/_exports/tree.ts",
-      "require": "./dist/_exports/tree.js",
-      "import": "./dist/_exports/tree.js"
+      "default": "./dist/_exports/tree.js"
     },
     "./ux": {
       "source": "./src/_exports/ux.ts",
-      "require": "./dist/_exports/ux.js",
-      "import": "./dist/_exports/ux.js"
+      "default": "./dist/_exports/ux.js"
     },
     "./package.json": "./package.json"
   },
-  "main": "dist/index.js",
+  "main": "./dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "./dist"
   ],
   "scripts": {
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
-    "build:types": "tsc --project tsconfig.lib.json",
+    "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
     "publint": "publint",
@@ -78,9 +75,11 @@
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
+    "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/codegen": "^5.6.0",
     "@sanity/eslint-config-cli": "workspace:*",
+    "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/debug": "catalog:",

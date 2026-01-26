@@ -1,0 +1,11 @@
+{
+  "name": "@repo/package.config",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./package.config.ts",
+  "types": "./package.config.ts",
+  "devDependencies": {
+    "@sanity/pkg-utils": "catalog:"
+  }
+}

@@ -25,13 +25,12 @@
   "exports": {
     ".": {
       "source": "./src/index.ts",
-      "require": "./dist/index.js",
-      "import": "./dist/index.js"
+      "default": "./dist/index.js"
     },
     "./package.json": "./package.json"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "bin": {
     "sanity": "./bin/run.js"
   },
@@ -46,7 +45,7 @@
   "scripts": {
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
     "postbuild": "pnpm run manifest:generate",
-    "build:types": "tsc --project tsconfig.lib.json",
+    "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
     "manifest:generate": "oclif manifest",
@@ -140,9 +139,11 @@
   "devDependencies": {
     "@eslint/compat": "catalog:",
     "@oclif/test": "catalog:",
+    "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:*",
+    "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/babel__traverse": "^7.28.0",

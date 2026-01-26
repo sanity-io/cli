@@ -9,12 +9,6 @@ export default [
   {
     rules: {
       '@typescript-eslint/no-explicit-any': 'warn',
-      'import/no-extraneous-dependencies': [
-        'error',
-        {
-          devDependencies: ['**/scripts/*.js', 'eslint.config.mjs', 'vitest.config.ts'],
-        },
-      ],
     },
   },
 ]

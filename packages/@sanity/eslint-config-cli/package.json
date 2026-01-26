@@ -22,11 +22,7 @@
   "sideEffects": false,
   "type": "module",
   "exports": {
-    ".": {
-      "source": "./eslint.config.mjs",
-      "require": "./eslint.config.mjs",
-      "import": "./eslint.config.mjs"
-    },
+    ".": "./eslint.config.mjs",
     "./package.json": "./package.json"
   },
   "main": "eslint.config.mjs",

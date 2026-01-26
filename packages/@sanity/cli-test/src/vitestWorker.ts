@@ -99,6 +99,8 @@ async function setupWatchMode(files: string[]) {
  * All npm packages are automatically marked as external (loaded from node_modules at runtime).
  * Only internal project code is bundled inline.
  *
+ * @public
+ *
  * @param filePaths - The paths to the worker files to build
  * @returns A promise that resolves when the worker build is setup
  * @throws If the worker files cannot be bundled
@@ -116,6 +118,8 @@ export async function setupWorkerBuild(filePaths: string[]) {
  * Teardown function to clean up the worker build.
  *
  * Closes all build contexts and deletes the compiled JavaScript files.
+ *
+ * @public
  *
  * @returns A promise that resolves when the worker build is teared down
  * @throws If the build contexts cannot be disposed

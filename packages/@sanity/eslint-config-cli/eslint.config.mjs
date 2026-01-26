@@ -135,6 +135,7 @@ export default defineConfig(
             '**/package.bundle.ts',
             '**/package.config.ts',
             '**/knip.config.ts',
+            '**/scripts/**',
           ],
           includeTypes: false,
           optionalDependencies: false,

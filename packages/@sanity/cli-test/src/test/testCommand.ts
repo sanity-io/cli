@@ -7,6 +7,9 @@ import {mockSanityCommand, type MockSanityCommandOptions} from './mockSanityComm
 
 type CommandClass = (new (argv: string[], config: Config) => Command) & typeof Command
 
+/**
+ * @public
+ */
 export interface TestCommandOptions {
   /**
    * Options for capturing output
@@ -23,6 +26,9 @@ export interface TestCommandOptions {
   mocks?: MockSanityCommandOptions
 }
 
+/**
+ * @public
+ */
 export async function testCommand(
   command: CommandClass,
   args?: string[],

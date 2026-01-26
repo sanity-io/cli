@@ -1,6 +1,9 @@
 import {findProjectRootSync, getCliConfigSync} from '@sanity/cli-core'
 import {createClient, type SanityClient} from '@sanity/client'
 
+/**
+ * @public
+ */
 export interface CliClientOptions {
   apiVersion?: string
 
@@ -11,7 +14,13 @@ export interface CliClientOptions {
   useCdn?: boolean
 }
 
-export function getCliClient(options: CliClientOptions = {}): SanityClient {
+/**
+ * @public
+ *
+ * @param options - The options to use for the client.
+ * @returns A configured Sanity API client.
+ */
+export const getCliClient: CliClientGetter = (options: CliClientOptions = {}): SanityClient => {
   if (typeof process !== 'object') {
     throw new TypeError('getCliClient() should only be called from node.js scripts')
   }
@@ -50,9 +59,13 @@ export function getCliClient(options: CliClientOptions = {}): SanityClient {
   })
 }
 
-/**
- * @internal
- * @deprecated This is only for INTERNAL use, and should not be relied upon outside of official Sanity modules
- * @returns A token to use when constructing a client without a `token` explicitly defined, or undefined
- */
+type CliClientGetter = ((options?: CliClientOptions) => SanityClient) & {
+  /**
+   * @deprecated This is only for INTERNAL use, and should not be relied upon outside of official Sanity modules
+   * @returns A token to use when constructing a client without a `token` explicitly defined, or undefined
+   * @internal
+   */
+  __internal__getToken: () => string | undefined
+}
+
 getCliClient.__internal__getToken = (): string | undefined => undefined

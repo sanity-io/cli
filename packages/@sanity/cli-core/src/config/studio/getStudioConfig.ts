@@ -11,7 +11,7 @@ import {
  *
  * @param rootPath - The root path for the project
  * @returns The studio config (some properties may be missing)
- * @internal
+ * @public
  */
 export async function getStudioConfig(
   rootPath: string,

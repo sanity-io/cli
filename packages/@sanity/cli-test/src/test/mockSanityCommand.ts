@@ -1,6 +1,9 @@
 import {type Command} from '@oclif/core'
 import {type CliConfig, type ProjectRootResult, SanityCommand} from '@sanity/cli-core'
 
+/**
+ * @public
+ */
 export interface MockSanityCommandOptions {
   /**
    * Mock CLI config (required if command uses getCliConfig or getProjectId)
@@ -22,6 +25,8 @@ export interface MockSanityCommandOptions {
 
 /**
  * Creates a testable subclass of a command with mocked SanityCommand dependencies.
+ *
+ * @public
  *
  * @example
  * ```ts

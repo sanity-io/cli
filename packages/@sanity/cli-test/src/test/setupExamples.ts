@@ -14,7 +14,11 @@ import {testCopyDirectory} from './testExample.js'
 
 const exec = promisify(execNode)
 
-/** Options for setupTestExamples */
+/**
+ * Options for setupTestExamples
+ *
+ * @public
+ */
 export interface SetupTestExamplesOptions {
   /**
    * Glob patterns for additional example directories to set up.
@@ -70,6 +74,8 @@ interface ExamplePath {
  * examples should build them as part of the test.
  *
  * This function is designed to be used with vitest globalSetup.
+ *
+ * @public
  *
  * @param options - Configuration options
  * @example
@@ -152,7 +158,11 @@ export async function setup(_: TestProject, options: SetupTestExamplesOptions = 
   }
 }
 
-/** Options for teardownTestExamples */
+/**
+ * Options for teardownTestExamples
+ *
+ * @public
+ */
 export interface TeardownTestExamplesOptions {
   /**
    * Custom temp directory path. Defaults to process.cwd()/tmp
@@ -166,6 +176,8 @@ export interface TeardownTestExamplesOptions {
  * Removes the temp directory created by setupTestExamples.
  *
  * This function is designed to be used with vitest globalSetup.
+ *
+ * @public
  *
  * @param options - Configuration options
  */
