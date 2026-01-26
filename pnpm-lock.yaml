@@ -21,6 +21,9 @@ catalogs:
     '@oclif/test':
       specifier: ^4.1.16
       version: 4.1.16
+    '@sanity/codegen':
+      specifier: ^5.7.1
+      version: 5.7.1
     '@sanity/pkg-utils':
       specifier: ^10.3.3
       version: 10.3.3
@@ -321,6 +324,9 @@ importers:
       '@sanity/client':
         specifier: ^7.14.1
         version: 7.14.1(debug@4.4.3)
+      '@sanity/codegen':
+        specifier: 'catalog:'
+        version: 5.7.1(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)
       '@sanity/descriptors':
         specifier: ^1.3.0
         version: 1.3.0
@@ -684,8 +690,8 @@ importers:
         specifier: workspace:*
         version: link:../../@repo/tsconfig
       '@sanity/codegen':
-        specifier: ^5.6.0
-        version: 5.6.0
+        specifier: 'catalog:'
+        version: 5.7.1(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)
       '@sanity/eslint-config-cli':
         specifier: workspace:*
         version: link:../eslint-config-cli
@@ -3292,8 +3298,8 @@ packages:
     resolution: {integrity: sha512-7gMDT+V5Nkna/FYUDGQGQciixeADu9dSG0+hyOeIM1DEQJ1Qge79ncQesUmwibsG66dae7CcQliKohf2qfeiMg==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
 
-  '@sanity/cli-core@0.1.0-alpha.6':
-    resolution: {integrity: sha512-yrZWRxSBZBuk+FxXULZI1gwOVWIPZ9tvdrswWmHsnqAU8051y9sDb9+ntHU8rn6c9jsRS0cJBJH+uhIlXt+1bA==}
+  '@sanity/cli-core@0.1.0-alpha.8':
+    resolution: {integrity: sha512-x6KNOG26XCTASfOofcYBPCfPR78lqN0Fz+Xy5SYs2iuvWN3vs8LZCYo0yiXR7MYpp+IpcV9JChzTM6yxeX7zMw==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
 
   '@sanity/cli-test@0.0.2-alpha.5':
@@ -3328,6 +3334,11 @@ packages:
   '@sanity/codegen@5.6.0':
     resolution: {integrity: sha512-o66wdsYNjJVGk33rIsEIwCGjVHjpqGgZkdVvJcXVW1ErUhSetCUH1+TIcT9+EpXQg0Jp2VL4mmEzAciiLPHcqg==}
     engines: {node: '>=20.19 <22 || >=22.12'}
+
+  '@sanity/codegen@5.7.1':
+    resolution: {integrity: sha512-IvLjQPjlRWy2lvFwJDR+7zR4PlIBqdccBtRFuXvlB8hKgehps8sumZjzRVwgL2vdvz5MiLmt4ggFlm/e8Pgz6A==}
+    engines: {node: '>=20.19 <22 || >=22.12'}
+    hasBin: true
 
   '@sanity/color@3.0.6':
     resolution: {integrity: sha512-2TjYEvOftD0v7ukx3Csdh9QIu44P2z7NDJtlC3qITJRYV36J7R6Vfd3trVhFnN77/7CZrGjqngrtohv8VqO5nw==}
@@ -12309,7 +12320,7 @@ snapshots:
       - utf-8-validate
       - yaml
 
-  '@sanity/cli-core@0.1.0-alpha.6(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)':
+  '@sanity/cli-core@0.1.0-alpha.8(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)':
     dependencies:
       '@inquirer/prompts': 8.2.0(@types/node@20.19.30)
       '@oclif/core': 4.8.0
@@ -12346,7 +12357,7 @@ snapshots:
       - utf-8-validate
       - yaml
 
-  '@sanity/cli-core@0.1.0-alpha.6(@types/node@22.19.3)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)':
+  '@sanity/cli-core@0.1.0-alpha.8(@types/node@22.19.3)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)':
     dependencies:
       '@inquirer/prompts': 8.2.0(@types/node@22.19.3)
       '@oclif/core': 4.8.0
@@ -12383,17 +12394,17 @@ snapshots:
       - utf-8-validate
       - yaml
 
-  '@sanity/cli-test@0.0.2-alpha.5(@oclif/core@4.8.0)(@sanity/cli-core@0.1.0-alpha.6(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2))':
+  '@sanity/cli-test@0.0.2-alpha.5(@oclif/core@4.8.0)(@sanity/cli-core@0.1.0-alpha.8(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2))':
     dependencies:
       '@oclif/core': 4.8.0
-      '@sanity/cli-core': 0.1.0-alpha.6(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)
+      '@sanity/cli-core': 0.1.0-alpha.8(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)
       ansis: 4.2.0
       nock: 14.0.10
 
-  '@sanity/cli-test@0.0.2-alpha.5(@oclif/core@4.8.0)(@sanity/cli-core@0.1.0-alpha.6(@types/node@22.19.3)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2))':
+  '@sanity/cli-test@0.0.2-alpha.5(@oclif/core@4.8.0)(@sanity/cli-core@0.1.0-alpha.8(@types/node@22.19.3)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2))':
     dependencies:
       '@oclif/core': 4.8.0
-      '@sanity/cli-core': 0.1.0-alpha.6(@types/node@22.19.3)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)
+      '@sanity/cli-core': 0.1.0-alpha.8(@types/node@22.19.3)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)
       ansis: 4.2.0
       nock: 14.0.10
 
@@ -12502,6 +12513,47 @@ snapshots:
       zod: 3.25.76
     transitivePeerDependencies:
       - supports-color
+
+  '@sanity/codegen@5.7.1(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)':
+    dependencies:
+      '@babel/core': 7.28.6
+      '@babel/generator': 7.28.6
+      '@babel/preset-env': 7.28.6(@babel/core@7.28.6)
+      '@babel/preset-react': 7.28.5(@babel/core@7.28.6)
+      '@babel/preset-typescript': 7.28.5(@babel/core@7.28.6)
+      '@babel/register': 7.28.6(@babel/core@7.28.6)
+      '@babel/traverse': 7.28.6
+      '@babel/types': 7.28.6
+      '@oclif/core': 4.8.0
+      '@oclif/plugin-help': 6.2.37
+      '@sanity/cli-core': 0.1.0-alpha.8(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)
+      '@sanity/worker-channels': 1.1.0
+      debug: 4.4.3(supports-color@8.1.1)
+      globby: 11.1.0
+      groq: 5.6.0
+      groq-js: 1.25.0
+      json5: 2.2.3
+      prettier: 3.8.1
+      reselect: 5.1.1
+      tsconfig-paths: 4.2.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - '@exodus/crypto'
+      - '@types/node'
+      - '@types/react'
+      - bufferutil
+      - canvas
+      - jiti
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - utf-8-validate
+      - yaml
 
   '@sanity/color@3.0.6': {}
 
@@ -12685,8 +12737,8 @@ snapshots:
     dependencies:
       '@oclif/core': 4.8.0
       '@oclif/plugin-help': 6.2.37
-      '@sanity/cli-core': 0.1.0-alpha.6(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)
-      '@sanity/cli-test': 0.0.2-alpha.5(@oclif/core@4.8.0)(@sanity/cli-core@0.1.0-alpha.6(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2))
+      '@sanity/cli-core': 0.1.0-alpha.8(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)
+      '@sanity/cli-test': 0.0.2-alpha.5(@oclif/core@4.8.0)(@sanity/cli-core@0.1.0-alpha.8(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2))
       '@sanity/client': 7.14.1(debug@4.4.3)
       '@sanity/mutate': 0.15.0(debug@4.4.3)
       '@sanity/types': 5.6.0(@types/react@19.2.9)(debug@4.4.3)
@@ -12722,8 +12774,8 @@ snapshots:
     dependencies:
       '@oclif/core': 4.8.0
       '@oclif/plugin-help': 6.2.37
-      '@sanity/cli-core': 0.1.0-alpha.6(@types/node@22.19.3)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)
-      '@sanity/cli-test': 0.0.2-alpha.5(@oclif/core@4.8.0)(@sanity/cli-core@0.1.0-alpha.6(@types/node@22.19.3)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2))
+      '@sanity/cli-core': 0.1.0-alpha.8(@types/node@22.19.3)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2)
+      '@sanity/cli-test': 0.0.2-alpha.5(@oclif/core@4.8.0)(@sanity/cli-core@0.1.0-alpha.8(@types/node@22.19.3)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.46.0)(yaml@2.8.2))
       '@sanity/client': 7.14.1(debug@4.4.3)
       '@sanity/mutate': 0.15.0(debug@4.4.3)
       '@sanity/types': 5.6.0(@types/react@19.2.9)(debug@4.4.3)

@@ -11,6 +11,7 @@ export default {
     '@oclif/plugin-not-found',
     '@sanity/runtime-cli',
     '@sanity/migrate',
+    '@sanity/codegen',
   ],
   topicSeparator: ' ',
 }
