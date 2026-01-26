@@ -123,7 +123,7 @@ describe(
         expect(error?.message).toContain('Failed to start preview server')
         expect(error?.oclif?.exit).toBe(1)
         expect(stdout).toContain(
-          `Could not find a production build in the '${cwd}/dist' directory.`,
+          `Could not find a production build in the '${convertToSystemPath(`${cwd}/dist`)}' directory.`,
         )
         expect(stdout).toContain(
           `Try building your studio with 'sanity build' before starting the preview server.`,
