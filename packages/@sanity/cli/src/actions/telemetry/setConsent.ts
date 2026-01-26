@@ -1,11 +1,9 @@
 import {getGlobalCliClient, getUserConfig, isCi, isTrueish} from '@sanity/cli-core'
 
-import {type ValidApiConsentStatus} from './isValidApiConsentStatus.js'
+import {TELEMETRY_CONSENT_CONFIG_KEY, type ValidApiConsentStatus} from '../../services/telemetry.js'
 import {resolveConsent} from './resolveConsent.js'
 import {telemetryDebug} from './telemetryDebug.js'
 import {type ConsentInformation} from './types.js'
-
-const TELEMETRY_CONSENT_CONFIG_KEY = 'telemetryConsent'
 
 type SettableConsentStatus = Extract<ValidApiConsentStatus, 'denied' | 'granted'>
 

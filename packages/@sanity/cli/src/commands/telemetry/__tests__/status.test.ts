@@ -3,8 +3,7 @@ import {getCliToken, isCi} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {fetchTelemetryConsent} from '../../../actions/telemetry/fetchTelemetryConsent.js'
-import {type ValidApiConsentStatus} from '../../../actions/telemetry/isValidApiConsentStatus.js'
+import {fetchTelemetryConsent, type ValidApiConsentStatus} from '../../../services/telemetry.js'
 import {Status} from '../status.js'
 
 vi.mock('@sanity/cli-core', async () => {
@@ -16,7 +15,8 @@ vi.mock('@sanity/cli-core', async () => {
   }
 })
 
-vi.mock('../../../actions/telemetry/fetchTelemetryConsent.js', () => ({
+vi.mock('../../../services/telemetry.js', async () => ({
+  ...(await vi.importActual('../../../services/telemetry.js')),
   fetchTelemetryConsent: vi.fn(),
 }))
 
