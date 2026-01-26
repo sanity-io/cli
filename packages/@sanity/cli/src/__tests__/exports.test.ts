@@ -18,6 +18,8 @@ function getPackagePath(tmpDir: string, version: string) {
   return join(tmpDir, `sanity-cli-${version}`, 'package')
 }
 
+const OLD_CLI_VERSION = '5.6.0'
+
 // Convert web stream to async iterable for use with Readable.from()
 async function* streamToAsyncIterable(
   stream: globalThis.ReadableStream<Uint8Array>,
@@ -61,11 +63,10 @@ async function downloadAndExtractTarball(version: string, destDir: string) {
 }
 
 async function getSanityPackageExports() {
-  const version = '5.5.0'
   const tmpDir = getTempPath()
-  await downloadAndExtractTarball(version, tmpDir)
+  await downloadAndExtractTarball(OLD_CLI_VERSION, tmpDir)
 
-  const packagePath = getPackagePath(tmpDir, version)
+  const packagePath = getPackagePath(tmpDir, OLD_CLI_VERSION)
 
   const packageJson = await readPackageJson(join(packagePath, 'package.json'))
   const main = packageJson.main
@@ -99,11 +100,10 @@ async function extractTypes(typesPath: string) {
 }
 
 async function getSanityPackageTypeExports() {
-  const version = '5.5.0'
   const tmpDir = getTempPath()
-  await downloadAndExtractTarball(version, tmpDir)
+  await downloadAndExtractTarball(OLD_CLI_VERSION, tmpDir)
 
-  const packagePath = getPackagePath(tmpDir, version)
+  const packagePath = getPackagePath(tmpDir, OLD_CLI_VERSION)
 
   const packageJson = await readPackageJson(join(packagePath, 'package.json'))
   const types = packageJson.types
