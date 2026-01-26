@@ -2,6 +2,7 @@ import {rm} from 'node:fs/promises'
 
 import {type Output} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
+import {createMockPath} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, it, type MockedFunction, vi} from 'vitest'
 
 import {buildApp} from '../buildApp.js'
@@ -108,7 +109,10 @@ describe('buildApp', () => {
   it('should build app successfully with basic options', async () => {
     await buildApp(baseBuildOptions)
 
-    expect(mockedReadModuleVersion).toHaveBeenCalledWith('/test/work/dir/dist', '@sanity/sdk-react')
+    expect(mockedReadModuleVersion).toHaveBeenCalledWith(
+      createMockPath('/test/work/dir/dist', {windowsPrefix: 'C:'}),
+      '@sanity/sdk-react',
+    )
     expect(mockedBuildStaticFiles).toHaveBeenCalled()
   })
 

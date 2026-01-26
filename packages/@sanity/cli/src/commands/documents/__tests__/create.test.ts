@@ -5,7 +5,7 @@ import path from 'node:path'
 
 import {runCommand} from '@oclif/test'
 import {getProjectCliClient} from '@sanity/cli-core'
-import {testCommand} from '@sanity/cli-test'
+import {createMockPath, testCommand} from '@sanity/cli-test'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
 import json5 from 'json5'
@@ -275,10 +275,13 @@ describe('#documents:create', () => {
       })
 
       expect(stdout).toContain('Created:')
-      expect(mockFs.mkdir).toHaveBeenCalledWith('/tmp/sanity-cli', {
-        mode: 0o700,
-        recursive: true,
-      })
+      expect(mockFs.mkdir).toHaveBeenCalledWith(
+        createMockPath('/tmp/sanity-cli', {windowsPrefix: ''}),
+        {
+          mode: 0o700,
+          recursive: true,
+        },
+      )
       expect(mockExecaSync).toHaveBeenCalled()
     }),
   )
