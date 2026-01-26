@@ -5,7 +5,7 @@ import {validateOrganizationName} from '../actions/organizations/validateOrganiz
 
 export async function promptForOrganizationName(user: SanityOrgUser): Promise<string> {
   return input({
-    default: user ? user.name : undefined,
+    default: user?.name,
     message: 'Organization name:',
     validate: validateOrganizationName,
   })

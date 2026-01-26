@@ -155,6 +155,8 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
   ): Promise<DatasetResponse | undefined> {
     try {
       let datasetName: string | undefined = datasetFromFlag
+      const existingDatasets = await listDatasets(projectId)
+      const existingDatasetNames = existingDatasets.map((ds) => ds.name)
 
       // Prompt for dataset in interactive mode if not provided
       if (!datasetName && !this.isUnattended()) {
@@ -166,13 +168,9 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
         if (wantsDataset) {
           const defaultConfig = await promptForDefaultConfig(this.output)
 
-          if (defaultConfig) {
-            datasetName = 'production'
-          } else {
-            const datasets = await listDatasets(projectId)
-            const datasetNames = datasets.map((ds) => ds.name)
-            datasetName = await promptForDatasetName({}, datasetNames)
-          }
+          datasetName = defaultConfig
+            ? 'production'
+            : await promptForDatasetName({}, existingDatasetNames)
         }
       }
 
