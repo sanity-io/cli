@@ -110,23 +110,35 @@ export default class CreateProjectCommand extends SanityCommand<typeof CreatePro
 
     let chosenOrganization: OrganizationCreateResponse | ProjectOrganization | undefined
     try {
-      chosenOrganization = await getOrganization(organization, user, this.output)
+      chosenOrganization = await getOrganization(
+        organization,
+        user,
+        this.output,
+        this.isUnattended(),
+      )
     } catch (error) {
       const errorText = organization
         ? `Failed to retrieve organization ${organization}`
         : 'Failed to retrieve an organization'
-      this.error(`${errorText}: ${error}`)
+      this.error(`${errorText}: ${error}`, {exit: 1})
     }
 
     const spin = spinner('Creating project').start()
-    const newProject = await createProject({
-      displayName: finalProjectName,
-      metadata: {
-        integration: 'cli',
-      },
-      organizationId: chosenOrganization?.id,
-    })
-    spin.succeed('Project created successfully')
+    let newProject
+    try {
+      newProject = await createProject({
+        displayName: finalProjectName,
+        metadata: {
+          integration: 'cli',
+        },
+        organizationId: chosenOrganization?.id,
+      })
+      spin.succeed('Project created successfully')
+    } catch (error) {
+      spin.fail()
+      debug(`Failed to create project: ${error}`)
+      this.error(`Failed to create project: ${error}`, {exit: 1})
+    }
 
     const newDataset = await this.handleDatasetCreation(
       newProject.projectId,

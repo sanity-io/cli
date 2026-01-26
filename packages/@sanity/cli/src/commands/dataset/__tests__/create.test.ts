@@ -209,7 +209,7 @@ describe('#dataset:create', () => {
       mocks: defaultMocks,
     })
 
-    expect(error?.message).toContain('Dataset creation failed: API Error')
+    expect(error?.message).toContain('Failed to create dataset: API Error')
     expect(error?.oclif?.exit).toBe(1)
   })
 

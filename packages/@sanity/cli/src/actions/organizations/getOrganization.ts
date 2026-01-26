@@ -24,6 +24,7 @@ export async function getOrganization(
   requestedId: string | undefined,
   user: SanityOrgUser,
   output: Output,
+  isUnattended: boolean,
 ) {
   // Get available organizations
   const spin = spinner('Loading organizations').start()
@@ -64,6 +65,12 @@ export async function getOrganization(
 
   debug('User has attach access to %d organizations.', withAttach.length)
   const organizationChoices = getOrganizationChoices(withAttach)
+
+  // In unattended mode  use defaults without prompting
+  if (isUnattended) {
+    // Use the first organization with attach permissions
+    return withAttach.length > 0 ? withAttach[0].organization : undefined
+  }
 
   // If the user only has a single organization (and they have attach access to it),
   // we'll default to that one. Otherwise, we'll default to the organization with the
