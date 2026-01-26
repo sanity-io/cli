@@ -51,6 +51,8 @@ import {
 } from '../prompts/init/nextjs.js'
 import {promptForTypeScript} from '../prompts/init/promptForTypescript.js'
 import {promptForDatasetName} from '../prompts/promptForDatasetName.js'
+import {promptForDefaultConfig} from '../prompts/promptForDefaultConfig.js'
+import {promptForOrganizationName} from '../prompts/promptForOrganizationName.js'
 import {createCorsOrigin, listCorsOrigins} from '../services/cors.js'
 import {createDataset as createDatasetService, listDatasets} from '../services/datasets.js'
 import {getProjectFeatures} from '../services/getProjectFeatures.js'
@@ -811,7 +813,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       debug('No datasets found for project, prompting for name')
       if (opts.showDefaultConfigPrompt) {
         this.log(datasetInfo)
-        defaultConfig = await this.promptForDefaultConfig()
+        defaultConfig = await promptForDefaultConfig(this.output)
       }
       const name = defaultConfig
         ? 'production'
@@ -842,7 +844,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       debug('User wants to create a new dataset, prompting for name')
       if (opts.showDefaultConfigPrompt && !existingDatasetNames.includes('production')) {
         this.log(datasetInfo)
-        defaultConfig = await this.promptForDefaultConfig()
+        defaultConfig = await promptForDefaultConfig(this.output)
       }
 
       const newDatasetName = defaultConfig
@@ -1323,13 +1325,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     })
   }
 
-  private async promptForDefaultConfig(): Promise<boolean> {
-    return confirm({
-      default: true,
-      message: 'Use the default dataset configuration?',
-    })
-  }
-
   private async promptForProjectCreation({
     isUsersFirstProject,
     organizationId,
@@ -1414,18 +1409,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   private async promptUserForNewOrganization(
     user: SanityOrgUser,
   ): Promise<OrganizationCreateResponse> {
-    const name = await input({
-      default: user ? user.name : undefined,
-      message: 'Organization name:',
-      validate(input) {
-        if (input.length === 0) {
-          return 'Organization name cannot be empty'
-        } else if (input.length > 100) {
-          return 'Organization name cannot be longer than 100 characters'
-        }
-        return true
-      },
-    })
+    const name = await promptForOrganizationName(user)
 
     const spin = spinner('Creating organization').start()
     const organization = await createOrganization(name)
