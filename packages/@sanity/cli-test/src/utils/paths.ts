@@ -50,17 +50,24 @@ export function getCurrentDrive(): string {
 
 /**
  * Converts Unix-style paths to platform-appropriate paths.
- * On Windows, auto-detects drive from process.cwd().
- * On Unix, keeps paths as-is.
+ * On Windows:
+ *   - Absolute paths starting with '/': adds drive letter and converts to backslashes
+ *   - Relative/partial paths: converts forward slashes to backslashes
+ * On Unix: keeps paths as-is.
  *
- * @param pathStr - Unix-style path (e.g., '/test/path')
+ * @param pathStr - Unix-style path (e.g., '/test/path' or '.config/file.json')
  * @returns Platform-appropriate path
  * @internal
  */
 export function convertToSystemPath(pathStr: string): string {
-  if (process.platform === 'win32' && pathStr.startsWith('/')) {
-    const drive = getCurrentDrive()
-    return `${drive}${pathStr.slice(1).replaceAll('/', '\\')}`
+  if (process.platform === 'win32') {
+    if (pathStr.startsWith('/')) {
+      // Absolute Unix path - add drive letter
+      const drive = getCurrentDrive()
+      return `${drive}${pathStr.slice(1).replaceAll('/', '\\')}`
+    }
+    // Relative/partial path - just convert separators
+    return pathStr.replaceAll('/', '\\')
   }
   return pathStr
 }
