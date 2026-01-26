@@ -18,7 +18,7 @@ export async function hasProjectAttachGrant(orgId: string) {
   } catch (err) {
     // If we get a 401, it means we don't have access to this organization
     // probably because of implicit membership
-    if (err.statusCode === 401) {
+    if ('statusCode' in err && err.statusCode === 401) {
       debug('No access to organization %s (401)', orgId)
       return false
     }

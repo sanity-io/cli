@@ -97,7 +97,6 @@ export default class CreateProjectCommand extends SanityCommand<typeof CreatePro
 
     const finalProjectName =
       projectName ||
-      projectName ||
       (yes || this.isUnattended() ? 'My Sanity Project' : await promptForProjectName())
 
     debug('Creating project with options: %O', {
