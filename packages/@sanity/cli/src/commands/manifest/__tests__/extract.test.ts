@@ -1,7 +1,7 @@
 import {access, mkdir, writeFile} from 'node:fs/promises'
 
 import {runCommand} from '@oclif/test'
-import {createMockPath, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {ExtractManifestCommand} from '../extract.js'
@@ -108,7 +108,7 @@ describe('#manifest:extract', () => {
     expect(stderr).toContain('Extracted manifest')
 
     expect(mockMkdir).toHaveBeenCalledWith(
-      createMockPath('/test/path/dist/static', {windowsPrefix: `C:`}),
+      convertToSystemPath('/test/path/dist/static'),
       {recursive: true},
     )
 
@@ -125,7 +125,7 @@ describe('#manifest:extract', () => {
     )
 
     expect(mockWriteFile).toHaveBeenCalledWith(
-      createMockPath('/test/path/dist/static/create-manifest.json', {windowsPrefix: `C:`}),
+      convertToSystemPath('/test/path/dist/static/create-manifest.json'),
       // eslint-disable-next-line no-useless-escape
       expect.stringContaining(`\"name\": \"test-name\"`),
     )
@@ -150,12 +150,12 @@ describe('#manifest:extract', () => {
     expect(stderr).toContain('Extracted manifest')
 
     expect(mockMkdir).toHaveBeenCalledWith(
-      createMockPath('/test/path/test/static', {windowsPrefix: `C:`}),
+      convertToSystemPath('/test/path/test/static'),
       {recursive: true},
     )
 
     expect(mockWriteFile).toHaveBeenCalledWith(
-      createMockPath('/test/path/test/static/create-manifest.json', {windowsPrefix: `C:`}),
+      convertToSystemPath('/test/path/test/static/create-manifest.json'),
       // eslint-disable-next-line no-useless-escape
       expect.stringContaining(`\"name\": \"test-name\"`),
     )

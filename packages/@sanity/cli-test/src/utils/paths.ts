@@ -33,21 +33,36 @@ export function getTempPath(customTempDir?: string): string {
 }
 
 /**
- * Creates a platform-appropriate mock path for testing.
- * On Windows, converts Unix-style paths to Windows paths (C:\\path\\to\\file).
- * On Unix, keeps paths as-is (/path/to/file).
+ * Gets the current Windows drive letter from process.cwd().
+ * Falls back to 'C:\\' if detection fails.
  *
- * @param unixPath - Unix-style path (e.g., '/mock/project/path')
+ * @returns Drive letter with backslash (e.g., 'C:\\', 'D:\\') or empty string on Unix
+ * @internal
+ */
+export function getCurrentDrive(): string {
+  if (process.platform !== 'win32') {
+    return ''
+  }
+  const cwd = process.cwd()
+  const match = cwd.match(/^([A-Z]:)[\\/]/)
+  return match ? match[1] + '\\' : 'C:\\'
+}
+
+/**
+ * Converts Unix-style paths to platform-appropriate paths.
+ * On Windows, auto-detects drive from process.cwd().
+ * On Unix, keeps paths as-is.
+ *
+ * @param pathStr - Unix-style path (e.g., '/test/path')
  * @returns Platform-appropriate path
  * @internal
  */
-export function createMockPath(unixPath: string, {windowsPrefix = 'C:\\'} = {}): string {
-  if (process.platform === 'win32') {
-    // Convert Unix path to Windows path
-    // /mock/project/path' => C:\mock\project\path
-    return `${windowsPrefix}${unixPath.replaceAll('/', '\\')}`
+export function convertToSystemPath(pathStr: string): string {
+  if (process.platform === 'win32' && pathStr.startsWith('/')) {
+    const drive = getCurrentDrive()
+    return `${drive}${pathStr.slice(1).replaceAll('/', '\\')}`
   }
-  return unixPath
+  return pathStr
 }
 
 /**

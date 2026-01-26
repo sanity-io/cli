@@ -1,6 +1,6 @@
 import {join} from 'node:path'
 
-import {createMockPath} from '@sanity/cli-test'
+import {convertToSystemPath} from '@sanity/cli-test'
 import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -56,9 +56,9 @@ vi.mock('../../../server/vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
-const mockTestCwd = createMockPath('/test/cwd')
-const mockSanityPath = createMockPath('/mock/path/to/sanity')
-const mockCustomOutput = createMockPath('/custom/output')
+const mockTestCwd = convertToSystemPath('/test/cwd')
+const mockSanityPath = convertToSystemPath('/mock/path/to/sanity')
+const mockCustomOutput = convertToSystemPath('/custom/output')
 
 describe('#getViteConfig', () => {
   beforeEach(async () => {
@@ -311,8 +311,8 @@ describe('#getViteConfig', () => {
 })
 
 describe('#finalizeViteConfig', () => {
-  const mockTestRoot = createMockPath('/test/root')
-  const mockTestMain = createMockPath('/test/main.js')
+  const mockTestRoot = convertToSystemPath('/test/root')
+  const mockTestMain = convertToSystemPath('/test/main.js')
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -367,7 +367,7 @@ describe('#finalizeViteConfig', () => {
     const inputConfig: InlineConfig = {
       build: {
         rollupOptions: {
-          input: createMockPath('/single/entry.js'),
+          input: convertToSystemPath('/single/entry.js'),
         },
       },
       root: mockTestRoot,
@@ -396,7 +396,7 @@ describe('#finalizeViteConfig', () => {
 })
 
 describe('#extendViteConfigWithUserConfig', () => {
-  const mockTest = createMockPath('/test')
+  const mockTest = convertToSystemPath('/test')
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -523,7 +523,7 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
 
     const warning = {
       code: 'UNUSED_EXTERNAL_IMPORT' as const,
-      ids: [join(createMockPath('/project'), 'node_modules/some-lib/index.js')],
+      ids: [join(convertToSystemPath('/project'), 'node_modules/some-lib/index.js')],
       message: 'Some warning from node_modules',
     }
 

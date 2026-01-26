@@ -6,7 +6,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {readJsonFile} from '../../util/readJsonFile'
 import {findProjectRoot} from '../findProjectRoot'
 
-function createMockPath(unixPath: string): string {
+function convertToSystemPath(unixPath: string): string {
   if (process.platform === 'win32') {
     // Convert Unix path to Windows path
     // /mock/project/path' => C:\mock\project\path
@@ -26,7 +26,7 @@ vi.mock('../../util/readJsonFile', () => ({
 }))
 
 describe('#findProjectRoot', () => {
-  const mockCwd = createMockPath('/mock/project/path')
+  const mockCwd = convertToSystemPath('/mock/project/path')
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -100,7 +100,7 @@ describe('#findProjectRoot', () => {
   })
 
   test('recursively searches parent directories for config', async () => {
-    const parentPath = createMockPath('/mock/project')
+    const parentPath = convertToSystemPath('/mock/project')
 
     // Mock access to return true only for config in parent directory
     vi.mocked(access).mockImplementation((path) => {

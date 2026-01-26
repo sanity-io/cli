@@ -5,11 +5,11 @@ import path from 'node:path'
 
 import {runCommand} from '@oclif/test'
 import {getProjectCliClient} from '@sanity/cli-core'
-import {createMockPath, testCommand} from '@sanity/cli-test'
+import {testCommand} from '@sanity/cli-test'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
 import json5 from 'json5'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, type Mock, test, vi} from 'vitest'
 
 import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {CreateDocumentCommand} from '../create.js'
@@ -44,6 +44,40 @@ const mockExecaSync = vi.mocked(execaSync)
 const mockJson5 = vi.mocked(json5)
 const mockRandomUUID = vi.mocked(randomUUID)
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
+
+// Platform-specific test helpers
+function getPlatformTmpDir(): string {
+  return process.platform === 'win32' ? 'C:\\tmp' : '/tmp'
+}
+
+interface FsMockSetup {
+  fs: {
+    mkdir: Mock
+    readFile: Mock
+    unlink: Mock
+    writeFile: Mock
+  }
+  os: {
+    tmpdir: Mock
+  }
+}
+
+function setupFsMocks(mocks: FsMockSetup): void {
+  const {fs: mockFs, os: mockOs} = mocks
+
+  // Platform-appropriate temp directory
+  const tmpDir = getPlatformTmpDir()
+  mockOs.tmpdir.mockReturnValue(tmpDir)
+
+  // Common FS operations
+
+  mockFs.mkdir.mockResolvedValue(undefined)
+
+  mockFs.writeFile.mockResolvedValue(undefined)
+
+  mockFs.unlink.mockResolvedValue(undefined)
+  mockFs.readFile.mockResolvedValue(Buffer.from(''))
+}
 
 const testProjectId = 'test-project'
 const testDataset = 'production'
@@ -80,18 +114,12 @@ const defaultMocks = {
 
 // Helper functions
 const setupEditorMocks = () => {
-  mockOs.tmpdir.mockReturnValue('/tmp')
-  mockFs.mkdir.mockResolvedValue(undefined)
-  mockFs.writeFile.mockResolvedValue(undefined)
-  mockFs.unlink.mockResolvedValue(undefined)
+  setupFsMocks({fs: mockFs, os: mockOs})
   mockExecaSync.mockReturnValue(undefined as never)
 }
 
 const setupWatchMocks = () => {
-  mockOs.tmpdir.mockReturnValue('/tmp')
-  mockFs.mkdir.mockResolvedValue(undefined)
-  mockFs.writeFile.mockResolvedValue(undefined)
-  mockFs.unlink.mockResolvedValue(undefined)
+  setupFsMocks({fs: mockFs, os: mockOs})
 }
 
 describe('#documents:create', () => {
@@ -275,13 +303,10 @@ describe('#documents:create', () => {
       })
 
       expect(stdout).toContain('Created:')
-      expect(mockFs.mkdir).toHaveBeenCalledWith(
-        createMockPath('/tmp/sanity-cli', {windowsPrefix: ''}),
-        {
-          mode: 0o700,
-          recursive: true,
-        },
-      )
+      expect(mockFs.mkdir).toHaveBeenCalledWith(path.join(getPlatformTmpDir(), 'sanity-cli'), {
+        mode: 0o700,
+        recursive: true,
+      })
       expect(mockExecaSync).toHaveBeenCalled()
     }),
   )

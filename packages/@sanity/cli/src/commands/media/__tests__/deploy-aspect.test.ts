@@ -2,7 +2,7 @@ import {basename} from 'node:path'
 
 import {runCommand} from '@oclif/test'
 import {select} from '@sanity/cli-core/ux'
-import {createMockPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {
   MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME,
   type MediaLibraryAssetAspectDocument,
@@ -48,13 +48,13 @@ const defaultMocks = {
       projectId: 'test-project-id',
     },
     mediaLibrary: {
-      aspectsPath: createMockPath('/test/project/aspects'),
+      aspectsPath: convertToSystemPath('/test/project/aspects'),
     },
   },
   projectRoot: {
-    directory: createMockPath('/test/project'),
-    path: createMockPath('/test/project/sanity.config.ts'),
-    root: createMockPath('/test/project'),
+    directory: convertToSystemPath('/test/project'),
+    path: convertToSystemPath('/test/project/sanity.config.ts'),
+    root: convertToSystemPath('/test/project'),
     type: 'studio' as const,
   },
   token: 'test-token',
@@ -292,7 +292,7 @@ describe('#media:deploy-aspect', () => {
       mocks: defaultMocks,
     })
 
-    expect(mockFsReaddir).toHaveBeenCalledWith(createMockPath('/test/project/aspects'), {
+    expect(mockFsReaddir).toHaveBeenCalledWith(convertToSystemPath('/test/project/aspects'), {
       withFileTypes: true,
     })
     expect(mockTsImport).toHaveBeenCalled()

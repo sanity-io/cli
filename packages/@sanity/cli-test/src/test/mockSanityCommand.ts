@@ -1,7 +1,8 @@
 import {type Command} from '@oclif/core'
 import {type CliConfig, type ProjectRootResult, SanityCommand} from '@sanity/cli-core'
 
-import {createTestToken} from './createTestToken'
+import {convertToSystemPath} from '../utils/paths.js'
+import {createTestToken} from './createTestToken.js'
 
 /**
  * @public
@@ -57,6 +58,16 @@ export function mockSanityCommand<T extends typeof SanityCommand<typeof Command>
 ): T {
   if (options.token) {
     createTestToken(options.token)
+  }
+
+  // Auto-convert paths in projectRoot to platform-appropriate format
+  let projectRoot = options.projectRoot
+  if (projectRoot) {
+    projectRoot = {
+      ...projectRoot,
+      directory: convertToSystemPath(projectRoot.directory),
+      path: convertToSystemPath(projectRoot.path),
+    }
   }
 
   // Create a subclass that overrides methods when mocks are provided

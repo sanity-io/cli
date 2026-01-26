@@ -1,7 +1,7 @@
 import {mkdir, writeFile} from 'node:fs/promises'
 
 import {runCommand} from '@oclif/test'
-import {createMockPath, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {ExtractSchemaCommand} from '../extract.js'
@@ -118,12 +118,12 @@ describe('#schema:extract', () => {
     expect(stderr).toContain('Extracted schema')
 
     expect(mockMkdir).toHaveBeenCalledWith(
-      createMockPath('/test/project/test', {windowsPrefix: `C:`}),
+      convertToSystemPath('/test/project/test'),
       {recursive: true},
     )
 
     expect(mockWriteFile).toHaveBeenCalledWith(
-      createMockPath('/test/project/test/schema.json', {windowsPrefix: `C:`}),
+      convertToSystemPath('/test/project/test/schema.json'),
       // eslint-disable-next-line no-useless-escape
       expect.stringContaining(`\"name\": \"post\"`),
     )

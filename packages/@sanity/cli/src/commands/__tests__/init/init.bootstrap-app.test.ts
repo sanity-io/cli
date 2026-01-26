@@ -1,4 +1,4 @@
-import {createMockPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -190,7 +190,7 @@ describe('#init: bootstrap-app-initialization', () => {
       dataset: 'test',
       organizationId: undefined,
       output: expect.any(Object),
-      outputPath: createMockPath('/test/output', {windowsPrefix: `C:`}),
+      outputPath: convertToSystemPath('/test/output'),
       overwriteFiles: undefined,
       packageName: 'test',
       projectId: 'test',
@@ -202,7 +202,7 @@ describe('#init: bootstrap-app-initialization', () => {
     })
     expect(stdout).toContain('Success! Your Studio has been created')
     expect(stdout).toContain(
-      `(cd ${createMockPath('/test/output', {windowsPrefix: `C:`})} to navigate to your new project directory)`,
+      `(cd ${convertToSystemPath('/test/output')} to navigate to your new project directory)`,
     )
     expect(stdout).toContain('Get started by running npm run dev')
     expect(stdout).toContain('Setup your Cursor IDE')
@@ -279,7 +279,7 @@ describe('#init: bootstrap-app-initialization', () => {
 
     expect(stdout).toContain('Success! Your Studio has been created')
     expect(stdout).toContain(
-      `(cd ${createMockPath('/test/output', {windowsPrefix: `C:`})} to navigate to your new project directory)`,
+      `(cd ${convertToSystemPath('/test/output')} to navigate to your new project directory)`,
     )
     expect(stdout).toContain('Get started by running npm run dev')
     expect(stdout).toContain(

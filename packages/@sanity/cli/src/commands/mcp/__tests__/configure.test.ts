@@ -3,7 +3,7 @@ import fs from 'node:fs/promises'
 
 import {runCommand} from '@oclif/test'
 import {checkbox} from '@sanity/cli-core/ux'
-import {createMockPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {execa} from 'execa'
 import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -127,11 +127,7 @@ describe('#mcp:configure', () => {
     })
 
     expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining(
-        createMockPath('.cursor/mcp.json', {
-          windowsPrefix: '',
-        }),
-      ),
+      expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
       expect.stringContaining('test-token-123'),
       'utf8',
     )

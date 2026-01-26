@@ -4,7 +4,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {findProjectRootSync} from '../findProjectRootSync'
 
-function createMockPath(unixPath: string): string {
+function convertToSystemPath(unixPath: string): string {
   if (process.platform === 'win32') {
     // Convert Unix path to Windows path
     // /mock/project/path' => C:\mock\project\path
@@ -24,7 +24,7 @@ vi.mock('node:fs', async () => {
 })
 
 describe('findProjectRootSync', () => {
-  const mockCwd = createMockPath('/mock/project/path')
+  const mockCwd = convertToSystemPath('/mock/project/path')
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -111,7 +111,7 @@ describe('findProjectRootSync', () => {
 
   test('recursively searches parent directories for config', async () => {
     const {existsSync} = await import('node:fs')
-    const parentPath = createMockPath('/mock/project')
+    const parentPath = convertToSystemPath('/mock/project')
 
     vi.mocked(existsSync).mockImplementation((path) => {
       return path === join(parentPath, 'sanity.config.ts')
@@ -141,7 +141,7 @@ describe('findProjectRootSync', () => {
     vi.mocked(readFileSync).mockReturnValue(JSON.stringify({root: true}))
 
     expect(() => findProjectRootSync(mockCwd)).toThrow(
-      `Found 'sanity.json' at ${createMockPath('/mock/project/path')} - Sanity Studio < v3 is no longer supported`,
+      `Found 'sanity.json' at ${convertToSystemPath('/mock/project/path')} - Sanity Studio < v3 is no longer supported`,
     )
   })
 })

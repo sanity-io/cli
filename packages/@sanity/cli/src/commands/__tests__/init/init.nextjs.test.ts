@@ -1,4 +1,4 @@
-import {createMockPath, createTestClient, mockApi, testCommand, testExample} from '@sanity/cli-test'
+import {convertToSystemPath, createTestClient, mockApi, testCommand, testExample} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -219,7 +219,7 @@ describe('#init:nextjs-app-initialization', () => {
         slug: 'nextjs',
       },
       output: expect.any(Object),
-      outputPath: createMockPath('/test/output', {windowsPrefix: `C:`}),
+      outputPath: convertToSystemPath('/test/output'),
     })
     expect(mocks.installNewPackages).toHaveBeenCalledWith(
       {

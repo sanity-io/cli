@@ -4,7 +4,7 @@ import {join} from 'node:path'
 
 import {runCommand} from '@oclif/test'
 import {normalizePath} from '@sanity/cli-core'
-import {createMockPath, testCommand, testExample} from '@sanity/cli-test'
+import {convertToSystemPath, testCommand, testExample} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
 import {buildExample} from '~test/helpers/buildExample.js'
 
@@ -76,7 +76,7 @@ describe('#start', () => {
       expect(error?.message).toContain('Failed to start preview server')
       expect(error?.oclif?.exit).toBe(1)
       expect(stdout).toContain(
-        `Could not find a production build in the '${createMockPath(`${cwd}/dist`, {windowsPrefix: ''})}' directory.`,
+        `Could not find a production build in the '${convertToSystemPath(`${cwd}/dist`)}' directory.`,
       )
       expect(stdout).toContain(
         `Try building your application with 'sanity build' before starting the preview server.`,
