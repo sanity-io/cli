@@ -157,7 +157,7 @@ describe('#init:nextjs-app-initialization', () => {
   })
   test('initializes nextjs app', async () => {
     const cwd = await testExample('basic-app')
-    process.cwd = () => cwd
+    process.chdir(cwd)
     setupInitSuccessMocks()
 
     mocks.confirm.mockResolvedValueOnce(true) // nextjs-add-config-files
@@ -219,7 +219,7 @@ describe('#init:nextjs-app-initialization', () => {
         slug: 'nextjs',
       },
       output: expect.any(Object),
-      outputPath: '/test/output',
+      outputPath: process.platform === 'win32' ? 'C:\\test\\output' : '/test/output',
     })
     expect(mocks.installNewPackages).toHaveBeenCalledWith(
       {

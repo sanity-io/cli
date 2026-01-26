@@ -1,7 +1,7 @@
 import {access, mkdir, writeFile} from 'node:fs/promises'
 
 import {runCommand} from '@oclif/test'
-import {testCommand} from '@sanity/cli-test'
+import {createMockPath, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {ExtractManifestCommand} from '../extract.js'
@@ -105,9 +105,12 @@ describe('#manifest:extract', () => {
     })
 
     expect(stderr).toContain('Extracting manifest')
-    expect(stderr).toContain('✔ Extracted manifest')
+    expect(stderr).toContain('Extracted manifest')
 
-    expect(mockMkdir).toHaveBeenCalledWith('/test/path/dist/static', {recursive: true})
+    expect(mockMkdir).toHaveBeenCalledWith(
+      createMockPath('/test/path/dist/static', {windowsPrefix: `C:`}),
+      {recursive: true},
+    )
 
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining('create-schema.json'),
@@ -122,7 +125,7 @@ describe('#manifest:extract', () => {
     )
 
     expect(mockWriteFile).toHaveBeenCalledWith(
-      '/test/path/dist/static/create-manifest.json',
+      createMockPath('/test/path/dist/static/create-manifest.json', {windowsPrefix: `C:`}),
       // eslint-disable-next-line no-useless-escape
       expect.stringContaining(`\"name\": \"test-name\"`),
     )
@@ -144,12 +147,15 @@ describe('#manifest:extract', () => {
     })
 
     expect(stderr).toContain('Extracting manifest')
-    expect(stderr).toContain('✔ Extracted manifest')
+    expect(stderr).toContain('Extracted manifest')
 
-    expect(mockMkdir).toHaveBeenCalledWith('/test/path/test/static', {recursive: true})
+    expect(mockMkdir).toHaveBeenCalledWith(
+      createMockPath('/test/path/test/static', {windowsPrefix: `C:`}),
+      {recursive: true},
+    )
 
     expect(mockWriteFile).toHaveBeenCalledWith(
-      '/test/path/test/static/create-manifest.json',
+      createMockPath('/test/path/test/static/create-manifest.json', {windowsPrefix: `C:`}),
       // eslint-disable-next-line no-useless-escape
       expect.stringContaining(`\"name\": \"test-name\"`),
     )
