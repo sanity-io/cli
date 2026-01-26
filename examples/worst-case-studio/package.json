@@ -22,7 +22,7 @@
     "react-dom": "^19.2.3",
     "sanity": "catalog:",
     "styled-components": "^6.3.8",
-    "vite-tsconfig-paths": "^5.1.4"
+    "vite-tsconfig-paths": "^6.0.5"
   },
   "devDependencies": {
     "@sanity/color": "^3.0.6",
