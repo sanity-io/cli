@@ -41,7 +41,7 @@ catalog:
   # Utilities
   debug: ^4.4.3
   jsdom: ^27.4.0
-  zod: ^4.3.5
+  zod: ^4.3.6
   'get-tsconfig': ^4.13.0
   execa: ^9.6.0
   ora: ^9.0.0
