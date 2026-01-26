@@ -89,12 +89,17 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     const canCreatePrivate = projectFeatures.includes('privateDataset')
     createDatasetDebug('%s create private datasets', canCreatePrivate ? 'Can' : 'Cannot')
 
-    await createDataset({
-      datasetName,
-      output: this.output,
-      projectFeatures,
-      projectId,
-      visibility,
-    })
+    try {
+      await createDataset({
+        datasetName,
+        output: this.output,
+        projectFeatures,
+        projectId,
+        visibility,
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      this.error(`Failed to create dataset: ${message}`, {exit: 1})
+    }
   }
 }

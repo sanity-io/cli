@@ -1,13 +1,20 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {CLIError} from '@oclif/core/errors'
+import {getGlobalCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm, spinner} from '@sanity/cli-core/ux'
+import {DatasetResponse} from '@sanity/client'
 
 import {createDataset} from '../../actions/dataset/create.js'
-import {getOrganizationId} from '../../actions/organizations/getOrganizationId.js'
+import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
+import {getOrganization} from '../../actions/organizations/getOrganization.js'
+import {formatProjectUrl} from '../../actions/projects/formatProjectUrl.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
+import {promptForDefaultConfig} from '../../prompts/promptForDefaultConfig.js'
 import {promptForProjectName} from '../../prompts/promptForProjectName.js'
+import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
-import {createProject} from '../../services/projects.js'
+import {OrganizationCreateResponse, ProjectOrganization} from '../../services/organizations.js'
+import {createProject, CreateProjectResult, PROJECTS_API_VERSION} from '../../services/projects.js'
 import {getCliUser} from '../../services/user.js'
 
 const debug = subdebug('projects:create')
@@ -53,6 +60,14 @@ export default class CreateProjectCommand extends SanityCommand<typeof CreatePro
   static override flags = {
     dataset: Flags.string({
       description: 'Create a dataset. Prompts for visibility unless specified or --yes used',
+      parse: async (input) => {
+        const datasetNameError = validateDatasetName(input)
+        if (datasetNameError) {
+          throw new CLIError(datasetNameError, {exit: 1})
+        }
+
+        return input
+      },
     }),
     'dataset-visibility': Flags.string({
       description: 'Dataset visibility: public or private',
@@ -77,7 +92,7 @@ export default class CreateProjectCommand extends SanityCommand<typeof CreatePro
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(CreateProjectCommand)
     const {projectName} = args
-    const {dataset, 'dataset-visibility': datasetVisibility, json, organization, yes} = flags
+    const {dataset, 'dataset-visibility': datasetVisibility, organization, yes} = flags
     const user = await getCliUser()
 
     const finalProjectName =
@@ -93,7 +108,15 @@ export default class CreateProjectCommand extends SanityCommand<typeof CreatePro
       unattended: yes,
     })
 
-    const organizationId = await getOrganizationId(organization, user, this.output)
+    let chosenOrganization: OrganizationCreateResponse | ProjectOrganization | undefined
+    try {
+      chosenOrganization = await getOrganization(organization, user, this.output)
+    } catch (error) {
+      const errorText = organization
+        ? `Failed to retrieve organization ${organization}`
+        : 'Failed to retrieve an organization'
+      this.error(`${errorText}: ${error}`)
+    }
 
     const spin = spinner('Creating project').start()
     const newProject = await createProject({
@@ -101,38 +124,92 @@ export default class CreateProjectCommand extends SanityCommand<typeof CreatePro
       metadata: {
         integration: 'cli',
       },
-      organizationId,
+      organizationId: chosenOrganization?.id,
     })
     spin.succeed('Project created successfully')
 
-    let datasetName: string | undefined = dataset
+    const newDataset = await this.handleDatasetCreation(
+      newProject.projectId,
+      dataset,
+      datasetVisibility,
+    )
 
-    if (!datasetName && !this.isUnattended()) {
-      const wantsDataset = await confirm({
-        default: true,
-        message: 'Would you like to create a dataset?',
-      })
-      if (wantsDataset) {
-        datasetName = await promptForDatasetName()
+    this.printProjectCreationSuccess(chosenOrganization, newProject, newDataset)
+  }
+
+  private async handleDatasetCreation(
+    projectId: string,
+    datasetFromFlag?: string,
+    datasetVisibility?: string,
+  ): Promise<DatasetResponse | undefined> {
+    try {
+      let datasetName: string | undefined = datasetFromFlag
+
+      // Prompt for dataset in interactive mode if not provided
+      if (!datasetName && !this.isUnattended()) {
+        const wantsDataset = await confirm({
+          default: true,
+          message: 'Would you like to create a dataset?',
+        })
+
+        if (wantsDataset) {
+          const defaultConfig = await promptForDefaultConfig(this.output)
+
+          if (defaultConfig) {
+            datasetName = 'production'
+          } else {
+            const datasets = await listDatasets(projectId)
+            const datasetNames = datasets.map((ds) => ds.name)
+            datasetName = await promptForDatasetName({}, datasetNames)
+          }
+        }
       }
-    }
 
-    // Create dataset if we have a name
-    if (datasetName) {
-      const projectFeatures = await getProjectFeatures(newProject.projectId)
-      await createDataset({
-        datasetName,
-        isUnattended: this.isUnattended(),
-        output: this.output,
-        projectFeatures,
-        projectId: newProject.projectId,
-        visibility: datasetVisibility,
-      })
-    }
+      // Create dataset if we have a name
+      if (datasetName) {
+        const projectFeatures = await getProjectFeatures(projectId)
+        return await createDataset({
+          datasetName,
+          isUnattended: this.isUnattended(),
+          output: this.output,
+          projectFeatures,
+          projectId,
+          visibility: datasetVisibility,
+        })
+      }
 
-    if (json) {
-      this.log(JSON.stringify(newProject, null, 2))
+      return
+    } catch (error) {
+      debug(`Error creating dataset: ${error}`)
+      this.warn(`Project created but dataset creation failed: ${error}`)
       return
     }
+  }
+
+  private async printProjectCreationSuccess(
+    organization: OrganizationCreateResponse | ProjectOrganization | undefined,
+    project: CreateProjectResult,
+    dataset: DatasetResponse | undefined,
+  ) {
+    if (this.flags.json) {
+      this.log(JSON.stringify(project, null, 2))
+      return
+    }
+
+    this.log(`Project created successfully!`)
+    this.log(`ID: ${project.projectId}`)
+    this.log(`Name: ${project.displayName}`)
+    this.log(`Organization: ${organization?.name || 'Personal'}`)
+
+    if (dataset) {
+      this.log(`Dataset: ${dataset.datasetName} (${dataset.aclMode})`)
+    }
+
+    const {apiHost} = (
+      await getGlobalCliClient({apiVersion: PROJECTS_API_VERSION, requireUser: false})
+    ).config()
+
+    this.log(``)
+    this.log(`Manage your project: ${formatProjectUrl(project.projectId, apiHost)}`)
   }
 }

@@ -1,4 +1,3 @@
-import {CLIError} from '@oclif/core/errors'
 import {Output, type SanityOrgUser, subdebug} from '@sanity/cli-core'
 import {select, spinner} from '@sanity/cli-core/ux'
 
@@ -18,10 +17,10 @@ const promptAndCreateNewOrganization = async (user: SanityOrgUser) => {
   const spin = spinner('Creating organization').start()
   const newOrganization = await createOrganization(organizationName)
   spin.succeed()
-  return newOrganization.id
+  return newOrganization
 }
 
-export async function getOrganizationId(
+export async function getOrganization(
   requestedId: string | undefined,
   user: SanityOrgUser,
   output: Output,
@@ -42,10 +41,11 @@ export async function getOrganizationId(
   if (requestedId) {
     const org = organizations.find((o) => o.id === requestedId || o.slug === requestedId)
     if (!org) {
-      throw new CLIError(`Organization "${requestedId}" not found or you don't have access to it`)
+      debug(`Organization "${requestedId}" not found or you don't have access to it`)
+      throw new Error(`Organization "${requestedId}" not found or you don't have access to it`)
     }
 
-    return org.id
+    return org
   }
 
   // If the user has no organizations, prompt them to create one with the same name as
@@ -83,5 +83,5 @@ export async function getOrganizationId(
     return promptAndCreateNewOrganization(user)
   }
 
-  return chosenOrg || undefined
+  return organizations.find((org) => org.id === chosenOrg)
 }

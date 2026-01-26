@@ -89,6 +89,7 @@ Code for sanity cli
 - [`sanity openapi get SLUG`](#sanity-openapi-get-slug)
 - [`sanity openapi list`](#sanity-openapi-list)
 - [`sanity preview [OUTPUTDIR]`](#sanity-preview-outputdir)
+- [`sanity projects create [PROJECTNAME]`](#sanity-projects-create-projectname)
 - [`sanity projects list`](#sanity-projects-list)
 - [`sanity schema delete`](#sanity-schema-delete)
 - [`sanity schema deploy`](#sanity-schema-deploy)
