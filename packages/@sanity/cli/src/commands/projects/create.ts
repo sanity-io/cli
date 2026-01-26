@@ -19,7 +19,7 @@ import {getCliUser} from '../../services/user.js'
 
 const debug = subdebug('projects:create')
 
-export default class CreateProjectCommand extends SanityCommand<typeof CreateProjectCommand> {
+export class CreateProjectCommand extends SanityCommand<typeof CreateProjectCommand> {
   static override args = {
     projectName: Args.string({
       description: 'Name of the project to create',

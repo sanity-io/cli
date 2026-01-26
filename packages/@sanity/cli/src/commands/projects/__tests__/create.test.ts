@@ -6,7 +6,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {CREATE_PROJECT_API_VERSION} from '../../../services/projects.js'
-import CreateProjectCommand from '../create.js'
+import {CreateProjectCommand} from '../create.js'
 
 const mockConfirm = vi.hoisted(() => vi.fn())
 const mockInput = vi.hoisted(() => vi.fn())
