@@ -16,17 +16,17 @@
     "start": "sanity start"
   },
   "dependencies": {
-    "@sanity/code-input": "^7.0.5",
+    "@sanity/code-input": "^7.0.6",
     "@sanity/vision": "catalog:",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "sanity": "catalog:",
-    "styled-components": "^6.3.5",
+    "styled-components": "^6.3.8",
     "vite-tsconfig-paths": "^5.1.4"
   },
   "devDependencies": {
     "@sanity/color": "^3.0.6",
-    "@types/react": "^19.2.8",
+    "@types/react": "^19.2.9",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
   }
