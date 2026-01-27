@@ -7,7 +7,7 @@ if git diff --cached --name-only | grep -q "^packages/@sanity/cli/src/commands/"
   cd packages/@sanity/cli
   pnpm build
   pnpm run readme
-  npx prettier --write README.md
-  git add README.md
-  cd ../..
+  cd ../../../
+  npx prettier --write packages/@sanity/cli/README.md
+  git add packages/@sanity/cli/README.md
 fi

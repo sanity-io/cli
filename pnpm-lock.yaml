@@ -75,6 +75,9 @@ catalogs:
     ora:
       specifier: ^9.0.0
       version: 9.0.0
+    prettier:
+      specifier: ^3.8.1
+      version: 3.8.1
     publint:
       specifier: ^0.3.17
       version: 0.3.17
@@ -136,7 +139,7 @@ importers:
         specifier: ^16.2.7
         version: 16.2.7
       prettier:
-        specifier: ^3.8.1
+        specifier: 'catalog:'
         version: 3.8.1
       prettier-plugin-packagejson:
         specifier: ^2.5.22
@@ -601,6 +604,9 @@ importers:
       oclif:
         specifier: ^4.22.68
         version: 4.22.68(@types/node@20.19.30)
+      prettier:
+        specifier: 'catalog:'
+        version: 3.8.1
       publint:
         specifier: 'catalog:'
         version: 0.3.17
