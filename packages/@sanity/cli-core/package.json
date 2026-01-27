@@ -77,7 +77,7 @@
     "@eslint/compat": "catalog:",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
-    "@sanity/codegen": "^5.6.0",
+    "@sanity/codegen": "catalog:",
     "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",

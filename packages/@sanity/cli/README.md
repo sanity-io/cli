@@ -102,6 +102,7 @@ Code for sanity cli
 - [`sanity tokens add [LABEL]`](#sanity-tokens-add-label)
 - [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
 - [`sanity tokens list`](#sanity-tokens-list)
+- [`sanity typegen generate`](#sanity-typegen-generate)
 - [`sanity undeploy`](#sanity-undeploy)
 - [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
 - [`sanity users list`](#sanity-users-list)
@@ -2962,6 +2963,54 @@ EXAMPLES
 ```
 
 _See code: [src/commands/tokens/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.8/src/commands/tokens/list.ts)_
+
+## `sanity typegen generate`
+
+Sanity TypeGen (Beta)
+
+```
+USAGE
+  $ sanity typegen generate [--config-path <value>]
+
+FLAGS
+  --config-path=<value>  [Default: sanity-typegen.json] Specifies the path to the typegen configuration file. This file
+                         should be a JSON file that contains settings for the type generation process.
+
+DESCRIPTION
+  Sanity TypeGen (Beta)
+  This command is currently in beta and may undergo significant changes. Feedback is welcome!
+
+  Configuration:
+  This command can utilize configuration settings defined in a `sanity-typegen.json` file. These settings include:
+
+  - "path": Specifies a glob pattern to locate your TypeScript or JavaScript files.
+  Default: "./src/**/*.{ts,tsx,js,jsx}"
+
+  - "schema": Defines the path to your Sanity schema file. This file should be generated using the `sanity schema
+  extract` command.
+  Default: "schema.json"
+
+  - "generates": Indicates the path where the generated TypeScript type definitions will be saved.
+  Default: "./sanity.types.ts"
+
+  The default configuration values listed above are used if not overridden in your `sanity-typegen.json` configuration
+  file. To customize the behavior of the type generation, adjust these properties in the configuration file according to
+  your project's needs.
+
+  Note:
+  - The `sanity schema extract` command is a prerequisite for extracting your Sanity Studio schema into a `schema.json`
+  file, which is then used by the `sanity typegen generate` command to generate type definitions.
+  - While this tool is in beta, we encourage you to experiment with these configurations and provide feedback to help
+  improve its functionality and usability.
+
+EXAMPLES
+  Generate TypeScript type definitions from a Sanity Studio schema extracted using the `sanity schema extract`
+  command.
+
+    $ sanity typegen generate
+```
+
+_See code: [@sanity/codegen](https://github.com/sanity-io/codegen/blob/v5.7.1/src/commands/typegen/generate.ts)_
 
 ## `sanity undeploy`
 
