@@ -1,6 +1,7 @@
 import {spawn} from 'node:child_process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import {pathToFileURL} from 'node:url'
 
 import {packageDirectory} from 'package-directory'
 
@@ -48,7 +49,7 @@ export async function execScript(options: ExecScriptOptions): Promise<void> {
   }
 
   const baseArgs = mockBrowserEnv
-    ? ['--import', tsxLoaderPath, '--import', browserEnvPath]
+    ? ['--import', tsxLoaderPath, '--import', pathToFileURL(browserEnvPath).href]
     : ['--import', tsxLoaderPath]
   const tokenArgs = withUserToken ? ['--import', configClientPath] : []
 
