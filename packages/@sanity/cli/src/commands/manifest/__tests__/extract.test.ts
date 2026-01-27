@@ -58,8 +58,9 @@ describe('#manifest:extract', () => {
   })
 
   test('should show --help text', async () => {
-    const {stderr, stdout} = await runCommand('manifest extract --help')
+    const {error, stderr, stdout} = await runCommand('manifest extract --help')
 
+    expect(error).toBeUndefined()
     expect(stderr).toBe('')
     expect(stdout).toMatchInlineSnapshot(`
       "Extracts the studio configuration as one or more JSON manifest files.
@@ -108,10 +109,9 @@ describe('#manifest:extract', () => {
     expect(stderr).toContain('Extracting manifest')
     expect(stderr).toContain('Extracted manifest')
 
-    expect(mockMkdir).toHaveBeenCalledWith(
-      convertToSystemPath('/test/path/dist/static'),
-      {recursive: true},
-    )
+    expect(mockMkdir).toHaveBeenCalledWith(convertToSystemPath('/test/path/dist/static'), {
+      recursive: true,
+    })
 
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining('create-schema.json'),
@@ -150,10 +150,9 @@ describe('#manifest:extract', () => {
     expect(stderr).toContain('Extracting manifest')
     expect(stderr).toContain('Extracted manifest')
 
-    expect(mockMkdir).toHaveBeenCalledWith(
-      convertToSystemPath('/test/path/test/static'),
-      {recursive: true},
-    )
+    expect(mockMkdir).toHaveBeenCalledWith(convertToSystemPath('/test/path/test/static'), {
+      recursive: true,
+    })
 
     expect(mockWriteFile).toHaveBeenCalledWith(
       convertToSystemPath('/test/path/test/static/create-manifest.json'),
