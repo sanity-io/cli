@@ -125,7 +125,7 @@
     "sanity": "catalog:",
     "semver": "^7.7.2",
     "semver-compare": "^1.0.0",
-    "styled-components": "^6.1.19",
+    "styled-components": "^6.3.8",
     "tar": "^7.5.6",
     "tar-fs": "^3.1.0",
     "tar-stream": "^3.1.7",
