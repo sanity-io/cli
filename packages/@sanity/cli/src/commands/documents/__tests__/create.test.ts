@@ -70,11 +70,8 @@ function setupFsMocks(mocks: FsMockSetup): void {
   mockOs.tmpdir.mockReturnValue(tmpDir)
 
   // Common FS operations
-
   mockFs.mkdir.mockResolvedValue(undefined)
-
   mockFs.writeFile.mockResolvedValue(undefined)
-
   mockFs.unlink.mockResolvedValue(undefined)
   mockFs.readFile.mockResolvedValue(Buffer.from(''))
 }

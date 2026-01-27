@@ -1,4 +1,4 @@
-import {posix, resolve} from 'node:path'
+import {resolve} from 'node:path'
 
 // Capture the initial working directory before any tests change it
 const INITIAL_CWD = process.cwd()
@@ -70,16 +70,4 @@ export function convertToSystemPath(pathStr: string): string {
     return pathStr.replaceAll('/', '\\')
   }
   return pathStr
-}
-
-/**
- * Joins path segments using POSIX separators (forward slashes) regardless of platform.
- * Useful for creating expected paths in tests that should work cross-platform.
- *
- * @param paths - Path segments to join
- * @returns Joined path with forward slashes
- * @internal
- */
-export function posixJoin(...paths: string[]): string {
-  return posix.join(...paths)
 }
