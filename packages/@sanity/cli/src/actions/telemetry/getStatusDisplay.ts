@@ -1,4 +1,4 @@
-import {type ConsentInformation} from './types.js'
+import {type ConsentInformation} from '@sanity/cli-core'
 
 export function getStatusDisplay(status: ConsentInformation['status']): string {
   switch (status) {

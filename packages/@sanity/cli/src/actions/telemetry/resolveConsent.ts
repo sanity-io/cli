@@ -1,4 +1,4 @@
-import {getCliToken, isCi, isTrueish} from '@sanity/cli-core'
+import {type ConsentInformation, getCliToken, isCi, isTrueish} from '@sanity/cli-core'
 
 import {
   fetchTelemetryConsent,
@@ -7,7 +7,6 @@ import {
   type ValidApiConsentStatus,
 } from '../../services/telemetry.js'
 import {telemetryDebug} from './telemetryDebug.js'
-import {type ConsentInformation} from './types.js'
 
 function parseApiConsentStatus(value: unknown): ValidApiConsentStatus {
   if (typeof value === 'string' && isValidApiConsentStatus(value)) {

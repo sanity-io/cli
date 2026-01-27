@@ -2,14 +2,19 @@ import {spawn} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 
 import {type Hook} from '@oclif/core'
-import {debug, findProjectRoot, getCliConfig} from '@sanity/cli-core'
+import {
+  createTelemetryStore,
+  debug,
+  findProjectRoot,
+  getCliConfig,
+  setCliTelemetry,
+} from '@sanity/cli-core'
 import {createSessionId} from '@sanity/telemetry'
 
 import {resolveConsent} from '../../actions/telemetry/resolveConsent.js'
 import {telemetryDebug} from '../../actions/telemetry/telemetryDebug.js'
 import {telemetryDisclosure} from '../../actions/telemetry/telemetryDisclosure.js'
 import {CliCommandTelemetry, type CLITraceData} from '../../telemetry/cli.telemetry.js'
-import {createTelemetryStore} from '../../telemetry/store/createTelemetryStore.js'
 import {detectRuntime} from '../../util/detectRuntime.js'
 import {parseArguments} from '../../util/parseArguments.js'
 
@@ -19,14 +24,14 @@ export const setupTelemetry: Hook.Prerun = async function ({config}) {
 
   const sessionId = createSessionId()
 
-  const store = createTelemetryStore(sessionId, {
+  const telemetry = createTelemetryStore(sessionId, {
     resolveConsent,
   })
 
   const projectRoot = await findProjectRoot(process.cwd())
   const cliConfig = await getCliConfig(projectRoot.directory)
 
-  store.logger.updateUserProperties({
+  telemetry.updateUserProperties({
     cliVersion: config.version,
     cpuArchitecture: process.arch,
     dataset: cliConfig?.api?.dataset,
@@ -51,8 +56,11 @@ export const setupTelemetry: Hook.Prerun = async function ({config}) {
 
   telemetryDebug('Starting command trace', traceOptions)
 
-  const cliCommandTrace = store.logger.trace(CliCommandTelemetry, traceOptions)
+  const cliCommandTrace = telemetry.trace(CliCommandTelemetry, traceOptions)
   cliCommandTrace.start()
+
+  // Set the global telemetry store with new context
+  setCliTelemetry(cliCommandTrace.newContext(args.groupOrCommand))
 
   // Handle process exit - complete trace and spawn worker to flush all telemetry
   process.once('exit', (status) => {

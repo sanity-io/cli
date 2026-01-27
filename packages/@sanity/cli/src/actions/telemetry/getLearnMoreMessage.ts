@@ -1,4 +1,4 @@
-import {type ConsentInformation} from './types.js'
+import {type ConsentInformation} from '@sanity/cli-core'
 
 export function getLearnMoreMessage(status: ConsentInformation['status']): string {
   const url = 'https://www.sanity.io/telemetry'

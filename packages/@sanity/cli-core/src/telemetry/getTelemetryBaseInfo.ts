@@ -1,10 +1,9 @@
 import {createHash} from 'node:crypto'
-import {homedir} from 'node:os'
+import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
-import {getCliToken} from '@sanity/cli-core'
-
-import {isStaging} from '../../util/isStaging.js'
+import {getCliToken} from '../services/getCliToken.js'
+import {isStaging} from '../util/isStaging.js'
 
 /**
  * Base information needed for telemetry file operations.
@@ -40,8 +39,7 @@ export async function getTelemetryBaseInfo(): Promise<TelemetryBaseInfo> {
 
   const hashedToken = createHash('sha256').update(token).digest('hex').slice(0, 8)
   const environment = isStaging() ? 'staging' : 'production'
-  // TODO: Change to use temp directory
-  const directory = join(homedir(), '.config', 'sanity')
+  const directory = join(tmpdir(), '.config', 'sanity')
   const basePattern = `telemetry-${hashedToken}-${environment}`
 
   return {

@@ -1,7 +1,7 @@
 import {rm, stat} from 'node:fs/promises'
 
-import {telemetryStoreDebug} from './debug.js'
 import {findTelemetryFiles} from './findTelemetryFiles.js'
+import {telemetryStoreDebug} from './telemetryStoreDebug.js'
 
 /**
  * Cleans up telemetry files older than the specified number of days

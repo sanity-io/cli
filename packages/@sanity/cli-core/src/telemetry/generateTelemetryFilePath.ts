@@ -1,7 +1,7 @@
 import {join} from 'node:path'
 
-import {telemetryStoreDebug} from './debug.js'
 import {getTelemetryBaseInfo} from './getTelemetryBaseInfo.js'
+import {telemetryStoreDebug} from './telemetryStoreDebug.js'
 
 /**
  * Generates a unique telemetry file path for a specific CLI session.

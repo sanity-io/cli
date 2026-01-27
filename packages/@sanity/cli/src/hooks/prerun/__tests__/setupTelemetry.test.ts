@@ -1,31 +1,33 @@
 import {type ChildProcess, spawn} from 'node:child_process'
 import {mkdir} from 'node:fs/promises'
-import {homedir} from 'node:os'
+import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
 import {type Config} from '@oclif/core'
 import {
+  clearCliTelemetry,
+  CLI_TELEMETRY_SYMBOL,
+  createTelemetryStore,
   findProjectRoot,
+  flushTelemetryFiles,
   getCliConfig,
-  getCliToken,
+  getCliTelemetry,
   getUserConfig,
   isCi,
   normalizePath,
+  readNDJSON,
 } from '@sanity/cli-core'
-import {testHook} from '@sanity/cli-test'
+import {createTestToken, testHook} from '@sanity/cli-test'
 import {type TelemetryEvent, type TelemetryLogEvent} from '@sanity/telemetry'
 import nock from 'nock'
 import {glob} from 'tinyglobby'
-import {afterEach, beforeEach, describe, expect, test,vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
-import {createTelemetryStore} from '../../../telemetry/store/createTelemetryStore.js'
-import {flushTelemetryFiles} from '../../../telemetry/store/flushTelemetryFiles.js'
-import {readNDJSON} from '../../../telemetry/utils/readNDJSON.js'
 import {setupTelemetry} from '../setupTelemetry.js'
 
 // Mock external dependencies
-vi.mock('node:os', () => ({homedir: vi.fn()}))
+vi.mock('node:os', () => ({tmpdir: vi.fn()}))
 vi.mock('node:child_process', async () => {
   const actual = await vi.importActual('node:child_process')
   return {
@@ -37,7 +39,6 @@ vi.mock('@sanity/cli-core', async () => ({
   ...(await vi.importActual('@sanity/cli-core')),
   findProjectRoot: vi.fn(),
   getCliConfig: vi.fn(),
-  getCliToken: vi.fn(),
   getUserConfig: vi.fn(),
   isCi: vi.fn(() => false),
 }))
@@ -47,11 +48,10 @@ vi.mock('../../actions/telemetry/telemetryDisclosure.js', () => ({
   telemetryDisclosure: vi.fn(),
 }))
 
-const mockHomedir = vi.mocked(homedir)
+const mockTmpdir = vi.mocked(tmpdir)
 const mockSpawn = vi.mocked(spawn)
 const mockFindProjectRoot = vi.mocked(findProjectRoot)
 const mockGetCliConfig = vi.mocked(getCliConfig)
-const mockGetCliToken = vi.mocked(getCliToken)
 const mockGetUserConfig = vi.mocked(getUserConfig)
 const mockIsCi = vi.mocked(isCi)
 
@@ -78,8 +78,8 @@ function setupTestDirectory() {
 }
 
 function setupBasicMocks(testDir: string) {
-  mockHomedir.mockReturnValue(testDir)
-  mockGetCliToken.mockResolvedValue('test-auth-token-123')
+  mockTmpdir.mockReturnValue(testDir)
+  createTestToken('test-auth-token-123')
 }
 
 function setupUserConfigMock(
@@ -171,6 +171,9 @@ describe('setupTelemetry integration test', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
+
+    // Reset globalThis.cliTelemetry after each test
+    clearCliTelemetry()
   })
 
   test('shows telemetry disclosure when not previously disclosed', async () => {
@@ -211,7 +214,7 @@ describe('setupTelemetry integration test', () => {
   })
 
   test('does not show disclosure in CI environment', async () => {
-    mockIsCi.mockReturnValueOnce(true)
+    mockIsCi.mockReturnValue(true)
 
     const {stderr} = await testHook<'prerun'>(setupTelemetry, {
       config,
@@ -280,7 +283,7 @@ describe('setupTelemetry integration test', () => {
         type: 'log' as const,
         version: 1,
       }
-      testStore.logger.log(testEvent, {test: true})
+      testStore.log(testEvent, {test: true})
 
       // Wait for file write operations
       await new Promise((resolve) => setTimeout(resolve, 100))
@@ -345,5 +348,17 @@ describe('setupTelemetry integration test', () => {
     } finally {
       process.argv = originalArgv
     }
+  })
+
+  test('ensures globalThis.cliTelemetry is set', async () => {
+    const global = globalThis as typeof globalThis & {
+      [CLI_TELEMETRY_SYMBOL]?: unknown
+    }
+    expect(global[CLI_TELEMETRY_SYMBOL]).toBeUndefined()
+
+    await testHook<'prerun'>(setupTelemetry, {config})
+
+    expect(global[CLI_TELEMETRY_SYMBOL]).toBeDefined()
+    expect(getCliTelemetry()).toEqual(global[CLI_TELEMETRY_SYMBOL])
   })
 })

@@ -6,7 +6,7 @@ import {
 } from '@sanity/telemetry'
 
 import {createTraceId} from './createTraceId.js'
-import {telemetryStoreDebug} from './debug.js'
+import {telemetryStoreDebug} from './telemetryStoreDebug.js'
 
 /**
  * Creates a trace instance that can emit trace lifecycle events
