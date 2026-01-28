@@ -75,7 +75,7 @@ async function runExecCommand(
   }
 }
 
-describe('#exec', () => {
+describe('#exec', {timeout: 15 * 1000}, () => {
   beforeEach(async () => {
     exampleDir = await testExample('basic-studio')
     fixtureDir = resolve(import.meta.dirname, '../../../test/__fixtures__')
@@ -200,7 +200,7 @@ describe('#exec', () => {
       }
     })
 
-    test('executes script with --mock-browser-env flag', {timeout: 15 * 1000}, async () => {
+    test('executes script with --mock-browser-env flag', async () => {
       const {exitCode, stdout} = await runExecCommand(exampleDir, scriptPath, [
         '--mock-browser-env',
       ])

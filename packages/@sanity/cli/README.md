@@ -2071,7 +2071,7 @@ EXAMPLES
 
   Create a brand new project with name "Movies Unlimited"
 
-    $ sanity init -y --create-project "Movies Unlimited" --dataset moviedb --visibility private --template moviedb ^
+    $ sanity init -y --create-project "Movies Unlimited" --dataset moviedb --visibility private --template moviedb \
       --output-path /Users/espenh/movies-unlimited
 ```
 

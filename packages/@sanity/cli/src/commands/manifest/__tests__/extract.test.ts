@@ -48,6 +48,8 @@ vi.mock('../../../actions/manifest/extractWorkspaceManifest.js', async () => ({
   ]),
 }))
 
+const NO_ERROR = {}
+
 const mockAccess = vi.mocked(access)
 const mockMkdir = vi.mocked(mkdir)
 const mockWriteFile = vi.mocked(writeFile)
@@ -58,9 +60,9 @@ describe('#manifest:extract', () => {
   })
 
   test('should show --help text', async () => {
-    const {stderr, stdout} = await runCommand('manifest extract --help')
+    const {error = NO_ERROR, stdout} = await runCommand('manifest extract --help')
 
-    expect(stderr).toBe('')
+    expect(error, 'should not error').toStrictEqual(NO_ERROR)
     expect(stdout).toMatchInlineSnapshot(`
       "Extracts the studio configuration as one or more JSON manifest files.
 

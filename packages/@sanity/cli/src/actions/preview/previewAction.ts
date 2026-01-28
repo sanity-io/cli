@@ -18,7 +18,8 @@ export async function previewAction(options: PreviewActionOptions) {
   const config = getPreviewServerConfig({cliConfig, flags, rootDir: outDir, workDir})
 
   try {
-    await startPreviewServer(config)
+    const server = await startPreviewServer(config)
+    return server
   } catch (err) {
     throw gracefulServerDeath('preview', config.httpHost, config.httpPort, err)
   }
