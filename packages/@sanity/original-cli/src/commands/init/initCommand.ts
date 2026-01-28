@@ -11,7 +11,7 @@ import {type CliCommandDefinition} from '../../types'
 const helpText = `
 Options
   -y, --yes Use unattended mode, accepting defaults and using only flags for choices
-  --project <projectId> Project ID to use for the studio
+  --project, --project-id <projectId> Project ID to use for the studio
   --organization <organizationId> Organization ID to use for the project
   --dataset <dataset> Dataset name for the studio
   --dataset-default Set up a project with a public dataset named "production"
@@ -26,7 +26,16 @@ Options
   --coupon <name> Optionally select a coupon for a new project (cannot be used with --project-plan)
   --no-typescript Do not use TypeScript for template files
   --package-manager <name> Specify which package manager to use [allowed: ${allowedPackageManagersString}]
-  --no-auto-updates Disable auto updates of studio versions
+  --auto-updates Enable/disable auto updates of studio versions (default: true)
+  --overwrite-files Overwrite existing files (default: false)
+  --no-mcp Skip AI editor integration (MCP) setup
+
+Some flags are used when initializing a project in a specific framework.
+
+Next.js
+  --nextjs-add-config-files Add config files to Next.js project (default: true)
+  --nextjs-embed-studio Embed the Studio in Next.js application (default: true)
+  --nextjs-append-env Append project ID and dataset to .env file (default: true)
 
 Examples
   # Initialize a new project, prompt for required information along the way
@@ -52,19 +61,20 @@ Examples
 `
 
 export interface InitFlags {
-  y?: boolean
-  yes?: boolean
-  project?: string
-  dataset?: string
-  template?: string
+  'y'?: boolean
+  'yes'?: boolean
+  'project'?: string
+  'project-id'?: string
+  'dataset'?: string
+  'template'?: string
   /**
    * Used for accessing private GitHub repo templates
    * @beta
    */
   'template-token'?: string
 
-  visibility?: string
-  typescript?: boolean
+  'visibility'?: string
+  'typescript'?: boolean
   'auto-updates'?: boolean
   /**
    * Used for initializing a project from a server schema that is saved in the Journey API
@@ -74,28 +84,38 @@ export interface InitFlags {
    * Overrides `visibility` option.
    * @beta
    */
-  quickstart?: string
-  bare?: boolean
-  env?: boolean | string
-  git?: boolean | string
+  'quickstart'?: string
+  'bare'?: boolean
+  'env'?: boolean | string
+  'git'?: boolean | string
 
   'output-path'?: string
   'project-plan'?: string
   'create-project'?: boolean | string
   'dataset-default'?: boolean
 
-  coupon?: string
+  'coupon'?: string
   /**
    * @deprecated `--reconfigure` is deprecated - manual configuration is now required
    */
-  reconfigure?: boolean
+  'reconfigure'?: boolean
 
-  organization?: string
+  'organization'?: string
 
   'package-manager'?: PackageManager
+
+  'overwrite-files'?: boolean
+
+  // Flags for Next.js projects
+  'nextjs-add-config-files'?: boolean
+  'nextjs-embed-studio'?: boolean
+  'nextjs-append-env'?: boolean
+
+  // Skip AI editor integration (MCP) setup
+  'mcp'?: boolean
 }
 
-export const initCommand: CliCommandDefinition<InitFlags> = {
+const initCommand: CliCommandDefinition<InitFlags> = {
   name: 'init',
   signature: '',
   description: 'Initializes a new Sanity Studio and/or project',

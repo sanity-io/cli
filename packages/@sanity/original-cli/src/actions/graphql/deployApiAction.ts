@@ -1,7 +1,7 @@
-/* eslint-disable no-process-env, no-process-exit, max-statements */
+/* eslint-disable max-statements */
 import {type CliCommandContext, type CliOutputter, type CliPrompter} from '@sanity/cli'
 import {type SanityClient} from '@sanity/client'
-import {get} from 'lodash'
+import {get} from 'lodash-es'
 import oneline from 'oneline'
 import {hideBin} from 'yargs/helpers'
 import yargs from 'yargs/yargs'
@@ -9,13 +9,12 @@ import yargs from 'yargs/yargs'
 import {debug} from '../../debug'
 import {getClientUrl} from '../../util/getClientUrl'
 import {getUrlHeaders} from '../../util/getUrlHeaders'
-import {isInteractive} from '../../util/isInteractive'
 import {extractFromSanitySchema} from './extractFromSanitySchema'
 import gen1 from './gen1'
 import gen2 from './gen2'
 import gen3 from './gen3'
 import {getGraphQLAPIs} from './getGraphQLAPIs'
-import {SchemaError} from '../../../../cli/src/actions/graphql/SchemaError'
+import {SchemaError} from './SchemaError'
 import {type DeployResponse, type GeneratedApiSpecification, type ValidationResponse} from './types'
 
 const latestGeneration = 'gen3'
@@ -26,6 +25,7 @@ const generations = {
 }
 
 const apiIdRegex = /^[a-z0-9_-]+$/
+const isInteractive = process.stdout.isTTY && process.env.TERM !== 'dumb' && !('CI' in process.env)
 
 const ignoredWarnings: string[] = ['OPTIONAL_INPUT_FIELD_ADDED']
 const ignoredBreaking: string[] = []
@@ -249,7 +249,7 @@ export default async function deployGraphQLApiAction(
         continue
       }
 
-      if (!isInteractive()) {
+      if (!isInteractive) {
         spinner.fail()
         renderBreakingChanges(valid, output)
         throw new Error(
@@ -364,7 +364,7 @@ async function shouldEnablePlayground({
   }
 
   // If no API is deployed, default to true if non-interactive
-  if (!isInteractive()) {
+  if (!isInteractive) {
     return true
   }
 
