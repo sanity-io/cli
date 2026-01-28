@@ -4,7 +4,7 @@ export default {
   dirname: 'sanity',
   helpClass: './dist/SanityHelp',
   hooks: {
-    prerun: ['./dist/hooks/prerun/setupTelemetry.js'],
+    prerun: ['./dist/hooks/prerun/setupTelemetry.js', './dist/hooks/prerun/injectEnvVariables.js'],
   },
   plugins: [
     '@oclif/plugin-help',

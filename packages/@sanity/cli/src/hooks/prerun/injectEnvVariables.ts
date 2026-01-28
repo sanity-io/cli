@@ -1,0 +1,31 @@
+import {type Hook} from '@oclif/core'
+import {warn} from '@oclif/core/ux'
+import {debug, findProjectRoot} from '@sanity/cli-core'
+import {chalk} from '@sanity/cli-core/ux'
+import {loadEnv} from 'vite'
+
+const sanityEnv = process.env.SANITY_INTERNAL_ENV || 'production'
+
+export const injectEnvVariables: Hook.Prerun = async function ({Command}) {
+  const workDir = await findProjectRoot(process.cwd())
+
+  // Use `production` for `sanity build` / `sanity deploy`,
+  // but default to `development` for everything else unless `SANITY_ACTIVE_ENV` is set
+  const isProdCmd = ['build', 'deploy'].includes(Command.id)
+  let mode = process.env.SANITY_ACTIVE_ENV
+  if (!mode && (isProdCmd || process.env.NODE_ENV === 'production')) {
+    mode = 'production'
+  } else if (!mode) {
+    mode = 'development'
+  }
+
+  if (mode === 'production' && !isProdCmd) {
+    warn(chalk.yellow(`Running in ${sanityEnv} environment mode\n`))
+  }
+
+  const isApp = workDir.type === 'app'
+  debug('Loading environment files using %s mode', mode)
+
+  const studioEnv = loadEnv(mode, workDir.directory, [isApp ? 'SANITY_APP_' : 'SANITY_STUDIO_'])
+  Object.assign(process.env, studioEnv)
+}

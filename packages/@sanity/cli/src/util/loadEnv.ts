@@ -1,11 +1,1 @@
-// @todo implement
-/**
- * @public
- */
-export function loadEnv(
-  mode: string,
-  envDir: string,
-  _prefixes: string[] = ['VITE_'],
-): Record<string, string> {
-  return {}
-}
+export {loadEnv} from 'vite'

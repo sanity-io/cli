@@ -37,7 +37,10 @@ const baseConfig = {
     },
     'packages/@sanity/cli': {
       entry: [
+        // Commands
         'src/commands/**/*.ts',
+        // Hooks
+        'src/hooks/**/*.ts',
         // Worker files
         'src/**/*.worker.ts',
         // certain threads files are used via loader, not import
