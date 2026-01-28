@@ -409,10 +409,12 @@ describe('#dev', {timeout: 15 * 1000}, () => {
     })
 
     try {
-      const {error} = await testCommand(DevCommand, ['--port', '5337'], {
+      const {error, result} = await testCommand(DevCommand, ['--port', '5337'], {
         config: {root: cwd},
         mocks: {isInteractive: true},
       })
+
+      await tryCloseServer(result)
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Port 5337 is already in use')
