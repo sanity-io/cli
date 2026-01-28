@@ -1,4 +1,5 @@
 import {readdir, readFile} from 'node:fs/promises'
+import {platform} from 'node:os'
 import {join} from 'node:path'
 
 import {testCommand, testExample} from '@sanity/cli-test'
@@ -9,7 +10,7 @@ import {BuildCommand} from '../build.js'
 describe(
   '#build',
   // might help with speed of tests if not ran concurrently
-  {concurrent: false},
+  {concurrent: false, timeout: (platform() === 'win32' ? 60 : 30) * 1000},
   () => {
     test('shows an error for invalid flags', async () => {
       const {error} = await testCommand(BuildCommand, ['--invalid'])

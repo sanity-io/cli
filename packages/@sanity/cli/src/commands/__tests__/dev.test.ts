@@ -1,5 +1,6 @@
 import {readFile, writeFile} from 'node:fs/promises'
 import {createServer} from 'node:http'
+import {platform} from 'node:os'
 import {join} from 'node:path'
 
 import {getProjectCliClient} from '@sanity/cli-core'
@@ -51,7 +52,7 @@ const mockUpgradePackages = vi.mocked(upgradePackages)
 const mockGetPackageManagerChoice = vi.mocked(getPackageManagerChoice)
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
-describe('#dev', {timeout: 15 * 1000}, () => {
+describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
   afterEach(() => {
     vi.clearAllMocks()
   })

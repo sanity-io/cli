@@ -1,5 +1,6 @@
 import {readFile, rm, writeFile} from 'node:fs/promises'
 import {createServer} from 'node:http'
+import {platform} from 'node:os'
 import {join} from 'node:path'
 
 import {convertToSystemPath, testCommand, testExample} from '@sanity/cli-test'
@@ -13,7 +14,7 @@ describe(
   '#preview',
   {
     concurrent: false,
-    timeout: 30 * 1000,
+    timeout: (platform() === 'win32' ? 60 : 30) * 1000,
   },
   () => {
     describe('basic-app', () => {
