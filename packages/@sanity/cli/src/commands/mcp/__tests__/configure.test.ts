@@ -47,6 +47,7 @@ const mockExeca = vi.mocked(execa)
 describe('#mcp:configure', () => {
   beforeEach(async () => {
     mockExistsSync.mockReturnValue(false)
+    mockReadFile.mockResolvedValue('{}') // Default: empty config file
     mockWriteFile.mockResolvedValue()
     mockExeca.mockRejectedValue(new Error('Not installed'))
     createTestToken('test-token')
@@ -64,11 +65,12 @@ describe('#mcp:configure', () => {
     mockExistsSync.mockReturnValue(false)
     mockExeca.mockRejectedValue(new Error('Not installed'))
 
-    const {stderr, stdout} = await testCommand(ConfigureMcpCommand, [])
-    const output = stdout + stderr
+    const {error, stderr} = await testCommand(ConfigureMcpCommand, [])
 
-    expect(output).toContain('No supported AI editors detected')
-    expect(output).toContain('https://mcp.sanity.io')
+    expect(error).toBeUndefined()
+
+    expect(stderr).toContain("Couldn't auto-configure Sanity MCP server for your editor")
+    expect(stderr).toContain('https://mcp.sanity.io')
   })
 
   test('detects Cursor and configures it', async () => {
@@ -256,13 +258,13 @@ describe('#mcp:configure', () => {
     })
 
     expect(mockCheckbox).toHaveBeenCalledWith({
-      choices: [
+      choices: expect.arrayContaining([
         {
           checked: true,
           name: 'Claude Code',
           value: 'Claude Code',
         },
-      ],
+      ]),
       message: 'Configure Sanity MCP server?',
     })
 
@@ -273,6 +275,153 @@ describe('#mcp:configure', () => {
     )
 
     expect(stdout).toContain('MCP configured for Claude Code')
+  })
+
+  test('detects OpenCode via CLI and configures it', async () => {
+    mockExeca.mockResolvedValue({
+      command: 'opencode --version',
+      exitCode: 0,
+      failed: false,
+      killed: false,
+      signal: undefined,
+      stderr: '',
+      stdout: '1.0.0',
+      timedOut: false,
+    } as never)
+
+    mockCheckbox.mockResolvedValue(['OpenCode'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-opencode', sid: 'session-opencode'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-opencode'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-opencode'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockExeca).toHaveBeenCalledWith('opencode', ['--version'], {
+      stdio: 'pipe',
+      timeout: 5000,
+    })
+
+    expect(mockCheckbox).toHaveBeenCalledWith({
+      choices: expect.arrayContaining([
+        {
+          checked: true,
+          name: 'OpenCode',
+          value: 'OpenCode',
+        },
+      ]),
+      message: 'Configure Sanity MCP server?',
+    })
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining('.config/opencode/opencode.json'),
+      expect.stringContaining('test-token-opencode'),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for OpenCode')
+  })
+
+  test('detects VS Code Insiders on macOS and configures it', async () => {
+    const originalPlatform = process.platform
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+    })
+
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes('Library/Application Support/Code - Insiders/User')
+    })
+
+    mockCheckbox.mockResolvedValue(['VS Code Insiders'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-insiders', sid: 'session-insiders'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-insiders'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-insiders'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).toHaveBeenCalledWith({
+      choices: [
+        {
+          checked: true,
+          name: 'VS Code Insiders',
+          value: 'VS Code Insiders',
+        },
+      ],
+      message: 'Configure Sanity MCP server?',
+    })
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining('Code - Insiders/User/mcp.json'),
+      expect.stringContaining('test-token-insiders'),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for VS Code Insiders')
+
+    Object.defineProperty(process, 'platform', {
+      value: originalPlatform,
+    })
+  })
+
+  test('detects Zed and configures it', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes('.config/zed')
+    })
+
+    mockCheckbox.mockResolvedValue(['Zed'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-zed', sid: 'session-zed'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-zed'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-zed'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).toHaveBeenCalledWith({
+      choices: [
+        {
+          checked: true,
+          name: 'Zed',
+          value: 'Zed',
+        },
+      ],
+      message: 'Configure Sanity MCP server?',
+    })
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining('.config/zed/settings.json'),
+      expect.stringContaining('test-token-zed'),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for Zed')
   })
 
   test('shows already installed status for configured editors', async () => {

@@ -82,6 +82,7 @@ export async function setupMCP(mcp?: boolean): Promise<MCPSetupResult> {
 
   if (!selected || selected.length === 0) {
     // User deselected all editors
+    ux.stdout('MCP configuration skipped')
     return {
       configuredEditors: [],
       detectedEditors,
