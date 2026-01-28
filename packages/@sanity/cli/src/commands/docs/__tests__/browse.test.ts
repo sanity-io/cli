@@ -15,7 +15,7 @@ describe('#docs:browse', () => {
   })
 
   test('help text is correct', async () => {
-    const {stdout} = await runCommand('docs browse --help')
+    const {stdout} = await runCommand(['docs', 'browse', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Open Sanity docs in a web browser
 

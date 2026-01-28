@@ -64,7 +64,7 @@ describe('#dataset:create', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['dataset create', '--help'])
+    const {stdout} = await runCommand(['dataset', 'create', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Create a new dataset within your project

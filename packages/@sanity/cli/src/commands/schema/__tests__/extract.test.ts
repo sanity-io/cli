@@ -48,7 +48,7 @@ describe('#schema:extract', () => {
   })
 
   test('should show --help text', async () => {
-    const {stdout} = await runCommand('schema extract --help')
+    const {stdout} = await runCommand(['schema', 'extract', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Extracts a JSON representation of a Sanity schema within a Studio context.
@@ -117,10 +117,9 @@ describe('#schema:extract', () => {
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('Extracted schema')
 
-    expect(mockMkdir).toHaveBeenCalledWith(
-      convertToSystemPath('/test/project/test'),
-      {recursive: true},
-    )
+    expect(mockMkdir).toHaveBeenCalledWith(convertToSystemPath('/test/project/test'), {
+      recursive: true,
+    })
 
     expect(mockWriteFile).toHaveBeenCalledWith(
       convertToSystemPath('/test/project/test/schema.json'),

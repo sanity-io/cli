@@ -42,7 +42,7 @@ describe('#tokens:add', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['tokens add', '--help'])
+    const {stdout} = await runCommand(['tokens', 'add', '--help'])
 
     expect(stdout).toContain('Create a new API token for this project')
   })

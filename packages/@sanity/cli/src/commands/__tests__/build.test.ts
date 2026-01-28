@@ -13,7 +13,7 @@ describe(
   {concurrent: false},
   () => {
     test('help text is correct', async () => {
-      const {stdout} = await runCommand('build --help')
+      const {stdout} = await runCommand(['build', '--help'])
       expect(stdout).toMatchInlineSnapshot(`
         "Builds the Sanity Studio configuration into a static bundle
 

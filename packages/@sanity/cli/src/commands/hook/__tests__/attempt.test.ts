@@ -29,7 +29,7 @@ describe('#attempt', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['hook attempt', '--help'])
+    const {stdout} = await runCommand(['hook', 'attempt', '--help'])
 
     expect(stdout).toContain('Print details of a given webhook delivery attempt')
     expect(stdout).toMatchInlineSnapshot(`

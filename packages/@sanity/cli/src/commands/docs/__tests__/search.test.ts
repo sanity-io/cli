@@ -35,7 +35,7 @@ afterEach(() => {
 
 describe('#docs:search', () => {
   test('--help works', async () => {
-    const {stdout} = await runCommand('docs search --help')
+    const {stdout} = await runCommand(['docs', 'search', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Search Sanity docs
 

@@ -53,7 +53,7 @@ describe('#backup:disable', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['backup disable', '--help'])
+    const {stdout} = await runCommand(['backup', 'disable', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Disable backup for a dataset.
 

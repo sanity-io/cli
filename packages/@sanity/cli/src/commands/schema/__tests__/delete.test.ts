@@ -81,7 +81,7 @@ describe('#schema:delete', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['schema delete', '--help'])
+    const {stdout} = await runCommand(['schema', 'delete', '--help'])
 
     expect(stdout).toContain('Delete schema documents by id')
     expect(stdout).toContain('--ids')

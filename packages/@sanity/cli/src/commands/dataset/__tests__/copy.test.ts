@@ -84,7 +84,7 @@ describe('#dataset:copy', () => {
   })
 
   test('help works', async () => {
-    const {stdout} = await runCommand(['dataset copy', '--help'])
+    const {stdout} = await runCommand(['dataset', 'copy', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Manages dataset copying, including starting a new copy job, listing copy jobs and following the progress of a running copy job

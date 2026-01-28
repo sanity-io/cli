@@ -69,7 +69,7 @@ describe('#schema:list', () => {
   })
 
   test('should show --help text', async () => {
-    const {stdout} = await runCommand('schema list --help')
+    const {stdout} = await runCommand(['schema', 'list', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Lists all schemas in the current dataset.

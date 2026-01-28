@@ -1,6 +1,6 @@
 import {runCommand} from '@oclif/test'
 import {confirm, input, select} from '@sanity/cli-core/ux'
-import {mockApi, testCommand,testExample} from '@sanity/cli-test'
+import {mockApi, testCommand, testExample} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -101,7 +101,7 @@ describe('#deploy', () => {
   })
 
   test('help text is correct', async () => {
-    const {stdout} = await runCommand('deploy --help')
+    const {stdout} = await runCommand(['deploy', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Builds and deploys Sanity Studio or application to Sanity hosting
 

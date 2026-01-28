@@ -58,7 +58,7 @@ describe('#backup:enable', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['backup enable', '--help'])
+    const {stdout} = await runCommand(['backup', 'enable', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Enable backup for a dataset.
 

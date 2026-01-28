@@ -39,7 +39,7 @@ describe('#dataset:alias:unlink', () => {
   })
 
   test('help works correctly', async () => {
-    const {stdout} = await runCommand(['dataset alias unlink', '--help'])
+    const {stdout} = await runCommand(['dataset', 'alias', 'unlink', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Unlink a dataset alias from its dataset within your project
 

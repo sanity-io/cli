@@ -77,7 +77,7 @@ describe('#docs:read', () => {
   })
 
   test('help text is correct', async () => {
-    const {stdout} = await runCommand('docs read --help')
+    const {stdout} = await runCommand(['docs', 'read', '--help'])
     expect(stdout).toContain('Read an article in terminal')
     expect(stdout).toContain('ARGUMENTS')
     expect(stdout).toContain('FLAGS')

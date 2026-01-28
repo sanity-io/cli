@@ -28,7 +28,7 @@ describe('#openapi:list', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['openapi list', '--help'])
+    const {stdout} = await runCommand(['openapi', 'list', '--help'])
 
     expect(stdout).toContain('List all available OpenAPI specifications')
   })

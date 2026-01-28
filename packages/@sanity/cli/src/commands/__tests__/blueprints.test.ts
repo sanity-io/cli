@@ -3,7 +3,7 @@ import {describe, expect, it} from 'vitest'
 
 describe('#blueprints', () => {
   it('should print blueprints help', async () => {
-    const {stdout} = await runCommand('blueprints --help')
+    const {stdout} = await runCommand(['blueprints', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Local Blueprint and remote Stack management commands
 
@@ -35,7 +35,7 @@ describe('#blueprints', () => {
 
 describe('#functions', () => {
   it('should print function help', async () => {
-    const {stdout} = await runCommand('functions --help')
+    const {stdout} = await runCommand(['functions', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Sanity Function development and management commands
 

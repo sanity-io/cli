@@ -66,7 +66,7 @@ describe('#backup:list', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['backup:list', '--help'])
+    const {stdout} = await runCommand(['backup', 'list', '--help'])
     expect(stdout).toContain('List available backups for a dataset')
     expect(stdout).toContain('USAGE')
     expect(stdout).toContain('EXAMPLES')

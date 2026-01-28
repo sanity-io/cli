@@ -50,7 +50,7 @@ describe('#dataset:alias:create', () => {
   })
 
   test('help works correctly', async () => {
-    const {stdout} = await runCommand(['dataset alias create', '--help'])
+    const {stdout} = await runCommand(['dataset', 'alias', 'create', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Create a dataset alias within your project
 

@@ -67,7 +67,7 @@ describe('#tokens:list', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['tokens list', '--help'])
+    const {stdout} = await runCommand(['tokens', 'list', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "List API tokens for the current project

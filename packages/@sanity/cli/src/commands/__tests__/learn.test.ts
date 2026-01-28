@@ -15,7 +15,7 @@ describe('#learn', () => {
   })
 
   test('help text is correct', async () => {
-    const {stdout} = await runCommand('learn --help')
+    const {stdout} = await runCommand(['learn', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Opens Sanity Learn in your web browser
 

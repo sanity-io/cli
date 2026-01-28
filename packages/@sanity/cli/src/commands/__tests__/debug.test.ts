@@ -49,7 +49,7 @@ afterEach(() => {
 
 describe('#debug', () => {
   test('help text is correct', async () => {
-    const {stdout} = await runCommand('debug --help')
+    const {stdout} = await runCommand(['debug', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Provides diagnostic info for Sanity Studio troubleshooting
 

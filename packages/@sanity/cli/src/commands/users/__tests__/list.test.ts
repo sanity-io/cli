@@ -40,7 +40,7 @@ describe('#list', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['users list', '--help'])
+    const {stdout} = await runCommand(['users', 'list', '--help'])
 
     expect(stdout).toContain('List all users of the project')
   })

@@ -39,7 +39,7 @@ describe('#hook:logs', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['hook logs', '--help'])
+    const {stdout} = await runCommand(['hook', 'logs', '--help'])
 
     expect(stdout).toContain('List latest log entries for a given hook')
   })

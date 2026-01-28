@@ -50,7 +50,7 @@ describe('graphql undeploy', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['graphql undeploy', '--help'])
+    const {stdout} = await runCommand(['graphql', 'undeploy', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Remove a deployed GraphQL API
@@ -160,7 +160,9 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/production/default',
     }).reply(204)
 
-    const {stdout} = await testCommand(Undeploy, ['--project', 'custom-project', '--force'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(Undeploy, ['--project', 'custom-project', '--force'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toBe('GraphQL API deleted\n')
   })
@@ -175,14 +177,11 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/staging/experimental',
     }).reply(204)
 
-    const {stdout} = await testCommand(Undeploy, [
-      '--project',
-      'custom-project',
-      '--dataset',
-      'staging',
-      '--tag',
-      'experimental',
-    ], {mocks: defaultMocks})
+    const {stdout} = await testCommand(
+      Undeploy,
+      ['--project', 'custom-project', '--dataset', 'staging', '--tag', 'experimental'],
+      {mocks: defaultMocks},
+    )
 
     expect(stdout).toBe('GraphQL API deleted\n')
     expect(mockConfirm).toHaveBeenCalledWith({
@@ -277,7 +276,9 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/staging/default',
     }).reply(204)
 
-    const {stderr, stdout} = await testCommand(Undeploy, ['--api', 'ios', '--dataset', 'staging'], {mocks: defaultMocks})
+    const {stderr, stdout} = await testCommand(Undeploy, ['--api', 'ios', '--dataset', 'staging'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toBe('GraphQL API deleted\n')
     expect(stderr).toContain('Both --api and --dataset specified, using --dataset staging')
@@ -303,12 +304,11 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/production/default',
     }).reply(204)
 
-    const {stderr, stdout} = await testCommand(Undeploy, [
-      '--api',
-      'ios',
-      '--project',
-      'test-project',
-    ], {mocks: defaultMocks})
+    const {stderr, stdout} = await testCommand(
+      Undeploy,
+      ['--api', 'ios', '--project', 'test-project'],
+      {mocks: defaultMocks},
+    )
 
     expect(stdout).toBe('GraphQL API deleted\n')
     expect(stderr).toContain('Both --api and --project specified, using --project test-project')
@@ -334,7 +334,9 @@ describe('graphql undeploy', () => {
       uri: '/apis/graphql/production/beta',
     }).reply(204)
 
-    const {stderr, stdout} = await testCommand(Undeploy, ['--api', 'ios', '--tag', 'beta'], {mocks: defaultMocks})
+    const {stderr, stdout} = await testCommand(Undeploy, ['--api', 'ios', '--tag', 'beta'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toBe('GraphQL API deleted\n')
     expect(stderr).toContain('Both --api and --tag specified, using --tag beta')

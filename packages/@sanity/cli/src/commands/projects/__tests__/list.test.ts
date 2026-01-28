@@ -14,7 +14,7 @@ describe('#list', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['projects list', '--help'])
+    const {stdout} = await runCommand(['projects', 'list', '--help'])
 
     expect(stdout).toContain('Lists projects connected to your user')
   })

@@ -50,7 +50,7 @@ describe('#dataset:list', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['dataset list', '--help'])
+    const {stdout} = await runCommand(['dataset', 'list', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "List datasets of your project
 

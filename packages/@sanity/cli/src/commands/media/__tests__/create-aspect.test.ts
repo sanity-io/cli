@@ -41,7 +41,7 @@ describe('#media:create-aspect', () => {
   })
 
   test('should show help text correctly', async () => {
-    const {stdout} = await runCommand(['media create-aspect --help'])
+    const {stdout} = await runCommand(['media', 'create-aspect', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Create a new aspect definition file
@@ -78,10 +78,9 @@ describe('#media:create-aspect', () => {
     expect(stdout).toContain('Next steps:')
     expect(stdout).toContain('sanity media deploy-aspect myTestAspect')
 
-    expect(mockMkdir).toHaveBeenCalledWith(
-      convertToSystemPath('/test/project/aspects'),
-      {recursive: true},
-    )
+    expect(mockMkdir).toHaveBeenCalledWith(convertToSystemPath('/test/project/aspects'), {
+      recursive: true,
+    })
     expect(mockAccess).toHaveBeenCalledWith(
       convertToSystemPath('/test/project/aspects/myTestAspect.ts'),
     )
@@ -161,10 +160,9 @@ describe('#media:create-aspect', () => {
       },
     })
 
-    expect(mockMkdir).toHaveBeenCalledWith(
-      convertToSystemPath('/new/aspects/path'),
-      {recursive: true},
-    )
+    expect(mockMkdir).toHaveBeenCalledWith(convertToSystemPath('/new/aspects/path'), {
+      recursive: true,
+    })
   })
 
   test('should generate correct template content', async () => {
