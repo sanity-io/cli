@@ -8,6 +8,7 @@ import {confirm} from '@sanity/cli-core/ux'
 import {testCommand, testExample} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {closeServer, tryCloseServer} from '../../../test/testUtils.js'
 import {checkRequiredDependencies} from '../../actions/build/checkRequiredDependencies.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
@@ -50,10 +51,6 @@ const mockConfirm = vi.mocked(confirm)
 const mockUpgradePackages = vi.mocked(upgradePackages)
 const mockGetPackageManagerChoice = vi.mocked(getPackageManagerChoice)
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
-
-type Result = {
-  close?: () => Promise<void>
-}
 
 describe('#dev', {timeout: 15 * 1000}, () => {
   afterEach(() => {
@@ -112,7 +109,7 @@ describe('#dev', {timeout: 15 * 1000}, () => {
       expect(stdout).toContain('Dev server started on port 5333')
       expect(stdout).toContain('View your app in the Sanity dashboard here:')
       expect(stderr).toContain('Checking configuration files')
-      await (result as Result).close?.()
+      await tryCloseServer(result)
     })
 
     test('should warn when --no-load-in-dashboard is used with app', async () => {
@@ -132,7 +129,7 @@ describe('#dev', {timeout: 15 * 1000}, () => {
       expect(stderr).toContain('Apps cannot run without the Sanity dashboard')
       expect(stderr).toContain('Starting dev server with the --load-in-dashboard flag set to true')
       expect(stdout).toContain('Dev server started on port 5334')
-      await (result as Result).close?.()
+      await tryCloseServer(result)
     })
 
     test('should automatically change port if conflicted', async () => {
@@ -156,15 +153,10 @@ describe('#dev', {timeout: 15 * 1000}, () => {
         expect(stdout).toMatch(/Dev server started on port \d{4}/)
         expect(stdout).not.toContain('Dev server started on port 5338')
         expect(stdout).toContain('View your app in the Sanity dashboard here:')
-        await (result as Result).close?.()
+        await tryCloseServer(result)
       } finally {
         // Clean up the server
-        await new Promise<void>((resolve, reject) => {
-          server.close((err) => {
-            if (err) reject(err)
-            else resolve()
-          })
-        })
+        await closeServer(server)
       }
     })
 
@@ -204,7 +196,8 @@ describe('#dev', {timeout: 15 * 1000}, () => {
       expect(stdout).toContain('ready in')
       expect(stdout).toContain('ms and running at http://localhost:5335')
       expect(stderr).toContain('Checking configuration files')
-      await (result as Result).close?.()
+
+      await tryCloseServer(result)
     })
 
     test('should start with custom host configuration', async () => {
@@ -222,7 +215,7 @@ describe('#dev', {timeout: 15 * 1000}, () => {
 
       expect(error).toBeUndefined()
       expect(stdout).toContain('http://127.0.0.1:5336')
-      await (result as Result).close?.()
+      await tryCloseServer(result)
     })
 
     test('should start with load-in-dashboard', async () => {
@@ -264,7 +257,7 @@ describe('#dev', {timeout: 15 * 1000}, () => {
       expect(stdout).toContain('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340')
       expect(stderr).toContain('Checking configuration files')
 
-      await (result as Result).close?.()
+      await tryCloseServer(result)
     })
 
     test('should error when projectId is missing with --load-in-dashboard', async () => {
@@ -341,7 +334,7 @@ describe('#dev', {timeout: 15 * 1000}, () => {
       // Check that the server started successfully with auto-updates flag
       expect(stdout).toMatch(/running at http:\/\/localhost:5346/)
       expect(stderr).toContain('Checking configuration files')
-      await (result as Result).close?.()
+      await tryCloseServer(result)
     })
 
     test('should handle auto-updates with version mismatch and user accepts upgrade', async () => {
@@ -384,7 +377,7 @@ describe('#dev', {timeout: 15 * 1000}, () => {
         {output: expect.any(Object), workDir: cwd},
       )
 
-      await (result as Result).close?.()
+      await tryCloseServer(result)
     })
 
     test('should handle invalid Sanity version during auto-updates', async () => {
@@ -426,12 +419,7 @@ describe('#dev', {timeout: 15 * 1000}, () => {
       expect(error?.oclif?.exit).toBe(1)
     } finally {
       // Clean up the server
-      await new Promise<void>((resolve, reject) => {
-        server.close((err) => {
-          if (err) reject(err)
-          else resolve()
-        })
-      })
+      await closeServer(server)
     }
   })
 })

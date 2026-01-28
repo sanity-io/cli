@@ -7,6 +7,7 @@ import {convertToSystemPath, testCommand, testExample} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
 import {buildExample} from '~test/helpers/buildExample.js'
 
+import {closeServer, tryCloseServer} from '../../../test/testUtils.js'
 import {PreviewCommand} from '../preview.js'
 
 describe(
@@ -58,9 +59,11 @@ describe(
         await buildExample(cwd)
         process.chdir(cwd)
 
-        const {error, stdout} = await testCommand(PreviewCommand, ['--port', '4334'], {
+        const {error, result, stdout} = await testCommand(PreviewCommand, ['--port', '4334'], {
           config: {root: cwd},
         })
+
+        await tryCloseServer(result)
 
         expect(error).toBeUndefined()
         expect(stdout).toContain(`Sanity application using vite@`)
@@ -75,11 +78,12 @@ describe(
         // Change to the example directory
         process.chdir(cwd)
 
-        const {error, stdout} = await testCommand(PreviewCommand, [], {
+        const {error, result, stdout} = await testCommand(PreviewCommand, [], {
           config: {root: cwd},
         })
 
-        expect(error).toBeDefined()
+        await tryCloseServer(result)
+
         expect(error?.message).toContain('Failed to start preview server')
         expect(error?.oclif?.exit).toBe(1)
         expect(stdout).toContain(
@@ -99,9 +103,11 @@ describe(
         // Change to the example directory
         process.chdir(cwd)
 
-        const {error, stdout} = await testCommand(PreviewCommand, ['--port', '4333'], {
+        const {error, result, stdout} = await testCommand(PreviewCommand, ['--port', '4333'], {
           config: {root: cwd},
         })
+
+        await tryCloseServer(result)
 
         expect(error).toBeUndefined()
         expect(stdout).toContain(`Sanity Studio using vite@`)
@@ -116,9 +122,11 @@ describe(
         // Change to the example directory
         process.chdir(cwd)
 
-        const {error, stdout} = await testCommand(PreviewCommand, [], {
+        const {error, result, stdout} = await testCommand(PreviewCommand, [], {
           config: {root: cwd},
         })
+
+        await tryCloseServer(result)
 
         expect(error).toBeDefined()
         expect(error?.message).toContain('Failed to start preview server')
@@ -154,9 +162,11 @@ describe(
 
       await writeFile(indexPath, newIndex)
 
-      const {error, stdout} = await testCommand(PreviewCommand, ['--port', '4335'], {
+      const {error, result, stdout} = await testCommand(PreviewCommand, ['--port', '4335'], {
         config: {root: cwd},
       })
+
+      await tryCloseServer(result)
 
       expect(error).toBeUndefined()
       expect(stdout).toContain(`Using resolved base path from static build: /custom-base-path`)
@@ -189,9 +199,13 @@ describe(
 
       await writeFile(indexPath, newIndex)
 
-      const {error, stderr, stdout} = await testCommand(PreviewCommand, ['--port', '4336'], {
-        config: {root: cwd},
-      })
+      const {error, result, stderr, stdout} = await testCommand(
+        PreviewCommand,
+        ['--port', '4336'],
+        {config: {root: cwd}},
+      )
+
+      await tryCloseServer(result)
 
       expect(error).toBeUndefined()
       expect(stderr).toContain(
@@ -212,9 +226,11 @@ describe(
       // Remove the index.html file
       await rm(join(cwd, 'dist', 'index.html'))
 
-      const {error} = await testCommand(PreviewCommand, ['--port', '4337'], {
+      const {error, result} = await testCommand(PreviewCommand, ['--port', '4337'], {
         config: {root: cwd},
       })
+
+      await tryCloseServer(result)
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Failed to start preview server')
@@ -235,21 +251,18 @@ describe(
       })
 
       try {
-        const {error} = await testCommand(PreviewCommand, ['--port', '4338'], {
+        const {error, result} = await testCommand(PreviewCommand, ['--port', '4338'], {
           config: {root: cwd},
         })
+
+        await tryCloseServer(result)
 
         expect(error).toBeDefined()
         expect(error?.message).toContain('Port 4338 is already in use')
         expect(error?.oclif?.exit).toBe(1)
       } finally {
         // Clean up the server
-        await new Promise<void>((resolve, reject) => {
-          server.close((err) => {
-            if (err) reject(err)
-            else resolve()
-          })
-        })
+        await closeServer(server)
       }
     })
 
@@ -281,9 +294,11 @@ describe(
       // Build the example
       await buildExample(cwd)
 
-      const {stdout} = await testCommand(PreviewCommand, [], {
+      const {result, stdout} = await testCommand(PreviewCommand, [], {
         config: {root: cwd},
       })
+
+      await tryCloseServer(result)
 
       expect(stdout).toContain(`ms and running at http://localhost:4339/ (production preview mode)`)
     })

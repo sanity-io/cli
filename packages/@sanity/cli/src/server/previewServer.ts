@@ -12,7 +12,10 @@ import {sanityBasePathRedirectPlugin} from './vite/plugin-sanity-basepath-redire
 
 const debug = serverDebug.extend('preview')
 
-interface PreviewServer {
+/**
+ * @internal
+ */
+export interface PreviewServer {
   close(): Promise<void>
   urls: {local: string[]; network: string[]}
 }
@@ -30,6 +33,13 @@ interface PreviewServerOptions {
   vite?: UserViteConfig
 }
 
+/**
+ * Starts a Vite preview server for the given build output directory
+ *
+ * @param options - Preview server options
+ * @returns A promise that resolves to the started preview server
+ * @internal
+ */
 export async function startPreviewServer(options: PreviewServerOptions): Promise<PreviewServer> {
   const {httpHost, httpPort, isApp, root, vite: extendViteConfig, workDir} = options
   const startTime = Date.now()

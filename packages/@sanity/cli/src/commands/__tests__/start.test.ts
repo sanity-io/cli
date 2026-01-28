@@ -7,6 +7,7 @@ import {convertToSystemPath, testCommand, testExample} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
 import {buildExample} from '~test/helpers/buildExample.js'
 
+import {closeServer, tryCloseServer} from '../../../test/testUtils.js'
 import {PreviewCommand} from '../preview.js'
 
 describe('#start', {timeout: 30 * 1000}, () => {
@@ -228,12 +229,7 @@ describe('#start', {timeout: 30 * 1000}, () => {
       expect(error?.oclif?.exit).toBe(1)
     } finally {
       // Clean up the server
-      await new Promise<void>((resolve, reject) => {
-        server.close((err) => {
-          if (err) reject(err)
-          else resolve()
-        })
-      })
+      await closeServer(server)
     }
   })
 
@@ -264,10 +260,12 @@ describe('#start', {timeout: 30 * 1000}, () => {
     `,
     )
 
-    const {stdout} = await testCommand(PreviewCommand, [], {
+    const {result, stdout} = await testCommand(PreviewCommand, [], {
       config: {root: cwd},
     })
 
     expect(stdout).toContain(`ms and running at http://localhost:1335/ (production preview mode)`)
+
+    await tryCloseServer(result)
   })
 })

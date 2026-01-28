@@ -5,6 +5,7 @@ import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
 import {chalk, confirm} from '@sanity/cli-core/ux'
 
 import {previewAction} from '../actions/preview/previewAction.js'
+import {type PreviewServer} from '../server/previewServer.js'
 
 export const previewDebug = subdebug('preview')
 
@@ -35,7 +36,7 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
     }),
   }
 
-  public async run(): Promise<void> {
+  public async run(): Promise<PreviewServer | void> {
     const {args, flags} = await this.parse(PreviewCommand)
 
     const workDir = (await this.getProjectRoot()).directory
@@ -47,7 +48,7 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
     const outDir = path.resolve(outputDir || defaultRootDir)
 
     try {
-      await previewAction({cliConfig, flags, outDir, workDir})
+      return await previewAction({cliConfig, flags, outDir, workDir})
     } catch (error) {
       if (error.name !== 'BUILD_NOT_FOUND') {
         previewDebug(`Failed to start preview server`, {error})
