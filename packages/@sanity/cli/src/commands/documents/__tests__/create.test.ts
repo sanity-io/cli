@@ -951,22 +951,27 @@ describe('#documents:create', () => {
         mockJson5.stringify.mockReturnValue(
           JSON.stringify({_id: 'test-doc', _type: 'specify-me'}, null, 2),
         )
-        mockExeca.mockResolvedValue({} as never)
 
         // Mock file read to return different content for file change
         mockFs.readFile.mockResolvedValue(JSON.stringify(mockDoc))
         mockJson5.parse.mockReturnValue(mockDoc)
 
-        await testCommand(CreateDocumentCommand, ['--watch'], {
+        // Trigger the change handler during execa (while still inside stdout capture)
+        // The watcher is set up before execa is called, so changeHandler will be defined
+        mockExeca.mockImplementation((async () => {
+          expect(changeHandler!).toBeDefined()
+          await changeHandler!()
+          return {}
+        }) as unknown as typeof execa)
+
+        const {stdout} = await testCommand(CreateDocumentCommand, ['--watch'], {
           mocks: {
             ...defaultMocks,
           },
         })
 
-        // Simulate file change
-        expect(changeHandler!).toBeDefined()
-        await changeHandler!()
-
+        expect(stdout).toContain('Created:')
+        expect(stdout).toContain('test-doc')
         expect(mockTransaction).toHaveBeenCalledWith([{create: mockDoc}])
       }),
     )
