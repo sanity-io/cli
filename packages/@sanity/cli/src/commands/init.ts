@@ -813,7 +813,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       debug('No datasets found for project, prompting for name')
       if (opts.showDefaultConfigPrompt) {
         this.log(datasetInfo)
-        defaultConfig = await promptForDefaultConfig(this.output)
+        defaultConfig = await promptForDefaultConfig()
       }
       const name = defaultConfig
         ? 'production'
@@ -844,7 +844,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       debug('User wants to create a new dataset, prompting for name')
       if (opts.showDefaultConfigPrompt && !existingDatasetNames.includes('production')) {
         this.log(datasetInfo)
-        defaultConfig = await promptForDefaultConfig(this.output)
+        defaultConfig = await promptForDefaultConfig()
       }
 
       const newDatasetName = defaultConfig
