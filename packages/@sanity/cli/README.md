@@ -62,6 +62,7 @@ Code for sanity cli
 - [`sanity functions env remove NAME KEY`](#sanity-functions-env-remove-name-key)
 - [`sanity functions logs [NAME]`](#sanity-functions-logs-name)
 - [`sanity functions test [NAME]`](#sanity-functions-test-name)
+- [`sanity graphql deploy`](#sanity-graphql-deploy)
 - [`sanity graphql list`](#sanity-graphql-list)
 - [`sanity graphql undeploy`](#sanity-graphql-undeploy)
 - [`sanity help [COMMAND]`](#sanity-help-command)
@@ -1811,6 +1812,51 @@ EXAMPLES
 ```
 
 _See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.0.3/src/commands/functions/test.ts)_
+
+## `sanity graphql deploy`
+
+Deploy a GraphQL API from the current Sanity schema
+
+```
+USAGE
+  $ sanity graphql deploy [--api <value>...] [--dataset <value>] [--dry-run] [--force] [--generation gen1|gen2|gen3]
+    [--non-null-document-fields] [--playground] [--tag <value>] [--with-union-cache]
+
+FLAGS
+  --api=<value>...            Only deploy API with this ID. Can be specified multiple times.
+  --dataset=<value>           Deploy API for the given dataset
+  --dry-run                   Validate defined GraphQL APIs, check for breaking changes, skip deploy
+  --force                     Deploy API without confirming breaking changes
+  --generation=<option>       API generation to deploy (defaults to "gen3")
+                              <options: gen1|gen2|gen3>
+  --non-null-document-fields  Use non-null document fields (_id, _type etc)
+  --[no-]playground           Enable GraphQL playground for easier debugging
+  --tag=<value>               Deploy API(s) to given tag (defaults to "default")
+  --with-union-cache          Enable union cache that optimizes schema generation for schemas with many self referencing
+                              types
+
+DESCRIPTION
+  Deploy a GraphQL API from the current Sanity schema
+
+EXAMPLES
+  Deploy all defined GraphQL APIs
+
+    $ sanity graphql deploy
+
+  Validate defined GraphQL APIs, check for breaking changes, skip deploy
+
+    $ sanity graphql deploy --dry-run
+
+  Deploy only the GraphQL APIs with the IDs "staging" and "ios"
+
+    $ sanity graphql deploy --api staging --api ios
+
+  Deploy all defined GraphQL APIs, overriding any playground setting
+
+    $ sanity graphql deploy --playground
+```
+
+_See code: [src/commands/graphql/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.8/src/commands/graphql/deploy.ts)_
 
 ## `sanity graphql list`
 
