@@ -122,7 +122,7 @@
     "recast": "^0.23.11",
     "resolve-from": "^5.0.0",
     "rimraf": "catalog:",
-    "rxjs": "^7.8.1",
+    "rxjs": "catalog:",
     "sanity": "catalog:",
     "semver": "^7.7.2",
     "semver-compare": "^1.0.0",
