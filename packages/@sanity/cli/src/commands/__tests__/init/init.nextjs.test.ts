@@ -1,4 +1,4 @@
-import {createTestClient, mockApi, testCommand, testExample} from '@sanity/cli-test'
+import {convertToSystemPath, createTestClient, mockApi, testCommand, testExample} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -157,7 +157,7 @@ describe('#init:nextjs-app-initialization', () => {
   })
   test('initializes nextjs app', async () => {
     const cwd = await testExample('basic-app')
-    process.cwd = () => cwd
+    process.chdir(cwd)
     setupInitSuccessMocks()
 
     mocks.confirm.mockResolvedValueOnce(true) // nextjs-add-config-files
@@ -219,7 +219,7 @@ describe('#init:nextjs-app-initialization', () => {
         slug: 'nextjs',
       },
       output: expect.any(Object),
-      outputPath: '/test/output',
+      outputPath: convertToSystemPath('/test/output'),
     })
     expect(mocks.installNewPackages).toHaveBeenCalledWith(
       {

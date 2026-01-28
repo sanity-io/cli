@@ -120,13 +120,9 @@ describe('#media:delete-aspect', () => {
       uri: '/media-libraries/test-library-id/mutate',
     }).reply(200, {results: [{id: 'myAspect'}]})
 
-    const {error, stdout} = await testCommand(MediaDeleteAspectCommand, ['myAspect'], {
+    const {stdout} = await testCommand(MediaDeleteAspectCommand, ['myAspect'], {
       mocks: defaultMocks,
     })
-
-    if (error) {
-      console.log('ERROR:', error.message)
-    }
 
     expect(mockConfirm).toHaveBeenCalledWith({
       default: false,

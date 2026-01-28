@@ -115,7 +115,7 @@ describe('#backup:download', () => {
   test('--help works', async () => {
     const {stdout} = await runCommand(['backup download', '--help'])
 
-    expect(stdout).toMatchInlineSnapshot(String.raw`
+    expect(stdout).toMatchInlineSnapshot(`
       "Download a dataset backup to a local file.
 
       USAGE
@@ -147,12 +147,12 @@ describe('#backup:download', () => {
 
         Download backup to a specific file
 
-          $ sanity backup download production --backup-id 2024-01-01-backup-2 \
+          $ sanity backup download production --backup-id 2024-01-01-backup-2 \\
             --out /path/to/file
 
         Download backup and overwrite existing file
 
-          $ sanity backup download production --backup-id 2024-01-01-backup-3 \
+          $ sanity backup download production --backup-id 2024-01-01-backup-3 \\
             --out /path/to/file --overwrite
 
       "

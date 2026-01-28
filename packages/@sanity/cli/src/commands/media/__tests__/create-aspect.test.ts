@@ -2,7 +2,7 @@ import {access, mkdir, writeFile} from 'node:fs/promises'
 
 import {runCommand} from '@oclif/test'
 import {input} from '@sanity/cli-core/ux'
-import {testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {MediaCreateAspectCommand} from '../create-aspect.js'
@@ -78,14 +78,19 @@ describe('#media:create-aspect', () => {
     expect(stdout).toContain('Next steps:')
     expect(stdout).toContain('sanity media deploy-aspect myTestAspect')
 
-    expect(mockMkdir).toHaveBeenCalledWith('/test/project/aspects', {recursive: true})
-    expect(mockAccess).toHaveBeenCalledWith('/test/project/aspects/myTestAspect.ts')
+    expect(mockMkdir).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/aspects'),
+      {recursive: true},
+    )
+    expect(mockAccess).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/aspects/myTestAspect.ts'),
+    )
     expect(mockWriteFile).toHaveBeenCalledWith(
-      '/test/project/aspects/myTestAspect.ts',
+      convertToSystemPath('/test/project/aspects/myTestAspect.ts'),
       expect.stringContaining("name: 'myTestAspect'"),
     )
     expect(mockWriteFile).toHaveBeenCalledWith(
-      '/test/project/aspects/myTestAspect.ts',
+      convertToSystemPath('/test/project/aspects/myTestAspect.ts'),
       expect.stringContaining("title: 'My Test Aspect'"),
     )
   })
@@ -156,7 +161,10 @@ describe('#media:create-aspect', () => {
       },
     })
 
-    expect(mockMkdir).toHaveBeenCalledWith('/new/aspects/path', {recursive: true})
+    expect(mockMkdir).toHaveBeenCalledWith(
+      convertToSystemPath('/new/aspects/path'),
+      {recursive: true},
+    )
   })
 
   test('should generate correct template content', async () => {

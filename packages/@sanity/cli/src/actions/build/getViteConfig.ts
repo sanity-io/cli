@@ -185,7 +185,8 @@ function suppressUnusedImport(warning: Rollup.RollupLog & {ids?: string[]}): boo
   }
 
   // If some library does something unexpected, we suppress since it isn't actionable
-  if (warning.ids?.every((id) => id.includes('/node_modules/'))) return true
+  if (warning.ids?.every((id) => id.includes('/node_modules/') || id.includes('\\node_modules\\')))
+    return true
 
   return false
 }

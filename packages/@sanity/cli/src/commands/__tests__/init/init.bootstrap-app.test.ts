@@ -1,4 +1,4 @@
-import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -190,7 +190,7 @@ describe('#init: bootstrap-app-initialization', () => {
       dataset: 'test',
       organizationId: undefined,
       output: expect.any(Object),
-      outputPath: '/test/output',
+      outputPath: convertToSystemPath('/test/output'),
       overwriteFiles: undefined,
       packageName: 'test',
       projectId: 'test',
@@ -201,7 +201,9 @@ describe('#init: bootstrap-app-initialization', () => {
       useTypeScript: true,
     })
     expect(stdout).toContain('Success! Your Studio has been created')
-    expect(stdout).toContain('cd /test/output to navigate to your new project directory')
+    expect(stdout).toContain(
+      `(cd ${convertToSystemPath('/test/output')} to navigate to your new project directory)`,
+    )
     expect(stdout).toContain('Get started by running npm run dev')
     expect(stdout).toContain('Setup your Cursor IDE')
     expect(stdout).toContain('Learn more: https://mcp.sanity.io')
@@ -276,7 +278,9 @@ describe('#init: bootstrap-app-initialization', () => {
     )
 
     expect(stdout).toContain('Success! Your Studio has been created')
-    expect(stdout).toContain('cd /test/output to navigate to your new project directory')
+    expect(stdout).toContain(
+      `(cd ${convertToSystemPath('/test/output')} to navigate to your new project directory)`,
+    )
     expect(stdout).toContain('Get started by running npm run dev')
     expect(stdout).toContain(
       'To set up your project with the MCP server, restart Cursor and type "Get started with Sanity" in the chat.',

@@ -1,5 +1,6 @@
 import {join} from 'node:path'
 
+import {normalizePath} from '@sanity/cli-core'
 import {glob} from 'tinyglobby'
 
 import {telemetryStoreDebug} from './debug.js'
@@ -24,7 +25,8 @@ export async function findTelemetryFiles(): Promise<string[]> {
     const fullPattern = join(directory, pattern)
     telemetryStoreDebug('Looking for files matching pattern: %s', fullPattern)
 
-    const matchingFiles = await glob(fullPattern)
+    // Converts windows backslashes to forward slashes for glob pattern
+    const matchingFiles = await glob(normalizePath(fullPattern))
     telemetryStoreDebug('Found %d matching telemetry files', matchingFiles.length)
     return matchingFiles
   } catch (error) {

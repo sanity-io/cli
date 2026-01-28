@@ -1,6 +1,8 @@
+import {basename} from 'node:path'
+
 import {runCommand} from '@oclif/test'
 import {select} from '@sanity/cli-core/ux'
-import {createTestToken, mockApi, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {
   MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME,
   type MediaLibraryAssetAspectDocument,
@@ -46,13 +48,13 @@ const defaultMocks = {
       projectId: 'test-project-id',
     },
     mediaLibrary: {
-      aspectsPath: '/test/project/aspects',
+      aspectsPath: convertToSystemPath('/test/project/aspects'),
     },
   },
   projectRoot: {
-    directory: '/test/project',
-    path: '/test/project/sanity.config.ts',
-    root: '/test/project',
+    directory: convertToSystemPath('/test/project'),
+    path: convertToSystemPath('/test/project/sanity.config.ts'),
+    root: convertToSystemPath('/test/project'),
     type: 'studio' as const,
   },
   token: 'test-token',
@@ -136,7 +138,7 @@ function setupTsImportMock(
   >,
 ) {
   mockTsImport.mockImplementation(async (filePath: string) => {
-    const filename = filePath.split('/').pop() || ''
+    const filename = basename(filePath)
     const importConfig = imports[filename]
 
     if (!importConfig) {
@@ -290,7 +292,9 @@ describe('#media:deploy-aspect', () => {
       mocks: defaultMocks,
     })
 
-    expect(mockFsReaddir).toHaveBeenCalledWith('/test/project/aspects', {withFileTypes: true})
+    expect(mockFsReaddir).toHaveBeenCalledWith(convertToSystemPath('/test/project/aspects'), {
+      withFileTypes: true,
+    })
     expect(mockTsImport).toHaveBeenCalled()
     expect(stdout).toContain('✓')
     expect(stdout).toContain('Deployed 1 aspect')

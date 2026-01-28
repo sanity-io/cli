@@ -1,7 +1,7 @@
 import {mkdir, writeFile} from 'node:fs/promises'
 
 import {runCommand} from '@oclif/test'
-import {testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {ExtractSchemaCommand} from '../extract.js'
@@ -87,7 +87,7 @@ describe('#schema:extract', () => {
     const {stderr} = await testCommand(ExtractSchemaCommand, [], {mocks: defaultMocks})
 
     expect(stderr).toContain('Extracting schema')
-    expect(stderr).toContain('✔ Extracted schema')
+    expect(stderr).toContain('Extracted schema')
 
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining('schema.json'),
@@ -99,7 +99,9 @@ describe('#schema:extract', () => {
   test('should extract schema with enforce-required-fields flag', async () => {
     mockWriteFile.mockResolvedValue(undefined)
 
-    const {stderr} = await testCommand(ExtractSchemaCommand, ['--enforce-required-fields'], {mocks: defaultMocks})
+    const {stderr} = await testCommand(ExtractSchemaCommand, ['--enforce-required-fields'], {
+      mocks: defaultMocks,
+    })
 
     expect(stderr).toContain('Extracting schema with enforced required fields')
   })
@@ -108,22 +110,29 @@ describe('#schema:extract', () => {
     mockMkdir.mockResolvedValue(undefined)
     mockWriteFile.mockResolvedValue(undefined)
 
-    const {stderr} = await testCommand(ExtractSchemaCommand, ['--path', '/test'], {mocks: defaultMocks})
+    const {stderr} = await testCommand(ExtractSchemaCommand, ['--path', '/test'], {
+      mocks: defaultMocks,
+    })
 
     expect(stderr).toContain('Extracting schema')
-    expect(stderr).toContain('✔ Extracted schema')
+    expect(stderr).toContain('Extracted schema')
 
-    expect(mockMkdir).toHaveBeenCalledWith('/test/project/test', {recursive: true})
+    expect(mockMkdir).toHaveBeenCalledWith(
+      convertToSystemPath('/test/project/test'),
+      {recursive: true},
+    )
 
     expect(mockWriteFile).toHaveBeenCalledWith(
-      '/test/project/test/schema.json',
+      convertToSystemPath('/test/project/test/schema.json'),
       // eslint-disable-next-line no-useless-escape
       expect.stringContaining(`\"name\": \"post\"`),
     )
   })
 
   test('throws an error if format flag is not groq-type-nodes', async () => {
-    const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--format', 'test-format'], {mocks: defaultMocks})
+    const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--format', 'test-format'], {
+      mocks: defaultMocks,
+    })
 
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('Failed to extract schema')
