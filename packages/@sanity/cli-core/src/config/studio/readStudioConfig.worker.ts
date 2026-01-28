@@ -2,6 +2,7 @@ import {pathToFileURL} from 'node:url'
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
 import {moduleResolve} from 'import-meta-resolve'
+import {firstValueFrom, of} from 'rxjs'
 import {z} from 'zod'
 
 import {doImport} from '../../util/doImport.js'
@@ -30,12 +31,6 @@ if (resolvePlugins) {
   if (typeof resolveConfig !== 'function') {
     throw new TypeError('Expected `resolveConfig` from `sanity` to be a function')
   }
-
-  // We'll want to use some observable tooling, but we'd prefer to use something
-  // compatible with what the studio uses internally, thus try to load RxJS from the
-  // sanity module path instead of installing it as a dependency locally.
-  const rxjsPath = (await moduleResolve('rxjs', sanityUrl)).href
-  const {firstValueFrom, of} = await doImport(rxjsPath)
 
   // We will also want to stub out some configuration - we don't need to resolve the
   // users' logged in state, for instance - so let's disable the auth implementation.

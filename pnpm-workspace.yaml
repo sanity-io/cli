@@ -47,6 +47,7 @@ catalog:
   'get-tsconfig': ^4.13.0
   execa: ^9.6.0
   ora: ^9.0.0
+  rxjs: ^7.8.2
 
   # Build Tools
   '@swc/core': ^1.15.10

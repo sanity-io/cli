@@ -69,6 +69,7 @@
     "json-lexer": "^1.2.0",
     "log-symbols": "^7.0.1",
     "ora": "catalog:",
+    "rxjs": "catalog:",
     "tsx": "catalog:",
     "vite": "catalog:",
     "zod": "catalog:"
