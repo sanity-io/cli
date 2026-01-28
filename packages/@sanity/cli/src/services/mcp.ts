@@ -4,14 +4,6 @@ export const MCP_API_VERSION = '2025-12-09'
 export const MCP_SERVER_URL = 'https://mcp.sanity.io'
 export const MCP_JOURNEY_API_VERSION = 'v2024-02-23'
 
-type EditorName = 'Claude Code' | 'Cursor' | 'VS Code'
-
-export interface Editor {
-  configKey: 'mcpServers' | 'servers'
-  configPath: string
-  name: EditorName
-}
-
 export interface MCPConfig {
   mcpServers?: Record<string, ServerConfig>
   servers?: Record<string, ServerConfig>
