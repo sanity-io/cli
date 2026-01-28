@@ -277,112 +277,186 @@ describe('#mcp:configure', () => {
     expect(stdout).toContain('MCP configured for Claude Code')
   })
 
-  test('detects OpenCode via CLI and configures it', async () => {
-    mockExeca.mockResolvedValue({
-      command: 'opencode --version',
-      exitCode: 0,
-      failed: false,
-      killed: false,
-      signal: undefined,
-      stderr: '',
-      stdout: '1.0.0',
-      timedOut: false,
-    } as never)
+  test.skipIf(process.platform !== 'darwin')(
+    'detects OpenCode via CLI on macOS and configures it',
+    async () => {
+      const originalPlatform = process.platform
+      Object.defineProperty(process, 'platform', {
+        value: 'darwin',
+      })
 
-    mockCheckbox.mockResolvedValue(['OpenCode'])
+      mockExeca.mockResolvedValue({
+        command: 'opencode --version',
+        exitCode: 0,
+        failed: false,
+        killed: false,
+        signal: undefined,
+        stderr: '',
+        stdout: '1.0.0',
+        timedOut: false,
+      } as never)
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-opencode', sid: 'session-opencode'})
+      mockCheckbox.mockResolvedValue(['OpenCode'])
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-opencode'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'test-token-opencode'})
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'post',
+        uri: '/auth/session/create',
+      }).reply(200, {id: 'session-opencode', sid: 'session-opencode'})
 
-    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'get',
+        query: {sid: 'session-opencode'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'MCP Token', token: 'test-token-opencode'})
 
-    expect(mockExeca).toHaveBeenCalledWith('opencode', ['--version'], {
-      stdio: 'pipe',
-      timeout: 5000,
-    })
+      const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    expect(mockCheckbox).toHaveBeenCalledWith({
-      choices: expect.arrayContaining([
-        {
-          checked: true,
-          name: 'OpenCode',
-          value: 'OpenCode',
-        },
-      ]),
-      message: 'Configure Sanity MCP server?',
-    })
+      expect(mockExeca).toHaveBeenCalledWith('opencode', ['--version'], {
+        stdio: 'pipe',
+        timeout: 5000,
+      })
 
-    expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining('.config/opencode/opencode.json'),
-      expect.stringContaining('test-token-opencode'),
-      'utf8',
-    )
+      expect(mockCheckbox).toHaveBeenCalledWith({
+        choices: expect.arrayContaining([
+          {
+            checked: true,
+            name: 'OpenCode',
+            value: 'OpenCode',
+          },
+        ]),
+        message: 'Configure Sanity MCP server?',
+      })
 
-    expect(stdout).toContain('MCP configured for OpenCode')
-  })
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining('.config/opencode/opencode.json'),
+        expect.stringContaining('test-token-opencode'),
+        'utf8',
+      )
 
-  test('detects VS Code Insiders on macOS and configures it', async () => {
+      expect(stdout).toContain('MCP configured for OpenCode')
+
+      Object.defineProperty(process, 'platform', {
+        value: originalPlatform,
+      })
+    },
+  )
+
+  test.skipIf(process.platform !== 'darwin')(
+    'detects VS Code Insiders on macOS and configures it',
+    async () => {
+      const originalPlatform = process.platform
+      Object.defineProperty(process, 'platform', {
+        value: 'darwin',
+      })
+
+      mockExistsSync.mockImplementation((path: PathLike) => {
+        return String(path).includes('Library/Application Support/Code - Insiders/User')
+      })
+
+      mockCheckbox.mockResolvedValue(['VS Code Insiders'])
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'post',
+        uri: '/auth/session/create',
+      }).reply(200, {id: 'session-insiders', sid: 'session-insiders'})
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'get',
+        query: {sid: 'session-insiders'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'MCP Token', token: 'test-token-insiders'})
+
+      const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+      expect(mockCheckbox).toHaveBeenCalledWith({
+        choices: [
+          {
+            checked: true,
+            name: 'VS Code Insiders',
+            value: 'VS Code Insiders',
+          },
+        ],
+        message: 'Configure Sanity MCP server?',
+      })
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining('Code - Insiders/User/mcp.json'),
+        expect.stringContaining('test-token-insiders'),
+        'utf8',
+      )
+
+      expect(stdout).toContain('MCP configured for VS Code Insiders')
+
+      Object.defineProperty(process, 'platform', {
+        value: originalPlatform,
+      })
+    },
+  )
+
+  test.skipIf(process.platform !== 'win32')(
+    'detects VS Code Insiders on Windows and configures it',
+    async () => {
+      const originalPlatform = process.platform
+      Object.defineProperty(process, 'platform', {
+        value: 'win32',
+      })
+
+      mockExistsSync.mockImplementation((path: PathLike) => {
+        return String(path).includes(String.raw`AppData\Roaming\Code - Insiders\User`)
+      })
+
+      mockCheckbox.mockResolvedValue(['VS Code Insiders'])
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'post',
+        uri: '/auth/session/create',
+      }).reply(200, {id: 'session-insiders', sid: 'session-insiders'})
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'get',
+        query: {sid: 'session-insiders'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'MCP Token', token: 'test-token-insiders'})
+
+      const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+      expect(mockCheckbox).toHaveBeenCalledWith({
+        choices: [
+          {
+            checked: true,
+            name: 'VS Code Insiders',
+            value: 'VS Code Insiders',
+          },
+        ],
+        message: 'Configure Sanity MCP server?',
+      })
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining(String.raw`AppData\Roaming\Code - Insiders\User\mcp.json`),
+        expect.stringContaining('test-token-insiders'),
+        'utf8',
+      )
+
+      expect(stdout).toContain('MCP configured for VS Code Insiders')
+
+      Object.defineProperty(process, 'platform', {
+        value: originalPlatform,
+      })
+    },
+  )
+
+  test.skipIf(process.platform !== 'darwin')('detects Zed on macOS and configures it', async () => {
     const originalPlatform = process.platform
     Object.defineProperty(process, 'platform', {
       value: 'darwin',
     })
 
-    mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('Library/Application Support/Code - Insiders/User')
-    })
-
-    mockCheckbox.mockResolvedValue(['VS Code Insiders'])
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-insiders', sid: 'session-insiders'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-insiders'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'test-token-insiders'})
-
-    const {stdout} = await testCommand(ConfigureMcpCommand, [])
-
-    expect(mockCheckbox).toHaveBeenCalledWith({
-      choices: [
-        {
-          checked: true,
-          name: 'VS Code Insiders',
-          value: 'VS Code Insiders',
-        },
-      ],
-      message: 'Configure Sanity MCP server?',
-    })
-
-    expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining('Code - Insiders/User/mcp.json'),
-      expect.stringContaining('test-token-insiders'),
-      'utf8',
-    )
-
-    expect(stdout).toContain('MCP configured for VS Code Insiders')
-
-    Object.defineProperty(process, 'platform', {
-      value: originalPlatform,
-    })
-  })
-
-  test('detects Zed and configures it', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       return String(path).includes('.config/zed')
     })
@@ -422,7 +496,65 @@ describe('#mcp:configure', () => {
     )
 
     expect(stdout).toContain('MCP configured for Zed')
+
+    Object.defineProperty(process, 'platform', {
+      value: originalPlatform,
+    })
   })
+
+  test.skipIf(process.platform !== 'win32')(
+    'detects Zed on Windows and configures it',
+    async () => {
+      const originalPlatform = process.platform
+      Object.defineProperty(process, 'platform', {
+        value: 'win32',
+      })
+
+      mockExistsSync.mockImplementation((path: PathLike) => {
+        return String(path).includes(String.raw`AppData\Roaming\Zed`)
+      })
+
+      mockCheckbox.mockResolvedValue(['Zed'])
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'post',
+        uri: '/auth/session/create',
+      }).reply(200, {id: 'session-zed', sid: 'session-zed'})
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'get',
+        query: {sid: 'session-zed'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'MCP Token', token: 'test-token-zed'})
+
+      const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+      expect(mockCheckbox).toHaveBeenCalledWith({
+        choices: [
+          {
+            checked: true,
+            name: 'Zed',
+            value: 'Zed',
+          },
+        ],
+        message: 'Configure Sanity MCP server?',
+      })
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining(String.raw`AppData\Roaming\Zed\settings.json`),
+        expect.stringContaining('test-token-zed'),
+        'utf8',
+      )
+
+      expect(stdout).toContain('MCP configured for Zed')
+
+      Object.defineProperty(process, 'platform', {
+        value: originalPlatform,
+      })
+    },
+  )
 
   test('shows already installed status for configured editors', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {

@@ -10,7 +10,7 @@ import {writeMCPConfig} from './writeMCPConfig.js'
 
 const mcpDebug = subdebug('mcp:setup')
 
-export const NO_EDITORS_DETECTED_MESSAGE = `Couldn't auto-configure Sanity MCP server for your editor. Visit ${MCP_SERVER_URL} for setup instructions.`
+const NO_EDITORS_DETECTED_MESSAGE = `Couldn't auto-configure Sanity MCP server for your editor. Visit ${MCP_SERVER_URL} for setup instructions.`
 
 export interface MCPSetupResult {
   configuredEditors: EditorName[]

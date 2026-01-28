@@ -6,7 +6,7 @@ import {execa} from 'execa'
 
 import {MCP_SERVER_URL} from '../../services/mcp.js'
 
-export interface EditorConfig {
+interface EditorConfig {
   buildServerConfig: (token: string) => Record<string, unknown>
   configKey: string
   /** Returns the config file path if editor is detected, null otherwise */
