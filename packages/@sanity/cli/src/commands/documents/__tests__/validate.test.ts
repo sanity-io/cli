@@ -66,7 +66,7 @@ describe('#documents:validate', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['documents validate', '--help'])
+    const {stdout} = await runCommand(['documents', 'validate', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Validate documents in a dataset against the studio schema

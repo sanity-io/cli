@@ -36,7 +36,7 @@ describe('#documents:query', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['documents query', '--help'])
+    const {stdout} = await runCommand(['documents', 'query', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Query for documents

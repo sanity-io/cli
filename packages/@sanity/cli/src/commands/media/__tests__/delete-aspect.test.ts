@@ -44,7 +44,7 @@ describe('#media:delete-aspect', () => {
   })
 
   test('should show help text correctly', async () => {
-    const {stdout} = await runCommand(['media delete-aspect --help'])
+    const {stdout} = await runCommand(['media', 'delete-aspect', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Undeploy an aspect

@@ -49,7 +49,7 @@ describe('#dataset:alias:link', () => {
   })
 
   test('help works correctly', async () => {
-    const {stdout} = await runCommand(['dataset alias link', '--help'])
+    const {stdout} = await runCommand(['dataset', 'alias', 'link', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Link a dataset alias to a dataset within your project
 

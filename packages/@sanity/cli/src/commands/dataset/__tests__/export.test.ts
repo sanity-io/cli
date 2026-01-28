@@ -135,7 +135,7 @@ describe('#dataset:export', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['dataset:export', '--help'])
+    const {stdout} = await runCommand(['dataset', 'export', '--help'])
 
     expect(stdout).toContain('Export dataset to local filesystem as a gzipped tarball')
     expect(stdout).toContain('ARGUMENTS')

@@ -61,7 +61,7 @@ describe('#mcp:configure', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['mcp configure', '--help'])
+    const {stdout} = await runCommand(['mcp', 'configure', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Configure Sanity MCP server for AI editors (Cursor, VS Code, Claude Code)

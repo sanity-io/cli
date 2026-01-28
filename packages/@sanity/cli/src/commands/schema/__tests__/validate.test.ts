@@ -11,7 +11,7 @@ vi.mock('../../../actions/schema/validateAction.js', () => ({
 
 describe('#schema:validate', () => {
   test('--help works', async () => {
-    const {stdout} = await runCommand(['schema:validate', '--help'])
+    const {stdout} = await runCommand(['schema', 'validate', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Validates all schema types specified in a workspace
 

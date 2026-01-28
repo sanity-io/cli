@@ -54,7 +54,7 @@ describe('#dataset:delete', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['dataset delete', '--help'])
+    const {stdout} = await runCommand(['dataset', 'delete', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Delete a dataset within your project
 

@@ -56,7 +56,7 @@ describe('#init: oclif command setup', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand('init --help')
+    const {stdout} = await runCommand(['init', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Initialize a new Sanity Studio, project and/or app

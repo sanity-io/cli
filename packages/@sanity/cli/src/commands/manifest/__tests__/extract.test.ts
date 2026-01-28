@@ -60,7 +60,7 @@ describe('#manifest:extract', () => {
   })
 
   test('should show --help text', async () => {
-    const {error = NO_ERROR, stdout} = await runCommand('manifest extract --help')
+    const {error = NO_ERROR, stdout} = await runCommand(['manifest', 'extract', '--help'])
 
     expect(error, 'should not error').toStrictEqual(NO_ERROR)
     expect(stdout).toMatchInlineSnapshot(`
@@ -110,10 +110,9 @@ describe('#manifest:extract', () => {
     expect(stderr).toContain('Extracting manifest')
     expect(stderr).toContain('Extracted manifest')
 
-    expect(mockMkdir).toHaveBeenCalledWith(
-      convertToSystemPath('/test/path/dist/static'),
-      {recursive: true},
-    )
+    expect(mockMkdir).toHaveBeenCalledWith(convertToSystemPath('/test/path/dist/static'), {
+      recursive: true,
+    })
 
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining('create-schema.json'),
@@ -152,10 +151,9 @@ describe('#manifest:extract', () => {
     expect(stderr).toContain('Extracting manifest')
     expect(stderr).toContain('Extracted manifest')
 
-    expect(mockMkdir).toHaveBeenCalledWith(
-      convertToSystemPath('/test/path/test/static'),
-      {recursive: true},
-    )
+    expect(mockMkdir).toHaveBeenCalledWith(convertToSystemPath('/test/path/test/static'), {
+      recursive: true,
+    })
 
     expect(mockWriteFile).toHaveBeenCalledWith(
       convertToSystemPath('/test/path/test/static/create-manifest.json'),

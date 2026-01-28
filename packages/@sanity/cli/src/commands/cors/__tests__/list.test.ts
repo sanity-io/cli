@@ -28,7 +28,7 @@ describe('#list', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['cors list', '--help'])
+    const {stdout} = await runCommand(['cors', 'list', '--help'])
 
     expect(stdout).toContain('List all origins allowed to access the API for this project')
   })

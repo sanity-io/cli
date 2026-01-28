@@ -84,7 +84,7 @@ describe('#exec', {timeout: 15 * 1000}, () => {
   })
 
   test('help text is correct', async () => {
-    const {stdout} = await runCommand('exec --help')
+    const {stdout} = await runCommand(['exec', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Executes a script within the Sanity Studio context
 

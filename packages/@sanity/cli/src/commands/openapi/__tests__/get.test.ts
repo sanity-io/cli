@@ -41,7 +41,7 @@ describe('#openapi:get', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['openapi get', '--help'])
+    const {stdout} = await runCommand(['openapi', 'get', '--help'])
 
     expect(stdout).toContain('Get an OpenAPI specification by slug')
   })

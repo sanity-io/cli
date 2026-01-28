@@ -42,7 +42,7 @@ describe('#hook:create', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['hook create', '--help'])
+    const {stdout} = await runCommand(['hook', 'create', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Create a new webhook for the current project

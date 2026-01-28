@@ -74,7 +74,7 @@ describe('#schema:deploy', () => {
   })
 
   test('should show --help text', async () => {
-    const {stdout} = await runCommand('schema deploy --help')
+    const {stdout} = await runCommand(['schema', 'deploy', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Deploy schema documents into workspace datasets.

@@ -37,7 +37,7 @@ describe('#documents:get', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['documents get', '--help'])
+    const {stdout} = await runCommand(['documents', 'get', '--help'])
 
     expect(stdout).toContain('Get and print a document by ID')
     expect(stdout).toContain('ARGUMENTS')

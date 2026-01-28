@@ -81,7 +81,7 @@ describe('#invite', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['users invite', '--help'])
+    const {stdout} = await runCommand(['users', 'invite', '--help'])
 
     expect(stdout).toContain('Invite a new user to the project')
     expect(stdout).toContain('--role')

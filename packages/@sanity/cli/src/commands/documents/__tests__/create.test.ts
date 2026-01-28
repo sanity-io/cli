@@ -125,7 +125,7 @@ describe('#documents:create', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['documents create', '--help'])
+    const {stdout} = await runCommand(['documents', 'create', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Create one or more documents

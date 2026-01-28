@@ -3,7 +3,7 @@ import {describe, expect, test} from 'vitest'
 
 describe('#migration', () => {
   test('should print migrations help', async () => {
-    const {stdout} = await runCommand('migration --help')
+    const {stdout} = await runCommand(['migration', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Create a new migration within your project
 
@@ -20,7 +20,7 @@ describe('#migration', () => {
   })
 
   test('should print migration create help', async () => {
-    const {stdout} = await runCommand('migration create --help')
+    const {stdout} = await runCommand(['migration', 'create', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Create a new migration within your project
 
@@ -47,7 +47,7 @@ describe('#migration', () => {
   })
 
   test('should print migration list help', async () => {
-    const {stdout} = await runCommand('migration list --help')
+    const {stdout} = await runCommand(['migration', 'list', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "List available migrations
 
@@ -67,7 +67,7 @@ describe('#migration', () => {
   })
 
   test('should print migration run help', async () => {
-    const {stdout} = await runCommand('migration run --help')
+    const {stdout} = await runCommand(['migration', 'run', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Run a migration against a dataset
 

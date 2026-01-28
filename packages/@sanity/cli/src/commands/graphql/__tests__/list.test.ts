@@ -28,7 +28,7 @@ describe('#list', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['graphql list', '--help'])
+    const {stdout} = await runCommand(['graphql', 'list', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "List all GraphQL endpoints deployed for this project

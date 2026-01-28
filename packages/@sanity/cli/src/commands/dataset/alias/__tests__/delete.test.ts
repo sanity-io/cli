@@ -39,7 +39,7 @@ describe('#dataset:alias:delete', () => {
   })
 
   test('help works correctly', async () => {
-    const {stdout} = await runCommand(['dataset alias delete', '--help'])
+    const {stdout} = await runCommand(['dataset', 'alias', 'delete', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Delete a dataset alias within your project
 

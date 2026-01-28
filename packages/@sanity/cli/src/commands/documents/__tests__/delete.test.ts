@@ -39,7 +39,7 @@ describe('#documents:delete', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['documents delete', '--help'])
+    const {stdout} = await runCommand(['documents', 'delete', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Delete one or more documents from the projects configured dataset

@@ -178,7 +178,7 @@ describe('#media:deploy-aspect', () => {
   })
 
   test('should show help text correctly', async () => {
-    const {stdout} = await runCommand(['media deploy-aspect --help'])
+    const {stdout} = await runCommand(['media', 'deploy-aspect', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Deploy an aspect

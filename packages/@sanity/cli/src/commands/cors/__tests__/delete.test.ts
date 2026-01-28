@@ -59,7 +59,7 @@ describe('#cors:delete', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['cors delete', '--help'])
+    const {stdout} = await runCommand(['cors', 'delete', '--help'])
     expect(stdout).toContain('Delete an existing CORS origin from your project')
   })
 

@@ -3,7 +3,7 @@ import {describe, expect, test} from 'vitest'
 
 describe('#dataset:import', () => {
   test('should print datasets:import help', async () => {
-    const {stdout} = await runCommand('dataset import --help')
+    const {stdout} = await runCommand(['dataset', 'import', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Import documents to a Sanity dataset

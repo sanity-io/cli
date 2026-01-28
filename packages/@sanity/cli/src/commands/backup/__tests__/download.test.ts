@@ -113,7 +113,7 @@ describe('#backup:download', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['backup download', '--help'])
+    const {stdout} = await runCommand(['backup', 'download', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Download a dataset backup to a local file.

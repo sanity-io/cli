@@ -37,7 +37,7 @@ describe('#dataset:visibility:get', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['dataset visibility get', '--help'])
+    const {stdout} = await runCommand(['dataset', 'visibility', 'get', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Get the visibility of a dataset

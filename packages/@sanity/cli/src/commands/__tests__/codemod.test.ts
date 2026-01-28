@@ -58,7 +58,7 @@ describe('#codemod', () => {
   })
 
   test('outputs empty string for help command', async () => {
-    const {stdout} = await runCommand('codemod --help')
+    const {stdout} = await runCommand(['codemod', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Updates Sanity Studio codebase with a code modification script

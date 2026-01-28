@@ -28,7 +28,7 @@ describe('#list', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['hook list', '--help'])
+    const {stdout} = await runCommand(['hook', 'list', '--help'])
 
     expect(stdout).toContain('List hooks for a given project')
   })

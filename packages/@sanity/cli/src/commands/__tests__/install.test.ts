@@ -36,7 +36,7 @@ afterEach(() => {
 
 describe('#install', () => {
   test('help text is correct', async () => {
-    const {stdout} = await runCommand('install --help')
+    const {stdout} = await runCommand(['install', '--help'])
     expect(stdout).toMatchInlineSnapshot(`
       "Installs dependencies for Sanity Studio project
 

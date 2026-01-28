@@ -38,7 +38,7 @@ describe('#delete', () => {
   })
 
   test('--help works', async () => {
-    const {stdout} = await runCommand(['hook delete', '--help'])
+    const {stdout} = await runCommand(['hook', 'delete', '--help'])
 
     expect(stdout).toContain('Delete a hook within your project')
   })

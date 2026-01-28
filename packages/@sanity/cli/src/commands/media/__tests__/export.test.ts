@@ -131,7 +131,7 @@ describe('#media:export', () => {
   })
 
   test('should show help text correctly', async () => {
-    const {stdout} = await runCommand(['media export --help'])
+    const {stdout} = await runCommand(['media', 'export', '--help'])
 
     expect(stdout).toMatchInlineSnapshot(`
       "Export an archive of all file and image assets including their aspect data from the target media library. Video assets are excluded from the export.
