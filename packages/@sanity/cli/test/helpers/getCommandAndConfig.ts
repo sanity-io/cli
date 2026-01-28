@@ -15,7 +15,12 @@ export async function getCommandAndConfig(cmd: string) {
   })
   // Disable auto-transpile. This is injected by oclif core https://github.com/oclif/core/blob/main/src/settings.ts#L40
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ;(globalThis as any).oclif.enableAutoTranspile = false
+  const oclif = (globalThis as any).oclif
+  if (oclif && typeof oclif === 'object') {
+    oclif.enableAutoTranspile = false
+  } else {
+    throw new Error('`globalThis.oclif` not defined - unable to disable auto-transpilation')
+  }
   const res = await config.findCommand(cmd)
 
   if (!res) {
