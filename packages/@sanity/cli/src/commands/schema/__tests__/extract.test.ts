@@ -50,8 +50,8 @@ describe('#schema:extract', () => {
   test('should show --help text', async () => {
     const {error, stderr, stdout} = await runCommand('schema extract --help')
 
-    expect(error).toBeUndefined()
     expect(stderr).toBe('')
+    expect(error).toBeUndefined()
     expect(stdout).toMatchInlineSnapshot(`
       "Extracts a JSON representation of a Sanity schema within a Studio context.
 
