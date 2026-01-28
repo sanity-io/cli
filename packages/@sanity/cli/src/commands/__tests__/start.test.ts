@@ -228,7 +228,12 @@ describe('#start', {timeout: 30 * 1000}, () => {
       expect(error?.oclif?.exit).toBe(1)
     } finally {
       // Clean up the server
-      server.close()
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => {
+          if (err) reject(err)
+          else resolve()
+        })
+      })
     }
   })
 
