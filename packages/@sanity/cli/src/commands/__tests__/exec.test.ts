@@ -2,7 +2,6 @@ import {copyFile, mkdir, rm} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
 
-import {runCommand} from '@oclif/test'
 import {setConfig} from '@sanity/cli-core'
 import {testCommand, testExample} from '@sanity/cli-test'
 import {execa} from 'execa'
@@ -81,51 +80,6 @@ describe('#exec', {timeout: 15 * 1000}, () => {
     fixtureDir = resolve(import.meta.dirname, '../../../test/__fixtures__')
     scriptPath = join(exampleDir, 'test-script.ts')
     await copyFile(join(fixtureDir, 'exec-script.ts'), scriptPath)
-  })
-
-  test('help text is correct', async () => {
-    const {stdout} = await runCommand(['exec', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Executes a script within the Sanity Studio context
-
-      USAGE
-        $ sanity exec SCRIPT... [--mock-browser-env] [--with-user-token]
-
-      ARGUMENTS
-        SCRIPT...  Path to the script to execute
-
-      FLAGS
-        --mock-browser-env  Mocks a browser-like environment using jsdom
-        --with-user-token   Prime access token from CLI config into getCliClient()
-
-      DESCRIPTION
-        Executes a script within the Sanity Studio context
-
-      EXAMPLES
-        Run the script at some/script.js in Sanity context
-
-          $ sanity exec some/script.js
-
-        Run the script at migrations/fullname.ts and configure \`getCliClient()\` from
-        \`sanity/cli\` to include the current user's token
-
-          $ sanity exec migrations/fullname.ts --with-user-token
-
-        Run the script at scripts/browserScript.js in a mock browser environment
-
-          $ sanity exec scripts/browserScript.js --mock-browser-env
-
-        Pass arbitrary arguments to scripts by separating them with a \`--\`.
-        Arguments are available in \`process.argv\` as they would in regular node
-        scripts (eg the following command would yield a \`process.argv\` of:
-        \`['/path/to/node', '/path/to/myscript.js', '--dry-run',
-        'positional-argument']\`)
-
-          $ sanity exec --mock-browser-env myscript.js -- --dry-run \\
-            positional-argument
-
-      "
-    `)
   })
 
   test('shows an error for invalid flags', async () => {

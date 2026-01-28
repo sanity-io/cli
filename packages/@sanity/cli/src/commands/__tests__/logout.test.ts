@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {getCliToken, setConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -27,22 +26,6 @@ afterEach(() => {
 })
 
 describe('#logout', () => {
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['logout', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Logs out the CLI from the current user session
-
-      USAGE
-        $ sanity logout
-
-      DESCRIPTION
-        Logs out the CLI from the current user session
-
-      "
-    `)
-  })
-
   test('logs out successfully if a token exists', async () => {
     mockedGetCliToken.mockResolvedValueOnce('test-token')
 

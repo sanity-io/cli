@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -36,35 +35,6 @@ const defaultMocks = {
 describe('#dataset:visibility:set', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['dataset', 'visibility', 'set', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Set the visibility of a dataset
-
-      USAGE
-        $ sanity dataset visibility set DATASET MODE
-
-      ARGUMENTS
-        DATASET  The name of the dataset to set visibility for
-        MODE     (public|private) The visibility mode to set
-
-      DESCRIPTION
-        Set the visibility of a dataset
-
-      EXAMPLES
-        Make a dataset private
-
-          $ sanity dataset visibility set my-dataset private
-
-        Make a dataset public
-
-          $ sanity dataset visibility set my-dataset public
-
-      "
-    `)
   })
 
   test('sets dataset visibility to public successfully', async () => {

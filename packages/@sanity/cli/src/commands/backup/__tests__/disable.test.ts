@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -50,33 +49,6 @@ describe('#backup:disable', () => {
     nock.cleanAll()
     vi.clearAllMocks()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['backup', 'disable', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Disable backup for a dataset.
-
-      USAGE
-        $ sanity backup disable [DATASET]
-
-      ARGUMENTS
-        [DATASET]  Dataset name to disable backup for
-
-      DESCRIPTION
-        Disable backup for a dataset.
-
-      EXAMPLES
-        Interactively disable backup for a dataset
-
-          $ sanity backup disable
-
-        Disable backup for the production dataset
-
-          $ sanity backup disable production
-
-      "
-    `)
   })
 
   test('should disable backup for specified dataset', async () => {

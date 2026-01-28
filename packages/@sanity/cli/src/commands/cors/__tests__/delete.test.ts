@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -56,11 +55,6 @@ describe('#cors:delete', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['cors', 'delete', '--help'])
-    expect(stdout).toContain('Delete an existing CORS origin from your project')
   })
 
   test('deletes a specific CORS origin', async () => {

@@ -1,6 +1,5 @@
 import {access, mkdir, writeFile} from 'node:fs/promises'
 
-import {runCommand} from '@oclif/test'
 import {input} from '@sanity/cli-core/ux'
 import {convertToSystemPath, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -38,27 +37,6 @@ const defaultMocks = {
 describe('#media:create-aspect', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('should show help text correctly', async () => {
-    const {stdout} = await runCommand(['media', 'create-aspect', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Create a new aspect definition file
-
-      USAGE
-        $ sanity media create-aspect
-
-      DESCRIPTION
-        Create a new aspect definition file
-
-      EXAMPLES
-        Create a new aspect definition file
-
-          $ sanity media create-aspect
-
-      "
-    `)
   })
 
   test('should create aspect file successfully', async () => {

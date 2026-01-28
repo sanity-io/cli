@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {createSchema} from 'sanity'
@@ -47,52 +46,6 @@ describe('graphql undeploy', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['graphql', 'undeploy', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Remove a deployed GraphQL API
-
-      USAGE
-        $ sanity graphql undeploy [--api <value>] [--dataset <value>] [--force]
-          [--project <value>] [--tag <value>]
-
-      FLAGS
-        --api=<value>      Undeploy API with this ID (project, dataset and tag flags
-                           take precedence)
-        --dataset=<value>  Dataset to undeploy GraphQL API from
-        --force            Skip confirmation prompt
-        --project=<value>  Project ID to delete GraphQL API for
-        --tag=<value>      [default: default] Tag to undeploy GraphQL API from
-
-      DESCRIPTION
-        Remove a deployed GraphQL API
-
-      EXAMPLES
-        Undeploy GraphQL API for current project and dataset
-
-          $ sanity graphql undeploy
-
-        Undeploy API with ID "ios"
-
-          $ sanity graphql undeploy --api ios
-
-        Undeploy GraphQL API for staging dataset
-
-          $ sanity graphql undeploy --dataset staging
-
-        Undeploy GraphQL API for staging dataset with "next" tag
-
-          $ sanity graphql undeploy --dataset staging --tag next
-
-        Undeploy GraphQL API without confirmation prompt
-
-          $ sanity graphql undeploy --force
-
-      "
-    `)
   })
 
   test('successfully undeploys GraphQL API with default tag', async () => {

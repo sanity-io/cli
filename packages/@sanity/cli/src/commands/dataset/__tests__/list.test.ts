@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -47,26 +46,6 @@ describe('#dataset:list', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['dataset', 'list', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "List datasets of your project
-
-      USAGE
-        $ sanity dataset list
-
-      DESCRIPTION
-        List datasets of your project
-
-      EXAMPLES
-        List datasets of your project
-
-          $ sanity dataset list
-
-      "
-    `)
   })
 
   test('lists datasets successfully', async () => {

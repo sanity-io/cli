@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises'
 
-import {runCommand} from '@oclif/test'
 import {type CliConfig} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {createTestToken, mockApi, testCommand} from '@sanity/cli-test'
@@ -128,47 +127,6 @@ describe('#media:export', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('should show help text correctly', async () => {
-    const {stdout} = await runCommand(['media', 'export', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Export an archive of all file and image assets including their aspect data from the target media library. Video assets are excluded from the export.
-
-      USAGE
-        $ sanity media export [DESTINATION] [--asset-concurrency <value>]
-          [--media-library-id <value>] [--no-compress] [--overwrite]
-
-      ARGUMENTS
-        [DESTINATION]  Output destination file path
-
-      FLAGS
-        --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
-        --media-library-id=<value>   The id of the target media library
-        --no-compress                Skips compressing tarball entries (still
-                                     generates a gzip file)
-        --overwrite                  Overwrite any file with the same name
-
-      DESCRIPTION
-        Export an archive of all file and image assets including their aspect data
-        from the target media library. Video assets are excluded from the export.
-
-      EXAMPLES
-        Export media library interactively
-
-          $ sanity media export
-
-        Export media library to output.tar.gz
-
-          $ sanity media export output.tar.gz
-
-        Export specific media library
-
-          $ sanity media export --media-library-id my-library-id
-
-      "
-    `)
   })
 
   test('should export with provided destination', async () => {

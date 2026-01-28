@@ -12,7 +12,7 @@ export default defineConfig({
       ],
       provider: 'istanbul',
     },
-    disableConsoleIntercept: true, // helps @oclif/test helpers
+    disableConsoleIntercept: true, // helps oclif test helpers
     env: {
       OCLIF_TEST_ROOT: 'packages/@sanity/cli',
     },

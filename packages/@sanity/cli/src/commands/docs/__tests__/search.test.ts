@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -34,40 +33,6 @@ afterEach(() => {
 })
 
 describe('#docs:search', () => {
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['docs', 'search', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Search Sanity docs
-
-      USAGE
-        $ sanity docs search QUERY [--limit <value>]
-
-      ARGUMENTS
-        QUERY  Search query for documentation
-
-      FLAGS
-        --limit=<value>  [default: 10] Maximum number of results to return
-
-      DESCRIPTION
-        Search Sanity docs
-
-      EXAMPLES
-        Search for documentation about schemas
-
-          $ sanity docs search schema
-
-        Search with phrase
-
-          $ sanity docs search "groq functions"
-
-        Limit search results
-
-          $ sanity docs search "deployment" --limit=5
-
-      "
-    `)
-  })
-
   test('searches and displays results', async () => {
     const searchResponse = [
       {

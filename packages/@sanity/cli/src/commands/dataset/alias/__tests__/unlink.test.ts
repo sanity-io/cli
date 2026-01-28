@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {input} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -36,44 +35,6 @@ describe('#dataset:alias:unlink', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('help works correctly', async () => {
-    const {stdout} = await runCommand(['dataset', 'alias', 'unlink', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Unlink a dataset alias from its dataset within your project
-
-      USAGE
-        $ sanity dataset alias unlink [ALIASNAME] [--force]
-
-      ARGUMENTS
-        [ALIASNAME]  Dataset alias name to unlink
-
-      FLAGS
-        --force  Skip confirmation prompt and unlink immediately
-
-      DESCRIPTION
-        Unlink a dataset alias from its dataset within your project
-
-      EXAMPLES
-        Unlink an alias with interactive selection
-
-          $ sanity dataset alias unlink
-
-        Unlink alias "conference" with confirmation prompt
-
-          $ sanity dataset alias unlink conference
-
-        Unlink alias with explicit ~ prefix
-
-          $ sanity dataset alias unlink ~conference
-
-        Unlink alias "conference" without confirmation prompt
-
-          $ sanity dataset alias unlink conference --force
-
-      "
-    `)
   })
 
   test.each([

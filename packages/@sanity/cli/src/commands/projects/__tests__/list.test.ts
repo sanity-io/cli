@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test} from 'vitest'
@@ -11,12 +10,6 @@ describe('#list', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['projects', 'list', '--help'])
-
-    expect(stdout).toContain('Lists projects connected to your user')
   })
 
   test('displays projects correctly', async () => {

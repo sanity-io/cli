@@ -3,7 +3,6 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
-import {runCommand} from '@oclif/test'
 import {getProjectCliClient} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {watch as chokidarWatch} from 'chokidar'
@@ -122,59 +121,6 @@ const setupWatchMocks = () => {
 describe('#documents:create', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['documents', 'create', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Create one or more documents
-
-      USAGE
-        $ sanity documents create [FILE] [-d <value>] [--id <value>] [--json5]
-          [--missing] [--replace] [--watch]
-
-      ARGUMENTS
-        [FILE]  JSON file to create document(s) from
-
-      FLAGS
-        -d, --dataset=<value>  Dataset to create document(s) in (overrides config)
-            --id=<value>       Specify a document ID to use. Will fetch remote
-                               document ID and populate editor.
-            --json5            Use JSON5 file type to allow a "simplified" version of
-                               JSON
-            --missing          On duplicate document IDs, don't modify the target
-                               document(s)
-            --replace          On duplicate document IDs, replace existing document
-                               with specified document(s)
-            --watch            Write the documents whenever the target file or buffer
-                               changes
-
-      DESCRIPTION
-        Create one or more documents
-
-      EXAMPLES
-        Create the document specified in "myDocument.json"
-
-          $ sanity documents create myDocument.json
-
-        Open configured $EDITOR and create the specified document(s)
-
-          $ sanity documents create
-
-        Fetch document with the ID "myDocId" and open configured $EDITOR with the
-        current document content (if any). Replace document with the edited version
-        when the editor closes
-
-          $ sanity documents create --id myDocId --replace
-
-        Open configured $EDITOR and replace the document with the given content on
-        each save. Use JSON5 file extension and parser for simplified syntax.
-
-          $ sanity documents create --id myDocId --watch --replace --json5
-
-      "
-    `)
   })
 
   test('creates document from JSON file and displays success message', async () => {

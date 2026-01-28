@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {getCliToken} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -30,27 +29,6 @@ describe('#enable', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs()
-  })
-
-  test('help text is correct', async () => {
-    const {stdout} = await runCommand(['telemetry', 'enable', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Enable telemetry for your logged in user
-
-      USAGE
-        $ sanity telemetry enable
-
-      DESCRIPTION
-        Enable telemetry for your logged in user
-
-      EXAMPLES
-        Enable telemetry for your logged in user
-
-          $ sanity telemetry telemetry enable
-
-      "
-    `)
   })
 
   test('enables telemetry when user is authenticated and status is different', async () => {

@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testExample} from '@sanity/cli-test'
 import nock from 'nock'
@@ -100,51 +99,6 @@ describe('#deploy', () => {
     expect(pending, 'pending mocks').toEqual([])
   })
 
-  test('help text is correct', async () => {
-    const {stdout} = await runCommand(['deploy', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Builds and deploys Sanity Studio or application to Sanity hosting
-
-      USAGE
-        $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--minify]
-          [--schema-required] [--source-maps] [--verbose] [-y]
-
-      ARGUMENTS
-        [SOURCEDIR]  Source directory
-
-      FLAGS
-        -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt
-                                 and otherwise uses defaults
-            --[no-]auto-updates  Automatically update the studio to the latest version
-            --[no-]build         Don't build the studio prior to deploy, instead
-                                 deploying the version currently in \`dist/\`
-            --[no-]minify        Skip minifying built JavaScript (speeds up build,
-                                 increases size of bundle)
-            --schema-required    Fail-fast deployment if schema store fails
-            --source-maps        Enable source maps for built bundles (increases size
-                                 of bundle)
-            --verbose            Enable verbose logging
-
-      DESCRIPTION
-        Builds and deploys Sanity Studio or application to Sanity hosting
-
-      EXAMPLES
-        Build the studio
-
-          $ sanity deploy
-
-        Deploys non-minified build with source maps
-
-          $ sanity deploy --no-minify --source-maps
-
-        Fail fast on schema store fails - for when other services rely on the stored
-        schema
-
-          $ sanity deploy --schema-required
-
-      "
-    `)
-  })
   test('shows an error for invalid flags', async () => {
     const {error} = await testCommand(DeployCommand, ['--invalid'])
 

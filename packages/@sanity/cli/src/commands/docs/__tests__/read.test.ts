@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import open from 'open'
@@ -74,13 +73,5 @@ describe('#docs:read', () => {
 
     const result = await testCommand(DocsReadCommand, ['/docs/nonexistent']).catch((err) => err)
     expect(result.error.message).toBe('Article not found: /docs/nonexistent')
-  })
-
-  test('help text is correct', async () => {
-    const {stdout} = await runCommand(['docs', 'read', '--help'])
-    expect(stdout).toContain('Read an article in terminal')
-    expect(stdout).toContain('ARGUMENTS')
-    expect(stdout).toContain('FLAGS')
-    expect(stdout).toContain('--web')
   })
 })

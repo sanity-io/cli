@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -25,27 +24,6 @@ describe('#list', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['graphql', 'list', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "List all GraphQL endpoints deployed for this project
-
-      USAGE
-        $ sanity graphql list
-
-      DESCRIPTION
-        List all GraphQL endpoints deployed for this project
-
-      EXAMPLES
-        List GraphQL endpoints for the current project
-
-          $ sanity graphql list
-
-      "
-    `)
   })
 
   test('displays GraphQL endpoints correctly with multiple endpoints', async () => {

@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {chalk} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -34,14 +33,6 @@ vi.mock('@sanity/cli-core', async () => {
 describe('#documents:get', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['documents', 'get', '--help'])
-
-    expect(stdout).toContain('Get and print a document by ID')
-    expect(stdout).toContain('ARGUMENTS')
-    expect(stdout).toContain('DOCUMENTID')
   })
 
   test('retrieves and displays a document successfully', async () => {

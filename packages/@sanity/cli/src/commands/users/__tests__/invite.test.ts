@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -78,13 +77,6 @@ describe('#invite', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['users', 'invite', '--help'])
-
-    expect(stdout).toContain('Invite a new user to the project')
-    expect(stdout).toContain('--role')
   })
 
   test('invites user with email and role provided via flags', async () => {

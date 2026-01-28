@@ -139,7 +139,6 @@
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
-    "@oclif/test": "catalog:",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-test": "workspace:*",

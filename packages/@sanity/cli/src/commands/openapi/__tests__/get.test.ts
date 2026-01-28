@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import open from 'open'
@@ -38,12 +37,6 @@ describe('#openapi:get', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['openapi', 'get', '--help'])
-
-    expect(stdout).toContain('Get an OpenAPI specification by slug')
   })
 
   test('gets YAML spec by default', async () => {

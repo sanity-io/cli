@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import open from 'open'
 import {describe, expect, test} from 'vitest'
@@ -12,20 +11,5 @@ describe('#learn', () => {
     expect(stdout).toContain('Opening https://www.sanity.io/learn')
     // Mocked in test setup
     expect(open).toHaveBeenCalledWith('https://www.sanity.io/learn')
-  })
-
-  test('help text is correct', async () => {
-    const {stdout} = await runCommand(['learn', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Opens Sanity Learn in your web browser
-
-      USAGE
-        $ sanity learn
-
-      DESCRIPTION
-        Opens Sanity Learn in your web browser
-
-      "
-    `)
   })
 })

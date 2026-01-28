@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -35,31 +34,6 @@ afterEach(() => {
 })
 
 describe('#install', () => {
-  test('help text is correct', async () => {
-    const {stdout} = await runCommand(['install', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Installs dependencies for Sanity Studio project
-
-      USAGE
-        $ sanity install [PACKAGES...]
-
-      ARGUMENTS
-        [PACKAGES...]  Packages to install
-
-      DESCRIPTION
-        Installs dependencies for Sanity Studio project
-
-      EXAMPLES
-        $ sanity install
-
-        $ sanity install @sanity/vision
-
-        $ sanity install some-package another-package
-
-      "
-    `)
-  })
-
   describe('install declared packages (no arguments)', () => {
     test('installs declared packages with npm', async () => {
       mockGetPackageManagerChoice.mockResolvedValueOnce({

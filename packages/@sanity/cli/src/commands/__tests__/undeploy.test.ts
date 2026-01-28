@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {confirm} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -34,11 +33,6 @@ describe('#undeploy', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['undeploy', '--help'])
-
-    expect(stdout).toContain('Removes the deployed Sanity Studio')
   })
 
   test('undeploys studio when studioHost is configured', async () => {

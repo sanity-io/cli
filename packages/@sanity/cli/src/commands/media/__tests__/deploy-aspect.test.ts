@@ -1,6 +1,5 @@
 import {basename} from 'node:path'
 
-import {runCommand} from '@oclif/test'
 import {select} from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {
@@ -175,38 +174,6 @@ describe('#media:deploy-aspect', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('should show help text correctly', async () => {
-    const {stdout} = await runCommand(['media', 'deploy-aspect', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Deploy an aspect
-
-      USAGE
-        $ sanity media deploy-aspect [ASPECTNAME] [--all] [--media-library-id <value>]
-
-      ARGUMENTS
-        [ASPECTNAME]  Name of the aspect to deploy
-
-      FLAGS
-        --all                       Deploy all aspects
-        --media-library-id=<value>  The id of the target media library
-
-      DESCRIPTION
-        Deploy an aspect
-
-      EXAMPLES
-        Deploy the aspect named "someAspect"
-
-          $ sanity media deploy-aspect someAspect
-
-        Deploy all aspects
-
-          $ sanity media deploy-aspect --all
-
-      "
-    `)
   })
 
   test.each([

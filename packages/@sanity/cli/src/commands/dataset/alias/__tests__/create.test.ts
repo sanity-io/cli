@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -47,42 +46,6 @@ describe('#dataset:alias:create', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('help works correctly', async () => {
-    const {stdout} = await runCommand(['dataset', 'alias', 'create', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Create a dataset alias within your project
-
-      USAGE
-        $ sanity dataset alias create [ALIASNAME] [TARGETDATASET]
-
-      ARGUMENTS
-        [ALIASNAME]      Dataset alias name to create
-        [TARGETDATASET]  Target dataset name to link the alias to
-
-      DESCRIPTION
-        Create a dataset alias within your project
-
-      EXAMPLES
-        Create an alias with interactive prompts
-
-          $ sanity dataset alias create
-
-        Create alias named "conference" with interactive dataset selection
-
-          $ sanity dataset alias create conference
-
-        Create alias "conference" linked to "conf-2025" dataset
-
-          $ sanity dataset alias create conference conf-2025
-
-        Create alias with explicit ~ prefix
-
-          $ sanity dataset alias create ~conference conf-2025
-
-      "
-    `)
   })
 
   test.each([

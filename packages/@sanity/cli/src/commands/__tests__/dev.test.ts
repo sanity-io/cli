@@ -2,7 +2,6 @@ import {readFile, writeFile} from 'node:fs/promises'
 import {createServer} from 'node:http'
 import {join} from 'node:path'
 
-import {runCommand} from '@oclif/test'
 import {getProjectCliClient} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {testCommand, testExample} from '@sanity/cli-test'
@@ -55,36 +54,6 @@ const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 describe('#dev', {timeout: 15 * 1000}, () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('help text is correct', async () => {
-    const {stdout} = await runCommand(['dev', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Starts a local development server for Sanity Studio with live reloading
-
-      USAGE
-        $ sanity dev [--auto-updates] [--host <value>]
-          [--load-in-dashboard] [--port <value>]
-
-      FLAGS
-        --[no-]auto-updates       Automatically update Sanity Studio dependencies.
-        --host=<value>            [default: localhost] The local network interface at
-                                  which to listen.
-        --[no-]load-in-dashboard  Load the app/studio in the Sanity dashboard.
-        --port=<value>            [default: 3333] TCP port to start server on.
-
-      DESCRIPTION
-        Starts a local development server for Sanity Studio with live reloading
-
-      EXAMPLES
-        $ sanity dev --host=0.0.0.0
-
-        $ sanity dev --port=1942
-
-        $ sanity dev --load-in-dashboard
-
-      "
-    `)
   })
 
   test('shows an error for invalid flags', async () => {

@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -25,12 +24,6 @@ describe('#list', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['cors', 'list', '--help'])
-
-    expect(stdout).toContain('List all origins allowed to access the API for this project')
   })
 
   test('displays CORS origins correctly', async () => {

@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -36,12 +35,6 @@ describe('#hook:logs', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['hook', 'logs', '--help'])
-
-    expect(stdout).toContain('List latest log entries for a given hook')
   })
 
   test('displays error when no project ID is found', async () => {

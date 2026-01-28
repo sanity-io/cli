@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {input, select} from '@sanity/cli-core/ux'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -61,42 +60,6 @@ describe('#dataset:create', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['dataset', 'create', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Create a new dataset within your project
-
-      USAGE
-        $ sanity dataset create [NAME] [--visibility custom|private|public]
-
-      ARGUMENTS
-        [NAME]  Name of the dataset to create
-
-      FLAGS
-        --visibility=<option>  Set visibility for this dataset (custom/private/public)
-                               <options: custom|private|public>
-
-      DESCRIPTION
-        Create a new dataset within your project
-
-      EXAMPLES
-        Interactively create a dataset
-
-          $ sanity dataset create
-
-        Create a dataset named "my-dataset"
-
-          $ sanity dataset create my-dataset
-
-        Create a private dataset named "my-dataset"
-
-          $ sanity dataset create my-dataset --visibility private
-
-      "
-    `)
   })
 
   test('creates dataset with provided name', async () => {
