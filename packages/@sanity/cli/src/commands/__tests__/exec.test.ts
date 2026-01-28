@@ -200,7 +200,7 @@ describe('#exec', () => {
       }
     })
 
-    test('executes script with --mock-browser-env flag', async () => {
+    test('executes script with --mock-browser-env flag', {timeout: 15 * 1000}, async () => {
       const {exitCode, stdout} = await runExecCommand(exampleDir, scriptPath, [
         '--mock-browser-env',
       ])

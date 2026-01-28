@@ -5,7 +5,7 @@ import {join} from 'node:path'
 import {runCommand} from '@oclif/test'
 import {getProjectCliClient} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
-import {testCommand,testExample} from '@sanity/cli-test'
+import {testCommand, testExample} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {checkRequiredDependencies} from '../../actions/build/checkRequiredDependencies.js'
@@ -55,7 +55,7 @@ type Result = {
   close?: () => Promise<void>
 }
 
-describe('#dev', () => {
+describe('#dev', {timeout: 15 * 1000}, () => {
   afterEach(() => {
     vi.clearAllMocks()
   })

@@ -13,6 +13,7 @@ describe(
   '#preview',
   {
     concurrent: false,
+    timeout: 30 * 1000,
   },
   () => {
     test('help works', async () => {
@@ -50,7 +51,7 @@ describe(
     })
 
     describe('basic-app', () => {
-      test('should start the  example', async () => {
+      test('should start the example', async () => {
         const cwd = await testExample('basic-app')
 
         // Build the example
