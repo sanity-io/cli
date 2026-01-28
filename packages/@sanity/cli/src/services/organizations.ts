@@ -79,6 +79,6 @@ export async function getOrganizationGrants(
   })
 
   return client.request<OrganizationGrantsResponse>({
-    uri: `organizations/${organizationId}/grants`,
+    uri: `/organizations/${organizationId}/grants`,
   })
 }

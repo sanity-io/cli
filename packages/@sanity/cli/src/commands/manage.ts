@@ -2,6 +2,8 @@ import {type FlagInput} from '@oclif/core/interfaces'
 import {getStudioConfig, SanityCommand} from '@sanity/cli-core'
 import open from 'open'
 
+import {getManageUrl} from '../actions/projects/getManageUrl.js'
+
 export class ManageCommand extends SanityCommand<typeof ManageCommand> {
   static override description = 'Opens project management interface in your web browser'
   static override flags = {} satisfies FlagInput
@@ -23,9 +25,7 @@ export class ManageCommand extends SanityCommand<typeof ManageCommand> {
       }
     }
 
-    const url = projectId
-      ? `https://www.sanity.io/manage/project/${projectId}`
-      : 'https://www.sanity.io/manage/'
+    const url = getManageUrl(projectId)
 
     this.log(`Opening ${url}`)
     await open(url)

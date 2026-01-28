@@ -1,6 +1,6 @@
 import {type Output, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {type DatasetAclMode} from '@sanity/client'
+import {type DatasetAclMode, DatasetResponse} from '@sanity/client'
 
 import {createDataset as createDatasetService} from '../../services/datasets.js'
 import {determineDatasetAclMode} from './determineDatasetAclMode.js'
@@ -61,7 +61,7 @@ export interface CreateDatasetOptions {
  * @returns Promise resolving when dataset is created
  * @throws Error if dataset creation fails
  */
-export async function createDataset(options: CreateDatasetOptions): Promise<void> {
+export async function createDataset(options: CreateDatasetOptions): Promise<DatasetResponse> {
   const {
     datasetName,
     forcePublic = false,
@@ -84,16 +84,16 @@ export async function createDataset(options: CreateDatasetOptions): Promise<void
 
   try {
     const spin = spinner('Creating dataset').start()
-    await createDatasetService({
+    const newDataset = await createDatasetService({
       aclMode,
       datasetName,
       projectId,
     })
     spin.succeed()
     output.log(`Dataset created successfully`)
+    return newDataset
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
     debug('Error creating dataset', {datasetName, error})
-    output.error(`Dataset creation failed: ${message}`, {exit: 1})
+    throw error
   }
 }
