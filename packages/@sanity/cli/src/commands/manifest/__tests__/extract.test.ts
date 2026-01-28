@@ -58,8 +58,9 @@ describe('#manifest:extract', () => {
   })
 
   test('should show --help text', async () => {
-    const {stdout} = await runCommand('manifest extract --help')
+    const {stderr, stdout} = await runCommand('manifest extract --help')
 
+    expect(stderr).toBe('')
     expect(stdout).toMatchInlineSnapshot(`
       "Extracts the studio configuration as one or more JSON manifest files.
 
