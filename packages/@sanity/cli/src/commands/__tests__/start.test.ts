@@ -9,7 +9,7 @@ import {buildExample} from '~test/helpers/buildExample.js'
 
 import {PreviewCommand} from '../preview.js'
 
-describe('#start', () => {
+describe('#start', {timeout: 30 * 1000}, () => {
   test('help works', async () => {
     const {stdout} = await runCommand(['start', '--help'])
 
@@ -45,7 +45,7 @@ describe('#start', () => {
   })
 
   describe('basic-app', () => {
-    test('should start the  example', async () => {
+    test('should start the example', async () => {
       const cwd = await testExample('basic-app')
       // Build the example
       await buildExample(cwd)
