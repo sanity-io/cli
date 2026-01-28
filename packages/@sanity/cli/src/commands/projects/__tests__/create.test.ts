@@ -124,10 +124,6 @@ describe('#projects:create', () => {
 
           $ sanity projects create "My Project" --organization=my-org
 
-        Create a project with a dataset (will prompt for details)
-
-          $ sanity projects create "My Project" --dataset
-
         Create a project with a private dataset named "staging"
 
           $ sanity projects create "My Project" --dataset=staging \

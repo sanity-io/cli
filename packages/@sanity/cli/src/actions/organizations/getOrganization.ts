@@ -12,6 +12,13 @@ import {getOrganizationsWithAttachGrantInfo} from './getOrganizationsWithAttachG
 
 const debug = subdebug('getOrganizationId')
 
+interface GetOrganizationOptions {
+  isUnattended: boolean
+  output: Output
+  requestedId: string | undefined
+  user: SanityOrgUser
+}
+
 const promptAndCreateNewOrganization = async (user: SanityOrgUser) => {
   const organizationName = await promptForOrganizationName(user)
   const spin = spinner('Creating organization').start()
@@ -20,12 +27,12 @@ const promptAndCreateNewOrganization = async (user: SanityOrgUser) => {
   return newOrganization
 }
 
-export async function getOrganization(
-  requestedId: string | undefined,
-  user: SanityOrgUser,
-  output: Output,
-  isUnattended: boolean,
-) {
+export async function getOrganization({
+  isUnattended,
+  output,
+  requestedId,
+  user,
+}: GetOrganizationOptions) {
   // Get available organizations
   const spin = spinner('Loading organizations').start()
   let organizations: ProjectOrganization[]
@@ -41,12 +48,9 @@ export async function getOrganization(
   // If organization is specified, validate it
   if (requestedId) {
     const org = organizations.find((o) => o.id === requestedId || o.slug === requestedId)
-    if (!org) {
-      debug(`Organization "${requestedId}" not found or you don't have access to it`)
-      throw new Error(`Organization "${requestedId}" not found or you don't have access to it`)
-    }
+    if (org) return org
 
-    return org
+    throw new Error(`Organization "${requestedId}" not found or you don't have access to it`)
   }
 
   // If the user has no organizations, prompt them to create one with the same name as

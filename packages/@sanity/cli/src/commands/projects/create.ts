@@ -1,20 +1,20 @@
 import {Args, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {getGlobalCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import {DatasetResponse} from '@sanity/client'
 
 import {createDataset} from '../../actions/dataset/create.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {getOrganization} from '../../actions/organizations/getOrganization.js'
-import {formatProjectUrl} from '../../actions/projects/formatProjectUrl.js'
+import {getManageUrl} from '../../actions/projects/getManageUrl.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {promptForDefaultConfig} from '../../prompts/promptForDefaultConfig.js'
 import {promptForProjectName} from '../../prompts/promptForProjectName.js'
 import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
 import {OrganizationCreateResponse, ProjectOrganization} from '../../services/organizations.js'
-import {createProject, CreateProjectResult, PROJECTS_API_VERSION} from '../../services/projects.js'
+import {createProject, CreateProjectResult} from '../../services/projects.js'
 import {getCliUser} from '../../services/user.js'
 
 const debug = subdebug('projects:create')
@@ -41,10 +41,6 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
     {
       command: '<%= config.bin %> <%= command.id %> "My Project" --organization=my-org',
       description: 'Create a project in a specific organization',
-    },
-    {
-      command: '<%= config.bin %> <%= command.id %> "My Project" --dataset',
-      description: 'Create a project with a dataset (will prompt for details)',
     },
     {
       command:
@@ -109,12 +105,12 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
 
     let chosenOrganization: OrganizationCreateResponse | ProjectOrganization | undefined
     try {
-      chosenOrganization = await getOrganization(
-        organization,
+      chosenOrganization = await getOrganization({
+        isUnattended: this.isUnattended(),
+        output: this.output,
+        requestedId: organization,
         user,
-        this.output,
-        this.isUnattended(),
-      )
+      })
     } catch (error) {
       const errorText = organization
         ? `Failed to retrieve organization ${organization}`
@@ -166,7 +162,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
         })
 
         if (wantsDataset) {
-          const defaultConfig = await promptForDefaultConfig(this.output)
+          const defaultConfig = await promptForDefaultConfig()
 
           datasetName = defaultConfig
             ? 'production'
@@ -214,11 +210,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       this.log(`Dataset: ${dataset.datasetName} (${dataset.aclMode})`)
     }
 
-    const {apiHost} = (
-      await getGlobalCliClient({apiVersion: PROJECTS_API_VERSION, requireUser: false})
-    ).config()
-
     this.log(``)
-    this.log(`Manage your project: ${formatProjectUrl(project.projectId, apiHost)}`)
+    this.log(`Manage your project: ${getManageUrl(project.projectId)}`)
   }
 }

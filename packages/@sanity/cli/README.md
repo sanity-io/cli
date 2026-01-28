@@ -2072,7 +2072,7 @@ EXAMPLES
 
   Create a brand new project with name "Movies Unlimited"
 
-    $ sanity init -y --create-project "Movies Unlimited" --dataset moviedb --visibility private --template moviedb ^
+    $ sanity init -y --create-project "Movies Unlimited" --dataset moviedb --visibility private --template moviedb \
       --output-path /Users/espenh/movies-unlimited
 ```
 
@@ -2561,6 +2561,54 @@ EXAMPLES
 
 _See code: [src/commands/preview.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.8/src/commands/preview.ts)_
 
+## `sanity projects create [PROJECTNAME]`
+
+Create a new Sanity project
+
+```
+USAGE
+  $ sanity projects create [PROJECTNAME] [--dataset <value>] [--dataset-visibility private|public] [--json]
+    [--organization <slug|id>] [-y]
+
+ARGUMENTS
+  [PROJECTNAME]  Name of the project to create
+
+FLAGS
+  -y, --yes                          Skip prompts and use defaults (project: "My Sanity Project", dataset: production,
+                                     visibility: public)
+      --dataset=<value>              Create a dataset. Prompts for visibility unless specified or --yes used
+      --dataset-visibility=<option>  Dataset visibility: public or private
+                                     <options: private|public>
+      --json                         Output in JSON format
+      --organization=<slug|id>       Organization to create the project in
+
+DESCRIPTION
+  Create a new Sanity project
+
+EXAMPLES
+  Interactively create a project
+
+    $ sanity projects create
+
+  Create a project named "My New Project"
+
+    $ sanity projects create "My New Project"
+
+  Create a project in a specific organization
+
+    $ sanity projects create "My Project" --organization=my-org
+
+  Create a project with a private dataset named "staging"
+
+    $ sanity projects create "My Project" --dataset=staging --dataset-visibility=private
+
+  Create a project non-interactively with JSON output
+
+    $ sanity projects create "CI Project" --yes --json
+```
+
+_See code: [src/commands/projects/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.8/src/commands/projects/create.ts)_
+
 ## `sanity projects list`
 
 Lists projects connected to your user
@@ -3011,7 +3059,7 @@ EXAMPLES
     $ sanity typegen generate
 ```
 
-_See code: [@sanity/codegen](https://github.com/sanity-io/codegen/blob/v5.7.1/src/commands/typegen/generate.ts)_
+_See code: [@sanity/codegen](https://github.com/sanity-io/codegen/blob/v5.7.2/src/commands/typegen/generate.ts)_
 
 ## `sanity undeploy`
 
