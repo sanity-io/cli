@@ -1,6 +1,6 @@
 import {getCliToken} from '@sanity/cli-core'
 
-import {getCliClient} from '../util/cliClient.js'
+import {getCliClient} from '../../util/cliClient.js'
 
 const token = await getCliToken()
 if (!token) {
