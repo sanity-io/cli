@@ -1,5 +1,5 @@
 import {copyFile, mkdir, rm} from 'node:fs/promises'
-import {tmpdir} from 'node:os'
+import {platform, tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
 
 import {setConfig} from '@sanity/cli-core'
@@ -74,7 +74,7 @@ async function runExecCommand(
   }
 }
 
-describe('#exec', {timeout: 15 * 1000}, () => {
+describe('#exec', {timeout: (platform() === 'win32' ? 80 : 60) * 1000}, () => {
   beforeEach(async () => {
     exampleDir = await testExample('basic-studio')
     fixtureDir = resolve(import.meta.dirname, '../../../test/__fixtures__')

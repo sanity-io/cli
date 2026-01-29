@@ -44,7 +44,7 @@ jobs:
         env:
           SANITY_AUTH_TOKEN: 'test-token'
         run: |
-          ARGS="--test-timeout=60000 --retry 4 --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}"
+          ARGS="--test-timeout=60000 --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}"
           if [ "${{ matrix.node-version }}" == "20" ]; then
             # We only gather coverage from a single Node version.
             # We pass in `--reporter=blob` so that we can combine the results from all shards.
