@@ -1,11 +1,11 @@
+import {type SpawnOptions} from 'node:child_process'
 import {copyFile, mkdir, rm} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
 
 import {setConfig} from '@sanity/cli-core'
 import {testCommand, testFixture} from '@sanity/cli-test'
-import {execa} from 'execa'
-import {beforeEach, describe, expect, test} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {ExecCommand} from '../exec.js'
 
@@ -15,6 +15,27 @@ const TEST_CONFIG_DIR = join(tmpdir(), 'sanity-cli-test-exec')
 const TEST_CONFIG_PATH = join(TEST_CONFIG_DIR, 'config.json')
 
 const fixtureDir = resolve(import.meta.dirname, '../../../test/__fixtures__')
+
+// Mock spawn to capture output instead of inheriting
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>()
+  return {
+    ...actual,
+    spawn: (command: string, args: string[], options: SpawnOptions) => {
+      // Change stdio from 'inherit' to 'pipe' so we can capture output
+      const proc = actual.spawn(command, args, {
+        ...options,
+        stdio: ['inherit', 'pipe', 'pipe'],
+      })
+
+      // Forward to process.stdout/stderr so testCommand captures it
+      proc.stdout?.pipe(process.stdout)
+      proc.stderr?.pipe(process.stderr)
+
+      return proc
+    },
+  }
+})
 
 // Helper to set up test authentication config
 async function setupTestAuth(token: string): Promise<{cleanup: () => Promise<void>}> {
@@ -38,38 +59,6 @@ async function setupTestAuth(token: string): Promise<{cleanup: () => Promise<voi
   }
 
   return {cleanup: () => rm(TEST_CONFIG_DIR, {force: true, recursive: true})}
-}
-
-// Helper to run sanity exec command and capture output
-async function runExecCommand(
-  cwd: string,
-  scriptPath: string,
-  flags: string[] = [],
-  customEnv?: Record<string, string>,
-): Promise<{exitCode: number | undefined; stderr: string; stdout: string}> {
-  // Get repo root - go up from packages/@sanity/cli/src/commands/__tests__
-  const repoRoot = resolve(import.meta.dirname, '../../../../../../')
-  const cliPath = join(repoRoot, 'packages/@sanity/cli/bin/run.js')
-
-  try {
-    const result = await execa('node', [cliPath, 'exec', scriptPath, ...flags], {
-      cwd,
-      // Use NODE_ENV: 'production' so oclif doesn't auto transpile
-      env: {...process.env, NODE_ENV: 'production', SANITY_BASE_PATH: cwd, ...customEnv},
-      reject: false,
-    })
-
-    return {
-      exitCode: result.exitCode,
-      stderr: result.stderr,
-      stdout: result.stdout,
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Command failed: ${error.message}`)
-    }
-    throw error
-  }
 }
 
 describe('#exec', {timeout: 15 * 1000}, () => {
@@ -104,14 +93,20 @@ describe('#exec', {timeout: 15 * 1000}, () => {
     let scriptPath: string
     beforeEach(async () => {
       exampleDir = await testFixture('basic-studio')
+      process.chdir(exampleDir)
 
       scriptPath = join(exampleDir, 'test-script.ts')
       await copyFile(join(fixtureDir, 'exec-script.ts'), scriptPath)
     })
-    test('executes script successfully', async () => {
-      const {exitCode, stdout} = await runExecCommand(exampleDir, scriptPath)
 
-      expect(exitCode).toBe(0)
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
+    test('executes script successfully', async () => {
+      const {error, stdout} = await testCommand(ExecCommand, [scriptPath])
+
+      expect(error).toBeUndefined()
 
       // Parse the JSON output
       const data = JSON.parse(stdout.trim())
@@ -128,17 +123,11 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       const {cleanup} = await setupTestAuth(TEST_TOKEN)
 
       try {
-        const {exitCode, stdout} = await runExecCommand(
-          exampleDir,
-          scriptPath,
-          ['--with-user-token'],
-          {
-            SANITY_CLI_CONFIG_PATH: TEST_CONFIG_PATH,
-            SANITY_INTERNAL_ENV: 'staging',
-          },
-        )
+        vi.stubEnv('SANITY_CLI_CONFIG_PATH', TEST_CONFIG_PATH)
+        vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
+        const {error, stdout} = await testCommand(ExecCommand, [scriptPath, '--with-user-token'])
 
-        expect(exitCode).toBe(0)
+        expect(error).toBeUndefined()
 
         // Parse the JSON output
         const data = JSON.parse(stdout.trim())
@@ -155,11 +144,9 @@ describe('#exec', {timeout: 15 * 1000}, () => {
     })
 
     test('executes script with --mock-browser-env flag', async () => {
-      const {exitCode, stdout} = await runExecCommand(exampleDir, scriptPath, [
-        '--mock-browser-env',
-      ])
+      const {error, stdout} = await testCommand(ExecCommand, [scriptPath, '--mock-browser-env'])
 
-      expect(exitCode).toBe(0)
+      expect(error).toBeUndefined()
 
       // Parse the JSON output
       const data = JSON.parse(stdout.trim())

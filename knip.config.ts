@@ -43,9 +43,6 @@ const baseConfig = {
         'src/hooks/**/*.ts',
         // Worker files
         'src/**/*.worker.ts',
-        // certain threads files are used via loader, not import
-        'src/threads/configClient.ts',
-        'src/threads/registerBrowserEnv.ts',
         'package.config.ts',
       ],
       ignore: [
