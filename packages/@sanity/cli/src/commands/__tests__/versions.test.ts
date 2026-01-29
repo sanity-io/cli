@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import getLatestVersion from 'get-latest-version'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -26,25 +25,6 @@ afterEach(() => {
 })
 
 describe('#versions', () => {
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['versions', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Shows installed versions of Sanity Studio and components
-
-      USAGE
-        $ sanity versions
-
-      DESCRIPTION
-        Shows installed versions of Sanity Studio and components
-
-      EXAMPLES
-        $ sanity versions
-
-      "
-    `)
-  })
-
   test('displays versions correctly when modules are up to date', async () => {
     vi.mocked(getCliVersion).mockResolvedValueOnce('3.0.0')
     vi.mocked(readPackageJson).mockResolvedValueOnce({

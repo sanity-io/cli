@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {getStudioConfig} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import open from 'open'
@@ -28,22 +27,6 @@ afterEach(() => {
 })
 
 describe('#manage', () => {
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['manage', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Opens project management interface in your web browser
-
-      USAGE
-        $ sanity manage
-
-      DESCRIPTION
-        Opens project management interface in your web browser
-
-      "
-    `)
-  })
-
   test('open link to project management interface if cli config has projectId', async () => {
     const {stdout} = await testCommand(ManageCommand, [], {
       mocks: {

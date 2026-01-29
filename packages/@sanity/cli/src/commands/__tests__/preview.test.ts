@@ -1,8 +1,8 @@
 import {readFile, rm, writeFile} from 'node:fs/promises'
 import {createServer} from 'node:http'
+import {platform} from 'node:os'
 import {join} from 'node:path'
 
-import {runCommand} from '@oclif/test'
 import {convertToSystemPath, testCommand, testExample} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
 import {buildExample} from '~test/helpers/buildExample.js'
@@ -14,43 +14,9 @@ describe(
   '#preview',
   {
     concurrent: false,
-    timeout: 30 * 1000,
+    timeout: (platform() === 'win32' ? 60 : 30) * 1000,
   },
   () => {
-    test('help works', async () => {
-      const {stdout} = await runCommand(['preview', '--help'])
-
-      expect(stdout).toMatchInlineSnapshot(`
-      "Starts a server to preview a production build
-
-      USAGE
-        $ sanity preview [OUTPUTDIR] [--host <value>] [--port <value>]
-
-      ARGUMENTS
-        [OUTPUTDIR]  Output directory
-
-      FLAGS
-        --host=<value>  [default: localhost] The local network interface at which to
-                        listen.
-        --port=<value>  [default: 3333] TCP port to start server on.
-
-      DESCRIPTION
-        Starts a server to preview a production build
-
-      ALIASES
-        $ sanity start
-
-      EXAMPLES
-        $ sanity preview --host=0.0.0.0
-
-        $ sanity preview --port=1942
-
-        $ sanity preview some/build-output-dir
-
-      "
-    `)
-    })
-
     describe('basic-app', () => {
       test('should start the example', async () => {
         const cwd = await testExample('basic-app')

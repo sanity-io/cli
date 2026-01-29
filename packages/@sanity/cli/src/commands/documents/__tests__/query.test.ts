@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {chalk} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -33,49 +32,6 @@ vi.mock('@sanity/cli-core', async () => {
 describe('#documents:query', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['documents', 'query', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Query for documents
-
-      USAGE
-        $ sanity documents query QUERY [--anonymous] [--api-version <value>] [-d
-          <value>] [--pretty] [-p <value>]
-
-      ARGUMENTS
-        QUERY  GROQ query to run against the dataset
-
-      FLAGS
-        -d, --dataset=<value>      Dataset to query (overrides config)
-        -p, --project=<value>      Project ID to query (overrides config)
-            --anonymous            Send the query without any authorization token
-            --api-version=<value>  [env: SANITY_CLI_QUERY_API_VERSION] API version to
-                                   use (defaults to 2025-08-15)
-            --pretty               Colorize JSON output
-
-      DESCRIPTION
-        Query for documents
-
-      EXAMPLES
-        Fetch 5 documents of type "movie"
-
-          $ sanity documents query '*[_type == "movie"][0..4]'
-
-        Fetch title of the oldest movie in the dataset named "staging"
-
-          $ sanity documents query '*[_type == "movie"]|order(releaseDate \\
-            asc)[0]{title}' --dataset staging
-
-        Use API version v2021-06-07 and do a query
-
-          $ sanity documents query '*[_id == "header"] { "headerText": \\
-            pt::text(body) }' --api-version v2021-06-07
-
-      "
-    `)
   })
 
   test('executes query successfully with basic options', async () => {

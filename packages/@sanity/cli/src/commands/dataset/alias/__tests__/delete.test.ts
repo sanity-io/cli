@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {input} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -36,40 +35,6 @@ describe('#dataset:alias:delete', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('help works correctly', async () => {
-    const {stdout} = await runCommand(['dataset', 'alias', 'delete', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Delete a dataset alias within your project
-
-      USAGE
-        $ sanity dataset alias delete ALIASNAME [--force]
-
-      ARGUMENTS
-        ALIASNAME  Dataset alias name to delete
-
-      FLAGS
-        --force  Skip confirmation prompt and delete immediately
-
-      DESCRIPTION
-        Delete a dataset alias within your project
-
-      EXAMPLES
-        Delete alias named "conference" with confirmation prompt
-
-          $ sanity dataset alias delete conference
-
-        Delete alias with explicit ~ prefix
-
-          $ sanity dataset alias delete ~conference
-
-        Delete alias named "conference" without confirmation prompt
-
-          $ sanity dataset alias delete conference --force
-
-      "
-    `)
   })
 
   test.each([

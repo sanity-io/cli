@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {input} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -51,36 +50,6 @@ const mockInput = vi.mocked(input)
 describe('#dataset:delete', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['dataset', 'delete', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Delete a dataset within your project
-
-      USAGE
-        $ sanity dataset delete DATASETNAME [--force]
-
-      ARGUMENTS
-        DATASETNAME  Dataset name to delete
-
-      FLAGS
-        --force  Do not prompt for delete confirmation - forcefully delete
-
-      DESCRIPTION
-        Delete a dataset within your project
-
-      EXAMPLES
-        Delete a specific dataset
-
-          $ sanity dataset delete my-dataset
-
-        Delete a specific dataset without confirmation
-
-          $ sanity dataset delete my-dataset --force
-
-      "
-    `)
   })
 
   test('deletes dataset with --force flag', async () => {

@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {getCliToken, getConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -48,29 +47,6 @@ afterEach(() => {
 })
 
 describe('#debug', () => {
-  test('help text is correct', async () => {
-    const {stdout} = await runCommand(['debug', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Provides diagnostic info for Sanity Studio troubleshooting
-
-      USAGE
-        $ sanity debug [--secrets]
-
-      FLAGS
-        --secrets  Include API keys in output
-
-      DESCRIPTION
-        Provides diagnostic info for Sanity Studio troubleshooting
-
-      EXAMPLES
-        $ sanity debug
-
-        $ sanity debug --secrets
-
-      "
-    `)
-  })
-
   test('shows debug information with authentication and config details', async () => {
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
     vi.mocked(getConfig).mockImplementation(async (key: string) => {

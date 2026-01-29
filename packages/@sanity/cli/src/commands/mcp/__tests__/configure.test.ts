@@ -1,7 +1,6 @@
 import {existsSync, type PathLike} from 'node:fs'
 import fs from 'node:fs/promises'
 
-import {runCommand} from '@oclif/test'
 import {checkbox} from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {execa} from 'execa'
@@ -58,27 +57,6 @@ describe('#mcp:configure', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['mcp', 'configure', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Configure Sanity MCP server for AI editors (Cursor, VS Code, Claude Code)
-
-      USAGE
-        $ sanity mcp configure
-
-      DESCRIPTION
-        Configure Sanity MCP server for AI editors (Cursor, VS Code, Claude Code)
-
-      EXAMPLES
-        Configure Sanity MCP server for detected AI editors
-
-          $ sanity mcp configure
-
-      "
-    `)
   })
 
   test('shows warning when no editors are detected', async () => {

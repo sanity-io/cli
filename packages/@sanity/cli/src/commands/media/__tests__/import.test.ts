@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {type CliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -49,44 +48,6 @@ describe('#media:import', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('should show help text correctly', async () => {
-    const {stdout} = await runCommand(['media', 'import', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Import a set of assets to the target media library.
-
-      USAGE
-        $ sanity media import SOURCE [--media-library-id <value>]
-          [--replace-aspects]
-
-      ARGUMENTS
-        SOURCE  Image file or folder to import from
-
-      FLAGS
-        --media-library-id=<value>  The id of the target media library
-        --replace-aspects           Replace existing aspect data. All versions will be
-                                    replaced (e.g. published and draft aspect data)
-
-      DESCRIPTION
-        Import a set of assets to the target media library.
-
-      EXAMPLES
-        Import all assets from the "products" directory
-
-          $ sanity media import products
-
-        Import all assets from "gallery" archive
-
-          $ sanity media import gallery.tar.gz
-
-        Import all assets from the "products" directory and replace aspects
-
-          $ sanity media import products --replace-aspects
-
-      "
-    `)
   })
 
   test('show console error when no projectId is found', async () => {

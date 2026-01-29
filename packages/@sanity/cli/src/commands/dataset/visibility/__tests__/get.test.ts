@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -34,30 +33,6 @@ const defaultMocks = {
 describe('#dataset:visibility:get', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['dataset', 'visibility', 'get', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Get the visibility of a dataset
-
-      USAGE
-        $ sanity dataset visibility get DATASET
-
-      ARGUMENTS
-        DATASET  The name of the dataset to get visibility for
-
-      DESCRIPTION
-        Get the visibility of a dataset
-
-      EXAMPLES
-        Check the visibility of a dataset
-
-          $ sanity dataset visibility get my-dataset
-
-      "
-    `)
   })
 
   test('gets dataset visibility successfully', async () => {

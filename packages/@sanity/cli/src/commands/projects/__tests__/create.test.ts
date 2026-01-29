@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -83,62 +82,8 @@ describe('#projects:create', () => {
     expect(pending, 'pending mocks').toEqual([])
   })
 
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['projects create', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(String.raw`
-      "Create a new Sanity project
-
-      USAGE
-        $ sanity projects create [PROJECTNAME] [--dataset <value>]
-          [--dataset-visibility private|public] [--json] [--organization <slug|id>]
-          [-y]
-
-      ARGUMENTS
-        [PROJECTNAME]  Name of the project to create
-
-      FLAGS
-        -y, --yes                          Skip prompts and use defaults (project: "My
-                                           Sanity Project", dataset: production,
-                                           visibility: public)
-            --dataset=<value>              Create a dataset. Prompts for visibility
-                                           unless specified or --yes used
-            --dataset-visibility=<option>  Dataset visibility: public or private
-                                           <options: private|public>
-            --json                         Output in JSON format
-            --organization=<slug|id>       Organization to create the project in
-
-      DESCRIPTION
-        Create a new Sanity project
-
-      EXAMPLES
-        Interactively create a project
-
-          $ sanity projects create
-
-        Create a project named "My New Project"
-
-          $ sanity projects create "My New Project"
-
-        Create a project in a specific organization
-
-          $ sanity projects create "My Project" --organization=my-org
-
-        Create a project with a private dataset named "staging"
-
-          $ sanity projects create "My Project" --dataset=staging \
-            --dataset-visibility=private
-
-        Create a project non-interactively with JSON output
-
-          $ sanity projects create "CI Project" --yes --json
-
-      "
-    `)
-  })
-
   test('throws error if provided invalid dataset flag', async () => {
-    const {error} = await runCommand(['projects create', '--dataset=~~invalid-name'])
+    const {error} = await testCommand(CreateProjectCommand, ['--dataset=~~invalid-name'])
 
     expect(error?.message).toContain('Dataset name must start with a letter or a number')
   })

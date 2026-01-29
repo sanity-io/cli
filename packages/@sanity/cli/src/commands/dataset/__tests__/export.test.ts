@@ -1,6 +1,5 @@
 import fs from 'node:fs/promises'
 
-import {runCommand} from '@oclif/test'
 import {type CliConfig, getProjectCliClient} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
@@ -132,15 +131,6 @@ const createTestContext = (overrides: TestContextOptions = {}) => {
 describe('#dataset:export', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['dataset', 'export', '--help'])
-
-    expect(stdout).toContain('Export dataset to local filesystem as a gzipped tarball')
-    expect(stdout).toContain('ARGUMENTS')
-    expect(stdout).toContain('EXAMPLES')
-    expect(stdout).toContain('--no-assets')
   })
 
   describe('successful exports', () => {

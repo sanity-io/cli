@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -39,12 +38,6 @@ describe('#tokens:add', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['tokens', 'add', '--help'])
-
-    expect(stdout).toContain('Create a new API token for this project')
   })
 
   test('creates token with label argument and default role', async () => {

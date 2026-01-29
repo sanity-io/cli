@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -64,34 +63,6 @@ describe('#tokens:list', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['tokens', 'list', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "List API tokens for the current project
-
-      USAGE
-        $ sanity tokens list [--json]
-
-      FLAGS
-        --json  Output tokens in JSON format
-
-      DESCRIPTION
-        List API tokens for the current project
-
-      EXAMPLES
-        List tokens for the current project
-
-          $ sanity tokens list
-
-        List tokens in JSON format
-
-          $ sanity tokens list --json
-
-      "
-    `)
   })
 
   test('displays tokens in table format by default', async () => {

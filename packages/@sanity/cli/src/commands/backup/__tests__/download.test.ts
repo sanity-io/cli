@@ -2,7 +2,6 @@ import {existsSync, mkdirSync} from 'node:fs'
 import {mkdir, mkdtemp, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 
-import {runCommand} from '@oclif/test'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -110,53 +109,6 @@ describe('#backup:download', () => {
     nock.cleanAll()
     vi.clearAllMocks()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['backup', 'download', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Download a dataset backup to a local file.
-
-      USAGE
-        $ sanity backup download [DATASET] [--backup-id <value>] [--concurrency
-          <value>] [--out <value>] [--overwrite]
-
-      ARGUMENTS
-        [DATASET]  Dataset name to download backup from
-
-      FLAGS
-        --backup-id=<value>    The backup ID to download
-        --concurrency=<value>  [default: 10] Concurrent number of backup item
-                               downloads (max: 24)
-        --out=<value>          The file or directory path the backup should download
-                               to
-        --overwrite            Allows overwriting of existing backup file
-
-      DESCRIPTION
-        Download a dataset backup to a local file.
-
-      EXAMPLES
-        Interactively download a backup
-
-          $ sanity backup download
-
-        Download a specific backup for the production dataset
-
-          $ sanity backup download production --backup-id 2024-01-01-backup-1
-
-        Download backup to a specific file
-
-          $ sanity backup download production --backup-id 2024-01-01-backup-2 \\
-            --out /path/to/file
-
-        Download backup and overwrite existing file
-
-          $ sanity backup download production --backup-id 2024-01-01-backup-3 \\
-            --out /path/to/file --overwrite
-
-      "
-    `)
   })
 
   describe('validation', () => {

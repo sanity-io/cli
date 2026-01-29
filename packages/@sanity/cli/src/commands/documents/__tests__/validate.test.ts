@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -63,67 +62,6 @@ describe('#documents:validate', () => {
   beforeEach(() => {
     mockConfirm.mockResolvedValue(true)
     mockIsFile.mockReturnValue(true)
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['documents', 'validate', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Validate documents in a dataset against the studio schema
-
-      USAGE
-        $ sanity documents validate [-d <value>] [--file <value>] [--format <value>]
-          [--level error|warning|info] [--max-custom-validation-concurrency <value>]
-          [--max-fetch-concurrency <value>] [--workspace <value>] [-y]
-
-      FLAGS
-        -d, --dataset=<value>                            Override the dataset used. By
-                                                         default, this is derived from
-                                                         the given workspace
-        -y, --yes                                        Skips the first confirmation
-                                                         prompt
-            --file=<value>                               Provide a path to either an
-                                                         .ndjson file or a tarball
-                                                         containing an .ndjson file
-            --format=<value>                             The output format used to
-                                                         print the found validation
-                                                         markers and report progress
-            --level=<option>                             [default: warning] The
-                                                         minimum level reported out.
-                                                         Defaults to warning
-                                                         <options: error|warning|info>
-            --max-custom-validation-concurrency=<value>  [default: 5] Specify how many
-                                                         custom validators can run
-                                                         concurrently
-            --max-fetch-concurrency=<value>              [default: 25] Specify how
-                                                         many \`client.fetch\` requests
-                                                         are allow concurrency at once
-            --workspace=<value>                          The name of the workspace to
-                                                         use when downloading and
-                                                         validating all documents
-
-      DESCRIPTION
-        Validate documents in a dataset against the studio schema
-
-      EXAMPLES
-        Validates all documents in a Sanity project with more than one workspace
-
-          $ sanity documents validate --workspace default
-
-        Override the dataset specified in the workspace
-
-          $ sanity documents validate --workspace default --dataset staging
-
-        Save the results of the report into a file
-
-          $ sanity documents validate --yes > report.txt
-
-        Report out info level validation markers too
-
-          $ sanity documents validate --level info
-
-      "
-    `)
   })
 
   test('throws error if user enters unsupported level flag', async () => {

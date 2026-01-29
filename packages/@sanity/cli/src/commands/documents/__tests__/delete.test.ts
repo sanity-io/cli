@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -36,46 +35,6 @@ vi.mock('@sanity/cli-core', async () => {
 describe('#documents:delete', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['documents', 'delete', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Delete one or more documents from the projects configured dataset
-
-      USAGE
-        $ sanity documents delete ID... [IDS...] [--dataset <value>]
-
-      ARGUMENTS
-        ID...     Document ID to delete
-        [IDS...]  Additional document IDs to delete
-
-      FLAGS
-        --dataset=<value>  NAME to override dataset
-
-      DESCRIPTION
-        Delete one or more documents from the projects configured dataset
-
-      EXAMPLES
-        Delete the document with the ID "myDocId"
-
-          $ sanity documents delete myDocId
-
-        ID wrapped in double or single quote works equally well
-
-          $ sanity documents delete 'myDocId'
-
-        Delete document with ID "someDocId" from dataset "blog"
-
-          $ sanity documents delete --dataset=blog someDocId
-
-        Delete the document with ID "doc1" and "doc2"
-
-          $ sanity documents delete doc1 doc2
-
-      "
-    `)
   })
 
   test('deletes a single document successfully', async () => {

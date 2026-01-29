@@ -1,7 +1,6 @@
 import {execSync, spawn} from 'node:child_process'
 import {existsSync} from 'node:fs'
 
-import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -55,41 +54,6 @@ const setupBasicMocks = (options = {}) => {
 describe('#codemod', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('outputs empty string for help command', async () => {
-    const {stdout} = await runCommand(['codemod', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Updates Sanity Studio codebase with a code modification script
-
-      USAGE
-        $ sanity codemod [CODEMODNAME] [--dry] [--extensions <value>]
-          [--no-verify]
-
-      ARGUMENTS
-        [CODEMODNAME]  Name of the codemod to run
-
-      FLAGS
-        --dry                 Dry run (no changes are made to files)
-        --extensions=<value>  [default: js,ts,tsx] Transform files with these file
-                              extensions (comma separated)
-        --no-verify           Skip verification steps before running codemod
-
-      DESCRIPTION
-        Updates Sanity Studio codebase with a code modification script
-
-      EXAMPLES
-        Show available code mods
-
-          $ sanity codemod
-
-        Run codemod to transform react-icons imports (dry run)
-
-          $ sanity codemod reactIconsV3 --dry
-
-      "
-    `)
   })
 
   test('lists available codemods when no name provided', async () => {

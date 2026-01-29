@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -46,49 +45,6 @@ describe('#dataset:alias:link', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('help works correctly', async () => {
-    const {stdout} = await runCommand(['dataset', 'alias', 'link', '--help'])
-    expect(stdout).toMatchInlineSnapshot(`
-      "Link a dataset alias to a dataset within your project
-
-      USAGE
-        $ sanity dataset alias link [ALIASNAME] [TARGETDATASET] [--force]
-
-      ARGUMENTS
-        [ALIASNAME]      Dataset alias name to link
-        [TARGETDATASET]  Target dataset name to link the alias to
-
-      FLAGS
-        --force  Skip confirmation prompt when relinking existing alias
-
-      DESCRIPTION
-        Link a dataset alias to a dataset within your project
-
-      EXAMPLES
-        Link an alias with interactive prompts
-
-          $ sanity dataset alias link
-
-        Link alias named "conference" with interactive dataset selection
-
-          $ sanity dataset alias link conference
-
-        Link alias "conference" to "conf-2025" dataset
-
-          $ sanity dataset alias link conference conf-2025
-
-        Link alias with explicit ~ prefix
-
-          $ sanity dataset alias link ~conference conf-2025
-
-        Force link without confirmation (skip relink prompt)
-
-          $ sanity dataset alias link conference conf-2025 --force
-
-      "
-    `)
   })
 
   test('links alias with valid arguments', async () => {

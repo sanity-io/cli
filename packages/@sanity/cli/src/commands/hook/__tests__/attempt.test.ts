@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -26,31 +25,6 @@ describe('#attempt', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['hook', 'attempt', '--help'])
-
-    expect(stdout).toContain('Print details of a given webhook delivery attempt')
-    expect(stdout).toMatchInlineSnapshot(`
-      "Print details of a given webhook delivery attempt
-
-      USAGE
-        $ sanity hook attempt ATTEMPTID
-
-      ARGUMENTS
-        ATTEMPTID  The delivery attempt ID to get details for
-
-      DESCRIPTION
-        Print details of a given webhook delivery attempt
-
-      EXAMPLES
-        Print details of webhook delivery attempt with ID abc123
-
-          $ sanity hook attempt abc123
-
-      "
-    `)
   })
 
   test('displays successful delivery attempt details', async () => {

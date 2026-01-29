@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {confirm, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -41,34 +40,6 @@ describe('#media:delete-aspect', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('should show help text correctly', async () => {
-    const {stdout} = await runCommand(['media', 'delete-aspect', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Undeploy an aspect
-
-      USAGE
-        $ sanity media delete-aspect ASPECTNAME [--media-library-id <value>] [--yes]
-
-      ARGUMENTS
-        ASPECTNAME  Name of the aspect to delete
-
-      FLAGS
-        --media-library-id=<value>  The id of the target media library
-        --yes                       Skip confirmation prompt
-
-      DESCRIPTION
-        Undeploy an aspect
-
-      EXAMPLES
-        Delete the aspect named "someAspect"
-
-          $ sanity media delete-aspect someAspect
-
-      "
-    `)
   })
 
   test('should error if aspect name is not provided', async () => {

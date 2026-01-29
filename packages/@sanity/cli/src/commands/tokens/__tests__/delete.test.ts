@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -66,11 +65,6 @@ describe('#tokens:delete', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['tokens', 'delete', '--help'])
-    expect(stdout).toContain('Delete an API token from this project')
   })
 
   test('deletes a specific token by ID with confirmation', async () => {

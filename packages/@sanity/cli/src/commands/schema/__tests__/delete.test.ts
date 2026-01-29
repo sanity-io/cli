@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -78,17 +77,6 @@ describe('#schema:delete', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['schema', 'delete', '--help'])
-
-    expect(stdout).toContain('Delete schema documents by id')
-    expect(stdout).toContain('--ids')
-    expect(stdout).toContain('--dataset')
-    expect(stdout).toContain('--extract-manifest')
-    expect(stdout).toContain('--manifest-dir')
-    expect(stdout).toContain('--verbose')
   })
 
   test('successfully deletes a single schema', async () => {

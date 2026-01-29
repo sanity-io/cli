@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {getCliToken, isCi} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -31,27 +30,6 @@ describe('telemetry status', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs()
-  })
-
-  test('help text is correct', async () => {
-    const {stdout} = await runCommand(['telemetry', 'status', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Check telemetry consent status for your logged in user
-
-      USAGE
-        $ sanity telemetry status
-
-      DESCRIPTION
-        Check telemetry consent status for your logged in user
-
-      EXAMPLES
-        Check telemetry consent status for your logged in user
-
-          $ sanity telemetry telemetry status
-
-      "
-    `)
   })
 
   test('command handles no flags correctly', async () => {

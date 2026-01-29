@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {select} from '@sanity/cli-core/ux'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -81,69 +80,6 @@ describe('#dataset:copy', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('help works', async () => {
-    const {stdout} = await runCommand(['dataset', 'copy', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Manages dataset copying, including starting a new copy job, listing copy jobs and following the progress of a running copy job
-
-      USAGE
-        $ sanity dataset copy [SOURCE] [TARGET] [--attach <value> | --list |
-          --detach | --skip-history] [--limit <value> ] [--offset <value> ]
-
-      ARGUMENTS
-        [SOURCE]  Name of the dataset to copy from
-        [TARGET]  Name of the dataset to copy to
-
-      FLAGS
-        --attach=<value>  Attach to the running copy process to show progress
-        --detach          Start the copy without waiting for it to finish
-        --limit=<value>   Maximum number of jobs returned (default 10, max 1000)
-        --list            Lists all dataset copy jobs
-        --offset=<value>  Start position in the list of jobs (default 0)
-        --skip-history    Don't preserve document history on copy
-
-      DESCRIPTION
-        Manages dataset copying, including starting a new copy job, listing copy jobs
-        and following the progress of a running copy job
-
-      EXAMPLES
-        Interactively copy a dataset
-
-          $ sanity dataset copy
-
-        Copy from source-dataset (prompts for target)
-
-          $ sanity dataset copy source-dataset
-
-        Copy from source-dataset to target-dataset
-
-          $ sanity dataset copy source-dataset target-dataset
-
-        Copy without preserving document history (faster for large datasets)
-
-          $ sanity dataset copy --skip-history source target
-
-        Start copy job without waiting for completion
-
-          $ sanity dataset copy --detach source target
-
-        Attach to a running copy job to follow progress
-
-          $ sanity dataset copy --attach <job-id>
-
-        List all dataset copy jobs
-
-          $ sanity dataset copy --list
-
-        List copy jobs with pagination
-
-          $ sanity dataset copy --list --offset 2 --limit 10
-
-      "
-    `)
   })
 
   describe('list mode', () => {

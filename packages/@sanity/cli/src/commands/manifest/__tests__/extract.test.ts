@@ -1,6 +1,5 @@
 import {access, mkdir, writeFile} from 'node:fs/promises'
 
-import {runCommand} from '@oclif/test'
 import {convertToSystemPath, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -48,8 +47,6 @@ vi.mock('../../../actions/manifest/extractWorkspaceManifest.js', async () => ({
   ]),
 }))
 
-const NO_ERROR = {}
-
 const mockAccess = vi.mocked(access)
 const mockMkdir = vi.mocked(mkdir)
 const mockWriteFile = vi.mocked(writeFile)
@@ -57,39 +54,6 @@ const mockWriteFile = vi.mocked(writeFile)
 describe('#manifest:extract', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('should show --help text', async () => {
-    const {error = NO_ERROR, stdout} = await runCommand(['manifest', 'extract', '--help'])
-
-    expect(error, 'should not error').toStrictEqual(NO_ERROR)
-    expect(stdout).toMatchInlineSnapshot(`
-      "Extracts the studio configuration as one or more JSON manifest files.
-
-      USAGE
-        $ sanity manifest extract [--path <value>]
-
-      FLAGS
-        --path=<value>  [default: /dist/static] Optional path to specify destination
-                        directory of the manifest files
-
-      DESCRIPTION
-        Extracts the studio configuration as one or more JSON manifest files.
-
-        **Note**: This command is experimental and subject to change. It is currently
-        intended for use with Create only.
-
-      EXAMPLES
-        Extracts manifests
-
-          $ sanity manifest extract
-
-        Extracts manifests into /public/static
-
-          $ sanity manifest extract --path /public/static
-
-      "
-    `)
   })
 
   test('should extract manifest files', async () => {

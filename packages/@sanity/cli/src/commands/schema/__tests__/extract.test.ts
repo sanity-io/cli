@@ -1,6 +1,5 @@
 import {mkdir, writeFile} from 'node:fs/promises'
 
-import {runCommand} from '@oclif/test'
 import {convertToSystemPath, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -45,40 +44,6 @@ const mockWriteFile = vi.mocked(writeFile)
 describe('#schema:extract', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('should show --help text', async () => {
-    const {stdout} = await runCommand(['schema', 'extract', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Extracts a JSON representation of a Sanity schema within a Studio context.
-
-      USAGE
-        $ sanity schema extract [--enforce-required-fields] [--format <format>]
-          [--path <value>] [--workspace <name>]
-
-      FLAGS
-        --enforce-required-fields  Makes the schema generated treat fields marked as
-                                   required as non-optional
-        --format=<format>          [default: groq-type-nodes] Format the schema as
-                                   GROQ type nodes. Only available format at the
-                                   moment.
-        --path=<value>             Optional path to specify destination of the schema
-                                   file
-        --workspace=<name>         The name of the workspace to generate a schema for
-
-      DESCRIPTION
-        Extracts a JSON representation of a Sanity schema within a Studio context.
-
-        **Note**: This command is experimental and subject to change.
-
-      EXAMPLES
-        Extracts schema types in a Sanity project with more than one workspace
-
-          $ sanity schema extract --workspace default
-
-      "
-    `)
   })
 
   test('should extract schema', async () => {

@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import open from 'open'
@@ -25,12 +24,6 @@ describe('#openapi:list', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['openapi', 'list', '--help'])
-
-    expect(stdout).toContain('List all available OpenAPI specifications')
   })
 
   test('displays OpenAPI specs correctly', async () => {

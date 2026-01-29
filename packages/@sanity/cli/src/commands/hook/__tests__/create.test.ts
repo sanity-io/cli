@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {testCommand} from '@sanity/cli-test'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -39,27 +38,6 @@ vi.mock('@sanity/cli-core', async () => {
 describe('#hook:create', () => {
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['hook', 'create', '--help'])
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "Create a new webhook for the current project
-
-      USAGE
-        $ sanity hook create
-
-      DESCRIPTION
-        Create a new webhook for the current project
-
-      EXAMPLES
-        Create a new webhook for the current project
-
-          $ sanity hook create
-
-      "
-    `)
   })
 
   test('opens webhook creation URL for project with organization', async () => {

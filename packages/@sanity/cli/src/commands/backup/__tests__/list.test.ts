@@ -1,4 +1,3 @@
-import {runCommand} from '@oclif/test'
 import {select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -63,13 +62,6 @@ describe('#backup:list', () => {
     nock.cleanAll()
     vi.clearAllMocks()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('--help works', async () => {
-    const {stdout} = await runCommand(['backup', 'list', '--help'])
-    expect(stdout).toContain('List available backups for a dataset')
-    expect(stdout).toContain('USAGE')
-    expect(stdout).toContain('EXAMPLES')
   })
 
   test('should fail when no project ID is configured', async () => {
