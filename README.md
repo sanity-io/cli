@@ -30,4 +30,4 @@ To run the CLI in development mode, you can run `pnpm run watch` in the `package
 
 This will watch for changes in the `src` folder and rebuild the CLI on every change running it from the `dist` folder.
 
-To test the specific commands you can navigate to `examples` and run `npx sanity <command>`. Since everything is watching for changes no need to rebuild when trying new commands.
+To test the specific commands you can navigate to `fixtures` and run `npx sanity <command>`. Since everything is watching for changes no need to rebuild when trying new commands.

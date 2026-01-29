@@ -1,5 +1,5 @@
 import {confirm, input, select} from '@sanity/cli-core/ux'
-import {mockApi, testCommand, testExample} from '@sanity/cli-test'
+import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -106,7 +106,7 @@ describe('#deploy', () => {
   })
 
   test("should prompt to confirm deleting source directory if it's not empty", async () => {
-    const cwd = await testExample('basic-app')
+    const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
     mockConfirm.mockResolvedValue(true)
@@ -154,7 +154,7 @@ describe('#deploy', () => {
   })
 
   test("should cancel the deployment if the user doesn't want to proceed", async () => {
-    const cwd = await testExample('basic-app')
+    const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
     mockConfirm.mockResolvedValue(false)
@@ -170,7 +170,7 @@ describe('#deploy', () => {
 
   describe('app', () => {
     test('should re-deploy app if it already exists', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       mockApi({
@@ -216,7 +216,7 @@ describe('#deploy', () => {
     })
 
     test('should handle missing @sanity/sdk-react version', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       mockReadModuleVersion.mockResolvedValue(null)
@@ -230,7 +230,7 @@ describe('#deploy', () => {
     })
 
     test('should create new user application if none exists', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const newAppId = 'new-app-id'
@@ -303,7 +303,7 @@ describe('#deploy', () => {
     })
 
     test('should skip build when --no-build flag is used', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
@@ -356,7 +356,7 @@ describe('#deploy', () => {
     })
 
     test('should handle directory check errors', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
@@ -398,7 +398,7 @@ describe('#deploy', () => {
     })
 
     test("should error when fetching user applications if user doesn't have org access", async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const anotherAppId = 'some-app-id'
@@ -436,7 +436,7 @@ describe('#deploy', () => {
     })
 
     test('should handle user-applications endpoint errors', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
@@ -468,7 +468,7 @@ describe('#deploy', () => {
     })
 
     test('should handle deployment API errors', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
@@ -519,7 +519,7 @@ describe('#deploy', () => {
     })
 
     test('should show an error if deployment.appId is configured but the application does not exist', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const nonExistentAppId = 'non-existent-app-id'
@@ -554,7 +554,7 @@ describe('#deploy', () => {
     })
 
     test('should show an error if deployment.appId and app.id (deprecated) are both in use', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const {error} = await testCommand(DeployCommand, ['--no-build'], {
@@ -577,7 +577,7 @@ describe('#deploy', () => {
     })
 
     test('should show a warning if app.id (deprecated) is used', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const {stderr} = await testCommand(DeployCommand, ['--no-build'], {
@@ -596,7 +596,7 @@ describe('#deploy', () => {
     })
 
     test('should handle app creation with retry when host is taken', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const newAppId = 'new-app-id'
@@ -677,7 +677,7 @@ describe('#deploy', () => {
     })
 
     test('should handle app creation failure with non-retryable error', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       mockInput.mockResolvedValue('Test App')
@@ -719,7 +719,7 @@ describe('#deploy', () => {
     })
 
     test('should handle findUserApplicationForApp API errors', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const existingAppId = 'existing-app-id'
@@ -751,7 +751,7 @@ describe('#deploy', () => {
     })
 
     test('should test input validation for app title', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const newAppId = 'new-app-id'
@@ -819,7 +819,7 @@ describe('#deploy', () => {
     })
 
     test('should allow selecting from list of apps', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const existingAppId1 = 'existing-app-id-1'
@@ -892,7 +892,7 @@ describe('#deploy', () => {
     })
 
     test('should allow creating a new app by selecting from list of apps', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const existingAppId1 = 'existing-app-id-1'
@@ -986,7 +986,7 @@ describe('#deploy', () => {
     })
 
     test('should throw an error if organizationId is not set', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const {error} = await testCommand(DeployCommand, [], {
@@ -1007,7 +1007,7 @@ describe('#deploy', () => {
     })
 
     test('should deploy app with manifest when manifest is provided', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const manifest = {
@@ -1058,7 +1058,7 @@ describe('#deploy', () => {
     })
 
     test('should deploy app without manifest when manifest is empty', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       // Return an empty manifest object
@@ -1106,7 +1106,7 @@ describe('#deploy', () => {
 
   describe('studio', () => {
     test('should handle missing sanity version', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       mockReadModuleVersion.mockResolvedValue(null)
@@ -1124,7 +1124,7 @@ describe('#deploy', () => {
     })
 
     test('should handle directory check errors', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1167,7 +1167,7 @@ describe('#deploy', () => {
     })
 
     test('should re-deploy studio if it already exists', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1224,7 +1224,7 @@ describe('#deploy', () => {
     })
 
     test('should create new studio hostname when studioHost is provided but does not exist', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       mockApi({
@@ -1286,7 +1286,7 @@ describe('#deploy', () => {
     })
 
     test('should handle studio hostname creation failure when name is taken', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1332,7 +1332,7 @@ describe('#deploy', () => {
     })
 
     test('should allow selecting from existing studio hostnames', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1409,7 +1409,7 @@ describe('#deploy', () => {
     })
 
     test('should allow creating new studio hostname from selection menu', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1500,7 +1500,7 @@ describe('#deploy', () => {
     })
 
     test('should handle input validation with retry for studio hostname creation', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1595,7 +1595,7 @@ describe('#deploy', () => {
     })
 
     test('should handle input validation fails with unknown error', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1656,7 +1656,7 @@ describe('#deploy', () => {
     })
 
     test('should throw error when no projectId is configured', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const {error} = await testCommand(DeployCommand, [], {
@@ -1676,7 +1676,7 @@ describe('#deploy', () => {
     })
 
     test('should log a warning if the deprecated auto-updates flag is used', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1698,7 +1698,7 @@ describe('#deploy', () => {
     })
 
     test('should throw an error when both the current and deprecated autoUpdates config are used', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const {error} = await testCommand(DeployCommand, [], {
@@ -1720,7 +1720,7 @@ describe('#deploy', () => {
     })
 
     test('should handle general API errors when finding user application', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1754,7 +1754,7 @@ describe('#deploy', () => {
     })
 
     test('should handle deployment API errors for studio', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1807,7 +1807,7 @@ describe('#deploy', () => {
     })
 
     test('should handle fatal errors during studio hostname creation', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1853,7 +1853,7 @@ describe('#deploy', () => {
     })
 
     test('should handle no existing studio applications scenario', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1929,7 +1929,7 @@ describe('#deploy', () => {
     })
 
     test('should skip build when --no-build flag is used for studio', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -1984,7 +1984,7 @@ describe('#deploy', () => {
     })
 
     test('should deploy studio using deployment.appId', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -2037,7 +2037,7 @@ describe('#deploy', () => {
     })
 
     test('should prioritize deployment.appId over studioHost when both are configured', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -2092,7 +2092,7 @@ describe('#deploy', () => {
     })
 
     test('should handle error when deployment.appId does not exist for the org', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'
@@ -2125,7 +2125,7 @@ describe('#deploy', () => {
     })
 
     test('should not fall back to studioHost when deployment.appId is configured but does not exist', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project-id'

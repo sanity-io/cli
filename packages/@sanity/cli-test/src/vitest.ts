@@ -2,7 +2,7 @@
  * Vitest global setup entry point.
  *
  * Import this in your vitest.config.ts globalSetup array for automatic
- * test example setup and teardown.
+ * test fixture setup and teardown.
  *
  * @example
  * ```typescript
@@ -16,7 +16,7 @@
  * })
  * ```
  */
-export {setup, teardown} from './test/setupExamples.js'
+export {setup, teardown} from './test/setupFixtures.js'
 export {snapshotSerializer} from './test/snapshotSerializer.js'
 
 export {setupWorkerBuild, teardownWorkerBuild} from './vitestWorker.js'

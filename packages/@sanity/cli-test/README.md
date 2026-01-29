@@ -18,38 +18,38 @@ export default defineConfig({
 })
 ```
 
-This will automatically copy and install dependencies for all bundled examples before tests run.
+This will automatically copy and install dependencies for all bundled fixtures before tests run.
 
-### 2. Use test examples in your tests
+### 2. Use test fixtures in your tests
 
 ```ts
-import {testExample} from '@sanity/cli-test'
+import {testFixture} from '@sanity/cli-test'
 import {describe, test} from 'vitest'
 
 describe('my test suite', () => {
   test('should work with basic-studio', async () => {
-    const cwd = await testExample('basic-studio')
-    // The example is now available at `cwd` with dependencies installed
+    const cwd = await testFixture('basic-studio')
+    // The fixture is now available at `cwd` with dependencies installed
     // Tests that need built output should build explicitly:
-    // await buildExample(cwd)
+    // await buildFixture(cwd)
   })
 })
 ```
 
 ## API
 
-### `testExample(exampleName: string, options?: TestExampleOptions): Promise<string>`
+### `testFixture(fixtureName: string, options?: TestFixtureOptions): Promise<string>`
 
-Creates an isolated copy of a bundled example for testing. Returns the absolute path to the temporary directory containing the example.
+Creates an isolated copy of a bundled fixture for testing. Returns the absolute path to the temporary directory containing the fixture.
 
 **Parameters:**
 
-- `exampleName` - Name of the example to copy (e.g., 'basic-app', 'basic-studio')
+- `fixtureName` - Name of the fixture to copy (e.g., 'basic-app', 'basic-studio')
 - `options.tempDir` - Optional custom temp directory path (defaults to `process.cwd()/tmp`)
 
-**Returns:** Absolute path to the temporary example directory
+**Returns:** Absolute path to the temporary fixture directory
 
-**Available Examples:**
+**Available Fixtures:**
 
 - `basic-app` - Basic Sanity application
 - `basic-studio` - Basic Sanity Studio
@@ -59,27 +59,27 @@ Creates an isolated copy of a bundled example for testing. Returns the absolute 
 **Example:**
 
 ```ts
-import {testExample} from '@sanity/cli-test'
+import {testFixture} from '@sanity/cli-test'
 
-const cwd = await testExample('basic-studio')
-// Example is ready at `cwd` with dependencies installed
-// Note: Examples are NOT built by default - tests should build if needed
+const cwd = await testFixture('basic-studio')
+// Fixture is ready at `cwd` with dependencies installed
+// Note: Fixtures are NOT built by default - tests should build if needed
 ```
 
-### `setup(options?: SetupTestExamplesOptions): Promise<void>`
+### `setup(options?: SetupTestFixturesOptions): Promise<void>`
 
-Vitest global setup function that copies examples and installs dependencies. This is automatically called by vitest when using `@sanity/cli-test/vitest` in your globalSetup config.
+Vitest global setup function that copies fixtures and installs dependencies. This is automatically called by vitest when using `@sanity/cli-test/vitest` in your globalSetup config.
 
 **Parameters:**
 
-- `options.additionalExamples` - Glob patterns for additional example directories from your local repo to set up alongside the default bundled examples (e.g., `['examples/*', 'dev/*']`). Only directories containing a `package.json` are included.
+- `options.additionalFixtures` - Glob patterns for additional fixture directories from your local repo to set up alongside the default bundled fixtures (e.g., `['fixtures/*', 'dev/*']`). Only directories containing a `package.json` are included.
 - `options.tempDir` - Custom temp directory path (defaults to `process.cwd()/tmp`)
 
-**Note:** Examples are NOT built during setup. Tests that need built output should build explicitly.
+**Note:** Fixtures are NOT built during setup. Tests that need built output should build explicitly.
 
-**Adding examples from your local repo:**
+**Adding fixtures from your local repo:**
 
-If your repo has its own example directories that you want to test alongside the default bundled examples, use the `additionalExamples` option to include them:
+If your repo has its own fixture directories that you want to test alongside the default bundled fixtures, use the `additionalFixtures` option to include them:
 
 ```ts
 // vitest.setup.ts
@@ -89,7 +89,7 @@ export {teardown}
 
 export async function setup(project) {
   return cliTestSetup(project, {
-    additionalExamples: ['examples/*', 'dev/*'],
+    additionalFixtures: ['fixtures/*', 'dev/*'],
   })
 }
 ```
@@ -105,7 +105,7 @@ export default defineConfig({
 })
 ```
 
-### `teardown(options?: TeardownTestExamplesOptions): Promise<void>`
+### `teardown(options?: TeardownTestFixturesOptions): Promise<void>`
 
 Vitest global teardown function that removes the temp directory. This is automatically called by vitest when using `@sanity/cli-test/vitest`.
 
@@ -186,17 +186,17 @@ mockApi({
 
 ## How It Works
 
-This package bundles pre-configured Sanity examples that can be used for testing. When you call `testExample()`:
+This package bundles pre-configured Sanity fixtures that can be used for testing. When you call `testFixture()`:
 
-1. It creates a unique temporary copy of the requested example
+1. It creates a unique temporary copy of the requested fixture
 2. Symlinks the node_modules directory from the global setup version (for performance)
 3. Returns the path to the isolated test directory
 
-The examples work identically whether this package is used in a monorepo or installed from npm.
+The fixtures work identically whether this package is used in a monorepo or installed from npm.
 
-## Building Examples
+## Building Fixtures
 
-Examples are NOT built during global setup or when calling `testExample()`. Tests that need built output should build explicitly:
+Fixtures are NOT built during global setup or when calling `testFixture()`. Tests that need built output should build explicitly:
 
 ```ts
 import {exec} from 'node:child_process'
@@ -204,8 +204,8 @@ import {promisify} from 'node:util'
 
 const execAsync = promisify(exec)
 
-const cwd = await testExample('basic-studio')
-// Build the example before running tests that need it
+const cwd = await testFixture('basic-studio')
+// Build the fixture before running tests that need it
 await execAsync('npx sanity build --yes', {cwd})
 ```
 
@@ -246,7 +246,7 @@ export default defineConfig({
   test: {
     globalSetup: [
       'test/workerBuild.ts', // Your worker setup
-      '@sanity/cli-test/vitest', // Example setup
+      '@sanity/cli-test/vitest', // Fixture setup
     ],
   },
 })

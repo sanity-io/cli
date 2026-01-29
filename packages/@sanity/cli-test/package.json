@@ -37,16 +37,16 @@
   "types": "./dist/index.d.ts",
   "files": [
     "./dist",
-    "./examples"
+    "./fixtures"
   ],
   "scripts": {
     "prebuild": "pnpm run clean",
-    "build": "pnpm run build:js && pnpm run copy:examples",
+    "build": "pnpm run build:js && pnpm run copy:fixtures",
     "build:js": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
-    "clean": "rimraf dist examples",
-    "copy:examples": "node scripts/copy-examples.js",
+    "clean": "rimraf dist fixtures",
+    "copy:fixtures": "node scripts/copy-fixtures.js",
     "lint": "eslint .",
     "publint": "publint",
     "test": "vitest run",

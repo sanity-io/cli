@@ -2,8 +2,14 @@ import {randomBytes} from 'node:crypto'
 import {copyFile, mkdir, readdir, readFile, stat, symlink, writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
-import {getExamplesPath, getTempPath} from '../utils/paths.js'
-import {type ExampleName} from './constants.js'
+import {getFixturesPath, getTempPath} from '../utils/paths.js'
+import {type FixtureName} from './constants.js'
+
+/**
+ * @deprecated Use {@link TestFixtureOptions} instead. This type alias will be removed in a future release.
+ * @public
+ */
+export type TestExampleOptions = TestFixtureOptions
 
 /**
  * Recursively copy a directory, skipping specified folders.
@@ -41,7 +47,7 @@ export async function testCopyDirectory(
 /**
  * @public
  */
-export interface TestExampleOptions {
+export interface TestFixtureOptions {
   /**
    * Custom temp directory. Defaults to process.cwd()/tmp
    */
@@ -49,71 +55,71 @@ export interface TestExampleOptions {
 }
 
 /**
- * Clones an example directory into a temporary directory with an isolated copy.
+ * Clones a fixture directory into a temporary directory with an isolated copy.
  *
- * The function creates a unique temporary copy of the specified example with:
+ * The function creates a unique temporary copy of the specified fixture with:
  * - A random unique ID to avoid conflicts between parallel tests
  * - Symlinked node_modules for performance (from the global setup version)
  * - Modified package.json name to prevent conflicts
  *
- * The example is first looked up in the temp directory (if global setup ran),
- * otherwise it falls back to the bundled examples in the package.
+ * The fixture is first looked up in the temp directory (if global setup ran),
+ * otherwise it falls back to the bundled fixtures in the package.
  *
- * @param exampleName - The name of the example to clone (e.g., 'basic-app', 'basic-studio')
+ * @param fixtureName - The name of the fixture to clone (e.g., 'basic-app', 'basic-studio')
  * @param options - Configuration options
- * @returns The absolute path to the temporary directory containing the example
+ * @returns The absolute path to the temporary directory containing the fixture
  *
  * @public
  *
  * @example
  * ```typescript
- * import {testExample} from '@sanity/cli-test'
+ * import {testFixture} from '@sanity/cli-test'
  * import {describe, test} from 'vitest'
  *
  * describe('my test suite', () => {
  *   test('should work with basic-studio', async () => {
- *     const cwd = await testExample('basic-studio')
+ *     const cwd = await testFixture('basic-studio')
  *     // ... run your tests in this directory
  *   })
  * })
  * ```
  */
-export async function testExample(
-  exampleName: ExampleName | (string & {}),
-  options: TestExampleOptions = {},
+export async function testFixture(
+  fixtureName: FixtureName | (string & {}),
+  options: TestFixtureOptions = {},
 ): Promise<string> {
   const {tempDir} = options
 
   const tempDirectory = getTempPath(tempDir)
 
-  // Examples are cloned in the tmp directory by the setup function
-  let tempExamplePath = join(tempDirectory, `example-${exampleName}`)
+  // Fixtures are cloned in the tmp directory by the setup function
+  let tempFixturePath = join(tempDirectory, `fixture-${fixtureName}`)
 
   try {
-    const stats = await stat(tempExamplePath)
+    const stats = await stat(tempFixturePath)
     if (!stats.isDirectory()) {
-      throw new Error(`${tempExamplePath} is not a directory`)
+      throw new Error(`${tempFixturePath} is not a directory`)
     }
   } catch (e) {
-    // If the cloned example doesn't exist, copy from the bundled examples
+    // If the cloned fixture doesn't exist, copy from the bundled fixtures
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
-      tempExamplePath = join(getExamplesPath(), exampleName)
+      tempFixturePath = join(getFixturesPath(), fixtureName)
     } else {
       throw e
     }
   }
 
   const tempId = randomBytes(8).toString('hex')
-  const tempPath = join(tempDirectory, `example-${exampleName}-${tempId}`)
+  const tempPath = join(tempDirectory, `fixture-${fixtureName}-${tempId}`)
 
   // Always skip node_modules (will be symlinked), dist (tests build if needed), and tmp
   const skipDirs = ['node_modules', 'dist', 'tmp']
 
-  // Copy the example to the temp directory
-  await testCopyDirectory(tempExamplePath, tempPath, skipDirs)
+  // Copy the fixture to the temp directory
+  await testCopyDirectory(tempFixturePath, tempPath, skipDirs)
 
   // Symlink the node_modules directory for performance
-  await symlink(join(tempExamplePath, 'node_modules'), join(tempPath, 'node_modules'))
+  await symlink(join(tempFixturePath, 'node_modules'), join(tempPath, 'node_modules'))
 
   // Replace the package.json name with a temp name
   const packageJsonPath = join(tempPath, 'package.json')
@@ -123,4 +129,22 @@ export async function testExample(
   await writeFile(packageJsonPath, JSON.stringify(packageJsonData, null, 2))
 
   return tempPath
+}
+
+/**
+ * @deprecated Use {@link testFixture} instead. This function will be removed in a future release.
+ *
+ * Clones an example (now called fixture) directory into a temporary directory with an isolated copy.
+ *
+ * @param exampleName - The name of the example/fixture to clone (e.g., 'basic-app', 'basic-studio')
+ * @param options - Configuration options
+ * @returns The absolute path to the temporary directory containing the example/fixture
+ *
+ * @public
+ */
+export async function testExample(
+  exampleName: FixtureName | (string & {}),
+  options: TestFixtureOptions = {},
+): Promise<string> {
+  return testFixture(exampleName, options)
 }

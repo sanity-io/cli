@@ -6,25 +6,25 @@ const baseConfig = {
   // For now only care about cli package
   ignore: [
     'packages/@sanity/original-cli/**',
-    'packages/@sanity/cli-test/examples/**',
+    'packages/@sanity/cli-test/fixtures/**',
 
     // See `helpClass` in `oclif.config.js`
     'packages/@sanity/cli/src/SanityHelp.ts',
   ],
   workspaces: {
-    'examples/*': {
+    'fixtures/*': {
       entry: ['sanity.cli.ts', 'sanity.config.ts'],
       // Binary is overridden by the CLI package
       ignoreBinaries: ['sanity'],
       project: ['schemaTypes/**/*.{js,jsx,ts,tsx}'],
     },
-    'examples/basic-app': {
+    'fixtures/basic-app': {
       entry: ['sanity.cli.ts', './src/App.tsx'],
       // Binary is overridden by the CLI package
       ignoreBinaries: ['sanity'],
       project,
     },
-    'examples/worst-case-studio': {
+    'fixtures/worst-case-studio': {
       entry: ['sanity.cli.ts', 'sanity.config.tsx', 'src/defines.ts'],
       // Binary is overridden by the CLI package
       ignoreBinaries: ['sanity'],

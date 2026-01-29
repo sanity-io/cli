@@ -3,9 +3,9 @@ import {createServer} from 'node:http'
 import {platform} from 'node:os'
 import {join} from 'node:path'
 
-import {convertToSystemPath, testCommand, testExample} from '@sanity/cli-test'
+import {convertToSystemPath, testCommand, testFixture} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
-import {buildExample} from '~test/helpers/buildExample.js'
+import {buildFixture} from '~test/helpers/buildFixture.js'
 
 import {closeServer, tryCloseServer} from '../../../test/testUtils.js'
 import {PreviewCommand} from '../preview.js'
@@ -19,10 +19,10 @@ describe(
   () => {
     describe('basic-app', () => {
       test('should start the example', async () => {
-        const cwd = await testExample('basic-app')
+        const cwd = await testFixture('basic-app')
 
         // Build the example
-        await buildExample(cwd)
+        await buildFixture(cwd)
         process.chdir(cwd)
 
         const {error, result, stdout} = await testCommand(PreviewCommand, ['--port', '4334'], {
@@ -40,7 +40,7 @@ describe(
       })
 
       test('should throw an error if the example has not been built', async () => {
-        const cwd = await testExample('basic-app')
+        const cwd = await testFixture('basic-app')
         // Change to the example directory
         process.chdir(cwd)
 
@@ -63,9 +63,9 @@ describe(
 
     describe('basic-studio', () => {
       test('should start the example', async () => {
-        const cwd = await testExample('basic-studio')
+        const cwd = await testFixture('basic-studio')
         // Build the example
-        await buildExample(cwd)
+        await buildFixture(cwd)
         // Change to the example directory
         process.chdir(cwd)
 
@@ -84,7 +84,7 @@ describe(
       })
 
       test('should throw an error if the example has not been built', async () => {
-        const cwd = await testExample('basic-studio')
+        const cwd = await testFixture('basic-studio')
         // Change to the example directory
         process.chdir(cwd)
 
@@ -107,9 +107,9 @@ describe(
     })
 
     test('should use resolved base path from index.html file', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       // Build the example
-      await buildExample(cwd)
+      await buildFixture(cwd)
       // Change to the example directory
       process.chdir(cwd)
 
@@ -144,9 +144,9 @@ describe(
     })
 
     test('should fallback to default basepath when cannot resolve from index.html', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       // Build the example
-      await buildExample(cwd)
+      await buildFixture(cwd)
       // Change to the example directory
       process.chdir(cwd)
 
@@ -183,9 +183,9 @@ describe(
     })
 
     test('should throw an error if the index.html file is not found', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       // Build the example
-      await buildExample(cwd)
+      await buildFixture(cwd)
       // Change to the example directory
       process.chdir(cwd)
 
@@ -204,9 +204,9 @@ describe(
     })
 
     test('should throw an error if port is already in use', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       // Build the example
-      await buildExample(cwd)
+      await buildFixture(cwd)
       // Change to the example directory
       process.chdir(cwd)
 
@@ -233,7 +233,7 @@ describe(
     })
 
     test('should allow using vite config from sanity.cli.ts', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       // Change to the example directory
       process.chdir(cwd)
 
@@ -258,7 +258,7 @@ describe(
       )
 
       // Build the example
-      await buildExample(cwd)
+      await buildFixture(cwd)
 
       const {result, stdout} = await testCommand(PreviewCommand, [], {
         config: {root: cwd},

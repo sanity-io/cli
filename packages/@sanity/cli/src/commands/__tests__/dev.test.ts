@@ -5,7 +5,7 @@ import {join} from 'node:path'
 
 import {getProjectCliClient} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
-import {testCommand, testExample} from '@sanity/cli-test'
+import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {closeServer, tryCloseServer} from '../../../test/testUtils.js'
@@ -67,7 +67,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
 
   describe('basic-app', () => {
     test('should start the dev server for app', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const {error, result, stderr, stdout} = await testCommand(DevCommand, ['--port', '5333'], {
@@ -83,7 +83,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     })
 
     test('should warn when --no-load-in-dashboard is used with app', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       const {error, result, stderr, stdout} = await testCommand(
@@ -103,7 +103,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     })
 
     test('should automatically change port if conflicted', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       // Create a server on port 5338 to block it
@@ -131,7 +131,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     })
 
     test('should error when organizationId is missing from config', async () => {
-      const cwd = await testExample('basic-app')
+      const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
       // Modify the config to remove organizationId
@@ -153,7 +153,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
 
   describe('basic-studio', () => {
     test('should start the dev server for studio', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const {error, result, stderr, stdout} = await testCommand(DevCommand, ['--port', '5335'], {
@@ -171,7 +171,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     })
 
     test('should start with custom host configuration', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const {error, result, stdout} = await testCommand(
@@ -189,7 +189,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     })
 
     test('should start with load-in-dashboard', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project'
@@ -231,7 +231,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     })
 
     test('should error when projectId is missing with --load-in-dashboard', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       // Modify config to remove projectId
@@ -251,7 +251,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     })
 
     test('should error when API fails to fetch organizationId', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       const projectId = 'test-project'
@@ -280,7 +280,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     })
 
     test('should start dev server successfully when user declines auto-updates', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       mockCompareDependencyVersions.mockResolvedValueOnce([
@@ -308,7 +308,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     })
 
     test('should handle auto-updates with version mismatch and user accepts upgrade', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       mockCompareDependencyVersions.mockResolvedValueOnce([
@@ -351,7 +351,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
     })
 
     test('should handle invalid Sanity version during auto-updates', async () => {
-      const cwd = await testExample('basic-studio')
+      const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
       mockCheckRequiredDependencies.mockResolvedValueOnce({
@@ -369,7 +369,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
   })
 
   test('should throw an error if port is already in use', async () => {
-    const cwd = await testExample('basic-studio')
+    const cwd = await testFixture('basic-studio')
     process.cwd = () => cwd
 
     // Create a server on port 5337 to block it

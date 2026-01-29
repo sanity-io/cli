@@ -12,7 +12,7 @@ export default defineConfig({
     coverage: {
       exclude: [
         '**/*.{test,spec,stories,d}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
-        'examples/**',
+        'fixtures/**',
         'packages/@sanity/cli/test/**',
         'packages/@sanity/cli/templates/**',
         // Vitest 4.0 no longer auto-excludes these directories

@@ -1,4 +1,10 @@
-import {convertToSystemPath, createTestClient, mockApi, testCommand, testExample} from '@sanity/cli-test'
+import {
+  convertToSystemPath,
+  createTestClient,
+  mockApi,
+  testCommand,
+  testFixture,
+} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -156,7 +162,7 @@ describe('#init:nextjs-app-initialization', () => {
     expect(pending, 'pending mocks').toEqual([])
   })
   test('initializes nextjs app', async () => {
-    const cwd = await testExample('basic-app')
+    const cwd = await testFixture('basic-app')
     process.chdir(cwd)
     setupInitSuccessMocks()
 
@@ -245,7 +251,7 @@ describe('#init:nextjs-app-initialization', () => {
   })
 
   test('initializes nextjs app in unattended mode', async () => {
-    const cwd = await testExample('basic-app')
+    const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
     // Mock to resolve correctly up to initializing nextjs app

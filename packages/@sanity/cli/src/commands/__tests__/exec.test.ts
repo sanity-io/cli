@@ -3,7 +3,7 @@ import {tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
 
 import {setConfig} from '@sanity/cli-core'
-import {testCommand, testExample} from '@sanity/cli-test'
+import {testCommand, testFixture} from '@sanity/cli-test'
 import {execa} from 'execa'
 import {beforeEach, describe, expect, test} from 'vitest'
 
@@ -76,7 +76,7 @@ async function runExecCommand(
 
 describe('#exec', {timeout: 15 * 1000}, () => {
   beforeEach(async () => {
-    exampleDir = await testExample('basic-studio')
+    exampleDir = await testFixture('basic-studio')
     fixtureDir = resolve(import.meta.dirname, '../../../test/__fixtures__')
     scriptPath = join(exampleDir, 'test-script.ts')
     await copyFile(join(fixtureDir, 'exec-script.ts'), scriptPath)

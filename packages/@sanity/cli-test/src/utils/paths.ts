@@ -4,22 +4,22 @@ import {resolve} from 'node:path'
 const INITIAL_CWD = process.cwd()
 
 /**
- * Gets the path to the examples directory bundled with this package.
+ * Gets the path to the fixtures directory bundled with this package.
  *
- * The examples are copied during build and bundled with the published package.
+ * The fixtures are copied during build and bundled with the published package.
  * This function works the same whether the package is used in a monorepo
  * or installed from npm.
  *
- * @returns Absolute path to the examples directory
+ * @returns Absolute path to the fixtures directory
  * @internal
  */
-export function getExamplesPath(): string {
-  // From dist/utils/paths.js -> ../../examples
-  return resolve(import.meta.dirname, '../../examples')
+export function getFixturesPath(): string {
+  // From dist/utils/paths.js -> ../../fixtures
+  return resolve(import.meta.dirname, '../../fixtures')
 }
 
 /**
- * Gets the path to the temporary directory for test examples.
+ * Gets the path to the temporary directory for test fixtures.
  *
  * Uses the initial working directory captured when this module was first loaded,
  * not process.cwd() which may change during test execution.

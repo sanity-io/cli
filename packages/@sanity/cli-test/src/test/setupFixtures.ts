@@ -8,30 +8,30 @@ import {glob} from 'tinyglobby'
 import {type TestProject} from 'vitest/node'
 
 import {fileExists} from '../utils/fileExists.js'
-import {getExamplesPath, getTempPath} from '../utils/paths.js'
-import {DEFAULT_EXAMPLES} from './constants.js'
-import {testCopyDirectory} from './testExample.js'
+import {getFixturesPath, getTempPath} from '../utils/paths.js'
+import {DEFAULT_FIXTURES} from './constants.js'
+import {testCopyDirectory} from './testFixture.js'
 
 const exec = promisify(execNode)
 
 /**
- * Options for setupTestExamples
+ * Options for setupTestFixtures
  *
  * @public
  */
-export interface SetupTestExamplesOptions {
+export interface SetupTestFixturesOptions {
   /**
-   * Glob patterns for additional example directories to set up.
+   * Glob patterns for additional fixture directories to set up.
    *
    * Each pattern is matched against directories in the current working directory.
    * Only directories containing a `package.json` file are included.
    *
    * @example
    * ```typescript
-   * ['examples/*', 'dev/*']
+   * ['fixtures/*', 'dev/*']
    * ```
    */
-  additionalExamples?: string[]
+  additionalFixtures?: string[]
 
   /**
    * Custom temp directory path. Defaults to process.cwd()/tmp
@@ -39,39 +39,39 @@ export interface SetupTestExamplesOptions {
   tempDir?: string
 }
 
-async function getAdditionalExamplePaths(examples: string[]): Promise<ExamplePath[]> {
-  const paths = await glob(examples, {
+async function getAdditionalFixturePaths(fixtures: string[]): Promise<FixturePath[]> {
+  const paths = await glob(fixtures, {
     absolute: true,
     ignore: ['**/node_modules/**', '**/dist/**'],
     onlyDirectories: true,
   })
 
-  const additionalExamples: ExamplePath[] = []
+  const additionalFixtures: FixturePath[] = []
 
   for (const path of paths) {
     if (await fileExists(join(`${path}/package.json`))) {
-      additionalExamples.push({
-        example: basename(path),
+      additionalFixtures.push({
+        fixture: basename(path),
         fromPath: path,
       })
     }
   }
 
-  return additionalExamples
+  return additionalFixtures
 }
 
-interface ExamplePath {
-  example: string
+interface FixturePath {
+  fixture: string
   fromPath: string
 }
 /**
- * Global setup function for initializing test examples.
+ * Global setup function for initializing test fixtures.
  *
- * Copies examples from the bundled location to a temp directory
+ * Copies fixtures from the bundled location to a temp directory
  * and installs dependencies.
  *
- * Note: Examples are NOT built during setup. Tests that need built
- * examples should build them as part of the test.
+ * Note: Fixtures are NOT built during setup. Tests that need built
+ * fixtures should build them as part of the test.
  *
  * This function is designed to be used with vitest globalSetup.
  *
@@ -88,8 +88,8 @@ interface ExamplePath {
  * })
  * ```
  */
-export async function setup(_: TestProject, options: SetupTestExamplesOptions = {}): Promise<void> {
-  const {additionalExamples, tempDir} = options
+export async function setup(_: TestProject, options: SetupTestFixturesOptions = {}): Promise<void> {
+  const {additionalFixtures, tempDir} = options
 
   const spinner = ora({
     // Without this, the watch mode input is discarded
@@ -98,35 +98,35 @@ export async function setup(_: TestProject, options: SetupTestExamplesOptions = 
   }).start()
 
   try {
-    const examplesDir = getExamplesPath()
+    const fixturesDir = getFixturesPath()
     const tempDirectory = getTempPath(tempDir)
 
-    const allExamplePaths: ExamplePath[] = []
+    const allFixturePaths: FixturePath[] = []
 
-    // Add the default examples
-    for (const example of DEFAULT_EXAMPLES) {
-      allExamplePaths.push({
-        example,
-        fromPath: join(examplesDir, example),
+    // Add the default fixtures
+    for (const fixture of DEFAULT_FIXTURES) {
+      allFixturePaths.push({
+        fixture,
+        fromPath: join(fixturesDir, fixture),
       })
     }
 
-    // Add the additional examples
-    if (additionalExamples && additionalExamples.length > 0) {
-      const additionalExamplePaths = await getAdditionalExamplePaths(additionalExamples)
+    // Add the additional fixtures
+    if (additionalFixtures && additionalFixtures.length > 0) {
+      const additionalFixturePaths = await getAdditionalFixturePaths(additionalFixtures)
 
-      if (additionalExamplePaths.length > 0) {
-        allExamplePaths.push(...additionalExamplePaths)
+      if (additionalFixturePaths.length > 0) {
+        allFixturePaths.push(...additionalFixturePaths)
       } else {
         spinner.warn(
-          `No additional examples found, check the glob pattern: ${additionalExamples.join(', ')}`,
+          `No additional fixtures found, check the glob pattern: ${additionalFixtures.join(', ')}`,
         )
       }
     }
 
-    for (const {example, fromPath} of allExamplePaths) {
-      const toPath = join(tempDirectory, `example-${example}`)
-      // Copy the example, excluding node_modules and dist
+    for (const {fixture, fromPath} of allFixturePaths) {
+      const toPath = join(tempDirectory, `fixture-${fixture}`)
+      // Copy the fixture, excluding node_modules and dist
       await testCopyDirectory(fromPath, toPath, ['node_modules', 'dist'])
 
       // Replace the package.json name with a temp name
@@ -159,11 +159,11 @@ export async function setup(_: TestProject, options: SetupTestExamplesOptions = 
 }
 
 /**
- * Options for teardownTestExamples
+ * Options for teardownTestFixtures
  *
  * @public
  */
-export interface TeardownTestExamplesOptions {
+export interface TeardownTestFixturesOptions {
   /**
    * Custom temp directory path. Defaults to process.cwd()/tmp
    */
@@ -171,9 +171,9 @@ export interface TeardownTestExamplesOptions {
 }
 
 /**
- * Teardown function to clean up test examples.
+ * Teardown function to clean up test fixtures.
  *
- * Removes the temp directory created by setupTestExamples.
+ * Removes the temp directory created by setupTestFixtures.
  *
  * This function is designed to be used with vitest globalSetup.
  *
@@ -181,7 +181,7 @@ export interface TeardownTestExamplesOptions {
  *
  * @param options - Configuration options
  */
-export async function teardown(options: TeardownTestExamplesOptions = {}): Promise<void> {
+export async function teardown(options: TeardownTestFixturesOptions = {}): Promise<void> {
   const {tempDir} = options
   const tempDirectory = getTempPath(tempDir)
 

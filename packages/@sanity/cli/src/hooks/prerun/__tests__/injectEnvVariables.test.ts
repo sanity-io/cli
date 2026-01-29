@@ -1,7 +1,7 @@
 import {writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
-import {testExample, testHook} from '@sanity/cli-test'
+import {testFixture, testHook} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
@@ -23,7 +23,7 @@ describe('#injectEnvVariables', () => {
   })
 
   test('should inject env variables from studios', async () => {
-    const cwd = await testExample('basic-studio')
+    const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
 
     // Create a .env file with a SANITY_TEST_VAR variable
@@ -41,7 +41,7 @@ describe('#injectEnvVariables', () => {
   })
 
   test('should inject env variables from apps', async () => {
-    const cwd = await testExample('basic-app')
+    const cwd = await testFixture('basic-app')
     process.chdir(cwd)
 
     // Create a .env file with a SANITY_TEST_VAR variable
@@ -59,7 +59,7 @@ describe('#injectEnvVariables', () => {
   })
 
   test('should warn when running in production environment', async () => {
-    const cwd = await testExample('basic-studio')
+    const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
 
     vi.stubEnv('SANITY_ACTIVE_ENV', 'production')

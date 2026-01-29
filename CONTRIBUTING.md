@@ -156,8 +156,8 @@ pnpm install
 # Build the CLI
 pnpm build:cli
 
-# Run from examples folder
-cd examples/basic-studio
+# Run from fixtures folder
+cd fixtures/basic-studio
 npx sanity <command>
 ```
 
@@ -168,7 +168,7 @@ npx sanity <command>
 pnpm watch:cli
 
 # In another terminal, test your changes
-cd examples/basic-studio
+cd fixtures/basic-studio
 DEBUG=sanity:* npx sanity <your-command>
 ```
 
