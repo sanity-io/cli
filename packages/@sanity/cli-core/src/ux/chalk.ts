@@ -1,1 +1,2 @@
-export {default as chalk, type Options as ChalkOptions} from 'chalk'
+export {default as chalk} from 'chalk'
+export * from 'chalk'
