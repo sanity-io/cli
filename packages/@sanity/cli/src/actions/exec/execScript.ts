@@ -1,9 +1,5 @@
 import {spawn} from 'node:child_process'
-import fs from 'node:fs/promises'
 import path from 'node:path'
-import {pathToFileURL} from 'node:url'
-
-import {packageDirectory} from 'package-directory'
 
 interface ExecScriptOptions {
   extraArguments: string[]
@@ -22,34 +18,20 @@ export async function execScript(options: ExecScriptOptions): Promise<void> {
 
   const resolvedScriptPath = path.resolve(scriptPath)
 
-  const cliPkgDir = await packageDirectory({cwd: import.meta.dirname})
-  if (!cliPkgDir) {
-    throw new Error('Unable to resolve @sanity/cli module root')
-  }
-
-  const threadsDir = path.join(cliPkgDir, 'dist', 'threads')
-  const browserEnvPath = path.join(threadsDir, 'registerBrowserEnv.js')
-  const configClientPath = path.join(threadsDir, 'configClient.js')
-
-  // Verify threads directory exists
-  if (!(await fs.stat(threadsDir).catch(() => false))) {
-    throw new Error('@sanity/cli module build error: missing threads directory')
-  }
+  const browserEnvPath = new URL('registerBrowserEnv.worker.js', import.meta.url).href
+  const configClientPath = new URL('configClient.worker.js', import.meta.url).href
 
   // Use tsx loader for TypeScript support in the spawned child process
   // We need to resolve the tsx loader path from the CLI's node_modules since the child
   // process will run from the user's script directory where tsx may not be installed.
-  let tsxLoaderPath: string
-  try {
-    // Resolve the tsx loader using Node's module resolution relative to package.json
-    const tsxPackageUrl = import.meta.resolve('tsx/package.json', import.meta.url)
-    tsxLoaderPath = new URL('dist/loader.mjs', tsxPackageUrl).pathname
-  } catch {
+  // Resolve the tsx loader using Node's module resolution relative to package.json
+  const tsxLoaderPath: string = import.meta.resolve('tsx', import.meta.url)
+  if (!tsxLoaderPath) {
     throw new Error('@sanity/cli not able to resolve tsx loader')
   }
 
   const baseArgs = mockBrowserEnv
-    ? ['--import', tsxLoaderPath, '--import', pathToFileURL(browserEnvPath).href]
+    ? ['--import', tsxLoaderPath, '--import', browserEnvPath]
     : ['--import', tsxLoaderPath]
   const tokenArgs = withUserToken ? ['--import', configClientPath] : []
 

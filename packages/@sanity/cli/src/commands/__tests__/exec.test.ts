@@ -14,10 +14,7 @@ const TEST_TOKEN = process.env.SANITY_API_TOKEN?.trim()
 const TEST_CONFIG_DIR = join(tmpdir(), 'sanity-cli-test-exec')
 const TEST_CONFIG_PATH = join(TEST_CONFIG_DIR, 'config.json')
 
-// Test example and fixture directory paths
-let exampleDir: string
-let fixtureDir: string
-let scriptPath: string
+const fixtureDir = resolve(import.meta.dirname, '../../../test/__fixtures__')
 
 // Helper to set up test authentication config
 async function setupTestAuth(token: string): Promise<{cleanup: () => Promise<void>}> {
@@ -57,7 +54,8 @@ async function runExecCommand(
   try {
     const result = await execa('node', [cliPath, 'exec', scriptPath, ...flags], {
       cwd,
-      env: {...process.env, SANITY_BASE_PATH: cwd, ...customEnv},
+      // Use NODE_ENV: 'production' so oclif doesn't auto transpile
+      env: {...process.env, NODE_ENV: 'production', SANITY_BASE_PATH: cwd, ...customEnv},
       reject: false,
     })
 
@@ -75,17 +73,14 @@ async function runExecCommand(
 }
 
 describe('#exec', {timeout: 15 * 1000}, () => {
-  beforeEach(async () => {
-    exampleDir = await testFixture('basic-studio')
-    fixtureDir = resolve(import.meta.dirname, '../../../test/__fixtures__')
-    scriptPath = join(exampleDir, 'test-script.ts')
-    await copyFile(join(fixtureDir, 'exec-script.ts'), scriptPath)
-  })
-
   test('shows an error for invalid flags', async () => {
-    const {error} = await testCommand(ExecCommand, [scriptPath, '--invalid'], {
-      config: {root: exampleDir},
-    })
+    const exampleDir = await testFixture('basic-studio')
+    process.chdir(exampleDir)
+
+    const scriptPath = join(exampleDir, 'test-script.ts')
+    await copyFile(join(fixtureDir, 'exec-script.ts'), scriptPath)
+
+    const {error} = await testCommand(ExecCommand, [scriptPath, '--invalid'])
 
     expect(error?.message).toContain('Nonexistent flag: --invalid')
   })
@@ -98,16 +93,21 @@ describe('#exec', {timeout: 15 * 1000}, () => {
   })
 
   test('validates that script file exists', async () => {
-    const nonExistentScript = join(exampleDir, 'non-existent-script.ts')
-
-    const {error} = await testCommand(ExecCommand, [nonExistentScript], {
-      config: {root: exampleDir},
-    })
+    const {error} = await testCommand(ExecCommand, ['non-existent-script.ts'])
 
     expect(error?.message).toContain('No file found at')
   })
 
   describe('integration tests', () => {
+    // Test example and fixture directory paths
+    let exampleDir: string
+    let scriptPath: string
+    beforeEach(async () => {
+      exampleDir = await testFixture('basic-studio')
+
+      scriptPath = join(exampleDir, 'test-script.ts')
+      await copyFile(join(fixtureDir, 'exec-script.ts'), scriptPath)
+    })
     test('executes script successfully', async () => {
       const {exitCode, stdout} = await runExecCommand(exampleDir, scriptPath)
 
