@@ -44,15 +44,39 @@ export async function execScript(options: ExecScriptOptions): Promise<void> {
     },
     stdio: 'inherit',
   })
+
+  // Signal handlers to forward signals to child process
+  const handleExit = (): void => {
+    proc.kill()
+  }
+  const handleSigInt = (): void => {
+    proc.kill('SIGINT')
+  }
+  const handleSigTerm = (): void => {
+    proc.kill('SIGTERM')
+  }
+
+  process.on('exit', handleExit)
+  process.on('SIGINT', handleSigInt)
+  process.on('SIGTERM', handleSigTerm)
+
   return new Promise<void>((resolve, reject) => {
     proc.on('exit', (code, signal) => {
+      // Clean up listeners when child process exits
+      process.removeListener('exit', handleExit)
+      process.removeListener('SIGINT', handleSigInt)
+      process.removeListener('SIGTERM', handleSigTerm)
+
       if (signal) reject(new Error(`Script terminated by signal: ${signal}`))
       else if (code && code !== 0) reject(new Error(`Script exited with code: ${code}`))
       else resolve()
     })
-    proc.on('error', reject)
-    process.on('exit', () => proc.kill())
-    process.on('SIGINT', () => proc.kill('SIGINT'))
-    process.on('SIGTERM', () => proc.kill('SIGTERM'))
+    proc.on('error', (err) => {
+      // Clean up listeners on error too
+      process.removeListener('exit', handleExit)
+      process.removeListener('SIGINT', handleSigInt)
+      process.removeListener('SIGTERM', handleSigTerm)
+      reject(err)
+    })
   })
 }
