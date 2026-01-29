@@ -22,16 +22,16 @@ catalogs:
       specifier: ^5.7.2
       version: 5.7.2
     '@sanity/pkg-utils':
-      specifier: ^10.3.3
+      specifier: ^10.3.5
       version: 10.3.5
     '@sanity/schema':
-      specifier: ^5.6.0
+      specifier: ^5.7.0
       version: 5.7.0
     '@sanity/types':
-      specifier: ^5.6.0
+      specifier: ^5.7.0
       version: 5.7.0
     '@sanity/vision':
-      specifier: ^5.6.0
+      specifier: ^5.7.0
       version: 5.7.0
     '@swc/cli':
       specifier: ^0.7.10
@@ -88,7 +88,7 @@ catalogs:
       specifier: ^7.8.2
       version: 7.8.2
     sanity:
-      specifier: ^5.6.0
+      specifier: ^5.7.0
       version: 5.7.0
     tsx:
       specifier: ^4.21.0
@@ -109,7 +109,7 @@ catalogs:
 overrides:
   '@sanity/client': ^7.14.1
   '@sanity/cli': workspace:*
-  create-sanity>@sanity/cli: ^5.6.0
+  create-sanity>@sanity/cli: ^5.7.0
 
 patchedDependencies:
   sanity:
@@ -343,7 +343,7 @@ importers:
         specifier: ^5.2.2
         version: 5.2.2(@noble/hashes@2.0.1)(@types/node@20.19.30)(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(vitest@4.0.18(@types/node@20.19.30)(jiti@2.6.1)(jsdom@27.4.0(@noble/hashes@2.0.1))(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(yaml@2.8.2)
       '@sanity/runtime-cli':
-        specifier: ^13.0.3
+        specifier: ^13.1.0
         version: 13.1.0(@types/node@20.19.30)(debug@4.4.3)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
       '@sanity/schema':
         specifier: 'catalog:'
@@ -842,7 +842,7 @@ importers:
   packages/create-sanity:
     dependencies:
       '@sanity/cli':
-        specifier: ^5.6.0
+        specifier: ^5.7.0
         version: 5.7.0(@types/node@25.0.10)(babel-plugin-react-compiler@1.0.0)(lightningcss@1.31.1)(react@19.2.3)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
       import-meta-resolve:
         specifier: ^4.1.0
