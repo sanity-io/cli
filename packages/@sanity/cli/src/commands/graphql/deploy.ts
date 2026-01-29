@@ -7,7 +7,6 @@ import {extractFromSanitySchema} from '../../actions/graphql/extractFromSanitySc
 import gen1 from '../../actions/graphql/gen1/index.js'
 import gen2 from '../../actions/graphql/gen2/index.js'
 import gen3 from '../../actions/graphql/gen3/index.js'
-import {getCurrentSchemaProps} from '../../actions/graphql/getCurrentSchemaProps.js'
 import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
 import {graphqlDebug} from '../../actions/graphql/graphqlDebug.js'
 import {resolveApiGeneration} from '../../actions/graphql/resolveApiGeneration.js'
@@ -17,7 +16,12 @@ import {
   type ResolvedGraphQLAPI,
   type ValidationResponse,
 } from '../../actions/graphql/types.js'
-import {deployGraphQLAPI, getClientUrl, validateGraphQLAPI} from '../../services/graphql.js'
+import {
+  deployGraphQLAPI,
+  getClientUrl,
+  getCurrentSchemaProps,
+  validateGraphQLAPI,
+} from '../../services/graphql.js'
 
 interface DeployTask {
   dataset: string
@@ -102,7 +106,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
     const {
       api: onlyApis,
       dataset: datasetFlag,
-      dryRun,
+      'dry-run': dryRun,
       generation: generationFlag,
       'non-null-document-fields': nonNullDocumentFieldsFlag,
       playground: playgroundFlag,

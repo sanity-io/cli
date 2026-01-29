@@ -5,6 +5,7 @@ import {
   type GeneratedApiSpecification,
   type ValidationResponse,
 } from '../actions/graphql/types.js'
+import {getUrlHeaders} from './getUrlHeaders.js'
 
 export const GRAPHQL_API_VERSION = 'v2025-09-19'
 
@@ -119,4 +120,39 @@ export async function getClientUrl(projectId: string, uri: string) {
   })
 
   return `${client.config().url}/${uri.replace(/^\//, '')}`
+}
+
+export async function getCurrentSchemaProps(
+  projectId: string,
+  dataset: string,
+  tag: string,
+): Promise<{
+  currentGeneration?: string
+  playgroundEnabled?: boolean
+}> {
+  try {
+    const client = await getProjectCliClient({
+      apiVersion: GRAPHQL_API_VERSION,
+      projectId,
+    })
+
+    const uri = `/apis/graphql/${dataset}/${tag}`
+    const config = client.config()
+    const apiUrl = `${config.url}/${uri.replace(/^\//, '')}`
+
+    const res = await getUrlHeaders(apiUrl, {
+      Authorization: `Bearer ${config.token}`,
+    })
+
+    return {
+      currentGeneration: res['x-sanity-graphql-generation'],
+      playgroundEnabled: res['x-sanity-graphql-playground'] === 'true',
+    }
+  } catch (err) {
+    if (err.statusCode === 404) {
+      return {}
+    }
+
+    throw err
+  }
 }
