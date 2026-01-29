@@ -8,6 +8,7 @@ export default {
       './dist/hooks/prerun/setupTelemetry.js',
       './dist/hooks/prerun/injectEnvVariables.js',
       './dist/hooks/prerun/warnings.js',
+      './dist/hooks/prerun/checkForUpdates.js',
     ],
   },
   plugins: [
