@@ -807,57 +807,6 @@ Commands should call services, not make API requests directly.
 
 ---
 
-## Migration from Original CLI
-
-When migrating functionality from `@sanity/original-cli`:
-
-### 1. Preserve Git History
-
-```bash
-# Move file to new location
-git mv packages/@sanity/original-cli/src/feature.ts \
-       packages/@sanity/cli/src/actions/feature.ts
-
-git commit -m "refactor: migrate feature from original CLI"
-```
-
-### 2. Then Modernize
-
-In separate commits:
-
-- Convert to ES modules (`import`/`export`)
-- Update to TypeScript strict mode
-- Adapt to new architecture patterns
-- Add comprehensive tests
-
-### 3. Reference Only
-
-**Never modify** `@sanity/original-cli` - it exists only as a reference for migration.
-
-### AI-Assisted Development
-
-We recommend using the following workflows and conventions when choosing to use AI for development and migration tasks:
-
-#### Using Claude
-
-1. Initial conversion: Let Claude do first pass of OCLIF conversion
-2. Incremental changes: Convert flags, then prompts, then logic
-3. Review PR comments: Claude reviews PRs automatically
-   - Focus on OCLIF-specific patterns
-   - Ignore legacy code quality issues
-   - Don't fix existing bugs unless critical
-
-#### Recommended Prompting Strategy
-
-```
-1. "Update this to the new class-based OCLIF structure"
-2. "Convert all flags and arguments to OCLIF format"
-3. "Extract prompts to private methods"
-4. "Move business logic to actions folder"
-```
-
----
-
 ## Pull Request Process
 
 ### Before Submitting
@@ -893,7 +842,6 @@ We recommend using the following workflows and conventions when choosing to use 
 4. **Documentation**:
    - Update command descriptions
    - Update examples
-   - Add migration notes if relevant
 
 ---
 

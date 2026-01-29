@@ -1,8 +1,8 @@
 # Important Notes
 
-- This repo is for migration of old CLI to new CLI. The code you will change will always be in `packages/@sanity/cli` code in `packages/@sanity/original-cli` is only for reference.
-- When migrating logic from `original-cli` to the new CLI, instead of creating a new file and duplicating the code - first use `git mv` to move it, then `git commit -m 'refactor: migrate … from original CLI` in order to maintain as much history as we can.
-- The new CLI is using oclif framework. Docs are here https://oclif.io/docs/api_reference
+- This repo contains the Sanity CLI built with the oclif framework
+- Code you work on will be in `packages/@sanity/cli`
+- oclif documentation: https://oclif.io/docs/api_reference
 
 # Architecture
 
@@ -14,7 +14,6 @@
   - Provides helper methods for API clients, logging, and error handling
   - Can be extended by external CLI modules
 - **`@sanity/cli-test`**: Testing utilities for CLI commands
-- **`@sanity/original-cli`**: Legacy CLI code moved from the monorepo (reference only)
 
 ## New CLI Structure
 
