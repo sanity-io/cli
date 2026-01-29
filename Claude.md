@@ -375,7 +375,7 @@ mockApi({uri: '/endpoint'}).reply(200, {...})
 - For faster iteration, use `pnpm watch:cli` in one terminal and run commands in another
 - Run single command: `npx sanity <command>`
 - Enable debug logs: `DEBUG=sanity:* npx sanity <command>`
-- Most if not all commands need to be run within one of the examples folders.
+- Most if not all commands need to be run within one of the fixture folders.
 
 # Workflow
 

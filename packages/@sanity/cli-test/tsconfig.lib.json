@@ -13,7 +13,7 @@
     "**/*.spec.ts",
     "test/**/*",
     "**/__tests__/**/*",
-    "./examples/**/*",
+    "./fixtures/**/*",
     "./scripts/**/*"
   ]
 }

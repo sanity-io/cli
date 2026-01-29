@@ -5,7 +5,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**", ".sanity/**", "lib/**", "examples/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**", ".sanity/**", "lib/**", "fixtures/**"]
     },
     "build:types": {
       "dependsOn": ["^build", "^build:types", "build"],

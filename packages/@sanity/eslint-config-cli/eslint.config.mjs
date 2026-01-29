@@ -263,7 +263,7 @@ export default defineConfig(
           extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts'],
 
           // use an array of glob patterns
-          project: ['packages/*/tsconfig.json', 'examples/*/tsconfig.json'],
+          project: ['packages/*/tsconfig.json', 'fixtures/*/tsconfig.json'],
         }),
       ],
     },

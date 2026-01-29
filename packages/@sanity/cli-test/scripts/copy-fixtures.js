@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Copies specified examples from the repo root to the cli-test package.
- * This script runs during the build process to bundle examples with the package.
+ * Copies specified fixtures from the repo root to the cli-test package.
+ * This script runs during the build process to bundle fixtures with the package.
  */
 
 // eslint-disable-next-line n/no-unsupported-features/node-builtins
@@ -13,11 +13,11 @@ import {parse as parseYaml} from 'yaml'
 const packageRoot = dirname(import.meta.dirname)
 // Go up 3 levels to get to the repo root (packages/@sanity/cli-test -> packages/@sanity -> packages -> root)
 const repoRoot = resolve(packageRoot, '../../..')
-const sourceExamplesDir = join(repoRoot, 'examples')
-const targetExamplesDir = join(packageRoot, 'examples')
+const sourceFixturesDir = join(repoRoot, 'fixtures')
+const targetFixturesDir = join(packageRoot, 'fixtures')
 
-// Copy all 4 examples
-const EXAMPLES_TO_COPY = [
+// Copy all 4 fixtures
+const FIXTURES_TO_COPY = [
   'basic-app',
   'basic-studio',
   'multi-workspace-studio',
@@ -74,21 +74,21 @@ function transformPackageJson(content, catalog) {
   return JSON.stringify(pkg, null, 2) + '\n'
 }
 
-async function copyExamples() {
-  console.log('Copying examples to cli-test package...')
+async function copyFixtures() {
+  console.log('Copying fixtures to cli-test package...')
 
   // Load catalog once at the start
   const catalog = await parseCatalog(join(repoRoot, 'pnpm-workspace.yaml'))
 
-  await mkdir(targetExamplesDir, {recursive: true})
+  await mkdir(targetFixturesDir, {recursive: true})
 
-  for (const example of EXAMPLES_TO_COPY) {
-    const sourceDir = join(sourceExamplesDir, example)
-    const targetDir = join(targetExamplesDir, example)
+  for (const fixture of FIXTURES_TO_COPY) {
+    const sourceDir = join(sourceFixturesDir, fixture)
+    const targetDir = join(targetFixturesDir, fixture)
 
-    console.log(`  Copying ${example}...`)
+    console.log(`  Copying ${fixture}...`)
 
-    // Copy the example, excluding node_modules, dist, and .turbo
+    // Copy the fixture, excluding node_modules, dist, and .turbo
     await cp(sourceDir, targetDir, {
       filter: (src) => {
         const name = src.split('/').pop()
@@ -104,10 +104,10 @@ async function copyExamples() {
     await writeFile(pkgJsonPath, transformedContent, 'utf8')
   }
 
-  console.log('Examples copied successfully!')
+  console.log('Fixtures copied successfully!')
 }
 
-await copyExamples().catch((error) => {
-  console.error('Failed to copy examples:', error)
+await copyFixtures().catch((error) => {
+  console.error('Failed to copy fixtures:', error)
   process.exit(1)
 })

@@ -4,11 +4,11 @@ import {promisify} from 'node:util'
 const execAsync = promisify(exec)
 
 /**
- * Builds a test example by running `npx sanity build --yes` in the example directory.
+ * Builds a test fixture by running `npx sanity build --yes` in the fixture directory.
  *
- * @param cwd - The directory path of the example to build
+ * @param cwd - The directory path of the fixture to build
  * @returns Promise that resolves when the build is complete
  */
-export async function buildExample(cwd: string): Promise<void> {
+export async function buildFixture(cwd: string): Promise<void> {
   await execAsync('npx sanity build --yes', {cwd})
 }
