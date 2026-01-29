@@ -13754,11 +13754,11 @@ snapshots:
 
   '@types/follow-redirects@1.14.4':
     dependencies:
-      '@types/node': 20.19.30
+      '@types/node': 25.0.10
 
   '@types/gunzip-maybe@1.4.3':
     dependencies:
-      '@types/node': 20.19.30
+      '@types/node': 25.0.10
 
   '@types/hast@3.0.4':
     dependencies:
@@ -13768,7 +13768,7 @@ snapshots:
 
   '@types/jsdom@27.0.0':
     dependencies:
-      '@types/node': 20.19.30
+      '@types/node': 25.0.10
       '@types/tough-cookie': 4.0.5
       parse5: 7.3.0
 
@@ -13790,7 +13790,7 @@ snapshots:
 
   '@types/mute-stream@0.0.4':
     dependencies:
-      '@types/node': 20.19.30
+      '@types/node': 25.0.10
 
   '@types/node@20.19.30':
     dependencies:
@@ -13838,12 +13838,12 @@ snapshots:
 
   '@types/tar-fs@2.0.4':
     dependencies:
-      '@types/node': 20.19.30
+      '@types/node': 25.0.10
       '@types/tar-stream': 3.1.4
 
   '@types/tar-stream@3.1.4':
     dependencies:
-      '@types/node': 20.19.30
+      '@types/node': 25.0.10
 
   '@types/tough-cookie@4.0.5': {}
 
@@ -13892,8 +13892,8 @@ snapshots:
 
   '@typescript-eslint/project-service@8.46.4(typescript@5.9.3)':
     dependencies:
-      '@typescript-eslint/tsconfig-utils': 8.46.4(typescript@5.9.3)
-      '@typescript-eslint/types': 8.46.4
+      '@typescript-eslint/tsconfig-utils': 8.53.1(typescript@5.9.3)
+      '@typescript-eslint/types': 8.53.1
       debug: 4.4.3(supports-color@8.1.1)
       typescript: 5.9.3
     transitivePeerDependencies:
