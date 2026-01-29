@@ -1,15 +1,18 @@
 # Sanity CLI
 
-> [!CAUTION]
-> This is _not_ the source code for the currently published `@sanity/cli` and related modules! Read below!
+## About This Repository
 
-## Background
+This repository contains the Sanity CLI, built with the [oclif framework](https://oclif.io).
 
-We're rewriting the Sanity CLI and CLI-related modules for a blueprints-first world. It should support both the new and the old world (studio-based projects). It will also provide a significantly improved developer experience.
+The CLI provides:
 
-The current state is very much WIP - see migration progress below.
+- Project initialization and management
+- Dataset operations and backups
+- Schema deployment and validation
+- Development server and deployment tools
+- GraphQL API management
 
-The currently published `@sanity/cli` source code lives in the [sanity monorepo](https://github.com/sanity-io/sanity/tree/next/packages/%40sanity/cli) and is spread across the `@sanity/cli` and `sanity` modules for legacy reasons. The intention is for the `@sanity/cli` module to house everything CLI related going forward.
+For the Sanity Studio and related tools, see the [sanity monorepo](https://github.com/sanity-io/sanity).
 
 ## Technical implementation
 
