@@ -4,8 +4,6 @@ import {generateHelpUrl} from '@sanity/generate-help-url'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {upperFirst} from 'lodash-es'
 
-const consoleOutputter = {error: (...args: unknown[]) => console.error(...args)}
-
 export class SchemaError extends Error {
   problemGroups: SchemaValidationProblemGroup[]
 
@@ -16,8 +14,7 @@ export class SchemaError extends Error {
   }
 
   print(output: Output): void {
-    const logger = output || consoleOutputter
-    logger.error('Uh oh… found errors in schema:\n')
+    output.warn('Uh oh… found errors in schema:\n')
 
     for (const group of this.problemGroups) {
       for (const problem of group.problems) {

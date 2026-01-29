@@ -23,7 +23,7 @@ export async function getCurrentSchemaProps(
     const apiUrl = `${config.url}/${uri.replace(/^\//, '')}`
 
     const res = await getUrlHeaders(apiUrl, {
-      Authorization: `Bearer ${client.config().token}`,
+      Authorization: `Bearer ${config.token}`,
     })
 
     return {

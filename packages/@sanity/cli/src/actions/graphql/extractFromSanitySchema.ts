@@ -154,7 +154,6 @@ function getCrossDatasetReferenceMetadata(
     if (!type) return
     if ('dataset' in type && typeof type.dataset === 'string') return type.dataset
     if (type.type) return getDataset(type.type)
-    return
   }
 
   const typeNames = getTypeNames(typeDef)

@@ -35,6 +35,7 @@ const generations = {
 }
 
 const ignoredBreaking = new Set<string>(['OPTIONAL_INPUT_FIELD_ADDED'])
+// Reserved for future use to filter out specific dangerous change types
 const ignoredWarnings = new Set<string>()
 
 const debug = graphqlDebug.extend('deploy')
@@ -121,10 +122,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       this.error('Failed to get GraphQL APIs', {exit: 1})
     }
 
-    let hasMultipleApis = apiDefs.length > 1
-    if (flags.api) {
-      hasMultipleApis = flags.api.length > 1
-    }
+    const hasMultipleApis = flags.api ? flags.api.length > 1 : apiDefs.length > 1
 
     const usedFlags = [
       datasetFlag && '--dataset',
@@ -166,9 +164,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         continue
       }
 
-      const dataset = datasetFlag || apiDef.dataset
-      const tag = tagFlag || apiDef.tag || 'default'
-      const apiName = [dataset, tag].join('/')
+      const {apiName} = this.getApiIdentifiers(apiDef, datasetFlag, tagFlag)
       if (apiNames.has(apiName)) {
         this.error(`Multiple GraphQL APIs with the same dataset and tag found (${apiName})`, {
           exit: 1,
@@ -205,10 +201,8 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
       index++
 
-      const dataset = datasetFlag || apiDef.dataset
-      const tag = tagFlag || apiDef.tag || 'default'
+      const {apiName, dataset, tag} = this.getApiIdentifiers(apiDef, datasetFlag, tagFlag)
       const {nonNullDocumentFields, playground, projectId, schema} = apiDef
-      const apiName = [dataset, tag].join('/')
       spin = spinner(`Generating GraphQL API: ${apiName}`).start()
 
       if (!dataset) {
@@ -377,6 +371,21 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
     }
   }
 
+  private filterChanges(valid: ValidationResponse) {
+    const {breakingChanges: breaking, dangerousChanges: dangerous} = valid
+    return {
+      breakingChanges: breaking.filter((change) => !ignoredBreaking.has(change.type)),
+      dangerousChanges: dangerous.filter((change) => !ignoredWarnings.has(change.type)),
+    }
+  }
+
+  private getApiIdentifiers(apiDef: ResolvedGraphQLAPI, datasetFlag?: string, tagFlag?: string) {
+    const dataset = datasetFlag || apiDef.dataset
+    const tag = tagFlag || apiDef.tag || 'default'
+    const apiName = [dataset, tag].join('/')
+    return {apiName, dataset, tag}
+  }
+
   private isRecognizedApiGeneration(generation: string): generation is 'gen1' | 'gen2' | 'gen3' {
     return ['gen1', 'gen2', 'gen3'].includes(generation)
   }
@@ -385,22 +394,24 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
     valid: ValidationResponse,
     {force, spin}: {force?: boolean; spin: ReturnType<typeof spinner>},
   ) {
-    const {breakingChanges: breaking, dangerousChanges: dangerous, validationError} = valid
+    const {validationError} = valid
     if (validationError) {
       spin.fail()
       this.error(`GraphQL schema is not valid:\n\n${validationError}`, {exit: 1})
     }
 
-    const breakingChanges = breaking.filter((change) => !ignoredBreaking.has(change.type))
-    const dangerousChanges = dangerous.filter((change) => !ignoredWarnings.has(change.type))
+    const {breakingChanges, dangerousChanges} = this.filterChanges(valid)
 
     const hasProblematicChanges = breakingChanges.length > 0 || dangerousChanges.length > 0
-    if (force && hasProblematicChanges) {
+
+    if (!hasProblematicChanges) {
+      spin.succeed()
+      return true
+    }
+
+    if (force) {
       spin.text = 'Validating GraphQL API: Dangerous changes. Forced with `--force`.'
       spin.warn()
-      return true
-    } else if (force || !hasProblematicChanges) {
-      spin.succeed()
       return true
     }
 
@@ -409,10 +420,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
   }
 
   private renderBreakingChanges(valid: ValidationResponse) {
-    const {breakingChanges: breaking, dangerousChanges: dangerous} = valid
-
-    const breakingChanges = breaking.filter((change) => !ignoredBreaking.has(change.type))
-    const dangerousChanges = dangerous.filter((change) => !ignoredWarnings.has(change.type))
+    const {breakingChanges, dangerousChanges} = this.filterChanges(valid)
 
     if (dangerousChanges.length > 0) {
       this.output.log('\nFound potentially dangerous changes from previous schema:')
