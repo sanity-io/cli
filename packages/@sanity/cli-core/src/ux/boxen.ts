@@ -1,1 +1,2 @@
-export {default as boxen, type Options as BoxenOptions} from 'boxen'
+export {default as boxen} from 'boxen'
+export * from 'boxen'
