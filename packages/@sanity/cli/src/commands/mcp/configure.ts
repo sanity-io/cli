@@ -1,6 +1,6 @@
 import {SanityCommand} from '@sanity/cli-core'
 
-import {setupMCP} from '../../actions/mcp/mcp.js'
+import {setupMCP} from '../../actions/mcp/setupMCP.js'
 
 export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpCommand> {
   static override description =
@@ -14,15 +14,14 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
   ]
 
   public async run(): Promise<void> {
+    // @todo
+    // const trace = telemetry.trace(MCPConfigureTrace)
     await setupMCP(true)
 
-    // TODO: Add telemetry tracking
     // @todo
     // trace.log({
-    //   step: 'mcpSetup',
     //   detectedEditors: mcpResult.detectedEditors,
     //   configuredEditors: mcpResult.configuredEditors,
-    //   skipped: mcpResult.skipped,
     // })
     // if (mcpResult.error) {
     //   trace.error(mcpResult.error)

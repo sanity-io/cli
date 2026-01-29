@@ -39,7 +39,7 @@ import {
 } from '../actions/init/templates/nextjs/index.js'
 import {type VersionedFramework} from '../actions/init/types.js'
 import {EditorName} from '../actions/mcp/editorConfigs.js'
-import {setupMCP} from '../actions/mcp/mcp.js'
+import {setupMCP} from '../actions/mcp/setupMCP.js'
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'

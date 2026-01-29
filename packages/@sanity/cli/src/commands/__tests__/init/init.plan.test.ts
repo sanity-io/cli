@@ -84,7 +84,7 @@ vi.mock('../../../util/getProjectDefaults.js', () => ({
   }),
 }))
 
-vi.mock('../../../actions/mcp/mcp.js', () => ({
+vi.mock('../../../actions/mcp/setupMCP.js', () => ({
   setupMCP: vi.fn().mockResolvedValue({
     configuredEditors: [],
     detectedEditors: [],
