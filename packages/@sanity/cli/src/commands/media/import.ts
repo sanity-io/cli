@@ -1,8 +1,7 @@
 import {Args, Flags} from '@oclif/core'
 import {getProjectCliClient, SanityCommand} from '@sanity/cli-core'
-import {chalk, spinner} from '@sanity/cli-core/ux'
+import {boxen, chalk, spinner} from '@sanity/cli-core/ux'
 import {SanityClient} from '@sanity/client'
-import boxen from 'boxen'
 import {type OperatorFunction, pipe, scan, tap} from 'rxjs'
 
 import {importer, type State} from '../../actions/media/importMedia.js'

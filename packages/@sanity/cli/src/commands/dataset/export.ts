@@ -4,10 +4,9 @@ import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
 import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
-import {input, spinner} from '@sanity/cli-core/ux'
+import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
-import boxen from 'boxen'
 import prettyMs from 'pretty-ms'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'

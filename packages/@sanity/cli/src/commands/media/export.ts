@@ -4,9 +4,8 @@ import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
 import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
-import {input, spinner} from '@sanity/cli-core/ux'
+import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
-import boxen from 'boxen'
 import prettyMs from 'pretty-ms'
 
 import {promptForMediaLibrary} from '../../prompts/promptForMediaLibrary.js'
