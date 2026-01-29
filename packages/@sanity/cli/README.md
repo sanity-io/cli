@@ -92,6 +92,7 @@ Code for sanity cli
 - [`sanity preview [OUTPUTDIR]`](#sanity-preview-outputdir)
 - [`sanity projects create [PROJECTNAME]`](#sanity-projects-create-projectname)
 - [`sanity projects list`](#sanity-projects-list)
+- [`sanity read`](#sanity-read)
 - [`sanity schema delete`](#sanity-schema-delete)
 - [`sanity schema deploy`](#sanity-schema-deploy)
 - [`sanity schema extract`](#sanity-schema-extract)
@@ -2683,6 +2684,23 @@ EXAMPLES
 ```
 
 _See code: [src/commands/projects/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.8/src/commands/projects/list.ts)_
+
+## `sanity read`
+
+Read the studio configuration file
+
+```
+USAGE
+  $ sanity read [--resolvePlugins]
+
+FLAGS
+  --resolvePlugins  Resolve plugins
+
+DESCRIPTION
+  Read the studio configuration file
+```
+
+_See code: [src/commands/read.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.8/src/commands/read.ts)_
 
 ## `sanity schema delete`
 
