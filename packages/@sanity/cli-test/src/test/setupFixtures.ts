@@ -111,7 +111,7 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
       allFixturePaths.push({
         fixture,
         fromPath: join(fixturesDir, fixture),
-        includeDist: 'includeDist' in options ? options.includeDist : false,
+        includeDist: 'includeDist' in options && options.includeDist ? options.includeDist : false,
       })
     }
 
