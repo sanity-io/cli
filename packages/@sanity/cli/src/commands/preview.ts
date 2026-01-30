@@ -51,7 +51,10 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
     } catch (error: unknown) {
       const suggestions =
         error instanceof Error && error.name === 'BUILD_NOT_FOUND'
-          ? ['Run `sanity build` to create a production build first.']
+          ? [
+              '`sanity build` to create a production build',
+              '`sanity dev` to run a development server',
+            ]
           : undefined
 
       const message = error instanceof Error ? error.message : String(error)

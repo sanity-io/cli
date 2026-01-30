@@ -50,7 +50,9 @@ describe(
       expect(error?.message).toContain(
         `Could not find a production build in the '${convertToSystemPath(`${cwd}/dist`)}' directory.`,
       )
-      expect(error?.suggestions).toContain('Run `sanity build` to create a production build first.')
+      expect(error?.suggestions).toContain('`sanity build` to create a production build')
+      expect(error?.suggestions).toContain('`sanity dev` to run a development server')
+
       expect(error?.oclif?.exit).toBe(1)
     })
 
