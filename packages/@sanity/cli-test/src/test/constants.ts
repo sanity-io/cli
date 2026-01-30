@@ -15,6 +15,8 @@ export const DEFAULT_FIXTURES: Record<FixtureName, FixtureOptions> = {
   'basic-app': {},
   'basic-studio': {},
   'multi-workspace-studio': {},
+  'prebuilt-app': {includeDist: true},
+  'prebuilt-studio': {includeDist: true},
   'worst-case-studio': {},
 } as const
 
@@ -26,6 +28,8 @@ export type FixtureName =
   | 'basic-app'
   | 'basic-studio'
   | 'multi-workspace-studio'
+  | 'prebuilt-app'
+  | 'prebuilt-studio'
   | 'worst-case-studio'
 
 /**

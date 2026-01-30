@@ -54,9 +54,7 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
       throw err
     }
 
-    const error = new Error(
-      `Could not find a production build in the '${root}' directory.\nTry building your ${isApp ? 'application' : 'studio'} with 'sanity build' before starting the preview server.`,
-    )
+    const error = new Error(`Could not find a production build in the '${root}' directory.`)
     error.name = 'BUILD_NOT_FOUND'
     throw error
   }
