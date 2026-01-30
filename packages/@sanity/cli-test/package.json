@@ -46,7 +46,7 @@
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "clean": "rimraf dist fixtures",
-    "copy:fixtures": "tsx scripts/copy-fixtures.js",
+    "copy:fixtures": "tsx scripts/copy-fixtures.ts",
     "lint": "eslint .",
     "publint": "publint",
     "test": "vitest run",
