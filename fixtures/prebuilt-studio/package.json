@@ -13,7 +13,6 @@
     "preview": "sanity preview"
   },
   "dependencies": {
-    "@sanity/vision": "catalog:",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "sanity": "catalog:",
