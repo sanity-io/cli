@@ -3,7 +3,7 @@ import {copyFile, mkdir, readdir, readFile, stat, symlink, writeFile} from 'node
 import {join} from 'node:path'
 
 import {getFixturesPath, getTempPath} from '../utils/paths.js'
-import {type FixtureName} from './constants.js'
+import {DEFAULT_FIXTURES, type FixtureName} from './constants.js'
 
 /**
  * @deprecated Use {@link TestFixtureOptions} instead. This type alias will be removed in a future release.
@@ -89,6 +89,8 @@ export async function testFixture(
   options: TestFixtureOptions = {},
 ): Promise<string> {
   const {tempDir} = options
+  const {includeDist = false} =
+    fixtureName in DEFAULT_FIXTURES ? DEFAULT_FIXTURES[fixtureName as FixtureName] : {}
 
   const tempDirectory = getTempPath(tempDir)
 
@@ -100,20 +102,20 @@ export async function testFixture(
     if (!stats.isDirectory()) {
       throw new Error(`${tempFixturePath} is not a directory`)
     }
-  } catch (e) {
+  } catch (err: unknown) {
     // If the cloned fixture doesn't exist, copy from the bundled fixtures
-    if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
+    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
       tempFixturePath = join(getFixturesPath(), fixtureName)
     } else {
-      throw e
+      throw err
     }
   }
 
   const tempId = randomBytes(8).toString('hex')
   const tempPath = join(tempDirectory, `fixture-${fixtureName}-${tempId}`)
 
-  // Always skip node_modules (will be symlinked), dist (tests build if needed), and tmp
-  const skipDirs = ['node_modules', 'dist', 'tmp']
+  // Always skip node_modules (will be symlinked), tmp and (unless specifically included) dist
+  const skipDirs = ['node_modules', 'tmp', ...(includeDist ? [] : ['dist'])]
 
   // Copy the fixture to the temp directory
   await testCopyDirectory(tempFixturePath, tempPath, skipDirs)

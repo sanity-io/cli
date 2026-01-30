@@ -10,26 +10,20 @@ import {dirname, join, resolve} from 'node:path'
 
 import {parse as parseYaml} from 'yaml'
 
+import {DEFAULT_FIXTURES} from '../src/index.js'
+
 const packageRoot = dirname(import.meta.dirname)
 // Go up 3 levels to get to the repo root (packages/@sanity/cli-test -> packages/@sanity -> packages -> root)
 const repoRoot = resolve(packageRoot, '../../..')
 const sourceFixturesDir = join(repoRoot, 'fixtures')
 const targetFixturesDir = join(packageRoot, 'fixtures')
 
-// Copy all 4 fixtures
-const FIXTURES_TO_COPY = [
-  'basic-app',
-  'basic-studio',
-  'multi-workspace-studio',
-  'worst-case-studio',
-]
-
 /**
  * Parses the pnpm-workspace.yaml file and extracts the catalog section.
  * @param yamlPath - Path to the pnpm-workspace.yaml file
  * @returns Map of package names to versions
  */
-async function parseCatalog(yamlPath) {
+async function parseCatalog(yamlPath: string) {
   const content = await readFile(yamlPath, 'utf8')
   const workspace = parseYaml(content)
 
@@ -37,8 +31,12 @@ async function parseCatalog(yamlPath) {
     throw new Error('Could not find catalog section in pnpm-workspace.yaml')
   }
 
-  const catalog = new Map()
+  const catalog = new Map<string, string>()
   for (const [packageName, version] of Object.entries(workspace.catalog)) {
+    if (typeof version !== 'string') {
+      throw new TypeError(`Invalid version for package ${packageName} in catalog`)
+    }
+
     catalog.set(packageName, version)
   }
 
@@ -51,10 +49,10 @@ async function parseCatalog(yamlPath) {
  * @param catalog - Map of package names to versions from the catalog
  * @returns Transformed package.json content
  */
-function transformPackageJson(content, catalog) {
+function transformPackageJson(content: string, catalog: Map<string, string>): string {
   const pkg = JSON.parse(content)
 
-  function transformDeps(deps) {
+  function transformDeps(deps: Record<string, string> | undefined) {
     if (!deps) return
 
     for (const [name, version] of Object.entries(deps)) {
@@ -82,17 +80,21 @@ async function copyFixtures() {
 
   await mkdir(targetFixturesDir, {recursive: true})
 
-  for (const fixture of FIXTURES_TO_COPY) {
+  for (const [fixture, options] of Object.entries(DEFAULT_FIXTURES)) {
     const sourceDir = join(sourceFixturesDir, fixture)
     const targetDir = join(targetFixturesDir, fixture)
 
     console.log(`  Copying ${fixture}...`)
 
-    // Copy the fixture, excluding node_modules, dist, and .turbo
+    // Copy the fixture, excluding node_modules, .turbo and (unless specified) dist directories
     await cp(sourceDir, targetDir, {
       filter: (src) => {
         const name = src.split('/').pop()
-        return name !== 'node_modules' && name !== 'dist' && name !== '.turbo'
+        return (
+          name !== 'node_modules' &&
+          name !== '.turbo' &&
+          (name !== 'dist' || options.includeDist === true)
+        )
       },
       recursive: true,
     })
