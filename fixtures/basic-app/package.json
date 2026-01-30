@@ -8,7 +8,6 @@
   "license": "UNLICENSED",
   "main": "package.json",
   "scripts": {
-    "build": "sanity build",
     "dev": "sanity dev",
     "start": "sanity start"
   },
