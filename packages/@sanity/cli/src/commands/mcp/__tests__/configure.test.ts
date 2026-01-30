@@ -115,7 +115,7 @@ describe('#mcp:configure', () => {
     expect(stdout).toContain('MCP configured for Cursor')
   })
 
-  test.skipIf(process.platform !== 'darwin')(
+  test.runIf(process.platform === 'darwin')(
     'detects VS Code on macOS and configures it',
     async () => {
       const originalPlatform = process.platform
@@ -169,7 +169,7 @@ describe('#mcp:configure', () => {
     },
   )
 
-  test.skipIf(process.platform !== 'win32')(
+  test.runIf(process.platform === 'win32')(
     'detects VS Code on Windows and configures it',
     async () => {
       const originalPlatform = process.platform
@@ -277,7 +277,7 @@ describe('#mcp:configure', () => {
     expect(stdout).toContain('MCP configured for Claude Code')
   })
 
-  test.skipIf(process.platform !== 'darwin')(
+  test.runIf(process.platform === 'darwin')(
     'detects OpenCode via CLI on macOS and configures it',
     async () => {
       const originalPlatform = process.platform
@@ -343,7 +343,7 @@ describe('#mcp:configure', () => {
     },
   )
 
-  test.skipIf(process.platform !== 'darwin')(
+  test.runIf(process.platform === 'darwin')(
     'detects VS Code Insiders on macOS and configures it',
     async () => {
       const originalPlatform = process.platform
@@ -397,7 +397,7 @@ describe('#mcp:configure', () => {
     },
   )
 
-  test.skipIf(process.platform !== 'win32')(
+  test.runIf(process.platform === 'win32')(
     'detects VS Code Insiders on Windows and configures it',
     async () => {
       const originalPlatform = process.platform
@@ -451,7 +451,7 @@ describe('#mcp:configure', () => {
     },
   )
 
-  test.skipIf(process.platform !== 'darwin')('detects Zed on macOS and configures it', async () => {
+  test.runIf(process.platform === 'darwin')('detects Zed on macOS and configures it', async () => {
     const originalPlatform = process.platform
     Object.defineProperty(process, 'platform', {
       value: 'darwin',
@@ -502,59 +502,56 @@ describe('#mcp:configure', () => {
     })
   })
 
-  test.skipIf(process.platform !== 'win32')(
-    'detects Zed on Windows and configures it',
-    async () => {
-      const originalPlatform = process.platform
-      Object.defineProperty(process, 'platform', {
-        value: 'win32',
-      })
+  test.runIf(process.platform === 'win32')('detects Zed on Windows and configures it', async () => {
+    const originalPlatform = process.platform
+    Object.defineProperty(process, 'platform', {
+      value: 'win32',
+    })
 
-      mockExistsSync.mockImplementation((path: PathLike) => {
-        return String(path).includes(String.raw`AppData\Roaming\Zed`)
-      })
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes(String.raw`AppData\Roaming\Zed`)
+    })
 
-      mockCheckbox.mockResolvedValue(['Zed'])
+    mockCheckbox.mockResolvedValue(['Zed'])
 
-      mockApi({
-        apiVersion: MCP_API_VERSION,
-        method: 'post',
-        uri: '/auth/session/create',
-      }).reply(200, {id: 'session-zed', sid: 'session-zed'})
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-zed', sid: 'session-zed'})
 
-      mockApi({
-        apiVersion: MCP_API_VERSION,
-        method: 'get',
-        query: {sid: 'session-zed'},
-        uri: '/auth/fetch',
-      }).reply(200, {label: 'MCP Token', token: 'test-token-zed'})
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-zed'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-zed'})
 
-      const {stdout} = await testCommand(ConfigureMcpCommand, [])
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-      expect(mockCheckbox).toHaveBeenCalledWith({
-        choices: [
-          {
-            checked: true,
-            name: 'Zed',
-            value: 'Zed',
-          },
-        ],
-        message: 'Configure Sanity MCP server?',
-      })
+    expect(mockCheckbox).toHaveBeenCalledWith({
+      choices: [
+        {
+          checked: true,
+          name: 'Zed',
+          value: 'Zed',
+        },
+      ],
+      message: 'Configure Sanity MCP server?',
+    })
 
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.stringContaining(String.raw`AppData\Roaming\Zed\settings.json`),
-        expect.stringContaining('test-token-zed'),
-        'utf8',
-      )
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(String.raw`AppData\Roaming\Zed\settings.json`),
+      expect.stringContaining('test-token-zed'),
+      'utf8',
+    )
 
-      expect(stdout).toContain('MCP configured for Zed')
+    expect(stdout).toContain('MCP configured for Zed')
 
-      Object.defineProperty(process, 'platform', {
-        value: originalPlatform,
-      })
-    },
-  )
+    Object.defineProperty(process, 'platform', {
+      value: originalPlatform,
+    })
+  })
 
   test('shows already installed status for configured editors', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
