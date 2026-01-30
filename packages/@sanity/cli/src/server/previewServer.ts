@@ -49,14 +49,14 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
   try {
     const index = await readFile(indexPath, 'utf8')
     basePath = tryResolveBasePathFromIndex(index)
-  } catch (err) {
-    if (err.code !== 'ENOENT') {
-      throw err
+  } catch (err: unknown) {
+    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
+      const error = new Error(`Could not find a production build in the '${root}' directory.`)
+      error.name = 'BUILD_NOT_FOUND'
+      throw error
     }
 
-    const error = new Error(`Could not find a production build in the '${root}' directory.`)
-    error.name = 'BUILD_NOT_FOUND'
-    throw error
+    throw err
   }
 
   const mode = 'production'
