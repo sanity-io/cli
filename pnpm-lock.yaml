@@ -30,9 +30,6 @@ catalogs:
     '@sanity/types':
       specifier: ^5.7.0
       version: 5.7.0
-    '@sanity/vision':
-      specifier: ^5.7.0
-      version: 5.7.0
     '@swc/cli':
       specifier: ^0.7.10
       version: 0.7.10
@@ -42,9 +39,6 @@ catalogs:
     '@types/debug':
       specifier: ^4.1.12
       version: 4.1.12
-    '@types/jsdom':
-      specifier: ^27.0.0
-      version: 27.0.0
     '@types/node':
       specifier: ^20.19.30
       version: 20.19.30
@@ -66,15 +60,9 @@ catalogs:
     get-tsconfig:
       specifier: ^4.13.0
       version: 4.13.0
-    jsdom:
-      specifier: ^27.4.0
-      version: 27.4.0
     nock:
       specifier: ^14.0.10
       version: 14.0.10
-    ora:
-      specifier: ^9.0.0
-      version: 9.1.0
     prettier:
       specifier: ^3.8.1
       version: 3.8.1
@@ -369,9 +357,6 @@ importers:
       '@vitejs/plugin-react':
         specifier: 'catalog:'
         version: 5.1.2(vite@7.3.1(@types/node@20.19.30)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
-      boxen:
-        specifier: ^8.0.1
-        version: 8.0.1
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
@@ -643,6 +628,9 @@ importers:
       babel-plugin-react-compiler:
         specifier: ^1.0.0
         version: 1.0.0
+      boxen:
+        specifier: ^8.0.1
+        version: 8.0.1
       chalk:
         specifier: ^5.6.2
         version: 5.6.2

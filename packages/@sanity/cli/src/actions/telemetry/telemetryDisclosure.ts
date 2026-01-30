@@ -1,7 +1,6 @@
 import {ux} from '@oclif/core'
 import {getUserConfig, isCi} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
-import boxen from 'boxen'
+import {boxen, chalk} from '@sanity/cli-core/ux'
 
 import {telemetryDebug} from './telemetryDebug.js'
 import {telemetryLearnMoreMessage} from './telemetryLearnMoreMessage.js'

@@ -84,7 +84,6 @@
     "@vercel/frameworks": "3.8.4",
     "@vercel/fs-detectors": "5.5.2",
     "@vitejs/plugin-react": "catalog:",
-    "boxen": "^8.0.1",
     "chokidar": "^4.0.3",
     "console-table-printer": "^2.14.6",
     "date-fns": "^4.1.0",

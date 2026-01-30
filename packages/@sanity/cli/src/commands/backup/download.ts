@@ -6,9 +6,8 @@ import {finished} from 'node:stream/promises'
 
 import {Args, Flags} from '@oclif/core'
 import {fileExists, SanityCommand} from '@sanity/cli-core'
-import {chalk, confirm, input, select} from '@sanity/cli-core/ux'
+import {boxen, chalk, confirm, input, select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
-import boxen from 'boxen'
 import pMap from 'p-map'
 import prettyMs from 'pretty-ms'
 
