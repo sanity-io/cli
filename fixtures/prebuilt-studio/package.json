@@ -1,0 +1,25 @@
+{
+  "name": "prebuilt-studio",
+  "version": "1.0.0",
+  "private": true,
+  "keywords": [
+    "sanity"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "package.json",
+  "scripts": {
+    "dev": "sanity dev",
+    "preview": "sanity preview"
+  },
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "sanity": "catalog:",
+    "styled-components": "^6.3.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.9",
+    "typescript": "^5.9.3"
+  }
+}

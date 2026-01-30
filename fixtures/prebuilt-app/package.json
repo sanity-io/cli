@@ -1,0 +1,26 @@
+{
+  "name": "prebuilt-app",
+  "version": "1.0.0",
+  "private": true,
+  "keywords": [
+    "sanity"
+  ],
+  "license": "UNLICENSED",
+  "main": "package.json",
+  "scripts": {
+    "dev": "sanity dev",
+    "preview": "sanity preview"
+  },
+  "dependencies": {
+    "@sanity/sdk": "^2.6.0",
+    "@sanity/sdk-react": "^2.6.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "sanity": "catalog:"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.9",
+    "sanity": "catalog:",
+    "typescript": "^5.9.3"
+  }
+}

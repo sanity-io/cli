@@ -39,20 +39,21 @@ export interface SetupTestFixturesOptions {
   tempDir?: string
 }
 
-async function getAdditionalFixturePaths(fixtures: string[]): Promise<FixturePath[]> {
+async function getAdditionalFixturePaths(fixtures: string[]): Promise<FixtureDetails[]> {
   const paths = await glob(fixtures, {
     absolute: true,
     ignore: ['**/node_modules/**', '**/dist/**'],
     onlyDirectories: true,
   })
 
-  const additionalFixtures: FixturePath[] = []
+  const additionalFixtures: FixtureDetails[] = []
 
   for (const path of paths) {
     if (await fileExists(join(`${path}/package.json`))) {
       additionalFixtures.push({
         fixture: basename(path),
         fromPath: path,
+        includeDist: false,
       })
     }
   }
@@ -60,10 +61,12 @@ async function getAdditionalFixturePaths(fixtures: string[]): Promise<FixturePat
   return additionalFixtures
 }
 
-interface FixturePath {
+interface FixtureDetails {
   fixture: string
   fromPath: string
+  includeDist: boolean
 }
+
 /**
  * Global setup function for initializing test fixtures.
  *
@@ -101,13 +104,14 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
     const fixturesDir = getFixturesPath()
     const tempDirectory = getTempPath(tempDir)
 
-    const allFixturePaths: FixturePath[] = []
+    const allFixturePaths: FixtureDetails[] = []
 
     // Add the default fixtures
-    for (const fixture of DEFAULT_FIXTURES) {
+    for (const [fixture, options] of Object.entries(DEFAULT_FIXTURES)) {
       allFixturePaths.push({
         fixture,
         fromPath: join(fixturesDir, fixture),
+        includeDist: 'includeDist' in options && options.includeDist ? options.includeDist : false,
       })
     }
 
@@ -124,10 +128,10 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
       }
     }
 
-    for (const {fixture, fromPath} of allFixturePaths) {
+    for (const {fixture, fromPath, includeDist} of allFixturePaths) {
       const toPath = join(tempDirectory, `fixture-${fixture}`)
       // Copy the fixture, excluding node_modules and dist
-      await testCopyDirectory(fromPath, toPath, ['node_modules', 'dist'])
+      await testCopyDirectory(fromPath, toPath, ['node_modules', ...(includeDist ? [] : ['dist'])])
 
       // Replace the package.json name with a temp name
       const packageJsonPath = join(toPath, 'package.json')

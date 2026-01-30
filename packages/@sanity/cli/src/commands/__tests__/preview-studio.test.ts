@@ -5,111 +5,61 @@ import {join} from 'node:path'
 
 import {convertToSystemPath, testCommand, testFixture} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
-import {buildFixture} from '~test/helpers/buildFixture.js'
 
 import {closeServer, tryCloseServer} from '../../../test/testUtils.js'
 import {PreviewCommand} from '../preview.js'
 
 describe(
-  '#preview',
+  '#preview (studio)',
   {
     concurrent: false,
     timeout: (platform() === 'win32' ? 60 : 30) * 1000,
   },
   () => {
-    describe('basic-app', () => {
-      test('should start the example', async () => {
-        const cwd = await testFixture('basic-app')
+    test('should preview a valid build', async () => {
+      const cwd = await testFixture('prebuilt-studio')
 
-        // Build the example
-        await buildFixture(cwd)
-        process.chdir(cwd)
+      // Change to the example directory
+      process.chdir(cwd)
 
-        const {error, result, stdout} = await testCommand(PreviewCommand, ['--port', '4334'], {
-          config: {root: cwd},
-        })
-
-        await tryCloseServer(result)
-
-        expect(error).toBeUndefined()
-        expect(stdout).toContain(`Sanity application using vite@`)
-        expect(stdout).toContain(`ready in`)
-        expect(stdout).toContain(
-          `ms and running at http://localhost:4334/ (production preview mode)`,
-        )
+      const {error, result, stdout} = await testCommand(PreviewCommand, ['--port', '4333'], {
+        config: {root: cwd},
       })
 
-      test('should throw an error if the example has not been built', async () => {
-        const cwd = await testFixture('basic-app')
-        // Change to the example directory
-        process.chdir(cwd)
+      await tryCloseServer(result)
 
-        const {error, result, stdout} = await testCommand(PreviewCommand, [], {
-          config: {root: cwd},
-        })
-
-        await tryCloseServer(result)
-
-        expect(error?.message).toContain('Failed to start preview server')
-        expect(error?.oclif?.exit).toBe(1)
-        expect(stdout).toContain(
-          `Could not find a production build in the '${convertToSystemPath(`${cwd}/dist`)}' directory.`,
-        )
-        expect(stdout).toContain(
-          `Try building your application with 'sanity build' before starting the preview server.`,
-        )
-      })
+      expect(error).toBeUndefined()
+      expect(stdout).toContain(`Sanity Studio using vite@`)
+      expect(stdout).toContain(`ready in`)
+      expect(stdout).toContain(`ms and running at http://localhost:4333/ (production preview mode)`)
     })
 
-    describe('basic-studio', () => {
-      test('should start the example', async () => {
-        const cwd = await testFixture('basic-studio')
-        // Build the example
-        await buildFixture(cwd)
-        // Change to the example directory
-        process.chdir(cwd)
+    test('should throw an error if the studio has not been built', async () => {
+      const cwd = await testFixture('basic-studio')
+      // Change to the example directory
+      process.chdir(cwd)
 
-        const {error, result, stdout} = await testCommand(PreviewCommand, ['--port', '4333'], {
-          config: {root: cwd},
-        })
-
-        await tryCloseServer(result)
-
-        expect(error).toBeUndefined()
-        expect(stdout).toContain(`Sanity Studio using vite@`)
-        expect(stdout).toContain(`ready in`)
-        expect(stdout).toContain(
-          `ms and running at http://localhost:4333/ (production preview mode)`,
-        )
+      // Explicitly make sure the dist directory is missing/empty
+      await rm(join(cwd, 'dist'), {force: true, recursive: true})
+      const {error, result} = await testCommand(PreviewCommand, [], {
+        config: {root: cwd},
       })
 
-      test('should throw an error if the example has not been built', async () => {
-        const cwd = await testFixture('basic-studio')
-        // Change to the example directory
-        process.chdir(cwd)
+      await tryCloseServer(result)
 
-        const {error, result, stdout} = await testCommand(PreviewCommand, [], {
-          config: {root: cwd},
-        })
-
-        await tryCloseServer(result)
-
-        expect(error).toBeDefined()
-        expect(error?.message).toContain('Failed to start preview server')
-        expect(error?.oclif?.exit).toBe(1)
-        expect(stdout).toContain(
-          `Could not find a production build in the '${convertToSystemPath(`${cwd}/dist`)}' directory.`,
-        )
-        expect(stdout).toContain(
-          `Try building your studio with 'sanity build' before starting the preview server.`,
-        )
-      })
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Failed to start preview server')
+      expect(error?.message).toContain(
+        `Could not find a production build in the '${convertToSystemPath(`${cwd}/dist`)}' directory.`,
+      )
+      expect(error?.suggestions).toContain('`sanity build` to create a production build')
+      expect(error?.suggestions).toContain('`sanity dev` to run a development server')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('should use resolved base path from index.html file', async () => {
-      const cwd = await testFixture('basic-studio')
-      // Build the example
-      await buildFixture(cwd)
+      const cwd = await testFixture('prebuilt-studio')
+
       // Change to the example directory
       process.chdir(cwd)
 
@@ -144,9 +94,8 @@ describe(
     })
 
     test('should fallback to default basepath when cannot resolve from index.html', async () => {
-      const cwd = await testFixture('basic-studio')
-      // Build the example
-      await buildFixture(cwd)
+      const cwd = await testFixture('prebuilt-studio')
+
       // Change to the example directory
       process.chdir(cwd)
 
@@ -183,9 +132,8 @@ describe(
     })
 
     test('should throw an error if the index.html file is not found', async () => {
-      const cwd = await testFixture('basic-studio')
-      // Build the example
-      await buildFixture(cwd)
+      const cwd = await testFixture('prebuilt-studio')
+
       // Change to the example directory
       process.chdir(cwd)
 
@@ -204,9 +152,8 @@ describe(
     })
 
     test('should throw an error if port is already in use', async () => {
-      const cwd = await testFixture('basic-studio')
-      // Build the example
-      await buildFixture(cwd)
+      const cwd = await testFixture('prebuilt-studio')
+
       // Change to the example directory
       process.chdir(cwd)
 
@@ -230,43 +177,6 @@ describe(
         // Clean up the server
         await closeServer(server)
       }
-    })
-
-    test('should allow using vite config from sanity.cli.ts', async () => {
-      const cwd = await testFixture('basic-app')
-      // Change to the example directory
-      process.chdir(cwd)
-
-      // Create a vite.config.ts file
-      await writeFile(
-        join(cwd, 'sanity.cli.ts'),
-        `
-      import {defineCliConfig} from 'sanity/cli'
-
-      export default defineCliConfig({
-        app: {
-          entry: './src/App.tsx',
-          organizationId: 'organizationId',
-        },
-        vite: {
-          preview: {
-            port: 4339,
-          },
-        },
-      })
-    `,
-      )
-
-      // Build the example
-      await buildFixture(cwd)
-
-      const {result, stdout} = await testCommand(PreviewCommand, [], {
-        config: {root: cwd},
-      })
-
-      await tryCloseServer(result)
-
-      expect(stdout).toContain(`ms and running at http://localhost:4339/ (production preview mode)`)
     })
   },
 )

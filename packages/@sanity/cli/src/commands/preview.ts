@@ -1,8 +1,7 @@
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk, confirm} from '@sanity/cli-core/ux'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {previewAction} from '../actions/preview/previewAction.js'
 import {type PreviewServer} from '../server/previewServer.js'
@@ -49,28 +48,20 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
 
     try {
       return await previewAction({cliConfig, flags, outDir, workDir})
-    } catch (error) {
-      if (error.name !== 'BUILD_NOT_FOUND') {
-        previewDebug(`Failed to start preview server`, {error})
-        this.output.error(error.message, {exit: 1})
-      }
+    } catch (error: unknown) {
+      const suggestions =
+        error instanceof Error && error.name === 'BUILD_NOT_FOUND'
+          ? [
+              '`sanity build` to create a production build',
+              '`sanity dev` to run a development server',
+            ]
+          : undefined
 
-      this.output.log(chalk.red.bgBlack(error.message))
-      this.output.log(chalk.red.bgBlack('\n'))
-
-      const shouldRunDevServer =
-        isInteractive() &&
-        (await confirm({
-          message: 'Do you want to start a development server instead?',
-        }))
-
-      if (shouldRunDevServer) {
-        // TODO: Implement dev server
-        this.output.log(chalk.green.bgBlack('Starting development server...'))
-      } else {
-        // Indicate that this isn't an expected exit
-        this.output.error(`Failed to start preview server`, {exit: 1})
-      }
+      const message = error instanceof Error ? error.message : String(error)
+      this.output.error(`Failed to start preview server: ${message}`, {
+        exit: 1,
+        suggestions,
+      })
     }
   }
 }

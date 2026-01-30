@@ -1,19 +1,36 @@
 /**
- * Default fixture names bundled with the package.
+ * Options for each fixture.
  * @public
  */
-export const DEFAULT_FIXTURES = [
-  'basic-app',
-  'basic-studio',
-  'multi-workspace-studio',
-  'worst-case-studio',
-] as const
+export interface FixtureOptions {
+  includeDist?: boolean
+}
+
+/**
+ * Default fixtures bundled with the package and their options.
+ *
+ * @public
+ */
+export const DEFAULT_FIXTURES: Record<FixtureName, FixtureOptions> = {
+  'basic-app': {},
+  'basic-studio': {},
+  'multi-workspace-studio': {},
+  'prebuilt-app': {includeDist: true},
+  'prebuilt-studio': {includeDist: true},
+  'worst-case-studio': {},
+} as const
 
 /**
  * Valid fixture name type.
  * @public
  */
-export type FixtureName = (typeof DEFAULT_FIXTURES)[number]
+export type FixtureName =
+  | 'basic-app'
+  | 'basic-studio'
+  | 'multi-workspace-studio'
+  | 'prebuilt-app'
+  | 'prebuilt-studio'
+  | 'worst-case-studio'
 
 /**
  * @deprecated Use {@link FixtureName} instead. This type alias will be removed in a future release.

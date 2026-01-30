@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+      name="viewport"
+    />
+    <meta content="noindex" name="robots" />
+    <meta content="same-origin" name="referrer" />
+    <title>Sanity Studio</title>
+    <style>
+      html,
+      body,
+      #sanity {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        -webkit-font-smoothing: antialiased;
+      }
+    </style>
+    <script type="application/json" id="__imports">
+      {
+        "imports": {
+          "react": "/vendor/react/index-CVS62ceT.mjs",
+          "react/compiler-runtime": "/vendor/react/compiler-runtime-DFvlMPQC.mjs",
+          "react/jsx-dev-runtime": "/vendor/react/jsx-dev-runtime-DYLplPiq.mjs",
+          "react/jsx-runtime": "/vendor/react/jsx-runtime-CInpRuN4.mjs",
+          "react/package.json": "/vendor/react/package.json-B3Sv_Ots.mjs",
+          "react-dom": "/vendor/react-dom/index-B3pchmCn.mjs",
+          "react-dom/client": "/vendor/react-dom/client-BptInOSw.mjs",
+          "react-dom/package.json": "/vendor/react-dom/package.json-CNqBlmzA.mjs",
+          "react-dom/server": "/vendor/react-dom/server-FfCSsckh.mjs",
+          "react-dom/static": "/vendor/react-dom/static-CN1Myo0a.mjs",
+          "styled-components": "/vendor/styled-components/index-X329-4Jb.mjs",
+          "styled-components/package.json": "/vendor/styled-components/package.json-DqoIBjAO.mjs",
+          "react-dom/server.browser": "/vendor/react-dom/server.browser-BzpYnHww.mjs",
+          "react-dom/static.browser": "/vendor/react-dom/static.browser-BCHXHC4T.mjs",
+          "sanity": "https://sanity-cdn.com/v1/modules/sanity/default/%5E5.7.0/t1769729422",
+          "sanity/": "https://sanity-cdn.com/v1/modules/sanity/default/%5E5.7.0/t1769729422/",
+          "@sanity/vision": "https://sanity-cdn.com/v1/modules/@sanity__vision/default/%5E5.7.0/t1769729422",
+          "@sanity/vision/": "https://sanity-cdn.com/v1/modules/@sanity__vision/default/%5E5.7.0/t1769729422/"
+        }
+      }
+    </script>
+    <script>
+      // auto-generated script to add import map with timestamp
+      const importsJson = document.getElementById('__imports')?.textContent
+      const {imports = {}, ...rest} = importsJson ? JSON.parse(importsJson) : {}
+      const importMapEl = document.createElement('script')
+      importMapEl.type = 'importmap'
+      const newTimestamp = `/t${Math.floor(Date.now() / 1000)}`
+      importMapEl.textContent = JSON.stringify({
+        imports: Object.fromEntries(
+          Object.entries(imports).map(([specifier, path]) => {
+            try {
+              const url = new URL(path)
+              if (/^sanity-cdn\.[a-zA-Z]+$/.test(url.hostname)) {
+                url.pathname = url.pathname.replace(/\/t\d+/, newTimestamp)
+              }
+              return [specifier, url.toString()]
+            } catch {
+              return [specifier, path]
+            }
+          }),
+        ),
+        ...rest,
+      })
+      document.head.appendChild(importMapEl)
+    </script>
+    <script
+      src="https://core.sanity-cdn.com/bridge.js"
+      async
+      type="module"
+      data-sanity-core
+    ></script>
+  </head>
+  <body>
+    <div id="sanity"></div>
+    <script src="/static/sanity-DxH-rpFr.js" type="module"></script>
+    <noscript
+      ><div class="sanity-app-no-js__root">
+        <div class="sanity-app-no-js__content">
+          <style type="text/css">
+            .sanity-app-no-js__root {
+              position: absolute;
+              top: 0;
+              right: 0;
+              left: 0;
+              bottom: 0;
+              background: #fff;
+            }
+
+            .sanity-app-no-js__content {
+              position: absolute;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              text-align: center;
+              font-family: helvetica, arial, sans-serif;
+            }
+          </style>
+          <h1>JavaScript disabled</h1>
+          <p>
+            Please <a href="https://www.enable-javascript.com/">enable JavaScript</a> in your
+            browser and reload the page to proceed.
+          </p>
+        </div>
+      </div></noscript
+    >
+  </body>
+</html>
