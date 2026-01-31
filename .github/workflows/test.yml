@@ -23,7 +23,7 @@ jobs:
         node-version: [20, 22, 24]
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-8core]
       fail-fast: false
 
     steps:
@@ -44,9 +44,9 @@ jobs:
         env:
           SANITY_AUTH_TOKEN: 'test-token'
         run: |
-          ARGS="--test-timeout=60000 --retry 4 --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}"
-          if [ "${{ matrix.node-version }}" == "20" ]; then
-            # We only gather coverage from a single Node version.
+          ARGS="--test-timeout=60000 --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}"
+          # We only gather coverage from Node 20 on Ubuntu
+          if [ "${{ matrix.node-version }}" == "20" ] && [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
             # We pass in `--reporter=blob` so that we can combine the results from all shards.
             ARGS="$ARGS --coverage --reporter=default --reporter=blob"
           fi
