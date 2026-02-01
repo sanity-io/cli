@@ -37,7 +37,11 @@ export default defineConfig({
       /**
        * Ignore unhandled errors on Windows + Node 20 to avoid flaky tests
        */
-      if (process.platform === 'win32' && error.message.includes('Worker forks emitted error')) {
+      if (
+        process.platform === 'win32' &&
+        process.version.startsWith('v20.') &&
+        error.message.includes('Worker forks emitted error')
+      ) {
         return false
       }
     },
