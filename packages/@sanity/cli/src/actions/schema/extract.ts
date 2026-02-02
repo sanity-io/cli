@@ -2,12 +2,10 @@ import {mkdir, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
 import {spinner} from '@sanity/cli-core/ux'
-import {extractSchema} from '@sanity/schema/_internal'
-import {type Schema} from '@sanity/types'
 
 import {type ExtractSchemaCommand} from '../../commands/schema/extract'
-import {getWorkspace} from '../../util/getWorkspace.js'
-import {importStudioConfig} from '../../util/importStudioConfig.js'
+import {extractSanitySchema} from './extractSanitySchema.js'
+import {schemasExtractDebug} from './utils/debug.js'
 
 const FILENAME = 'schema.json'
 
@@ -37,11 +35,10 @@ export async function extract(options: ExtractSchemaOptions): Promise<void> {
       throw new Error(`Unsupported format: "${format}"`)
     }
 
-    const workspaces = await importStudioConfig(workDir)
-    const workspace = getWorkspace(workspaces, workspaceName)
-
-    const schema = extractSchema(workspace.schema as Schema, {
+    const schema = await extractSanitySchema({
       enforceRequiredFields,
+      workDir,
+      workspaceName: workspaceName ?? 'default',
     })
 
     const outputDir = path ? resolve(join(workDir, path)) : workDir
@@ -58,6 +55,7 @@ export async function extract(options: ExtractSchemaOptions): Promise<void> {
         : `Extracted schema to ${outputPath}`,
     )
   } catch (err) {
+    schemasExtractDebug('Failed to extract schema', err)
     spin.fail(
       enforceRequiredFields
         ? 'Failed to extract schema with enforced required fields'

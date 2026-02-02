@@ -92,6 +92,7 @@
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "publint": "catalog:",
+    "sanity": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
