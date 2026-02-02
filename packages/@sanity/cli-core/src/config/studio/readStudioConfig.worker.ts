@@ -1,12 +1,13 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {firstValueFrom, of} from 'rxjs'
+import {of} from 'rxjs'
 import {z} from 'zod'
 
 import {doImport} from '../../util/doImport.js'
 import {getEmptyAuth} from '../../util/getEmptyAuth.js'
 import {resolveLocalPackage} from '../../util/resolveLocalPackage.js'
 import {safeStructuredClone} from '../../util/safeStructuredClone.js'
+import {getStudioWorkspaces} from './getStudioWorkspaces.js'
 
 if (isMainThread || !parentPort) {
   throw new Error('Should only be run in a worker!')
@@ -38,7 +39,7 @@ if (resolvePlugins) {
     workspace.auth = {state: of(getEmptyAuth())}
   })
 
-  config = await firstValueFrom(resolveConfig(workspaces))
+  config = await getStudioWorkspaces(configPath)
 }
 
 parentPort.postMessage(safeStructuredClone(config))
