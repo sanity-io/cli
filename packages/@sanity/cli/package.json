@@ -102,6 +102,7 @@
     "is-tar": "^1.0.0",
     "isomorphic-dompurify": "^2.32.0",
     "json5": "^2.2.3",
+    "jsonc-parser": "^3.3.1",
     "lodash-es": "^4.17.21",
     "minimist": "^1.2.8",
     "nanoid": "^5.1.5",

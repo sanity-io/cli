@@ -68,8 +68,8 @@ const baseConfig = {
         'src/prompts/init/promptForTypescript.ts',
         'src/actions/init/setupMCP.ts',
       ],
-      // Claude is not a dependency of the CLI, but it is used in the MCP configuration
-      ignoreBinaries: ['claude'],
+      // Claude and OpenCode are not dependencies of the CLI, but they are used in the MCP configuration
+      ignoreBinaries: ['claude', 'opencode'],
       oclif: {
         config: ['oclif.config.js'],
       },

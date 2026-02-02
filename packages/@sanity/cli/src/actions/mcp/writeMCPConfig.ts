@@ -2,51 +2,38 @@ import {existsSync} from 'node:fs'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {subdebug} from '@sanity/cli-core'
+import {applyEdits, modify} from 'jsonc-parser'
 
-import {type Editor, MCP_SERVER_URL, type MCPConfig} from '../../services/mcp.js'
-
-const debug = subdebug('mcp:writeMCPConfig')
+import {EDITOR_CONFIGS} from './editorConfigs.js'
+import {Editor} from './types.js'
 
 /**
  * Write MCP configuration to editor config file
- * Merges with existing config if present
+ * Uses jsonc-parser's modify/applyEdits to preserve comments
  *
- * @param editor - Editor to configure
- * @param token - MCP authentication token
+ * Note: Config parseability is already validated in detectAvailableEditors()
  */
 export async function writeMCPConfig(editor: Editor, token: string): Promise<void> {
   const configPath = editor.configPath
+  const {buildServerConfig, configKey} = EDITOR_CONFIGS[editor.name]
 
-  // 1. Read existing config (if exists)
-  let existingConfig: MCPConfig = {}
+  // Read existing content or start with empty object
+  let content = '{}'
   if (existsSync(configPath)) {
-    try {
-      const content = await fs.readFile(configPath, 'utf8')
-      existingConfig = JSON.parse(content) as MCPConfig
-    } catch {
-      debug(`Warning: Could not parse ${configPath}. Creating new config.`)
-      // Use empty config (will overwrite)
+    const fileContent = await fs.readFile(configPath, 'utf8')
+    if (fileContent.trim()) {
+      content = fileContent
     }
   }
 
-  // 2. Create/update Sanity server entry
-  const serverKey = editor.configKey
-  if (!existingConfig[serverKey]) {
-    existingConfig[serverKey] = {}
-  }
+  // Modify using jsonc-parser - preserves comments
+  // Setting a nested path automatically creates intermediate objects
+  const edits = modify(content, [configKey, 'Sanity'], buildServerConfig(token), {
+    formattingOptions: {insertSpaces: true, tabSize: 2},
+  })
+  content = applyEdits(content, edits)
 
-  existingConfig[serverKey]!.Sanity = {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    type: 'http',
-    url: MCP_SERVER_URL,
-  }
-
-  // 3. Ensure parent directory exists
+  // Ensure parent directory exists and write
   await fs.mkdir(path.dirname(configPath), {recursive: true})
-
-  // 4. Write config
-  await fs.writeFile(configPath, JSON.stringify(existingConfig, null, 2), 'utf8')
+  await fs.writeFile(configPath, content, 'utf8')
 }

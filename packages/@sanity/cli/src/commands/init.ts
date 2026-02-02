@@ -30,7 +30,6 @@ import {
   type RepoInfo,
 } from '../actions/init/remoteTemplate.js'
 import {resolvePackageManager} from '../actions/init/resolvePackageManager.js'
-import {type EditorName, setupMCP} from '../actions/init/setupMCP.js'
 import templates from '../actions/init/templates/index.js'
 import {
   sanityCliTemplate,
@@ -39,6 +38,8 @@ import {
   sanityStudioTemplate,
 } from '../actions/init/templates/nextjs/index.js'
 import {type VersionedFramework} from '../actions/init/types.js'
+import {EditorName} from '../actions/mcp/editorConfigs.js'
+import {setupMCP} from '../actions/mcp/setupMCP.js'
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'
@@ -432,7 +433,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     })
 
     // Set up MCP integration
-    const mcpResult = await setupMCP({mcp: this.flags.mcp, output: this.output})
+    const mcpResult = await setupMCP(this.flags.mcp)
     // @todo
     // trace.log({
     //   step: 'mcpSetup',
