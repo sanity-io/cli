@@ -25,7 +25,7 @@ export class SchemaError extends Error {
           message += `\nSee ${generateHelpUrl(problem.helpId)}`
         }
 
-        output.error(message, {exit: 1})
+        output.log(message)
       }
     }
   }

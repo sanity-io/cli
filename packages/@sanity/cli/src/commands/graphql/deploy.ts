@@ -153,6 +153,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
     }
 
     const deployTasks: DeployTask[] = []
+    let hasErrors = false
 
     for (const apiId of onlyApis || []) {
       if (!apiDefs.some((apiDef) => apiDef.id === apiId)) {
@@ -214,11 +215,17 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         this.error(`No dataset specified for API at index ${index}`, {exit: 1})
       }
 
-      const {currentGeneration, playgroundEnabled} = await getCurrentSchemaProps(
-        projectId,
-        dataset,
-        tag,
-      )
+      let currentGeneration: string | undefined
+      let playgroundEnabled: boolean | undefined
+      try {
+        const schemaProps = await getCurrentSchemaProps(projectId, dataset, tag)
+        currentGeneration = schemaProps.currentGeneration
+        playgroundEnabled = schemaProps.playgroundEnabled
+      } catch (err) {
+        debug('Failed to get current GraphQL schema properties', err)
+        spin.fail()
+        this.error('Failed to get current GraphQL schema properties', {exit: 1})
+      }
 
       // CLI flag takes precedence over configuration
       const specifiedGeneration = generationFlag === undefined ? apiDef.generation : generationFlag
@@ -264,15 +271,16 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
         apiSpec = generateSchema(extracted, {filterSuffix: apiDef.filterSuffix})
       } catch (err) {
-        debug('extractFromSanitySchema error', err)
+        debug('Failed to extract schema', err)
         spin.fail()
 
         if (err instanceof SchemaError) {
           err.print(this.output)
-          process.exitCode = 1
+          this.error('Failed to extract schema', {exit: 1})
+        } else {
+          const message = err instanceof Error ? err.message : 'Unknown error'
+          this.error(`Failed to extract schema: ${message}`, {exit: 1})
         }
-
-        this.error('Failed to generate GraphQL API', {exit: 1})
       }
 
       let valid: ValidationResponse | undefined
@@ -297,7 +305,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         if (dryRun) {
           spin.fail()
           this.renderBreakingChanges(valid)
-          process.exitCode = 1
+          hasErrors = true
           continue
         }
 
@@ -372,6 +380,10 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         debug('Failed to deploy GraphQL API', error)
         this.error('Failed to deploy GraphQL API', {exit: 1})
       }
+    }
+
+    if (hasErrors) {
+      this.exit(1)
     }
   }
 

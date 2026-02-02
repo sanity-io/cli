@@ -149,7 +149,7 @@ export async function getCurrentSchemaProps(
       playgroundEnabled: res['x-sanity-graphql-playground'] === 'true',
     }
   } catch (err) {
-    if (err.statusCode === 404) {
+    if (err instanceof Error && 'statusCode' in err && err.statusCode === 404) {
       return {}
     }
 

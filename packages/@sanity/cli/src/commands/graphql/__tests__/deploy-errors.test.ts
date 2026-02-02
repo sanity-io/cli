@@ -1,3 +1,6 @@
+import {writeFile} from 'node:fs/promises'
+import {join} from 'node:path'
+
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
@@ -5,19 +8,22 @@ import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 import {GRAPHQL_API_VERSION} from '../../../services/graphql.js'
 import {GraphQLDeployCommand} from '../deploy.js'
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+const mockIsInteractive = vi.hoisted(() => vi.fn())
+const mockConfirm = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
   return {
     ...actual,
-    isInteractive: vi.fn(),
+    isInteractive: mockIsInteractive,
   }
 })
 
-vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core/ux')>()
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual('@sanity/cli-core/ux')
   return {
     ...actual,
-    confirm: vi.fn(),
+    confirm: mockConfirm,
   }
 })
 
@@ -31,9 +37,6 @@ describe('#graphql:deploy errors', {timeout: 30 * 1000}, () => {
 
   afterEach(() => {
     vi.clearAllMocks()
-  })
-
-  afterEach(() => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending).toEqual([])
@@ -70,74 +73,75 @@ describe('#graphql:deploy errors', {timeout: 30 * 1000}, () => {
     expect(error?.message).toContain('--force')
     expect(stdout).toContain('Found BREAKING changes')
     expect(stdout).toContain('Field "oldField" was removed')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
-  describe('error handling', () => {
-    test.each([
-      {
-        deployReply: null,
-        description: 'validation errors',
-        expectedError: 'GraphQL schema is not valid',
-        headReply: 404,
-        validateReply: {
-          body: {
-            breakingChanges: [],
-            dangerousChanges: [],
-            validationError: 'Invalid schema: type "Post" has no fields',
-          },
-          status: 200,
-        },
-      },
-      {
-        deployReply: {
-          body: {error: 'Internal Server Error', message: 'Deploy failed'},
-          status: 500,
-        },
-        description: 'deploy failures',
-        expectedError: 'Failed to deploy GraphQL API',
-        headReply: 404,
-        validateReply: {
-          body: {breakingChanges: [], dangerousChanges: [], validationError: null},
-          status: 200,
-        },
-      },
-      {
-        deployReply: null,
-        description: 'getCurrentSchemaProps 500 error',
-        expectedError: true, // Just check error is defined
-        headReply: 500,
-        validateReply: null,
-      },
-    ])('handles $description', async ({deployReply, expectedError, headReply, validateReply}) => {
-      nock('https://ppsg7ml5.api.sanity.io')
-        .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
-        .reply(headReply)
+  test('handles validation errors', async () => {
+    nock('https://ppsg7ml5.api.sanity.io')
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+      .reply(404)
 
-      if (validateReply) {
-        mockApi({
-          apiHost: 'https://ppsg7ml5.api.sanity.io',
-          apiVersion: GRAPHQL_API_VERSION,
-          method: 'post',
-          uri: '/apis/graphql/test/default/validate',
-        }).reply(validateReply.status, validateReply.body)
-      }
-
-      if (deployReply) {
-        mockApi({
-          apiHost: 'https://ppsg7ml5.api.sanity.io',
-          apiVersion: GRAPHQL_API_VERSION,
-          method: 'put',
-          uri: '/apis/graphql/test/default',
-        }).reply(deployReply.status, deployReply.body)
-      }
-
-      const {error} = await testCommand(GraphQLDeployCommand, ['--force'])
-
-      expect(error).toBeDefined()
-      if (typeof expectedError === 'string') {
-        expect(error?.message).toContain(expectedError)
-      }
+    mockApi({
+      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiVersion: GRAPHQL_API_VERSION,
+      method: 'post',
+      uri: '/apis/graphql/test/default/validate',
+    }).reply(200, {
+      breakingChanges: [],
+      dangerousChanges: [],
+      validationError: 'Invalid schema: type "Post" has no fields',
     })
+
+    const {error} = await testCommand(GraphQLDeployCommand, ['--force'])
+
+    expect(error).toBeDefined()
+    expect(error?.message).toContain('GraphQL schema is not valid')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('handles deploy failures', async () => {
+    nock('https://ppsg7ml5.api.sanity.io')
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+      .reply(404)
+
+    mockApi({
+      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiVersion: GRAPHQL_API_VERSION,
+      method: 'post',
+      uri: '/apis/graphql/test/default/validate',
+    }).reply(200, {
+      breakingChanges: [],
+      dangerousChanges: [],
+      validationError: null,
+    })
+
+    mockApi({
+      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiVersion: GRAPHQL_API_VERSION,
+      method: 'put',
+      uri: '/apis/graphql/test/default',
+    }).reply(500, {
+      error: 'Internal Server Error',
+      message: 'Deploy failed',
+    })
+
+    const {error} = await testCommand(GraphQLDeployCommand, ['--force'])
+
+    expect(error).toBeDefined()
+    expect(error?.message).toContain('Failed to deploy GraphQL API')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('handles getCurrentSchemaProps 500 error', async () => {
+    nock('https://ppsg7ml5.api.sanity.io')
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+      .reply(500)
+
+    const {error} = await testCommand(GraphQLDeployCommand, ['--force'])
+
+    expect(error).toBeDefined()
+    expect(error?.message).toContain('Failed to get current GraphQL schema properties')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('rejects invalid --generation flag', async () => {
@@ -145,6 +149,7 @@ describe('#graphql:deploy errors', {timeout: 30 * 1000}, () => {
 
     expect(error).toBeDefined()
     expect(error?.message).toContain('--generation=gen4 to be one of: gen1, gen2, gen3')
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('rejects invalid API ID', async () => {
@@ -154,5 +159,62 @@ describe('#graphql:deploy errors', {timeout: 30 * 1000}, () => {
 
     expect(error).toBeDefined()
     expect(error?.message).toContain('GraphQL API with id "MyAPI" not found')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('handles getGraphQLAPIs failure with invalid schema', async () => {
+    // Create a separate fixture for this test to avoid affecting other tests
+    const testCwd = await testFixture('basic-studio')
+
+    // Modify the schema to have an invalid type reference
+    const invalidSchema = `import {defineField} from 'sanity'
+
+import author from './author'
+import blockContent from './blockContent'
+import category from './category'
+import post from './post'
+
+export const schemaTypes = [
+  post,
+  author,
+  category,
+  blockContent,
+  defineField({
+    name: 'incorrectType',
+    type: 'incorrectType',
+  }),
+]
+`
+    await writeFile(join(testCwd, 'schemaTypes', 'index.ts'), invalidSchema)
+
+    process.chdir(testCwd)
+    const {error} = await testCommand(GraphQLDeployCommand, [])
+
+    expect(error).toBeDefined()
+    expect(error?.message).toContain('Failed to get GraphQL APIs')
+    expect(error?.oclif?.exit).toBe(1)
+
+    process.chdir(cwd)
+  })
+
+  test('handles validateGraphQLAPI network error with response body', async () => {
+    nock('https://ppsg7ml5.api.sanity.io')
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+      .reply(404)
+
+    mockApi({
+      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiVersion: GRAPHQL_API_VERSION,
+      method: 'post',
+      uri: '/apis/graphql/test/default/validate',
+    }).reply(400, {
+      validationError: 'Schema validation failed: duplicate type name',
+    })
+
+    const {error} = await testCommand(GraphQLDeployCommand, [])
+
+    expect(error).toBeDefined()
+    expect(error?.message).toContain('Schema validation failed: duplicate type name')
+    expect(error?.oclif?.exit).toBe(1)
   })
 })

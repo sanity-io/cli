@@ -171,6 +171,7 @@ export function extractFromSanitySchema(
 ): ApiSpecification {
   const {nonNullDocumentFields, withUnionCache} = extractOptions
   const unionRecursionGuards = new Set<string>()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const unionDefinitionCache = new Map<string, any>()
   const hasErrors =
     sanitySchema._validation &&
@@ -279,6 +280,7 @@ export function extractFromSanitySchema(
     return {
       description: getDescription(type),
       type: mapFieldType(type),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any
   }
 
@@ -320,6 +322,7 @@ export function extractFromSanitySchema(
     }
 
     if (parent && def.type && isTopLevelType(def.type.name)) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return {type: getTypeName(def.type.name)} as any
     }
 
@@ -351,6 +354,7 @@ export function extractFromSanitySchema(
           : (convertType(field, name, {
               fieldName: field.name,
               ...getDeprecation(def),
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
             }) as any),
       ),
       [internal]: {
@@ -391,6 +395,7 @@ export function extractFromSanitySchema(
     return gatherAllFields(extended)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function getReferenceDefinition(def: SchemaType): any {
     const base = {description: getDescription(def), isReference: true}
     const candidates = arrayify(gatherAllReferenceCandidates(def))
@@ -425,6 +430,7 @@ export function extractFromSanitySchema(
     def: ArraySchemaType,
     parent: string,
     options: {isField?: boolean} = {},
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): any {
     const base = {description: getDescription(def), kind: 'List'}
     const name = !options.isField && def.name ? {name: getTypeName(def.name)} : {}
