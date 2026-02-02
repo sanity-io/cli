@@ -85,7 +85,7 @@
     "@vercel/fs-detectors": "5.5.2",
     "@vitejs/plugin-react": "catalog:",
     "chokidar": "^4.0.3",
-    "console-table-printer": "^2.14.6",
+    "console-table-printer": "^2.15.0",
     "date-fns": "^4.1.0",
     "debug": "catalog:",
     "deep-sort-object": "^1.0.2",
