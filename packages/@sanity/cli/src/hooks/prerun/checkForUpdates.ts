@@ -1,6 +1,6 @@
 import {type Hook} from '@oclif/core'
 
-import {checkForUpdates as checkForUpdatesUtil} from '../../util/updateChecker.js'
+import {checkForUpdates as checkForUpdatesUtil} from '../../util/update/updateChecker.js'
 
 /**
  * Prerun hook that checks for CLI updates and notifies the user if a new version is available.
