@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {findStudioConfigPath} from '@sanity/cli-core'
+import {tryFindStudioConfigPath} from '@sanity/cli-core'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
 
 import {buildDebug} from './buildDebug.js'
@@ -68,7 +68,7 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<FSWat
   buildDebug('Writing app.js to runtime directory')
   let relativeConfigLocation: string | null = null
   if (!isApp) {
-    const studioConfigPath = await findStudioConfigPath(cwd)
+    const studioConfigPath = await tryFindStudioConfigPath(cwd)
     relativeConfigLocation = studioConfigPath ? path.relative(runtimeDir, studioConfigPath) : null
   }
 
