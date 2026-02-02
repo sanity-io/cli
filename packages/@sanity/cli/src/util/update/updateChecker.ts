@@ -45,7 +45,7 @@ export async function checkForUpdates(config: {
   const now = Date.now()
 
   const currentCache: UpdateCache = cache || {lastChecked: 0, latestVersion: ''}
-  // debug(`Current update cache: ${JSON.stringify(currentCache)}`)
+  debug(`Current update cache: ${JSON.stringify(currentCache)}`)
 
   const shouldCheckLatestVersion =
     !currentCache.lastChecked || now - currentCache.lastChecked >= UPDATE_CHECK_INTERVAL

@@ -7,8 +7,9 @@ import {checkForUpdates as checkForUpdatesUtil} from '../../util/update/updateCh
  * This is non-blocking and will silently fail if anything goes wrong.
  */
 export const checkForUpdates: Hook.Prerun = async function ({config}) {
-  // Non-blocking - don't await
-  checkForUpdatesUtil(config).catch(() => {
+  try {
+    await checkForUpdatesUtil(config)
+  } catch {
     // Silently fail - never interrupt user
-  })
+  }
 }

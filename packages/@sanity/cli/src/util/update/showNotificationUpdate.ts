@@ -1,14 +1,17 @@
 import {boxen} from '@sanity/cli-core/ux'
 
-import {detectPackageManager} from './detectPackageCommand'
-import getUpdateCommand from './getUpdateCommand'
+import {getPackageManagerChoice} from '../packageManager/packageManagerChoice.js'
+import getUpdateCommand from './getUpdateCommand.js'
 
 /**
  * Show a boxed notification about the available update
  */
-export function showUpdateNotification(currentVersion: string, latestVersion: string): void {
-  const pm = detectPackageManager()
-  const command = getUpdateCommand(pm)
+export async function showUpdateNotification(
+  currentVersion: string,
+  latestVersion: string,
+): Promise<void> {
+  const {chosen} = await getPackageManagerChoice(process.cwd(), {interactive: false})
+  const command = getUpdateCommand(chosen)
 
   const message = `Update available: ${currentVersion} → ${latestVersion}\n\nRun ${command} to update`
 
