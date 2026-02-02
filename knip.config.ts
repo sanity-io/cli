@@ -5,7 +5,6 @@ const project = ['src/**/*.{js,jsx,ts,tsx}', '!**/docs/**']
 const baseConfig = {
   // For now only care about cli package
   ignore: [
-    'packages/@sanity/original-cli/**',
     'packages/@sanity/cli-test/fixtures/**',
 
     // See `helpClass` in `oclif.config.js`
