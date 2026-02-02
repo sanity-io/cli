@@ -1,17 +1,14 @@
 import {writeFileSync} from 'node:fs'
-import path from 'node:path'
-import {Worker} from 'node:worker_threads'
 
-import {Output} from '@sanity/cli-core'
+import {Output, studioWorkerTask} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
-import {readPackageUp} from 'read-package-up'
 
+import {formatSchemaValidation, getAggregatedSeverity} from './formatSchemaValidation.js'
+import {generateMetafile} from './metafile.js'
 import {
   type ValidateSchemaWorkerData,
   type ValidateSchemaWorkerResult,
-} from '../../threads/validateSchema.js'
-import {formatSchemaValidation, getAggregatedSeverity} from './formatSchemaValidation.js'
-import {generateMetafile} from './metafile.js'
+} from './validateSchema.worker.js'
 
 interface Options {
   output: Output
@@ -26,13 +23,6 @@ interface Options {
 export async function validateAction(options: Options): Promise<void> {
   const {debugMetafilePath, format, level, output, workDir, workspace} = options
 
-  const rootPkgPath = (await readPackageUp({cwd: import.meta.dirname}))?.path
-  if (!rootPkgPath) {
-    throw new Error('Could not find root directory for `sanity` package')
-  }
-
-  const workerPath = path.join(path.dirname(rootPkgPath), 'dist', 'threads', 'validateSchema.js')
-
   let spin
 
   if (format === 'pretty') {
@@ -41,20 +31,17 @@ export async function validateAction(options: Options): Promise<void> {
     ).start()
   }
 
-  const worker = new Worker(workerPath, {
-    env: process.env,
-    workerData: {
-      debugSerialize: Boolean(debugMetafilePath),
-      level,
-      workDir,
-      workspace: workspace,
-    } satisfies ValidateSchemaWorkerData,
-  })
-
-  const {serializedDebug, validation} = await new Promise<ValidateSchemaWorkerResult>(
-    (resolve, reject) => {
-      worker.addListener('message', resolve)
-      worker.addListener('error', reject)
+  const {serializedDebug, validation} = await studioWorkerTask<ValidateSchemaWorkerResult>(
+    new URL('validateSchema.worker.js', import.meta.url),
+    {
+      name: 'validateSchema',
+      studioRootPath: workDir,
+      workerData: {
+        debugSerialize: Boolean(debugMetafilePath),
+        level,
+        workDir,
+        workspace: workspace,
+      } satisfies ValidateSchemaWorkerData,
     },
   )
 
@@ -113,5 +100,7 @@ export async function validateAction(options: Options): Promise<void> {
     }
   }
 
-  process.exitCode = didFail ? 1 : 0
+  if (didFail) {
+    throw new Error('Schema validation failed')
+  }
 }

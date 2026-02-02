@@ -1,6 +1,6 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {mockBrowserEnvironment} from '@sanity/cli-core'
+import {getStudioWorkspaces} from '@sanity/cli-core'
 import {
   type EncodableObject,
   type EncodableValue,
@@ -9,8 +9,7 @@ import {
 import {DescriptorConverter} from '@sanity/schema/_internal'
 import {type SchemaValidationProblem, type SchemaValidationProblemGroup} from '@sanity/types'
 
-import {getWorkspace} from '../util/getWorkspace.js'
-import {importStudioConfig} from '../util/importStudioConfig.js'
+import {getWorkspace} from '../../util/getWorkspace.js'
 
 /** @internal */
 export interface ValidateSchemaWorkerData {
@@ -64,13 +63,13 @@ async function main() {
     throw new Error('This module must be run as a worker thread')
   }
 
-  const cleanup = await mockBrowserEnvironment(workDir)
-
   try {
-    const workspaces = await importStudioConfig(workDir)
+    const workspaces = await getStudioWorkspaces(workDir)
     const workspace = getWorkspace(workspaces, workspaceName)
     const schema = workspace.schema
-    const validation = schema._validation!
+    console.log('schema', schema)
+    const validation = schema._validation ?? []
+    console.log('validation', validation)
 
     let serializedDebug: ValidateSchemaWorkerResult['serializedDebug']
 
@@ -97,8 +96,6 @@ async function main() {
     console.error(err)
     console.error(err.stack)
     throw err
-  } finally {
-    cleanup()
   }
 }
 
@@ -186,4 +183,9 @@ function getSerializedTypeDebug(typeDef: EncodableObject): SerializedTypeDebug {
 }
 
 await main()
-process.exit()
+
+// Explicitly exit the process to avoid any dangling references from keeping
+// the process alive after resolving it's main task
+setImmediate(() => {
+  process.exit(1)
+})
