@@ -1,3 +1,4 @@
+import {ux} from '@oclif/core'
 import {boxen} from '@sanity/cli-core/ux'
 
 import {getPackageManagerChoice} from '../packageManager/packageManagerChoice.js'
@@ -22,5 +23,5 @@ export async function showUpdateNotification(
     padding: 1,
   })
 
-  process.stderr.write('\n' + boxed + '\n')
+  ux.stderr('\n' + boxed + '\n')
 }

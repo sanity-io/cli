@@ -1,6 +1,6 @@
 import {type Hook} from '@oclif/core'
 
-import {checkForUpdates as checkForUpdatesUtil} from '../../util/update/updateChecker.js'
+import {updateChecker} from '../../util/update/updateChecker.js'
 
 /**
  * Prerun hook that checks for CLI updates and notifies the user if a new version is available.
@@ -8,7 +8,7 @@ import {checkForUpdates as checkForUpdatesUtil} from '../../util/update/updateCh
  */
 export const checkForUpdates: Hook.Prerun = async function ({config}) {
   try {
-    await checkForUpdatesUtil(config)
+    await updateChecker(config)
   } catch {
     // Silently fail - never interrupt user
   }

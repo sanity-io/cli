@@ -25,7 +25,7 @@ const store = getUserConfig()
  *
  * @param config - The CLI config containing version and name
  */
-export async function checkForUpdates(config: {
+export async function updateChecker(config: {
   name: string
   root: string
   version: string
@@ -90,7 +90,7 @@ export async function checkForUpdates(config: {
   }
 
   debug('Update is available (%s)', currentCache.latestVersion)
-  showUpdateNotification(config.version, currentCache.latestVersion)
+  await showUpdateNotification(config.version, currentCache.latestVersion)
   currentCache.lastNotified = now
   store.set('updateCheck', currentCache)
 }
