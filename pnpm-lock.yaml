@@ -420,7 +420,7 @@ importers:
         specifier: ^4.0.3
         version: 4.0.3
       console-table-printer:
-        specifier: ^2.14.6
+        specifier: ^2.15.0
         version: 2.15.0
       date-fns:
         specifier: ^4.1.0
