@@ -4,7 +4,7 @@ import {debug, findProjectRoot} from '@sanity/cli-core'
 import {chalk} from '@sanity/cli-core/ux'
 import {loadEnv} from 'vite'
 
-const sanityEnv = process.env.SANITY_INTERNAL_ENV || 'production'
+import {getSanityEnv} from '../../util/getSanityEnv.js'
 
 export const injectEnvVariables: Hook.Prerun = async function ({Command}) {
   const workDir = await findProjectRoot(process.cwd())
@@ -20,7 +20,7 @@ export const injectEnvVariables: Hook.Prerun = async function ({Command}) {
   }
 
   if (mode === 'production' && !isProdCmd) {
-    warn(chalk.yellow(`Running in ${sanityEnv} environment mode\n`))
+    warn(chalk.yellow(`Running in ${getSanityEnv()} environment mode\n`))
   }
 
   const isApp = workDir.type === 'app'
