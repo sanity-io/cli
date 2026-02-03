@@ -2,12 +2,18 @@ import {mkdir, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
 import {exit} from '@oclif/core/errors'
-import {type Output, type ProjectRootResult, studioWorkerTask} from '@sanity/cli-core'
+import {
+  getCliTelemetry,
+  type Output,
+  type ProjectRootResult,
+  studioWorkerTask,
+} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {type extractSchema as extractSchemaInternal} from '@sanity/schema/_internal'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 
 import {type ExtractSchemaCommand} from '../../commands/schema/extract'
+import {SchemaExtractedTrace} from '../../telemetry/extractSchema.telemetry.js'
 import {formatSchemaValidation} from './formatSchemaValidation.js'
 import {type ExtractSchemaWorkerData} from './types.js'
 import {schemasExtractDebug} from './utils/debug.js'
@@ -59,9 +65,8 @@ export async function extractSchema(options: ExtractSchemaOptions): Promise<void
 
   const workDir = projectRoot.directory
 
-  // TODO: Add telemetry
-  // const trace = telemetry.trace(ExtractSchemaTrace)
-  // trace.start()
+  const trace = getCliTelemetry().trace(SchemaExtractedTrace)
+  trace.start()
 
   try {
     if (format !== 'groq-type-nodes') {
@@ -88,6 +93,14 @@ export async function extractSchema(options: ExtractSchemaOptions): Promise<void
 
     const schema = result.schema
 
+    trace.log({
+      enforceRequiredFields,
+      schemaAllTypesCount: schema.length,
+      schemaDocumentTypesCount: schema.filter((type) => type.type === 'document').length,
+      schemaFormat: flags.format || 'groq-type-nodes',
+      schemaTypesCount: schema.filter((type) => type.type === 'type').length,
+    })
+
     const outputDir = path ? resolve(join(workDir, path)) : workDir
     const outputPath = join(outputDir, FILENAME)
     await mkdir(outputDir, {recursive: true})
@@ -101,7 +114,10 @@ export async function extractSchema(options: ExtractSchemaOptions): Promise<void
         ? `Extracted schema to ${outputPath} with enforced required fields`
         : `Extracted schema to ${outputPath}`,
     )
+
+    trace.complete()
   } catch (err) {
+    trace.error(err)
     schemasExtractDebug('Failed to extract schema', err)
     spin.fail(
       enforceRequiredFields
