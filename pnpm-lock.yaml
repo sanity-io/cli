@@ -784,6 +784,9 @@ importers:
       publint:
         specifier: 'catalog:'
         version: 0.3.17
+      sanity:
+        specifier: 'catalog:'
+        version: 5.7.0(patch_hash=47865c57364c9e3ab3904da34f079bf1380d77d61b382170c00b59257e8a40ce)(@emotion/is-prop-valid@1.4.0)(@noble/hashes@2.0.1)(@types/node@20.19.30)(@types/react-dom@19.2.3(@types/react@19.2.9))(@types/react@19.2.9)(jiti@2.6.1)(lightningcss@1.31.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)(styled-components@6.3.8(react-dom@19.2.3(react@19.2.3))(react@19.2.3))(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(vitest@4.0.18(@types/node@20.19.30)(jiti@2.6.1)(jsdom@27.4.0(@noble/hashes@2.0.1))(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(yaml@2.8.2)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3

@@ -16,10 +16,6 @@ export async function importStudioConfig(rootPath: string) {
     const tsconfig = getTsconfig(rootPath)
     const configPath = await findStudioConfigPath(rootPath)
 
-    if (!configPath) {
-      throw new Error(`Failed to find config in "${rootPath}"`)
-    }
-
     let config = await tsImport(configPath, {
       parentURL: import.meta.url,
       tsconfig: tsconfig?.path ?? undefined,

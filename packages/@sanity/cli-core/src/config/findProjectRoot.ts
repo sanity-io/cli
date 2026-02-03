@@ -1,5 +1,5 @@
 import {findAppConfigPath} from './util/findAppConfigPath.js'
-import {findStudioConfigPath} from './util/findStudioConfigPath.js'
+import {tryFindStudioConfigPath} from './util/findStudioConfigPath.js'
 import {
   type ProjectRootResult,
   recursivelyResolveProjectRoot,
@@ -52,7 +52,7 @@ async function resolveProjectRootForStudio(
   basePath: string,
   iterations = 0,
 ): Promise<false | ProjectRootResult> {
-  return recursivelyResolveProjectRoot(basePath, findStudioConfigPath, 'studio', iterations)
+  return recursivelyResolveProjectRoot(basePath, tryFindStudioConfigPath, 'studio', iterations)
 }
 
 /**

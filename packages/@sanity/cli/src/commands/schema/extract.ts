@@ -1,7 +1,7 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 
-import {extract} from '../../actions/schema/extract.js'
+import {extractSchema} from '../../actions/schema/extractSchema.js'
 
 const description = `
 Extracts a JSON representation of a Sanity schema within a Studio context.
@@ -40,15 +40,12 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(ExtractSchemaCommand)
-    const workDir = (await this.getProjectRoot()).directory
+    const projectRoot = await this.getProjectRoot()
 
-    try {
-      await extract({
-        flags,
-        workDir,
-      })
-    } catch (error) {
-      this.error(`Failed to extract schema:\n${error}`, {exit: 1})
-    }
+    await extractSchema({
+      flags,
+      output: this.output,
+      projectRoot,
+    })
   }
 }

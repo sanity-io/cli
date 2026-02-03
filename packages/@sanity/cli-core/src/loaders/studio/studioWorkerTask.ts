@@ -40,11 +40,11 @@ interface StudioWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
  * @throws If the worker exits with a non-zero code
  * @internal
  */
-export function studioWorkerTask(
+export function studioWorkerTask<T = unknown>(
   filePath: URL,
   options: StudioWorkerTaskOptions,
-): Promise<unknown> {
-  return new Promise((resolve, reject) => {
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
     if (!/\.worker\.(js|ts)$/.test(filePath.pathname)) {
       throw new Error('Studio worker tasks must include `.worker.(js|ts)` in path')
     }
