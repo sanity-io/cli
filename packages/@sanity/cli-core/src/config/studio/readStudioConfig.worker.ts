@@ -1,11 +1,8 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {of} from 'rxjs'
 import {z} from 'zod'
 
 import {doImport} from '../../util/doImport.js'
-import {getEmptyAuth} from '../../util/getEmptyAuth.js'
-import {resolveLocalPackage} from '../../util/resolveLocalPackage.js'
 import {safeStructuredClone} from '../../util/safeStructuredClone.js'
 import {getStudioWorkspaces} from './getStudioWorkspaces.js'
 
@@ -20,25 +17,6 @@ const {configPath, resolvePlugins} = z
 let {default: config} = await doImport(configPath)
 
 if (resolvePlugins) {
-  // If we need to resolve plugins, we need to import and use the `resolveConfig`
-  // function from the `sanity` package. This package should be installed in the users'
-  // studio project, not as part of the CLI - so we need to resolve the full path of the
-  // Sanity package relative to the studio.
-
-  const {resolveConfig} = await resolveLocalPackage<typeof import('sanity')>('sanity', configPath)
-  if (typeof resolveConfig !== 'function') {
-    throw new TypeError('Expected `resolveConfig` from `sanity` to be a function')
-  }
-
-  // We will also want to stub out some configuration - we don't need to resolve the
-  // users' logged in state, for instance - so let's disable the auth implementation.
-  const workspaces = Array.isArray(config)
-    ? config
-    : [{...config, basePath: config.basePath || '/', name: config.name || 'default'}]
-  workspaces.map((workspace) => {
-    workspace.auth = {state: of(getEmptyAuth())}
-  })
-
   config = await getStudioWorkspaces(configPath)
 }
 

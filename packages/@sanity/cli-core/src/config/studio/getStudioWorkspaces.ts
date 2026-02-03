@@ -26,9 +26,9 @@ export async function getStudioWorkspaces(configPath: string): Promise<Workspace
     ? config
     : [{...config, basePath: config.basePath || '/', name: config.name || 'default'}]
 
-  rawWorkspaces.map((workspace) => {
+  for (const workspace of rawWorkspaces) {
     workspace.auth = {state: of(getEmptyAuth())}
-  })
+  }
 
   return firstValueFrom(resolveConfig(rawWorkspaces))
 }

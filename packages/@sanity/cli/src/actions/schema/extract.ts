@@ -38,7 +38,7 @@ export async function extract(options: ExtractSchemaOptions): Promise<void> {
     const schema = await extractSanitySchema({
       enforceRequiredFields,
       workDir,
-      workspaceName: workspaceName ?? 'default',
+      workspaceName: workspaceName || 'default',
     })
 
     const outputDir = path ? resolve(join(workDir, path)) : workDir
