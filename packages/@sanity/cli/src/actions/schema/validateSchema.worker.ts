@@ -14,7 +14,6 @@ import {
 } from '@sanity/types'
 
 import {getWorkspace} from '../../util/getWorkspace.js'
-import {type SchemaError} from './SchemaError.js'
 
 /** @internal */
 export interface ValidateSchemaWorkerData {
@@ -154,7 +153,7 @@ function isEncodableObject(val: EncodableValue | undefined): val is EncodableObj
   return typeof val === 'object' && val !== null && !Array.isArray(val)
 }
 
-function isSchemaError(err: unknown): err is SchemaError {
+function isSchemaError(err: unknown): err is {schema: Schema} {
   return (
     err !== null &&
     typeof err === 'object' &&
