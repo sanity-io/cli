@@ -1,4 +1,4 @@
-import {type SerializedSchemaDebug, type SerializedTypeDebug} from './validateSchema.worker.js'
+import {type SerializedSchemaDebug, type SerializedTypeDebug} from './types.js'
 
 // This implements the metafile format of ESBuild.
 type Metafile = {
