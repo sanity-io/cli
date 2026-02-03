@@ -142,13 +142,14 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
       if (flags.force) {
         this.warn(`--force specified, continuing...`)
-      } else if (
-        !(await confirm({
+      } else {
+        const confirmed = await confirm({
           default: false,
           message: 'Continue with flag overrides for all APIs?',
-        }))
-      ) {
-        this.error('Operation cancelled', {exit: 1})
+        })
+        if (!confirmed) {
+          this.error('Operation cancelled', {exit: 1})
+        }
       }
     }
 
@@ -333,7 +334,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         spin.succeed()
       } else if (dryRun) {
         spin.succeed()
-        this.output.log('GraphQL API is valid and has no breaking changes')
+        this.log('GraphQL API is valid and has no breaking changes')
         continue
       }
 
@@ -347,14 +348,14 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
     }
 
     // Give some space for deployment tasks
-    this.output.log('')
+    this.log('')
 
     for (const task of deployTasks) {
       const {dataset, enablePlayground, projectId, schema, tag} = task
 
-      this.output.log(`Project: ${projectId}`)
-      this.output.log(`Dataset: ${dataset}`)
-      this.output.log(`Tag:     ${tag}`)
+      this.log(`Project: ${projectId}`)
+      this.log(`Dataset: ${dataset}`)
+      this.log(`Tag:     ${tag}`)
 
       spin = spinner('Deploying GraphQL API').start()
 
@@ -372,9 +373,9 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
           projectId,
           response.location.replace(/^\/(v1|v\d{4}-\d{2}-\d{2})\//, '/'),
         )
-        this.output.log(`URL:     ${apiUrl}`)
+        this.log(`URL:     ${apiUrl}`)
         spin.start('Deployed!').succeed()
-        this.output.log('')
+        this.log('')
       } catch (error) {
         spin.fail()
         debug('Failed to deploy GraphQL API', error)
@@ -439,13 +440,13 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
     const {breakingChanges, dangerousChanges} = this.filterChanges(valid)
 
     if (dangerousChanges.length > 0) {
-      this.output.log('\nFound potentially dangerous changes from previous schema:')
-      for (const change of dangerousChanges) this.output.log(` - ${change.description}`)
+      this.log('\nFound potentially dangerous changes from previous schema:')
+      for (const change of dangerousChanges) this.log(` - ${change.description}`)
     }
 
     if (breakingChanges.length > 0) {
-      this.output.log('\nFound BREAKING changes from previous schema:')
-      for (const change of breakingChanges) this.output.log(` - ${change.description}`)
+      this.log('\nFound BREAKING changes from previous schema:')
+      for (const change of breakingChanges) this.log(` - ${change.description}`)
     }
 
     this.output.log('')
