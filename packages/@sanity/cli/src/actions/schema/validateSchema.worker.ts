@@ -1,16 +1,20 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {mockBrowserEnvironment} from '@sanity/cli-core'
+import {findStudioConfigPath, getStudioWorkspaces} from '@sanity/cli-core'
 import {
   type EncodableObject,
   type EncodableValue,
   type SetSynchronization,
 } from '@sanity/descriptors'
 import {DescriptorConverter} from '@sanity/schema/_internal'
-import {type SchemaValidationProblem, type SchemaValidationProblemGroup} from '@sanity/types'
+import {
+  type Schema,
+  type SchemaValidationProblem,
+  type SchemaValidationProblemGroup,
+} from '@sanity/types'
 
-import {getWorkspace} from '../util/getWorkspace.js'
-import {importStudioConfig} from '../util/importStudioConfig.js'
+import {getWorkspace} from '../../util/getWorkspace.js'
+import {type SerializedSchemaDebug, type SerializedTypeDebug} from './types.js'
 
 /** @internal */
 export interface ValidateSchemaWorkerData {
@@ -28,30 +32,6 @@ export interface ValidateSchemaWorkerResult {
   serializedDebug?: SerializedSchemaDebug
 }
 
-/**
- * Contains debug information about the serialized schema.
- *
- * @internal
- **/
-export type SerializedSchemaDebug = {
-  hoisted: Record<string, SerializedTypeDebug>
-  parent?: SerializedSchemaDebug
-  size: number
-  types: Record<string, SerializedTypeDebug>
-}
-
-/**
- * Contains debug information about a serialized type.
- *
- * @internal
- **/
-export type SerializedTypeDebug = {
-  extends: string
-  fields?: Record<string, SerializedTypeDebug>
-  of?: Record<string, SerializedTypeDebug>
-  size: number
-}
-
 const {
   debugSerialize,
   level = 'warning',
@@ -64,42 +44,46 @@ async function main() {
     throw new Error('This module must be run as a worker thread')
   }
 
-  const cleanup = await mockBrowserEnvironment(workDir)
-
   try {
-    const workspaces = await importStudioConfig(workDir)
+    const configPath = await findStudioConfigPath(workDir)
+    const workspaces = await getStudioWorkspaces(configPath)
     const workspace = getWorkspace(workspaces, workspaceName)
     const schema = workspace.schema
-    const validation = schema._validation!
-
-    let serializedDebug: ValidateSchemaWorkerResult['serializedDebug']
-
-    if (debugSerialize) {
-      const conv = new DescriptorConverter()
-      const set = await conv.get(schema)
-      serializedDebug = getSerializedSchemaDebug(set)
+    parentPort?.postMessage(await resultFromSchema(schema))
+  } catch (err: unknown) {
+    if (isSchemaError(err)) {
+      parentPort?.postMessage(await resultFromSchema(err.schema))
+      return
     }
 
-    const result: ValidateSchemaWorkerResult = {
-      serializedDebug,
-      validation: validation
-        .map((group) => ({
-          ...group,
-          problems: group.problems.filter((problem) =>
-            level === 'error' ? problem.severity === 'error' : true,
-          ),
-        }))
-        .filter((group) => group.problems.length),
-    }
-
-    parentPort?.postMessage(result)
-  } catch (err) {
-    console.error(err)
-    console.error(err.stack)
     throw err
-  } finally {
-    cleanup()
   }
+}
+
+async function resultFromSchema(schema: Schema): Promise<ValidateSchemaWorkerResult> {
+  let serializedDebug: ValidateSchemaWorkerResult['serializedDebug']
+
+  if (debugSerialize) {
+    const conv = new DescriptorConverter()
+    const set = await conv.get(schema)
+    serializedDebug = getSerializedSchemaDebug(set)
+  }
+
+  const validation = schema._validation ?? []
+
+  const result: ValidateSchemaWorkerResult = {
+    serializedDebug,
+    validation: validation
+      .map((group) => ({
+        ...group,
+        problems: group.problems.filter((problem) =>
+          level === 'error' ? problem.severity === 'error' : true,
+        ),
+      }))
+      .filter((group) => group.problems.length),
+  }
+
+  return result
 }
 
 function getSerializedSchemaDebug(set: SetSynchronization<string>): SerializedSchemaDebug {
@@ -146,6 +130,17 @@ function isEncodableObject(val: EncodableValue | undefined): val is EncodableObj
   return typeof val === 'object' && val !== null && !Array.isArray(val)
 }
 
+function isSchemaError(err: unknown): err is {schema: Schema} {
+  return (
+    err !== null &&
+    typeof err === 'object' &&
+    'schema' in err &&
+    err.schema !== null &&
+    typeof err.schema === 'object' &&
+    '_validation' in err.schema
+  )
+}
+
 function getSerializedTypeDebug(typeDef: EncodableObject): SerializedTypeDebug {
   const ext = typeof typeDef.extends === 'string' ? typeDef.extends : '<unknown>'
   let fields: SerializedTypeDebug['fields']
@@ -186,4 +181,9 @@ function getSerializedTypeDebug(typeDef: EncodableObject): SerializedTypeDebug {
 }
 
 await main()
-process.exit()
+
+// Explicitly exit the process to avoid any dangling references from keeping
+// the process alive after resolving it's main task
+setImmediate(() => {
+  process.exit(1)
+})

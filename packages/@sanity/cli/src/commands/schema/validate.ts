@@ -1,8 +1,9 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {validateAction} from '../../actions/schema/validateAction.js'
 
+const debug = subdebug('schema:validate')
 export class SchemaValidate extends SanityCommand<typeof SchemaValidate> {
   static override description = 'Validates all schema types specified in a workspace'
 
@@ -61,6 +62,14 @@ export class SchemaValidate extends SanityCommand<typeof SchemaValidate> {
       workspace: flags.workspace,
     }
 
-    await validateAction(options)
+    try {
+      await validateAction(options)
+    } catch (error) {
+      debug('Error validating schema', error)
+      this.error(
+        `Error validating schema: ${error instanceof Error ? error.message : String(error)}`,
+        {exit: 1},
+      )
+    }
   }
 }
