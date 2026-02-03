@@ -1,15 +1,20 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {getStudioWorkspaces} from '@sanity/cli-core'
+import {findStudioConfigPath, getStudioWorkspaces} from '@sanity/cli-core'
 import {
   type EncodableObject,
   type EncodableValue,
   type SetSynchronization,
 } from '@sanity/descriptors'
 import {DescriptorConverter} from '@sanity/schema/_internal'
-import {type SchemaValidationProblem, type SchemaValidationProblemGroup} from '@sanity/types'
+import {
+  type Schema,
+  type SchemaValidationProblem,
+  type SchemaValidationProblemGroup,
+} from '@sanity/types'
 
 import {getWorkspace} from '../../util/getWorkspace.js'
+import {type SchemaError} from './SchemaError.js'
 
 /** @internal */
 export interface ValidateSchemaWorkerData {
@@ -64,39 +69,45 @@ async function main() {
   }
 
   try {
-    const workspaces = await getStudioWorkspaces(workDir)
+    const configPath = await findStudioConfigPath(workDir)
+    const workspaces = await getStudioWorkspaces(configPath)
     const workspace = getWorkspace(workspaces, workspaceName)
     const schema = workspace.schema
-    console.log('schema', schema)
-    const validation = schema._validation ?? []
-    console.log('validation', validation)
-
-    let serializedDebug: ValidateSchemaWorkerResult['serializedDebug']
-
-    if (debugSerialize) {
-      const conv = new DescriptorConverter()
-      const set = await conv.get(schema)
-      serializedDebug = getSerializedSchemaDebug(set)
+    parentPort?.postMessage(await resultFromSchema(schema))
+  } catch (err: unknown) {
+    if (isSchemaError(err)) {
+      parentPort?.postMessage(await resultFromSchema(err.schema))
+      return
     }
 
-    const result: ValidateSchemaWorkerResult = {
-      serializedDebug,
-      validation: validation
-        .map((group) => ({
-          ...group,
-          problems: group.problems.filter((problem) =>
-            level === 'error' ? problem.severity === 'error' : true,
-          ),
-        }))
-        .filter((group) => group.problems.length),
-    }
-
-    parentPort?.postMessage(result)
-  } catch (err) {
-    console.error(err)
-    console.error(err.stack)
     throw err
   }
+}
+
+async function resultFromSchema(schema: Schema): Promise<ValidateSchemaWorkerResult> {
+  let serializedDebug: ValidateSchemaWorkerResult['serializedDebug']
+
+  if (debugSerialize) {
+    const conv = new DescriptorConverter()
+    const set = await conv.get(schema)
+    serializedDebug = getSerializedSchemaDebug(set)
+  }
+
+  const validation = schema._validation ?? []
+
+  const result: ValidateSchemaWorkerResult = {
+    serializedDebug,
+    validation: validation
+      .map((group) => ({
+        ...group,
+        problems: group.problems.filter((problem) =>
+          level === 'error' ? problem.severity === 'error' : true,
+        ),
+      }))
+      .filter((group) => group.problems.length),
+  }
+
+  return result
 }
 
 function getSerializedSchemaDebug(set: SetSynchronization<string>): SerializedSchemaDebug {
@@ -141,6 +152,17 @@ function getSerializedSchemaDebug(set: SetSynchronization<string>): SerializedSc
 
 function isEncodableObject(val: EncodableValue | undefined): val is EncodableObject {
   return typeof val === 'object' && val !== null && !Array.isArray(val)
+}
+
+function isSchemaError(err: unknown): err is SchemaError {
+  return (
+    err !== null &&
+    typeof err === 'object' &&
+    'schema' in err &&
+    err.schema !== null &&
+    typeof err.schema === 'object' &&
+    '_validation' in err.schema
+  )
 }
 
 function getSerializedTypeDebug(typeDef: EncodableObject): SerializedTypeDebug {
