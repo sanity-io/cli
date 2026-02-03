@@ -1,5 +1,6 @@
+import {type ConsentInformation} from '@sanity/cli-core'
+
 import {getStatusDisplay} from './getStatusDisplay.js'
-import {type ConsentInformation} from './types.js'
 
 export function getStatusMessage(consentInfo: ConsentInformation): string {
   const {reason, status} = consentInfo

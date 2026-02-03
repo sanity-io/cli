@@ -3,11 +3,11 @@ import {rm} from 'node:fs/promises'
 import {type TelemetryEvent} from '@sanity/telemetry'
 import {catchError, defer, from, lastValueFrom, mergeMap, of, reduce, switchMap, tap} from 'rxjs'
 
-import {type ConsentInformation} from '../../actions/telemetry/types.js'
-import {readNDJSON} from '../utils/readNDJSON.js'
+import {readNDJSON} from '../util/readNDJSON.js'
 import {cleanupOldTelemetryFiles} from './cleanupOldTelemetryFiles.js'
-import {telemetryStoreDebug} from './debug.js'
 import {findTelemetryFiles} from './findTelemetryFiles.js'
+import {telemetryStoreDebug} from './telemetryStoreDebug.js'
+import {type ConsentInformation} from './types.js'
 
 interface FlushTelemetryFilesOptions {
   resolveConsent: () => Promise<ConsentInformation>

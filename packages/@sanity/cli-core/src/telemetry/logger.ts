@@ -6,7 +6,7 @@ import {
   type TelemetryTrace,
 } from '@sanity/telemetry'
 
-import {telemetryStoreDebug} from './debug.js'
+import {telemetryStoreDebug} from './telemetryStoreDebug.js'
 import {createTrace} from './trace.js'
 
 // Sample rate tracking for log events

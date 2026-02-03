@@ -10,7 +10,9 @@ import {
   type GlobalCliClientOptions,
   type ProjectCliClientOptions,
 } from './services/apiClient.js'
+import {type CLITelemetryStore} from './telemetry/types.js'
 import {type Output} from './types.js'
+import {getCliTelemetry} from './util/getCliTelemetry.js'
 import {isInteractive} from './util/isInteractive.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
@@ -60,6 +62,13 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
   }
 
   /**
+   * The telemetry store.
+   *
+   * @returns The telemetry store.
+   */
+  protected telemetry!: CLITelemetryStore
+
+  /**
    * Get the CLI config.
    *
    * @returns The CLI config.
@@ -101,6 +110,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
 
     this.args = args as Args<T>
     this.flags = flags as Flags<T>
+    this.telemetry = getCliTelemetry()
 
     await super.init()
   }

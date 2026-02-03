@@ -2,12 +2,12 @@ import {appendFileSync} from 'node:fs'
 import {mkdir} from 'node:fs/promises'
 import {dirname} from 'node:path'
 
-import {type TelemetryEvent, type TelemetryStore} from '@sanity/telemetry'
+import {type TelemetryEvent} from '@sanity/telemetry'
 
-import {type ConsentInformation} from '../../actions/telemetry/types.js'
-import {telemetryStoreDebug} from './debug.js'
 import {generateTelemetryFilePath} from './generateTelemetryFilePath.js'
 import {createLogger} from './logger.js'
+import {telemetryStoreDebug} from './telemetryStoreDebug.js'
+import {type CLITelemetryStore, type ConsentInformation, TelemetryUserProperties} from './types.js'
 
 /**
  * FILE MANAGEMENT STRATEGY:
@@ -33,8 +33,6 @@ interface CreateTelemetryStoreOptions {
   resolveConsent: () => Promise<ConsentInformation>
 }
 
-type CLITelemetryStore<T> = Pick<TelemetryStore<T>, 'logger'>
-
 /**
  * Creates a file-based telemetry store with cached consent and reliable synchronous I/O.
  *
@@ -46,11 +44,13 @@ type CLITelemetryStore<T> = Pick<TelemetryStore<T>, 'logger'>
  * @param sessionId - Unique session identifier for file isolation
  * @param options - Configuration options
  * @returns TelemetryStore instance compatible with the telemetry interface
+ *
+ * @internal
  */
-export function createTelemetryStore<UserProperties>(
+export function createTelemetryStore(
   sessionId: string,
   options: CreateTelemetryStoreOptions,
-): CLITelemetryStore<UserProperties> {
+): CLITelemetryStore {
   telemetryStoreDebug('Creating telemetry store with sessionId: %s', sessionId)
 
   let cachedConsent: ConsentInformation | null = null
@@ -120,7 +120,7 @@ export function createTelemetryStore<UserProperties>(
     }
   }
 
-  const logger = createLogger<UserProperties>(sessionId, emit)
+  const logger = createLogger<TelemetryUserProperties>(sessionId, emit)
 
   // Initialize both consent and file path concurrently
   Promise.allSettled([initializeConsent(), initializeFilePath()]).then((results) => {
@@ -132,7 +132,5 @@ export function createTelemetryStore<UserProperties>(
     }
   })
 
-  return {
-    logger,
-  }
+  return logger
 }

@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
+import {flushTelemetryFiles} from '@sanity/cli-core'
+
 import {resolveConsent} from '../../actions/telemetry/resolveConsent.js'
 import {sendEvents} from '../../services/telemetry.js'
-import {flushTelemetryFiles} from '../../telemetry/store/flushTelemetryFiles.js'
 
 export async function runFlushWorker() {
   await flushTelemetryFiles({resolveConsent, sendEvents})

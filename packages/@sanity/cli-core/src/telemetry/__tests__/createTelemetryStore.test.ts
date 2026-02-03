@@ -1,24 +1,20 @@
 import {mkdir} from 'node:fs/promises'
-import {homedir} from 'node:os'
+import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
-import {getCliToken, normalizePath} from '@sanity/cli-core'
 import {type TelemetryEvent} from '@sanity/telemetry'
 import {glob} from 'tinyglobby'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-import {waitForAsync} from '~test/helpers/waitForAsync.js'
 
-import {readNDJSON} from '../../utils/readNDJSON.js'
+import {normalizePath} from '../../util/normalizePath.js'
+import {readNDJSON} from '../../util/readNDJSON.js'
+import {waitForAsync} from '../../util/waitForAsync.js'
 import {createTelemetryStore} from '../createTelemetryStore.js'
+import {type TelemetryUserProperties} from '../types.js'
 
-vi.mock('node:os', () => ({homedir: vi.fn()}))
-vi.mock('@sanity/cli-core', async () => ({
-  ...(await vi.importActual('@sanity/cli-core')),
-  getCliToken: vi.fn(),
-}))
+vi.mock('node:os', () => ({tmpdir: vi.fn()}))
 
-const mockGetCliToken = vi.mocked(getCliToken)
-const mockHomedir = vi.mocked(homedir)
+const mockTmpdir = vi.mocked(tmpdir)
 const mockResolveConsent = vi.fn()
 
 const INIT_DELAY = 50 // Store initialization (async consent + file path)
@@ -72,8 +68,8 @@ describe('#createTelemetryStore', () => {
     testDir = join(process.cwd(), 'tmp', 'telemetry-tests', `test-${timestamp}-${random}`)
     await mkdir(testDir, {recursive: true})
 
-    mockHomedir.mockReturnValue(testDir)
-    mockGetCliToken.mockResolvedValue('test-auth-token-123')
+    mockTmpdir.mockReturnValue(testDir)
+    vi.stubEnv('SANITY_AUTH_TOKEN', 'test-auth-token-123')
   })
 
   afterEach(() => {
@@ -86,10 +82,10 @@ describe('#createTelemetryStore', () => {
       const store = await setupStore(sessionId)
 
       const testEvent = createLogEvent('test-event')
-      store.logger.log(testEvent, {testData: true})
+      store.log(testEvent, {testData: true})
 
       const testTrace = createTraceEvent('test-trace')
-      const trace = store.logger.trace(testTrace, {traceContext: 'test'})
+      const trace = store.trace(testTrace, {traceContext: 'test'})
       trace.start()
       trace.log({step: 'processing'})
       trace.complete()
@@ -134,7 +130,7 @@ describe('#createTelemetryStore', () => {
       await waitForAsync(INIT_DELAY)
 
       const grantedEvent = createLogEvent('granted-event')
-      store1.logger.log(grantedEvent, {consentStatus: 'granted'})
+      store1.log(grantedEvent, {consentStatus: 'granted'})
 
       const expectedPath = join(testDir, '.config', 'sanity')
       const grantedFiles = await glob(normalizePath(join(expectedPath, 'telemetry-*.ndjson')))
@@ -159,7 +155,7 @@ describe('#createTelemetryStore', () => {
       await waitForAsync(INIT_DELAY)
 
       const deniedEvent = createLogEvent('denied-event')
-      store2.logger.log(deniedEvent, {consentStatus: 'denied'})
+      store2.log(deniedEvent, {consentStatus: 'denied'})
 
       // No new files should be created when consent is denied
       const finalFiles = await glob(normalizePath(join(expectedPath, 'telemetry-*.ndjson')))
@@ -179,7 +175,7 @@ describe('#createTelemetryStore', () => {
       await waitForAsync(WAIT_FOR_OPERATIONS)
 
       const testEvent = createLogEvent('init-failure-event')
-      store.logger.log(testEvent, {initTest: true})
+      store.log(testEvent, {initTest: true})
 
       await waitForAsync(WAIT_FOR_OPERATIONS)
 
@@ -203,14 +199,14 @@ describe('#createTelemetryStore', () => {
 
       // Session 1 uses trace
       const traceEvent = createTraceEvent('trace-event-1')
-      const trace1 = store1.logger.trace(traceEvent, {session: 1})
+      const trace1 = store1.trace(traceEvent, {session: 1})
       trace1.start()
       trace1.log({data: 'test1', session: 1})
       trace1.complete()
 
       // Session 2 uses log
       const logEvent = createLogEvent('event-2')
-      store2.logger.log(logEvent, {data: 'test2', session: 2})
+      store2.log(logEvent, {data: 'test2', session: 2})
 
       const telemetryPath = getTelemetryPath(testDir)
       const sessionFiles = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
@@ -250,7 +246,7 @@ describe('#createTelemetryStore', () => {
       const store = await setupStore(sessionId)
 
       const lifecycleTrace = createTraceEvent('lifecycle-trace')
-      const trace = store.logger.trace(lifecycleTrace, {traceContext: 'lifecycle'})
+      const trace = store.trace(lifecycleTrace, {traceContext: 'lifecycle'})
 
       trace.start()
       trace.log({action: 'initialize', step: 1})
@@ -282,7 +278,7 @@ describe('#createTelemetryStore', () => {
       const store = await setupStore(sessionId)
 
       const asyncTrace = createTraceEvent('async-operation')
-      const asyncTraceInstance = store.logger.trace(asyncTrace)
+      const asyncTraceInstance = store.trace(asyncTrace)
 
       const asyncOperation = new Promise<string>((resolve) => {
         setTimeout(() => resolve('success'), ASYNC_OPERATION_DELAY)
@@ -303,7 +299,7 @@ describe('#createTelemetryStore', () => {
       const store = await setupStore(sessionId)
 
       const failTrace = createTraceEvent('fail-operation')
-      const failingTrace = store.logger.trace(failTrace)
+      const failingTrace = store.trace(failTrace)
 
       const failingOperation = new Promise<object>((_, reject) => {
         setTimeout(() => reject(new Error('Operation failed')), ASYNC_OPERATION_DELAY)
@@ -323,7 +319,7 @@ describe('#createTelemetryStore', () => {
       const store = await setupStore(sessionId)
 
       const parentTrace = createTraceEvent('parent-operation')
-      const parentTraceInstance = store.logger.trace(parentTrace, {level: 'parent'})
+      const parentTraceInstance = store.trace(parentTrace, {level: 'parent'})
       parentTraceInstance.start()
 
       const childLogger = parentTraceInstance.newContext('child-operation')
@@ -350,7 +346,10 @@ describe('#createTelemetryStore', () => {
       const store = await setupStore(sessionId)
 
       // Test updateUserProperties
-      store.logger.updateUserProperties({plan: 'pro', userId: 'test-user-123'})
+      store.updateUserProperties({
+        plan: 'pro',
+        userId: 'test-user-123',
+      } as unknown as TelemetryUserProperties)
 
       // Test sampling behavior
       const sampledEvent = {
@@ -361,8 +360,8 @@ describe('#createTelemetryStore', () => {
         version: 1,
       }
 
-      store.logger.log(sampledEvent, {attempt: 1}) // Should go through
-      store.logger.log(sampledEvent, {attempt: 2}) // Should be blocked by sampling
+      store.log(sampledEvent, {attempt: 1}) // Should go through
+      store.log(sampledEvent, {attempt: 2}) // Should be blocked by sampling
 
       const telemetryPath = getTelemetryPath(testDir)
       const files = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))

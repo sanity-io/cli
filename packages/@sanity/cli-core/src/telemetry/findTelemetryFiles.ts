@@ -1,10 +1,10 @@
 import {join} from 'node:path'
 
-import {normalizePath} from '@sanity/cli-core'
 import {glob} from 'tinyglobby'
 
-import {telemetryStoreDebug} from './debug.js'
+import {normalizePath} from '../util/normalizePath.js'
 import {getTelemetryBaseInfo} from './getTelemetryBaseInfo.js'
+import {telemetryStoreDebug} from './telemetryStoreDebug.js'
 
 /**
  * Discovers and returns paths to all telemetry files for the current user/environment.

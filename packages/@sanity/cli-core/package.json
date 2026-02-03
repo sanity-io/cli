@@ -71,7 +71,9 @@
     "log-symbols": "^7.0.1",
     "ora": "catalog:",
     "rxjs": "catalog:",
+    "tinyglobby": "catalog:",
     "tsx": "catalog:",
+    "typeid-js": "^1.2.0",
     "vite": "catalog:",
     "zod": "catalog:"
   },
@@ -82,6 +84,7 @@
     "@sanity/codegen": "catalog:",
     "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
+    "@sanity/telemetry": "catalog:",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/debug": "catalog:",
@@ -91,6 +94,9 @@
     "publint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "@sanity/telemetry": ">=0.8.1 <0.9.0"
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
