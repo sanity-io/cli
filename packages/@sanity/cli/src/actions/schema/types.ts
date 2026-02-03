@@ -1,3 +1,4 @@
+import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {z} from 'zod'
 
 export const extractSchemaWorkerData = z.object({
@@ -31,4 +32,12 @@ export type SerializedTypeDebug = {
   fields?: Record<string, SerializedTypeDebug>
   of?: Record<string, SerializedTypeDebug>
   size: number
+}
+
+/** @internal */
+export interface ExtractSchemaWorkerError {
+  error: string
+  type: 'error'
+
+  validation?: SchemaValidationProblemGroup[]
 }

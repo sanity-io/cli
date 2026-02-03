@@ -9,6 +9,9 @@ import {firstValueFrom, of} from 'rxjs'
 import {resolveConfig} from 'sanity'
 import {tsImport} from 'tsx/esm/api'
 
+/**
+ * @deprecated Use `getStudioWorkspaces` function from `@sanity/cli-core` instead.
+ */
 export async function importStudioConfig(rootPath: string) {
   const mockBrowserCleanup = await mockBrowserEnvironment(rootPath)
 

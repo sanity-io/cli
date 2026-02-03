@@ -1,24 +1,20 @@
-import {createHash} from 'node:crypto'
 import {mkdir, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
-import {getTimer, Output} from '@sanity/cli-core'
+import {findProjectRoot, getTimer, Output, studioWorkerTask} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {type Workspace} from 'sanity'
 
-import {type ExtractManifestCommand} from '../../commands/manifest/extract'
-import {importStudioConfig} from '../../util/importStudioConfig.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
-import {extractWorkspaceManifest} from './extractWorkspaceManifest.js'
+import {type ExtractSchemaWorkerError} from '../schema/types.js'
+import {SchemaExtractionError} from '../schema/utils/SchemaExtractionError.js'
 import {
   type CreateManifest,
   type CreateWorkspaceManifest,
-  type ManifestWorkspaceFile,
+  type ExtractManifestWorkerData,
 } from './types'
+import {writeWorkspaceFiles} from './writeWorkspaceFiles.js'
 
 export const MANIFEST_FILENAME = 'create-manifest.json'
-const SCHEMA_FILENAME_SUFFIX = '.create-schema.json'
-const TOOLS_FILENAME_SUFFIX = '.create-tools.json'
 
 /** Escape-hatch env flags to change action behavior */
 const FEATURE_ENABLED_ENV_NAME = 'SANITY_CLI_EXTRACT_MANIFEST_ENABLED'
@@ -28,9 +24,8 @@ const EXTRACT_MANIFEST_LOG_ERRORS = process.env.SANITY_CLI_EXTRACT_MANIFEST_LOG_
 const CREATE_TIMER = 'create-manifest'
 
 interface ExtractManifestOptions {
-  flags: ExtractManifestCommand['flags']
+  outPath: string
   output: Output
-  workDir: string
 }
 
 /**
@@ -40,24 +35,35 @@ interface ExtractManifestOptions {
 export async function extractManifestSafe(
   options: ExtractManifestOptions,
 ): Promise<Error | undefined> {
+  const {outPath, output} = options
   if (!EXTRACT_MANIFEST_ENABLED) {
     return undefined
   }
 
   try {
-    await extractManifest(options)
+    await extractManifest(outPath)
     return undefined
   } catch (err) {
     if (EXTRACT_MANIFEST_LOG_ERRORS) {
-      options.output.error(err)
+      output.error(err)
     }
     return err
   }
 }
 
-async function extractManifest(options: ExtractManifestOptions): Promise<void> {
-  const {flags, workDir} = options
-  const staticPath = resolve(join(workDir, flags.path))
+interface ExtractManifestWorkerResult {
+  type: 'success'
+  workspaceManifests: CreateWorkspaceManifest[]
+}
+
+type ExtractManifestWorkerMessage = ExtractManifestWorkerResult | ExtractSchemaWorkerError
+
+export async function extractManifest(outPath: string): Promise<void> {
+  const projectRoot = await findProjectRoot(process.cwd())
+
+  const workDir = projectRoot.directory
+  const configPath = projectRoot.path
+  const staticPath = resolve(join(workDir, outPath))
   const path = join(staticPath, MANIFEST_FILENAME)
 
   const timer = getTimer()
@@ -65,10 +71,22 @@ async function extractManifest(options: ExtractManifestOptions): Promise<void> {
   const spin = spinner('Extracting manifest').start()
 
   try {
-    const workspaceManifests = await getWorkspaceManifests(workDir)
+    const result = await studioWorkerTask<ExtractManifestWorkerMessage>(
+      new URL('extractManifest.worker.js', import.meta.url),
+      {
+        name: 'extractManifest',
+        studioRootPath: workDir,
+        workerData: {configPath, workDir} satisfies ExtractManifestWorkerData,
+      },
+    )
+
+    if (result.type === 'error') {
+      throw new SchemaExtractionError(result.error, result.validation)
+    }
+
     await mkdir(staticPath, {recursive: true})
 
-    const workspaceFiles = await writeWorkspaceFiles(workspaceManifests, staticPath)
+    const workspaceFiles = await writeWorkspaceFiles(result.workspaceManifests, staticPath)
 
     const manifest: CreateManifest = {
       /**
@@ -88,48 +106,8 @@ async function extractManifest(options: ExtractManifestOptions): Promise<void> {
 
     spin.succeed(`Extracted manifest (${manifestDuration.toFixed(0)}ms)`)
   } catch (err) {
-    spin.fail(err.message)
+    spin.fail()
+
     throw err
   }
-}
-
-async function getWorkspaceManifests(workDir: string): Promise<CreateWorkspaceManifest[]> {
-  const workspaces = await importStudioConfig(workDir)
-  return await extractWorkspaceManifest(workspaces as unknown as Workspace[])
-}
-
-function writeWorkspaceFiles(
-  manifestWorkspaces: CreateWorkspaceManifest[],
-  staticPath: string,
-): Promise<ManifestWorkspaceFile[]> {
-  const output = manifestWorkspaces.map((workspace) => writeWorkspaceFile(workspace, staticPath))
-
-  return Promise.all(output)
-}
-
-async function writeWorkspaceFile(
-  workspace: CreateWorkspaceManifest,
-  staticPath: string,
-): Promise<ManifestWorkspaceFile> {
-  const [schemaFilename, toolsFilename] = await Promise.all([
-    createFile(staticPath, workspace.schema, SCHEMA_FILENAME_SUFFIX),
-    createFile(staticPath, workspace.tools, TOOLS_FILENAME_SUFFIX),
-  ])
-
-  return {
-    ...workspace,
-    schema: schemaFilename,
-    tools: toolsFilename,
-  }
-}
-
-const createFile = async (path: string, content: unknown, filenameSuffix: string) => {
-  const stringifiedContent = JSON.stringify(content, null, 2)
-  const hash = createHash('sha1').update(stringifiedContent).digest('hex')
-  const filename = `${hash.slice(0, 8)}${filenameSuffix}`
-
-  // workspaces with identical data will overwrite each others file. This is ok, since they are identical and can be shared
-  await writeFile(join(path, filename), stringifiedContent)
-
-  return filename
 }

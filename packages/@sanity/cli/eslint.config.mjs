@@ -9,7 +9,30 @@ export default [
     ignores: ['templates/**'],
   },
   ...eslintConfig,
-  {rules: {'@typescript-eslint/no-explicit-any': 'warn'}},
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
+    },
+  },
+  {
+    files: ['**/*'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'warn',
+        {
+          paths: [
+            {
+              allowTypeImports: true,
+              message:
+                'Importing from sanity directly is not allowed. Use `resolveLocalPackage` function from @sanity/cli-core instead.',
+              name: 'sanity',
+            },
+          ],
+        },
+      ],
+    },
+  },
   {
     files: ['test/__fixtures__/**/*.ts'],
     rules: {
