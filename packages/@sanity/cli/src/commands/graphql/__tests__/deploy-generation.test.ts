@@ -1,3 +1,4 @@
+import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
@@ -25,10 +26,16 @@ vi.mock('@sanity/cli-core/ux', async () => {
 
 describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
   let cwd: string
+  let projectId: string
+  let dataset: string
 
   beforeAll(async () => {
     cwd = await testFixture('basic-studio')
     process.chdir(cwd)
+
+    const cliConfig = await getCliConfig(cwd)
+    projectId = cliConfig.api?.projectId ?? ''
+    dataset = cliConfig.api?.dataset ?? ''
   })
 
   afterEach(() => {
@@ -39,18 +46,18 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
   })
 
   test('uses specified generation flag and maintains existing', async () => {
-    nock('https://ppsg7ml5.api.sanity.io')
-      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+    nock(`https://${projectId}.api.sanity.io`)
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(200, '', {
         'x-sanity-graphql-generation': 'gen2',
         'x-sanity-graphql-playground': 'true',
       })
 
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'post',
-      uri: '/apis/graphql/test/default/validate',
+      uri: `/apis/graphql/${dataset}/default/validate`,
     }).reply(200, {
       breakingChanges: [],
       dangerousChanges: [],
@@ -59,13 +66,13 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
 
     let capturedBody: {enablePlayground?: boolean; schema?: {generation?: string}} | undefined
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'put',
-      uri: '/apis/graphql/test/default',
+      uri: `/apis/graphql/${dataset}/default`,
     }).reply(200, function (_, requestBody) {
       capturedBody = requestBody as typeof capturedBody
-      return {location: '/v1/graphql/test/default'}
+      return {location: `/v1/graphql/${dataset}/default`}
     })
 
     const {error, stderr} = await testCommand(GraphQLDeployCommand, [])
@@ -78,18 +85,18 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
   test('changes generation with --force from gen2 to gen3', async () => {
     mockIsInteractive.mockReturnValue(false)
 
-    nock('https://ppsg7ml5.api.sanity.io')
-      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+    nock(`https://${projectId}.api.sanity.io`)
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(200, '', {
         'x-sanity-graphql-generation': 'gen2',
         'x-sanity-graphql-playground': 'true',
       })
 
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'post',
-      uri: '/apis/graphql/test/default/validate',
+      uri: `/apis/graphql/${dataset}/default/validate`,
     }).reply(200, {
       breakingChanges: [],
       dangerousChanges: [],
@@ -98,13 +105,13 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
 
     let capturedBody: {enablePlayground?: boolean; schema?: {generation?: string}} | undefined
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'put',
-      uri: '/apis/graphql/test/default',
+      uri: `/apis/graphql/${dataset}/default`,
     }).reply(200, function (_, requestBody) {
       capturedBody = requestBody as typeof capturedBody
-      return {location: '/v1/graphql/test/default'}
+      return {location: `/v1/graphql/${dataset}/default`}
     })
 
     const {error, stderr} = await testCommand(GraphQLDeployCommand, [
@@ -124,8 +131,8 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
     mockIsInteractive.mockReturnValue(true)
     mockConfirm.mockResolvedValue(false) // User declines the generation change
 
-    nock('https://ppsg7ml5.api.sanity.io')
-      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+    nock(`https://${projectId}.api.sanity.io`)
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(200, '', {
         'x-sanity-graphql-generation': 'gen2',
         'x-sanity-graphql-playground': 'true',
@@ -147,8 +154,8 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
   test('fails changing generation in non-interactive mode without --force', async () => {
     mockIsInteractive.mockReturnValue(false)
 
-    nock('https://ppsg7ml5.api.sanity.io')
-      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+    nock(`https://${projectId}.api.sanity.io`)
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(200, '', {
         'x-sanity-graphql-generation': 'gen2',
         'x-sanity-graphql-playground': 'true',
@@ -167,18 +174,18 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
     mockIsInteractive.mockReturnValue(true)
     mockConfirm.mockResolvedValue(true) // User confirms the generation change
 
-    nock('https://ppsg7ml5.api.sanity.io')
-      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+    nock(`https://${projectId}.api.sanity.io`)
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(200, '', {
         'x-sanity-graphql-generation': 'gen2',
         'x-sanity-graphql-playground': 'true',
       })
 
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'post',
-      uri: '/apis/graphql/test/default/validate',
+      uri: `/apis/graphql/${dataset}/default/validate`,
     }).reply(200, {
       breakingChanges: [],
       dangerousChanges: [],
@@ -187,13 +194,13 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
 
     let capturedBody: {enablePlayground?: boolean; schema?: {generation?: string}} | undefined
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'put',
-      uri: '/apis/graphql/test/default',
+      uri: `/apis/graphql/${dataset}/default`,
     }).reply(200, function (_, requestBody) {
       capturedBody = requestBody as typeof capturedBody
-      return {location: '/v1/graphql/test/default'}
+      return {location: `/v1/graphql/${dataset}/default`}
     })
 
     const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen3'])
@@ -211,15 +218,15 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
   })
 
   test('deploys with gen1 generation', async () => {
-    nock('https://ppsg7ml5.api.sanity.io')
-      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+    nock(`https://${projectId}.api.sanity.io`)
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(404)
 
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'post',
-      uri: '/apis/graphql/test/default/validate',
+      uri: `/apis/graphql/${dataset}/default/validate`,
     }).reply(200, {
       breakingChanges: [],
       dangerousChanges: [],
@@ -228,13 +235,13 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
 
     let capturedBody: {enablePlayground?: boolean; schema?: {generation?: string}} | undefined
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'put',
-      uri: '/apis/graphql/test/default',
+      uri: `/apis/graphql/${dataset}/default`,
     }).reply(200, function (_, requestBody) {
       capturedBody = requestBody as typeof capturedBody
-      return {location: '/v1/graphql/test/default'}
+      return {location: `/v1/graphql/${dataset}/default`}
     })
 
     const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen1'])
@@ -245,18 +252,18 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
   })
 
   test('uses specified generation when it matches currently deployed', async () => {
-    nock('https://ppsg7ml5.api.sanity.io')
-      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+    nock(`https://${projectId}.api.sanity.io`)
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(200, '', {
         'x-sanity-graphql-generation': 'gen3',
         'x-sanity-graphql-playground': 'true',
       })
 
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'post',
-      uri: '/apis/graphql/test/default/validate',
+      uri: `/apis/graphql/${dataset}/default/validate`,
     }).reply(200, {
       breakingChanges: [],
       dangerousChanges: [],
@@ -265,13 +272,13 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
 
     let capturedBody: {enablePlayground?: boolean; schema?: {generation?: string}} | undefined
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'put',
-      uri: '/apis/graphql/test/default',
+      uri: `/apis/graphql/${dataset}/default`,
     }).reply(200, function (_, requestBody) {
       capturedBody = requestBody as typeof capturedBody
-      return {location: '/v1/graphql/test/default'}
+      return {location: `/v1/graphql/${dataset}/default`}
     })
 
     const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen3'])

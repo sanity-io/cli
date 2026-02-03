@@ -1,6 +1,7 @@
 import {writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
+import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
@@ -29,10 +30,16 @@ vi.mock('@sanity/cli-core/ux', async () => {
 
 describe('#graphql:deploy errors', {timeout: 30 * 1000}, () => {
   let cwd: string
+  let projectId: string
+  let dataset: string
 
   beforeAll(async () => {
     cwd = await testFixture('basic-studio')
     process.chdir(cwd)
+
+    const cliConfig = await getCliConfig(cwd)
+    projectId = cliConfig.api?.projectId ?? ''
+    dataset = cliConfig.api?.dataset ?? ''
   })
 
   afterEach(() => {
@@ -43,18 +50,18 @@ describe('#graphql:deploy errors', {timeout: 30 * 1000}, () => {
   })
 
   test('fails on breaking changes without --force in non-interactive mode', async () => {
-    nock('https://ppsg7ml5.api.sanity.io')
-      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+    nock(`https://${projectId}.api.sanity.io`)
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(200, '', {
         'x-sanity-graphql-generation': 'gen3',
         'x-sanity-graphql-playground': 'true',
       })
 
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'post',
-      uri: '/apis/graphql/test/default/validate',
+      uri: `/apis/graphql/${dataset}/default/validate`,
     }).reply(200, {
       breakingChanges: [
         {
@@ -77,15 +84,15 @@ describe('#graphql:deploy errors', {timeout: 30 * 1000}, () => {
   })
 
   test('handles validation errors', async () => {
-    nock('https://ppsg7ml5.api.sanity.io')
-      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+    nock(`https://${projectId}.api.sanity.io`)
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(404)
 
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'post',
-      uri: '/apis/graphql/test/default/validate',
+      uri: `/apis/graphql/${dataset}/default/validate`,
     }).reply(200, {
       breakingChanges: [],
       dangerousChanges: [],
@@ -100,15 +107,15 @@ describe('#graphql:deploy errors', {timeout: 30 * 1000}, () => {
   })
 
   test('handles deploy failures', async () => {
-    nock('https://ppsg7ml5.api.sanity.io')
-      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+    nock(`https://${projectId}.api.sanity.io`)
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(404)
 
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'post',
-      uri: '/apis/graphql/test/default/validate',
+      uri: `/apis/graphql/${dataset}/default/validate`,
     }).reply(200, {
       breakingChanges: [],
       dangerousChanges: [],
@@ -116,10 +123,10 @@ describe('#graphql:deploy errors', {timeout: 30 * 1000}, () => {
     })
 
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'put',
-      uri: '/apis/graphql/test/default',
+      uri: `/apis/graphql/${dataset}/default`,
     }).reply(500, {
       error: 'Internal Server Error',
       message: 'Deploy failed',
@@ -133,8 +140,8 @@ describe('#graphql:deploy errors', {timeout: 30 * 1000}, () => {
   })
 
   test('handles getCurrentSchemaProps 500 error', async () => {
-    nock('https://ppsg7ml5.api.sanity.io')
-      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+    nock(`https://${projectId}.api.sanity.io`)
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(500)
 
     const {error} = await testCommand(GraphQLDeployCommand, ['--force'])
@@ -198,15 +205,15 @@ export const schemaTypes = [
   })
 
   test('handles validateGraphQLAPI network error with response body', async () => {
-    nock('https://ppsg7ml5.api.sanity.io')
-      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/test/default`)
+    nock(`https://${projectId}.api.sanity.io`)
+      .head(`/${GRAPHQL_API_VERSION}/apis/graphql/${dataset}/default`)
       .reply(404)
 
     mockApi({
-      apiHost: 'https://ppsg7ml5.api.sanity.io',
+      apiHost: `https://${projectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
       method: 'post',
-      uri: '/apis/graphql/test/default/validate',
+      uri: `/apis/graphql/${dataset}/default/validate`,
     }).reply(400, {
       validationError: 'Schema validation failed: duplicate type name',
     })
