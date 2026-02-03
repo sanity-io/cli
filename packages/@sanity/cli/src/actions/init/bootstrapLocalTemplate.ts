@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import {styleText} from 'node:util'
 
 import {Output, subdebug} from '@sanity/cli-core'
-import {chalk, spinner} from '@sanity/cli-core/ux'
+import {spinner} from '@sanity/cli-core/ux'
 import {deburr} from 'lodash-es'
 
 import {studioDependencies} from '../../studioDependencies.js'
@@ -171,7 +172,7 @@ export async function bootstrapLocalTemplate(
       await fs.writeFile(filePath, content, {flag: 'wx'})
     } catch (err) {
       if (err.code === 'EEXIST') {
-        output.warn(`\n${chalk.yellow('⚠')} File "${filePath}" already exists, skipping`)
+        output.warn(`\n${styleText('yellow', '⚠')} File "${filePath}" already exists, skipping`)
       } else {
         throw err
       }

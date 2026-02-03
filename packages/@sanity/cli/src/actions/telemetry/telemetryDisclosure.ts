@@ -1,6 +1,8 @@
+import {styleText} from 'node:util'
+
 import {ux} from '@oclif/core'
 import {getUserConfig, isCi} from '@sanity/cli-core'
-import {boxen, chalk} from '@sanity/cli-core/ux'
+import {boxen} from '@sanity/cli-core/ux'
 
 import {telemetryDebug} from './telemetryDebug.js'
 import {telemetryLearnMoreMessage} from './telemetryLearnMoreMessage.js'
@@ -26,7 +28,7 @@ export function telemetryDisclosure(): void {
       `The Sanity CLI now collects telemetry data on general usage and errors.
 This helps us improve Sanity and prioritize features.
 
-To opt in/out, run ${chalk.cyan('npx sanity telemetry enable/disable')}.
+To opt in/out, run ${styleText('cyan', 'npx sanity telemetry enable/disable')}.
 
 ${telemetryLearnMoreMessage('unset')}`,
       {

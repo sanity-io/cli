@@ -1,8 +1,9 @@
 import {basename, dirname} from 'node:path'
+import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
-import {chalk, spinner} from '@sanity/cli-core/ux'
+import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
 import {createDeployment} from '../../services/userApplications.js'
@@ -115,10 +116,10 @@ export async function deployStudio(options: DeployAppOptions) {
     spin.succeed()
 
     // And let the user know we're done
-    output.log(`\nSuccess! Studio deployed to ${chalk.cyan(location)}`)
+    output.log(`\nSuccess! Studio deployed to ${styleText('cyan', location || 'unknown URL')}`)
 
     if (!appId) {
-      output.log(`\nAdd ${chalk.cyan(`deployment: { appId: '${userApplication.id}' }`)}`)
+      output.log(`\nAdd ${styleText('cyan', `deployment: { appId: '${userApplication.id}' }`)}`)
       output.log(`to sanity.cli.js or sanity.cli.ts`)
       output.log(`to avoid prompting on next deploy.`)
     }
@@ -131,6 +132,6 @@ export async function deployStudio(options: DeployAppOptions) {
 
     spin.fail()
     deployDebug('Error deploying studio', error)
-    output.error('Error deploying studio', {exit: 1})
+    output.error(`Error deploying studio: ${error}`, {exit: 1})
   }
 }

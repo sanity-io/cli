@@ -1,4 +1,5 @@
-import {chalk} from '@sanity/cli-core/ux'
+import {styleText} from 'node:util'
+
 import {padEnd} from 'lodash-es'
 
 import {type ModuleVersionResult} from './types.js'
@@ -33,8 +34,11 @@ export function getFormatters(versions: ModuleVersionResult[]): {
 
   const formatName = (name: string): string =>
     padEnd(name, nameLength + 1)
-      .replace(/^@sanity\/(.*?)(\s|$)/, `${chalk.yellow('@sanity/')}${chalk.cyan('$1')}$2`)
-      .replace(/^sanity(\s|$)/, `${chalk.yellow('sanity')}$1`)
+      .replace(
+        /^@sanity\/(.*?)(\s|$)/,
+        `${styleText('yellow', '@sanity/')}${styleText('cyan', '$1')}$2`,
+      )
+      .replace(/^sanity(\s|$)/, `${styleText('yellow', 'sanity')}$1`)
 
   return {formatName, nameLength, versionLength}
 }

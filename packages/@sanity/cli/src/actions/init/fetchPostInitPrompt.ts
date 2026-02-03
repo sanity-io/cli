@@ -1,4 +1,4 @@
-import {chalk} from '@sanity/cli-core/ux'
+import {styleText} from 'node:util'
 
 import {getPostInitPrompt} from '../../services/mcp.js'
 
@@ -9,7 +9,7 @@ const DEFAULT_MESSAGE =
  * Applies cyan formatting to text wrapped in **markers**.
  */
 function applyCyanFormatting(text: string): string {
-  return text.replaceAll(/\*\*([^*]+)\*\*/g, (_, content) => chalk.cyan(content))
+  return text.replaceAll(/\*\*([^*]+)\*\*/g, (_, content) => styleText('cyan', content))
 }
 
 /**

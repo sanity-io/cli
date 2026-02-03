@@ -1,6 +1,8 @@
+import {styleText} from 'node:util'
+
 import {Args, Flags} from '@oclif/core'
 import {getProjectCliClient, SanityCommand} from '@sanity/cli-core'
-import {boxen, chalk, spinner} from '@sanity/cli-core/ux'
+import {boxen, spinner} from '@sanity/cli-core/ux'
 import {SanityClient} from '@sanity/client'
 import {type OperatorFunction, pipe, scan, tap} from 'rxjs'
 
@@ -161,7 +163,7 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
         process.exit(130)
       })
     }).catch((error) => {
-      this.error(chalk.red(error.message), {exit: 1})
+      this.error(styleText('red', error.message), {exit: 1})
     })
   }
 
@@ -179,7 +181,7 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
         complete: () => spin.succeed(`Imported ${previousState?.fileCount} assets`),
         next: ([processedAssetsCount, state]) => {
           previousState = state
-          spin.text = `${processedAssetsCount} of ${state?.fileCount} assets imported ${chalk.dim(state?.asset.originalFilename)}`
+          spin.text = `${processedAssetsCount} of ${state?.fileCount} assets imported ${styleText('dim', state?.asset.originalFilename ?? '')}`
         },
       }),
     )

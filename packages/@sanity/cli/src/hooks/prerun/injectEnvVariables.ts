@@ -1,7 +1,8 @@
+import {styleText} from 'node:util'
+
 import {type Hook} from '@oclif/core'
 import {warn} from '@oclif/core/ux'
 import {debug, findProjectRoot} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 import {loadEnv} from 'vite'
 
 import {getSanityEnv} from '../../util/getSanityEnv.js'
@@ -20,7 +21,7 @@ export const injectEnvVariables: Hook.Prerun = async function ({Command}) {
   }
 
   if (mode === 'production' && !isProdCmd) {
-    warn(chalk.yellow(`Running in ${getSanityEnv()} environment mode\n`))
+    warn(styleText('yellow', `Running in ${getSanityEnv()} environment mode\n`))
   }
 
   const isApp = workDir.type === 'app'

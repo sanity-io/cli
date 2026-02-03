@@ -1,6 +1,8 @@
+import {styleText} from 'node:util'
+
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk, input, logSymbols} from '@sanity/cli-core/ux'
+import {input, logSymbols} from '@sanity/cli-core/ux'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {deleteDataset} from '../../services/datasets.js'
@@ -59,8 +61,9 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
       try {
         const project = await getProjectById(projectId)
         this.log(
-          chalk.yellow(
-            `${logSymbols.warning} Deleting dataset "${chalk.bold(chalk.underline(datasetName))}" from project "${chalk.bold(chalk.underline(project.displayName))} (${chalk.bold(chalk.underline(project.id))})"\n`,
+          styleText(
+            'yellow',
+            `${logSymbols.warning} Deleting dataset "${styleText(['bold', 'underline'], datasetName)}" from project "${styleText(['bold', 'underline'], project.displayName)} (${styleText(['bold', 'underline'], project.id)})"\n`,
           ),
         )
       } catch (error) {

@@ -1,5 +1,6 @@
+import {styleText} from 'node:util'
+
 import {Output} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {
   ALLOWED_PACKAGE_MANAGERS,
@@ -36,7 +37,8 @@ export async function resolvePackageManager({
   // only log warning if a package manager flag is passed
   if (packageManager) {
     output.warn(
-      chalk.yellow(
+      styleText(
+        'yellow',
         `Given package manager "${packageManager}" is not supported. Supported package managers are ${allowedPackageManagersString}.`,
       ),
     )

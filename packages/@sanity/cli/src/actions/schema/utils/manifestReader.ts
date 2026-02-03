@@ -1,9 +1,9 @@
 import {type Stats} from 'node:fs'
 import {readFile, stat} from 'node:fs/promises'
 import path, {join, resolve} from 'node:path'
+import {styleText} from 'node:util'
 
 import {type Output} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {MANIFEST_FILENAME} from '../../manifest/extractManifest.js'
 import {type CreateManifest, type ManifestSchemaType} from '../../manifest/types.js'
@@ -54,7 +54,10 @@ export const createManifestReader: CreateManifestReaderFactory = ({
     }
 
     output.log(
-      chalk.gray(`↳ Read manifest from ${manifestFile} (last modified: ${result.lastModified})`),
+      styleText(
+        'gray',
+        `↳ Read manifest from ${manifestFile} (last modified: ${result.lastModified})`,
+      ),
     )
 
     parsedManifest = result

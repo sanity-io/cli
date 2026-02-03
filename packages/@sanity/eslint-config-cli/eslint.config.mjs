@@ -161,10 +161,21 @@ export default defineConfig(
       'n/no-unsupported-features/es-syntax': 'off',
       'n/no-unsupported-features/node-builtins': [
         'error',
-        {ignores: ['import.meta.dirname', 'fetch', 'Response']},
+        {ignores: ['import.meta.dirname', 'fetch', 'Response', 'util.styleText']},
       ],
       'no-dupe-class-members': 'off',
       'no-redeclare': 'off',
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              message: 'Use `util.styleText` from Node.js instead.',
+              name: 'chalk',
+            },
+          ],
+        },
+      ],
       'no-restricted-syntax': [
         'error',
         {

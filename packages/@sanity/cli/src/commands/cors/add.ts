@@ -1,9 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk, confirm, logSymbols} from '@sanity/cli-core/ux'
+import {confirm, logSymbols} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
 import {filterAndValidateOrigin} from '../../actions/cors/filterAndValidateOrigin.js'
@@ -113,18 +114,18 @@ export class Add extends SanityCommand<typeof Add> {
     this.log('')
     if (hasWildcard) {
       this.log(oneline`
-      ${chalk.yellow(`${logSymbols.warning} Warning:`)}
-      We ${chalk.red(chalk.underline('HIGHLY'))} recommend NOT allowing credentials
+      ${styleText('yellow', `${logSymbols.warning} Warning:`)}
+      We ${styleText(['red', 'underline'], 'HIGHLY')} recommend NOT allowing credentials
       on origins containing wildcards. If you are logged in to a studio, people will
-      be able to send requests ${chalk.underline('on your behalf')} to read and modify
+      be able to send requests ${styleText('underline', 'on your behalf')} to read and modify
       data, from any matching origin. Please tread carefully!
     `)
     } else {
       this.log(oneline`
-      ${chalk.yellow(`${logSymbols.warning} Warning:`)}
+      ${styleText('yellow', `${logSymbols.warning} Warning:`)}
       Should this origin be allowed to send requests using authentication tokens or
       session cookies? Be aware that any script on this origin will be able to send
-      requests ${chalk.underline('on your behalf')} to read and modify data if you
+      requests ${styleText('underline', 'on your behalf')} to read and modify data if you
       are logged in to a Sanity studio. If this origin hosts a studio, you will need
       this, otherwise you should probably answer "No" (n).
     `)
@@ -148,7 +149,7 @@ export class Add extends SanityCommand<typeof Add> {
    */
   private async promptForWildcardConfirmation(origin: string) {
     this.log('')
-    this.log(chalk.yellow(`${logSymbols.warning} Warning: Examples of allowed origins:`))
+    this.log(styleText('yellow', `${logSymbols.warning} Warning: Examples of allowed origins:`))
 
     if (origin === '*') {
       this.log('- http://www.some-malicious.site')
@@ -165,8 +166,8 @@ export class Add extends SanityCommand<typeof Add> {
     return confirm({
       default: false,
       message: oneline`
-      Using wildcards can be ${chalk.red('risky')}.
-      Are you ${chalk.underline('absolutely sure')} you want to allow this origin?`,
+      Using wildcards can be ${styleText('red', 'risky')}.
+      Are you ${styleText('underline', 'absolutely sure')} you want to allow this origin?`,
     })
   }
 }

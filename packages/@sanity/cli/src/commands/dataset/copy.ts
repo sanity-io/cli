@@ -1,7 +1,9 @@
+import {styleText} from 'node:util'
+
 import {Args, Flags} from '@oclif/core'
 import {exit} from '@oclif/core/errors'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk, spinner} from '@sanity/cli-core/ux'
+import {spinner} from '@sanity/cli-core/ux'
 import {Table} from 'console-table-printer'
 import {formatDistance, formatDistanceToNow, parseISO} from 'date-fns'
 
@@ -200,7 +202,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
     try {
       await this.subscribeToProgress(jobId)
-      this.log(`Job ${chalk.green(jobId)} completed`)
+      this.log(`Job ${styleText('green', jobId)} completed`)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to attach to copy job: %s', message, error)
@@ -266,7 +268,9 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
     // Start the copy job
     try {
-      this.log(`Copying dataset ${chalk.green(sourceDataset)} to ${chalk.green(targetDataset)}...`)
+      this.log(
+        `Copying dataset ${styleText('green', sourceDataset)} to ${styleText('green', targetDataset)}...`,
+      )
 
       if (!skipHistory) {
         this.log(
@@ -281,14 +285,14 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
         targetDataset,
       })
 
-      this.log(`Job ${chalk.green(response.jobId)} started`)
+      this.log(`Job ${styleText('green', response.jobId)} started`)
 
       if (flags.detach) {
         return
       }
 
       await this.subscribeToProgress(response.jobId)
-      this.log(`Job ${chalk.green(response.jobId)} completed`)
+      this.log(`Job ${styleText('green', response.jobId)} completed`)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Dataset copying failed: %s', message, error)

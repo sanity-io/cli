@@ -1,5 +1,6 @@
+import {styleText} from 'node:util'
+
 import {type Output} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {deleteSchema} from '../../services/schemas.js'
 import {isDefined} from '../manifest/schemaTypeHelpers.js'
@@ -116,7 +117,8 @@ export async function deleteSchemaAction(
         const error = result.reason
         if (error instanceof DeleteIdError) {
           output.warn(
-            chalk.red(
+            styleText(
+              'red',
               [
                 `Failed to delete schema "${error.id}" in dataset "${error.dataset}":`,
                 error.message,

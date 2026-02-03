@@ -1,4 +1,4 @@
-import {select} from '@sanity/cli-core/ux'
+import {input, select} from '@sanity/cli-core/ux'
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {of, throwError} from 'rxjs'
@@ -58,7 +58,6 @@ const defaultMocks = {
   token: testToken,
 }
 
-const mockSelect = vi.mocked(select)
 const mockFollowCopyJobProgress = vi.mocked(followCopyJobProgress)
 
 function createMockDataset(name: string) {
@@ -304,12 +303,15 @@ describe('#dataset:copy', () => {
     })
 
     test('prompts for source dataset when not provided', async () => {
+      const mockSelect = vi.mocked(select)
+      const mockInput = vi.mocked(input)
+
       mockListDatasets.mockResolvedValue([
         createMockDataset('production'),
         createMockDataset('staging'),
       ])
       mockSelect.mockResolvedValueOnce('production')
-      mockSelect.mockResolvedValueOnce('backup')
+      mockInput.mockResolvedValueOnce('backup')
       mockApi({
         apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: DATASET_API_VERSION,
@@ -318,7 +320,12 @@ describe('#dataset:copy', () => {
       }).reply(200, {jobId: 'job-789'})
       mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
 
-      await testCommand(CopyDatasetCommand, [], {mocks: defaultMocks})
+      const {error} = await testCommand(CopyDatasetCommand, [], {
+        mocks: defaultMocks,
+      })
+
+      expect(error).toBeUndefined()
+      expect(mockInput).toHaveBeenCalledOnce()
 
       expect(mockSelect).toHaveBeenCalledWith({
         choices: expect.arrayContaining([

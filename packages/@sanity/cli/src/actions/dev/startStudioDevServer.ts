@@ -1,5 +1,7 @@
+import {styleText} from 'node:util'
+
 import {isInteractive} from '@sanity/cli-core'
-import {chalk, confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
+import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
 import semver from 'semver'
 
 import {startDevServer} from '../../server/devServer.js'
@@ -79,7 +81,7 @@ export async function startStudioDevServer(
       if (isInteractive()) {
         const shouldUpgrade = await confirm({
           default: true,
-          message: chalk.yellow(`${message}Do you want to upgrade local versions?`),
+          message: styleText('yellow', `${message}Do you want to upgrade local versions?`),
         })
         if (shouldUpgrade) {
           await upgradePackages(
@@ -92,7 +94,7 @@ export async function startStudioDevServer(
         }
       } else {
         // In this case we warn the user but we don't ask them if they want to upgrade because it's not interactive.
-        output.log(chalk.yellow(message))
+        output.log(styleText('yellow', message))
       }
     }
   }
@@ -128,14 +130,13 @@ export async function startStudioDevServer(
       output.log(`Dev server started on port ${port}`)
       output.log(`View your studio in the Sanity dashboard here:`)
       output.log(
-        chalk.blue(
-          chalk.underline(
-            getCoreAppURL({
-              httpHost,
-              httpPort: port,
-              organizationId: organizationId!,
-            }),
-          ),
+        styleText(
+          ['blue', 'underline'],
+          getCoreAppURL({
+            httpHost,
+            httpPort: port,
+            organizationId: organizationId!,
+          }),
         ),
       )
     } else {
@@ -148,9 +149,9 @@ export async function startStudioDevServer(
 
       loggerInfo(
         `${appType} ` +
-          `using ${chalk.cyan(`vite@${viteVersion}`)} ` +
-          `ready in ${chalk.cyan(`${Math.ceil(startupDuration)}ms`)} ` +
-          `and running at ${chalk.cyan(url)}`,
+          `using ${styleText('cyan', `vite@${viteVersion}`)} ` +
+          `ready in ${styleText('cyan', `${Math.ceil(startupDuration)}ms`)} ` +
+          `and running at ${styleText('cyan', url)}`,
       )
     }
 

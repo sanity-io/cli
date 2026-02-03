@@ -1,6 +1,7 @@
+import {styleText} from 'node:util'
+
 import {CLIError} from '@oclif/core/errors'
 import {Output} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {VersionedFramework} from '../types.js'
 import {writeEnvVarsToFile} from './writeEnvVarsToFile.js'
@@ -25,7 +26,7 @@ export async function createOrAppendEnvVars({
   try {
     if (framework && framework.envPrefix && log) {
       output.log(
-        `\nDetected framework ${chalk.blue(framework?.name)}, using prefix '${
+        `\nDetected framework ${styleText('blue', framework?.name ?? '')}, using prefix '${
           framework.envPrefix
         }'`,
       )

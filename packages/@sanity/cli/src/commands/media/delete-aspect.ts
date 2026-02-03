@@ -1,6 +1,8 @@
+import {styleText} from 'node:util'
+
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk, confirm} from '@sanity/cli-core/ux'
+import {confirm} from '@sanity/cli-core/ux'
 
 import {selectMediaLibrary} from '../../prompts/selectMediaLibrary.js'
 import {deleteAspect} from '../../services/mediaLibraries.js'
@@ -71,13 +73,13 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
       })
 
       if (response.results.length === 0) {
-        this.warn(chalk.bold(`There's no deployed aspect with that name`))
+        this.warn(styleText('bold', `There's no deployed aspect with that name`))
         this.log(`  - ${aspectName}`)
         return
       }
 
       this.log()
-      this.log(`${chalk.green('✓')} ${chalk.bold('Deleted aspect')}`)
+      this.log(`${styleText('green', '✓')} ${styleText('bold', 'Deleted aspect')}`)
       this.log(`  - ${aspectName}`)
 
       // TODO: Find existing aspect definition files matching the undeployed aspect name and offer
@@ -86,7 +88,8 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
       const err = error as Error
       deleteAspectDebug('Failed to delete aspect', err)
       this.error(
-        chalk.bold('Failed to delete aspect') + `\n  - ${aspectName}\n\n${chalk.red(err.message)}`,
+        styleText('bold', 'Failed to delete aspect') +
+          `\n  - ${aspectName}\n\n${styleText('red', err.message)}`,
         {
           exit: 1,
         },

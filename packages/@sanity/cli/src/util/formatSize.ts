@@ -1,4 +1,4 @@
-import {chalk} from '@sanity/cli-core/ux'
+import {styleText} from 'node:util'
 
 /**
  * Formats bytes to kB
@@ -6,5 +6,5 @@ import {chalk} from '@sanity/cli-core/ux'
  * @internal
  */
 export function formatSize(bytes: number): string {
-  return chalk.cyan(`${(bytes / 1024).toFixed(0)} kB`)
+  return styleText('cyan', `${(bytes / 1024).toFixed(0)} kB`)
 }

@@ -1,13 +1,16 @@
 import {isatty} from 'node:tty'
+import {styleText} from 'node:util'
 
-import {chalk, logSymbols} from '@sanity/cli-core/ux'
+import {logSymbols} from '@sanity/cli-core/ux'
 import {type SchemaValidationProblemGroup, type SchemaValidationProblemPath} from '@sanity/types'
 
 const isTty = isatty(1)
 
 const headers = {
-  error: isTty ? chalk.bold(chalk.bgRed(chalk.black(' ERROR '))) : chalk.red('[ERROR]'),
-  warning: isTty ? chalk.bold(chalk.bgYellow(chalk.black(' WARN '))) : chalk.yellow('[WARN]'),
+  error: isTty ? styleText(['bold', 'bgRed', 'black'], ' ERROR ') : styleText('red', '[ERROR]'),
+  warning: isTty
+    ? styleText(['bold', 'bgYellow', 'black'], ' WARN ')
+    : styleText('yellow', '[WARN]'),
 }
 
 const severityValues = {error: 0, warning: 1}
@@ -70,7 +73,7 @@ export function formatSchemaValidation(validation: SchemaValidationProblemGroup[
     })
     .map(([topLevelType, groups]) => {
       const formattedTopLevelType = isTty
-        ? chalk.bgWhite(chalk.black(` ${topLevelType} `))
+        ? styleText(['bgWhite', 'black'], ` ${topLevelType} `)
         : `[${topLevelType}]`
 
       const header = `${headers[getAggregatedSeverity(groups)]} ${formattedTopLevelType}`
@@ -80,7 +83,7 @@ export function formatSchemaValidation(validation: SchemaValidationProblemGroup[
             severityValues[getAggregatedSeverity(a)] - severityValues[getAggregatedSeverity(b)],
         )
         .map((group) => {
-          const formattedPath = `  ${chalk.bold(formatPath(group.path) || '(root)')}`
+          const formattedPath = `  ${styleText('bold', formatPath(group.path) || '(root)')}`
           const formattedMessages = group.problems
             .toSorted((a, b) => severityValues[a.severity] - severityValues[b.severity])
             .map(({message, severity}) => `    ${logSymbols[severity]} ${message}`)

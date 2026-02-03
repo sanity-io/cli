@@ -5,8 +5,9 @@ import {tmpdir} from 'node:os'
 import path from 'node:path'
 import {text} from 'node:stream/consumers'
 import {pipeline} from 'node:stream/promises'
+import {styleText} from 'node:util'
 
-import {chalk, spinner} from '@sanity/cli-core/ux'
+import {spinner} from '@sanity/cli-core/ux'
 import {type SanityClient} from '@sanity/client'
 import {type FileAsset, type ImageAsset, type SanityDocument} from '@sanity/types'
 import gunzipMaybe from 'gunzip-maybe'
@@ -166,7 +167,7 @@ export function resolveSource({sourcePath}: Pick<Context, 'sourcePath'>): Observ
     tap(({aspectsNdjsonPath, importSourcePath}) => {
       if (aspectsNdjsonPath === undefined) {
         throw new Error(
-          `No ${chalk.bold('data.ndjson')} file found in import source ${chalk.bold(importSourcePath)}`,
+          `No ${styleText('bold', 'data.ndjson')} file found in import source ${styleText('bold', importSourcePath)}`,
         )
       }
       importMediaDebug(`[Found NDJSON file] ${aspectsNdjsonPath}`)

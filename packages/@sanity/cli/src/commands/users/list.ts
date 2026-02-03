@@ -1,6 +1,7 @@
+import {styleText} from 'node:util'
+
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 import {size, sortBy} from 'lodash-es'
 
 import {getMembersForProject} from '../../actions/users/getMembersForProject.js'
@@ -82,10 +83,10 @@ export class List extends SanityCommand<typeof List> {
     const printRow = (row: string[]) => {
       const isInvite = row[0] === '<pending>'
       const textRow = row.map((col, i) => `${col}`.padEnd(maxWidths[i])).join('   ')
-      return isInvite ? chalk.dim(textRow) : textRow
+      return isInvite ? styleText('dim', textRow) : textRow
     }
 
-    this.log(chalk.cyan(printRow(this.sortFields)))
+    this.log(styleText('cyan', printRow(this.sortFields)))
     for (const row of rows) {
       this.log(printRow(row))
     }

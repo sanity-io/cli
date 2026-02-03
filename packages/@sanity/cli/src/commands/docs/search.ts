@@ -1,6 +1,8 @@
+import {styleText} from 'node:util'
+
 import {Args, Flags} from '@oclif/core'
 import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk, select} from '@sanity/cli-core/ux'
+import {select} from '@sanity/cli-core/ux'
 
 import {readDoc, searchDocs, type SearchResult} from '../../services/docs.js'
 
@@ -72,7 +74,7 @@ export class DocsSearchCommand extends SanityCommand<typeof DocsSearchCommand> {
 
     for (const [index, result] of results.entries()) {
       this.log(`${index + 1}. ${result.title}`)
-      this.log(`   ${chalk.cyan(`URL: https://www.sanity.io${result.path}`)}`)
+      this.log(`   ${styleText('cyan', `URL: https://www.sanity.io${result.path}`)}`)
       if (result.description) {
         this.log(`   ${result.description}`)
       }

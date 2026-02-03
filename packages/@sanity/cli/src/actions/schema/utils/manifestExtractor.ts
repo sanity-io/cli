@@ -1,5 +1,6 @@
+import {styleText} from 'node:util'
+
 import {type Output} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {extractManifestSafe} from '../../manifest/extractManifest.js'
 import {FlagValidationError} from './schemaStoreValidation.js'
@@ -33,7 +34,7 @@ export async function ensureManifestExtractSatisfied(args: {
     if (schemaRequired || err instanceof FlagValidationError) {
       throw err
     } else {
-      output.log(chalk.gray(`↳ Failed to extract manifest:\n  ${err.message}`))
+      output.log(styleText('gray', `↳ Failed to extract manifest:\n  ${err.message}`))
       return false
     }
   }

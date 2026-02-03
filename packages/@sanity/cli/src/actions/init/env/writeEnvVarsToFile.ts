@@ -1,8 +1,8 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import {styleText} from 'node:util'
 
 import {Output, subdebug} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {VersionedFramework} from '../types.js'
 import {parseAndUpdateEnvVars} from './parseAndUpdateEnvVars.js'
@@ -70,6 +70,8 @@ export async function writeEnvVarsToFile({
   })
 
   if (log) {
-    output.log(`\n${chalk.green('Success!')} Environment variables written to ${fileOutputPath}`)
+    output.log(
+      `\n${styleText('green', 'Success!')} Environment variables written to ${fileOutputPath}`,
+    )
   }
 }

@@ -1,5 +1,6 @@
+import {styleText} from 'node:util'
+
 import {type CliConfig, type Output} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 interface Options {
   cliConfig: CliConfig
@@ -36,7 +37,7 @@ export function checkForDeprecatedAppId({cliConfig, output}: Options): void {
   // Throw an error if both the old and new app ID configs are found
   if (hasOld && hasNew) {
     output.error(
-      `${chalk.bold('Found both app.id (deprecated) and deployment.appId in your application configuration.')}
+      `${styleText('bold', 'Found both app.id (deprecated) and deployment.appId in your application configuration.')}
 
 Please remove app.id from your sanity.cli.js or sanity.cli.ts file.`,
       {
@@ -48,12 +49,12 @@ Please remove app.id from your sanity.cli.js or sanity.cli.ts file.`,
   // Just warn if only the old app ID config is found
   if (hasOld) {
     output.warn(
-      `${chalk.bold('The `app.id` config has moved to `deployment.appId`.')}
+      `${styleText('bold', 'The `app.id` config has moved to `deployment.appId`.')}
 
 Please update \`sanity.cli.ts\` or \`sanity.cli.js\` and move:
-${chalk.red(`app: {id: "${getDeprecatedAppId(cliConfig)}", ... }`)}
+${styleText('red', `app: {id: "${getDeprecatedAppId(cliConfig)}", ... }`)}
 to
-${chalk.green(`deployment: {appId: "${getDeprecatedAppId(cliConfig)}", ... }`)}
+${styleText('green', `deployment: {appId: "${getDeprecatedAppId(cliConfig)}", ... }`)}
 `,
     )
   }
