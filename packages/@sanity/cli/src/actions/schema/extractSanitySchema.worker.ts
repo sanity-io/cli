@@ -2,18 +2,17 @@ import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
 import {getStudioWorkspaces} from '@sanity/cli-core'
 import {extractSchema} from '@sanity/schema/_internal'
-import {z} from 'zod'
 
 import {getWorkspace} from '../../util/getWorkspace.js'
+import {extractSchemaWorkerData} from './types.js'
 import {extractValidationFromSchemaError} from './utils/extractValidationFromSchemaError.js'
 
 if (isMainThread || !parentPort) {
   throw new Error('Should only be run in a worker!')
 }
 
-const {configPath, enforceRequiredFields, workspaceName} = z
-  .object({configPath: z.string(), enforceRequiredFields: z.boolean(), workspaceName: z.string()})
-  .parse(workerData)
+const {configPath, enforceRequiredFields, workDir, workspaceName} =
+  extractSchemaWorkerData.parse(workerData)
 
 try {
   const workspaces = await getStudioWorkspaces(configPath)
@@ -31,7 +30,7 @@ try {
     type: 'success',
   })
 } catch (error) {
-  const validation = extractValidationFromSchemaError(error)
+  const validation = await extractValidationFromSchemaError(error, workDir)
   parentPort.postMessage({
     error: error instanceof Error ? error.message : String(error),
     type: 'error',

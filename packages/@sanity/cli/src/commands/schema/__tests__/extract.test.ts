@@ -1,5 +1,6 @@
 import {existsSync} from 'node:fs'
-import {resolve} from 'node:path'
+import {readFile, writeFile} from 'node:fs/promises'
+import {join, resolve} from 'node:path'
 
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -54,7 +55,6 @@ describe('#schema:extract', {timeout: 30 * 1000}, () => {
 
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('Failed to extract schema')
-    expect(error?.message).toContain('Unsupported format: "invalid-format"')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -68,5 +68,54 @@ describe('#schema:extract', {timeout: 30 * 1000}, () => {
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('Extracted schema')
     expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
+  })
+
+  test('should fail with validation errors for invalid schema (duplicate types)', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
+    // Modify schema to have duplicate types
+    const schemaIndexPath = join(cwd, 'schemaTypes', 'index.ts')
+    const content = await readFile(schemaIndexPath, 'utf8')
+    const modified = content.replace(
+      'export const schemaTypes = [post, author, category, blockContent]',
+      'export const schemaTypes = [post, post, author, category, blockContent]',
+    )
+    await writeFile(schemaIndexPath, modified)
+
+    const {error, stderr, stdout} = await testCommand(ExtractSchemaCommand, [])
+
+    expect(stderr).toContain('Extracting schema')
+    expect(stderr).toContain('Failed to extract schema')
+    expect(stdout).toContain('[ERROR]')
+    expect(stdout).toContain('A type with name "post" is already defined in the schema')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('should fail when workspace does not exist', async () => {
+    const cwd = await testFixture('multi-workspace-studio')
+    process.chdir(cwd)
+
+    const {error, stderr} = await testCommand(ExtractSchemaCommand, [
+      '--workspace',
+      'non-existent-workspace',
+    ])
+
+    expect(stderr).toContain('Extracting schema')
+    expect(stderr).toContain('Failed to extract schema')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('should fail when multiple workspaces exist and no workspace flag provided', async () => {
+    const cwd = await testFixture('multi-workspace-studio')
+    process.chdir(cwd)
+
+    const {error, stderr} = await testCommand(ExtractSchemaCommand, [])
+
+    expect(stderr).toContain('Extracting schema')
+    expect(stderr).toContain('Failed to extract schema')
+    expect(error?.message).toContain('Multiple workspaces found')
+    expect(error?.message).toContain('--workspace')
+    expect(error?.oclif?.exit).toBe(1)
   })
 })

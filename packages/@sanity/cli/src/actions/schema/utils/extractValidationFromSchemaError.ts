@@ -1,13 +1,15 @@
+import {resolveLocalPackage} from '@sanity/cli-core'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
-
-import {SchemaError} from '../SchemaError.js'
 
 /**
  * Extracts validation problem groups from a SchemaError.
  */
-export function extractValidationFromSchemaError(
+export async function extractValidationFromSchemaError(
   error: unknown,
-): SchemaValidationProblemGroup[] | undefined {
+  workDir: string,
+): Promise<SchemaValidationProblemGroup[] | undefined> {
+  const {SchemaError} = await resolveLocalPackage<typeof import('sanity')>('sanity', workDir)
+
   if (error instanceof SchemaError) {
     return error.schema._validation
   }

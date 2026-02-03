@@ -28,9 +28,6 @@ export async function getStudioConfig(
   options: ReadStudioConfigOptions,
 ): Promise<RawStudioConfig | ResolvedStudioConfig> {
   const studioConfigPath = await findStudioConfigPath(rootPath)
-  if (!studioConfigPath) {
-    throw new Error(`Unable to find studio configuration file in ${rootPath}`)
-  }
 
   // TypeScript is not being very clever with our overloads :(
   return options.resolvePlugins
