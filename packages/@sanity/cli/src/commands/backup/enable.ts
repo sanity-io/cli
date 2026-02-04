@@ -1,6 +1,7 @@
+import {styleText} from 'node:util'
+
 import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
@@ -86,13 +87,14 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
       await setBackup({dataset, projectId, status: true})
 
       this.log(
-        `${chalk.green(
+        `${styleText(
+          'green',
           `Enabled backups for dataset ${dataset}.\nPlease note that it may take up to 24 hours before the first backup is created.\n`,
         )}`,
       )
 
       this.log(
-        `${chalk.bold(`Retention policies may apply depending on your plan and agreement.\n`)}`,
+        `${styleText('bold', `Retention policies may apply depending on your plan and agreement.\n`)}`,
       )
 
       enableBackupDebug(`Successfully enabled backup for dataset ${dataset}`)

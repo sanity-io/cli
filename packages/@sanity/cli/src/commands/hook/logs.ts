@@ -1,8 +1,8 @@
-import {inspect} from 'node:util'
+import {inspect, styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk, select} from '@sanity/cli-core/ux'
+import {select} from '@sanity/cli-core/ux'
 import {groupBy} from 'lodash-es'
 
 import {formatFailure} from '../../actions/hook/formatFailure.js'
@@ -165,10 +165,10 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
         const prefix = `  [${date}]`
 
         if (attempt.inProgress) {
-          this.log(`${prefix} ${chalk.yellow('Pending')}`)
+          this.log(`${prefix} ${styleText('yellow', 'Pending')}`)
         } else if (attempt.isFailure) {
           const failure = formatFailure(attempt, {includeHelp: true})
-          this.log(`${prefix} ${chalk.yellow(`Failure: ${failure}`)}`)
+          this.log(`${prefix} ${styleText('yellow', `Failure: ${failure}`)}`)
         } else {
           this.log(`${prefix} Success: HTTP ${attempt.resultCode} (${attempt.duration}ms)`)
         }

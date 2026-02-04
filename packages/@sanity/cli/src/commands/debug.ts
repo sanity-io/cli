@@ -1,8 +1,8 @@
 import path from 'node:path'
+import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {formatObject, printKeyValue, SanityCommand} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 import {omit, padStart} from 'lodash-es'
 
 import {gatherDebugInfo} from '../actions/debug/gatherDebugInfo.js'
@@ -39,7 +39,7 @@ export class Debug extends SanityCommand<typeof Debug> {
 
       this.output.log('\nUser:')
       if (user instanceof Error) {
-        this.log(`  ${chalk.red(user.message)}\n`)
+        this.log(`  ${styleText('red', user.message)}\n`)
       } else if (user) {
         printKeyValue({
           ID: user.id,
@@ -74,14 +74,14 @@ export class Debug extends SanityCommand<typeof Debug> {
       }
 
       // Global configuration (user home dir config file)
-      this.log(`Global config (${chalk.yellow(getGlobalConfigLocation())}):`)
+      this.log(`Global config (${styleText('yellow', getGlobalConfigLocation())}):`)
       const globalCfg = omit(globalConfig, ['authType', 'authToken'])
       this.log(`  ${formatObject(globalCfg).replaceAll('\n', '\n  ')}\n`)
 
       // Project configuration (projectDir/sanity.json)
       if (projectConfig) {
         const configLocation = projectConfig
-          ? ` (${chalk.yellow(path.relative(process.cwd(), projectRoot.path))})`
+          ? ` (${styleText('yellow', path.relative(process.cwd(), projectRoot.path))})`
           : ''
 
         this.log(`Project config${configLocation}:`)
@@ -97,8 +97,8 @@ export class Debug extends SanityCommand<typeof Debug> {
           const version = padStart(mod.installed || '<missing>', versionLength)
           const latest =
             mod.installed === mod.latest
-              ? chalk.green('(up to date)')
-              : `(latest: ${chalk.yellow(mod.latest)})`
+              ? styleText('green', '(up to date)')
+              : `(latest: ${styleText('yellow', mod.latest)})`
 
           this.log(`${formatName(getDisplayName(mod))} ${version} ${latest}`)
         }

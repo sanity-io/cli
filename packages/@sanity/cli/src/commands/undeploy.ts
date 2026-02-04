@@ -1,6 +1,8 @@
+import {styleText} from 'node:util'
+
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
-import {chalk, confirm, spinner} from '@sanity/cli-core/ux'
+import {confirm, spinner} from '@sanity/cli-core/ux'
 
 import {
   getStudioOrAppUserApplication,
@@ -47,22 +49,23 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
       }
       spin.succeed()
 
-      const url = `https://${chalk.yellow(userApplication.appHost)}.sanity.studio`
+      const url = `https://${styleText('yellow', userApplication.appHost)}.sanity.studio`
 
       if (!flags.yes) {
-        let message = `This will undeploy ${url} and make it unavailable for your users.\nThe hostname will be available for anyone to claim.\nAre you ${chalk.red(
+        let message = `This will undeploy ${url} and make it unavailable for your users.\nThe hostname will be available for anyone to claim.\nAre you ${styleText(
+          'red',
           'sure',
         )} you want to undeploy?`
 
         if (isApp) {
           message = `This will undeploy the following application:
 
-    Title: ${chalk.yellow(userApplication.title || '(untitled application)')}
-    ID:    ${chalk.yellow(userApplication.id)}
+    Title: ${styleText('yellow', userApplication.title || '(untitled application)')}
+    ID:    ${styleText('yellow', userApplication.id)}
 
 The application will no longer be available for any of your users if you proceed.
 
-Are you ${chalk.red('sure')} you want to undeploy?`
+Are you ${styleText('red', 'sure')} you want to undeploy?`
         }
 
         const shouldUndeploy = await confirm({
@@ -85,12 +88,14 @@ Are you ${chalk.red('sure')} you want to undeploy?`
 
       if (isApp) {
         this.log(
-          `\n${chalk.bold('⏱️ Application undeploy scheduled.')} It might be a few minutes until ${
-            userApplication.title ? chalk.italic(`'${userApplication.title}'`) : 'your application'
+          `\n${styleText('bold', '⏱️ Application undeploy scheduled.')} It might be a few minutes until ${
+            userApplication.title
+              ? styleText('italic', `'${userApplication.title}'`)
+              : 'your application'
           } is unavailable.`,
         )
         this.log(
-          `\n${chalk.bold('Remember to remove `deployment.appId` from your application configuration')} to avoid errors when redeploying.`,
+          `\n${styleText('bold', 'Remember to remove `deployment.appId` from your application configuration')} to avoid errors when redeploying.`,
         )
       } else {
         this.log(

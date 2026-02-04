@@ -1,5 +1,6 @@
+import {styleText} from 'node:util'
+
 import {warn} from '@oclif/core/ux'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {getSanityEnv} from './getSanityEnv.js'
 
@@ -12,10 +13,11 @@ export function warnOnNonProductionEnvironment(): void {
 
   if (process.env.TEST !== 'true') {
     warn(
-      chalk.yellow(
+      styleText(
+        'yellow',
         knownEnvs.has(getSanityEnv())
           ? `Running in ${getSanityEnv()} environment mode\n`
-          : `Running in ${chalk.red('UNKNOWN')} "${getSanityEnv()}" environment mode\n`,
+          : `Running in ${styleText('red', 'UNKNOWN')} "${getSanityEnv()}" environment mode\n`,
       ),
     )
   }

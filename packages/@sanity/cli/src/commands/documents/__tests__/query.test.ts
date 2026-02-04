@@ -1,4 +1,3 @@
-import {chalk} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -64,9 +63,9 @@ describe('#documents:query', () => {
 
     mockFetch.mockResolvedValue(mockResults)
 
-    const originalChalkLevel = chalk.level
-    // Force colorization
-    chalk.level = 3
+    // Set FORCE_COLOR to enable colorization
+    const originalForceColor = process.env.FORCE_COLOR
+    process.env.FORCE_COLOR = '1'
 
     const {stdout} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]', '--pretty'], {
       capture: {
@@ -75,8 +74,12 @@ describe('#documents:query', () => {
       mocks: defaultMocks,
     })
 
-    // Reset chalk level
-    chalk.level = originalChalkLevel
+    // Reset FORCE_COLOR
+    if (originalForceColor === undefined) {
+      delete process.env.FORCE_COLOR
+    } else {
+      process.env.FORCE_COLOR = originalForceColor
+    }
 
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
     expect(stdout).toContain('"_id"')

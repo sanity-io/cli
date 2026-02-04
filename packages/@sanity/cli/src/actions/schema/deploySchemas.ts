@@ -1,5 +1,6 @@
+import {styleText} from 'node:util'
+
 import {type Output} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {type DeploySchemaCommand} from '../../commands/schema/deploy'
 import {updateSchemas} from '../../services/schemas.js'
@@ -108,7 +109,9 @@ export async function deploySchemas(
     schemasDeployDebug('Error updating schemas', err.message)
     return 'failure'
   } finally {
-    output.log(`${chalk.gray('↳ List deployed schemas with:')} ${chalk.cyan('sanity schema list')}`)
+    output.log(
+      `${styleText('gray', '↳ List deployed schemas with:')} ${styleText('cyan', 'sanity schema list')}`,
+    )
   }
 }
 
@@ -147,18 +150,20 @@ function getUpdateSchema(args: {
       ])
 
       if (verbose) {
-        output.log(chalk.gray(`↳ schemaId: ${id}, projectId: ${projectId}, dataset: ${dataset}`))
+        output.log(
+          styleText('gray', `↳ schemaId: ${id}, projectId: ${projectId}, dataset: ${dataset}`),
+        )
       }
     } catch (err) {
       if ('statusCode' in err && err?.statusCode === 401) {
         output.warn(
           `↳ No permissions to write schema for workspace "${workspace.name}" in dataset "${workspace.dataset}". ${
             SCHEMA_PERMISSION_HELP_TEXT
-          }:\n  ${chalk.red(`${err.message}`)}`,
+          }:\n  ${styleText('red', `${err.message}`)}`,
         )
       } else {
         output.error(
-          `↳ Error deploying schema for workspace "${workspace.name}":\n  ${chalk.red(`${err.message}`)}`,
+          `↳ Error deploying schema for workspace "${workspace.name}":\n  ${styleText('red', `${err.message}`)}`,
         )
       }
 

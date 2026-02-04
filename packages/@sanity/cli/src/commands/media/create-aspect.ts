@@ -1,8 +1,9 @@
 import fs, {mkdir} from 'node:fs/promises'
 import path from 'node:path'
+import {styleText} from 'node:util'
 
 import {fileExists, SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk, input} from '@sanity/cli-core/ux'
+import {input} from '@sanity/cli-core/ux'
 import {createPublishedId} from '@sanity/id-utils'
 import {camelCase} from 'lodash-es'
 
@@ -48,7 +49,9 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
 
       const destinationPathExists = await fileExists(destinationPath)
       if (destinationPathExists) {
-        this.error(`A file already exists at ${chalk.bold(relativeDestinationPath)}`, {exit: 1})
+        this.error(`A file already exists at ${styleText('bold', relativeDestinationPath)}`, {
+          exit: 1,
+        })
       }
 
       await fs.writeFile(
@@ -59,18 +62,20 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
         }),
       )
 
-      this.log(`${chalk.green('✓')} Aspect created! ${chalk.bold(relativeDestinationPath)}`)
+      this.log(
+        `${styleText('green', '✓')} Aspect created! ${styleText('bold', relativeDestinationPath)}`,
+      )
       this.log()
       this.log('Next steps:')
       this.log(
-        `Open ${chalk.bold(relativeDestinationPath)} in your code editor and customize the aspect.`,
+        `Open ${styleText('bold', relativeDestinationPath)} in your code editor and customize the aspect.`,
       )
       this.log()
       this.log('Deploy this aspect by running:')
-      this.log(chalk.bold(`sanity media deploy-aspect ${safeName}`))
+      this.log(styleText('bold', `sanity media deploy-aspect ${safeName}`))
       this.log()
       this.log('Deploy all aspects by running:')
-      this.log(chalk.bold(`sanity media deploy-aspect --all`))
+      this.log(styleText('bold', `sanity media deploy-aspect --all`))
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       createAspectDebug('Failed to create aspect', error)

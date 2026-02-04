@@ -1,5 +1,6 @@
+import {styleText} from 'node:util'
+
 import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {
   GRAPHQL_API_VERSION,
@@ -52,11 +53,11 @@ export class List extends SanityCommand<typeof List> {
       const {dataset, tag} = endpoint
       const url = client.getUrl(`/graphql/${dataset}/${tag}`)
 
-      this.log(`${index + 1}.  ${chalk.bold('Dataset:')}     ${dataset}`)
-      this.log(`    ${chalk.bold('Tag:')}         ${tag}`)
-      this.log(`    ${chalk.bold('Generation:')}  ${endpoint.generation}`)
-      this.log(`    ${chalk.bold('Playground:')}  ${endpoint.playgroundEnabled}`)
-      this.log(`    ${chalk.bold('URL:')}  ${url}\n`)
+      this.log(`${index + 1}.  ${styleText('bold', 'Dataset:')}     ${dataset}`)
+      this.log(`    ${styleText('bold', 'Tag:')}         ${tag}`)
+      this.log(`    ${styleText('bold', 'Generation:')}  ${endpoint.generation}`)
+      this.log(`    ${styleText('bold', 'Playground:')}  ${endpoint.playgroundEnabled}`)
+      this.log(`    ${styleText('bold', 'URL:')}  ${url}\n`)
     }
   }
 }

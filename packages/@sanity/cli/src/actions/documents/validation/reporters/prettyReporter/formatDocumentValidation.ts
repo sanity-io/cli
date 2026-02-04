@@ -1,5 +1,7 @@
+import {styleText} from 'node:util'
+
 import {convertToTree, formatTree, maxKeyLength, type Tree} from '@sanity/cli-core/tree'
-import {chalk, logSymbols} from '@sanity/cli-core/ux'
+import {logSymbols} from '@sanity/cli-core/ux'
 import {type Path, type ValidationMarker} from '@sanity/types'
 
 import {Level} from '../../../types'
@@ -17,16 +19,22 @@ interface Marker extends Pick<ValidationMarker, 'level' | 'message'> {
 type ValidationTree = Tree<Marker>
 
 const levelHeaders = {
-  error: isTty ? chalk.bold(chalk.bgRed(chalk.black(' ERROR '))) : chalk.red('[ERROR]'),
-  info: isTty ? chalk.bold(chalk.cyan(chalk.black(' INFO '))) : chalk.cyan('[INFO]'),
-  warning: isTty ? chalk.bold(chalk.bgYellow(chalk.black(' WARN '))) : chalk.yellow('[WARN]'),
+  error: isTty
+    ? styleText('bold', styleText('bgRed', styleText('black', ' ERROR ')))
+    : styleText('red', '[ERROR]'),
+  info: isTty
+    ? styleText('bold', styleText('cyan', styleText('black', ' INFO ')))
+    : styleText('cyan', '[INFO]'),
+  warning: isTty
+    ? styleText('bold', styleText('bgYellow', styleText('black', ' WARN ')))
+    : styleText('yellow', '[WARN]'),
 }
 /**
  * Creates a terminal hyperlink. Only outputs a hyperlink if the output is
  * determined to be a TTY
  */
-const link = (text: string, url: string) =>
-  isTty ? `\u001B]8;;${url}\u0007${text}\u001B]8;;\u0007` : chalk.underline(text)
+const link = (linkText: string, url: string) =>
+  isTty ? `\u001B]8;;${url}\u0007${linkText}\u001B]8;;\u0007` : styleText('underline', linkText)
 
 /**
  * For sorting markers
@@ -73,11 +81,11 @@ export function formatDocumentValidation({
   const tree = convertToTree<Marker>(markers)
 
   const documentTypeHeader = isTty
-    ? chalk.bgWhite(chalk.black(` ${documentType} `))
+    ? styleText('bgWhite', styleText('black', ` ${documentType} `))
     : `[${documentType}]`
 
   const header = `${levelHeaders[level]} ${documentTypeHeader} ${
-    intentUrl ? link(documentId, intentUrl) : chalk.underline(documentId)
+    intentUrl ? link(documentId, intentUrl) : styleText('underline', documentId)
   }`
 
   const paddingLength = Math.max(maxKeyLength(tree.children) + 2, 30)

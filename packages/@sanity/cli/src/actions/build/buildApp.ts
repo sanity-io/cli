@@ -1,8 +1,9 @@
 import {rm} from 'node:fs/promises'
 import path from 'node:path'
+import {styleText} from 'node:util'
 
 import {getTimer} from '@sanity/cli-core'
-import {chalk, confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import semver from 'semver'
 
 import {getAppId} from '../../util/appId.js'
@@ -67,7 +68,8 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     if (result?.length && !unattendedMode) {
       const shouldContinue = await confirm({
         default: false,
-        message: chalk.yellow(
+        message: styleText(
+          'yellow',
           `The following local package versions are different from the versions currently served at runtime.\n` +
             `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
             `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')} \n\n` +

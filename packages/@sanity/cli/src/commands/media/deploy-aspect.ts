@@ -1,6 +1,8 @@
+import {styleText} from 'node:util'
+
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk, spinner} from '@sanity/cli-core/ux'
+import {spinner} from '@sanity/cli-core/ux'
 import {isAssetAspect, type SchemaValidationProblem} from '@sanity/types'
 
 import {getMediaLibraryConfig} from '../../actions/media/getMediaLibraryConfig.js'
@@ -102,7 +104,8 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       if (result.invalid.length > 0) {
         this.logToStderr('')
         this.warn(
-          chalk.bold(
+          styleText(
+            'bold',
             `Skipped ${result.invalid.length} invalid ${pluralize('aspect', result.invalid.length)}`,
           ),
         )
@@ -112,7 +115,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       // Check if we found the requested aspect (when not using --all)
       if (!all && result.valid.length === 0 && result.invalid.length === 0) {
         this.log()
-        this.error(`Could not find aspect: ${chalk.bold(aspectName)}`, {exit: 1})
+        this.error(`Could not find aspect: ${styleText('bold', aspectName ?? '')}`, {exit: 1})
       }
 
       // Deploy valid aspects
@@ -136,7 +139,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       // Display success message
       this.log()
       this.log(
-        `${chalk.green('✓')} ${chalk.bold(`Deployed ${result.valid.length} ${pluralize('aspect', result.valid.length)}`)}`,
+        `${styleText('green', '✓')} ${styleText('bold', `Deployed ${result.valid.length} ${pluralize('aspect', result.valid.length)}`)}`,
       )
       this.log(this.formatAspectList(result.valid))
 
@@ -152,9 +155,12 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
         error: err,
         mediaLibraryId: mediaLibraryIdFlag,
       })
-      this.error(chalk.bold('Failed to deploy aspects') + `\n\n${chalk.red(err.message)}`, {
-        exit: 1,
-      })
+      this.error(
+        styleText('bold', 'Failed to deploy aspects') + `\n\n${styleText('red', err.message)}`,
+        {
+          exit: 1,
+        },
+      )
     }
   }
 
@@ -177,17 +183,19 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
           group.map(({message}) => message),
         )
 
-        const errorLabel = simplifiedErrors.length > 0 ? ` ${chalk.bgRed(simplifiedErrors[0])}` : ''
+        const errorLabel =
+          simplifiedErrors.length > 0 ? ` ${styleText('bgRed', simplifiedErrors[0])}` : ''
 
         const remainingErrorsCount = simplifiedErrors.length - 1
         const remainingErrorsLabel =
           remainingErrorsCount > 0
-            ? chalk.italic(
+            ? styleText(
+                'italic',
                 ` and ${remainingErrorsCount} other ${pluralize('error', remainingErrorsCount)}`,
               )
             : ''
 
-        return `  - ${label} ${chalk.dim(filename)}${errorLabel}${remainingErrorsLabel}`
+        return `  - ${label} ${styleText('dim', filename)}${errorLabel}${remainingErrorsLabel}`
       })
       .join('\n')
   }

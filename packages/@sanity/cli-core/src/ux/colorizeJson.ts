@@ -1,4 +1,5 @@
-import chalk from 'chalk'
+import {styleText} from 'node:util'
+
 import tokenize, {type LexerToken} from 'json-lexer'
 
 interface KeyToken {
@@ -16,11 +17,11 @@ const identity = (inp: string): string => inp
 
 export function colorizeJson(input: unknown): string {
   const formatters: Record<ExtendedLexerToken['type'], (str: string) => string> = {
-    key: chalk.white,
-    literal: chalk.bold,
-    number: chalk.yellow,
-    punctuator: chalk.white,
-    string: chalk.green,
+    key: (s) => styleText('white', s),
+    literal: (s) => styleText('bold', s),
+    number: (s) => styleText('yellow', s),
+    punctuator: (s) => styleText('white', s),
+    string: (s) => styleText('green', s),
     whitespace: identity,
   }
 

@@ -1,5 +1,6 @@
+import {styleText} from 'node:util'
+
 import {SanityCommand} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 import {padStart} from 'lodash-es'
 
 import {findSanityModulesVersions} from '../actions/versions/findSanityModulesVersions.js'
@@ -22,8 +23,8 @@ export class Versions extends SanityCommand<typeof Versions> {
       const version = padStart(mod.installed || '<missing>', versionLength)
       const latest =
         mod.installed === mod.latest
-          ? chalk.green('(up to date)')
-          : `(latest: ${chalk.yellow(mod.latest)})`
+          ? styleText('green', '(up to date)')
+          : `(latest: ${styleText('yellow', mod.latest)})`
 
       this.log(`${formatName(getDisplayName(mod))} ${version} ${latest}`)
     }

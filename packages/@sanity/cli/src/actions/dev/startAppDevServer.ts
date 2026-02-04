@@ -1,4 +1,4 @@
-import {chalk} from '@sanity/cli-core/ux'
+import {styleText} from 'node:util'
 
 import {startDevServer} from '../../server/devServer.js'
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
@@ -47,7 +47,7 @@ export async function startAppDevServer(
 
     output.log(`Dev server started on port ${port}`)
     output.log(`View your app in the Sanity dashboard here:`)
-    output.log(chalk.blue(chalk.underline(coreAppUrl)))
+    output.log(styleText(['blue', 'underline'], coreAppUrl))
 
     return {close}
   } catch (err) {

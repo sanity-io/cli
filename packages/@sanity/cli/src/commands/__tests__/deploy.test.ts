@@ -137,9 +137,7 @@ describe('#deploy', () => {
         appType: 'coreApp',
       },
       uri: `/user-applications/${appId}/deployments`,
-    }).reply(200, {
-      id: 'deployment-id',
-    })
+    }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
 
     const {error} = await testCommand(DeployCommand, ['build'], {
       config: {root: cwd},
@@ -198,9 +196,7 @@ describe('#deploy', () => {
           appType: 'coreApp',
         },
         uri: `/user-applications/${appId}/deployments`,
-      }).reply(200, {
-        id: 'deployment-id',
-      })
+      }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
 
       const {error, stderr, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
@@ -274,9 +270,7 @@ describe('#deploy', () => {
           appType: 'coreApp',
         },
         uri: `/user-applications/${newAppId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-      })
+      }).reply(201, {id: deploymentId}, {location: 'https://generated-host.sanity.app/'})
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
@@ -334,9 +328,7 @@ describe('#deploy', () => {
           appType: 'coreApp',
         },
         uri: `/user-applications/${existingAppId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-      })
+      }).reply(201, {id: deploymentId}, {location: 'https://existing-host.sanity.app/'})
 
       const {error, stdout} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
@@ -657,9 +649,7 @@ describe('#deploy', () => {
           appType: 'coreApp',
         },
         uri: `/user-applications/${newAppId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-      })
+      }).reply(201, {id: deploymentId}, {location: 'https://generated-host-2.sanity.app/'})
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
@@ -795,9 +785,7 @@ describe('#deploy', () => {
           appType: 'coreApp',
         },
         uri: `/user-applications/${newAppId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-      })
+      }).reply(201, {id: deploymentId}, {location: 'https://generated-host.sanity.app/'})
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
@@ -865,9 +853,7 @@ describe('#deploy', () => {
           appType: 'coreApp',
         },
         uri: `/user-applications/${existingAppId2}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-      })
+      }).reply(201, {id: deploymentId}, {location: 'https://existing-host-2.sanity.app/'})
 
       mockSelect.mockResolvedValue('existing-host-2')
 
@@ -959,9 +945,7 @@ describe('#deploy', () => {
           appType: 'coreApp',
         },
         uri: `/user-applications/${newAppId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-      })
+      }).reply(201, {id: deploymentId}, {location: 'https://generated-host.sanity.app/'})
 
       mockSelect.mockResolvedValue('NEW_APP')
 
@@ -1043,9 +1027,7 @@ describe('#deploy', () => {
           appType: 'coreApp',
         },
         uri: `/user-applications/${appId}/deployments`,
-      }).reply(200, {
-        location: 'https://existing-host.sanity.app/',
-      })
+      }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
@@ -1089,9 +1071,7 @@ describe('#deploy', () => {
           appType: 'coreApp',
         },
         uri: `/user-applications/${appId}/deployments`,
-      }).reply(200, {
-        location: 'https://existing-host.sanity.app/',
-      })
+      }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
@@ -1200,9 +1180,7 @@ describe('#deploy', () => {
           appType: 'studio',
         },
         uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-      })
+      }).reply(201, {id: deploymentId}, {location: `https://${studioHost}.sanity.studio`})
 
       const {error, stderr, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
@@ -1263,9 +1241,7 @@ describe('#deploy', () => {
           appType: 'studio',
         },
         uri: `/projects/test-project-id/user-applications/new-studio-app-id/deployments`,
-      }).reply(200, {
-        id: 'deployment-id',
-      })
+      }).reply(201, {id: 'deployment-id'}, {location: 'https://new-studio-host.sanity.studio'})
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
@@ -1377,10 +1353,11 @@ describe('#deploy', () => {
           appType: 'studio',
         },
         uri: `/projects/${projectId}/user-applications/${studioTwoId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-        location: 'https://studio-two.sanity.studio',
-      })
+      }).reply(
+        201,
+        {id: deploymentId, location: 'https://studio-two.sanity.studio'},
+        {location: 'https://studio-two.sanity.studio'},
+      )
 
       mockSelect.mockResolvedValue('studio-two')
 
@@ -1463,9 +1440,7 @@ describe('#deploy', () => {
           appType: 'studio',
         },
         uri: `/projects/${projectId}/user-applications/${newStudioFromMenuId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-      })
+      }).reply(201, {id: deploymentId}, {location: 'https://new-studio-from-menu.sanity.studio'})
 
       mockSelect.mockResolvedValue('NEW_STUDIO')
       mockInput.mockImplementation(({validate}) => {
@@ -1575,9 +1550,7 @@ describe('#deploy', () => {
           appType: 'studio',
         },
         uri: `/projects/${projectId}/user-applications/${validStudioId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-      })
+      }).reply(201, {id: deploymentId}, {location: 'https://valid-name.sanity.studio'})
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
@@ -1905,9 +1878,7 @@ describe('#deploy', () => {
           appType: 'studio',
         },
         uri: `/projects/${projectId}/user-applications/${newStudioId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-      })
+      }).reply(201, {id: deploymentId}, {location: `https://new-studio-name.sanity.studio`})
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
@@ -1962,9 +1933,7 @@ describe('#deploy', () => {
           appType: 'studio',
         },
         uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-      })
+      }).reply(201, {id: deploymentId}, {location: `https://${studioHost}.sanity.studio`})
 
       const {error, stdout} = await testCommand(DeployCommand, ['--no-build'], {
         config: {root: cwd},
@@ -2013,10 +1982,11 @@ describe('#deploy', () => {
           appType: 'studio',
         },
         uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-        location: `https://${appHost}.sanity.studio`,
-      })
+      }).reply(
+        201,
+        {id: deploymentId, location: `https://${appHost}.sanity.studio`},
+        {location: `https://${appHost}.sanity.studio`},
+      )
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
@@ -2067,10 +2037,11 @@ describe('#deploy', () => {
           appType: 'studio',
         },
         uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
-      }).reply(200, {
-        id: deploymentId,
-        location: `https://${studioHost}.sanity.studio`,
-      })
+      }).reply(
+        201,
+        {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+        {location: `https://${studioHost}.sanity.studio`},
+      )
 
       const {error, stdout} = await testCommand(DeployCommand, [], {
         config: {root: cwd},

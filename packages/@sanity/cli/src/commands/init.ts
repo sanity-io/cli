@@ -2,11 +2,12 @@
 import {existsSync} from 'node:fs'
 import {mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
+import {styleText} from 'node:util'
 
 import {Args, Command, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
 import {getCliToken, SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
-import {chalk, confirm, input, logSymbols, select, Separator, spinner} from '@sanity/cli-core/ux'
+import {confirm, input, logSymbols, select, Separator, spinner} from '@sanity/cli-core/ux'
 import {type DatasetAclMode, isHttpError} from '@sanity/client'
 import {DatasetImportCommand} from '@sanity/import'
 import {type Framework, frameworks} from '@vercel/frameworks'
@@ -394,8 +395,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     if (this.flags.bare) {
       this.log(`${logSymbols.success} Below are your project details`)
       this.log('')
-      this.log(`Project ID: ${chalk.cyan(projectId)}`)
-      this.log(`Dataset: ${chalk.cyan(datasetName)}`)
+      this.log(`Project ID: ${styleText('cyan', projectId)}`)
+      this.log(`Dataset: ${styleText('cyan', datasetName)}`)
       this.log(
         `\nYou can find your project on Sanity Manage — https://www.sanity.io/manage/project/${projectId}\n`,
       )
@@ -573,9 +574,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
       this.log('')
       this.log('If you want to delete the imported data, use')
-      this.log(`  ${chalk.cyan(`npx sanity dataset delete ${datasetName}`)}`)
+      this.log(`  ${styleText('cyan', `npx sanity dataset delete ${datasetName}`)}`)
       this.log('and create a new clean dataset with')
-      this.log(`  ${chalk.cyan(`npx sanity dataset create <name>`)}\n`)
+      this.log(`  ${styleText('cyan', `npx sanity dataset create <name>`)}\n`)
     }
 
     const devCommandMap: Record<PackageManager, string> = {
@@ -588,25 +589,27 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     const devCommand = devCommandMap[pkgManager]
 
     const isCurrentDir = outputPath === process.cwd()
-    const goToProjectDir = `\n(${chalk.cyan(`cd ${outputPath}`)} to navigate to your new project directory)`
+    const goToProjectDir = `\n(${styleText('cyan', `cd ${outputPath}`)} to navigate to your new project directory)`
 
     if (isAppTemplate) {
       //output for custom apps here
       this.log(
-        `${logSymbols.success} ${chalk.green.bold('Success!')} Your custom app has been scaffolded.`,
+        `${logSymbols.success} ${styleText(['green', 'bold'], 'Success!')} Your custom app has been scaffolded.`,
       )
       if (!isCurrentDir) this.log(goToProjectDir)
       this.log(
-        `\n${chalk.bold('Next')}, configure the project(s) and dataset(s) your app should work with.`,
+        `\n${styleText('bold', 'Next')}, configure the project(s) and dataset(s) your app should work with.`,
       )
       this.log('\nGet started in `src/App.tsx`, or refer to our documentation for a walkthrough:')
-      this.log(chalk.blue.underline('https://www.sanity.io/docs/app-sdk/sdk-configuration'))
+      this.log(
+        styleText(['blue', 'underline'], 'https://www.sanity.io/docs/app-sdk/sdk-configuration'),
+      )
       if (mcpConfigured && mcpConfigured.length > 0) {
         const message = await this.getPostInitMCPPrompt(mcpConfigured)
         this.log(`\n${message}`)
-        this.log(`\nLearn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+        this.log(`\nLearn more: ${styleText('cyan', 'https://mcp.sanity.io')}`)
         this.log(
-          `\nHave feedback? Tell us in the community: ${chalk.cyan('https://www.sanity.io/community/join')}`,
+          `\nHave feedback? Tell us in the community: ${styleText('cyan', 'https://www.sanity.io/community/join')}`,
         )
       }
       this.log('\n')
@@ -616,17 +619,17 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       this.log(`npx sanity deploy          to deploy your app`)
     } else {
       //output for Studios here
-      this.log(`✅ ${chalk.green.bold('Success!')} Your Studio has been created.`)
+      this.log(`✅ ${styleText(['green', 'bold'], 'Success!')} Your Studio has been created.`)
       if (!isCurrentDir) this.log(goToProjectDir)
       this.log(
-        `\nGet started by running ${chalk.cyan(devCommand)} to launch your Studio's development server`,
+        `\nGet started by running ${styleText('cyan', devCommand)} to launch your Studio's development server`,
       )
       if (mcpConfigured && mcpConfigured.length > 0) {
         const message = await this.getPostInitMCPPrompt(mcpConfigured)
         this.log(`\n${message}`)
-        this.log(`\nLearn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+        this.log(`\nLearn more: ${styleText('cyan', 'https://mcp.sanity.io')}`)
         this.log(
-          `\nHave feedback? Tell us in the community: ${chalk.cyan('https://www.sanity.io/community/join')}`,
+          `\nHave feedback? Tell us in the community: ${styleText('cyan', 'https://www.sanity.io/community/join')}`,
         )
       }
       this.log('\n')
@@ -642,7 +645,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
       const DISCORD_INVITE_LINK = 'https://www.sanity.io/community/join'
 
-      this.log(`\nJoin the Sanity community: ${chalk.cyan(DISCORD_INVITE_LINK)}`)
+      this.log(`\nJoin the Sanity community: ${styleText('cyan', DISCORD_INVITE_LINK)}`)
       this.log('We look forward to seeing you there!\n')
     }
 
@@ -1305,14 +1308,14 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     this.log(
-      `\n${chalk.green('Success!')} Your Sanity configuration files has been added to this project`,
+      `\n${styleText('green', 'Success!')} Your Sanity configuration files has been added to this project`,
     )
     if (mcpConfigured && mcpConfigured.length > 0) {
       const message = await this.getPostInitMCPPrompt(mcpConfigured)
       this.log(`\n${message}`)
-      this.log(`\nLearn more: ${chalk.cyan('https://mcp.sanity.io')}`)
+      this.log(`\nLearn more: ${styleText('cyan', 'https://mcp.sanity.io')}`)
       this.log(
-        `\nHave feedback? Tell us in the community: ${chalk.cyan('https://www.sanity.io/community/join')}`,
+        `\nHave feedback? Tell us in the community: ${styleText('cyan', 'https://www.sanity.io/community/join')}`,
       )
     }
 
@@ -1544,7 +1547,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       if (this.promptForUndefinedFlag(this.flags['overwrite-files'])) {
         overwrite = await confirm({
           default: false,
-          message: `File ${chalk.yellow(
+          message: `File ${styleText(
+            'yellow',
             filePath.replace(workDir, ''),
           )} already exists. Do you want to overwrite it?`,
         })

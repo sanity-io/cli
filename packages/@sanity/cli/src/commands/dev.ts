@@ -1,6 +1,7 @@
+import {styleText} from 'node:util'
+
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {devAction} from '../actions/dev/devAction.js'
 import {devDebug} from '../actions/dev/devDebug.js'
@@ -61,9 +62,12 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
       return result
     } catch (error) {
       devDebug(`Failed to start dev server`, error)
-      this.output.error(chalk.red.bgBlack(`Failed to start dev server: ${error.message}`), {
-        exit: 1,
-      })
+      this.output.error(
+        styleText(['red', 'bgBlack'], `Failed to start dev server: ${error.message}`),
+        {
+          exit: 1,
+        },
+      )
     }
   }
 }

@@ -1,8 +1,9 @@
 import {basename, dirname} from 'node:path'
+import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
-import {chalk, spinner} from '@sanity/cli-core/ux'
+import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
 import {createDeployment} from '../../services/userApplications.js'
@@ -119,20 +120,29 @@ export async function deployApp(options: DeployAppOptions) {
     spin.succeed()
 
     // And let the user know we're done
-    output.log(`\n🚀 ${chalk.bold('Success!')} Application deployed`)
+    output.log(`\n🚀 ${styleText('bold', 'Success!')} Application deployed`)
 
     if (!appId) {
-      output.log(`\n════ ${chalk.bold('Next step:')} ════`)
+      output.log(`\n════ ${styleText('bold', 'Next step:')} ════`)
       output.log(
-        chalk.bold('\nAdd the deployment.appId to your sanity.cli.js or sanity.cli.ts file:'),
+        styleText(
+          'bold',
+          '\nAdd the deployment.appId to your sanity.cli.js or sanity.cli.ts file:',
+        ),
       )
       output.log(`
-${chalk.dim(`app: {
+${styleText(
+  'dim',
+  `app: {
   // your application config here…
-}`)},
-${chalk.bold.green(`deployment: {
+}`,
+)},
+${styleText(
+  ['bold', 'green'],
+  `deployment: {
   appId: '${userApplication.id}',
-}\n`)}`)
+}\n`,
+)}`)
     }
   } catch (error) {
     spin.clear()
@@ -149,6 +159,6 @@ ${chalk.bold.green(`deployment: {
     }
 
     deployDebug('Error deploying application', error)
-    output.error('Error deploying application', {exit: 1})
+    output.error(`Error deploying application: ${error}`, {exit: 1})
   }
 }

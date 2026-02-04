@@ -1,4 +1,3 @@
-import {chalk} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -33,6 +32,7 @@ vi.mock('@sanity/cli-core', async () => {
 describe('#documents:get', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   test('retrieves and displays a document successfully', async () => {
@@ -63,9 +63,8 @@ describe('#documents:get', () => {
 
     mockGetDocument.mockResolvedValue(mockDoc)
 
-    const originalChalkLevel = chalk.level
-    // Force colorization
-    chalk.level = 3
+    // Set FORCE_COLOR to enable colorization
+    vi.stubEnv('FORCE_COLOR', '1')
 
     const {stdout} = await testCommand(GetDocumentCommand, ['test-doc', '--pretty'], {
       capture: {
@@ -73,9 +72,6 @@ describe('#documents:get', () => {
       },
       mocks: defaultMocks,
     })
-
-    // Reset chalk level
-    chalk.level = originalChalkLevel
 
     // Check that the output contains the document data
     expect(stdout).toContain('test-doc')

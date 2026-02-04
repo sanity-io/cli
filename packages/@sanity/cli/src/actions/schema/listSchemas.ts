@@ -1,5 +1,6 @@
+import {styleText} from 'node:util'
+
 import {type Output} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {type ListSchemaCommand} from '../../commands/schema/list.js'
 import {getSchemas} from '../../services/schemas.js'
@@ -123,12 +124,13 @@ function parseSchemas(
           output.warn(
             `↳ No permissions to read schema from "${error.dataset}". ${
               SCHEMA_PERMISSION_HELP_TEXT
-            }:\n  ${chalk.red(`${error.message}`)}`,
+            }:\n  ${styleText('red', `${error.message}`)}`,
           )
           return []
         }
 
-        const message = chalk.red(
+        const message = styleText(
+          'red',
           `↳ Failed to fetch schema from "${error.dataset}":\n  ${error.message}`,
         )
         output.error(message)
@@ -173,6 +175,6 @@ function printSchemas({
   const rowToString = (row: string[]) =>
     row.map((col, i) => `${col}`.padEnd(maxWidths[i])).join('   ')
 
-  output.log(chalk.cyan(rowToString(headings)))
+  output.log(styleText('cyan', rowToString(headings)))
   for (const row of rows) output.log(rowToString(row))
 }

@@ -3,10 +3,11 @@ import {mkdir, mkdtemp} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import path from 'node:path'
 import {finished} from 'node:stream/promises'
+import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
 import {fileExists, SanityCommand} from '@sanity/cli-core'
-import {boxen, chalk, confirm, input, select} from '@sanity/cli-core/ux'
+import {boxen, confirm, input, select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import pMap from 'p-map'
 import prettyMs from 'pretty-ms'
@@ -124,9 +125,9 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
       boxen(
         `Downloading backup for:
 
-${chalk.bold('projectId')}: ${chalk.cyan(opts.projectId)}
-${chalk.bold('dataset')}: ${chalk.cyan(opts.datasetName)}
-${chalk.bold('backupId')}: ${chalk.cyan(opts.backupId)}`,
+${styleText('bold', 'projectId')}: ${styleText('cyan', opts.projectId)}
+${styleText('bold', 'dataset')}: ${styleText('cyan', opts.datasetName)}
+${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
         {
           borderColor: 'cyan',
           borderStyle: 'round',
@@ -135,7 +136,7 @@ ${chalk.bold('backupId')}: ${chalk.cyan(opts.backupId)}`,
       ),
     )
     this.log('')
-    this.log(`Downloading backup to "${chalk.cyan(outFilePath)}"`)
+    this.log(`Downloading backup to "${styleText('cyan', outFilePath)}"`)
 
     const start = Date.now()
     const progressSpinner = newProgress('Setting up backup environment...')
@@ -225,7 +226,7 @@ ${chalk.bold('backupId')}: ${chalk.cyan(opts.backupId)}`,
     }
 
     progressSpinner.set({
-      step: `Cleaning up temporary files at ${chalk.cyan(`${tmpOutDir}`)}`,
+      step: `Cleaning up temporary files at ${styleText('cyan', `${tmpOutDir}`)}`,
     })
     await cleanupTmpDir(tmpOutDir)
 

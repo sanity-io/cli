@@ -1,6 +1,8 @@
+import {styleText} from 'node:util'
+
 import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk, select} from '@sanity/cli-core/ux'
+import {select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
@@ -63,9 +65,9 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
     try {
       await setBackup({dataset, projectId, status: false})
 
-      this.log(`${chalk.green(`Disabled daily backups for dataset ${dataset}.\n`)}`)
+      this.log(`${styleText('green', `Disabled daily backups for dataset ${dataset}.\n`)}`)
       this.log(
-        `${chalk.yellow('Note: Existing backups will be retained according to your retention policy.\n')}`,
+        `${styleText('yellow', 'Note: Existing backups will be retained according to your retention policy.\n')}`,
       )
 
       disableBackupDebug(`Successfully disabled backup for dataset ${dataset}`)

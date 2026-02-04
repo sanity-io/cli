@@ -1,5 +1,6 @@
+import {styleText} from 'node:util'
+
 import {type CliConfig, type Output} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {type DeployFlags} from '../deploy/types.js'
 import {type DevFlags} from '../dev/types.js'
@@ -45,8 +46,8 @@ export function shouldAutoUpdate({cliConfig, flags, output}: AutoUpdateSources):
   if (hasOldConfig) {
     output.warn('The autoUpdates config has moved to deployment.autoUpdates.')
     output.warn(`Please update sanity.cli.ts or sanity.cli.js and make the following change:
-  ${chalk.red(`-  autoUpdates: ${cliConfig.autoUpdates},`)}
-  ${chalk.green(`+  deployment: {autoUpdates: ${cliConfig.autoUpdates}}`)}
+  ${styleText('red', `-  autoUpdates: ${cliConfig.autoUpdates},`)}
+  ${styleText('green', `+  deployment: {autoUpdates: ${cliConfig.autoUpdates}}`)}
 `)
   }
 

@@ -1,8 +1,8 @@
 import {readFile} from 'node:fs/promises'
 import path from 'node:path'
+import {styleText} from 'node:util'
 
 import {type UserViteConfig} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 import {type InlineConfig, preview} from 'vite'
 
 import {extendViteConfigWithUserConfig} from '../actions/build/getViteConfig.js'
@@ -95,7 +95,7 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
   if (basePath === undefined) {
     warn('Could not determine base path from index.html, using "/" as default')
   } else if (basePath && basePath !== '/') {
-    info(`Using resolved base path from static build: ${chalk.cyan(basePath)}`)
+    info(`Using resolved base path from static build: ${styleText('cyan', basePath)}`)
   }
 
   const startupDuration = Date.now() - startTime
@@ -104,9 +104,9 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
 
   info(
     `Sanity ${isApp ? 'application' : 'Studio'} ` +
-      `using ${chalk.cyan(`vite@${viteVersion}`)} ` +
-      `ready in ${chalk.cyan(`${Math.ceil(startupDuration)}ms`)} ` +
-      `and running at ${chalk.cyan(url)} (production preview mode)`,
+      `using ${styleText('cyan', `vite@${viteVersion}`)} ` +
+      `ready in ${styleText('cyan', `${Math.ceil(startupDuration)}ms`)} ` +
+      `and running at ${styleText('cyan', url)} (production preview mode)`,
   )
 
   return {

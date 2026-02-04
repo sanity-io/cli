@@ -735,10 +735,10 @@ import {colorizeJson} from '@sanity/cli-core'
 this.log(colorizeJson(data))
 
 // Colors
-import chalk from 'chalk'
-this.log(chalk.green('Success!'))
-this.log(chalk.yellow('Warning:'), 'Something to note')
-this.log(chalk.red('Error:'), 'Operation failed')
+import {styleText} from 'node:util'
+this.log(styleText('green', 'Success!'))
+this.log(styleText('yellow', 'Warning:'), 'Something to note')
+this.log(styleText('red', 'Error:'), 'Operation failed')
 
 // JSON output
 this.log(JSON.stringify(data, null, 2))

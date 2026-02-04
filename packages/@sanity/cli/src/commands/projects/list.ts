@@ -1,6 +1,7 @@
+import {styleText} from 'node:util'
+
 import {Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 import {size, sortBy} from 'lodash-es'
 
 import {listProjects} from '../../services/projects.js'
@@ -61,7 +62,7 @@ export class List extends SanityCommand<typeof List> {
       const printRow = (row: string[]) =>
         row.map((col, i) => `${col}`.padEnd(maxWidths[i])).join('   ')
 
-      this.log(chalk.cyan(printRow(sortFields)))
+      this.log(styleText('cyan', printRow(sortFields)))
       for (const row of rows) this.log(printRow(row))
     } catch (error) {
       projectsDebug('Error listing projects', error)

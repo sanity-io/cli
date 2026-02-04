@@ -1,9 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {Output, SanityCommand} from '@sanity/cli-core'
-import {chalk, confirm, logSymbols} from '@sanity/cli-core/ux'
+import {confirm, logSymbols} from '@sanity/cli-core/ux'
 
 import {Level} from '../../actions/documents/types.js'
 import {validateDocuments} from '../../actions/documents/validate.js'
@@ -93,7 +94,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
 
     if (!unattendedMode) {
       this.log(
-        `${chalk.yellow(`${logSymbols.warning} Warning:`)} This command ${
+        `${styleText('yellow', `${logSymbols.warning} Warning:`)} This command ${
           flags.file
             ? 'reads all documents from your input file'
             : 'downloads all documents from your dataset'

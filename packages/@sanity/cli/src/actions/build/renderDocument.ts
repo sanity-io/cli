@@ -1,8 +1,8 @@
 import {dirname} from 'node:path'
 import {fileURLToPath} from 'node:url'
+import {styleText} from 'node:util'
 
 import {tsxWorkerTask} from '@sanity/cli-core'
-import {chalk} from '@sanity/cli-core/ux'
 
 import {buildDebug} from './buildDebug.js'
 
@@ -55,10 +55,10 @@ export async function renderDocument(options: RenderDocumentOptions): Promise<st
 
       if (Array.isArray(msg.message)) {
         for (const warning of msg.message) {
-          console.warn(`${chalk.yellow('[warn]')} ${warning}`)
+          console.warn(`${styleText('yellow', '[warn]')} ${warning}`)
         }
       } else {
-        console.warn(`${chalk.yellow('[warn]')} ${msg.message}`)
+        console.warn(`${styleText('yellow', '[warn]')} ${msg.message}`)
       }
 
       if (msg.warnKey) {
