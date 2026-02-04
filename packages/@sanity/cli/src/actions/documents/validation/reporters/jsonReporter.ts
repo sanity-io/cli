@@ -1,7 +1,6 @@
 import {omit} from 'lodash-es'
 
-import {type BuiltInValidationReporter} from '../../../../commands/documents/validate.js'
-import {Level} from '../../types.js'
+import {type BuiltInValidationReporter, Level} from '../../types.js'
 
 // TODO: replace with Array.fromAsync when it's out of stage3
 async function arrayFromAsync<T>(iterable: AsyncIterable<T>) {

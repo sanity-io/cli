@@ -1,7 +1,6 @@
 import {omit} from 'lodash-es'
 
-import {type BuiltInValidationReporter} from '../../../../commands/documents/validate.js'
-import {Level} from '../../types.js'
+import {type BuiltInValidationReporter, Level} from '../../types.js'
 
 export const ndjson: BuiltInValidationReporter = async ({output, worker}) => {
   let overallLevel: Level = 'info'
