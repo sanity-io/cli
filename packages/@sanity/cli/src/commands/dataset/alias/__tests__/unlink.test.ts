@@ -42,8 +42,8 @@ describe('#dataset:alias:unlink', () => {
     ['~staging', 'with ~ prefix'],
   ])('unlinks alias with confirmation: %s (%s)', async (aliasInput) => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
       uri: '/aliases',
     }).reply(200, [
       {datasetName: 'production', name: 'staging'},
@@ -51,9 +51,9 @@ describe('#dataset:alias:unlink', () => {
     ])
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
       method: 'patch',
+      projectId: testProjectId,
       uri: '/aliases/staging/unlink',
     }).reply(200, {aliasName: 'staging', datasetName: 'production'})
 
@@ -72,8 +72,8 @@ describe('#dataset:alias:unlink', () => {
 
   test('unlinks alias with force flag (skips confirmation)', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
       uri: '/aliases',
     }).reply(200, [
       {datasetName: 'production', name: 'staging'},
@@ -81,9 +81,9 @@ describe('#dataset:alias:unlink', () => {
     ])
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
       method: 'patch',
+      projectId: testProjectId,
       uri: '/aliases/staging/unlink',
     }).reply(200, {aliasName: 'staging', datasetName: 'production'})
 
@@ -98,8 +98,8 @@ describe('#dataset:alias:unlink', () => {
 
   test('prompts for alias name when no alias provided', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
       uri: '/aliases',
     }).reply(200, [
       {datasetName: 'production', name: 'staging'},
@@ -107,9 +107,9 @@ describe('#dataset:alias:unlink', () => {
     ])
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
       method: 'patch',
+      projectId: testProjectId,
       uri: '/aliases/staging/unlink',
     }).reply(200, {aliasName: 'staging', datasetName: 'production'})
 
@@ -128,8 +128,8 @@ describe('#dataset:alias:unlink', () => {
 
   test('handles user cancellation during confirmation', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
       uri: '/aliases',
     }).reply(200, [
       {datasetName: 'production', name: 'staging'},
@@ -167,8 +167,8 @@ describe('#dataset:alias:unlink', () => {
 
   test('shows error when alias does not exist', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
       uri: '/aliases',
     }).reply(200, [
       {datasetName: 'production', name: 'staging'},
@@ -183,8 +183,8 @@ describe('#dataset:alias:unlink', () => {
 
   test('shows error when alias exists but is not linked', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
       uri: '/aliases',
     }).reply(200, [
       {datasetName: 'production', name: 'staging'},
@@ -199,15 +199,15 @@ describe('#dataset:alias:unlink', () => {
 
   test('handles API error during unlink', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
       uri: '/aliases',
     }).reply(200, [{datasetName: 'production', name: 'staging'}])
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
       method: 'patch',
+      projectId: testProjectId,
       uri: '/aliases/staging/unlink',
     }).reply(500, {message: 'API Error'})
 

@@ -20,11 +20,23 @@ export interface MockApiOptions {
   apiVersion?: string
 
   /**
+   * Whether to include `tag: 'sanity.cli'` in query parameters.
+   * Defaults to `true`. Set to `false` for endpoints that don't use CLI tagging.
+   */
+  includeQueryTag?: boolean
+
+  /**
    * HTTP method to mock
    *
    * Defaults to 'get'
    */
   method?: 'delete' | 'get' | 'patch' | 'post' | 'put'
+
+  /**
+   * Project ID to mock. When provided, constructs apiHost as `https://{projectId}.api.sanity.io`
+   * Takes precedence over apiHost if both are provided.
+   */
+  projectId?: string
 
   /**
    * Query parameters to mock
@@ -40,13 +52,15 @@ export interface MockApiOptions {
 export function mockApi({
   apiHost = 'https://api.sanity.io',
   apiVersion = 'v2025-05-14',
+  includeQueryTag = true,
   method = 'get',
+  projectId,
   query = {},
   uri,
 }: MockApiOptions) {
   const version = apiVersion.startsWith('v') ? apiVersion : `v${apiVersion}`
+  const host = projectId ? `https://${projectId}.api.sanity.io` : apiHost
+  const queryParams = includeQueryTag ? {tag: 'sanity.cli', ...query} : query
 
-  return nock(apiHost)
-    [method](`/${version}${uri}`)
-    .query({tag: 'sanity.cli', ...query})
+  return nock(host)[method](`/${version}${uri}`).query(queryParams)
 }

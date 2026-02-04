@@ -42,15 +42,15 @@ describe('#dataset:alias:delete', () => {
     ['~test-alias', 'with ~ prefix'],
   ])('deletes alias with confirmation: %s (%s)', async (aliasInput) => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
       uri: '/aliases',
     }).reply(200, [{datasetName: 'production', name: 'test-alias'}])
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
       method: 'delete',
+      projectId: testProjectId,
       uri: '/aliases/test-alias',
     }).reply(200, {deleted: true})
 
@@ -67,15 +67,15 @@ describe('#dataset:alias:delete', () => {
 
   test('deletes alias with force flag (skips confirmation)', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
       uri: '/aliases',
     }).reply(200, [{datasetName: 'production', name: 'test-alias'}])
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
       method: 'delete',
+      projectId: testProjectId,
       uri: '/aliases/test-alias',
     }).reply(200, {deleted: true})
 
@@ -90,15 +90,15 @@ describe('#dataset:alias:delete', () => {
 
   test('deletes unlinked alias with confirmation (different prompt message)', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
       uri: '/aliases',
     }).reply(200, [{datasetName: null, name: 'test-alias'}])
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
       method: 'delete',
+      projectId: testProjectId,
       uri: '/aliases/test-alias',
     }).reply(200, {deleted: true})
 
@@ -116,8 +116,8 @@ describe('#dataset:alias:delete', () => {
 
   test('fails when alias does not exist', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
       uri: '/aliases',
     }).reply(200, [{datasetName: 'production', name: 'other-alias'}])
 
@@ -148,15 +148,15 @@ describe('#dataset:alias:delete', () => {
 
   test('handles API errors gracefully', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
       uri: '/aliases',
     }).reply(200, [{datasetName: 'production', name: 'test-alias'}])
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: DATASET_ALIASES_API_VERSION,
       method: 'delete',
+      projectId: testProjectId,
       uri: '/aliases/test-alias',
     }).reply(500, {message: 'API Error: Network timeout'})
 

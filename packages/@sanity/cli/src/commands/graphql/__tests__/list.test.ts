@@ -28,8 +28,8 @@ describe('#list', () => {
 
   test('displays GraphQL endpoints correctly with multiple endpoints', async () => {
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
+      projectId: testProjectId,
       uri: '/apis/graphql',
     }).reply(200, [
       {
@@ -70,8 +70,8 @@ describe('#list', () => {
 
   test('displays single GraphQL endpoint correctly', async () => {
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
+      projectId: testProjectId,
       uri: '/apis/graphql',
     }).reply(200, [
       {
@@ -99,8 +99,8 @@ describe('#list', () => {
 
   test('handles empty GraphQL endpoints list', async () => {
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
+      projectId: testProjectId,
       uri: '/apis/graphql',
     }).reply(200, [])
 
@@ -111,8 +111,8 @@ describe('#list', () => {
 
   test('handles null/undefined GraphQL endpoints response', async () => {
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
+      projectId: testProjectId,
       uri: '/apis/graphql',
     }).reply(200, undefined)
 
@@ -128,8 +128,8 @@ describe('#list', () => {
     'displays error when API request fails with %i status and message "%s"',
     async (status, message) => {
       mockApi({
-        apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: GRAPHQL_API_VERSION,
+        projectId: testProjectId,
         uri: '/apis/graphql',
       }).reply(status, {message})
 
@@ -157,8 +157,8 @@ describe('#list', () => {
 
   test('displays endpoints correctly when dataset names contain special characters', async () => {
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
+      projectId: testProjectId,
       uri: '/apis/graphql',
     }).reply(200, [
       {
@@ -187,8 +187,8 @@ describe('#list', () => {
 
   test('displays endpoints with various generation values correctly', async () => {
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: GRAPHQL_API_VERSION,
+      projectId: testProjectId,
       uri: '/apis/graphql',
     }).reply(200, [
       {

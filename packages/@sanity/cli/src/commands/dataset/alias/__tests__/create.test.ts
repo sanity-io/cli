@@ -55,23 +55,23 @@ describe('#dataset:alias:create', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'} as never])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/features`,
     }).reply(200, ['advancedDatasetManagement'])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'put',
+      projectId: testProjectId,
       uri: `/aliases/test-alias`,
     }).reply(200, {aliasName: 'test-alias', datasetName: 'production'})
 
@@ -88,23 +88,23 @@ describe('#dataset:alias:create', () => {
     mockListDatasets.mockResolvedValue([])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/features`,
     }).reply(200, ['advancedDatasetManagement'])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'put',
+      projectId: testProjectId,
       uri: `/aliases/test-alias`,
     }).reply(200, {aliasName: 'test-alias', datasetName: null})
 
@@ -117,16 +117,16 @@ describe('#dataset:alias:create', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'} as never])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/features`,
     }).reply(200, ['advancedDatasetManagement'])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [{datasetName: 'production', name: 'existing-alias'}])
 
@@ -142,9 +142,9 @@ describe('#dataset:alias:create', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'} as never])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/features`,
     }).reply(200, [])
 
@@ -160,16 +160,16 @@ describe('#dataset:alias:create', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'} as never])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/features`,
     }).reply(200, ['advancedDatasetManagement'])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [])
 
@@ -198,23 +198,23 @@ describe('#dataset:alias:create', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'} as never])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/features`,
     }).reply(200, ['advancedDatasetManagement'])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'put',
+      projectId: testProjectId,
       uri: `/aliases/test-alias`,
     }).reply(500, {error: 'API Error: Network timeout', message: 'API Error: Network timeout'})
 
@@ -233,9 +233,9 @@ describe('#dataset:alias:create', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'} as never])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/features`,
     }).reply(200, ['advancedDatasetManagement'])
 
