@@ -1,23 +1,13 @@
-import {getUserConfig, isCi, subdebug} from '@sanity/cli-core'
+import {createExpiringConfig, getUserConfig, isCi, subdebug} from '@sanity/cli-core'
 import semver from 'semver'
 
 import {fetchLatestVersionWithTimeout} from './fetchLatestVersionWithTimeout.js'
 import {showUpdateNotification} from './showNotificationUpdate.js'
 
-interface UpdateCache {
-  lastChecked: number
-  latestVersion: string
-
-  lastNotified?: number
-}
-
 const debug = subdebug('updateChecker')
 
-const UPDATE_CHECK_INTERVAL = 12 * 60 * 60 * 1000 // 12 hours
+const TWELVE_HOURS = 12 * 60 * 60 * 1000 // 12 hours
 const CHECK_TIMEOUT = 300
-
-// Use standard config store for caching
-const store = getUserConfig()
 
 /**
  * Check for CLI updates and notify the user if a new version is available.
@@ -41,43 +31,33 @@ export async function updateChecker(config: {
     return
   }
 
-  const cache = store.get('updateCheck') as UpdateCache | undefined
-  const now = Date.now()
+  const store = getUserConfig()
 
-  const currentCache: UpdateCache = cache || {lastChecked: 0, latestVersion: ''}
-  debug(`Current update cache: ${JSON.stringify(currentCache)}`)
+  // Cache for latest version from npm
+  const latestVersionCache = createExpiringConfig({
+    fetchValue: async () => {
+      const version = await fetchLatestVersionWithTimeout(config.name, CHECK_TIMEOUT)
+      if (version) {
+        debug('Latest remote version is %s', version)
+      }
+      return version
+    },
+    key: 'cliLastUpdateCheck',
+    onCacheHit: () => debug('Less than 12 hours since last check, skipping update check'),
+    onFetch: () => debug('Checking for latest remote version'),
+    store,
+    ttl: TWELVE_HOURS,
+    validateValue: (value): value is string => typeof value === 'string',
+  })
 
-  const shouldCheckLatestVersion =
-    !currentCache.lastChecked || now - currentCache.lastChecked >= UPDATE_CHECK_INTERVAL
+  const latestVersion = await latestVersionCache.get()
 
-  if (shouldCheckLatestVersion) {
-    debug('Checking for latest remote version')
-    const latestVersion = await fetchLatestVersionWithTimeout(config.name, CHECK_TIMEOUT)
-
-    if (latestVersion) {
-      debug('Latest remote version is %s', latestVersion)
-      currentCache.lastChecked = now
-      currentCache.latestVersion = latestVersion
-      store.set('updateCheck', currentCache)
-    }
-  } else {
-    debug('Less than 12 hours since last check, skipping update check')
-  }
-
-  const shouldNotify =
-    !currentCache.lastNotified || now - currentCache.lastNotified >= UPDATE_CHECK_INTERVAL
-
-  if (!shouldNotify) {
-    debug('Less than 12 hours since last nag, skipping')
-    return
-  }
-
-  if (!currentCache.latestVersion) {
+  if (!latestVersion) {
     debug('No cached latest version result found')
     return
   }
 
-  const comparison = semver.compare(currentCache.latestVersion, config.version)
+  const comparison = semver.compare(latestVersion, config.version)
 
   if (comparison < 0) {
     debug('Remote version older than local')
@@ -89,8 +69,20 @@ export async function updateChecker(config: {
     return
   }
 
-  debug('Update is available (%s)', currentCache.latestVersion)
-  await showUpdateNotification(config.version, currentCache.latestVersion)
-  currentCache.lastNotified = now
-  store.set('updateCheck', currentCache)
+  debug('Update is available (%s)', latestVersion)
+
+  // Cache for notification throttle
+  const updateNag = createExpiringConfig({
+    fetchValue: async () => {
+      await showUpdateNotification(config.version, latestVersion)
+      return true
+    },
+    key: 'cliLastUpdateNag',
+    onCacheHit: () => debug('Less than 12 hours since last nag, skipping'),
+    store,
+    ttl: TWELVE_HOURS,
+    validateValue: (value): value is true => value === true,
+  })
+
+  await updateNag.get()
 }
