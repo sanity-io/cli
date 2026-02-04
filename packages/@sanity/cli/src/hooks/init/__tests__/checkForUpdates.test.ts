@@ -1,12 +1,14 @@
 import {getUserConfig, isCi} from '@sanity/cli-core'
 import {testFixture, testHook} from '@sanity/cli-test'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {beforeEach, describe, expect, test, vi} from 'vitest'
 import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
 import {checkForUpdates} from '../checkForUpdates.js'
 
 const mockDebug = vi.hoisted(() => vi.fn())
 const mockGetLatestVersion = vi.hoisted(() => vi.fn())
+const mockIsInstalledGlobally = vi.hoisted(() => ({default: false}))
+const mockIsInstalledUsingYarn = vi.hoisted(() => vi.fn())
 
 // Mock dependencies
 vi.mock('@sanity/cli-core', async () => ({
@@ -19,9 +21,13 @@ vi.mock('get-latest-version', () => ({
   default: mockGetLatestVersion,
 }))
 
-const mockIsCi = vi.mocked(isCi)
+vi.mock('is-installed-globally', () => mockIsInstalledGlobally)
 
-let originalEnv: Record<string, string>
+vi.mock('../../../util/update/isInstalledUsingYarn.js', () => ({
+  isInstalledUsingYarn: mockIsInstalledUsingYarn,
+}))
+
+const mockIsCi = vi.mocked(isCi)
 
 describe('#checkForUpdates', () => {
   beforeEach(() => {
@@ -32,8 +38,9 @@ describe('#checkForUpdates', () => {
 
     vi.resetAllMocks()
     vi.unstubAllEnvs()
-    originalEnv = {...process.env} as Record<string, string>
     mockIsCi.mockReturnValue(false)
+    mockIsInstalledGlobally.default = false
+    mockIsInstalledUsingYarn.mockReturnValue(false)
 
     // Clear cache keys
     const userConfig = getUserConfig()
@@ -41,15 +48,11 @@ describe('#checkForUpdates', () => {
     userConfig.delete('cliLastUpdateNag')
   })
 
-  afterEach(() => {
-    process.env = originalEnv
-  })
-
   test('returns early if running on CI', async () => {
     const {config} = await getCommandAndConfig('help')
     mockIsCi.mockReturnValue(true)
 
-    await testHook<'prerun'>(checkForUpdates, {
+    await testHook<'init'>(checkForUpdates, {
       config,
     })
 
@@ -63,7 +66,7 @@ describe('#checkForUpdates', () => {
     const {config} = await getCommandAndConfig('help')
     vi.stubEnv('NO_UPDATE_NOTIFIER', '1')
 
-    await testHook<'prerun'>(checkForUpdates, {
+    await testHook<'init'>(checkForUpdates, {
       config,
     })
 
@@ -81,7 +84,7 @@ describe('#checkForUpdates', () => {
       stdout: {...process.stdout, isTTY: false},
     })
 
-    await testHook<'prerun'>(checkForUpdates, {
+    await testHook<'init'>(checkForUpdates, {
       config,
     })
 
@@ -99,7 +102,7 @@ describe('#checkForUpdates', () => {
       value: '1.0.0',
     })
 
-    await testHook<'prerun'>(checkForUpdates, {
+    await testHook<'init'>(checkForUpdates, {
       config,
     })
 
@@ -114,7 +117,7 @@ describe('#checkForUpdates', () => {
 
     mockGetLatestVersion.mockResolvedValueOnce('1.1.0')
 
-    await testHook<'prerun'>(checkForUpdates, {
+    await testHook<'init'>(checkForUpdates, {
       config,
     })
 
@@ -137,7 +140,7 @@ describe('#checkForUpdates', () => {
       () => new Promise((resolve) => setTimeout(() => resolve('1.1.0'), 500)),
     )
 
-    await testHook<'prerun'>(checkForUpdates, {
+    await testHook<'init'>(checkForUpdates, {
       config,
     })
 
@@ -159,7 +162,7 @@ describe('#checkForUpdates', () => {
     const error = new Error('Network error')
     mockGetLatestVersion.mockRejectedValueOnce(error)
 
-    await testHook<'prerun'>(checkForUpdates, {
+    await testHook<'init'>(checkForUpdates, {
       config,
     })
 
@@ -189,7 +192,7 @@ describe('#checkForUpdates', () => {
       value: true,
     })
 
-    await testHook<'prerun'>(checkForUpdates, {
+    await testHook<'init'>(checkForUpdates, {
       config,
     })
 
@@ -202,7 +205,7 @@ describe('#checkForUpdates', () => {
     // No cache set up - will check but get empty version
     mockGetLatestVersion.mockResolvedValueOnce('')
 
-    await testHook<'prerun'>(checkForUpdates, {
+    await testHook<'init'>(checkForUpdates, {
       config,
     })
 
@@ -220,7 +223,7 @@ describe('#checkForUpdates', () => {
       value: '1.0.0', // older than current
     })
 
-    await testHook<'prerun'>(checkForUpdates, {
+    await testHook<'init'>(checkForUpdates, {
       config,
     })
 
@@ -238,7 +241,7 @@ describe('#checkForUpdates', () => {
       value: config.version, // same as current
     })
 
-    await testHook<'prerun'>(checkForUpdates, {
+    await testHook<'init'>(checkForUpdates, {
       config,
     })
 
@@ -259,7 +262,7 @@ describe('#checkForUpdates', () => {
       value: '999.0.0', // newer than current
     })
 
-    const {stderr} = await testHook<'prerun'>(checkForUpdates, {
+    const {stderr} = await testHook<'init'>(checkForUpdates, {
       config,
     })
 
@@ -273,5 +276,29 @@ describe('#checkForUpdates', () => {
       updatedAt: expect.any(Number),
       value: true,
     })
+  })
+
+  test('shows yarn global add command when globally installed via yarn', async () => {
+    mockIsInstalledGlobally.default = true
+    mockIsInstalledUsingYarn.mockReturnValue(true)
+
+    const {config} = await getCommandAndConfig('help')
+    const now = Date.now()
+    const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
+
+    const userConfig = getUserConfig()
+    userConfig.set('cliLastUpdateCheck', {
+      updatedAt: recentTimestamp,
+      value: '999.0.0', // newer than current
+    })
+
+    const {stderr} = await testHook<'init'>(checkForUpdates, {
+      config,
+    })
+
+    expect(mockDebug).toHaveBeenCalledWith('Update is available (%s)', '999.0.0')
+    expect(stderr).toContain('Update available')
+    expect(stderr).toContain('999.0.0')
+    expect(stderr).toContain('yarn global add sanity')
   })
 })

@@ -1,8 +1,10 @@
 import {ux} from '@oclif/core'
 import {boxen} from '@sanity/cli-core/ux'
+import isInstalledGlobally from 'is-installed-globally'
 
 import {getPackageManagerChoice} from '../packageManager/packageManagerChoice.js'
-import getUpdateCommand from './getUpdateCommand.js'
+import {cliPkgName, getUpdateCommand} from './getUpdateCommand.js'
+import {isInstalledUsingYarn} from './isInstalledUsingYarn.js'
 
 /**
  * Show a boxed notification about the available update
@@ -11,8 +13,17 @@ export async function showUpdateNotification(
   currentVersion: string,
   latestVersion: string,
 ): Promise<void> {
-  const {chosen} = await getPackageManagerChoice(process.cwd(), {interactive: false})
-  const command = getUpdateCommand(chosen)
+  let command
+
+  // Check if CLI is installed globally
+  if (isInstalledGlobally) {
+    command = isInstalledUsingYarn()
+      ? `yarn global add ${cliPkgName}`
+      : `npm install -g ${cliPkgName}`
+  } else {
+    const {chosen} = await getPackageManagerChoice(process.cwd(), {interactive: false})
+    command = getUpdateCommand(chosen)
+  }
 
   const message = `Update available: ${currentVersion} → ${latestVersion}\n\nRun ${command} to update`
 
