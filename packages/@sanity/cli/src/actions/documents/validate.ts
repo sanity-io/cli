@@ -1,21 +1,10 @@
-import path from 'node:path'
-import {fileURLToPath} from 'node:url'
-import {Worker} from 'node:worker_threads'
-
-import {getGlobalCliClient} from '@sanity/cli-core'
+import {createStudioWorker, getGlobalCliClient} from '@sanity/cli-core'
 import {type ClientConfig} from '@sanity/client'
 import {type ValidationMarker} from '@sanity/types'
-import {readPackageUp} from 'read-package-up'
 
-import {
-  type ValidateDocumentsWorkerData,
-  type ValidationWorkerChannel,
-} from '../../threads/validateDocuments.js'
 import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels.js'
 import {DOCUMENTS_API_VERSION} from './constants.js'
-import {Level} from './types.js'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+import {Level, type ValidateDocumentsWorkerData, type ValidationWorkerChannel} from './types.js'
 
 interface ValidateDocumentsOptions<TReturn = unknown> {
   dataset?: string // override
@@ -83,14 +72,6 @@ export async function validateDocuments(options: ValidateDocumentsOptions): Prom
     requireUser: true,
   })
 
-  const rootPkgPath = (await readPackageUp({cwd: __dirname}))?.path
-
-  if (!rootPkgPath) {
-    throw new Error('Could not find root directory for `sanity` package')
-  }
-
-  const workerPath = path.join(path.dirname(rootPkgPath), 'dist', 'threads', 'validateDocuments.js')
-
   const clientConfig: ClientConfig = {
     ...apiClient.config(),
     // we set this explictly to true because we pass in a token via the
@@ -106,8 +87,9 @@ export async function validateDocuments(options: ValidateDocumentsOptions): Prom
     useProjectHostname: true,
   }
 
-  const worker = new Worker(workerPath, {
-    env: process.env,
+  const worker = createStudioWorker(new URL('validateDocuments.worker.js', import.meta.url), {
+    name: 'validateDocuments',
+    studioRootPath: workDir,
     workerData: {
       // removes props in the config that make this object fail to serialize
       clientConfig: structuredClone(clientConfig),

@@ -1,3 +1,4 @@
+import {stat} from 'node:fs/promises'
 import {dirname} from 'node:path'
 
 import {firstValueFrom, of} from 'rxjs'
@@ -6,6 +7,7 @@ import {type Workspace} from 'sanity'
 import {doImport} from '../../util/doImport.js'
 import {getEmptyAuth} from '../../util/getEmptyAuth.js'
 import {resolveLocalPackage} from '../../util/resolveLocalPackage.js'
+import {findStudioConfigPath} from '../util/findStudioConfigPath.js'
 import {isStudioConfig} from './isStudioConfig.js'
 
 /**
@@ -16,6 +18,10 @@ import {isStudioConfig} from './isStudioConfig.js'
  * @internal
  */
 export async function getStudioWorkspaces(configPath: string): Promise<Workspace[]> {
+  const isDirectory = (await stat(configPath)).isDirectory()
+  if (isDirectory) {
+    configPath = await findStudioConfigPath(configPath)
+  }
   let config = await doImport(configPath)
   if (!isStudioConfig(config)) {
     if (!('default' in config) || !isStudioConfig(config.default)) {

@@ -5,20 +5,19 @@ import readline from 'node:readline'
 import {Readable} from 'node:stream'
 import {workerData as _workerData, isMainThread, parentPort} from 'node:worker_threads'
 
-import {mockBrowserEnvironment} from '@sanity/cli-core'
-import {
-  type ClientConfig,
-  createClient,
-  type SanityClient,
-  type SanityDocument,
-} from '@sanity/client'
+import {getStudioWorkspaces, isRecord, resolveLocalPackage} from '@sanity/cli-core'
+import {type ClientConfig, createClient, type SanityDocument} from '@sanity/client'
 import {type ValidationContext, type ValidationMarker} from '@sanity/types'
 import pMap from 'p-map'
-import {isRecord, validateDocument} from 'sanity'
 
-import {extractDocumentsFromNdjsonOrTarball} from '../util/extractDocumentsFromNdjsonOrTarball.js'
-import {getWorkspace} from '../util/getWorkspace.js'
-import {importStudioConfig} from '../util/importStudioConfig.js'
+import {
+  type AvailabilityResponse,
+  checkDocumentAvailability,
+  exportDocuments,
+  getDocumentCount,
+} from '../../services/documents.js'
+import {extractDocumentsFromNdjsonOrTarball} from '../../util/extractDocumentsFromNdjsonOrTarball.js'
+import {getWorkspace} from '../../util/getWorkspace.js'
 import {
   DOCUMENT_VALIDATION_TIMEOUT,
   getReferenceIds,
@@ -27,55 +26,9 @@ import {
   MAX_VALIDATION_CONCURRENCY,
   REFERENCE_INTEGRITY_BATCH_SIZE,
   shouldIncludeDocument,
-} from '../util/validation/validateDocumentsUtils.js'
-import {
-  createReporter,
-  type WorkerChannel,
-  type WorkerChannelEvent,
-  type WorkerChannelStream,
-} from '../util/workerChannels.js'
-
-interface AvailabilityResponse {
-  omitted: {id: string; reason: 'existence' | 'permission'}[]
-}
-
-/** @internal */
-export interface ValidateDocumentsWorkerData {
-  workDir: string
-
-  clientConfig?: Partial<ClientConfig>
-  dataset?: string
-  level?: ValidationMarker['level']
-  maxCustomValidationConcurrency?: number
-  maxFetchConcurrency?: number
-  ndjsonFilePath?: string
-  projectId?: string
-  studioHost?: string
-  workspace?: string
-}
-
-/** @internal */
-export type ValidationWorkerChannel = WorkerChannel<{
-  exportFinished: WorkerChannelEvent<{totalDocumentsToValidate: number}>
-  exportProgress: WorkerChannelStream<{documentCount: number; downloadedCount: number}>
-  loadedDocumentCount: WorkerChannelEvent<{documentCount: number}>
-  loadedReferenceIntegrity: WorkerChannelEvent
-  loadedWorkspace: WorkerChannelEvent<{
-    basePath: string
-    dataset: string
-    name: string
-    projectId: string
-  }>
-  validation: WorkerChannelStream<{
-    documentId: string
-    documentType: string
-    intentUrl?: string
-    level: ValidationMarker['level']
-    markers: ValidationMarker[]
-    revision: string
-    validatedCount: number
-  }>
-}>
+} from '../../util/validation/validateDocumentsUtils.js'
+import {createReporter} from '../../util/workerChannels.js'
+import {type ValidateDocumentsWorkerData, type ValidationWorkerChannel} from './types.js'
 
 const {
   clientConfig,
@@ -109,13 +62,16 @@ await main()
 process.exit()
 
 async function loadWorkspace() {
-  const workspaces = await importStudioConfig(workDir)
+  const workspaces = await getStudioWorkspaces(workDir)
   const workspace = getWorkspace(workspaces, workspaceName)
+
+  const resolvedDataset = dataset || workspace.dataset
+  const resolvedProjectId = projectId || workspace.projectId
 
   const client = createClient({
     ...clientConfig,
-    dataset: dataset || workspace.dataset,
-    projectId: projectId || workspace.projectId,
+    dataset: resolvedDataset,
+    projectId: resolvedProjectId,
     requestTagPrefix: 'sanity.cli.validate',
   }).config({apiVersion: 'v2021-03-25'})
 
@@ -126,20 +82,22 @@ async function loadWorkspace() {
     projectId: workspace.projectId,
   })
 
-  return {client, workspace}
+  return {client, dataset: resolvedDataset, projectId: resolvedProjectId, workspace}
 }
 
-async function downloadFromExport(client: SanityClient) {
-  const exportUrl = new URL(client.getUrl(`/data/export/${client.config().dataset}`, false))
+interface DownloadFromExportOptions {
+  dataset: string
+  projectId: string
+}
 
-  const documentCount = await client.fetch('length(*)')
+async function downloadFromExport({
+  dataset: datasetName,
+  projectId: projId,
+}: DownloadFromExportOptions) {
+  const documentCount = await getDocumentCount({dataset: datasetName, projectId: projId})
   report.event.loadedDocumentCount({documentCount})
 
-  const {token} = client.config()
-  const response = await fetch(exportUrl, {
-    // eslint-disable-next-line n/no-unsupported-features/node-builtins
-    headers: new Headers({...(token && {Authorization: `Bearer ${token}`})}),
-  })
+  const response = await exportDocuments({dataset: datasetName, projectId: projId})
 
   const reader = response.body?.getReader()
   if (!reader) throw new Error('Could not get reader from response body.')
@@ -208,14 +166,16 @@ async function downloadFromFile(filePath: string) {
 }
 
 interface CheckReferenceExistenceOptions {
-  client: SanityClient
+  dataset: string
   documentIds: Set<string>
+  projectId: string
   referencedIds: Set<string>
 }
 
 async function checkReferenceExistence({
-  client,
+  dataset: datasetName,
   documentIds,
+  projectId: projId,
   referencedIds: _referencedIds,
 }: CheckReferenceExistenceOptions) {
   const existingIds = new Set(documentIds)
@@ -229,14 +189,13 @@ async function checkReferenceExistence({
   }
 
   for (const batch of batches) {
-    const {omitted} = await client.request<AvailabilityResponse>({
-      json: true,
-      query: {excludeContent: 'true'},
-      tag: 'documents-availability',
-      uri: client.getDataUrl('doc', batch.join(',')),
+    const {omitted} = await checkDocumentAvailability({
+      dataset: datasetName,
+      documentIds: batch,
+      projectId: projId,
     })
 
-    const omittedIds: Record<string, 'existence' | 'permission'> = {}
+    const omittedIds: Record<string, AvailabilityResponse['omitted'][number]['reason']> = {}
     for (const item of omitted) {
       omittedIds[item.id] = item.reason
     }
@@ -255,17 +214,20 @@ async function checkReferenceExistence({
 }
 
 async function main() {
-  const cleanupBrowserEnvironment = await mockBrowserEnvironment(workDir)
-
   let cleanupDownloadedDocuments: (() => Promise<void>) | undefined
 
   try {
-    const {client, workspace} = await loadWorkspace()
+    const {client, dataset: datasetName, projectId: projId, workspace} = await loadWorkspace()
     const {cleanup, documentIds, getDocuments, referencedIds} = ndjsonFilePath
       ? await downloadFromFile(ndjsonFilePath)
-      : await downloadFromExport(client)
+      : await downloadFromExport({dataset: datasetName, projectId: projId})
     cleanupDownloadedDocuments = cleanup
-    const {existingIds} = await checkReferenceExistence({client, documentIds, referencedIds})
+    const {existingIds} = await checkReferenceExistence({
+      dataset: datasetName,
+      documentIds,
+      projectId: projId,
+      referencedIds,
+    })
 
     const getClient = <TOptions extends Partial<ClientConfig>>(options: TOptions) =>
       client.withConfig(options)
@@ -291,6 +253,11 @@ async function main() {
 
       try {
         const timeout = Symbol('timeout')
+
+        const {validateDocument} = await resolveLocalPackage<typeof import('sanity')>(
+          'sanity',
+          workDir,
+        )
 
         const result = await Promise.race([
           validateDocument({
@@ -363,6 +330,5 @@ async function main() {
     report.stream.validation.end()
   } finally {
     await cleanupDownloadedDocuments?.()
-    cleanupBrowserEnvironment()
   }
 }

@@ -6,10 +6,9 @@ import {Flags} from '@oclif/core'
 import {Output, SanityCommand} from '@sanity/cli-core'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 
-import {Level} from '../../actions/documents/types.js'
+import {Level, type ValidationWorkerChannel} from '../../actions/documents/types.js'
 import {validateDocuments} from '../../actions/documents/validate.js'
 import {reporters} from '../../actions/documents/validation/reporters/index.js'
-import {type ValidationWorkerChannel} from '../../threads/validateDocuments.js'
 import {type WorkerChannelReceiver} from '../../util/workerChannels.js'
 
 type ValidateDocumentsCommandFlags = ValidateDocumentsCommand['flags']
@@ -126,8 +125,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       })
 
       if (!confirmed) {
-        this.log('User aborted')
-        this.exit(1)
+        this.error('User aborted', {exit: 1})
       }
     }
 
@@ -153,7 +151,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
 
       const stat = await fs.promises.stat(filePath)
       if (!stat.isFile()) {
-        this.error(`'--file' must point to a valid ndjson file or tarball`)
+        this.error(`'--file' must point to a valid ndjson file or tarball`, {exit: 1})
       }
 
       ndjsonFilePath = filePath
