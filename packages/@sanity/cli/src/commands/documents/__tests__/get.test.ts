@@ -32,6 +32,7 @@ vi.mock('@sanity/cli-core', async () => {
 describe('#documents:get', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   test('retrieves and displays a document successfully', async () => {
@@ -63,8 +64,7 @@ describe('#documents:get', () => {
     mockGetDocument.mockResolvedValue(mockDoc)
 
     // Set FORCE_COLOR to enable colorization
-    const originalForceColor = process.env.FORCE_COLOR
-    process.env.FORCE_COLOR = '1'
+    vi.stubEnv('FORCE_COLOR', '1')
 
     const {stdout} = await testCommand(GetDocumentCommand, ['test-doc', '--pretty'], {
       capture: {
@@ -72,13 +72,6 @@ describe('#documents:get', () => {
       },
       mocks: defaultMocks,
     })
-
-    // Reset FORCE_COLOR
-    if (originalForceColor === undefined) {
-      delete process.env.FORCE_COLOR
-    } else {
-      process.env.FORCE_COLOR = originalForceColor
-    }
 
     // Check that the output contains the document data
     expect(stdout).toContain('test-doc')
