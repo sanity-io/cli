@@ -1,0 +1,2 @@
+{"_id":"author-valid","_type":"author","_rev":"rev1","_createdAt":"2024-01-01T00:00:00Z","_updatedAt":"2024-01-01T00:00:00Z","name":"Valid Author"}
+{"_id":"post-invalid-type","_type":"post","_rev":"rev2","_createdAt":"2024-01-01T00:00:00Z","_updatedAt":"2024-01-01T00:00:00Z","title":12345,"author":{"_type":"reference","_ref":"author-valid"}}

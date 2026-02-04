@@ -1,9 +1,12 @@
+import {type Output} from '@sanity/cli-core'
 import {type ClientConfig} from '@sanity/client'
 import {type ValidationMarker} from '@sanity/types'
 
+import {type ValidateDocumentsCommand} from '../../commands/documents/validate.js'
 import {
   type WorkerChannel,
   type WorkerChannelEvent,
+  type WorkerChannelReceiver,
   type WorkerChannelStream,
 } from '../../util/workerChannels.js'
 
@@ -46,3 +49,9 @@ export type ValidationWorkerChannel = WorkerChannel<{
     validatedCount: number
   }>
 }>
+
+export type BuiltInValidationReporter = (options: {
+  flags: ValidateDocumentsCommand['flags']
+  output: Output
+  worker: WorkerChannelReceiver<ValidationWorkerChannel>
+}) => Promise<Level>

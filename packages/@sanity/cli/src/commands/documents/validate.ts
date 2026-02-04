@@ -3,21 +3,12 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {Output, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 
-import {Level, type ValidationWorkerChannel} from '../../actions/documents/types.js'
+import {type Level} from '../../actions/documents/types.js'
 import {validateDocuments} from '../../actions/documents/validate.js'
 import {reporters} from '../../actions/documents/validation/reporters/index.js'
-import {type WorkerChannelReceiver} from '../../util/workerChannels.js'
-
-type ValidateDocumentsCommandFlags = ValidateDocumentsCommand['flags']
-
-export type BuiltInValidationReporter = (options: {
-  flags: ValidateDocumentsCommandFlags
-  output: Output
-  worker: WorkerChannelReceiver<ValidationWorkerChannel>
-}) => Promise<Level>
 
 export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocumentsCommand> {
   static description = 'Validate documents in a dataset against the studio schema'
@@ -55,17 +46,11 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       description:
         'The output format used to print the found validation markers and report progress',
     }),
-    level: Flags.custom<Level>({
+    level: Flags.string({
       default: 'warning',
       description: 'The minimum level reported out. Defaults to warning',
       options: ['error', 'warning', 'info'],
-      parse: async (input) => {
-        if (input !== 'error' && input !== 'warning' && input !== 'info') {
-          throw new Error(`Invalid level: ${input}. Must be 'error', 'warning', or 'info'`)
-        }
-        return input as Level
-      },
-    })(),
+    }),
     'max-custom-validation-concurrency': Flags.integer({
       default: 5,
       description: 'Specify how many custom validators can run concurrently',
@@ -134,14 +119,15 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
         style: 'long',
         type: 'conjunction',
       })
-      throw new Error(
+      this.error(
         `Did not recognize format '${flags.format}'. Available formats are ${formatter.format(
           Object.keys(reporters).map((key) => `'${key}'`),
         )}`,
+        {exit: 1},
       )
     }
 
-    const level = flags.level
+    const level = flags.level as Level
     const maxCustomValidationConcurrency = flags['max-custom-validation-concurrency']
     const maxFetchConcurrency = flags['max-fetch-concurrency']
 
@@ -157,27 +143,31 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       ndjsonFilePath = filePath
     }
 
-    const overallLevel = await validateDocuments({
-      dataset: flags.dataset,
-      level,
-      maxCustomValidationConcurrency,
-      maxFetchConcurrency,
-      ndjsonFilePath,
-      reporter: (worker) => {
-        const reporter =
-          flags.format && flags.format in reporters
-            ? reporters[flags.format as keyof typeof reporters]
-            : reporters.pretty
+    try {
+      const overallLevel = await validateDocuments({
+        dataset: flags.dataset,
+        level,
+        maxCustomValidationConcurrency,
+        maxFetchConcurrency,
+        ndjsonFilePath,
+        reporter: (worker) => {
+          const reporter =
+            flags.format && flags.format in reporters
+              ? reporters[flags.format as keyof typeof reporters]
+              : reporters.pretty
 
-        return reporter({flags, output: this.output, worker})
-      },
-      studioHost: cliConfig?.studioHost,
-      workDir,
-      workspace: flags.workspace,
-    })
+          return reporter({flags, output: this.output, worker})
+        },
+        studioHost: cliConfig?.studioHost,
+        workDir,
+        workspace: flags.workspace,
+      })
 
-    if (overallLevel === 'error') {
-      this.exit(1)
+      if (overallLevel === 'error') {
+        this.exit(1)
+      }
+    } catch (err) {
+      this.error(err instanceof Error ? err.message : String(err), {exit: 1})
     }
   }
 }
