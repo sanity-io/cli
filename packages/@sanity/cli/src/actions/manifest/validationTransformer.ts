@@ -1,4 +1,3 @@
-import {Rule as BaseRule} from '@sanity/schema'
 import {type Rule, type RuleSpec, type SchemaValidationValue} from '@sanity/types'
 
 import {type SerializableProp} from './transformerUtils.js'
@@ -39,10 +38,6 @@ export function transformValidation(
   // we don't want type in the output as that is implicitly given by the typedef itself an will only bloat the payload
   const disallowedFlags = new Set(['type'])
 
-  // Validation rules that refer to other fields use symbols, which cannot be serialized. It would
-  // be possible to transform these to a serializable type, but we haven't implemented that for now.
-  const disallowedConstraintTypes = new Set<symbol | unknown>([BaseRule.FIELD_REF])
-
   const serializedValidation = validationArray
     .map(({_level, _message, _rules}) => {
       const message: Partial<Pick<ManifestValidationGroup, 'message'>> =
@@ -60,11 +55,16 @@ export function transformValidation(
             return false
           }
 
-          return !(
+          // Validation rules that refer to other fields use symbols, which cannot be serialized. It would
+          // be possible to transform these to a serializable type, but we haven't implemented that for now.
+          const isFieldReference =
             typeof constraint === 'object' &&
             'type' in constraint &&
-            disallowedConstraintTypes.has(constraint.type)
-          )
+            typeof constraint.type === 'symbol' &&
+            (constraint.type.description === 'FIELD_REF' ||
+              constraint.type.description === '@sanity/schema/field-ref')
+
+          return !isFieldReference
         })
         .map((rule) => {
           const transformer: ValidationRuleTransformer =
