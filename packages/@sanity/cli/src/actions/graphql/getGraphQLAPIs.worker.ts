@@ -26,7 +26,7 @@ async function main() {
     throw new Error('This module must be run as a worker thread')
   }
 
-  await getGraphQLAPIsForked(parentPort).then(() => process.exit())
+  await getGraphQLAPIsForked(parentPort)
 }
 
 await main()

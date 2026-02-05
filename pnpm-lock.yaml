@@ -386,6 +386,9 @@ importers:
       '@sanity/export':
         specifier: ^6.0.5
         version: 6.0.5
+      '@sanity/generate-help-url':
+        specifier: ^4.0.0
+        version: 4.0.0
       '@sanity/id-utils':
         specifier: ^1.0.0
         version: 1.0.0
@@ -506,6 +509,9 @@ importers:
       peek-stream:
         specifier: ^1.1.3
         version: 1.1.3
+      pluralize-esm:
+        specifier: ^9.0.5
+        version: 9.0.5
       preferred-pm:
         specifier: ^4.1.1
         version: 4.1.1

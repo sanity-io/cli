@@ -15,7 +15,7 @@ import gen1 from './gen1'
 import gen2 from './gen2'
 import gen3 from './gen3'
 import {getGraphQLAPIs} from './getGraphQLAPIs'
-import {SchemaError} from './SchemaError'
+import {SchemaError} from '../../../../cli/src/actions/graphql/SchemaError'
 import {type DeployResponse, type GeneratedApiSpecification, type ValidationResponse} from './types'
 
 const latestGeneration = 'gen3'
