@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.0.2-alpha.8](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.7...cli-test-v0.0.2-alpha.8) (2026-02-05)
+
+
+### Features
+
+* allow making telemetry calls from CLI ([#346](https://github.com/sanity-io/cli/issues/346)) ([41ef21e](https://github.com/sanity-io/cli/commit/41ef21eb1c3d6c1854b91bb0c953aa8596e39566))
+* inject env variables before the commands are run ([#297](https://github.com/sanity-io/cli/issues/297)) ([eb01a5f](https://github.com/sanity-io/cli/commit/eb01a5f74c19824425cf83e0e95e6e5bc0857736))
+* make telemetry calls in commands ([#347](https://github.com/sanity-io/cli/issues/347)) ([6e22909](https://github.com/sanity-io/cli/commit/6e229091b41e581bf3ebe4be3540dca5a5b5c9c8))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @sanity/client to ^7.14.1 ([#327](https://github.com/sanity-io/cli/issues/327)) ([1bbb9bb](https://github.com/sanity-io/cli/commit/1bbb9bb1c464e9a36aef216e2c669afc972cbdeb))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.9
+  * peerDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.9
+
 ## [0.0.2-alpha.7](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.6...cli-test-v0.0.2-alpha.7) (2026-01-23)
 
 
