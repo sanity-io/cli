@@ -1,0 +1,3 @@
+{"_id":"author-1","_type":"author","_rev":"rev1","_createdAt":"2024-01-01T00:00:00Z","_updatedAt":"2024-01-01T00:00:00Z","name":"Test Author"}
+{"_id":"category-1","_type":"category","_rev":"rev2","_createdAt":"2024-01-01T00:00:00Z","_updatedAt":"2024-01-01T00:00:00Z","title":"Test Category"}
+{"_id":"post-1","_type":"post","_rev":"rev3","_createdAt":"2024-01-01T00:00:00Z","_updatedAt":"2024-01-01T00:00:00Z","title":"Test Post","author":{"_type":"reference","_ref":"author-1"}}

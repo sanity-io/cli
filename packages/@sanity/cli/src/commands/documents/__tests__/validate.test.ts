@@ -1,50 +1,57 @@
-import {testCommand} from '@sanity/cli-test'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {resolve} from 'node:path'
+
+import {type CliConfig, getCliConfig} from '@sanity/cli-core'
+import {testCommand, testFixture} from '@sanity/cli-test'
+import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {ValidateDocumentsCommand} from '../validate.js'
 
+const VALID_DOCS_PATH = resolve(
+  import.meta.dirname,
+  '../../../../test/__fixtures__/valid-documents.ndjson',
+)
+const INVALID_DOCS_PATH = resolve(
+  import.meta.dirname,
+  '../../../../test/__fixtures__/invalid-documents.ndjson',
+)
+
 const mocks = vi.hoisted(() => ({
   confirm: vi.fn(),
-  isFile: vi.fn(),
-  validate: vi.fn(),
+  getGlobalCliClient: vi.fn(),
 }))
 
-vi.mock('node:fs', () => ({
-  default: {
-    promises: {
-      stat: vi.fn().mockResolvedValue({
-        isFile: mocks.isFile,
-      }),
-    },
-    resolve: vi.fn((dir, file) => `/resolved/${file}`),
-  },
-}))
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    getGlobalCliClient: mocks.getGlobalCliClient,
+  }
+})
 
-vi.mock('@sanity/cli-core/ux', async () => {
-  const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
+vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core/ux')>()
   return {
     ...actual,
     confirm: mocks.confirm,
   }
 })
 
-vi.mock('../../../actions/documents/validate.js', () => ({
-  validateDocuments: mocks.validate,
-}))
-
-const mockConfirm = mocks.confirm
-const mockIsFile = mocks.isFile
-const mockValidate = mocks.validate
-
-const testProjectId = 'test-project'
-const testDataset = 'test-dataset'
+function setupMocksFromConfig(cliConfig: CliConfig) {
+  mocks.getGlobalCliClient.mockResolvedValue({
+    config: () => ({
+      dataset: cliConfig.api?.dataset,
+      projectId: cliConfig.api?.projectId,
+      token: 'test-token',
+    }),
+  })
+}
 
 const defaultMocks = {
-  cliConfig: {api: {dataset: testDataset, projectId: testProjectId}},
+  cliConfig: {api: {dataset: 'test-dataset', projectId: 'test-project'}},
   globalApiClient: {
     config: vi.fn(() => ({
-      dataset: testDataset,
-      projectId: testProjectId,
+      dataset: 'test-dataset',
+      projectId: 'test-project',
     })),
   } as never,
   projectRoot: {
@@ -55,144 +62,237 @@ const defaultMocks = {
   token: 'test-token',
 }
 
-describe('#documents:validate', () => {
+describe('#documents:validate', {timeout: 60 * 1000}, () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
-  beforeEach(() => {
-    mockConfirm.mockResolvedValue(true)
-    mockIsFile.mockReturnValue(true)
-  })
 
-  test('throws error if user enters unsupported level flag', async () => {
-    const {error} = await testCommand(ValidateDocumentsCommand, ['--level', 'critical'], {
+  test.each([
+    {
+      args: ['--level', 'critical'],
+      description: 'unsupported level flag',
+      expectedError: 'Expected --level=critical to be one of: error, warning, info',
+    },
+    {
+      args: ['--max-custom-validation-concurrency', 'abc'],
+      description: 'non-integer max-custom-validation-concurrency',
+      expectedError: 'Expected an integer but received: abc',
+    },
+    {
+      args: ['--max-fetch-concurrency', 'xyz'],
+      description: 'non-integer max-fetch-concurrency',
+      expectedError: 'Expected an integer but received: xyz',
+    },
+  ])('throws error for $description', async ({args, expectedError}) => {
+    const {error} = await testCommand(ValidateDocumentsCommand, args, {
       mocks: defaultMocks,
     })
 
-    expect(error?.message).toContain('Expected --level=critical to be one of: error, warning, info')
+    expect(error?.message).toContain(expectedError)
+    expect(error?.oclif?.exit).toBe(2)
   })
 
-  test('throws error if user enters non integer max-custom-validation-concurrency flag', async () => {
-    const {error} = await testCommand(
-      ValidateDocumentsCommand,
-      ['--max-custom-validation-concurrency', 'abc'],
-      {mocks: defaultMocks},
-    )
+  describe('basic-studio', () => {
+    let cwd: string
+    let cliConfig: CliConfig
 
-    expect(error?.message).toContain('Expected an integer but received: abc')
-  })
-
-  test('throws error if user enters non integer max-fetch-concurrency flag', async () => {
-    const {error} = await testCommand(
-      ValidateDocumentsCommand,
-      ['--max-fetch-concurrency', 'xyz'],
-      {mocks: defaultMocks},
-    )
-
-    expect(error?.message).toContain('Expected an integer but received: xyz')
-  })
-
-  test('prompts user to confirm by default and exits if they do not want to continue', async () => {
-    mockConfirm.mockResolvedValue(false)
-
-    const {stdout} = await testCommand(ValidateDocumentsCommand, [], {mocks: defaultMocks})
-
-    expect(stdout).toMatchInlineSnapshot(`
-      "⚠ Warning: This command downloads all documents from your dataset and processes them through your local schema within a simulated browser environment.
-
-      Potential pitfalls:
-
-      - Processes all documents locally (excluding assets). Large datasets may require more resources.
-      - Executes all custom validation functions. Some functions may need to be refactored for compatibility.
-      - Not all standard browser features are available and may cause issues while loading your Studio.
-      - Adheres to document permissions. Ensure this account can see all desired documents.
-      User aborted
-      "
-    `)
-    expect(mockConfirm).toHaveBeenCalledWith({
-      default: true,
-      message: expect.stringContaining('Are you sure you want to continue?'),
-    })
-    expect(mockConfirm).toHaveBeenCalled()
-  })
-
-  test('skips confirm if user uses yes flag', async () => {
-    await testCommand(ValidateDocumentsCommand, ['--y'], {mocks: defaultMocks})
-
-    expect(mockConfirm).not.toHaveBeenCalled()
-  })
-
-  test('exits if format is incorrect value', async () => {
-    const {error} = await testCommand(ValidateDocumentsCommand, ['--format', 'xml'], {
-      mocks: defaultMocks,
+    beforeAll(async () => {
+      cwd = await testFixture('basic-studio')
+      cliConfig = await getCliConfig(cwd)
     })
 
-    expect(error?.message).toContain(
-      "Did not recognize format 'xml'. Available formats are 'json', 'ndjson', and 'pretty'",
-    )
-  })
+    beforeEach(() => {
+      process.chdir(cwd)
+      setupMocksFromConfig(cliConfig)
+    })
 
-  test('exits if user inputs invalid file path in flag', async () => {
-    mockIsFile.mockReturnValue(false)
-
-    const {error} = await testCommand(
-      ValidateDocumentsCommand,
-      ['--file', '/non/existent/file.ndjson'],
-      {mocks: defaultMocks},
-    )
-
-    expect(error?.message).toContain("'--file' must point to a valid ndjson file or tarball")
-  })
-
-  test('validateDocuments is called with the correct params', async () => {
-    mockValidate.mockResolvedValue('warning')
-
-    await testCommand(
-      ValidateDocumentsCommand,
-      [
+    test('exits if format is incorrect value', async () => {
+      const {error} = await testCommand(ValidateDocumentsCommand, [
         '--yes',
-        '--dataset',
-        'my-dataset',
-        '--workspace',
-        'my-workspace',
-        '--level',
-        'info',
-        '--max-custom-validation-concurrency',
-        '10',
-        '--max-fetch-concurrency',
-        '50',
         '--file',
-        '/path/to/file.ndjson',
-      ],
-      {mocks: defaultMocks},
-    )
+        VALID_DOCS_PATH,
+        '--format',
+        'xml',
+      ])
 
-    expect(mockValidate).toHaveBeenCalledWith({
-      dataset: 'my-dataset',
-      level: 'info',
-      maxCustomValidationConcurrency: 10,
-      maxFetchConcurrency: 50,
-      ndjsonFilePath: expect.stringContaining('file.ndjson'),
-      reporter: expect.any(Function),
-      studioHost: undefined,
-      workDir: '/test/path',
-      workspace: 'my-workspace',
+      expect(error?.message).toContain(
+        "Did not recognize format 'xml'. Available formats are 'json', 'ndjson', and 'pretty'",
+      )
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('validates documents without markers and outputs empty NDJSON', async () => {
+      mocks.confirm.mockResolvedValue(true)
+
+      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
+        '--file',
+        VALID_DOCS_PATH,
+        '--format',
+        'ndjson',
+      ])
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('Warning:')
+      expect(stdout).toContain('reads all documents from your input file')
+      expect(stdout).toContain('Potential pitfalls:')
+      expect(stdout).toContain('processes them through your local schema')
+      expect(stdout).toContain('Checks for missing document references')
+      expect(mocks.confirm).toHaveBeenCalledWith({
+        default: true,
+        message: 'Are you sure you want to continue?',
+      })
+    })
+
+    test('aborts when user declines confirmation', async () => {
+      mocks.confirm.mockResolvedValue(false)
+
+      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
+        '--file',
+        VALID_DOCS_PATH,
+        '--format',
+        'ndjson',
+      ])
+
+      expect(error?.message).toBe('User aborted')
+      expect(error?.oclif?.exit).toBe(1)
+      expect(stdout).toContain('Warning:')
+      expect(mocks.confirm).toHaveBeenCalledWith({
+        default: true,
+        message: 'Are you sure you want to continue?',
+      })
+    })
+
+    test('shows file-specific warning when using --file flag', async () => {
+      mocks.confirm.mockResolvedValue(true)
+
+      const {stdout} = await testCommand(ValidateDocumentsCommand, [
+        '--file',
+        VALID_DOCS_PATH,
+        '--format',
+        'ndjson',
+      ])
+
+      expect(stdout).toContain('reads all documents from your input file')
+      expect(stdout).toContain('Checks for missing document references')
+    })
+
+    test('errors when --file points to a directory', async () => {
+      mocks.confirm.mockResolvedValue(true)
+
+      const {error} = await testCommand(ValidateDocumentsCommand, [
+        '--file',
+        '.',
+        '--format',
+        'ndjson',
+      ])
+
+      expect(error?.message).toBe("'--file' must point to a valid ndjson file or tarball")
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('validates documents without markers and outputs empty JSON array', async () => {
+      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
+        '--yes',
+        '--file',
+        VALID_DOCS_PATH,
+        '--format',
+        'json',
+      ])
+
+      expect(error).toBeUndefined()
+      const parsed = JSON.parse(stdout)
+      expect(Array.isArray(parsed)).toBe(true)
+      expect(parsed.length).toBe(0)
+    })
+
+    test('reports validation errors for documents with type mismatches', async () => {
+      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
+        '--yes',
+        '--file',
+        INVALID_DOCS_PATH,
+        '--format',
+        'ndjson',
+      ])
+
+      expect(error?.oclif?.exit).toBe(1)
+      expect(stdout).toContain('post-invalid-type')
+
+      const lines = stdout.trim().split('\n').filter(Boolean)
+      const invalidPost = lines.find((line) => {
+        const parsed = JSON.parse(line)
+        return parsed.documentId === 'post-invalid-type'
+      })
+      expect(invalidPost).toBeDefined()
+
+      const parsed = JSON.parse(invalidPost!)
+      expect(parsed.markers.length).toBeGreaterThan(0)
+      expect(parsed.markers.some((m: {level: string}) => m.level === 'error')).toBe(true)
+    })
+
+    test('filters markers by level correctly', async () => {
+      const {stdout} = await testCommand(ValidateDocumentsCommand, [
+        '--yes',
+        '--file',
+        INVALID_DOCS_PATH,
+        '--format',
+        'ndjson',
+        '--level',
+        'error',
+      ])
+
+      const lines = stdout.trim().split('\n').filter(Boolean)
+      expect(lines.length).toBeGreaterThan(0)
+
+      for (const line of lines) {
+        const parsed = JSON.parse(line)
+        expect(parsed.markers.length).toBeGreaterThan(0)
+        for (const marker of parsed.markers) {
+          expect(marker.level).toBe('error')
+        }
+      }
     })
   })
 
-  test('exits with code 1 if validateDocuments returns overall level as error', async () => {
-    mockValidate.mockResolvedValue('error')
+  describe('multi-workspace-studio', () => {
+    let cwd: string
+    let cliConfig: CliConfig
 
-    const {error} = await testCommand(ValidateDocumentsCommand, [], {mocks: defaultMocks})
+    beforeAll(async () => {
+      cwd = await testFixture('multi-workspace-studio')
+      cliConfig = await getCliConfig(cwd)
+    })
 
-    expect(error?.oclif?.exit).toBe(1)
-  })
+    beforeEach(() => {
+      process.chdir(cwd)
+      setupMocksFromConfig(cliConfig)
+    })
 
-  test('exits with code 0 if validateDocuments does not return overall level as error', async () => {
-    mockValidate.mockResolvedValue('warning')
+    test('works with multi-workspace studio using workspace flag', async () => {
+      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
+        '--yes',
+        '--file',
+        VALID_DOCS_PATH,
+        '--format',
+        'json',
+        '--workspace',
+        'production',
+      ])
 
-    const {error} = await testCommand(ValidateDocumentsCommand, [], {mocks: defaultMocks})
+      expect(error).toBeUndefined()
+      const parsed = JSON.parse(stdout)
+      expect(Array.isArray(parsed)).toBe(true)
+    })
 
-    expect(error).toBe(undefined)
+    test('fails when multiple workspaces exist and no workspace flag provided', async () => {
+      const {error} = await testCommand(ValidateDocumentsCommand, [
+        '--yes',
+        '--file',
+        VALID_DOCS_PATH,
+      ])
+
+      expect(error?.message).toContain('Multiple workspaces found')
+      expect(error?.message).toContain('--workspace')
+      expect(error?.oclif?.exit).toBe(1)
+    })
   })
 })
