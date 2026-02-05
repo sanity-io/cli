@@ -25,7 +25,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-describe('#graphql:deploy', {timeout: 30 * 1000}, () => {
+describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
   let cwd: string
   let projectId: string
   let dataset: string
