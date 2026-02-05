@@ -44,8 +44,7 @@ describe('#checkForUpdates', () => {
 
     // Clear cache keys
     const userConfig = getUserConfig()
-    userConfig.delete('cliLastUpdateCheck')
-    userConfig.delete('cliLastUpdateNag')
+    userConfig.delete('cliLastestRemoteVersion')
   })
 
   test('returns early if running on CI', async () => {
@@ -97,7 +96,7 @@ describe('#checkForUpdates', () => {
     const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
     const userConfig = getUserConfig()
-    userConfig.set('cliLastUpdateCheck', {
+    userConfig.set('cliLastestRemoteVersion', {
       updatedAt: recentTimestamp,
       value: '1.0.0',
     })
@@ -126,7 +125,7 @@ describe('#checkForUpdates', () => {
     expect(mockDebug).toHaveBeenCalledWith('Latest remote version is %s', '1.1.0')
 
     const userConfig = getUserConfig()
-    const cachedVersion = userConfig.get('cliLastUpdateCheck')
+    const cachedVersion = userConfig.get('cliLastestRemoteVersion')
     expect(cachedVersion).toMatchObject({
       updatedAt: expect.any(Number),
       value: '1.1.0',
@@ -147,12 +146,11 @@ describe('#checkForUpdates', () => {
     expect(mockDebug).toHaveBeenCalledWith('Checking for latest remote version')
     expect(mockGetLatestVersion).toHaveBeenCalled()
     expect(mockDebug).toHaveBeenCalledWith(
-      'Max time (%dms) reached waiting for latest version info',
-      300,
+      expect.stringContaining('Max time 300 reached waiting for latest version info'),
     )
 
     const userConfig = getUserConfig()
-    const cachedVersion = userConfig.get('cliLastUpdateCheck')
+    const cachedVersion = userConfig.get('cliLastestRemoteVersion')
     expect(cachedVersion).toBeUndefined()
   })
 
@@ -173,30 +171,8 @@ describe('#checkForUpdates', () => {
     )
 
     const userConfig = getUserConfig()
-    const cachedVersion = userConfig.get('cliLastUpdateCheck')
+    const cachedVersion = userConfig.get('cliLastestRemoteVersion')
     expect(cachedVersion).toBeUndefined()
-  })
-
-  test('returns early if notified within last 12 hours', async () => {
-    const {config} = await getCommandAndConfig('help')
-    const now = Date.now()
-    const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
-
-    const userConfig = getUserConfig()
-    userConfig.set('cliLastUpdateCheck', {
-      updatedAt: recentTimestamp,
-      value: '999.0.0',
-    })
-    userConfig.set('cliLastUpdateNag', {
-      updatedAt: recentTimestamp,
-      value: true,
-    })
-
-    await testHook<'init'>(checkForUpdates, {
-      config,
-    })
-
-    expect(mockDebug).toHaveBeenCalledWith('Less than 12 hours since last nag, skipping')
   })
 
   test('returns early if no cached version found', async () => {
@@ -218,7 +194,7 @@ describe('#checkForUpdates', () => {
     const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
     const userConfig = getUserConfig()
-    userConfig.set('cliLastUpdateCheck', {
+    userConfig.set('cliLastestRemoteVersion', {
       updatedAt: recentTimestamp,
       value: '1.0.0', // older than current
     })
@@ -236,7 +212,7 @@ describe('#checkForUpdates', () => {
     const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
     const userConfig = getUserConfig()
-    userConfig.set('cliLastUpdateCheck', {
+    userConfig.set('cliLastestRemoteVersion', {
       updatedAt: recentTimestamp,
       value: config.version, // same as current
     })
@@ -253,14 +229,9 @@ describe('#checkForUpdates', () => {
     process.chdir(cwd)
 
     const {config} = await getCommandAndConfig('help')
-    const now = Date.now()
-    const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
-    const userConfig = getUserConfig()
-    userConfig.set('cliLastUpdateCheck', {
-      updatedAt: recentTimestamp,
-      value: '999.0.0', // newer than current
-    })
+    // Mock fetching new version
+    mockGetLatestVersion.mockResolvedValueOnce('999.0.0')
 
     const {stderr} = await testHook<'init'>(checkForUpdates, {
       config,
@@ -270,12 +241,28 @@ describe('#checkForUpdates', () => {
     expect(stderr).toContain('Update available')
     expect(stderr).toContain('999.0.0')
     expect(stderr).toContain('pnpm')
+  })
 
-    const nagCache = userConfig.get('cliLastUpdateNag')
-    expect(nagCache).toMatchObject({
-      updatedAt: expect.any(Number),
-      value: true,
+  test('does not show notification when cache is hit', async () => {
+    const {config} = await getCommandAndConfig('help')
+    const now = Date.now()
+    const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
+
+    const userConfig = getUserConfig()
+    userConfig.set('cliLastestRemoteVersion', {
+      updatedAt: recentTimestamp,
+      value: '999.0.0', // newer than current
     })
+
+    const {stderr} = await testHook<'init'>(checkForUpdates, {
+      config,
+    })
+
+    expect(mockDebug).toHaveBeenCalledWith(
+      'Less than 12 hours since last check, skipping update check',
+    )
+    expect(mockDebug).toHaveBeenCalledWith('Update is available (%s)', '999.0.0')
+    expect(stderr).not.toContain('Update available')
   })
 
   test('shows yarn global add command when globally installed via yarn', async () => {
@@ -283,14 +270,9 @@ describe('#checkForUpdates', () => {
     mockIsInstalledUsingYarn.mockReturnValue(true)
 
     const {config} = await getCommandAndConfig('help')
-    const now = Date.now()
-    const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
-    const userConfig = getUserConfig()
-    userConfig.set('cliLastUpdateCheck', {
-      updatedAt: recentTimestamp,
-      value: '999.0.0', // newer than current
-    })
+    // Mock fetching new version
+    mockGetLatestVersion.mockResolvedValueOnce('999.0.0')
 
     const {stderr} = await testHook<'init'>(checkForUpdates, {
       config,

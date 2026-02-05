@@ -17,14 +17,16 @@ export async function fetchLatestVersionWithTimeout(
     ])
 
     if (result === null) {
-      debug('Max time (%dms) reached waiting for latest version info', timeout)
+      throw new Error(`Max time ${timeout} reached waiting for latest version info`)
     }
+
+    debug('Latest remote version is %s', result)
 
     return result
   } catch (err) {
     debug(
       `Failed to fetch latest version of ${packageName} from npm:\n${err instanceof Error ? err.stack : String(err)}`,
     )
-    return undefined
+    throw err
   }
 }

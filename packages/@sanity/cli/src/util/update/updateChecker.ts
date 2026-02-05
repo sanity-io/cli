@@ -33,17 +33,16 @@ export async function updateChecker(config: {
 
   const store = getUserConfig()
 
+  let showNotificationUpdate = true
+
   // Cache for latest version from npm
   const latestVersionCache = createExpiringConfig({
-    fetchValue: async () => {
-      const version = await fetchLatestVersionWithTimeout(config.name, CHECK_TIMEOUT)
-      if (version) {
-        debug('Latest remote version is %s', version)
-      }
-      return version
+    fetchValue: async () => fetchLatestVersionWithTimeout(config.name, CHECK_TIMEOUT),
+    key: 'cliLastestRemoteVersion',
+    onCacheHit: () => {
+      debug('Less than 12 hours since last check, skipping update check')
+      showNotificationUpdate = false
     },
-    key: 'cliLastUpdateCheck',
-    onCacheHit: () => debug('Less than 12 hours since last check, skipping update check'),
     onFetch: () => debug('Checking for latest remote version'),
     store,
     ttl: TWELVE_HOURS,
@@ -71,18 +70,7 @@ export async function updateChecker(config: {
 
   debug('Update is available (%s)', latestVersion)
 
-  // Cache for notification throttle
-  const updateNag = createExpiringConfig({
-    fetchValue: async () => {
-      await showUpdateNotification(config.version, latestVersion)
-      return true
-    },
-    key: 'cliLastUpdateNag',
-    onCacheHit: () => debug('Less than 12 hours since last nag, skipping'),
-    store,
-    ttl: TWELVE_HOURS,
-    validateValue: (value): value is true => value === true,
-  })
-
-  await updateNag.get()
+  if (showNotificationUpdate) {
+    await showUpdateNotification(config.version, latestVersion)
+  }
 }

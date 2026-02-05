@@ -9,7 +9,7 @@ import {updateChecker} from '../../util/update/updateChecker.js'
 export const checkForUpdates: Hook.Init = async function ({config}) {
   try {
     await updateChecker(config)
-  } catch {
-    // Silently fail - never interrupt user
+  } catch (err) {
+    console.error(`Error checking for updates: ${err}`)
   }
 }

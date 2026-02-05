@@ -78,9 +78,6 @@ export function createExpiringConfig<Type>({
         onRevalidate()
       }
 
-      if (currentFetch) {
-        return currentFetch
-      }
       onFetch()
 
       currentFetch = Promise.resolve(fetchValue())
@@ -88,8 +85,6 @@ export function createExpiringConfig<Type>({
       if (!validateValue(nextValue)) {
         throw new Error('Fetched value is invalid')
       }
-
-      currentFetch = null
 
       store.set(key, {
         updatedAt: Date.now(),
