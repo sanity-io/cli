@@ -1,6 +1,7 @@
 import DOMPurify from 'isomorphic-dompurify'
 import {renderToReadableStream} from 'react-dom/server'
 
+import {manifestDebug} from './debug.js'
 import {config} from './purifyConfig.js'
 import {SchemaIcon, type SchemaIconProps} from './SchemaIcon.js'
 
@@ -21,7 +22,8 @@ export const resolveIcon = async (props: SchemaIconProps): Promise<string | null
     }
     const html = new TextDecoder().decode(Buffer.concat(chunks))
     return DOMPurify.sanitize(html.trim(), config)
-  } catch {
+  } catch (error) {
+    manifestDebug('Error resolving icon', error)
     return null
   }
 }

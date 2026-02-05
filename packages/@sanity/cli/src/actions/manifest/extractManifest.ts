@@ -7,6 +7,7 @@ import {spinner} from '@sanity/cli-core/ux'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
 import {type ExtractSchemaWorkerError} from '../schema/types.js'
 import {SchemaExtractionError} from '../schema/utils/SchemaExtractionError.js'
+import {manifestDebug} from './debug.js'
 import {
   type CreateManifest,
   type CreateWorkspaceManifest,
@@ -106,6 +107,7 @@ export async function extractManifest(outPath: string): Promise<void> {
 
     spin.succeed(`Extracted manifest (${manifestDuration.toFixed(0)}ms)`)
   } catch (err) {
+    manifestDebug('Error extracting manifest', err)
     spin.fail()
 
     throw err

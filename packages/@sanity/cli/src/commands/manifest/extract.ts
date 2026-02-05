@@ -1,6 +1,7 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 
+import {manifestDebug} from '../../actions/manifest/debug.js'
 import {extractManifest} from '../../actions/manifest/extractManifest.js'
 import {formatSchemaValidation} from '../../actions/schema/formatSchemaValidation.js'
 import {SchemaExtractionError} from '../../actions/schema/utils/SchemaExtractionError.js'
@@ -38,6 +39,7 @@ export class ExtractManifestCommand extends SanityCommand<typeof ExtractManifest
     try {
       await extractManifest(flags.path)
     } catch (error) {
+      manifestDebug('Error extracting manifest in command', error)
       if (
         error instanceof SchemaExtractionError &&
         error.validation &&
