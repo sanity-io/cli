@@ -6,13 +6,7 @@
   "prConcurrentLimit": 3,
   "automerge": true,
   "dependencyDashboardApproval": false,
-  "ignorePaths": [
-    "**/node_modules/**",
-    "**/bower_components/**",
-    "**/tests/**",
-    "**/fixtures/**",
-    "packages/@sanity/original-cli/**"
-  ],
+  "ignorePaths": ["**/node_modules/**", "**/bower_components/**", "**/tests/**", "**/fixtures/**"],
   "minimumReleaseAge": "3 days",
   "packageRules": [
     {
