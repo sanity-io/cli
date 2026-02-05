@@ -221,8 +221,8 @@ describe('#debug', () => {
 
     // Mock the /me API endpoint to return user info
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: USERS_API_VERSION,
+      projectId: 'project123',
       uri: '/users/me',
     }).reply(200, {
       email: 'test@example.com',
@@ -232,8 +232,8 @@ describe('#debug', () => {
 
     // Mock the project API endpoint to return no project (404)
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: PROJECTS_API_VERSION,
+      projectId: 'project123',
       uri: '/projects/project123',
     }).reply(404)
 
@@ -256,8 +256,8 @@ describe('#debug', () => {
 
     // Mock the /me API endpoint to return user info
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: USERS_API_VERSION,
+      projectId: 'project123',
       uri: '/users/me',
     }).reply(200, {
       email: 'test@example.com',
@@ -267,8 +267,8 @@ describe('#debug', () => {
 
     // Mock the project API endpoint to return project info
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: PROJECTS_API_VERSION,
+      projectId: 'project123',
       uri: '/projects/project123',
     }).reply(200, {
       displayName: 'Test Project',
@@ -337,8 +337,8 @@ describe('#debug', () => {
 
     // Mock the /me API endpoint to return user info
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: USERS_API_VERSION,
+      projectId: 'project123',
       uri: '/users/me',
     }).reply(200, {
       email: 'test@example.com',
@@ -348,8 +348,8 @@ describe('#debug', () => {
 
     // Mock the project API endpoint to return project info
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: PROJECTS_API_VERSION,
+      projectId: 'project123',
       uri: '/projects/project123',
     }).reply(200, {
       displayName: 'Test Project',
@@ -390,8 +390,8 @@ describe('#debug', () => {
 
     // Mock the /me API endpoint to return user info
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: USERS_API_VERSION,
+      projectId: 'project123',
       uri: '/users/me',
     }).reply(200, {
       email: 'test@example.com',
@@ -401,8 +401,8 @@ describe('#debug', () => {
 
     // Mock the project API endpoint to return project info
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: PROJECTS_API_VERSION,
+      projectId: 'project123',
       uri: '/projects/project123',
     }).reply(200, {
       displayName: 'Test Project',
@@ -430,8 +430,8 @@ describe('#debug', () => {
 
     // Mock the /me API endpoint to return an error
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: USERS_API_VERSION,
+      projectId: 'project123',
       uri: '/users/me',
     }).reply(500, {
       error: 'Internal server error',
@@ -457,8 +457,8 @@ describe('#debug', () => {
 
     // Mock the /me API endpoint to return user info
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: USERS_API_VERSION,
+      projectId: 'project123',
       uri: '/users/me',
     }).reply(200, {
       email: 'test@example.com',
@@ -468,8 +468,8 @@ describe('#debug', () => {
 
     // Mock the project API endpoint to return an error
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: PROJECTS_API_VERSION,
+      projectId: 'project123',
       uri: '/projects/project123',
     }).reply(404, {
       error: 'Project not found',
@@ -494,8 +494,8 @@ describe('#debug', () => {
 
     // Mock the /me API endpoint to return user info
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: USERS_API_VERSION,
+      projectId: 'project123',
       uri: '/users/me',
     }).reply(200, {
       email: 'test@example.com',
@@ -505,8 +505,8 @@ describe('#debug', () => {
 
     // Mock the project API endpoint to return null
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: PROJECTS_API_VERSION,
+      projectId: 'project123',
       uri: '/projects/project123',
     }).reply(200, () => {
       return null
@@ -531,8 +531,8 @@ describe('#debug', () => {
 
     // Mock the /me API endpoint to return user info
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: USERS_API_VERSION,
+      projectId: 'project123',
       uri: '/users/me',
     }).reply(200, {
       email: 'test@example.com',
@@ -542,8 +542,8 @@ describe('#debug', () => {
 
     // Mock the project API endpoint to return project with no members
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: PROJECTS_API_VERSION,
+      projectId: 'project123',
       uri: '/projects/project123',
     }).reply(200, {
       displayName: 'Test Project',
@@ -570,8 +570,8 @@ describe('#debug', () => {
 
     // Mock the /me API endpoint to return user info
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: USERS_API_VERSION,
+      projectId: 'project123',
       uri: '/users/me',
     }).reply(200, {
       email: 'test@example.com',
@@ -581,8 +581,8 @@ describe('#debug', () => {
 
     // Mock the project API endpoint to return project with member but no roles
     mockApi({
-      apiHost: 'https://project123.api.sanity.io',
       apiVersion: PROJECTS_API_VERSION,
+      projectId: 'project123',
       uri: '/projects/project123',
     }).reply(200, {
       displayName: 'Test Project',

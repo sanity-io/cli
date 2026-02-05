@@ -66,9 +66,9 @@ describe('#dataset:create', () => {
     mockListDatasets.mockResolvedValue([])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: '/features',
     }).reply(200, [])
     mockCreateDataset.mockResolvedValue(undefined as never)
@@ -86,9 +86,9 @@ describe('#dataset:create', () => {
   test('prompts for dataset name when not provided', async () => {
     mockListDatasets.mockResolvedValue([])
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: '/features',
     }).reply(200, [])
     mockCreateDataset.mockResolvedValue(undefined as never)
@@ -131,9 +131,9 @@ describe('#dataset:create', () => {
       },
     ])
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: '/features',
     }).reply(200, [])
 
@@ -161,9 +161,9 @@ describe('#dataset:create', () => {
   test('handles dataset creation errors', async () => {
     mockListDatasets.mockResolvedValue([])
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: '/features',
     }).reply(200, [])
     mockCreateDataset.mockRejectedValue(new Error('API Error'))
@@ -179,9 +179,9 @@ describe('#dataset:create', () => {
   test('prompts for dataset visibility when private datasets available and no flag provided', async () => {
     mockListDatasets.mockResolvedValue([])
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: '/features',
     }).reply(200, ['privateDataset'])
     mockCreateDataset.mockResolvedValue(undefined as never)
@@ -258,9 +258,9 @@ describe('#dataset:create', () => {
     ])('$testName', async ({expectedAclMode, expectWarning, hasPrivateFeature, visibility}) => {
       mockListDatasets.mockResolvedValue([])
       mockApi({
-        apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: PROJECT_FEATURES_API_VERSION,
         method: 'get',
+        projectId: testProjectId,
         uri: '/features',
       }).reply(200, hasPrivateFeature ? ['privateDataset'] : [])
       mockCreateDataset.mockResolvedValue(undefined as never)
@@ -284,9 +284,9 @@ describe('#dataset:create', () => {
 
   test('handles client request failure independently from listDatasets', async () => {
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: '/features',
     }).reply(500, {error: 'Features API error'})
 

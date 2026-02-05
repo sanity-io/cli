@@ -84,9 +84,9 @@ describe('#dataset:copy', () => {
   describe('list mode', () => {
     test('lists copy jobs successfully', async () => {
       mockApi({
-        apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: DATASET_API_VERSION,
         method: 'get',
+        projectId: testProjectId,
         uri: `/projects/${testProjectId}/datasets/copy`,
       }).reply(200, [
         {
@@ -120,9 +120,9 @@ describe('#dataset:copy', () => {
 
     test('lists copy jobs with offset and limit', async () => {
       mockApi({
-        apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: DATASET_API_VERSION,
         method: 'get',
+        projectId: testProjectId,
         query: {
           limit: '10',
           offset: '2',
@@ -165,9 +165,9 @@ describe('#dataset:copy', () => {
 
     test('shows message when no copy jobs exist', async () => {
       mockApi({
-        apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: DATASET_API_VERSION,
         method: 'get',
+        projectId: testProjectId,
         uri: `/projects/${testProjectId}/datasets/copy`,
       }).reply(200, [])
 
@@ -178,9 +178,9 @@ describe('#dataset:copy', () => {
 
     test('handles errors when listing copy jobs', async () => {
       mockApi({
-        apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: DATASET_API_VERSION,
         method: 'get',
+        projectId: testProjectId,
         uri: `/projects/${testProjectId}/datasets/copy`,
       }).reply(500, {
         error: 'API Error',
@@ -286,9 +286,9 @@ describe('#dataset:copy', () => {
         createMockDataset('staging'),
       ])
       mockApi({
-        apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: DATASET_API_VERSION,
         method: 'put',
+        projectId: testProjectId,
         uri: `/datasets/production/copy`,
       }).reply(200, {jobId: 'job-456'})
       mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
@@ -313,9 +313,9 @@ describe('#dataset:copy', () => {
       mockSelect.mockResolvedValueOnce('production')
       mockInput.mockResolvedValueOnce('backup')
       mockApi({
-        apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: DATASET_API_VERSION,
         method: 'put',
+        projectId: testProjectId,
         uri: `/datasets/production/copy`,
       }).reply(200, {jobId: 'job-789'})
       mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
@@ -393,9 +393,9 @@ describe('#dataset:copy', () => {
         createMockDataset('staging'),
       ])
       mockApi({
-        apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: DATASET_API_VERSION,
         method: 'put',
+        projectId: testProjectId,
         uri: `/datasets/production/copy`,
       }).reply(200, {jobId: 'job-skip'})
       mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
@@ -411,9 +411,9 @@ describe('#dataset:copy', () => {
         createMockDataset('staging'),
       ])
       mockApi({
-        apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: DATASET_API_VERSION,
         method: 'put',
+        projectId: testProjectId,
         uri: `/datasets/production/copy`,
       }).reply(200, {jobId: 'job-detach'})
 
@@ -432,9 +432,9 @@ describe('#dataset:copy', () => {
         createMockDataset('staging'),
       ])
       mockApi({
-        apiHost: `https://${testProjectId}.api.sanity.io`,
         apiVersion: DATASET_API_VERSION,
         method: 'put',
+        projectId: testProjectId,
         uri: `/datasets/production/copy`,
       }).reply(500, {
         error: 'Insufficient permissions',

@@ -1,5 +1,5 @@
 import {confirm} from '@sanity/cli-core/ux'
-import {testCommand} from '@sanity/cli-test'
+import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -13,20 +13,6 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-function mockUserApplicationsApi(options: {
-  method?: 'DELETE' | 'GET'
-  query?: Record<string, string>
-  uri: string
-}) {
-  const {method = 'GET', query = {}, uri} = options
-  const apiHost = 'https://api.sanity.io'
-  const apiVersion = 'v2024-08-01'
-
-  return nock(apiHost)
-    [method.toLowerCase() as 'delete' | 'get'](`/${apiVersion}${uri}`)
-    .query({tag: 'sanity.cli', ...query})
-}
-
 describe('#undeploy', () => {
   afterEach(() => {
     vi.clearAllMocks()
@@ -36,7 +22,8 @@ describe('#undeploy', () => {
   })
 
   test('undeploys studio when studioHost is configured', async () => {
-    mockUserApplicationsApi({
+    mockApi({
+      apiVersion: 'v2024-08-01',
       query: {appHost: 'my-host', appType: 'studio'},
       uri: '/projects/test/user-applications',
     }).reply(200, {
@@ -44,8 +31,9 @@ describe('#undeploy', () => {
       id: 'app-id',
     })
 
-    mockUserApplicationsApi({
-      method: 'DELETE',
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      method: 'delete',
       query: {appType: 'studio'},
       uri: '/user-applications/app-id',
     }).reply(200)
@@ -64,7 +52,8 @@ describe('#undeploy', () => {
   })
 
   test('undeploys application when app id is configured', async () => {
-    mockUserApplicationsApi({
+    mockApi({
+      apiVersion: 'v2024-08-01',
       query: {appType: 'coreApp'},
       uri: '/user-applications/core-id',
     }).reply(200, {
@@ -72,8 +61,9 @@ describe('#undeploy', () => {
       id: 'core-id',
     })
 
-    mockUserApplicationsApi({
-      method: 'DELETE',
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      method: 'delete',
       query: {appType: 'coreApp'},
       uri: '/user-applications/core-id',
     }).reply(200)
@@ -92,7 +82,8 @@ describe('#undeploy', () => {
   })
 
   test('does nothing if no application found', async () => {
-    mockUserApplicationsApi({
+    mockApi({
+      apiVersion: 'v2024-08-01',
       query: {appHost: 'my-host', appType: 'studio'},
       uri: '/projects/test/user-applications',
     }).reply(404)
@@ -111,7 +102,8 @@ describe('#undeploy', () => {
   })
 
   test('does nothing if no application found (app config)', async () => {
-    mockUserApplicationsApi({
+    mockApi({
+      apiVersion: 'v2024-08-01',
       query: {appType: 'coreApp'},
       uri: '/user-applications/core-id',
     }).reply(404)
@@ -159,7 +151,8 @@ describe('#undeploy', () => {
   })
 
   test('does not undeploy if prompt is rejected', async () => {
-    mockUserApplicationsApi({
+    mockApi({
+      apiVersion: 'v2024-08-01',
       query: {appHost: 'my-host', appType: 'studio'},
       uri: '/projects/test/user-applications',
     }).reply(200, {
@@ -183,7 +176,8 @@ describe('#undeploy', () => {
   })
 
   test('undeploys if prompt is accepted', async () => {
-    mockUserApplicationsApi({
+    mockApi({
+      apiVersion: 'v2024-08-01',
       query: {appHost: 'my-host', appType: 'studio'},
       uri: '/projects/test/user-applications',
     }).reply(200, {
@@ -191,8 +185,9 @@ describe('#undeploy', () => {
       id: 'app-id',
     })
 
-    mockUserApplicationsApi({
-      method: 'DELETE',
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      method: 'delete',
       query: {appType: 'studio'},
       uri: '/user-applications/app-id',
     }).reply(200)
@@ -213,7 +208,8 @@ describe('#undeploy', () => {
   })
 
   test('undeploys app if prompt is accepted (app config)', async () => {
-    mockUserApplicationsApi({
+    mockApi({
+      apiVersion: 'v2024-08-01',
       query: {appType: 'coreApp'},
       uri: '/user-applications/core-id',
     }).reply(200, {
@@ -222,8 +218,9 @@ describe('#undeploy', () => {
       title: 'core-app',
     })
 
-    mockUserApplicationsApi({
-      method: 'DELETE',
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      method: 'delete',
       query: {appType: 'coreApp'},
       uri: '/user-applications/core-id',
     }).reply(200)
@@ -251,7 +248,8 @@ describe('#undeploy', () => {
   })
 
   test('undeploys app with missing title and reports using fallback value', async () => {
-    mockUserApplicationsApi({
+    mockApi({
+      apiVersion: 'v2024-08-01',
       query: {appType: 'coreApp'},
       uri: '/user-applications/core-id',
     }).reply(200, {
@@ -260,8 +258,9 @@ describe('#undeploy', () => {
       // title missing
     })
 
-    mockUserApplicationsApi({
-      method: 'DELETE',
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      method: 'delete',
       query: {appType: 'coreApp'},
       uri: '/user-applications/core-id',
     }).reply(200)
@@ -288,7 +287,8 @@ describe('#undeploy', () => {
   })
 
   test('handles generic errors', async () => {
-    mockUserApplicationsApi({
+    mockApi({
+      apiVersion: 'v2024-08-01',
       query: {appHost: 'my-host', appType: 'studio'},
       uri: '/projects/test/user-applications',
     }).reply(500, {message: 'Generic error'})
@@ -310,15 +310,17 @@ describe('#undeploy', () => {
   test('undeploys studio using deployment.appId', async () => {
     const appHost = 'my-studio'
 
-    mockUserApplicationsApi({
+    mockApi({
+      apiVersion: 'v2024-08-01',
       uri: '/projects/test/user-applications/app-id',
     }).reply(200, {
       appHost,
       id: 'app-id',
     })
 
-    mockUserApplicationsApi({
-      method: 'DELETE',
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      method: 'delete',
       query: {appType: 'studio'},
       uri: '/user-applications/app-id',
     }).reply(200)
@@ -340,15 +342,17 @@ describe('#undeploy', () => {
     const appHost = 'my-host'
 
     // Should call by appId, NOT by appHost
-    mockUserApplicationsApi({
+    mockApi({
+      apiVersion: 'v2024-08-01',
       uri: '/projects/test/user-applications/app-id',
     }).reply(200, {
       appHost,
       id: 'app-id',
     })
 
-    mockUserApplicationsApi({
-      method: 'DELETE',
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      method: 'delete',
       query: {appType: 'studio'},
       uri: '/user-applications/app-id',
     }).reply(200)
@@ -368,7 +372,8 @@ describe('#undeploy', () => {
   })
 
   test('handles error when deployment.appId does not exist for the org', async () => {
-    mockUserApplicationsApi({
+    mockApi({
+      apiVersion: 'v2024-08-01',
       uri: '/projects/test/user-applications/non-existent-app-id',
     }).reply(404, {
       message: 'Application not found',

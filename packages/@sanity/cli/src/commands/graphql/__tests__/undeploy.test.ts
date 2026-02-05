@@ -52,9 +52,9 @@ describe('graphql undeploy', () => {
     mockConfirm.mockResolvedValueOnce(true)
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: GRAPHQL_API_VERSION,
       method: 'delete',
+      projectId: 'test-project',
       uri: '/apis/graphql/production/default',
     }).reply(204)
 
@@ -72,9 +72,9 @@ describe('graphql undeploy', () => {
     mockConfirm.mockResolvedValueOnce(true)
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: GRAPHQL_API_VERSION,
       method: 'delete',
+      projectId: 'test-project',
       uri: '/apis/graphql/production/beta',
     }).reply(204)
 
@@ -92,9 +92,9 @@ describe('graphql undeploy', () => {
     mockConfirm.mockResolvedValueOnce(true)
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: GRAPHQL_API_VERSION,
       method: 'delete',
+      projectId: 'test-project',
       uri: '/apis/graphql/staging/default',
     }).reply(204)
 
@@ -107,9 +107,9 @@ describe('graphql undeploy', () => {
     mockConfirm.mockResolvedValueOnce(true)
 
     mockApi({
-      apiHost: 'https://custom-project.api.sanity.io',
       apiVersion: GRAPHQL_API_VERSION,
       method: 'delete',
+      projectId: 'custom-project',
       uri: '/apis/graphql/production/default',
     }).reply(204)
 
@@ -124,9 +124,9 @@ describe('graphql undeploy', () => {
     mockConfirm.mockResolvedValue(true)
 
     mockApi({
-      apiHost: 'https://custom-project.api.sanity.io',
       apiVersion: GRAPHQL_API_VERSION,
       method: 'delete',
+      projectId: 'custom-project',
       uri: '/apis/graphql/staging/experimental',
     }).reply(204)
 
@@ -146,9 +146,9 @@ describe('graphql undeploy', () => {
 
   test('successfully undeploys with --force flag (skips confirmation)', async () => {
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: GRAPHQL_API_VERSION,
       method: 'delete',
+      projectId: 'test-project',
       uri: '/apis/graphql/production/default',
     }).reply(204)
 
@@ -179,9 +179,9 @@ describe('graphql undeploy', () => {
     ])
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: GRAPHQL_API_VERSION,
       method: 'delete',
+      projectId: 'test-project',
       uri: '/apis/graphql/ios-dataset/mobile',
     }).reply(204)
 
@@ -223,9 +223,9 @@ describe('graphql undeploy', () => {
     ])
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: GRAPHQL_API_VERSION,
       method: 'delete',
+      projectId: 'test-project',
       uri: '/apis/graphql/staging/default',
     }).reply(204)
 
@@ -251,9 +251,9 @@ describe('graphql undeploy', () => {
     ])
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: GRAPHQL_API_VERSION,
       method: 'delete',
+      projectId: 'test-project',
       uri: '/apis/graphql/production/default',
     }).reply(204)
 
@@ -281,9 +281,9 @@ describe('graphql undeploy', () => {
     ])
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: GRAPHQL_API_VERSION,
       method: 'delete',
+      projectId: 'test-project',
       uri: '/apis/graphql/production/beta',
     }).reply(204)
 
@@ -327,9 +327,9 @@ describe('graphql undeploy', () => {
     mockConfirm.mockResolvedValue(true)
 
     mockApi({
-      apiHost: 'https://test-project.api.sanity.io',
       apiVersion: GRAPHQL_API_VERSION,
       method: 'delete',
+      projectId: 'test-project',
       uri: '/apis/graphql/production/default',
     }).reply(404, {message: 'GraphQL API not found'})
 

@@ -51,16 +51,16 @@ describe('#dataset:alias:link', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'development'}] as never)
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [{datasetName: null, name: 'staging'}])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'patch',
+      projectId: testProjectId,
       uri: `/aliases/staging`,
     }).reply(200, {aliasName: 'staging', datasetName: 'production'})
 
@@ -75,16 +75,16 @@ describe('#dataset:alias:link', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'development'}] as never)
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [{datasetName: 'development', name: 'staging'}])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'patch',
+      projectId: testProjectId,
       uri: `/aliases/staging`,
     }).reply(200, {aliasName: 'staging', datasetName: 'production'})
 
@@ -102,16 +102,16 @@ describe('#dataset:alias:link', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}] as never)
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [{datasetName: null, name: 'staging'}])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'patch',
+      projectId: testProjectId,
       uri: `/aliases/staging`,
     }).reply(200, {aliasName: 'staging', datasetName: 'production'})
 
@@ -153,9 +153,9 @@ describe('#dataset:alias:link', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}] as never)
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [{datasetName: null, name: 'staging'}])
 
@@ -171,9 +171,9 @@ describe('#dataset:alias:link', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}] as never)
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [{datasetName: null, name: 'staging'}])
 
@@ -189,9 +189,9 @@ describe('#dataset:alias:link', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}] as never)
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [{datasetName: 'production', name: 'staging'}])
 
@@ -207,9 +207,9 @@ describe('#dataset:alias:link', () => {
     mockListDatasets.mockResolvedValue([] as never)
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [{datasetName: null, name: 'staging'}])
 
@@ -223,16 +223,16 @@ describe('#dataset:alias:link', () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}] as never)
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [{datasetName: null, name: 'staging'}])
 
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'patch',
+      projectId: testProjectId,
       uri: `/aliases/staging`,
     }).reply(500, {error: 'API Error', message: 'API Error'})
 

@@ -55,9 +55,9 @@ describe('#dataset:list', () => {
       {name: 'development'} as never,
     ])
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [])
 
@@ -71,9 +71,9 @@ describe('#dataset:list', () => {
   test('lists datasets and aliases successfully', async () => {
     mockListDatasets.mockResolvedValue([{name: 'production'} as never, {name: 'test'} as never])
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [
       {datasetName: 'production', name: 'prod'},
@@ -89,9 +89,9 @@ describe('#dataset:list', () => {
   test('handles unlinked aliases', async () => {
     mockListDatasets.mockResolvedValue([{name: 'production'} as never])
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [
       {datasetName: 'production', name: 'prod'},
@@ -107,9 +107,9 @@ describe('#dataset:list', () => {
   test('handles empty dataset list', async () => {
     mockListDatasets.mockResolvedValue([])
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [])
 
@@ -122,9 +122,9 @@ describe('#dataset:list', () => {
   test('handles alias fetch failure gracefully', async () => {
     mockListDatasets.mockResolvedValue([{name: 'production'} as never])
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(500, {
       error: 'Alias service unavailable',
@@ -153,9 +153,9 @@ describe('#dataset:list', () => {
     Object.assign(listError, {statusCode: 500})
     mockListDatasets.mockRejectedValue(listError)
     mockApi({
-      apiHost: `https://${testProjectId}.api.sanity.io`,
       apiVersion: DATASET_API_VERSION,
       method: 'get',
+      projectId: testProjectId,
       uri: `/aliases`,
     }).reply(200, [])
 
