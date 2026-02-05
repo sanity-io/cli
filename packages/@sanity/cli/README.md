@@ -3060,7 +3060,7 @@ EXAMPLES
     $ sanity typegen generate
 ```
 
-_See code: [@sanity/codegen](https://github.com/sanity-io/codegen/blob/v5.9.1/src/commands/typegen/generate.ts)_
+_See code: [@sanity/codegen](https://github.com/sanity-io/codegen/blob/v5.9.2/src/commands/typegen/generate.ts)_
 
 ## `sanity undeploy`
 

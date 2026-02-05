@@ -31,6 +31,7 @@ vi.mock('@sanity/cli-core', async () => {
 describe('#documents:query', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   test('executes query successfully with basic options', async () => {
@@ -64,8 +65,7 @@ describe('#documents:query', () => {
     mockFetch.mockResolvedValue(mockResults)
 
     // Set FORCE_COLOR to enable colorization
-    const originalForceColor = process.env.FORCE_COLOR
-    process.env.FORCE_COLOR = '1'
+    vi.stubEnv('FORCE_COLOR', '1')
 
     const {stdout} = await testCommand(QueryDocumentCommand, ['*[_type == "movie"]', '--pretty'], {
       capture: {
@@ -73,13 +73,6 @@ describe('#documents:query', () => {
       },
       mocks: defaultMocks,
     })
-
-    // Reset FORCE_COLOR
-    if (originalForceColor === undefined) {
-      delete process.env.FORCE_COLOR
-    } else {
-      process.env.FORCE_COLOR = originalForceColor
-    }
 
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
     expect(stdout).toContain('"_id"')
@@ -239,7 +232,5 @@ describe('#documents:query', () => {
 
     expect(stdout).toContain('"_id": "test"')
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
-
-    vi.unstubAllEnvs()
   })
 })
