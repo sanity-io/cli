@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.1.0-alpha.9](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.8...cli-core-v0.1.0-alpha.9) (2026-02-05)
+
+
+### Features
+
+* add typegen generate command ([#340](https://github.com/sanity-io/cli/issues/340)) ([3230469](https://github.com/sanity-io/cli/commit/32304690cedcb4215e02d128e90576a56846cc16))
+* allow making telemetry calls from CLI ([#346](https://github.com/sanity-io/cli/issues/346)) ([41ef21e](https://github.com/sanity-io/cli/commit/41ef21eb1c3d6c1854b91bb0c953aa8596e39566))
+* make telemetry calls in commands ([#347](https://github.com/sanity-io/cli/issues/347)) ([6e22909](https://github.com/sanity-io/cli/commit/6e229091b41e581bf3ebe4be3540dca5a5b5c9c8))
+
+
+### Bug Fixes
+
+* **core:** fixes issue with resolving plugins in studio config ([#349](https://github.com/sanity-io/cli/issues/349)) ([71689bf](https://github.com/sanity-io/cli/commit/71689bf6e0f36590d61b03c37c90527a61ec8224))
+* **deps:** update dependency @inquirer/prompts to ^8.2.0 ([#342](https://github.com/sanity-io/cli/issues/342)) ([e4bdbe2](https://github.com/sanity-io/cli/commit/e4bdbe2d6e632043f31bcafed118eeee036852cc))
+* **documents:** fixes documents validate not working ([#386](https://github.com/sanity-io/cli/issues/386)) ([9a3337b](https://github.com/sanity-io/cli/commit/9a3337bd1d6c4af799bd1ef729414f45de2e8d8a))
+* **schema:** fixes schema extract command ([#375](https://github.com/sanity-io/cli/issues/375)) ([6382401](https://github.com/sanity-io/cli/commit/63824011f8cd64bb2f0ec422e51701fc4c8e6140))
+
 ## [0.1.0-alpha.8](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.7...cli-core-v0.1.0-alpha.8) (2026-01-23)
 
 

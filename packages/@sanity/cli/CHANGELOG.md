@@ -1,5 +1,46 @@
 # Changelog
 
+## [6.0.0-alpha.9](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.8...cli-v6.0.0-alpha.9) (2026-02-05)
+
+
+### Features
+
+* add typegen generate command ([#340](https://github.com/sanity-io/cli/issues/340)) ([3230469](https://github.com/sanity-io/cli/commit/32304690cedcb4215e02d128e90576a56846cc16))
+* allow making telemetry calls from CLI ([#346](https://github.com/sanity-io/cli/issues/346)) ([41ef21e](https://github.com/sanity-io/cli/commit/41ef21eb1c3d6c1854b91bb0c953aa8596e39566))
+* **graphql:** add graphql deploy command ([#366](https://github.com/sanity-io/cli/issues/366)) ([fdb407b](https://github.com/sanity-io/cli/commit/fdb407bd21a379cacf0141728c7b657fe596340a))
+* inject env variables before the commands are run ([#297](https://github.com/sanity-io/cli/issues/297)) ([eb01a5f](https://github.com/sanity-io/cli/commit/eb01a5f74c19824425cf83e0e95e6e5bc0857736))
+* make telemetry calls in commands ([#347](https://github.com/sanity-io/cli/issues/347)) ([6e22909](https://github.com/sanity-io/cli/commit/6e229091b41e581bf3ebe4be3540dca5a5b5c9c8))
+* **mcp:** moving latest updates from old cli ([#352](https://github.com/sanity-io/cli/issues/352)) ([92c3d3d](https://github.com/sanity-io/cli/commit/92c3d3df744a03bacff55b2c60ddf85749533c6b))
+* **projects:** migrating `projects create` command ([#336](https://github.com/sanity-io/cli/issues/336)) ([11e8592](https://github.com/sanity-io/cli/commit/11e8592fe57b8d54bc5f0a340f0b887052013cef))
+* show warnings before running commands ([#307](https://github.com/sanity-io/cli/issues/307)) ([b7422bb](https://github.com/sanity-io/cli/commit/b7422bbc5357da2e764e17e454f84eaa2ff043a6))
+
+
+### Bug Fixes
+
+* **core:** fixes issue with resolving plugins in studio config ([#349](https://github.com/sanity-io/cli/issues/349)) ([71689bf](https://github.com/sanity-io/cli/commit/71689bf6e0f36590d61b03c37c90527a61ec8224))
+* **deps:** update dependency @babel/traverse to ^7.28.6 ([#372](https://github.com/sanity-io/cli/issues/372)) ([9933c79](https://github.com/sanity-io/cli/commit/9933c79575847896c1256b031eee0f63f88f4727))
+* **deps:** update dependency @sanity/template-validator to v3 ([#393](https://github.com/sanity-io/cli/issues/393)) ([fdf07d5](https://github.com/sanity-io/cli/commit/fdf07d5014fdfe3ad0820cd66561267b55135d2f))
+* **deps:** update dependency console-table-printer to ^2.15.0 ([#373](https://github.com/sanity-io/cli/issues/373)) ([f8eb61b](https://github.com/sanity-io/cli/commit/f8eb61b45b05bb39a965bb15aaad62231abc3f7f))
+* **deps:** update dependency styled-components to ^6.3.8 ([#343](https://github.com/sanity-io/cli/issues/343)) ([453facf](https://github.com/sanity-io/cli/commit/453facf0e3599f4d1e03e243e9ef8c5796851ff2))
+* **deps:** update dependency tar to ^7.5.6 ([#338](https://github.com/sanity-io/cli/issues/338)) ([0361f0a](https://github.com/sanity-io/cli/commit/0361f0a906eb0a905ad67b1b7d53627694298b68))
+* **deps:** update oclif-tooling ([#335](https://github.com/sanity-io/cli/issues/335)) ([b4327e0](https://github.com/sanity-io/cli/commit/b4327e0f90d1c46a0ef18f1e402b6a8e798db394))
+* **deps:** update sanity-tooling ([#356](https://github.com/sanity-io/cli/issues/356)) ([651d330](https://github.com/sanity-io/cli/commit/651d330c473da4dcb838f772b2f5bd1eecb30e75))
+* **deps:** update sanity-tooling ([#370](https://github.com/sanity-io/cli/issues/370)) ([9ccdea8](https://github.com/sanity-io/cli/commit/9ccdea816a990899b15b06426e0c2a9d0701ecc9))
+* **deps:** update sanity-tooling ([#384](https://github.com/sanity-io/cli/issues/384)) ([361f505](https://github.com/sanity-io/cli/commit/361f50590154fcb7efc7e65dba996bd16789a6f9))
+* **deps:** update sanity-tooling ([#392](https://github.com/sanity-io/cli/issues/392)) ([d64d3d4](https://github.com/sanity-io/cli/commit/d64d3d4fd6507a8920158cb1f4822cae83607b6e))
+* **documents:** fixes documents validate not working ([#386](https://github.com/sanity-io/cli/issues/386)) ([9a3337b](https://github.com/sanity-io/cli/commit/9a3337bd1d6c4af799bd1ef729414f45de2e8d8a))
+* **schema:** fixes schema extract command ([#375](https://github.com/sanity-io/cli/issues/375)) ([6382401](https://github.com/sanity-io/cli/commit/63824011f8cd64bb2f0ec422e51701fc4c8e6140))
+* **schema:** fixes schema validate not working ([#376](https://github.com/sanity-io/cli/issues/376)) ([c4120aa](https://github.com/sanity-io/cli/commit/c4120aa134a2919f464041be603b3ed74cfeead5))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.9
+  * devDependencies
+    * @sanity/cli-test bumped to 0.0.2-alpha.8
+
 ## [6.0.0-alpha.8](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.7...cli-v6.0.0-alpha.8) (2026-01-23)
 
 
