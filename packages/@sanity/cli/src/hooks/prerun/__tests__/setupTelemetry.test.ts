@@ -361,4 +361,95 @@ describe('setupTelemetry integration test', () => {
     expect(global[CLI_TELEMETRY_SYMBOL]).toBeDefined()
     expect(getCliTelemetry()).toEqual(global[CLI_TELEMETRY_SYMBOL])
   })
+
+  test('should initialize telemetry when project root is not found', async () => {
+    setupBasicMocks(testDir)
+    setupUserConfigMock({telemetryDisclosed: true})
+    setupSpawnMock()
+    const getProcessExitHandler = captureProcessExit()
+
+    // Mock findProjectRoot to throw an error
+    mockFindProjectRoot.mockRejectedValue(new Error('Project root not found'))
+
+    const originalArgv = process.argv
+    process.argv = ['node', 'sanity', 'help']
+
+    try {
+      await testHook<'prerun'>(setupTelemetry, {config})
+
+      // Wait for telemetry initialization
+      await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_OPERATIONS))
+
+      // Verify telemetry still gets initialized
+      expect(getCliTelemetry()).toBeDefined()
+
+      // Verify worker spawn happens without project config
+      const capturedProcessExit = getProcessExitHandler()
+      expect(capturedProcessExit).toBeDefined()
+      capturedProcessExit?.(0)
+
+      await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_OPERATIONS))
+
+      expect(mockSpawn).toHaveBeenCalledWith(
+        process.execPath,
+        [expect.stringMatching(/flushTelemetry\.worker\.js$/)],
+        expect.objectContaining({
+          detached: true,
+          env: expect.objectContaining({
+            SANITY_TELEMETRY_PROJECT_ID: '', // Empty since no config found
+          }),
+        }),
+      )
+    } finally {
+      process.argv = originalArgv
+    }
+  })
+
+  test('should initialize telemetry when getCliConfig fails', async () => {
+    setupBasicMocks(testDir)
+    setupUserConfigMock({telemetryDisclosed: true})
+    setupSpawnMock()
+    const getProcessExitHandler = captureProcessExit()
+
+    // Mock findProjectRoot to succeed but getCliConfig to throw
+    mockFindProjectRoot.mockResolvedValue({
+      directory: testDir,
+      path: join(testDir, 'sanity.cli.ts'),
+      type: 'studio',
+    })
+    mockGetCliConfig.mockRejectedValue(new Error('Failed to read config'))
+
+    const originalArgv = process.argv
+    process.argv = ['node', 'sanity', 'help']
+
+    try {
+      await testHook<'prerun'>(setupTelemetry, {config})
+
+      // Wait for telemetry initialization
+      await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_OPERATIONS))
+
+      // Verify telemetry still gets initialized
+      expect(getCliTelemetry()).toBeDefined()
+
+      // Verify worker spawn happens without project config
+      const capturedProcessExit = getProcessExitHandler()
+      expect(capturedProcessExit).toBeDefined()
+      capturedProcessExit?.(0)
+
+      await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_OPERATIONS))
+
+      expect(mockSpawn).toHaveBeenCalledWith(
+        process.execPath,
+        [expect.stringMatching(/flushTelemetry\.worker\.js$/)],
+        expect.objectContaining({
+          detached: true,
+          env: expect.objectContaining({
+            SANITY_TELEMETRY_PROJECT_ID: '', // Empty since config read failed
+          }),
+        }),
+      )
+    } finally {
+      process.argv = originalArgv
+    }
+  })
 })
