@@ -53,6 +53,7 @@ try {
   cliConfig = await getCliConfig(rootPath)
 } catch (err) {
   if (!isNotFoundError(err)) {
+    // eslint-disable-next-line no-console
     console.warn('[warn] Failed to load CLI config:', err)
   }
 }

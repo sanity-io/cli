@@ -1,7 +1,7 @@
 import {dirname} from 'node:path'
 import {fileURLToPath} from 'node:url'
-import {styleText} from 'node:util'
 
+import {ux} from '@oclif/core'
 import {tsxWorkerTask} from '@sanity/cli-core'
 
 import {buildDebug} from './buildDebug.js'
@@ -55,10 +55,10 @@ export async function renderDocument(options: RenderDocumentOptions): Promise<st
 
       if (Array.isArray(msg.message)) {
         for (const warning of msg.message) {
-          console.warn(`${styleText('yellow', '[warn]')} ${warning}`)
+          ux.warn(warning)
         }
-      } else {
-        console.warn(`${styleText('yellow', '[warn]')} ${msg.message}`)
+      } else if (msg.message) {
+        ux.warn(msg.message)
       }
 
       if (msg.warnKey) {

@@ -135,6 +135,7 @@ test('should match type exports of the current cli package', async () => {
   try {
     expect(newCliTypeExports.toSorted()).toStrictEqual(oldCliTypeExports.toSorted())
   } catch (error) {
+    // eslint-disable-next-line no-console
     console.log(
       boxen(`!!!!!!! Old and New CLI Type Exports do not match !!!!!!!`, {
         borderColor: 'red',
@@ -143,6 +144,7 @@ test('should match type exports of the current cli package', async () => {
         padding: 1,
       }),
     )
+    // eslint-disable-next-line no-console
     console.log(diff(error.expected, error.actual))
   }
 })

@@ -163,6 +163,7 @@ export default defineConfig(
         'error',
         {ignores: ['import.meta.dirname', 'fetch', 'Response', 'util.styleText']},
       ],
+      'no-console': 'error',
       'no-dupe-class-members': 'off',
       'no-redeclare': 'off',
       'no-restricted-imports': [
