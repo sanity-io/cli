@@ -1,5 +1,6 @@
 import {stat} from 'node:fs/promises'
 import {dirname} from 'node:path'
+import {isMainThread} from 'node:worker_threads'
 
 import {firstValueFrom, of} from 'rxjs'
 import {type Workspace} from 'sanity'
@@ -13,11 +14,16 @@ import {isStudioConfig} from './isStudioConfig.js'
 /**
  * Resolves the workspaces from the studio config.
  *
+ * NOTE: This function should only be called from a worker thread.
+ *
  * @param configPath - The path to the studio config
  * @returns The workspaces
  * @internal
  */
 export async function getStudioWorkspaces(configPath: string): Promise<Workspace[]> {
+  if (isMainThread) {
+    throw new Error('getStudioWorkspaces should only be called from a worker thread')
+  }
   const isDirectory = (await stat(configPath)).isDirectory()
   if (isDirectory) {
     configPath = await findStudioConfigPath(configPath)

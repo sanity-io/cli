@@ -2792,13 +2792,11 @@ Lists all schemas in the current dataset.
 
 ```
 USAGE
-  $ sanity schema list [--extract-manifest] [--id <schema_id>] [--json] [--manifest-dir <directory>]
+  $ sanity schema list [--id <schema_id>] [--json]
 
 FLAGS
-  --[no-]extract-manifest     Disables manifest generation - the command will fail if no manifest exists
-  --id=<schema_id>            Fetch a single schema by id
-  --json                      Get schema as json
-  --manifest-dir=<directory>  [default: ./dist/static] Directory containing manifest file
+  --id=<schema_id>  Fetch a single schema by id
+  --json            Get schema as json
 
 DESCRIPTION
   Lists all schemas in the current dataset.
@@ -2824,10 +2822,6 @@ EXAMPLES
   Get singular stored schema as pretty-printed json-object
 
     $ sanity schema list --json --id _.schemas.workspaceName
-
-  Runs using a pre-existing manifest file. Config changes in sanity.config will not be picked up in this case.
-
-    $ sanity schema list --no-extract-manifest
 ```
 
 _See code: [src/commands/schema/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.8/src/commands/schema/list.ts)_
