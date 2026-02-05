@@ -6,10 +6,17 @@ import {styleText} from 'node:util'
 
 import {Args, Command, Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {getCliToken, SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
+import {
+  getCliToken,
+  SanityCommand,
+  type SanityOrgUser,
+  subdebug,
+  type TelemetryUserProperties,
+} from '@sanity/cli-core'
 import {confirm, input, logSymbols, select, Separator, spinner} from '@sanity/cli-core/ux'
 import {type DatasetAclMode, isHttpError} from '@sanity/client'
 import {DatasetImportCommand} from '@sanity/import'
+import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 import {execa, type Options} from 'execa'
@@ -67,6 +74,7 @@ import {
 import {getPlanId, getPlanIdFromCoupon} from '../services/plans.js'
 import {createProject, listProjects, updateProjectInitializedAt} from '../services/projects.js'
 import {getCliUser} from '../services/user.js'
+import {CLIInitStepCompleted, type InitStepResult} from '../telemetry/init.telemetry.js'
 import {absolutify, validateEmptyPath} from '../util/fsUtils.js'
 import {getProjectDefaults} from '../util/getProjectDefaults.js'
 import {
@@ -267,6 +275,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }),
   }
 
+  _trace!: TelemetryTrace<TelemetryUserProperties, InitStepResult>
+
   public async run(): Promise<void> {
     const workDir = process.cwd()
 
@@ -284,8 +294,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       )
     }
 
-    // @todo
-    //const trace = telemetry.trace(CLIInitStepCompleted)
+    this._trace = this.telemetry.trace(CLIInitStepCompleted)
 
     // Slightly more helpful message for removed flags rather than just saying the flag
     // does not exist.
@@ -338,21 +347,20 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       this.checkFlagsInUnattendedMode({createProjectName, isNextJs})
     }
 
-    // @todo
-    // trace.start()
-    // trace.log({
-    //   step: 'start',
-    //   flags: {
-    //     defaultConfig,
-    //     unattended,
-    //     plan: intendedPlan,
-    //     coupon: intendedCoupon,
-    //     reconfigure,
-    //     git: commitMessage,
-    //     bare: bareOutput,
-    //     env,
-    //   },
-    // })
+    this._trace.start()
+    this._trace.log({
+      flags: {
+        bare: this.flags.bare,
+        coupon: this.flags.coupon,
+        defaultConfig,
+        env: this.flags.env,
+        git: this.flags.git,
+        plan: this.flags['project-plan'],
+        reconfigure: this.flags.reconfigure,
+        unattended: this.isUnattended(),
+      },
+      step: 'start',
+    })
 
     // Plan can be set through `--project-plan`, or implied through `--coupon`.
     // As coupons can expire and project plans might change/be removed, we need to
@@ -408,12 +416,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       initNext = await promptForConfigFiles()
     }
 
-    // @todo
-    // trace.log({
-    //   step: 'useDetectedFramework',
-    //   selectedOption: initNext ? 'yes' : 'no',
-    //   detectedFramework: detectedFramework?.name,
-    // })
+    this._trace.log({
+      detectedFramework: detectedFramework?.name,
+      selectedOption: initNext ? 'yes' : 'no',
+      step: 'useDetectedFramework',
+    })
 
     const sluggedName = deburr(displayName.toLowerCase())
       .replaceAll(/\s+/g, '-')
@@ -435,16 +442,16 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     // Set up MCP integration
     const mcpResult = await setupMCP(this.flags.mcp)
-    // @todo
-    // trace.log({
-    //   step: 'mcpSetup',
-    //   detectedEditors: mcpResult.detectedEditors,
-    //   configuredEditors: mcpResult.configuredEditors,
-    //   skipped: mcpResult.skipped,
-    // })
-    // if (mcpResult.error) {
-    //   trace.error(mcpResult.error)
-    // }
+
+    this._trace.log({
+      configuredEditors: mcpResult.configuredEditors,
+      detectedEditors: mcpResult.detectedEditors,
+      skipped: mcpResult.skipped,
+      step: 'mcpSetup',
+    })
+    if (mcpResult.error) {
+      this._trace.error(mcpResult.error)
+    }
     const mcpConfigured = mcpResult.configuredEditors
 
     if (isNextJs) {
@@ -484,8 +491,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     // Prompt for template to use
     const templateName = await this.promptForTemplate()
-    // @todo
-    // trace.log({step: 'selectProjectTemplate', selectedOption: templateName})
+    this._trace.log({selectedOption: templateName, step: 'selectProjectTemplate'})
     const template = templates[templateName]
     if (!remoteTemplateInfo && !template) {
       this.error(`Template "${templateName}" not found`, {exit: 1})
@@ -496,8 +502,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       useTypeScript = true
     } else if (this.promptForUndefinedFlag(this.flags.typescript)) {
       useTypeScript = await promptForTypeScript()
-      // @todo
-      // trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
+      this._trace.log({selectedOption: useTypeScript ? 'yes' : 'no', step: 'useTypeScript'})
     }
 
     // If the template has a sample dataset, prompt the user whether or not we should import it
@@ -506,8 +511,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       template?.datasetUrl &&
       (await this.promptForDatasetImport(template.importPrompt))
 
-    // @todo
-    // trace.log({step: 'importTemplateDataset', selectedOption: shouldImport ? 'yes' : 'no'})
+    this._trace.log({selectedOption: shouldImport ? 'yes' : 'no', step: 'importTemplateDataset'})
 
     try {
       await updateProjectInitializedAt(projectId)
@@ -546,8 +550,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       targetDir: outputPath,
     })
 
-    // @todo
-    // trace.log({selectedOption: pkgManager, step: 'selectPackageManager', })
+    this._trace.log({selectedOption: pkgManager, step: 'selectPackageManager'})
 
     // Now for the slow part... installing dependencies
     await installDeclaredPackages(outputPath, pkgManager, {output: this.output, workDir})
@@ -640,8 +643,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     if (isFirstProject) {
-      // @todo
-      // trace.log({step: 'sendCommunityInvite', selectedOption: 'yes'})
+      this._trace.log({selectedOption: 'yes', step: 'sendCommunityInvite'})
 
       const DISCORD_INVITE_LINK = 'https://www.sanity.io/community/join'
 
@@ -649,8 +651,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       this.log('We look forward to seeing you there!\n')
     }
 
-    // @todo
-    // trace.complete()
+    this._trace.complete()
   }
 
   private checkFlagsInUnattendedMode({
@@ -746,8 +747,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     if (isAuthenticated) {
-      // @todo telemetry
-      // trace.log({ step: 'login', alreadyLoggedIn: true })
+      this._trace.log({alreadyLoggedIn: true, step: 'login'})
     } else {
       if (this.isUnattended()) {
         this.error('Must be logged in to run this command in unattended mode, run `sanity login`', {
@@ -755,11 +755,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         })
       }
 
-      // @todo telemetry
-      //trace.log({step: 'login'})
+      this._trace.log({step: 'login'})
 
-      // @todo trigger login action, then get and return user info
-      await login({output: this.output})
+      await login({output: this.output, telemetry: this._trace.newContext('login')})
     }
 
     user = await getCliUser()
@@ -1079,13 +1077,12 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     })
     debug(`Dataset with name ${dataset.datasetName} selected`)
 
-    // @todo
-    // trace.log({
-    //   step: 'createOrSelectDataset',
-    //   selectedOption: dataset.userAction,
-    //   datasetName: dataset.datasetName,
-    //   visibility: flags.visibility as 'private' | 'public',
-    // })
+    this._trace.log({
+      datasetName: dataset.datasetName,
+      selectedOption: dataset.userAction,
+      step: 'createOrSelectDataset',
+      visibility: this.flags.visibility as 'private' | 'public',
+    })
 
     return {
       datasetName: dataset.datasetName,
@@ -1138,8 +1135,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     if (this.promptForUndefinedFlag(this.flags.typescript)) {
       useTypeScript = await promptForTypeScript()
     }
-    // @todo
-    // trace.log({step: 'useTypeScript', selectedOption: useTypeScript ? 'yes' : 'no'})
+    this._trace.log({selectedOption: useTypeScript ? 'yes' : 'no', step: 'useTypeScript'})
 
     const fileExtension = useTypeScript ? 'ts' : 'js'
     let embeddedStudio = this.flagOrDefault('nextjs-embed-studio', true)
@@ -1263,8 +1259,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       packageManager: this.flags['package-manager'] as PackageManager,
       targetDir: workDir,
     })
-    // @todo
-    // trace.log({step: 'selectPackageManager', selectedOption: chosen})
+    this._trace.log({selectedOption: chosen, step: 'selectPackageManager'})
     const packages = ['@sanity/vision@4', 'sanity@4', '@sanity/image-url@1', 'styled-components@6']
     if (templateToUse === 'blog') {
       packages.push('@sanity/icons')
@@ -1490,12 +1485,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         this.warn(`Coupon "${intendedCoupon}" is not available - using default plan`)
       }
 
-      // @todo
-      // trace.log({
-      //   step: 'useDefaultPlanCoupon',
-      //   selectedOption: useDefaultPlan ? 'yes' : 'no',
-      //   coupon: intendedCoupon,
-      // })
+      this._trace.log({
+        coupon: intendedCoupon,
+        selectedOption: useDefaultPlan ? 'yes' : 'no',
+        step: 'useDefaultPlanCoupon',
+      })
 
       if (useDefaultPlan) {
         this.log('Using default plan.')
@@ -1526,12 +1520,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         this.warn(`Project plan "${intendedPlan}" does not exist - using default plan`)
       }
 
-      // @todo
-      // trace.log({
-      //   step: 'useDefaultPlanId',
-      //   selectedOption: useDefaultPlan ? 'yes' : 'no',
-      //   planId: intendedPlan,
-      // })
+      this._trace.log({
+        planId: intendedPlan,
+        selectedOption: useDefaultPlan ? 'yes' : 'no',
+        step: 'useDefaultPlanId',
+      })
 
       if (useDefaultPlan) {
         this.log('Using default plan.')

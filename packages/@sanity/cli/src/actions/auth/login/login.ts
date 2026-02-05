@@ -1,7 +1,14 @@
-import {getCliToken, getGlobalCliClient, type Output, setConfig} from '@sanity/cli-core'
+import {
+  type CLITelemetryStore,
+  getCliToken,
+  getGlobalCliClient,
+  type Output,
+  setConfig,
+} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import open from 'open'
 
+import {LoginTrace} from '../../../telemetry/login.telemetry.js'
 import {canLaunchBrowser} from '../../../util/canLaunchBrowser.js'
 import {startServerForTokenCallback} from '../authServer.js'
 import {getProvider} from './getProvider.js'
@@ -10,6 +17,8 @@ const LOGIN_API_VERSION = '2024-02-01'
 
 interface LoginOptions {
   output: Output
+
+  telemetry: CLITelemetryStore
 
   experimental?: boolean
   open?: boolean
@@ -28,11 +37,12 @@ interface LoginOptions {
  * @internal
  */
 export async function login(options: LoginOptions) {
-  const {output} = options
+  const {output, telemetry} = options
   const previousToken = await getCliToken()
   const hasExistingToken = Boolean(previousToken)
 
-  // @todo start telemetry trace
+  const trace = telemetry.trace(LoginTrace)
+  trace.start()
 
   // We explicitly want to use an unauthenticated client here, even if we already logged in
   const globalClient = await getGlobalCliClient({apiVersion: LOGIN_API_VERSION})
@@ -45,7 +55,7 @@ export async function login(options: LoginOptions) {
     specifiedProvider: options.provider,
   })
 
-  // @todo trace.log({step: 'selectProvider', provider: provider?.name})
+  trace.log({provider: provider?.name, step: 'selectProvider'})
 
   if (provider === undefined) {
     throw new Error('No authentication providers found')
@@ -57,7 +67,7 @@ export async function login(options: LoginOptions) {
     token: tokenPromise,
   } = await startServerForTokenCallback({client, providerUrl: provider.url})
 
-  // @todo trace.log({step: 'waitForToken'})
+  trace.log({step: 'waitForToken'})
 
   const serverUrl = server.address()
   if (!serverUrl || typeof serverUrl === 'string') {
@@ -85,7 +95,7 @@ export async function login(options: LoginOptions) {
     spin.stop()
   } catch (err: unknown) {
     spin.stop()
-    // @todo trace.error(err)
+    trace.error(err as Error)
     throw err instanceof Error
       ? new Error(`Login failed: ${err.message}`, {cause: err})
       : new Error(`${err}`)
@@ -112,4 +122,6 @@ export async function login(options: LoginOptions) {
         }
       })
   }
+
+  trace.complete()
 }

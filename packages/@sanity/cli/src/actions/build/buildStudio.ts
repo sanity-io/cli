@@ -2,10 +2,11 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {getTimer} from '@sanity/cli-core'
+import {getCliTelemetry, getTimer} from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import semver from 'semver'
 
+import {StudioBuildTrace} from '../../telemetry/build.telemetry.js'
 import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
@@ -152,9 +153,8 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
 
   spin = spinner(`Build Sanity Studio`).start()
 
-  // TODO: Add telemetry
-  // const trace = telemetry.trace(BuildTrace)
-  // trace.start()
+  const trace = getCliTelemetry().trace(StudioBuildTrace)
+  trace.start()
 
   let importMap
 
@@ -182,23 +182,24 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       vite: cliConfig && 'vite' in cliConfig ? cliConfig.vite : undefined,
     })
 
-    // trace.log({
-    //   outputSize: bundle.chunks
-    //     .flatMap((chunk) => chunk.modules.flatMap((mod) => mod.renderedLength))
-    //     .reduce((sum, n) => sum + n, 0),
-    // })
+    trace.log({
+      outputSize: bundle.chunks
+        .flatMap((chunk) => chunk.modules.flatMap((mod) => mod.renderedLength))
+        .reduce((sum, n) => sum + n, 0),
+    })
     const buildDuration = timer.end('bundleStudio')
 
     spin.text = `Build Sanity Studio (${buildDuration.toFixed(0)}ms)`
     spin.succeed()
 
-    // trace.complete()
+    trace.complete()
     if (flags.stats) {
       output.log('\nLargest module files:')
       output.log(formatModuleSizes(sortModulesBySize(bundle.chunks).slice(0, 15)))
     }
   } catch (error) {
     spin.fail()
+    trace.error(error)
     const message = error instanceof Error ? error.message : String(error)
     buildDebug(`Failed to build Sanity Studio`, {error})
     output.error(`Failed to build Sanity Studio: ${message}`, {exit: 1})

@@ -21,7 +21,11 @@ export * from './telemetry/createTelemetryStore.js'
 export * from './telemetry/flushTelemetryFiles.js'
 export * from './telemetry/getTelemetryBaseInfo.js'
 export * from './telemetry/telemetryStoreDebug.js'
-export {type ConsentInformation} from './telemetry/types.js'
+export {
+  type CLITelemetryStore,
+  type ConsentInformation,
+  type TelemetryUserProperties,
+} from './telemetry/types.js'
 export {type Output, type SanityOrgUser} from './types.js'
 export * from './util/createExpiringConfig.js'
 export {doImport} from './util/doImport.js'

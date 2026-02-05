@@ -43,10 +43,8 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
   public async run(): Promise<void> {
     const {flags} = await this.parse(LoginCommand)
 
-    await login({...flags, output: this.output})
+    await login({...flags, output: this.output, telemetry: this.telemetry})
 
     this.log('Login successful')
-
-    // @todo trace.complete()
   }
 }
