@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.2-alpha.10](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.9...cli-test-v0.0.2-alpha.10) (2026-02-05)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.11
+  * peerDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.11
+
 ## [0.0.2-alpha.9](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.8...cli-test-v0.0.2-alpha.9) (2026-02-05)
 
 
