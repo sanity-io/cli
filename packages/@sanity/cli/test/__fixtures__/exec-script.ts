@@ -13,6 +13,7 @@ try {
     .catch(() => ({email: 'unknown', id: 'unknown'}))
 
   // Output JSON that tests can parse
+  // eslint-disable-next-line no-console
   console.log(
     JSON.stringify({
       browser: {
@@ -30,6 +31,7 @@ try {
     }),
   )
 } catch (error) {
+  // eslint-disable-next-line no-console
   console.error(
     JSON.stringify({
       error: error instanceof Error ? error.message : String(error),

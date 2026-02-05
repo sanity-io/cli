@@ -21,9 +21,11 @@ function isSupportedNodeVersion(major, minor, patch) {
 }
 
 if (!isSupportedNodeVersion(majorVersion, minorVersion, patchVersion)) {
+  // eslint-disable-next-line no-console
   console.error(
     `${err}Node.js version >=20.19.1 <22 or >=22.12 required. You are running ${process.version}`,
   )
+  // eslint-disable-next-line no-console
   console.error('')
   process.exit(1)
 }
