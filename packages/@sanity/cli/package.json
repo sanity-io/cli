@@ -79,7 +79,7 @@
     "@sanity/runtime-cli": "^13.2.1",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
-    "@sanity/template-validator": "^2.4.6",
+    "@sanity/template-validator": "^3.0.0",
     "@sanity/types": "catalog:",
     "@sanity/ui": "^3.1.11",
     "@vercel/frameworks": "3.8.4",
