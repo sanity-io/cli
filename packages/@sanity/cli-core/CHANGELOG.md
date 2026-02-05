@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.11](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.10...cli-core-v0.1.0-alpha.11) (2026-02-05)
+
+
+### Bug Fixes
+
+* **core:** re-add chalk dependency ([#395](https://github.com/sanity-io/cli/issues/395)) ([b51f986](https://github.com/sanity-io/cli/commit/b51f9862238785e47f4e65766061156706e64bf3))
+
 ## [0.1.0-alpha.10](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.9...cli-core-v0.1.0-alpha.10) (2026-02-05)
 
 
