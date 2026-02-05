@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.0.2-alpha.9](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.8...cli-test-v0.0.2-alpha.9) (2026-02-05)
+
+
+### Bug Fixes
+
+* add no-console lint rule ([7823696](https://github.com/sanity-io/cli/commit/78236965ebdd784d01384b96b23bc590eeaaa325))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.10
+    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.2
+  * peerDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.10
+
 ## [0.0.2-alpha.8](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.7...cli-test-v0.0.2-alpha.8) (2026-02-05)
 
 
