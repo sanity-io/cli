@@ -408,8 +408,8 @@ importers:
         specifier: 'catalog:'
         version: 0.8.1(react@19.2.3)
       '@sanity/template-validator':
-        specifier: ^2.4.6
-        version: 2.4.6
+        specifier: ^3.0.0
+        version: 3.0.0
       '@sanity/types':
         specifier: 'catalog:'
         version: 5.8.1(@types/react@19.2.9)(debug@4.4.3)
@@ -3609,11 +3609,6 @@ packages:
     engines: {node: '>=16.0.0'}
     peerDependencies:
       react: ^18.2 || ^19.0.0
-
-  '@sanity/template-validator@2.4.6':
-    resolution: {integrity: sha512-PTDYF5TWCvpcXGThCk1Ngn+/sfQ27VqVyNBc7FYo9nCt6vfjFWUGUGbb3Qfrk/NcOhe9CyoV6g7ieZcHUZijtQ==}
-    engines: {node: '>=18.0.0'}
-    hasBin: true
 
   '@sanity/template-validator@3.0.0':
     resolution: {integrity: sha512-ej6bdYiMz+M3Z/kYlWnTgGy2KQcYQk3O2dwJog1xSI8l444T3IZSOICr9cFuQL/j41W9HcEHqcbg/LO+31L3KA==}
@@ -13249,12 +13244,6 @@ snapshots:
       react: 19.2.3
       rxjs: 7.8.2
       typeid-js: 0.3.0
-
-  '@sanity/template-validator@2.4.6':
-    dependencies:
-      '@actions/core': 3.0.0
-      '@actions/github': 9.0.0
-      yaml: 2.8.2
 
   '@sanity/template-validator@3.0.0':
     dependencies:
