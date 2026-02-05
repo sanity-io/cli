@@ -67,7 +67,7 @@
     ],
     "overrides": {
       "@sanity/cli": "workspace:*",
-      "create-sanity>@sanity/cli": "^5.7.0"
+      "create-sanity>@sanity/cli": "^5.8.1"
     },
     "patchedDependencies": {
       "sanity": "patches/sanity.patch"
