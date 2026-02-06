@@ -10,6 +10,7 @@ export const checkForUpdates: Hook.Init = async function ({config}) {
   try {
     await updateChecker(config)
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.error(`Error checking for updates: ${err}`)
   }
 }

@@ -78,6 +78,11 @@ export function createExpiringConfig<Type>({
         onRevalidate()
       }
 
+      // Return existing fetch if one is already in progress
+      if (currentFetch) {
+        return currentFetch
+      }
+
       onFetch()
 
       currentFetch = Promise.resolve(fetchValue())
@@ -90,6 +95,8 @@ export function createExpiringConfig<Type>({
         updatedAt: Date.now(),
         value: nextValue,
       })
+
+      currentFetch = null
 
       return nextValue
     },
