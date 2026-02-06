@@ -13,7 +13,7 @@ import {isStudioConfig} from './isStudioConfig.js'
 /**
  * Resolves the workspaces from the studio config.
  *
- * @param options - The options for the function
+ * @param configPath - The path to the studio config
  * @returns The workspaces
  * @internal
  */

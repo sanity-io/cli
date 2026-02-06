@@ -1,5 +1,6 @@
 import {type SanityDocumentLike} from '@sanity/types'
 import {type MediaLibraryConfig} from 'sanity'
+import {z} from 'zod'
 
 export const SANITY_WORKSPACE_SCHEMA_ID_PREFIX = '_.schemas'
 export const SANITY_WORKSPACE_SCHEMA_TYPE = 'system.schema'
@@ -141,3 +142,7 @@ export interface StoredWorkspaceSchema extends SanityDocumentLike {
 
   tag?: string
 }
+
+export const extractManifestWorkerData = z.object({configPath: z.string(), workDir: z.string()})
+
+export type ExtractManifestWorkerData = z.infer<typeof extractManifestWorkerData>

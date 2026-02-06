@@ -10,25 +10,15 @@ import {
 } from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {type extractSchema as extractSchemaInternal} from '@sanity/schema/_internal'
-import {type SchemaValidationProblemGroup} from '@sanity/types'
 
 import {type ExtractSchemaCommand} from '../../commands/schema/extract'
 import {SchemaExtractedTrace} from '../../telemetry/extractSchema.telemetry.js'
 import {formatSchemaValidation} from './formatSchemaValidation.js'
-import {type ExtractSchemaWorkerData} from './types.js'
+import {type ExtractSchemaWorkerData, type ExtractSchemaWorkerError} from './types.js'
 import {schemasExtractDebug} from './utils/debug.js'
+import {SchemaExtractionError} from './utils/SchemaExtractionError.js'
 
 const FILENAME = 'schema.json'
-
-class SchemaExtractionError extends Error {
-  validation?: SchemaValidationProblemGroup[]
-
-  constructor(message: string, validation?: SchemaValidationProblemGroup[]) {
-    super(message)
-    this.name = 'SchemaExtractionError'
-    this.validation = validation
-  }
-}
 
 interface ExtractSchemaOptions {
   flags: ExtractSchemaCommand['flags']
@@ -39,14 +29,6 @@ interface ExtractSchemaOptions {
 interface ExtractSchemaWorkerResult {
   schema: ReturnType<typeof extractSchemaInternal>
   type: 'success'
-}
-
-/** @internal */
-interface ExtractSchemaWorkerError {
-  error: string
-  type: 'error'
-
-  validation?: SchemaValidationProblemGroup[]
 }
 
 type ExtractSchemaWorkerMessage = ExtractSchemaWorkerError | ExtractSchemaWorkerResult
