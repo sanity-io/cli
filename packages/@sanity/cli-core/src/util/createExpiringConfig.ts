@@ -91,12 +91,12 @@ export function createExpiringConfig<Type>({
         throw new Error('Fetched value is invalid')
       }
 
+      currentFetch = null
+
       store.set(key, {
         updatedAt: Date.now(),
         value: nextValue,
       })
-
-      currentFetch = null
 
       return nextValue
     },
