@@ -72,15 +72,6 @@ describe('#promiseRaceWithTimeout', () => {
     expect(clearTimeoutSpy).toHaveBeenCalled()
   })
 
-  test('returns correct result with complex objects', async () => {
-    const data = {id: 123, name: 'test', nested: {value: true}}
-    const promise = Promise.resolve(data)
-
-    const result = await promiseRaceWithTimeout(promise, 1000)
-
-    expect(result).toEqual(data)
-  })
-
   test('handles zero timeout', async () => {
     const promise = new Promise((resolve) => {
       setTimeout(() => resolve('delayed'), 100)

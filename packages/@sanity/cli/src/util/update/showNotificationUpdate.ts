@@ -1,3 +1,5 @@
+import {styleText} from 'node:util'
+
 import {ux} from '@oclif/core'
 import {boxen} from '@sanity/cli-core/ux'
 import isInstalledGlobally from 'is-installed-globally'
@@ -25,7 +27,7 @@ export async function showUpdateNotification(
     command = getUpdateCommand(chosen)
   }
 
-  const message = `Update available: ${currentVersion} → ${latestVersion}\n\nRun ${command} to update`
+  const message = `Update available: ${styleText('dim', currentVersion)} → ${styleText('green', latestVersion)}\n\nRun ${styleText('cyan', command)} to update`
 
   const boxed = boxen(message, {
     borderColor: 'yellow',
