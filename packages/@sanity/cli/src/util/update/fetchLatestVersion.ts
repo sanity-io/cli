@@ -16,7 +16,7 @@ export async function fetchLatestVersion(
     const result = await promiseRaceWithTimeout(getLatestVersion(packageName), timeout)
 
     if (result === null) {
-      throw new Error(`Max time ${timeout} reached waiting for latest version info`)
+      debug(`Max time ${timeout} reached waiting for latest version info`)
     }
 
     debug('Latest remote version is %s', result)

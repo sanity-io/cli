@@ -106,7 +106,7 @@ describe('#checkForUpdates', () => {
     const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
     const userConfig = getUserConfig()
-    userConfig.set('cliLastestRemoteVersion', {
+    userConfig.set('cliLatestRemoteVersion', {
       updatedAt: recentTimestamp,
       value: '1.0.0',
     })
@@ -135,7 +135,7 @@ describe('#checkForUpdates', () => {
     expect(mockDebug).toHaveBeenCalledWith('Latest remote version is %s', '1.1.0')
 
     const userConfig = getUserConfig()
-    const cachedVersion = userConfig.get('cliLastestRemoteVersion')
+    const cachedVersion = userConfig.get('cliLatestRemoteVersion')
     expect(cachedVersion).toMatchObject({
       updatedAt: expect.any(Number),
       value: '1.1.0',
@@ -160,7 +160,7 @@ describe('#checkForUpdates', () => {
     )
 
     const userConfig = getUserConfig()
-    const cachedVersion = userConfig.get('cliLastestRemoteVersion')
+    const cachedVersion = userConfig.get('cliLatestRemoteVersion')
     expect(cachedVersion).toBeUndefined()
   })
 
@@ -181,7 +181,7 @@ describe('#checkForUpdates', () => {
     )
 
     const userConfig = getUserConfig()
-    const cachedVersion = userConfig.get('cliLastestRemoteVersion')
+    const cachedVersion = userConfig.get('cliLatestRemoteVersion')
     expect(cachedVersion).toBeUndefined()
   })
 
@@ -204,7 +204,7 @@ describe('#checkForUpdates', () => {
     const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
     const userConfig = getUserConfig()
-    userConfig.set('cliLastestRemoteVersion', {
+    userConfig.set('cliLatestRemoteVersion', {
       updatedAt: recentTimestamp,
       value: '1.0.0', // older than current
     })
@@ -222,7 +222,7 @@ describe('#checkForUpdates', () => {
     const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
     const userConfig = getUserConfig()
-    userConfig.set('cliLastestRemoteVersion', {
+    userConfig.set('cliLatestRemoteVersion', {
       updatedAt: recentTimestamp,
       value: config.version, // same as current
     })
@@ -259,7 +259,7 @@ describe('#checkForUpdates', () => {
     const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
     const userConfig = getUserConfig()
-    userConfig.set('cliLastestRemoteVersion', {
+    userConfig.set('cliLatestRemoteVersion', {
       updatedAt: recentTimestamp,
       value: '999.0.0', // newer than current
     })

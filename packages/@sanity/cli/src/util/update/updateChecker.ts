@@ -38,7 +38,7 @@ export async function updateChecker(config: {
   // Cache for latest version from npm
   const latestVersionCache = createExpiringConfig({
     fetchValue: async () => fetchLatestVersion(config.name, CHECK_TIMEOUT),
-    key: 'cliLastestRemoteVersion',
+    key: 'cliLatestRemoteVersion',
     onCacheHit: () => {
       debug('Less than 12 hours since last check, skipping update check')
       showNotificationUpdate = false
