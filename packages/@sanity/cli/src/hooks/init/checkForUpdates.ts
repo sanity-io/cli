@@ -1,6 +1,7 @@
 import {type Hook} from '@oclif/core'
 
 import {updateChecker} from '../../util/update/updateChecker.js'
+import {updateCheckerDebug} from '../../util/update/updateCheckerDebug.js'
 
 /**
  * Init hook that checks for CLI updates and notifies the user if a new version is available.
@@ -10,7 +11,6 @@ export const checkForUpdates: Hook.Init = async function ({config}) {
   try {
     await updateChecker(config)
   } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error(`Error checking for updates: ${err}`)
+    updateCheckerDebug(`Error checking for updates: ${err}`)
   }
 }

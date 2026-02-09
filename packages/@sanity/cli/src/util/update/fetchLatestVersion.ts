@@ -1,20 +1,19 @@
 import {subdebug} from '@sanity/cli-core'
 import getLatestVersion from 'get-latest-version'
 
+import {promiseRaceWithTimeout} from '../promiseRaceWithTimeout.js'
+
 const debug = subdebug('updateChecker')
 
 /**
  * Fetch the latest version from npm with a timeout
  */
-export async function fetchLatestVersionWithTimeout(
+export async function fetchLatestVersion(
   packageName: string,
   timeout: number,
 ): Promise<string | null | undefined> {
   try {
-    const result = await Promise.race([
-      getLatestVersion(packageName),
-      new Promise<null>((resolve) => setTimeout(() => resolve(null), timeout)),
-    ])
+    const result = await promiseRaceWithTimeout(getLatestVersion(packageName), timeout)
 
     if (result === null) {
       throw new Error(`Max time ${timeout} reached waiting for latest version info`)

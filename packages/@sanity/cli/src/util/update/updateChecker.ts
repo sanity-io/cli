@@ -1,7 +1,7 @@
 import {createExpiringConfig, getUserConfig, isCi, subdebug} from '@sanity/cli-core'
 import semver from 'semver'
 
-import {fetchLatestVersionWithTimeout} from './fetchLatestVersionWithTimeout.js'
+import {fetchLatestVersion} from './fetchLatestVersion.js'
 import {showUpdateNotification} from './showNotificationUpdate.js'
 
 const debug = subdebug('updateChecker')
@@ -37,7 +37,7 @@ export async function updateChecker(config: {
 
   // Cache for latest version from npm
   const latestVersionCache = createExpiringConfig({
-    fetchValue: async () => fetchLatestVersionWithTimeout(config.name, CHECK_TIMEOUT),
+    fetchValue: async () => fetchLatestVersion(config.name, CHECK_TIMEOUT),
     key: 'cliLastestRemoteVersion',
     onCacheHit: () => {
       debug('Less than 12 hours since last check, skipping update check')

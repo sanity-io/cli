@@ -10,9 +10,21 @@ const mockGetLatestVersion = vi.hoisted(() => vi.fn())
 const mockIsInstalledGlobally = vi.hoisted(() => ({default: false}))
 const mockIsInstalledUsingYarn = vi.hoisted(() => vi.fn())
 
-// Mock dependencies
+const mockConfigStore = vi.hoisted(() => {
+  const store = new Map<string, unknown>()
+  return {
+    clear: vi.fn(() => store.clear()),
+    delete: vi.fn((key: string) => store.delete(key)),
+    get: vi.fn((key: string) => store.get(key)),
+    set: vi.fn((key: string, value: unknown) => store.set(key, value)),
+  }
+})
+
+const mockGetUserConfig = vi.hoisted(() => vi.fn(() => mockConfigStore))
+
 vi.mock('@sanity/cli-core', async () => ({
   ...(await vi.importActual('@sanity/cli-core')),
+  getUserConfig: mockGetUserConfig,
   isCi: vi.fn(),
   subdebug: vi.fn(() => mockDebug),
 }))
@@ -42,9 +54,7 @@ describe('#checkForUpdates', () => {
     mockIsInstalledGlobally.default = false
     mockIsInstalledUsingYarn.mockReturnValue(false)
 
-    // Clear cache keys
-    const userConfig = getUserConfig()
-    userConfig.delete('cliLastestRemoteVersion')
+    mockConfigStore.clear()
   })
 
   test('returns early if running on CI', async () => {
