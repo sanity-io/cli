@@ -21,12 +21,6 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
         '<%= config.bin %> <%= command.id %> --ids sanity.workspace.schema.workspaceName,prefix.sanity.workspace.schema.otherWorkspace',
       description: 'Delete multiple schemas',
     },
-    {
-      command:
-        '<%= config.bin %> <%= command.id %> --no-extract-manifest --ids sanity.workspace.schema.workspaceName',
-      description:
-        'Delete using a pre-existing manifest file (config changes in sanity.config will not be picked up)',
-    },
   ]
 
   static override flags = {

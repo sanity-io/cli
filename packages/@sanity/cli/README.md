@@ -2708,10 +2708,6 @@ EXAMPLES
   Delete multiple schemas
 
     $ sanity schema delete --ids sanity.workspace.schema.workspaceName,prefix.sanity.workspace.schema.otherWorkspace
-
-  Delete using a pre-existing manifest file (config changes in sanity.config will not be picked up)
-
-    $ sanity schema delete --no-extract-manifest --ids sanity.workspace.schema.workspaceName
 ```
 
 _See code: [src/commands/schema/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.11/src/commands/schema/delete.ts)_
