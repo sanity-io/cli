@@ -237,4 +237,25 @@ describe('getCliClient', () => {
     // Reset
     getCliClient.__internal__getToken = () => undefined
   })
+
+  test('should pass through additional ClientConfig options', () => {
+    const options = {
+      dataset: 'test-dataset',
+      projectId: 'test-project',
+      timeout: 30_000,
+      withCredentials: true,
+    }
+
+    getCliClient(options)
+
+    expect(createClient).toHaveBeenCalledWith({
+      apiVersion: '2022-06-06',
+      dataset: 'test-dataset',
+      projectId: 'test-project',
+      timeout: 30_000,
+      token: undefined,
+      useCdn: false,
+      withCredentials: true,
+    })
+  })
 })

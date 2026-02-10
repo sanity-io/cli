@@ -1,17 +1,16 @@
 import {findProjectRootSync, getCliConfigSync} from '@sanity/cli-core'
-import {createClient, type SanityClient} from '@sanity/client'
+import {type ClientConfig, createClient, type SanityClient} from '@sanity/client'
 
 /**
  * @public
  */
-export interface CliClientOptions {
-  apiVersion?: string
-
+export interface CliClientOptions extends ClientConfig {
+  /**
+   * If no `projectId` or `dataset` is provided, `getCliClient` will try to
+   * resolve these from the `sanity.cli.ts` configuration file. Use this option
+   * to specify the directory to look for this file.
+   */
   cwd?: string
-  dataset?: string
-  projectId?: string
-  token?: string
-  useCdn?: boolean
 }
 
 /**
@@ -32,10 +31,11 @@ export const getCliClient: CliClientGetter = (options: CliClientOptions = {}): S
     projectId,
     token = getCliClient.__internal__getToken(),
     useCdn = false,
+    ...restOfOptions
   } = options
 
   if (projectId && dataset) {
-    return createClient({apiVersion, dataset, projectId, token, useCdn})
+    return createClient({apiVersion, dataset, projectId, token, useCdn, ...restOfOptions})
   }
 
   const projectRoot = findProjectRootSync(cwd)
@@ -56,6 +56,7 @@ export const getCliClient: CliClientGetter = (options: CliClientOptions = {}): S
     projectId: apiConfig.projectId,
     token,
     useCdn,
+    ...restOfOptions,
   })
 }
 
