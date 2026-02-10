@@ -6,19 +6,38 @@ import {pipeline} from 'node:stream/promises'
 import {boxen} from '@sanity/cli-core/ux'
 import {getTempPath} from '@sanity/cli-test'
 import {diff} from '@vitest/utils/diff'
+import getLatestVersion from 'get-latest-version'
 import gunzipMaybe from 'gunzip-maybe'
 import {extract} from 'tar-fs'
 import ts from 'typescript'
-import {expect, test} from 'vitest'
+import {beforeAll, expect, test} from 'vitest'
 
 import * as newExports from '../index.js'
 import {readPackageJson} from '../util/readPackageJson.js'
+
+const packageName = '@sanity/cli'
 
 function getPackagePath(tmpDir: string, version: string) {
   return join(tmpDir, `sanity-cli-${version}`, 'package')
 }
 
-const OLD_CLI_VERSION = '5.6.0'
+async function getLatestCliVersion(): Promise<string> {
+  const version = await getLatestVersion(packageName)
+
+  if (!version) {
+    throw new Error('Unable to retrieve version')
+  }
+
+  return version
+}
+
+let latestCliVersion: string
+
+beforeAll(async () => {
+  latestCliVersion = await getLatestCliVersion()
+  const tmpDir = getTempPath()
+  await downloadAndExtractTarball(latestCliVersion, tmpDir)
+})
 
 // Convert web stream to async iterable for use with Readable.from()
 async function* streamToAsyncIterable(
@@ -47,7 +66,6 @@ async function downloadAndExtractTarball(version: string, destDir: string) {
     }
   }
 
-  const packageName = '@sanity/cli'
   const res = await fetch(`https://registry.npmjs.org/${packageName}/-/cli-${version}.tgz`)
 
   if (!res.ok) {
@@ -64,9 +82,7 @@ async function downloadAndExtractTarball(version: string, destDir: string) {
 
 async function getSanityPackageExports() {
   const tmpDir = getTempPath()
-  await downloadAndExtractTarball(OLD_CLI_VERSION, tmpDir)
-
-  const packagePath = getPackagePath(tmpDir, OLD_CLI_VERSION)
+  const packagePath = getPackagePath(tmpDir, latestCliVersion)
 
   const packageJson = await readPackageJson(join(packagePath, 'package.json'))
   const main = packageJson.main
@@ -88,11 +104,19 @@ async function extractTypes(typesPath: string) {
   const exportedTypes: string[] = []
 
   ts.forEachChild(sourceFile, (node) => {
+    // Handle direct exports: export interface X, export type X = ...
     if (
       (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) &&
       node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
     ) {
       exportedTypes.push(node.name.text)
+    }
+
+    // Handle re-exports: export { X, Y, Z }
+    if (ts.isExportDeclaration(node) && node.exportClause && ts.isNamedExports(node.exportClause)) {
+      for (const element of node.exportClause.elements) {
+        exportedTypes.push(element.name.text)
+      }
     }
   })
 
@@ -101,9 +125,7 @@ async function extractTypes(typesPath: string) {
 
 async function getSanityPackageTypeExports() {
   const tmpDir = getTempPath()
-  await downloadAndExtractTarball(OLD_CLI_VERSION, tmpDir)
-
-  const packagePath = getPackagePath(tmpDir, OLD_CLI_VERSION)
+  const packagePath = getPackagePath(tmpDir, latestCliVersion)
 
   const packageJson = await readPackageJson(join(packagePath, 'package.json'))
   const types = packageJson.types
@@ -113,7 +135,6 @@ async function getSanityPackageTypeExports() {
   const typesPath = join(packagePath, types)
 
   const exportedTypes = await extractTypes(typesPath)
-
   return exportedTypes
 }
 
