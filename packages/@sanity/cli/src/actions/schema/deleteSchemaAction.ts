@@ -1,17 +1,13 @@
 import {styleText} from 'node:util'
 
-import {type Output} from '@sanity/cli-core'
+import {CLIError} from '@oclif/core/errors'
+import {type Output, studioWorkerTask} from '@sanity/cli-core'
+import {type Workspace} from 'sanity'
 
 import {deleteSchema} from '../../services/schemas.js'
 import {isDefined} from '../manifest/schemaTypeHelpers.js'
-import {type SchemaStoreActionResult} from './schemaStoreTypes.js'
-import {ensureManifestExtractSatisfied} from './utils/manifestExtractor.js'
-import {createManifestReader} from './utils/manifestReader.js'
 import {getDatasetsOutString, getStringList} from './utils/schemaStoreOutStrings.js'
-import {
-  filterLogReadProjectIdMismatch,
-  type WorkspaceSchemaId,
-} from './utils/schemaStoreValidation.js'
+import {type WorkspaceSchemaId} from './utils/schemaStoreValidation.js'
 
 // Native implementation instead of lodash/uniq
 function uniq<T>(array: T[]): T[] {
@@ -19,9 +15,8 @@ function uniq<T>(array: T[]): T[] {
 }
 
 interface DeleteSchemasOptions {
-  extractManifest: boolean
+  configPath: string
   ids: WorkspaceSchemaId[]
-  manifestDir: string
   output: Output
   projectId: string
   verbose: boolean
@@ -47,42 +42,19 @@ class DeleteIdError extends Error {
   }
 }
 
-/**
- * Deletes all stored schemas matching --ids in workspace datasets.
- *
- * Workspaces are determined by on-disk manifest file – not directly from sanity.config.
- * All schema store actions require a manifest to exist, so we regenerate it by default.
- * Manifest generation can be optionally disabled with --no-manifest-extract.
- * In this case the command uses and existing file or throws when missing.
- */
-export async function deleteSchemaAction(
-  options: DeleteSchemasOptions,
-): Promise<SchemaStoreActionResult> {
-  const {dataset, extractManifest, ids, manifestDir, output, projectId, verbose, workDir} = options
+export async function deleteSchemaAction(options: DeleteSchemasOptions): Promise<void> {
+  const {configPath, dataset, ids, output, projectId, verbose, workDir} = options
 
-  if (
-    !(await ensureManifestExtractSatisfied({
-      extractManifest,
-      manifestDir,
-      output,
-      schemaRequired: true,
-      workDir,
-    }))
-  ) {
-    return 'failure'
-  }
+  const projectDatasets = await studioWorkerTask<(Workspace & {key: string})[]>(
+    new URL('deleteSchema.worker.js', import.meta.url),
+    {
+      name: 'deleteSchema',
+      studioRootPath: workDir,
+      workerData: {configPath, dataset},
+    },
+  )
 
-  const manifest = await createManifestReader({
-    manifestDir,
-    output,
-    workDir,
-  }).getManifest()
-
-  const workspaces = manifest.workspaces
-    .filter((workspace) => !dataset || workspace.dataset === dataset)
-    .filter((workspace) => filterLogReadProjectIdMismatch(workspace, projectId, output))
-
-  const datasets = uniq(workspaces.map((w) => w.dataset))
+  const datasets = projectDatasets.map((w) => w.dataset)
 
   const results = await Promise.allSettled(
     datasets.flatMap((targetDataset: string) => {
@@ -139,7 +111,7 @@ export async function deleteSchemaAction(
   if (success) {
     output.log(`Successfully deleted ${uniqueDeletedSchemaIds.length}/${ids.length} schemas`)
   } else {
-    output.error(
+    throw new CLIError(
       [
         `Deleted ${uniqueDeletedSchemaIds.length}/${ids.length} schemas.`,
         deletedIds.length > 0
@@ -161,6 +133,4 @@ export async function deleteSchemaAction(
         .join('\n'),
     )
   }
-
-  return success ? 'success' : 'failure'
 }
