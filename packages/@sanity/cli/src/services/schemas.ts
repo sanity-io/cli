@@ -1,5 +1,7 @@
 import {getGlobalCliClient} from '@sanity/cli-core'
 
+import {type StoredWorkspaceSchema} from '../actions/manifest/types.js'
+
 export const SCHEMA_API_VERSION = 'v2025-03-01'
 
 async function getSchemaClient() {
@@ -12,7 +14,7 @@ async function getSchemaClient() {
 export async function getSchemas(dataset: string, projectId: string, id?: string) {
   const client = await getSchemaClient()
 
-  return client.request({
+  return client.request<StoredWorkspaceSchema[]>({
     method: 'GET',
     uri: `/projects/${projectId}/datasets/${dataset}/schemas${id ? `/${id}` : ''}`,
   })

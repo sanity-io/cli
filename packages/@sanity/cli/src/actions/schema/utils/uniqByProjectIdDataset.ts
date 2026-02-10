@@ -1,8 +1,8 @@
-import {uniqBy} from '../../../util/uniqBy.js'
-import {type ManifestWorkspaceFile} from '../../manifest/types'
+import {uniqBy} from 'lodash-es'
+import {type Workspace} from 'sanity'
 
-export function uniqByProjectIdDataset(workspaces: ManifestWorkspaceFile[]) {
-  return uniqBy(
+export function uniqByProjectIdDataset(workspaces: Workspace[]) {
+  return uniqBy<Workspace & {key: string}>(
     workspaces.map((w) => ({
       ...w,
       key: `${w.projectId}-${w.dataset}`,
