@@ -3,6 +3,7 @@ import {fileURLToPath} from 'node:url'
 
 import {type Hook} from '@oclif/core'
 import {
+  type CliConfig,
   createTelemetryStore,
   debug,
   findProjectRoot,
@@ -28,8 +29,13 @@ export const setupTelemetry: Hook.Prerun = async function ({config}) {
     resolveConsent,
   })
 
-  const projectRoot = await findProjectRoot(process.cwd())
-  const cliConfig = await getCliConfig(projectRoot.directory)
+  let cliConfig: CliConfig | undefined
+  try {
+    const projectRoot = await findProjectRoot(process.cwd())
+    cliConfig = await getCliConfig(projectRoot.directory)
+  } catch {
+    // Accept not finding a project root and/or CLI config
+  }
 
   telemetry.updateUserProperties({
     cliVersion: config.version,
