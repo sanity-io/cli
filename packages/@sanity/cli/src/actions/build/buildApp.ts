@@ -2,6 +2,7 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
+import {CLIError} from '@oclif/core/errors'
 import {getCliTelemetry, getTimer} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import semver from 'semver'
@@ -34,11 +35,11 @@ export async function buildApp(options: BuildOptions): Promise<void> {
 
   const appId = getAppId(cliConfig)
 
-  const installedSdkVersion = await readModuleVersion(outputDir, '@sanity/sdk-react')
-  const installedSanityVersion = await readModuleVersion(outputDir, 'sanity')
+  const installedSdkVersion = await readModuleVersion(workDir, '@sanity/sdk-react')
+  const installedSanityVersion = await readModuleVersion(workDir, 'sanity')
 
   if (!installedSdkVersion) {
-    throw new Error(`Failed to find installed @sanity/sdk-react version`)
+    throw new CLIError(`Failed to find installed @sanity/sdk-react version`, {exit: 1})
   }
 
   let autoUpdatesImports = {}
@@ -47,7 +48,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
     const cleanSDKVersion = semver.parse(installedSdkVersion)?.version
     if (!cleanSDKVersion) {
-      throw new Error(`Failed to parse installed SDK version: ${installedSdkVersion}`)
+      throw new CLIError(`Failed to parse installed SDK version: ${installedSdkVersion}`, {exit: 1})
     }
 
     // Sanity might not be installed, but if it is, we want to auto update it.

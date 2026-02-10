@@ -467,6 +467,9 @@ importers:
       gunzip-maybe:
         specifier: ^1.4.2
         version: 1.4.2
+      import-meta-resolve:
+        specifier: ^4.2.0
+        version: 4.2.0
       install-peerdeps:
         specifier: ^3.0.7
         version: 3.0.7

@@ -1,6 +1,7 @@
-import path from 'node:path'
+import {resolve} from 'node:path'
+import {pathToFileURL} from 'node:url'
 
-import resolveFrom from 'resolve-from'
+import {moduleResolve} from 'import-meta-resolve'
 
 import {readPackageJson} from './readPackageJson.js'
 
@@ -12,6 +13,12 @@ import {readPackageJson} from './readPackageJson.js'
  * @returns Version number, of null
  */
 export async function readModuleVersion(dir: string, moduleName: string): Promise<string | null> {
-  const manifestPath = resolveFrom.silent(dir, path.join(moduleName, 'package.json'))
-  return manifestPath ? (await readPackageJson(manifestPath)).version : null
+  try {
+    const dirUrl = pathToFileURL(resolve(dir, 'noop.js'))
+    const packageUrl = moduleResolve(`${moduleName}/package.json`, dirUrl)
+
+    return (await readPackageJson(packageUrl)).version
+  } catch {
+    return null
+  }
 }
