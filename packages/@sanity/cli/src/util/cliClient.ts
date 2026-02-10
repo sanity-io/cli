@@ -5,6 +5,11 @@ import {type ClientConfig, createClient, type SanityClient} from '@sanity/client
  * @public
  */
 export interface CliClientOptions extends ClientConfig {
+  /**
+   * If no `projectId` or `dataset` is provided, `getCliClient` will try to
+   * resolve these from the `sanity.cli.ts` configuration file. Use this option
+   * to specify the directory to look for this file.
+   */
   cwd?: string
 }
 
