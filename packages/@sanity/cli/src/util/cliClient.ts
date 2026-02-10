@@ -1,17 +1,11 @@
 import {findProjectRootSync, getCliConfigSync} from '@sanity/cli-core'
-import {createClient, type SanityClient} from '@sanity/client'
+import {type ClientConfig, createClient, type SanityClient} from '@sanity/client'
 
 /**
  * @public
  */
-export interface CliClientOptions {
-  apiVersion?: string
-
+export interface CliClientOptions extends ClientConfig {
   cwd?: string
-  dataset?: string
-  projectId?: string
-  token?: string
-  useCdn?: boolean
 }
 
 /**
