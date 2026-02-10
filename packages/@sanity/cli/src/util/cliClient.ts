@@ -31,10 +31,11 @@ export const getCliClient: CliClientGetter = (options: CliClientOptions = {}): S
     projectId,
     token = getCliClient.__internal__getToken(),
     useCdn = false,
+    ...restOfOptions
   } = options
 
   if (projectId && dataset) {
-    return createClient({apiVersion, dataset, projectId, token, useCdn})
+    return createClient({apiVersion, dataset, projectId, token, useCdn, ...restOfOptions})
   }
 
   const projectRoot = findProjectRootSync(cwd)
@@ -55,6 +56,7 @@ export const getCliClient: CliClientGetter = (options: CliClientOptions = {}): S
     projectId: apiConfig.projectId,
     token,
     useCdn,
+    ...restOfOptions,
   })
 }
 
