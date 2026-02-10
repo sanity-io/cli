@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/turbo/schema.json",
   "globalDependencies": ["**/.env.*local"],
-  "globalEnv": ["SANITY_API_TOKEN", "NODE_VERSION"],
+  "globalEnv": ["SANITY_API_TOKEN", "NODE_VERSION", "NO_UPDATE_NOTIFIER"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

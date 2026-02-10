@@ -78,9 +78,11 @@ export function createExpiringConfig<Type>({
         onRevalidate()
       }
 
+      // Return existing fetch if one is already in progress
       if (currentFetch) {
         return currentFetch
       }
+
       onFetch()
 
       currentFetch = Promise.resolve(fetchValue())
