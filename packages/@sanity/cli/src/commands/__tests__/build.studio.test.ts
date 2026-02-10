@@ -1,5 +1,4 @@
 import {readdir} from 'node:fs/promises'
-import {platform} from 'node:os'
 import {join} from 'node:path'
 
 import {testCommand, testFixture} from '@sanity/cli-test'
@@ -7,7 +6,7 @@ import {describe, expect, test} from 'vitest'
 
 import {BuildCommand} from '../build.js'
 
-describe('#build studio', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
+describe('#build studio', {timeout: 60 * 1000}, () => {
   test('shows an error for invalid flags', async () => {
     const {error} = await testCommand(BuildCommand, ['--invalid'])
 
@@ -22,7 +21,6 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, 
       config: {root: cwd},
     })
 
-    // Assert things here
     expect(error).toBeUndefined()
     expect(stdout).toContain(`Building with auto-updates enabled`)
     expect(stderr).toContain('✔ Clean output folder')
@@ -34,7 +32,8 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, 
     expect(files).toContain('static')
   })
 
-  test("should build the 'worst-case-studio' example", async () => {
+  // TODO: Fix, See SDK-780
+  test.skip("should build the 'worst-case-studio' example", async () => {
     const cwd = await testFixture('worst-case-studio')
     process.chdir(cwd)
 

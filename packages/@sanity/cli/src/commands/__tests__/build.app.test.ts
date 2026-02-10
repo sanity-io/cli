@@ -124,13 +124,11 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
     const cwd = await testFixture('basic-app')
     process.chdir(cwd)
 
-    // Remove sdk-react
     const packageJson = await readFile(join(cwd, 'package.json'), 'utf8')
     const packageJsonData = JSON.parse(packageJson)
     delete packageJsonData.dependencies['@sanity/sdk-react']
     await writeFile(join(cwd, 'package.json'), JSON.stringify(packageJsonData, null, 2))
 
-    // Remove symlink
     await unlink(join(cwd, 'node_modules'))
     await execAsync(`pnpm install --prefer-offline --no-lockfile`, {
       cwd,
