@@ -1192,7 +1192,7 @@ DESCRIPTION
   Builds and deploys Sanity Studio or application to Sanity hosting
 
 EXAMPLES
-  Build the studio
+  Build and deploy the studio to Sanity hosting
 
     $ sanity deploy
 

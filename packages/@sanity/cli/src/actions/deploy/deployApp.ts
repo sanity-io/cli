@@ -27,7 +27,7 @@ import {type DeployAppOptions} from './types.js'
  * @internal
  */
 export async function deployApp(options: DeployAppOptions) {
-  const {cliConfig, exit, flags, output, sourceDir, workDir} = options
+  const {cliConfig, flags, output, sourceDir, workDir} = options
 
   const organizationId = cliConfig.app?.organizationId
   const appId = getAppId(cliConfig)
@@ -74,7 +74,6 @@ export async function deployApp(options: DeployAppOptions) {
       await buildApp({
         autoUpdatesEnabled: isAutoUpdating,
         cliConfig,
-        exit,
         flags,
         outDir: sourceDir,
         output,
