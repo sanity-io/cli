@@ -41,3 +41,10 @@ export interface ExtractSchemaWorkerError {
 
   validation?: SchemaValidationProblemGroup[]
 }
+
+export const uniqWorkspaceWorkerDataSchema = z.object({
+  configPath: z.string(),
+  dataset: z.string().optional(),
+})
+
+export type UniqWorkspaceWorkerData = z.infer<typeof uniqWorkspaceWorkerDataSchema>

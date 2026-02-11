@@ -6,6 +6,7 @@ import {type Workspace} from 'sanity'
 
 import {deleteSchema} from '../../services/schemas.js'
 import {isDefined} from '../manifest/schemaTypeHelpers.js'
+import {type UniqWorkspaceWorkerData} from './types.js'
 import {getDatasetsOutString, getStringList} from './utils/schemaStoreOutStrings.js'
 import {type WorkspaceSchemaId} from './utils/schemaStoreValidation.js'
 
@@ -46,11 +47,11 @@ export async function deleteSchemaAction(options: DeleteSchemasOptions): Promise
   const {configPath, dataset, ids, output, projectId, verbose, workDir} = options
 
   const projectDatasets = await studioWorkerTask<(Workspace & {key: string})[]>(
-    new URL('deleteSchema.worker.js', import.meta.url),
+    new URL('uniqueWorkspaces.worker.js', import.meta.url),
     {
-      name: 'deleteSchema',
+      name: 'uniqueWorkspaces',
       studioRootPath: workDir,
-      workerData: {configPath, dataset},
+      workerData: {configPath, dataset} satisfies UniqWorkspaceWorkerData,
     },
   )
 

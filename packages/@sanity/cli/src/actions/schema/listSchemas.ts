@@ -8,6 +8,7 @@ import {type Workspace} from 'sanity'
 import {getSchemas} from '../../services/schemas.js'
 import {isDefined} from '../manifest/schemaTypeHelpers.js'
 import {type StoredWorkspaceSchema} from '../manifest/types.js'
+import {type UniqWorkspaceWorkerData} from './types.js'
 import {getDatasetsOutString} from './utils/schemaStoreOutStrings.js'
 import {SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
 
@@ -35,11 +36,11 @@ export async function listSchemas(options: ListSchemasOptions): Promise<void> {
   const {configPath, id, json, output, workDir} = options
 
   const projectDatasets = await studioWorkerTask<(Workspace & {key: string})[]>(
-    new URL('listSchemas.worker.js', import.meta.url),
+    new URL('uniqueWorkspaces.worker.js', import.meta.url),
     {
-      name: 'listSchemas',
+      name: 'uniqueWorkspaces',
       studioRootPath: workDir,
-      workerData: {configPath},
+      workerData: {configPath} satisfies UniqWorkspaceWorkerData,
     },
   )
 
