@@ -52,7 +52,7 @@ catalog:
 
   # Build Tools
   '@swc/core': ^1.15.11
-  '@swc/cli': ^0.7.10
+  '@swc/cli': ^0.8.0
   rimraf: ^6.0.1
   '@sanity/pkg-utils': ^10.4.4
 
