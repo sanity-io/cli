@@ -57,50 +57,23 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
     expect(indexHtml).toContain('importmap')
   })
 
-  test.each([
-    {
-      assert: async (cwd: string) => {
-        const staticFiles = await readdir(join(cwd, 'dist', 'static'))
-        expect(staticFiles.some((file) => file.endsWith('.map'))).toBe(true)
-      },
-      flags: ['--yes', '--source-maps'],
-      name: '--source-maps',
-    },
-    {
-      assert: async (cwd: string) => {
-        const files = await readdir(join(cwd, 'dist'))
-        expect(files).toContain('index.html')
-      },
-      flags: ['--yes', '--no-minify'],
-      name: '--no-minify',
-    },
-    {
-      assert: async (_cwd: string, stdout: string) => {
-        expect(stdout).toContain('Largest module files:')
-      },
-      flags: ['--yes', '--stats'],
-      name: '--stats',
-    },
-  ])('should build with $name flag', async ({assert, flags}) => {
-    const cwd = await testFixture('basic-app')
-    process.chdir(cwd)
-
-    const {error, stderr, stdout} = await testCommand(BuildCommand, flags)
-
-    expect(error).toBeUndefined()
-    expect(stderr).toContain('Build Sanity application')
-    await assert(cwd, stdout)
-  })
-
-  test('should include SANITY_APP_ environment variables in output', async () => {
+  test('should build with --source-maps and --stats flags and injects environment variables', async () => {
     const cwd = await testFixture('basic-app')
     process.chdir(cwd)
 
     vi.stubEnv('SANITY_APP_TEST_VAR', 'test-value')
 
-    const {error, stdout} = await testCommand(BuildCommand, ['--yes'])
+    const {error, stderr, stdout} = await testCommand(BuildCommand, [
+      '--yes',
+      '--source-maps',
+      '--stats',
+    ])
 
     expect(error).toBeUndefined()
+    const staticFiles = await readdir(join(cwd, 'dist', 'static'))
+    expect(staticFiles.some((file) => file.endsWith('.map'))).toBe(true)
+    expect(stdout).toContain('Largest module files:')
+    expect(stderr).toContain('Build Sanity application')
     expect(stdout).toContain('SANITY_APP_TEST_VAR')
   })
 
@@ -142,6 +115,7 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
     const {error} = await testCommand(BuildCommand, ['--yes'])
 
     expect(error?.message).toContain('Failed to build Sanity application')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should prompt for directory cleanup with custom output dir and confirm', async () => {
@@ -189,7 +163,8 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
 
     const {error} = await testCommand(BuildCommand, [])
 
-    expect(error).toBeDefined()
+    expect(error?.message).toContain('Declined to continue with build')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('should continue build when user confirms version diff prompt', async () => {

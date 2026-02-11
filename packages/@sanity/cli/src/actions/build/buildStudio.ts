@@ -2,7 +2,6 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {exit} from '@oclif/core/errors'
 import {getCliTelemetry, getTimer} from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import semver from 'semver'
@@ -103,7 +102,8 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       })
 
       if (choice === 'cancel') {
-        return exit(1)
+        output.error('Declined to continue with build', {exit: 1})
+        return
       }
 
       if (choice === 'upgrade' || choice === 'upgrade-and-proceed') {
@@ -116,7 +116,8 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
         )
 
         if (choice !== 'upgrade-and-proceed') {
-          return exit(1)
+          output.error('Declined to continue with build', {exit: 1})
+          return
         }
       }
     }

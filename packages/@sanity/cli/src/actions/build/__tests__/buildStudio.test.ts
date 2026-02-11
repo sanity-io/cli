@@ -1,7 +1,6 @@
 import {rm} from 'node:fs/promises'
 import path from 'node:path'
 
-import {exit} from '@oclif/core/errors'
 import {type Output} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {mockTelemetry} from '@sanity/cli-test'
@@ -94,10 +93,6 @@ vi.mock('../getStudioEnvVars.js', () => ({
 
 vi.mock('../shouldAutoUpdate.js', () => ({
   shouldAutoUpdate: mockedShouldAutoUpdate,
-}))
-
-vi.mock('@oclif/core/errors', () => ({
-  exit: vi.fn(),
 }))
 
 describe('buildStudio', () => {
@@ -316,7 +311,7 @@ describe('buildStudio', () => {
 
     await buildStudio(options)
 
-    expect(exit).toHaveBeenCalledWith(1)
+    expect(mockOutput.error).toHaveBeenCalledWith('Declined to continue with build', {exit: 1})
     expect(mockedUpgradePackages).not.toHaveBeenCalled()
   })
 
@@ -348,7 +343,7 @@ describe('buildStudio', () => {
       },
       {output: mockOutput, workDir: '/test/work/dir'},
     )
-    expect(exit).toHaveBeenCalledWith(1)
+    expect(mockOutput.error).toHaveBeenCalledWith('Declined to continue with build', {exit: 1})
   })
 
   it('should upgrade packages and continue building when user selects upgrade-and-proceed', async () => {
