@@ -6,7 +6,6 @@ export type DeployFlags = DeployCommand['flags']
 
 export interface DeployAppOptions {
   cliConfig: CliConfig
-  exit: (code?: number) => void
   flags: DeployFlags
   output: Output
   sourceDir: string

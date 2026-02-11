@@ -99,6 +99,7 @@
     "get-tsconfig": "catalog:",
     "git-user-info": "^2.0.3",
     "gunzip-maybe": "^1.4.2",
+    "import-meta-resolve": "^4.2.0",
     "install-peerdeps": "^3.0.7",
     "is-installed-globally": "^1.0.0",
     "is-tar": "^1.0.0",

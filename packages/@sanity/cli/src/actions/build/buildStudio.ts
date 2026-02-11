@@ -31,7 +31,7 @@ import {type BuildOptions} from './types.js'
  */
 export async function buildStudio(options: BuildOptions): Promise<void> {
   const timer = getTimer()
-  const {cliConfig, exit, flags, outDir, output, workDir} = options
+  const {cliConfig, flags, outDir, output, workDir} = options
 
   const unattendedMode = Boolean(flags.yes)
   const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
@@ -102,7 +102,8 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       })
 
       if (choice === 'cancel') {
-        return exit(1)
+        output.error('Declined to continue with build', {exit: 1})
+        return
       }
 
       if (choice === 'upgrade' || choice === 'upgrade-and-proceed') {
@@ -115,7 +116,8 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
         )
 
         if (choice !== 'upgrade-and-proceed') {
-          return exit(1)
+          output.error('Declined to continue with build', {exit: 1})
+          return
         }
       }
     }

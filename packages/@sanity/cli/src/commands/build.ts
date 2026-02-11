@@ -58,17 +58,15 @@ export class BuildCommand extends SanityCommand<typeof BuildCommand> {
     const output = this.output
 
     const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
-    const exit = this.exit.bind(this)
 
     if (isApp) {
       buildDebug(`Building app`)
       await buildApp({
         autoUpdatesEnabled,
         cliConfig,
-        exit,
         flags,
         outDir: this.args.outputDir,
-        output: this.output,
+        output,
         workDir,
       })
     } else {
@@ -76,10 +74,9 @@ export class BuildCommand extends SanityCommand<typeof BuildCommand> {
       await buildStudio({
         autoUpdatesEnabled,
         cliConfig,
-        exit,
         flags,
         outDir: this.args.outputDir,
-        output: this.output,
+        output,
         workDir,
       })
     }

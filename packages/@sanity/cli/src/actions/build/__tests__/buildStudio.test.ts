@@ -107,7 +107,6 @@ describe('buildStudio', () => {
   const baseBuildOptions: BuildOptions = {
     autoUpdatesEnabled: false,
     cliConfig: {},
-    exit: vi.fn(),
     flags: {
       'auto-updates': false,
       json: false,
@@ -312,7 +311,7 @@ describe('buildStudio', () => {
 
     await buildStudio(options)
 
-    expect(baseBuildOptions.exit).toHaveBeenCalledWith(1)
+    expect(mockOutput.error).toHaveBeenCalledWith('Declined to continue with build', {exit: 1})
     expect(mockedUpgradePackages).not.toHaveBeenCalled()
   })
 
@@ -344,7 +343,7 @@ describe('buildStudio', () => {
       },
       {output: mockOutput, workDir: '/test/work/dir'},
     )
-    expect(baseBuildOptions.exit).toHaveBeenCalledWith(1)
+    expect(mockOutput.error).toHaveBeenCalledWith('Declined to continue with build', {exit: 1})
   })
 
   it('should upgrade packages and continue building when user selects upgrade-and-proceed', async () => {

@@ -36,7 +36,7 @@ export type PackageJson = z.infer<typeof packageJsonSchema>
  * @internal
  */
 export async function readPackageJson(
-  filePath: string,
+  filePath: string | URL,
   skipSchemaValidation = false,
 ): Promise<PackageJson> {
   let pkg: unknown

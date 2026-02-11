@@ -1,11 +1,12 @@
-import DescriptionInput from '@/descriptionInput'
-import {schemaTypes} from '@/schemaTypes'
 import {codeInput} from '@sanity/code-input'
 import {visionTool} from '@sanity/vision'
 // eslint-disable-next-line import/no-unresolved
 import {theme} from 'https://themer.sanity.build/api/hues?preset=dew'
 import {defineConfig, defineField, defineType} from 'sanity'
 import {structureTool} from 'sanity/structure'
+
+import DescriptionInput from '@/descriptionInput'
+import {schemaTypes} from '@/schemaTypes'
 
 // Look ma, dynamic imports in the config 🙈
 // Look ma, top level await in the config 🙈

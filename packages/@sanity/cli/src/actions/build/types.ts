@@ -8,7 +8,6 @@ export type BuildFlags = BuildCommand['flags']
 export interface BuildOptions {
   autoUpdatesEnabled: boolean
   cliConfig: CliConfig
-  exit: (code?: number) => void
   flags: BuildFlags | DeployFlags
   output: Output
 

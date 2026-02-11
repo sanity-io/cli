@@ -22,8 +22,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      // TODO: Update this
-      description: 'Build the studio',
+      description: 'Build and deploy the studio to Sanity hosting',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --no-minify --source-maps',
@@ -110,7 +109,6 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       deployDebug('Deploying app')
       await deployApp({
         cliConfig,
-        exit: this.exit,
         flags,
         output: this.output,
         sourceDir,
@@ -120,7 +118,6 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       deployDebug('Deploying studio')
       await deployStudio({
         cliConfig,
-        exit: this.exit,
         flags,
         output: this.output,
         sourceDir,

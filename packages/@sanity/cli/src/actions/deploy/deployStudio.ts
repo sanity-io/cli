@@ -19,7 +19,7 @@ import {findUserApplicationForStudio} from './findUserApplicationForStudio.js'
 import {type DeployAppOptions} from './types.js'
 
 export async function deployStudio(options: DeployAppOptions) {
-  const {cliConfig, exit, flags, output, sourceDir, workDir} = options
+  const {cliConfig, flags, output, sourceDir, workDir} = options
 
   const appHost = cliConfig.studioHost
   const appId = getAppId(cliConfig)
@@ -67,7 +67,6 @@ export async function deployStudio(options: DeployAppOptions) {
       await buildStudio({
         autoUpdatesEnabled: isAutoUpdating,
         cliConfig,
-        exit,
         flags,
         outDir: sourceDir,
         output,

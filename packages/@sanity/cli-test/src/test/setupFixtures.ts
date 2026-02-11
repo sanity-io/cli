@@ -190,5 +190,5 @@ export async function teardown(options: TeardownTestFixturesOptions = {}): Promi
   const tempDirectory = getTempPath(tempDir)
 
   // Remove the tmp directory
-  await rm(tempDirectory, {force: true, recursive: true})
+  await rm(tempDirectory, {force: true, maxRetries: 3, recursive: true}).catch(() => {})
 }
