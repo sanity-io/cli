@@ -30,10 +30,9 @@ export async function checkStudioDependencyVersions(
   output: Output,
 ): Promise<void> {
   const manifest = await readPackageJson(path.join(workDir, 'package.json'), {
-    ensureDependencies: true,
     skipSchemaValidation: true,
   })
-  const dependencies = {...manifest.dependencies, ...manifest.devDependencies}
+  const dependencies = {...manifest?.dependencies, ...manifest?.devDependencies}
 
   const packageInfo = PACKAGES.map(async (pkg): Promise<false | PackageInfo> => {
     const dependency = dependencies[pkg.name]

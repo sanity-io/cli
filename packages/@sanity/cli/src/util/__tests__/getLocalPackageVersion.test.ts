@@ -35,7 +35,6 @@ describe('getLocalPackageVersion', () => {
     const mockVersion = '1.0.0'
 
     vi.mocked(resolveFrom.silent).mockReturnValueOnce(mockPath)
-    // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
     vi.mocked(readPackageJson).mockResolvedValueOnce({
       name: mockModuleId,
       version: mockVersion,
@@ -58,7 +57,6 @@ describe('getLocalPackageVersion', () => {
     vi.mocked(resolveFrom.silent).mockReturnValueOnce(undefined)
     // Second call succeeds (resolving the module itself)
     vi.mocked(resolveFrom.silent).mockReturnValueOnce(modulePath)
-    // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
     vi.mocked(readPackageJson).mockResolvedValueOnce({
       name: mockModuleId,
       version: mockVersion,
@@ -92,7 +90,6 @@ describe('getLocalPackageVersion', () => {
 
     vi.spyOn(process, 'cwd').mockReturnValue(mockCwd)
     vi.mocked(resolveFrom.silent).mockReturnValueOnce(mockPath)
-    // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
     vi.mocked(readPackageJson).mockResolvedValueOnce({
       name: mockModuleId,
       version: mockVersion,

@@ -78,9 +78,7 @@ describe('checkStudioDependencyVersions', () => {
           name: 'test-project',
           version: '1.0.0',
         })
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'react', version: '18.2.0'} as PackageJson)
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'react-dom', version: '18.2.0'} as PackageJson)
 
       mockedResolveFromSilent
@@ -103,7 +101,6 @@ describe('checkStudioDependencyVersions', () => {
           name: 'test-project',
           version: '1.0.0',
         })
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'react', version: '20.0.0'} as PackageJson)
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
@@ -133,7 +130,6 @@ describe('checkStudioDependencyVersions', () => {
           name: 'test-project',
           version: '1.0.0',
         })
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'react', version: '16.14.0'} as PackageJson)
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
@@ -221,7 +217,6 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'react', version: '18.2.0'} as PackageJson)
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
@@ -286,11 +281,8 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'react', version: '16.14.0'} as PackageJson)
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'react-dom', version: '20.0.0'} as PackageJson)
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'styled-components', version: '6.1.0'} as PackageJson)
 
       mockedResolveFromSilent
@@ -343,7 +335,6 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'react', version: '16.14.0'} as PackageJson)
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
@@ -371,7 +362,6 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'react', version: '16.14.0'} as PackageJson)
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
@@ -408,7 +398,6 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'react', version: '20.0.0'} as PackageJson)
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
@@ -437,9 +426,7 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'react', version: '16.14.0'} as PackageJson)
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'react-dom', version: '16.14.0'} as PackageJson)
 
       mockedResolveFromSilent
@@ -529,7 +516,6 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: '@sanity/ui', version: '2.0.0'} as PackageJson)
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/@sanity/ui/package.json')
@@ -550,7 +536,6 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
         .mockResolvedValueOnce({name: 'styled-components', version: '6.1.0'} as PackageJson)
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/styled-components/package.json')

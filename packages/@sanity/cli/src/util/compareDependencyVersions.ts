@@ -62,10 +62,9 @@ export async function compareDependencyVersions(
   {fetchFn = globalThis.fetch}: {appId?: string; fetchFn?: typeof fetch} = {},
 ): Promise<Array<CompareDependencyVersions>> {
   const manifest = await readPackageJson(path.join(workDir, 'package.json'), {
-    ensureDependencies: true,
     skipSchemaValidation: true,
   })
-  const dependencies = {...manifest.dependencies, ...manifest.devDependencies}
+  const dependencies = {...manifest?.dependencies, ...manifest?.devDependencies}
 
   const failedDependencies: Array<CompareDependencyVersions> = []
 
@@ -81,7 +80,6 @@ export async function compareDependencyVersions(
         ? semver.parse(
             (
               await readPackageJson(manifestPath, {
-                ensureDependencies: true,
                 skipSchemaValidation: true,
               })
             ).version,

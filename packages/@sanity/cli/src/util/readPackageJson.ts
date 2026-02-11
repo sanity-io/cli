@@ -48,17 +48,6 @@ const packageJsonSchema = z.object({
 export type PackageJson = z.infer<typeof packageJsonSchema>
 
 /**
- * Package.json with guaranteed dependency fields.
- * Used when ensureDependencies option is enabled.
- *
- * @public
- */
-export interface PackageJsonWithDeps extends PackageJson {
-  dependencies: Record<string, string>
-  devDependencies: Record<string, string>
-}
-
-/**
  * Options for reading package.json files
  *
  * @public
@@ -71,13 +60,6 @@ export interface ReadPackageJsonOptions {
   defaults?: Partial<PackageJson>
 
   /**
-   * Ensure dependencies and devDependencies fields exist (as empty objects if missing).
-   * When true, returns PackageJsonWithDeps type.
-   * Defaults to false.
-   */
-  ensureDependencies?: boolean
-
-  /**
    * Skip Zod schema validation. When true, the file is parsed but not validated.
    * Defaults to false.
    */
@@ -88,44 +70,18 @@ export interface ReadPackageJsonOptions {
  * Read the `package.json` file at the given path
  *
  * @param filePath - Path to package.json to read
- * @param options - Options object or boolean (for backward compatibility with skipSchemaValidation)
+ * @param options - Options object for controlling read behavior
  * @returns The parsed package.json
  * @public
  */
 export async function readPackageJson(
   filePath: string | URL,
-  options?: boolean | ReadPackageJsonOptions,
-): Promise<PackageJson>
-
-/**
- * Read the `package.json` file at the given path with guaranteed dependency fields
- *
- * @param filePath - Path to package.json to read
- * @param options - Options with ensureDependencies set to true
- * @returns The parsed package.json with guaranteed dependencies and devDependencies
- * @public
- */
-export async function readPackageJson(
-  filePath: string | URL,
-  options: ReadPackageJsonOptions & {ensureDependencies: true},
-): Promise<PackageJsonWithDeps>
-
-export async function readPackageJson(
-  filePath: string | URL,
-  options?: boolean | ReadPackageJsonOptions,
-): Promise<PackageJson | PackageJsonWithDeps> {
-  // Normalize options (handle backward compatibility with boolean parameter)
-  const normalizedOptions: ReadPackageJsonOptions =
-    typeof options === 'boolean' ? {skipSchemaValidation: options} : (options ?? {})
-
-  const {
-    defaults = {},
-    ensureDependencies = false,
-    skipSchemaValidation = false,
-  } = normalizedOptions
+  options: ReadPackageJsonOptions = {},
+): Promise<PackageJson> {
+  const {defaults = {}, skipSchemaValidation = false} = options
 
   // Read and parse the file
-  let pkg: unknown
+  let pkg: Record<string, unknown>
   try {
     pkg = JSON.parse(await readFile(filePath, 'utf8'))
   } catch (err: unknown) {
@@ -133,7 +89,7 @@ export async function readPackageJson(
   }
 
   // Merge with defaults (parsed values take precedence)
-  const merged = {...defaults, ...(pkg as object)}
+  const merged = {...defaults, ...pkg}
 
   // Validate with schema unless skipped
   let validated: PackageJson
@@ -147,15 +103,6 @@ export async function readPackageJson(
       )
     }
     validated = data
-  }
-
-  // Ensure dependency fields exist if requested
-  if (ensureDependencies) {
-    return {
-      ...validated,
-      dependencies: validated.dependencies ?? {},
-      devDependencies: validated.devDependencies ?? {},
-    } as PackageJsonWithDeps
   }
 
   return validated
