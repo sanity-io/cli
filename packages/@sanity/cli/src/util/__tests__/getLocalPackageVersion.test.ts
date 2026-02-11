@@ -1,11 +1,13 @@
 import {join} from 'node:path'
 
+import {type PackageJson} from '@sanity/cli-core'
 // Import the mocked modules
 import resolveFrom from 'resolve-from'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getLocalPackageVersion} from '../getLocalPackageVersion'
-import {type PackageJson, readPackageJson} from '../readPackageJson.js'
+
+const mockReadPackageJson = vi.hoisted(() => vi.fn())
 
 // Mock the dependencies
 vi.mock('resolve-from', () => ({
@@ -14,9 +16,13 @@ vi.mock('resolve-from', () => ({
   },
 }))
 
-vi.mock('../readPackageJson', () => ({
-  readPackageJson: vi.fn(),
-}))
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    readPackageJson: mockReadPackageJson,
+  }
+})
 
 describe('getLocalPackageVersion', () => {
   const mockWorkDir = '/mock/work/dir'
@@ -35,7 +41,7 @@ describe('getLocalPackageVersion', () => {
     const mockVersion = '1.0.0'
 
     vi.mocked(resolveFrom.silent).mockReturnValueOnce(mockPath)
-    vi.mocked(readPackageJson).mockResolvedValueOnce({
+    mockReadPackageJson.mockResolvedValueOnce({
       name: mockModuleId,
       version: mockVersion,
     } as PackageJson)
@@ -43,7 +49,7 @@ describe('getLocalPackageVersion', () => {
     const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
 
     expect(resolveFrom.silent).toHaveBeenCalledWith(mockWorkDir, join(mockModuleId, 'package.json'))
-    expect(readPackageJson).toHaveBeenCalledWith(mockPath)
+    expect(mockReadPackageJson).toHaveBeenCalledWith(mockPath)
     expect(result).toBe(mockVersion)
   })
 
@@ -57,7 +63,7 @@ describe('getLocalPackageVersion', () => {
     vi.mocked(resolveFrom.silent).mockReturnValueOnce(undefined)
     // Second call succeeds (resolving the module itself)
     vi.mocked(resolveFrom.silent).mockReturnValueOnce(modulePath)
-    vi.mocked(readPackageJson).mockResolvedValueOnce({
+    mockReadPackageJson.mockResolvedValueOnce({
       name: mockModuleId,
       version: mockVersion,
     } as PackageJson)
@@ -66,7 +72,7 @@ describe('getLocalPackageVersion', () => {
 
     expect(resolveFrom.silent).toHaveBeenCalledWith(mockWorkDir, join(mockModuleId, 'package.json'))
     expect(resolveFrom.silent).toHaveBeenCalledWith(mockWorkDir, mockModuleId)
-    expect(readPackageJson).toHaveBeenCalledWith(manifestPath)
+    expect(mockReadPackageJson).toHaveBeenCalledWith(manifestPath)
     expect(result).toBe(mockVersion)
   })
 
@@ -79,7 +85,7 @@ describe('getLocalPackageVersion', () => {
 
     expect(resolveFrom.silent).toHaveBeenCalledWith(mockWorkDir, join(mockModuleId, 'package.json'))
     expect(resolveFrom.silent).toHaveBeenCalledWith(mockWorkDir, mockModuleId)
-    expect(readPackageJson).not.toHaveBeenCalled()
+    expect(mockReadPackageJson).not.toHaveBeenCalled()
     expect(result).toBeUndefined()
   })
 
@@ -90,7 +96,7 @@ describe('getLocalPackageVersion', () => {
 
     vi.spyOn(process, 'cwd').mockReturnValue(mockCwd)
     vi.mocked(resolveFrom.silent).mockReturnValueOnce(mockPath)
-    vi.mocked(readPackageJson).mockResolvedValueOnce({
+    mockReadPackageJson.mockResolvedValueOnce({
       name: mockModuleId,
       version: mockVersion,
     } as PackageJson)
@@ -98,7 +104,7 @@ describe('getLocalPackageVersion', () => {
     const result = await getLocalPackageVersion(mockModuleId, '')
 
     expect(resolveFrom.silent).toHaveBeenCalledWith(mockCwd, join(mockModuleId, 'package.json'))
-    expect(readPackageJson).toHaveBeenCalledWith(mockPath)
+    expect(mockReadPackageJson).toHaveBeenCalledWith(mockPath)
     expect(result).toBe(mockVersion)
   })
 })

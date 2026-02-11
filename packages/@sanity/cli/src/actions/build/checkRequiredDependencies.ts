@@ -1,12 +1,11 @@
 import path from 'node:path'
 
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, type Output, type PackageJson, readPackageJson} from '@sanity/cli-core'
 import {oneline} from 'oneline'
 import semver, {type SemVer} from 'semver'
 
 import {determineIsApp} from '../../util/determineIsApp.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
-import {type PackageJson, readPackageJson} from '../../util/readPackageJson.js'
 
 const defaultStudioManifestProps: Partial<PackageJson> = {
   name: 'studio',

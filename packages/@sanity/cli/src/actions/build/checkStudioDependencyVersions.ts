@@ -1,10 +1,8 @@
 import path from 'node:path'
 
-import {type Output} from '@sanity/cli-core'
+import {type Output, readPackageJson} from '@sanity/cli-core'
 import resolveFrom from 'resolve-from'
 import semver, {type SemVer} from 'semver'
-
-import {readPackageJson} from '../../util/readPackageJson.js'
 
 interface PackageInfo {
   deprecatedBelow: string | null

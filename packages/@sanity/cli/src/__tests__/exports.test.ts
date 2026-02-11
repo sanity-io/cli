@@ -3,6 +3,7 @@ import {join} from 'node:path'
 import {Readable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
 
+import {readPackageJson} from '@sanity/cli-core'
 import {boxen} from '@sanity/cli-core/ux'
 import {getTempPath} from '@sanity/cli-test'
 import {diff} from '@vitest/utils/diff'
@@ -12,7 +13,6 @@ import ts from 'typescript'
 import {expect, test} from 'vitest'
 
 import * as newExports from '../index.js'
-import {readPackageJson} from '../util/readPackageJson.js'
 
 function getPackagePath(tmpDir: string, version: string) {
   return join(tmpDir, `sanity-cli-${version}`, 'package')

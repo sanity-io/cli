@@ -5,10 +5,17 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {Versions} from '../../commands/versions.js'
 import {getCliVersion} from '../../util/getCliVersion.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
-import {readPackageJson} from '../../util/readPackageJson.js'
+
+const mockReadPackageJson = vi.hoisted(() => vi.fn())
 
 vi.mock(import('../../util/getCliVersion.js'))
-vi.mock(import('../../util/readPackageJson.js'))
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    readPackageJson: mockReadPackageJson,
+  }
+})
 vi.mock(import('../../util/getLocalPackageVersion.js'))
 vi.mock(import('get-latest-version'))
 
@@ -27,7 +34,7 @@ afterEach(() => {
 describe('#versions', () => {
   test('displays versions correctly when modules are up to date', async () => {
     vi.mocked(getCliVersion).mockResolvedValueOnce('3.0.0')
-    vi.mocked(readPackageJson).mockResolvedValueOnce({
+    mockReadPackageJson.mockResolvedValueOnce({
       dependencies: {
         '@sanity/cli': '3.0.0',
         sanity: '3.0.0',
@@ -51,7 +58,7 @@ describe('#versions', () => {
 
   test('displays versions correctly when modules need update', async () => {
     vi.mocked(getCliVersion).mockResolvedValueOnce('2.0.0')
-    vi.mocked(readPackageJson).mockResolvedValueOnce({
+    mockReadPackageJson.mockResolvedValueOnce({
       dependencies: {
         '@sanity/cli': '2.0.0',
         sanity: '2.0.0',
@@ -75,7 +82,7 @@ describe('#versions', () => {
 
   test('displays versions correctly when a module is missing', async () => {
     vi.mocked(getCliVersion).mockResolvedValueOnce('3.0.0')
-    vi.mocked(readPackageJson).mockResolvedValueOnce({
+    mockReadPackageJson.mockResolvedValueOnce({
       dependencies: {
         sanity: '3.0.0',
       },
@@ -97,7 +104,7 @@ describe('#versions', () => {
 
   test("doesn't show anything if no sanity packages", async () => {
     vi.mocked(getCliVersion).mockResolvedValueOnce('3.0.0')
-    vi.mocked(readPackageJson).mockResolvedValueOnce({
+    mockReadPackageJson.mockResolvedValueOnce({
       dependencies: {
         'something-random': '3.0.0',
       },
@@ -116,7 +123,7 @@ describe('#versions', () => {
 
   test('shows error if no sanity packages are found', async () => {
     vi.mocked(getCliVersion).mockResolvedValueOnce('3.0.0')
-    vi.mocked(readPackageJson).mockResolvedValueOnce({
+    mockReadPackageJson.mockResolvedValueOnce({
       dependencies: {},
       devDependencies: {},
       name: 'test',

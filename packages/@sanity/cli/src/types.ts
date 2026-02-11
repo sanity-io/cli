@@ -4,7 +4,7 @@
  *
  * @public
  */
-export type {PackageJson, PackageJsonWithDeps} from './util/readPackageJson.js'
+export type {PackageJson, ReadPackageJsonOptions} from '@sanity/cli-core'
 
 export interface CliApiConfig {
   dataset?: string

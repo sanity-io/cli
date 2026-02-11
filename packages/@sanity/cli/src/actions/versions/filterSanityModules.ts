@@ -1,4 +1,4 @@
-import {type PackageJson} from '../../util/readPackageJson.js'
+import {type PackageJson} from '@sanity/cli-core'
 
 /**
  * Filter the sanity modules from the package.json.

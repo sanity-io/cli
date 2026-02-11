@@ -1,9 +1,8 @@
 import {resolve} from 'node:path'
 import {pathToFileURL} from 'node:url'
 
+import {readPackageJson} from '@sanity/cli-core'
 import {moduleResolve} from 'import-meta-resolve'
-
-import {readPackageJson} from './readPackageJson.js'
 
 /**
  * Reads the version number of the _installed_ module, or returns `null` if not found

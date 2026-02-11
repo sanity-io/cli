@@ -1,10 +1,10 @@
 import path from 'node:path'
 
+import {readPackageJson} from '@sanity/cli-core'
 import resolveFrom from 'resolve-from'
 import semver from 'semver'
 
 import {getModuleUrl} from '../actions/build/getAutoUpdatesImportMap.js'
-import {readPackageJson} from './readPackageJson.js'
 
 function getRemoteResolvedVersion(fetchFn: typeof fetch, url: string) {
   return fetchFn(url, {

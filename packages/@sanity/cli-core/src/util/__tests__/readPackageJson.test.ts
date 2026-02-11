@@ -2,7 +2,7 @@ import {readFile} from 'node:fs/promises'
 
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {readPackageJson} from '../readPackageJson'
+import {readPackageJson} from '../readPackageJson.js'
 
 vi.mock('node:fs/promises', () => ({
   readFile: vi.fn(),
