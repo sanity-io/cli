@@ -6,9 +6,13 @@ import semver, {type SemVer} from 'semver'
 
 import {determineIsApp} from '../../util/determineIsApp.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
-import {type PartialPackageManifest, readPackageManifest} from '../../util/readPackageManifest.js'
+import {
+  type PackageJson,
+  type PackageJsonWithDeps,
+  readPackageJson,
+} from '../../util/readPackageJson.js'
 
-const defaultStudioManifestProps: PartialPackageManifest = {
+const defaultStudioManifestProps: Partial<PackageJson> = {
   name: 'studio',
   version: '1.0.0',
 }
@@ -47,12 +51,15 @@ export async function checkRequiredDependencies(
     return {installedSanityVersion: ''}
   }
 
-  const [studioPackageManifest, installedStyledComponentsVersion, installedSanityVersion] =
-    await Promise.all([
-      readPackageManifest(path.join(studioPath, 'package.json'), defaultStudioManifestProps),
-      readModuleVersion(studioPath, 'styled-components'),
-      readModuleVersion(studioPath, 'sanity'),
-    ])
+  const studioPackageManifest = (await readPackageJson(path.join(studioPath, 'package.json'), {
+    defaults: defaultStudioManifestProps,
+    ensureDependencies: true,
+    skipSchemaValidation: true,
+  })) as PackageJsonWithDeps
+  const [installedStyledComponentsVersion, installedSanityVersion] = await Promise.all([
+    readModuleVersion(studioPath, 'styled-components'),
+    readModuleVersion(studioPath, 'sanity'),
+  ])
 
   const wantedStyledComponentsVersionRange = styledComponentsVersionRange
 

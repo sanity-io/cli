@@ -4,7 +4,7 @@ import resolveFrom from 'resolve-from'
 import semver from 'semver'
 
 import {getModuleUrl} from '../actions/build/getAutoUpdatesImportMap.js'
-import {readPackageManifest} from './readPackageManifest.js'
+import {readPackageJson} from './readPackageJson.js'
 
 function getRemoteResolvedVersion(fetchFn: typeof fetch, url: string) {
   return fetchFn(url, {
@@ -61,7 +61,10 @@ export async function compareDependencyVersions(
   workDir: string,
   {fetchFn = globalThis.fetch}: {appId?: string; fetchFn?: typeof fetch} = {},
 ): Promise<Array<CompareDependencyVersions>> {
-  const manifest = await readPackageManifest(path.join(workDir, 'package.json'))
+  const manifest = await readPackageJson(path.join(workDir, 'package.json'), {
+    ensureDependencies: true,
+    skipSchemaValidation: true,
+  })
   const dependencies = {...manifest.dependencies, ...manifest.devDependencies}
 
   const failedDependencies: Array<CompareDependencyVersions> = []
@@ -75,7 +78,14 @@ export async function compareDependencyVersions(
 
     const installed = semver.coerce(
       manifestPath
-        ? semver.parse((await readPackageManifest(manifestPath)).version)
+        ? semver.parse(
+            (
+              await readPackageJson(manifestPath, {
+                ensureDependencies: true,
+                skipSchemaValidation: true,
+              })
+            ).version,
+          )
         : semver.coerce(manifestVersion),
     )
 

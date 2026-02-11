@@ -5,7 +5,7 @@ import resolveFrom from 'resolve-from'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getLocalPackageVersion} from '../getLocalPackageVersion'
-import {readPackageJson} from '../readPackageJson.js'
+import {type PackageJson, readPackageJson} from '../readPackageJson.js'
 
 // Mock the dependencies
 vi.mock('resolve-from', () => ({
@@ -35,10 +35,11 @@ describe('getLocalPackageVersion', () => {
     const mockVersion = '1.0.0'
 
     vi.mocked(resolveFrom.silent).mockReturnValueOnce(mockPath)
+    // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
     vi.mocked(readPackageJson).mockResolvedValueOnce({
       name: mockModuleId,
       version: mockVersion,
-    })
+    } as PackageJson)
 
     const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
 
@@ -57,10 +58,11 @@ describe('getLocalPackageVersion', () => {
     vi.mocked(resolveFrom.silent).mockReturnValueOnce(undefined)
     // Second call succeeds (resolving the module itself)
     vi.mocked(resolveFrom.silent).mockReturnValueOnce(modulePath)
+    // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
     vi.mocked(readPackageJson).mockResolvedValueOnce({
       name: mockModuleId,
       version: mockVersion,
-    })
+    } as PackageJson)
 
     const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
 
@@ -90,10 +92,11 @@ describe('getLocalPackageVersion', () => {
 
     vi.spyOn(process, 'cwd').mockReturnValue(mockCwd)
     vi.mocked(resolveFrom.silent).mockReturnValueOnce(mockPath)
+    // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
     vi.mocked(readPackageJson).mockResolvedValueOnce({
       name: mockModuleId,
       version: mockVersion,
-    })
+    } as PackageJson)
 
     const result = await getLocalPackageVersion(mockModuleId, '')
 

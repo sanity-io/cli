@@ -32,6 +32,7 @@ describe('#versions', () => {
         '@sanity/cli': '3.0.0',
         sanity: '3.0.0',
       },
+      devDependencies: {},
       name: 'test',
       version: '1.0.0',
     })
@@ -55,6 +56,7 @@ describe('#versions', () => {
         '@sanity/cli': '2.0.0',
         sanity: '2.0.0',
       },
+      devDependencies: {},
       name: 'test',
       version: '1.0.0',
     })
@@ -77,6 +79,7 @@ describe('#versions', () => {
       dependencies: {
         sanity: '3.0.0',
       },
+      devDependencies: {},
       name: 'test',
       version: '1.0.0',
     })
@@ -98,6 +101,7 @@ describe('#versions', () => {
       dependencies: {
         'something-random': '3.0.0',
       },
+      devDependencies: {},
       name: 'test',
       version: '1.0.0',
     })
@@ -114,6 +118,7 @@ describe('#versions', () => {
     vi.mocked(getCliVersion).mockResolvedValueOnce('3.0.0')
     vi.mocked(readPackageJson).mockResolvedValueOnce({
       dependencies: {},
+      devDependencies: {},
       name: 'test',
       version: '1.0.0',
     })

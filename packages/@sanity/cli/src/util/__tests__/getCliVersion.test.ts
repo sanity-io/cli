@@ -2,7 +2,7 @@ import {packageDirectory} from 'package-directory'
 import {describe, expect, test, vi} from 'vitest'
 
 import {getCliVersion} from '../getCliVersion.js'
-import {readPackageJson} from '../readPackageJson.js'
+import {type PackageJson, readPackageJson} from '../readPackageJson.js'
 
 vi.mock('package-directory')
 vi.mock(import('../readPackageJson.js'))
@@ -10,10 +10,11 @@ vi.mock(import('../readPackageJson.js'))
 describe('#getCliVersion', () => {
   test('should return the version of the @sanity/cli package', async () => {
     vi.mocked(packageDirectory).mockResolvedValueOnce('/test/path')
+    // @ts-expect-error - vitest mock typing doesn't handle function overloads correctly
     vi.mocked(readPackageJson).mockResolvedValueOnce({
       name: '@sanity/cli',
       version: '1.0.0',
-    })
+    } as PackageJson)
 
     const version = await getCliVersion()
 

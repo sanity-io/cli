@@ -1,21 +1,10 @@
 /**
+ * PackageJson type is now consolidated in readPackageJson.ts
+ * Re-exported here for backward compatibility.
+ *
  * @public
  */
-export interface PackageJson {
-  name: string
-  version: string
-
-  author?: string
-  dependencies?: Record<string, string>
-  description?: string
-  devDependencies?: Record<string, string>
-  engines?: Record<string, string>
-  license?: string
-  peerDependencies?: Record<string, string>
-  private?: boolean
-  repository?: {type: string; url: string}
-  scripts?: Record<string, string>
-}
+export type {PackageJson, PackageJsonWithDeps} from './util/readPackageJson.js'
 
 export interface CliApiConfig {
   dataset?: string
