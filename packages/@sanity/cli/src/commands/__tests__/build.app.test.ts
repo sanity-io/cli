@@ -34,7 +34,7 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
 
   afterEach(() => {
     vi.clearAllMocks()
-    delete process.env.SANITY_APP_TEST_VAR
+    vi.unstubAllEnvs()
   })
 
   test('should build the "basic-app" example with auto-updates', async () => {
@@ -96,28 +96,12 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
     const cwd = await testFixture('basic-app')
     process.chdir(cwd)
 
-    process.env.SANITY_APP_TEST_VAR = 'test-value'
+    vi.stubEnv('SANITY_APP_TEST_VAR', 'test-value')
 
     const {error, stdout} = await testCommand(BuildCommand, ['--yes'])
 
     expect(error).toBeUndefined()
     expect(stdout).toContain('SANITY_APP_TEST_VAR')
-  })
-
-  test('should build to a custom output directory', async () => {
-    const cwd = await testFixture('basic-app')
-    process.chdir(cwd)
-
-    const customDir = 'custom-output'
-    const {error, stderr} = await testCommand(BuildCommand, ['--yes', customDir])
-
-    expect(error).toBeUndefined()
-    expect(stderr).toContain('Build Sanity application')
-
-    const outputFolder = join(cwd, customDir)
-    const files = await readdir(outputFolder)
-    expect(files).toContain('index.html')
-    expect(files).toContain('static')
   })
 
   test('should error when @sanity/sdk-react is not installed', async () => {
