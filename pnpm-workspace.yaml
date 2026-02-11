@@ -57,7 +57,7 @@ catalog:
   '@sanity/pkg-utils': ^10.4.4
 
   # Type Definitions
-  '@types/node': ^20.19.30
+  '@types/node': ^20.19.33
   '@types/debug': ^4.1.12
   '@types/jsdom': ^27.0.0
 
