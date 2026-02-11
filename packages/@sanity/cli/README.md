@@ -2690,14 +2690,12 @@ Delete schema documents by id
 
 ```
 USAGE
-  $ sanity schema delete --ids <value> [--dataset <value>] [--extract-manifest] [--manifest-dir <value>] [--verbose]
+  $ sanity schema delete --ids <value> [--dataset <value>] [--verbose]
 
 FLAGS
-  --dataset=<value>        Delete schemas from a specific dataset
-  --[no-]extract-manifest  Generate manifest file (disable with --no-extract-manifest)
-  --ids=<value>            (required) Comma-separated list of schema ids to delete
-  --manifest-dir=<value>   [default: ./dist/static] Directory containing manifest file
-  --verbose                Enable verbose logging
+  --dataset=<value>  Delete schemas from a specific dataset
+  --ids=<value>      (required) Comma-separated list of schema ids to delete
+  --verbose          Enable verbose logging
 
 DESCRIPTION
   Delete schema documents by id
@@ -2710,10 +2708,6 @@ EXAMPLES
   Delete multiple schemas
 
     $ sanity schema delete --ids sanity.workspace.schema.workspaceName,prefix.sanity.workspace.schema.otherWorkspace
-
-  Delete using a pre-existing manifest file (config changes in sanity.config will not be picked up)
-
-    $ sanity schema delete --no-extract-manifest --ids sanity.workspace.schema.workspaceName
 ```
 
 _See code: [src/commands/schema/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.11/src/commands/schema/delete.ts)_

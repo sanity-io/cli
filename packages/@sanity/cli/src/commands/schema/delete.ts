@@ -1,9 +1,10 @@
 import {Flags} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
 import {parseStringFlag, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
 import {parseIds} from '../../actions/schema/utils/schemaStoreValidation.js'
-import {NO_DATASET_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteSchemaDebug = subdebug('schema:delete')
 
@@ -20,12 +21,6 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
         '<%= config.bin %> <%= command.id %> --ids sanity.workspace.schema.workspaceName,prefix.sanity.workspace.schema.otherWorkspace',
       description: 'Delete multiple schemas',
     },
-    {
-      command:
-        '<%= config.bin %> <%= command.id %> --no-extract-manifest --ids sanity.workspace.schema.workspaceName',
-      description:
-        'Delete using a pre-existing manifest file (config changes in sanity.config will not be picked up)',
-    },
   ]
 
   static override flags = {
@@ -37,6 +32,7 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       allowNo: true,
       default: true,
       description: 'Generate manifest file (disable with --no-extract-manifest)',
+      hidden: true,
     }),
     ids: Flags.string({
       description: 'Comma-separated list of schema ids to delete',
@@ -45,6 +41,7 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
     'manifest-dir': Flags.directory({
       default: './dist/static',
       description: 'Directory containing manifest file',
+      hidden: true,
     }),
     verbose: Flags.boolean({
       default: false,
@@ -61,37 +58,29 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
     const ids = parseIds(flags.ids)
 
     try {
-      const workDir = (await this.getProjectRoot()).directory
-      const cliConfig = await this.getCliConfig()
+      const workDir = await this.getProjectRoot()
       const projectId = await this.getProjectId()
-      const cliDataset = cliConfig.api?.dataset
 
       if (!projectId) {
         this.error(NO_PROJECT_ID, {exit: 1})
       }
 
-      if (!cliDataset) {
-        this.error(NO_DATASET_ID, {exit: 1})
-      }
-
-      const result = await deleteSchemaAction({
+      await deleteSchemaAction({
+        configPath: workDir.path,
         dataset,
-        extractManifest: flags['extract-manifest'],
         ids,
-        manifestDir: flags['manifest-dir'],
         output: this.output,
         projectId,
         verbose: flags['verbose'],
-        workDir,
+        workDir: workDir.directory,
       })
-
-      if (result === 'failure') {
-        this.error('Failed to delete schemas', {exit: 1})
-      }
     } catch (error) {
-      const err = error as Error
-      deleteSchemaDebug('Error deleting schemas', err)
-      this.error(`Failed to delete schemas: ${err.message}`, {exit: 1})
+      if (error instanceof CLIError) {
+        this.error(error.message, {exit: 1})
+      }
+
+      deleteSchemaDebug('Error deleting schemas', error)
+      this.error(`Failed to delete schemas: ${error.message}`, {exit: 1})
     }
   }
 }

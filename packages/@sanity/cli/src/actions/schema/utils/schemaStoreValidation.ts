@@ -1,5 +1,4 @@
 import {CLIError} from '@oclif/core/errors'
-import {type Output} from '@sanity/cli-core'
 import {uniqBy} from 'lodash-es'
 
 import {isDefined} from '../../manifest/schemaTypeHelpers.js'
@@ -138,23 +137,6 @@ export async function parseTag(tag?: string) {
   }
 
   return tag
-}
-
-function getProjectIdMismatchMessage(
-  workspace: {name: string; projectId: string},
-  operation: 'read' | 'write',
-) {
-  return `No permissions to ${operation} schema for workspace "${workspace.name}" with projectId "${workspace.projectId}"`
-}
-
-export function filterLogReadProjectIdMismatch(
-  workspace: {name: string; projectId: string},
-  projectId: string,
-  output: Output,
-) {
-  const canRead = workspace.projectId === projectId
-  if (!canRead) output.warn(`${getProjectIdMismatchMessage(workspace, 'read')} – ignoring it.`)
-  return canRead
 }
 
 export const SCHEMA_PERMISSION_HELP_TEXT =
