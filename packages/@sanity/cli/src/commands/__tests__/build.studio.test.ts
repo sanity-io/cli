@@ -32,8 +32,7 @@ describe('#build studio', {timeout: 60 * 1000}, () => {
     expect(files).toContain('static')
   })
 
-  // TODO: Fix, See SDK-780
-  test.skip("should build the 'worst-case-studio' example", async () => {
+  test("should build the 'worst-case-studio' example", async () => {
     const cwd = await testFixture('worst-case-studio')
     process.chdir(cwd)
 
