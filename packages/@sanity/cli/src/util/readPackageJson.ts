@@ -9,7 +9,7 @@ import {z} from 'zod'
  * 🟠ℹ️ SINCE THIS IS USED IN A NUMBER OF LOCATIONS WHERE ℹ️🟠
  * 🟠ℹ️ WE CANNOT ENFORCE/GUARANTEE ANY PARTICULAR PROPS  ℹ️🟠
  */
-const packageJsonSchema = z.object({
+const packageJsonSchema = z.looseObject({
   // Required fields
   name: z.string(),
   version: z.string(),

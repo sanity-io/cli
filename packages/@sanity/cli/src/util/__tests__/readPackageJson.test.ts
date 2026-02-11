@@ -225,4 +225,18 @@ describe('readPackageJson', () => {
     expect(result.dependencies).toEqual({'default-dep': '^1.0.0'})
     expect(result.devDependencies).toEqual({'default-dev-dep': '^2.0.0'})
   })
+
+  test('allows unknown fields to pass through', async () => {
+    const filePackage = {
+      name: '@sanity/test',
+      unknownField: 'unknown value',
+      version: '1.0.0',
+    }
+
+    vi.mocked(readFile).mockResolvedValueOnce(JSON.stringify(filePackage))
+
+    const result = await readPackageJson(mockFilePath)
+
+    expect(result.unknownField).toBe('unknown value')
+  })
 })
