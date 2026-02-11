@@ -89,7 +89,6 @@
     "console-table-printer": "^2.15.0",
     "date-fns": "^4.1.0",
     "debug": "catalog:",
-    "deep-sort-object": "^1.0.2",
     "dotenv": "^17.2.3",
     "eventsource": "^4.1.0",
     "execa": "catalog:",

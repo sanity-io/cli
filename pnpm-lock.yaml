@@ -437,9 +437,6 @@ importers:
       debug:
         specifier: 'catalog:'
         version: 4.4.3(supports-color@8.1.1)
-      deep-sort-object:
-        specifier: ^1.0.2
-        version: 1.0.2
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3
@@ -5280,9 +5277,6 @@ packages:
 
   deep-object-diff@1.1.9:
     resolution: {integrity: sha512-Rn+RuwkmkDwCi2/oXOFS9Gsr5lJZu/yTGpK7wAaAIE75CC+LCGEZHpY6VQJa/RoJcrmaA/docWJZvYohlNkWPA==}
-
-  deep-sort-object@1.0.2:
-    resolution: {integrity: sha512-Ko2XVMhRhz5Mxyb+QhLX13SHgcK1vuxc6XEfOyTMlbRbv7bhSmMqUw4ywqRwKgV25W+FDIaZjPWQrdblHCTwdA==}
 
   deepmerge@4.3.1:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
@@ -15270,10 +15264,6 @@ snapshots:
   deep-is@0.1.4: {}
 
   deep-object-diff@1.1.9: {}
-
-  deep-sort-object@1.0.2:
-    dependencies:
-      is-plain-object: 2.0.4
 
   deepmerge@4.3.1: {}
 

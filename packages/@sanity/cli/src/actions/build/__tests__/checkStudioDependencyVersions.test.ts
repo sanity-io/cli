@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import {type Output, type PackageJson} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import resolveFrom from 'resolve-from'
 import semver from 'semver'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
@@ -34,7 +34,7 @@ describe('checkStudioDependencyVersions', () => {
 
     // Create mock output
     mockOutput = {
-      error: vi.fn().mockImplementation((message: Error | string, options?: {exit?: boolean}) => {
+      error: vi.fn().mockImplementation((_: Error | string, options?: {exit?: boolean}) => {
         if (options?.exit !== false) {
           throw new Error('process.exit called')
         }
@@ -84,8 +84,8 @@ describe('checkStudioDependencyVersions', () => {
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: 'react', version: '18.2.0'} as PackageJson)
-        .mockResolvedValueOnce({name: 'react-dom', version: '18.2.0'} as PackageJson)
+        .mockResolvedValueOnce({name: 'react', version: '18.2.0'})
+        .mockResolvedValueOnce({name: 'react-dom', version: '18.2.0'})
 
       mockedResolveFromSilent
         .mockReturnValueOnce('/node_modules/react/package.json')
@@ -107,7 +107,7 @@ describe('checkStudioDependencyVersions', () => {
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: 'react', version: '20.0.0'} as PackageJson)
+        .mockResolvedValueOnce({name: 'react', version: '20.0.0'})
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
 
@@ -136,7 +136,7 @@ describe('checkStudioDependencyVersions', () => {
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: 'react', version: '16.14.0'} as PackageJson)
+        .mockResolvedValueOnce({name: 'react', version: '16.14.0'})
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
 
@@ -223,7 +223,7 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: 'react', version: '18.2.0'} as PackageJson)
+        .mockResolvedValueOnce({name: 'react', version: '18.2.0'})
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
 
@@ -287,9 +287,9 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: 'react', version: '16.14.0'} as PackageJson)
-        .mockResolvedValueOnce({name: 'react-dom', version: '20.0.0'} as PackageJson)
-        .mockResolvedValueOnce({name: 'styled-components', version: '6.1.0'} as PackageJson)
+        .mockResolvedValueOnce({name: 'react', version: '16.14.0'})
+        .mockResolvedValueOnce({name: 'react-dom', version: '20.0.0'})
+        .mockResolvedValueOnce({name: 'styled-components', version: '6.1.0'})
 
       mockedResolveFromSilent
         .mockReturnValueOnce('/node_modules/react/package.json')
@@ -341,7 +341,7 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: 'react', version: '16.14.0'} as PackageJson)
+        .mockResolvedValueOnce({name: 'react', version: '16.14.0'})
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
 
@@ -368,7 +368,7 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: 'react', version: '16.14.0'} as PackageJson)
+        .mockResolvedValueOnce({name: 'react', version: '16.14.0'})
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
 
@@ -404,7 +404,7 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: 'react', version: '20.0.0'} as PackageJson)
+        .mockResolvedValueOnce({name: 'react', version: '20.0.0'})
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
 
@@ -432,8 +432,8 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: 'react', version: '16.14.0'} as PackageJson)
-        .mockResolvedValueOnce({name: 'react-dom', version: '16.14.0'} as PackageJson)
+        .mockResolvedValueOnce({name: 'react', version: '16.14.0'})
+        .mockResolvedValueOnce({name: 'react-dom', version: '16.14.0'})
 
       mockedResolveFromSilent
         .mockReturnValueOnce('/node_modules/react/package.json')
@@ -522,7 +522,7 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: '@sanity/ui', version: '2.0.0'} as PackageJson)
+        .mockResolvedValueOnce({name: '@sanity/ui', version: '2.0.0'})
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/@sanity/ui/package.json')
 
@@ -542,7 +542,7 @@ Read more at https://help.sanity.io/upgrade-packages
           name: 'test-project',
           version: '1.0.0',
         })
-        .mockResolvedValueOnce({name: 'styled-components', version: '6.1.0'} as PackageJson)
+        .mockResolvedValueOnce({name: 'styled-components', version: '6.1.0'})
 
       mockedResolveFromSilent.mockReturnValueOnce('/node_modules/styled-components/package.json')
 
