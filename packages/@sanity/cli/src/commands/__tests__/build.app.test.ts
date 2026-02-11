@@ -128,9 +128,7 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
       expect(error?.message).toContain('Failed to find installed @sanity/sdk-react version')
       expect(error?.oclif?.exit).toBe(1)
     } finally {
-      await rm(join(cwd, 'node_modules'), {force: true, maxRetries: 3, recursive: true}).catch(
-        () => {},
-      )
+      await rm(join(cwd, 'node_modules'), {force: true, recursive: true}).catch(() => {})
     }
   })
 
