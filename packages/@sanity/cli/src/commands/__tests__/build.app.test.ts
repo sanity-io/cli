@@ -1,6 +1,6 @@
 import {exec} from 'node:child_process'
-import {readdir, readFile, unlink, writeFile} from 'node:fs/promises'
-import {platform} from 'node:os'
+import {readdir, readFile, rm, unlink, writeFile} from 'node:fs/promises'
+import {platform, tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {promisify} from 'node:util'
 
@@ -121,7 +121,9 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
   })
 
   test('should error when @sanity/sdk-react is not installed', async () => {
-    const cwd = await testFixture('basic-app')
+    const cwd = await testFixture('basic-app', {
+      tempDir: tmpdir(),
+    })
     process.chdir(cwd)
 
     const packageJson = await readFile(join(cwd, 'package.json'), 'utf8')
@@ -129,15 +131,21 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
     delete packageJsonData.dependencies['@sanity/sdk-react']
     await writeFile(join(cwd, 'package.json'), JSON.stringify(packageJsonData, null, 2))
 
+    // Remove node_modules so the package can't be found
     await unlink(join(cwd, 'node_modules'))
-    await execAsync(`pnpm install --prefer-offline --no-lockfile`, {
+    // Install from pnpm without updating the lockfile
+    await execAsync(`pnpm install --prefer-offline`, {
       cwd,
     })
 
-    const {error} = await testCommand(BuildCommand, ['--yes'])
+    try {
+      const {error} = await testCommand(BuildCommand, ['--yes'])
 
-    expect(error?.message).toContain('Failed to find installed @sanity/sdk-react version')
-    expect(error?.oclif?.exit).toBe(1)
+      expect(error?.message).toContain('Failed to find installed @sanity/sdk-react version')
+      expect(error?.oclif?.exit).toBe(1)
+    } finally {
+      await rm(join(cwd, 'node_modules'), {force: true, recursive: true})
+    }
   })
 
   test('should handle build errors gracefully', async () => {
@@ -252,17 +260,16 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
         `})\n`,
       name: 'react compiler config',
     },
-    // TODO: Fix, See SDK-780
-    // {
-    //   config:
-    //     `import {defineCliConfig} from 'sanity/cli'\n` +
-    //     `export default defineCliConfig({\n` +
-    //     `  app: {entry: './src/App.tsx', organizationId: 'org-id'},\n` +
-    //     `  deployment: {appId: 'app-id', autoUpdates: true},\n` +
-    //     `  vite: (config) => ({...config, define: {...config.define, 'import.meta.env.CUSTOM_VAR': JSON.stringify('custom-value')}}),\n` +
-    //     `})\n`,
-    //   name: 'custom vite config',
-    // },
+    {
+      config:
+        `import {defineCliConfig} from 'sanity/cli'\n` +
+        `export default defineCliConfig({\n` +
+        `  app: {entry: './src/App.tsx', organizationId: 'org-id'},\n` +
+        `  deployment: {appId: 'app-id', autoUpdates: true},\n` +
+        `  vite: (config) => ({...config, define: {...config.define, 'import.meta.env.CUSTOM_VAR': JSON.stringify('custom-value')}}),\n` +
+        `})\n`,
+      name: 'custom vite config',
+    },
   ])('should build with $name', async ({config}) => {
     const cwd = await testFixture('basic-app')
     process.chdir(cwd)

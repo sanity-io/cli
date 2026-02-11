@@ -2,7 +2,7 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {CLIError} from '@oclif/core/errors'
+import {CLIError, exit} from '@oclif/core/errors'
 import {getCliTelemetry, getTimer} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import semver from 'semver'
@@ -26,7 +26,7 @@ import {type BuildOptions} from './types.js'
  * @internal
  */
 export async function buildApp(options: BuildOptions): Promise<void> {
-  const {autoUpdatesEnabled, cliConfig, exit, flags, outDir, output, workDir} = options
+  const {autoUpdatesEnabled, cliConfig, flags, outDir, output, workDir} = options
   const unattendedMode = flags.yes
   const timer = getTimer()
 

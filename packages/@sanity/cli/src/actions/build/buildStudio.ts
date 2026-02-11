@@ -2,6 +2,7 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
+import {exit} from '@oclif/core/errors'
 import {getCliTelemetry, getTimer} from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import semver from 'semver'
@@ -31,7 +32,7 @@ import {type BuildOptions} from './types.js'
  */
 export async function buildStudio(options: BuildOptions): Promise<void> {
   const timer = getTimer()
-  const {cliConfig, exit, flags, outDir, output, workDir} = options
+  const {cliConfig, flags, outDir, output, workDir} = options
 
   const unattendedMode = Boolean(flags.yes)
   const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))

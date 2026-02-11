@@ -1,3 +1,5 @@
+import {pathToFileURL} from 'node:url'
+
 import {getTsconfig} from 'get-tsconfig'
 import {tsImport} from 'tsx/esm/api'
 
@@ -57,7 +59,7 @@ export async function getCliConfig(rootPath: string): Promise<CliConfig> {
     const tsconfig = getTsconfig(rootPath)
 
     // Ensure we get the default export (sometimes we get a bit of a mixed bag)
-    cliConfig = await tsImport(configPath, {
+    cliConfig = await tsImport(pathToFileURL(configPath).href, {
       parentURL: import.meta.url,
       tsconfig: tsconfig?.path ?? undefined,
     })
