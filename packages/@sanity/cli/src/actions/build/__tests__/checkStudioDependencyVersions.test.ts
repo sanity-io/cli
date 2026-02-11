@@ -392,7 +392,6 @@ Read more at https://help.sanity.io/upgrade-packages
           dependencies: {
             react: '^20.0.0',
           },
-          devDependencies: {},
           name: 'test-project',
           version: '1.0.0',
         })
