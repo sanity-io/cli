@@ -80,7 +80,6 @@ describe('checkStudioDependencyVersions', () => {
             react: '^18.0.0',
             'react-dom': '^18.0.0',
           },
-          devDependencies: {},
           name: 'test-project',
           version: '1.0.0',
         })
@@ -103,7 +102,6 @@ describe('checkStudioDependencyVersions', () => {
           dependencies: {
             react: '^20.0.0',
           },
-          devDependencies: {},
           name: 'test-project',
           version: '1.0.0',
         })
@@ -132,7 +130,6 @@ describe('checkStudioDependencyVersions', () => {
           dependencies: {
             react: '^16.0.0',
           },
-          devDependencies: {},
           name: 'test-project',
           version: '1.0.0',
         })
@@ -238,7 +235,6 @@ Read more at https://help.sanity.io/upgrade-packages
         dependencies: {
           react: '^18.0.0',
         },
-        devDependencies: {},
         name: 'test-project',
         version: '1.0.0',
       })
@@ -262,7 +258,6 @@ Read more at https://help.sanity.io/upgrade-packages
         dependencies: {
           react: 'invalid-version',
         },
-        devDependencies: {},
         name: 'test-project',
         version: '1.0.0',
       })
@@ -283,7 +278,6 @@ Read more at https://help.sanity.io/upgrade-packages
             'react-dom': '^20.0.0', // untested
             'styled-components': '^6.0.0', // supported
           },
-          devDependencies: {},
           name: 'test-project',
           version: '1.0.0',
         })
@@ -337,7 +331,6 @@ Read more at https://help.sanity.io/upgrade-packages
           dependencies: {
             react: '^16.0.0',
           },
-          devDependencies: {},
           name: 'test-project',
           version: '1.0.0',
         })
@@ -364,7 +357,6 @@ Read more at https://help.sanity.io/upgrade-packages
           dependencies: {
             react: '^16.0.0',
           },
-          devDependencies: {},
           name: 'test-project',
           version: '1.0.0',
         })
@@ -428,7 +420,6 @@ Read more at https://help.sanity.io/upgrade-packages
             react: '^16.0.0',
             'react-dom': '^16.0.0',
           },
-          devDependencies: {},
           name: 'test-project',
           version: '1.0.0',
         })
@@ -465,8 +456,6 @@ Read more at https://help.sanity.io/upgrade-packages
 
     test('should handle packages with no dependencies property', async () => {
       mockReadPackageJson.mockResolvedValue({
-        dependencies: {},
-        devDependencies: {},
         name: 'test-project',
         version: '1.0.0',
       })
@@ -496,7 +485,6 @@ Read more at https://help.sanity.io/upgrade-packages
         dependencies: {
           react: 'invalid-version',
         },
-        devDependencies: {},
         name: 'test-project',
         version: '1.0.0',
       })
@@ -518,7 +506,6 @@ Read more at https://help.sanity.io/upgrade-packages
           dependencies: {
             '@sanity/ui': '^2.0.0',
           },
-          devDependencies: {},
           name: 'test-project',
           version: '1.0.0',
         })
@@ -538,7 +525,6 @@ Read more at https://help.sanity.io/upgrade-packages
           dependencies: {
             'styled-components': '^6.0.0',
           },
-          devDependencies: {},
           name: 'test-project',
           version: '1.0.0',
         })

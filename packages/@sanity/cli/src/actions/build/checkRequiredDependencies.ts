@@ -46,14 +46,15 @@ export async function checkRequiredDependencies(
     return {installedSanityVersion: ''}
   }
 
-  const studioPackageManifest = await readPackageJson(path.join(studioPath, 'package.json'), {
-    defaults: defaultStudioManifestProps,
-    skipSchemaValidation: true,
-  })
-  const [installedStyledComponentsVersion, installedSanityVersion] = await Promise.all([
-    readModuleVersion(studioPath, 'styled-components'),
-    readModuleVersion(studioPath, 'sanity'),
-  ])
+  const [studioPackageManifest, installedStyledComponentsVersion, installedSanityVersion] =
+    await Promise.all([
+      readPackageJson(path.join(studioPath, 'package.json'), {
+        defaults: defaultStudioManifestProps,
+        skipSchemaValidation: true,
+      }),
+      readModuleVersion(studioPath, 'styled-components'),
+      readModuleVersion(studioPath, 'sanity'),
+    ])
 
   const wantedStyledComponentsVersionRange = styledComponentsVersionRange
 
