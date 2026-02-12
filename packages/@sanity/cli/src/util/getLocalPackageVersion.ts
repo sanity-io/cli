@@ -1,38 +1,27 @@
-import {join, normalize as normalizePath} from 'node:path'
+import {resolve} from 'node:path'
+import {pathToFileURL} from 'node:url'
 
 import {readPackageJson} from '@sanity/cli-core'
-import resolveFrom from 'resolve-from'
+import {moduleResolve} from 'import-meta-resolve'
 
 /**
  * Get the version of a package installed locally.
  *
- * @param moduleId - The name of the package in npm.
- * @param workDir - The working directory to resolve the module from.
+ * @param moduleName - The name of the package in npm.
+ * @param workDir - The working directory to resolve the module from. (aka project root)
  * @returns The version of the package installed locally.
  * @internal
  */
 export async function getLocalPackageVersion(
-  moduleId: string,
+  moduleName: string,
   workDir: string,
-): Promise<string | undefined> {
-  const fromPath = workDir || process.cwd()
-  const modulePath = resolveFrom.silent(fromPath, join(moduleId, 'package.json'))
-  if (modulePath) {
-    const pkg = await readPackageJson(modulePath)
-    return pkg.version
-  }
+): Promise<string | null> {
+  try {
+    const dirUrl = pathToFileURL(resolve(workDir, 'noop.js'))
+    const packageUrl = moduleResolve(`${moduleName}/package.json`, dirUrl)
 
-  // In the case of packages with an `exports` key, we may not be able to resolve `package.json`.
-  // If this happens, try to resolve the module itself and look for the last occurence of the
-  // package name, then append `package.json` to that path
-  const pathSegment = normalizePath(moduleId)
-  const parentPath = resolveFrom.silent(fromPath, moduleId)
-  if (!parentPath) {
-    return undefined
+    return (await readPackageJson(packageUrl)).version
+  } catch {
+    return null
   }
-
-  const moduleRoot = parentPath.slice(0, parentPath.lastIndexOf(pathSegment) + pathSegment.length)
-  const manifestPath = join(moduleRoot, 'package.json')
-  const pkg = await readPackageJson(manifestPath)
-  return pkg.version
 }

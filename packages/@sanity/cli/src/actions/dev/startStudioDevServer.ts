@@ -9,9 +9,9 @@ import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
 import {getProjectById} from '../../services/projects.js'
 import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
+import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
-import {readModuleVersion} from '../../util/readModuleVersion.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {checkRequiredDependencies} from '../build/checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from '../build/checkStudioDependencyVersions.js'
@@ -144,7 +144,7 @@ export async function startStudioDevServer(
       const url = `http://${httpHost || 'localhost'}:${port}${config.basePath}`
       const appType = 'Sanity Studio'
 
-      const viteVersion = await readModuleVersion(import.meta.url, 'vite')
+      const viteVersion = await getLocalPackageVersion('vite', import.meta.url)
       spin.succeed()
 
       loggerInfo(

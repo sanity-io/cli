@@ -1,20 +1,15 @@
-import {join} from 'node:path'
+import {resolve} from 'node:path'
+import {pathToFileURL} from 'node:url'
 
 import {type PackageJson} from '@sanity/cli-core'
-// Import the mocked modules
-import resolveFrom from 'resolve-from'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {moduleResolve} from 'import-meta-resolve'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {getLocalPackageVersion} from '../getLocalPackageVersion'
+import {getLocalPackageVersion} from '../getLocalPackageVersion.js'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 
-// Mock the dependencies
-vi.mock('resolve-from', () => ({
-  default: {
-    silent: vi.fn(),
-  },
-}))
+vi.mock('import-meta-resolve')
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -24,23 +19,23 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
+const mockedModuleResolve = vi.mocked(moduleResolve)
+
 describe('getLocalPackageVersion', () => {
   const mockWorkDir = '/mock/work/dir'
   const mockModuleId = '@sanity/test'
-
-  beforeEach(() => {
-    vi.resetAllMocks()
-  })
 
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('returns version when package.json is directly resolved', async () => {
-    const mockPath = join(mockWorkDir, 'node_modules', mockModuleId, 'package.json')
+  test('returns version when package.json is resolved', async () => {
+    const mockPackageUrl = pathToFileURL(
+      resolve(mockWorkDir, 'node_modules', mockModuleId, 'package.json'),
+    )
     const mockVersion = '1.0.0'
 
-    vi.mocked(resolveFrom.silent).mockReturnValueOnce(mockPath)
+    mockedModuleResolve.mockReturnValueOnce(mockPackageUrl)
     mockReadPackageJson.mockResolvedValueOnce({
       name: mockModuleId,
       version: mockVersion,
@@ -48,63 +43,42 @@ describe('getLocalPackageVersion', () => {
 
     const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
 
-    expect(resolveFrom.silent).toHaveBeenCalledWith(mockWorkDir, join(mockModuleId, 'package.json'))
-    expect(mockReadPackageJson).toHaveBeenCalledWith(mockPath)
+    expect(mockedModuleResolve).toHaveBeenCalledWith(
+      `${mockModuleId}/package.json`,
+      pathToFileURL(resolve(mockWorkDir, 'noop.js')),
+    )
+    expect(mockReadPackageJson).toHaveBeenCalledWith(mockPackageUrl)
     expect(result).toBe(mockVersion)
   })
 
-  test('handles packages with exports field when direct resolution fails', async () => {
-    const modulePath = join(mockWorkDir, 'node_modules', mockModuleId, 'index.js')
-    const moduleRoot = join(mockWorkDir, 'node_modules', mockModuleId)
-    const manifestPath = join(moduleRoot, 'package.json')
-    const mockVersion = '2.0.0'
-
-    // First call returns null (direct package.json resolution fails)
-    vi.mocked(resolveFrom.silent).mockReturnValueOnce(undefined)
-    // Second call succeeds (resolving the module itself)
-    vi.mocked(resolveFrom.silent).mockReturnValueOnce(modulePath)
-    mockReadPackageJson.mockResolvedValueOnce({
-      name: mockModuleId,
-      version: mockVersion,
-    } as PackageJson)
+  test('returns null when moduleResolve throws', async () => {
+    mockedModuleResolve.mockImplementationOnce(() => {
+      throw new Error('Module not found')
+    })
 
     const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
 
-    expect(resolveFrom.silent).toHaveBeenCalledWith(mockWorkDir, join(mockModuleId, 'package.json'))
-    expect(resolveFrom.silent).toHaveBeenCalledWith(mockWorkDir, mockModuleId)
-    expect(mockReadPackageJson).toHaveBeenCalledWith(manifestPath)
-    expect(result).toBe(mockVersion)
-  })
-
-  test('returns undefined when module cannot be resolved at all', async () => {
-    // Both resolution attempts fail
-    vi.mocked(resolveFrom.silent).mockReturnValueOnce(undefined)
-    vi.mocked(resolveFrom.silent).mockReturnValueOnce(undefined)
-
-    const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
-
-    expect(resolveFrom.silent).toHaveBeenCalledWith(mockWorkDir, join(mockModuleId, 'package.json'))
-    expect(resolveFrom.silent).toHaveBeenCalledWith(mockWorkDir, mockModuleId)
+    expect(mockedModuleResolve).toHaveBeenCalledOnce()
+    expect(mockedModuleResolve).toHaveBeenCalledWith(
+      `${mockModuleId}/package.json`,
+      pathToFileURL(resolve(mockWorkDir, 'noop.js')),
+    )
     expect(mockReadPackageJson).not.toHaveBeenCalled()
-    expect(result).toBeUndefined()
+    expect(result).toBeNull()
   })
 
-  test('uses process.cwd() when workDir is not provided', async () => {
-    const mockCwd = '/current/working/dir'
-    const mockPath = join(mockCwd, 'node_modules', mockModuleId, 'package.json')
-    const mockVersion = '3.0.0'
+  test('returns null when readPackageJson throws', async () => {
+    const mockPackageUrl = pathToFileURL(
+      resolve(mockWorkDir, 'node_modules', mockModuleId, 'package.json'),
+    )
 
-    vi.spyOn(process, 'cwd').mockReturnValue(mockCwd)
-    vi.mocked(resolveFrom.silent).mockReturnValueOnce(mockPath)
-    mockReadPackageJson.mockResolvedValueOnce({
-      name: mockModuleId,
-      version: mockVersion,
-    } as PackageJson)
+    mockedModuleResolve.mockReturnValueOnce(mockPackageUrl)
+    mockReadPackageJson.mockRejectedValueOnce(new Error('Failed to read package.json'))
 
-    const result = await getLocalPackageVersion(mockModuleId, '')
+    const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
 
-    expect(resolveFrom.silent).toHaveBeenCalledWith(mockCwd, join(mockModuleId, 'package.json'))
-    expect(mockReadPackageJson).toHaveBeenCalledWith(mockPath)
-    expect(result).toBe(mockVersion)
+    expect(mockedModuleResolve).toHaveBeenCalledOnce()
+    expect(mockReadPackageJson).toHaveBeenCalledWith(mockPackageUrl)
+    expect(result).toBeNull()
   })
 })

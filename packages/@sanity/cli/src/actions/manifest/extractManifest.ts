@@ -4,7 +4,7 @@ import {join, resolve} from 'node:path'
 import {findProjectRoot, getTimer, Output, studioWorkerTask} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
-import {readModuleVersion} from '../../util/readModuleVersion.js'
+import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {type ExtractSchemaWorkerError} from '../schema/types.js'
 import {SchemaExtractionError} from '../schema/utils/SchemaExtractionError.js'
 import {manifestDebug} from './debug.js'
@@ -97,7 +97,7 @@ export async function extractManifest(outPath: string): Promise<void> {
        * 3. Added studioVersion field.
        */
       createdAt: new Date().toISOString(),
-      studioVersion: await readModuleVersion(workDir, 'sanity'),
+      studioVersion: await getLocalPackageVersion('sanity', workDir),
       version: 3,
       workspaces: workspaceFiles,
     }

@@ -6,7 +6,7 @@ import {type UserViteConfig} from '@sanity/cli-core'
 import {type InlineConfig, preview} from 'vite'
 
 import {extendViteConfigWithUserConfig} from '../actions/build/getViteConfig.js'
-import {readModuleVersion} from '../util/readModuleVersion.js'
+import {getLocalPackageVersion} from '../util/getLocalPackageVersion.js'
 import {serverDebug} from './serverDebug.js'
 import {sanityBasePathRedirectPlugin} from './vite/plugin-sanity-basepath-redirect.js'
 
@@ -100,7 +100,7 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
 
   const startupDuration = Date.now() - startTime
 
-  const viteVersion = await readModuleVersion(import.meta.url, 'vite')
+  const viteVersion = await getLocalPackageVersion('vite', import.meta.url)
 
   info(
     `Sanity ${isApp ? 'application' : 'Studio'} ` +

@@ -9,7 +9,7 @@ import {pack} from 'tar-fs'
 import {createDeployment} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
-import {readModuleVersion} from '../../util/readModuleVersion.js'
+import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildApp} from '../build/buildApp.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
@@ -32,7 +32,7 @@ export async function deployApp(options: DeployAppOptions) {
   const organizationId = cliConfig.app?.organizationId
   const appId = getAppId(cliConfig)
   const isAutoUpdating = shouldAutoUpdate({cliConfig, flags, output})
-  const installedSdkVersion = await readModuleVersion(sourceDir, '@sanity/sdk-react')
+  const installedSdkVersion = await getLocalPackageVersion('@sanity/sdk-react', workDir)
 
   if (!installedSdkVersion) {
     output.error(`Failed to find installed @sanity/sdk-react version`, {exit: 1})
