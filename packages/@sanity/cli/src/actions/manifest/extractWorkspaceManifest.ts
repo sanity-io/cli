@@ -46,8 +46,10 @@ export function extractWorkspaceManifest(
 /**
  * Extracts all serializable properties from userland schema types,
  * so they best-effort can be used as definitions for Schema.compile.
+ *
+ * @internal
  */
-async function extractManifestSchemaTypes(
+export async function extractManifestSchemaTypes(
   schema: Schema,
   workDir: string,
 ): Promise<ManifestSchemaType[]> {

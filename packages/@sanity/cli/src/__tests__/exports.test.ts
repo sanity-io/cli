@@ -12,7 +12,7 @@ import {extract} from 'tar-fs'
 import ts from 'typescript'
 import {expect, test} from 'vitest'
 
-import * as newExports from '../index.js'
+import * as newExports from '../exports/index.js'
 
 function getPackagePath(tmpDir: string, version: string) {
   return join(tmpDir, `sanity-cli-${version}`, 'package')
@@ -129,7 +129,7 @@ test('should match exports of the current cli package', async () => {
 test('should match type exports of the current cli package', async () => {
   const oldCliTypeExports = await getSanityPackageTypeExports()
   const newCliTypeExports = await extractTypes(
-    join(import.meta.dirname, '../../dist', 'index.d.ts'),
+    join(import.meta.dirname, '..', '..', 'dist', 'exports', 'index.d.ts'),
   )
 
   try {
