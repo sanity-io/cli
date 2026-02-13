@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.0.2-alpha.11](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.10...cli-test-v0.0.2-alpha.11) (2026-02-13)
+
+
+### Bug Fixes
+
+* **build:** fixes issue with app build not failing for missing deps ([#409](https://github.com/sanity-io/cli/issues/409)) ([7a266fd](https://github.com/sanity-io/cli/commit/7a266fdf9fd6ad0acafcbd6770354a838b3d655e))
+* **test:** fixes peer dependency range for vitest ([#414](https://github.com/sanity-io/cli/issues/414)) ([9ec2562](https://github.com/sanity-io/cli/commit/9ec2562794a7bd60324ea4b91dfb41df4da0e943))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.12
+  * peerDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.12
+
 ## [0.0.2-alpha.10](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.9...cli-test-v0.0.2-alpha.10) (2026-02-05)
 
 

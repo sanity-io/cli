@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.0-alpha.12](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.11...cli-core-v0.1.0-alpha.12) (2026-02-13)
+
+
+### Features
+
+* **update:** oclif hook to notify of updated versions of CLI ([#374](https://github.com/sanity-io/cli/issues/374)) ([4172cbc](https://github.com/sanity-io/cli/commit/4172cbc548d51033208e534d98dd660113d7586d))
+
+
+### Bug Fixes
+
+* **build:** fixes issue with app build not failing for missing deps ([#409](https://github.com/sanity-io/cli/issues/409)) ([7a266fd](https://github.com/sanity-io/cli/commit/7a266fdf9fd6ad0acafcbd6770354a838b3d655e))
+* **manifest:** fixes manifest extract not working ([#382](https://github.com/sanity-io/cli/issues/382)) ([3d14632](https://github.com/sanity-io/cli/commit/3d14632ec71ba731214356e755ce0e0194d46f7f))
+
 ## [0.1.0-alpha.11](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.10...cli-core-v0.1.0-alpha.11) (2026-02-05)
 
 
