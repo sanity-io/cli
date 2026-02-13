@@ -3,6 +3,7 @@ import {defineConfig} from '@sanity/pkg-utils'
 
 export default defineConfig({
   ...baseConfig,
+  external: ['sanity'],
   extract: {
     ...baseConfig.extract,
     // Disable rules for now

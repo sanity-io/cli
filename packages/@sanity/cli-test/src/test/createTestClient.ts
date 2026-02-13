@@ -1,4 +1,4 @@
-import {type ClientConfig, createClient} from '@sanity/client'
+import {type ClientConfig, createClient, type SanityClient} from '@sanity/client'
 import {vi} from 'vitest'
 
 /**
@@ -49,7 +49,10 @@ export interface CreateTestClientOptions extends ClientConfig {
  * }).reply(200, {data: [...]})
  * ```
  */
-export function createTestClient(options: CreateTestClientOptions) {
+export function createTestClient(options: CreateTestClientOptions): {
+  client: SanityClient
+  request: ReturnType<typeof vi.fn>
+} {
   const {apiVersion, projectId, token, ...rest} = options
 
   const client = createClient({
