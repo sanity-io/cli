@@ -127,7 +127,6 @@
     "react-is": "^19.2.1",
     "read-package-up": "^11.0.0",
     "recast": "^0.23.11",
-    "resolve-from": "^5.0.0",
     "rimraf": "catalog:",
     "rxjs": "catalog:",
     "semver": "^7.7.2",

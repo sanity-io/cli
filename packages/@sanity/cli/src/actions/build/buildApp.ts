@@ -125,7 +125,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   if (autoUpdatesEnabled) {
     importMap = {
       imports: {
-        ...(await buildVendorDependencies({basePath, cwd: workDir, outputDir})),
+        ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: true, outputDir})),
         ...autoUpdatesImports,
       },
     }
