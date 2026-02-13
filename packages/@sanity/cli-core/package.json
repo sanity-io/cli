@@ -64,7 +64,7 @@
     "configstore": "^7.0.0",
     "debug": "catalog:",
     "get-tsconfig": "catalog:",
-    "import-meta-resolve": "^4.1.0",
+    "import-meta-resolve": "catalog:",
     "jsdom": "catalog:",
     "json-lexer": "^1.2.0",
     "log-symbols": "^7.0.1",
