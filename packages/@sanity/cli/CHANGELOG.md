@@ -1,5 +1,31 @@
 # Changelog
 
+## [6.0.0-alpha.12](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.11...cli-v6.0.0-alpha.12) (2026-02-13)
+
+
+### Features
+
+* **update:** oclif hook to notify of updated versions of CLI ([#374](https://github.com/sanity-io/cli/issues/374)) ([4172cbc](https://github.com/sanity-io/cli/commit/4172cbc548d51033208e534d98dd660113d7586d))
+
+
+### Bug Fixes
+
+* **build:** fixes issue with app build not failing for missing deps ([#409](https://github.com/sanity-io/cli/issues/409)) ([7a266fd](https://github.com/sanity-io/cli/commit/7a266fdf9fd6ad0acafcbd6770354a838b3d655e))
+* **cli:** set up telemetry even if project root/config not found ([#397](https://github.com/sanity-io/cli/issues/397)) ([0e4b9b2](https://github.com/sanity-io/cli/commit/0e4b9b268ea8d52dcd8581234880ea08552465a5))
+* **deps:** update dependency chokidar to v5 ([#411](https://github.com/sanity-io/cli/issues/411)) ([1dc251a](https://github.com/sanity-io/cli/commit/1dc251aefa436fcb5a84a9038e00ee6558eb9170))
+* **deps:** update sanity-tooling ([#403](https://github.com/sanity-io/cli/issues/403)) ([8ba4536](https://github.com/sanity-io/cli/commit/8ba45368a324c9e1145f6b4ec14327dffe702a08))
+* **deps:** update sanity-tooling ([#416](https://github.com/sanity-io/cli/issues/416)) ([66038c6](https://github.com/sanity-io/cli/commit/66038c64deeb9ce312bb37a39136371611a55882))
+* **manifest:** fixes manifest extract not working ([#382](https://github.com/sanity-io/cli/issues/382)) ([3d14632](https://github.com/sanity-io/cli/commit/3d14632ec71ba731214356e755ce0e0194d46f7f))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.12
+  * devDependencies
+    * @sanity/cli-test bumped to 0.0.2-alpha.11
+
 ## [6.0.0-alpha.11](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.10...cli-v6.0.0-alpha.11) (2026-02-05)
 
 
