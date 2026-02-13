@@ -1,8 +1,7 @@
 import {join, normalize as normalizePath} from 'node:path'
 
+import {readPackageJson} from '@sanity/cli-core'
 import resolveFrom from 'resolve-from'
-
-import {readPackageJson} from './readPackageJson.js'
 
 /**
  * Get the version of a package installed locally.

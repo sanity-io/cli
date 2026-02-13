@@ -4,17 +4,23 @@ import {beforeEach, describe, expect, test, vi} from 'vitest'
 // Imported mocks
 import {determineIsApp} from '../../../util/determineIsApp'
 import {readModuleVersion} from '../../../util/readModuleVersion'
-import {readPackageManifest} from '../../../util/readPackageManifest'
 import {checkRequiredDependencies} from '../checkRequiredDependencies'
+
+const mockReadPackageJson = vi.hoisted(() => vi.fn())
 
 // Mocks
 vi.mock('../../../util/determineIsApp')
 vi.mock('../../../util/readModuleVersion')
-vi.mock('../../../util/readPackageManifest')
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    readPackageJson: mockReadPackageJson,
+  }
+})
 
 const mockedDetermineIsApp = vi.mocked(determineIsApp)
 const mockedReadModuleVersion = vi.mocked(readModuleVersion)
-const mockedReadPackageManifest = vi.mocked(readPackageManifest)
 
 describe('#checkRequiredDependencies', () => {
   const workDir = '/tmp/test-studio'
@@ -38,12 +44,12 @@ describe('#checkRequiredDependencies', () => {
       workDir,
     })
     expect(result).toEqual({installedSanityVersion: ''})
-    expect(mockedReadPackageManifest).not.toHaveBeenCalled()
+    expect(mockReadPackageJson).not.toHaveBeenCalled()
   })
 
   test('should call output.error and return empty string if sanity is not installed', async () => {
     mockedDetermineIsApp.mockReturnValue(false)
-    mockedReadPackageManifest.mockResolvedValue({
+    mockReadPackageJson.mockResolvedValue({
       dependencies: {},
       devDependencies: {},
       name: 'test-studio',
@@ -70,7 +76,7 @@ describe('#checkRequiredDependencies', () => {
 
   test('should call output.error and return sanity version if styled-components is not declared', async () => {
     mockedDetermineIsApp.mockReturnValue(false)
-    mockedReadPackageManifest.mockResolvedValue({
+    mockReadPackageJson.mockResolvedValue({
       dependencies: {},
       devDependencies: {},
       name: 'test-studio',
@@ -98,7 +104,7 @@ describe('#checkRequiredDependencies', () => {
 
   test('should call output.error and return sanity version for invalid styled-components version range', async () => {
     mockedDetermineIsApp.mockReturnValue(false)
-    mockedReadPackageManifest.mockResolvedValue({
+    mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': 'some-invalid-range'},
       devDependencies: {},
       name: 'test-studio',
@@ -123,7 +129,7 @@ describe('#checkRequiredDependencies', () => {
 
   test('should warn on incompatible declared styled-components version', async () => {
     mockedDetermineIsApp.mockReturnValue(false)
-    mockedReadPackageManifest.mockResolvedValue({
+    mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': '^5.0.0'},
       devDependencies: {},
       name: 'test-studio',
@@ -148,7 +154,7 @@ describe('#checkRequiredDependencies', () => {
 
   test('should not warn on complex but valid styled-components version range', async () => {
     mockedDetermineIsApp.mockReturnValue(false)
-    mockedReadPackageManifest.mockResolvedValue({
+    mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': '>=6.0.0 <7.0.0'},
       devDependencies: {},
       name: 'test-studio',
@@ -167,7 +173,7 @@ describe('#checkRequiredDependencies', () => {
 
   test('should call output.error and return sanity version if styled-components is declared but not installed', async () => {
     mockedDetermineIsApp.mockReturnValue(false)
-    mockedReadPackageManifest.mockResolvedValue({
+    mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': '^6.1.15'},
       devDependencies: {},
       name: 'test-studio',
@@ -195,7 +201,7 @@ describe('#checkRequiredDependencies', () => {
 
   test('should warn on incompatible installed styled-components version', async () => {
     mockedDetermineIsApp.mockReturnValue(false)
-    mockedReadPackageManifest.mockResolvedValue({
+    mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': '^6.1.15'},
       devDependencies: {},
       name: 'test-studio',
@@ -223,7 +229,7 @@ describe('#checkRequiredDependencies', () => {
 
   test('should succeed on happy path', async () => {
     mockedDetermineIsApp.mockReturnValue(false)
-    mockedReadPackageManifest.mockResolvedValue({
+    mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': '^6.1.15'},
       devDependencies: {},
       name: 'test-studio',

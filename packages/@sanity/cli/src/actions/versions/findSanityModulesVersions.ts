@@ -1,12 +1,12 @@
 import path from 'node:path'
 
+import {readPackageJson} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import promiseProps from 'promise-props-recursive'
 import semver from 'semver'
 import semverCompare from 'semver-compare'
 
 import {getCliVersion} from '../../util/getCliVersion.js'
-import {readPackageJson} from '../../util/readPackageJson.js'
 import {buildPackageArray} from './buildPackageArray.js'
 import {filterSanityModules} from './filterSanityModules.js'
 import {type ModuleVersionInfo, type ModuleVersionResult} from './types.js'

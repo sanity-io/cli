@@ -1,7 +1,6 @@
-import {Output} from '@sanity/cli-core'
+import {Output, readPackageJson} from '@sanity/cli-core'
 import semver from 'semver'
 
-import {readPackageJson} from '../../util/readPackageJson.js'
 import {VersionedFramework} from './types.js'
 
 interface CheckCompatibilityOptions {

@@ -5,18 +5,24 @@ import resolveFrom from 'resolve-from'
 import semver from 'semver'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {readPackageJson} from '../../../util/readPackageJson'
 import {checkStudioDependencyVersions} from '../checkStudioDependencyVersions'
+
+const mockReadPackageJson = vi.hoisted(() => vi.fn())
 
 // Mock dependencies
 vi.mock('node:path')
 vi.mock('resolve-from')
-vi.mock('../../../util/readPackageJson')
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    readPackageJson: mockReadPackageJson,
+  }
+})
 
 const mockedPath = vi.mocked(path)
 const mockedResolveFrom = vi.mocked(resolveFrom)
 const mockedResolveFromSilent = vi.fn().mockReturnValue(null)
-const mockedReadPackageJson = vi.mocked(readPackageJson)
 
 describe('checkStudioDependencyVersions', () => {
   const workDir = '/test/work/dir'
@@ -28,7 +34,7 @@ describe('checkStudioDependencyVersions', () => {
 
     // Create mock output
     mockOutput = {
-      error: vi.fn().mockImplementation((message: Error | string, options?: {exit?: boolean}) => {
+      error: vi.fn().mockImplementation((_: Error | string, options?: {exit?: boolean}) => {
         if (options?.exit !== false) {
           throw new Error('process.exit called')
         }
@@ -52,7 +58,7 @@ describe('checkStudioDependencyVersions', () => {
 
   describe('when no dependencies are installed', () => {
     test('should not warn or error when no tracked packages are installed', async () => {
-      mockedReadPackageJson.mockResolvedValue({
+      mockReadPackageJson.mockResolvedValue({
         dependencies: {},
         devDependencies: {},
         name: 'test-project',
@@ -68,7 +74,7 @@ describe('checkStudioDependencyVersions', () => {
 
   describe('when dependencies are installed', () => {
     test('should handle packages with valid versions', async () => {
-      mockedReadPackageJson
+      mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
             react: '^18.0.0',
@@ -91,7 +97,7 @@ describe('checkStudioDependencyVersions', () => {
     })
 
     test('should handle packages with untested versions (newer than supported)', async () => {
-      mockedReadPackageJson
+      mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
             react: '^20.0.0',
@@ -119,7 +125,7 @@ describe('checkStudioDependencyVersions', () => {
     })
 
     test('should handle packages with unsupported versions (older than supported)', async () => {
-      mockedReadPackageJson
+      mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
             react: '^16.0.0',
@@ -205,7 +211,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle packages installed in devDependencies', async () => {
-      mockedReadPackageJson
+      mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {},
           devDependencies: {
@@ -225,7 +231,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle packages where manifest path cannot be resolved', async () => {
-      mockedReadPackageJson.mockResolvedValueOnce({
+      mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {
           react: '^18.0.0',
         },
@@ -248,7 +254,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle packages where version cannot be coerced', async () => {
-      mockedReadPackageJson.mockResolvedValueOnce({
+      mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {
           react: 'invalid-version',
         },
@@ -265,7 +271,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle mixed package states correctly', async () => {
-      mockedReadPackageJson
+      mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
             react: '^16.0.0', // unsupported
@@ -320,7 +326,7 @@ Read more at https://help.sanity.io/upgrade-packages
         return originalCoerce(version)
       })
 
-      mockedReadPackageJson
+      mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
             react: '^16.0.0',
@@ -346,7 +352,7 @@ Read more at https://help.sanity.io/upgrade-packages
 
   describe('helper functions', () => {
     test('should generate correct upgrade instructions', async () => {
-      mockedReadPackageJson
+      mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
             react: '^16.0.0',
@@ -381,7 +387,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should generate correct downgrade instructions', async () => {
-      mockedReadPackageJson
+      mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
             react: '^20.0.0',
@@ -407,7 +413,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should list multiple packages correctly', async () => {
-      mockedReadPackageJson
+      mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
             react: '^16.0.0',
@@ -440,7 +446,7 @@ Read more at https://help.sanity.io/upgrade-packages
 
   describe('edge cases', () => {
     test('should handle readPackageJson throwing an error', async () => {
-      mockedReadPackageJson.mockRejectedValue(new Error('Failed to read package.json'))
+      mockReadPackageJson.mockRejectedValue(new Error('Failed to read package.json'))
 
       await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
         'Failed to read package.json',
@@ -448,7 +454,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle packages with no dependencies property', async () => {
-      mockedReadPackageJson.mockResolvedValue({
+      mockReadPackageJson.mockResolvedValue({
         name: 'test-project',
         version: '1.0.0',
       })
@@ -460,7 +466,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle packages with empty dependencies', async () => {
-      mockedReadPackageJson.mockResolvedValue({
+      mockReadPackageJson.mockResolvedValue({
         dependencies: {},
         devDependencies: {},
         name: 'test-project',
@@ -474,7 +480,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle semver.coerce returning null', async () => {
-      mockedReadPackageJson.mockResolvedValueOnce({
+      mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {
           react: 'invalid-version',
         },
@@ -494,7 +500,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle @sanity/ui package correctly', async () => {
-      mockedReadPackageJson
+      mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
             '@sanity/ui': '^2.0.0',
@@ -513,7 +519,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle styled-components package correctly', async () => {
-      mockedReadPackageJson
+      mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
             'styled-components': '^6.0.0',

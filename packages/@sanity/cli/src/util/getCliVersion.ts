@@ -1,9 +1,8 @@
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 
+import {type PackageJson, readPackageJson} from '@sanity/cli-core'
 import {packageDirectory} from 'package-directory'
-
-import {type PackageJson, readPackageJson} from './readPackageJson.js'
 
 /**
  * Get the version of the `@sanity/cli` package.

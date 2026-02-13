@@ -3,11 +3,9 @@ import {join, posix, sep} from 'node:path'
 import {Readable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
 
-import {subdebug} from '@sanity/cli-core'
+import {readPackageJson, subdebug} from '@sanity/cli-core'
 import {ENV_TEMPLATE_FILES, REQUIRED_ENV_VAR} from '@sanity/template-validator'
 import {x} from 'tar'
-
-import {readPackageJson} from '../../util/readPackageJson.js'
 
 const debug = subdebug('remoteTemplate')
 

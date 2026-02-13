@@ -1,10 +1,8 @@
 import path from 'node:path'
 
-import {type Output} from '@sanity/cli-core'
+import {type Output, readPackageJson} from '@sanity/cli-core'
 import resolveFrom from 'resolve-from'
 import semver, {type SemVer} from 'semver'
-
-import {readPackageJson} from '../../util/readPackageJson.js'
 
 interface PackageInfo {
   deprecatedBelow: string | null
@@ -29,8 +27,10 @@ export async function checkStudioDependencyVersions(
   workDir: string,
   output: Output,
 ): Promise<void> {
-  const manifest = await readPackageJson(path.join(workDir, 'package.json'), true)
-  const dependencies = {...manifest.dependencies, ...manifest.devDependencies}
+  const manifest = await readPackageJson(path.join(workDir, 'package.json'), {
+    skipSchemaValidation: true,
+  })
+  const dependencies = {...manifest?.dependencies, ...manifest?.devDependencies}
 
   const packageInfo = PACKAGES.map(async (pkg): Promise<false | PackageInfo> => {
     const dependency = dependencies[pkg.name]

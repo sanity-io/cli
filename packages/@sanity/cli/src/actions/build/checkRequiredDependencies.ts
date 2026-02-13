@@ -1,14 +1,13 @@
 import path from 'node:path'
 
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, type Output, type PackageJson, readPackageJson} from '@sanity/cli-core'
 import {oneline} from 'oneline'
 import semver, {type SemVer} from 'semver'
 
 import {determineIsApp} from '../../util/determineIsApp.js'
 import {readModuleVersion} from '../../util/readModuleVersion.js'
-import {type PartialPackageManifest, readPackageManifest} from '../../util/readPackageManifest.js'
 
-const defaultStudioManifestProps: PartialPackageManifest = {
+const defaultStudioManifestProps: Partial<PackageJson> = {
   name: 'studio',
   version: '1.0.0',
 }
@@ -49,7 +48,10 @@ export async function checkRequiredDependencies(
 
   const [studioPackageManifest, installedStyledComponentsVersion, installedSanityVersion] =
     await Promise.all([
-      readPackageManifest(path.join(studioPath, 'package.json'), defaultStudioManifestProps),
+      readPackageJson(path.join(studioPath, 'package.json'), {
+        defaults: defaultStudioManifestProps,
+        skipSchemaValidation: true,
+      }),
       readModuleVersion(studioPath, 'styled-components'),
       readModuleVersion(studioPath, 'sanity'),
     ])
@@ -66,8 +68,8 @@ export async function checkRequiredDependencies(
   // we'll want to automatically _add it_ to the manifest and tell the user to reinstall
   // dependencies before running whatever command was being run
   const declaredStyledComponentsVersion =
-    studioPackageManifest.dependencies['styled-components'] ||
-    studioPackageManifest.devDependencies['styled-components']
+    studioPackageManifest.dependencies?.['styled-components'] ||
+    studioPackageManifest?.devDependencies?.['styled-components']
 
   if (!declaredStyledComponentsVersion) {
     output.error(

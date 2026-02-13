@@ -1,5 +1,3 @@
-import sortObject from 'deep-sort-object'
-
 import {type PackageJson, type SanityJson} from '../../types.js'
 
 const manifestPropOrder = [
@@ -16,22 +14,31 @@ const manifestPropOrder = [
   'devDependencies',
 ]
 
-export function createPackageManifest(
-  data: Omit<PackageJson, 'version'> & {gitRemote?: string} & {isAppTemplate?: boolean},
-): string {
+// PackageJson has an index signature ([x: string]: unknown) from z.looseObject,
+// which causes Omit to collapse the type. Strip the index signature first, then Omit.
+type RemoveIndex<T> = {
+  [K in keyof T as string extends K ? never : K]: T[K]
+}
+type PackageJsonWithoutVersion = Omit<RemoveIndex<PackageJson>, 'version'>
+
+interface CreatePackageManifestOptions extends PackageJsonWithoutVersion {
+  gitRemote?: string
+
+  isAppTemplate?: boolean
+}
+
+export function createPackageManifest(data: CreatePackageManifestOptions): string {
   const {isAppTemplate} = data
 
-  const dependencies = data.dependencies
-    ? {dependencies: sortObject(data.dependencies) as Record<string, string>}
-    : {}
+  const dependencies = data.dependencies ? {dependencies: sortKeys(data.dependencies)} : {}
 
   const devDependencies = data.devDependencies
-    ? {devDependencies: sortObject(data.devDependencies) as Record<string, string>}
+    ? {devDependencies: sortKeys(data.devDependencies)}
     : {}
 
   // Don't write a prettier config for SDK apps; we want to allow developers to use their own
   const prettierConfig = isAppTemplate
-    ? {}
+    ? ({} as Record<string, never>)
     : {
         prettier: {
           bracketSpacing: false,
@@ -41,7 +48,7 @@ export function createPackageManifest(
         },
       }
 
-  const pkg = {
+  const pkg: PackageJson = {
     ...getCommonManifest(data),
 
     keywords: ['sanity'],
@@ -62,14 +69,13 @@ export function createPackageManifest(
   return serializeManifest(pkg)
 }
 
-function getCommonManifest(data: Omit<PackageJson, 'version'> & {gitRemote?: string}) {
+function getCommonManifest(data: PackageJsonWithoutVersion & {gitRemote?: string}) {
   const pkg: PackageJson = {
-    author: data.author,
-    description: data.description,
-    devDependencies: {},
-    license: data.license || 'UNLICENSED',
-    name: data.name,
+    name: data.name as string,
     version: '1.0.0',
+    ...(data.author ? {author: data.author as string} : {}),
+    ...(data.description ? {description: data.description as string} : {}),
+    license: (data.license as string | undefined) || 'UNLICENSED',
   }
 
   if (pkg.license === 'UNLICENSED') {
@@ -84,6 +90,10 @@ function getCommonManifest(data: Omit<PackageJson, 'version'> & {gitRemote?: str
   }
 
   return pkg
+}
+
+function sortKeys(obj: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(Object.entries(obj).toSorted(([a], [b]) => a.localeCompare(b)))
 }
 
 function serializeManifest(src: PackageJson | SanityJson): string {
