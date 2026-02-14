@@ -1,10 +1,10 @@
 diff --git a/package.json b/package.json
-index 4e67d2773d0f6ec28942eb96a9ff5ebd41f0ab08..6b86173ad6547399ab2c2a6203b174ae6923ec45 100644
+index bfd76ba7ca28ed357be53560f487269da898fc9f..5b93f7c77b30ea5e30f66ac6a98d6d29afe4871c 100644
 --- a/package.json
 +++ b/package.json
-@@ -69,9 +69,6 @@
-       ]
-     }
+@@ -20,9 +20,6 @@
+     "url": "git+https://github.com/sanity-io/sanity.git",
+     "directory": "packages/sanity"
    },
 -  "bin": {
 -    "sanity": "./bin/sanity"
