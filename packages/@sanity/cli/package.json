@@ -24,13 +24,17 @@
   "type": "module",
   "exports": {
     ".": {
-      "source": "./src/index.ts",
-      "default": "./dist/index.js"
+      "source": "./src/exports/index.ts",
+      "default": "./dist/exports/index.js"
+    },
+    "./_internal": {
+      "source": "./src/exports/_internal.ts",
+      "default": "./dist/exports/_internal.js"
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/exports/index.js",
+  "types": "./dist/exports/index.d.ts",
   "bin": {
     "sanity": "./bin/run.js"
   },
