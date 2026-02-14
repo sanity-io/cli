@@ -1,6 +1,5 @@
 export * from './config/cli/getCliConfig.js'
 export * from './config/cli/getCliConfigSync.js'
-export {cliConfigSchema} from './config/cli/schemas.js'
 export {type CliConfig} from './config/cli/types/cliConfig.js'
 export {type UserViteConfig} from './config/cli/types/userViteConfig.js'
 export * from './config/findProjectRoot.js'
