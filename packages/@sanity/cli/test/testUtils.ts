@@ -81,3 +81,20 @@ function isPromiseLike(value: unknown): value is Promise<unknown> {
     typeof value.finally === 'function'
   )
 }
+
+/**
+ * Type guard to check if a value has a close method.
+ * Useful for testing commands that return watchers or long-running processes.
+ *
+ * @param value - The value to check
+ * @returns True if the value has a close method, false otherwise
+ * @internal
+ */
+export function canCloseWatcher(value: unknown): value is {close: () => Promise<void>} {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'close' in value &&
+    typeof value.close === 'function'
+  )
+}

@@ -46,7 +46,7 @@ interface ExtractSchemaWorkerResult {
 type ExtractSchemaWorkerMessage = ExtractSchemaWorkerError | ExtractSchemaWorkerResult
 
 interface ExtractSchemaWatcher {
-  stop: () => Promise<void>
+  close: () => Promise<void>
   watcher: FSWatcher
 }
 
@@ -215,9 +215,8 @@ export async function startExtractSchemaWatcher(
     output.error(`Watcher error: ${err instanceof Error ? err.message : String(err)}`)
   })
 
-  const stop = async () => {
-    await watcher.close()
+  return {
+    close: () => watcher.close(),
+    watcher,
   }
-
-  return {stop, watcher}
 }

@@ -55,20 +55,24 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
     }),
   }
 
-  public async run(): Promise<void> {
+  public async run(): Promise<{close?: () => Promise<void>}> {
     const {flags} = await this.parse(ExtractSchemaCommand)
     const projectRoot = await this.getProjectRoot()
 
-    await (flags.watch
-      ? watchExtractSchema({
-          flags,
-          output: this.output,
-          projectRoot,
-        })
-      : extractSchema({
-          flags,
-          output: this.output,
-          projectRoot,
-        }))
+    if (flags.watch) {
+      return watchExtractSchema({
+        flags,
+        output: this.output,
+        projectRoot,
+      })
+    }
+
+    await extractSchema({
+      flags,
+      output: this.output,
+      projectRoot,
+    })
+
+    return {}
   }
 }

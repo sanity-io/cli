@@ -11,7 +11,9 @@ interface WatchExtractSchemaOptions {
   projectRoot: ProjectRootResult
 }
 
-export async function watchExtractSchema(options: WatchExtractSchemaOptions): Promise<void> {
+export async function watchExtractSchema(
+  options: WatchExtractSchemaOptions,
+): Promise<{close: () => Promise<void>}> {
   const {flags, output, projectRoot} = options
 
   // Keep the start time + some simple stats for extractions as they happen
@@ -39,7 +41,7 @@ export async function watchExtractSchema(options: WatchExtractSchemaOptions): Pr
   output.log('Running initial extraction...')
 
   // Start the watcher (includes initial extraction)
-  const {stop} = await startExtractSchemaWatcher({
+  const {close} = await startExtractSchemaWatcher({
     flags,
     onExtraction: ({duration, success}) => {
       if (success) {
@@ -63,8 +65,8 @@ export async function watchExtractSchema(options: WatchExtractSchemaOptions): Pr
   output.log('Watching for changes... (Ctrl+C to stop)')
 
   /**
-   * Handle graceful shutdown.
-   * Wrapped in once() to prevent it being called twice by SIGINT/SIGTERM callbacks.
+   * Cleanup function that logs telemetry and stops the watcher.
+   * Wrapped in once() to prevent multiple calls.
    */
   const cleanup = once(async () => {
     trace.log({
@@ -78,12 +80,10 @@ export async function watchExtractSchema(options: WatchExtractSchemaOptions): Pr
 
     output.log('')
     output.log('Stopping watch mode...')
-    await stop()
-    process.exit(0)
+    await close()
   })
 
-  process.on('SIGINT', cleanup)
-  process.on('SIGTERM', cleanup)
-
-  // Watcher keeps process alive until cleanup is called
+  // Return cleanup function for programmatic usage and testing
+  // The CLI framework will handle SIGINT/SIGTERM
+  return {close: cleanup}
 }
