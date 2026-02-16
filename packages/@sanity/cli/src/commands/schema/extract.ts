@@ -2,6 +2,7 @@ import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 
 import {extractSchema} from '../../actions/schema/extractSchema.js'
+import {watchExtractSchema} from '../../actions/schema/watchExtractSchema.js'
 
 const description = `
 Extracts a JSON representation of a Sanity schema within a Studio context.
@@ -16,6 +17,14 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
     {
       command: '<%= config.bin %> <%= command.id %> --workspace default',
       description: 'Extracts schema types in a Sanity project with more than one workspace',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> --watch',
+      description: 'Watch mode - re-extract on changes',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> --watch --watch-patterns "lib/**/*.ts',
+      description: 'Watch with custom glob patterns',
     },
   ]
 
@@ -32,6 +41,14 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
     path: Flags.string({
       description: 'Optional path to specify destination of the schema file',
     }),
+    watch: Flags.boolean({
+      description: 'Enable watch mode to re-extract schema on file changes',
+    }),
+    'watch-patterns': Flags.string({
+      description: 'Additional glob pattern(s) to watch (can be specified multiple times)',
+      helpValue: '<glob>',
+      multiple: true,
+    }),
     workspace: Flags.string({
       description: 'The name of the workspace to generate a schema for',
       helpValue: '<name>',
@@ -42,10 +59,16 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
     const {flags} = await this.parse(ExtractSchemaCommand)
     const projectRoot = await this.getProjectRoot()
 
-    await extractSchema({
-      flags,
-      output: this.output,
-      projectRoot,
-    })
+    await (flags.watch
+      ? watchExtractSchema({
+          flags,
+          output: this.output,
+          projectRoot,
+        })
+      : extractSchema({
+          flags,
+          output: this.output,
+          projectRoot,
+        }))
   }
 }
