@@ -212,7 +212,7 @@ describe('#init: authentication', () => {
       },
     )
 
-    expect(error).toBe(undefined)
+    if (error) throw error
     expect(mockLogin).toHaveBeenCalled()
   })
 })

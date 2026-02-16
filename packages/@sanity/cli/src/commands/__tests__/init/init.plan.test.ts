@@ -261,7 +261,7 @@ describe('#init: retrieving plan', () => {
       },
     )
 
-    expect(error).toBe(undefined)
+    if (error) throw error
     expect(stderr).toContain('Warning: Coupon "INVALID123" is not available - using default plan')
     expect(stdout).toContain('Using default plan.')
   })
@@ -412,7 +412,7 @@ describe('#init: retrieving plan', () => {
       },
     )
 
-    expect(error).toBe(undefined)
+    if (error) throw error
     expect(stderr).toContain('Warning: Project plan "growth" does not exist - using default plan')
     expect(stdout).toContain('Using default plan.')
   })
