@@ -144,7 +144,7 @@ describe('#deploy', () => {
       mocks: defaultMocks,
     })
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(mockConfirm).toHaveBeenCalledWith({
       default: false,
       message: '"./build" is not empty, do you want to proceed?',
@@ -202,7 +202,7 @@ describe('#deploy', () => {
         config: {root: cwd},
         mocks: defaultMocks,
       })
-      expect(error).toBeUndefined()
+      if (error) throw error
 
       expect(stderr).toContain('Checking application info')
       expect(stderr).toContain('Verifying local content')
@@ -283,7 +283,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Application deployed')
       expect(stdout).toContain(
         `Add the deployment.appId to your sanity.cli.js or sanity.cli.ts file:`,
@@ -342,7 +342,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Application deployed')
       expect(mockBuildApp).not.toHaveBeenCalled()
     })
@@ -662,7 +662,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Application deployed')
     })
 
@@ -798,7 +798,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
 
       expect(mockInput).toHaveBeenCalledWith({
         message: 'Enter a title for your application:',
@@ -868,7 +868,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Application deployed')
       expect(stdout).toContain(
         `Add the deployment.appId to your sanity.cli.js or sanity.cli.ts file:`,
@@ -960,7 +960,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Application deployed')
       expect(stdout).toContain(
         `Add the deployment.appId to your sanity.cli.js or sanity.cli.ts file:`,
@@ -1034,7 +1034,7 @@ describe('#deploy', () => {
         mocks: defaultMocks,
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Application deployed')
       expect(mockExtractAppManifest).toHaveBeenCalled()
     })
@@ -1078,7 +1078,7 @@ describe('#deploy', () => {
         mocks: defaultMocks,
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Application deployed')
       expect(mockExtractAppManifest).toHaveBeenCalled()
     })
@@ -1194,7 +1194,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stderr).toContain('Checking project info')
       expect(stderr).toContain('Verifying local content')
       expect(stderr).toContain('Deploying to sanity.studio')
@@ -1255,7 +1255,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Studio deployed')
       expect(stdout).toContain('Your project has not been assigned a studio hostname')
       expect(stdout).toContain('Creating https://new-studio-host.sanity.studio')
@@ -1372,7 +1372,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Studio deployed to https://studio-two.sanity.studio')
       expect(mockSelect).toHaveBeenCalledWith({
         choices: [
@@ -1466,7 +1466,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Studio deployed')
       expect(mockInput).toHaveBeenCalledWith({
         message: 'Studio hostname (<value>.sanity.studio):',
@@ -1563,7 +1563,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Studio deployed')
     })
 
@@ -1891,7 +1891,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Studio deployed')
       expect(mockInput).toHaveBeenCalledWith({
         message: 'Studio hostname (<value>.sanity.studio):',
@@ -1947,7 +1947,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Success! Studio deployed')
       expect(mockBuildStudio).not.toHaveBeenCalled()
     })
@@ -2002,7 +2002,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain(`Success! Studio deployed to https://${appHost}.sanity.studio`)
     })
 
@@ -2058,7 +2058,7 @@ describe('#deploy', () => {
         },
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain(`Success! Studio deployed to https://${studioHost}.sanity.studio`)
     })
 

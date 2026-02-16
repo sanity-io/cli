@@ -287,7 +287,7 @@ describe('#cors:add', () => {
         mocks: defaultMocks,
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('CORS origin added successfully')
     })
 
@@ -299,7 +299,7 @@ describe('#cors:add', () => {
         mocks: defaultMocks,
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('CORS origin added successfully')
     })
 

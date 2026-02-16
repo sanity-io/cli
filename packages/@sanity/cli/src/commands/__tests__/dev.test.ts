@@ -75,7 +75,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         mocks: {isInteractive: true},
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Dev server started on port 5333')
       expect(stdout).toContain('View your app in the Sanity dashboard here:')
       expect(stderr).toContain('Checking configuration files')
@@ -95,7 +95,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         },
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stderr).toContain('Apps cannot run without the Sanity dashboard')
       expect(stderr).toContain('Starting dev server with the --load-in-dashboard flag set to true')
       expect(stdout).toContain('Dev server started on port 5334')
@@ -118,7 +118,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
           mocks: {isInteractive: true},
         })
 
-        expect(error).toBeUndefined()
+        if (error) throw error
         // Should automatically pick a different port
         expect(stdout).toMatch(/Dev server started on port \d{4}/)
         expect(stdout).not.toContain('Dev server started on port 5338')
@@ -161,7 +161,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         mocks: {isInteractive: true},
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Sanity Studio using vite@')
       expect(stdout).toContain('ready in')
       expect(stdout).toContain('ms and running at http://localhost:5335')
@@ -183,7 +183,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         },
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('http://127.0.0.1:5336')
       await tryCloseServer(result)
     })
@@ -221,7 +221,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         },
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Dev server started on port 5340')
       expect(stdout).toContain('View your studio in the Sanity dashboard here:')
       expect(stdout).toContain('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340')
@@ -300,7 +300,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         },
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       // Check that the server started successfully with auto-updates flag
       expect(stdout).toMatch(/running at http:\/\/localhost:5346/)
       expect(stderr).toContain('Checking configuration files')
@@ -335,7 +335,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
         },
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toMatch(/running at http:\/\/localhost:5348/)
       expect(stderr).toContain('Checking configuration files')
 

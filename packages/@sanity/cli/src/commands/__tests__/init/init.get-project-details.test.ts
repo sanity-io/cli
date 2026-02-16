@@ -187,7 +187,7 @@ describe('#init: get project details', () => {
       }),
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
   })
 
   test('returns `Unknown project` if project/organization call fails and in unattended mode with project id provided', async () => {
@@ -217,7 +217,7 @@ describe('#init: get project details', () => {
 
     // The command will eventually error out during setup, but that's after getProjectDetails
     // The fact it doesn't throw during getProjectDetails means "Unknown project" was returned
-    expect(error).toBeUndefined()
+    if (error) throw error
   })
 
   test('throws error if project/organization call fails and not in unattended mode', async () => {
@@ -557,7 +557,7 @@ describe('#init: get project details', () => {
       },
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
   })
 
   test('throws warn if visibility flag is provided but not available as a project feature', async () => {

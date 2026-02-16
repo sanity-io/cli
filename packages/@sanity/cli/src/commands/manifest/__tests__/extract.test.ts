@@ -15,7 +15,7 @@ describe('#manifest:extract', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(ExtractManifestCommand, [])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Extracting manifest')
     expect(stderr).toContain('Extracted manifest')
 
@@ -61,7 +61,7 @@ describe('#manifest:extract', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(ExtractManifestCommand, ['--path', './custom-output'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Extracting manifest')
     expect(stderr).toContain('Extracted manifest')
 
@@ -84,7 +84,7 @@ describe('#manifest:extract', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(ExtractManifestCommand, [])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Extracting manifest')
     expect(stderr).toContain('Extracted manifest')
 

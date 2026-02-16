@@ -44,7 +44,7 @@ describe('#install', () => {
 
       const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(mockGetPackageManagerChoice).toHaveBeenCalledWith('/test/project', {
         interactive: true,
       })
@@ -67,7 +67,7 @@ describe('#install', () => {
 
       const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
         '/test/project',
         'yarn',
@@ -86,7 +86,7 @@ describe('#install', () => {
 
       const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
         '/test/project',
         'pnpm',
@@ -105,7 +105,7 @@ describe('#install', () => {
 
       const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
         '/test/project',
         'bun',
@@ -124,7 +124,7 @@ describe('#install', () => {
 
       const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
         '/test/project',
         'manual',
@@ -145,7 +145,7 @@ describe('#install', () => {
 
       const {error} = await testCommand(Install, ['@sanity/vision'], {mocks: defaultMocks})
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(mockInstallNewPackages).toHaveBeenCalledWith(
         {
           packageManager: 'npm',
@@ -169,7 +169,7 @@ describe('#install', () => {
         mocks: defaultMocks,
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(mockInstallNewPackages).toHaveBeenCalledWith(
         {
           packageManager: 'yarn',
@@ -191,7 +191,7 @@ describe('#install', () => {
 
       const {error} = await testCommand(Install, ['some-package'], {mocks: defaultMocks})
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(mockInstallNewPackages).toHaveBeenCalledWith(
         {
           packageManager: 'pnpm',

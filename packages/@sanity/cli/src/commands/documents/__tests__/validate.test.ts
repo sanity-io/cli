@@ -131,7 +131,7 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
         'ndjson',
       ])
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Warning:')
       expect(stdout).toContain('reads all documents from your input file')
       expect(stdout).toContain('Potential pitfalls:')
@@ -199,7 +199,7 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
         'json',
       ])
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       const parsed = JSON.parse(stdout)
       expect(Array.isArray(parsed)).toBe(true)
       expect(parsed.length).toBe(0)
@@ -278,7 +278,7 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
         'production',
       ])
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       const parsed = JSON.parse(stdout)
       expect(Array.isArray(parsed)).toBe(true)
     })

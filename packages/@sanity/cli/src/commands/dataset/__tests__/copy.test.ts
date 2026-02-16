@@ -324,7 +324,7 @@ describe('#dataset:copy', () => {
         mocks: defaultMocks,
       })
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(mockInput).toHaveBeenCalledOnce()
 
       expect(mockSelect).toHaveBeenCalledWith({

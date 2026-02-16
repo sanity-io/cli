@@ -60,7 +60,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       config: {root: cwd},
     })
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain(`Building with auto-updates enabled`)
     expect(stderr).toContain('✔ Clean output folder')
     expect(stderr).toContain(`✔ Build Sanity Studio`)
@@ -77,7 +77,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
 
     const {error, stderr} = await testCommand(BuildCommand, ['--yes'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Clean output folder')
     expect(stderr).toContain(`Build Sanity Studio`)
 
@@ -99,7 +99,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       '--stats',
     ])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     const staticFiles = await readdir(join(cwd, 'dist', 'static'))
     expect(staticFiles.some((file) => file.endsWith('.map'))).toBe(true)
     expect(stdout).toContain('Largest module files:')
@@ -155,7 +155,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const customDir = 'custom-output'
     const {error, stderr} = await testCommand(BuildCommand, [customDir])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(mockedConfirm).toHaveBeenCalledWith(
       expect.objectContaining({
         message: expect.stringContaining('Do you want to delete the existing directory'),
@@ -177,7 +177,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const customDir = 'custom-output'
     const {error, stderr} = await testCommand(BuildCommand, [customDir])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).not.toContain('Clean output folder')
     expect(stderr).toContain('Build Sanity Studio')
   })
@@ -230,7 +230,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
 
     const {error, stderr} = await testCommand(BuildCommand, [])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(mockedUpgradePackages).toHaveBeenCalledWith(
       expect.objectContaining({
         packages: [['sanity', '3.1.0']],
@@ -256,7 +256,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       config: {root: cwd},
     })
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(mockedSelect).not.toHaveBeenCalled()
     expect(stderr).toContain('Build Sanity Studio')
   })
@@ -290,7 +290,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
 
     const {error, stderr} = await testCommand(BuildCommand, ['--yes'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Build Sanity Studio')
 
     const files = await readdir(join(cwd, 'dist'))

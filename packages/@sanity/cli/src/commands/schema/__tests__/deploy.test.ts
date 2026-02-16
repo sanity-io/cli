@@ -231,7 +231,7 @@ describe('#schema:deploy', () => {
 
     const {error} = await testCommand(DeploySchemaCommand, ['--tag', tag])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
   })
 
   test('throw an error if some schemas fail to deploy', async () => {

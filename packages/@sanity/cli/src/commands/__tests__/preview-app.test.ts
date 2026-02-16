@@ -27,7 +27,7 @@ describe(
 
       await tryCloseServer(result)
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain(`Sanity application using vite@`)
       expect(stdout).toContain(`ready in`)
       expect(stdout).toContain(`ms and running at http://localhost:4334/ (production preview mode)`)

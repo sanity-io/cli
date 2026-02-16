@@ -168,7 +168,7 @@ describe('#init: authentication', () => {
       },
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('You are logged in as test@example.com using SAML')
   })
 

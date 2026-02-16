@@ -75,7 +75,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
       config: {root: cwd},
     })
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain(`Project: ${projectId}`)
     expect(stdout).toContain(`Dataset: ${dataset}`)
     expect(stdout).toContain('Tag:')
@@ -127,7 +127,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
 
     const {error, stderr, stdout} = await testCommand(GraphQLDeployCommand, ['--force'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Dangerous changes. Forced')
     expect(stderr).toContain('Deployed!')
     expect(stdout).toContain(`Project: ${projectId}`)
@@ -166,7 +166,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
 
     const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--playground'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Deployed!')
     expect(capturedBody?.enablePlayground).toBe(true)
   })
@@ -203,7 +203,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
       config: {root: cwd},
     })
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Deployed!')
     expect(mockConfirm).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -244,7 +244,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
       config: {root: cwd},
     })
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Deployed!')
   })
 
@@ -277,7 +277,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
 
     const {error, stderr, stdout} = await testCommand(GraphQLDeployCommand, [])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('Found BREAKING changes')
     expect(stderr).not.toContain('Deployed!')
     expect(mockConfirm).toHaveBeenCalledWith(
@@ -305,7 +305,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
 
     const {error, stderr, stdout} = await testCommand(GraphQLDeployCommand, ['--dry-run'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('GraphQL API is valid and has no breaking changes')
     expect(stdout).not.toContain(`Project: ${projectId}`)
     expect(stderr).not.toContain('Deployed!')
@@ -377,7 +377,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
 
     const {error, stdout} = await testCommand(GraphQLDeployCommand, [])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('Found potentially dangerous changes from previous schema')
     expect(stdout).toContain('Field "count" changed type from "Int" to "String"')
     expect(stdout).toContain('Enum value "ACTIVE" was added')
@@ -421,7 +421,7 @@ describe('#graphql:deploy', {timeout: 60 * 1000}, () => {
 
     const {error, stderr, stdout} = await testCommand(GraphQLDeployCommand, [])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('Found BREAKING changes')
     expect(mockConfirm).toHaveBeenCalledWith(
       expect.objectContaining({

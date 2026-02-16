@@ -106,7 +106,7 @@ describe('#exec', {timeout: 15 * 1000}, () => {
     test('executes script successfully', async () => {
       const {error, stdout} = await testCommand(ExecCommand, [scriptPath])
 
-      expect(error).toBeUndefined()
+      if (error) throw error
 
       // Parse the JSON output
       const data = JSON.parse(stdout.trim())
@@ -127,7 +127,7 @@ describe('#exec', {timeout: 15 * 1000}, () => {
         vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
         const {error, stdout} = await testCommand(ExecCommand, [scriptPath, '--with-user-token'])
 
-        expect(error).toBeUndefined()
+        if (error) throw error
 
         // Parse the JSON output
         const data = JSON.parse(stdout.trim())
@@ -146,7 +146,7 @@ describe('#exec', {timeout: 15 * 1000}, () => {
     test('executes script with --mock-browser-env flag', async () => {
       const {error, stdout} = await testCommand(ExecCommand, [scriptPath, '--mock-browser-env'])
 
-      expect(error).toBeUndefined()
+      if (error) throw error
 
       // Parse the JSON output
       const data = JSON.parse(stdout.trim())

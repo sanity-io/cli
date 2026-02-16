@@ -77,7 +77,7 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(GraphQLDeployCommand, [])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Deployed!')
     expect(capturedBody?.schema?.generation).toBe('gen2')
   })
@@ -120,7 +120,7 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
       '--force',
     ])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Specified generation (gen3)')
     expect(stderr).toContain('currently deployed (gen2)')
     expect(stderr).toContain('Deployed!')
@@ -140,7 +140,7 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen3'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Specified generation (gen3)')
     expect(stderr).toContain('currently deployed (gen2)')
     expect(mockConfirm).toHaveBeenCalledWith(
@@ -205,7 +205,7 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen3'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Specified generation (gen3)')
     expect(stderr).toContain('currently deployed (gen2)')
     expect(mockConfirm).toHaveBeenCalledWith(
@@ -246,7 +246,7 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen1'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Deployed!')
     expect(capturedBody?.schema?.generation).toBe('gen1')
   })
@@ -283,7 +283,7 @@ describe('#graphql:deploy generation', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--generation', 'gen3'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Deployed!')
     // Should not warn about generation mismatch
     expect(stderr).not.toContain('Specified generation')
