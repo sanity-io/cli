@@ -2,6 +2,7 @@ import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 
 import {extractSchema} from '../../actions/schema/extractSchema.js'
+import {getExtractOptions} from '../../actions/schema/getExtractOptions.js'
 import {watchExtractSchema} from '../../actions/schema/watchExtractSchema.js'
 
 const description = `
@@ -30,7 +31,6 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
 
   static override flags = {
     'enforce-required-fields': Flags.boolean({
-      default: false,
       description: 'Makes the schema generated treat fields marked as required as non-optional',
     }),
     format: Flags.string({
@@ -55,24 +55,27 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
     }),
   }
 
-  public async run(): Promise<{close?: () => Promise<void>}> {
+  public async run(): Promise<{close?: () => Promise<void>} | void> {
     const {flags} = await this.parse(ExtractSchemaCommand)
     const projectRoot = await this.getProjectRoot()
 
+    const {schemaExtraction} = await this.getCliConfig()
+    const extractOptions = getExtractOptions({
+      flags,
+      projectRoot,
+      schemaExtraction,
+    })
+
     if (flags.watch) {
       return watchExtractSchema({
-        flags,
+        extractOptions,
         output: this.output,
-        projectRoot,
       })
     }
 
-    await extractSchema({
-      flags,
+    return await extractSchema({
+      extractOptions,
       output: this.output,
-      projectRoot,
     })
-
-    return {}
   }
 }

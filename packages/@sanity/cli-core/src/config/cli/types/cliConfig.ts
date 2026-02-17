@@ -78,6 +78,37 @@ export interface CliConfig {
   /** Wraps the Studio in \<React.StrictMode\> root to aid in flagging potential problems related to concurrent features (startTransition, useTransition, useDeferredValue, Suspense). Can also be enabled by setting SANITY_STUDIO_REACT_STRICT_MODE="true"|"false". It only applies to sanity dev in development mode and is ignored in sanity build and in production. Defaults to false. */
   reactStrictMode?: boolean
 
+  /**
+   * Configuration for schema extraction (`sanity schema extract`)
+   */
+  schemaExtraction?: {
+    /**
+     * When true, schema fields marked as required will be non-optional in the output.
+     * Defaults to `false`
+     */
+    enforceRequiredFields?: boolean
+
+    /**
+     * Output path for the extracted schema file.
+     * Defaults to `schema.json` in the working directory.
+     */
+    path?: string
+
+    /**
+     * Additional glob patterns to watch for schema changes in watch mode.
+     * These extend the default patterns:
+     * - `sanity.config.{js,jsx,ts,tsx,mjs}`
+     * - `schema*\/**\/*.{js,jsx,ts,tsx,mjs}`
+     */
+    watchPatterns?: string[]
+
+    /**
+     * The name of the workspace to generate a schema for. Required if your Sanity project has more than one
+     * workspace.
+     */
+    workspace?: string
+  }
+
   /** Defines the hostname and port that the development server should run on. hostname defaults to localhost, and port to 3333. */
   server?: {
     hostname?: string

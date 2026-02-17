@@ -1,20 +1,19 @@
-import {getCliTelemetry, Output, type ProjectRootResult} from '@sanity/cli-core'
+import {getCliTelemetry, type Output} from '@sanity/cli-core'
 import {mean, once} from 'lodash-es'
 
-import {type ExtractSchemaCommand} from '../../commands/schema/extract.js'
 import {SchemaExtractionWatchModeTrace} from '../../telemetry/extractSchema.telemetry.js'
 import {DEFAULT_WATCH_PATTERNS, startExtractSchemaWatcher} from './extractSchemaWatcher.js'
+import {type ExtractOptions} from './getExtractOptions.js'
 
 interface WatchExtractSchemaOptions {
-  flags: ExtractSchemaCommand['flags']
+  extractOptions: ExtractOptions
   output: Output
-  projectRoot: ProjectRootResult
 }
 
 export async function watchExtractSchema(
   options: WatchExtractSchemaOptions,
 ): Promise<{close: () => Promise<void>}> {
-  const {flags, output, projectRoot} = options
+  const {extractOptions, output} = options
 
   // Keep the start time + some simple stats for extractions as they happen
   const startTime = Date.now()
@@ -23,8 +22,7 @@ export async function watchExtractSchema(
     successfulDurations: [],
   }
 
-  const additionalWatchPatterns = flags['watch-patterns'] ?? []
-  const watchPatterns = [...DEFAULT_WATCH_PATTERNS, ...additionalWatchPatterns]
+  const watchPatterns = [...DEFAULT_WATCH_PATTERNS, ...extractOptions.watchPatterns]
 
   const trace = getCliTelemetry().trace(SchemaExtractionWatchModeTrace)
   trace.start()
@@ -42,7 +40,7 @@ export async function watchExtractSchema(
 
   // Start the watcher (includes initial extraction)
   const {close} = await startExtractSchemaWatcher({
-    flags,
+    extractOptions,
     onExtraction: ({duration, success}) => {
       if (success) {
         stats.successfulDurations.push(duration)
@@ -51,13 +49,12 @@ export async function watchExtractSchema(
       }
     },
     output,
-    projectRoot,
     watchPatterns,
   })
 
   trace.log({
-    enforceRequiredFields: flags['enforce-required-fields'],
-    schemaFormat: flags.format || 'groq-type-nodes',
+    enforceRequiredFields: extractOptions.enforceRequiredFields,
+    schemaFormat: extractOptions.format,
     step: 'started',
   })
 

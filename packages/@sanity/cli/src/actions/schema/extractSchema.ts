@@ -1,29 +1,21 @@
 import {mkdir, writeFile} from 'node:fs/promises'
-import {join, resolve} from 'node:path'
+import {dirname} from 'node:path'
 
 import {exit} from '@oclif/core/errors'
-import {
-  getCliTelemetry,
-  type Output,
-  type ProjectRootResult,
-  studioWorkerTask,
-} from '@sanity/cli-core'
+import {getCliTelemetry, type Output, studioWorkerTask} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {type extractSchema as extractSchemaInternal} from '@sanity/schema/_internal'
 
-import {type ExtractSchemaCommand} from '../../commands/schema/extract'
 import {SchemaExtractedTrace} from '../../telemetry/extractSchema.telemetry.js'
 import {formatSchemaValidation} from './formatSchemaValidation.js'
+import {type ExtractOptions} from './getExtractOptions.js'
 import {type ExtractSchemaWorkerData, type ExtractSchemaWorkerError} from './types.js'
 import {schemasExtractDebug} from './utils/debug.js'
 import {SchemaExtractionError} from './utils/SchemaExtractionError.js'
 
-const FILENAME = 'schema.json'
-
-interface ExtractSchemaOptions {
-  flags: ExtractSchemaCommand['flags']
+interface ExtractSchemaActionOptions {
+  extractOptions: ExtractOptions
   output: Output
-  projectRoot: ProjectRootResult
 }
 
 interface ExtractSchemaWorkerResult {
@@ -33,19 +25,15 @@ interface ExtractSchemaWorkerResult {
 
 type ExtractSchemaWorkerMessage = ExtractSchemaWorkerError | ExtractSchemaWorkerResult
 
-export async function extractSchema(options: ExtractSchemaOptions): Promise<void> {
-  const {flags, output, projectRoot} = options
-  const {
-    'enforce-required-fields': enforceRequiredFields,
-    format,
-    path,
-    workspace: workspaceName,
-  } = flags
+export async function extractSchema(options: ExtractSchemaActionOptions): Promise<void> {
+  const {extractOptions, output} = options
+  const {configPath, enforceRequiredFields, format, outputPath, workspace} = extractOptions
+
   const spin = spinner(
     enforceRequiredFields ? 'Extracting schema with enforced required fields' : 'Extracting schema',
   ).start()
 
-  const workDir = projectRoot.directory
+  const workDir = dirname(configPath)
 
   const trace = getCliTelemetry().trace(SchemaExtractedTrace)
   trace.start()
@@ -61,10 +49,10 @@ export async function extractSchema(options: ExtractSchemaOptions): Promise<void
         name: 'extractSanitySchema',
         studioRootPath: workDir,
         workerData: {
-          configPath: projectRoot.path,
+          configPath,
           enforceRequiredFields,
           workDir,
-          workspaceName,
+          workspaceName: workspace,
         } satisfies ExtractSchemaWorkerData,
       },
     )
@@ -79,12 +67,11 @@ export async function extractSchema(options: ExtractSchemaOptions): Promise<void
       enforceRequiredFields,
       schemaAllTypesCount: schema.length,
       schemaDocumentTypesCount: schema.filter((type) => type.type === 'document').length,
-      schemaFormat: flags.format || 'groq-type-nodes',
+      schemaFormat: format,
       schemaTypesCount: schema.filter((type) => type.type === 'type').length,
     })
 
-    const outputDir = path ? resolve(join(workDir, path)) : workDir
-    const outputPath = join(outputDir, FILENAME)
+    const outputDir = dirname(outputPath)
     await mkdir(outputDir, {recursive: true})
 
     spin.text = `Writing schema to ${outputPath}`

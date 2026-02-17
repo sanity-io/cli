@@ -1,15 +1,15 @@
 import {mkdir, writeFile} from 'node:fs/promises'
-import {isAbsolute, join, relative, resolve} from 'node:path'
+import {dirname, isAbsolute, relative} from 'node:path'
 
-import {type Output, type ProjectRootResult, studioWorkerTask} from '@sanity/cli-core'
+import {type Output, studioWorkerTask} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {type extractSchema as extractSchemaInternal} from '@sanity/schema/_internal'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
 import {debounce} from 'lodash-es'
 import {glob} from 'tinyglobby'
 
-import {type ExtractSchemaCommand} from '../../commands/schema/extract.js'
 import {formatSchemaValidation} from './formatSchemaValidation.js'
+import {type ExtractOptions} from './getExtractOptions.js'
 import {type ExtractSchemaWorkerData, type ExtractSchemaWorkerError} from './types.js'
 import {schemasExtractDebug} from './utils/debug.js'
 import {SchemaExtractionError} from './utils/SchemaExtractionError.js'
@@ -30,9 +30,8 @@ const IGNORED_PATTERNS = [
 ]
 
 interface ExtractSchemaWatcherOptions {
-  flags: ExtractSchemaCommand['flags']
+  extractOptions: ExtractOptions
   output: Output
-  projectRoot: ProjectRootResult
   watchPatterns: string[]
 
   onExtraction?: (result: {duration: number; success: boolean}) => void
@@ -49,8 +48,6 @@ interface ExtractSchemaWatcher {
   close: () => Promise<void>
   watcher: FSWatcher
 }
-
-const FILENAME = 'schema.json'
 
 /** State for tracking extraction status */
 interface WatchState {
@@ -107,22 +104,19 @@ function createExtractionRunner(onExtract: () => Promise<void>): ExtractionRunne
 export async function startExtractSchemaWatcher(
   options: ExtractSchemaWatcherOptions,
 ): Promise<ExtractSchemaWatcher> {
-  const {flags, onExtraction, output, projectRoot, watchPatterns} = options
+  const {extractOptions, onExtraction, output, watchPatterns} = options
 
-  const workDir = projectRoot.directory
-  const {
-    'enforce-required-fields': enforceRequiredFields,
-    format,
-    path,
-    workspace: workspaceName,
-  } = flags
-
-  const outputDir = path ? resolve(join(workDir, path)) : workDir
-  const outputPath = join(outputDir, FILENAME)
+  const {configPath, enforceRequiredFields, format, outputPath, workspace} = extractOptions
+  const workDir = dirname(configPath)
+  const outputDir = dirname(outputPath)
 
   // Helper function to run extraction with spinner and error handling
-  const runExtraction = async (spinnerText: string, successText: string): Promise<boolean> => {
-    const spin = spinner(spinnerText).start()
+  const runExtraction = async (): Promise<boolean> => {
+    const spin = spinner(
+      enforceRequiredFields
+        ? 'Extracting schema with enforced required fields'
+        : 'Extracting schema...',
+    ).start()
     const extractionStartTime = Date.now()
 
     try {
@@ -136,10 +130,10 @@ export async function startExtractSchemaWatcher(
           name: 'extractSanitySchema',
           studioRootPath: workDir,
           workerData: {
-            configPath: projectRoot.path,
+            configPath,
             enforceRequiredFields,
             workDir,
-            workspaceName,
+            workspaceName: workspace,
           } satisfies ExtractSchemaWorkerData,
         },
       )
@@ -156,7 +150,11 @@ export async function startExtractSchemaWatcher(
       // Write schema to file
       await writeFile(outputPath, `${JSON.stringify(schema, null, 2)}\n`)
 
-      spin.succeed(successText)
+      spin.succeed(
+        enforceRequiredFields
+          ? `Extracted schema to ${outputPath} with enforced required fields`
+          : `Extracted schema to ${outputPath}`,
+      )
 
       const duration = Date.now() - extractionStartTime
       onExtraction?.({duration, success: true})
@@ -182,7 +180,7 @@ export async function startExtractSchemaWatcher(
   }
 
   // Run initial extraction
-  await runExtraction('Extracting schema...', `Extracted schema to ${outputPath}`)
+  await runExtraction()
 
   const absoluteWatchPatterns = await glob(watchPatterns, {
     absolute: true,
@@ -191,7 +189,7 @@ export async function startExtractSchemaWatcher(
 
   // Create extraction runner with concurrency control
   const {runExtraction: runConcurrentExtraction} = createExtractionRunner(async () => {
-    await runExtraction('Extracting schema...', `Extracted schema to ${outputPath}`)
+    await runExtraction()
   })
 
   // Debounced extraction trigger (1 second delay)
