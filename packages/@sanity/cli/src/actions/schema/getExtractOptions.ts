@@ -36,11 +36,7 @@ export function getExtractOptions({
       flags['enforce-required-fields'] ?? schemaExtraction?.enforceRequiredFields ?? false,
     format: flags.format ?? 'groq-type-nodes',
     outputPath,
-    watchPatterns: flags['watch-patterns']
-      ? Array.isArray(flags['watch-patterns'])
-        ? flags['watch-patterns']
-        : [flags['watch-patterns']]
-      : (schemaExtraction?.watchPatterns ?? []),
+    watchPatterns: flags['watch-patterns'] ?? schemaExtraction?.watchPatterns ?? [],
     workspace: flags.workspace ?? schemaExtraction?.workspace,
   }
 }

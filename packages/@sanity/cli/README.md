@@ -2792,7 +2792,7 @@ EXAMPLES
 
   Watch with custom glob patterns
 
-    $ sanity schema extract --watch --watch-patterns "lib/**/*.ts
+    $ sanity schema extract --watch --watch-patterns "lib/**/*.ts"
 ```
 
 _See code: [src/commands/schema/extract.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.11/src/commands/schema/extract.ts)_

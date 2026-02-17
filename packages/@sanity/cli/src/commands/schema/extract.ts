@@ -24,7 +24,7 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
       description: 'Watch mode - re-extract on changes',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --watch --watch-patterns "lib/**/*.ts',
+      command: '<%= config.bin %> <%= command.id %> --watch --watch-patterns "lib/**/*.ts"',
       description: 'Watch with custom glob patterns',
     },
   ]
