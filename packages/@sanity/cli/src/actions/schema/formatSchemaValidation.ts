@@ -2,6 +2,7 @@ import {isatty} from 'node:tty'
 import {styleText} from 'node:util'
 
 import {logSymbols} from '@sanity/cli-core/ux'
+import {generateHelpUrl} from '@sanity/generate-help-url'
 import {type SchemaValidationProblemGroup, type SchemaValidationProblemPath} from '@sanity/types'
 
 const isTty = isatty(1)
@@ -86,7 +87,10 @@ export function formatSchemaValidation(validation: SchemaValidationProblemGroup[
           const formattedPath = `  ${styleText('bold', formatPath(group.path) || '(root)')}`
           const formattedMessages = group.problems
             .toSorted((a, b) => severityValues[a.severity] - severityValues[b.severity])
-            .map(({message, severity}) => `    ${logSymbols[severity]} ${message}`)
+            .map(({helpId, message, severity}) => {
+              const help = helpId ? `\n      See ${generateHelpUrl(helpId)}` : ''
+              return `    ${logSymbols[severity]} ${message}${help}`
+            })
             .join('\n')
 
           return `${formattedPath}\n${formattedMessages}`
