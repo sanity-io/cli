@@ -1,16 +1,14 @@
-import {mkdir, writeFile} from 'node:fs/promises'
 import {dirname, isAbsolute, relative} from 'node:path'
 
-import {type Output, studioWorkerTask} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {type extractSchema as extractSchemaInternal} from '@sanity/schema/_internal'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
 import {debounce} from 'lodash-es'
 import {glob} from 'tinyglobby'
 
 import {formatSchemaValidation} from './formatSchemaValidation.js'
 import {type ExtractOptions} from './getExtractOptions.js'
-import {type ExtractSchemaWorkerData, type ExtractSchemaWorkerError} from './types.js'
+import {runSchemaExtraction} from './runSchemaExtraction.js'
 import {schemasExtractDebug} from './utils/debug.js'
 import {SchemaExtractionError} from './utils/SchemaExtractionError.js'
 
@@ -36,13 +34,6 @@ interface ExtractSchemaWatcherOptions {
 
   onExtraction?: (result: {duration: number; success: boolean}) => void
 }
-
-interface ExtractSchemaWorkerResult {
-  schema: ReturnType<typeof extractSchemaInternal>
-  type: 'success'
-}
-
-type ExtractSchemaWorkerMessage = ExtractSchemaWorkerError | ExtractSchemaWorkerResult
 
 interface ExtractSchemaWatcher {
   close: () => Promise<void>
@@ -106,9 +97,8 @@ export async function startExtractSchemaWatcher(
 ): Promise<ExtractSchemaWatcher> {
   const {extractOptions, onExtraction, output, watchPatterns} = options
 
-  const {configPath, enforceRequiredFields, format, outputPath, workspace} = extractOptions
+  const {configPath, enforceRequiredFields, outputPath} = extractOptions
   const workDir = dirname(configPath)
-  const outputDir = dirname(outputPath)
 
   // Helper function to run extraction with spinner and error handling
   const runExtraction = async (): Promise<boolean> => {
@@ -120,35 +110,7 @@ export async function startExtractSchemaWatcher(
     const extractionStartTime = Date.now()
 
     try {
-      if (format !== 'groq-type-nodes') {
-        throw new Error(`Unsupported format: "${format}"`)
-      }
-
-      const result = await studioWorkerTask<ExtractSchemaWorkerMessage>(
-        new URL('extractSanitySchema.worker.js', import.meta.url),
-        {
-          name: 'extractSanitySchema',
-          studioRootPath: workDir,
-          workerData: {
-            configPath,
-            enforceRequiredFields,
-            workDir,
-            workspaceName: workspace,
-          } satisfies ExtractSchemaWorkerData,
-        },
-      )
-
-      if (result.type === 'error') {
-        throw new SchemaExtractionError(result.error, result.validation)
-      }
-
-      const schema = result.schema
-
-      // Ensure output directory exists
-      await mkdir(outputDir, {recursive: true})
-
-      // Write schema to file
-      await writeFile(outputPath, `${JSON.stringify(schema, null, 2)}\n`)
+      await runSchemaExtraction(extractOptions)
 
       spin.succeed(
         enforceRequiredFields
