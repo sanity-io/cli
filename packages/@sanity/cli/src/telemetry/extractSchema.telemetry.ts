@@ -31,6 +31,6 @@ export const SchemaExtractedTrace = defineTrace<SchemaExtractedTraceAttributes>(
 
 export const SchemaExtractionWatchModeTrace = defineTrace<SchemaExtractionWatchModeAttributes>({
   description: 'Trace emitted when schema extraction watch mode is run',
-  name: 'Schema Extraction Watch Mode Started',
+  name: 'Schema Extraction Watch Mode',
   version: 0,
 })

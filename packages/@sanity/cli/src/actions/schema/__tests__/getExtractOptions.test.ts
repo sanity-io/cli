@@ -1,3 +1,5 @@
+import {join, resolve} from 'node:path'
+
 import {describe, expect, test} from 'vitest'
 
 import {type ExtractSchemaCommand} from '../../../commands/schema/extract.js'
@@ -33,7 +35,7 @@ describe('getExtractOptions', () => {
       configPath: '/test/project/sanity.config.ts',
       enforceRequiredFields: true,
       format: 'groq-type-nodes',
-      outputPath: '/test/project/custom-output/schema.json',
+      outputPath: resolve(join('/test/project', 'custom-output', 'schema.json')),
       watchPatterns: ['pattern1/**/*.ts', 'pattern2/**/*.js'],
       workspace: 'production',
     })
@@ -61,7 +63,7 @@ describe('getExtractOptions', () => {
       configPath: '/test/project/sanity.config.ts',
       enforceRequiredFields: true,
       format: 'groq-type-nodes',
-      outputPath: '/test/project/cli-config-output/schema.json',
+      outputPath: resolve(join('/test/project', 'cli-config-output', 'schema.json')),
       watchPatterns: ['cli-pattern/**/*.ts'],
       workspace: 'staging',
     })
@@ -84,7 +86,7 @@ describe('getExtractOptions', () => {
       configPath: '/test/project/sanity.config.ts',
       enforceRequiredFields: false,
       format: 'groq-type-nodes',
-      outputPath: '/test/project/schema.json',
+      outputPath: join('/test/project', 'schema.json'),
       watchPatterns: [],
       workspace: undefined,
     })
