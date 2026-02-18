@@ -1,38 +1,47 @@
-import {join, normalize as normalizePath} from 'node:path'
+import {join, normalize, resolve} from 'node:path'
+import {fileURLToPath, pathToFileURL} from 'node:url'
 
 import {readPackageJson} from '@sanity/cli-core'
-import resolveFrom from 'resolve-from'
+import {moduleResolve} from 'import-meta-resolve'
 
 /**
  * Get the version of a package installed locally.
  *
- * @param moduleId - The name of the package in npm.
- * @param workDir - The working directory to resolve the module from.
+ * @param moduleName - The name of the package in npm.
+ * @param workDir - The working directory to resolve the module from. (aka project root)
  * @returns The version of the package installed locally.
  * @internal
  */
 export async function getLocalPackageVersion(
-  moduleId: string,
+  moduleName: string,
   workDir: string,
-): Promise<string | undefined> {
-  const fromPath = workDir || process.cwd()
-  const modulePath = resolveFrom.silent(fromPath, join(moduleId, 'package.json'))
-  if (modulePath) {
-    const pkg = await readPackageJson(modulePath)
-    return pkg.version
-  }
+): Promise<string | null> {
+  try {
+    const dirUrl = pathToFileURL(resolve(workDir, 'noop.js'))
 
-  // In the case of packages with an `exports` key, we may not be able to resolve `package.json`.
-  // If this happens, try to resolve the module itself and look for the last occurence of the
-  // package name, then append `package.json` to that path
-  const pathSegment = normalizePath(moduleId)
-  const parentPath = resolveFrom.silent(fromPath, moduleId)
-  if (!parentPath) {
-    return undefined
-  }
+    let packageJsonUrl: URL
+    try {
+      packageJsonUrl = moduleResolve(`${moduleName}/package.json`, dirUrl)
+    } catch (err: unknown) {
+      if (isErrPackagePathNotExported(err)) {
+        // Fallback: resolve main entry point and derive package root
+        const mainUrl = moduleResolve(moduleName, dirUrl)
+        const mainPath = fileURLToPath(mainUrl)
+        const normalizedName = normalize(moduleName)
+        const idx = mainPath.lastIndexOf(normalizedName)
+        const moduleRoot = mainPath.slice(0, idx + normalizedName.length)
+        packageJsonUrl = pathToFileURL(join(moduleRoot, 'package.json'))
+      } else {
+        throw err
+      }
+    }
 
-  const moduleRoot = parentPath.slice(0, parentPath.lastIndexOf(pathSegment) + pathSegment.length)
-  const manifestPath = join(moduleRoot, 'package.json')
-  const pkg = await readPackageJson(manifestPath)
-  return pkg.version
+    return (await readPackageJson(packageJsonUrl)).version
+  } catch {
+    return null
+  }
+}
+
+function isErrPackagePathNotExported(err: unknown): boolean {
+  return err instanceof Error && 'code' in err && err.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED'
 }

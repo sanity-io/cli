@@ -9,7 +9,7 @@ import {pack} from 'tar-fs'
 import {createDeployment} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
-import {readModuleVersion} from '../../util/readModuleVersion.js'
+import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {buildStudio} from '../build/buildStudio.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {checkDir} from './checkDir.js'
@@ -24,7 +24,7 @@ export async function deployStudio(options: DeployAppOptions) {
   const appHost = cliConfig.studioHost
   const appId = getAppId(cliConfig)
   const projectId = cliConfig.api?.projectId
-  const installedSanityVersion = await readModuleVersion(sourceDir, 'sanity')
+  const installedSanityVersion = await getLocalPackageVersion('sanity', workDir)
   const isAutoUpdating = shouldAutoUpdate({cliConfig, flags, output})
 
   if (!installedSanityVersion) {

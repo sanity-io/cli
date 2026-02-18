@@ -9,12 +9,10 @@ import {checkDir} from '../../actions/deploy/checkDir.js'
 import {extractAppManifest} from '../../actions/manifest/extractAppManifest.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
-import {readModuleVersion} from '../../util/readModuleVersion.js'
+import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {DeployCommand} from '../deploy.js'
 
-vi.mock('../../util/readModuleVersion.js', () => ({
-  readModuleVersion: vi.fn(),
-}))
+vi.mock('../../util/getLocalPackageVersion.js')
 
 vi.mock('../../actions/build/buildApp.js', () => ({
   buildApp: vi.fn(),
@@ -60,7 +58,7 @@ const mockConfirm = vi.mocked(confirm)
 const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
 const mockDirIsEmptyOrNonExistent = vi.mocked(dirIsEmptyOrNonExistent)
-const mockReadModuleVersion = vi.mocked(readModuleVersion)
+const mockGetLocalPackageVersion = vi.mocked(getLocalPackageVersion)
 const mockBuildStudio = vi.mocked(buildStudio)
 const mockBuildApp = vi.mocked(buildApp)
 const mockExtractAppManifest = vi.mocked(extractAppManifest)
@@ -82,10 +80,10 @@ const defaultMocks = {
 describe('#deploy', () => {
   beforeEach(async () => {
     // Set up default mocks
-    mockReadModuleVersion.mockImplementation(async (sourceDir, moduleName) => {
+    mockGetLocalPackageVersion.mockImplementation(async (moduleName) => {
       if (moduleName === 'sanity') return '3.0.0' // for studio deployments
       if (moduleName === '@sanity/sdk-react') return '1.0.0' // for app deployments
-      return '1.0.0'
+      return null
     })
     mockCheckDir.mockResolvedValue()
     // Default to empty manifest for app deployments
@@ -215,7 +213,7 @@ describe('#deploy', () => {
       const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
-      mockReadModuleVersion.mockResolvedValue(null)
+      mockGetLocalPackageVersion.mockResolvedValue(null)
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},
@@ -1089,7 +1087,7 @@ describe('#deploy', () => {
       const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
-      mockReadModuleVersion.mockResolvedValue(null)
+      mockGetLocalPackageVersion.mockResolvedValue(null)
 
       const {error} = await testCommand(DeployCommand, [], {
         config: {root: cwd},

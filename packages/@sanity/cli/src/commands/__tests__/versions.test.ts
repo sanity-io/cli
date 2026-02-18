@@ -90,8 +90,8 @@ describe('#versions', () => {
       name: 'test',
       version: '1.0.0',
     })
-    vi.mocked(getLocalPackageVersion).mockReturnValueOnce(Promise.resolve(undefined))
-    vi.mocked(getLatestVersion).mockResolvedValue('3.0.0' as never)
+    vi.mocked(getLocalPackageVersion).mockResolvedValueOnce(null)
+    vi.mocked(getLatestVersion).mockResolvedValueOnce('3.0.0' as never)
 
     const {stdout} = await testCommand(Versions, [], {mocks: defaultMocks})
 

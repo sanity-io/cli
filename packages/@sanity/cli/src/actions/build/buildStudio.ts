@@ -163,7 +163,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   if (autoUpdatesEnabled) {
     importMap = {
       imports: {
-        ...(await buildVendorDependencies({basePath, cwd: workDir, outputDir})),
+        ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: false, outputDir})),
         ...autoUpdatesImports,
       },
     }

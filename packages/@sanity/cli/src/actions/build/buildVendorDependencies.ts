@@ -1,10 +1,9 @@
-import fs from 'node:fs'
-import path from 'node:path'
+import path, {resolve} from 'node:path'
 
-import resolveFrom from 'resolve-from'
 import semver from 'semver'
 import {build} from 'vite'
 
+import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 
 // Directory where vendor packages will be stored
@@ -95,6 +94,9 @@ const VENDOR_IMPORTS: VendorImports = {
       './static.browser': './cjs/react-dom-server.browser.production.js',
     },
   },
+}
+
+const STYLED_COMPONENTS_IMPORTS = {
   'styled-components': {
     '^6.1.0': {
       '.': './dist/styled-components.esm.js',
@@ -106,6 +108,7 @@ const VENDOR_IMPORTS: VendorImports = {
 interface VendorBuildOptions {
   basePath: string
   cwd: string
+  isApp: boolean
   outputDir: string
 }
 
@@ -116,42 +119,20 @@ interface VendorBuildOptions {
 export async function buildVendorDependencies({
   basePath,
   cwd,
+  isApp,
   outputDir,
 }: VendorBuildOptions): Promise<Record<string, string>> {
-  // normalize the CWD to a relative dir for better error messages
-  const dir = path.relative(process.cwd(), path.resolve(cwd))
   const entry: Record<string, string> = {}
   const imports: Record<string, string> = {}
 
+  // If we're building an app, we don't need to build the styled-components package
+  const vendorImports = isApp ? VENDOR_IMPORTS : {...VENDOR_IMPORTS, ...STYLED_COMPONENTS_IMPORTS}
+
   // Iterate over each package and its version ranges in VENDOR_IMPORTS
-  for (const [packageName, ranges] of Object.entries(VENDOR_IMPORTS)) {
-    const packageJsonPath = resolveFrom.silent(cwd, path.join(packageName, 'package.json'))
-    if (!packageJsonPath) {
-      throw new Error(
-        `Could not find package.json for package '${packageName}' from directory '${dir}'. Is it installed?`,
-      )
-    }
-
-    let packageJson
-
-    try {
-      // Read and parse the package.json file
-      packageJson = JSON.parse(await fs.promises.readFile(packageJsonPath, 'utf8'))
-    } catch (e) {
-      const message = `Could not read package.json for package '${packageName}' from directory '${dir}'`
-      if (typeof e?.message === 'string') {
-        // Re-assign the error message so the stack trace is more visible
-        e.message = `${message}: ${e.message}`
-        throw e
-      }
-
-      throw new Error(message, {cause: e})
-    }
-
-    // Coerce the version to a semver-compatible version
-    const version = semver.coerce(packageJson.version)?.version
+  for (const [packageName, ranges] of Object.entries(vendorImports)) {
+    const version = await getLocalPackageVersion(packageName, cwd)
     if (!version) {
-      throw new Error(`Could not parse version '${packageJson.version}' from '${packageName}'`)
+      throw new Error(`Could not get version for '${packageName}'`)
     }
 
     // Sort version ranges in descending order
@@ -186,22 +167,13 @@ export async function buildVendorDependencies({
 
     // Iterate over each subpath and its corresponding entry point
     for (const [subpath, relativeEntryPoint] of Object.entries(subpaths)) {
-      const packagePath = path.dirname(packageJsonPath)
-      const entryPoint = resolveFrom.silent(packagePath, relativeEntryPoint)
-
-      if (!entryPoint) {
-        throw new Error(
-          `Failed to resolve entry point '${path.join(packageName, relativeEntryPoint)}'. `,
-        )
-      }
-
       const specifier = path.posix.join(packageName, subpath)
       const chunkName = path.posix.join(
         packageName,
         path.relative(packageName, specifier) || 'index',
       )
 
-      entry[chunkName] = entryPoint
+      entry[chunkName] = resolve(`node_modules/${packageName}/${relativeEntryPoint}`)
       imports[specifier] = path.posix.join('/', basePath, VENDOR_DIR, `${chunkName}.mjs`)
     }
   }

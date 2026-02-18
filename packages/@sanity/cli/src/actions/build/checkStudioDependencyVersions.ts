@@ -1,8 +1,9 @@
 import path from 'node:path'
 
 import {type Output, readPackageJson} from '@sanity/cli-core'
-import resolveFrom from 'resolve-from'
 import semver, {type SemVer} from 'semver'
+
+import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 
 interface PackageInfo {
   deprecatedBelow: string | null
@@ -14,9 +15,15 @@ interface PackageInfo {
   supported: string[]
 }
 
+interface TrackedPackage {
+  deprecatedBelow: string | null
+  name: string
+  supported: string[]
+}
+
 // NOTE: when doing changes here, also remember to update versions in help docs at
 // https://sanity.io/admin/structure/docs;helpArticle;upgrade-packages
-const PACKAGES = [
+const DEFAULT_PACKAGES: TrackedPackage[] = [
   {deprecatedBelow: null, name: 'react', supported: ['^18 || ^19']},
   {deprecatedBelow: null, name: 'react-dom', supported: ['^18 || ^19']},
   {deprecatedBelow: null, name: 'styled-components', supported: ['^6']},
@@ -26,24 +33,21 @@ const PACKAGES = [
 export async function checkStudioDependencyVersions(
   workDir: string,
   output: Output,
+  {packages = DEFAULT_PACKAGES}: {packages?: TrackedPackage[]} = {},
 ): Promise<void> {
   const manifest = await readPackageJson(path.join(workDir, 'package.json'), {
     skipSchemaValidation: true,
   })
   const dependencies = {...manifest?.dependencies, ...manifest?.devDependencies}
 
-  const packageInfo = PACKAGES.map(async (pkg): Promise<false | PackageInfo> => {
+  const packageInfo = packages.map(async (pkg): Promise<false | PackageInfo> => {
     const dependency = dependencies[pkg.name]
     if (!dependency) {
       return false
     }
 
-    const manifestPath = resolveFrom.silent(workDir, path.join(pkg.name, 'package.json'))
-    const installed = semver.coerce(
-      manifestPath
-        ? (await readPackageJson(manifestPath)).version
-        : dependency.replaceAll(/[\D.]/g, ''),
-    )
+    const packageVersion = await getLocalPackageVersion(pkg.name, workDir)
+    const installed = semver.coerce(packageVersion ?? dependency.replaceAll(/[\D.]/g, ''))
 
     if (!installed) {
       return false

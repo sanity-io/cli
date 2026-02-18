@@ -1,10 +1,10 @@
 import path from 'node:path'
 
 import {readPackageJson} from '@sanity/cli-core'
-import resolveFrom from 'resolve-from'
 import semver from 'semver'
 
 import {getModuleUrl} from '../actions/build/getAutoUpdatesImportMap.js'
+import {getLocalPackageVersion} from './getLocalPackageVersion.js'
 
 function getRemoteResolvedVersion(fetchFn: typeof fetch, url: string) {
   return fetchFn(url, {
@@ -71,20 +71,12 @@ export async function compareDependencyVersions(
   for (const pkg of packages) {
     const resolvedVersion = await getRemoteResolvedVersion(fetchFn, getModuleUrl(pkg))
 
-    const manifestPath = resolveFrom.silent(workDir, path.join(pkg.name, 'package.json'))
+    const packageVersion = await getLocalPackageVersion(pkg.name, workDir)
 
     const manifestVersion = dependencies[pkg.name]
 
     const installed = semver.coerce(
-      manifestPath
-        ? semver.parse(
-            (
-              await readPackageJson(manifestPath, {
-                skipSchemaValidation: true,
-              })
-            ).version,
-          )
-        : semver.coerce(manifestVersion),
+      packageVersion ? semver.parse(packageVersion) : semver.coerce(manifestVersion),
     )
 
     if (!installed) {

@@ -1,11 +1,14 @@
-import resolveFrom from 'resolve-from'
 import {beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {compareDependencyVersions} from '../compareDependencyVersions'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 
-vi.mock('resolve-from')
+const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+vi.mock('../../util/getLocalPackageVersion.js', () => ({
+  getLocalPackageVersion: mockGetLocalPackageVersion,
+}))
+
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
@@ -15,7 +18,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 })
 
 const mockedFetch = vi.fn()
-const mockedResolveFrom = vi.mocked(resolveFrom)
 
 const autoUpdatePackages = [
   {name: 'sanity', version: '1.0.0'},
@@ -40,9 +42,7 @@ describe('compareDependencyVersions', () => {
         ok: false,
         status: 302,
       })
-      vi.mocked(mockedResolveFrom.silent)
-        .mockReturnValueOnce('/test/workdir/node_modules/sanity/package.json')
-        .mockReturnValueOnce('/test/workdir/node_modules/@sanity/vision/package.json')
+      mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
       mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
@@ -81,9 +81,8 @@ describe('compareDependencyVersions', () => {
         ok: false,
         status: 302,
       })
-      vi.mocked(mockedResolveFrom.silent)
-        .mockReturnValueOnce('/test/workdir/node_modules/sanity/package.json')
-        .mockReturnValueOnce('/test/workdir/node_modules/@sanity/vision/package.json')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
       mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
@@ -127,9 +126,8 @@ describe('compareDependencyVersions', () => {
         ok: false,
         status: 302,
       })
-      vi.mocked(mockedResolveFrom.silent)
-        .mockReturnValueOnce('/test/workdir/node_modules/sanity/package.json')
-        .mockReturnValueOnce('/test/workdir/node_modules/@sanity/vision/package.json')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
       mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
@@ -179,9 +177,8 @@ describe('compareDependencyVersions', () => {
         ok: false,
         status: 302,
       })
-      vi.mocked(mockedResolveFrom.silent)
-        .mockReturnValueOnce('/test/workdir/node_modules/sanity/package.json')
-        .mockReturnValueOnce('/test/workdir/node_modules/@sanity/vision/package.json')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.50.0')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
       mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
@@ -227,6 +224,8 @@ describe('compareDependencyVersions', () => {
           get: vi.fn<(name: string) => string | null>().mockReturnValue('3.40.0'),
         },
       })
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.20.0')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.20.0')
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {
           '@sanity/vision': '^3.20.0',
@@ -271,9 +270,8 @@ describe('compareDependencyVersions', () => {
         ok: false,
         status: 302,
       })
-      vi.mocked(mockedResolveFrom.silent)
-        .mockReturnValueOnce('/test/workdir/node_modules/@sanity/sdk-react/package.json')
-        .mockReturnValueOnce('/test/workdir/node_modules/@sanity/sdk/package.json')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
@@ -312,9 +310,8 @@ describe('compareDependencyVersions', () => {
         ok: false,
         status: 302,
       })
-      vi.mocked(mockedResolveFrom.silent)
-        .mockReturnValueOnce('/test/workdir/node_modules/@sanity/sdk-react/package.json')
-        .mockReturnValueOnce('/test/workdir/node_modules/@sanity/sdk/package.json')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('0.0.0')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
@@ -358,9 +355,8 @@ describe('compareDependencyVersions', () => {
         ok: false,
         status: 302,
       })
-      vi.mocked(mockedResolveFrom.silent)
-        .mockReturnValueOnce('/test/workdir/node_modules/@sanity/sdk-react/package.json')
-        .mockReturnValueOnce('/test/workdir/node_modules/@sanity/sdk/package.json')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
@@ -410,9 +406,8 @@ describe('compareDependencyVersions', () => {
         ok: false,
         status: 302,
       })
-      vi.mocked(mockedResolveFrom.silent)
-        .mockReturnValueOnce('/test/workdir/node_modules/@sanity/sdk-react/package.json')
-        .mockReturnValueOnce('/test/workdir/node_modules/@sanity/sdk/package.json')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('0.2.0')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('0.2.0')
       mockReadPackageJson
         .mockResolvedValueOnce({
           dependencies: {
@@ -462,6 +457,8 @@ describe('compareDependencyVersions', () => {
         ok: false,
         status: 302,
       })
+      mockGetLocalPackageVersion.mockResolvedValueOnce('0.0.0')
+      mockGetLocalPackageVersion.mockResolvedValueOnce('0.0.0')
       mockReadPackageJson.mockResolvedValueOnce({
         dependencies: {
           '@sanity/sdk': '^0.0.0',

@@ -5,7 +5,7 @@ import {oneline} from 'oneline'
 import semver, {type SemVer} from 'semver'
 
 import {determineIsApp} from '../../util/determineIsApp.js'
-import {readModuleVersion} from '../../util/readModuleVersion.js'
+import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 
 const defaultStudioManifestProps: Partial<PackageJson> = {
   name: 'studio',
@@ -52,8 +52,8 @@ export async function checkRequiredDependencies(
         defaults: defaultStudioManifestProps,
         skipSchemaValidation: true,
       }),
-      readModuleVersion(studioPath, 'styled-components'),
-      readModuleVersion(studioPath, 'sanity'),
+      getLocalPackageVersion('styled-components', studioPath),
+      getLocalPackageVersion('sanity', studioPath),
     ])
 
   const wantedStyledComponentsVersionRange = styledComponentsVersionRange

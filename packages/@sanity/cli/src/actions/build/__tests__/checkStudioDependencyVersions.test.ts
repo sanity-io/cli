@@ -1,17 +1,16 @@
-import path from 'node:path'
-
 import {type Output} from '@sanity/cli-core'
-import resolveFrom from 'resolve-from'
 import semver from 'semver'
-import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {checkStudioDependencyVersions} from '../checkStudioDependencyVersions'
+import {checkStudioDependencyVersions} from '../checkStudioDependencyVersions.js'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
+const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 
-// Mock dependencies
-vi.mock('node:path')
-vi.mock('resolve-from')
+vi.mock('../../../util/getLocalPackageVersion.js', () => ({
+  getLocalPackageVersion: mockGetLocalPackageVersion,
+}))
+
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
@@ -20,50 +19,55 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-const mockedPath = vi.mocked(path)
-const mockedResolveFrom = vi.mocked(resolveFrom)
-const mockedResolveFromSilent = vi.fn().mockReturnValue(null)
-
 describe('checkStudioDependencyVersions', () => {
   const workDir = '/test/work/dir'
-  const packageJsonPath = '/test/work/dir/package.json'
   let mockOutput: Output
 
-  beforeEach(() => {
-    vi.resetAllMocks()
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
 
-    // Create mock output
-    mockOutput = {
-      error: vi.fn().mockImplementation((_: Error | string, options?: {exit?: boolean}) => {
-        if (options?.exit !== false) {
+  function createMockOutput(): Output {
+    return {
+      error: vi.fn().mockImplementation((_: Error | string, options?: {exit?: number}) => {
+        if (options?.exit) {
           throw new Error('process.exit called')
         }
       }),
       log: vi.fn(),
       warn: vi.fn(),
     } as unknown as Output
+  }
 
-    // Mock console methods (keeping for backwards compatibility if needed)
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
-    vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.spyOn(process, 'exit').mockImplementation(() => {
-      throw new Error('process.exit called')
+  /**
+   * Helper to set up the project package.json mock and local package version mocks.
+   * Only needs the project package.json (one call) and getLocalPackageVersion per package.
+   */
+  function setupMocks(opts: {
+    dependencies?: Record<string, string>
+    devDependencies?: Record<string, string>
+    localVersions?: Record<string, string | null>
+  }) {
+    mockOutput = createMockOutput()
+
+    mockReadPackageJson.mockResolvedValue({
+      dependencies: opts.dependencies ?? {},
+      devDependencies: opts.devDependencies ?? {},
+      name: 'test-project',
+      version: '1.0.0',
     })
 
-    // Setup default mocks
-    mockedPath.join.mockReturnValue(packageJsonPath)
-    mockedResolveFromSilent.mockReturnValue(null)
-    mockedResolveFrom.silent = mockedResolveFromSilent
-  })
+    if (opts.localVersions) {
+      mockGetLocalPackageVersion.mockImplementation((name: string) => {
+        const version = opts.localVersions?.[name]
+        return Promise.resolve(version ?? null)
+      })
+    }
+  }
 
   describe('when no dependencies are installed', () => {
     test('should not warn or error when no tracked packages are installed', async () => {
-      mockReadPackageJson.mockResolvedValue({
-        dependencies: {},
-        devDependencies: {},
-        name: 'test-project',
-        version: '1.0.0',
-      })
+      setupMocks({})
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
@@ -74,21 +78,16 @@ describe('checkStudioDependencyVersions', () => {
 
   describe('when dependencies are installed', () => {
     test('should handle packages with valid versions', async () => {
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            react: '^18.0.0',
-            'react-dom': '^18.0.0',
-          },
-          name: 'test-project',
-          version: '1.0.0',
-        })
-        .mockResolvedValueOnce({name: 'react', version: '18.2.0'})
-        .mockResolvedValueOnce({name: 'react-dom', version: '18.2.0'})
-
-      mockedResolveFromSilent
-        .mockReturnValueOnce('/node_modules/react/package.json')
-        .mockReturnValueOnce('/node_modules/react-dom/package.json')
+      setupMocks({
+        dependencies: {
+          react: '^18.0.0',
+          'react-dom': '^18.0.0',
+        },
+        localVersions: {
+          react: '18.2.0',
+          'react-dom': '18.2.0',
+        },
+      })
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
@@ -97,17 +96,10 @@ describe('checkStudioDependencyVersions', () => {
     })
 
     test('should handle packages with untested versions (newer than supported)', async () => {
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            react: '^20.0.0',
-          },
-          name: 'test-project',
-          version: '1.0.0',
-        })
-        .mockResolvedValueOnce({name: 'react', version: '20.0.0'})
-
-      mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
+      setupMocks({
+        dependencies: {react: '^20.0.0'},
+        localVersions: {react: '20.0.0'},
+      })
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
@@ -125,17 +117,10 @@ describe('checkStudioDependencyVersions', () => {
     })
 
     test('should handle packages with unsupported versions (older than supported)', async () => {
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            react: '^16.0.0',
-          },
-          name: 'test-project',
-          version: '1.0.0',
-        })
-        .mockResolvedValueOnce({name: 'react', version: '16.14.0'})
-
-      mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
+      setupMocks({
+        dependencies: {react: '^16.0.0'},
+        localVersions: {react: '16.14.0'},
+      })
 
       await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
         'process.exit called',
@@ -157,72 +142,35 @@ describe('checkStudioDependencyVersions', () => {
       )
     })
 
-    test('should handle deprecated packages when deprecatedBelow is set', async () => {
-      // We can't easily test this with the current PACKAGES structure since they all have
-      // deprecatedBelow: null. However, we can at least test that a scenario where
-      // deprecatedBelow would be used would create the correct PackageInfo structure
-      // and would trigger a deprecation warning through the filtered array logic
+    test('should warn about deprecated packages when deprecatedBelow is set', async () => {
+      setupMocks({
+        dependencies: {react: '^17.0.0'},
+        localVersions: {react: '17.0.2'},
+      })
 
-      // This test ensures that if the deprecated code path were to be triggered,
-      // the function would behave correctly
-      const mockPackageInfo = {
-        deprecatedBelow: '18.0.0',
-        installed: semver.coerce('17.0.2')!,
-        isDeprecated: true,
-        isUnsupported: false,
-        isUntested: false,
-        name: 'react',
-        supported: ['^18 || ^19'],
-      }
+      // Use injectable packages parameter to test the deprecated code path
+      await checkStudioDependencyVersions(workDir, mockOutput, {
+        packages: [{deprecatedBelow: '18.0.0', name: 'react', supported: ['^17', '^18']}],
+      })
 
-      // Manually trigger the deprecated path by simulating the filtered array
-      const deprecated = [mockPackageInfo]
-      if (deprecated.length > 0) {
-        mockOutput.warn(`The following package versions have been deprecated and should be upgraded:
-
-  react (installed: 17.0.2, want: 18.0.0)
-
-Support for these will be removed in a future release!
-
-  To upgrade, run either:
-
-  npm install "react@18.0.0"
-
-  or
-
-  yarn add "react@18.0.0"
-
-  or
-
-  pnpm add "react@18.0.0"
-
-
-Read more at https://help.sanity.io/upgrade-packages
-`)
-      }
-
-      expect(deprecated.length).toBe(1)
-      expect(deprecated[0].isDeprecated).toBe(true)
       expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining(
           'The following package versions have been deprecated and should be upgraded:',
         ),
       )
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining('react (installed: 17.0.2, want: 18.0.0)'),
+      )
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Support for these will be removed in a future release!'),
+      )
     })
 
     test('should handle packages installed in devDependencies', async () => {
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {
-            react: '^18.0.0',
-          },
-          name: 'test-project',
-          version: '1.0.0',
-        })
-        .mockResolvedValueOnce({name: 'react', version: '18.2.0'})
-
-      mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
+      setupMocks({
+        devDependencies: {react: '^18.0.0'},
+        localVersions: {react: '18.2.0'},
+      })
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
@@ -230,22 +178,18 @@ Read more at https://help.sanity.io/upgrade-packages
       expect(mockOutput.error).not.toHaveBeenCalled()
     })
 
-    test('should handle packages where manifest path cannot be resolved', async () => {
-      mockReadPackageJson.mockResolvedValueOnce({
-        dependencies: {
-          react: '^18.0.0',
-        },
-        name: 'test-project',
-        version: '1.0.0',
+    test('should fall back to dependency version string when local version cannot be resolved', async () => {
+      setupMocks({
+        dependencies: {react: '^18.0.0'},
+        localVersions: {react: null},
       })
-
-      mockedResolveFromSilent.mockReturnValue(null)
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
-      // When manifest path cannot be resolved, the function falls back to using the dependency version
-      // which gets stripped of non-digit/dot characters, resulting in "1800" which is treated as 1800.0.0
-      // This is much higher than the supported range, so it becomes "untested"
+      // When getLocalPackageVersion returns null, the function falls back to
+      // dependency.replaceAll(/[\D.]/g, '') which strips all non-digit and dot characters.
+      // "^18.0.0" becomes "1800" which semver.coerce turns into 1800.0.0.
+      // This is much higher than the supported range (^18 || ^19), so it's classified as "untested".
       expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining(
           'The following package versions have not yet been marked as supported:',
@@ -253,42 +197,33 @@ Read more at https://help.sanity.io/upgrade-packages
       )
     })
 
-    test('should handle packages where version cannot be coerced', async () => {
-      mockReadPackageJson.mockResolvedValueOnce({
-        dependencies: {
-          react: 'invalid-version',
-        },
-        name: 'test-project',
-        version: '1.0.0',
+    test('should skip packages where version cannot be coerced', async () => {
+      setupMocks({
+        dependencies: {react: 'invalid-version'},
+        localVersions: {react: null},
       })
-
-      mockedResolveFromSilent.mockReturnValue(null)
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
+      // "invalid-version" stripped of non-digit/dot chars becomes "" which semver.coerce returns null for
+      // The function returns false for this package and skips it
       expect(mockOutput.warn).not.toHaveBeenCalled()
       expect(mockOutput.error).not.toHaveBeenCalled()
     })
 
     test('should handle mixed package states correctly', async () => {
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            react: '^16.0.0', // unsupported
-            'react-dom': '^20.0.0', // untested
-            'styled-components': '^6.0.0', // supported
-          },
-          name: 'test-project',
-          version: '1.0.0',
-        })
-        .mockResolvedValueOnce({name: 'react', version: '16.14.0'})
-        .mockResolvedValueOnce({name: 'react-dom', version: '20.0.0'})
-        .mockResolvedValueOnce({name: 'styled-components', version: '6.1.0'})
-
-      mockedResolveFromSilent
-        .mockReturnValueOnce('/node_modules/react/package.json')
-        .mockReturnValueOnce('/node_modules/react-dom/package.json')
-        .mockReturnValueOnce('/node_modules/styled-components/package.json')
+      setupMocks({
+        dependencies: {
+          react: '^16.0.0', // unsupported (older)
+          'react-dom': '^20.0.0', // untested (newer)
+          'styled-components': '^6.0.0', // supported
+        },
+        localVersions: {
+          react: '16.14.0',
+          'react-dom': '20.0.0',
+          'styled-components': '6.1.0',
+        },
+      })
 
       await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
         'process.exit called',
@@ -307,16 +242,17 @@ Read more at https://help.sanity.io/upgrade-packages
     })
   })
 
-  describe('helper functions edge cases', () => {
-    test('should handle invalid version ranges in helper functions', async () => {
-      // Test the edge case where semver.coerce returns null and falls back to {version: ''}
+  describe('helper functions', () => {
+    test('should handle invalid version ranges in upgrade instructions', async () => {
+      // Test the edge case where semver.coerce returns null in getUpgradeInstructions,
+      // falling back to {version: ''}
       const originalCoerce = semver.coerce
       let coerceCallCount = 0
       vi.spyOn(semver, 'coerce').mockImplementation((version) => {
         coerceCallCount++
-        // Return null for the version in getUpgradeInstructions to test the fallback
+        // Return null for the version range strings in getUpgradeInstructions
         if (
-          coerceCallCount > 2 &&
+          coerceCallCount > 1 &&
           version &&
           typeof version === 'string' &&
           version.includes('^')
@@ -326,17 +262,10 @@ Read more at https://help.sanity.io/upgrade-packages
         return originalCoerce(version)
       })
 
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            react: '^16.0.0',
-          },
-          name: 'test-project',
-          version: '1.0.0',
-        })
-        .mockResolvedValueOnce({name: 'react', version: '16.14.0'})
-
-      mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
+      setupMocks({
+        dependencies: {react: '^16.0.0'},
+        localVersions: {react: '16.14.0'},
+      })
 
       await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
         'process.exit called',
@@ -348,21 +277,12 @@ Read more at https://help.sanity.io/upgrade-packages
         {exit: 1},
       )
     })
-  })
 
-  describe('helper functions', () => {
     test('should generate correct upgrade instructions', async () => {
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            react: '^16.0.0',
-          },
-          name: 'test-project',
-          version: '1.0.0',
-        })
-        .mockResolvedValueOnce({name: 'react', version: '16.14.0'})
-
-      mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
+      setupMocks({
+        dependencies: {react: '^16.0.0'},
+        localVersions: {react: '16.14.0'},
+      })
 
       await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
         'process.exit called',
@@ -387,17 +307,10 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should generate correct downgrade instructions', async () => {
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            react: '^20.0.0',
-          },
-          name: 'test-project',
-          version: '1.0.0',
-        })
-        .mockResolvedValueOnce({name: 'react', version: '20.0.0'})
-
-      mockedResolveFromSilent.mockReturnValueOnce('/node_modules/react/package.json')
+      setupMocks({
+        dependencies: {react: '^20.0.0'},
+        localVersions: {react: '20.0.0'},
+      })
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
@@ -413,21 +326,16 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should list multiple packages correctly', async () => {
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            react: '^16.0.0',
-            'react-dom': '^16.0.0',
-          },
-          name: 'test-project',
-          version: '1.0.0',
-        })
-        .mockResolvedValueOnce({name: 'react', version: '16.14.0'})
-        .mockResolvedValueOnce({name: 'react-dom', version: '16.14.0'})
-
-      mockedResolveFromSilent
-        .mockReturnValueOnce('/node_modules/react/package.json')
-        .mockReturnValueOnce('/node_modules/react-dom/package.json')
+      setupMocks({
+        dependencies: {
+          react: '^16.0.0',
+          'react-dom': '^16.0.0',
+        },
+        localVersions: {
+          react: '16.14.0',
+          'react-dom': '16.14.0',
+        },
+      })
 
       await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
         'process.exit called',
@@ -446,6 +354,7 @@ Read more at https://help.sanity.io/upgrade-packages
 
   describe('edge cases', () => {
     test('should handle readPackageJson throwing an error', async () => {
+      mockOutput = createMockOutput()
       mockReadPackageJson.mockRejectedValue(new Error('Failed to read package.json'))
 
       await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
@@ -454,6 +363,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle packages with no dependencies property', async () => {
+      mockOutput = createMockOutput()
       mockReadPackageJson.mockResolvedValue({
         name: 'test-project',
         version: '1.0.0',
@@ -466,12 +376,7 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle packages with empty dependencies', async () => {
-      mockReadPackageJson.mockResolvedValue({
-        dependencies: {},
-        devDependencies: {},
-        name: 'test-project',
-        version: '1.0.0',
-      })
+      setupMocks({})
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
@@ -480,17 +385,15 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle semver.coerce returning null', async () => {
-      mockReadPackageJson.mockResolvedValueOnce({
-        dependencies: {
-          react: 'invalid-version',
-        },
+      mockOutput = createMockOutput()
+      mockReadPackageJson.mockResolvedValue({
+        dependencies: {react: 'invalid-version'},
         name: 'test-project',
         version: '1.0.0',
       })
+      mockGetLocalPackageVersion.mockResolvedValue(null)
 
-      mockedResolveFromSilent.mockReturnValue(null)
-
-      // Mock semver.coerce to return null
+      // Mock semver.coerce to return null for any input
       vi.spyOn(semver, 'coerce').mockReturnValue(null)
 
       await checkStudioDependencyVersions(workDir, mockOutput)
@@ -500,17 +403,10 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle @sanity/ui package correctly', async () => {
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/ui': '^2.0.0',
-          },
-          name: 'test-project',
-          version: '1.0.0',
-        })
-        .mockResolvedValueOnce({name: '@sanity/ui', version: '2.0.0'})
-
-      mockedResolveFromSilent.mockReturnValueOnce('/node_modules/@sanity/ui/package.json')
+      setupMocks({
+        dependencies: {'@sanity/ui': '^2.0.0'},
+        localVersions: {'@sanity/ui': '2.0.0'},
+      })
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
@@ -519,17 +415,10 @@ Read more at https://help.sanity.io/upgrade-packages
     })
 
     test('should handle styled-components package correctly', async () => {
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            'styled-components': '^6.0.0',
-          },
-          name: 'test-project',
-          version: '1.0.0',
-        })
-        .mockResolvedValueOnce({name: 'styled-components', version: '6.1.0'})
-
-      mockedResolveFromSilent.mockReturnValueOnce('/node_modules/styled-components/package.json')
+      setupMocks({
+        dependencies: {'styled-components': '^6.0.0'},
+        localVersions: {'styled-components': '6.1.0'},
+      })
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 

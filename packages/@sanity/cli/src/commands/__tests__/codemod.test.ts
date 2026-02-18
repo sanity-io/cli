@@ -194,7 +194,7 @@ describe('#codemod', () => {
         version: '2.8.0',
       },
     ])('$description', async ({expectedError, version}) => {
-      mockGetLocalPackageVersion.mockResolvedValue(version)
+      mockGetLocalPackageVersion.mockResolvedValue(version ?? null)
 
       const {error} = await testCommand(CodemodCommand, ['reactIconsV3'])
 

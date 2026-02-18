@@ -9,8 +9,8 @@ import semver from 'semver'
 import {AppBuildTrace} from '../../telemetry/build.telemetry.js'
 import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
+import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
-import {readModuleVersion} from '../../util/readModuleVersion.js'
 import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'
@@ -34,8 +34,8 @@ export async function buildApp(options: BuildOptions): Promise<void> {
 
   const appId = getAppId(cliConfig)
 
-  const installedSdkVersion = await readModuleVersion(workDir, '@sanity/sdk-react')
-  const installedSanityVersion = await readModuleVersion(workDir, 'sanity')
+  const installedSdkVersion = await getLocalPackageVersion('@sanity/sdk-react', workDir)
+  const installedSanityVersion = await getLocalPackageVersion('sanity', workDir)
 
   if (!installedSdkVersion) {
     output.error(`Failed to find installed @sanity/sdk-react version`, {exit: 1})
@@ -125,7 +125,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   if (autoUpdatesEnabled) {
     importMap = {
       imports: {
-        ...(await buildVendorDependencies({basePath, cwd: workDir, outputDir})),
+        ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: true, outputDir})),
         ...autoUpdatesImports,
       },
     }
