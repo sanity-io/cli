@@ -82,6 +82,9 @@ export async function checkRequiredDependencies(
     return {installedSanityVersion}
   }
 
+  // We ignore catalog identifiers since we check the actual version anyway
+  const isStyledComponentsVersionRangeInCatalog =
+    declaredStyledComponentsVersion.startsWith('catalog:')
   // Theoretically the version specified in package.json could be incorrect, eg `foo`
   let minDeclaredStyledComponentsVersion: SemVer | null = null
   try {
@@ -90,7 +93,7 @@ export async function checkRequiredDependencies(
     // Intentional fall-through (variable will be left as null, throwing below)
   }
 
-  if (!minDeclaredStyledComponentsVersion) {
+  if (!minDeclaredStyledComponentsVersion && !isStyledComponentsVersionRangeInCatalog) {
     output.error(
       oneline`
       Declared dependency \`styled-components\` has an invalid version range:
@@ -108,8 +111,9 @@ export async function checkRequiredDependencies(
   // to anything is going to be challenging, so only compare "simple" ranges/versions
   // (^x.x.x / ~x.x.x / x.x.x)
   if (
+    !isStyledComponentsVersionRangeInCatalog &&
     isComparableRange(declaredStyledComponentsVersion) &&
-    !semver.satisfies(minDeclaredStyledComponentsVersion, wantedStyledComponentsVersionRange)
+    !semver.satisfies(minDeclaredStyledComponentsVersion!, wantedStyledComponentsVersionRange)
   ) {
     output.warn(oneline`
       Declared version of styled-components (${declaredStyledComponentsVersion})
