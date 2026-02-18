@@ -471,6 +471,152 @@ describe('#mcp:configure', () => {
     },
   )
 
+  test('detects Codex CLI via CLI and configures TOML with headers', async () => {
+    mockExeca.mockImplementation((async (command: string | URL) => {
+      if (command === 'codex') {
+        return {
+          command: 'codex --version',
+          exitCode: 0,
+          failed: false,
+          killed: false,
+          signal: undefined,
+          stderr: '',
+          stdout: '1.0.0',
+          timedOut: false,
+        } as never
+      }
+
+      throw new Error('Not installed')
+    }) as never)
+
+    mockCheckbox.mockResolvedValue(['Codex CLI'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-codex', sid: 'session-codex'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-codex'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-codex'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockExeca).toHaveBeenCalledWith('codex', ['--version'], {
+      stdio: 'pipe',
+      timeout: 5000,
+    })
+
+    expect(mockCheckbox).toHaveBeenCalledWith({
+      choices: [
+        {
+          checked: true,
+          name: 'Codex CLI',
+          value: 'Codex CLI',
+        },
+      ],
+      message: 'Configure Sanity MCP server?',
+    })
+
+    const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
+    expect(writtenContent).toContain('[mcp_servers.Sanity]')
+    expect(writtenContent).toContain('[mcp_servers.Sanity.http_headers]')
+    expect(writtenContent).toContain('Authorization = "Bearer test-token-codex"')
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.codex/config.toml')),
+      expect.any(String),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for Codex CLI')
+  })
+
+  test('uses CODEX_HOME when configuring Codex CLI', async () => {
+    const originalCodexHome = process.env.CODEX_HOME
+    process.env.CODEX_HOME = '/tmp/custom-codex-home'
+    try {
+      mockExeca.mockImplementation((async (command: string | URL) => {
+        if (command === 'codex') {
+          return {
+            command: 'codex --version',
+            exitCode: 0,
+            failed: false,
+            killed: false,
+            signal: undefined,
+            stderr: '',
+            stdout: '1.0.0',
+            timedOut: false,
+          } as never
+        }
+
+        throw new Error('Not installed')
+      }) as never)
+
+      mockCheckbox.mockResolvedValue(['Codex CLI'])
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'post',
+        uri: '/auth/session/create',
+      }).reply(200, {id: 'session-codex-home', sid: 'session-codex-home'})
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'get',
+        query: {sid: 'session-codex-home'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'MCP Token', token: 'test-token-codex-home'})
+
+      const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining('/tmp/custom-codex-home/config.toml'),
+        expect.any(String),
+        'utf8',
+      )
+
+      expect(stdout).toContain('MCP configured for Codex CLI')
+    } finally {
+      process.env.CODEX_HOME = originalCodexHome
+    }
+  })
+
+  test('skips Codex CLI when existing TOML config is unparseable', async () => {
+    mockExeca.mockImplementation((async (command: string | URL) => {
+      if (command === 'codex') {
+        return {
+          command: 'codex --version',
+          exitCode: 0,
+          failed: false,
+          killed: false,
+          signal: undefined,
+          stderr: '',
+          stdout: '1.0.0',
+          timedOut: false,
+        } as never
+      }
+
+      throw new Error('Not installed')
+    }) as never)
+
+    mockExistsSync.mockImplementation((p: PathLike) => {
+      const normalized = String(p).replaceAll('\\', '/')
+      return normalized.endsWith('/config.toml')
+    })
+    mockReadFile.mockResolvedValue('[[[')
+    mockCheckbox.mockResolvedValue([])
+
+    await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).not.toHaveBeenCalled()
+    expect(mockWriteFile).not.toHaveBeenCalled()
+  })
+
   test.runIf(process.platform === 'darwin')(
     'detects VS Code Insiders on macOS and configures it',
     async () => {

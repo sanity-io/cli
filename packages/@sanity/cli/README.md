@@ -2252,14 +2252,14 @@ _See code: [src/commands/manifest/extract.ts](https://github.com/sanity-io/cli/b
 
 ## `sanity mcp configure`
 
-Configure Sanity MCP server for AI editors (Claude Code, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code)
+Configure Sanity MCP server for AI editors (Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code)
 
 ```
 USAGE
   $ sanity mcp configure
 
 DESCRIPTION
-  Configure Sanity MCP server for AI editors (Claude Code, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code)
+  Configure Sanity MCP server for AI editors (Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code)
 
 EXAMPLES
   Configure Sanity MCP server for detected AI editors
