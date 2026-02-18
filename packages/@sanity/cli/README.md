@@ -2758,14 +2758,17 @@ Extracts a JSON representation of a Sanity schema within a Studio context.
 
 ```
 USAGE
-  $ sanity schema extract [--enforce-required-fields] [--format <format>] [--path <value>] [--workspace <name>]
+  $ sanity schema extract [--enforce-required-fields] [--format <format>] [--path <value>] [--watch]
+    [--watch-patterns <glob>...] [--workspace <name>]
 
 FLAGS
-  --enforce-required-fields  Makes the schema generated treat fields marked as required as non-optional
-  --format=<format>          [default: groq-type-nodes] Format the schema as GROQ type nodes. Only available format at
-                             the moment.
-  --path=<value>             Optional path to specify destination of the schema file
-  --workspace=<name>         The name of the workspace to generate a schema for
+  --enforce-required-fields   Makes the schema generated treat fields marked as required as non-optional
+  --format=<format>           [default: groq-type-nodes] Format the schema as GROQ type nodes. Only available format at
+                              the moment.
+  --path=<value>              Optional path to specify destination of the schema file
+  --watch                     Enable watch mode to re-extract schema on file changes
+  --watch-patterns=<glob>...  Additional glob pattern(s) to watch (can be specified multiple times)
+  --workspace=<name>          The name of the workspace to generate a schema for
 
 DESCRIPTION
   Extracts a JSON representation of a Sanity schema within a Studio context.
@@ -2776,6 +2779,14 @@ EXAMPLES
   Extracts schema types in a Sanity project with more than one workspace
 
     $ sanity schema extract --workspace default
+
+  Watch mode - re-extract on changes
+
+    $ sanity schema extract --watch
+
+  Watch with custom glob patterns
+
+    $ sanity schema extract --watch --watch-patterns "lib/**/*.ts"
 ```
 
 _See code: [src/commands/schema/extract.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.11/src/commands/schema/extract.ts)_

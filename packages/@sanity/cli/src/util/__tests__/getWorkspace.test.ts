@@ -34,7 +34,7 @@ describe('#getWorkspace', () => {
 
   test('throws an error if multiple workspaces exist but no name is specified', () => {
     expect(() => getWorkspace(mockWorkspaces)).toThrowError(
-      `Multiple workspaces found. Please specify which workspace to use with "--workspace". Available workspaces: test, test-staging`,
+      `Multiple workspaces found. Please specify which workspace to use with '--workspace' or with the schemaExtraction.workspace config prop. Available workspaces: test, test-staging`,
     )
   })
 
