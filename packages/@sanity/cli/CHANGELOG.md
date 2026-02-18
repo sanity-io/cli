@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.0.0-alpha.13](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.12...cli-v6.0.0-alpha.13) (2026-02-18)
+
+
+### Bug Fixes
+
+* throw on error instead of using assertion ([#423](https://github.com/sanity-io/cli/issues/423)) ([36f3053](https://github.com/sanity-io/cli/commit/36f3053a3510a91c2e2187e63b767ebfeb97952f))
+
 ## [6.0.0-alpha.12](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.11...cli-v6.0.0-alpha.12) (2026-02-13)
 
 
