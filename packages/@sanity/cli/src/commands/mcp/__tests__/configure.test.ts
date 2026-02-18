@@ -320,8 +320,10 @@ describe('#mcp:configure', () => {
   })
 
   test('detects GitHub Copilot CLI and configures it with tools field', async () => {
-    mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('.copilot')
+    // Match both ~/.copilot and $XDG_CONFIG_HOME/copilot across platforms
+    mockExistsSync.mockImplementation((p: PathLike) => {
+      const normalizedPath = String(p).replaceAll('\\', '/')
+      return /\/.?copilot(?:\/|$)/.test(normalizedPath)
     })
 
     mockCheckbox.mockResolvedValue(['GitHub Copilot CLI'])
@@ -363,6 +365,45 @@ describe('#mcp:configure', () => {
 
     expect(stdout).toContain('MCP configured for GitHub Copilot CLI')
   })
+
+  test.runIf(process.platform === 'linux')(
+    'detects GitHub Copilot CLI via XDG_CONFIG_HOME on Linux',
+    async () => {
+      const originalXdg = process.env.XDG_CONFIG_HOME
+      process.env.XDG_CONFIG_HOME = '/home/user/.config'
+
+      mockExistsSync.mockImplementation((p: PathLike) => {
+        return String(p).includes('/home/user/.config/copilot')
+      })
+
+      mockCheckbox.mockResolvedValue(['GitHub Copilot CLI'])
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'post',
+        uri: '/auth/session/create',
+      }).reply(200, {id: 'session-copilot-xdg', sid: 'session-copilot-xdg'})
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'get',
+        query: {sid: 'session-copilot-xdg'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'MCP Token', token: 'test-token-copilot-xdg'})
+
+      const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining('/home/user/.config/copilot/mcp-config.json'),
+        expect.stringContaining('test-token-copilot-xdg'),
+        'utf8',
+      )
+
+      expect(stdout).toContain('MCP configured for GitHub Copilot CLI')
+
+      process.env.XDG_CONFIG_HOME = originalXdg
+    },
+  )
 
   test.runIf(process.platform === 'darwin')(
     'detects OpenCode via CLI on macOS and configures it',

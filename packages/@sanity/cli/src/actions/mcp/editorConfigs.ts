@@ -65,7 +65,7 @@ export const EDITOR_CONFIGS = {
     detect: async () => {
       const copilotDir =
         process.platform === 'linux' && process.env.XDG_CONFIG_HOME
-          ? process.env.XDG_CONFIG_HOME
+          ? path.join(process.env.XDG_CONFIG_HOME, 'copilot')
           : path.join(homeDir, '.copilot')
       return existsSync(copilotDir) ? path.join(copilotDir, 'mcp-config.json') : null
     },
