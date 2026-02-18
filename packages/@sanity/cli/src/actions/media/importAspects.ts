@@ -1,7 +1,7 @@
 import {access, readdir} from 'node:fs/promises'
 import path from 'node:path'
 
-import {tryGetDefaultExport} from '@sanity/cli-core'
+import {importModule} from '@sanity/cli-core'
 import {validateMediaLibraryAssetAspect} from '@sanity/schema/_internal'
 import {
   isAssetAspect,
@@ -9,7 +9,6 @@ import {
   type SchemaValidationProblem,
 } from '@sanity/types'
 import {getTsconfig} from 'get-tsconfig'
-import {tsImport} from 'tsx/esm/api'
 
 /**
  * File extensions that are considered valid aspect definition files
@@ -105,13 +104,9 @@ export async function importAspects(options: ImportAspectsOptions): Promise<Impo
 
     try {
       // Dynamically import the aspect file with TypeScript support
-      const aspectModule = await tsImport(filePath, {
-        parentURL: import.meta.url,
-        tsconfig: tsconfig?.path,
+      const maybeAspect = await importModule(filePath, {
+        tsconfigPath: tsconfig?.path,
       })
-
-      // Get the default export
-      const maybeAspect = tryGetDefaultExport(aspectModule)
 
       // Check if user wants to filter this aspect
       if (!filterAspects(maybeAspect)) {

@@ -1,12 +1,8 @@
-import {pathToFileURL} from 'node:url'
-
 import {getTsconfig} from 'get-tsconfig'
-import {tsImport} from 'tsx/esm/api'
 
 import {debug} from '../../debug.js'
-import {tsxWorkerTask} from '../../loaders/tsx/tsxWorkerTask.js'
+import {importModule} from '../../util/importModule.js'
 import {NotFoundError} from '../../util/NotFoundError.js'
-import {tryGetDefaultExport} from '../../util/tryGetDefaultExport.js'
 import {findPathForFiles} from '../util/findConfigsPaths.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'
@@ -41,41 +37,28 @@ export async function getCliConfig(rootPath: string): Promise<CliConfig> {
 
   const configPath = configPaths[0].path
 
+  debug(`Loading CLI config from: ${configPath}`)
+
   let cliConfig: CliConfig | undefined
   try {
-    cliConfig = await tsxWorkerTask<CliConfig | undefined>(
-      new URL('getCliConfig.worker.js', import.meta.url),
-      {
-        name: 'cliConfig',
-        rootPath,
-        workerData: {configPath},
-      },
-    )
+    const result = await importModule<CliConfig>(configPath, {
+      tsconfigPath: getTsconfig(rootPath)?.path ?? undefined,
+    })
+
+    debug('CLI config', result)
+
+    cliConfig = result
   } catch (err) {
     debug('Failed to load CLI config in worker thread: %s', err)
 
-    // Assuming that didn't work because of unseriazable properties, so we'll try the
-    // main thread with tsx registered.
-    const tsconfig = getTsconfig(rootPath)
-
-    // Ensure we get the default export (sometimes we get a bit of a mixed bag)
-    cliConfig = await tsImport(pathToFileURL(configPath).href, {
-      parentURL: import.meta.url,
-      tsconfig: tsconfig?.path ?? undefined,
-    })
-    cliConfig = tryGetDefaultExport(cliConfig) as CliConfig | undefined
-
-    if (!cliConfig) {
-      throw new Error('Invalid CLI config structure')
-    }
+    throw new Error('CLI config cannot be loaded')
   }
 
   const {data, error, success} = cliConfigSchema.safeParse(cliConfig)
   if (!success) {
+    debug(`Invalid CLI config: ${error.message}`)
     throw new Error(`Invalid CLI config: ${error.message}`)
   }
 
-  // There is a minor difference here because of the `vite` property and how the types
-  // aren't as specific as our manually typed `CliConfig` type, thus the cast.
-  return data as CliConfig
+  return data
 }
