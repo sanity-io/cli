@@ -1,4 +1,4 @@
-import {resolve} from 'node:path'
+import {join, resolve} from 'node:path'
 import {pathToFileURL} from 'node:url'
 
 import {type PackageJson} from '@sanity/cli-core'
@@ -20,6 +20,12 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 })
 
 const mockedModuleResolve = vi.mocked(moduleResolve)
+
+function createNodeError(code: string, message: string): Error {
+  const err = new Error(message)
+  ;(err as Error & {code: string}).code = code
+  return err
+}
 
 describe('getLocalPackageVersion', () => {
   const mockWorkDir = '/mock/work/dir'
@@ -51,22 +57,6 @@ describe('getLocalPackageVersion', () => {
     expect(result).toBe(mockVersion)
   })
 
-  test('returns null when moduleResolve throws', async () => {
-    mockedModuleResolve.mockImplementationOnce(() => {
-      throw new Error('Module not found')
-    })
-
-    const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
-
-    expect(mockedModuleResolve).toHaveBeenCalledOnce()
-    expect(mockedModuleResolve).toHaveBeenCalledWith(
-      `${mockModuleId}/package.json`,
-      pathToFileURL(resolve(mockWorkDir, 'noop.js')),
-    )
-    expect(mockReadPackageJson).not.toHaveBeenCalled()
-    expect(result).toBeNull()
-  })
-
   test('returns null when readPackageJson throws', async () => {
     const mockPackageUrl = pathToFileURL(
       resolve(mockWorkDir, 'node_modules', mockModuleId, 'package.json'),
@@ -79,6 +69,81 @@ describe('getLocalPackageVersion', () => {
 
     expect(mockedModuleResolve).toHaveBeenCalledOnce()
     expect(mockReadPackageJson).toHaveBeenCalledWith(mockPackageUrl)
+    expect(result).toBeNull()
+  })
+
+  test('returns version via fallback when package has strict exports', async () => {
+    const mainEntryPath = resolve(mockWorkDir, 'node_modules', mockModuleId, 'dist', 'index.js')
+    const mainEntryUrl = pathToFileURL(mainEntryPath)
+    const expectedPackageJsonUrl = pathToFileURL(
+      join(resolve(mockWorkDir, 'node_modules', mockModuleId), 'package.json'),
+    )
+    const mockVersion = '2.0.0'
+    const dirUrl = pathToFileURL(resolve(mockWorkDir, 'noop.js'))
+
+    mockedModuleResolve
+      .mockImplementationOnce(() => {
+        throw createNodeError('ERR_PACKAGE_PATH_NOT_EXPORTED', 'Package path not exported')
+      })
+      .mockReturnValueOnce(mainEntryUrl)
+
+    mockReadPackageJson.mockResolvedValueOnce({
+      name: mockModuleId,
+      version: mockVersion,
+    } as PackageJson)
+
+    const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
+
+    expect(mockedModuleResolve).toHaveBeenCalledTimes(2)
+    expect(mockedModuleResolve).toHaveBeenNthCalledWith(1, `${mockModuleId}/package.json`, dirUrl)
+    expect(mockedModuleResolve).toHaveBeenNthCalledWith(2, mockModuleId, dirUrl)
+    expect(mockReadPackageJson).toHaveBeenCalledWith(expectedPackageJsonUrl)
+    expect(result).toBe(mockVersion)
+  })
+
+  test('returns null when fallback moduleResolve also throws', async () => {
+    mockedModuleResolve
+      .mockImplementationOnce(() => {
+        throw createNodeError('ERR_PACKAGE_PATH_NOT_EXPORTED', 'Package path not exported')
+      })
+      .mockImplementationOnce(() => {
+        throw createNodeError('ERR_MODULE_NOT_FOUND', 'Module not found')
+      })
+
+    const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
+
+    expect(mockedModuleResolve).toHaveBeenCalledTimes(2)
+    expect(mockReadPackageJson).not.toHaveBeenCalled()
+    expect(result).toBeNull()
+  })
+
+  test('returns null when readPackageJson fails in fallback path', async () => {
+    const mainEntryPath = resolve(mockWorkDir, 'node_modules', mockModuleId, 'dist', 'index.js')
+
+    mockedModuleResolve
+      .mockImplementationOnce(() => {
+        throw createNodeError('ERR_PACKAGE_PATH_NOT_EXPORTED', 'Package path not exported')
+      })
+      .mockReturnValueOnce(pathToFileURL(mainEntryPath))
+
+    mockReadPackageJson.mockRejectedValueOnce(new Error('Failed to read package.json'))
+
+    const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
+
+    expect(mockedModuleResolve).toHaveBeenCalledTimes(2)
+    expect(mockReadPackageJson).toHaveBeenCalledOnce()
+    expect(result).toBeNull()
+  })
+
+  test('returns null when moduleResolve throws a non-fallback error', async () => {
+    mockedModuleResolve.mockImplementationOnce(() => {
+      throw createNodeError('ERR_MODULE_NOT_FOUND', 'Module not found')
+    })
+
+    const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
+
+    expect(mockedModuleResolve).toHaveBeenCalledOnce()
+    expect(mockReadPackageJson).not.toHaveBeenCalled()
     expect(result).toBeNull()
   })
 })

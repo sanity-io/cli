@@ -1,5 +1,5 @@
-import {resolve} from 'node:path'
-import {pathToFileURL} from 'node:url'
+import {join, normalize, resolve} from 'node:path'
+import {fileURLToPath, pathToFileURL} from 'node:url'
 
 import {readPackageJson} from '@sanity/cli-core'
 import {moduleResolve} from 'import-meta-resolve'
@@ -18,10 +18,30 @@ export async function getLocalPackageVersion(
 ): Promise<string | null> {
   try {
     const dirUrl = pathToFileURL(resolve(workDir, 'noop.js'))
-    const packageUrl = moduleResolve(`${moduleName}/package.json`, dirUrl)
 
-    return (await readPackageJson(packageUrl)).version
+    let packageJsonUrl: URL
+    try {
+      packageJsonUrl = moduleResolve(`${moduleName}/package.json`, dirUrl)
+    } catch (err: unknown) {
+      if (isErrPackagePathNotExported(err)) {
+        // Fallback: resolve main entry point and derive package root
+        const mainUrl = moduleResolve(moduleName, dirUrl)
+        const mainPath = fileURLToPath(mainUrl)
+        const normalizedName = normalize(moduleName)
+        const idx = mainPath.lastIndexOf(normalizedName)
+        const moduleRoot = mainPath.slice(0, idx + normalizedName.length)
+        packageJsonUrl = pathToFileURL(join(moduleRoot, 'package.json'))
+      } else {
+        throw err
+      }
+    }
+
+    return (await readPackageJson(packageJsonUrl)).version
   } catch {
     return null
   }
+}
+
+function isErrPackagePathNotExported(err: unknown): boolean {
+  return err instanceof Error && 'code' in err && err.code === 'ERR_PACKAGE_PATH_NOT_EXPORTED'
 }
