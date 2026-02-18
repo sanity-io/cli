@@ -46,6 +46,30 @@ export const EDITOR_CONFIGS = {
       return existsSync(cursorDir) ? path.join(cursorDir, 'mcp.json') : null
     },
   },
+  'Gemini CLI': {
+    buildServerConfig: defaultHttpConfig,
+    configKey: 'mcpServers',
+    detect: async () => {
+      const geminiDir = path.join(homeDir, '.gemini')
+      return existsSync(geminiDir) ? path.join(geminiDir, 'settings.json') : null
+    },
+  },
+  'GitHub Copilot CLI': {
+    buildServerConfig: (token: string) => ({
+      headers: {Authorization: `Bearer ${token}`},
+      tools: ['*'],
+      type: 'http',
+      url: MCP_SERVER_URL,
+    }),
+    configKey: 'mcpServers',
+    detect: async () => {
+      const copilotDir =
+        process.platform === 'linux' && process.env.XDG_CONFIG_HOME
+          ? process.env.XDG_CONFIG_HOME
+          : path.join(homeDir, '.copilot')
+      return existsSync(copilotDir) ? path.join(copilotDir, 'mcp-config.json') : null
+    },
+  },
   OpenCode: {
     buildServerConfig: (token) => ({
       headers: {Authorization: `Bearer ${token}`},

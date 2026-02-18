@@ -277,6 +277,93 @@ describe('#mcp:configure', () => {
     expect(stdout).toContain('MCP configured for Claude Code')
   })
 
+  test('detects Gemini CLI and configures it', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes('.gemini')
+    })
+
+    mockCheckbox.mockResolvedValue(['Gemini CLI'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-gemini', sid: 'session-gemini'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-gemini'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-gemini'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).toHaveBeenCalledWith({
+      choices: [
+        {
+          checked: true,
+          name: 'Gemini CLI',
+          value: 'Gemini CLI',
+        },
+      ],
+      message: 'Configure Sanity MCP server?',
+    })
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.gemini/settings.json')),
+      expect.stringContaining('test-token-gemini'),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for Gemini CLI')
+  })
+
+  test('detects GitHub Copilot CLI and configures it with tools field', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes('.copilot')
+    })
+
+    mockCheckbox.mockResolvedValue(['GitHub Copilot CLI'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-copilot', sid: 'session-copilot'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-copilot'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-copilot'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).toHaveBeenCalledWith({
+      choices: [
+        {
+          checked: true,
+          name: 'GitHub Copilot CLI',
+          value: 'GitHub Copilot CLI',
+        },
+      ],
+      message: 'Configure Sanity MCP server?',
+    })
+
+    const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
+    expect(writtenContent).toContain('test-token-copilot')
+    expect(writtenContent).toContain('"tools"')
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining('mcp-config.json'),
+      expect.any(String),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for GitHub Copilot CLI')
+  })
+
   test.runIf(process.platform === 'darwin')(
     'detects OpenCode via CLI on macOS and configures it',
     async () => {
