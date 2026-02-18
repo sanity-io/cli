@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.13](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.12...cli-core-v0.1.0-alpha.13) (2026-02-18)
+
+
+### Features
+
+* **schema:** moving latest updates to schema extract command ([#425](https://github.com/sanity-io/cli/issues/425)) ([b4f55ef](https://github.com/sanity-io/cli/commit/b4f55ef4267d3a173c2d11d9942a0608010148ff))
+
 ## [0.1.0-alpha.12](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.11...cli-core-v0.1.0-alpha.12) (2026-02-13)
 
 
