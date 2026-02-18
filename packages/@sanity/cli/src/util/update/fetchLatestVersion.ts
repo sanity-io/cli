@@ -1,5 +1,5 @@
 import {subdebug} from '@sanity/cli-core'
-import getLatestVersion from 'get-latest-version'
+import {getLatestVersion} from 'get-latest-version'
 
 import {promiseRaceWithTimeout} from '../promiseRaceWithTimeout.js'
 

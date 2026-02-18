@@ -1,4 +1,4 @@
-import getLatestVersion from 'get-latest-version'
+import {getLatestVersion} from 'get-latest-version'
 
 import {versionsDebug} from './versionsDebug.js'
 

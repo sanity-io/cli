@@ -30,7 +30,7 @@ vi.mock('@sanity/cli-core', async () => ({
 }))
 
 vi.mock('get-latest-version', () => ({
-  default: mockGetLatestVersion,
+  getLatestVersion: mockGetLatestVersion,
 }))
 
 vi.mock('is-installed-globally', () => mockIsInstalledGlobally)
