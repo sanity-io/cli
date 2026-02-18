@@ -1,5 +1,26 @@
 # Changelog
 
+## [6.0.0-alpha.14](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.13...cli-v6.0.0-alpha.14) (2026-02-18)
+
+
+### Features
+
+* **schema:** moving latest updates to schema extract command ([#425](https://github.com/sanity-io/cli/issues/425)) ([b4f55ef](https://github.com/sanity-io/cli/commit/b4f55ef4267d3a173c2d11d9942a0608010148ff))
+
+
+### Bug Fixes
+
+* allow catalog-versioned styled components dependency ([#429](https://github.com/sanity-io/cli/issues/429)) ([7970af9](https://github.com/sanity-io/cli/commit/7970af922e96855c5ecb8c1c08494fe2d307797d))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.13
+  * devDependencies
+    * @sanity/cli-test bumped to 0.0.2-alpha.12
+
 ## [6.0.0-alpha.13](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.12...cli-v6.0.0-alpha.13) (2026-02-18)
 
 
