@@ -223,6 +223,84 @@ describe('#checkRequiredDependencies', () => {
     )
   })
 
+  test('should not error on catalog: prefix for styled-components version', async () => {
+    mockedDetermineIsApp.mockReturnValue(false)
+    mockReadPackageJson.mockResolvedValue({
+      dependencies: {'styled-components': 'catalog:'},
+      devDependencies: {},
+      name: 'test-studio',
+      version: '1.0.0',
+    })
+    mockedGetLocalPackageVersion.mockImplementation(async (module: string) => {
+      if (module === 'sanity') return '3.2.0'
+      if (module === 'styled-components') return '6.1.15'
+      return null
+    })
+
+    const result = await checkRequiredDependencies({
+      cliConfig: mockCliConfig as CliConfig,
+      output: mockOutput,
+      workDir,
+    })
+
+    expect(result).toEqual({installedSanityVersion: '3.2.0'})
+    expect(mockOutput.error).not.toHaveBeenCalled()
+    expect(mockOutput.warn).not.toHaveBeenCalled()
+  })
+
+  test('should not warn on version comparison when using catalog: prefix', async () => {
+    mockedDetermineIsApp.mockReturnValue(false)
+    mockReadPackageJson.mockResolvedValue({
+      dependencies: {'styled-components': 'catalog:react'},
+      devDependencies: {},
+      name: 'test-studio',
+      version: '1.0.0',
+    })
+    mockedGetLocalPackageVersion.mockImplementation(async (module: string) => {
+      if (module === 'sanity') return '3.2.0'
+      if (module === 'styled-components') return '6.1.15'
+      return null
+    })
+
+    const result = await checkRequiredDependencies({
+      cliConfig: mockCliConfig as CliConfig,
+      output: mockOutput,
+      workDir,
+    })
+
+    expect(result).toEqual({installedSanityVersion: '3.2.0'})
+    expect(mockOutput.error).not.toHaveBeenCalled()
+    expect(mockOutput.warn).not.toHaveBeenCalled()
+  })
+
+  test('should still warn on incompatible installed version when using catalog: prefix', async () => {
+    mockedDetermineIsApp.mockReturnValue(false)
+    mockReadPackageJson.mockResolvedValue({
+      dependencies: {'styled-components': 'catalog:'},
+      devDependencies: {},
+      name: 'test-studio',
+      version: '1.0.0',
+    })
+    mockedGetLocalPackageVersion.mockImplementation(async (module: string) => {
+      if (module === 'sanity') return '3.2.0'
+      if (module === 'styled-components') return '5.3.6'
+      return null
+    })
+
+    await checkRequiredDependencies({
+      cliConfig: mockCliConfig as CliConfig,
+      output: mockOutput,
+      workDir,
+    })
+
+    expect(mockOutput.error).not.toHaveBeenCalled()
+    expect(mockOutput.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Installed version of styled-components (5.3.6) is not compatible with the version required by sanity (^6.1.15)',
+      ),
+    )
+  })
+
   test('should succeed on happy path', async () => {
     mockedDetermineIsApp.mockReturnValue(false)
     mockReadPackageJson.mockResolvedValue({
