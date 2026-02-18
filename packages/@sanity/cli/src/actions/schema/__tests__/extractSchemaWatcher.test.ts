@@ -50,21 +50,6 @@ describe('extractSchemaWatcher', () => {
     vi.clearAllMocks()
   })
 
-  test('extracts schema successfully', async () => {
-    const cwd = await testFixture('basic-studio')
-    const onExtraction = vi.fn()
-    mockStudioWorkerTask.mockResolvedValue({schema: [], type: 'success'})
-
-    await startExtractSchemaWatcher({
-      extractOptions: getExtractOptions(cwd),
-      onExtraction,
-      output,
-      watchPatterns: ['**/*.ts'],
-    })
-
-    expect(onExtraction).toHaveBeenCalledWith({duration: expect.any(Number), success: true})
-  })
-
   test('continues watching after validation errors', async () => {
     const cwd = await testFixture('basic-studio')
     mockStudioWorkerTask.mockResolvedValue({

@@ -66,6 +66,15 @@ export const cliConfigSchema = z.object({
 
   reactStrictMode: z.boolean().optional(),
 
+  schemaExtraction: z
+    .object({
+      enforceRequiredFields: z.boolean().optional(),
+      path: z.string().optional(),
+      watchPatterns: z.array(z.string()).optional(),
+      workspace: z.string().optional(),
+    })
+    .optional(),
+
   server: z
     .object({
       hostname: z.string().optional(),

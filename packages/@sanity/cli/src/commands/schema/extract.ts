@@ -73,7 +73,7 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
       })
     }
 
-    return await extractSchema({
+    return extractSchema({
       extractOptions,
       output: this.output,
     })
