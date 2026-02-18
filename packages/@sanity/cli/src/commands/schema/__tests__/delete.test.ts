@@ -47,7 +47,7 @@ describe('#schema:delete', {timeout: 30 * 1000}, () => {
     ])
 
     expect(stdout).toContain('Successfully deleted 1/1 schemas')
-    expect(error).toBeUndefined()
+    if (error) throw error
   })
 
   test('successfully deletes multiple schemas', async () => {
@@ -78,7 +78,7 @@ describe('#schema:delete', {timeout: 30 * 1000}, () => {
     ])
 
     expect(stdout).toContain('Successfully deleted 2/2 schemas')
-    expect(error).toBeUndefined()
+    if (error) throw error
   })
 
   test('filters schemas by dataset when dataset flag is provided', async () => {
@@ -100,7 +100,7 @@ describe('#schema:delete', {timeout: 30 * 1000}, () => {
     ])
 
     expect(stdout).toContain('Successfully deleted 1/1 schemas')
-    expect(error).toBeUndefined()
+    if (error) throw error
   })
 
   test.each([

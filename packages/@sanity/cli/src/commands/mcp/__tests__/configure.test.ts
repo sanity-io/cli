@@ -67,7 +67,7 @@ describe('#mcp:configure', () => {
 
     const {error, stderr} = await testCommand(ConfigureMcpCommand, [])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
 
     expect(stderr).toContain("Couldn't auto-configure Sanity MCP server for your editor")
     expect(stderr).toContain('https://mcp.sanity.io')

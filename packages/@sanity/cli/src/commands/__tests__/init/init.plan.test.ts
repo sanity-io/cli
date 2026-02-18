@@ -261,7 +261,7 @@ describe('#init: retrieving plan', () => {
       },
     )
 
-    expect(error).toBe(undefined)
+    if (error) throw error
     expect(stderr).toContain('Warning: Coupon "INVALID123" is not available - using default plan')
     expect(stdout).toContain('Using default plan.')
   })
@@ -299,7 +299,7 @@ describe('#init: retrieving plan', () => {
       },
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(mockConfirm).toHaveBeenCalledWith({
       default: true,
       message: 'Coupon "INVALID123" is not available, use default plan instead?',
@@ -357,7 +357,7 @@ describe('#init: retrieving plan', () => {
       },
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
   })
 
   test('throw error when no plan id is returned by request', async () => {
@@ -412,7 +412,7 @@ describe('#init: retrieving plan', () => {
       },
     )
 
-    expect(error).toBe(undefined)
+    if (error) throw error
     expect(stderr).toContain('Warning: Project plan "growth" does not exist - using default plan')
     expect(stdout).toContain('Using default plan.')
   })
@@ -449,7 +449,7 @@ describe('#init: retrieving plan', () => {
       },
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(mockConfirm).toHaveBeenCalledWith({
       default: true,
       message: 'Project plan "growth" does not exist, use default plan instead?',

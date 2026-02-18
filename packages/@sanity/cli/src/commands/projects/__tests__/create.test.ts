@@ -196,7 +196,7 @@ describe('#projects:create', () => {
       },
     })
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(mockInput).toHaveBeenCalledWith({
       default: 'Test User',
       message: 'Organization name:',
@@ -251,7 +251,7 @@ describe('#projects:create', () => {
       mocks: {...defaultMocks, isInteractive: true},
     })
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(mockSelect).toHaveBeenCalledWith({
       choices: expect.arrayContaining([expect.objectContaining({value: '-new-'})]),
       default: undefined,
@@ -297,7 +297,7 @@ describe('#projects:create', () => {
       },
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('Project created successfully')
     expect(stdout).toContain('My Sanity Project')
     expect(stdout).toContain('Dataset: staging (private)')
@@ -328,7 +328,7 @@ describe('#projects:create', () => {
       },
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('Project created successfully')
     expect(stdout).toContain('My Sanity Project')
     expect(stdout).not.toContain('Dataset:')
@@ -381,7 +381,7 @@ describe('#projects:create', () => {
       mocks: {...defaultMocks, isInteractive: true},
     })
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('Project created successfully')
     expect(stdout).toContain('Dataset: production (public)')
   })
@@ -427,7 +427,7 @@ describe('#projects:create', () => {
       },
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(mockInput).toHaveBeenCalledWith({
       message: 'Dataset name:',
       validate: expect.any(Function),
@@ -469,7 +469,7 @@ describe('#projects:create', () => {
       },
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('Project created successfully')
     expect(stderr).toContain('Project created but dataset creation failed')
   })
@@ -499,7 +499,7 @@ describe('#projects:create', () => {
       },
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     const json = JSON.parse(stdout)
     expect(json).toEqual({
       displayName: 'My Project',
@@ -530,7 +530,7 @@ describe('#projects:create', () => {
       mocks: {...defaultMocks, isInteractive: true},
     })
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(mockInput).toHaveBeenCalledWith({
       default: 'My Sanity Project',
       message: 'Project name:',
@@ -564,7 +564,7 @@ describe('#projects:create', () => {
       },
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('Manage your project: https://www.sanity.io/manage/project/proj-123')
   })
 })

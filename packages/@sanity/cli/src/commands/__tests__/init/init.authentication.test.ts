@@ -168,7 +168,7 @@ describe('#init: authentication', () => {
       },
     )
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('You are logged in as test@example.com using SAML')
   })
 
@@ -212,7 +212,7 @@ describe('#init: authentication', () => {
       },
     )
 
-    expect(error).toBe(undefined)
+    if (error) throw error
     expect(mockLogin).toHaveBeenCalled()
   })
 })

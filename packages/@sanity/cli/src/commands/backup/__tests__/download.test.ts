@@ -389,7 +389,7 @@ describe('#backup:download', () => {
         },
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
 
       expect(stdout).toContain('Downloading backup for:')
       expect(stdout).toContain('projectId')
@@ -447,7 +447,7 @@ describe('#backup:download', () => {
         },
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stderr).toContain('Backup download complete')
       expect(existsSync(out)).toBe(true)
     })
@@ -488,7 +488,7 @@ describe('#backup:download', () => {
         default: false,
         message: `File "${fullPath}" already exists, would you like to overwrite it?`,
       })
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stderr).toContain('Backup download complete')
       expect(existsSync(out)).toBe(true)
     })
@@ -556,7 +556,7 @@ describe('#backup:download', () => {
         },
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stderr).toContain('Backup download complete')
       expect(existsSync(out)).toBe(true)
     })
@@ -609,7 +609,7 @@ describe('#backup:download', () => {
         },
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(mockSelect).toHaveBeenCalledWith(
         expect.objectContaining({
           choices: expect.arrayContaining([

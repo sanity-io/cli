@@ -18,7 +18,7 @@ describe('#schema:validate', {timeout: 30 * 1000}, () => {
 
     const {error, stderr, stdout} = await testCommand(SchemaValidate, [])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Validating schema')
     expect(stderr).toContain('Validated schema')
     expect(stdout).toContain('Validation results:')
@@ -32,7 +32,7 @@ describe('#schema:validate', {timeout: 30 * 1000}, () => {
 
     const {error, stderr, stdout} = await testCommand(SchemaValidate, ['--format', 'json'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).not.toContain('Validating schema')
     const parsed = JSON.parse(stdout)
     expect(Array.isArray(parsed)).toBe(true)
@@ -44,7 +44,7 @@ describe('#schema:validate', {timeout: 30 * 1000}, () => {
 
     const {error, stderr, stdout} = await testCommand(SchemaValidate, ['--format', 'ndjson'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).not.toContain('Validating schema')
     if (stdout.trim()) {
       const lines = stdout.trim().split('\n')
@@ -72,7 +72,7 @@ describe('#schema:validate', {timeout: 30 * 1000}, () => {
 
     const {error, stdout} = await testCommand(SchemaValidate, ['--level', 'warning'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('Errors:')
     expect(stdout).toContain('Warnings:')
   })
@@ -83,7 +83,7 @@ describe('#schema:validate', {timeout: 30 * 1000}, () => {
 
     const {error, stdout} = await testCommand(SchemaValidate, ['--level', 'error'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('Errors:')
     expect(stdout).not.toContain('Warnings:')
   })
@@ -94,7 +94,7 @@ describe('#schema:validate', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(SchemaValidate, ['--workspace', 'production'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Validating schema')
     expect(stderr).toContain('Validated schema')
   })
@@ -210,7 +210,7 @@ describe('#schema:validate', {timeout: 30 * 1000}, () => {
       metafilePath,
     ])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(existsSync(metafilePath)).toBe(true)
     expect(stdout).toContain('Metafile written to:')
     expect(stdout).toContain('https://esbuild.github.io/analyze/')

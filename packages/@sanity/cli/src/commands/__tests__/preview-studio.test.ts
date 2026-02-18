@@ -28,7 +28,7 @@ describe(
 
       await tryCloseServer(result)
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain(`Sanity Studio using vite@`)
       expect(stdout).toContain(`ready in`)
       expect(stdout).toContain(`ms and running at http://localhost:4333/ (production preview mode)`)
@@ -84,7 +84,7 @@ describe(
 
       await tryCloseServer(result)
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain(`Using resolved base path from static build: /custom-base-path`)
       expect(stdout).toContain(`Sanity Studio using vite@`)
       expect(stdout).toContain(`ready in`)
@@ -122,7 +122,7 @@ describe(
 
       await tryCloseServer(result)
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stderr).toContain(
         `Could not determine base path from index.html, using "/" as default`,
       )

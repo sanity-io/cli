@@ -18,7 +18,7 @@ describe('#schema:extract', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(ExtractSchemaCommand, [])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('Extracted schema')
     expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
@@ -30,7 +30,7 @@ describe('#schema:extract', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--enforce-required-fields'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Extracting schema with enforced required fields')
     expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
   })
@@ -41,7 +41,7 @@ describe('#schema:extract', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--path', './custom-output'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('Extracted schema')
     expect(existsSync(resolve(cwd, 'custom-output', 'schema.json'))).toBe(true)
@@ -64,7 +64,7 @@ describe('#schema:extract', {timeout: 30 * 1000}, () => {
 
     const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--workspace', 'production'])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('Extracted schema')
     expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
