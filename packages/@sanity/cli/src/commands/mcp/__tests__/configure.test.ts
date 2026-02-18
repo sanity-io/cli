@@ -574,11 +574,9 @@ describe('#mcp:configure', () => {
 
       const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.stringContaining('/tmp/custom-codex-home/config.toml'),
-        expect.any(String),
-        'utf8',
-      )
+      const writtenPath = mockWriteFile.mock.calls[0]?.[0] as string
+      expect(writtenPath.replaceAll('\\', '/')).toMatch(/\/tmp\/custom-codex-home\/config\.toml$/)
+      expect(mockWriteFile).toHaveBeenCalledWith(expect.any(String), expect.any(String), 'utf8')
 
       expect(stdout).toContain('MCP configured for Codex CLI')
     } finally {
