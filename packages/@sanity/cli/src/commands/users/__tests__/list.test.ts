@@ -43,8 +43,8 @@ describe('#list', () => {
       projects: {
         getById: vi.fn().mockResolvedValue({
           members: [
-            {id: 'user1', isRobot: false, role: 'developer'},
-            {id: 'user2', isRobot: false, role: 'admin'},
+            {id: 'user1', isRobot: false, roles: [{title: 'Developer'}]},
+            {id: 'user2', isRobot: false, roles: [{title: 'Administrator'}]},
           ],
         }),
       },
@@ -64,7 +64,14 @@ describe('#list', () => {
 
     const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
-    expect(stdout).toMatchSnapshot()
+    expect(stdout).toContain('User One')
+    expect(stdout).toContain('user1')
+    expect(stdout).toContain('Developer')
+    expect(stdout).toContain('2023-01-01')
+    expect(stdout).toContain('User Two')
+    expect(stdout).toContain('user2')
+    expect(stdout).toContain('Administrator')
+    expect(stdout).toContain('2023-01-02')
   })
 
   test('displays pending invitations correctly', async () => {
@@ -72,8 +79,8 @@ describe('#list', () => {
       projects: {
         getById: vi.fn().mockResolvedValue({
           members: [
-            {id: 'user1', isRobot: false, role: 'developer'},
-            {id: 'user2', isRobot: false, role: 'admin'},
+            {id: 'user1', isRobot: false, roles: [{title: 'Developer'}]},
+            {id: 'user2', isRobot: false, roles: [{title: 'Administrator'}]},
           ],
         }),
       },
@@ -87,7 +94,7 @@ describe('#list', () => {
         email: 'pending@example.com',
         id: 'invite1',
         invitedByUser: {id: 'user2'},
-        role: 'viewer',
+        roles: [{title: 'Viewer'}],
       },
     ])
     mockApi({
@@ -100,7 +107,12 @@ describe('#list', () => {
 
     const {stdout} = await testCommand(List, [], {mocks: defaultMocks})
 
-    expect(stdout).toMatchSnapshot()
+    expect(stdout).toContain('<pending>')
+    expect(stdout).toContain('pending@example.com')
+    expect(stdout).toContain('Viewer')
+    expect(stdout).toContain('2023-02-01')
+    expect(stdout).toContain('User One')
+    expect(stdout).toContain('User Two')
   })
 
   test('displays an error if the API request fails', async () => {
@@ -126,9 +138,9 @@ describe('#list', () => {
       projects: {
         getById: vi.fn().mockResolvedValue({
           members: [
-            {id: 'user1', isRobot: false, role: 'developer'},
-            {id: 'user2', isRobot: false, role: 'admin'},
-            {id: 'user3', isRobot: false, role: 'viewer'},
+            {id: 'user1', isRobot: false, roles: [{title: 'Developer'}]},
+            {id: 'user2', isRobot: false, roles: [{title: 'Administrator'}]},
+            {id: 'user3', isRobot: false, roles: [{title: 'Viewer'}]},
           ],
         }),
       },
@@ -150,23 +162,20 @@ describe('#list', () => {
 
     const {stdout} = await testCommand(List, ['--sort', 'role'], {mocks: defaultMocks})
 
-    // Check that we have all the roles in the output
-    expect(stdout).toMatchSnapshot()
-
     // Split by lines and remove empty lines
     const lines = stdout.split('\n').filter(Boolean)
 
     // Find the indices of lines containing each role
-    const adminIndex = lines.findIndex((line) => line.includes('admin'))
-    const developerIndex = lines.findIndex((line) => line.includes('developer'))
-    const viewerIndex = lines.findIndex((line) => line.includes('viewer'))
+    const adminIndex = lines.findIndex((line) => line.includes('Administrator'))
+    const developerIndex = lines.findIndex((line) => line.includes('Developer'))
+    const viewerIndex = lines.findIndex((line) => line.includes('Viewer'))
 
     // Verify they all exist
     expect(adminIndex).toBeGreaterThan(-1)
     expect(developerIndex).toBeGreaterThan(-1)
     expect(viewerIndex).toBeGreaterThan(-1)
 
-    // Now check the sort order (admin should come first alphabetically)
+    // Now check the sort order (Administrator should come first alphabetically)
     expect(adminIndex).toBeLessThan(developerIndex)
     expect(developerIndex).toBeLessThan(viewerIndex)
   })
@@ -176,9 +185,9 @@ describe('#list', () => {
       projects: {
         getById: vi.fn().mockResolvedValue({
           members: [
-            {id: 'user1', isRobot: false, role: 'developer'},
-            {id: 'user2', isRobot: false, role: 'admin'},
-            {id: 'user3', isRobot: false, role: 'viewer'},
+            {id: 'user1', isRobot: false, roles: [{title: 'Developer'}]},
+            {id: 'user2', isRobot: false, roles: [{title: 'Administrator'}]},
+            {id: 'user3', isRobot: false, roles: [{title: 'Viewer'}]},
           ],
         }),
       },
@@ -225,8 +234,8 @@ describe('#list', () => {
       projects: {
         getById: vi.fn().mockResolvedValue({
           members: [
-            {id: 'user1', isRobot: false, role: 'developer'},
-            {id: 'user2', isRobot: false, role: 'admin'},
+            {id: 'user1', isRobot: false, roles: [{title: 'Developer'}]},
+            {id: 'user2', isRobot: false, roles: [{title: 'Administrator'}]},
           ],
         }),
       },
@@ -244,7 +253,7 @@ describe('#list', () => {
 
     // Check that pending invitation is not in the output
     expect(stdout).not.toContain('pending@example.com')
-    expect(stdout).not.toContain('viewer')
+    expect(stdout).not.toContain('Viewer')
   })
 
   test('excludes robots when --no-robots is specified', async () => {
@@ -252,9 +261,9 @@ describe('#list', () => {
       projects: {
         getById: vi.fn().mockResolvedValue({
           members: [
-            {id: 'user1', isRobot: false, role: 'developer'},
-            {id: 'user2', isRobot: false, role: 'admin'},
-            {id: 'robot1', isRobot: true, role: 'viewer'},
+            {id: 'user1', isRobot: false, roles: [{title: 'Developer'}]},
+            {id: 'user2', isRobot: false, roles: [{title: 'Administrator'}]},
+            {id: 'robot1', isRobot: true, roles: [{title: 'Viewer'}]},
           ],
         }),
       },

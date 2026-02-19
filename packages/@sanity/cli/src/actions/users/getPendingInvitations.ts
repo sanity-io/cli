@@ -13,6 +13,6 @@ export function getPendingInvitations(invitations: Invite[]) {
       date: invite.createdAt,
       id: '<pending>',
       name: invite.email,
-      role: invite.role,
+      roles: invite.roles,
     }))
 }

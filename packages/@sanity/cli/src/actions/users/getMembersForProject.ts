@@ -1,3 +1,5 @@
+import {type Role} from '@sanity/types'
+
 import {getProjectById, getProjectInvites} from '../../services/projects.js'
 import {getMembers} from '../../services/user.js'
 import {getPendingInvitations} from './getPendingInvitations.js'
@@ -27,7 +29,8 @@ interface MemberList {
   date: string
   id: string
   name: string
-  role: string
+
+  roles?: Role[]
 }
 
 /**
