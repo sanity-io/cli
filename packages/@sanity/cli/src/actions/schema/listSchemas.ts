@@ -1,8 +1,7 @@
 import {styleText} from 'node:util'
 
 import {type Output, studioWorkerTask} from '@sanity/cli-core'
-import {logSymbols} from '@sanity/cli-core/ux'
-import {Table} from 'console-table-printer'
+import {logSymbols, Table} from '@sanity/cli-core/ux'
 import {type Workspace} from 'sanity'
 
 import {getSchemas} from '../../services/schemas.js'

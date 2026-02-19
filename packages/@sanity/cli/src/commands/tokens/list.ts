@@ -1,6 +1,6 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {Table} from 'console-table-printer'
+import {Table} from '@sanity/cli-core/ux'
 
 import {type Token} from '../../actions/tokens/types.js'
 import {getTokens} from '../../services/tokens.js'

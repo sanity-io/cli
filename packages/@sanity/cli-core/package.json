@@ -61,6 +61,7 @@
     "@sanity/types": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",
     "boxen": "^8.0.1",
+    "console-table-printer": "^2.15.0",
     "configstore": "^7.0.0",
     "debug": "catalog:",
     "get-tsconfig": "catalog:",
