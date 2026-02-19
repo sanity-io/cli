@@ -55,7 +55,6 @@
   "packages": {
     "packages/@sanity/cli-core": {
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
       "component": "cli-core",
       "prerelease": true,
       "prerelease-type": "alpha",
@@ -64,7 +63,6 @@
     },
     "packages/@sanity/cli-test": {
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
       "component": "cli-test",
       "prerelease": true,
       "prerelease-type": "alpha",
@@ -73,7 +71,6 @@
     },
     "packages/@sanity/cli": {
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
       "component": "cli",
       "prerelease": true,
       "prerelease-type": "alpha",
@@ -82,7 +79,6 @@
     },
     "packages/@sanity/eslint-config-cli": {
       "bump-minor-pre-major": true,
-      "bump-patch-for-minor-pre-major": true,
       "component": "eslint-config-cli",
       "prerelease": true,
       "prerelease-type": "alpha",
