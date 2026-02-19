@@ -1,5 +1,5 @@
 import {testCommand} from '@sanity/cli-test'
-import getLatestVersion from 'get-latest-version'
+import {getLatestVersion} from 'get-latest-version'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {Versions} from '../../commands/versions.js'

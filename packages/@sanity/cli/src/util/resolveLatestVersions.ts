@@ -1,4 +1,4 @@
-import latestVersion from 'get-latest-version'
+import {getLatestVersion} from 'get-latest-version'
 import promiseProps from 'promise-props-recursive'
 
 /**
@@ -13,7 +13,7 @@ export function resolveLatestVersions(
   const lookups: Record<string, Promise<string> | string> = {}
   for (const [packageName, range] of Object.entries(pkgs)) {
     lookups[packageName] =
-      range === 'latest' ? latestVersion(packageName, {range}).then(caretify) : range
+      range === 'latest' ? getLatestVersion(packageName, {range}).then(caretify) : range
   }
 
   return promiseProps(lookups)
