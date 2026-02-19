@@ -11,6 +11,7 @@ interface EditorConfig {
   configKey: string
   /** Returns the config file path if editor is detected, null otherwise */
   detect: () => Promise<string | null>
+  format: 'jsonc' | 'toml'
 }
 
 const defaultHttpConfig = (token: string) => ({
@@ -37,6 +38,25 @@ export const EDITOR_CONFIGS = {
         return null
       }
     },
+    format: 'jsonc',
+  },
+  'Codex CLI': {
+    buildServerConfig: (token) => ({
+      http_headers: {Authorization: `Bearer ${token}`},
+      type: 'http',
+      url: MCP_SERVER_URL,
+    }),
+    configKey: 'mcp_servers',
+    detect: async () => {
+      try {
+        await execa('codex', ['--version'], {stdio: 'pipe', timeout: 5000})
+        const codexHome = process.env.CODEX_HOME || path.join(homeDir, '.codex')
+        return path.join(codexHome, 'config.toml')
+      } catch {
+        return null
+      }
+    },
+    format: 'toml',
   },
   Cursor: {
     buildServerConfig: defaultHttpConfig,
@@ -45,6 +65,33 @@ export const EDITOR_CONFIGS = {
       const cursorDir = path.join(homeDir, '.cursor')
       return existsSync(cursorDir) ? path.join(cursorDir, 'mcp.json') : null
     },
+    format: 'jsonc',
+  },
+  'Gemini CLI': {
+    buildServerConfig: defaultHttpConfig,
+    configKey: 'mcpServers',
+    detect: async () => {
+      const geminiDir = path.join(homeDir, '.gemini')
+      return existsSync(geminiDir) ? path.join(geminiDir, 'settings.json') : null
+    },
+    format: 'jsonc',
+  },
+  'GitHub Copilot CLI': {
+    buildServerConfig: (token: string) => ({
+      headers: {Authorization: `Bearer ${token}`},
+      tools: ['*'],
+      type: 'http',
+      url: MCP_SERVER_URL,
+    }),
+    configKey: 'mcpServers',
+    detect: async () => {
+      const copilotDir =
+        process.platform === 'linux' && process.env.XDG_CONFIG_HOME
+          ? path.join(process.env.XDG_CONFIG_HOME, 'copilot')
+          : path.join(homeDir, '.copilot')
+      return existsSync(copilotDir) ? path.join(copilotDir, 'mcp-config.json') : null
+    },
+    format: 'jsonc',
   },
   OpenCode: {
     buildServerConfig: (token) => ({
@@ -61,6 +108,7 @@ export const EDITOR_CONFIGS = {
         return null
       }
     },
+    format: 'jsonc',
   },
   'VS Code': {
     buildServerConfig: defaultHttpConfig,
@@ -84,6 +132,7 @@ export const EDITOR_CONFIGS = {
       }
       return configDir && existsSync(configDir) ? path.join(configDir, 'mcp.json') : null
     },
+    format: 'jsonc',
   },
   'VS Code Insiders': {
     buildServerConfig: defaultHttpConfig,
@@ -107,6 +156,7 @@ export const EDITOR_CONFIGS = {
       }
       return configDir && existsSync(configDir) ? path.join(configDir, 'mcp.json') : null
     },
+    format: 'jsonc',
   },
   Zed: {
     buildServerConfig: (token) => ({
@@ -130,6 +180,7 @@ export const EDITOR_CONFIGS = {
       }
       return configDir && existsSync(configDir) ? path.join(configDir, 'settings.json') : null
     },
+    format: 'jsonc',
   },
 } satisfies Record<string, EditorConfig>
 

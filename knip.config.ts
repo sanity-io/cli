@@ -56,8 +56,8 @@ const baseConfig = {
         'src/**/*.worker.ts',
         'package.config.ts',
       ],
-      // Claude and OpenCode are not dependencies of the CLI, but they are used in the MCP configuration
-      ignoreBinaries: ['claude', 'opencode'],
+      // Claude, Codex, and OpenCode are not dependencies of the CLI, but they are used in MCP configuration
+      ignoreBinaries: ['claude', 'codex', 'opencode'],
       oclif: {
         config: ['oclif.config.js'],
       },

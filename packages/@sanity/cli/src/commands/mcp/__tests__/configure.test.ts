@@ -277,6 +277,134 @@ describe('#mcp:configure', () => {
     expect(stdout).toContain('MCP configured for Claude Code')
   })
 
+  test('detects Gemini CLI and configures it', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes('.gemini')
+    })
+
+    mockCheckbox.mockResolvedValue(['Gemini CLI'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-gemini', sid: 'session-gemini'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-gemini'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-gemini'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).toHaveBeenCalledWith({
+      choices: [
+        {
+          checked: true,
+          name: 'Gemini CLI',
+          value: 'Gemini CLI',
+        },
+      ],
+      message: 'Configure Sanity MCP server?',
+    })
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.gemini/settings.json')),
+      expect.stringContaining('test-token-gemini'),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for Gemini CLI')
+  })
+
+  test('detects GitHub Copilot CLI and configures it with tools field', async () => {
+    // Match both ~/.copilot and $XDG_CONFIG_HOME/copilot across platforms
+    mockExistsSync.mockImplementation((p: PathLike) => {
+      const normalizedPath = String(p).replaceAll('\\', '/')
+      return /\/.?copilot(?:\/|$)/.test(normalizedPath)
+    })
+
+    mockCheckbox.mockResolvedValue(['GitHub Copilot CLI'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-copilot', sid: 'session-copilot'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-copilot'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-copilot'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).toHaveBeenCalledWith({
+      choices: [
+        {
+          checked: true,
+          name: 'GitHub Copilot CLI',
+          value: 'GitHub Copilot CLI',
+        },
+      ],
+      message: 'Configure Sanity MCP server?',
+    })
+
+    const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
+    expect(writtenContent).toContain('test-token-copilot')
+    expect(writtenContent).toContain('"tools"')
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining('mcp-config.json'),
+      expect.any(String),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for GitHub Copilot CLI')
+  })
+
+  test.runIf(process.platform === 'linux')(
+    'detects GitHub Copilot CLI via XDG_CONFIG_HOME on Linux',
+    async () => {
+      const originalXdg = process.env.XDG_CONFIG_HOME
+      process.env.XDG_CONFIG_HOME = '/home/user/.config'
+
+      mockExistsSync.mockImplementation((p: PathLike) => {
+        return String(p).includes('/home/user/.config/copilot')
+      })
+
+      mockCheckbox.mockResolvedValue(['GitHub Copilot CLI'])
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'post',
+        uri: '/auth/session/create',
+      }).reply(200, {id: 'session-copilot-xdg', sid: 'session-copilot-xdg'})
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'get',
+        query: {sid: 'session-copilot-xdg'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'MCP Token', token: 'test-token-copilot-xdg'})
+
+      const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining('/home/user/.config/copilot/mcp-config.json'),
+        expect.stringContaining('test-token-copilot-xdg'),
+        'utf8',
+      )
+
+      expect(stdout).toContain('MCP configured for GitHub Copilot CLI')
+
+      process.env.XDG_CONFIG_HOME = originalXdg
+    },
+  )
+
   test.runIf(process.platform === 'darwin')(
     'detects OpenCode via CLI on macOS and configures it',
     async () => {
@@ -342,6 +470,150 @@ describe('#mcp:configure', () => {
       })
     },
   )
+
+  test('detects Codex CLI via CLI and configures TOML with headers', async () => {
+    mockExeca.mockImplementation((async (command: string | URL) => {
+      if (command === 'codex') {
+        return {
+          command: 'codex --version',
+          exitCode: 0,
+          failed: false,
+          killed: false,
+          signal: undefined,
+          stderr: '',
+          stdout: '1.0.0',
+          timedOut: false,
+        } as never
+      }
+
+      throw new Error('Not installed')
+    }) as never)
+
+    mockCheckbox.mockResolvedValue(['Codex CLI'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-codex', sid: 'session-codex'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-codex'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-codex'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockExeca).toHaveBeenCalledWith('codex', ['--version'], {
+      stdio: 'pipe',
+      timeout: 5000,
+    })
+
+    expect(mockCheckbox).toHaveBeenCalledWith({
+      choices: [
+        {
+          checked: true,
+          name: 'Codex CLI',
+          value: 'Codex CLI',
+        },
+      ],
+      message: 'Configure Sanity MCP server?',
+    })
+
+    const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
+    expect(writtenContent).toContain('[mcp_servers.Sanity]')
+    expect(writtenContent).toContain('[mcp_servers.Sanity.http_headers]')
+    expect(writtenContent).toContain('Authorization = "Bearer test-token-codex"')
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.codex/config.toml')),
+      expect.any(String),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for Codex CLI')
+  })
+
+  test('uses CODEX_HOME when configuring Codex CLI', async () => {
+    const originalCodexHome = process.env.CODEX_HOME
+    process.env.CODEX_HOME = '/tmp/custom-codex-home'
+    try {
+      mockExeca.mockImplementation((async (command: string | URL) => {
+        if (command === 'codex') {
+          return {
+            command: 'codex --version',
+            exitCode: 0,
+            failed: false,
+            killed: false,
+            signal: undefined,
+            stderr: '',
+            stdout: '1.0.0',
+            timedOut: false,
+          } as never
+        }
+
+        throw new Error('Not installed')
+      }) as never)
+
+      mockCheckbox.mockResolvedValue(['Codex CLI'])
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'post',
+        uri: '/auth/session/create',
+      }).reply(200, {id: 'session-codex-home', sid: 'session-codex-home'})
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'get',
+        query: {sid: 'session-codex-home'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'MCP Token', token: 'test-token-codex-home'})
+
+      const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+      const writtenPath = mockWriteFile.mock.calls[0]?.[0] as string
+      expect(writtenPath.replaceAll('\\', '/')).toMatch(/\/tmp\/custom-codex-home\/config\.toml$/)
+      expect(mockWriteFile).toHaveBeenCalledWith(expect.any(String), expect.any(String), 'utf8')
+
+      expect(stdout).toContain('MCP configured for Codex CLI')
+    } finally {
+      process.env.CODEX_HOME = originalCodexHome
+    }
+  })
+
+  test('skips Codex CLI when existing TOML config is unparseable', async () => {
+    mockExeca.mockImplementation((async (command: string | URL) => {
+      if (command === 'codex') {
+        return {
+          command: 'codex --version',
+          exitCode: 0,
+          failed: false,
+          killed: false,
+          signal: undefined,
+          stderr: '',
+          stdout: '1.0.0',
+          timedOut: false,
+        } as never
+      }
+
+      throw new Error('Not installed')
+    }) as never)
+
+    mockExistsSync.mockImplementation((p: PathLike) => {
+      const normalized = String(p).replaceAll('\\', '/')
+      return normalized.endsWith('/config.toml')
+    })
+    mockReadFile.mockResolvedValue('[[[')
+    mockCheckbox.mockResolvedValue([])
+
+    await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).not.toHaveBeenCalled()
+    expect(mockWriteFile).not.toHaveBeenCalled()
+  })
 
   test.runIf(process.platform === 'darwin')(
     'detects VS Code Insiders on macOS and configures it',
