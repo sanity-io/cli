@@ -703,7 +703,7 @@ try {
 ### Interactive Prompts
 
 ```typescript
-import {select, input, confirm} from '@inquirer/prompts'
+import {select, input, confirm} from '@sanity/cli-core/ux'
 
 // Selection prompt
 const dataset = await select({
@@ -744,20 +744,20 @@ this.log(styleText('red', 'Error:'), 'Operation failed')
 this.log(JSON.stringify(data, null, 2))
 
 // Symbols
-import {logSymbols} from '@sanity/cli-core'
+import {logSymbols} from '@sanity/cli-core/ux'
 this.log(`${logSymbols.success} Operation completed`)
 this.log(`${logSymbols.error} Operation failed`)
 this.log(`${logSymbols.info} Additional information`)
 this.log(`${logSymbols.warning} Proceed with caution`)
 
 // Spinner
-import {spinner} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 const spin = spinner('Loading...').start()
 await operation()
 spin.stop()
 
 // Tables
-import {Table} from 'console-table-printer'
+import {Table} from '@sanity/cli-core/ux'
 const table = new Table({
   columns: [
     {name: 'id', title: 'ID'},
