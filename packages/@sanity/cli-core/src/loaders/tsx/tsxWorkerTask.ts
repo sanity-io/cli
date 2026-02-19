@@ -3,9 +3,9 @@ import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {getTsconfig} from 'get-tsconfig'
 
-import {debug} from '../../debug.js'
 import {type RequireProps} from '../../types.js'
 import {isRecord} from '../../util/isRecord.js'
+import {promisifyWorker} from '../../util/promisifyWorker.js'
 
 /**
  * Options for the tsx worker task
@@ -48,32 +48,5 @@ export function tsxWorkerTask<T = unknown>(
     env,
   })
 
-  return new Promise((resolve, reject) => {
-    worker.addListener('error', function onWorkerError(err) {
-      debug(`Failed to load file through worker for: ${filePath.pathname}`, err)
-      reject(new Error(`Failed to load file through worker: ${err.message}`, {cause: err}))
-      cleanup()
-    })
-    worker.addListener('exit', function onWorkerExit(code) {
-      if (code > 0) {
-        reject(new Error(`Worker exited with code ${code}`))
-      }
-    })
-    worker.addListener('messageerror', function onWorkerMessageError(err) {
-      debug(`Failed to parse message from worker for: ${filePath.pathname}`, err)
-      reject(new Error(`Fail to parse message from worker: ${err}`))
-      cleanup()
-    })
-    worker.addListener('message', function onWorkerMessage(message) {
-      resolve(message)
-      cleanup()
-    })
-
-    function cleanup() {
-      // Allow the worker a _bit_ of time to clean up, but ensure that we don't have
-      // lingering processes hanging around forever if the worker doesn't exit on its
-      // own.
-      setImmediate(() => worker.terminate())
-    }
-  })
+  return promisifyWorker<T>(worker)
 }

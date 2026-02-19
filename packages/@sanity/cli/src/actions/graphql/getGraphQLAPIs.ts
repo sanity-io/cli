@@ -1,6 +1,12 @@
 import {isMainThread, Worker} from 'node:worker_threads'
 
-import {type CliConfig, getCliConfig, getStudioConfig, resolveLocalPackage} from '@sanity/cli-core'
+import {
+  type CliConfig,
+  getCliConfig,
+  getStudioConfig,
+  promisifyWorker,
+  resolveLocalPackage,
+} from '@sanity/cli-core'
 import {packageDirectory} from 'package-directory'
 
 import {
@@ -45,26 +51,16 @@ async function getApisWithSchemaTypes(workDir: string): Promise<TypeResolvedGrap
     throw new Error('Unable to resolve @sanity/cli module root')
   }
 
-  return new Promise<TypeResolvedGraphQLAPI[]>((resolve, reject) => {
-    const worker = new Worker(new URL(`getGraphQLAPIs.worker.js`, import.meta.url), {
-      env: process.env,
-      workerData: {
-        cliConfig: extractGraphQLConfig(cliConfig),
-        workDir,
-        workspaces,
-      },
-    })
-    worker.on('message', resolve)
-    worker.on('error', (error) => {
-      reject(error)
-      worker.terminate()
-    })
-    worker.on('exit', (code) => {
-      if (code !== 0) {
-        reject(new Error(`Worker stopped with exit code ${code}`))
-      }
-    })
+  const worker = new Worker(new URL(`getGraphQLAPIs.worker.js`, import.meta.url), {
+    env: process.env,
+    workerData: {
+      cliConfig: extractGraphQLConfig(cliConfig),
+      workDir,
+      workspaces,
+    },
   })
+
+  return promisifyWorker<TypeResolvedGraphQLAPI[]>(worker)
 }
 
 function extractGraphQLConfig(config: CliConfig) {
