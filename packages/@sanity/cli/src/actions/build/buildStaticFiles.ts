@@ -90,10 +90,11 @@ export async function buildStaticFiles(
     viteConfig = await finalizeViteConfig(viteConfig)
   }
 
+  const fromPath = path.join(cwd, 'static')
   // Copy files placed in /static to the built /static
-  buildDebug('Copying static files from /static to output dir')
+  buildDebug(`Copying static files from ${fromPath} to output dir`)
   const staticPath = path.join(outputDir, 'static')
-  await copyDir(path.join(cwd, 'static'), staticPath)
+  await copyDir(fromPath, staticPath)
 
   // Write favicons, not overwriting ones that already exist, to static folder
   buildDebug('Writing favicons to output dir')

@@ -4,6 +4,7 @@ import {getCliConfig} from './config/cli/getCliConfig.js'
 import {type CliConfig} from './config/cli/types/cliConfig.js'
 import {findProjectRoot} from './config/findProjectRoot.js'
 import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
+import {subdebug} from './debug.js'
 import {
   getGlobalCliClient,
   getProjectCliClient,
@@ -20,6 +21,8 @@ type Flags<T extends typeof Command> = Interfaces.InferredFlags<
 >
 
 type Args<T extends typeof Command> = Interfaces.InferredArgs<T['args']>
+
+const debug = subdebug('sanityCommand')
 
 export abstract class SanityCommand<T extends typeof Command> extends Command {
   protected args!: Args<T>
@@ -76,6 +79,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
   protected async getCliConfig(): Promise<CliConfig> {
     const root = await this.getProjectRoot()
 
+    debug(`Using project root`, root)
     return getCliConfig(root.directory)
   }
 
