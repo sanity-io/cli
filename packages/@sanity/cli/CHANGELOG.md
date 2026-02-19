@@ -1,5 +1,27 @@
 # Changelog
 
+## [6.0.0-alpha.15](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.14...cli-v6.0.0-alpha.15) (2026-02-19)
+
+
+### Features
+
+* add Gemini CLI and GitHub Copilot CLI to MCP configure ([#427](https://github.com/sanity-io/cli/issues/427)) ([3c30306](https://github.com/sanity-io/cli/commit/3c30306fa27aa07e093d247cb0d865d5066eb738))
+
+
+### Bug Fixes
+
+* add more debug logging ([#437](https://github.com/sanity-io/cli/issues/437)) ([687bcbf](https://github.com/sanity-io/cli/commit/687bcbf2f00a0f8ccc5187a5b4a8ae41b166f1e8))
+* **deps:** upgrade `get-latest-version` to 6.0.1 ([#431](https://github.com/sanity-io/cli/issues/431)) ([21b8ca8](https://github.com/sanity-io/cli/commit/21b8ca8cbde7241d4609eeaf5bb11d7cfc04f127))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.14
+  * devDependencies
+    * @sanity/cli-test bumped to 0.0.2-alpha.13
+
 ## [6.0.0-alpha.14](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.13...cli-v6.0.0-alpha.14) (2026-02-18)
 
 

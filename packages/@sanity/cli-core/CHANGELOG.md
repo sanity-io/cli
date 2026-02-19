@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.14](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.13...cli-core-v0.1.0-alpha.14) (2026-02-19)
+
+
+### Bug Fixes
+
+* add more debug logging ([#437](https://github.com/sanity-io/cli/issues/437)) ([687bcbf](https://github.com/sanity-io/cli/commit/687bcbf2f00a0f8ccc5187a5b4a8ae41b166f1e8))
+
 ## [0.1.0-alpha.13](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.12...cli-core-v0.1.0-alpha.13) (2026-02-18)
 
 
