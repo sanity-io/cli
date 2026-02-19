@@ -4,7 +4,7 @@ export interface Invite {
   email: string
   isAccepted: boolean
   isRevoked: boolean
-  role: string
+  roles: Role[]
 }
 
 export interface User {

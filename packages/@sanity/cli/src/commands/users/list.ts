@@ -2,10 +2,17 @@ import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
-import {size, sortBy} from 'lodash-es'
+import {Table} from 'console-table-printer'
+import {sortBy} from 'lodash-es'
 
 import {getMembersForProject} from '../../actions/users/getMembersForProject.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+
+const sortFields = ['id', 'name', 'role', 'date']
+
+function dimText(value: string, isDim: boolean): string {
+  return isDim ? styleText('dim', value) : value
+}
 
 export class List extends SanityCommand<typeof List> {
   static override description = 'List all users of the project'
@@ -46,8 +53,6 @@ export class List extends SanityCommand<typeof List> {
     }),
   }
 
-  private readonly sortFields = ['id', 'name', 'role', 'date']
-
   public async run(): Promise<void> {
     const {invitations, order, robots, sort} = this.flags
 
@@ -64,31 +69,40 @@ export class List extends SanityCommand<typeof List> {
     })
 
     const ordered = sortBy(
-      members.map(({date, id, name, role}) => [id, name, role, date]),
-      [this.sortFields.indexOf(sort)],
+      members.map(({date, id, name, roles}) => [
+        id,
+        name,
+        roles
+          ?.map((role) => role.title)
+          .join(', ')
+          .trim() || '-',
+        date,
+      ]),
+      [sortFields.indexOf(sort)],
     )
 
     const rows = order === 'asc' ? ordered : ordered.toReversed()
 
-    // Initialize maxWidths with the width of each header
-    const maxWidths = this.sortFields.map((str) => size(str))
+    const table = new Table({
+      columns: [
+        {alignment: 'left', maxLen: 30, name: 'id', title: 'ID'},
+        {alignment: 'left', maxLen: 40, name: 'name', title: 'Name'},
+        {alignment: 'left', maxLen: 30, name: 'role', title: 'Role'},
+        {alignment: 'left', maxLen: 12, name: 'date', title: 'Date'},
+      ],
+      rowSeparator: true,
+    })
 
-    // Calculate maximum width for each column
-    for (const row of rows) {
-      for (const [i, element] of row.entries()) {
-        maxWidths[i] = Math.max(size(element), maxWidths[i])
-      }
+    for (const [id, name, role, date] of rows) {
+      const isPending = id === '<pending>'
+      table.addRow({
+        date: dimText(date, isPending),
+        id: dimText(id, isPending),
+        name: dimText(name, isPending),
+        role: dimText(role, isPending),
+      })
     }
 
-    const printRow = (row: string[]) => {
-      const isInvite = row[0] === '<pending>'
-      const textRow = row.map((col, i) => `${col}`.padEnd(maxWidths[i])).join('   ')
-      return isInvite ? styleText('dim', textRow) : textRow
-    }
-
-    this.log(styleText('cyan', printRow(this.sortFields)))
-    for (const row of rows) {
-      this.log(printRow(row))
-    }
+    table.printTable()
   }
 }
