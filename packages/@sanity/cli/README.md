@@ -3,110 +3,112 @@
 Code for sanity cli
 
 <!-- toc -->
-* [@sanity/cli](#sanitycli)
-* [Commands](#commands)
+
+- [@sanity/cli](#sanitycli)
+- [Commands](#commands)
 <!-- tocstop -->
 
 # Commands
 
   <!-- commands -->
-* [`sanity backup disable [DATASET]`](#sanity-backup-disable-dataset)
-* [`sanity backup download [DATASET]`](#sanity-backup-download-dataset)
-* [`sanity backup enable [DATASET]`](#sanity-backup-enable-dataset)
-* [`sanity backup list [DATASET]`](#sanity-backup-list-dataset)
-* [`sanity blueprints add TYPE`](#sanity-blueprints-add-type)
-* [`sanity blueprints config`](#sanity-blueprints-config)
-* [`sanity blueprints deploy`](#sanity-blueprints-deploy)
-* [`sanity blueprints destroy`](#sanity-blueprints-destroy)
-* [`sanity blueprints doctor`](#sanity-blueprints-doctor)
-* [`sanity blueprints info`](#sanity-blueprints-info)
-* [`sanity blueprints init [DIR]`](#sanity-blueprints-init-dir)
-* [`sanity blueprints logs`](#sanity-blueprints-logs)
-* [`sanity blueprints plan`](#sanity-blueprints-plan)
-* [`sanity blueprints stacks`](#sanity-blueprints-stacks)
-* [`sanity build [OUTPUTDIR]`](#sanity-build-outputdir)
-* [`sanity codemod [CODEMODNAME]`](#sanity-codemod-codemodname)
-* [`sanity cors add ORIGIN`](#sanity-cors-add-origin)
-* [`sanity cors delete [ORIGIN]`](#sanity-cors-delete-origin)
-* [`sanity cors list`](#sanity-cors-list)
-* [`sanity dataset alias create [ALIASNAME] [TARGETDATASET]`](#sanity-dataset-alias-create-aliasname-targetdataset)
-* [`sanity dataset alias delete ALIASNAME`](#sanity-dataset-alias-delete-aliasname)
-* [`sanity dataset alias link [ALIASNAME] [TARGETDATASET]`](#sanity-dataset-alias-link-aliasname-targetdataset)
-* [`sanity dataset alias unlink [ALIASNAME]`](#sanity-dataset-alias-unlink-aliasname)
-* [`sanity dataset copy [SOURCE] [TARGET]`](#sanity-dataset-copy-source-target)
-* [`sanity dataset create [NAME]`](#sanity-dataset-create-name)
-* [`sanity dataset delete DATASETNAME`](#sanity-dataset-delete-datasetname)
-* [`sanity dataset export [NAME] [DESTINATION]`](#sanity-dataset-export-name-destination)
-* [`sanity dataset import SOURCE`](#sanity-dataset-import-source)
-* [`sanity dataset list`](#sanity-dataset-list)
-* [`sanity dataset visibility get DATASET`](#sanity-dataset-visibility-get-dataset)
-* [`sanity dataset visibility set DATASET MODE`](#sanity-dataset-visibility-set-dataset-mode)
-* [`sanity debug`](#sanity-debug)
-* [`sanity deploy [SOURCEDIR]`](#sanity-deploy-sourcedir)
-* [`sanity dev`](#sanity-dev)
-* [`sanity docs browse`](#sanity-docs-browse)
-* [`sanity docs read PATH`](#sanity-docs-read-path)
-* [`sanity docs search QUERY`](#sanity-docs-search-query)
-* [`sanity documents create [FILE]`](#sanity-documents-create-file)
-* [`sanity documents delete ID [IDS]`](#sanity-documents-delete-id-ids)
-* [`sanity documents get DOCUMENTID`](#sanity-documents-get-documentid)
-* [`sanity documents query QUERY`](#sanity-documents-query-query)
-* [`sanity documents validate`](#sanity-documents-validate)
-* [`sanity exec SCRIPT`](#sanity-exec-script)
-* [`sanity functions add`](#sanity-functions-add)
-* [`sanity functions dev`](#sanity-functions-dev)
-* [`sanity functions env add NAME KEY VALUE`](#sanity-functions-env-add-name-key-value)
-* [`sanity functions env list NAME`](#sanity-functions-env-list-name)
-* [`sanity functions env remove NAME KEY`](#sanity-functions-env-remove-name-key)
-* [`sanity functions logs [NAME]`](#sanity-functions-logs-name)
-* [`sanity functions test [NAME]`](#sanity-functions-test-name)
-* [`sanity graphql deploy`](#sanity-graphql-deploy)
-* [`sanity graphql list`](#sanity-graphql-list)
-* [`sanity graphql undeploy`](#sanity-graphql-undeploy)
-* [`sanity help [COMMAND]`](#sanity-help-command)
-* [`sanity hook attempt ATTEMPTID`](#sanity-hook-attempt-attemptid)
-* [`sanity hook create`](#sanity-hook-create)
-* [`sanity hook delete [NAME]`](#sanity-hook-delete-name)
-* [`sanity hook list`](#sanity-hook-list)
-* [`sanity hook logs [NAME]`](#sanity-hook-logs-name)
-* [`sanity init`](#sanity-init)
-* [`sanity install [PACKAGES]`](#sanity-install-packages)
-* [`sanity learn`](#sanity-learn)
-* [`sanity login`](#sanity-login)
-* [`sanity logout`](#sanity-logout)
-* [`sanity manage`](#sanity-manage)
-* [`sanity manifest extract`](#sanity-manifest-extract)
-* [`sanity mcp configure`](#sanity-mcp-configure)
-* [`sanity media create-aspect`](#sanity-media-create-aspect)
-* [`sanity media delete-aspect ASPECTNAME`](#sanity-media-delete-aspect-aspectname)
-* [`sanity media deploy-aspect [ASPECTNAME]`](#sanity-media-deploy-aspect-aspectname)
-* [`sanity media export [DESTINATION]`](#sanity-media-export-destination)
-* [`sanity media import SOURCE`](#sanity-media-import-source)
-* [`sanity migration create [TITLE]`](#sanity-migration-create-title)
-* [`sanity migration list`](#sanity-migration-list)
-* [`sanity migration run [ID]`](#sanity-migration-run-id)
-* [`sanity openapi get SLUG`](#sanity-openapi-get-slug)
-* [`sanity openapi list`](#sanity-openapi-list)
-* [`sanity preview [OUTPUTDIR]`](#sanity-preview-outputdir)
-* [`sanity projects create [PROJECTNAME]`](#sanity-projects-create-projectname)
-* [`sanity projects list`](#sanity-projects-list)
-* [`sanity schema delete`](#sanity-schema-delete)
-* [`sanity schema deploy`](#sanity-schema-deploy)
-* [`sanity schema extract`](#sanity-schema-extract)
-* [`sanity schema list`](#sanity-schema-list)
-* [`sanity schema validate`](#sanity-schema-validate)
-* [`sanity start [OUTPUTDIR]`](#sanity-start-outputdir)
-* [`sanity telemetry disable`](#sanity-telemetry-disable)
-* [`sanity telemetry enable`](#sanity-telemetry-enable)
-* [`sanity telemetry status`](#sanity-telemetry-status)
-* [`sanity tokens add [LABEL]`](#sanity-tokens-add-label)
-* [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
-* [`sanity tokens list`](#sanity-tokens-list)
-* [`sanity typegen generate`](#sanity-typegen-generate)
-* [`sanity undeploy`](#sanity-undeploy)
-* [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
-* [`sanity users list`](#sanity-users-list)
-* [`sanity versions`](#sanity-versions)
+
+- [`sanity backup disable [DATASET]`](#sanity-backup-disable-dataset)
+- [`sanity backup download [DATASET]`](#sanity-backup-download-dataset)
+- [`sanity backup enable [DATASET]`](#sanity-backup-enable-dataset)
+- [`sanity backup list [DATASET]`](#sanity-backup-list-dataset)
+- [`sanity blueprints add TYPE`](#sanity-blueprints-add-type)
+- [`sanity blueprints config`](#sanity-blueprints-config)
+- [`sanity blueprints deploy`](#sanity-blueprints-deploy)
+- [`sanity blueprints destroy`](#sanity-blueprints-destroy)
+- [`sanity blueprints doctor`](#sanity-blueprints-doctor)
+- [`sanity blueprints info`](#sanity-blueprints-info)
+- [`sanity blueprints init [DIR]`](#sanity-blueprints-init-dir)
+- [`sanity blueprints logs`](#sanity-blueprints-logs)
+- [`sanity blueprints plan`](#sanity-blueprints-plan)
+- [`sanity blueprints stacks`](#sanity-blueprints-stacks)
+- [`sanity build [OUTPUTDIR]`](#sanity-build-outputdir)
+- [`sanity codemod [CODEMODNAME]`](#sanity-codemod-codemodname)
+- [`sanity cors add ORIGIN`](#sanity-cors-add-origin)
+- [`sanity cors delete [ORIGIN]`](#sanity-cors-delete-origin)
+- [`sanity cors list`](#sanity-cors-list)
+- [`sanity dataset alias create [ALIASNAME] [TARGETDATASET]`](#sanity-dataset-alias-create-aliasname-targetdataset)
+- [`sanity dataset alias delete ALIASNAME`](#sanity-dataset-alias-delete-aliasname)
+- [`sanity dataset alias link [ALIASNAME] [TARGETDATASET]`](#sanity-dataset-alias-link-aliasname-targetdataset)
+- [`sanity dataset alias unlink [ALIASNAME]`](#sanity-dataset-alias-unlink-aliasname)
+- [`sanity dataset copy [SOURCE] [TARGET]`](#sanity-dataset-copy-source-target)
+- [`sanity dataset create [NAME]`](#sanity-dataset-create-name)
+- [`sanity dataset delete DATASETNAME`](#sanity-dataset-delete-datasetname)
+- [`sanity dataset export [NAME] [DESTINATION]`](#sanity-dataset-export-name-destination)
+- [`sanity dataset import SOURCE`](#sanity-dataset-import-source)
+- [`sanity dataset list`](#sanity-dataset-list)
+- [`sanity dataset visibility get DATASET`](#sanity-dataset-visibility-get-dataset)
+- [`sanity dataset visibility set DATASET MODE`](#sanity-dataset-visibility-set-dataset-mode)
+- [`sanity debug`](#sanity-debug)
+- [`sanity deploy [SOURCEDIR]`](#sanity-deploy-sourcedir)
+- [`sanity dev`](#sanity-dev)
+- [`sanity docs browse`](#sanity-docs-browse)
+- [`sanity docs read PATH`](#sanity-docs-read-path)
+- [`sanity docs search QUERY`](#sanity-docs-search-query)
+- [`sanity documents create [FILE]`](#sanity-documents-create-file)
+- [`sanity documents delete ID [IDS]`](#sanity-documents-delete-id-ids)
+- [`sanity documents get DOCUMENTID`](#sanity-documents-get-documentid)
+- [`sanity documents query QUERY`](#sanity-documents-query-query)
+- [`sanity documents validate`](#sanity-documents-validate)
+- [`sanity exec SCRIPT`](#sanity-exec-script)
+- [`sanity functions add`](#sanity-functions-add)
+- [`sanity functions dev`](#sanity-functions-dev)
+- [`sanity functions env add NAME KEY VALUE`](#sanity-functions-env-add-name-key-value)
+- [`sanity functions env list NAME`](#sanity-functions-env-list-name)
+- [`sanity functions env remove NAME KEY`](#sanity-functions-env-remove-name-key)
+- [`sanity functions logs [NAME]`](#sanity-functions-logs-name)
+- [`sanity functions test [NAME]`](#sanity-functions-test-name)
+- [`sanity graphql deploy`](#sanity-graphql-deploy)
+- [`sanity graphql list`](#sanity-graphql-list)
+- [`sanity graphql undeploy`](#sanity-graphql-undeploy)
+- [`sanity help [COMMAND]`](#sanity-help-command)
+- [`sanity hook attempt ATTEMPTID`](#sanity-hook-attempt-attemptid)
+- [`sanity hook create`](#sanity-hook-create)
+- [`sanity hook delete [NAME]`](#sanity-hook-delete-name)
+- [`sanity hook list`](#sanity-hook-list)
+- [`sanity hook logs [NAME]`](#sanity-hook-logs-name)
+- [`sanity init`](#sanity-init)
+- [`sanity install [PACKAGES]`](#sanity-install-packages)
+- [`sanity learn`](#sanity-learn)
+- [`sanity login`](#sanity-login)
+- [`sanity logout`](#sanity-logout)
+- [`sanity manage`](#sanity-manage)
+- [`sanity manifest extract`](#sanity-manifest-extract)
+- [`sanity mcp configure`](#sanity-mcp-configure)
+- [`sanity media create-aspect`](#sanity-media-create-aspect)
+- [`sanity media delete-aspect ASPECTNAME`](#sanity-media-delete-aspect-aspectname)
+- [`sanity media deploy-aspect [ASPECTNAME]`](#sanity-media-deploy-aspect-aspectname)
+- [`sanity media export [DESTINATION]`](#sanity-media-export-destination)
+- [`sanity media import SOURCE`](#sanity-media-import-source)
+- [`sanity migration create [TITLE]`](#sanity-migration-create-title)
+- [`sanity migration list`](#sanity-migration-list)
+- [`sanity migration run [ID]`](#sanity-migration-run-id)
+- [`sanity openapi get SLUG`](#sanity-openapi-get-slug)
+- [`sanity openapi list`](#sanity-openapi-list)
+- [`sanity preview [OUTPUTDIR]`](#sanity-preview-outputdir)
+- [`sanity projects create [PROJECTNAME]`](#sanity-projects-create-projectname)
+- [`sanity projects list`](#sanity-projects-list)
+- [`sanity schema delete`](#sanity-schema-delete)
+- [`sanity schema deploy`](#sanity-schema-deploy)
+- [`sanity schema extract`](#sanity-schema-extract)
+- [`sanity schema list`](#sanity-schema-list)
+- [`sanity schema validate`](#sanity-schema-validate)
+- [`sanity start [OUTPUTDIR]`](#sanity-start-outputdir)
+- [`sanity telemetry disable`](#sanity-telemetry-disable)
+- [`sanity telemetry enable`](#sanity-telemetry-enable)
+- [`sanity telemetry status`](#sanity-telemetry-status)
+- [`sanity tokens add [LABEL]`](#sanity-tokens-add-label)
+- [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
+- [`sanity tokens list`](#sanity-tokens-list)
+- [`sanity typegen generate`](#sanity-typegen-generate)
+- [`sanity undeploy`](#sanity-undeploy)
+- [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
+- [`sanity users list`](#sanity-users-list)
+- [`sanity versions`](#sanity-versions)
 
 ## `sanity backup disable [DATASET]`
 
@@ -2250,14 +2252,14 @@ _See code: [src/commands/manifest/extract.ts](https://github.com/sanity-io/cli/b
 
 ## `sanity mcp configure`
 
-Configure Sanity MCP server for AI editors (Cursor, VS Code, Claude Code)
+Configure Sanity MCP server for AI editors (Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code)
 
 ```
 USAGE
   $ sanity mcp configure
 
 DESCRIPTION
-  Configure Sanity MCP server for AI editors (Cursor, VS Code, Claude Code)
+  Configure Sanity MCP server for AI editors (Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code)
 
 EXAMPLES
   Configure Sanity MCP server for detected AI editors
@@ -2756,14 +2758,17 @@ Extracts a JSON representation of a Sanity schema within a Studio context.
 
 ```
 USAGE
-  $ sanity schema extract [--enforce-required-fields] [--format <format>] [--path <value>] [--workspace <name>]
+  $ sanity schema extract [--enforce-required-fields] [--format <format>] [--path <value>] [--watch]
+    [--watch-patterns <glob>...] [--workspace <name>]
 
 FLAGS
-  --enforce-required-fields  Makes the schema generated treat fields marked as required as non-optional
-  --format=<format>          [default: groq-type-nodes] Format the schema as GROQ type nodes. Only available format at
-                             the moment.
-  --path=<value>             Optional path to specify destination of the schema file
-  --workspace=<name>         The name of the workspace to generate a schema for
+  --enforce-required-fields   Makes the schema generated treat fields marked as required as non-optional
+  --format=<format>           [default: groq-type-nodes] Format the schema as GROQ type nodes. Only available format at
+                              the moment.
+  --path=<value>              Optional path to specify destination of the schema file
+  --watch                     Enable watch mode to re-extract schema on file changes
+  --watch-patterns=<glob>...  Additional glob pattern(s) to watch (can be specified multiple times)
+  --workspace=<name>          The name of the workspace to generate a schema for
 
 DESCRIPTION
   Extracts a JSON representation of a Sanity schema within a Studio context.
@@ -2774,6 +2779,14 @@ EXAMPLES
   Extracts schema types in a Sanity project with more than one workspace
 
     $ sanity schema extract --workspace default
+
+  Watch mode - re-extract on changes
+
+    $ sanity schema extract --watch
+
+  Watch with custom glob patterns
+
+    $ sanity schema extract --watch --watch-patterns "lib/**/*.ts"
 ```
 
 _See code: [src/commands/schema/extract.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.14/src/commands/schema/extract.ts)_
@@ -3195,4 +3208,5 @@ EXAMPLES
 ```
 
 _See code: [src/commands/versions.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.14/src/commands/versions.ts)_
+
 <!-- commandsstop -->

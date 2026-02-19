@@ -87,19 +87,19 @@ export class List extends SanityCommand<typeof List> {
       columns: [
         {alignment: 'left', maxLen: 30, name: 'id', title: 'ID'},
         {alignment: 'left', maxLen: 40, name: 'name', title: 'Name'},
-        {alignment: 'left', maxLen: 30, name: 'role', title: 'Role'},
+        {alignment: 'left', maxLen: 30, name: 'roles', title: 'Roles'},
         {alignment: 'left', maxLen: 12, name: 'date', title: 'Date'},
       ],
       rowSeparator: true,
     })
 
-    for (const [id, name, role, date] of rows) {
+    for (const [id, name, roles, date] of rows) {
       const isPending = id === '<pending>'
       table.addRow({
         date: dimText(date, isPending),
         id: dimText(id, isPending),
         name: dimText(name, isPending),
-        role: dimText(role, isPending),
+        roles: dimText(roles, isPending),
       })
     }
 
