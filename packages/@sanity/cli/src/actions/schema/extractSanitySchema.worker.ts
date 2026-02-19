@@ -37,9 +37,3 @@ try {
     validation,
   })
 }
-
-// Explicitly exit the process to avoid any dangling references from keeping
-// the process alive after resolving it's main task
-setImmediate(() => {
-  process.exit(1)
-})

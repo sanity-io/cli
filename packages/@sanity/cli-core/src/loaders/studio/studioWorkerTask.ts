@@ -2,6 +2,7 @@ import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {type RequireProps} from '../../types.js'
 import {isRecord} from '../../util/isRecord.js'
+import {promisifyWorker} from '../../util/promisifyWorker.js'
 
 /**
  * Options for the studio worker task
@@ -44,34 +45,8 @@ export function studioWorkerTask<T = unknown>(
   filePath: URL,
   options: StudioWorkerTaskOptions,
 ): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const worker = createStudioWorker(filePath, options)
-
-    worker.addListener('error', function onWorkerError(err) {
-      reject(new Error(`Fail to load file through worker: ${err.message}`))
-      cleanup()
-    })
-    worker.addListener('exit', function onWorkerExit(code) {
-      if (code > 0) {
-        reject(new Error(`Worker exited with code ${code}`))
-      }
-    })
-    worker.addListener('messageerror', function onWorkerMessageError(err) {
-      reject(new Error(`Fail to parse message from worker: ${err}`))
-      cleanup()
-    })
-    worker.addListener('message', function onWorkerMessage(message) {
-      resolve(message)
-      cleanup()
-    })
-
-    function cleanup() {
-      // Allow the worker a _bit_ of time to clean up, but ensure that we don't have
-      // lingering processes hanging around forever if the worker doesn't exit on its
-      // own.
-      setImmediate(() => worker.terminate())
-    }
-  })
+  const worker = createStudioWorker(filePath, options)
+  return promisifyWorker<T>(worker)
 }
 
 /**

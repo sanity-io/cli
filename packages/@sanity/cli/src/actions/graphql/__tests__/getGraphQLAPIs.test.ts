@@ -42,7 +42,8 @@ vi.mock('node:worker_threads', () => ({
   Worker: MockWorker,
 }))
 
-vi.mock('@sanity/cli-core', () => ({
+vi.mock('@sanity/cli-core', async (importOriginal) => ({
+  ...(await importOriginal()),
   getCliConfig: mockGetCliConfig,
   getStudioConfig: mockGetStudioConfig,
   resolveLocalPackage: mockResolveLocalPackage,
@@ -111,11 +112,12 @@ describe('getGraphQLAPIs', () => {
 
     // Mock worker instance
     const mockWorkerInstance = {
-      on: vi.fn((event, callback) => {
+      addListener: vi.fn((event, callback) => {
         if (event === 'message') {
           setImmediate(() => callback(testResponse))
         }
       }),
+      removeAllListeners: vi.fn(),
       terminate: vi.fn(),
     }
 
@@ -158,7 +160,7 @@ describe('getGraphQLAPIs', () => {
   test('handles multiple GraphQL APIs', async () => {
     // Create a new worker instance with custom response
     const mockWorkerInstance = {
-      on: vi.fn((event, callback) => {
+      addListener: vi.fn((event, callback) => {
         if (event === 'message') {
           setImmediate(() =>
             callback([
@@ -180,6 +182,7 @@ describe('getGraphQLAPIs', () => {
           )
         }
       }),
+      removeAllListeners: vi.fn(),
       terminate: vi.fn(),
     }
 
@@ -204,32 +207,34 @@ describe('getGraphQLAPIs', () => {
     const workerError = new Error('Worker failed')
 
     const mockWorkerInstance = {
-      on: vi.fn((event, callback) => {
+      addListener: vi.fn((event, callback) => {
         if (event === 'error') {
           setImmediate(() => callback(workerError))
         }
       }),
+      removeAllListeners: vi.fn(),
       terminate: vi.fn(),
     }
 
     setMockWorkerImplementation(() => mockWorkerInstance)
 
-    await expect(getGraphQLAPIs('/test/workdir')).rejects.toThrow('Worker failed')
+    await expect(getGraphQLAPIs('/test/workdir')).rejects.toThrow('Worker error: Worker failed')
   })
 
   test('handles worker exit with non-zero code', async () => {
     const mockWorkerInstance = {
-      on: vi.fn((event, callback) => {
+      addListener: vi.fn((event, callback) => {
         if (event === 'exit') {
           setImmediate(() => callback(1))
         }
       }),
+      removeAllListeners: vi.fn(),
       terminate: vi.fn(),
     }
 
     setMockWorkerImplementation(() => mockWorkerInstance)
 
-    await expect(getGraphQLAPIs('/test/workdir')).rejects.toThrow('Worker stopped with exit code 1')
+    await expect(getGraphQLAPIs('/test/workdir')).rejects.toThrow('Worker exited with code 1')
   })
 
   test('throws error when package directory cannot be resolved', async () => {
