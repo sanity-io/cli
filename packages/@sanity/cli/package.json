@@ -51,6 +51,7 @@
     "postbuild": "pnpm run manifest:generate",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
+    "docs:generate": "typedoc",
     "lint": "eslint .",
     "manifest:generate": "oclif manifest",
     "manifest:remove": "rimraf oclif.manifest.json",
@@ -174,6 +175,7 @@
     "publint": "catalog:",
     "rimraf": "catalog:",
     "sanity": "catalog:",
+    "typedoc": "^0.28.17",
     "typescript": "catalog:",
     "vite-tsconfig-paths": "^6.0.4",
     "vitest": "catalog:"

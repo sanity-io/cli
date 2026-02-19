@@ -13,3 +13,6 @@ package-lock.json
 
 # Worker js files, created for tests
 *.worker.js
+
+# docs
+docs/
