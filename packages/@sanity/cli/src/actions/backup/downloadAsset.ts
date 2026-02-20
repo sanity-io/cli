@@ -2,15 +2,16 @@ import {createWriteStream} from 'node:fs'
 import path from 'node:path'
 import {pipeline} from 'node:stream/promises'
 
-import {getIt} from 'get-it'
-import {httpErrors, keepAlive, promise, retry} from 'get-it/middleware'
+import {createRequester, keepAlive, retry} from '@sanity/cli-core/request'
 
 import {backupDownloadDebug} from './backupDownloadDebug.js'
 
 const CONNECTION_TIMEOUT = 15 * 1000 // 15 seconds
 const READ_TIMEOUT = 3 * 60 * 1000 // 3 minutes
 
-const request = getIt([keepAlive(), httpErrors(), retry(), promise()])
+const request = createRequester({middleware: {promise: {onlyBody: false}}})
+  .use(keepAlive())
+  .use(retry())
 
 /**
  * Downloads an asset (image or file) from a backup to the specified output directory
@@ -43,7 +44,7 @@ export async function downloadAsset(
   backupDownloadDebug(
     'Received asset %s with status code %d',
     normalizedFileName,
-    response?.statusCode,
+    response.statusCode,
   )
 
   await pipeline(response.body, createWriteStream(assetFilePath))

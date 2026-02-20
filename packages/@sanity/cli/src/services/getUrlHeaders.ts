@@ -1,16 +1,6 @@
-import {getIt} from 'get-it'
-import {promise} from 'get-it/middleware'
+import {createRequester} from '@sanity/cli-core/request'
 
-const request = getIt([promise()])
-
-class HttpError extends Error {
-  statusCode?: number
-
-  constructor(message: string) {
-    super(message)
-    this.name = 'HttpError'
-  }
-}
+const request = createRequester({middleware: {promise: {onlyBody: false}}})
 
 /**
  * Gets the headers of a URL
@@ -27,12 +17,6 @@ export async function getUrlHeaders(url: string, headers = {}): Promise<Record<s
     stream: true,
     url,
   })
-
-  if (response.statusCode >= 400) {
-    const error = new HttpError(`Request returned HTTP ${response.statusCode}`)
-    error.statusCode = response.statusCode
-    throw error
-  }
 
   response.body.resume()
   return response.headers

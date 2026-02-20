@@ -87,6 +87,9 @@ catalogs:
     publint:
       specifier: ^0.3.17
       version: 0.3.17
+    read-package-up:
+      specifier: ^12.0.0
+      version: 12.0.0
     rimraf:
       specifier: ^6.0.1
       version: 6.1.2
@@ -452,9 +455,6 @@ importers:
       form-data:
         specifier: ^4.0.5
         version: 4.0.5
-      get-it:
-        specifier: ^8.7.0
-        version: 8.7.0(debug@4.4.3)
       get-latest-version:
         specifier: ^6.0.1
         version: 6.0.1(debug@4.4.3)
@@ -537,7 +537,7 @@ importers:
         specifier: ^19.2.4
         version: 19.2.4
       read-package-up:
-        specifier: ^12.0.0
+        specifier: 'catalog:'
         version: 12.0.0
       recast:
         specifier: ^0.23.11
@@ -711,6 +711,9 @@ importers:
       debug:
         specifier: 'catalog:'
         version: 4.4.3(supports-color@8.1.1)
+      get-it:
+        specifier: ^8.7.0
+        version: 8.7.0(debug@4.4.3)
       get-tsconfig:
         specifier: 'catalog:'
         version: 4.13.6
@@ -729,6 +732,9 @@ importers:
       ora:
         specifier: 'catalog:'
         version: 9.1.0
+      read-package-up:
+        specifier: 'catalog:'
+        version: 12.0.0
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
