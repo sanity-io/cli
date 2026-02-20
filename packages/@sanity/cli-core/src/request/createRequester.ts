@@ -44,10 +44,17 @@ export function createRequester(options?: {middleware?: MiddlewareOptions}): Req
 
   // 2. headers
   if (opts?.headers !== false) {
-    const pkg = getPackageInfo()
-    const defaultHeaders: Record<string, string> = {'User-Agent': `${pkg.name}@${pkg.version}`}
     const customHeaders = typeof opts?.headers === 'object' ? opts.headers : {}
-    middleware.push(headers({...defaultHeaders, ...customHeaders}))
+    const allHeaders = customHeaders['User-Agent']
+      ? {...customHeaders}
+      : {
+          get ['User-Agent']() {
+            const pkg = getPackageInfo()
+            return `${pkg.name}@${pkg.version}`
+          },
+          ...customHeaders,
+        }
+    middleware.push(headers(allHeaders))
   }
 
   // 3. debug

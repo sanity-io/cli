@@ -1,11 +1,15 @@
 import path from 'node:path'
 
 import {readPackageJson} from '@sanity/cli-core'
-import {createRequester, type Requester} from '@sanity/cli-core/request'
+import {createRequester} from '@sanity/cli-core/request'
 import semver from 'semver'
 
 import {getModuleUrl} from '../actions/build/getAutoUpdatesImportMap.js'
 import {getLocalPackageVersion} from './getLocalPackageVersion.js'
+
+const request = createRequester({
+  middleware: {httpErrors: false, promise: {onlyBody: false}},
+})
 
 interface CompareDependencyVersions {
   installed: string
@@ -50,14 +54,10 @@ export async function compareDependencyVersions(
   })
   const dependencies = {...manifest?.dependencies, ...manifest?.devDependencies}
 
-  const request = createRequester({
-    middleware: {httpErrors: false, promise: {onlyBody: false}},
-  })
-
   const failedDependencies: Array<CompareDependencyVersions> = []
 
   for (const pkg of packages) {
-    const resolvedVersion = await getRemoteResolvedVersion(request, getModuleUrl(pkg, {appId}))
+    const resolvedVersion = await getRemoteResolvedVersion(getModuleUrl(pkg, {appId}))
 
     const packageVersion = await getLocalPackageVersion(pkg.name, workDir)
 
@@ -68,7 +68,7 @@ export async function compareDependencyVersions(
     )
 
     if (!installed) {
-      throw new Error(`Failed to parse installed version for ${pkg}`)
+      throw new Error(`Failed to parse installed version for ${pkg.name}`)
     }
 
     if (!semver.eq(resolvedVersion, installed.version)) {
@@ -83,7 +83,7 @@ export async function compareDependencyVersions(
   return failedDependencies
 }
 
-async function getRemoteResolvedVersion(request: Requester, url: string): Promise<string> {
+async function getRemoteResolvedVersion(url: string): Promise<string> {
   const response = await request({
     maxRedirects: 0,
     method: 'HEAD',

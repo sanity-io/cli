@@ -71,6 +71,23 @@ describe('#createRequester', () => {
     ])
   })
 
+  test('does not resolve package info until User-Agent header is accessed', () => {
+    mockHttpErrors.mockReturnValue({})
+    mockHeaders.mockReturnValue({})
+    mockDebug.mockReturnValue({})
+    mockPromise.mockReturnValue({})
+
+    createRequester()
+
+    expect(mockReadPackageUpSync).not.toHaveBeenCalled()
+
+    // Accessing the getter triggers the lazy resolution
+    const headersObj = mockHeaders.mock.calls[0][0]
+    expect(headersObj['User-Agent']).toBe('@sanity/cli-core@1.0.0')
+
+    expect(mockReadPackageUpSync).toHaveBeenCalledOnce()
+  })
+
   test('caches package info across calls', () => {
     mockHttpErrors.mockReturnValue({})
     mockHeaders.mockReturnValue({})
@@ -79,6 +96,12 @@ describe('#createRequester', () => {
 
     createRequester()
     createRequester()
+
+    // Trigger the lazy getter on both headers objects
+    const firstHeaders = mockHeaders.mock.calls[0][0]
+    const secondHeaders = mockHeaders.mock.calls[1][0]
+    expect(firstHeaders['User-Agent']).toBe('@sanity/cli-core@1.0.0')
+    expect(secondHeaders['User-Agent']).toBe('@sanity/cli-core@1.0.0')
 
     // readPackageUpSync should only be called once due to caching
     expect(mockReadPackageUpSync).toHaveBeenCalledOnce()
@@ -177,6 +200,8 @@ describe('#createRequester', () => {
     expect(mockHeaders).toHaveBeenCalledWith(
       expect.objectContaining({'User-Agent': 'custom-agent'}),
     )
+    // Should not resolve package info when User-Agent is overridden
+    expect(mockReadPackageUpSync).not.toHaveBeenCalled()
   })
 
   test('disables debug when set to false', () => {
@@ -226,10 +251,15 @@ describe('#createRequester', () => {
     mockReadPackageUpSync.mockReturnValue(undefined)
 
     mockHttpErrors.mockReturnValue({})
+    mockHeaders.mockReturnValue({})
     mockDebug.mockReturnValue({})
     mockPromise.mockReturnValue({})
 
-    expect(() => createRequester()).toThrow(
+    createRequester()
+
+    // The error is thrown lazily when the User-Agent getter is accessed
+    const headersObj = mockHeaders.mock.calls[0][0]
+    expect(() => headersObj['User-Agent']).toThrow(
       'Unable to resolve @sanity/cli-core package root',
     )
   })
