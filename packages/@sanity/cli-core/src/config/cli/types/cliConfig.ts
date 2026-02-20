@@ -83,6 +83,11 @@ export interface CliConfig {
    */
   schemaExtraction?: {
     /**
+     * Enable schema extraction as part of sanity dev and sanity build
+     */
+    enabled?: boolean
+
+    /**
      * When true, schema fields marked as required will be non-optional in the output.
      * Defaults to `false`
      */

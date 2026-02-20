@@ -68,6 +68,7 @@ export const cliConfigSchema = z.object({
 
   schemaExtraction: z
     .object({
+      enabled: z.boolean().optional(),
       enforceRequiredFields: z.boolean().optional(),
       path: z.string().optional(),
       watchPatterns: z.array(z.string()).optional(),

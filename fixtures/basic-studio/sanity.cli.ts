@@ -8,4 +8,7 @@ export default defineCliConfig({
   deployment: {
     autoUpdates: true,
   },
+  schemaExtraction: {
+    enabled: true,
+  },
 })

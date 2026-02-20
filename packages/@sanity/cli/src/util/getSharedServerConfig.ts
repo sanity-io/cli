@@ -15,6 +15,7 @@ export interface GetSharedServerConfigResult {
   cwd: string
   httpHost: string
   httpPort: number
+  schemaExtraction: CliConfig['schemaExtraction']
   vite: CliConfig['vite']
 
   entry?: string
@@ -63,6 +64,7 @@ export function getSharedServerConfig({
     httpHost,
     httpPort,
     isApp,
+    schemaExtraction: cliConfig?.schemaExtraction,
     vite: cliConfig?.vite,
   }
 }

@@ -107,6 +107,10 @@ export async function startStudioDevServer(
     }
   }
 
+  if (cliConfig?.schemaExtraction?.enabled) {
+    output.log(`${logSymbols.info} Running dev server with schema extraction enabled`)
+  }
+
   const config = getDevServerConfig({cliConfig, flags, output, workDir})
 
   if (loadInDashboard) {
