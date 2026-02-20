@@ -121,7 +121,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     // Remove node_modules so the package can't be found
     await unlink(join(cwd, 'node_modules'))
     // Install from pnpm without updating the lockfile
-    await execAsync(`pnpm install --prefer-offline`, {
+    await execAsync(`pnpm install --prefer-offline --config.minimum-release-age=0`, {
       cwd,
     })
 
