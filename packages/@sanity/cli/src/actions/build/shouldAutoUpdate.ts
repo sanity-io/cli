@@ -24,6 +24,8 @@ export function shouldAutoUpdate({cliConfig, flags, output}: AutoUpdateSources):
     output.warn(
       `The ${flagUsed} flag is deprecated for deploy and build commands. Set the autoUpdates option in the deployment section of sanity.cli.ts or sanity.cli.js instead.`,
     )
+    // Flags always take precedence over config
+    return Boolean(flags['auto-updates'])
   }
 
   const hasOldConfig = cliConfig && 'autoUpdates' in cliConfig
