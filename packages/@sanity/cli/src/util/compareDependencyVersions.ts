@@ -34,6 +34,13 @@ interface CompareDependencyVersions {
   remote: string
 }
 
+interface CompareDependencyVersionsOptions {
+  /** When provided, uses the app-specific module endpoint instead of the default endpoint. */
+  appId?: string
+  /** {@link https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API | Fetch}-compatible function to use for requesting the current remote version of a module. */
+  fetchFn?: typeof fetch
+}
+
 /**
  * @internal
  *
@@ -46,9 +53,9 @@ interface CompareDependencyVersions {
  * The failed dependencies are anything that does not strictly match the remote version.
  * This means that if a version is lower or greater by even a patch it will be marked as failed.
  *
- * @param autoUpdatesImports - An object mapping package names to their remote import URLs.
+ * @param packages - An array of packages with their name and version to compare against remote.
  * @param workDir - The path to the working directory containing the package.json file.
- * @param fetchFn - Optional {@link https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API | Fetch}-compatible function to use for requesting the current remote version of a module
+ * @param options - Optional configuration for version comparison.
  *
  * @returns A promise that resolves to an array of objects, each containing
  * the name of a package whose local and remote versions do not match, along with the local and remote versions.
@@ -59,7 +66,7 @@ interface CompareDependencyVersions {
 export async function compareDependencyVersions(
   packages: {name: string; version: string}[],
   workDir: string,
-  {fetchFn = globalThis.fetch}: {appId?: string; fetchFn?: typeof fetch} = {},
+  {appId, fetchFn = globalThis.fetch}: CompareDependencyVersionsOptions = {},
 ): Promise<Array<CompareDependencyVersions>> {
   const manifest = await readPackageJson(path.join(workDir, 'package.json'), {
     skipSchemaValidation: true,
@@ -69,7 +76,7 @@ export async function compareDependencyVersions(
   const failedDependencies: Array<CompareDependencyVersions> = []
 
   for (const pkg of packages) {
-    const resolvedVersion = await getRemoteResolvedVersion(fetchFn, getModuleUrl(pkg))
+    const resolvedVersion = await getRemoteResolvedVersion(fetchFn, getModuleUrl(pkg, {appId}))
 
     const packageVersion = await getLocalPackageVersion(pkg.name, workDir)
 
