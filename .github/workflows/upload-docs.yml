@@ -77,7 +77,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: typedoc-html-pr-${{ github.event.pull_request.number }}
-          path: docs/html
+          path: packages/@sanity/cli/docs/html
           retention-days: 7
 
       - name: Comment on PR
