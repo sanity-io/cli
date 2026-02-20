@@ -5,7 +5,7 @@ import {bootstrapRemoteTemplate} from './bootstrapRemoteTemplate.js'
 import {type GenerateConfigOptions} from './createStudioConfig.js'
 import {type RepoInfo} from './remoteTemplate.js'
 
-export interface BootstrapTemplateOptions {
+interface BootstrapTemplateOptions {
   autoUpdates: boolean
   bearerToken: string | undefined
   dataset: string

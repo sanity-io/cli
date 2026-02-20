@@ -20,7 +20,7 @@ import {updateInitialTemplateMetadata} from './updateInitialTemplateMetadata.js'
 
 const debug = subdebug('init:bootstrapRemoteTemplate')
 
-export interface BootstrapLocalOptions {
+interface BootstrapLocalOptions {
   output: Output
   outputPath: string
   packageName: string

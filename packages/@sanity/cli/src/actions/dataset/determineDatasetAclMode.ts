@@ -6,7 +6,7 @@ import {promptForDatasetAclMode} from '../../prompts/promptForDatasetAclMode.js'
 /**
  * Options for determining the ACL mode for a dataset
  */
-export interface DetermineDatasetAclModeOptions {
+interface DetermineDatasetAclModeOptions {
   /**
    * Whether the project has the capability to create private datasets
    */

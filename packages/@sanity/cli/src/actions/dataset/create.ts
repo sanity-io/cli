@@ -10,7 +10,7 @@ const debug = subdebug('dataset:create')
 /**
  * Options for creating a dataset
  */
-export interface CreateDatasetOptions {
+interface CreateDatasetOptions {
   /**
    * Name of the dataset to create
    */

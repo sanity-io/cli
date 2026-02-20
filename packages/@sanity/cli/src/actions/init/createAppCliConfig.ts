@@ -11,7 +11,7 @@ export default defineCliConfig({
 })
 `
 
-export interface GenerateCliConfigOptions {
+interface GenerateCliConfigOptions {
   entry: string
 
   organizationId?: string

@@ -10,7 +10,7 @@ import {getCliUser} from '../services/user.js'
 
 const debug = subdebug('getProjectDefaults')
 
-export interface ProjectDefaults {
+interface ProjectDefaults {
   author: string | undefined
   description: string
   gitRemote: string
