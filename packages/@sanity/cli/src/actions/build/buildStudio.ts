@@ -75,7 +75,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     autoUpdatesImports = getAutoUpdatesImportMap(sanityDependencies, {appId})
 
     // Check the versions
-    const result = await compareDependencyVersions(sanityDependencies, workDir)
+    const result = await compareDependencyVersions(sanityDependencies, workDir, {appId})
 
     // If it is in unattended mode, we don't want to prompt
     if (result?.length && !unattendedMode) {

@@ -489,4 +489,61 @@ describe('compareDependencyVersions', () => {
       ])
     })
   })
+
+  describe('module URL selection', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    it('should use the default module endpoint when no appId is provided', async () => {
+      mockedFetch.mockResolvedValue({
+        headers: {
+          get: vi.fn<(name: string) => string | null>().mockReturnValue('3.40.0'),
+        },
+        ok: false,
+        status: 302,
+      })
+      mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {sanity: '^3.40.0'},
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      await compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir', {
+        fetchFn: mockedFetch,
+      })
+
+      const url = mockedFetch.mock.calls[0][0] as string
+      expect(url).toContain('/v1/modules/sanity/default/')
+      expect(url).not.toContain('/by-app/')
+    })
+
+    it('should use the app-specific module endpoint when appId is provided', async () => {
+      mockedFetch.mockResolvedValue({
+        headers: {
+          get: vi.fn<(name: string) => string | null>().mockReturnValue('3.40.0'),
+        },
+        ok: false,
+        status: 302,
+      })
+      mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {sanity: '^3.40.0'},
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      await compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir', {
+        appId: 'my-app-id',
+        fetchFn: mockedFetch,
+      })
+
+      const url = mockedFetch.mock.calls[0][0] as string
+      expect(url).toContain('/v1/modules/by-app/my-app-id/')
+      expect(url).not.toContain('/default/')
+    })
+  })
 })
