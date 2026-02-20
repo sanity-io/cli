@@ -35,6 +35,10 @@
       "source": "./src/_exports/ux.ts",
       "default": "./dist/_exports/ux.js"
     },
+    "./request": {
+      "source": "./src/_exports/request.ts",
+      "default": "./dist/_exports/request.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.js",
@@ -63,6 +67,8 @@
     "boxen": "^8.0.1",
     "configstore": "^7.0.0",
     "debug": "catalog:",
+    "get-it": "^8.7.0",
+    "read-package-up": "catalog:",
     "get-tsconfig": "catalog:",
     "import-meta-resolve": "catalog:",
     "jsdom": "catalog:",

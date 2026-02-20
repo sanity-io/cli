@@ -1,12 +1,13 @@
-import {getIt} from 'get-it'
-import {httpErrors, keepAlive, promise, retry} from 'get-it/middleware'
+import {createRequester, keepAlive, retry} from '@sanity/cli-core/request'
 
 import {backupDownloadDebug} from './backupDownloadDebug.js'
 
 const CONNECTION_TIMEOUT = 15 * 1000 // 15 seconds
 const READ_TIMEOUT = 3 * 60 * 1000 // 3 minutes
 
-const request = getIt([keepAlive(), httpErrors(), retry(), promise()])
+const request = createRequester({middleware: {promise: {onlyBody: false}}})
+  .use(keepAlive())
+  .use(retry())
 
 /**
  * Downloads a document from a backup URL
