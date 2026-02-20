@@ -36,9 +36,10 @@ describe('compareDependencyVersions (integration)', {timeout: 30_000}, () => {
     )
 
     // The CDN should resolve to a version newer than 3.0.0
-    expect(result).toHaveLength(1)
+    expect(result.mismatched).toHaveLength(1)
+    expect(result.unresolvedPrerelease).toEqual([])
 
-    const [mismatch] = result
+    const [mismatch] = result.mismatched
     expect(mismatch.pkg).toBe('sanity')
     expect(mismatch.installed).toBe('3.0.0')
     expect(semver.valid(mismatch.remote)).toBeTruthy()

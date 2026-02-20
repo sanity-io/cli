@@ -47,7 +47,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     mockedIsInteractive.mockReturnValue(true)
     mockedConfirm.mockResolvedValue(true)
     mockedSelect.mockResolvedValue('upgrade-and-proceed')
-    mockedCompareDependencyVersions.mockResolvedValue([])
+    mockedCompareDependencyVersions.mockResolvedValue({mismatched: [], unresolvedPrerelease: []})
     mockedUpgradePackages.mockResolvedValue(undefined)
   })
 
@@ -196,9 +196,10 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
 
-    mockedCompareDependencyVersions.mockResolvedValue([
-      {installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'},
-    ])
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
+      unresolvedPrerelease: [],
+    })
     mockedSelect.mockResolvedValue('cancel')
 
     const {error} = await testCommand(BuildCommand, [])
@@ -212,9 +213,10 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
 
-    mockedCompareDependencyVersions.mockResolvedValue([
-      {installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'},
-    ])
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
+      unresolvedPrerelease: [],
+    })
     mockedSelect.mockResolvedValue('upgrade')
 
     const {error, stderr} = await testCommand(BuildCommand, [])
@@ -234,9 +236,10 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
 
-    mockedCompareDependencyVersions.mockResolvedValue([
-      {installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'},
-    ])
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
+      unresolvedPrerelease: [],
+    })
     mockedSelect.mockResolvedValue('continue')
 
     const {error, stderr} = await testCommand(BuildCommand, [])
@@ -254,9 +257,10 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
 
-    mockedCompareDependencyVersions.mockResolvedValue([
-      {installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'},
-    ])
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
+      unresolvedPrerelease: [],
+    })
     mockedSelect.mockResolvedValue('upgrade-and-proceed')
 
     const {error, stderr} = await testCommand(BuildCommand, [])
@@ -275,13 +279,93 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     expect(files).toContain('index.html')
   })
 
+  test('should error in unattended mode when prerelease versions are detected', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [],
+      unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
+    })
+
+    const {error} = await testCommand(BuildCommand, ['--yes'], {
+      config: {root: cwd},
+    })
+
+    expect(error?.message).toContain('prerelease versions')
+    expect(error?.message).toContain('--no-auto-updates')
+    expect(error?.oclif?.exit).toBe(1)
+    expect(mockedSelect).not.toHaveBeenCalled()
+  })
+
+  test('should exit when user selects "cancel" for prerelease prompt', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [],
+      unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
+    })
+    mockedSelect.mockResolvedValue('cancel')
+
+    const {error} = await testCommand(BuildCommand, [])
+
+    expect(error?.message).toContain('Declined to continue with build')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('should build without auto-updates when user selects "disable-auto-updates" for prerelease', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [],
+      unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
+    })
+    mockedSelect.mockResolvedValue('disable-auto-updates')
+
+    const {error, stderr} = await testCommand(BuildCommand, [])
+
+    if (error) throw error
+    expect(stderr).toContain('Auto-updates disabled for this build')
+    expect(stderr).toContain('Build Sanity Studio')
+
+    const outputFolder = join(cwd, 'dist')
+    const files = await readdir(outputFolder)
+    expect(files).toContain('index.html')
+
+    // Should not have shown the version mismatch prompt
+    expect(mockedUpgradePackages).not.toHaveBeenCalled()
+  })
+
+  test('should skip version mismatch prompt after disabling auto-updates for prerelease', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [{installed: '3.0.0', pkg: '@sanity/vision', remote: '3.1.0'}],
+      unresolvedPrerelease: [{pkg: 'sanity', version: '5.11.1-alpha.14'}],
+    })
+    // First select call is for prerelease prompt
+    mockedSelect.mockResolvedValue('disable-auto-updates')
+
+    const {error, stderr} = await testCommand(BuildCommand, [])
+
+    if (error) throw error
+    expect(stderr).toContain('Build Sanity Studio')
+    // select should only be called once (for the prerelease prompt), not twice
+    expect(mockedSelect).toHaveBeenCalledTimes(1)
+    expect(mockedUpgradePackages).not.toHaveBeenCalled()
+  })
+
   test('should skip version prompt in unattended mode and show warning', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
 
-    mockedCompareDependencyVersions.mockResolvedValue([
-      {installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'},
-    ])
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
+      unresolvedPrerelease: [],
+    })
 
     const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
       config: {root: cwd},
@@ -298,9 +382,10 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     process.chdir(cwd)
 
     mockedIsInteractive.mockReturnValue(false)
-    mockedCompareDependencyVersions.mockResolvedValue([
-      {installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'},
-    ])
+    mockedCompareDependencyVersions.mockResolvedValue({
+      mismatched: [{installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'}],
+      unresolvedPrerelease: [],
+    })
 
     const {error, stderr} = await testCommand(BuildCommand, [])
 

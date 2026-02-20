@@ -17,6 +17,16 @@ interface CompareDependencyVersions {
   remote: string
 }
 
+export interface UnresolvedPrerelease {
+  pkg: string
+  version: string
+}
+
+export interface CompareDependencyVersionsResult {
+  mismatched: Array<CompareDependencyVersions>
+  unresolvedPrerelease: Array<UnresolvedPrerelease>
+}
+
 interface CompareDependencyVersionsOptions {
   /** When provided, uses the app-specific module endpoint instead of the default endpoint. */
   appId?: string
@@ -40,26 +50,37 @@ interface CompareDependencyVersionsOptions {
  * @param workDir - The path to the working directory containing the package.json file.
  * @param options - Optional configuration for version comparison.
  *
- * @returns A promise that resolves to an array of objects, each containing
- * the name of a package whose local and remote versions do not match, along with the local and remote versions.
+ * @returns A promise that resolves to an object containing `mismatched` (packages whose local and remote versions differ)
+ * and `unresolvedPrerelease` (packages with prerelease versions that could not be resolved remotely).
  *
- * @throws Throws an error if the remote version of a package cannot be fetched, or if the local version of a package
- * cannot be parsed.
+ * @throws Throws an error if the remote version of a non-prerelease package cannot be fetched, or if the local version
+ * of a package cannot be parsed.
  */
 export async function compareDependencyVersions(
   packages: {name: string; version: string}[],
   workDir: string,
   {appId, requester = defaultRequester}: CompareDependencyVersionsOptions = {},
-): Promise<Array<CompareDependencyVersions>> {
+): Promise<CompareDependencyVersionsResult> {
   const manifest = await readPackageJson(path.join(workDir, 'package.json'), {
     skipSchemaValidation: true,
   })
   const dependencies = {...manifest?.dependencies, ...manifest?.devDependencies}
 
-  const failedDependencies: Array<CompareDependencyVersions> = []
+  const mismatched: Array<CompareDependencyVersions> = []
+  const unresolvedPrerelease: Array<UnresolvedPrerelease> = []
 
   for (const pkg of packages) {
     const resolvedVersion = await getRemoteResolvedVersion(getModuleUrl(pkg, {appId}), requester)
+
+    if (resolvedVersion === null) {
+      if (semver.prerelease(pkg.version)) {
+        unresolvedPrerelease.push({pkg: pkg.name, version: pkg.version})
+        continue
+      }
+      throw new Error(
+        `Failed to resolve remote version for ${pkg.name}@${pkg.version}: package not found`,
+      )
+    }
 
     const packageVersion = await getLocalPackageVersion(pkg.name, workDir)
 
@@ -74,7 +95,7 @@ export async function compareDependencyVersions(
     }
 
     if (!semver.eq(resolvedVersion, installed.version)) {
-      failedDependencies.push({
+      mismatched.push({
         installed: installed.version,
         pkg: pkg.name,
         remote: resolvedVersion,
@@ -82,13 +103,13 @@ export async function compareDependencyVersions(
     }
   }
 
-  return failedDependencies
+  return {mismatched, unresolvedPrerelease}
 }
 
 async function getRemoteResolvedVersion(
   url: string,
   request: typeof defaultRequester,
-): Promise<string> {
+): Promise<string | null> {
   let response
   try {
     response = await request({
@@ -108,6 +129,10 @@ async function getRemoteResolvedVersion(
       throw new Error(`Missing 'x-resolved-version' header on response from HEAD ${url}`)
     }
     return resolved
+  }
+
+  if (response.statusCode === 404) {
+    return null
   }
 
   throw new Error(`Unexpected HTTP response: ${response.statusCode} ${response.statusMessage}`)

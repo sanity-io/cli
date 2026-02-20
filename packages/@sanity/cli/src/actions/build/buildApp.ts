@@ -17,6 +17,7 @@ import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
 import {getAppEnvVars} from './getAppEnvVars.js'
 import {getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
+import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'
 
 /**
@@ -25,7 +26,8 @@ import {type BuildOptions} from './types.js'
  * @internal
  */
 export async function buildApp(options: BuildOptions): Promise<void> {
-  const {autoUpdatesEnabled, cliConfig, flags, outDir, output, workDir} = options
+  const {cliConfig, flags, outDir, output, workDir} = options
+  let {autoUpdatesEnabled} = options
   const unattendedMode = flags.yes
   const timer = getTimer()
 
@@ -65,17 +67,27 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     output.log(`${logSymbols.info} Building with auto-updates enabled`)
 
     // Check the versions
-    const result = await compareDependencyVersions(autoUpdatedPackages, workDir, {appId})
+    const {mismatched, unresolvedPrerelease} = await compareDependencyVersions(
+      autoUpdatedPackages,
+      workDir,
+      {appId},
+    )
+
+    if (unresolvedPrerelease.length > 0) {
+      await handlePrereleaseVersions({output, unattendedMode, unresolvedPrerelease})
+      autoUpdatesImports = {}
+      autoUpdatesEnabled = false
+    }
 
     // If it is in unattended mode, we don't want to prompt
-    if (result?.length && !unattendedMode) {
+    if (mismatched.length > 0 && !unattendedMode && autoUpdatesEnabled) {
       const shouldContinue = await confirm({
         default: false,
         message: styleText(
           'yellow',
           `The following local package versions are different from the versions currently served at runtime.\n` +
             `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
-            `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')} \n\n` +
+            `${mismatched.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')} \n\n` +
             `Continue anyway?`,
         ),
       })

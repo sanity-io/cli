@@ -22,7 +22,7 @@ vi.mock('../../actions/build/checkRequiredDependencies.js', () => ({
 }))
 
 vi.mock('../../util/compareDependencyVersions.js', () => ({
-  compareDependencyVersions: vi.fn().mockResolvedValue([]),
+  compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -283,13 +283,16 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
-      mockCompareDependencyVersions.mockResolvedValueOnce([
-        {
-          installed: '3.0.0',
-          pkg: 'sanity',
-          remote: '3.1.0',
-        },
-      ])
+      mockCompareDependencyVersions.mockResolvedValueOnce({
+        mismatched: [
+          {
+            installed: '3.0.0',
+            pkg: 'sanity',
+            remote: '3.1.0',
+          },
+        ],
+        unresolvedPrerelease: [],
+      })
       mockConfirm.mockResolvedValueOnce(false) // User declines upgrade
 
       const {error, result, stderr, stdout} = await testCommand(
@@ -311,13 +314,16 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd
 
-      mockCompareDependencyVersions.mockResolvedValueOnce([
-        {
-          installed: '3.0.0',
-          pkg: 'sanity',
-          remote: '3.1.0',
-        },
-      ])
+      mockCompareDependencyVersions.mockResolvedValueOnce({
+        mismatched: [
+          {
+            installed: '3.0.0',
+            pkg: 'sanity',
+            remote: '3.1.0',
+          },
+        ],
+        unresolvedPrerelease: [],
+      })
       mockConfirm.mockResolvedValueOnce(true) // User accepts upgrade
 
       mockUpgradePackages.mockResolvedValueOnce(undefined)
