@@ -16,12 +16,12 @@ catalog:
   prettier: ^3.8.1
 
   # Sanity
-  sanity: ^5.9.0
-  '@sanity/vision': ^5.9.0
-  '@sanity/types': ^5.9.0
-  '@sanity/schema': ^5.9.0
-  '@sanity/client': ^7.14.1
-  '@sanity/codegen': ^5.9.3
+  sanity: ^5.11.0
+  '@sanity/vision': ^5.11.0
+  '@sanity/types': ^5.11.0
+  '@sanity/schema': ^5.11.0
+  '@sanity/client': ^7.15.0
+  '@sanity/codegen': ^5.9.4
   '@sanity/telemetry': ^0.8.1
 
   # Build & Development Tools

@@ -31,7 +31,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@sanity/cli": "^5.9.0",
+    "@sanity/cli": "^5.11.0",
     "import-meta-resolve": "catalog:"
   },
   "devDependencies": {
