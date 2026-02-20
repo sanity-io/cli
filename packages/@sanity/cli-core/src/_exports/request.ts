@@ -9,13 +9,10 @@ export {type Requester} from 'get-it'
 export {
   agent,
   base,
-  Cancel,
-  CancelToken,
   injectResponse,
   jsonRequest,
   jsonResponse,
   keepAlive,
-  mtls,
   observable,
   progress,
   proxy,
