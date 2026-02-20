@@ -7,7 +7,7 @@ import semver from 'semver'
 import {getModuleUrl} from '../actions/build/getAutoUpdatesImportMap.js'
 import {getLocalPackageVersion} from './getLocalPackageVersion.js'
 
-const request = createRequester({
+const defaultRequester = createRequester({
   middleware: {httpErrors: false, promise: {onlyBody: false}},
 })
 
@@ -20,6 +20,8 @@ interface CompareDependencyVersions {
 interface CompareDependencyVersionsOptions {
   /** When provided, uses the app-specific module endpoint instead of the default endpoint. */
   appId?: string
+  /** Optional requester for dependency injection (primarily for testing). */
+  requester?: typeof defaultRequester
 }
 
 /**
@@ -47,7 +49,7 @@ interface CompareDependencyVersionsOptions {
 export async function compareDependencyVersions(
   packages: {name: string; version: string}[],
   workDir: string,
-  {appId}: CompareDependencyVersionsOptions = {},
+  {appId, requester = defaultRequester}: CompareDependencyVersionsOptions = {},
 ): Promise<Array<CompareDependencyVersions>> {
   const manifest = await readPackageJson(path.join(workDir, 'package.json'), {
     skipSchemaValidation: true,
@@ -57,7 +59,7 @@ export async function compareDependencyVersions(
   const failedDependencies: Array<CompareDependencyVersions> = []
 
   for (const pkg of packages) {
-    const resolvedVersion = await getRemoteResolvedVersion(getModuleUrl(pkg, {appId}))
+    const resolvedVersion = await getRemoteResolvedVersion(getModuleUrl(pkg, {appId}), requester)
 
     const packageVersion = await getLocalPackageVersion(pkg.name, workDir)
 
@@ -83,12 +85,21 @@ export async function compareDependencyVersions(
   return failedDependencies
 }
 
-async function getRemoteResolvedVersion(url: string): Promise<string> {
-  const response = await request({
-    maxRedirects: 0,
-    method: 'HEAD',
-    url,
-  })
+async function getRemoteResolvedVersion(
+  url: string,
+  request: typeof defaultRequester,
+): Promise<string> {
+  let response
+  try {
+    response = await request({
+      maxRedirects: 0,
+      method: 'HEAD',
+      url,
+    })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    throw new Error(`Failed to fetch remote version for ${url}: ${message}`)
+  }
 
   // 302 is expected, but lets also handle 2xx
   if (response.statusCode < 400) {

@@ -44,7 +44,7 @@ export async function downloadAsset(
   backupDownloadDebug(
     'Received asset %s with status code %d',
     normalizedFileName,
-    response?.statusCode,
+    response.statusCode,
   )
 
   await pipeline(response.body, createWriteStream(assetFilePath))
