@@ -24,6 +24,7 @@ export interface DevServerOptions {
   isApp?: boolean
   projectName?: string
   schemaExtraction?: CliConfig['schemaExtraction']
+  typegen?: CliConfig['typegen']
   vite?: UserViteConfig
 }
 
@@ -45,6 +46,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     reactCompiler,
     reactStrictMode,
     schemaExtraction,
+    typegen,
     vite: extendViteConfig,
   } = options
 
@@ -69,6 +71,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     reactCompiler,
     schemaExtraction,
     server: {host: httpHost, port: httpPort},
+    typegen,
   })
 
   // Extend Vite configuration with user-provided config

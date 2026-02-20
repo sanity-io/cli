@@ -126,7 +126,14 @@ export interface CliConfig {
   /**
    * Configuration for Sanity typegen
    */
-  typegen?: Partial<TypeGenConfig>
+  typegen?: Partial<TypeGenConfig> & {
+    /**
+     * Enable typegen as part of sanity dev and sanity build.
+     * When enabled, types are generated on startup and when files change.
+     * Defaults to `false`
+     */
+    enabled?: boolean
+  }
 
   /** Exposes the default Vite configuration for custom apps and the Studio so it can be changed and extended. */
   vite?: UserViteConfig

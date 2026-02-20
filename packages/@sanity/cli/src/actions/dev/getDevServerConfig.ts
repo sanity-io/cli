@@ -49,5 +49,6 @@ export function getDevServerConfig({
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),
+    typegen: cliConfig?.typegen,
   }
 }

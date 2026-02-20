@@ -87,5 +87,5 @@ export const cliConfigSchema = z.object({
 
   vite: z.custom<UserViteConfig>().optional(),
 
-  typegen: z.custom<TypeGenConfig>().optional(),
+  typegen: z.custom<Partial<TypeGenConfig> & {enabled?: boolean}>().optional(),
 }) satisfies z.ZodType<CliConfig>
