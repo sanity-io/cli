@@ -12,7 +12,6 @@ import {compareDependencyVersions} from '../../util/compareDependencyVersions.js
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
-import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {checkRequiredDependencies} from '../build/checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from '../build/checkStudioDependencyVersions.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
@@ -61,14 +60,6 @@ export async function startStudioDevServer(
       result = await compareDependencyVersions(sanityDependencies, workDir, {appId})
     } catch (err) {
       output.warn(`Failed to compare local versions against auto-updating versions: ${err}`)
-    }
-
-    if (!appId) {
-      warnAboutMissingAppId({
-        appType: 'studio',
-        output,
-        projectId,
-      })
     }
 
     if (result?.unresolvedPrerelease.length) {
