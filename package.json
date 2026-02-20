@@ -39,7 +39,7 @@
     "watch:cli": "turbo run watch --filter=@sanity/cli --filter=@sanity/cli*"
   },
   "resolutions": {
-    "@sanity/client": "^7.14.1"
+    "@sanity/client": "^7.15.0"
   },
   "devDependencies": {
     "@eslint/compat": "catalog:",
@@ -67,7 +67,7 @@
     ],
     "overrides": {
       "@sanity/cli": "workspace:*",
-      "create-sanity>@sanity/cli": "^5.9.0"
+      "create-sanity>@sanity/cli": "^5.11.0"
     },
     "patchedDependencies": {
       "sanity": "patches/sanity.patch"
