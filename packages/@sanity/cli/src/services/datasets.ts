@@ -1,5 +1,9 @@
 import {getProjectCliClient} from '@sanity/cli-core'
-import {type DatasetAclMode} from '@sanity/client'
+import {
+  type DatasetCreateOptions as ClientCreateOptions,
+  type DatasetAclMode,
+  type EmbeddingsSettingsBody,
+} from '@sanity/client'
 import {EventSource} from 'eventsource'
 import {Observable} from 'rxjs'
 
@@ -54,16 +58,26 @@ interface CreateDatasetOptions {
   projectId: string
 
   aclMode?: DatasetAclMode
+  embeddings?: EmbeddingsSettingsBody
 }
 
-export async function createDataset({aclMode, datasetName, projectId}: CreateDatasetOptions) {
+export async function createDataset({
+  aclMode,
+  datasetName,
+  embeddings,
+  projectId,
+}: CreateDatasetOptions) {
   const client = await getDatasetClient(projectId)
+  const options: ClientCreateOptions = {}
 
   if (aclMode) {
-    return client.datasets.create(datasetName, {aclMode})
+    options.aclMode = aclMode
+  }
+  if (embeddings) {
+    options.embeddings = embeddings
   }
 
-  return client.datasets.create(datasetName)
+  return client.datasets.create(datasetName, options)
 }
 
 interface CopyDatasetOptions {

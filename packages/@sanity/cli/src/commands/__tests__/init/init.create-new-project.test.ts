@@ -239,7 +239,7 @@ describe('#init: create new project', () => {
       }),
     )
 
-    expect(mocks.datasetsCreate).toHaveBeenCalledWith('production')
+    expect(mocks.datasetsCreate).toHaveBeenCalledWith('production', {})
 
     expect(spinnerSpy).toHaveBeenCalledWith('Creating organization')
     expect(spinnerSpy).toHaveBeenCalledWith('Creating dataset')
@@ -331,7 +331,7 @@ describe('#init: create new project', () => {
       },
     )
 
-    expect(mocks.datasetsCreate).toHaveBeenCalledWith('production')
+    expect(mocks.datasetsCreate).toHaveBeenCalledWith('production', {})
 
     expect(spinnerSpy).toHaveBeenCalledWith('Creating organization')
     expect(spinnerSpy).toHaveBeenCalledWith('Creating dataset')

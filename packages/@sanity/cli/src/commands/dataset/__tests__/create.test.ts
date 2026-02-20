@@ -298,6 +298,50 @@ describe('#dataset:create', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('creates dataset with --embeddings flag', async () => {
+    mockListDatasets.mockResolvedValue([])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      projectId: testProjectId,
+      uri: '/features',
+    }).reply(200, [])
+    mockCreateDataset.mockResolvedValue(undefined as never)
+
+    const {stdout} = await testCommand(CreateDatasetCommand, ['my-dataset', '--embeddings'], {
+      mocks: defaultMocks,
+    })
+
+    expect(mockCreateDataset).toHaveBeenCalledWith('my-dataset', {
+      aclMode: 'public',
+      embeddings: {enabled: true},
+    })
+    expect(stdout).toContain('Dataset created successfully')
+  })
+
+  test('creates dataset with --embeddings and --embeddings-projection flags', async () => {
+    mockListDatasets.mockResolvedValue([])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      projectId: testProjectId,
+      uri: '/features',
+    }).reply(200, [])
+    mockCreateDataset.mockResolvedValue(undefined as never)
+
+    const {stdout} = await testCommand(
+      CreateDatasetCommand,
+      ['my-dataset', '--embeddings', '--embeddings-projection', '{ title, body }'],
+      {mocks: defaultMocks},
+    )
+
+    expect(mockCreateDataset).toHaveBeenCalledWith('my-dataset', {
+      aclMode: 'public',
+      embeddings: {enabled: true, projection: '{ title, body }'},
+    })
+    expect(stdout).toContain('Dataset created successfully')
+  })
+
   test('errors when no project ID is found', async () => {
     const {error} = await testCommand(CreateDatasetCommand, ['my-dataset'], {
       mocks: {

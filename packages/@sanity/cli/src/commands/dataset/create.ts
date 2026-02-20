@@ -38,6 +38,14 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
   ]
 
   static override flags = {
+    embeddings: Flags.boolean({
+      default: false,
+      description: 'Enable embeddings for this dataset',
+    }),
+    'embeddings-projection': Flags.string({
+      dependsOn: ['embeddings'],
+      description: 'GROQ projection for embeddings indexing (e.g. "{ title, body }")',
+    }),
     visibility: Flags.string({
       description: 'Set visibility for this dataset (custom/private/public)',
       options: ALLOWED_ACL_MODES,
@@ -92,6 +100,8 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     try {
       await createDataset({
         datasetName,
+        embeddings: flags.embeddings,
+        embeddingsProjection: flags['embeddings-projection'],
         output: this.output,
         projectFeatures,
         projectId,

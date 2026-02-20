@@ -38,6 +38,9 @@ Code for sanity cli
 - [`sanity dataset copy [SOURCE] [TARGET]`](#sanity-dataset-copy-source-target)
 - [`sanity dataset create [NAME]`](#sanity-dataset-create-name)
 - [`sanity dataset delete DATASETNAME`](#sanity-dataset-delete-datasetname)
+- [`sanity dataset embeddings disable [DATASET]`](#sanity-dataset-embeddings-disable-dataset)
+- [`sanity dataset embeddings enable [DATASET]`](#sanity-dataset-embeddings-enable-dataset)
+- [`sanity dataset embeddings status [DATASET]`](#sanity-dataset-embeddings-status-dataset)
 - [`sanity dataset export [NAME] [DESTINATION]`](#sanity-dataset-export-name-destination)
 - [`sanity dataset import SOURCE`](#sanity-dataset-import-source)
 - [`sanity dataset list`](#sanity-dataset-list)
@@ -134,7 +137,7 @@ EXAMPLES
     $ sanity backup disable production
 ```
 
-_See code: [src/commands/backup/disable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/backup/disable.ts)_
+_See code: [src/commands/backup/disable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/backup/disable.ts)_
 
 ## `sanity backup download [DATASET]`
 
@@ -142,16 +145,14 @@ Download a dataset backup to a local file.
 
 ```
 USAGE
-  $ sanity backup download [DATASET] [--backup-id <value>] [--concurrency
-    <value>] [--out <value>] [--overwrite]
+  $ sanity backup download [DATASET] [--backup-id <value>] [--concurrency <value>] [--out <value>] [--overwrite]
 
 ARGUMENTS
   [DATASET]  Dataset name to download backup from
 
 FLAGS
   --backup-id=<value>    The backup ID to download
-  --concurrency=<value>  [default: 10] Concurrent number of backup item downloads
-                         (max: 24)
+  --concurrency=<value>  [default: 10] Concurrent number of backup item downloads (max: 24)
   --out=<value>          The file or directory path the backup should download to
   --overwrite            Allows overwriting of existing backup file
 
@@ -169,16 +170,14 @@ EXAMPLES
 
   Download backup to a specific file
 
-    $ sanity backup download production --backup-id 2024-01-01-backup-2 --out \
-      /path/to/file
+    $ sanity backup download production --backup-id 2024-01-01-backup-2 --out /path/to/file
 
   Download backup and overwrite existing file
 
-    $ sanity backup download production --backup-id 2024-01-01-backup-3 --out \
-      /path/to/file --overwrite
+    $ sanity backup download production --backup-id 2024-01-01-backup-3 --out /path/to/file --overwrite
 ```
 
-_See code: [src/commands/backup/download.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/backup/download.ts)_
+_See code: [src/commands/backup/download.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/backup/download.ts)_
 
 ## `sanity backup enable [DATASET]`
 
@@ -204,7 +203,7 @@ EXAMPLES
     $ sanity backup enable production
 ```
 
-_See code: [src/commands/backup/enable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/backup/enable.ts)_
+_See code: [src/commands/backup/enable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/backup/enable.ts)_
 
 ## `sanity backup list [DATASET]`
 
@@ -212,18 +211,15 @@ List available backups for a dataset.
 
 ```
 USAGE
-  $ sanity backup list [DATASET] [--after <value>] [--before <value>] [-l
-    <value>]
+  $ sanity backup list [DATASET] [--after <value>] [--before <value>] [-l <value>]
 
 ARGUMENTS
   [DATASET]  Dataset name to list backups for
 
 FLAGS
   -l, --limit=<value>   [default: 30] Maximum number of backups returned
-      --after=<value>   Only return backups after this date (inclusive,
-                        YYYY-MM-DD format)
-      --before=<value>  Only return backups before this date (exclusive,
-                        YYYY-MM-DD format)
+      --after=<value>   Only return backups after this date (inclusive, YYYY-MM-DD format)
+      --before=<value>  Only return backups before this date (exclusive, YYYY-MM-DD format)
 
 DESCRIPTION
   List available backups for a dataset.
@@ -246,7 +242,7 @@ EXAMPLES
     $ sanity backup list production --after 2024-01-31 --limit 10
 ```
 
-_See code: [src/commands/backup/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/backup/list.ts)_
+_See code: [src/commands/backup/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/backup/list.ts)_
 
 ## `sanity blueprints add TYPE`
 
@@ -255,55 +251,36 @@ Add a function resource to a Blueprint
 ```
 USAGE
   $ sanity blueprints add TYPE [--example <value> | -n <value> | --fn-type
-    document-create|document-delete|document-update|document-publish|media-librar
-    y-asset-create|media-library-asset-update|media-library-asset-delete... |
-    --language ts|js | --javascript | --fn-helpers | --fn-installer
+    document-create|document-delete|document-update|document-publish|media-library-asset-create|media-library-asset-upda
+    te|media-library-asset-delete... | --language ts|js | --javascript | --fn-helpers | --fn-installer
     skip|npm|pnpm|yarn] [-i | ]
 
 ARGUMENTS
   TYPE  (function) Type of resource to add (only "function" is supported)
 
 FLAGS
-  -i, --install
-      Shortcut for --fn-installer npm
-
-  -n, --name=<value>
-      Name of the resource to add
-
-  --example=<value>
-      Example to use for the function resource. Discover examples at
-      https://www.sanity.io/exchange/type=recipes/by=sanity
-
-  --[no-]fn-helpers
-      Add helpers to the new function
-
-  --fn-installer=<option>
-      Which package manager to use when installing the @sanity/functions helpers
-      <options: skip|npm|pnpm|yarn>
-
-  --fn-type=<option>...
-      Document change event(s) that should trigger the function; you can specify
-      multiple events by specifying this flag multiple times
-      <options:
-      document-create|document-delete|document-update|document-publish|media-librar
-      y-asset-create|media-library-asset-update|media-library-asset-delete>
-
-  --javascript
-      Use JavaScript instead of TypeScript
-
-  --language=<option>
-      [default: ts] Language of the new function
-      <options: ts|js>
+  -i, --install                Shortcut for --fn-installer npm
+  -n, --name=<value>           Name of the resource to add
+      --example=<value>        Example to use for the function resource. Discover examples at
+                               https://www.sanity.io/exchange/type=recipes/by=sanity
+      --[no-]fn-helpers        Add helpers to the new function
+      --fn-installer=<option>  Which package manager to use when installing the @sanity/functions helpers
+                               <options: skip|npm|pnpm|yarn>
+      --fn-type=<option>...    Document change event(s) that should trigger the function; you can specify multiple
+                               events by specifying this flag multiple times
+                               <options: document-create|document-delete|document-update|document-publish|media-library-
+                               asset-create|media-library-asset-update|media-library-asset-delete>
+      --javascript             Use JavaScript instead of TypeScript
+      --language=<option>      [default: ts] Language of the new function
+                               <options: ts|js>
 
 DESCRIPTION
   Add a function resource to a Blueprint
 
-  Scaffolds a new Sanity Function in your Blueprint. Functions are serverless
-  handlers triggered by document events (create, update, delete, publish) or
-  media library events.
+  Scaffolds a new Sanity Function in your Blueprint. Functions are serverless handlers triggered by document events
+  (create, update, delete, publish) or media library events.
 
-  After adding a function, use 'functions dev' to test locally, then 'blueprints
-  deploy' to publish it.
+  After adding a function, use 'functions dev' to test locally, then 'blueprints deploy' to publish it.
 
 EXAMPLES
   $ sanity blueprints add function
@@ -317,7 +294,7 @@ EXAMPLES
   $ sanity blueprints add function --name my-function --fn-type document-create --fn-type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/blueprints/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/add.ts)_
 
 ## `sanity blueprints config`
 
@@ -328,25 +305,19 @@ USAGE
   $ sanity blueprints config [--project-id <value> -e] [--stack-id <value> ]
 
 FLAGS
-  -e, --edit                Modify the configuration interactively, or directly
-                            when combined with ID flags.
-      --project-id=<value>  Directly set the project ID in the configuration.
-                            Requires --edit flag
-      --stack-id=<value>    Directly set the Stack ID in the configuration.
-                            Requires --edit flag
+  -e, --edit                Modify the configuration interactively, or directly when combined with ID flags.
+      --project-id=<value>  Directly set the project ID in the configuration. Requires --edit flag
+      --stack-id=<value>    Directly set the Stack ID in the configuration. Requires --edit flag
 
 DESCRIPTION
   View or edit the local Blueprint configuration
 
-  Manages the local Blueprint configuration, which links your Blueprint to a
-  Sanity project and Stack.
+  Manages the local Blueprint configuration, which links your Blueprint to a Sanity project and Stack.
 
-  Without flags, displays the current configuration. Use --edit to interactively
-  modify settings, or combine --edit with ID flags to update values directly
-  (useful for scripting and automation).
+  Without flags, displays the current configuration. Use --edit to interactively modify settings, or combine --edit with
+  ID flags to update values directly (useful for scripting and automation).
 
-  If you need to switch your Blueprint to a different Stack, use --edit
-  --stack-id.
+  If you need to switch your Blueprint to a different Stack, use --edit --stack-id.
 
 EXAMPLES
   $ sanity blueprints config
@@ -358,7 +329,7 @@ EXAMPLES
   $ sanity blueprints config --edit --project-id <projectId> --stack-id <stackId>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/blueprints/config.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/config.ts)_
 
 ## `sanity blueprints deploy`
 
@@ -374,16 +345,13 @@ FLAGS
 DESCRIPTION
   Deploy the local Blueprint to the remote Stack
 
-  Pushes your local Blueprint configuration to the remote Stack; provisioning,
-  updating, or destroying resources as needed. This is the primary command for
-  applying infrastructure changes.
+  Pushes your local Blueprint configuration to the remote Stack; provisioning, updating, or destroying resources as
+  needed. This is the primary command for applying infrastructure changes.
 
-  Before deploying, run 'blueprints plan' to preview changes. After deployment,
-  use 'blueprints info' to verify Stack status or 'blueprints logs' to monitor
-  activity.
+  Before deploying, run 'blueprints plan' to preview changes. After deployment, use 'blueprints info' to verify Stack
+  status or 'blueprints logs' to monitor activity.
 
-  Use --no-wait to queue the deployment and return immediately without waiting
-  for completion.
+  Use --no-wait to queue the deployment and return immediately without waiting for completion.
 
 EXAMPLES
   $ sanity blueprints deploy
@@ -391,7 +359,7 @@ EXAMPLES
   $ sanity blueprints deploy --no-wait
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/blueprints/deploy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/deploy.ts)_
 
 ## `sanity blueprints destroy`
 
@@ -399,8 +367,7 @@ Destroy the remote Stack deployment and its resources (will not delete local fil
 
 ```
 USAGE
-  $ sanity blueprints destroy [--project-id <value> --stack-id <value> --force]
-    [--no-wait]
+  $ sanity blueprints destroy [--project-id <value> --stack-id <value> --force] [--no-wait]
 
 FLAGS
   --force               Force Stack destruction (skip confirmation)
@@ -409,18 +376,14 @@ FLAGS
   --stack-id=<value>    Stack ID to destroy (defaults to current Stack)
 
 DESCRIPTION
-  Destroy the remote Stack deployment and its resources (will not delete local
-  files)
+  Destroy the remote Stack deployment and its resources (will not delete local files)
 
-  Permanently removes the remote Stack and all its provisioned resources. Your
-  local Blueprint files remain untouched, allowing you to redeploy later with
-  'blueprints init' + 'blueprints deploy'.
+  Permanently removes the remote Stack and all its provisioned resources. Your local Blueprint files remain untouched,
+  allowing you to redeploy later with 'blueprints init' + 'blueprints deploy'.
 
-  This is a destructive operation. You will be prompted to confirm unless --force
-  is specified.
+  This is a destructive operation. You will be prompted to confirm unless --force is specified.
 
-  Use this to clean up test environments or decommission a Stack you no longer
-  need.
+  Use this to clean up test environments or decommission a Stack you no longer need.
 
 EXAMPLES
   $ sanity blueprints destroy
@@ -428,7 +391,7 @@ EXAMPLES
   $ sanity blueprints destroy --stack-id <stackId> --project-id <projectId> --force --no-wait
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/blueprints/destroy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/destroy.ts)_
 
 ## `sanity blueprints doctor`
 
@@ -439,8 +402,7 @@ USAGE
   $ sanity blueprints doctor [--json] [-p <value>] [--verbose] [--fix]
 
 FLAGS
-  -p, --path=<value>  [env: SANITY_BLUEPRINT_PATH] Path to a Blueprint file or
-                      directory containing one
+  -p, --path=<value>  [env: SANITY_BLUEPRINT_PATH] Path to a Blueprint file or directory containing one
       --fix           Interactively fix configuration issues
       --json          Format output as json.
       --verbose       Verbose output
@@ -448,15 +410,14 @@ FLAGS
 DESCRIPTION
   Diagnose potential issues with local Blueprint and remote Stack configuration
 
-  Analyzes your local Blueprint and remote Stack configuration for common issues,
-  such as missing authentication, invalid project references, or misconfigured
-  resources.
+  Analyzes your local Blueprint and remote Stack configuration for common issues, such as missing authentication,
+  invalid project references, or misconfigured resources.
 
-  Run this command when encountering errors with other Blueprint commands. Use
-  --fix to interactively resolve detected issues.
+  Run this command when encountering errors with other Blueprint commands. Use --fix to interactively resolve detected
+  issues.
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/blueprints/doctor.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/doctor.ts)_
 
 ## `sanity blueprints info`
 
@@ -472,14 +433,13 @@ FLAGS
 DESCRIPTION
   Show information about the local Blueprint's remote Stack deployment
 
-  Displays the current state and metadata of your remote Stack deployment,
-  including deployed resources, status, and configuration.
+  Displays the current state and metadata of your remote Stack deployment, including deployed resources, status, and
+  configuration.
 
-  Use this command to verify a deployment succeeded, check what resources are
-  live, or confirm which Stack your local Blueprint is connected to.
+  Use this command to verify a deployment succeeded, check what resources are live, or confirm which Stack your local
+  Blueprint is connected to.
 
-  Run 'blueprints stacks' to see all available Stacks in your project or
-  organization.
+  Run 'blueprints stacks' to see all available Stacks in your project or organization.
 
 EXAMPLES
   $ sanity blueprints info
@@ -487,7 +447,7 @@ EXAMPLES
   $ sanity blueprints info --id <stackId>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/blueprints/info.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/info.ts)_
 
 ## `sanity blueprints init [DIR]`
 
@@ -495,42 +455,35 @@ Initialize a local Blueprint and optionally provision a remote Stack deployment
 
 ```
 USAGE
-  $ sanity blueprints init [DIR] [--verbose] [--dir <value>] [--example
-    <value> | --blueprint-type json|js|ts | --stack-id <value> | --stack-name
-    <value>] [--project-id <value>]
+  $ sanity blueprints init [DIR] [--verbose] [--dir <value>] [--example <value> | --blueprint-type json|js|ts |
+    --stack-id <value> | --stack-name <value>] [--project-id <value>]
 
 ARGUMENTS
   [DIR]  Directory to create the local Blueprint in
 
 FLAGS
-  --blueprint-type=<option>  Blueprint manifest type to use for the local
-                             Blueprint
+  --blueprint-type=<option>  Blueprint manifest type to use for the local Blueprint
                              <options: json|js|ts>
   --dir=<value>              Directory to create the local Blueprint in
   --example=<value>          Example to use for the local Blueprint
-  --project-id=<value>       Sanity project ID used to scope local Blueprint and
-                             remote Stack
+  --project-id=<value>       Sanity project ID used to scope local Blueprint and remote Stack
   --stack-id=<value>         Existing Stack ID used to scope local Blueprint
-  --stack-name=<value>       Name to use for a new Stack provisioned during
-                             initialization
+  --stack-name=<value>       Name to use for a new Stack provisioned during initialization
   --verbose                  Verbose output
 
 DESCRIPTION
   Initialize a local Blueprint and optionally provision a remote Stack deployment
 
-  A Blueprint is your local infrastructure-as-code configuration that defines
-  Sanity resources (datasets, functions, etc.). A Stack is the remote deployment
-  target where your Blueprint is applied.
+  A Blueprint is your local infrastructure-as-code configuration that defines Sanity resources (datasets, functions,
+  etc.). A Stack is the remote deployment target where your Blueprint is applied.
   [NOTE: Currently, accounts are limited to three (3) Stacks per project scope.]
 
-  This is typically the first command you run in a new project. It creates a
-  local Blueprint manifest file (sanity.blueprint.ts, .js, or .json) and
-  provisions a new remote Stack.
-  Additionally, a Blueprint configuration file is created in .sanity/ containing
-  the scope and Stack IDs. This is .gitignored by default.
+  This is typically the first command you run in a new project. It creates a local Blueprint manifest file
+  (sanity.blueprint.ts, .js, or .json) and provisions a new remote Stack.
+  Additionally, a Blueprint configuration file is created in .sanity/ containing the scope and Stack IDs. This is
+  .gitignored by default.
 
-  After initialization, use 'blueprints plan' to preview changes, then
-  'blueprints deploy' to apply them.
+  After initialization, use 'blueprints plan' to preview changes, then 'blueprints deploy' to apply them.
 
 EXAMPLES
   $ sanity blueprints init
@@ -544,7 +497,7 @@ EXAMPLES
   $ sanity blueprints init --blueprint-type <json|js|ts> --stack-name <stackName>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/blueprints/init.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/init.ts)_
 
 ## `sanity blueprints logs`
 
@@ -560,13 +513,11 @@ FLAGS
 DESCRIPTION
   Display logs for the current Blueprint's Stack deployment
 
-  Retrieves Stack deployment logs, useful for debugging and monitoring deployment
-  activity.
+  Retrieves Stack deployment logs, useful for debugging and monitoring deployment activity.
 
   Use --watch (-w) to stream logs in real-time.
 
-  If you're not seeing expected logs, verify your Stack is deployed with
-  'blueprints info'.
+  If you're not seeing expected logs, verify your Stack is deployed with 'blueprints info'.
 
 EXAMPLES
   $ sanity blueprints logs
@@ -574,7 +525,7 @@ EXAMPLES
   $ sanity blueprints logs --watch
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/blueprints/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/logs.ts)_
 
 ## `sanity blueprints plan`
 
@@ -585,21 +536,19 @@ USAGE
   $ sanity blueprints plan
 
 DESCRIPTION
-  Enumerate resources to be deployed to the remote Stack - will not modify any
-  resources
+  Enumerate resources to be deployed to the remote Stack - will not modify any resources
 
-  Use this command to preview what changes will be applied to your remote Stack
-  before deploying. This is a safe, read-only operation—no resources are created,
-  modified, or deleted.
+  Use this command to preview what changes will be applied to your remote Stack before deploying. This is a safe,
+  read-only operation—no resources are created, modified, or deleted.
 
-  Run 'blueprints plan' after making local changes to your Blueprint manifest to
-  verify the expected diff. When ready, run 'blueprints deploy' to apply changes.
+  Run 'blueprints plan' after making local changes to your Blueprint manifest to verify the expected diff. When ready,
+  run 'blueprints deploy' to apply changes.
 
 EXAMPLES
   $ sanity blueprints plan
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/blueprints/plan.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/plan.ts)_
 
 ## `sanity blueprints stacks`
 
@@ -613,14 +562,12 @@ FLAGS
   --project-id=<value>  Project ID to show Stack deployments for
 
 DESCRIPTION
-  List all remote Stack deployments (defaults to the current Blueprint's project
-  scope)
+  List all remote Stack deployments (defaults to the current Blueprint's project scope)
 
-  Shows all Stacks associated with a project or organization. By default, lists
-  Stacks scoped to the local Blueprint.
+  Shows all Stacks associated with a project or organization. By default, lists Stacks scoped to the local Blueprint.
 
-  Use this to discover existing Stacks you can scope a local Blueprint to (using
-  'blueprints config --edit'), or to audit what's deployed across your project.
+  Use this to discover existing Stacks you can scope a local Blueprint to (using 'blueprints config --edit'), or to
+  audit what's deployed across your project.
 
 EXAMPLES
   $ sanity blueprints stacks
@@ -630,7 +577,7 @@ EXAMPLES
   $ sanity blueprints stacks --organization-id <organizationId>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/blueprints/stacks.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/stacks.ts)_
 
 ## `sanity build [OUTPUTDIR]`
 
@@ -638,19 +585,16 @@ Builds the Sanity Studio configuration into a static bundle
 
 ```
 USAGE
-  $ sanity build [OUTPUTDIR] [--auto-updates] [--minify]
-    [--source-maps] [--stats] [-y]
+  $ sanity build [OUTPUTDIR] [--auto-updates] [--minify] [--source-maps] [--stats] [-y]
 
 ARGUMENTS
   [OUTPUTDIR]  Output directory
 
 FLAGS
-  -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt
-                           and otherwise uses defaults
+  -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Enable/disable auto updates of studio versions
       --[no-]minify        Enable/disable minifying of built bundles
-      --[no-]source-maps   Enable source maps for built bundles (increases size
-                           of bundle)
+      --[no-]source-maps   Enable source maps for built bundles (increases size of bundle)
       --stats              Show stats about the built bundles
 
 DESCRIPTION
@@ -662,7 +606,7 @@ EXAMPLES
   $ sanity build --no-minify --source-maps
 ```
 
-_See code: [src/commands/build.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/build.ts)_
+_See code: [src/commands/build.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/build.ts)_
 
 ## `sanity codemod [CODEMODNAME]`
 
@@ -670,16 +614,14 @@ Updates Sanity Studio codebase with a code modification script
 
 ```
 USAGE
-  $ sanity codemod [CODEMODNAME] [--dry] [--extensions <value>]
-    [--no-verify]
+  $ sanity codemod [CODEMODNAME] [--dry] [--extensions <value>] [--no-verify]
 
 ARGUMENTS
   [CODEMODNAME]  Name of the codemod to run
 
 FLAGS
   --dry                 Dry run (no changes are made to files)
-  --extensions=<value>  [default: js,ts,tsx] Transform files with these file
-                        extensions (comma separated)
+  --extensions=<value>  [default: js,ts,tsx] Transform files with these file extensions (comma separated)
   --no-verify           Skip verification steps before running codemod
 
 DESCRIPTION
@@ -695,7 +637,7 @@ EXAMPLES
     $ sanity codemod reactIconsV3 --dry
 ```
 
-_See code: [src/commands/codemod.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/codemod.ts)_
+_See code: [src/commands/codemod.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/codemod.ts)_
 
 ## `sanity cors add ORIGIN`
 
@@ -709,8 +651,7 @@ ARGUMENTS
   ORIGIN  Origin to allow (e.g., https://example.com)
 
 FLAGS
-  --[no-]credentials  Allow credentials (token/cookie) to be sent from this
-                      origin
+  --[no-]credentials  Allow credentials (token/cookie) to be sent from this origin
 
 DESCRIPTION
   Allow a new origin to use your project API through CORS
@@ -729,7 +670,7 @@ EXAMPLES
     $ sanity cors add https://myapp.com --credentials
 ```
 
-_See code: [src/commands/cors/add.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/cors/add.ts)_
+_See code: [src/commands/cors/add.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/cors/add.ts)_
 
 ## `sanity cors delete [ORIGIN]`
 
@@ -755,7 +696,7 @@ EXAMPLES
     $ sanity cors delete https://example.com
 ```
 
-_See code: [src/commands/cors/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/cors/delete.ts)_
+_See code: [src/commands/cors/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/cors/delete.ts)_
 
 ## `sanity cors list`
 
@@ -774,7 +715,7 @@ EXAMPLES
     $ sanity cors list
 ```
 
-_See code: [src/commands/cors/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/cors/list.ts)_
+_See code: [src/commands/cors/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/cors/list.ts)_
 
 ## `sanity dataset alias create [ALIASNAME] [TARGETDATASET]`
 
@@ -809,7 +750,7 @@ EXAMPLES
     $ sanity dataset alias create ~conference conf-2025
 ```
 
-_See code: [src/commands/dataset/alias/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dataset/alias/create.ts)_
+_See code: [src/commands/dataset/alias/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/alias/create.ts)_
 
 ## `sanity dataset alias delete ALIASNAME`
 
@@ -842,7 +783,7 @@ EXAMPLES
     $ sanity dataset alias delete conference --force
 ```
 
-_See code: [src/commands/dataset/alias/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dataset/alias/delete.ts)_
+_See code: [src/commands/dataset/alias/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/alias/delete.ts)_
 
 ## `sanity dataset alias link [ALIASNAME] [TARGETDATASET]`
 
@@ -884,7 +825,7 @@ EXAMPLES
     $ sanity dataset alias link conference conf-2025 --force
 ```
 
-_See code: [src/commands/dataset/alias/link.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dataset/alias/link.ts)_
+_See code: [src/commands/dataset/alias/link.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/alias/link.ts)_
 
 ## `sanity dataset alias unlink [ALIASNAME]`
 
@@ -921,7 +862,7 @@ EXAMPLES
     $ sanity dataset alias unlink conference --force
 ```
 
-_See code: [src/commands/dataset/alias/unlink.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dataset/alias/unlink.ts)_
+_See code: [src/commands/dataset/alias/unlink.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/alias/unlink.ts)_
 
 ## `sanity dataset copy [SOURCE] [TARGET]`
 
@@ -929,8 +870,8 @@ Manages dataset copying, including starting a new copy job, listing copy jobs an
 
 ```
 USAGE
-  $ sanity dataset copy [SOURCE] [TARGET] [--attach <value> | --list |
-    --detach | --skip-history] [--limit <value> ] [--offset <value> ]
+  $ sanity dataset copy [SOURCE] [TARGET] [--attach <value> | --list | --detach | --skip-history] [--limit <value>
+    ] [--offset <value> ]
 
 ARGUMENTS
   [SOURCE]  Name of the dataset to copy from
@@ -945,8 +886,8 @@ FLAGS
   --skip-history    Don't preserve document history on copy
 
 DESCRIPTION
-  Manages dataset copying, including starting a new copy job, listing copy jobs
-  and following the progress of a running copy job
+  Manages dataset copying, including starting a new copy job, listing copy jobs and following the progress of a running
+  copy job
 
 EXAMPLES
   Interactively copy a dataset
@@ -982,7 +923,7 @@ EXAMPLES
     $ sanity dataset copy --list --offset 2 --limit 10
 ```
 
-_See code: [src/commands/dataset/copy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dataset/copy.ts)_
+_See code: [src/commands/dataset/copy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/copy.ts)_
 
 ## `sanity dataset create [NAME]`
 
@@ -990,14 +931,16 @@ Create a new dataset within your project
 
 ```
 USAGE
-  $ sanity dataset create [NAME] [--visibility custom|private|public]
+  $ sanity dataset create [NAME] [--embeddings-projection <value> --embeddings] [--visibility custom|private|public]
 
 ARGUMENTS
   [NAME]  Name of the dataset to create
 
 FLAGS
-  --visibility=<option>  Set visibility for this dataset (custom/private/public)
-                         <options: custom|private|public>
+  --embeddings                     Enable embeddings for this dataset
+  --embeddings-projection=<value>  GROQ projection for embeddings indexing (e.g. "{ title, body }")
+  --visibility=<option>            Set visibility for this dataset (custom/private/public)
+                                   <options: custom|private|public>
 
 DESCRIPTION
   Create a new dataset within your project
@@ -1016,7 +959,7 @@ EXAMPLES
     $ sanity dataset create my-dataset --visibility private
 ```
 
-_See code: [src/commands/dataset/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dataset/create.ts)_
+_See code: [src/commands/dataset/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/create.ts)_
 
 ## `sanity dataset delete DATASETNAME`
 
@@ -1045,7 +988,85 @@ EXAMPLES
     $ sanity dataset delete my-dataset --force
 ```
 
-_See code: [src/commands/dataset/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dataset/delete.ts)_
+_See code: [src/commands/dataset/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/delete.ts)_
+
+## `sanity dataset embeddings disable [DATASET]`
+
+Disable embeddings for a dataset
+
+```
+USAGE
+  $ sanity dataset embeddings disable [DATASET]
+
+ARGUMENTS
+  [DATASET]  Dataset name to disable embeddings for
+
+DESCRIPTION
+  Disable embeddings for a dataset
+
+EXAMPLES
+  Disable embeddings for the production dataset
+
+    $ sanity dataset embeddings disable production
+```
+
+_See code: [src/commands/dataset/embeddings/disable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/embeddings/disable.ts)_
+
+## `sanity dataset embeddings enable [DATASET]`
+
+Enable embeddings for a dataset
+
+```
+USAGE
+  $ sanity dataset embeddings enable [DATASET] [--projection <value>] [--wait]
+
+ARGUMENTS
+  [DATASET]  Dataset name to enable embeddings for
+
+FLAGS
+  --projection=<value>  GROQ projection defining which fields to embed (e.g. "{ title, body }")
+  --wait                Wait for embeddings processing to complete before returning
+
+DESCRIPTION
+  Enable embeddings for a dataset
+
+EXAMPLES
+  Enable embeddings for the production dataset
+
+    $ sanity dataset embeddings enable production
+
+  Enable embeddings with a specific projection
+
+    $ sanity dataset embeddings enable production --projection "{ title, body }"
+
+  Enable embeddings and wait for processing to complete
+
+    $ sanity dataset embeddings enable production --wait
+```
+
+_See code: [src/commands/dataset/embeddings/enable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/embeddings/enable.ts)_
+
+## `sanity dataset embeddings status [DATASET]`
+
+Show embeddings settings and status for a dataset
+
+```
+USAGE
+  $ sanity dataset embeddings status [DATASET]
+
+ARGUMENTS
+  [DATASET]  The name of the dataset to check embeddings status for
+
+DESCRIPTION
+  Show embeddings settings and status for a dataset
+
+EXAMPLES
+  Show embeddings status for the production dataset
+
+    $ sanity dataset embeddings status production
+```
+
+_See code: [src/commands/dataset/embeddings/status.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/embeddings/status.ts)_
 
 ## `sanity dataset export [NAME] [DESTINATION]`
 
@@ -1053,9 +1074,8 @@ Export dataset to local filesystem as a gzipped tarball. Assets failing with HTT
 
 ```
 USAGE
-  $ sanity dataset export [NAME] [DESTINATION] [--asset-concurrency <value>]
-    [--mode stream|cursor] [--no-assets] [--no-compress] [--no-drafts]
-    [--overwrite] [--raw] [--types <value>]
+  $ sanity dataset export [NAME] [DESTINATION] [--asset-concurrency <value>] [--mode stream|cursor] [--no-assets]
+    [--no-compress] [--no-drafts] [--overwrite] [--raw] [--types <value>]
 
 ARGUMENTS
   [NAME]         Name of the dataset to export
@@ -1063,26 +1083,20 @@ ARGUMENTS
 
 FLAGS
   --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
-  --mode=<option>              [default: stream] Mode to export documents with
-                               `cursor` might be more performant for larger
-                               datasets, but might not be as accurate if the
-                               dataset is being modified during export
+  --mode=<option>              [default: stream] Mode to export documents with `cursor` might be more performant for
+                               larger datasets, but might not be as accurate if the dataset is being modified during
+                               export
                                <options: stream|cursor>
-  --no-assets                  Export only non-asset documents and remove
-                               references to image assets
-  --no-compress                Skips compressing tarball entries (still generates
-                               a gzip file)
+  --no-assets                  Export only non-asset documents and remove references to image assets
+  --no-compress                Skips compressing tarball entries (still generates a gzip file)
   --no-drafts                  Export only published versions of documents
   --overwrite                  Overwrite any file with the same name
-  --raw                        Extract only documents, without rewriting asset
-                               references
-  --types=<value>              Defines which document types to export
-                               (comma-separated)
+  --raw                        Extract only documents, without rewriting asset references
+  --types=<value>              Defines which document types to export (comma-separated)
 
 DESCRIPTION
-  Export dataset to local filesystem as a gzipped tarball. Assets failing with
-  HTTP status codes 401, 403 and 404 upon download are ignored and excluded from
-  export.
+  Export dataset to local filesystem as a gzipped tarball. Assets failing with HTTP status codes 401, 403 and 404 upon
+  download are ignored and excluded from export.
 
 EXAMPLES
   Export dataset "moviedb" to localPath.tar.gz
@@ -1102,7 +1116,7 @@ EXAMPLES
     $ sanity dataset export staging staging.tar.gz --types products,shops
 ```
 
-_See code: [src/commands/dataset/export.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dataset/export.ts)_
+_See code: [src/commands/dataset/export.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/export.ts)_
 
 ## `sanity dataset import SOURCE`
 
@@ -1110,11 +1124,9 @@ Import documents to a Sanity dataset
 
 ```
 USAGE
-  $ sanity dataset import SOURCE -p <value> -d <value> [-t <value>]
-    [--replace | --missing] [--allow-failing-assets]
-    [--allow-assets-in-different-dataset] [--replace-assets]
-    [--skip-cross-dataset-references] [--allow-replacement-characters]
-    [--allow-system-documents] [--asset-concurrency <value>]
+  $ sanity dataset import SOURCE -p <value> -d <value> [-t <value>] [--replace | --missing] [--allow-failing-assets]
+    [--allow-assets-in-different-dataset] [--replace-assets] [--skip-cross-dataset-references]
+    [--allow-replacement-characters] [--allow-system-documents] [--asset-concurrency <value>]
 
 ARGUMENTS
   SOURCE  Source file (use "-" for stdin)
@@ -1122,14 +1134,10 @@ ARGUMENTS
 FLAGS
   -d, --dataset=<value>                    (required) Dataset to import to
   -p, --project=<value>                    (required) Project ID to import to
-  -t, --token=<value>                      [env: SANITY_IMPORT_TOKEN] Token to
-                                           authenticate with
-      --allow-assets-in-different-dataset  Allow asset documents to reference
-                                           different project/dataset
-      --allow-failing-assets               Skip assets that cannot be
-                                           fetched/uploaded
-      --allow-replacement-characters       Allow unicode replacement characters
-                                           in imported documents
+  -t, --token=<value>                      [env: SANITY_IMPORT_TOKEN] Token to authenticate with
+      --allow-assets-in-different-dataset  Allow asset documents to reference different project/dataset
+      --allow-failing-assets               Skip assets that cannot be fetched/uploaded
+      --allow-replacement-characters       Allow unicode replacement characters in imported documents
       --allow-system-documents             Imports system documents
       --asset-concurrency=<value>          Number of parallel asset imports
       --missing                            Skip documents that already exist
@@ -1143,15 +1151,14 @@ DESCRIPTION
 EXAMPLES
   Import "./my-dataset.ndjson" into dataset "staging"
 
-    $ sanity dataset import -p myPrOj -d staging -t someSecretToken \
-      my-dataset.ndjson
+    $ sanity dataset import -p myPrOj -d staging -t someSecretToken my-dataset.ndjson
 
   Import into dataset "test" from stdin, read token from env var
 
     cat my-dataset.ndjson | sanity dataset import -p myPrOj -d test -
 ```
 
-_See code: [src/commands/dataset/import.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dataset/import.ts)_
+_See code: [src/commands/dataset/import.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/import.ts)_
 
 ## `sanity dataset list`
 
@@ -1170,7 +1177,7 @@ EXAMPLES
     $ sanity dataset list
 ```
 
-_See code: [src/commands/dataset/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dataset/list.ts)_
+_See code: [src/commands/dataset/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/list.ts)_
 
 ## `sanity dataset visibility get DATASET`
 
@@ -1192,7 +1199,7 @@ EXAMPLES
     $ sanity dataset visibility get my-dataset
 ```
 
-_See code: [src/commands/dataset/visibility/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dataset/visibility/get.ts)_
+_See code: [src/commands/dataset/visibility/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/visibility/get.ts)_
 
 ## `sanity dataset visibility set DATASET MODE`
 
@@ -1219,7 +1226,7 @@ EXAMPLES
     $ sanity dataset visibility set my-dataset public
 ```
 
-_See code: [src/commands/dataset/visibility/set.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dataset/visibility/set.ts)_
+_See code: [src/commands/dataset/visibility/set.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/visibility/set.ts)_
 
 ## `sanity debug`
 
@@ -1241,7 +1248,7 @@ EXAMPLES
   $ sanity debug --secrets
 ```
 
-_See code: [src/commands/debug.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/debug.ts)_
+_See code: [src/commands/debug.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/debug.ts)_
 
 ## `sanity deploy [SOURCEDIR]`
 
@@ -1249,23 +1256,19 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--minify]
-    [--schema-required] [--source-maps] [--verbose] [-y]
+  $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--minify] [--schema-required] [--source-maps]
+    [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
 
 FLAGS
-  -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt
-                           and otherwise uses defaults
+  -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
-      --[no-]build         Don't build the studio prior to deploy, instead
-                           deploying the version currently in `dist/`
-      --[no-]minify        Skip minifying built JavaScript (speeds up build,
-                           increases size of bundle)
+      --[no-]build         Don't build the studio prior to deploy, instead deploying the version currently in `dist/`
+      --[no-]minify        Skip minifying built JavaScript (speeds up build, increases size of bundle)
       --schema-required    Fail-fast deployment if schema store fails
-      --source-maps        Enable source maps for built bundles (increases size
-                           of bundle)
+      --source-maps        Enable source maps for built bundles (increases size of bundle)
       --verbose            Enable verbose logging
 
 DESCRIPTION
@@ -1280,13 +1283,12 @@ EXAMPLES
 
     $ sanity deploy --no-minify --source-maps
 
-  Fail fast on schema store fails - for when other services rely on the stored
-  schema
+  Fail fast on schema store fails - for when other services rely on the stored schema
 
     $ sanity deploy --schema-required
 ```
 
-_See code: [src/commands/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/deploy.ts)_
+_See code: [src/commands/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/deploy.ts)_
 
 ## `sanity dev`
 
@@ -1294,13 +1296,11 @@ Starts a local development server for Sanity Studio with live reloading
 
 ```
 USAGE
-  $ sanity dev [--auto-updates] [--host <value>]
-    [--load-in-dashboard] [--port <value>]
+  $ sanity dev [--auto-updates] [--host <value>] [--load-in-dashboard] [--port <value>]
 
 FLAGS
   --[no-]auto-updates       Automatically update Sanity Studio dependencies.
-  --host=<value>            [default: localhost] The local network interface at
-                            which to listen.
+  --host=<value>            [default: localhost] The local network interface at which to listen.
   --[no-]load-in-dashboard  Load the app/studio in the Sanity dashboard.
   --port=<value>            [default: 3333] TCP port to start server on.
 
@@ -1315,7 +1315,7 @@ EXAMPLES
   $ sanity dev --load-in-dashboard
 ```
 
-_See code: [src/commands/dev.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/dev.ts)_
+_See code: [src/commands/dev.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dev.ts)_
 
 ## `sanity docs browse`
 
@@ -1329,7 +1329,7 @@ DESCRIPTION
   Open Sanity docs in a web browser
 ```
 
-_See code: [src/commands/docs/browse.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/docs/browse.ts)_
+_See code: [src/commands/docs/browse.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/docs/browse.ts)_
 
 ## `sanity docs read PATH`
 
@@ -1366,7 +1366,7 @@ EXAMPLES
     $ sanity docs read https://www.sanity.io/docs/studio/installation -w
 ```
 
-_See code: [src/commands/docs/read.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/docs/read.ts)_
+_See code: [src/commands/docs/read.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/docs/read.ts)_
 
 ## `sanity docs search QUERY`
 
@@ -1399,7 +1399,7 @@ EXAMPLES
     $ sanity docs search "deployment" --limit=5
 ```
 
-_See code: [src/commands/docs/search.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/docs/search.ts)_
+_See code: [src/commands/docs/search.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/docs/search.ts)_
 
 ## `sanity documents create [FILE]`
 
@@ -1407,24 +1407,18 @@ Create one or more documents
 
 ```
 USAGE
-  $ sanity documents create [FILE] [-d <value>] [--id <value>] [--json5]
-    [--missing] [--replace] [--watch]
+  $ sanity documents create [FILE] [-d <value>] [--id <value>] [--json5] [--missing] [--replace] [--watch]
 
 ARGUMENTS
   [FILE]  JSON file to create document(s) from
 
 FLAGS
   -d, --dataset=<value>  Dataset to create document(s) in (overrides config)
-      --id=<value>       Specify a document ID to use. Will fetch remote document
-                         ID and populate editor.
-      --json5            Use JSON5 file type to allow a "simplified" version of
-                         JSON
-      --missing          On duplicate document IDs, don't modify the target
-                         document(s)
-      --replace          On duplicate document IDs, replace existing document
-                         with specified document(s)
-      --watch            Write the documents whenever the target file or buffer
-                         changes
+      --id=<value>       Specify a document ID to use. Will fetch remote document ID and populate editor.
+      --json5            Use JSON5 file type to allow a "simplified" version of JSON
+      --missing          On duplicate document IDs, don't modify the target document(s)
+      --replace          On duplicate document IDs, replace existing document with specified document(s)
+      --watch            Write the documents whenever the target file or buffer changes
 
 DESCRIPTION
   Create one or more documents
@@ -1438,19 +1432,18 @@ EXAMPLES
 
     $ sanity documents create
 
-  Fetch document with the ID "myDocId" and open configured $EDITOR with the
-  current document content (if any). Replace document with the edited version
-  when the editor closes
+  Fetch document with the ID "myDocId" and open configured $EDITOR with the current document content (if any). Replace
+  document with the edited version when the editor closes
 
     $ sanity documents create --id myDocId --replace
 
-  Open configured $EDITOR and replace the document with the given content on
-  each save. Use JSON5 file extension and parser for simplified syntax.
+  Open configured $EDITOR and replace the document with the given content on each save. Use JSON5 file extension and
+  parser for simplified syntax.
 
     $ sanity documents create --id myDocId --watch --replace --json5
 ```
 
-_See code: [src/commands/documents/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/documents/create.ts)_
+_See code: [src/commands/documents/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/documents/create.ts)_
 
 ## `sanity documents delete ID [IDS]`
 
@@ -1488,7 +1481,7 @@ EXAMPLES
     $ sanity documents delete doc1 doc2
 ```
 
-_See code: [src/commands/documents/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/documents/delete.ts)_
+_See code: [src/commands/documents/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/documents/delete.ts)_
 
 ## `sanity documents get DOCUMENTID`
 
@@ -1522,7 +1515,7 @@ EXAMPLES
     $ sanity documents get myDocId --dataset production
 ```
 
-_See code: [src/commands/documents/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/documents/get.ts)_
+_See code: [src/commands/documents/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/documents/get.ts)_
 
 ## `sanity documents query QUERY`
 
@@ -1530,8 +1523,7 @@ Query for documents
 
 ```
 USAGE
-  $ sanity documents query QUERY [--anonymous] [--api-version <value>] [-d
-    <value>] [--pretty] [-p <value>]
+  $ sanity documents query QUERY [--anonymous] [--api-version <value>] [-d <value>] [--pretty] [-p <value>]
 
 ARGUMENTS
   QUERY  GROQ query to run against the dataset
@@ -1540,8 +1532,7 @@ FLAGS
   -d, --dataset=<value>      Dataset to query (overrides config)
   -p, --project=<value>      Project ID to query (overrides config)
       --anonymous            Send the query without any authorization token
-      --api-version=<value>  [env: SANITY_CLI_QUERY_API_VERSION] API version to
-                             use (defaults to 2025-08-15)
+      --api-version=<value>  [env: SANITY_CLI_QUERY_API_VERSION] API version to use (defaults to 2025-08-15)
       --pretty               Colorize JSON output
 
 DESCRIPTION
@@ -1554,16 +1545,14 @@ EXAMPLES
 
   Fetch title of the oldest movie in the dataset named "staging"
 
-    $ sanity documents query '*[_type == "movie"]|order(releaseDate \
-      asc)[0]{title}' --dataset staging
+    $ sanity documents query '*[_type == "movie"]|order(releaseDate asc)[0]{title}' --dataset staging
 
   Use API version v2021-06-07 and do a query
 
-    $ sanity documents query '*[_id == "header"] { "headerText": \
-      pt::text(body) }' --api-version v2021-06-07
+    $ sanity documents query '*[_id == "header"] { "headerText": pt::text(body) }' --api-version v2021-06-07
 ```
 
-_See code: [src/commands/documents/query.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/documents/query.ts)_
+_See code: [src/commands/documents/query.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/documents/query.ts)_
 
 ## `sanity documents validate`
 
@@ -1571,35 +1560,25 @@ Validate documents in a dataset against the studio schema
 
 ```
 USAGE
-  $ sanity documents validate [-d <value>] [--file <value>] [--format <value>]
-    [--level error|warning|info] [--max-custom-validation-concurrency <value>]
-    [--max-fetch-concurrency <value>] [--workspace <value>] [-y]
+  $ sanity documents validate [-d <value>] [--file <value>] [--format <value>] [--level error|warning|info]
+    [--max-custom-validation-concurrency <value>] [--max-fetch-concurrency <value>] [--workspace <value>] [-y]
 
 FLAGS
-  -d, --dataset=<value>                            Override the dataset used. By
-                                                   default, this is derived from
-                                                   the given workspace
-  -y, --yes                                        Skips the first confirmation
-                                                   prompt
-      --file=<value>                               Provide a path to either an
-                                                   .ndjson file or a tarball
-                                                   containing an .ndjson file
-      --format=<value>                             The output format used to
-                                                   print the found validation
-                                                   markers and report progress
-      --level=<option>                             [default: warning] The minimum
-                                                   level reported out. Defaults
-                                                   to warning
+  -d, --dataset=<value>                            Override the dataset used. By default, this is derived from the given
+                                                   workspace
+  -y, --yes                                        Skips the first confirmation prompt
+      --file=<value>                               Provide a path to either an .ndjson file or a tarball containing an
+                                                   .ndjson file
+      --format=<value>                             The output format used to print the found validation markers and
+                                                   report progress
+      --level=<option>                             [default: warning] The minimum level reported out. Defaults to
+                                                   warning
                                                    <options: error|warning|info>
-      --max-custom-validation-concurrency=<value>  [default: 5] Specify how many
-                                                   custom validators can run
-                                                   concurrently
-      --max-fetch-concurrency=<value>              [default: 25] Specify how many
-                                                   `client.fetch` requests are
-                                                   allow concurrency at once
-      --workspace=<value>                          The name of the workspace to
-                                                   use when downloading and
-                                                   validating all documents
+      --max-custom-validation-concurrency=<value>  [default: 5] Specify how many custom validators can run concurrently
+      --max-fetch-concurrency=<value>              [default: 25] Specify how many `client.fetch` requests are allow
+                                                   concurrency at once
+      --workspace=<value>                          The name of the workspace to use when downloading and validating all
+                                                   documents
 
 DESCRIPTION
   Validate documents in a dataset against the studio schema
@@ -1622,7 +1601,7 @@ EXAMPLES
     $ sanity documents validate --level info
 ```
 
-_See code: [src/commands/documents/validate.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/documents/validate.ts)_
+_See code: [src/commands/documents/validate.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/documents/validate.ts)_
 
 ## `sanity exec SCRIPT`
 
@@ -1647,8 +1626,8 @@ EXAMPLES
 
     $ sanity exec some/script.js
 
-  Run the script at migrations/fullname.ts and configure `getCliClient()` from
-  `sanity/cli` to include the current user's token
+  Run the script at migrations/fullname.ts and configure `getCliClient()` from `sanity/cli` to include the current
+  user's token
 
     $ sanity exec migrations/fullname.ts --with-user-token
 
@@ -1656,16 +1635,14 @@ EXAMPLES
 
     $ sanity exec scripts/browserScript.js --mock-browser-env
 
-  Pass arbitrary arguments to scripts by separating them with a `--`. Arguments
-  are available in `process.argv` as they would in regular node scripts (eg the
-  following command would yield a `process.argv` of: `['/path/to/node',
+  Pass arbitrary arguments to scripts by separating them with a `--`. Arguments are available in `process.argv` as
+  they would in regular node scripts (eg the following command would yield a `process.argv` of: `['/path/to/node',
   '/path/to/myscript.js', '--dry-run', 'positional-argument']`)
 
-    $ sanity exec --mock-browser-env myscript.js -- --dry-run \
-      positional-argument
+    $ sanity exec --mock-browser-env myscript.js -- --dry-run positional-argument
 ```
 
-_See code: [src/commands/exec.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/exec.ts)_
+_See code: [src/commands/exec.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/exec.ts)_
 
 ## `sanity functions add`
 
@@ -1673,54 +1650,34 @@ Add a Function to your Blueprint
 
 ```
 USAGE
-  $ sanity functions add [--example <value> | -n <value> |  | --language
-    ts|js | --javascript |  | ] [--type
-    document-create|document-delete|document-update|document-publish|media-librar
-    y-asset-create|media-library-asset-update|media-library-asset-delete... ]
-    [--helpers] [--installer skip|npm|pnpm|yarn] [-i | ]
+  $ sanity functions add [--example <value> | -n <value> |  | --language ts|js | --javascript |  | ] [--type
+    document-create|document-delete|document-update|document-publish|media-library-asset-create|media-library-asset-upda
+    te|media-library-asset-delete... ] [--helpers] [--installer skip|npm|pnpm|yarn] [-i | ]
 
 FLAGS
-  -i, --install
-      Shortcut for --fn-installer npm
-
-  -n, --name=<value>
-      Name of the Function to add
-
-  --example=<value>
-      Example to use for the Function
-
-  --[no-]helpers
-      Add helpers to the new Function
-
-  --installer=<option>
-      How to install the @sanity/functions helpers
-      <options: skip|npm|pnpm|yarn>
-
-  --javascript
-      Use JavaScript instead of TypeScript
-
-  --language=<option>
-      [default: ts] Language of the new Function
-      <options: ts|js>
-
-  --type=<option>...
-      Document change event(s) that should trigger the function; you can specify
-      multiple events by specifying this flag multiple times
-      <options:
-      document-create|document-delete|document-update|document-publish|media-librar
-      y-asset-create|media-library-asset-update|media-library-asset-delete>
+  -i, --install             Shortcut for --fn-installer npm
+  -n, --name=<value>        Name of the Function to add
+      --example=<value>     Example to use for the Function
+      --[no-]helpers        Add helpers to the new Function
+      --installer=<option>  How to install the @sanity/functions helpers
+                            <options: skip|npm|pnpm|yarn>
+      --javascript          Use JavaScript instead of TypeScript
+      --language=<option>   [default: ts] Language of the new Function
+                            <options: ts|js>
+      --type=<option>...    Document change event(s) that should trigger the function; you can specify multiple events
+                            by specifying this flag multiple times
+                            <options: document-create|document-delete|document-update|document-publish|media-library-ass
+                            et-create|media-library-asset-update|media-library-asset-delete>
 
 DESCRIPTION
   Add a Function to your Blueprint
 
-  Scaffolds a new Function in the functions/ folder and templates a resource for
-  your Blueprint manifest.
+  Scaffolds a new Function in the functions/ folder and templates a resource for your Blueprint manifest.
 
-  Functions are serverless handlers triggered by document events (create, update,
-  delete, publish) or media library events.
+  Functions are serverless handlers triggered by document events (create, update, delete, publish) or media library
+  events.
 
-  After adding, use 'functions dev' to test locally, then 'blueprints deploy' to
-  publish.
+  After adding, use 'functions dev' to test locally, then 'blueprints deploy' to publish.
 
 EXAMPLES
   $ sanity functions add
@@ -1734,7 +1691,7 @@ EXAMPLES
   $ sanity functions add --name my-function --type document-create --type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/functions/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/add.ts)_
 
 ## `sanity functions dev`
 
@@ -1745,23 +1702,20 @@ USAGE
   $ sanity functions dev [-h <value>] [-p <value>] [-t <value>]
 
 FLAGS
-  -h, --host=<value>     The local network interface at which to listen.
-                         [default: "localhost"]
+  -h, --host=<value>     The local network interface at which to listen. [default: "localhost"]
   -p, --port=<value>     TCP port to start emulator on. [default: 8080]
-  -t, --timeout=<value>  Maximum execution time for all functions, in seconds.
-                         Takes precedence over function-specific `timeout`
+  -t, --timeout=<value>  Maximum execution time for all functions, in seconds. Takes precedence over function-specific
+                         `timeout`
 
 DESCRIPTION
   Start the Sanity Function emulator
 
-  Runs a local, web-based development server to test your functions before
-  deploying.
+  Runs a local, web-based development server to test your functions before deploying.
 
-  Open the emulator in your browser to interactively test your functions with the
-  payload editor.
+  Open the emulator in your browser to interactively test your functions with the payload editor.
 
-  Optionally, set the host and port with the --host and --port flags. Function
-  timeout can be configured with the --timeout flag.
+  Optionally, set the host and port with the --host and --port flags. Function timeout can be configured with the
+  --timeout flag.
 
   To invoke a function with the CLI, use 'functions test'.
 
@@ -1771,7 +1725,7 @@ EXAMPLES
   $ sanity functions dev --timeout 60
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/functions/dev.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/dev.ts)_
 
 ## `sanity functions env add NAME KEY VALUE`
 
@@ -1789,18 +1743,16 @@ ARGUMENTS
 DESCRIPTION
   Add or set an environment variable for a deployed function
 
-  Sets an environment variable in a deployed Sanity Function. If the variable
-  already exists, its value is updated.
+  Sets an environment variable in a deployed Sanity Function. If the variable already exists, its value is updated.
 
-  Environment variables are useful for API keys, configuration values, and other
-  secrets that shouldn't be hardcoded. Changes take effect on the next function
-  invocation.
+  Environment variables are useful for API keys, configuration values, and other secrets that shouldn't be hardcoded.
+  Changes take effect on the next function invocation.
 
 EXAMPLES
   $ sanity functions env add MyFunction API_URL https://api.example.com/
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/functions/env/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/env/add.ts)_
 
 ## `sanity functions env list NAME`
 
@@ -1816,17 +1768,15 @@ ARGUMENTS
 DESCRIPTION
   List environment variables for a deployed function
 
-  Displays all environment variables (keys only) configured in a deployed Sanity
-  Function.
+  Displays all environment variables (keys only) configured in a deployed Sanity Function.
 
-  Use 'functions env add' to set variables or 'functions env remove' to delete
-  them.
+  Use 'functions env add' to set variables or 'functions env remove' to delete them.
 
 EXAMPLES
   $ sanity functions env list MyFunction
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/functions/env/list.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/env/list.ts)_
 
 ## `sanity functions env remove NAME KEY`
 
@@ -1843,8 +1793,8 @@ ARGUMENTS
 DESCRIPTION
   Remove an environment variable from a deployed function
 
-  Deletes an environment variable from a deployed Sanity Function. The change
-  takes effect on the next function invocation.
+  Deletes an environment variable from a deployed Sanity Function. The change takes effect on the next function
+  invocation.
 
   Use 'functions env list' to see current variables before removing.
 
@@ -1852,7 +1802,7 @@ EXAMPLES
   $ sanity functions env remove MyFunction API_URL
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/functions/env/remove.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/env/remove.ts)_
 
 ## `sanity functions logs [NAME]`
 
@@ -1876,11 +1826,10 @@ FLAGS
 DESCRIPTION
   Retrieve or delete logs for a Sanity Function
 
-  Fetches execution logs from a deployed function, useful for debugging
-  production issues or monitoring activity.
+  Fetches execution logs from a deployed function, useful for debugging production issues or monitoring activity.
 
-  Use --watch (-w) to stream logs in real-time. Use --delete to clear all logs
-  for a function (requires confirmation unless --force is specified).
+  Use --watch (-w) to stream logs in real-time. Use --delete to clear all logs for a function (requires confirmation
+  unless --force is specified).
 
 EXAMPLES
   $ sanity functions logs <name>
@@ -1892,7 +1841,7 @@ EXAMPLES
   $ sanity functions logs <name> --delete
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/functions/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/logs.ts)_
 
 ## `sanity functions test [NAME]`
 
@@ -1900,12 +1849,10 @@ Invoke a local Sanity Function
 
 ```
 USAGE
-  $ sanity functions test [NAME] [--data-before <value> | [-d <value> | -f
-    <value> | --document-id <value>] |  |  | --file-before <value> | --file-after
-    <value> | --document-id-before <value> | --document-id-after <value>]
-    [--data-after <value> |  |  |  |  |  |  | ] [-e create|update|delete] [-t
-    <value>] [-a <value>] [--with-user-token] [--media-library-id <value> |
-    --project-id <value> | --dataset <value>]
+  $ sanity functions test [NAME] [--data-before <value> | [-d <value> | -f <value> | --document-id <value>] |  |  |
+    --file-before <value> | --file-after <value> | --document-id-before <value> | --document-id-after <value>]
+    [--data-after <value> |  |  |  |  |  |  | ] [-e create|update|delete] [-t <value>] [-a <value>] [--with-user-token]
+    [--media-library-id <value> | --project-id <value> | --dataset <value>]
 
 ARGUMENTS
   [NAME]  The name of the Sanity Function
@@ -1932,12 +1879,11 @@ FLAGS
 DESCRIPTION
   Invoke a local Sanity Function
 
-  Executes a function locally with the provided payload, simulating how it would
-  run when deployed. Use this to test your function logic before deploying.
+  Executes a function locally with the provided payload, simulating how it would run when deployed. Use this to test
+  your function logic before deploying.
 
-  Provide test data via --data (inline JSON), --file (JSON file), or
-  --document-id (fetch from Sanity). For update events, use the before/after flag
-  pairs to simulate document changes.
+  Provide test data via --data (inline JSON), --file (JSON file), or --document-id (fetch from Sanity). For update
+  events, use the before/after flag pairs to simulate document changes.
 
 EXAMPLES
   $ sanity functions test <name> --data '{ "id": 1 }'
@@ -1949,7 +1895,7 @@ EXAMPLES
   $ sanity functions test <name> --event update --data-before '{ "title": "before" }' --data-after '{ "title": "after" }'
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.0/src/commands/functions/test.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/test.ts)_
 
 ## `sanity graphql deploy`
 
@@ -1957,24 +1903,21 @@ Deploy a GraphQL API from the current Sanity schema
 
 ```
 USAGE
-  $ sanity graphql deploy [--api <value>...] [--dataset <value>] [--dry-run]
-    [--force] [--generation gen1|gen2|gen3] [--non-null-document-fields]
-    [--playground] [--tag <value>] [--with-union-cache]
+  $ sanity graphql deploy [--api <value>...] [--dataset <value>] [--dry-run] [--force] [--generation gen1|gen2|gen3]
+    [--non-null-document-fields] [--playground] [--tag <value>] [--with-union-cache]
 
 FLAGS
-  --api=<value>...            Only deploy API with this ID. Can be specified
-                              multiple times.
+  --api=<value>...            Only deploy API with this ID. Can be specified multiple times.
   --dataset=<value>           Deploy API for the given dataset
-  --dry-run                   Validate defined GraphQL APIs, check for breaking
-                              changes, skip deploy
+  --dry-run                   Validate defined GraphQL APIs, check for breaking changes, skip deploy
   --force                     Deploy API without confirming breaking changes
   --generation=<option>       API generation to deploy (defaults to "gen3")
                               <options: gen1|gen2|gen3>
   --non-null-document-fields  Use non-null document fields (_id, _type etc)
   --[no-]playground           Enable GraphQL playground for easier debugging
   --tag=<value>               Deploy API(s) to given tag (defaults to "default")
-  --with-union-cache          Enable union cache that optimizes schema generation
-                              for schemas with many self referencing types
+  --with-union-cache          Enable union cache that optimizes schema generation for schemas with many self referencing
+                              types
 
 DESCRIPTION
   Deploy a GraphQL API from the current Sanity schema
@@ -1997,7 +1940,7 @@ EXAMPLES
     $ sanity graphql deploy --playground
 ```
 
-_See code: [src/commands/graphql/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/graphql/deploy.ts)_
+_See code: [src/commands/graphql/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/graphql/deploy.ts)_
 
 ## `sanity graphql list`
 
@@ -2016,7 +1959,7 @@ EXAMPLES
     $ sanity graphql list
 ```
 
-_See code: [src/commands/graphql/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/graphql/list.ts)_
+_See code: [src/commands/graphql/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/graphql/list.ts)_
 
 ## `sanity graphql undeploy`
 
@@ -2024,12 +1967,10 @@ Remove a deployed GraphQL API
 
 ```
 USAGE
-  $ sanity graphql undeploy [--api <value>] [--dataset <value>] [--force]
-    [--project <value>] [--tag <value>]
+  $ sanity graphql undeploy [--api <value>] [--dataset <value>] [--force] [--project <value>] [--tag <value>]
 
 FLAGS
-  --api=<value>      Undeploy API with this ID (project, dataset and tag flags
-                     take precedence)
+  --api=<value>      Undeploy API with this ID (project, dataset and tag flags take precedence)
   --dataset=<value>  Dataset to undeploy GraphQL API from
   --force            Skip confirmation prompt
   --project=<value>  Project ID to delete GraphQL API for
@@ -2060,7 +2001,7 @@ EXAMPLES
     $ sanity graphql undeploy --force
 ```
 
-_See code: [src/commands/graphql/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/graphql/undeploy.ts)_
+_See code: [src/commands/graphql/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/graphql/undeploy.ts)_
 
 ## `sanity help [COMMAND]`
 
@@ -2102,7 +2043,7 @@ EXAMPLES
     $ sanity hook attempt abc123
 ```
 
-_See code: [src/commands/hook/attempt.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/hook/attempt.ts)_
+_See code: [src/commands/hook/attempt.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/hook/attempt.ts)_
 
 ## `sanity hook create`
 
@@ -2121,7 +2062,7 @@ EXAMPLES
     $ sanity hook create
 ```
 
-_See code: [src/commands/hook/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/hook/create.ts)_
+_See code: [src/commands/hook/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/hook/create.ts)_
 
 ## `sanity hook delete [NAME]`
 
@@ -2147,7 +2088,7 @@ EXAMPLES
     $ sanity hook delete my-hook
 ```
 
-_See code: [src/commands/hook/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/hook/delete.ts)_
+_See code: [src/commands/hook/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/hook/delete.ts)_
 
 ## `sanity hook list`
 
@@ -2166,7 +2107,7 @@ EXAMPLES
     $ sanity hook list
 ```
 
-_See code: [src/commands/hook/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/hook/list.ts)_
+_See code: [src/commands/hook/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/hook/list.ts)_
 
 ## `sanity hook logs [NAME]`
 
@@ -2195,7 +2136,7 @@ EXAMPLES
     $ sanity hook logs [NAME]
 ```
 
-_See code: [src/commands/hook/logs.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/hook/logs.ts)_
+_See code: [src/commands/hook/logs.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/hook/logs.ts)_
 
 ## `sanity init`
 
@@ -2203,36 +2144,28 @@ Initialize a new Sanity Studio, project and/or app
 
 ```
 USAGE
-  $ sanity init [--json] [--auto-updates | --bare] [--coupon <code>
-    | --project-plan <name>] [--dataset <name> | --dataset-default] [--env
-    <filename> | ] [--git <message> | ] [--mcp] [--nextjs-add-config-files]
-    [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>]
-    [--output-path <path> | ] [--overwrite-files] [--package-manager <manager> |
-    ] [--project <id> | --create-project <name>] [--provider <provider>]
-    [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
+  $ sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dataset
+    <name> | --dataset-default] [--env <filename> | ] [--git <message> | ] [--mcp] [--nextjs-add-config-files]
+    [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>] [--output-path <path> | ] [--overwrite-files]
+    [--package-manager <manager> | ] [--project <id> | --create-project <name>] [--provider <provider>] [--template
+    <template> | ] [--typescript | ] [--visibility <mode>] [-y]
 
 FLAGS
-  -y, --yes                        Unattended mode, answers "yes" to any "yes/no"
-                                   prompt and otherwise uses defaults
+  -y, --yes                        Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates          Enable auto updates of studio versions
-      --bare                       Skip the Studio initialization and only print
-                                   the selected project ID and dataset name to
-                                   stdout
-      --coupon=<code>              Optionally select a coupon for a new project
-                                   (cannot be used with --project-plan)
+      --bare                       Skip the Studio initialization and only print the selected project ID and dataset
+                                   name to stdout
+      --coupon=<code>              Optionally select a coupon for a new project (cannot be used with --project-plan)
       --create-project=<name>      Create a new project with the given name
       --dataset=<name>             Dataset name for the studio
-      --dataset-default            Set up a project with a public dataset named
-                                   "production"
+      --dataset-default            Set up a project with a public dataset named "production"
       --env=<filename>             Write environment variables to file
-      --[no-]git=<message>         Specify a commit message for initial commit,
-                                   or disable git init
+      --[no-]git=<message>         Specify a commit message for initial commit, or disable git init
       --[no-]mcp                   Enable AI editor integration (MCP) setup
       --organization=<id>          Organization ID to use for the project
       --output-path=<path>         Path to write studio project to
       --[no-]overwrite-files       Overwrite existing files
-      --package-manager=<manager>  Specify which package manager to use [allowed:
-                                   npm, yarn, pnpm]
+      --package-manager=<manager>  Specify which package manager to use [allowed: npm, yarn, pnpm]
       --project=<id>               Project ID to use for the studio
       --project-plan=<name>        Optionally select a plan for a new project
       --provider=<provider>        Login provider to use
@@ -2260,23 +2193,19 @@ EXAMPLES
 
   Initialize a project with the given project ID and dataset to the given path
 
-    $ sanity init -y --project abc123 --dataset production --output-path \
-      ~/myproj
+    $ sanity init -y --project abc123 --dataset production --output-path ~/myproj
 
-  Initialize a project with the given project ID and dataset using the moviedb
-  template to the given path
+  Initialize a project with the given project ID and dataset using the moviedb template to the given path
 
-    $ sanity init -y --project abc123 --dataset staging --template moviedb \
-      --output-path .
+    $ sanity init -y --project abc123 --dataset staging --template moviedb --output-path .
 
   Create a brand new project with name "Movies Unlimited"
 
-    $ sanity init -y --create-project "Movies Unlimited" --dataset moviedb \
-      --visibility private --template moviedb --output-path \
-      /Users/espenh/movies-unlimited
+    $ sanity init -y --create-project "Movies Unlimited" --dataset moviedb --visibility private --template moviedb \
+      --output-path /Users/espenh/movies-unlimited
 ```
 
-_See code: [src/commands/init.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/init.ts)_
+_See code: [src/commands/init.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/init.ts)_
 
 ## `sanity install [PACKAGES]`
 
@@ -2300,7 +2229,7 @@ EXAMPLES
   $ sanity install some-package another-package
 ```
 
-_See code: [src/commands/install.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/install.ts)_
+_See code: [src/commands/install.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/install.ts)_
 
 ## `sanity learn`
 
@@ -2314,7 +2243,7 @@ DESCRIPTION
   Opens Sanity Learn in your web browser
 ```
 
-_See code: [src/commands/learn.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/learn.ts)_
+_See code: [src/commands/learn.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/learn.ts)_
 
 ## `sanity login`
 
@@ -2325,11 +2254,9 @@ USAGE
   $ sanity login [--open] [--provider <providerId>] [--sso <slug>]
 
 FLAGS
-  --[no-]open              Open a browser window to log in (`--no-open` only
-                           prints URL)
+  --[no-]open              Open a browser window to log in (`--no-open` only prints URL)
   --provider=<providerId>  Log in using the given provider
-  --sso=<slug>             Log in using Single Sign-On, using the given
-                           organization slug
+  --sso=<slug>             Log in using Single Sign-On, using the given organization slug
 
 DESCRIPTION
   Authenticates the CLI for access to Sanity projects
@@ -2348,7 +2275,7 @@ EXAMPLES
     $ sanity login --provider github --no-open
 ```
 
-_See code: [src/commands/login.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/login.ts)_
+_See code: [src/commands/login.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/login.ts)_
 
 ## `sanity logout`
 
@@ -2362,7 +2289,7 @@ DESCRIPTION
   Logs out the CLI from the current user session
 ```
 
-_See code: [src/commands/logout.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/logout.ts)_
+_See code: [src/commands/logout.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/logout.ts)_
 
 ## `sanity manage`
 
@@ -2376,7 +2303,7 @@ DESCRIPTION
   Opens project management interface in your web browser
 ```
 
-_See code: [src/commands/manage.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/manage.ts)_
+_See code: [src/commands/manage.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/manage.ts)_
 
 ## `sanity manifest extract`
 
@@ -2387,14 +2314,12 @@ USAGE
   $ sanity manifest extract [--path <value>]
 
 FLAGS
-  --path=<value>  [default: /dist/static] Optional path to specify destination
-                  directory of the manifest files
+  --path=<value>  [default: /dist/static] Optional path to specify destination directory of the manifest files
 
 DESCRIPTION
   Extracts the studio configuration as one or more JSON manifest files.
 
-  **Note**: This command is experimental and subject to change. It is currently
-  intended for use with Create only.
+  **Note**: This command is experimental and subject to change. It is currently intended for use with Create only.
 
 EXAMPLES
   Extracts manifests
@@ -2406,7 +2331,7 @@ EXAMPLES
     $ sanity manifest extract --path /public/static
 ```
 
-_See code: [src/commands/manifest/extract.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/manifest/extract.ts)_
+_See code: [src/commands/manifest/extract.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/manifest/extract.ts)_
 
 ## `sanity mcp configure`
 
@@ -2417,8 +2342,7 @@ USAGE
   $ sanity mcp configure
 
 DESCRIPTION
-  Configure Sanity MCP server for AI editors (Claude Code, Codex CLI, Cursor,
-  Gemini CLI, GitHub Copilot CLI, VS Code)
+  Configure Sanity MCP server for AI editors (Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code)
 
 EXAMPLES
   Configure Sanity MCP server for detected AI editors
@@ -2426,7 +2350,7 @@ EXAMPLES
     $ sanity mcp configure
 ```
 
-_See code: [src/commands/mcp/configure.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/mcp/configure.ts)_
+_See code: [src/commands/mcp/configure.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/mcp/configure.ts)_
 
 ## `sanity media create-aspect`
 
@@ -2445,7 +2369,7 @@ EXAMPLES
     $ sanity media create-aspect
 ```
 
-_See code: [src/commands/media/create-aspect.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/media/create-aspect.ts)_
+_See code: [src/commands/media/create-aspect.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/media/create-aspect.ts)_
 
 ## `sanity media delete-aspect ASPECTNAME`
 
@@ -2471,7 +2395,7 @@ EXAMPLES
     $ sanity media delete-aspect someAspect
 ```
 
-_See code: [src/commands/media/delete-aspect.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/media/delete-aspect.ts)_
+_See code: [src/commands/media/delete-aspect.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/media/delete-aspect.ts)_
 
 ## `sanity media deploy-aspect [ASPECTNAME]`
 
@@ -2501,7 +2425,7 @@ EXAMPLES
     $ sanity media deploy-aspect --all
 ```
 
-_See code: [src/commands/media/deploy-aspect.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/media/deploy-aspect.ts)_
+_See code: [src/commands/media/deploy-aspect.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/media/deploy-aspect.ts)_
 
 ## `sanity media export [DESTINATION]`
 
@@ -2509,8 +2433,8 @@ Export an archive of all file and image assets including their aspect data from 
 
 ```
 USAGE
-  $ sanity media export [DESTINATION] [--asset-concurrency <value>]
-    [--media-library-id <value>] [--no-compress] [--overwrite]
+  $ sanity media export [DESTINATION] [--asset-concurrency <value>] [--media-library-id <value>] [--no-compress]
+    [--overwrite]
 
 ARGUMENTS
   [DESTINATION]  Output destination file path
@@ -2518,13 +2442,12 @@ ARGUMENTS
 FLAGS
   --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
   --media-library-id=<value>   The id of the target media library
-  --no-compress                Skips compressing tarball entries (still generates
-                               a gzip file)
+  --no-compress                Skips compressing tarball entries (still generates a gzip file)
   --overwrite                  Overwrite any file with the same name
 
 DESCRIPTION
-  Export an archive of all file and image assets including their aspect data from
-  the target media library. Video assets are excluded from the export.
+  Export an archive of all file and image assets including their aspect data from the target media library. Video assets
+  are excluded from the export.
 
 EXAMPLES
   Export media library interactively
@@ -2540,7 +2463,7 @@ EXAMPLES
     $ sanity media export --media-library-id my-library-id
 ```
 
-_See code: [src/commands/media/export.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/media/export.ts)_
+_See code: [src/commands/media/export.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/media/export.ts)_
 
 ## `sanity media import SOURCE`
 
@@ -2548,16 +2471,15 @@ Import a set of assets to the target media library.
 
 ```
 USAGE
-  $ sanity media import SOURCE [--media-library-id <value>]
-    [--replace-aspects]
+  $ sanity media import SOURCE [--media-library-id <value>] [--replace-aspects]
 
 ARGUMENTS
   SOURCE  Image file or folder to import from
 
 FLAGS
   --media-library-id=<value>  The id of the target media library
-  --replace-aspects           Replace existing aspect data. All versions will be
-                              replaced (e.g. published and draft aspect data)
+  --replace-aspects           Replace existing aspect data. All versions will be replaced (e.g. published and draft
+                              aspect data)
 
 DESCRIPTION
   Import a set of assets to the target media library.
@@ -2576,7 +2498,7 @@ EXAMPLES
     $ sanity media import products --replace-aspects
 ```
 
-_See code: [src/commands/media/import.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/media/import.ts)_
+_See code: [src/commands/media/import.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/media/import.ts)_
 
 ## `sanity migration create [TITLE]`
 
@@ -2629,31 +2551,24 @@ Run a migration against a dataset
 
 ```
 USAGE
-  $ sanity migration run [ID] [--api-version <value>] [--concurrency
-    <value>] [--confirm] [--dataset <value>] [--dry-run] [--from-export <value>]
-    [--progress] [--project <value>]
+  $ sanity migration run [ID] [--api-version <value>] [--concurrency <value>] [--confirm] [--dataset <value>]
+    [--dry-run] [--from-export <value>] [--progress] [--project <value>]
 
 ARGUMENTS
   [ID]  ID
 
 FLAGS
-  --api-version=<value>  API version to use when migrating. Defaults to
-                         v2024-01-29.
-  --concurrency=<value>  [default: 6] How many mutation requests to run in
-                         parallel. Must be between 1 and 10. Default: 6.
-  --[no-]confirm         Prompt for confirmation before running the migration
-                         (default: true). Use --no-confirm to skip.
-  --dataset=<value>      Dataset to migrate. Defaults to the dataset configured
-                         in your Sanity CLI config.
-  --[no-]dry-run         By default the migration runs in dry mode. Use
-                         --no-dry-run to migrate dataset.
-  --from-export=<value>  Use a local dataset export as source for migration
-                         instead of calling the Sanity API. Note: this is only
-                         supported for dry runs.
-  --[no-]progress        Display progress during migration (default: true). Use
-                         --no-progress to hide output.
-  --project=<value>      Project ID of the dataset to migrate. Defaults to the
-                         projectId configured in your Sanity CLI config.
+  --api-version=<value>  API version to use when migrating. Defaults to v2024-01-29.
+  --concurrency=<value>  [default: 6] How many mutation requests to run in parallel. Must be between 1 and 10. Default:
+                         6.
+  --[no-]confirm         Prompt for confirmation before running the migration (default: true). Use --no-confirm to skip.
+  --dataset=<value>      Dataset to migrate. Defaults to the dataset configured in your Sanity CLI config.
+  --[no-]dry-run         By default the migration runs in dry mode. Use --no-dry-run to migrate dataset.
+  --from-export=<value>  Use a local dataset export as source for migration instead of calling the Sanity API. Note:
+                         this is only supported for dry runs.
+  --[no-]progress        Display progress during migration (default: true). Use --no-progress to hide output.
+  --project=<value>      Project ID of the dataset to migrate. Defaults to the projectId configured in your Sanity CLI
+                         config.
 
 DESCRIPTION
   Run a migration against a dataset
@@ -2669,8 +2584,7 @@ EXAMPLES
 
   execute the migration using a dataset export as the source
 
-    $ sanity migration run <id> --from-export=production.tar.gz --no-dry-run \
-      --project xyz --dataset staging
+    $ sanity migration run <id> --from-export=production.tar.gz --no-dry-run --project xyz --dataset staging
 ```
 
 _See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/run.ts)_
@@ -2712,7 +2626,7 @@ EXAMPLES
     $ sanity openapi get query > query-api.yaml
 ```
 
-_See code: [src/commands/openapi/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/openapi/get.ts)_
+_See code: [src/commands/openapi/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/openapi/get.ts)_
 
 ## `sanity openapi list`
 
@@ -2743,7 +2657,7 @@ EXAMPLES
     $ sanity openapi list --web
 ```
 
-_See code: [src/commands/openapi/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/openapi/list.ts)_
+_See code: [src/commands/openapi/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/openapi/list.ts)_
 
 ## `sanity preview [OUTPUTDIR]`
 
@@ -2757,8 +2671,7 @@ ARGUMENTS
   [OUTPUTDIR]  Output directory
 
 FLAGS
-  --host=<value>  [default: localhost] The local network interface at which to
-                  listen.
+  --host=<value>  [default: localhost] The local network interface at which to listen.
   --port=<value>  [default: 3333] TCP port to start server on.
 
 DESCRIPTION
@@ -2775,7 +2688,7 @@ EXAMPLES
   $ sanity preview some/build-output-dir
 ```
 
-_See code: [src/commands/preview.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/preview.ts)_
+_See code: [src/commands/preview.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/preview.ts)_
 
 ## `sanity projects create [PROJECTNAME]`
 
@@ -2783,19 +2696,16 @@ Create a new Sanity project
 
 ```
 USAGE
-  $ sanity projects create [PROJECTNAME] [--dataset <value>]
-    [--dataset-visibility private|public] [--json] [--organization <slug|id>]
-    [-y]
+  $ sanity projects create [PROJECTNAME] [--dataset <value>] [--dataset-visibility private|public] [--json]
+    [--organization <slug|id>] [-y]
 
 ARGUMENTS
   [PROJECTNAME]  Name of the project to create
 
 FLAGS
-  -y, --yes                          Skip prompts and use defaults (project: "My
-                                     Sanity Project", dataset: production,
+  -y, --yes                          Skip prompts and use defaults (project: "My Sanity Project", dataset: production,
                                      visibility: public)
-      --dataset=<value>              Create a dataset. Prompts for visibility
-                                     unless specified or --yes used
+      --dataset=<value>              Create a dataset. Prompts for visibility unless specified or --yes used
       --dataset-visibility=<option>  Dataset visibility: public or private
                                      <options: private|public>
       --json                         Output in JSON format
@@ -2819,15 +2729,14 @@ EXAMPLES
 
   Create a project with a private dataset named "staging"
 
-    $ sanity projects create "My Project" --dataset=staging \
-      --dataset-visibility=private
+    $ sanity projects create "My Project" --dataset=staging --dataset-visibility=private
 
   Create a project non-interactively with JSON output
 
     $ sanity projects create "CI Project" --yes --json
 ```
 
-_See code: [src/commands/projects/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/projects/create.ts)_
+_See code: [src/commands/projects/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/projects/create.ts)_
 
 ## `sanity projects list`
 
@@ -2835,8 +2744,7 @@ Lists projects connected to your user
 
 ```
 USAGE
-  $ sanity projects list [--order asc|desc] [--sort
-    id|members|name|url|created]
+  $ sanity projects list [--order asc|desc] [--sort id|members|name|url|created]
 
 FLAGS
   --order=<option>  [default: desc]
@@ -2857,7 +2765,7 @@ EXAMPLES
     $ sanity projects list --sort=members --order=asc
 ```
 
-_See code: [src/commands/projects/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/projects/list.ts)_
+_See code: [src/commands/projects/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/projects/list.ts)_
 
 ## `sanity schema delete`
 
@@ -2882,11 +2790,10 @@ EXAMPLES
 
   Delete multiple schemas
 
-    $ sanity schema delete --ids sanity.workspace.schema.workspaceName,prefix \
-      .sanity.workspace.schema.otherWorkspace
+    $ sanity schema delete --ids sanity.workspace.schema.workspaceName,prefix.sanity.workspace.schema.otherWorkspace
 ```
 
-_See code: [src/commands/schema/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/schema/delete.ts)_
+_See code: [src/commands/schema/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/schema/delete.ts)_
 
 ## `sanity schema deploy`
 
@@ -2894,14 +2801,12 @@ Deploy schema documents into workspace datasets.
 
 ```
 USAGE
-  $ sanity schema deploy [--extract-manifest] [--manifest-dir <directory>]
-    [--tag <tag>] [--verbose] [--workspace <name>]
+  $ sanity schema deploy [--extract-manifest] [--manifest-dir <directory>] [--tag <tag>] [--verbose] [--workspace
+    <name>]
 
 FLAGS
-  --[no-]extract-manifest     Disables manifest generation - the command will
-                              fail if no manifest exists
-  --manifest-dir=<directory>  [default: ./dist/static] Directory containing
-                              manifest file
+  --[no-]extract-manifest     Disables manifest generation - the command will fail if no manifest exists
+  --manifest-dir=<directory>  [default: ./dist/static] Directory containing manifest file
   --tag=<tag>                 Add a tag suffix to the schema id
   --verbose                   Print detailed information during deployment
   --workspace=<name>          The name of the workspace to deploy a schema for
@@ -2911,8 +2816,7 @@ DESCRIPTION
 
   **Note**: This command is experimental and subject to change.
 
-  This operation (re-)generates a manifest file describing the sanity config
-  workspace by default.
+  This operation (re-)generates a manifest file describing the sanity config workspace by default.
   To re-use an existing manifest file, use --no-extract-manifest.
 
 EXAMPLES
@@ -2924,13 +2828,12 @@ EXAMPLES
 
     $ sanity schema deploy --workspace default
 
-  Runs using a pre-existing manifest file. Config changes in sanity.config will
-  not be picked up in this case.
+  Runs using a pre-existing manifest file. Config changes in sanity.config will not be picked up in this case.
 
     $ sanity schema deploy --no-extract-manifest
 ```
 
-_See code: [src/commands/schema/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/schema/deploy.ts)_
+_See code: [src/commands/schema/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/schema/deploy.ts)_
 
 ## `sanity schema extract`
 
@@ -2938,21 +2841,16 @@ Extracts a JSON representation of a Sanity schema within a Studio context.
 
 ```
 USAGE
-  $ sanity schema extract [--enforce-required-fields] [--format <format>]
-    [--path <value>] [--watch] [--watch-patterns <glob>...] [--workspace <name>]
+  $ sanity schema extract [--enforce-required-fields] [--format <format>] [--path <value>] [--watch]
+    [--watch-patterns <glob>...] [--workspace <name>]
 
 FLAGS
-  --enforce-required-fields   Makes the schema generated treat fields marked as
-                              required as non-optional
-  --format=<format>           [default: groq-type-nodes] Format the schema as
-                              GROQ type nodes. Only available format at the
-                              moment.
-  --path=<value>              Optional path to specify destination of the schema
-                              file
-  --watch                     Enable watch mode to re-extract schema on file
-                              changes
-  --watch-patterns=<glob>...  Additional glob pattern(s) to watch (can be
-                              specified multiple times)
+  --enforce-required-fields   Makes the schema generated treat fields marked as required as non-optional
+  --format=<format>           [default: groq-type-nodes] Format the schema as GROQ type nodes. Only available format at
+                              the moment.
+  --path=<value>              Optional path to specify destination of the schema file
+  --watch                     Enable watch mode to re-extract schema on file changes
+  --watch-patterns=<glob>...  Additional glob pattern(s) to watch (can be specified multiple times)
   --workspace=<name>          The name of the workspace to generate a schema for
 
 DESCRIPTION
@@ -2974,7 +2872,7 @@ EXAMPLES
     $ sanity schema extract --watch --watch-patterns "lib/**/*.ts"
 ```
 
-_See code: [src/commands/schema/extract.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/schema/extract.ts)_
+_See code: [src/commands/schema/extract.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/schema/extract.ts)_
 
 ## `sanity schema list`
 
@@ -2993,8 +2891,7 @@ DESCRIPTION
 
   **Note**: This command is experimental and subject to change.
 
-  This operation (re-)generates a manifest file describing the sanity config
-  workspace by default.
+  This operation (re-)generates a manifest file describing the sanity config workspace by default.
   To re-use an existing manifest file, use --no-extract-manifest.
 
 EXAMPLES
@@ -3015,7 +2912,7 @@ EXAMPLES
     $ sanity schema list --json --id _.schemas.workspaceName
 ```
 
-_See code: [src/commands/schema/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/schema/list.ts)_
+_See code: [src/commands/schema/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/schema/list.ts)_
 
 ## `sanity schema validate`
 
@@ -3023,23 +2920,19 @@ Validates all schema types specified in a workspace
 
 ```
 USAGE
-  $ sanity schema validate [--debug-metafile-path <value>] [--format
-    pretty|ndjson|json] [--level error|warning] [--workspace <value>]
+  $ sanity schema validate [--debug-metafile-path <value>] [--format pretty|ndjson|json] [--level error|warning]
+    [--workspace <value>]
 
 FLAGS
-  --format=<option>    [default: pretty] The output format used to print schema
-                       errors and warnings
+  --format=<option>    [default: pretty] The output format used to print schema errors and warnings
                        <options: pretty|ndjson|json>
   --level=<option>     [default: warning] The minimum level reported out
                        <options: error|warning>
-  --workspace=<value>  The name of the workspace to use when validating all
-                       schema types
+  --workspace=<value>  The name of the workspace to use when validating all schema types
 
 DEBUG FLAGS
-  --debug-metafile-path=<value>  Optional path where a metafile will be written
-                                 for build analysis. Only written on successful
-                                 validation. Can be analyzed at
-                                 https://esbuild.github.io/analyze/
+  --debug-metafile-path=<value>  Optional path where a metafile will be written for build analysis. Only written on
+                                 successful validation. Can be analyzed at https://esbuild.github.io/analyze/
 
 DESCRIPTION
   Validates all schema types specified in a workspace
@@ -3057,13 +2950,12 @@ EXAMPLES
 
     $ sanity schema validate --level error
 
-  Generate a report which can be analyzed with
-  https://esbuild.github.io/analyze/
+  Generate a report which can be analyzed with https://esbuild.github.io/analyze/
 
     $ sanity schema validate --debug-metafile-path metafile.json
 ```
 
-_See code: [src/commands/schema/validate.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/schema/validate.ts)_
+_See code: [src/commands/schema/validate.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/schema/validate.ts)_
 
 ## `sanity start [OUTPUTDIR]`
 
@@ -3077,8 +2969,7 @@ ARGUMENTS
   [OUTPUTDIR]  Output directory
 
 FLAGS
-  --host=<value>  [default: localhost] The local network interface at which to
-                  listen.
+  --host=<value>  [default: localhost] The local network interface at which to listen.
   --port=<value>  [default: 3333] TCP port to start server on.
 
 DESCRIPTION
@@ -3112,7 +3003,7 @@ EXAMPLES
     $ sanity telemetry telemetry disable
 ```
 
-_See code: [src/commands/telemetry/disable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/telemetry/disable.ts)_
+_See code: [src/commands/telemetry/disable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/telemetry/disable.ts)_
 
 ## `sanity telemetry enable`
 
@@ -3131,7 +3022,7 @@ EXAMPLES
     $ sanity telemetry telemetry enable
 ```
 
-_See code: [src/commands/telemetry/enable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/telemetry/enable.ts)_
+_See code: [src/commands/telemetry/enable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/telemetry/enable.ts)_
 
 ## `sanity telemetry status`
 
@@ -3150,7 +3041,7 @@ EXAMPLES
     $ sanity telemetry telemetry status
 ```
 
-_See code: [src/commands/telemetry/status.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/telemetry/status.ts)_
+_See code: [src/commands/telemetry/status.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/telemetry/status.ts)_
 
 ## `sanity tokens add [LABEL]`
 
@@ -3189,7 +3080,7 @@ EXAMPLES
     $ sanity tokens add "API Token" --json
 ```
 
-_See code: [src/commands/tokens/add.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/tokens/add.ts)_
+_See code: [src/commands/tokens/add.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/tokens/add.ts)_
 
 ## `sanity tokens delete [TOKENID]`
 
@@ -3222,7 +3113,7 @@ EXAMPLES
     $ sanity tokens delete silJ2lFmK6dONB --yes
 ```
 
-_See code: [src/commands/tokens/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/tokens/delete.ts)_
+_See code: [src/commands/tokens/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/tokens/delete.ts)_
 
 ## `sanity tokens list`
 
@@ -3248,7 +3139,7 @@ EXAMPLES
     $ sanity tokens list --json
 ```
 
-_See code: [src/commands/tokens/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/tokens/list.ts)_
+_See code: [src/commands/tokens/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/tokens/list.ts)_
 
 ## `sanity typegen generate`
 
@@ -3259,49 +3150,42 @@ USAGE
   $ sanity typegen generate [--config-path <value>] [--watch]
 
 FLAGS
-  --config-path=<value>  [Default: sanity-typegen.json] Specifies the path to the
-                         typegen configuration file. This file should be a JSON
-                         file that contains settings for the type generation
-                         process.
+  --config-path=<value>  [Default: sanity-typegen.json] Specifies the path to the typegen configuration file. This file
+                         should be a JSON file that contains settings for the type generation process.
   --watch                [Default: false] Run the typegen in watch mode
 
 DESCRIPTION
   Sanity TypeGen
 
   Configuration:
-  This command can utilize configuration settings defined in a
-  `sanity-typegen.json` file. These settings include:
+  This command can utilize configuration settings defined in a `sanity-typegen.json` file. These settings include:
 
-  - "path": Specifies a glob pattern to locate your TypeScript or JavaScript
-  files.
+  - "path": Specifies a glob pattern to locate your TypeScript or JavaScript files.
   Default: "./src/**/*.{ts,tsx,js,jsx}"
 
-  - "schema": Defines the path to your Sanity schema file. This file should be
-  generated using the `sanity schema extract` command.
+  - "schema": Defines the path to your Sanity schema file. This file should be generated using the `sanity schema
+  extract` command.
   Default: "schema.json"
 
-  - "generates": Indicates the path where the generated TypeScript type
-  definitions will be saved.
+  - "generates": Indicates the path where the generated TypeScript type definitions will be saved.
   Default: "./sanity.types.ts"
 
-  The default configuration values listed above are used if not overridden in
-  your `sanity-typegen.json` configuration file. To customize the behavior of the
-  type generation, adjust these properties in the configuration file according to
+  The default configuration values listed above are used if not overridden in your `sanity-typegen.json` configuration
+  file. To customize the behavior of the type generation, adjust these properties in the configuration file according to
   your project's needs.
 
   Note:
-  - The `sanity schema extract` command is a prerequisite for extracting your
-  Sanity Studio schema into a `schema.json` file, which is then used by the
-  `sanity typegen generate` command to generate type definitions.
+  - The `sanity schema extract` command is a prerequisite for extracting your Sanity Studio schema into a `schema.json`
+  file, which is then used by the `sanity typegen generate` command to generate type definitions.
 
 EXAMPLES
-  Generate TypeScript type definitions from a Sanity Studio schema extracted
-  using the `sanity schema extract` command.
+  Generate TypeScript type definitions from a Sanity Studio schema extracted using the `sanity schema extract`
+  command.
 
     $ sanity typegen generate
 ```
 
-_See code: [@sanity/codegen](https://github.com/sanity-io/codegen/blob/v5.9.4/src/commands/typegen/generate.ts)_
+_See code: [@sanity/codegen](https://github.com/sanity-io/codegen/blob/v5.10.1/src/commands/typegen/generate.ts)_
 
 ## `sanity undeploy`
 
@@ -3312,14 +3196,13 @@ USAGE
   $ sanity undeploy [-y]
 
 FLAGS
-  -y, --yes  Unattended mode, answers "yes" to any "yes/no" prompt and otherwise
-             uses defaults
+  -y, --yes  Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
 
 DESCRIPTION
   Removes the deployed Sanity Studio/App from Sanity hosting
 ```
 
-_See code: [src/commands/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/undeploy.ts)_
+_See code: [src/commands/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/undeploy.ts)_
 
 ## `sanity users invite [EMAIL]`
 
@@ -3352,7 +3235,7 @@ EXAMPLES
     $ sanity users invite pippi@sanity.io --role administrator
 ```
 
-_See code: [src/commands/users/invite.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/users/invite.ts)_
+_See code: [src/commands/users/invite.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/users/invite.ts)_
 
 ## `sanity users list`
 
@@ -3360,8 +3243,7 @@ List all users of the project
 
 ```
 USAGE
-  $ sanity users list [--invitations] [--order asc|desc] [--robots]
-    [--sort id|name|role|date]
+  $ sanity users list [--invitations] [--order asc|desc] [--robots] [--sort id|name|role|date]
 
 FLAGS
   --[no-]invitations  Includes or excludes pending invitations
@@ -3388,7 +3270,7 @@ EXAMPLES
     $ sanity users list --sort role
 ```
 
-_See code: [src/commands/users/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/users/list.ts)_
+_See code: [src/commands/users/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/users/list.ts)_
 
 ## `sanity versions`
 
@@ -3405,6 +3287,6 @@ EXAMPLES
   $ sanity versions
 ```
 
-_See code: [src/commands/versions.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.16/src/commands/versions.ts)_
+_See code: [src/commands/versions.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/versions.ts)_
 
 <!-- commandsstop -->

@@ -33,6 +33,17 @@ interface CreateDatasetOptions {
   projectId: string
 
   /**
+   * Whether to enable embeddings for the new dataset
+   */
+  embeddings?: boolean
+
+  /**
+   * GROQ projection for embeddings indexing (e.g. "\{ title, body \}")
+   * Only used when embeddings is true
+   */
+  embeddingsProjection?: string
+
+  /**
    * Whether to force disable private dataset creation
    * Used when default config is selected (which forces public datasets)
    */
@@ -64,6 +75,8 @@ interface CreateDatasetOptions {
 export async function createDataset(options: CreateDatasetOptions): Promise<DatasetResponse> {
   const {
     datasetName,
+    embeddings,
+    embeddingsProjection,
     forcePublic = false,
     isUnattended = false,
     output,
@@ -87,6 +100,9 @@ export async function createDataset(options: CreateDatasetOptions): Promise<Data
     const newDataset = await createDatasetService({
       aclMode,
       datasetName,
+      embeddings: embeddings
+        ? {enabled: true, ...(embeddingsProjection ? {projection: embeddingsProjection} : {})}
+        : undefined,
       projectId,
     })
     spin.succeed()
