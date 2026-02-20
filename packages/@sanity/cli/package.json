@@ -170,7 +170,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "catalog:",
     "nock": "catalog:",
-    "oclif": "^4.22.68",
+    "oclif": "^4.22.79",
     "prettier": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
