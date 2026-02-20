@@ -169,7 +169,7 @@ describe('#backup:enable', () => {
       mocks: defaultMocks,
     })
 
-    expect(mockCreateDataset).toHaveBeenCalledWith('new-dataset')
+    expect(mockCreateDataset).toHaveBeenCalledWith('new-dataset', {})
     expect(stdout).toContain('Enabled backups for dataset new-dataset')
     expect(mockInput).toHaveBeenCalledWith({
       default: undefined,

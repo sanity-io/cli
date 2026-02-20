@@ -194,12 +194,12 @@ describe('#createDataset', () => {
     expect(mockClient.datasets.create).toHaveBeenCalledWith('test-dataset', {aclMode: 'private'})
   })
 
-  test('calls client.datasets.create without aclMode if not provided', async () => {
+  test('calls client.datasets.create with empty options if aclMode not provided', async () => {
     mockClient.datasets.create.mockResolvedValue(undefined)
 
     await createDataset({datasetName: 'test-dataset', projectId: 'test-project'})
 
-    expect(mockClient.datasets.create).toHaveBeenCalledWith('test-dataset')
+    expect(mockClient.datasets.create).toHaveBeenCalledWith('test-dataset', {})
     expect(mockGetProjectCliClient).toHaveBeenCalledWith({
       apiVersion: DATASET_API_VERSION,
       projectId: 'test-project',
