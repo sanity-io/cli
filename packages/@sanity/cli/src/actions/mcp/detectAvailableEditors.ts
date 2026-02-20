@@ -9,7 +9,7 @@ import {EDITOR_CONFIGS, type EditorName} from './editorConfigs.js'
 
 const debug = subdebug('mcp:detectAvailableEditors')
 
-export interface Editor {
+interface Editor {
   configPath: string
   /** Whether Sanity MCP is already configured for this editor */
   configured: boolean

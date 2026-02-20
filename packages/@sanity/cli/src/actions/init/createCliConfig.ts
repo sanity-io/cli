@@ -18,7 +18,7 @@ export default defineCliConfig({
 })
 `
 
-export interface GenerateCliConfigOptions {
+interface GenerateCliConfigOptions {
   autoUpdates: boolean
   dataset: string
   projectId: string

@@ -7,7 +7,7 @@ export const PROJECTS_API_VERSION = '2025-09-22'
 
 export const CREATE_PROJECT_API_VERSION = 'v2025-05-14'
 
-export interface CreateProjectOptions {
+interface CreateProjectOptions {
   displayName: string
 
   metadata?: {
