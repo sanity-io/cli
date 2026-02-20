@@ -3,6 +3,8 @@ import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {compareDependencyVersions} from '../compareDependencyVersions'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
+const mockRequest = vi.hoisted(() => vi.fn())
+const mockCreateRequester = vi.hoisted(() => vi.fn())
 
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 vi.mock('../../util/getLocalPackageVersion.js', () => ({
@@ -17,7 +19,13 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-const mockedFetch = vi.fn()
+vi.mock('@sanity/cli-core/request', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core/request')>()
+  return {
+    ...actual,
+    createRequester: mockCreateRequester,
+  }
+})
 
 const autoUpdatePackages = [
   {name: 'sanity', version: '1.0.0'},
@@ -32,15 +40,13 @@ const appAutoUpdatePackages = [
 describe('compareDependencyVersions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCreateRequester.mockReturnValue(mockRequest)
   })
   describe('for studio', () => {
     it('should return empty array if versions match', async () => {
-      mockedFetch.mockResolvedValue({
-        headers: {
-          get: vi.fn<(name: string) => string | null>().mockReturnValue('3.40.0'),
-        },
-        ok: false,
-        status: 302,
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
       mockReadPackageJson
@@ -66,20 +72,15 @@ describe('compareDependencyVersions', () => {
           version: '3.40.0',
         })
 
-      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir', {
-        fetchFn: mockedFetch,
-      })
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
 
       expect(result).toEqual([])
     })
 
     it('should return one item in array if versions mismatches for one pkg', async () => {
-      mockedFetch.mockResolvedValue({
-        headers: {
-          get: vi.fn<(name: string) => string | null>().mockReturnValue('3.40.0'),
-        },
-        ok: false,
-        status: 302,
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
@@ -106,9 +107,7 @@ describe('compareDependencyVersions', () => {
           version: '3.40.0',
         })
 
-      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir', {
-        fetchFn: mockedFetch,
-      })
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
 
       expect(result).toEqual([
         {
@@ -119,12 +118,9 @@ describe('compareDependencyVersions', () => {
       ])
     })
     it('should return multiple items in array if versions mismatches for more pkg', async () => {
-      mockedFetch.mockResolvedValue({
-        headers: {
-          get: vi.fn<(name: string) => string | null>().mockReturnValue('3.40.0'),
-        },
-        ok: false,
-        status: 302,
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
@@ -151,9 +147,7 @@ describe('compareDependencyVersions', () => {
           version: '3.30.0',
         })
 
-      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir', {
-        fetchFn: mockedFetch,
-      })
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
 
       expect(result).toEqual([
         {
@@ -170,12 +164,9 @@ describe('compareDependencyVersions', () => {
     })
 
     it("should warn if the user's package.json version is greater then remote", async () => {
-      mockedFetch.mockResolvedValue({
-        headers: {
-          get: vi.fn<(name: string) => string | null>().mockReturnValue('3.40.0'),
-        },
-        ok: false,
-        status: 302,
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.50.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
@@ -202,9 +193,7 @@ describe('compareDependencyVersions', () => {
           version: '3.40.0',
         })
 
-      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir', {
-        fetchFn: mockedFetch,
-      })
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
 
       expect(result).toEqual([
         {
@@ -216,13 +205,9 @@ describe('compareDependencyVersions', () => {
     })
 
     it("should read from user's package.json if resolveFrom fails to find package.json in node_modules", async () => {
-      mockedFetch.mockResolvedValue({
-        ok: false,
-        status: 302,
-
-        headers: {
-          get: vi.fn<(name: string) => string | null>().mockReturnValue('3.40.0'),
-        },
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.20.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.20.0')
@@ -236,9 +221,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir', {
-        fetchFn: mockedFetch,
-      })
+      const result = await compareDependencyVersions(autoUpdatePackages, '/test/workdir')
 
       expect(mockReadPackageJson).toHaveBeenCalledTimes(1)
 
@@ -260,15 +243,13 @@ describe('compareDependencyVersions', () => {
   describe('for app', () => {
     beforeEach(() => {
       vi.clearAllMocks()
+      mockCreateRequester.mockReturnValue(mockRequest)
     })
 
     it('should return empty array if versions match', async () => {
-      mockedFetch.mockResolvedValue({
-        headers: {
-          get: vi.fn<(name: string) => string | null>().mockReturnValue('0.1.0'),
-        },
-        ok: false,
-        status: 302,
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '0.1.0'},
+        statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
@@ -295,20 +276,15 @@ describe('compareDependencyVersions', () => {
           version: '0.1.0',
         })
 
-      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir', {
-        fetchFn: mockedFetch,
-      })
+      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir')
 
       expect(result).toEqual([])
     })
 
     it('should return one item in array if versions mismatches for one pkg', async () => {
-      mockedFetch.mockResolvedValue({
-        headers: {
-          get: vi.fn<(name: string) => string | null>().mockReturnValue('0.1.0'),
-        },
-        ok: false,
-        status: 302,
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '0.1.0'},
+        statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.0.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
@@ -335,9 +311,7 @@ describe('compareDependencyVersions', () => {
           version: '0.1.0',
         })
 
-      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir', {
-        fetchFn: mockedFetch,
-      })
+      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir')
 
       expect(result).toEqual([
         {
@@ -348,12 +322,9 @@ describe('compareDependencyVersions', () => {
       ])
     })
     it('should return multiple items in array if versions mismatches for more pkg', async () => {
-      mockedFetch.mockResolvedValue({
-        headers: {
-          get: vi.fn<(name: string) => string | null>().mockReturnValue('0.2.0'),
-        },
-        ok: false,
-        status: 302,
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '0.2.0'},
+        statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
@@ -380,9 +351,7 @@ describe('compareDependencyVersions', () => {
           version: '0.1.0',
         })
 
-      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir', {
-        fetchFn: mockedFetch,
-      })
+      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir')
 
       expect(result).toEqual([
         {
@@ -399,12 +368,9 @@ describe('compareDependencyVersions', () => {
     })
 
     it("should warn if the user's package.json version is greater then remote", async () => {
-      mockedFetch.mockResolvedValue({
-        headers: {
-          get: vi.fn<(name: string) => string | null>().mockReturnValue('0.1.0'),
-        },
-        ok: false,
-        status: 302,
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '0.1.0'},
+        statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.2.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.2.0')
@@ -431,9 +397,7 @@ describe('compareDependencyVersions', () => {
           version: '0.2.0',
         })
 
-      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir', {
-        fetchFn: mockedFetch,
-      })
+      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir')
 
       expect(result).toEqual([
         {
@@ -450,12 +414,9 @@ describe('compareDependencyVersions', () => {
     })
 
     it("should read from user's package.json if resolveFrom fails to find package.json in node_modules", async () => {
-      mockedFetch.mockResolvedValue({
-        headers: {
-          get: vi.fn<(name: string) => string | null>().mockReturnValue('0.1.0'),
-        },
-        ok: false,
-        status: 302,
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '0.1.0'},
+        statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.0.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.0.0')
@@ -469,9 +430,7 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir', {
-        fetchFn: mockedFetch,
-      })
+      const result = await compareDependencyVersions(appAutoUpdatePackages, '/test/workdir')
 
       expect(mockReadPackageJson).toHaveBeenCalledTimes(1)
 
@@ -493,15 +452,13 @@ describe('compareDependencyVersions', () => {
   describe('module URL selection', () => {
     beforeEach(() => {
       vi.clearAllMocks()
+      mockCreateRequester.mockReturnValue(mockRequest)
     })
 
     it('should use the default module endpoint when no appId is provided', async () => {
-      mockedFetch.mockResolvedValue({
-        headers: {
-          get: vi.fn<(name: string) => string | null>().mockReturnValue('3.40.0'),
-        },
-        ok: false,
-        status: 302,
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
       mockReadPackageJson.mockResolvedValueOnce({
@@ -511,22 +468,17 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      await compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir', {
-        fetchFn: mockedFetch,
-      })
+      await compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir')
 
-      const url = mockedFetch.mock.calls[0][0] as string
+      const url = mockRequest.mock.calls[0][0].url as string
       expect(url).toContain('/v1/modules/sanity/default/')
       expect(url).not.toContain('/by-app/')
     })
 
     it('should use the app-specific module endpoint when appId is provided', async () => {
-      mockedFetch.mockResolvedValue({
-        headers: {
-          get: vi.fn<(name: string) => string | null>().mockReturnValue('3.40.0'),
-        },
-        ok: false,
-        status: 302,
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
       mockReadPackageJson.mockResolvedValueOnce({
@@ -538,10 +490,9 @@ describe('compareDependencyVersions', () => {
 
       await compareDependencyVersions([{name: 'sanity', version: '3.40.0'}], '/test/workdir', {
         appId: 'my-app-id',
-        fetchFn: mockedFetch,
       })
 
-      const url = mockedFetch.mock.calls[0][0] as string
+      const url = mockRequest.mock.calls[0][0].url as string
       expect(url).toContain('/v1/modules/by-app/my-app-id/')
       expect(url).not.toContain('/default/')
     })

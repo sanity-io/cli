@@ -1,32 +1,11 @@
 import path from 'node:path'
 
 import {readPackageJson} from '@sanity/cli-core'
+import {createRequester, type Requester} from '@sanity/cli-core/request'
 import semver from 'semver'
 
 import {getModuleUrl} from '../actions/build/getAutoUpdatesImportMap.js'
 import {getLocalPackageVersion} from './getLocalPackageVersion.js'
-
-function getRemoteResolvedVersion(fetchFn: typeof fetch, url: string) {
-  return fetchFn(url, {
-    method: 'HEAD',
-    redirect: 'manual',
-  }).then(
-    (res) => {
-      // 302 is expected, but lets also handle 2xx
-      if (res.ok || res.status < 400) {
-        const resolved = res.headers.get('x-resolved-version')
-        if (!resolved) {
-          throw new Error(`Missing 'x-resolved-version' header on response from HEAD ${url}`)
-        }
-        return resolved
-      }
-      throw new Error(`Unexpected HTTP response: ${res.status} ${res.statusText}`)
-    },
-    (err) => {
-      throw new Error(`Failed to fetch remote version for ${url}: ${err.message}`, {cause: err})
-    },
-  )
-}
 
 interface CompareDependencyVersions {
   installed: string
@@ -37,8 +16,6 @@ interface CompareDependencyVersions {
 interface CompareDependencyVersionsOptions {
   /** When provided, uses the app-specific module endpoint instead of the default endpoint. */
   appId?: string
-  /** {@link https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API | Fetch}-compatible function to use for requesting the current remote version of a module. */
-  fetchFn?: typeof fetch
 }
 
 /**
@@ -66,17 +43,21 @@ interface CompareDependencyVersionsOptions {
 export async function compareDependencyVersions(
   packages: {name: string; version: string}[],
   workDir: string,
-  {appId, fetchFn = globalThis.fetch}: CompareDependencyVersionsOptions = {},
+  {appId}: CompareDependencyVersionsOptions = {},
 ): Promise<Array<CompareDependencyVersions>> {
   const manifest = await readPackageJson(path.join(workDir, 'package.json'), {
     skipSchemaValidation: true,
   })
   const dependencies = {...manifest?.dependencies, ...manifest?.devDependencies}
 
+  const request = createRequester({
+    middleware: {httpErrors: false, promise: {onlyBody: false}},
+  })
+
   const failedDependencies: Array<CompareDependencyVersions> = []
 
   for (const pkg of packages) {
-    const resolvedVersion = await getRemoteResolvedVersion(fetchFn, getModuleUrl(pkg, {appId}))
+    const resolvedVersion = await getRemoteResolvedVersion(request, getModuleUrl(pkg, {appId}))
 
     const packageVersion = await getLocalPackageVersion(pkg.name, workDir)
 
@@ -100,4 +81,23 @@ export async function compareDependencyVersions(
   }
 
   return failedDependencies
+}
+
+async function getRemoteResolvedVersion(request: Requester, url: string): Promise<string> {
+  const response = await request({
+    maxRedirects: 0,
+    method: 'HEAD',
+    url,
+  })
+
+  // 302 is expected, but lets also handle 2xx
+  if (response.statusCode < 400) {
+    const resolved = response.headers['x-resolved-version']
+    if (!resolved) {
+      throw new Error(`Missing 'x-resolved-version' header on response from HEAD ${url}`)
+    }
+    return resolved
+  }
+
+  throw new Error(`Unexpected HTTP response: ${response.statusCode} ${response.statusMessage}`)
 }
