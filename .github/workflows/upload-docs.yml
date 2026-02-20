@@ -53,7 +53,7 @@ jobs:
         id: generate
         run: |
           echo "🔄 Generating TypeDoc documentation..."
-          cd packages/@sanity/cli && pnpm run docs:generate
+          pnpm --filter @sanity/cli run docs:generate
 
           # Check if the file was generated successfully
           if [ -f "$TYPEDOC_OUTPUT" ]; then
