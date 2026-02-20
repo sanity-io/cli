@@ -206,5 +206,33 @@ describe('shouldAutoUpdate', () => {
         'The --auto-updates flag is deprecated for deploy and build commands. Set the autoUpdates option in the deployment section of sanity.cli.ts or sanity.cli.js instead.',
       )
     })
+
+    it('should use flag value over config when --no-auto-updates overrides deprecated top-level config true', () => {
+      const result = shouldAutoUpdate({
+        cliConfig: {autoUpdates: true},
+        flags: {'auto-updates': false} as BuildFlags,
+        output: mockOutput,
+      })
+
+      expect(result).toBe(false)
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        'The --no-auto-updates flag is deprecated for deploy and build commands. Set the autoUpdates option in the deployment section of sanity.cli.ts or sanity.cli.js instead.',
+      )
+      expect(mockOutput.warn).toHaveBeenCalledTimes(1)
+    })
+
+    it('should use flag value over config when --auto-updates overrides deprecated top-level config false', () => {
+      const result = shouldAutoUpdate({
+        cliConfig: {autoUpdates: false},
+        flags: {'auto-updates': true} as BuildFlags,
+        output: mockOutput,
+      })
+
+      expect(result).toBe(true)
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        'The --auto-updates flag is deprecated for deploy and build commands. Set the autoUpdates option in the deployment section of sanity.cli.ts or sanity.cli.js instead.',
+      )
+      expect(mockOutput.warn).toHaveBeenCalledTimes(1)
+    })
   })
 })
