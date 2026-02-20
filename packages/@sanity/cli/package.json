@@ -44,6 +44,7 @@
     "./dist",
     "./oclif.config.js",
     "./oclif.manifest.json",
+    "./static",
     "./templates"
   ],
   "scripts": {
