@@ -10,6 +10,8 @@ import {
   getViteConfig,
 } from '../getViteConfig.js'
 
+const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
+
 // Mock all external dependencies
 vi.mock('read-package-up', () => ({
   readPackageUp: vi.fn(),
@@ -54,6 +56,12 @@ vi.mock('../../../server/vite/plugin-sanity-favicons.js', () => ({
 
 vi.mock('../../../server/vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
+}))
+
+vi.mock('../../../server/vite/plugin-schema-extraction.js', () => ({
+  sanitySchemaExtractionPlugin: mockExtractSchemaPlugin.mockReturnValue({
+    name: 'sanity/schema-extraction',
+  }),
 }))
 
 const mockTestCwd = convertToSystemPath('/test/cwd')
@@ -107,12 +115,13 @@ describe('#getViteConfig', () => {
     expect(config.define).toMatchObject({
       __SANITY_STAGING__: false,
       'process.env.MODE': '"development"',
+      'process.env.PKG_BUILD_VERSION': undefined,
       'process.env.SC_DISABLE_SPEEDY': '"false"',
       'process.env.STUDIO_VAR': '"studio-value"',
     })
 
     expect(config.plugins).toHaveLength(4)
-    expect(config.resolve?.dedupe).toEqual(['styled-components'])
+    expect(config.resolve?.dedupe).toEqual(['react', 'react-dom', 'sanity', 'styled-components'])
   })
 
   test('should create vite config for app mode', async () => {
@@ -227,6 +236,9 @@ describe('#getViteConfig', () => {
 
     expect(viteReact).toHaveBeenCalledWith({
       babel: {
+        generatorOpts: {
+          compact: true,
+        },
         plugins: [['babel-plugin-react-compiler', reactCompilerConfig]],
       },
     })
@@ -307,6 +319,58 @@ describe('#getViteConfig', () => {
       defaultFaviconsPath: join(mockSanityPath, 'static/favicons'),
       staticUrlPath: '/studio/static',
     })
+  })
+
+  test('should include schema extraction plugin when enabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+      schemaExtraction: {
+        enabled: true,
+        enforceRequiredFields: true,
+        path: 'custom-schema.json',
+        watchPatterns: ['custom/**/*.ts'],
+        workspace: 'production',
+      },
+    }
+
+    const config = await getViteConfig(options)
+
+    const schemaPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/schema-extraction',
+    )
+
+    expect(mockExtractSchemaPlugin).toHaveBeenCalledWith({
+      additionalPatterns: ['custom/**/*.ts'],
+      enforceRequiredFields: true,
+      outputPath: 'custom-schema.json',
+      telemetryLogger: undefined,
+      workDir: '/test/cwd',
+      workspaceName: 'production',
+    })
+    expect(schemaPlugin).toBeDefined()
+  })
+
+  test('should not include schema extraction plugin when disabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+      schemaExtraction: {
+        enabled: false,
+        path: 'schema.json',
+      },
+    }
+
+    const config = await getViteConfig(options)
+
+    const schemaPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/schema-extraction',
+    )
+
+    expect(mockExtractSchemaPlugin).not.toHaveBeenCalled()
+    expect(schemaPlugin).toBeUndefined()
   })
 })
 
