@@ -37,7 +37,7 @@ const INITIAL_EXTRACTION_DELAY_MS = 1000
  *
  * @public
  */
-export interface SchemaExtractionPluginOptions {
+interface SchemaExtractionPluginOptions {
   /**
    * Additional glob patterns to watch for schema changes.
    * These are merged with the default patterns.

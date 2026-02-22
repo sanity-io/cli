@@ -346,7 +346,7 @@ describe('#getViteConfig', () => {
       enforceRequiredFields: true,
       outputPath: 'custom-schema.json',
       telemetryLogger: undefined,
-      workDir: '/test/cwd',
+      workDir: mockTestCwd,
       workspaceName: 'production',
     })
     expect(schemaPlugin).toBeDefined()

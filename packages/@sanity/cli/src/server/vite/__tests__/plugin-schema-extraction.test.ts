@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import {CLITelemetryStore} from '@sanity/cli-core'
 import {SchemaValidationProblemGroup} from 'sanity'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
@@ -22,6 +24,8 @@ const traceMock = {
 const telemetryLogger = {
   trace: vi.fn().mockReturnValue(traceMock),
 } as unknown as CLITelemetryStore
+
+const TEST_PROJECT_DIR = path.resolve('/project')
 
 function createMockWatcher() {
   const listeners = new Map<string, Array<(...args: unknown[]) => void>>()
@@ -77,11 +81,11 @@ describe('sanitySchemaExtractionPlugin', () => {
   it('runs initial extraction when httpServer emits listening event', async () => {
     const plugin = sanitySchemaExtractionPlugin({
       output,
-      workDir: '/project',
+      workDir: TEST_PROJECT_DIR,
     })
 
     const configResolved = plugin.configResolved as (config: {root: string}) => void
-    configResolved({root: '/project'})
+    configResolved({root: TEST_PROJECT_DIR})
 
     const watcher = createMockWatcher()
     const httpServer = createMockHttpServer()
@@ -116,12 +120,12 @@ describe('sanitySchemaExtractionPlugin', () => {
       debounceMs: 100,
       enforceRequiredFields: true,
       output: {error: vi.fn(), info: vi.fn(), log: vi.fn()},
-      workDir: '/project',
+      workDir: TEST_PROJECT_DIR,
     })
 
     // Simulate Vite's configResolved hook
     const configResolved = plugin.configResolved as (config: {root: string}) => void
-    configResolved({root: '/project'})
+    configResolved({root: TEST_PROJECT_DIR})
 
     // Create a fake watcher and server, then call configureServer hook
     const watcher = createMockWatcher()
@@ -134,9 +138,9 @@ describe('sanitySchemaExtractionPlugin', () => {
     expect(mockRunSchemaExtraction).toHaveBeenCalledTimes(0)
 
     // Trigger three rapid changes on a schema file
-    watcher.emit('change', '/project/schemaTypes/post.ts')
-    watcher.emit('change', '/project/schemaTypes/page.ts')
-    watcher.emit('change', '/project/schemaTypes/author.ts')
+    watcher.emit('change', path.join(TEST_PROJECT_DIR, 'schemaTypes', 'post.ts'))
+    watcher.emit('change', path.join(TEST_PROJECT_DIR, 'schemaTypes', 'page.ts'))
+    watcher.emit('change', path.join(TEST_PROJECT_DIR, 'schemaTypes', 'author.ts'))
 
     // Advance past debounce
     await vi.advanceTimersByTimeAsync(100)
@@ -144,21 +148,21 @@ describe('sanitySchemaExtractionPlugin', () => {
 
     // Called with correct params in object
     expect(mockRunSchemaExtraction).toHaveBeenCalledWith({
-      configPath: '/project/sanity.config.ts',
+      configPath: path.join(TEST_PROJECT_DIR, 'sanity.config.ts'),
       enforceRequiredFields: true,
       format: 'groq-type-nodes',
-      outputPath: '/project/schema.json',
+      outputPath: path.join(TEST_PROJECT_DIR, 'schema.json'),
       watchPatterns: [],
       workspace: undefined,
     })
 
     // Trigger another change
-    watcher.emit('change', '/project/schemaTypes/author.ts')
+    watcher.emit('change', path.join(TEST_PROJECT_DIR, 'schemaTypes', 'author.ts'))
     await vi.advanceTimersByTimeAsync(100)
     expect(mockRunSchemaExtraction).toHaveBeenCalledTimes(2)
 
     // Trigger a change event unrelated to the watching
-    watcher.emit('change', '/src/component/Foobar/index.tsx')
+    watcher.emit('change', path.join('/src', 'component', 'Foobar', 'index.tsx'))
     await vi.advanceTimersByTimeAsync(100)
     expect(mockRunSchemaExtraction).toHaveBeenCalledTimes(2)
   })
@@ -167,11 +171,11 @@ describe('sanitySchemaExtractionPlugin', () => {
     const plugin = sanitySchemaExtractionPlugin({
       debounceMs: 100,
       output,
-      workDir: '/project',
+      workDir: TEST_PROJECT_DIR,
     })
 
     const configResolved = plugin.configResolved as (config: {root: string}) => void
-    configResolved({root: '/project'})
+    configResolved({root: TEST_PROJECT_DIR})
 
     const watcher = createMockWatcher()
     const configureServer = plugin.configureServer as unknown as (server: {
@@ -192,7 +196,7 @@ describe('sanitySchemaExtractionPlugin', () => {
     )
 
     // Trigger extraction
-    watcher.emit('change', '/project/schemaTypes/post.ts')
+    watcher.emit('change', path.join(TEST_PROJECT_DIR, 'schemaTypes', 'post.ts'))
     await vi.advanceTimersByTimeAsync(100)
 
     expect(mockRunSchemaExtraction).toHaveBeenCalledTimes(1)
@@ -214,23 +218,23 @@ describe('sanitySchemaExtractionPlugin', () => {
     ])
 
     const plugin = sanitySchemaExtractionPlugin({
-      outputPath: '/project/dist/schema.json',
+      outputPath: path.join(TEST_PROJECT_DIR, 'dist', 'schema.json'),
       telemetryLogger: telemetryLogger,
-      workDir: '/project',
+      workDir: TEST_PROJECT_DIR,
     })
 
     const configResolved = plugin.configResolved as (config: {root: string}) => void
-    configResolved({root: '/project'})
+    configResolved({root: TEST_PROJECT_DIR})
 
     const buildEnd = plugin.buildEnd as () => Promise<void>
     await buildEnd()
 
     expect(mockRunSchemaExtraction).toHaveBeenCalledTimes(1)
     expect(mockRunSchemaExtraction).toHaveBeenCalledWith({
-      configPath: '/project/sanity.config.ts',
+      configPath: path.join(TEST_PROJECT_DIR, 'sanity.config.ts'),
       enforceRequiredFields: false,
       format: 'groq-type-nodes',
-      outputPath: '/project/dist/schema.json',
+      outputPath: path.join(TEST_PROJECT_DIR, 'dist', 'schema.json'),
       watchPatterns: [],
       workspace: undefined,
     })
@@ -251,11 +255,11 @@ describe('sanitySchemaExtractionPlugin', () => {
       enforceRequiredFields: true,
       output: {error: vi.fn(), info: vi.fn(), log: vi.fn()},
       telemetryLogger: telemetryLogger,
-      workDir: '/project',
+      workDir: TEST_PROJECT_DIR,
     })
 
     const configResolved = plugin.configResolved as (config: {root: string}) => void
-    configResolved({root: '/project'})
+    configResolved({root: TEST_PROJECT_DIR})
 
     const watcher = createMockWatcher()
     const httpServer = createMockHttpServer()
