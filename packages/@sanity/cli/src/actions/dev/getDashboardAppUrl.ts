@@ -55,7 +55,7 @@ export const getDashboardAppURL = async ({
     // <dashboard-app-url>/<orgniazationId>?dev=<dev-server-url>
     return body?.url ?? getDefaultDashboardURL({organizationId, url})
   } catch (err) {
-    debug(`Failed to fetch dashboard URL: ${err.message}`)
+    debug(`Failed to fetch dashboard URL: ${err instanceof Error ? err.message : String(err)}`)
     return getDefaultDashboardURL({organizationId, url})
   } finally {
     clearTimeout(timer)

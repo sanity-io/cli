@@ -3,17 +3,16 @@ import path, {isAbsolute} from 'node:path'
 import {type CLITelemetryStore} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {debounce, mean, once} from 'lodash-es'
-import picomatch from 'picomatch'
 import {type Plugin} from 'vite'
 
 import {formatSchemaValidation} from '../../actions/schema/formatSchemaValidation.js'
+import {createSchemaPatternMatcher} from '../../actions/schema/matchSchemaPattern.js'
 import {runSchemaExtraction} from '../../actions/schema/runSchemaExtraction.js'
 import {SchemaExtractionError} from '../../actions/schema/utils/SchemaExtractionError.js'
 import {
   SchemaExtractedTrace,
   SchemaExtractionWatchModeTrace,
 } from '../../telemetry/extractSchema.telemetry.js'
-import {toForwardSlashes} from '../../util/toForwardSlashes.js'
 
 /**
  * Default glob patterns to watch for schema changes.
@@ -195,12 +194,12 @@ export function sanitySchemaExtractionPlugin(options: SchemaExtractionPluginOpti
       // add stats for the successful extraction run to use later for telemetry
       stats.successfulDurations.push(Date.now() - extractionStartTime)
     } catch (err) {
-      output.log(
+      output.error(
         logSymbols.error,
         `Extraction failed: ${err instanceof Error ? err.message : String(err)}`,
       )
       if (err instanceof SchemaExtractionError && err.validation && err.validation.length > 0) {
-        output.log(logSymbols.error, formatSchemaValidation(err.validation))
+        output.error(logSymbols.error, formatSchemaValidation(err.validation))
       }
 
       // track the failed extraction
@@ -220,17 +219,10 @@ export function sanitySchemaExtractionPlugin(options: SchemaExtractionPluginOpti
     void runExtraction()
   }, debounceMs)
 
-  // Create a matcher function from all watch patterns
-  const isMatch = picomatch(watchPatterns)
+  const {isMatch} = createSchemaPatternMatcher(watchPatterns)
 
-  // Handler for file changes
   const handleChange = (filePath: string) => {
-    const relativePath = path.isAbsolute(filePath)
-      ? path.relative(resolvedWorkDir, filePath)
-      : filePath
-    // Normalize to forward slashes for cross-platform picomatch compatibility
-    const normalizedPath = toForwardSlashes(relativePath)
-    if (isMatch(normalizedPath)) {
+    if (isMatch(filePath, resolvedWorkDir)) {
       debouncedExtract()
     }
   }

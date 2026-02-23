@@ -185,9 +185,8 @@ export function sanityTypegenPlugin(options: TypegenPluginOptions): Plugin {
   return {
     name: 'sanity/typegen',
 
-    configResolved(viteConfig) {
-      // Resolve paths from options or Vite's project root
-      const rootDir = workDir ?? viteConfig.root
+    configResolved() {
+      const rootDir = workDir
 
       resolvedSchemaPath = path.isAbsolute(config.schema)
         ? config.schema

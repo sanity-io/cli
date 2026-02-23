@@ -3,46 +3,8 @@ import path from 'node:path'
 import {CLITelemetryStore} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
+import {createMockHttpServer, createMockWatcher} from '../../../../test/testUtils.js'
 import {sanityTypegenPlugin} from '../plugin-typegen.js'
-
-function createMockWatcher() {
-  const listeners = new Map<string, Array<(...args: unknown[]) => void>>()
-
-  return {
-    add: vi.fn(),
-    emit(event: string, ...args: unknown[]) {
-      const eventListeners = listeners.get(event) || []
-      for (const listener of eventListeners) {
-        listener(...args)
-      }
-    },
-    on(event: string, listener: (...args: unknown[]) => void) {
-      if (!listeners.has(event)) {
-        listeners.set(event, [])
-      }
-      listeners.get(event)!.push(listener)
-    },
-  }
-}
-
-function createMockHttpServer() {
-  const listeners = new Map<string, Array<(...args: unknown[]) => void>>()
-
-  return {
-    emit(event: string, ...args: unknown[]) {
-      const eventListeners = listeners.get(event) || []
-      for (const listener of eventListeners) {
-        listener(...args)
-      }
-    },
-    once(event: string, listener: (...args: unknown[]) => void) {
-      if (!listeners.has(event)) {
-        listeners.set(event, [])
-      }
-      listeners.get(event)!.push(listener)
-    },
-  }
-}
 
 const TEST_PROJECT_DIR = path.resolve('/project')
 

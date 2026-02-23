@@ -4,6 +4,7 @@ import {CLITelemetryStore} from '@sanity/cli-core'
 import {SchemaValidationProblemGroup} from 'sanity'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
+import {createMockHttpServer, createMockWatcher} from '../../../../test/testUtils.js'
 import {SchemaExtractionError} from '../../../actions/schema/utils/SchemaExtractionError.js'
 import {sanitySchemaExtractionPlugin} from '../plugin-schema-extraction.js'
 
@@ -26,45 +27,6 @@ const telemetryLogger = {
 } as unknown as CLITelemetryStore
 
 const TEST_PROJECT_DIR = path.resolve('/project')
-
-function createMockWatcher() {
-  const listeners = new Map<string, Array<(...args: unknown[]) => void>>()
-
-  return {
-    add: vi.fn(),
-    emit(event: string, ...args: unknown[]) {
-      const eventListeners = listeners.get(event) || []
-      for (const listener of eventListeners) {
-        listener(...args)
-      }
-    },
-    on(event: string, listener: (...args: unknown[]) => void) {
-      if (!listeners.has(event)) {
-        listeners.set(event, [])
-      }
-      listeners.get(event)!.push(listener)
-    },
-  }
-}
-
-function createMockHttpServer() {
-  const listeners = new Map<string, Array<(...args: unknown[]) => void>>()
-
-  return {
-    emit(event: string, ...args: unknown[]) {
-      const eventListeners = listeners.get(event) || []
-      for (const listener of eventListeners) {
-        listener(...args)
-      }
-    },
-    once(event: string, listener: (...args: unknown[]) => void) {
-      if (!listeners.has(event)) {
-        listeners.set(event, [])
-      }
-      listeners.get(event)!.push(listener)
-    },
-  }
-}
 
 describe('sanitySchemaExtractionPlugin', () => {
   beforeEach(() => {
@@ -194,7 +156,7 @@ describe('sanitySchemaExtractionPlugin', () => {
     await vi.advanceTimersByTimeAsync(100)
 
     expect(mockRunSchemaExtraction).toHaveBeenCalledTimes(1)
-    expect(output.log).toHaveBeenCalledWith(
+    expect(output.error).toHaveBeenCalledWith(
       expect.anything(),
       'Extraction failed: Schema validation failed',
     )

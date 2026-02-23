@@ -1,13 +1,13 @@
-import {dirname, isAbsolute, relative} from 'node:path'
+import {dirname, isAbsolute, join, relative} from 'node:path'
 
 import {type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
 import debounce from 'lodash-es/debounce.js'
-import {glob} from 'tinyglobby'
 
 import {formatSchemaValidation} from './formatSchemaValidation.js'
 import {type ExtractOptions} from './getExtractOptions.js'
+import {createSchemaPatternMatcher} from './matchSchemaPattern.js'
 import {runSchemaExtraction} from './runSchemaExtraction.js'
 import {schemasExtractDebug} from './utils/debug.js'
 import {SchemaExtractionError} from './utils/SchemaExtractionError.js'
@@ -144,10 +144,7 @@ export async function startExtractSchemaWatcher(
   // Run initial extraction
   await runExtraction()
 
-  const absoluteWatchPatterns = await glob(watchPatterns, {
-    absolute: true,
-    ignore: IGNORED_PATTERNS,
-  })
+  const absoluteWatchPatterns = watchPatterns.map((pattern) => join(workDir, pattern))
 
   // Create extraction runner with concurrency control
   const {runExtraction: runConcurrentExtraction} = createExtractionRunner(async () => {
@@ -159,12 +156,19 @@ export async function startExtractSchemaWatcher(
     void runConcurrentExtraction()
   }, 1000)
 
+  const {isMatch} = createSchemaPatternMatcher(watchPatterns)
+
   const watcher: FSWatcher = chokidarWatch(absoluteWatchPatterns, {
     cwd: workDir,
+    ignored: IGNORED_PATTERNS,
     ignoreInitial: true,
   })
 
   watcher.on('all', (event, filePath) => {
+    if (!isMatch(filePath, workDir)) {
+      return
+    }
+
     const timestamp = new Date().toLocaleTimeString()
     const relativePath = isAbsolute(filePath) ? relative(workDir, filePath) : filePath
     output.log(`[${timestamp}] ${event}: ${relativePath}`)
