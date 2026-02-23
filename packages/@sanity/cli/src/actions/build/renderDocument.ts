@@ -1,5 +1,5 @@
 import {ux} from '@oclif/core'
-import {tsxWorkerTask} from '@sanity/cli-core'
+import {tsWorkerTask} from '@sanity/cli-core'
 
 import {buildDebug} from './buildDebug.js'
 
@@ -33,11 +33,10 @@ interface RenderDocumentWorkerResult {
 export async function renderDocument(options: RenderDocumentOptions): Promise<string> {
   buildDebug('Starting worker thread for %s', import.meta.url)
   try {
-    const msg = await tsxWorkerTask<RenderDocumentWorkerResult>(
+    const msg = await tsWorkerTask<RenderDocumentWorkerResult>(
       new URL(`renderDocument.worker.js`, import.meta.url),
       {
         name: 'renderDocument',
-        rootPath: options.studioRootPath,
         workerData: {...options, shouldWarn: true},
       },
     )
