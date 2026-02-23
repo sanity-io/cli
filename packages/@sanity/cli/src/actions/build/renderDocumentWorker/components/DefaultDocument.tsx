@@ -1,6 +1,6 @@
-import {Favicons} from './Favicons'
-import {GlobalErrorHandler} from './GlobalErrorHandler'
-import {NoJavascript} from './NoJavascript'
+import {Favicons} from './Favicons.js'
+import {GlobalErrorHandler} from './GlobalErrorHandler.js'
+import {NoJavascript} from './NoJavascript.js'
 
 const globalStyles = `
   @font-face {

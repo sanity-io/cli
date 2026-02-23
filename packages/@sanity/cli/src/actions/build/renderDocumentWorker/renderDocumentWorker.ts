@@ -1,6 +1,6 @@
 import {type MessagePort} from 'node:worker_threads'
 
-import {getDocumentHtml} from './getDocumentHtml.jsx'
+import {getDocumentHtml} from './getDocumentHtml.js'
 import {type DocumentProps} from './types.js'
 
 /**

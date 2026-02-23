@@ -1,13 +1,13 @@
 /**
  * App HTML Document, this is in the _internal package
- * to avoid importing styled-components from sanity pacakge
+ * to avoid importing styled-components from sanity package
  */
 
 import {type JSX} from 'react'
 
-import {Favicons} from './Favicons'
-import {GlobalErrorHandler} from './GlobalErrorHandler'
-import {NoJavascript} from './NoJavascript'
+import {Favicons} from './Favicons.js'
+import {GlobalErrorHandler} from './GlobalErrorHandler.js'
+import {NoJavascript} from './NoJavascript.js'
 
 /**
  * @internal

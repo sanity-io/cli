@@ -13,6 +13,9 @@
     },
     "target": "es2023"
   },
+  "module": {
+    "type": "nodenext"
+  },
   "isModule": true,
   "sourceMaps": true
 }
