@@ -16,7 +16,6 @@ import {MediaDeployAspectCommand} from '../deploy-aspect.js'
 const mockFsAccess = vi.hoisted(() => vi.fn())
 const mockFsReaddir = vi.hoisted(() => vi.fn())
 const mockImportModule = vi.hoisted(() => vi.fn())
-const mockGetTsconfig = vi.hoisted(() => vi.fn())
 
 vi.mock('node:fs/promises', () => ({
   access: mockFsAccess,
@@ -30,10 +29,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
     importModule: mockImportModule,
   }
 })
-
-vi.mock('get-tsconfig', () => ({
-  getTsconfig: mockGetTsconfig,
-}))
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
@@ -162,7 +157,6 @@ function setupImportModuleMock(
 function setupDefaultMocks() {
   mockFsAccess.mockResolvedValue(undefined)
   mockFsReaddir.mockResolvedValue([])
-  mockGetTsconfig.mockReturnValue({path: '/test/tsconfig.json'} as never)
 }
 
 describe('#media:deploy-aspect', () => {

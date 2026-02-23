@@ -1,8 +1,6 @@
 import {fileURLToPath, URL} from 'node:url'
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
-import {getTsconfig} from 'get-tsconfig'
-
 import {type RequireProps} from '../../types.js'
 import {isRecord} from '../../util/isRecord.js'
 import {promisifyWorker} from '../../util/promisifyWorker.js'
@@ -12,9 +10,7 @@ import {promisifyWorker} from '../../util/promisifyWorker.js'
  *
  * @internal
  */
-interface TsxWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
-  rootPath: string
-}
+type TsWorkerTaskOptions = RequireProps<WorkerOptions, 'name'>
 
 /**
  * Executes a worker file with tsx registered. This means you can import other
@@ -31,19 +27,13 @@ interface TsxWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
  * @throws If the worker exits with a non-zero code
  * @internal
  */
-export function tsxWorkerTask<T = unknown>(
-  filePath: URL,
-  options: TsxWorkerTaskOptions,
-): Promise<T> {
-  const tsconfig = getTsconfig(options.rootPath)
-
+export function tsWorkerTask<T = unknown>(filePath: URL, options: TsWorkerTaskOptions): Promise<T> {
   const env = {
     ...(isRecord(options.env) ? options.env : process.env),
-    ...(tsconfig?.path ? {TSX_TSCONFIG_PATH: tsconfig.path} : {}),
-    TSX_WORKER_TASK_SCRIPT: fileURLToPath(filePath),
+    TS_WORKER_TASK_SCRIPT: fileURLToPath(filePath),
   }
 
-  const worker = new Worker(new URL('tsxWorkerLoader.worker.js', import.meta.url), {
+  const worker = new Worker(new URL('tsWorkerLoader.worker.js', import.meta.url), {
     ...options,
     env,
   })
