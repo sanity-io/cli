@@ -1,6 +1,3 @@
-import {dirname} from 'node:path'
-import {fileURLToPath} from 'node:url'
-
 import {ux} from '@oclif/core'
 import {tsxWorkerTask} from '@sanity/cli-core'
 
@@ -34,16 +31,13 @@ interface RenderDocumentWorkerResult {
 }
 
 export async function renderDocument(options: RenderDocumentOptions): Promise<string> {
-  const filename = fileURLToPath(import.meta.url)
-  const dir = dirname(fileURLToPath(import.meta.url))
-
-  buildDebug('Starting worker thread for %s', filename)
+  buildDebug('Starting worker thread for %s', import.meta.url)
   try {
     const msg = await tsxWorkerTask<RenderDocumentWorkerResult>(
       new URL(`renderDocument.worker.js`, import.meta.url),
       {
         name: 'renderDocument',
-        rootPath: dir,
+        rootPath: options.studioRootPath,
         workerData: {...options, shouldWarn: true},
       },
     )
