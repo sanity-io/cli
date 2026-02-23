@@ -109,7 +109,6 @@ describe('sanitySchemaExtractionPlugin', () => {
       enforceRequiredFields: true,
       format: 'groq-type-nodes',
       outputPath: path.join(TEST_PROJECT_DIR, 'schema.json'),
-      watchPatterns: [],
       workspace: undefined,
     })
 
@@ -192,7 +191,6 @@ describe('sanitySchemaExtractionPlugin', () => {
       enforceRequiredFields: false,
       format: 'groq-type-nodes',
       outputPath: path.join(TEST_PROJECT_DIR, 'dist', 'schema.json'),
-      watchPatterns: [],
       workspace: undefined,
     })
 
