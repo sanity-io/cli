@@ -45,19 +45,19 @@ export async function getCliConfig(rootPath: string): Promise<CliConfig> {
       tsconfigPath: getTsconfig(rootPath)?.path ?? undefined,
     })
 
-    debug('CLI config', result)
+    debug('CLI config loaded: %o', result)
 
     cliConfig = result
   } catch (err) {
     debug('Failed to load CLI config in worker thread: %s', err)
 
-    throw new Error('CLI config cannot be loaded')
+    throw new Error('CLI config cannot be loaded', {cause: err})
   }
 
   const {data, error, success} = cliConfigSchema.safeParse(cliConfig)
   if (!success) {
     debug(`Invalid CLI config: ${error.message}`)
-    throw new Error(`Invalid CLI config: ${error.message}`)
+    throw new Error(`Invalid CLI config: ${error.message}`, {cause: error})
   }
 
   return data

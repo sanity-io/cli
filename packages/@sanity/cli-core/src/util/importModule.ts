@@ -14,7 +14,7 @@ interface ImportModuleOptions {
    * Path to the tsconfig file to use for the import. If not provided, the tsconfig
    * will be inferred from the nearest `tsconfig.json` file.
    */
-  tsconfigPath?: boolean | string
+  tsconfigPath?: string
 }
 
 const debug = subdebug('importModule')
@@ -37,7 +37,7 @@ export async function importModule<T = unknown>(
 
   const jiti = createJiti(import.meta.url, {
     debug: debug.enabled,
-    tsconfigPaths: typeof tsconfigPath === 'string' ? tsconfigPath : undefined,
+    tsconfigPaths: typeof tsconfigPath === 'string' ? tsconfigPath : true,
   })
 
   const fileURL = typeof filePath === 'string' ? pathToFileURL(filePath) : filePath
