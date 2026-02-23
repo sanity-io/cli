@@ -31,7 +31,7 @@ const debug = subdebug('importModule')
  */
 export async function importModule<T = unknown>(
   filePath: string | URL,
-  options: ImportModuleOptions,
+  options: ImportModuleOptions = {},
 ): Promise<T> {
   const {default: returnDefault = true, tsconfigPath} = options
 

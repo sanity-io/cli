@@ -1,5 +1,3 @@
-import {getTsconfig} from 'get-tsconfig'
-
 import {debug} from '../../debug.js'
 import {importModule} from '../../util/importModule.js'
 import {NotFoundError} from '../../util/NotFoundError.js'
@@ -41,9 +39,7 @@ export async function getCliConfig(rootPath: string): Promise<CliConfig> {
 
   let cliConfig: CliConfig | undefined
   try {
-    const result = await importModule<CliConfig>(configPath, {
-      tsconfigPath: getTsconfig(rootPath)?.path ?? undefined,
-    })
+    const result = await importModule<CliConfig>(configPath)
 
     debug('CLI config loaded: %o', result)
 

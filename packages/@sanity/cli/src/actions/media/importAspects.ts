@@ -8,7 +8,6 @@ import {
   type MediaLibraryAssetAspectDocument,
   type SchemaValidationProblem,
 } from '@sanity/types'
-import {getTsconfig} from 'get-tsconfig'
 
 /**
  * File extensions that are considered valid aspect definition files
@@ -92,9 +91,6 @@ export async function importAspects(options: ImportAspectsOptions): Promise<Impo
     (entry) => entry.isFile() && ASPECT_FILE_EXTENSIONS.has(path.extname(entry.name)),
   )
 
-  // Get tsconfig for TypeScript compilation
-  const tsconfig = getTsconfig(aspectsPath)
-
   // Import and validate all aspect files
   const aspects: AspectContainer[] = []
 
@@ -104,9 +100,7 @@ export async function importAspects(options: ImportAspectsOptions): Promise<Impo
 
     try {
       // Dynamically import the aspect file with TypeScript support
-      const maybeAspect = await importModule(filePath, {
-        tsconfigPath: tsconfig?.path,
-      })
+      const maybeAspect = await importModule(filePath)
 
       // Check if user wants to filter this aspect
       if (!filterAspects(maybeAspect)) {
