@@ -15,6 +15,15 @@ const mockedSelect = vi.hoisted(() => vi.fn())
 const mockedConfirm = vi.hoisted(() => vi.fn())
 const mockedCompareDependencyVersions = vi.hoisted(() => vi.fn())
 const mockedUpgradePackages = vi.hoisted(() => vi.fn())
+const mockedIsInteractive = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...original,
+    isInteractive: mockedIsInteractive,
+  }
+})
 
 vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
   const original = await importOriginal<typeof import('@sanity/cli-core/ux')>()
@@ -35,6 +44,7 @@ vi.mock('../../util/packageManager/upgradePackages.js', () => ({
 
 describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, () => {
   beforeEach(() => {
+    mockedIsInteractive.mockReturnValue(true)
     mockedConfirm.mockResolvedValue(true)
     mockedSelect.mockResolvedValue('upgrade-and-proceed')
     mockedCompareDependencyVersions.mockResolvedValue([])
@@ -209,14 +219,32 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
 
     const {error} = await testCommand(BuildCommand, [])
 
-    expect(error?.message).toContain('Declined to continue with build')
-    expect(error?.oclif?.exit).toBe(1)
     expect(mockedUpgradePackages).toHaveBeenCalledWith(
       expect.objectContaining({
         packages: [['sanity', '3.1.0']],
       }),
       expect.any(Object),
     )
+  })
+
+  test('should continue without upgrading when user selects "continue"', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
+    mockedCompareDependencyVersions.mockResolvedValue([
+      {installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'},
+    ])
+    mockedSelect.mockResolvedValue('continue')
+
+    const {error, stderr} = await testCommand(BuildCommand, [])
+
+    if (error) throw error
+    expect(mockedUpgradePackages).not.toHaveBeenCalled()
+    expect(stderr).toContain('Build Sanity Studio')
+
+    const outputFolder = join(cwd, 'dist')
+    const files = await readdir(outputFolder)
+    expect(files).toContain('index.html')
   })
 
   test('should upgrade and build when user selects "upgrade-and-proceed"', async () => {
@@ -244,7 +272,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     expect(files).toContain('index.html')
   })
 
-  test('should skip version prompt in unattended mode', async () => {
+  test('should skip version prompt in unattended mode and show warning', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
 
@@ -255,6 +283,22 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
       config: {root: cwd},
     })
+
+    if (error) throw error
+    expect(mockedSelect).not.toHaveBeenCalled()
+    expect(stderr).toContain('Build Sanity Studio')
+  })
+
+  test('should skip version prompt in non-interactive mode and show warning', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
+    mockedIsInteractive.mockReturnValue(false)
+    mockedCompareDependencyVersions.mockResolvedValue([
+      {installed: '3.0.0', pkg: 'sanity', remote: '3.1.0'},
+    ])
+
+    const {error, stderr} = await testCommand(BuildCommand, [])
 
     if (error) throw error
     expect(mockedSelect).not.toHaveBeenCalled()

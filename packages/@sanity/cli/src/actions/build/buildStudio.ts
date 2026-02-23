@@ -2,7 +2,7 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {getCliTelemetry, getTimer} from '@sanity/cli-core'
+import {getCliTelemetry, getTimer, isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import semver from 'semver'
 
@@ -77,48 +77,58 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     // Check the versions
     const result = await compareDependencyVersions(sanityDependencies, workDir, {appId})
 
-    // If it is in unattended mode, we don't want to prompt
-    if (result?.length && !unattendedMode) {
-      const choice = await select({
-        choices: [
-          {
-            name: `Upgrade and proceed with build`,
-            value: 'upgrade-and-proceed',
-          },
-          {
-            name: `Upgrade only. You will need to run the build command again`,
-            value: 'upgrade',
-          },
-          {name: 'Cancel', value: 'cancel'},
-        ],
-        default: 'upgrade-and-proceed',
-        message: styleText(
-          'yellow',
-          `The following local package versions are different from the versions currently served at runtime.\n` +
-            `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
-            `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')} \n\n` +
-            `Do you want to upgrade local versions before deploying?`,
-        ),
-      })
+    if (result?.length) {
+      const versionMismatchWarning =
+        `The following local package versions are different from the versions currently served at runtime.\n` +
+        `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
+        `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')}`
 
-      if (choice === 'cancel') {
-        output.error('Declined to continue with build', {exit: 1})
-        return
-      }
+      // If it is non-interactive or in unattended mode, we don't want to prompt
+      if (isInteractive() && !unattendedMode) {
+        const choice = await select({
+          choices: [
+            {
+              name: `Upgrade local versions (recommended). You will need to run the build command again`,
+              value: 'upgrade',
+            },
+            {
+              name: `Upgrade and proceed with build`,
+              value: 'upgrade-and-proceed',
+            },
+            {
+              name: `Continue anyway`,
+              value: 'continue',
+            },
+            {name: 'Cancel', value: 'cancel'},
+          ],
+          default: 'upgrade-and-proceed',
+          message: styleText(
+            'yellow',
+            `${logSymbols.warning} ${versionMismatchWarning}\n\nDo you want to upgrade local versions before deploying?`,
+          ),
+        })
 
-      if (choice === 'upgrade' || choice === 'upgrade-and-proceed') {
-        await upgradePackages(
-          {
-            packageManager: (await getPackageManagerChoice(workDir, {interactive: false})).chosen,
-            packages: result.map((res) => [res.pkg, res.remote]),
-          },
-          {output, workDir},
-        )
-
-        if (choice !== 'upgrade-and-proceed') {
+        if (choice === 'cancel') {
           output.error('Declined to continue with build', {exit: 1})
           return
         }
+
+        if (choice === 'upgrade' || choice === 'upgrade-and-proceed') {
+          await upgradePackages(
+            {
+              packageManager: (await getPackageManagerChoice(workDir, {interactive: false})).chosen,
+              packages: result.map((res) => [res.pkg, res.remote]),
+            },
+            {output, workDir},
+          )
+
+          if (choice === 'upgrade') {
+            return
+          }
+        }
+      } else {
+        // if non-interactive or unattended, just show the warning
+        output.warn(versionMismatchWarning)
       }
     }
   }
