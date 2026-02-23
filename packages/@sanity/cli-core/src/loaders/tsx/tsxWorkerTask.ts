@@ -30,8 +30,6 @@ interface TsxWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
  * @throws If the file does not exist
  * @throws If the worker exits with a non-zero code
  * @internal
- *
- * @deprecated Use `importModule` instead.
  */
 export function tsxWorkerTask<T = unknown>(
   filePath: URL,
