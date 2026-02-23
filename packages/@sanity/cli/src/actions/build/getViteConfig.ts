@@ -11,7 +11,7 @@ import {sanityBuildEntries} from '../../server/vite/plugin-sanity-build-entries.
 import {sanityFaviconsPlugin} from '../../server/vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from '../../server/vite/plugin-sanity-runtime-rewrite.js'
 import {sanitySchemaExtractionPlugin} from '../../server/vite/plugin-schema-extraction.js'
-// import {sanityTypegenPlugin} from '../../server/vite/plugin-typegen.js'
+import {sanityTypegenPlugin} from '../../server/vite/plugin-typegen.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {
   getAppEnvironmentVariables,
@@ -88,7 +88,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     server,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
-    // typegen,
+    typegen,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)
@@ -164,15 +164,15 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
           ]
         : []),
       // Add typegen when enabled
-      // ...(typegen?.enabled
-      //   ? [
-      //       sanityTypegenPlugin({
-      //         config: typegen,
-      //         telemetryLogger: getCliTelemetry(),
-      //         workDir: cwd,
-      //       }),
-      //     ]
-      //   : []),
+      ...(typegen?.enabled
+        ? [
+            sanityTypegenPlugin({
+              config: typegen,
+              telemetryLogger: getCliTelemetry(),
+              workDir: cwd,
+            }),
+          ]
+        : []),
     ],
     resolve: {
       dedupe: ['react', 'react-dom', 'sanity', 'styled-components'],

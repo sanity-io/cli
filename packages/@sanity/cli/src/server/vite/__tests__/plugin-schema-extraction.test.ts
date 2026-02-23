@@ -5,7 +5,7 @@ import {SchemaValidationProblemGroup} from 'sanity'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {SchemaExtractionError} from '../../../actions/schema/utils/SchemaExtractionError.js'
-import {sanitySchemaExtractionPlugin} from '../plugin-schema-extraction'
+import {sanitySchemaExtractionPlugin} from '../plugin-schema-extraction.js'
 
 const mockRunSchemaExtraction = vi.hoisted(() => vi.fn())
 

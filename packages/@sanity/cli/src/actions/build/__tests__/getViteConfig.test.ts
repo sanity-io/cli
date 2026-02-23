@@ -11,6 +11,7 @@ import {
 } from '../getViteConfig.js'
 
 const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
+const mockTypegenPlugin = vi.hoisted(() => vi.fn())
 
 // Mock all external dependencies
 vi.mock('read-package-up', () => ({
@@ -61,6 +62,12 @@ vi.mock('../../../server/vite/plugin-sanity-runtime-rewrite.js', () => ({
 vi.mock('../../../server/vite/plugin-schema-extraction.js', () => ({
   sanitySchemaExtractionPlugin: mockExtractSchemaPlugin.mockReturnValue({
     name: 'sanity/schema-extraction',
+  }),
+}))
+
+vi.mock('../../../server/vite/plugin-typegen.js', () => ({
+  sanityTypegenPlugin: mockTypegenPlugin.mockReturnValue({
+    name: 'sanity/typegen',
   }),
 }))
 
@@ -371,6 +378,57 @@ describe('#getViteConfig', () => {
 
     expect(mockExtractSchemaPlugin).not.toHaveBeenCalled()
     expect(schemaPlugin).toBeUndefined()
+  })
+
+  test('should include typegen plugin when enabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+      typegen: {
+        enabled: true,
+        generates: 'sanity.types.ts',
+        schema: 'custom-schema.json',
+      },
+    }
+
+    const config = await getViteConfig(options)
+
+    const typegenPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/typegen',
+    )
+
+    expect(mockTypegenPlugin).toHaveBeenCalledWith({
+      config: {
+        enabled: true,
+        generates: 'sanity.types.ts',
+        schema: 'custom-schema.json',
+      },
+      telemetryLogger: undefined,
+      workDir: mockTestCwd,
+    })
+    expect(typegenPlugin).toBeDefined()
+  })
+
+  test('should not include typegen plugin when disabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+      typegen: {
+        enabled: false,
+        generates: 'sanity.types.ts',
+      },
+    }
+
+    const config = await getViteConfig(options)
+
+    const typegenPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/typegen',
+    )
+
+    expect(mockTypegenPlugin).not.toHaveBeenCalled()
+    expect(typegenPlugin).toBeUndefined()
   })
 })
 
