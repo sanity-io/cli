@@ -165,7 +165,6 @@ export function sanitySchemaExtractionPlugin(options: SchemaExtractionPluginOpti
       enforceRequiredFields,
       format,
       outputPath: resolvedOutputPath,
-      watchPatterns: additionalPatterns,
       workspace: workspaceName,
     })
 
