@@ -4,6 +4,7 @@ import {createServer, createServerModuleRunner, type InlineConfig, loadEnv, merg
 
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {type CliConfig} from '../../config/cli/types/cliConfig.js'
+import {subdebug} from '../../debug.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js'
 import {isRecord} from '../../util/isRecord.js'
@@ -17,6 +18,8 @@ const rootPath = process.env.STUDIO_WORKER_STUDIO_ROOT_PATH
 if (!rootPath) {
   throw new Error('Missing `STUDIO_WORKER_STUDIO_ROOT_PATH` environment variable')
 }
+
+const debug = subdebug('studio:worker')
 
 const workerScriptPath = process.env.STUDIO_WORKER_TASK_FILE
 if (!workerScriptPath) {
@@ -44,6 +47,17 @@ const defaultViteConfig: InlineConfig = {
     hmr: false,
     watch: null,
   },
+  ssr: {
+    /**
+     * By default, all dependencies are externalized. Locally linked dependencies are not externalized,
+     * so we need to explicitly list the dependencies that should not be externalized.
+     *
+     * cli-core should not be externalized, or the worker won't intercept the imports and throw an error.
+     *
+     * @see https://vitejs.dev/config/ssr-config.html#ssr-noexternal
+     */
+    noExternal: ['@sanity/cli-core'],
+  },
 }
 
 // Allow the CLI config (`sanity.cli.(js|ts)`) to define a `vite` property which can
@@ -52,6 +66,7 @@ let cliConfig: CliConfig | undefined
 try {
   cliConfig = await getCliConfig(rootPath)
 } catch (err) {
+  debug('Failed to load CLI config: %o', err)
   if (!isNotFoundError(err)) {
     // eslint-disable-next-line no-console
     console.warn('[warn] Failed to load CLI config:', err)
@@ -69,6 +84,7 @@ if (typeof cliConfig?.vite === 'function') {
   viteConfig = mergeConfig(viteConfig, cliConfig.vite)
 }
 
+debug('Creating Vite server with config: %o', viteConfig)
 // Vite will build the files we give it - targetting Node.js instead of the browser.
 // We include the inject plugin in order to provide the stubs for the undefined global APIs.
 const server = await createServer(viteConfig)
@@ -85,7 +101,6 @@ for (const key in env) {
   process.env[key] ??= env[key]
 }
 
-// Now we're using Vite's Module Runner (replaces vite-node in Vite 4+)
 const runner = await createServerModuleRunner(server.environments.ssr, {
   hmr: false,
   sourcemapInterceptor: 'prepareStackTrace',

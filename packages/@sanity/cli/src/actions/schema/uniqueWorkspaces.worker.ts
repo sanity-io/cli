@@ -24,5 +24,5 @@ try {
 
   parentPort.postMessage(safeStructuredClone(uniqueWorkspaces))
 } catch (error) {
-  throw new Error(error instanceof Error ? error.message : String(error))
+  throw new Error(error instanceof Error ? error.message : String(error), {cause: error})
 }
