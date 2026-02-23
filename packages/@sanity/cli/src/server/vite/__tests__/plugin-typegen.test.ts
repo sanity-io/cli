@@ -129,20 +129,18 @@ describe('sanityTypegenPlugin', () => {
     }) => void
     configureServer({httpServer, watcher})
 
-    // No generation yet
     expect(runTypegenGenerate).not.toHaveBeenCalled()
 
-    // Simulate server starting
     httpServer.emit('listening')
 
-    // Still not called - waiting for initial delay (1000ms)
     expect(runTypegenGenerate).not.toHaveBeenCalled()
 
-    // Advance past initial generation delay
     await vi.advanceTimersByTimeAsync(1000)
 
     expect(runTypegenGenerate).toHaveBeenCalledTimes(1)
     expect(output.info).toHaveBeenCalledWith(expect.anything(), 'Typegen enabled. Watching:')
+
+    watcher.emit('close')
   })
 
   it('generates types when a matching query file changes', async () => {
@@ -166,24 +164,20 @@ describe('sanityTypegenPlugin', () => {
 
     expect(runTypegenGenerate).toHaveBeenCalledTimes(0)
 
-    // Trigger change on a query file
     watcher.emit('change', path.join('src', 'queries', 'posts.ts'))
 
-    // Advance past debounce (1000ms default)
     await vi.advanceTimersByTimeAsync(1000)
-    // Both initial generation (1000ms delay) and debounced change fire together
     expect(runTypegenGenerate).toHaveBeenCalledTimes(2)
 
-    // Trigger another change
     watcher.emit('change', path.join('src', 'queries', 'authors.ts'))
     await vi.advanceTimersByTimeAsync(1000)
     expect(runTypegenGenerate).toHaveBeenCalledTimes(3)
 
-    // Trigger a change event unrelated to the watching patterns
     watcher.emit('change', path.join('/other', 'path', 'file.ts'))
     await vi.advanceTimersByTimeAsync(1000)
-    // Should still be 3 since the file doesn't match the pattern
     expect(runTypegenGenerate).toHaveBeenCalledTimes(3)
+
+    watcher.emit('close')
   })
 
   it('generates types when schema.json changes', async () => {
@@ -207,12 +201,12 @@ describe('sanityTypegenPlugin', () => {
 
     expect(runTypegenGenerate).toHaveBeenCalledTimes(0)
 
-    // Trigger change on schema.json (using absolute path as watcher would)
     watcher.emit('change', path.join(TEST_PROJECT_DIR, 'schema.json'))
 
-    // Advance past debounce (1000ms) - both initial and debounced fire
     await vi.advanceTimersByTimeAsync(1000)
     expect(runTypegenGenerate).toHaveBeenCalledTimes(2)
+
+    watcher.emit('close')
   })
 
   it('logs error when schema.json does not exist', async () => {
@@ -234,19 +228,17 @@ describe('sanityTypegenPlugin', () => {
     }) => void
     configureServer({httpServer: null, watcher})
 
-    // Trigger change
     watcher.emit('change', path.join('src', 'queries', 'posts.ts'))
     await vi.advanceTimersByTimeAsync(1000)
 
-    // Should not call runTypegenGenerate since schema doesn't exist
     expect(runTypegenGenerate).not.toHaveBeenCalled()
 
-    // Should log error about missing schema
     expect(output.error).toHaveBeenCalledWith(expect.stringContaining('Schema file not found'))
+
+    watcher.emit('close')
   })
 
   it('logs warning when generation has errors', async () => {
-    // Mock both calls to return errors (initial + debounced)
     const errorResult = {
       code: '',
       emptyUnionTypeNodesGenerated: 0,
@@ -279,12 +271,13 @@ describe('sanityTypegenPlugin', () => {
     watcher.emit('change', path.join('src', 'queries', 'posts.ts'))
     await vi.advanceTimersByTimeAsync(1000)
 
-    // Both initial and debounced fire at 1000ms
     expect(runTypegenGenerate).toHaveBeenCalledTimes(2)
     expect(output.log).toHaveBeenCalledWith(
       expect.anything(),
       expect.stringContaining('with errors in 2 files'),
     )
+
+    watcher.emit('close')
   })
 
   it('generates types during build via buildEnd hook', async () => {
@@ -321,7 +314,7 @@ describe('sanityTypegenPlugin', () => {
     vi.useRealTimers()
 
     const plugin = sanityTypegenPlugin({
-      config: {}, // Empty config - should use defaults
+      config: {},
       output,
       workDir: TEST_PROJECT_DIR,
     })
@@ -334,10 +327,10 @@ describe('sanityTypegenPlugin', () => {
 
     expect(runTypegenGenerate).toHaveBeenCalledWith({
       config: expect.objectContaining({
-        formatGeneratedCode: false, // default
-        generates: 'sanity.types.ts', // default
-        overloadClientMethods: false, // default
-        schema: 'schema.json', // default
+        formatGeneratedCode: false,
+        generates: 'sanity.types.ts',
+        overloadClientMethods: false,
+        schema: 'schema.json',
       }),
       workDir: TEST_PROJECT_DIR,
     })
@@ -363,12 +356,13 @@ describe('sanityTypegenPlugin', () => {
     }) => void
     configureServer({httpServer, watcher})
 
-    // Telemetry trace should be started
     expect(telemetryLogger.trace).toHaveBeenCalled()
     expect(traceMock.start).toHaveBeenCalled()
     expect(traceMock.log).toHaveBeenCalledWith({
       step: 'started',
     })
+
+    watcher.emit('close')
   })
 
   it('debounces rapid file changes', async () => {
@@ -390,16 +384,14 @@ describe('sanityTypegenPlugin', () => {
     }) => void
     configureServer({httpServer: null, watcher})
 
-    // Trigger multiple rapid changes
     watcher.emit('change', path.join('src', 'queries', 'posts.ts'))
     watcher.emit('change', path.join('src', 'queries', 'authors.ts'))
     watcher.emit('change', path.join('src', 'queries', 'categories.ts'))
 
-    // Advance past debounce (1000ms)
     await vi.advanceTimersByTimeAsync(1000)
 
-    // Should generate twice: once from initial generation (1000ms delay) and once from debounced changes
-    // The multiple rapid changes are debounced into a single call
     expect(runTypegenGenerate).toHaveBeenCalledTimes(2)
+
+    watcher.emit('close')
   })
 })

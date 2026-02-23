@@ -75,7 +75,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
-    findProjectRoot: vi.fn().mockResolvedValue(''),
+    findProjectRoot: vi.fn().mockResolvedValue({path: '/mock/config/path'}),
   }
 })
 
@@ -358,6 +358,7 @@ describe('#getViteConfig', () => {
 
     expect(mockExtractSchemaPlugin).toHaveBeenCalledWith({
       additionalPatterns: ['custom/**/*.ts'],
+      configPath: '/mock/config/path',
       enforceRequiredFields: true,
       outputPath: 'custom-schema.json',
       telemetryLogger: undefined,
