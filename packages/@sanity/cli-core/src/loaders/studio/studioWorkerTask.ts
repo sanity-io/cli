@@ -1,3 +1,4 @@
+import {fileURLToPath} from 'node:url'
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {type RequireProps} from '../../types.js'
@@ -78,7 +79,9 @@ export function studioWorkerTask<T = unknown>(
  * @internal
  */
 export function createStudioWorker(filePath: URL, options: StudioWorkerTaskOptions) {
-  if (!/\.worker\.(js|ts)$/.test(filePath.pathname)) {
+  const normalizedFilePath = fileURLToPath(filePath)
+
+  if (!/\.worker\.(js|ts)$/.test(normalizedFilePath)) {
     throw new Error('Studio worker tasks must include `.worker.(js|ts)` in path')
   }
 
@@ -87,7 +90,7 @@ export function createStudioWorker(filePath: URL, options: StudioWorkerTaskOptio
     env: {
       ...(isRecord(options.env) ? options.env : process.env),
       STUDIO_WORKER_STUDIO_ROOT_PATH: options.studioRootPath,
-      STUDIO_WORKER_TASK_FILE: filePath.pathname,
+      STUDIO_WORKER_TASK_FILE: normalizedFilePath,
     },
   })
 }

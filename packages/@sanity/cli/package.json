@@ -99,7 +99,6 @@
     "execa": "catalog:",
     "form-data": "^4.0.5",
     "get-latest-version": "^6.0.1",
-    "get-tsconfig": "catalog:",
     "git-user-info": "^2.0.3",
     "gunzip-maybe": "^1.4.2",
     "import-meta-resolve": "catalog:",

@@ -15,7 +15,7 @@ import {MediaDeployAspectCommand} from '../deploy-aspect.js'
 
 const mockFsAccess = vi.hoisted(() => vi.fn())
 const mockFsReaddir = vi.hoisted(() => vi.fn())
-const mockTsImport = vi.hoisted(() => vi.fn())
+const mockImportModule = vi.hoisted(() => vi.fn())
 const mockGetTsconfig = vi.hoisted(() => vi.fn())
 
 vi.mock('node:fs/promises', () => ({
@@ -23,9 +23,13 @@ vi.mock('node:fs/promises', () => ({
   readdir: mockFsReaddir,
 }))
 
-vi.mock('tsx/esm/api', () => ({
-  tsImport: mockTsImport,
-}))
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    importModule: mockImportModule,
+  }
+})
 
 vi.mock('get-tsconfig', () => ({
   getTsconfig: mockGetTsconfig,
@@ -124,9 +128,9 @@ function setupFileSystemMock(files: Array<{filename: string; isFile: boolean}>) 
 }
 
 /**
- * Helper to setup tsImport mock to return aspect definitions
+ * Helper to setup importModule mock to return aspect definitions
  */
-function setupTsImportMock(
+function setupImportModuleMock(
   imports: Record<
     string,
     {
@@ -136,7 +140,7 @@ function setupTsImportMock(
     }
   >,
 ) {
-  mockTsImport.mockImplementation(async (filePath: string) => {
+  mockImportModule.mockImplementation(async (filePath: string) => {
     const filename = basename(filePath)
     const importConfig = imports[filename]
 
@@ -148,9 +152,7 @@ function setupTsImportMock(
       throw new Error(importConfig.errorMessage || 'Import failed')
     }
 
-    return {
-      default: importConfig.aspect,
-    }
+    return importConfig.aspect
   })
 }
 
@@ -229,7 +231,7 @@ describe('#media:deploy-aspect', () => {
   test('should successfully deploy a single aspect', async () => {
     setupFileSystemMock([{filename: 'myAspect.ts', isFile: true}])
 
-    setupTsImportMock({
+    setupImportModuleMock({
       'myAspect.ts': {
         aspect: createMockAspect('myAspect'),
       },
@@ -262,7 +264,7 @@ describe('#media:deploy-aspect', () => {
     expect(mockFsReaddir).toHaveBeenCalledWith(convertToSystemPath('/test/project/aspects'), {
       withFileTypes: true,
     })
-    expect(mockTsImport).toHaveBeenCalled()
+    expect(mockImportModule).toHaveBeenCalled()
     expect(stdout).toContain('✓')
     expect(stdout).toContain('Deployed 1 aspect')
     expect(stdout).toContain('myAspect')
@@ -274,7 +276,7 @@ describe('#media:deploy-aspect', () => {
       {filename: 'aspect2.ts', isFile: true},
     ])
 
-    setupTsImportMock({
+    setupImportModuleMock({
       'aspect1.ts': {
         aspect: createMockAspect('aspect1'),
       },
@@ -317,7 +319,7 @@ describe('#media:deploy-aspect', () => {
   test('should use --media-library-id flag when provided', async () => {
     setupFileSystemMock([{filename: 'myAspect.ts', isFile: true}])
 
-    setupTsImportMock({
+    setupImportModuleMock({
       'myAspect.ts': {
         aspect: createMockAspect('myAspect'),
       },
@@ -347,7 +349,7 @@ describe('#media:deploy-aspect', () => {
       {filename: 'anotherAspect.ts', isFile: true},
     ])
 
-    setupTsImportMock({
+    setupImportModuleMock({
       'anotherAspect.ts': {
         aspect: createMockAspect('anotherAspect'),
       },
@@ -383,7 +385,7 @@ describe('#media:deploy-aspect', () => {
       {filename: 'validAspect.ts', isFile: true},
     ])
 
-    setupTsImportMock({
+    setupImportModuleMock({
       'invalidAspect.ts': {
         aspect: createInvalidMockAspect('invalidAspect'),
       },
@@ -425,7 +427,7 @@ describe('#media:deploy-aspect', () => {
   test('should warn if no valid aspects to deploy', async () => {
     setupFileSystemMock([{filename: 'invalidAspect.ts', isFile: true}])
 
-    setupTsImportMock({
+    setupImportModuleMock({
       'invalidAspect.ts': {
         aspect: createInvalidMockAspect('invalidAspect'),
       },
@@ -452,7 +454,7 @@ describe('#media:deploy-aspect', () => {
   test('should handle API errors gracefully', async () => {
     setupFileSystemMock([{filename: 'myAspect.ts', isFile: true}])
 
-    setupTsImportMock({
+    setupImportModuleMock({
       'myAspect.ts': {
         aspect: createMockAspect('myAspect'),
       },
@@ -489,7 +491,7 @@ describe('#media:deploy-aspect', () => {
   test('should fetch and present media libraries for selection', async () => {
     setupFileSystemMock([{filename: 'myAspect.ts', isFile: true}])
 
-    setupTsImportMock({
+    setupImportModuleMock({
       'myAspect.ts': {
         aspect: createMockAspect('myAspect'),
       },

@@ -1,4 +1,4 @@
-import {URL} from 'node:url'
+import {fileURLToPath, URL} from 'node:url'
 import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {getTsconfig} from 'get-tsconfig'
@@ -40,7 +40,7 @@ export function tsxWorkerTask<T = unknown>(
   const env = {
     ...(isRecord(options.env) ? options.env : process.env),
     ...(tsconfig?.path ? {TSX_TSCONFIG_PATH: tsconfig.path} : {}),
-    TSX_WORKER_TASK_SCRIPT: filePath.pathname,
+    TSX_WORKER_TASK_SCRIPT: fileURLToPath(filePath),
   }
 
   const worker = new Worker(new URL('tsxWorkerLoader.worker.js', import.meta.url), {
