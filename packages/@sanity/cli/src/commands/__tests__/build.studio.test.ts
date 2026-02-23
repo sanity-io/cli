@@ -286,6 +286,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
 
     if (error) throw error
     expect(mockedSelect).not.toHaveBeenCalled()
+    expect(stderr).toContain('local version: 3.0.0, runtime version: 3.1.0')
     expect(stderr).toContain('Build Sanity Studio')
   })
 
@@ -302,6 +303,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
 
     if (error) throw error
     expect(mockedSelect).not.toHaveBeenCalled()
+    expect(stderr).toContain('local version: 3.0.0, runtime version: 3.1.0')
     expect(stderr).toContain('Build Sanity Studio')
   })
 
