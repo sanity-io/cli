@@ -13,6 +13,7 @@ import {
   SchemaExtractedTrace,
   SchemaExtractionWatchModeTrace,
 } from '../../telemetry/extractSchema.telemetry.js'
+import {toForwardSlashes} from '../../util/toForwardSlashes.js'
 
 /**
  * Default glob patterns to watch for schema changes.
@@ -220,7 +221,9 @@ export function sanitySchemaExtractionPlugin(options: SchemaExtractionPluginOpti
     const relativePath = path.isAbsolute(filePath)
       ? path.relative(resolvedWorkDir, filePath)
       : filePath
-    if (isMatch(relativePath)) {
+    // Normalize to forward slashes for cross-platform picomatch compatibility
+    const normalizedPath = toForwardSlashes(relativePath)
+    if (isMatch(normalizedPath)) {
       debouncedExtract()
     }
   }
