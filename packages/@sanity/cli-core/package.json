@@ -61,7 +61,7 @@
   "dependencies": {
     "@inquirer/prompts": "^8.2.0",
     "@oclif/core": "catalog:",
-    "@rexxars/jiti": "^2.6.2",
+    "@rexxars/jiti": "catalog:",
     "@sanity/client": "catalog:",
     "@sanity/types": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",

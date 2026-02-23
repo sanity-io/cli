@@ -72,6 +72,7 @@
     "@oclif/plugin-help": "catalog:",
     "@oclif/plugin-not-found": "catalog:",
     "@rexxars/gitconfiglocal": "^3.0.1",
+    "@rexxars/jiti": "catalog:",
     "@sanity/cli-core": "workspace:*",
     "@sanity/client": "catalog:",
     "@sanity/codegen": "catalog:",

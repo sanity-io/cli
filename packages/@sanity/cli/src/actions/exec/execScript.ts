@@ -21,18 +21,18 @@ export async function execScript(options: ExecScriptOptions): Promise<void> {
   const browserEnvPath = new URL('registerBrowserEnv.worker.js', import.meta.url).href
   const configClientPath = new URL('configClient.worker.js', import.meta.url).href
 
-  // Use tsx loader for TypeScript support in the spawned child process
-  // We need to resolve the tsx loader path from the CLI's node_modules since the child
-  // process will run from the user's script directory where tsx may not be installed.
-  // Resolve the tsx loader using Node's module resolution relative to package.json
-  const tsxLoaderPath: string = import.meta.resolve('tsx', import.meta.url)
-  if (!tsxLoaderPath) {
-    throw new Error('@sanity/cli not able to resolve tsx loader')
+  // Use jiti loader for TypeScript support in the spawned child process
+  // We need to resolve the jiti loader path from the CLI's node_modules since the child
+  // process will run from the user's script directory where jiti may not be installed.
+  // Resolve the jiti loader using Node's module resolution relative to package.json
+  const jitiLoaderPath: string = import.meta.resolve('@rexxars/jiti', import.meta.url)
+  if (!jitiLoaderPath) {
+    throw new Error('@sanity/cli not able to resolve jiti loader')
   }
 
   const baseArgs = mockBrowserEnv
-    ? ['--import', tsxLoaderPath, '--import', browserEnvPath]
-    : ['--import', tsxLoaderPath]
+    ? ['--import', jitiLoaderPath, '--import', browserEnvPath]
+    : ['--import', jitiLoaderPath]
   const tokenArgs = withUserToken ? ['--import', configClientPath] : []
 
   const nodeArgs = [...baseArgs, ...tokenArgs, resolvedScriptPath, ...extraArguments]

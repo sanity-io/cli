@@ -50,6 +50,7 @@ catalog:
   rxjs: ^7.8.2
   tinyglobby: ^0.2.15
   'import-meta-resolve': ^4.2.0
+  '@rexxars/jiti': ^2.6.2
 
   # Build Tools
   '@swc/core': ^1.15.11

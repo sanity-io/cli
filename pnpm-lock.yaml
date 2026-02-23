@@ -18,6 +18,9 @@ catalogs:
     '@oclif/plugin-not-found':
       specifier: ^3.2.74
       version: 3.2.74
+    '@rexxars/jiti':
+      specifier: ^2.6.2
+      version: 2.6.2
     '@sanity/codegen':
       specifier: ^5.9.4
       version: 5.9.4
@@ -374,6 +377,9 @@ importers:
       '@rexxars/gitconfiglocal':
         specifier: ^3.0.1
         version: 3.0.1
+      '@rexxars/jiti':
+        specifier: 'catalog:'
+        version: 2.6.2
       '@sanity/cli-core':
         specifier: workspace:*
         version: link:../cli-core
@@ -688,7 +694,7 @@ importers:
         specifier: 'catalog:'
         version: 4.8.0
       '@rexxars/jiti':
-        specifier: ^2.6.2
+        specifier: 'catalog:'
         version: 2.6.2
       '@sanity/client':
         specifier: ^7.15.0
