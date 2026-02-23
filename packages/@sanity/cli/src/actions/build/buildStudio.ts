@@ -101,7 +101,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
             },
             {name: 'Cancel', value: 'cancel'},
           ],
-          default: 'upgrade-and-proceed',
+          default: 'upgrade',
           message: styleText(
             'yellow',
             `${logSymbols.warning} ${versionMismatchWarning}\n\nDo you want to upgrade local versions before deploying?`,
