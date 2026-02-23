@@ -1,6 +1,6 @@
 import {getUserConfig, isCi} from '@sanity/cli-core'
 import {testFixture, testHook} from '@sanity/cli-test'
-import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
 import {checkForUpdates} from '../checkForUpdates.js'
@@ -43,6 +43,7 @@ const mockIsCi = vi.mocked(isCi)
 
 describe('#checkForUpdates', () => {
   beforeEach(() => {
+    vi.unstubAllGlobals()
     vi.stubGlobal('process', {
       ...process,
       stdout: {...process.stdout, isTTY: true},
@@ -55,6 +56,10 @@ describe('#checkForUpdates', () => {
     mockIsInstalledUsingYarn.mockReturnValue(false)
 
     mockConfigStore.clear()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
   })
 
   test('returns early if running on CI', async () => {
