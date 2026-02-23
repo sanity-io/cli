@@ -16,7 +16,7 @@ import {checkRequiredDependencies} from '../build/checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from '../build/checkStudioDependencyVersions.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {devDebug} from './devDebug.js'
-import {getCoreAppURL} from './getCoreAppUrl.js'
+import {getDashboardAppURL} from './getDashboardAppUrl.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 import {type DevActionOptions} from './types.js'
 
@@ -135,7 +135,7 @@ export async function startStudioDevServer(
       output.log(
         styleText(
           ['blue', 'underline'],
-          getCoreAppURL({
+          await getDashboardAppURL({
             httpHost,
             httpPort: port,
             organizationId: organizationId!,
