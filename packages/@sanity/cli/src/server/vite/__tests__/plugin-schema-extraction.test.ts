@@ -80,6 +80,7 @@ describe('sanitySchemaExtractionPlugin', () => {
 
   it('runs initial extraction when httpServer emits listening event', async () => {
     const plugin = sanitySchemaExtractionPlugin({
+      configPath: path.join(TEST_PROJECT_DIR, 'sanity.config.ts'),
       output,
       workDir: TEST_PROJECT_DIR,
     })
@@ -117,6 +118,7 @@ describe('sanitySchemaExtractionPlugin', () => {
 
   it('extracts schema when a matching file changes', async () => {
     const plugin = sanitySchemaExtractionPlugin({
+      configPath: path.join(TEST_PROJECT_DIR, 'sanity.config.ts'),
       debounceMs: 100,
       enforceRequiredFields: true,
       output: {error: vi.fn(), info: vi.fn(), log: vi.fn()},
@@ -169,6 +171,7 @@ describe('sanitySchemaExtractionPlugin', () => {
 
   it('logs error and validation messages when extraction fails', async () => {
     const plugin = sanitySchemaExtractionPlugin({
+      configPath: path.join(TEST_PROJECT_DIR, 'sanity.config.ts'),
       debounceMs: 100,
       output,
       workDir: TEST_PROJECT_DIR,
@@ -218,6 +221,7 @@ describe('sanitySchemaExtractionPlugin', () => {
     ])
 
     const plugin = sanitySchemaExtractionPlugin({
+      configPath: path.join(TEST_PROJECT_DIR, 'sanity.config.ts'),
       outputPath: path.join(TEST_PROJECT_DIR, 'dist', 'schema.json'),
       telemetryLogger: telemetryLogger,
       workDir: TEST_PROJECT_DIR,
@@ -252,6 +256,7 @@ describe('sanitySchemaExtractionPlugin', () => {
 
   it('calls telemetry logger during watch mode', async () => {
     const plugin = sanitySchemaExtractionPlugin({
+      configPath: path.join(TEST_PROJECT_DIR, 'sanity.config.ts'),
       enforceRequiredFields: true,
       output: {error: vi.fn(), info: vi.fn(), log: vi.fn()},
       telemetryLogger: telemetryLogger,

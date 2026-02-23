@@ -40,6 +40,12 @@ const INITIAL_EXTRACTION_DELAY_MS = 1000
  */
 interface SchemaExtractionPluginOptions {
   /**
+   * Name of sanity config file
+   * @example sanity.config.ts
+   */
+  configPath: string
+
+  /**
    * Additional glob patterns to watch for schema changes.
    * These are merged with the default patterns.
    * @example `['lib/custom-types/**\/*.ts', 'shared/schemas/**\/*.ts']`
@@ -123,9 +129,10 @@ interface SchemaExtractionPluginOptions {
  *
  * @internal
  */
-export function sanitySchemaExtractionPlugin(options: SchemaExtractionPluginOptions = {}) {
+export function sanitySchemaExtractionPlugin(options: SchemaExtractionPluginOptions) {
   const {
     additionalPatterns = [],
+    configPath,
     debounceMs = DEFAULT_DEBOUNCE_MS,
     enforceRequiredFields = false,
     format = 'groq-type-nodes',
@@ -155,7 +162,7 @@ export function sanitySchemaExtractionPlugin(options: SchemaExtractionPluginOpti
 
   const extractSchema = () =>
     runSchemaExtraction({
-      configPath: path.join(resolvedWorkDir, 'sanity.config.ts'),
+      configPath,
       enforceRequiredFields,
       format,
       outputPath: resolvedOutputPath,
@@ -258,7 +265,7 @@ export function sanitySchemaExtractionPlugin(options: SchemaExtractionPluginOpti
         // Log telemetry if available
         if (trace) {
           trace.log({
-            averageExtractionDuration: mean(stats.successfulDurations),
+            averageExtractionDuration: mean(stats.successfulDurations) || 0,
             extractionFailedCount: stats.failedCount,
             extractionSuccessfulCount: stats.successfulDurations.length,
             step: 'stopped',
@@ -310,7 +317,7 @@ export function sanitySchemaExtractionPlugin(options: SchemaExtractionPluginOpti
       try {
         const start = Date.now()
         const schema = await extractSchema()
-        output.error(`✓ Extract schema (${Date.now() - start}ms)`)
+        output.log(`✓ Extract schema (${Date.now() - start}ms)`)
 
         trace?.log({
           enforceRequiredFields,

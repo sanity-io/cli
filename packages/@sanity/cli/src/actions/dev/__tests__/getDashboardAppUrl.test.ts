@@ -22,7 +22,7 @@ describe('#getDashboardAppUrl', () => {
         new Promise((resolve, reject) => {
           const timeout = setTimeout(
             () => resolve({json: () => ({url: 'https://custom.url'}), ok: true}),
-            1000,
+            6000,
           )
           signal.addEventListener('abort', () => {
             clearTimeout(timeout)
@@ -35,14 +35,13 @@ describe('#getDashboardAppUrl', () => {
       httpHost: 'localhost',
       httpPort: 3333,
       organizationId: 'org-123',
-      timeout: 100,
     })
 
     await vi.advanceTimersByTimeAsync(5000)
 
     const result = await promise
 
-    expect(result).toContain('/@org-123?dev=http%3A%2F%2Flocalhost%3A3333')
+    expect(result).toBe('https://www.sanity.io/@org-123?dev=http%3A%2F%2Flocalhost%3A3333')
   })
 
   test('should send default dashboard app url if fetch fails', async () => {
@@ -57,7 +56,22 @@ describe('#getDashboardAppUrl', () => {
       organizationId: 'org-456',
     })
 
-    expect(result).toContain('/@org-456?dev=http%3A%2F%2Flocalhost%3A3333')
+    expect(result).toBe('https://www.sanity.io/@org-456?dev=http%3A%2F%2Flocalhost%3A3333')
+  })
+
+  test('should send default url if body does not return url', async () => {
+    mockFetch.mockResolvedValue({
+      json: () => Promise.resolve({}),
+      ok: true,
+    })
+
+    const result = await getDashboardAppURL({
+      httpHost: 'localhost',
+      httpPort: 3333,
+      organizationId: 'org-789',
+    })
+
+    expect(result).toBe('https://www.sanity.io/@org-789?dev=http%3A%2F%2Flocalhost%3A3333')
   })
 
   test('sends back dashboard app url when successful', async () => {

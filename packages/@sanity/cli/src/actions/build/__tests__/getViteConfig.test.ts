@@ -71,6 +71,14 @@ vi.mock('../../../server/vite/plugin-typegen.js', () => ({
   }),
 }))
 
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    findProjectRoot: vi.fn().mockResolvedValue(''),
+  }
+})
+
 const mockTestCwd = convertToSystemPath('/test/cwd')
 const mockSanityPath = convertToSystemPath('/mock/path/to/sanity')
 const mockCustomOutput = convertToSystemPath('/custom/output')

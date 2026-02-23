@@ -1,6 +1,11 @@
 import path from 'node:path'
 
-import {type CliConfig, getCliTelemetry, type UserViteConfig} from '@sanity/cli-core'
+import {
+  type CliConfig,
+  findProjectRoot,
+  getCliTelemetry,
+  type UserViteConfig,
+} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
@@ -98,6 +103,8 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     throw new Error('Unable to resolve `@sanity/cli` module root')
   }
 
+  const configPath = (await findProjectRoot(cwd)).path
+
   const customFaviconsPath = path.join(cwd, 'static')
   const defaultFaviconsPath = path.join(path.dirname(sanityCliPkgPath), 'static', 'favicons')
   const staticPath = `${basePath}static`
@@ -155,6 +162,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
         ? [
             sanitySchemaExtractionPlugin({
               additionalPatterns: schemaExtraction.watchPatterns,
+              configPath,
               enforceRequiredFields: schemaExtraction.enforceRequiredFields,
               outputPath: schemaExtraction.path,
               telemetryLogger: getCliTelemetry(),

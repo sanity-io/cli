@@ -23,18 +23,16 @@ export const getDashboardAppURL = async ({
   httpHost = 'localhost',
   httpPort = 3333,
   organizationId,
-  timeout = DEFAULT_TIMEOUT,
 }: {
   httpHost?: string
   httpPort?: number
   organizationId: string
-  timeout?: number
 }): Promise<string> => {
   const url = `http://${httpHost}:${httpPort}`
 
   const abortController = new AbortController()
   // Wait for 5 seconds before aborting the request
-  const timer = setTimeout(() => abortController.abort(), timeout)
+  const timer = setTimeout(() => abortController.abort(), DEFAULT_TIMEOUT)
   try {
     const queryParams = new URLSearchParams({
       organizationId,
@@ -55,7 +53,7 @@ export const getDashboardAppURL = async ({
 
     const body = await res.json()
     // <dashboard-app-url>/<orgniazationId>?dev=<dev-server-url>
-    return body.url
+    return body?.url ?? getDefaultDashboardURL({organizationId, url})
   } catch (err) {
     debug(`Failed to fetch dashboard URL: ${err.message}`)
     return getDefaultDashboardURL({organizationId, url})
