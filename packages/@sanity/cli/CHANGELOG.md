@@ -1,5 +1,36 @@
 # Changelog
 
+## [6.0.0-alpha.16](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.15...cli-v6.0.0-alpha.16) (2026-02-23)
+
+
+### Features
+
+* **cli-core:** export requester with shared middleware ([#451](https://github.com/sanity-io/cli/issues/451)) ([c506e8a](https://github.com/sanity-io/cli/commit/c506e8aa4a5b477b0f343b7408eb603b6d469cb1))
+
+
+### Bug Fixes
+
+* **build:** fixes issue with build failure on missing favicons ([#439](https://github.com/sanity-io/cli/issues/439)) ([aaa9c7c](https://github.com/sanity-io/cli/commit/aaa9c7c2909480716b02fc0a4e738bddad5532ca))
+* **cli:** pass appId to compareDependencyVersions for correct module URL ([#450](https://github.com/sanity-io/cli/issues/450)) ([a157cbc](https://github.com/sanity-io/cli/commit/a157cbc4363e787d7c415ab82124fb2fb11821f8))
+* **deps:** update dependency @babel/traverse to ^7.29.0 ([#455](https://github.com/sanity-io/cli/issues/455)) ([fdab51c](https://github.com/sanity-io/cli/commit/fdab51c49a6461c1c3225f7740d9f3d87f68828d))
+* **deps:** update dependency oclif to ^4.22.79 ([#443](https://github.com/sanity-io/cli/issues/443)) ([c6148e2](https://github.com/sanity-io/cli/commit/c6148e24fc88e5c6bcd590104096d911f22f6e92))
+* **deps:** update dependency read-package-up to v12 ([#447](https://github.com/sanity-io/cli/issues/447)) ([d2574f7](https://github.com/sanity-io/cli/commit/d2574f798e14333f32b26c5275b73b45abde5d4c))
+* **deps:** Update react monorepo to ^19.2.4 ([#444](https://github.com/sanity-io/cli/issues/444)) ([201513b](https://github.com/sanity-io/cli/commit/201513b2bf6a12c6b4f9bb2955bbf965f5a55306))
+* **deps:** update sanity-tooling ([#424](https://github.com/sanity-io/cli/issues/424)) ([ca6c758](https://github.com/sanity-io/cli/commit/ca6c75817f4ec011dc38edc09b4fbff050d6e087))
+* fixes issues with jsx in CLI code ([#457](https://github.com/sanity-io/cli/issues/457)) ([17ee663](https://github.com/sanity-io/cli/commit/17ee66348b959658a844307019c0dcd08741109c))
+* issues reading CLI config in CJS project ([#428](https://github.com/sanity-io/cli/issues/428)) ([42701d0](https://github.com/sanity-io/cli/commit/42701d001f46fe89761544725e668b070079f5ac))
+* make `--no-auto-updates` override `deployment.autoUpdates` ([#448](https://github.com/sanity-io/cli/issues/448)) ([a7c09e6](https://github.com/sanity-io/cli/commit/a7c09e63ed1da0f74ad6f292b66a0726242ffc15))
+* **users:** fixes issues with row alignment in users list ([#434](https://github.com/sanity-io/cli/issues/434)) ([9ff1150](https://github.com/sanity-io/cli/commit/9ff1150c0b67025382df36ae56ac21c3190805c6))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.15
+  * devDependencies
+    * @sanity/cli-test bumped to 0.0.2-alpha.14
+
 ## [6.0.0-alpha.15](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.14...cli-v6.0.0-alpha.15) (2026-02-19)
 
 
