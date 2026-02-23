@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.0-alpha.15](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.14...cli-core-v0.1.0-alpha.15) (2026-02-23)
+
+
+### Features
+
+* **cli-core:** export requester with shared middleware ([#451](https://github.com/sanity-io/cli/issues/451)) ([c506e8a](https://github.com/sanity-io/cli/commit/c506e8aa4a5b477b0f343b7408eb603b6d469cb1))
+
+
+### Bug Fixes
+
+* issues reading CLI config in CJS project ([#428](https://github.com/sanity-io/cli/issues/428)) ([42701d0](https://github.com/sanity-io/cli/commit/42701d001f46fe89761544725e668b070079f5ac))
+
 ## [0.1.0-alpha.14](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.13...cli-core-v0.1.0-alpha.14) (2026-02-19)
 
 
