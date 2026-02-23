@@ -40,26 +40,23 @@ vi.mock('../../../util/update/isInstalledUsingYarn.js', () => ({
 }))
 
 const mockIsCi = vi.mocked(isCi)
+const originalIsTTY = process.stdout.isTTY
 
 describe('#checkForUpdates', () => {
   beforeEach(() => {
-    vi.unstubAllGlobals()
-    vi.stubGlobal('process', {
-      ...process,
-      stdout: {...process.stdout, isTTY: true},
-    })
-
     vi.resetAllMocks()
     vi.unstubAllEnvs()
     mockIsCi.mockReturnValue(false)
     mockIsInstalledGlobally.default = false
     mockIsInstalledUsingYarn.mockReturnValue(false)
+    process.stdout.isTTY = true
 
     mockConfigStore.clear()
   })
 
   afterEach(() => {
-    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    process.stdout.isTTY = originalIsTTY
   })
 
   test('returns early if running on CI', async () => {
@@ -92,11 +89,7 @@ describe('#checkForUpdates', () => {
 
   test('returns early if not TTY', async () => {
     const {config} = await getCommandAndConfig('help')
-
-    vi.stubGlobal('process', {
-      ...process,
-      stdout: {...process.stdout, isTTY: false},
-    })
+    process.stdout.isTTY = false
 
     await testHook<'init'>(checkForUpdates, {
       config,
