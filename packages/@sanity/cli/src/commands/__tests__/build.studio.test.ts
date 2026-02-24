@@ -217,7 +217,9 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     ])
     mockedSelect.mockResolvedValue('upgrade')
 
-    const {error} = await testCommand(BuildCommand, [])
+    const {error, stderr} = await testCommand(BuildCommand, [])
+
+    if (error) throw error
 
     expect(mockedUpgradePackages).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -225,6 +227,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       }),
       expect.any(Object),
     )
+    expect(stderr).not.toContain('Build Sanity Studio')
   })
 
   test('should continue without upgrading when user selects "continue"', async () => {
