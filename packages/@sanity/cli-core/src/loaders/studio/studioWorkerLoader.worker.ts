@@ -33,6 +33,19 @@ await setupBrowserStubs()
 
 const studioEnvVars = await getStudioEnvironmentVariables(rootPath)
 
+// Allow the CLI config (`sanity.cli.(js|ts)`) to define a `vite` property which can
+// extend/modify the default vite configuration for the studio.
+let cliConfig: CliConfig | undefined
+try {
+  cliConfig = await getCliConfig(rootPath)
+} catch (err) {
+  debug('Failed to load CLI config: %o', err)
+  if (!isNotFoundError(err)) {
+    // eslint-disable-next-line no-console
+    console.warn('[warn] Failed to load CLI config:', err)
+  }
+}
+
 /**
  * Fetches and caches modules from HTTP/HTTPS URLs.
  * Vite's SSR transform treats `https://` imports as external and bypasses the plugin
@@ -68,6 +81,11 @@ const defaultViteConfig: InlineConfig = {
       JSON.stringify(value),
     ]),
   ),
+  // TODO: Combine with `determineIsApp` from `@sanity/cli`
+  envPrefix: cliConfig && 'app' in cliConfig ? 'SANITY_APP_' : 'SANITY_STUDIO_',
+  esbuild: {
+    jsx: 'automatic',
+  },
   logLevel: 'error',
   optimizeDeps: {
     include: undefined,
@@ -85,19 +103,6 @@ const defaultViteConfig: InlineConfig = {
      */
     noExternal: true,
   },
-}
-
-// Allow the CLI config (`sanity.cli.(js|ts)`) to define a `vite` property which can
-// extend/modify the default vite configuration for the studio.
-let cliConfig: CliConfig | undefined
-try {
-  cliConfig = await getCliConfig(rootPath)
-} catch (err) {
-  debug('Failed to load CLI config: %o', err)
-  if (!isNotFoundError(err)) {
-    // eslint-disable-next-line no-console
-    console.warn('[warn] Failed to load CLI config:', err)
-  }
 }
 
 let viteConfig = defaultViteConfig
@@ -123,7 +128,7 @@ await server.pluginContainer.buildStart({})
 // Note that Sanity also provides environment variables through `process.env.*` for compat reasons,
 // and so we need to do the same here.
 // @todo is this in line with sanity?
-const env = loadEnv(server.config.mode, server.config.envDir, '')
+const env = loadEnv(server.config.mode, server.config.envDir, viteConfig.envPrefix ?? '')
 for (const key in env) {
   process.env[key] ??= env[key]
 }

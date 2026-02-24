@@ -8,6 +8,8 @@ import {structureTool} from 'sanity/structure'
 import DescriptionInput from '@/descriptionInput'
 import {schemaTypes} from '@/schemaTypes'
 
+import fieldComponentsTest from './fieldComponentsTest.jsx'
+
 // Look ma, dynamic imports in the config 🙈
 // Look ma, top level await in the config 🙈
 const arbitraryImport = await import('@/defines')
@@ -27,7 +29,7 @@ export default defineConfig({
   schema: {
     types: [
       ...schemaTypes,
-
+      fieldComponentsTest,
       defineType({
         fields: [
           defineField({name: 'title', type: 'string'}),
