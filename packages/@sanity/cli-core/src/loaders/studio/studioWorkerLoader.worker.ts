@@ -1,6 +1,9 @@
 import {isMainThread} from 'node:worker_threads'
 
-import {createServer, createServerModuleRunner, type InlineConfig, loadEnv, mergeConfig} from 'vite'
+import {createServer, type InlineConfig, loadEnv, mergeConfig} from 'vite'
+import {ViteNodeRunner} from 'vite-node/client'
+import {ViteNodeServer} from 'vite-node/server'
+import {installSourcemapsSupport} from 'vite-node/source-map'
 
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {type CliConfig} from '../../config/cli/types/cliConfig.js'
@@ -40,8 +43,11 @@ const defaultViteConfig: InlineConfig = {
       JSON.stringify(value),
     ]),
   ),
-  logLevel: 'error',
-  optimizeDeps: {disabled: true}, // @todo is this necessary? cant remember why was added
+  logLevel: 'warn',
+  optimizeDeps: {
+    include: undefined,
+    noDiscovery: true,
+  },
   root: rootPath,
   server: {
     hmr: false,
@@ -49,14 +55,10 @@ const defaultViteConfig: InlineConfig = {
   },
   ssr: {
     /**
-     * By default, all dependencies are externalized. Locally linked dependencies are not externalized,
-     * so we need to explicitly list the dependencies that should not be externalized.
-     *
-     * cli-core should not be externalized, or the worker won't intercept the imports and throw an error.
-     *
-     * @see https://vitejs.dev/config/ssr-config.html#ssr-noexternal
+     * We don't want to externalize any dependencies, we want everything to run thru vite.
+     * Especially for CJS compatibility, etc.
      */
-    noExternal: ['@sanity/cli-core'],
+    noExternal: true,
   },
 }
 
@@ -101,13 +103,28 @@ for (const key in env) {
   process.env[key] ??= env[key]
 }
 
-const runner = await createServerModuleRunner(server.environments.ssr, {
-  hmr: false,
-  sourcemapInterceptor: 'prepareStackTrace',
+// Now we're providing the glue that ensures node-specific loading and execution works.
+const node = new ViteNodeServer(server)
+
+// Should make it easier to debug any crashes in the imported code…
+installSourcemapsSupport({
+  getSourceMap: (source) => node.getSourceMap(source),
 })
 
-// Apply the `define` config from vite - imports environment variables
-await runner.import('/@vite/env')
+const runner = new ViteNodeRunner({
+  base: server.config.base,
+  async fetchModule(id) {
+    return node.fetchModule(id)
+  },
+  resolveId(id, importer) {
+    return node.resolveId(id, importer)
+  },
+  root: server.config.root,
+})
 
-// Execute the worker script
-await runner.import(workerScriptPath)
+// Copied from `vite-node` - it appears that this applies the `define` config from
+// vite, but it also takes a surprisingly long time to execute. Not clear at this
+// point why this is, so we should investigate whether it's necessary or not.
+await runner.executeId('/@vite/env')
+
+await runner.executeId(workerScriptPath)
