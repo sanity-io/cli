@@ -44,7 +44,7 @@ export function promisifyWorker<T = unknown>(worker: Worker): Promise<T> {
     })
     worker.addListener('message', function onWorkerMessage(message) {
       settled = true
-      debug(`Worker message: ${message}`)
+      debug('Worker message %o', message)
       resolve(message)
       cleanup()
     })

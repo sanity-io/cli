@@ -154,4 +154,15 @@ describe('#manifest:extract', {timeout: 30 * 1000}, () => {
     expect(stdout).toContain('A type with name "post" is already defined in the schema')
     expect(error?.oclif?.exit).toBe(1)
   })
+
+  test('can extract manifest from worst-case-studio', async () => {
+    const cwd = await testFixture('worst-case-studio')
+    process.chdir(cwd)
+
+    const {error, stderr} = await testCommand(ExtractManifestCommand, [])
+
+    if (error) throw error
+    expect(stderr).toContain('Extracting manifest')
+    expect(stderr).toContain('Extracted manifest')
+  })
 })

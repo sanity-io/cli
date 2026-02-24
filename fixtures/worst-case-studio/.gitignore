@@ -27,3 +27,6 @@
 
 # Dotenv and similar local-only files
 *.local
+
+# Override root .gitignore to track .env in this fixture
+!.env

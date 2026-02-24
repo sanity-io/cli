@@ -62,6 +62,8 @@ type ExtractManifestWorkerMessage = ExtractManifestWorkerResult | ExtractSchemaW
 export async function extractManifest(outPath: string): Promise<void> {
   const projectRoot = await findProjectRoot(process.cwd())
 
+  manifestDebug('Project root %o', projectRoot)
+
   const workDir = projectRoot.directory
   const configPath = projectRoot.path
   const staticPath = resolve(join(workDir, outPath))
@@ -80,6 +82,8 @@ export async function extractManifest(outPath: string): Promise<void> {
         workerData: {configPath, workDir} satisfies ExtractManifestWorkerData,
       },
     )
+
+    manifestDebug('Result %o', result)
 
     if (result.type === 'error') {
       throw new SchemaExtractionError(result.error, result.validation)

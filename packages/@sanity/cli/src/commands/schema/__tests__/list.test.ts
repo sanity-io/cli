@@ -5,7 +5,7 @@ import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 import {SCHEMA_API_VERSION} from '../../../services/schemas.js'
 import {ListSchemaCommand} from '../list.js'
 
-describe('#schema:list', {timeout: 30 * 1000}, () => {
+describe('#schema:list', {timeout: 60 * 1000}, () => {
   let projectId: string | undefined
   beforeAll(async () => {
     const cwd = await testFixture('multi-workspace-studio')

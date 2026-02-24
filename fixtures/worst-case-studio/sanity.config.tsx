@@ -3,10 +3,13 @@ import {visionTool} from '@sanity/vision'
 // eslint-disable-next-line import/no-unresolved
 import {theme} from 'https://themer.sanity.build/api/hues?preset=dew'
 import {defineConfig, defineField, defineType} from 'sanity'
+import {media} from 'sanity-plugin-media'
 import {structureTool} from 'sanity/structure'
 
 import DescriptionInput from '@/descriptionInput'
 import {schemaTypes} from '@/schemaTypes'
+
+import fieldComponentsTest from './fieldComponentsTest.jsx'
 
 // Look ma, dynamic imports in the config 🙈
 // Look ma, top level await in the config 🙈
@@ -22,12 +25,12 @@ export default defineConfig({
   // @ts-expect-error - defined through vite's `define` option in CLI config
   projectId: PROJECT_ID,
 
-  plugins: [structureTool(), visionTool(), codeInput()],
+  plugins: [structureTool(), visionTool(), codeInput(), media()],
 
   schema: {
     types: [
       ...schemaTypes,
-
+      fieldComponentsTest,
       defineType({
         fields: [
           defineField({name: 'title', type: 'string'}),
