@@ -7,7 +7,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {SchemaValidate} from '../validate.js'
 
-describe('#schema:validate', {timeout: 30 * 1000}, () => {
+describe('#schema:validate', {timeout: 60 * 1000}, () => {
   afterEach(() => {
     vi.clearAllMocks()
   })

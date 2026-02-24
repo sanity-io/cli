@@ -33,6 +33,31 @@ await setupBrowserStubs()
 
 const studioEnvVars = await getStudioEnvironmentVariables(rootPath)
 
+/**
+ * Fetches and caches modules from HTTP/HTTPS URLs.
+ * Vite's SSR transform treats `https://` imports as external and bypasses the plugin
+ * resolve pipeline entirely, so we intercept them at the ViteNodeRunner level instead.
+ */
+const httpModuleCache = new Map<string, string>()
+async function fetchHttpModule(url: string): Promise<{code: string}> {
+  const cached = httpModuleCache.get(url)
+  if (cached) return {code: cached}
+
+  debug('Fetching HTTP import: %s', url)
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch module from ${url}: ${response.status} ${response.statusText}`)
+  }
+
+  const code = await response.text()
+  httpModuleCache.set(url, code)
+  return {code}
+}
+
+function isHttpUrl(id: string): boolean {
+  return id.startsWith('https://') || id.startsWith('http://')
+}
+
 const defaultViteConfig: InlineConfig = {
   build: {target: 'node'},
   configFile: false, // @todo Should use `vite` prop from `sanity.cli.ts` (if any)
@@ -114,9 +139,25 @@ installSourcemapsSupport({
 const runner = new ViteNodeRunner({
   base: server.config.base,
   async fetchModule(id) {
+    // Vite's SSR transform externalizes https:// imports, so Node's ESM loader
+    // would reject them. We fetch the module over HTTP and run it through Vite's
+    // SSR transform to rewrite ESM export/import syntax to the __vite_ssr_*
+    // format that ViteNodeRunner expects.
+    if (isHttpUrl(id)) {
+      const {code: rawCode} = await fetchHttpModule(id)
+      const result = await server.ssrTransform(rawCode, null, id)
+      return {code: result?.code || rawCode}
+    }
     return node.fetchModule(id)
   },
   resolveId(id, importer) {
+    // Prevent vite-node from trying to resolve HTTP URLs through Node's resolver
+    if (isHttpUrl(id)) return {id}
+    // Resolve any import from an HTTP-fetched module against the remote origin
+    // (e.g. esm.sh returns `export * from '/pkg@1.0/es2022/pkg.mjs'`)
+    if (importer && isHttpUrl(importer)) {
+      return {id: new URL(id, importer).href}
+    }
     return node.resolveId(id, importer)
   },
   root: server.config.root,
