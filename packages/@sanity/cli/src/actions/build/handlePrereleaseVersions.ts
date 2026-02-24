@@ -8,11 +8,10 @@ import {type UnresolvedPrerelease} from '../../util/compareDependencyVersions.js
 /**
  * Handle prerelease versions that cannot be resolved by the auto-updates CDN.
  *
- * In unattended mode, exits with an error. In interactive mode, prompts the user
- * to either disable auto-updates for this build or cancel.
+ * In unattended or non-interactive mode, exits with an error. In interactive mode,
+ * prompts the user to either disable auto-updates for this build or cancel.
  *
- * @returns `true` if auto-updates should be disabled, or does not return if the
- *   build should be cancelled (exits via `output.error`).
+ * Does not return if the build should be cancelled (exits via `output.error`).
  */
 export async function handlePrereleaseVersions({
   output,
@@ -22,7 +21,7 @@ export async function handlePrereleaseVersions({
   output: Output
   unattendedMode: boolean
   unresolvedPrerelease: UnresolvedPrerelease[]
-}): Promise<true> {
+}): Promise<void> {
   const prereleaseMessage =
     `The following packages are using prerelease versions not yet available on the auto-updates CDN:\n\n` +
     `${unresolvedPrerelease.map((mod) => ` - ${mod.pkg} (${mod.version})`).join('\n')}\n\n` +
@@ -59,5 +58,4 @@ export async function handlePrereleaseVersions({
   }
 
   output.warn('Auto-updates disabled for this build')
-  return true
 }

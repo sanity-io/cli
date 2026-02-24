@@ -74,7 +74,7 @@ export async function startStudioDevServer(
     if (result?.unresolvedPrerelease.length) {
       for (const mod of result.unresolvedPrerelease) {
         output.warn(
-          `Your local version of ${mod.pkg} (${mod.version}) is a prerelease not yet available on the auto-updates CDN. Version checks for this package will be skipped.`,
+          `Your local version of ${mod.pkg} (${mod.version}) is a prerelease not available on the auto-updates CDN. The locally installed version will be used.`,
         )
       }
     }

@@ -378,8 +378,9 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       )
 
       if (error) throw error
-      expect(stderr).toContain('sanity (3.0.0-alpha.1) is a')
-      expect(stderr).toContain('@sanity/vision (3.0.0-alpha.1) is a')
+      expect(stderr).toContain('sanity (3.0.0-alpha.1)')
+      expect(stderr).toContain('@sanity/vision (3.0.0-alpha.1)')
+      expect(stderr).toContain('locally installed version')
       await tryCloseServer(result)
     })
 
