@@ -67,7 +67,7 @@ async function fetchHttpModule(url: string): Promise<{code: string}> {
   return {code}
 }
 
-function isHttpUrl(id: string): boolean {
+function isHttpsUrl(id: string): boolean {
   return id.startsWith('https://')
 }
 
@@ -148,7 +148,7 @@ const runner = new ViteNodeRunner({
     // would reject them. We fetch the module over HTTP and run it through Vite's
     // SSR transform to rewrite ESM export/import syntax to the __vite_ssr_*
     // format that ViteNodeRunner expects.
-    if (isHttpUrl(id)) {
+    if (isHttpsUrl(id)) {
       const {code: rawCode} = await fetchHttpModule(id)
       const result = await server.ssrTransform(rawCode, null, id)
       return {code: result?.code || rawCode}
@@ -157,10 +157,10 @@ const runner = new ViteNodeRunner({
   },
   resolveId(id, importer) {
     // Prevent vite-node from trying to resolve HTTP URLs through Node's resolver
-    if (isHttpUrl(id)) return {id}
+    if (isHttpsUrl(id)) return {id}
     // Resolve any import from an HTTP-fetched module against the remote origin
     // (e.g. esm.sh returns `export * from '/pkg@1.0/es2022/pkg.mjs'`)
-    if (importer && isHttpUrl(importer)) {
+    if (importer && isHttpsUrl(importer)) {
       return {id: new URL(id, importer).href}
     }
     return node.resolveId(id, importer)
