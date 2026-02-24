@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.0-alpha.16](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.15...cli-core-v0.1.0-alpha.16) (2026-02-24)
+
+
+### Bug Fixes
+
+* issue with reading sanity config in various situations ([#460](https://github.com/sanity-io/cli/issues/460)) ([2a19272](https://github.com/sanity-io/cli/commit/2a1927290014aa901e067f4ad92bb41ecb0f2c66))
+
 ## [0.1.0-alpha.15](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.14...cli-core-v0.1.0-alpha.15) (2026-02-23)
 
 

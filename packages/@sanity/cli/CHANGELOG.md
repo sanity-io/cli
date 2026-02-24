@@ -1,5 +1,23 @@
 # Changelog
 
+## [6.0.0-alpha.17](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.16...cli-v6.0.0-alpha.17) (2026-02-24)
+
+
+### Bug Fixes
+
+* **cli:** add "Continue anyway" option to build version mismatch prompt ([#456](https://github.com/sanity-io/cli/issues/456)) ([b48373f](https://github.com/sanity-io/cli/commit/b48373f5f4f4a95a66a89ba81fd6aea313454ccb))
+* **deps:** update sanity-tooling ([#461](https://github.com/sanity-io/cli/issues/461)) ([3f92213](https://github.com/sanity-io/cli/commit/3f922132472231209f13d64faf1450499a74e77a))
+* issue with reading sanity config in various situations ([#460](https://github.com/sanity-io/cli/issues/460)) ([2a19272](https://github.com/sanity-io/cli/commit/2a1927290014aa901e067f4ad92bb41ecb0f2c66))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.16
+  * devDependencies
+    * @sanity/cli-test bumped to 0.0.2-alpha.15
+
 ## [6.0.0-alpha.16](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.15...cli-v6.0.0-alpha.16) (2026-02-23)
 
 
