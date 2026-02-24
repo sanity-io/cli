@@ -356,6 +356,33 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       await tryCloseServer(result)
     })
 
+    test('should warn about prerelease versions during auto-updates', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      mockCompareDependencyVersions.mockResolvedValueOnce({
+        mismatched: [],
+        unresolvedPrerelease: [
+          {pkg: 'sanity', version: '3.0.0-alpha.1'},
+          {pkg: '@sanity/vision', version: '3.0.0-alpha.1'},
+        ],
+      })
+
+      const {error, result, stderr} = await testCommand(
+        DevCommand,
+        ['--auto-updates', '--port', '5349'],
+        {
+          config: {root: cwd},
+          mocks: {isInteractive: true},
+        },
+      )
+
+      if (error) throw error
+      expect(stderr).toContain('sanity (3.0.0-alpha.1) is a')
+      expect(stderr).toContain('@sanity/vision (3.0.0-alpha.1) is a')
+      await tryCloseServer(result)
+    })
+
     test('should handle invalid Sanity version during auto-updates', async () => {
       const cwd = await testFixture('basic-studio')
       process.cwd = () => cwd

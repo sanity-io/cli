@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {type Output} from '@sanity/cli-core'
+import {isInteractive, type Output} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
 import {type UnresolvedPrerelease} from '../../util/compareDependencyVersions.js'
@@ -29,7 +29,7 @@ export async function handlePrereleaseVersions({
     `Auto-updates cannot be used with prerelease versions. To re-enable auto-updates later, ` +
     `switch to a non-prerelease version locally and deploy again.`
 
-  if (unattendedMode) {
+  if (unattendedMode || !isInteractive()) {
     output.error(
       `${prereleaseMessage}\n\n` +
         `Cannot build with auto-updates in unattended mode when using prerelease versions. ` +

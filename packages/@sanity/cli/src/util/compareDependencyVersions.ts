@@ -22,7 +22,7 @@ export interface UnresolvedPrerelease {
   version: string
 }
 
-export interface CompareDependencyVersionsResult {
+interface CompareDependencyVersionsResult {
   mismatched: Array<CompareDependencyVersions>
   unresolvedPrerelease: Array<UnresolvedPrerelease>
 }

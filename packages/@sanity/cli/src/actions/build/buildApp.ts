@@ -2,7 +2,7 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {getCliTelemetry, getTimer} from '@sanity/cli-core'
+import {getCliTelemetry, getTimer, isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import semver from 'semver'
 
@@ -79,22 +79,26 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       autoUpdatesEnabled = false
     }
 
-    // If it is in unattended mode, we don't want to prompt
-    if (mismatched.length > 0 && !unattendedMode && autoUpdatesEnabled) {
-      const shouldContinue = await confirm({
-        default: false,
-        message: styleText(
-          'yellow',
-          `The following local package versions are different from the versions currently served at runtime.\n` +
-            `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
-            `${mismatched.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')} \n\n` +
-            `Continue anyway?`,
-        ),
-      })
+    if (mismatched.length > 0 && autoUpdatesEnabled) {
+      const versionMismatchWarning =
+        `The following local package versions are different from the versions currently served at runtime.\n` +
+        `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
+        `${mismatched.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')}`
 
-      if (!shouldContinue) {
-        output.error('Declined to continue with build', {exit: 1})
-        return
+      // If it is non-interactive or in unattended mode, we don't want to prompt
+      if (isInteractive() && !unattendedMode) {
+        const shouldContinue = await confirm({
+          default: false,
+          message: styleText('yellow', `${versionMismatchWarning} \n\nContinue anyway?`),
+        })
+
+        if (!shouldContinue) {
+          output.error('Declined to continue with build', {exit: 1})
+          return
+        }
+      } else {
+        // if non-interactive or unattended, just show the warning
+        output.warn(versionMismatchWarning)
       }
     }
   }
