@@ -43,7 +43,7 @@ const defaultViteConfig: InlineConfig = {
       JSON.stringify(value),
     ]),
   ),
-  logLevel: 'warn',
+  logLevel: 'error',
   optimizeDeps: {
     include: undefined,
     noDiscovery: true,
