@@ -3,6 +3,7 @@ import {visionTool} from '@sanity/vision'
 // eslint-disable-next-line import/no-unresolved
 import {theme} from 'https://themer.sanity.build/api/hues?preset=dew'
 import {defineConfig, defineField, defineType} from 'sanity'
+import {media} from 'sanity-plugin-media'
 import {structureTool} from 'sanity/structure'
 
 import DescriptionInput from '@/descriptionInput'
@@ -24,7 +25,7 @@ export default defineConfig({
   // @ts-expect-error - defined through vite's `define` option in CLI config
   projectId: PROJECT_ID,
 
-  plugins: [structureTool(), visionTool(), codeInput()],
+  plugins: [structureTool(), visionTool(), codeInput(), media()],
 
   schema: {
     types: [

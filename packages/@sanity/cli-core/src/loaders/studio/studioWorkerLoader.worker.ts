@@ -57,7 +57,7 @@ async function fetchHttpModule(url: string): Promise<{code: string}> {
   if (cached) return {code: cached}
 
   debug('Fetching HTTP import: %s', url)
-  const response = await fetch(url)
+  const response = await fetch(url, {signal: AbortSignal.timeout(30_000)})
   if (!response.ok) {
     throw new Error(`Failed to fetch module from ${url}: ${response.status} ${response.statusText}`)
   }
@@ -68,7 +68,7 @@ async function fetchHttpModule(url: string): Promise<{code: string}> {
 }
 
 function isHttpUrl(id: string): boolean {
-  return id.startsWith('https://') || id.startsWith('http://')
+  return id.startsWith('https://')
 }
 
 const defaultViteConfig: InlineConfig = {
