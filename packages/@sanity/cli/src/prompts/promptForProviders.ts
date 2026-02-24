@@ -1,6 +1,6 @@
 import {select} from '@sanity/cli-core/ux'
 
-import {type LoginProvider} from '../types.js'
+import {type LoginProvider} from '../actions/auth/types.js'
 
 /**
  * Prompts the user to select a provider from the given list of providers,
@@ -10,7 +10,7 @@ import {type LoginProvider} from '../types.js'
  * @returns The selected login provider
  * @internal
  */
-export async function promptProviders(providers: LoginProvider[]): Promise<LoginProvider> {
+export async function promptForProviders(providers: LoginProvider[]): Promise<LoginProvider> {
   if (providers.length === 1) {
     return providers[0]
   }

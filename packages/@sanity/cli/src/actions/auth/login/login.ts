@@ -1,19 +1,12 @@
-import {
-  type CLITelemetryStore,
-  getCliToken,
-  getGlobalCliClient,
-  type Output,
-  setConfig,
-} from '@sanity/cli-core'
+import {type CLITelemetryStore, getCliToken, type Output, setConfig} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import open from 'open'
 
+import {logout} from '../../../services/auth.js'
 import {LoginTrace} from '../../../telemetry/login.telemetry.js'
 import {canLaunchBrowser} from '../../../util/canLaunchBrowser.js'
 import {startServerForTokenCallback} from '../authServer.js'
 import {getProvider} from './getProvider.js'
-
-const LOGIN_API_VERSION = '2024-02-01'
 
 interface LoginOptions {
   output: Output
@@ -44,12 +37,7 @@ export async function login(options: LoginOptions) {
   const trace = telemetry.trace(LoginTrace)
   trace.start()
 
-  // We explicitly want to use an unauthenticated client here, even if we already logged in
-  const globalClient = await getGlobalCliClient({apiVersion: LOGIN_API_VERSION})
-  const client = globalClient.withConfig({token: undefined})
-
   const provider = await getProvider({
-    client,
     experimental: options.experimental,
     orgSlug: options.sso,
     specifiedProvider: options.provider,
@@ -61,11 +49,7 @@ export async function login(options: LoginOptions) {
     throw new Error('No authentication providers found')
   }
 
-  const {
-    loginUrl,
-    server,
-    token: tokenPromise,
-  } = await startServerForTokenCallback({client, providerUrl: provider.url})
+  const {loginUrl, server, token: tokenPromise} = await startServerForTokenCallback(provider.url)
 
   trace.log({step: 'waitForToken'})
 
@@ -100,8 +84,9 @@ export async function login(options: LoginOptions) {
       ? new Error(`Login failed: ${err.message}`, {cause: err})
       : new Error(`${err}`)
   } finally {
-    server.close()
-    server.unref()
+    await new Promise<void>((resolve) => {
+      server.close(() => resolve())
+    })
   }
 
   // Store the token
@@ -112,15 +97,12 @@ export async function login(options: LoginOptions) {
 
   // If we had a session previously, attempt to clear it
   if (hasExistingToken) {
-    await globalClient
-      .withConfig({token: previousToken})
-      .request({method: 'POST', uri: '/auth/logout'})
-      .catch((err) => {
-        const statusCode = err && err.response && err.response.statusCode
-        if (statusCode !== 401) {
-          output.warn('Failed to invalidate previous session')
-        }
-      })
+    await logout(previousToken).catch((err) => {
+      const statusCode = err && err.response && err.response.statusCode
+      if (statusCode !== 401) {
+        output.warn('Failed to invalidate previous session')
+      }
+    })
   }
 
   trace.complete()

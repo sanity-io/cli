@@ -3,9 +3,8 @@
 Code for sanity cli
 
 <!-- toc -->
-
-- [@sanity/cli](#sanitycli)
-- [Commands](#commands)
+* [@sanity/cli](#sanitycli)
+* [Commands](#commands)
 <!-- tocstop -->
 
 # Commands
@@ -402,7 +401,7 @@ Diagnose potential issues with local Blueprint and remote Stack configuration
 
 ```
 USAGE
-  $ sanity blueprints doctor [--json] [-p <value>] [--verbose] [--fix]
+  $ sanity blueprints doctor [--json] [--path <value>] [--verbose] [--fix]
 
 FLAGS
   -p, --path=<value>  [env: SANITY_BLUEPRINT_PATH] Path to a Blueprint file or directory containing one
@@ -2378,7 +2377,7 @@ _See code: [src/commands/manifest/extract.ts](https://github.com/sanity-io/cli/b
 
 ## `sanity mcp configure`
 
-Configure Sanity MCP server for AI editors (Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code)
+Configure Sanity MCP server for AI editors (Cursor, VS Code, Claude Code)
 
 ```
 USAGE
@@ -2567,7 +2566,7 @@ EXAMPLES
     $ sanity migration create "Rename field from location to address"
 ```
 
-_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/create.ts)_
+_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.4/src/commands/migration/create.ts)_
 
 ## `sanity migration list`
 
@@ -2586,7 +2585,7 @@ EXAMPLES
     $ sanity migration list
 ```
 
-_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/list.ts)_
+_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.4/src/commands/migration/list.ts)_
 
 ## `sanity migration run [ID]`
 
@@ -2630,7 +2629,7 @@ EXAMPLES
     $ sanity migration run <id> --from-export=production.tar.gz --no-dry-run --project xyz --dataset staging
 ```
 
-_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/run.ts)_
+_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.4/src/commands/migration/run.ts)_
 
 ## `sanity openapi get SLUG`
 
@@ -2901,14 +2900,6 @@ EXAMPLES
   Extracts schema types in a Sanity project with more than one workspace
 
     $ sanity schema extract --workspace default
-
-  Watch mode - re-extract on changes
-
-    $ sanity schema extract --watch
-
-  Watch with custom glob patterns
-
-    $ sanity schema extract --watch --watch-patterns "lib/**/*.ts"
 ```
 
 _See code: [src/commands/schema/extract.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/schema/extract.ts)_
@@ -3182,7 +3173,7 @@ _See code: [src/commands/tokens/list.ts](https://github.com/sanity-io/cli/blob/v
 
 ## `sanity typegen generate`
 
-Sanity TypeGen
+Sanity TypeGen (Beta)
 
 ```
 USAGE
@@ -3194,7 +3185,8 @@ FLAGS
   --watch                [Default: false] Run the typegen in watch mode
 
 DESCRIPTION
-  Sanity TypeGen
+  Sanity TypeGen (Beta)
+  This command is currently in beta and may undergo significant changes. Feedback is welcome!
 
   Configuration:
   This command can utilize configuration settings defined in a `sanity-typegen.json` file. These settings include:
