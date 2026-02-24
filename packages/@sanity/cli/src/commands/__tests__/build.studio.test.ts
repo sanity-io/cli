@@ -98,7 +98,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should build with --source-maps and --stats flags and injects environment variables', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     vi.stubEnv('SANITY_STUDIO_TEST_VAR', 'test-value')
@@ -118,7 +118,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should error when styled-components is not installed', async () => {
-    const cwd = await testFixture('basic-studio', {
+    const cwd = await testFixture('tiny-studio', {
       tempDir: tmpdir(),
     })
     process.chdir(cwd)
@@ -146,7 +146,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should handle build errors gracefully', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     // Corrupt the config file to trigger a build error
@@ -159,7 +159,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should prompt for directory cleanup with custom output dir and confirm', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     const customDir = 'custom-output'
@@ -179,7 +179,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should skip cleanup when user declines directory cleanup prompt', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     mockedConfirm.mockResolvedValue(false)
@@ -193,7 +193,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should exit when user selects "cancel" for version diff', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     mockedCompareDependencyVersions.mockResolvedValue({
@@ -210,7 +210,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should upgrade packages when user selects "upgrade" only', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     mockedCompareDependencyVersions.mockResolvedValue({
@@ -233,7 +233,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should continue without upgrading when user selects "continue"', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     mockedCompareDependencyVersions.mockResolvedValue({
@@ -254,7 +254,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should upgrade and build when user selects "upgrade-and-proceed"', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     mockedCompareDependencyVersions.mockResolvedValue({
@@ -280,7 +280,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should error in unattended mode when prerelease versions are detected', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     mockedCompareDependencyVersions.mockResolvedValue({
@@ -299,7 +299,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should exit when user selects "cancel" for prerelease prompt', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     mockedCompareDependencyVersions.mockResolvedValue({
@@ -315,7 +315,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should build without auto-updates when user selects "disable-auto-updates" for prerelease', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     mockedCompareDependencyVersions.mockResolvedValue({
@@ -339,7 +339,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should skip version mismatch prompt after disabling auto-updates for prerelease', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     mockedCompareDependencyVersions.mockResolvedValue({
@@ -359,7 +359,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should skip version prompt in unattended mode and show warning', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     mockedCompareDependencyVersions.mockResolvedValue({
@@ -378,7 +378,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
   })
 
   test('should skip version prompt in non-interactive mode and show warning', async () => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     mockedIsInteractive.mockReturnValue(false)
@@ -417,7 +417,7 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
       name: 'custom vite config',
     },
   ])('should build with $name', async ({config}) => {
-    const cwd = await testFixture('basic-studio')
+    const cwd = await testFixture('tiny-studio')
     process.chdir(cwd)
 
     await writeFile(join(cwd, 'sanity.cli.ts'), config)
