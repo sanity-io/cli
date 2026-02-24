@@ -30,17 +30,19 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Setup git identity
-        run: |
-          git config --global user.email "squiggler[bot] <squiggler[bot]@users.noreply.github.com>"
-          git config --global user.name "squiggler[bot]"
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.ECOSPARK_APP_ID }}
+          private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
 
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-
+          github_token: ${{ steps.generate_token.outputs.token }}
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
             actions: read
