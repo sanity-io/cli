@@ -53,13 +53,6 @@ export async function login(options: LoginOptions) {
 
   trace.log({step: 'waitForToken'})
 
-  const serverUrl = server.address()
-  if (!serverUrl || typeof serverUrl === 'string') {
-    // Note: `serverUrl` is string only when binding to unix sockets,
-    // thus we can safely assume Something Is Wrong™ if it's a string
-    throw new Error('Failed to start auth callback server')
-  }
-
   // Open a browser on the login page (or tell the user to)
   const shouldLaunchBrowser = canLaunchBrowser() && options.open !== false
   const actionText = shouldLaunchBrowser ? 'Opening browser at' : 'Please open a browser at'

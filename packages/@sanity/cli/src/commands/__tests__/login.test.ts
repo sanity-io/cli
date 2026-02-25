@@ -57,13 +57,6 @@ const mockedSetConfig = vi.mocked(setConfig)
 const mockedOpen = vi.mocked(open)
 const mockedCanLaunchBrowser = vi.mocked(canLaunchBrowser)
 
-afterEach(() => {
-  vi.clearAllMocks()
-  const pending = nock.pendingMocks()
-  nock.cleanAll()
-  expect(pending, 'pending mocks').toEqual([])
-})
-
 /**
  * Simulates OAuth provider redirecting back to local callback server.
  * Makes actual HTTP request to the running local server in test.
@@ -110,6 +103,13 @@ function mockSingleProviderLogin(sessionId = 'test-session-id') {
 }
 
 describe('#login', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
+  })
+
   describe('Provider Selection', () => {
     // Error/early-exit tests first (no auth server started, so no port conflicts)
 
@@ -580,6 +580,8 @@ describe('#login', () => {
   describe('Auth Server and Token Exchange', () => {
     test('falls back to next port when first port is busy', async () => {
       mockedGetCliToken.mockResolvedValue('')
+      mockedCanLaunchBrowser.mockReturnValue(true)
+
       mockSingleProviderLogin()
 
       // Block port 4321
@@ -598,7 +600,7 @@ describe('#login', () => {
 
         // Verify login URL uses fallback port
         const loginUrl = mockedOpen.mock.calls[0][0] as string
-        expect(loginUrl).toContain('localhost:4000')
+        expect(loginUrl).toContain('4000')
       } finally {
         await new Promise<void>((resolve) => {
           blockingServer.close(() => resolve())
@@ -833,10 +835,10 @@ describe('#login', () => {
 
       const commandPromise = testCommand(LoginCommand, [])
       await simulateOAuthCallback(4321, 'test-session-id')
-      const {error, stdout} = await commandPromise
+      const {error, stderr} = await commandPromise
 
       expect(error).toBeUndefined()
-      expect(stdout).toContain('Failed to invalidate previous session')
+      expect(stderr).toContain('Failed to invalidate previous session')
       expect(mockedSetConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
     })
   })

@@ -20,5 +20,5 @@ export async function promptForProviders(providers: LoginProvider[]): Promise<Lo
     message: 'Please log in or create a new account',
   })
 
-  return provider || providers[0]
+  return provider
 }

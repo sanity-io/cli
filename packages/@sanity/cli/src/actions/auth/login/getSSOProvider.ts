@@ -28,5 +28,5 @@ export async function getSSOProvider(orgSlug: string): Promise<LoginProvider | u
     message: 'Select SSO provider',
   })
 
-  return selectedProvider ? samlProviderToLoginProvider(selectedProvider) : undefined
+  return samlProviderToLoginProvider(selectedProvider)
 }

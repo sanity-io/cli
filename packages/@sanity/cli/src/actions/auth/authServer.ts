@@ -1,10 +1,9 @@
 import {createServer, type Server} from 'node:http'
 import os from 'node:os'
 
-import {subdebug} from '@sanity/cli-core'
+import {getSanityUrl, subdebug} from '@sanity/cli-core'
 
 import {getTokenDetails} from '../../services/auth.js'
-import {getSanityEnv} from '../../util/getSanityEnv.js'
 import {type TokenDetails} from './types.js'
 
 const debug = subdebug('auth')
@@ -38,7 +37,7 @@ const platformNames: Record<string, string | undefined> = {
 export function startServerForTokenCallback(
   providerUrl: string,
 ): Promise<{loginUrl: URL; server: Server; token: Promise<TokenDetails>}> {
-  const domain = getSanityEnv() === 'staging' ? 'www.sanity.work' : 'www.sanity.io'
+  const sanityUrl = getSanityUrl()
 
   const attemptPorts = [...callbackPorts]
   let callbackPort = attemptPorts.shift()
@@ -56,7 +55,7 @@ export function startServerForTokenCallback(
       function failLoginRequest(code = '') {
         res.writeHead(303, 'See Other', {
           Connection: 'close',
-          Location: `https://${domain}/login/error${code ? `?error=${code}` : ''}`,
+          Location: `${sanityUrl}/login/error${code ? `?error=${code}` : ''}`,
         })
         res.end()
         server.close()
@@ -95,7 +94,7 @@ export function startServerForTokenCallback(
 
       res.writeHead(303, 'See Other', {
         Connection: 'close',
-        Location: `https://${domain}/login/success`,
+        Location: `${sanityUrl}/login/success`,
       })
       res.end()
       server.close()
