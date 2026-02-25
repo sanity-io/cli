@@ -131,6 +131,7 @@ describe('#login', () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Cannot find login provider with name "invalid-provider"')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('throws error when no providers are available', async () => {
@@ -146,6 +147,7 @@ describe('#login', () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('No authentication providers found')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('handles provider API error gracefully', async () => {
@@ -161,6 +163,7 @@ describe('#login', () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Internal Server Error')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     // Full-flow tests
@@ -347,6 +350,7 @@ describe('#login', () => {
       const noProviders = await testCommand(LoginCommand, ['--sso', 'no-sso-org'])
       expect(noProviders.error).toBeDefined()
       expect(noProviders.error?.message).toContain('No authentication providers found')
+      expect(noProviders.error?.oclif?.exit).toBe(1)
     })
 
     test('throws error for invalid organization slug', async () => {
@@ -362,6 +366,7 @@ describe('#login', () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Organization not found')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('handles SSO provider API error', async () => {
@@ -377,6 +382,7 @@ describe('#login', () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Internal Server Error')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     // Full-flow tests
@@ -690,6 +696,7 @@ describe('#login', () => {
       const {error} = await commandPromise
       expect(error).toBeDefined()
       expect(error?.message).toContain('Login failed')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('handles missing sid in token URL', async () => {
@@ -726,6 +733,7 @@ describe('#login', () => {
       const {error} = await commandPromise
       expect(error).toBeDefined()
       expect(error?.message).toContain('Login failed')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('handles token exchange failures', async () => {
@@ -752,6 +760,7 @@ describe('#login', () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Login failed')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('returns 404 for non-callback endpoints', async () => {

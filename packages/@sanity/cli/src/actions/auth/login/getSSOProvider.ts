@@ -1,8 +1,11 @@
+import {subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
 import {getSSOProviders} from '../../../services/auth.js'
 import {type LoginProvider} from '../types.js'
 import {samlProviderToLoginProvider} from './samlProviderToLoginProvider.js'
+
+const debug = subdebug('login:getSSOProvider')
 
 /**
  * Get the SSO provider for the given slug
@@ -12,21 +15,26 @@ import {samlProviderToLoginProvider} from './samlProviderToLoginProvider.js'
  * @internal
  */
 export async function getSSOProvider(orgSlug: string): Promise<LoginProvider | undefined> {
-  const providers = await getSSOProviders(orgSlug)
+  try {
+    const providers = await getSSOProviders(orgSlug)
 
-  const enabledProviders = providers.filter((candidate) => !candidate.disabled)
-  if (enabledProviders.length === 0) {
-    return undefined
+    const enabledProviders = providers.filter((candidate) => !candidate.disabled)
+    if (enabledProviders.length === 0) {
+      return undefined
+    }
+
+    if (enabledProviders.length === 1) {
+      return samlProviderToLoginProvider(enabledProviders[0])
+    }
+
+    const selectedProvider = await select({
+      choices: enabledProviders.map((provider) => ({name: provider.name, value: provider})),
+      message: 'Select SSO provider',
+    })
+
+    return samlProviderToLoginProvider(selectedProvider)
+  } catch (err) {
+    debug('Error retrieving SSO Providers', err)
+    throw err
   }
-
-  if (enabledProviders.length === 1) {
-    return samlProviderToLoginProvider(enabledProviders[0])
-  }
-
-  const selectedProvider = await select({
-    choices: enabledProviders.map((provider) => ({name: provider.name, value: provider})),
-    message: 'Select SSO provider',
-  })
-
-  return samlProviderToLoginProvider(selectedProvider)
 }

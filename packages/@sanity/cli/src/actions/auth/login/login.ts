@@ -1,3 +1,4 @@
+import {CLIError} from '@oclif/core/errors'
 import {type CLITelemetryStore, getCliToken, type Output, setConfig} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import open from 'open'
@@ -46,7 +47,7 @@ export async function login(options: LoginOptions) {
   trace.log({provider: provider?.name, step: 'selectProvider'})
 
   if (provider === undefined) {
-    throw new Error('No authentication providers found')
+    throw new CLIError('No authentication providers found', {exit: 1})
   }
 
   const {loginUrl, server, token: tokenPromise} = await startServerForTokenCallback(provider.url)
@@ -74,8 +75,8 @@ export async function login(options: LoginOptions) {
     spin.stop()
     trace.error(err as Error)
     throw err instanceof Error
-      ? new Error(`Login failed: ${err.message}`, {cause: err})
-      : new Error(`${err}`)
+      ? new CLIError(`Login failed: ${err.message}`, {exit: 1})
+      : new CLIError(`${err}`, {exit: 1})
   } finally {
     await new Promise<void>((resolve) => {
       server.close(() => resolve())

@@ -1,9 +1,13 @@
-import {input, spinner} from '@sanity/cli-core/ux'
+import {CLIError} from '@oclif/core/errors'
+import {subdebug} from '@sanity/cli-core'
+import {input, spinner, SpinnerInstance} from '@sanity/cli-core/ux'
 
 import {promptForProviders} from '../../../prompts/promptForProviders.js'
 import {getProviders} from '../../../services/auth.js'
 import {type LoginProvider} from '../types.js'
 import {getSSOProvider} from './getSSOProvider.js'
+
+const debug = subdebug('login:getProvider')
 
 /**
  * Prompt the user to select a login provider, or use the specified provider if given.
@@ -21,35 +25,43 @@ export async function getProvider({
   orgSlug: string | undefined
   specifiedProvider: string | undefined
 }): Promise<LoginProvider | undefined> {
-  if (orgSlug) {
-    return getSSOProvider(orgSlug)
-  }
+  let spin: SpinnerInstance | undefined
 
-  // Fetch and prompt for login provider to use
-  const spin = spinner('Fetching providers...').start()
-  let {providers} = await getProviders()
-  if (experimental) {
-    providers = [...providers, {name: 'sso', title: 'SSO', url: '_not_used_'}]
-  }
-  spin.stop()
-
-  if (specifiedProvider) {
-    const provider = providers.find((prov) => prov.name === specifiedProvider)
-    if (!provider) {
-      throw new Error(`Cannot find login provider with name "${specifiedProvider}"`)
+  try {
+    if (orgSlug) {
+      return await getSSOProvider(orgSlug)
     }
+
+    spin = spinner('Fetching providers...').start()
+    // Fetch and prompt for login provider to use
+    let {providers} = await getProviders()
+    if (experimental) {
+      providers = [...providers, {name: 'sso', title: 'SSO', url: '_not_used_'}]
+    }
+    spin.stop()
+
+    if (specifiedProvider) {
+      const provider = providers.find((prov) => prov.name === specifiedProvider)
+      if (!provider) {
+        throw new CLIError(`Cannot find login provider with name "${specifiedProvider}"`, {exit: 1})
+      }
+      return provider
+    }
+
+    if (providers.length === 0) {
+      return undefined
+    }
+
+    const provider = await promptForProviders(providers)
+    if (provider.name === 'sso') {
+      const orgSlug = await input({message: 'Organization slug:'})
+      return await getSSOProvider(orgSlug)
+    }
+
     return provider
+  } catch (err) {
+    spin?.stop()
+    debug('Error retrieving providers', err)
+    throw new CLIError(`Error retrieving providers: ${err}`, {exit: 1})
   }
-
-  if (providers.length === 0) {
-    return undefined
-  }
-
-  const provider = await promptForProviders(providers)
-  if (provider.name === 'sso') {
-    const orgSlug = await input({message: 'Organization slug:'})
-    return getSSOProvider(orgSlug)
-  }
-
-  return provider
 }
