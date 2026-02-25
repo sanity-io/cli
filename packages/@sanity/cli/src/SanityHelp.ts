@@ -75,7 +75,7 @@ export function replaceInitWithCreateCommand(help: string): string {
   // separator, but npm does. Only include it if we need to, as the commands look
   // cleaner without it.
   return help
-    .replaceAll(/(\s+)sanity(\s+)init(\s*)\n/g, `$1${createCmd}$2\n`)
+    .replaceAll(/(\s+)sanity\s+init\s*\n/g, `$1${createCmd}\n`)
     .replaceAll(/(\s+)sanity(\s+)init/g, `$1${createCmd}${flagSeparator}`)
 }
 

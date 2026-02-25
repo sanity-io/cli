@@ -162,7 +162,7 @@ describe('replaceInitWithCreateCommand', () => {
       vi.stubEnv('npm_config_user_agent', UA)
       const result = replaceInitWithCreateCommand(makeInitHelp())
       // The bare "$ sanity init\n" line gets the first regex (no flag separator)
-      expect(result).toMatch(/\$ pnpm create sanity@latest\s*\n/)
+      expect(result).toContain('$ pnpm create sanity@latest\n')
     })
 
     test('removes all "sanity init" references', () => {
