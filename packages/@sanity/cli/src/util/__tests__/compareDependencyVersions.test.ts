@@ -45,73 +45,48 @@ describe('compareDependencyVersions', () => {
     vi.clearAllMocks()
   })
   describe('for studio', () => {
-    it('should return empty array if versions match', async () => {
+    it('should return empty mismatched array if versions match', async () => {
       mockRequest.mockResolvedValue({
         headers: {'x-resolved-version': '3.40.0'},
         statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/vision': '^3.40.0',
-            sanity: '^3.40.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: 'sanity',
-          version: '3.40.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/vision',
-          version: '3.40.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/vision': '^3.40.0',
+          sanity: '^3.40.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(autoUpdatePackages, '/test/workdir')
 
-      expect(result).toEqual([])
+      expect(result.mismatched).toEqual([])
+      expect(result.unresolvedPrerelease).toEqual([])
     })
 
-    it('should return one item in array if versions mismatches for one pkg', async () => {
+    it('should return one item in mismatched array if versions mismatches for one pkg', async () => {
       mockRequest.mockResolvedValue({
         headers: {'x-resolved-version': '3.40.0'},
         statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/vision': '^3.40.0',
-            sanity: '^3.40.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: 'sanity',
-          version: '3.30.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/vision',
-          version: '3.40.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/vision': '^3.40.0',
+          sanity: '^3.40.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(autoUpdatePackages, '/test/workdir')
 
-      expect(result).toEqual([
+      expect(result.mismatched).toEqual([
         {
           installed: '3.30.0',
           pkg: 'sanity',
@@ -119,39 +94,26 @@ describe('compareDependencyVersions', () => {
         },
       ])
     })
-    it('should return multiple items in array if versions mismatches for more pkg', async () => {
+    it('should return multiple items in mismatched array if versions mismatches for more pkg', async () => {
       mockRequest.mockResolvedValue({
         headers: {'x-resolved-version': '3.40.0'},
         statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/vision': '^3.40.0',
-            sanity: '^3.40.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: 'sanity',
-          version: '3.30.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/vision',
-          version: '3.30.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/vision': '^3.40.0',
+          sanity: '^3.40.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(autoUpdatePackages, '/test/workdir')
 
-      expect(result).toEqual([
+      expect(result.mismatched).toEqual([
         {
           installed: '3.30.0',
           pkg: 'sanity',
@@ -172,32 +134,19 @@ describe('compareDependencyVersions', () => {
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.50.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/vision': '^3.40.0',
-            sanity: '^3.40.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: 'sanity',
-          version: '3.50.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/vision',
-          version: '3.40.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/vision': '^3.40.0',
+          sanity: '^3.40.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(autoUpdatePackages, '/test/workdir')
 
-      expect(result).toEqual([
+      expect(result.mismatched).toEqual([
         {
           installed: '3.50.0',
           pkg: 'sanity',
@@ -227,7 +176,7 @@ describe('compareDependencyVersions', () => {
 
       expect(mockReadPackageJson).toHaveBeenCalledTimes(1)
 
-      expect(result).toEqual([
+      expect(result.mismatched).toEqual([
         {
           installed: '3.20.0',
           pkg: 'sanity',
@@ -243,74 +192,49 @@ describe('compareDependencyVersions', () => {
   })
 
   describe('for app', () => {
-    it('should return empty array if versions match', async () => {
+    it('should return empty mismatched array if versions match', async () => {
       mockRequest.mockResolvedValue({
         headers: {'x-resolved-version': '0.1.0'},
         statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/sdk': '^0.1.0',
-            '@sanity/sdk-react': '^0.1.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk-react',
-          version: '0.1.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk',
-          version: '0.1.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/sdk': '^0.1.0',
+          '@sanity/sdk-react': '^0.1.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(appAutoUpdatePackages, '/test/workdir')
 
-      expect(result).toEqual([])
+      expect(result.mismatched).toEqual([])
+      expect(result.unresolvedPrerelease).toEqual([])
     })
 
-    it('should return one item in array if versions mismatches for one pkg', async () => {
+    it('should return one item in mismatched array if versions mismatches for one pkg', async () => {
       mockRequest.mockResolvedValue({
         headers: {'x-resolved-version': '0.1.0'},
         statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.0.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/sdk': '^0.1.0',
-            '@sanity/sdk-react': '^0.1.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk-react',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk',
-          version: '0.1.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/sdk': '^0.1.0',
+          '@sanity/sdk-react': '^0.1.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(appAutoUpdatePackages, '/test/workdir')
 
-      expect(result).toEqual([
+      expect(result.mismatched).toEqual([
         {
           installed: '0.0.0',
           pkg: '@sanity/sdk-react',
@@ -318,39 +242,26 @@ describe('compareDependencyVersions', () => {
         },
       ])
     })
-    it('should return multiple items in array if versions mismatches for more pkg', async () => {
+    it('should return multiple items in mismatched array if versions mismatches for more pkg', async () => {
       mockRequest.mockResolvedValue({
         headers: {'x-resolved-version': '0.2.0'},
         statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/sdk': '^0.1.0',
-            '@sanity/sdk-react': '^0.1.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk-react',
-          version: '0.1.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk',
-          version: '0.1.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/sdk': '^0.1.0',
+          '@sanity/sdk-react': '^0.1.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(appAutoUpdatePackages, '/test/workdir')
 
-      expect(result).toEqual([
+      expect(result.mismatched).toEqual([
         {
           installed: '0.1.0',
           pkg: '@sanity/sdk-react',
@@ -371,32 +282,19 @@ describe('compareDependencyVersions', () => {
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.2.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.2.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/sdk': '^0.1.0',
-            '@sanity/sdk-react': '^0.1.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk-react',
-          version: '0.2.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk',
-          version: '0.2.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/sdk': '^0.1.0',
+          '@sanity/sdk-react': '^0.1.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(appAutoUpdatePackages, '/test/workdir')
 
-      expect(result).toEqual([
+      expect(result.mismatched).toEqual([
         {
           installed: '0.2.0',
           pkg: '@sanity/sdk-react',
@@ -431,7 +329,7 @@ describe('compareDependencyVersions', () => {
 
       expect(mockReadPackageJson).toHaveBeenCalledTimes(1)
 
-      expect(result).toEqual([
+      expect(result.mismatched).toEqual([
         {
           installed: '0.0.0',
           pkg: '@sanity/sdk-react',
@@ -497,6 +395,80 @@ describe('compareDependencyVersions', () => {
     })
   })
 
+  describe('undeclared packages', () => {
+    it('should skip packages not declared in the local package.json', async () => {
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
+      })
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          sanity: '^3.40.0',
+          // @sanity/vision is intentionally not declared
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      const result = await compare(autoUpdatePackages, '/test/workdir')
+
+      // Only sanity should be checked, @sanity/vision should be skipped entirely
+      expect(mockRequest).toHaveBeenCalledTimes(1)
+      expect(result.mismatched).toEqual([])
+      expect(result.unresolvedPrerelease).toEqual([])
+    })
+
+    it('should still report mismatches for declared packages when others are undeclared', async () => {
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
+      })
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          sanity: '^3.30.0',
+          // @sanity/vision is intentionally not declared
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      const result = await compare(autoUpdatePackages, '/test/workdir')
+
+      expect(result.mismatched).toEqual([
+        {
+          installed: '3.30.0',
+          pkg: 'sanity',
+          remote: '3.40.0',
+        },
+      ])
+      expect(result.unresolvedPrerelease).toEqual([])
+    })
+
+    it('should throw when a declared package has an unparseable local version', async () => {
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
+      })
+      mockGetLocalPackageVersion.mockResolvedValueOnce(null)
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          sanity: 'not-a-valid-version',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      await expect(
+        compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
+      ).rejects.toThrow('Failed to parse installed version for sanity')
+    })
+  })
+
   describe('module URL selection', () => {
     it('should use the default module endpoint when no appId is provided', async () => {
       mockRequest.mockResolvedValue({
@@ -538,6 +510,126 @@ describe('compareDependencyVersions', () => {
       const url = mockRequest.mock.calls[0][0].url as string
       expect(url).toContain('/v1/modules/by-app/my-app-id/')
       expect(url).not.toContain('/default/')
+    })
+  })
+
+  describe('prerelease version handling', () => {
+    it('should return prerelease package in unresolvedPrerelease when remote returns 404', async () => {
+      mockRequest.mockResolvedValue({
+        headers: {},
+        statusCode: 404,
+        statusMessage: 'Not Found',
+      })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {sanity: '^5.11.1-alpha.14'},
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      const result = await compare(
+        [{name: 'sanity', version: '5.11.1-alpha.14'}],
+        '/test/workdir',
+      )
+
+      expect(result.mismatched).toEqual([])
+      expect(result.unresolvedPrerelease).toEqual([
+        {pkg: 'sanity', version: '5.11.1-alpha.14'},
+      ])
+    })
+
+    it('should throw for non-prerelease package when remote returns 404', async () => {
+      mockRequest.mockResolvedValue({
+        headers: {},
+        statusCode: 404,
+        statusMessage: 'Not Found',
+      })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {sanity: '^3.40.0'},
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      await expect(
+        compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
+      ).rejects.toThrow('Failed to resolve remote version for sanity@3.40.0: package not found')
+    })
+
+    it('should correctly split resolvable and prerelease packages', async () => {
+      // First call (sanity with prerelease) returns 404
+      // Second call (@sanity/vision with normal version) returns resolved version
+      mockRequest
+        .mockResolvedValueOnce({
+          headers: {},
+          statusCode: 404,
+          statusMessage: 'Not Found',
+        })
+        .mockResolvedValueOnce({
+          headers: {'x-resolved-version': '3.40.0'},
+          statusCode: 302,
+        })
+
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/vision': '^3.40.0',
+          sanity: '^5.11.1-alpha.14',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      const result = await compare(
+        [
+          {name: 'sanity', version: '5.11.1-alpha.14'},
+          {name: '@sanity/vision', version: '3.40.0'},
+        ],
+        '/test/workdir',
+      )
+
+      expect(result.unresolvedPrerelease).toEqual([
+        {pkg: 'sanity', version: '5.11.1-alpha.14'},
+      ])
+      expect(result.mismatched).toEqual([
+        {
+          installed: '3.30.0',
+          pkg: '@sanity/vision',
+          remote: '3.40.0',
+        },
+      ])
+    })
+
+    it('should handle multiple prerelease packages with 404', async () => {
+      mockRequest.mockResolvedValue({
+        headers: {},
+        statusCode: 404,
+        statusMessage: 'Not Found',
+      })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/vision': '^5.11.1-beta.1',
+          sanity: '^5.11.1-alpha.14',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      const result = await compare(
+        [
+          {name: 'sanity', version: '5.11.1-alpha.14'},
+          {name: '@sanity/vision', version: '5.11.1-beta.1'},
+        ],
+        '/test/workdir',
+      )
+
+      expect(result.mismatched).toEqual([])
+      expect(result.unresolvedPrerelease).toEqual([
+        {pkg: 'sanity', version: '5.11.1-alpha.14'},
+        {pkg: '@sanity/vision', version: '5.11.1-beta.1'},
+      ])
     })
   })
 })

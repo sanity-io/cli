@@ -71,12 +71,20 @@ export async function startStudioDevServer(
       })
     }
 
+    if (result?.unresolvedPrerelease.length) {
+      for (const mod of result.unresolvedPrerelease) {
+        output.warn(
+          `Your local version of ${mod.pkg} (${mod.version}) is a prerelease not available on the auto-updates CDN. The locally installed version will be used.`,
+        )
+      }
+    }
+
     // mismatch between local and auto-updating dependencies
-    if (result?.length) {
+    if (result?.mismatched.length) {
       const message =
         `The following local package versions are different from the versions currently served at runtime.\n` +
         `When using auto updates, we recommend that you run with the same versions locally as will be used when deploying.\n\n` +
-        `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')}\n\n`
+        `${result.mismatched.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')}\n\n`
 
       if (isInteractive()) {
         const shouldUpgrade = await confirm({
@@ -87,7 +95,7 @@ export async function startStudioDevServer(
           await upgradePackages(
             {
               packageManager: (await getPackageManagerChoice(workDir, {interactive: false})).chosen,
-              packages: result.map((res) => [res.pkg, res.remote]),
+              packages: result.mismatched.map((res) => [res.pkg, res.remote]),
             },
             {output, workDir},
           )

@@ -21,6 +21,7 @@ import {checkStudioDependencyVersions} from './checkStudioDependencyVersions.js'
 import {determineBasePath} from './determineBasePath.js'
 import {getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getStudioEnvVars} from './getStudioEnvVars.js'
+import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {shouldAutoUpdate} from './shouldAutoUpdate.js'
 import {type BuildOptions} from './types.js'
 
@@ -47,7 +48,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     workDir,
   })
 
-  const autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
+  let autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
 
   let autoUpdatesImports = {}
 
@@ -75,13 +76,23 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     autoUpdatesImports = getAutoUpdatesImportMap(sanityDependencies, {appId})
 
     // Check the versions
-    const result = await compareDependencyVersions(sanityDependencies, workDir, {appId})
+    const {mismatched, unresolvedPrerelease} = await compareDependencyVersions(
+      sanityDependencies,
+      workDir,
+      {appId},
+    )
 
-    if (result?.length) {
+    if (unresolvedPrerelease.length > 0) {
+      await handlePrereleaseVersions({output, unattendedMode, unresolvedPrerelease})
+      autoUpdatesImports = {}
+      autoUpdatesEnabled = false
+    }
+
+    if (mismatched.length > 0 && autoUpdatesEnabled) {
       const versionMismatchWarning =
         `The following local package versions are different from the versions currently served at runtime.\n` +
         `When using auto updates, we recommend that you test locally with the same versions before deploying. \n\n` +
-        `${result.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')}`
+        `${mismatched.map((mod) => ` - ${mod.pkg} (local version: ${mod.installed}, runtime version: ${mod.remote})`).join('\n')}`
 
       // If it is non-interactive or in unattended mode, we don't want to prompt
       if (isInteractive() && !unattendedMode) {
@@ -117,7 +128,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
           await upgradePackages(
             {
               packageManager: (await getPackageManagerChoice(workDir, {interactive: false})).chosen,
-              packages: result.map((res) => [res.pkg, res.remote]),
+              packages: mismatched.map((res) => [res.pkg, res.remote]),
             },
             {output, workDir},
           )
