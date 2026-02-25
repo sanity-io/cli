@@ -51,28 +51,15 @@ describe('compareDependencyVersions', () => {
         statusCode: 302,
       })
       mockGetLocalPackageVersion.mockResolvedValue('3.40.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/vision': '^3.40.0',
-            sanity: '^3.40.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: 'sanity',
-          version: '3.40.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/vision',
-          version: '3.40.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/vision': '^3.40.0',
+          sanity: '^3.40.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(autoUpdatePackages, '/test/workdir')
 
@@ -87,28 +74,15 @@ describe('compareDependencyVersions', () => {
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/vision': '^3.40.0',
-            sanity: '^3.40.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: 'sanity',
-          version: '3.30.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/vision',
-          version: '3.40.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/vision': '^3.40.0',
+          sanity: '^3.40.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(autoUpdatePackages, '/test/workdir')
 
@@ -127,28 +101,15 @@ describe('compareDependencyVersions', () => {
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/vision': '^3.40.0',
-            sanity: '^3.40.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: 'sanity',
-          version: '3.30.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/vision',
-          version: '3.30.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/vision': '^3.40.0',
+          sanity: '^3.40.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(autoUpdatePackages, '/test/workdir')
 
@@ -173,28 +134,15 @@ describe('compareDependencyVersions', () => {
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.50.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/vision': '^3.40.0',
-            sanity: '^3.40.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: 'sanity',
-          version: '3.50.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/vision',
-          version: '3.40.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/vision': '^3.40.0',
+          sanity: '^3.40.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(autoUpdatePackages, '/test/workdir')
 
@@ -251,28 +199,15 @@ describe('compareDependencyVersions', () => {
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/sdk': '^0.1.0',
-            '@sanity/sdk-react': '^0.1.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk-react',
-          version: '0.1.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk',
-          version: '0.1.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/sdk': '^0.1.0',
+          '@sanity/sdk-react': '^0.1.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(appAutoUpdatePackages, '/test/workdir')
 
@@ -287,28 +222,15 @@ describe('compareDependencyVersions', () => {
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.0.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/sdk': '^0.1.0',
-            '@sanity/sdk-react': '^0.1.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk-react',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk',
-          version: '0.1.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/sdk': '^0.1.0',
+          '@sanity/sdk-react': '^0.1.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(appAutoUpdatePackages, '/test/workdir')
 
@@ -327,28 +249,15 @@ describe('compareDependencyVersions', () => {
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.1.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/sdk': '^0.1.0',
-            '@sanity/sdk-react': '^0.1.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk-react',
-          version: '0.1.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk',
-          version: '0.1.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/sdk': '^0.1.0',
+          '@sanity/sdk-react': '^0.1.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(appAutoUpdatePackages, '/test/workdir')
 
@@ -373,28 +282,15 @@ describe('compareDependencyVersions', () => {
       })
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.2.0')
       mockGetLocalPackageVersion.mockResolvedValueOnce('0.2.0')
-      mockReadPackageJson
-        .mockResolvedValueOnce({
-          dependencies: {
-            '@sanity/sdk': '^0.1.0',
-            '@sanity/sdk-react': '^0.1.0',
-          },
-          devDependencies: {},
-          name: 'test-package',
-          version: '0.0.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk-react',
-          version: '0.2.0',
-        })
-        .mockResolvedValueOnce({
-          dependencies: {},
-          devDependencies: {},
-          name: '@sanity/sdk',
-          version: '0.2.0',
-        })
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          '@sanity/sdk': '^0.1.0',
+          '@sanity/sdk-react': '^0.1.0',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
 
       const result = await compare(appAutoUpdatePackages, '/test/workdir')
 
@@ -496,6 +392,80 @@ describe('compareDependencyVersions', () => {
       await expect(
         compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
       ).rejects.toThrow('Unexpected HTTP response: 500 Internal Server Error')
+    })
+  })
+
+  describe('undeclared packages', () => {
+    it('should skip packages not declared in the local package.json', async () => {
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
+      })
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.40.0')
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          sanity: '^3.40.0',
+          // @sanity/vision is intentionally not declared
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      const result = await compare(autoUpdatePackages, '/test/workdir')
+
+      // Only sanity should be checked, @sanity/vision should be skipped entirely
+      expect(mockRequest).toHaveBeenCalledTimes(1)
+      expect(result.mismatched).toEqual([])
+      expect(result.unresolvedPrerelease).toEqual([])
+    })
+
+    it('should still report mismatches for declared packages when others are undeclared', async () => {
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
+      })
+      mockGetLocalPackageVersion.mockResolvedValueOnce('3.30.0')
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          sanity: '^3.30.0',
+          // @sanity/vision is intentionally not declared
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      const result = await compare(autoUpdatePackages, '/test/workdir')
+
+      expect(result.mismatched).toEqual([
+        {
+          installed: '3.30.0',
+          pkg: 'sanity',
+          remote: '3.40.0',
+        },
+      ])
+      expect(result.unresolvedPrerelease).toEqual([])
+    })
+
+    it('should throw when a declared package has an unparseable local version', async () => {
+      mockRequest.mockResolvedValue({
+        headers: {'x-resolved-version': '3.40.0'},
+        statusCode: 302,
+      })
+      mockGetLocalPackageVersion.mockResolvedValueOnce(null)
+      mockReadPackageJson.mockResolvedValueOnce({
+        dependencies: {
+          sanity: 'not-a-valid-version',
+        },
+        devDependencies: {},
+        name: 'test-package',
+        version: '0.0.0',
+      })
+
+      await expect(
+        compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
+      ).rejects.toThrow('Failed to parse installed version for sanity')
     })
   })
 

@@ -70,6 +70,11 @@ export async function compareDependencyVersions(
   const unresolvedPrerelease: Array<UnresolvedPrerelease> = []
 
   for (const pkg of packages) {
+    // Skip packages that are not declared in the local package.json
+    if (!dependencies[pkg.name]) {
+      continue
+    }
+
     const resolvedVersion = await getRemoteResolvedVersion(getModuleUrl(pkg, {appId}), requester)
 
     if (resolvedVersion === null) {
