@@ -62,6 +62,9 @@ export async function getProvider({
   } catch (err) {
     spin?.stop()
     debug('Error retrieving providers', err)
-    throw new CLIError(`Error retrieving providers: ${err}`, {exit: 1})
+    throw new CLIError(
+      `Error retrieving providers: ${err instanceof Error ? err.message : String(err)}`,
+      {exit: 1},
+    )
   }
 }

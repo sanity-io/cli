@@ -824,10 +824,10 @@ describe('#login', () => {
 
       const commandPromise = testCommand(LoginCommand, [])
       await simulateOAuthCallback(4321, 'session-401')
-      const {error, stdout} = await commandPromise
+      const {error, stderr} = await commandPromise
 
       expect(error).toBeUndefined()
-      expect(stdout).not.toContain('Failed to invalidate previous session')
+      expect(stderr).not.toContain('Failed to invalidate previous session')
       expect(mockedSetConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
     })
 
