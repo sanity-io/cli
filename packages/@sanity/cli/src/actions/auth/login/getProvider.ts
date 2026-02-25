@@ -43,7 +43,7 @@ export async function getProvider({
     if (specifiedProvider) {
       const provider = providers.find((prov) => prov.name === specifiedProvider)
       if (!provider) {
-        throw new CLIError(`Cannot find login provider with name "${specifiedProvider}"`, {exit: 1})
+        throw new Error(`Cannot find login provider with name "${specifiedProvider}"`)
       }
       return provider
     }
