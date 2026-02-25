@@ -80,12 +80,12 @@ describe('checkStudioDependencyVersions', () => {
     test('should handle packages with valid versions', async () => {
       setupMocks({
         dependencies: {
-          react: '^18.0.0',
-          'react-dom': '^18.0.0',
+          react: '^19.2.2',
+          'react-dom': '^19.2.2',
         },
         localVersions: {
-          react: '18.2.0',
-          'react-dom': '18.2.0',
+          react: '19.2.2',
+          'react-dom': '19.2.2',
         },
       })
 
@@ -109,7 +109,7 @@ describe('checkStudioDependencyVersions', () => {
         ),
       )
       expect(mockOutput.warn).toHaveBeenCalledWith(
-        expect.stringContaining('react (installed: 20.0.0, want: ^18 || ^19)'),
+        expect.stringContaining('react (installed: 20.0.0, want: ^19.2.2)'),
       )
       expect(mockOutput.warn).toHaveBeenCalledWith(
         expect.stringContaining('To downgrade, run either:'),
@@ -133,11 +133,33 @@ describe('checkStudioDependencyVersions', () => {
         {exit: 1},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
-        expect.stringContaining('react (installed: 16.14.0, want: ^18 || ^19)'),
+        expect.stringContaining('react (installed: 16.14.0, want: ^19.2.2)'),
         {exit: 1},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
         expect.stringContaining('To upgrade, run either:'),
+        {exit: 1},
+      )
+    })
+
+    test('should handle React 18 as unsupported', async () => {
+      setupMocks({
+        dependencies: {react: '^18.0.0'},
+        localVersions: {react: '18.2.0'},
+      })
+
+      await expect(checkStudioDependencyVersions(workDir, mockOutput)).rejects.toThrow(
+        'process.exit called',
+      )
+
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'The following package versions are no longer supported and needs to be upgraded:',
+        ),
+        {exit: 1},
+      )
+      expect(mockOutput.error).toHaveBeenCalledWith(
+        expect.stringContaining('react (installed: 18.2.0, want: ^19.2.2)'),
         {exit: 1},
       )
     })
@@ -168,8 +190,8 @@ describe('checkStudioDependencyVersions', () => {
 
     test('should handle packages installed in devDependencies', async () => {
       setupMocks({
-        devDependencies: {react: '^18.0.0'},
-        localVersions: {react: '18.2.0'},
+        devDependencies: {react: '^19.2.2'},
+        localVersions: {react: '19.2.2'},
       })
 
       await checkStudioDependencyVersions(workDir, mockOutput)
@@ -180,7 +202,7 @@ describe('checkStudioDependencyVersions', () => {
 
     test('should fall back to dependency version string when local version cannot be resolved', async () => {
       setupMocks({
-        dependencies: {react: '^18.0.0'},
+        dependencies: {react: '^19.2.2'},
         localVersions: {react: null},
       })
 
@@ -231,12 +253,12 @@ describe('checkStudioDependencyVersions', () => {
 
       // Should warn about untested versions
       expect(mockOutput.warn).toHaveBeenCalledWith(
-        expect.stringContaining('react-dom (installed: 20.0.0, want: ^18 || ^19)'),
+        expect.stringContaining('react-dom (installed: 20.0.0, want: ^19.2.2)'),
       )
 
       // Should error about unsupported versions
       expect(mockOutput.error).toHaveBeenCalledWith(
-        expect.stringContaining('react (installed: 16.14.0, want: ^18 || ^19)'),
+        expect.stringContaining('react (installed: 16.14.0, want: ^19.2.2)'),
         {exit: 1},
       )
     })
@@ -289,15 +311,15 @@ describe('checkStudioDependencyVersions', () => {
       )
 
       expect(mockOutput.error).toHaveBeenCalledWith(
-        expect.stringContaining('npm install "react@18.0.0"'),
+        expect.stringContaining('npm install "react@^19.2.2"'),
         {exit: 1},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
-        expect.stringContaining('yarn add "react@18.0.0"'),
+        expect.stringContaining('yarn add "react@^19.2.2"'),
         {exit: 1},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
-        expect.stringContaining('pnpm add "react@18.0.0"'),
+        expect.stringContaining('pnpm add "react@^19.2.2"'),
         {exit: 1},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
@@ -315,13 +337,13 @@ describe('checkStudioDependencyVersions', () => {
       await checkStudioDependencyVersions(workDir, mockOutput)
 
       expect(mockOutput.warn).toHaveBeenCalledWith(
-        expect.stringContaining('yarn add "react@18.0.0"'),
+        expect.stringContaining('yarn add "react@^19.2.2"'),
       )
       expect(mockOutput.warn).toHaveBeenCalledWith(
-        expect.stringContaining('npm install "react@18.0.0"'),
+        expect.stringContaining('npm install "react@^19.2.2"'),
       )
       expect(mockOutput.warn).toHaveBeenCalledWith(
-        expect.stringContaining('pnpm install "react@18.0.0"'),
+        expect.stringContaining('pnpm install "react@^19.2.2"'),
       )
     })
 
@@ -342,11 +364,11 @@ describe('checkStudioDependencyVersions', () => {
       )
 
       expect(mockOutput.error).toHaveBeenCalledWith(
-        expect.stringContaining('react (installed: 16.14.0, want: ^18 || ^19)'),
+        expect.stringContaining('react (installed: 16.14.0, want: ^19.2.2)'),
         {exit: 1},
       )
       expect(mockOutput.error).toHaveBeenCalledWith(
-        expect.stringContaining('react-dom (installed: 16.14.0, want: ^18 || ^19)'),
+        expect.stringContaining('react-dom (installed: 16.14.0, want: ^19.2.2)'),
         {exit: 1},
       )
     })
@@ -402,15 +424,37 @@ describe('checkStudioDependencyVersions', () => {
       expect(mockOutput.error).not.toHaveBeenCalled()
     })
 
-    test('should handle @sanity/ui package correctly', async () => {
+    test('should handle @sanity/ui v3 package correctly', async () => {
       setupMocks({
-        dependencies: {'@sanity/ui': '^2.0.0'},
-        localVersions: {'@sanity/ui': '2.0.0'},
+        dependencies: {'@sanity/ui': '^3.0.0'},
+        localVersions: {'@sanity/ui': '3.0.0'},
       })
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
       expect(mockOutput.warn).not.toHaveBeenCalled()
+      expect(mockOutput.error).not.toHaveBeenCalled()
+    })
+
+    test('should warn about @sanity/ui v2 being deprecated', async () => {
+      setupMocks({
+        dependencies: {'@sanity/ui': '^2.0.0'},
+        localVersions: {'@sanity/ui': '2.8.0'},
+      })
+
+      await checkStudioDependencyVersions(workDir, mockOutput)
+
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'The following package versions have been deprecated and should be upgraded:',
+        ),
+      )
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining('@sanity/ui (installed: 2.8.0, want: ^3)'),
+      )
+      expect(mockOutput.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Support for these will be removed in a future release!'),
+      )
       expect(mockOutput.error).not.toHaveBeenCalled()
     })
 

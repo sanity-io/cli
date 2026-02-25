@@ -30,7 +30,7 @@ export default defineCliConfig({
   project: {
     basePath: '/studio',
   },
-  reactCompiler: {target: '18'},
+  reactCompiler: {target: '19'},
   reactStrictMode: true,
   server: {
     hostname: '0.0.0.0',
