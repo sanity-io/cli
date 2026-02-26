@@ -111,7 +111,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   }
 
   let shouldClean = true
-  if (outputDir !== defaultOutputDir && !unattendedMode) {
+  if (outputDir !== defaultOutputDir && !unattendedMode && isInteractive()) {
     shouldClean = await confirm({
       default: true,
       message: `Do you want to delete the existing directory (${outputDir}) first?`,
