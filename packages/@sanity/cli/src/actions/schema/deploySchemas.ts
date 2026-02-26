@@ -6,10 +6,9 @@ import {type Workspace} from 'sanity'
 
 import {updateSchemas} from '../../services/schemas.js'
 import {CURRENT_WORKSPACE_SCHEMA_VERSION, type StoredWorkspaceSchema} from '../manifest/types.js'
-import {type SchemaStoreActionResult} from './schemaStoreTypes.js'
 import {type ExtractWorkspaceWorkerData} from './types.js'
-import {schemasDeployDebug} from './utils/debug.js'
-import {FlagValidationError, SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
+import {SchemaExtractionError} from './utils/SchemaExtractionError.js'
+import {SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
 import {getWorkspaceSchemaId} from './utils/workspaceSchemaId.js'
 
 interface DeploySchemasOptions {
@@ -17,7 +16,6 @@ interface DeploySchemasOptions {
   verbose: boolean
   workDir: string
 
-  schemaRequired?: boolean
   tag?: string
   workspaceName?: string
 }
@@ -33,74 +31,57 @@ type ExtractWorkspaceWorkerMessage =
       workspaces: Workspace[]
     }
 
-export async function deploySchemas(
-  options: DeploySchemasOptions,
-): Promise<SchemaStoreActionResult> {
-  const {output, schemaRequired, tag, verbose, workDir, workspaceName} = options
+export async function deploySchemas(options: DeploySchemasOptions): Promise<void> {
+  const {output, tag, verbose, workDir, workspaceName} = options
 
-  try {
-    const result = await studioWorkerTask<ExtractWorkspaceWorkerMessage>(
-      new URL('extractSanityWorkspace.worker.js', import.meta.url),
-      {
-        name: 'extractSanityWorkspace',
-        studioRootPath: workDir,
-        workerData: {
-          configPath: workDir,
-          workDir,
-        } satisfies ExtractWorkspaceWorkerData,
-      },
-    )
+  const result = await studioWorkerTask<ExtractWorkspaceWorkerMessage>(
+    new URL('extractSanityWorkspace.worker.js', import.meta.url),
+    {
+      name: 'extractSanityWorkspace',
+      studioRootPath: workDir,
+      workerData: {
+        configPath: workDir,
+        workDir,
+      } satisfies ExtractWorkspaceWorkerData,
+    },
+  )
 
-    if (result.type === 'error') {
-      throw new Error(result.error)
-    }
+  if (result.type === 'error') {
+    throw new SchemaExtractionError(result.error, result.validation)
+  }
 
-    const workspaces = result.workspaces.filter(
-      (workspace) => !workspaceName || workspace.name === workspaceName,
-    )
-    if (workspaces.length === 0) {
-      const error = workspaceName
-        ? new FlagValidationError(`Found no workspaces named "${workspaceName}"`)
-        : new Error('Workspace array in manifest is empty.')
-      throw error
-    }
+  const workspaces = result.workspaces.filter(
+    (workspace) => !workspaceName || workspace.name === workspaceName,
+  )
+  if (workspaces.length === 0) {
+    const error = workspaceName
+      ? new Error(`Found no workspaces named "${workspaceName}"`)
+      : new Error('No workspaces found')
+    throw error
+  }
 
-    /* Known caveat: we _don't_ rollback failed operations or partial success */
-    const results = await Promise.allSettled(
-      workspaces.map(async (workspace): Promise<void> => {
-        await updateWorkspaceSchema({
-          output,
-          tag,
-          verbose,
-          workspace,
-        })
-      }),
-    )
+  /* Known caveat: we _don't_ rollback failed operations or partial success */
+  const results = await Promise.allSettled(
+    workspaces.map(async (workspace): Promise<void> => {
+      await updateWorkspaceSchema({
+        output,
+        tag,
+        verbose,
+        workspace,
+      })
+    }),
+  )
 
-    const fulfilledUpdates = results.filter((result) => result.status === 'fulfilled')
-    const rejectedUpdates = results.filter((result) => result.status === 'rejected')
+  const fulfilledUpdates = results.filter((result) => result.status === 'fulfilled')
+  const rejectedUpdates = results.filter((result) => result.status === 'rejected')
 
-    if (rejectedUpdates.length > 0) {
-      throw new Error(
-        `Failed to deploy ${rejectedUpdates.length}/${workspaces.length} schemas. Successfully deployed ${fulfilledUpdates.length}/${workspaces.length} schemas.`,
-      )
-    }
-
-    output.log(`Deployed ${fulfilledUpdates.length}/${workspaces.length} schemas`)
-    return 'success'
-  } catch (err) {
-    if (schemaRequired || err instanceof FlagValidationError) {
-      output.error(err.message, {exit: 1})
-    } else {
-      output.error(`↳ Error when storing schemas:\n  ${err.message}`, {exit: 1})
-    }
-    schemasDeployDebug('Error updating schemas', err.message)
-    return 'failure'
-  } finally {
-    output.log(
-      `${styleText('gray', '↳ List deployed schemas with:')} ${styleText('cyan', 'sanity schema list')}`,
+  if (rejectedUpdates.length > 0) {
+    throw new Error(
+      `Failed to deploy ${rejectedUpdates.length}/${workspaces.length} schemas. Successfully deployed ${fulfilledUpdates.length}/${workspaces.length} schemas.`,
     )
   }
+
+  output.log(`Deployed ${fulfilledUpdates.length}/${workspaces.length} schemas`)
 }
 
 async function updateWorkspaceSchema(args: {
@@ -147,8 +128,11 @@ async function updateWorkspaceSchema(args: {
         }:\n  ${styleText('red', `${err.message}`)}`,
       )
     } else {
-      output.error(
-        `↳ Error deploying schema for workspace "${workspace.name}":\n  ${styleText('red', `${err.message}`)}`,
+      output.log(
+        styleText(
+          'red',
+          `↳ Error deploying schema for workspace "${workspace.name}":\n  ${styleText('red', `${err.message}`)}`,
+        ),
       )
     }
 

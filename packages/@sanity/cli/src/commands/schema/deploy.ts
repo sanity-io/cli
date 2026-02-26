@@ -1,8 +1,12 @@
+import {styleText} from 'node:util'
+
 import {Flags} from '@oclif/core'
 import {parseStringFlag, SanityCommand} from '@sanity/cli-core'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
+import {formatSchemaValidation} from '../../actions/schema/formatSchemaValidation.js'
 import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
+import {SchemaExtractionError} from '../../actions/schema/utils/SchemaExtractionError.js'
 import {parseTag} from '../../actions/schema/utils/schemaStoreValidation.js'
 
 const description = `
@@ -69,7 +73,20 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
         workDir,
         workspaceName: workspace,
       })
+
+      this.log(
+        `${styleText('gray', '↳ List deployed schemas with:')} ${styleText('cyan', 'sanity schema list')}`,
+      )
     } catch (error) {
+      if (
+        error instanceof SchemaExtractionError &&
+        error.validation &&
+        error.validation.length > 0
+      ) {
+        this.output.log(formatSchemaValidation(error.validation))
+        this.exit(1)
+      }
+
       schemasDeployDebug('Failed to deploy schemas', error)
       const errorMessage = error instanceof Error ? error.message : String(error)
       this.error(`Failed to deploy schemas:\n${errorMessage}`, {exit: 1})
