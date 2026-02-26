@@ -1,317 +1,237 @@
 import {getCliConfig} from '@sanity/cli-core'
-import {mockApi, testCommand} from '@sanity/cli-test'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
+import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
-import {extractManifestSafe} from '../../../actions/manifest/extractManifest.js'
-import {createManifestReader} from '../../../actions/schema/utils/manifestReader.js'
 import {SCHEMA_API_VERSION} from '../../../services/schemas.js'
-import {NO_DATASET_ID, NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {DeploySchemaCommand} from '../deploy.js'
 
-const mockManifest = {
-  createdAt: '2024-01-01T00:00:00.000Z',
-  studioVersion: '3.0.0',
-  version: 3,
-  workspaces: [
-    {
-      basePath: '/',
-      dataset: 'production',
-      icon: null,
-      name: 'default',
-      projectId: 'test-project',
-      schema: 'default.create-schema.json',
-      tools: 'default.create-tools.json',
-    },
-    {
-      basePath: '/staging',
-      dataset: 'staging',
-      icon: null,
-      name: 'staging',
-      projectId: 'test-project',
-      schema: 'staging.create-schema.json',
-      tools: 'staging.create-tools.json',
-    },
-  ],
-}
+describe('#schema:deploy', {timeout: 60 * 1000}, () => {
+  describe('basic-studio', () => {
+    let projectId: string | undefined
+    beforeAll(async () => {
+      const cwd = await testFixture('basic-studio')
+      process.chdir(cwd)
+      const cliConfig = await getCliConfig(cwd)
+      projectId = cliConfig.api?.projectId
+    })
 
-vi.mock('../../../../../cli-core/src/config/findProjectRoot.js', async () => ({
-  findProjectRoot: vi.fn().mockResolvedValue({}),
-}))
+    afterEach(() => {
+      vi.clearAllMocks()
+    })
 
-vi.mock('../../../../../cli-core/src/config/cli/getCliConfig.js', () => ({
-  getCliConfig: vi.fn(),
-}))
+    test('deploys schema for single workspace', async () => {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/test/schemas`,
+      }).reply(200, {})
 
-vi.mock('../../../actions/manifest/extractManifest.js')
-vi.mock('../../../actions/schema/utils/manifestReader.js')
+      const {error, stdout} = await testCommand(DeploySchemaCommand, [])
 
-const mockedGetCliConfig = vi.mocked(getCliConfig)
-const mockExtractManifestSafe = vi.mocked(extractManifestSafe)
-const mockedCreateManifestReader = vi.mocked(createManifestReader)
+      expect(stdout).toContain('Deployed 1/1 schemas')
+      expect(stdout).toContain('sanity schema list')
+      if (error) throw error
+    })
 
-describe('#schema:deploy', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
+    test('deploys with --verbose flag', async () => {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/test/schemas`,
+      }).reply(200, {})
 
-    mockedGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: 'production',
-        projectId: 'test-project',
+      const {error, stdout} = await testCommand(DeploySchemaCommand, ['--verbose'])
+
+      expect(stdout).toContain('schemaId:')
+      expect(stdout).toContain(projectId)
+      expect(stdout).toContain('dataset: test')
+      if (error) throw error
+    })
+
+    test('deploys with --tag flag', async () => {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/test/schemas`,
+      }).reply(200, {})
+
+      const {error, stdout} = await testCommand(DeploySchemaCommand, ['--tag', 'mytag'])
+
+      expect(stdout).toContain('Deployed 1/1 schemas')
+      if (error) throw error
+    })
+
+    test.each([
+      {desc: 'empty tag', expectedError: 'tag argument is empty', tag: ''},
+      {
+        desc: 'tag containing period',
+        expectedError: 'tag cannot contain . (period)',
+        tag: 'my.tag',
       },
-    })
-
-    mockedCreateManifestReader.mockReturnValue({
-      getManifest: vi.fn().mockResolvedValue(mockManifest),
-      getWorkspaceSchema: vi.fn(),
-    })
-
-    mockExtractManifestSafe.mockResolvedValue(undefined)
-  })
-
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
-  test('should deploy schemas', async () => {
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/production/schemas',
-    }).reply(200, undefined)
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/staging/schemas',
-    }).reply(200, undefined)
-
-    const {stdout} = await testCommand(DeploySchemaCommand)
-
-    expect(stdout).toContain('Deployed 2/2 schemas')
-    expect(stdout).toContain('↳ List deployed schemas with: sanity schema list')
-  })
-
-  test('should deploy a specific schema based on workspace flag', async () => {
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/production/schemas',
-    }).reply(200, undefined)
-
-    const {stdout} = await testCommand(DeploySchemaCommand, ['--workspace', 'default'])
-
-    expect(stdout).toContain('Deployed 1/1 schemas')
-    expect(stdout).toContain('↳ List deployed schemas with: sanity schema list')
-  })
-
-  test('should enable verbose logging with verbose flag', async () => {
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/production/schemas',
-    }).reply(200, undefined)
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/staging/schemas',
-    }).reply(200, undefined)
-
-    const {stdout} = await testCommand(DeploySchemaCommand, ['--verbose'])
-
-    expect(stdout).toContain(
-      '↳ schemaId: _.schemas.default, projectId: test-project, dataset: production',
-    )
-  })
-
-  test.each([
-    {desc: 'no project ID is found', projectId: undefined},
-    {desc: 'project ID is empty string', projectId: ''},
-  ])('throws an error if $desc', async ({projectId}) => {
-    mockedGetCliConfig.mockResolvedValue({
-      api: {
-        dataset: 'production',
-        projectId,
+      {
+        desc: 'tag starting with dash',
+        expectedError: 'tag cannot start with - (dash)',
+        tag: '-mytag',
       },
-    })
-
-    const {error} = await testCommand(DeploySchemaCommand)
-
-    expect(error?.message).toContain(NO_PROJECT_ID)
-  })
-
-  test.each([
-    {dataset: undefined, desc: 'no dataset is found'},
-    {dataset: '', desc: 'dataset is empty string'},
-  ])('throws an error if $desc', async ({dataset}) => {
-    mockedGetCliConfig.mockResolvedValue({
-      api: {
-        dataset,
-        projectId: 'test-project',
+      {
+        desc: 'tag with invalid characters',
+        expectedError: 'tag can only contain characters in',
+        tag: 'my@tag',
       },
+    ])('throws error for $desc', async ({expectedError, tag}) => {
+      const {error} = await testCommand(DeploySchemaCommand, ['--tag', tag])
+
+      expect(error?.message).toContain(expectedError)
+      expect(error?.oclif?.exit).toBe(2)
     })
 
-    const {error} = await testCommand(DeploySchemaCommand)
+    test('handles API 401 permission error', async () => {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/test/schemas`,
+      }).reply(401, {message: 'Unauthorized'})
 
-    expect(error?.message).toContain(NO_DATASET_ID)
-  })
+      const {error, stderr} = await testCommand(DeploySchemaCommand, [])
 
-  test.each([{flag: 'tag'}, {flag: 'workspace'}])(
-    'throws error when $flag flag is empty string',
-    async ({flag}) => {
-      const {error} = await testCommand(DeploySchemaCommand, [`--${flag}`, ''])
-
-      expect(error?.message).toContain(`${flag} argument is empty`)
-    },
-  )
-
-  test.each([
-    {
-      desc: 'contains period',
-      expectedError: 'tag cannot contain . (period)',
-      tag: 'test.tag',
-    },
-    {
-      desc: 'starts with dash',
-      expectedError: 'tag cannot start with - (dash)',
-      tag: '-testtag',
-    },
-    {
-      desc: 'contains invalid character (space)',
-      expectedError: 'tag can only contain characters in [a-zA-Z0-9_-]',
-      tag: 'test tag',
-    },
-    {
-      desc: 'contains invalid character (@)',
-      expectedError: 'tag can only contain characters in [a-zA-Z0-9_-]',
-      tag: 'test@tag',
-    },
-    {
-      desc: 'contains invalid character (!)',
-      expectedError: 'tag can only contain characters in [a-zA-Z0-9_-]',
-      tag: 'test!',
-    },
-    {
-      desc: 'contains multiple periods',
-      expectedError: 'tag cannot contain . (period)',
-      tag: 'test.tag.name',
-    },
-  ])('throws error when tag $desc', async ({expectedError, tag}) => {
-    const {error} = await testCommand(DeploySchemaCommand, ['--tag', tag])
-
-    expect(error?.message).toContain(expectedError)
-  })
-
-  test.each([
-    {
-      desc: 'valid tag with alphanumeric',
-      tag: 'v1',
-    },
-    {
-      desc: 'valid tag with underscore',
-      tag: 'feature_branch',
-    },
-    {
-      desc: 'valid tag with dash in middle',
-      tag: 'test-tag',
-    },
-    {
-      desc: 'valid tag with mixed case',
-      tag: 'TestTag123',
-    },
-  ])('successfully parses $desc', async ({tag}) => {
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/production/schemas',
-    }).reply(200, undefined)
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/staging/schemas',
-    }).reply(200, undefined)
-
-    const {error} = await testCommand(DeploySchemaCommand, ['--tag', tag])
-
-    if (error) throw error
-  })
-
-  test('throw an error if some schemas fail to deploy', async () => {
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/production/schemas',
-    }).reply(200, undefined)
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/staging/schemas',
-    }).reply(404, undefined)
-
-    const {error, stdout} = await testCommand(DeploySchemaCommand)
-
-    expect(error?.message).toContain(
-      'Failed to deploy 1/2 schemas. Successfully deployed 1/2 schemas.',
-    )
-    expect(stdout).toContain('↳ List deployed schemas with: sanity schema list')
-  })
-
-  test('throws an error if workspace is not found', async () => {
-    const {error} = await testCommand(DeploySchemaCommand, ['--workspace', 'test'])
-
-    expect(error?.message).toContain('Found no workspaces named "test"')
-  })
-
-  test('throws an error if schema request fails', async () => {
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/production/schemas',
-    }).reply(400, {
-      error: 'Bad request',
-    })
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/staging/schemas',
-    }).reply(400, {
-      error: 'Bad request',
+      expect(error?.oclif?.exit).toBe(1)
+      expect(stderr).toContain('No permissions')
     })
 
-    const {error} = await testCommand(DeploySchemaCommand)
+    test('handles API 500 error', async () => {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/test/schemas`,
+      }).reply(500, {message: 'Internal Server Error'})
 
-    expect(error?.message).toContain('↳ Error when storing schemas')
+      const {error} = await testCommand(DeploySchemaCommand, [])
+
+      expect(error?.message).toContain('Failed to deploy schemas')
+      expect(error?.oclif?.exit).toBe(1)
+    })
   })
 
-  test('throws an error if schema request fails due to permissions', async () => {
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/production/schemas',
-    }).reply(401)
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/staging/schemas',
-    }).reply(200, undefined)
+  describe('multi-workspace-studio', () => {
+    let projectId: string | undefined
+    beforeAll(async () => {
+      const cwd = await testFixture('multi-workspace-studio')
+      process.chdir(cwd)
+      const cliConfig = await getCliConfig(cwd)
+      projectId = cliConfig.api?.projectId
+    })
 
-    const {stderr} = await testCommand(DeploySchemaCommand)
+    afterEach(() => {
+      vi.clearAllMocks()
+    })
 
-    expect(stderr).toContain('↳ No permissions to write schema for workspace "default"')
-  })
+    test('deploys all workspaces', async () => {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/test/schemas`,
+      }).reply(200, {})
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/staging/schemas`,
+      }).reply(200, {})
 
-  test('skips manifest extraction with no-extract-manifest flag', async () => {
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/production/schemas',
-    }).reply(200, undefined)
-    mockApi({
-      apiVersion: SCHEMA_API_VERSION,
-      method: 'put',
-      uri: '/projects/test-project/datasets/staging/schemas',
-    }).reply(200, undefined)
+      const {error, stdout} = await testCommand(DeploySchemaCommand, [])
 
-    await testCommand(DeploySchemaCommand, ['--no-extract-manifest'])
+      expect(stdout).toContain('Deployed 2/2 schemas')
+      expect(stdout).toContain('sanity schema list')
+      if (error) throw error
+    })
 
-    expect(mockExtractManifestSafe).not.toHaveBeenCalled()
+    test('deploys only production workspace with --workspace flag', async () => {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/test/schemas`,
+      }).reply(200, {})
+
+      const {error, stdout} = await testCommand(DeploySchemaCommand, ['--workspace', 'production'])
+
+      expect(stdout).toContain('Deployed 1/1 schemas')
+      if (error) throw error
+    })
+
+    test('deploys only staging workspace with --workspace flag', async () => {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/staging/schemas`,
+      }).reply(200, {})
+
+      const {error, stdout} = await testCommand(DeploySchemaCommand, ['--workspace', 'staging'])
+
+      expect(stdout).toContain('Deployed 1/1 schemas')
+      if (error) throw error
+    })
+
+    test('throws error for non-existent workspace', async () => {
+      const {error} = await testCommand(DeploySchemaCommand, ['--workspace', 'nonexistent'])
+
+      expect(error?.message).toContain('Found no workspaces named "nonexistent"')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('handles partial failure when one workspace fails', async () => {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/test/schemas`,
+      }).reply(200, {})
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/staging/schemas`,
+      }).reply(500, {message: 'Internal Server Error'})
+
+      const {error} = await testCommand(DeploySchemaCommand, [])
+
+      expect(error?.message).toContain('Failed to deploy')
+      expect(error?.message).toContain('1/2')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('deploys all workspaces with --verbose flag', async () => {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/test/schemas`,
+      }).reply(200, {})
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/staging/schemas`,
+      }).reply(200, {})
+
+      const {error, stdout} = await testCommand(DeploySchemaCommand, ['--verbose'])
+
+      expect(stdout).toContain('Deployed 2/2 schemas')
+      expect(stdout).toContain('dataset: test')
+      expect(stdout).toContain('dataset: staging')
+      if (error) throw error
+    })
+
+    test('deploys workspace with --workspace and --tag flags', async () => {
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/test/schemas`,
+      }).reply(200, {})
+
+      const {error, stdout} = await testCommand(DeploySchemaCommand, [
+        '--workspace',
+        'production',
+        '--tag',
+        'mytag',
+      ])
+
+      expect(stdout).toContain('Deployed 1/1 schemas')
+      if (error) throw error
+    })
   })
 })

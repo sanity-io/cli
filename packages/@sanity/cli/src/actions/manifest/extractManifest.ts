@@ -1,7 +1,7 @@
 import {mkdir, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
-import {findProjectRoot, getTimer, Output, studioWorkerTask} from '@sanity/cli-core'
+import {findProjectRoot, getTimer, studioWorkerTask} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
@@ -15,42 +15,8 @@ import {
 } from './types'
 import {writeWorkspaceFiles} from './writeWorkspaceFiles.js'
 
-export const MANIFEST_FILENAME = 'create-manifest.json'
-
-/** Escape-hatch env flags to change action behavior */
-const FEATURE_ENABLED_ENV_NAME = 'SANITY_CLI_EXTRACT_MANIFEST_ENABLED'
-const EXTRACT_MANIFEST_ENABLED = process.env[FEATURE_ENABLED_ENV_NAME] !== 'false'
-const EXTRACT_MANIFEST_LOG_ERRORS = process.env.SANITY_CLI_EXTRACT_MANIFEST_LOG_ERRORS === 'true'
-
+const MANIFEST_FILENAME = 'create-manifest.json'
 const CREATE_TIMER = 'create-manifest'
-
-interface ExtractManifestOptions {
-  outPath: string
-  output: Output
-}
-
-/**
- * This function will never throw.
- * @returns `undefined` if extract succeeded - caught error if it failed
- */
-export async function extractManifestSafe(
-  options: ExtractManifestOptions,
-): Promise<Error | undefined> {
-  const {outPath, output} = options
-  if (!EXTRACT_MANIFEST_ENABLED) {
-    return undefined
-  }
-
-  try {
-    await extractManifest(outPath)
-    return undefined
-  } catch (err) {
-    if (EXTRACT_MANIFEST_LOG_ERRORS) {
-      output.error(err)
-    }
-    return err
-  }
-}
 
 interface ExtractManifestWorkerResult {
   type: 'success'
