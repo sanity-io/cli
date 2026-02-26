@@ -2,7 +2,7 @@ import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {subdebug} from '../debug.js'
 
-const debug = subdebug('worker')
+const debug = subdebug('promisifyWorker')
 
 /**
  * Creates a Node.js Worker from the given file path and options, and wraps it
@@ -18,6 +18,9 @@ const debug = subdebug('worker')
  */
 export function promisifyWorker<T = unknown>(filePath: URL, options?: WorkerOptions): Promise<T> {
   const worker = new Worker(filePath, options)
+
+  const fileName = `[${filePath.pathname}]`
+
   return new Promise<T>((resolve, reject) => {
     let settled = false
 
@@ -31,22 +34,22 @@ export function promisifyWorker<T = unknown>(filePath: URL, options?: WorkerOpti
     // so there is nothing to terminate or remove listeners from.
     worker.addListener('exit', function onWorkerExit(code) {
       if (code > 0) {
-        debug(`Worker exited with code ${code}`)
+        debug(`${fileName} exited with code ${code}`)
         reject(new Error(`Worker exited with code ${code}`))
       } else if (!settled) {
-        debug('Worker exited with code 0 without sending a message')
+        debug(`${fileName} exited with code 0 without sending a message`)
         reject(new Error('Worker exited without sending a message'))
       }
     })
     worker.addListener('messageerror', function onWorkerMessageError(err) {
       settled = true
-      debug(`Worker message error: ${err.message}`, err)
+      debug(`${fileName} message error: ${err.message}`, err)
       reject(new Error(`Failed to deserialize worker message: ${err}`))
       cleanup()
     })
     worker.addListener('message', function onWorkerMessage(message) {
       settled = true
-      debug('Worker message %o', message)
+      debug(`${fileName} message %o`, message)
       resolve(message)
       cleanup()
     })
