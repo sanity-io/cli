@@ -7,17 +7,11 @@
   "automerge": true,
   "dependencyDashboardApproval": false,
   "ignorePaths": ["**/node_modules/**", "**/bower_components/**", "**/tests/**", "**/fixtures/**"],
-  "minimumReleaseAge": "3 days",
   "packageRules": [
     {
       "enabled": false,
       "description": "Exclude peer dependencies from being updated",
       "matchDepTypes": ["peerDependencies"]
-    },
-    {
-      "description": "Exclude sanity & @sanity/* packages from minimumReleaseAge (no delay for internal packages)",
-      "matchPackageNames": ["@sanity/*", "@portabletext/*", "react-rx", "groq-js", "sanity"],
-      "minimumReleaseAge": "0 days"
     },
     {
       "matchDepTypes": ["devDependencies"],
@@ -46,8 +40,8 @@
         "eslint-*",
         "@stylistic/eslint-plugin"
       ],
-      "group": {"semanticCommitType": "chore"},
-      "semanticCommitType": "chore"
+      "group": {"semanticCommitType": "fix"},
+      "semanticCommitType": "fix"
     },
     {
       "description": "Group sanity related deps in a single PR, as they often have to update together",
