@@ -171,6 +171,11 @@ export default defineConfig(
         {
           paths: [
             {
+              message:
+                'Import prompts from `@sanity/cli-core/ux` instead, which includes non-interactive environment safety checks.',
+              name: '@inquirer/prompts',
+            },
+            {
               message: 'Use `util.styleText` from Node.js instead.',
               name: 'chalk',
             },
@@ -284,6 +289,22 @@ export default defineConfig(
     files: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*.ts'],
     rules: {
       'no-restricted-syntax': 'off',
+    },
+  },
+  {
+    files: ['**/ux/prompts.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              message: 'Use `util.styleText` from Node.js instead.',
+              name: 'chalk',
+            },
+          ],
+        },
+      ],
     },
   },
   prettier,
