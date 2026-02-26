@@ -42,7 +42,7 @@ catalog:
 
   # Utilities
   debug: ^4.4.3
-  jsdom: ^27.4.0
+  jsdom: ^28.1.0
   zod: ^4.3.6
   'get-tsconfig': ^4.13.6
   execa: ^9.6.0
@@ -61,7 +61,7 @@ catalog:
   # Type Definitions
   '@types/node': ^20.19.33
   '@types/debug': ^4.1.12
-  '@types/jsdom': ^27.0.0
+  '@types/jsdom': ^28.0.0
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
