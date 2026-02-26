@@ -26,11 +26,6 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
       command: '<%= config.bin %> <%= command.id %> --workspace default',
       description: 'Deploy the schema for only the workspace "default"',
     },
-    {
-      command: '<%= config.bin %> <%= command.id %> --no-extract-manifest',
-      description:
-        'Runs using a pre-existing manifest file. Config changes in sanity.config will not be picked up in this case.',
-    },
   ]
 
   static override flags = {
