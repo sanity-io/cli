@@ -19,13 +19,6 @@ const taggedIdIdPattern = new RegExp(
   String.raw`${idIdPatternString}\.tag\.([${validForNamesChars}]+)$`,
 )
 
-export class FlagValidationError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'FlagValidationError'
-  }
-}
-
 export interface WorkspaceSchemaId {
   schemaId: string
   workspace: string
