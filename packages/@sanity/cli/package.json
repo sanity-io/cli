@@ -105,7 +105,7 @@
     "install-peerdeps": "^3.0.7",
     "is-installed-globally": "^1.0.0",
     "is-tar": "^1.0.0",
-    "isomorphic-dompurify": "^2.32.0",
+    "isomorphic-dompurify": "^3.0.0",
     "json5": "^2.2.3",
     "jsonc-parser": "^3.3.1",
     "lodash-es": "^4.17.21",
