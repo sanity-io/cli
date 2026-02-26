@@ -1,21 +1,23 @@
-import {type Worker} from 'node:worker_threads'
+import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {subdebug} from '../debug.js'
 
 const debug = subdebug('worker')
 
 /**
- * Wraps a Node.js Worker in a Promise that resolves with the first message
- * the worker sends, and rejects on error, message deserialization failure,
- * or non-zero exit code. The worker is terminated after a message or error
- * is received.
+ * Creates a Node.js Worker from the given file path and options, and wraps it
+ * in a Promise that resolves with the first message the worker sends, and
+ * rejects on error, message deserialization failure, or non-zero exit code.
+ * The worker is terminated after a message or error is received.
  *
- * @param worker - The Worker instance to promisify
+ * @param filePath - URL to the worker file
+ * @param options - Options to pass to the Worker constructor
  * @returns A promise that resolves with the first message from the worker
  * @throws If the worker emits an error, a message deserialization error, or exits with a non-zero code
  * @internal
  */
-export function promisifyWorker<T = unknown>(worker: Worker): Promise<T> {
+export function promisifyWorker<T = unknown>(filePath: URL, options?: WorkerOptions): Promise<T> {
+  const worker = new Worker(filePath, options)
   return new Promise<T>((resolve, reject) => {
     let settled = false
 
