@@ -408,8 +408,8 @@ importers:
         specifier: ^5.2.5
         version: 5.2.5(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.33)(@types/react@19.2.14)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(xstate@5.25.1)(yaml@2.8.2)
       '@sanity/runtime-cli':
-        specifier: ^13.4.1
-        version: 13.4.1(@types/node@20.19.33)(debug@4.4.3)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+        specifier: ^14.1.0
+        version: 14.1.0(@types/node@20.19.33)(debug@4.4.3)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
       '@sanity/schema':
         specifier: 'catalog:'
         version: 5.12.0(@types/react@19.2.14)(debug@4.4.3)
@@ -3624,13 +3624,8 @@ packages:
     peerDependencies:
       '@sanity/client': ^7.16.0
 
-  '@sanity/runtime-cli@13.4.1':
-    resolution: {integrity: sha512-A1lp57hppI9m1J/9sY8H6oS4gcFE5kgwD/0E684MMZm1w0F3omHOEY2lB6ihaaPyI/cUfo8WJSkMx3YLtv3tew==}
-    engines: {node: '>=20.19'}
-    hasBin: true
-
-  '@sanity/runtime-cli@14.0.1':
-    resolution: {integrity: sha512-CY8hIWPvq4qJ+h+dQ/Pz40K7M8AGOpRnBKyAAFHzCZJE10hUnMpyBtwafUTj3RyYNbAhDDv2XyFdgXpNM53IAQ==}
+  '@sanity/runtime-cli@14.1.0':
+    resolution: {integrity: sha512-WhkHRSbfhhOPBx/EUSr4Tdd5pw4xSWdJvdN+i6zwwRnTkThHhLARwjSRl8s7uzn/WhYjQtxCBDyVumKL3wPi/Q==}
     engines: {node: '>=20.19'}
     hasBin: true
 
@@ -4892,6 +4887,7 @@ packages:
   basic-ftp@5.1.0:
     resolution: {integrity: sha512-RkaJzeJKDbaDWTIPiJwubyljaEPwpVWkm9Rt5h9Nd6h7tEXTJ3VB4qxdZBioV7JO5yLUaOKwz7vDOzlncUsegw==}
     engines: {node: '>=10.0.0'}
+    deprecated: Security vulnerability fixed in 5.2.0, please upgrade
 
   before-after-hook@4.0.0:
     resolution: {integrity: sha512-q6tR3RPqIB1pMiTRMFcZwuG5T8vwp+vUvEG0vuI6B+Rikh5BfPp2fQ82c925FOs+b0lcFQ8CFrL+KbilfZFhOQ==}
@@ -12643,7 +12639,7 @@ snapshots:
       '@babel/traverse': 7.29.0
       '@sanity/client': 7.16.0(debug@4.4.3)
       '@sanity/codegen': 5.10.1(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@25.0.10)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2)
-      '@sanity/runtime-cli': 14.0.1(@types/node@25.0.10)(debug@4.4.3)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+      '@sanity/runtime-cli': 14.1.0(@types/node@25.0.10)(debug@4.4.3)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
       '@sanity/telemetry': 0.8.1(react@19.2.4)
       '@sanity/template-validator': 3.0.0
       '@sanity/worker-channels': 1.1.0
@@ -13293,7 +13289,7 @@ snapshots:
       '@sanity/client': 7.16.0(debug@4.4.3)
       '@sanity/uuid': 3.0.2
 
-  '@sanity/runtime-cli@13.4.1(@types/node@20.19.33)(debug@4.4.3)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)':
+  '@sanity/runtime-cli@14.1.0(@types/node@20.19.33)(debug@4.4.3)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)':
     dependencies:
       '@architect/hydrate': 5.0.1
       '@architect/inventory': 5.0.0
@@ -13337,7 +13333,7 @@ snapshots:
       - utf-8-validate
       - yaml
 
-  '@sanity/runtime-cli@14.0.1(@types/node@25.0.10)(debug@4.4.3)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)':
+  '@sanity/runtime-cli@14.1.0(@types/node@25.0.10)(debug@4.4.3)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)':
     dependencies:
       '@architect/hydrate': 5.0.1
       '@architect/inventory': 5.0.0
