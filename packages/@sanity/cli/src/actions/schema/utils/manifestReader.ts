@@ -14,7 +14,7 @@ type CreateManifestReaderFactory = (args: {
   workDir: string
 }) => CreateManifestReader
 
-export interface CreateManifestReader {
+interface CreateManifestReader {
   getManifest: () => Promise<CreateManifest>
   getWorkspaceSchema: (workspaceName: string) => Promise<ManifestSchemaType[]>
 }

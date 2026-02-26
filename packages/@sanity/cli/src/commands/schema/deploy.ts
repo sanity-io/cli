@@ -4,7 +4,6 @@ import {parseStringFlag, SanityCommand} from '@sanity/cli-core'
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
 import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
 import {parseTag} from '../../actions/schema/utils/schemaStoreValidation.js'
-import {NO_DATASET_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const description = `
 Deploy schema documents into workspace datasets.
@@ -67,34 +66,18 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
 
     try {
       const workDir = (await this.getProjectRoot()).directory
-      const cliConfig = await this.getCliConfig()
-      const projectId = await this.getProjectId()
-      const dataset = cliConfig.api?.dataset
 
-      if (!projectId) {
-        this.error(NO_PROJECT_ID, {exit: 1})
-      }
-
-      if (!dataset) {
-        this.error(NO_DATASET_ID, {exit: 1})
-      }
-
-      const result = await deploySchemas({
-        extractManifest: flags['extract-manifest'],
-        manifestDir: flags['manifest-dir'],
+      await deploySchemas({
         output: this.output,
         tag,
         verbose: flags['verbose'],
         workDir,
         workspaceName: workspace,
       })
-
-      if (result === 'failure') {
-        this.error('Failed to deploy schemas', {exit: 1})
-      }
     } catch (error) {
       schemasDeployDebug('Failed to deploy schemas', error)
-      this.error(`Failed to deploy schemas:\n${error}`, {exit: 1})
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      this.error(`Failed to deploy schemas:\n${errorMessage}`, {exit: 1})
     }
   }
 }
