@@ -205,7 +205,7 @@ export async function createUserApplication(options: {
 interface CreateDeploymentOptions {
   applicationId: string
   isAutoUpdating: boolean
-  tarball: Gzip
+  tarball: Gzip | undefined
   version: string
 
   isApp?: boolean
@@ -236,7 +236,9 @@ export async function createDeployment({
     formData.append('manifest', JSON.stringify(manifest))
   }
 
-  formData.append('tarball', tarball, {contentType: 'application/gzip', filename: 'app.tar.gz'})
+  if (tarball) {
+    formData.append('tarball', tarball, {contentType: 'application/gzip', filename: 'app.tar.gz'})
+  }
 
   let uri
   let query

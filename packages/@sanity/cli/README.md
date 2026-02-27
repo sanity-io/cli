@@ -1256,8 +1256,8 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--minify] [--schema-required] [--source-maps]
-    [--verbose] [-y]
+  $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--external] [--minify] [--schema-required]
+    [--source-maps] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
@@ -1266,6 +1266,9 @@ FLAGS
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
       --[no-]build         Don't build the studio prior to deploy, instead deploying the version currently in `dist/`
+      --external           Register an externally hosted studio
+                           Note: Ignores --source-maps, --no-minify, and --no-build flags.
+                           Note: Schema deployment is skipped unless --schema-required is also passed
       --[no-]minify        Skip minifying built JavaScript (speeds up build, increases size of bundle)
       --schema-required    Fail-fast deployment if schema store fails
       --source-maps        Enable source maps for built bundles (increases size of bundle)
@@ -1286,6 +1289,10 @@ EXAMPLES
   Fail fast on schema store fails - for when other services rely on the stored schema
 
     $ sanity deploy --schema-required
+
+  Register an externally hosted studio (studioHost contains full URL)
+
+    $ sanity deploy --external
 ```
 
 _See code: [src/commands/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/deploy.ts)_
