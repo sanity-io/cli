@@ -80,6 +80,13 @@
       "semanticCommitType": "chore"
     },
     {
+      "description": "Group commitlint related deps in a single PR, as they often have to update together",
+      "groupName": "commitlint-tooling",
+      "matchPackageNames": ["@commitlint/*", "commitlint"],
+      "group": {"semanticCommitType": "chore"},
+      "semanticCommitType": "chore"
+    },
+    {
       "matchDepTypes": ["dependencies", "peerDependencies"],
       "rangeStrategy": "bump",
       "semanticCommitType": "fix"

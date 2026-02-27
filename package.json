@@ -42,6 +42,9 @@
     "@sanity/client": "^7.16.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.4.2",
+    "@commitlint/config-conventional": "^20.4.2",
+    "@commitlint/types": "^20.4.0",
     "@eslint/compat": "catalog:",
     "@sanity/eslint-config-cli": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
