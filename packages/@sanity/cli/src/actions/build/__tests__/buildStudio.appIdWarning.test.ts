@@ -132,6 +132,8 @@ describe('buildStudio appId warning', () => {
 
   test('should not warn about missing appId when auto-updates are disabled', async () => {
     mockGetAppId.mockReturnValue(undefined)
+    // buildStudio ignores options.autoUpdatesEnabled — it calls shouldAutoUpdate() internally,
+    // so the mock above is what actually controls the behavior in this test.
     vi.mocked(shouldAutoUpdate).mockReturnValueOnce(false)
     const output = createMockOutput()
 
