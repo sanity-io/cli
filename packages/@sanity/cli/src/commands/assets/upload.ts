@@ -90,8 +90,10 @@ export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadComman
 
       // POST directly to the assets API
       // SanityClient doesn't expose a raw asset upload method that returns the URL,
-      // so we use fetch with the client's token
-      const url = `https://${projectId}.api.sanity.io/v2024-01-01/assets/${assetType}/${dataset}?filename=${encodeURIComponent(filename)}`
+      // so we use fetch with the client's token and getUrl() for correct host resolution
+      const url = client.getUrl(
+        `assets/${assetType}/${dataset}?filename=${encodeURIComponent(filename)}`,
+      )
 
       const res = await fetch(url, {
         body,
