@@ -46,8 +46,21 @@ export function studioWorkerTask<T = unknown>(
   filePath: URL,
   options: StudioWorkerTaskOptions,
 ): Promise<T> {
-  const worker = createStudioWorker(filePath, options)
-  return promisifyWorker<T>(worker)
+  const normalizedFilePath = fileURLToPath(filePath)
+
+  if (!/\.worker\.(js|ts)$/.test(normalizedFilePath)) {
+    throw new Error('Studio worker tasks must include `.worker.(js|ts)` in path')
+  }
+
+  const {studioRootPath, ...workerOptions} = options
+  return promisifyWorker<T>(new URL('studioWorkerLoader.worker.js', import.meta.url), {
+    ...workerOptions,
+    env: {
+      ...(isRecord(workerOptions.env) ? workerOptions.env : process.env),
+      STUDIO_WORKER_STUDIO_ROOT_PATH: studioRootPath,
+      STUDIO_WORKER_TASK_FILE: normalizedFilePath,
+    },
+  })
 }
 
 /**

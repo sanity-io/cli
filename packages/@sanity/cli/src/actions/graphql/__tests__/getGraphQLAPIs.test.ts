@@ -33,7 +33,6 @@ const {MockWorker, mockWorkerConstructor, setMockWorkerImplementation} = vi.hois
 
 const mockGetCliConfig = vi.hoisted(() => vi.fn())
 const mockGetStudioConfig = vi.hoisted(() => vi.fn())
-const mockPackageDirectory = vi.hoisted(() => vi.fn())
 const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 
 // Mock dependencies
@@ -47,10 +46,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
   getCliConfig: mockGetCliConfig,
   getStudioConfig: mockGetStudioConfig,
   resolveLocalPackage: mockResolveLocalPackage,
-}))
-
-vi.mock('package-directory', () => ({
-  packageDirectory: mockPackageDirectory,
 }))
 
 describe('getGraphQLAPIs', () => {
@@ -87,8 +82,6 @@ describe('getGraphQLAPIs', () => {
         ],
       },
     ])
-
-    mockPackageDirectory.mockResolvedValue('/test/cli/package')
 
     // Mock resolveLocalPackage to return a mock sanity package with createSchema
     mockResolveLocalPackage.mockResolvedValue({
@@ -235,14 +228,6 @@ describe('getGraphQLAPIs', () => {
     setMockWorkerImplementation(() => mockWorkerInstance)
 
     await expect(getGraphQLAPIs('/test/workdir')).rejects.toThrow('Worker exited with code 1')
-  })
-
-  test('throws error when package directory cannot be resolved', async () => {
-    mockPackageDirectory.mockResolvedValueOnce(undefined)
-
-    await expect(getGraphQLAPIs('/test/workdir')).rejects.toThrow(
-      'Unable to resolve @sanity/cli module root',
-    )
   })
 
   test('passes CLI config to worker', async () => {

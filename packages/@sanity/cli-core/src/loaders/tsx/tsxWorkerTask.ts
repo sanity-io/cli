@@ -1,5 +1,5 @@
 import {fileURLToPath, URL} from 'node:url'
-import {Worker, type WorkerOptions} from 'node:worker_threads'
+import {type WorkerOptions} from 'node:worker_threads'
 
 import {getTsconfig} from 'get-tsconfig'
 
@@ -43,10 +43,8 @@ export function tsxWorkerTask<T = unknown>(
     TSX_WORKER_TASK_SCRIPT: fileURLToPath(filePath),
   }
 
-  const worker = new Worker(new URL('tsxWorkerLoader.worker.js', import.meta.url), {
+  return promisifyWorker<T>(new URL('tsxWorkerLoader.worker.js', import.meta.url), {
     ...options,
     env,
   })
-
-  return promisifyWorker<T>(worker)
 }
