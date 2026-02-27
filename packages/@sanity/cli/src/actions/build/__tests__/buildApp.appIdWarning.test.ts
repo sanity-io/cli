@@ -120,6 +120,22 @@ describe('buildApp appId warning', () => {
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
   })
 
+  test('should not warn about missing appId when auto-updates are disabled', async () => {
+    mockGetAppId.mockReturnValue(undefined)
+    const output = createMockOutput()
+
+    await buildApp({
+      autoUpdatesEnabled: false,
+      cliConfig: {deployment: {autoUpdates: false}},
+      flags: FLAGS,
+      outDir: '/tmp/dist',
+      output,
+      workDir: '/tmp',
+    })
+
+    expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
+  })
+
   test('should not warn about missing appId when appId is configured', async () => {
     mockGetAppId.mockReturnValue('my-app-id')
     const output = createMockOutput()

@@ -80,6 +80,7 @@ vi.mock('@sanity/cli-core/ux', () => ({
 
 // Import after mocks are set up
 const {buildStudio} = await import('../buildStudio.js')
+const {shouldAutoUpdate} = await import('../shouldAutoUpdate.js')
 
 function createMockOutput(): Output {
   return {
@@ -120,6 +121,23 @@ describe('buildStudio appId warning', () => {
       autoUpdatesEnabled: true,
       calledFromDeploy: true,
       cliConfig: {deployment: {autoUpdates: true}},
+      flags: FLAGS,
+      outDir: '/tmp/dist',
+      output,
+      workDir: '/tmp',
+    })
+
+    expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
+  })
+
+  test('should not warn about missing appId when auto-updates are disabled', async () => {
+    mockGetAppId.mockReturnValue(undefined)
+    vi.mocked(shouldAutoUpdate).mockReturnValue(false)
+    const output = createMockOutput()
+
+    await buildStudio({
+      autoUpdatesEnabled: false,
+      cliConfig: {deployment: {autoUpdates: false}},
       flags: FLAGS,
       outDir: '/tmp/dist',
       output,
