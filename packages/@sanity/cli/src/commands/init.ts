@@ -77,6 +77,7 @@ import {getCliUser} from '../services/user.js'
 import {CLIInitStepCompleted, type InitStepResult} from '../telemetry/init.telemetry.js'
 import {absolutify, validateEmptyPath} from '../util/fsUtils.js'
 import {getProjectDefaults} from '../util/getProjectDefaults.js'
+import {getPeerDependencies} from '../util/packageManager/getPeerDependencies.js'
 import {
   installDeclaredPackages,
   installNewPackages,
@@ -1293,7 +1294,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         break
       }
       case 'yarn': {
-        await execa('npx', ['install-peerdeps', '--yarn', 'next-sanity@11'], execOptions)
+        const peerDeps = await getPeerDependencies('next-sanity@11', workDir)
+        await installNewPackages(
+          {packageManager: 'yarn', packages: ['next-sanity@11', ...peerDeps]},
+          {output: this.output, workDir},
+        )
         break
       }
       default: {
