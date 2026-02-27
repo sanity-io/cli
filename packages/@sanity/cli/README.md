@@ -3,113 +3,115 @@
 Code for sanity cli
 
 <!-- toc -->
-* [@sanity/cli](#sanitycli)
-* [Commands](#commands)
+
+- [@sanity/cli](#sanitycli)
+- [Commands](#commands)
 <!-- tocstop -->
 
 # Commands
 
   <!-- commands -->
-* [`sanity backup disable [DATASET]`](#sanity-backup-disable-dataset)
-* [`sanity backup download [DATASET]`](#sanity-backup-download-dataset)
-* [`sanity backup enable [DATASET]`](#sanity-backup-enable-dataset)
-* [`sanity backup list [DATASET]`](#sanity-backup-list-dataset)
-* [`sanity blueprints add TYPE`](#sanity-blueprints-add-type)
-* [`sanity blueprints config`](#sanity-blueprints-config)
-* [`sanity blueprints deploy`](#sanity-blueprints-deploy)
-* [`sanity blueprints destroy`](#sanity-blueprints-destroy)
-* [`sanity blueprints doctor`](#sanity-blueprints-doctor)
-* [`sanity blueprints info`](#sanity-blueprints-info)
-* [`sanity blueprints init [DIR]`](#sanity-blueprints-init-dir)
-* [`sanity blueprints logs`](#sanity-blueprints-logs)
-* [`sanity blueprints plan`](#sanity-blueprints-plan)
-* [`sanity blueprints stacks`](#sanity-blueprints-stacks)
-* [`sanity build [OUTPUTDIR]`](#sanity-build-outputdir)
-* [`sanity codemod [CODEMODNAME]`](#sanity-codemod-codemodname)
-* [`sanity cors add ORIGIN`](#sanity-cors-add-origin)
-* [`sanity cors delete [ORIGIN]`](#sanity-cors-delete-origin)
-* [`sanity cors list`](#sanity-cors-list)
-* [`sanity dataset alias create [ALIASNAME] [TARGETDATASET]`](#sanity-dataset-alias-create-aliasname-targetdataset)
-* [`sanity dataset alias delete ALIASNAME`](#sanity-dataset-alias-delete-aliasname)
-* [`sanity dataset alias link [ALIASNAME] [TARGETDATASET]`](#sanity-dataset-alias-link-aliasname-targetdataset)
-* [`sanity dataset alias unlink [ALIASNAME]`](#sanity-dataset-alias-unlink-aliasname)
-* [`sanity dataset copy [SOURCE] [TARGET]`](#sanity-dataset-copy-source-target)
-* [`sanity dataset create [NAME]`](#sanity-dataset-create-name)
-* [`sanity dataset delete DATASETNAME`](#sanity-dataset-delete-datasetname)
-* [`sanity dataset embeddings disable [DATASET]`](#sanity-dataset-embeddings-disable-dataset)
-* [`sanity dataset embeddings enable [DATASET]`](#sanity-dataset-embeddings-enable-dataset)
-* [`sanity dataset embeddings status [DATASET]`](#sanity-dataset-embeddings-status-dataset)
-* [`sanity dataset export [NAME] [DESTINATION]`](#sanity-dataset-export-name-destination)
-* [`sanity dataset import SOURCE`](#sanity-dataset-import-source)
-* [`sanity dataset list`](#sanity-dataset-list)
-* [`sanity dataset visibility get DATASET`](#sanity-dataset-visibility-get-dataset)
-* [`sanity dataset visibility set DATASET MODE`](#sanity-dataset-visibility-set-dataset-mode)
-* [`sanity debug`](#sanity-debug)
-* [`sanity deploy [SOURCEDIR]`](#sanity-deploy-sourcedir)
-* [`sanity dev`](#sanity-dev)
-* [`sanity docs browse`](#sanity-docs-browse)
-* [`sanity docs read PATH`](#sanity-docs-read-path)
-* [`sanity docs search QUERY`](#sanity-docs-search-query)
-* [`sanity documents create [FILE]`](#sanity-documents-create-file)
-* [`sanity documents delete ID [IDS]`](#sanity-documents-delete-id-ids)
-* [`sanity documents get DOCUMENTID`](#sanity-documents-get-documentid)
-* [`sanity documents query QUERY`](#sanity-documents-query-query)
-* [`sanity documents validate`](#sanity-documents-validate)
-* [`sanity exec SCRIPT`](#sanity-exec-script)
-* [`sanity functions add`](#sanity-functions-add)
-* [`sanity functions dev`](#sanity-functions-dev)
-* [`sanity functions env add NAME KEY VALUE`](#sanity-functions-env-add-name-key-value)
-* [`sanity functions env list NAME`](#sanity-functions-env-list-name)
-* [`sanity functions env remove NAME KEY`](#sanity-functions-env-remove-name-key)
-* [`sanity functions logs [NAME]`](#sanity-functions-logs-name)
-* [`sanity functions test [NAME]`](#sanity-functions-test-name)
-* [`sanity graphql deploy`](#sanity-graphql-deploy)
-* [`sanity graphql list`](#sanity-graphql-list)
-* [`sanity graphql undeploy`](#sanity-graphql-undeploy)
-* [`sanity help [COMMAND]`](#sanity-help-command)
-* [`sanity hook attempt ATTEMPTID`](#sanity-hook-attempt-attemptid)
-* [`sanity hook create`](#sanity-hook-create)
-* [`sanity hook delete [NAME]`](#sanity-hook-delete-name)
-* [`sanity hook list`](#sanity-hook-list)
-* [`sanity hook logs [NAME]`](#sanity-hook-logs-name)
-* [`sanity init`](#sanity-init)
-* [`sanity install [PACKAGES]`](#sanity-install-packages)
-* [`sanity learn`](#sanity-learn)
-* [`sanity login`](#sanity-login)
-* [`sanity logout`](#sanity-logout)
-* [`sanity manage`](#sanity-manage)
-* [`sanity manifest extract`](#sanity-manifest-extract)
-* [`sanity mcp configure`](#sanity-mcp-configure)
-* [`sanity media create-aspect`](#sanity-media-create-aspect)
-* [`sanity media delete-aspect ASPECTNAME`](#sanity-media-delete-aspect-aspectname)
-* [`sanity media deploy-aspect [ASPECTNAME]`](#sanity-media-deploy-aspect-aspectname)
-* [`sanity media export [DESTINATION]`](#sanity-media-export-destination)
-* [`sanity media import SOURCE`](#sanity-media-import-source)
-* [`sanity migration create [TITLE]`](#sanity-migration-create-title)
-* [`sanity migration list`](#sanity-migration-list)
-* [`sanity migration run [ID]`](#sanity-migration-run-id)
-* [`sanity openapi get SLUG`](#sanity-openapi-get-slug)
-* [`sanity openapi list`](#sanity-openapi-list)
-* [`sanity preview [OUTPUTDIR]`](#sanity-preview-outputdir)
-* [`sanity projects create [PROJECTNAME]`](#sanity-projects-create-projectname)
-* [`sanity projects list`](#sanity-projects-list)
-* [`sanity schema delete`](#sanity-schema-delete)
-* [`sanity schema deploy`](#sanity-schema-deploy)
-* [`sanity schema extract`](#sanity-schema-extract)
-* [`sanity schema list`](#sanity-schema-list)
-* [`sanity schema validate`](#sanity-schema-validate)
-* [`sanity start [OUTPUTDIR]`](#sanity-start-outputdir)
-* [`sanity telemetry disable`](#sanity-telemetry-disable)
-* [`sanity telemetry enable`](#sanity-telemetry-enable)
-* [`sanity telemetry status`](#sanity-telemetry-status)
-* [`sanity tokens add [LABEL]`](#sanity-tokens-add-label)
-* [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
-* [`sanity tokens list`](#sanity-tokens-list)
-* [`sanity typegen generate`](#sanity-typegen-generate)
-* [`sanity undeploy`](#sanity-undeploy)
-* [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
-* [`sanity users list`](#sanity-users-list)
-* [`sanity versions`](#sanity-versions)
+
+- [`sanity backup disable [DATASET]`](#sanity-backup-disable-dataset)
+- [`sanity backup download [DATASET]`](#sanity-backup-download-dataset)
+- [`sanity backup enable [DATASET]`](#sanity-backup-enable-dataset)
+- [`sanity backup list [DATASET]`](#sanity-backup-list-dataset)
+- [`sanity blueprints add TYPE`](#sanity-blueprints-add-type)
+- [`sanity blueprints config`](#sanity-blueprints-config)
+- [`sanity blueprints deploy`](#sanity-blueprints-deploy)
+- [`sanity blueprints destroy`](#sanity-blueprints-destroy)
+- [`sanity blueprints doctor`](#sanity-blueprints-doctor)
+- [`sanity blueprints info`](#sanity-blueprints-info)
+- [`sanity blueprints init [DIR]`](#sanity-blueprints-init-dir)
+- [`sanity blueprints logs`](#sanity-blueprints-logs)
+- [`sanity blueprints plan`](#sanity-blueprints-plan)
+- [`sanity blueprints stacks`](#sanity-blueprints-stacks)
+- [`sanity build [OUTPUTDIR]`](#sanity-build-outputdir)
+- [`sanity codemod [CODEMODNAME]`](#sanity-codemod-codemodname)
+- [`sanity cors add ORIGIN`](#sanity-cors-add-origin)
+- [`sanity cors delete [ORIGIN]`](#sanity-cors-delete-origin)
+- [`sanity cors list`](#sanity-cors-list)
+- [`sanity dataset alias create [ALIASNAME] [TARGETDATASET]`](#sanity-dataset-alias-create-aliasname-targetdataset)
+- [`sanity dataset alias delete ALIASNAME`](#sanity-dataset-alias-delete-aliasname)
+- [`sanity dataset alias link [ALIASNAME] [TARGETDATASET]`](#sanity-dataset-alias-link-aliasname-targetdataset)
+- [`sanity dataset alias unlink [ALIASNAME]`](#sanity-dataset-alias-unlink-aliasname)
+- [`sanity dataset copy [SOURCE] [TARGET]`](#sanity-dataset-copy-source-target)
+- [`sanity dataset create [NAME]`](#sanity-dataset-create-name)
+- [`sanity dataset delete DATASETNAME`](#sanity-dataset-delete-datasetname)
+- [`sanity dataset embeddings disable [DATASET]`](#sanity-dataset-embeddings-disable-dataset)
+- [`sanity dataset embeddings enable [DATASET]`](#sanity-dataset-embeddings-enable-dataset)
+- [`sanity dataset embeddings status [DATASET]`](#sanity-dataset-embeddings-status-dataset)
+- [`sanity dataset export [NAME] [DESTINATION]`](#sanity-dataset-export-name-destination)
+- [`sanity dataset import SOURCE`](#sanity-dataset-import-source)
+- [`sanity dataset list`](#sanity-dataset-list)
+- [`sanity dataset visibility get DATASET`](#sanity-dataset-visibility-get-dataset)
+- [`sanity dataset visibility set DATASET MODE`](#sanity-dataset-visibility-set-dataset-mode)
+- [`sanity debug`](#sanity-debug)
+- [`sanity deploy [SOURCEDIR]`](#sanity-deploy-sourcedir)
+- [`sanity dev`](#sanity-dev)
+- [`sanity docs browse`](#sanity-docs-browse)
+- [`sanity docs read PATH`](#sanity-docs-read-path)
+- [`sanity docs search QUERY`](#sanity-docs-search-query)
+- [`sanity documents create [FILE]`](#sanity-documents-create-file)
+- [`sanity documents delete ID [IDS]`](#sanity-documents-delete-id-ids)
+- [`sanity documents get DOCUMENTID`](#sanity-documents-get-documentid)
+- [`sanity documents query QUERY`](#sanity-documents-query-query)
+- [`sanity documents validate`](#sanity-documents-validate)
+- [`sanity exec SCRIPT`](#sanity-exec-script)
+- [`sanity functions add`](#sanity-functions-add)
+- [`sanity functions dev`](#sanity-functions-dev)
+- [`sanity functions env add NAME KEY VALUE`](#sanity-functions-env-add-name-key-value)
+- [`sanity functions env list NAME`](#sanity-functions-env-list-name)
+- [`sanity functions env remove NAME KEY`](#sanity-functions-env-remove-name-key)
+- [`sanity functions logs [NAME]`](#sanity-functions-logs-name)
+- [`sanity functions test [NAME]`](#sanity-functions-test-name)
+- [`sanity graphql deploy`](#sanity-graphql-deploy)
+- [`sanity graphql list`](#sanity-graphql-list)
+- [`sanity graphql undeploy`](#sanity-graphql-undeploy)
+- [`sanity help [COMMAND]`](#sanity-help-command)
+- [`sanity hook attempt ATTEMPTID`](#sanity-hook-attempt-attemptid)
+- [`sanity hook create`](#sanity-hook-create)
+- [`sanity hook delete [NAME]`](#sanity-hook-delete-name)
+- [`sanity hook list`](#sanity-hook-list)
+- [`sanity hook logs [NAME]`](#sanity-hook-logs-name)
+- [`sanity init`](#sanity-init)
+- [`sanity install [PACKAGES]`](#sanity-install-packages)
+- [`sanity learn`](#sanity-learn)
+- [`sanity login`](#sanity-login)
+- [`sanity logout`](#sanity-logout)
+- [`sanity manage`](#sanity-manage)
+- [`sanity manifest extract`](#sanity-manifest-extract)
+- [`sanity mcp configure`](#sanity-mcp-configure)
+- [`sanity media create-aspect`](#sanity-media-create-aspect)
+- [`sanity media delete-aspect ASPECTNAME`](#sanity-media-delete-aspect-aspectname)
+- [`sanity media deploy-aspect [ASPECTNAME]`](#sanity-media-deploy-aspect-aspectname)
+- [`sanity media export [DESTINATION]`](#sanity-media-export-destination)
+- [`sanity media import SOURCE`](#sanity-media-import-source)
+- [`sanity migration create [TITLE]`](#sanity-migration-create-title)
+- [`sanity migration list`](#sanity-migration-list)
+- [`sanity migration run [ID]`](#sanity-migration-run-id)
+- [`sanity openapi get SLUG`](#sanity-openapi-get-slug)
+- [`sanity openapi list`](#sanity-openapi-list)
+- [`sanity preview [OUTPUTDIR]`](#sanity-preview-outputdir)
+- [`sanity projects create [PROJECTNAME]`](#sanity-projects-create-projectname)
+- [`sanity projects list`](#sanity-projects-list)
+- [`sanity schema delete`](#sanity-schema-delete)
+- [`sanity schema deploy`](#sanity-schema-deploy)
+- [`sanity schema extract`](#sanity-schema-extract)
+- [`sanity schema list`](#sanity-schema-list)
+- [`sanity schema validate`](#sanity-schema-validate)
+- [`sanity start [OUTPUTDIR]`](#sanity-start-outputdir)
+- [`sanity telemetry disable`](#sanity-telemetry-disable)
+- [`sanity telemetry enable`](#sanity-telemetry-enable)
+- [`sanity telemetry status`](#sanity-telemetry-status)
+- [`sanity tokens add [LABEL]`](#sanity-tokens-add-label)
+- [`sanity tokens delete [TOKENID]`](#sanity-tokens-delete-tokenid)
+- [`sanity tokens list`](#sanity-tokens-list)
+- [`sanity typegen generate`](#sanity-typegen-generate)
+- [`sanity undeploy`](#sanity-undeploy)
+- [`sanity users invite [EMAIL]`](#sanity-users-invite-email)
+- [`sanity users list`](#sanity-users-list)
+- [`sanity versions`](#sanity-versions)
 
 ## `sanity backup disable [DATASET]`
 
@@ -728,16 +730,23 @@ Create a dataset alias within your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset alias create [ALIASNAME] [TARGETDATASET]
+  $ pnpm exec sanity dataset alias create [ALIASNAME] [TARGETDATASET] [-p <value>]
 
 ARGUMENTS
   [ALIASNAME]      Dataset alias name to create
   [TARGETDATASET]  Target dataset name to link the alias to
 
+FLAGS
+  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+
 DESCRIPTION
   Create a dataset alias within your project
 
 EXAMPLES
+  Create alias in a specific project
+
+    $ pnpm exec sanity dataset alias create --project-id abc123 conference conf-2025
+
   Create an alias with interactive prompts
 
     $ pnpm exec sanity dataset alias create
@@ -763,13 +772,14 @@ Delete a dataset alias within your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset alias delete ALIASNAME [--force]
+  $ pnpm exec sanity dataset alias delete ALIASNAME [-p <value>] [--force]
 
 ARGUMENTS
   ALIASNAME  Dataset alias name to delete
 
 FLAGS
-  --force  Skip confirmation prompt and delete immediately
+  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+      --force               Skip confirmation prompt and delete immediately
 
 DESCRIPTION
   Delete a dataset alias within your project
@@ -796,14 +806,15 @@ Link a dataset alias to a dataset within your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset alias link [ALIASNAME] [TARGETDATASET] [--force]
+  $ pnpm exec sanity dataset alias link [ALIASNAME] [TARGETDATASET] [-p <value>] [--force]
 
 ARGUMENTS
   [ALIASNAME]      Dataset alias name to link
   [TARGETDATASET]  Target dataset name to link the alias to
 
 FLAGS
-  --force  Skip confirmation prompt when relinking existing alias
+  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+      --force               Skip confirmation prompt when relinking existing alias
 
 DESCRIPTION
   Link a dataset alias to a dataset within your project
@@ -838,13 +849,14 @@ Unlink a dataset alias from its dataset within your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset alias unlink [ALIASNAME] [--force]
+  $ pnpm exec sanity dataset alias unlink [ALIASNAME] [-p <value>] [--force]
 
 ARGUMENTS
   [ALIASNAME]  Dataset alias name to unlink
 
 FLAGS
-  --force  Skip confirmation prompt and unlink immediately
+  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+      --force               Skip confirmation prompt and unlink immediately
 
 DESCRIPTION
   Unlink a dataset alias from its dataset within your project
@@ -875,20 +887,21 @@ Manages dataset copying, including starting a new copy job, listing copy jobs an
 
 ```
 USAGE
-  $ pnpm exec sanity dataset copy [SOURCE] [TARGET] [--attach <value> | --list | --detach | --skip-history] [--limit <value>
-    ] [--offset <value> ]
+  $ pnpm exec sanity dataset copy [SOURCE] [TARGET] [-p <value>] [--attach <value> | --list | --detach | --skip-history]
+    [--limit <value> ] [--offset <value> ]
 
 ARGUMENTS
   [SOURCE]  Name of the dataset to copy from
   [TARGET]  Name of the dataset to copy to
 
 FLAGS
-  --attach=<value>  Attach to the running copy process to show progress
-  --detach          Start the copy without waiting for it to finish
-  --limit=<value>   Maximum number of jobs returned (default 10, max 1000)
-  --list            Lists all dataset copy jobs
-  --offset=<value>  Start position in the list of jobs (default 0)
-  --skip-history    Don't preserve document history on copy
+  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+      --attach=<value>      Attach to the running copy process to show progress
+      --detach              Start the copy without waiting for it to finish
+      --limit=<value>       Maximum number of jobs returned (default 10, max 1000)
+      --list                Lists all dataset copy jobs
+      --offset=<value>      Start position in the list of jobs (default 0)
+      --skip-history        Don't preserve document history on copy
 
 DESCRIPTION
   Manages dataset copying, including starting a new copy job, listing copy jobs and following the progress of a running
@@ -936,16 +949,18 @@ Create a new dataset within your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset create [NAME] [--embeddings-projection <value> --embeddings] [--visibility custom|private|public]
+  $ pnpm exec sanity dataset create [NAME] [-p <value>] [--embeddings-projection <value> --embeddings] [--visibility
+    custom|private|public]
 
 ARGUMENTS
   [NAME]  Name of the dataset to create
 
 FLAGS
-  --embeddings                     Enable embeddings for this dataset
-  --embeddings-projection=<value>  GROQ projection for embeddings indexing (e.g. "{ title, body }")
-  --visibility=<option>            Set visibility for this dataset (custom/private/public)
-                                   <options: custom|private|public>
+  -p, --project-id=<value>             Project ID to use. Overrides the project ID from the Sanity config.
+      --embeddings                     Enable embeddings for this dataset
+      --embeddings-projection=<value>  GROQ projection for embeddings indexing (e.g. "{ title, body }")
+      --visibility=<option>            Set visibility for this dataset (custom/private/public)
+                                       <options: custom|private|public>
 
 DESCRIPTION
   Create a new dataset within your project
@@ -972,13 +987,14 @@ Delete a dataset within your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset delete DATASETNAME [--force]
+  $ pnpm exec sanity dataset delete DATASETNAME [-p <value>] [--force]
 
 ARGUMENTS
   DATASETNAME  Dataset name to delete
 
 FLAGS
-  --force  Do not prompt for delete confirmation - forcefully delete
+  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+      --force               Do not prompt for delete confirmation - forcefully delete
 
 DESCRIPTION
   Delete a dataset within your project
@@ -1001,10 +1017,13 @@ Disable embeddings for a dataset
 
 ```
 USAGE
-  $ pnpm exec sanity dataset embeddings disable [DATASET]
+  $ pnpm exec sanity dataset embeddings disable [DATASET] [-p <value>]
 
 ARGUMENTS
   [DATASET]  Dataset name to disable embeddings for
+
+FLAGS
+  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
 
 DESCRIPTION
   Disable embeddings for a dataset
@@ -1023,14 +1042,15 @@ Enable embeddings for a dataset
 
 ```
 USAGE
-  $ pnpm exec sanity dataset embeddings enable [DATASET] [--projection <value>] [--wait]
+  $ pnpm exec sanity dataset embeddings enable [DATASET] [-p <value>] [--projection <value>] [--wait]
 
 ARGUMENTS
   [DATASET]  Dataset name to enable embeddings for
 
 FLAGS
-  --projection=<value>  GROQ projection defining which fields to embed (e.g. "{ title, body }")
-  --wait                Wait for embeddings processing to complete before returning
+  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+      --projection=<value>  GROQ projection defining which fields to embed (e.g. "{ title, body }")
+      --wait                Wait for embeddings processing to complete before returning
 
 DESCRIPTION
   Enable embeddings for a dataset
@@ -1057,10 +1077,13 @@ Show embeddings settings and status for a dataset
 
 ```
 USAGE
-  $ pnpm exec sanity dataset embeddings status [DATASET]
+  $ pnpm exec sanity dataset embeddings status [DATASET] [-p <value>]
 
 ARGUMENTS
   [DATASET]  The name of the dataset to check embeddings status for
+
+FLAGS
+  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
 
 DESCRIPTION
   Show embeddings settings and status for a dataset
@@ -1079,25 +1102,26 @@ Export dataset to local filesystem as a gzipped tarball. Assets failing with HTT
 
 ```
 USAGE
-  $ pnpm exec sanity dataset export [NAME] [DESTINATION] [--asset-concurrency <value>] [--mode stream|cursor] [--no-assets]
-    [--no-compress] [--no-drafts] [--overwrite] [--raw] [--types <value>]
+  $ pnpm exec sanity dataset export [NAME] [DESTINATION] [-p <value>] [--asset-concurrency <value>] [--mode stream|cursor]
+    [--no-assets] [--no-compress] [--no-drafts] [--overwrite] [--raw] [--types <value>]
 
 ARGUMENTS
   [NAME]         Name of the dataset to export
   [DESTINATION]  Output destination file path
 
 FLAGS
-  --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
-  --mode=<option>              [default: stream] Mode to export documents with `cursor` might be more performant for
-                               larger datasets, but might not be as accurate if the dataset is being modified during
-                               export
-                               <options: stream|cursor>
-  --no-assets                  Export only non-asset documents and remove references to image assets
-  --no-compress                Skips compressing tarball entries (still generates a gzip file)
-  --no-drafts                  Export only published versions of documents
-  --overwrite                  Overwrite any file with the same name
-  --raw                        Extract only documents, without rewriting asset references
-  --types=<value>              Defines which document types to export (comma-separated)
+  -p, --project-id=<value>         Project ID to use. Overrides the project ID from the Sanity config.
+      --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
+      --mode=<option>              [default: stream] Mode to export documents with `cursor` might be more performant for
+                                   larger datasets, but might not be as accurate if the dataset is being modified during
+                                   export
+                                   <options: stream|cursor>
+      --no-assets                  Export only non-asset documents and remove references to image assets
+      --no-compress                Skips compressing tarball entries (still generates a gzip file)
+      --no-drafts                  Export only published versions of documents
+      --overwrite                  Overwrite any file with the same name
+      --raw                        Extract only documents, without rewriting asset references
+      --types=<value>              Defines which document types to export (comma-separated)
 
 DESCRIPTION
   Export dataset to local filesystem as a gzipped tarball. Assets failing with HTTP status codes 401, 403 and 404 upon
@@ -1171,7 +1195,10 @@ List datasets of your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset list
+  $ pnpm exec sanity dataset list [-p <value>]
+
+FLAGS
+  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
 
 DESCRIPTION
   List datasets of your project
@@ -1180,6 +1207,10 @@ EXAMPLES
   List datasets of your project
 
     $ pnpm exec sanity dataset list
+
+  List datasets for a specific project
+
+    $ pnpm exec sanity dataset list --project-id abc123
 ```
 
 _See code: [src/commands/dataset/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/list.ts)_
@@ -1190,10 +1221,13 @@ Get the visibility of a dataset
 
 ```
 USAGE
-  $ pnpm exec sanity dataset visibility get DATASET
+  $ pnpm exec sanity dataset visibility get DATASET [-p <value>]
 
 ARGUMENTS
   DATASET  The name of the dataset to get visibility for
+
+FLAGS
+  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
 
 DESCRIPTION
   Get the visibility of a dataset
@@ -1212,11 +1246,14 @@ Set the visibility of a dataset
 
 ```
 USAGE
-  $ pnpm exec sanity dataset visibility set DATASET MODE
+  $ pnpm exec sanity dataset visibility set DATASET MODE [-p <value>]
 
 ARGUMENTS
   DATASET  The name of the dataset to set visibility for
   MODE     (public|private) The visibility mode to set
+
+FLAGS
+  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
 
 DESCRIPTION
   Set the visibility of a dataset
@@ -3290,4 +3327,5 @@ EXAMPLES
 ```
 
 _See code: [src/commands/versions.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/versions.ts)_
+
 <!-- commandsstop -->
