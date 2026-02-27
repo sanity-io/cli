@@ -64,8 +64,10 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     const projectId = cliConfig?.api?.projectId
     const appId = getAppId(cliConfig)
 
-    // Warn if auto updates enabled but no appId configured
-    if (!appId) {
+    // Warn if auto updates enabled but no appId configured.
+    // Skip when called from deploy, since deploy handles appId itself
+    // (prompts the user and tells them to add it to config).
+    if (!appId && !options.calledFromDeploy) {
       warnAboutMissingAppId({appType: 'studio', output, projectId})
     }
 

@@ -13,5 +13,6 @@ export interface BuildOptions {
 
   workDir: string
 
+  calledFromDeploy?: boolean
   outDir?: string
 }
