@@ -1,10 +1,13 @@
+import {styleText} from 'node:util'
+
 import {Flags} from '@oclif/core'
 import {parseStringFlag, SanityCommand} from '@sanity/cli-core'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
+import {formatSchemaValidation} from '../../actions/schema/formatSchemaValidation.js'
 import {schemasDeployDebug} from '../../actions/schema/utils/debug.js'
+import {SchemaExtractionError} from '../../actions/schema/utils/SchemaExtractionError.js'
 import {parseTag} from '../../actions/schema/utils/schemaStoreValidation.js'
-import {NO_DATASET_ID, NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const description = `
 Deploy schema documents into workspace datasets.
@@ -26,11 +29,6 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
     {
       command: '<%= config.bin %> <%= command.id %> --workspace default',
       description: 'Deploy the schema for only the workspace "default"',
-    },
-    {
-      command: '<%= config.bin %> <%= command.id %> --no-extract-manifest',
-      description:
-        'Runs using a pre-existing manifest file. Config changes in sanity.config will not be picked up in this case.',
     },
   ]
 
@@ -67,21 +65,8 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
 
     try {
       const workDir = (await this.getProjectRoot()).directory
-      const cliConfig = await this.getCliConfig()
-      const projectId = await this.getProjectId()
-      const dataset = cliConfig.api?.dataset
 
-      if (!projectId) {
-        this.error(NO_PROJECT_ID, {exit: 1})
-      }
-
-      if (!dataset) {
-        this.error(NO_DATASET_ID, {exit: 1})
-      }
-
-      const result = await deploySchemas({
-        extractManifest: flags['extract-manifest'],
-        manifestDir: flags['manifest-dir'],
+      await deploySchemas({
         output: this.output,
         tag,
         verbose: flags['verbose'],
@@ -89,12 +74,22 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
         workspaceName: workspace,
       })
 
-      if (result === 'failure') {
-        this.error('Failed to deploy schemas', {exit: 1})
-      }
+      this.log(
+        `${styleText('gray', '↳ List deployed schemas with:')} ${styleText('cyan', 'sanity schema list')}`,
+      )
     } catch (error) {
+      if (
+        error instanceof SchemaExtractionError &&
+        error.validation &&
+        error.validation.length > 0
+      ) {
+        this.output.log(formatSchemaValidation(error.validation))
+        this.exit(1)
+      }
+
       schemasDeployDebug('Failed to deploy schemas', error)
-      this.error(`Failed to deploy schemas:\n${error}`, {exit: 1})
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      this.error(`Failed to deploy schemas:\n${errorMessage}`, {exit: 1})
     }
   }
 }

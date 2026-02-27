@@ -42,7 +42,7 @@ export async function updateSchemas<T>(dataset: string, projectId: string, schem
 
   return client.request({
     body: {
-      schemas: schemas,
+      schemas,
     },
     method: 'PUT',
     url: `/projects/${projectId}/datasets/${dataset}/schemas`,

@@ -2827,10 +2827,6 @@ EXAMPLES
   Deploy the schema for only the workspace "default"
 
     $ sanity schema deploy --workspace default
-
-  Runs using a pre-existing manifest file. Config changes in sanity.config will not be picked up in this case.
-
-    $ sanity schema deploy --no-extract-manifest
 ```
 
 _See code: [src/commands/schema/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/schema/deploy.ts)_

@@ -48,3 +48,10 @@ export const uniqWorkspaceWorkerDataSchema = z.object({
 })
 
 export type UniqWorkspaceWorkerData = z.infer<typeof uniqWorkspaceWorkerDataSchema>
+
+export const extractWorkspaceWorkerData = z.object({
+  configPath: z.string(),
+  workDir: z.string(),
+})
+
+export type ExtractWorkspaceWorkerData = z.infer<typeof extractWorkspaceWorkerData>
