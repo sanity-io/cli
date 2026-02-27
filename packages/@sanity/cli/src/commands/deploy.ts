@@ -33,6 +33,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       description:
         'Fail fast on schema store fails - for when other services rely on the stored schema',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --external',
+      description: 'Register an externally hosted studio (studioHost contains full URL)',
+    },
   ]
 
   static override flags = {
@@ -46,6 +50,11 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       default: true,
       description:
         "Don't build the studio prior to deploy, instead deploying the version currently in `dist/`",
+    }),
+    external: Flags.boolean({
+      default: false,
+      description:
+        'Register an externally hosted studio\n Note: Ignores --source-maps, --no-minify, and --no-build flags.\n Note: Schema deployment is skipped unless --schema-required is also passed',
     }),
     minify: Flags.boolean({
       allowNo: true,
@@ -83,7 +92,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
     const sourceDir = path.resolve(process.cwd(), this.args.sourceDir || defaultOutputDir)
 
-    if (this.args.sourceDir && this.args.sourceDir !== 'dist') {
+    // Skip source directory checks for external deployments
+    if (this.args.sourceDir && this.args.sourceDir !== 'dist' && !flags.external) {
       let relativeOutput = path.relative(process.cwd(), sourceDir)
       if (relativeOutput[0] !== '.') {
         relativeOutput = `./${relativeOutput}`

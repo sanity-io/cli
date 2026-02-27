@@ -1308,6 +1308,9 @@ FLAGS
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
       --[no-]build         Don't build the studio prior to deploy, instead deploying the version currently in `dist/`
+      --external           Register an externally hosted studio
+                           Note: Ignores --source-maps, --no-minify, and --no-build flags.
+                           Note: Schema deployment is skipped unless --schema-required is also passed
       --[no-]minify        Skip minifying built JavaScript (speeds up build, increases size of bundle)
       --schema-required    Fail-fast deployment if schema store fails
       --source-maps        Enable source maps for built bundles (increases size of bundle)

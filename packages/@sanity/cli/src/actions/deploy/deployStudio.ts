@@ -12,9 +12,12 @@ import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {buildStudio} from '../build/buildStudio.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
+import {deploySchemas} from '../schema/deploySchemas.js'
 import {checkDir} from './checkDir.js'
+import {createExternalStudioUserApplication} from './createExternalStudioUserApplication.js'
 import {createStudioUserApplication} from './createStudioUserApplication.js'
 import {deployDebug} from './deployDebug.js'
+import {findUserApplicationForExternalStudio} from './findUserApplicationForExternalStudio.js'
 import {findUserApplicationForStudio} from './findUserApplicationForStudio.js'
 import {type DeployAppOptions} from './types.js'
 
@@ -40,28 +43,28 @@ export async function deployStudio(options: DeployAppOptions) {
   let spin = spinner('Verifying local content')
 
   try {
-    let userApplication = await findUserApplicationForStudio({
-      appHost,
-      appId,
-      output,
-      projectId,
-    })
+    let userApplication
+    if (flags.external) {
+      userApplication =
+        appId || appHost
+          ? await findUserApplicationForExternalStudio({appHost, appId, output, projectId})
+          : await createExternalStudioUserApplication(projectId, output)
+    } else {
+      userApplication = await findUserApplicationForStudio({appHost, appId, output, projectId})
 
-    if (!userApplication) {
-      // otherwise, prompt the user for a hostname
-      output.log('Your project has not been assigned a studio hostname.')
-      output.log('To deploy your Sanity Studio to our hosted sanity.studio service,')
-      output.log('you will need one. Please enter the part you want to use.')
+      if (!userApplication) {
+        output.log('Your project has not been assigned a studio hostname.')
+        output.log('To deploy your Sanity Studio to our hosted sanity.studio service,')
+        output.log('you will need one. Please enter the part you want to use.')
 
-      userApplication = await createStudioUserApplication(projectId)
-
-      deployDebug('Created user application', userApplication)
+        userApplication = await createStudioUserApplication(projectId)
+      }
     }
 
     deployDebug('Found user application', userApplication)
 
-    // Always build the project, unless --no-build is passed
-    const shouldBuild = flags.build
+    // Always build the project, unless --no-build is passed or --external is used
+    const shouldBuild = flags.build && !flags.external
     if (shouldBuild) {
       deployDebug(`Building studio`)
       await buildStudio({
@@ -75,34 +78,38 @@ export async function deployStudio(options: DeployAppOptions) {
       })
     }
 
-    // TODO: Implement schema deployment
-    // await deploySchemasAction(
-    //   {
-    //     'extract-manifest': shouldBuild,
-    //     'manifest-dir': `${sourceDir}/static`,
-    //     'schema-required': flags['schema-required'],
-    //     'verbose': flags.verbose,
-    //   },
-    //   {...context, manifestExtractor: createManifestExtractor(context)},
-    // )
-
-    // Ensure that the directory exists, is a directory and seems to have valid content
-    spin = spin.start()
-    try {
-      await checkDir(sourceDir)
-      spin.succeed()
-    } catch (err) {
-      spin.fail()
-      deployDebug('Error checking directory', err)
-      output.error('Error checking directory', {exit: 1})
+    if (!flags.external || flags['schema-required']) {
+      deploySchemas({
+        // For external, always extract from source (no dist folder)
+        extractManifest: flags.external ?? shouldBuild,
+        manifestDir: flags.external ? '' : `${sourceDir}/static`,
+        output,
+        schemaRequired: flags['schema-required'],
+        verbose: flags.verbose,
+        workDir,
+      })
     }
 
-    // Create a tarball of the given directory
-    const parentDir = dirname(sourceDir)
-    const base = basename(sourceDir)
-    const tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
+    let tarball
 
-    spin = spinner('Deploying to sanity.studio').start()
+    if (!flags.external) {
+      // Ensure that the directory exists, is a directory and seems to have valid content
+      spin = spin.start('Verifying local content')
+      try {
+        await checkDir(sourceDir)
+        spin.succeed()
+      } catch (err) {
+        spin.fail()
+        deployDebug('Error checking directory', err)
+        output.error('Error checking directory', {exit: 1})
+      }
+      // Create a tarball of the given directory
+      const parentDir = dirname(sourceDir)
+      const base = basename(sourceDir)
+      tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
+    }
+
+    spin = spinner(flags.external ? 'Registering studio' : 'Deploying to sanity.studio').start()
 
     const {location} = await createDeployment({
       applicationId: userApplication.id,
@@ -116,7 +123,11 @@ export async function deployStudio(options: DeployAppOptions) {
     spin.succeed()
 
     // And let the user know we're done
-    output.log(`\nSuccess! Studio deployed to ${styleText('cyan', location || 'unknown URL')}`)
+    if (flags.external) {
+      output.log(`\nSuccess! Studio registered`)
+    } else {
+      output.log(`\nSuccess! Studio deployed to ${styleText('cyan', location || 'unknown URL')}`)
+    }
 
     if (!appId) {
       output.log(`\nAdd ${styleText('cyan', `deployment: { appId: '${userApplication.id}' }`)}`)
