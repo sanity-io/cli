@@ -27,7 +27,10 @@ export async function getPeerDependencies(packageName: string, cwd: string): Pro
   }
 
   try {
-    const peerDeps: Record<string, string> = JSON.parse(stdout)
+    const peerDeps: Record<string, string> | null = JSON.parse(stdout)
+    if (!peerDeps || typeof peerDeps !== 'object') {
+      return []
+    }
     return Object.entries(peerDeps).map(([name, range]) => `${name}@${range}`)
   } catch (error) {
     throw new Error(`Failed to resolve peer dependencies for ${packageName}`, {cause: error})

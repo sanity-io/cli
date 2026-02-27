@@ -53,6 +53,17 @@ describe('getPeerDependencies', () => {
     expect(result).toEqual([])
   })
 
+  test('returns empty array when npm view returns null', async () => {
+    mockGetPartialEnvWithNpmPath.mockReturnValue({PATH: '/mock/path'})
+    mockExeca.mockResolvedValueOnce({
+      stdout: 'null',
+    } as unknown as Result)
+
+    const result = await getPeerDependencies('some-package@1', cwd)
+
+    expect(result).toEqual([])
+  })
+
   test('returns empty array when npm view returns empty stdout', async () => {
     mockGetPartialEnvWithNpmPath.mockReturnValue({PATH: '/mock/path'})
     mockExeca.mockResolvedValueOnce({
