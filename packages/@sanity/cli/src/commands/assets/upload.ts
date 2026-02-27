@@ -52,6 +52,9 @@ export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadComman
     const cliConfig = await this.getCliConfig().catch(() => {})
 
     // Resolve project ID: --project flag > env > sanity.config.ts in cwd
+    // Note: we read from cliConfig directly instead of using this.getProjectId()
+    // because getProjectId() calls getCliConfig() → findProjectRoot() which throws
+    // when run outside a Sanity project directory, even if --project is provided.
     const projectId = flags.project || cliConfig?.api?.projectId
     if (!projectId) {
       this.error(

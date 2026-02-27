@@ -1,6 +1,6 @@
-import {type CliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {type CliConfig} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {AssetsUploadCommand} from '../upload.js'
 
@@ -40,8 +40,16 @@ const defaultMocks = {
 }
 
 describe('#assets:upload', () => {
+  const originalEnv = {...process.env}
+
+  beforeEach(() => {
+    delete process.env.SANITY_PROJECT_ID
+    delete process.env.SANITY_DATASET
+  })
+
   afterEach(() => {
     vi.clearAllMocks()
+    process.env = {...originalEnv}
   })
 
   test('uploads an image and prints URL', async () => {
@@ -87,15 +95,38 @@ describe('#assets:upload', () => {
     expect(error?.message).toContain('Upload failed')
   })
 
-  test('errors when no project ID is found', async () => {
-    const {error} = await testCommand(AssetsUploadCommand, ['test.png'], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {api: {} as CliConfig['api']},
-      },
+  test('errors when response has no URL', async () => {
+    mocks.readFile.mockResolvedValueOnce(Buffer.from('fake-image-data'))
+    mocks.upload.mockResolvedValueOnce({
+      _id: 'image-abc123',
+      _type: 'sanity.imageAsset',
     })
 
-    expect(error?.message).toContain('No project ID found')
+    const {error} = await testCommand(AssetsUploadCommand, ['test.png'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error?.message).toContain('No URL in response for test.png')
+  })
+
+  test('errors when no project ID is found', async () => {
+    const originalProjectId = process.env.SANITY_PROJECT_ID
+    delete process.env.SANITY_PROJECT_ID
+
+    try {
+      const {error} = await testCommand(AssetsUploadCommand, ['test.png'], {
+        mocks: {
+          ...defaultMocks,
+          cliConfig: {api: {} as CliConfig['api']},
+        },
+      })
+
+      expect(error?.message).toContain('No project ID found')
+    } finally {
+      if (originalProjectId !== undefined) {
+        process.env.SANITY_PROJECT_ID = originalProjectId
+      }
+    }
   })
 
   test('errors when file cannot be read', async () => {
@@ -109,5 +140,19 @@ describe('#assets:upload', () => {
 
     expect(error?.message).toContain('Cannot read missing.png')
     expect(error?.message).toContain('ENOENT')
+  })
+
+  test('errors when upload response has no URL', async () => {
+    mocks.readFile.mockResolvedValueOnce(Buffer.from('fake-image-data'))
+    mocks.upload.mockResolvedValueOnce({
+      _id: 'image-abc123',
+      _type: 'sanity.imageAsset',
+    })
+
+    const {error} = await testCommand(AssetsUploadCommand, ['test.png'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error?.message).toContain('No URL in response for test.png')
   })
 })
