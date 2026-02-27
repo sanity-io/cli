@@ -162,7 +162,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   }
 
   // Determine base path for built studio
-  const basePath = determineBasePath(cliConfig, 'studio')
+  const basePath = determineBasePath(cliConfig, 'studio', output)
 
   let spin: SpinnerInstance
   if (shouldClean) {
