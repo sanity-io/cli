@@ -79,12 +79,8 @@ export async function deployStudio(options: DeployAppOptions) {
     }
 
     if (!flags.external || flags['schema-required']) {
-      deploySchemas({
-        // For external, always extract from source (no dist folder)
-        extractManifest: flags.external ?? shouldBuild,
-        manifestDir: flags.external ? '' : `${sourceDir}/static`,
+      await deploySchemas({
         output,
-        schemaRequired: flags['schema-required'],
         verbose: flags.verbose,
         workDir,
       })
