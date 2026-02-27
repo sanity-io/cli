@@ -308,7 +308,10 @@ export function sanitySchemaExtractionPlugin(options: SchemaExtractionPluginOpti
       try {
         const start = Date.now()
         const schema = await extractSchema()
-        output.log(`✓ Extract schema (${Date.now() - start}ms)`)
+        output.log(
+          logSymbols.success,
+          `Extracted schema to ${outputPathOption} (${Date.now() - start}ms)`,
+        )
 
         trace?.log({
           enforceRequiredFields,

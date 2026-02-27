@@ -1305,9 +1305,9 @@ USAGE
 
 FLAGS
   --[no-]auto-updates       Automatically update Sanity Studio dependencies.
-  --host=<value>            The local network interface at which to listen.
+  --host=<value>            [default: localhost] The local network interface at which to listen.
   --[no-]load-in-dashboard  Load the app/studio in the Sanity dashboard.
-  --port=<value>            TCP port to start server on.
+  --port=<value>            [default: 3333] TCP port to start server on.
 
 DESCRIPTION
   Starts a local development server for Sanity Studio with live reloading
