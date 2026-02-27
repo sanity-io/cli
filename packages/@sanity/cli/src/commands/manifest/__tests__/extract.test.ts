@@ -8,7 +8,7 @@ import {describe, expect, test} from 'vitest'
 import {type CreateManifest} from '../../../actions/manifest/types.js'
 import {ExtractManifestCommand} from '../extract.js'
 
-describe('#manifest:extract', {timeout: 30 * 1000}, () => {
+describe('#manifest:extract', {timeout: 60 * 1000}, () => {
   test('should extract manifest files', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)

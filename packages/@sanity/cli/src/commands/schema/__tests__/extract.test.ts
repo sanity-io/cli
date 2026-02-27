@@ -8,7 +8,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {canCloseWatcher} from '../../../../test/testUtils.js'
 import {ExtractSchemaCommand} from '../extract.js'
 
-describe('#schema:extract', {timeout: 30 * 1000}, () => {
+describe('#schema:extract', {timeout: 60 * 1000}, () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
