@@ -89,9 +89,10 @@ export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadComman
       const isImage = contentType.startsWith('image/')
       const assetType = isImage ? 'images' : 'files'
 
-      let body: Buffer
+      let body: Blob
       try {
-        body = await readFile(file)
+        const buffer = await readFile(file)
+        body = new Blob([buffer], {type: contentType})
       } catch {
         this.error(`File not found: ${file}`, {exit: 1})
       }
