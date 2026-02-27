@@ -93,4 +93,18 @@ describe('getDevServerConfig', () => {
 
     expect(output.warn).not.toHaveBeenCalled()
   })
+
+  test('should not warn when env var is set and cliConfig is undefined', () => {
+    vi.stubEnv('SANITY_STUDIO_BASEPATH', '/env-base')
+    const output = createMockOutput()
+
+    getDevServerConfig({
+      cliConfig: undefined,
+      flags: FLAGS,
+      output,
+      workDir: '/tmp',
+    })
+
+    expect(output.warn).not.toHaveBeenCalled()
+  })
 })
