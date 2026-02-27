@@ -132,7 +132,7 @@ describe('buildStudio appId warning', () => {
 
   test('should not warn about missing appId when auto-updates are disabled', async () => {
     mockGetAppId.mockReturnValue(undefined)
-    vi.mocked(shouldAutoUpdate).mockReturnValue(false)
+    vi.mocked(shouldAutoUpdate).mockReturnValueOnce(false)
     const output = createMockOutput()
 
     await buildStudio({
