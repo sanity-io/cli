@@ -4,21 +4,12 @@ import {basename, extname} from 'node:path'
 import {Args, Flags} from '@oclif/core'
 import {getProjectCliClient, SanityCommand} from '@sanity/cli-core'
 
-const CONTENT_TYPES: Record<string, string> = {
-  '.gif': 'image/gif',
-  '.jpeg': 'image/jpeg',
-  '.jpg': 'image/jpeg',
-  '.pdf': 'application/pdf',
-  '.png': 'image/png',
-  '.svg': 'image/svg+xml',
-  '.webp': 'image/webp',
-}
+const IMAGE_EXTENSIONS = new Set(['.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp'])
 
 export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadCommand> {
   static override args = {
     file: Args.string({
       description: 'File(s) to upload',
-      required: true,
     }),
   }
 
@@ -58,7 +49,7 @@ export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadComman
     }
 
     // Resolve config once — may fail if run outside a Sanity project directory
-    const cliConfig = await this.getCliConfig().catch(() => undefined)
+    const cliConfig = await this.getCliConfig().catch(() => {})
 
     // Resolve project ID: --project flag > env > sanity.config.ts in cwd
     const projectId = flags.project || cliConfig?.api?.projectId
@@ -84,48 +75,30 @@ export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadComman
 
     for (const file of files) {
       const ext = extname(file).toLowerCase()
-      const contentType = CONTENT_TYPES[ext] || 'application/octet-stream'
       const filename = basename(file)
-      const isImage = contentType.startsWith('image/')
-      const assetType = isImage ? 'images' : 'files'
+      const assetType = IMAGE_EXTENSIONS.has(ext) ? 'image' : 'file'
 
-      let body: Blob
+      let body: Buffer
       try {
-        const buffer = await readFile(file)
-        body = new Blob([buffer], {type: contentType})
-      } catch {
-        this.error(`File not found: ${file}`, {exit: 1})
+        body = await readFile(file)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        this.error(`Cannot read ${file}: ${message}`, {exit: 1})
       }
 
-      // POST directly to the assets API
-      // SanityClient doesn't expose a raw asset upload method that returns the URL,
-      // so we use fetch with the client's token and getUrl() for correct host resolution
-      const url = client.getUrl(
-        `assets/${assetType}/${dataset}?filename=${encodeURIComponent(filename)}`,
-      )
-
-      const res = await fetch(url, {
-        body,
-        headers: {
-          Authorization: `Bearer ${client.config().token}`,
-          'Content-Type': contentType,
-        },
-        method: 'POST',
-      })
-
-      if (!res.ok) {
-        const text = await res.text()
-        this.error(`Failed to upload ${filename}: ${res.status} ${text}`, {exit: 1})
+      let doc
+      try {
+        doc = await client.assets.upload(assetType, body, {filename})
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        this.error(`Failed to upload ${filename}: ${message}`, {exit: 1})
       }
 
-      const data = (await res.json()) as {document?: {url?: string}}
-      const assetUrl = data.document?.url
-
-      if (!assetUrl) {
+      if (!doc.url) {
         this.error(`No URL in response for ${filename}`, {exit: 1})
       }
 
-      this.log(assetUrl)
+      this.log(doc.url)
     }
   }
 }
