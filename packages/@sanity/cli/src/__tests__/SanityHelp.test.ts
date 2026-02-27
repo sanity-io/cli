@@ -155,7 +155,9 @@ describe('replaceInitWithCreateCommand', () => {
       vi.stubEnv('npm_config_user_agent', UA)
       const result = replaceInitWithCreateCommand(makeInitHelp())
       expect(result).toContain('$ pnpm create sanity@latest --bare')
-      expect(result).toContain('$ pnpm create sanity@latest --project my-project --dataset production')
+      expect(result).toContain(
+        '$ pnpm create sanity@latest --project my-project --dataset production',
+      )
     })
 
     test('replaces bare example (no flags)', () => {
@@ -198,7 +200,10 @@ describe('replaceInitWithCreateCommand', () => {
       // on this specific line.
       const lines = result.split('\n')
       const bareLine = lines.find(
-        (l) => l.includes('npm create sanity@latest') && !l.includes('--bare') && !l.includes('--project'),
+        (l) =>
+          l.includes('npm create sanity@latest') &&
+          !l.includes('--bare') &&
+          !l.includes('--project'),
       )
       expect(bareLine).toBeDefined()
       expect(bareLine).not.toContain(' -- ')

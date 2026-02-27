@@ -294,7 +294,7 @@ EXAMPLES
   $ sanity blueprints add function --name my-function --fn-type document-create --fn-type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/add.ts)_
 
 ## `sanity blueprints config`
 
@@ -302,12 +302,12 @@ View or edit the local Blueprint configuration
 
 ```
 USAGE
-  $ sanity blueprints config [--project-id <value> -e] [--stack-id <value> ]
+  $ sanity blueprints config [--project-id <value> -e] [--stack <value> ]
 
 FLAGS
   -e, --edit                Modify the configuration interactively, or directly when combined with ID flags.
       --project-id=<value>  Directly set the project ID in the configuration. Requires --edit flag
-      --stack-id=<value>    Directly set the Stack ID in the configuration. Requires --edit flag
+      --stack=<value>       Stack name or ID to set in the configuration. Requires --edit flag
 
 DESCRIPTION
   View or edit the local Blueprint configuration
@@ -317,7 +317,7 @@ DESCRIPTION
   Without flags, displays the current configuration. Use --edit to interactively modify settings, or combine --edit with
   ID flags to update values directly (useful for scripting and automation).
 
-  If you need to switch your Blueprint to a different Stack, use --edit --stack-id.
+  If you need to switch your Blueprint to a different Stack, use --edit --stack.
 
 EXAMPLES
   $ sanity blueprints config
@@ -326,10 +326,10 @@ EXAMPLES
 
   $ sanity blueprints config --edit --project-id <projectId>
 
-  $ sanity blueprints config --edit --project-id <projectId> --stack-id <stackId>
+  $ sanity blueprints config --edit --project-id <projectId> --stack <name-or-id>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/config.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/config.ts)_
 
 ## `sanity blueprints deploy`
 
@@ -337,10 +337,11 @@ Deploy the local Blueprint to the remote Stack
 
 ```
 USAGE
-  $ sanity blueprints deploy [--no-wait]
+  $ sanity blueprints deploy [--stack <value>] [--no-wait]
 
 FLAGS
-  --no-wait  Do not wait for Stack deployment to complete
+  --no-wait        Do not wait for Stack deployment to complete
+  --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   Deploy the local Blueprint to the remote Stack
@@ -353,13 +354,15 @@ DESCRIPTION
 
   Use --no-wait to queue the deployment and return immediately without waiting for completion.
 
+  Set SANITY_ASSET_TIMEOUT (seconds) to override the 60-second timeout for processing resource assets.
+
 EXAMPLES
   $ sanity blueprints deploy
 
   $ sanity blueprints deploy --no-wait
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/deploy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/deploy.ts)_
 
 ## `sanity blueprints destroy`
 
@@ -367,13 +370,13 @@ Destroy the remote Stack deployment and its resources (will not delete local fil
 
 ```
 USAGE
-  $ sanity blueprints destroy [--project-id <value> --stack-id <value> --force] [--no-wait]
+  $ sanity blueprints destroy [--project-id <value> --stack <value> --force] [--no-wait]
 
 FLAGS
   --force               Force Stack destruction (skip confirmation)
   --no-wait             Do not wait for Stack destruction to complete
   --project-id=<value>  Project associated with the Stack
-  --stack-id=<value>    Stack ID to destroy (defaults to current Stack)
+  --stack=<value>       Stack name or ID to destroy (defaults to the locally configured Stack)
 
 DESCRIPTION
   Destroy the remote Stack deployment and its resources (will not delete local files)
@@ -388,10 +391,10 @@ DESCRIPTION
 EXAMPLES
   $ sanity blueprints destroy
 
-  $ sanity blueprints destroy --stack-id <stackId> --project-id <projectId> --force --no-wait
+  $ sanity blueprints destroy --stack <name-or-id> --project-id <projectId> --force --no-wait
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/destroy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/destroy.ts)_
 
 ## `sanity blueprints doctor`
 
@@ -405,7 +408,7 @@ FLAGS
   -p, --path=<value>  [env: SANITY_BLUEPRINT_PATH] Path to a Blueprint file or directory containing one
       --fix           Interactively fix configuration issues
       --json          Format output as json.
-      --verbose       Verbose output
+      --[no-]verbose  Verbose output; defaults to true
 
 DESCRIPTION
   Diagnose potential issues with local Blueprint and remote Stack configuration
@@ -417,7 +420,7 @@ DESCRIPTION
   issues.
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/doctor.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/doctor.ts)_
 
 ## `sanity blueprints info`
 
@@ -425,10 +428,10 @@ Show information about the local Blueprint's remote Stack deployment
 
 ```
 USAGE
-  $ sanity blueprints info [--id <value>]
+  $ sanity blueprints info [--stack <value>]
 
 FLAGS
-  --id=<value>  Stack ID to show info for (defaults to the current Stack)
+  --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   Show information about the local Blueprint's remote Stack deployment
@@ -444,10 +447,10 @@ DESCRIPTION
 EXAMPLES
   $ sanity blueprints info
 
-  $ sanity blueprints info --id <stackId>
+  $ sanity blueprints info --stack <name-or-id>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/info.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/info.ts)_
 
 ## `sanity blueprints init [DIR]`
 
@@ -497,7 +500,7 @@ EXAMPLES
   $ sanity blueprints init --blueprint-type <json|js|ts> --stack-name <stackName>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/init.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/init.ts)_
 
 ## `sanity blueprints logs`
 
@@ -505,10 +508,11 @@ Display logs for the current Blueprint's Stack deployment
 
 ```
 USAGE
-  $ sanity blueprints logs [-w]
+  $ sanity blueprints logs [--stack <value>] [-w]
 
 FLAGS
-  -w, --watch  Watch for new Stack logs (streaming mode)
+  -w, --watch          Watch for new Stack logs (streaming mode)
+      --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   Display logs for the current Blueprint's Stack deployment
@@ -525,7 +529,7 @@ EXAMPLES
   $ sanity blueprints logs --watch
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/logs.ts)_
 
 ## `sanity blueprints plan`
 
@@ -533,7 +537,10 @@ Enumerate resources to be deployed to the remote Stack - will not modify any res
 
 ```
 USAGE
-  $ sanity blueprints plan
+  $ sanity blueprints plan [--stack <value>]
+
+FLAGS
+  --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   Enumerate resources to be deployed to the remote Stack - will not modify any resources
@@ -548,7 +555,7 @@ EXAMPLES
   $ sanity blueprints plan
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/plan.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/plan.ts)_
 
 ## `sanity blueprints stacks`
 
@@ -577,7 +584,7 @@ EXAMPLES
   $ sanity blueprints stacks --organization-id <organizationId>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/blueprints/stacks.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/stacks.ts)_
 
 ## `sanity build [OUTPUTDIR]`
 
@@ -1691,7 +1698,7 @@ EXAMPLES
   $ sanity functions add --name my-function --type document-create --type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/add.ts)_
 
 ## `sanity functions dev`
 
@@ -1725,7 +1732,7 @@ EXAMPLES
   $ sanity functions dev --timeout 60
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/dev.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/dev.ts)_
 
 ## `sanity functions env add NAME KEY VALUE`
 
@@ -1752,7 +1759,7 @@ EXAMPLES
   $ sanity functions env add MyFunction API_URL https://api.example.com/
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/env/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/env/add.ts)_
 
 ## `sanity functions env list NAME`
 
@@ -1776,7 +1783,7 @@ EXAMPLES
   $ sanity functions env list MyFunction
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/env/list.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/env/list.ts)_
 
 ## `sanity functions env remove NAME KEY`
 
@@ -1802,7 +1809,7 @@ EXAMPLES
   $ sanity functions env remove MyFunction API_URL
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/env/remove.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/env/remove.ts)_
 
 ## `sanity functions logs [NAME]`
 
@@ -1810,7 +1817,7 @@ Retrieve or delete logs for a Sanity Function
 
 ```
 USAGE
-  $ sanity functions logs [NAME] [-u] [-f [-d | -l <value> | -j]] [-w]
+  $ sanity functions logs [NAME] [--stack <value>] [-u] [-f [-d | -l <value> | -j]] [-w]
 
 ARGUMENTS
   [NAME]  The name of the Sanity Function
@@ -1822,6 +1829,7 @@ FLAGS
   -l, --limit=<value>  [default: 50] Total number of log entries to retrieve
   -u, --utc            Show dates in UTC time zone
   -w, --watch          Watch for new logs (streaming mode)
+      --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   Retrieve or delete logs for a Sanity Function
@@ -1841,7 +1849,7 @@ EXAMPLES
   $ sanity functions logs <name> --delete
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/logs.ts)_
 
 ## `sanity functions test [NAME]`
 
@@ -1895,7 +1903,7 @@ EXAMPLES
   $ sanity functions test <name> --event update --data-before '{ "title": "before" }' --data-after '{ "title": "after" }'
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v13.4.1/src/commands/functions/test.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/test.ts)_
 
 ## `sanity graphql deploy`
 
