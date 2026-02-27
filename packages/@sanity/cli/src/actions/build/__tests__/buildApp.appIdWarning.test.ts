@@ -3,6 +3,15 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
+/** These are not relevant for what we are testing, but still needed to pass type checker */
+const FLAGS = {
+  'auto-updates': true,
+  json: false,
+  minify: true,
+  'source-maps': true,
+  stats: true,
+  yes: true,
+} as const
 
 // Mock heavy dependencies to isolate appId warning logic
 // Paths are relative to the test file location (__tests__/)
@@ -83,7 +92,7 @@ describe('buildApp appId warning', () => {
     await buildApp({
       autoUpdatesEnabled: true,
       cliConfig: {deployment: {autoUpdates: true}},
-      flags: {} as never,
+      flags: FLAGS,
       outDir: '/tmp/dist',
       output,
       workDir: '/tmp',
@@ -102,7 +111,7 @@ describe('buildApp appId warning', () => {
       autoUpdatesEnabled: true,
       calledFromDeploy: true,
       cliConfig: {deployment: {autoUpdates: true}},
-      flags: {} as never,
+      flags: FLAGS,
       outDir: '/tmp/dist',
       output,
       workDir: '/tmp',
@@ -118,7 +127,7 @@ describe('buildApp appId warning', () => {
     await buildApp({
       autoUpdatesEnabled: true,
       cliConfig: {deployment: {appId: 'my-app-id', autoUpdates: true}},
-      flags: {} as never,
+      flags: FLAGS,
       outDir: '/tmp/dist',
       output,
       workDir: '/tmp',
