@@ -1,6 +1,5 @@
 import {type CliConfig} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
-import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {AssetsUploadCommand} from '../upload.js'
@@ -34,9 +33,6 @@ const defaultMocks = {
 describe('#assets:upload', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('uploads a file and prints URL', async () => {

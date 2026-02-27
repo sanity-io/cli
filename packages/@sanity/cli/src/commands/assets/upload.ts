@@ -54,20 +54,23 @@ export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadComman
     const files = argv as string[]
 
     if (files.length === 0) {
-      this.error('No files specified')
+      this.error('No files specified', {exit: 1})
     }
 
+    // Resolve config once — may fail if run outside a Sanity project directory
+    const cliConfig = await this.getCliConfig().catch(() => undefined)
+
     // Resolve project ID: --project flag > env > sanity.config.ts in cwd
-    const projectId = flags.project || (await this.getProjectId())
+    const projectId = flags.project || cliConfig?.api?.projectId
     if (!projectId) {
       this.error(
         'No project ID found. Either run this from a Sanity project directory, ' +
           'or pass --project <id>',
+        {exit: 1},
       )
     }
 
     // Resolve dataset: --dataset flag > env > sanity.config.ts > "production"
-    const cliConfig = await this.getCliConfig().catch(() => undefined)
     const dataset = flags.dataset || cliConfig?.api?.dataset || 'production'
 
     // Auth token resolved automatically by getProjectCliClient
@@ -86,7 +89,12 @@ export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadComman
       const isImage = contentType.startsWith('image/')
       const assetType = isImage ? 'images' : 'files'
 
-      const body = await readFile(file)
+      let body: Buffer
+      try {
+        body = await readFile(file)
+      } catch {
+        this.error(`File not found: ${file}`, {exit: 1})
+      }
 
       // POST directly to the assets API
       // SanityClient doesn't expose a raw asset upload method that returns the URL,
@@ -106,14 +114,14 @@ export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadComman
 
       if (!res.ok) {
         const text = await res.text()
-        this.error(`Failed to upload ${filename}: ${res.status} ${text}`)
+        this.error(`Failed to upload ${filename}: ${res.status} ${text}`, {exit: 1})
       }
 
       const data = (await res.json()) as {document?: {url?: string}}
       const assetUrl = data.document?.url
 
       if (!assetUrl) {
-        this.error(`No URL in response for ${filename}`)
+        this.error(`No URL in response for ${filename}`, {exit: 1})
       }
 
       this.log(assetUrl)
