@@ -9,7 +9,7 @@ jobs:
     if: >-
       !contains(github.event.pull_request.labels.*.name, 'skip-review') &&
       github.actor != 'squiggler[bot]' &&
-      (github.actor != 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'major'))
+      (github.actor != 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, '⚠️ major'))
 
     runs-on: ubuntu-latest
     permissions:
