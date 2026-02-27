@@ -18,6 +18,15 @@ function createMockOutput(): Output {
   } as unknown as Output
 }
 
+/** These are not relevant for what we are testing, but still needed to pass type checker */
+const FLAGS = {
+  'auto-updates': false,
+  host: 'localhost',
+  json: false,
+  'load-in-dashboard': false,
+  port: '3333',
+} as const
+
 describe('getDevServerConfig', () => {
   afterEach(() => {
     vi.unstubAllEnvs()
@@ -30,7 +39,7 @@ describe('getDevServerConfig', () => {
 
     getDevServerConfig({
       cliConfig,
-      flags: {host: 'localhost', port: '3333'} as never,
+      flags: FLAGS,
       output,
       workDir: '/tmp',
     })
@@ -47,7 +56,7 @@ describe('getDevServerConfig', () => {
 
     getDevServerConfig({
       cliConfig,
-      flags: {host: 'localhost', port: '3333'} as never,
+      flags: FLAGS,
       output,
       workDir: '/tmp',
     })
@@ -63,7 +72,7 @@ describe('getDevServerConfig', () => {
 
     getDevServerConfig({
       cliConfig,
-      flags: {host: 'localhost', port: '3333'} as never,
+      flags: FLAGS,
       output,
       workDir: '/tmp',
     })
@@ -77,7 +86,7 @@ describe('getDevServerConfig', () => {
 
     getDevServerConfig({
       cliConfig: {},
-      flags: {host: 'localhost', port: '3333'} as never,
+      flags: FLAGS,
       output,
       workDir: '/tmp',
     })
