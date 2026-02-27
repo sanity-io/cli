@@ -66,6 +66,7 @@ export async function deployStudio(options: DeployAppOptions) {
       deployDebug(`Building studio`)
       await buildStudio({
         autoUpdatesEnabled: isAutoUpdating,
+        calledFromDeploy: true,
         cliConfig,
         flags,
         outDir: sourceDir,

@@ -11,6 +11,7 @@ import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
+import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildDebug} from './buildDebug.js'
 import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'
@@ -65,6 +66,13 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     autoUpdatesImports = getAutoUpdatesImportMap(autoUpdatedPackages, {appId})
 
     output.log(`${logSymbols.info} Building with auto-updates enabled`)
+
+    // Warn if auto updates enabled but no appId configured.
+    // Skip when called from deploy, since deploy handles appId itself
+    // (prompts the user and tells them to add it to config).
+    if (!appId && !options.calledFromDeploy) {
+      warnAboutMissingAppId({appType: 'app', output})
+    }
 
     // Check the versions
     const {mismatched, unresolvedPrerelease} = await compareDependencyVersions(

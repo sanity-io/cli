@@ -73,6 +73,7 @@ export async function deployApp(options: DeployAppOptions) {
       deployDebug(`Building app`)
       await buildApp({
         autoUpdatesEnabled: isAutoUpdating,
+        calledFromDeploy: true,
         cliConfig,
         flags,
         outDir: sourceDir,
