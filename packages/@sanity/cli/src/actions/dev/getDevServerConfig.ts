@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, getSanityEnvVar, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {type DevServerOptions} from '../../server/devServer.js'
@@ -31,14 +31,16 @@ export function getDevServerConfig({
 
   configSpinner.succeed()
 
+  const isApp = cliConfig && 'app' in cliConfig
   const env = process.env
   const reactStrictMode = env.SANITY_STUDIO_REACT_STRICT_MODE
     ? env.SANITY_STUDIO_REACT_STRICT_MODE === 'true'
     : Boolean(cliConfig?.reactStrictMode)
 
-  if (env.SANITY_STUDIO_BASEPATH && cliConfig?.project?.basePath) {
+  const envBasePath = getSanityEnvVar('BASEPATH', isApp ?? false)
+  if (envBasePath && cliConfig?.project?.basePath) {
     output.warn(
-      `Overriding configured base path (${cliConfig.project.basePath}) with value from environment variable (${env.SANITY_STUDIO_BASEPATH})`,
+      `Overriding configured base path (${cliConfig.project.basePath}) with value from environment variable (${envBasePath})`,
     )
   }
 
