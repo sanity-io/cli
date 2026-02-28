@@ -3,7 +3,6 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DATASET_API_VERSION, type DatasetAliasDefinition} from '../../../services/datasets.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {ListDatasetCommand} from '../list.js'
 
 const mockListDatasets = vi.hoisted(() => vi.fn())
@@ -144,8 +143,44 @@ describe('#dataset:list', () => {
         cliConfig: {api: {projectId: undefined}},
       },
     })
-    expect(error?.message).toBe(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('uses --project-id flag when provided', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'} as never])
+    mockApi({
+      apiVersion: DATASET_API_VERSION,
+      method: 'get',
+      projectId: testProjectId,
+      uri: `/aliases`,
+    }).reply(200, [])
+
+    const {error, stdout} = await testCommand(
+      ListDatasetCommand,
+      ['--project-id', 'other-project'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeUndefined()
+    expect(stdout).toContain('production')
+  })
+
+  test('uses -p short flag when provided', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'staging'} as never])
+    mockApi({
+      apiVersion: DATASET_API_VERSION,
+      method: 'get',
+      projectId: testProjectId,
+      uri: `/aliases`,
+    }).reply(200, [])
+
+    const {error, stdout} = await testCommand(ListDatasetCommand, ['-p', 'other-project'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error).toBeUndefined()
+    expect(stdout).toContain('staging')
   })
 
   test('handles API errors when listing datasets ', async () => {

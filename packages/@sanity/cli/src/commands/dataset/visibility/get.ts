@@ -3,7 +3,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
 import {listDatasets} from '../../../services/datasets.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {projectIdFlag} from '../../../util/sharedFlags.js'
 
 const getDebug = subdebug('dataset:visibility:get')
 
@@ -24,14 +24,15 @@ export class DatasetVisibilityGetCommand extends SanityCommand<typeof DatasetVis
     },
   ]
 
+  static override flags = {
+    ...projectIdFlag,
+  }
+
   public async run(): Promise<void> {
     const {args} = await this.parse(DatasetVisibilityGetCommand)
     const {dataset} = args
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     const dsError = validateDatasetName(dataset)
     if (dsError) {

@@ -1,7 +1,7 @@
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {listDatasetAliases, listDatasets} from '../../services/datasets.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {projectIdFlag} from '../../util/sharedFlags.js'
 
 const listDatasetDebug = subdebug('dataset:list')
 
@@ -13,13 +13,18 @@ export class ListDatasetCommand extends SanityCommand<typeof ListDatasetCommand>
       command: '<%= config.bin %> <%= command.id %>',
       description: 'List datasets of your project',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      description: 'List datasets for a specific project',
+    },
   ]
+
+  static override flags = {
+    ...projectIdFlag,
+  }
 
   public async run(): Promise<void> {
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     const [datasets, aliases] = await Promise.allSettled([
       listDatasets(projectId),

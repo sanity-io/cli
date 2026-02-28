@@ -5,7 +5,6 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getGraphQLAPIs} from '../../../actions/graphql/getGraphQLAPIs.js'
 import {GRAPHQL_API_VERSION} from '../../../services/graphql.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Undeploy} from '../undeploy.js'
 
 // Mock getGraphQLAPIs
@@ -304,7 +303,7 @@ describe('graphql undeploy', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

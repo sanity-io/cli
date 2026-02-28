@@ -10,7 +10,6 @@ import {execa, execaSync} from 'execa'
 import json5 from 'json5'
 import {afterEach, describe, expect, type Mock, test, vi} from 'vitest'
 
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {CreateDocumentCommand} from '../create.js'
 
 vi.mock('node:fs/promises')
@@ -328,7 +327,7 @@ describe('#documents:create', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

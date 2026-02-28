@@ -1,3 +1,4 @@
+import {ProjectRootNotFoundError} from '../errors/ProjectRootNotFoundError.js'
 import {findAppConfigPath} from './util/findAppConfigPath.js'
 import {tryFindStudioConfigPath} from './util/findStudioConfigPath.js'
 import {
@@ -31,9 +32,12 @@ export async function findProjectRoot(cwd: string): Promise<ProjectRootResult> {
       return appProjectRoot
     }
 
-    // If nothing is found throw an error
-    throw new Error('No project root found')
+    // If nothing is found throw a specific error
+    throw new ProjectRootNotFoundError('No project root found')
   } catch (err: unknown) {
+    if (err instanceof ProjectRootNotFoundError) {
+      throw err
+    }
     const message = err instanceof Error ? err.message : `${err}`
     throw new Error(`Error occurred trying to resolve project root:\n${message}`)
   }

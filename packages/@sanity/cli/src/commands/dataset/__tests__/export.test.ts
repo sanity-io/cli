@@ -6,7 +6,6 @@ import {testCommand} from '@sanity/cli-test'
 import {exportDataset, type ExportResult} from '@sanity/export'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {DatasetExportCommand} from '../export.js'
 
 vi.mock('@sanity/export', () => ({
@@ -412,7 +411,7 @@ describe('#dataset:export', () => {
         mocks,
       })
 
-      expect(error?.message).toEqual(NO_PROJECT_ID)
+      expect(error?.message).toContain('Unable to determine project ID')
       expect(error?.oclif?.exit).toBe(1)
     })
 

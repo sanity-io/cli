@@ -2,7 +2,6 @@ import {input} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {DeleteDatasetCommand} from '../delete.js'
 
 const mockDeleteDataset = vi.hoisted(() => vi.fn())
@@ -107,7 +106,7 @@ describe('#dataset:delete', () => {
         cliConfig: {api: {projectId}},
       },
     })
-    expect(error?.message).toBe(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

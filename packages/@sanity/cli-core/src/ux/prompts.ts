@@ -1,7 +1,7 @@
 import * as inquirer from '@inquirer/prompts'
 
+import {NonInteractiveError} from '../errors/NonInteractiveError.js'
 import {isInteractive} from '../util/isInteractive.js'
-import {NonInteractiveError} from '../util/NonInteractiveError.js'
 
 export {Separator} from '@inquirer/prompts'
 

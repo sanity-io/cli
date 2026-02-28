@@ -3,7 +3,6 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {TokensListCommand} from '../list.js'
 
 const testProjectId = 'test-project'
@@ -151,7 +150,7 @@ describe('#tokens:list', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -164,7 +163,7 @@ describe('#tokens:list', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -177,7 +176,7 @@ describe('#tokens:list', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
   })
 
   test('handles 404 error gracefully', async () => {

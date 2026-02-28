@@ -4,7 +4,6 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DATASET_ALIASES_API_VERSION} from '../../../../services/datasetAliases.js'
-import {NO_PROJECT_ID} from '../../../../util/errorMessages.js'
 import {UnlinkAliasCommand} from '../unlink.js'
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -152,7 +151,7 @@ describe('#dataset:alias:unlink', () => {
       },
     })
 
-    expect(error?.message).toContain(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

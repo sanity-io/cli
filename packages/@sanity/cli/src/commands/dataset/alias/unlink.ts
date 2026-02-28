@@ -6,7 +6,7 @@ import {processAliasName} from '../../../actions/dataset/processAliasName.js'
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
 import {promptForDatasetAliasName} from '../../../prompts/promptForDatasetAliasName.js'
 import {listAliases, unlinkAlias} from '../../../services/datasetAliases.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {projectIdFlag} from '../../../util/sharedFlags.js'
 
 const unlinkAliasDebug = subdebug('dataset:alias:unlink')
 
@@ -40,6 +40,7 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
   ]
 
   static override flags = {
+    ...projectIdFlag,
     force: Flags.boolean({
       description: 'Skip confirmation prompt and unlink immediately',
       required: false,
@@ -51,9 +52,6 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
     const {force} = flags
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     try {
       const aliasNameInput = args.aliasName || (await promptForDatasetAliasName())

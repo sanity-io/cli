@@ -5,6 +5,7 @@ import {type CliConfig} from './config/cli/types/cliConfig.js'
 import {findProjectRoot} from './config/findProjectRoot.js'
 import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
 import {subdebug} from './debug.js'
+import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
 import {
   getGlobalCliClient,
   getProjectCliClient,
@@ -84,14 +85,27 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
   }
 
   /**
-   * Get the project ID from the CLI config.
+   * Get the project ID from passed flags or (if not provided) the CLI config.
    *
    * @returns The project ID or `undefined` if it's not set.
    */
-  protected async getProjectId(): Promise<string | undefined> {
-    const config = await this.getCliConfig()
+  protected async getProjectId(): Promise<string> {
+    const projectId = await this.tryGetProjectId()
+    if (projectId) return projectId
 
-    return config.api?.projectId
+    const cmdHasProjectFlag =
+      this.constructor &&
+      'flags' in this.constructor &&
+      typeof this.constructor.flags === 'object' &&
+      this.constructor.flags !== null &&
+      'project-id' in this.constructor.flags
+
+    throw new ProjectRootNotFoundError('Unable to determine project ID', {
+      suggestions: [
+        ...(cmdHasProjectFlag ? ['Providing a project ID: --project-id <project-id>'] : []),
+        'Running this command from within a Sanity project directory',
+      ],
+    })
   }
 
   /**
@@ -141,5 +155,33 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    */
   protected resolveIsInteractive(): boolean {
     return isInteractive()
+  }
+
+  /**
+   * Try to get the project ID from the flags or CLI config, but just return `undefined` if it can't be found.
+   *
+   * @returns The project ID or `undefined` if it's not set.
+   */
+  protected async tryGetProjectId(): Promise<string | undefined> {
+    // constructor will be the specific command class, so we can check if it
+    // has a `project-id` flag defined before attempting to access it.
+    const cmdHasProjectFlag =
+      this.constructor &&
+      'flags' in this.constructor &&
+      typeof this.constructor.flags === 'object' &&
+      this.constructor.flags !== null &&
+      'project-id' in this.constructor.flags
+
+    if (cmdHasProjectFlag) {
+      const flagProjectId =
+        'project-id' in this.flags && typeof this.flags['project-id'] === 'string'
+          ? this.flags['project-id']
+          : undefined
+
+      if (flagProjectId) return flagProjectId
+    }
+
+    const config = await this.getCliConfig()
+    return config.api?.projectId
   }
 }

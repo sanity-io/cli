@@ -4,7 +4,6 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECTS_API_VERSION} from '../../../services/projects.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {UsersInviteCommand} from '../invite.js'
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -152,7 +151,7 @@ describe('#invite', () => {
     )
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

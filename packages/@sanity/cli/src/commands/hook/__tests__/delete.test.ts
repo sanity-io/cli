@@ -3,7 +3,6 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {HOOK_API_VERSION} from '../../../actions/hook/constants.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Delete} from '../delete.js'
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -185,7 +184,7 @@ describe('#delete', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
   })
 
   test('handles case insensitive hook name matching', async () => {

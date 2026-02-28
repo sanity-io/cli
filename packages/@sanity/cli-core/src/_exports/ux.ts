@@ -1,4 +1,4 @@
-export {NonInteractiveError} from '../util/NonInteractiveError.js'
+export {NonInteractiveError} from '../errors/NonInteractiveError.js'
 export * from '../ux/boxen.js'
 export * from '../ux/logSymbols.js'
 export * from '../ux/prompts.js'

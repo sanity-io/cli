@@ -492,7 +492,7 @@ describe('#dataset:copy', () => {
       },
     })
 
-    expect(error?.message).toContain('sanity.cli.ts does not contain a project identifier')
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 })

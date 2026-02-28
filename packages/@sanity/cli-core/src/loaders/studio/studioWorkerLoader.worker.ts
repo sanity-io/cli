@@ -8,10 +8,10 @@ import {installSourcemapsSupport} from 'vite-node/source-map'
 import {getCliConfig} from '../../config/cli/getCliConfig.js'
 import {type CliConfig} from '../../config/cli/types/cliConfig.js'
 import {subdebug} from '../../debug.js'
+import {isNotFoundError} from '../../errors/NotFoundError.js'
 import {getStudioEnvironmentVariables} from '../../util/environment/getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from '../../util/environment/setupBrowserStubs.js'
 import {isRecord} from '../../util/isRecord.js'
-import {isNotFoundError} from '../../util/NotFoundError.js'
 
 if (isMainThread) {
   throw new Error('Should be child of thread, not the main thread')

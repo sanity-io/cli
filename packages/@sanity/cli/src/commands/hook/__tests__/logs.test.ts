@@ -4,7 +4,6 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {HOOK_API_VERSION} from '../../../actions/hook/constants.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {LogsHookCommand} from '../logs.js'
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -46,7 +45,7 @@ describe('#hook:logs', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

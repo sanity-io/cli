@@ -18,7 +18,7 @@ import {
   listDatasetCopyJobs,
   listDatasets,
 } from '../../services/datasets.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {projectIdFlag} from '../../util/sharedFlags.js'
 
 const copyDatasetDebug = subdebug('dataset:copy')
 
@@ -73,6 +73,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
   ]
 
   static override flags = {
+    ...projectIdFlag,
     attach: Flags.string({
       description: 'Attach to the running copy process to show progress',
       exclusive: ['list', 'detach', 'skip-history'],
@@ -112,9 +113,6 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     const {args, flags} = await this.parse(CopyDatasetCommand)
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     this.projectId = projectId
 

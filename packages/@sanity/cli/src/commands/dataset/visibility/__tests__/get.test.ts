@@ -1,7 +1,6 @@
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {NO_PROJECT_ID} from '../../../../util/errorMessages.js'
 import {DatasetVisibilityGetCommand} from '../get.js'
 
 const mockListDatasets = vi.hoisted(() => vi.fn())
@@ -75,7 +74,7 @@ describe('#dataset:visibility:get', () => {
       },
     })
 
-    expect(error?.message).toContain(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

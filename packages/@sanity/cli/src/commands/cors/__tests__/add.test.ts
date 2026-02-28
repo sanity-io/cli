@@ -6,7 +6,6 @@ import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {CORS_API_VERSION} from '../../../services/cors.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Add} from '../add.js'
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -136,7 +135,7 @@ describe('#cors:add', () => {
       },
     })
 
-    expect(error?.message).toContain(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
   })
 
   const errorHandlingCases = [

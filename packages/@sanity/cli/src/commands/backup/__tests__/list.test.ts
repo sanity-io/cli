@@ -4,7 +4,6 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {BACKUP_API_VERSION} from '../../../actions/backup/constants.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {ListBackupCommand} from '../list.js'
 
 const mockListDatasets = vi.hoisted(() => vi.fn())
@@ -71,7 +70,7 @@ describe('#backup:list', () => {
         cliConfig: {api: {}},
       },
     })
-    expect(error?.message).toContain(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

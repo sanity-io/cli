@@ -3,7 +3,6 @@ import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
 import {SCHEMA_API_VERSION} from '../../../services/schemas.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {DeleteSchemaCommand} from '../delete.js'
 
 const schemaIds = ['_.schemas.production', '_.schemas.staging']
@@ -111,7 +110,7 @@ describe('#schema:delete', {timeout: 30 * 1000}, () => {
       mocks: {cliConfig: {api: {dataset: 'test', projectId: testProjectId}}},
     })
 
-    expect(error?.message).toContain(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

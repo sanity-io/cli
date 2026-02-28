@@ -9,7 +9,7 @@ import {promptForDatasetAliasName} from '../../../prompts/promptForDatasetAliasN
 import {selectDataset} from '../../../prompts/selectDataset.js'
 import {listAliases, updateAlias} from '../../../services/datasetAliases.js'
 import {listDatasets} from '../../../services/datasets.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {projectIdFlag} from '../../../util/sharedFlags.js'
 
 const linkAliasDebug = subdebug('dataset:alias:link')
 
@@ -51,6 +51,7 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
   ]
 
   static override flags = {
+    ...projectIdFlag,
     force: Flags.boolean({
       description: 'Skip confirmation prompt when relinking existing alias',
       required: false,
@@ -62,9 +63,6 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
     const {force} = flags
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     if (args.aliasName) {
       const {apiName} = processAliasName(args.aliasName)

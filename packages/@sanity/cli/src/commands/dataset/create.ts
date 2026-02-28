@@ -6,7 +6,7 @@ import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {projectIdFlag} from '../../util/sharedFlags.js'
 
 const createDatasetDebug = subdebug('dataset:create')
 
@@ -38,6 +38,7 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
   ]
 
   static override flags = {
+    ...projectIdFlag,
     embeddings: Flags.boolean({
       default: false,
       description: 'Enable embeddings for this dataset',
@@ -59,9 +60,6 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
 
     // Ensure we have project context
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     // Get dataset name from args or prompt
     let {name: datasetName} = args

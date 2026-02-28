@@ -3,7 +3,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
 import {getEmbeddingsSettings} from '../../../services/embeddings.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {projectIdFlag} from '../../../util/sharedFlags.js'
 
 const debug = subdebug('dataset:embeddings:status')
 
@@ -26,14 +26,15 @@ export class DatasetEmbeddingsStatusCommand extends SanityCommand<
     },
   ]
 
+  static override flags = {
+    ...projectIdFlag,
+  }
+
   public async run(): Promise<void> {
     const {args} = await this.parse(DatasetEmbeddingsStatusCommand)
     let {dataset} = args
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     try {
       ;({dataset} = await resolveDataset({dataset, projectId}))
