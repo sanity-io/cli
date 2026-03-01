@@ -227,7 +227,7 @@ describe('resolveGraphQLApis', () => {
       expect(schemaType.type).toBe('document')
       expect(schemaType.fields).toEqual([{name: 'title', type: 'string'}])
       // validation function should be stripped
-      expect((schemaType as Record<string, unknown>).validation).toBeUndefined()
+      expect((schemaType as unknown as Record<string, unknown>).validation).toBeUndefined()
     })
 
     test('handles schema with no _original', () => {
