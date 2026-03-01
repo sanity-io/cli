@@ -5,6 +5,7 @@ import {SanityCommand, subdebug, waitForAsync} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {getEmbeddingsSettings, setEmbeddingsSettings} from '../../../services/embeddings.js'
 import {projectIdFlag} from '../../../util/sharedFlags.js'
 
@@ -58,7 +59,15 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
     let {dataset} = args
     const {projection, wait} = flags
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'update', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     try {
       ;({dataset} = await resolveDataset({dataset, projectId}))

@@ -5,6 +5,11 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {DATASET_API_VERSION} from '../../../../services/datasets.js'
 import {LinkAliasCommand} from '../link.js'
 
+vi.mock('../../../../prompts/promptForProject.js', async () => {
+  const {NonInteractiveError} = await import('@sanity/cli-core')
+  return {promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select'))}
+})
+
 const mockListDatasets = vi.hoisted(() => vi.fn())
 const testProjectId = vi.hoisted(() => 'test-project')
 const testToken = vi.hoisted(() => 'test-token')

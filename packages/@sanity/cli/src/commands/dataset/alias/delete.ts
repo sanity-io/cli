@@ -4,6 +4,7 @@ import {input} from '@sanity/cli-core/ux'
 
 import {processAliasName} from '../../../actions/dataset/processAliasName.js'
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {listAliases, removeAlias} from '../../../services/datasetAliases.js'
 import {projectIdFlag} from '../../../util/sharedFlags.js'
 
@@ -46,7 +47,15 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
     const {args, flags} = await this.parse(DeleteAliasCommand)
     const {force} = flags
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'delete', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     const {apiName, displayName} = processAliasName(args.aliasName)
 

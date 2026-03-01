@@ -10,6 +10,7 @@ import {formatDistance, formatDistanceToNow, parseISO} from 'date-fns'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {
   copyDataset,
   type CopyJobProgressEvent,
@@ -112,7 +113,15 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(CopyDatasetCommand)
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'create', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     this.projectId = projectId
 

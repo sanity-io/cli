@@ -1,7 +1,12 @@
+import {NonInteractiveError} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DatasetVisibilityGetCommand} from '../get.js'
+
+vi.mock('../../../../prompts/promptForProject.js', () => ({
+  promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
+}))
 
 const mockListDatasets = vi.hoisted(() => vi.fn())
 

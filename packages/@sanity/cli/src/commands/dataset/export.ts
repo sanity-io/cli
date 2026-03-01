@@ -11,6 +11,7 @@ import prettyMs from 'pretty-ms'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDataset} from '../../prompts/promptForDataset.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasets} from '../../services/datasets.js'
 import {absolutify} from '../../util/absolutify.js'
 import {projectIdFlag} from '../../util/sharedFlags.js'
@@ -94,7 +95,12 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     const {destination: targetDestination, name: targetDataset} = args
 
     // Get project configuration
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+        }),
+    })
 
     const projectClient = await getProjectCliClient({
       apiVersion: '2023-05-26',

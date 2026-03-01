@@ -6,6 +6,11 @@ import {DATASET_API_VERSION} from '../../../../services/datasets.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../../services/getProjectFeatures.js'
 import {CreateAliasCommand} from '../create.js'
 
+vi.mock('../../../../prompts/promptForProject.js', async () => {
+  const {NonInteractiveError} = await import('@sanity/cli-core')
+  return {promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select'))}
+})
+
 const mockListDatasets = vi.hoisted(() => vi.fn())
 const testProjectId = vi.hoisted(() => 'test-project')
 const testToken = vi.hoisted(() => 'test-token')

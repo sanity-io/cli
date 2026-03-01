@@ -30,6 +30,15 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
+vi.mock('../../../prompts/promptForProject.js', async () => {
+  const {NonInteractiveError} = await vi.importActual<typeof import('@sanity/cli-core')>(
+    '@sanity/cli-core',
+  )
+  return {
+    promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
+  }
+})
+
 const TEST_DATASET_NAME = 'test-dataset'
 const TEST_PROJECT_NAME = 'Test Project'
 const TEST_PROJECT_ID = 'test-project'

@@ -2,6 +2,7 @@ import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {getEmbeddingsSettings} from '../../../services/embeddings.js'
 import {projectIdFlag} from '../../../util/sharedFlags.js'
 
@@ -34,7 +35,12 @@ export class DatasetEmbeddingsStatusCommand extends SanityCommand<
     const {args} = await this.parse(DatasetEmbeddingsStatusCommand)
     let {dataset} = args
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+        }),
+    })
 
     try {
       ;({dataset} = await resolveDataset({dataset, projectId}))

@@ -5,6 +5,7 @@ import {input} from '@sanity/cli-core/ux'
 import {processAliasName} from '../../../actions/dataset/processAliasName.js'
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
 import {promptForDatasetAliasName} from '../../../prompts/promptForDatasetAliasName.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {listAliases, unlinkAlias} from '../../../services/datasetAliases.js'
 import {projectIdFlag} from '../../../util/sharedFlags.js'
 
@@ -51,7 +52,15 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
     const {args, flags} = await this.parse(UnlinkAliasCommand)
     const {force} = flags
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'update', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     try {
       const aliasNameInput = args.aliasName || (await promptForDatasetAliasName())

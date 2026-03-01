@@ -4,6 +4,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {createDataset} from '../../actions/dataset/create.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
 import {projectIdFlag} from '../../util/sharedFlags.js'
@@ -59,7 +60,15 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     const {visibility} = flags
 
     // Ensure we have project context
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'create', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     // Get dataset name from args or prompt
     let {name: datasetName} = args

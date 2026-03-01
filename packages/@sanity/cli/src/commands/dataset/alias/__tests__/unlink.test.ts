@@ -1,3 +1,4 @@
+import {NonInteractiveError} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
@@ -5,6 +6,10 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DATASET_ALIASES_API_VERSION} from '../../../../services/datasetAliases.js'
 import {UnlinkAliasCommand} from '../unlink.js'
+
+vi.mock('../../../../prompts/promptForProject.js', () => ({
+  promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
+}))
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')

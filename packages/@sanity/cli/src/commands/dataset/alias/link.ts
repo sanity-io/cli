@@ -6,6 +6,7 @@ import {processAliasName} from '../../../actions/dataset/processAliasName.js'
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
 import {promptForDatasetAliasName} from '../../../prompts/promptForDatasetAliasName.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {selectDataset} from '../../../prompts/selectDataset.js'
 import {listAliases, updateAlias} from '../../../services/datasetAliases.js'
 import {listDatasets} from '../../../services/datasets.js'
@@ -62,7 +63,15 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
     const {args, flags} = await this.parse(LinkAliasCommand)
     const {force} = flags
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'update', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     if (args.aliasName) {
       const {apiName} = processAliasName(args.aliasName)

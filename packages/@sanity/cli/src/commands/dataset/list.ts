@@ -1,5 +1,6 @@
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasetAliases, listDatasets} from '../../services/datasets.js'
 import {projectIdFlag} from '../../util/sharedFlags.js'
 
@@ -24,7 +25,12 @@ export class ListDatasetCommand extends SanityCommand<typeof ListDatasetCommand>
   }
 
   public async run(): Promise<void> {
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+        }),
+    })
 
     const [datasets, aliases] = await Promise.allSettled([
       listDatasets(projectId),

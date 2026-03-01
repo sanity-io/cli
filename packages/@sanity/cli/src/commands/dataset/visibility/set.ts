@@ -3,6 +3,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {DatasetsResponse} from '@sanity/client'
 
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {editDatasetAcl, listDatasets} from '../../../services/datasets.js'
 import {projectIdFlag} from '../../../util/sharedFlags.js'
 
@@ -42,7 +43,15 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
     const {args} = await this.parse(DatasetVisibilitySetCommand)
     const {dataset, mode} = args
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'update', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     const dsError = validateDatasetName(dataset)
     if (dsError) {
