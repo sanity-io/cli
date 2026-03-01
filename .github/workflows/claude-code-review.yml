@@ -24,6 +24,15 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Read review prompt
+        id: review-prompt
+        run: |
+          {
+            echo 'content<<PROMPT_EOF'
+            cat .claude/commands/review.md
+            echo PROMPT_EOF
+          } >> "$GITHUB_OUTPUT"
+
       - name: Run Claude Code Review
         if: github.actor != 'renovate[bot]'
         id: claude-review
@@ -35,27 +44,7 @@ jobs:
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
 
-            Please review this PR and identify only issues that need fixing.
-            For each issue found:
-            - State the problem in 1-2 sentences
-            - Provide the fix or recommendation
-            - Include line numbers when relevant
-
-            Skip:
-            - Compliments or positive observations
-            - General assessments
-            - Explanations of what the code does
-
-            Focus on:
-            - Bugs or logic errors
-            - Security vulnerabilities
-            - Performance problems
-            - Missing error handling
-            - Inadequate test coverage
-            - Code matches the existing codebase
-            - Ensure any new dependency installed is truly necessary or could be accomplished with existing dependencies
-
-            Try to keep the entire review short and concise. Be direct and actionable.
+            ${{ steps.review-prompt.outputs.content }}
           use_sticky_comment: true
           claude_args: |
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*), Bash(gh pr diff:*), Bash(gh pr view:*)"
