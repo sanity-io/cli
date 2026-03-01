@@ -100,24 +100,45 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
   protected async getProjectId(options?: {
     fallback?: () => Promise<string>
   }): Promise<string> {
-    const projectId = await this.tryGetProjectId()
-    if (projectId) return projectId
+    const hasProjectFlag =
+      'flags' in this.constructor &&
+      typeof this.constructor.flags === 'object' &&
+      this.constructor.flags !== null &&
+      'project-id' in this.constructor.flags
 
+    // Check --project-id flag first
+    if (hasProjectFlag) {
+      const flagProjectId =
+        'project-id' in this.flags && typeof this.flags['project-id'] === 'string'
+          ? this.flags['project-id']
+          : undefined
+
+      if (flagProjectId) return flagProjectId
+    }
+
+    // Fall back to CLI config
+    try {
+      const config = await this.getCliConfig()
+      const configProjectId = config.api?.projectId
+      if (configProjectId) return configProjectId
+    } catch (err) {
+      if (!(err instanceof ProjectRootNotFoundError)) throw err
+      // No project root — fall through to fallback/error
+    }
+
+    // Offer interactive selection if a fallback was provided
     if (options?.fallback) {
       try {
         return await options.fallback()
       } catch (err) {
-        if (err instanceof NonInteractiveError) {
-          // Fall through to throw the more helpful error with suggestions
-        } else {
-          throw err
-        }
+        if (!(err instanceof NonInteractiveError)) throw err
+        // Fall through to throw the more helpful error with suggestions
       }
     }
 
     throw new ProjectRootNotFoundError('Unable to determine project ID', {
       suggestions: [
-        ...(this.cmdHasProjectFlag() ? ['Providing a project ID: --project-id <project-id>'] : []),
+        ...(hasProjectFlag ? ['Providing a project ID: --project-id <project-id>'] : []),
         'Running this command from within a Sanity project directory',
       ],
     })
@@ -172,39 +193,4 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
     return isInteractive()
   }
 
-  /**
-   * Try to get the project ID from the flags or CLI config, but just return `undefined` if it can't be found.
-   *
-   * @returns The project ID or `undefined` if it's not set.
-   */
-  protected async tryGetProjectId(): Promise<string | undefined> {
-    if (this.cmdHasProjectFlag()) {
-      const flagProjectId =
-        'project-id' in this.flags && typeof this.flags['project-id'] === 'string'
-          ? this.flags['project-id']
-          : undefined
-
-      if (flagProjectId) return flagProjectId
-    }
-
-    try {
-      const config = await this.getCliConfig()
-      return config.api?.projectId
-    } catch (err) {
-      if (err instanceof ProjectRootNotFoundError) {
-        return undefined
-      }
-      throw err
-    }
-  }
-
-  private cmdHasProjectFlag(): boolean {
-    return Boolean(
-      this.constructor &&
-        'flags' in this.constructor &&
-        typeof this.constructor.flags === 'object' &&
-        this.constructor.flags !== null &&
-        'project-id' in this.constructor.flags,
-    )
-  }
 }
