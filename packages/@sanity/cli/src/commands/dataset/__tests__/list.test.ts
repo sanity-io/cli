@@ -13,17 +13,20 @@ const testToken = vi.hoisted(() => 'test-token')
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
 
-  const testClient = createTestClient({
-    apiVersion: 'v2025-09-16',
-    projectId: testProjectId,
-    token: testToken,
-  })
-
-  mockGetProjectCliClient.mockResolvedValue({
-    datasets: {
-      list: mockListDatasets,
-    } as never,
-    request: testClient.request,
+  // Dynamically create a test client based on the projectId passed to getProjectCliClient,
+  // so that HTTP requests target the correct host (e.g. other-project.api.sanity.io).
+  mockGetProjectCliClient.mockImplementation((options?: {projectId?: string}) => {
+    const client = createTestClient({
+      apiVersion: 'v2025-09-16',
+      projectId: options?.projectId ?? testProjectId,
+      token: testToken,
+    })
+    return Promise.resolve({
+      datasets: {
+        list: mockListDatasets,
+      } as never,
+      request: client.request,
+    })
   })
 
   return {
@@ -166,7 +169,7 @@ describe('#dataset:list', () => {
     mockApi({
       apiVersion: DATASET_API_VERSION,
       method: 'get',
-      projectId: testProjectId,
+      projectId: 'other-project',
       uri: `/aliases`,
     }).reply(200, [])
 
@@ -178,7 +181,6 @@ describe('#dataset:list', () => {
 
     expect(error).toBeUndefined()
     expect(stdout).toContain('production')
-    // Verify the flag project ID is passed through to the client factory
     expect(mockGetProjectCliClient).toHaveBeenCalledWith(
       expect.objectContaining({projectId: 'other-project'}),
     )
@@ -189,7 +191,7 @@ describe('#dataset:list', () => {
     mockApi({
       apiVersion: DATASET_API_VERSION,
       method: 'get',
-      projectId: testProjectId,
+      projectId: 'other-project',
       uri: `/aliases`,
     }).reply(200, [])
 
@@ -199,7 +201,6 @@ describe('#dataset:list', () => {
 
     expect(error).toBeUndefined()
     expect(stdout).toContain('staging')
-    // Verify the short flag project ID is passed through to the client factory
     expect(mockGetProjectCliClient).toHaveBeenCalledWith(
       expect.objectContaining({projectId: 'other-project'}),
     )
