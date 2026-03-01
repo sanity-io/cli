@@ -3,7 +3,12 @@ import path from 'node:path'
 import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
+import {
+  getProjectCliClient,
+  ProjectRootNotFoundError,
+  SanityCommand,
+  subdebug,
+} from '@sanity/cli-core'
 import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
@@ -121,13 +126,16 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
 
     // Determine dataset name
     let dataset = targetDataset
-    try {
-      if (!dataset) {
+    if (!dataset) {
+      try {
         // Get default dataset from config (only available when running from a project directory)
         let defaultDataset: string | undefined
-        if (!flags['project-id']) {
+        try {
           const cliConfig = await this.getCliConfig()
           defaultDataset = cliConfig.api?.dataset
+        } catch (err) {
+          if (!(err instanceof ProjectRootNotFoundError)) throw err
+          // Not inside a project directory — no default dataset available
         }
 
         if (defaultDataset) {
@@ -136,12 +144,12 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
         } else {
           dataset = await promptForDataset({allowCreation: false, datasets})
         }
+      } catch (error) {
+        exportDebug('Error selecting dataset', error)
+        this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
+          exit: 1,
+        })
       }
-    } catch (error) {
-      exportDebug('Error selecting dataset', error)
-      this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
-        exit: 1,
-      })
     }
 
     // Validate dataset name

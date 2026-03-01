@@ -1,11 +1,12 @@
 import fs from 'node:fs/promises'
 
-import {type CliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {type CliConfig, getProjectCliClient, ProjectRootNotFoundError} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {exportDataset, type ExportResult} from '@sanity/export'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {DatasetExportCommand} from '../export.js'
 
 vi.mock('@sanity/export', () => ({
@@ -50,6 +51,7 @@ const mockInput = vi.mocked(input)
 const mockSelect = vi.mocked(select)
 const mockFs = vi.mocked(fs)
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
+const mockPromptForProject = vi.mocked(promptForProject)
 
 const TEST_CONFIG = {
   DATASET: 'production',
@@ -260,6 +262,37 @@ describe('#dataset:export', () => {
         expect.objectContaining({
           dataset: 'staging',
         }),
+      )
+    })
+
+    test('prompts for dataset when project was selected via prompt outside a project directory', async () => {
+      // Simulates: user is outside a project directory, selects project interactively.
+      // getCliConfig() throws ProjectRootNotFoundError for both getProjectId and dataset
+      // selection — the fix ensures the second throw is silently swallowed and we fall
+      // through to promptForDataset instead of surfacing "Failed to select dataset".
+      mockPromptForProject.mockResolvedValueOnce(TEST_CONFIG.PROJECT_ID)
+      mockGetProjectCliClient.mockResolvedValue({
+        datasets: {
+          list: vi.fn().mockResolvedValue([{name: 'production'}, {name: 'staging'}]),
+        },
+      } as never)
+      mockSelect.mockResolvedValueOnce('staging')
+      mockInput.mockResolvedValueOnce('staging.tar.gz')
+      mockFs.stat.mockRejectedValue(new Error('File not found'))
+
+      const {error} = await testCommand(DatasetExportCommand, [], {
+        mocks: {
+          cliConfigError: new ProjectRootNotFoundError('No project root found'),
+          token: defaultMocks.token,
+        },
+      })
+
+      expect(error).toBeUndefined()
+      expect(mockSelect).toHaveBeenCalledWith(
+        expect.objectContaining({message: 'Select the dataset name:'}),
+      )
+      expect(mockExportDataset).toHaveBeenCalledWith(
+        expect.objectContaining({dataset: 'staging'}),
       )
     })
 
