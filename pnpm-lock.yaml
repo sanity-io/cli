@@ -364,6 +364,25 @@ importers:
         specifier: ^4.21.0
         version: 4.21.0
 
+  packages/@repo/coverage-delta:
+    dependencies:
+      prettier:
+        specifier: 'catalog:'
+        version: 3.8.1
+    devDependencies:
+      '@repo/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@sanity/eslint-config-cli':
+        specifier: workspace:*
+        version: link:../../@sanity/eslint-config-cli
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.33
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.3(jiti@2.6.1)
+
   packages/@repo/package.config:
     devDependencies:
       '@sanity/pkg-utils':

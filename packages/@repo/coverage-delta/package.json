@@ -1,0 +1,19 @@
+{
+  "name": "@repo/coverage-delta",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "report": "node src/coverage-delta.ts"
+  },
+  "dependencies": {
+    "prettier": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:"
+  }
+}

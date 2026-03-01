@@ -74,7 +74,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions/setup
         with:
-          node-version: 20
+          node-version: 24
 
       - name: 'Download coverage artifacts'
         uses: actions/download-artifact@v8
@@ -87,5 +87,33 @@ jobs:
         run: |
           pnpm vitest run --merge-reports --coverage
 
-      - name: Report coverage
-        uses: davelosert/vitest-coverage-report-action@8ab049ff5a2c6e78f78af446329379b318544a1a # v2
+      - name: Prepare coverage baseline
+        if: github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p coverage/baseline
+          cp coverage/coverage-summary.json coverage/baseline/coverage-summary.json
+          echo "${{ github.sha }}" > coverage/baseline/sha.txt
+
+      - name: Save coverage baseline to cache
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: coverage/baseline
+          key: coverage-main-${{ github.sha }}
+
+      # The exact key won't match on PRs (PR SHA ≠ main SHA); restore-keys picks up the latest main entry.
+      - name: Restore main branch coverage baseline
+        if: github.event_name == 'pull_request'
+        uses: actions/cache/restore@v4
+        with:
+          path: coverage/baseline
+          key: coverage-main-${{ github.sha }}
+          restore-keys: |
+            coverage-main-
+
+      - name: Post coverage delta
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: node packages/@repo/coverage-delta/src/coverage-delta.ts
