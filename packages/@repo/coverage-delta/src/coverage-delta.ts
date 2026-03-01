@@ -53,6 +53,12 @@ function getChangedFiles(): string[] {
   return (result.stdout ?? '').trim().split('\n').filter(Boolean)
 }
 
+function isNoExistingCommentError(stderr: string): boolean {
+  // gh cli reports this when --edit-last finds no comment from the current user
+  const normalized = stderr.toLowerCase()
+  return normalized.includes('no comments') || normalized.includes('no comment found')
+}
+
 function postComment(body: string): void {
   const tmpFile = join(tmpdir(), `coverage-delta-${Date.now()}.md`)
   writeFileSync(tmpFile, body)
@@ -60,19 +66,24 @@ function postComment(body: string): void {
     // Try to edit existing coverage comment, fall back to creating new one
     const edit = spawnSync('gh', ['pr', 'comment', '--edit-last', '--body-file', tmpFile], {
       encoding: 'utf8',
-      stdio: 'inherit',
     })
 
-    if (edit.status !== 0) {
-      const create = spawnSync('gh', ['pr', 'comment', '--body-file', tmpFile], {
-        encoding: 'utf8',
-        stdio: 'inherit',
-      })
-      if (create.status !== 0) {
-        throw new Error(
-          `Failed to post coverage comment: gh exited with status ${create.status ?? 'unknown'}`,
-        )
-      }
+    if (edit.status === 0) return
+
+    const editStderr = (edit.stderr ?? '').trim()
+    if (!isNoExistingCommentError(editStderr)) {
+      throw new Error(`Failed to edit coverage comment: ${editStderr || `gh exited with status ${edit.status}`}`)
+    }
+
+    // No existing comment — create a new one
+    const create = spawnSync('gh', ['pr', 'comment', '--body-file', tmpFile], {
+      encoding: 'utf8',
+      stdio: 'inherit',
+    })
+    if (create.status !== 0) {
+      throw new Error(
+        `Failed to post coverage comment: gh exited with status ${create.status ?? 'unknown'}`,
+      )
     }
   } finally {
     unlinkSync(tmpFile)

@@ -2,8 +2,28 @@ import {readFileSync} from 'node:fs'
 
 import {type CoverageSummary, type FileDelta} from './types.ts'
 
+function isCoverageMetric(value: unknown): value is {pct: number} {
+  return typeof value === 'object' && value !== null && 'pct' in value && typeof value.pct === 'number'
+}
+
+function isFileCoverageData(
+  value: unknown,
+): value is {branches: {pct: number}; functions: {pct: number}; lines: {pct: number}; statements: {pct: number}} {
+  if (typeof value !== 'object' || value === null) return false
+  return (
+    'statements' in value &&
+    isCoverageMetric(value.statements) &&
+    'branches' in value &&
+    isCoverageMetric(value.branches) &&
+    'functions' in value &&
+    isCoverageMetric(value.functions) &&
+    'lines' in value &&
+    isCoverageMetric(value.lines)
+  )
+}
+
 export function isCoverageSummary(value: unknown): value is CoverageSummary {
-  return typeof value === 'object' && value !== null && 'total' in value
+  return typeof value === 'object' && value !== null && 'total' in value && isFileCoverageData(value.total)
 }
 
 export function parseCoverageSummary(filePath: string): CoverageSummary {
@@ -71,8 +91,8 @@ export function buildMarkdown(
 
   const hasBaseline = baseline !== null
 
-  const headerRow = hasBaseline ? '| File | Coverage | Delta |' : '| File | Coverage |'
-  const separatorRow = hasBaseline ? '| ---- | -------- | ----- |' : '| ---- | -------- |'
+  const headerRow = hasBaseline ? '| File | Stmts | Delta |' : '| File | Stmts |'
+  const separatorRow = hasBaseline ? '| ---- | ----- | ----- |' : '| ---- | ----- |'
 
   const rows = deltas.map(({baseline, current, delta, displayName}) => {
     const coverage =

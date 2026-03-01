@@ -33,6 +33,31 @@ describe('isCoverageSummary', () => {
   test('returns false for object without total', () => {
     expect(isCoverageSummary({foo: 'bar'})).toBe(false)
   })
+
+  test('returns false when total is null', () => {
+    expect(isCoverageSummary({total: null})).toBe(false)
+  })
+
+  test('returns false when total is a string', () => {
+    expect(isCoverageSummary({total: 'string'})).toBe(false)
+  })
+
+  test('returns false when total is missing metric fields', () => {
+    expect(isCoverageSummary({total: {statements: {pct: 80}}})).toBe(false)
+  })
+
+  test('returns false when pct is not a number', () => {
+    expect(
+      isCoverageSummary({
+        total: {
+          branches: {pct: 80},
+          functions: {pct: 80},
+          lines: {pct: 80},
+          statements: {pct: 'not a number'},
+        },
+      }),
+    ).toBe(false)
+  })
 })
 
 describe('findCoverageKey', () => {
@@ -131,7 +156,7 @@ describe('buildMarkdown', () => {
   test('includes delta column when baseline exists', () => {
     const deltas = [{baseline: 80, current: 85, delta: 5, displayName: 'src/a.ts'}]
     const md = buildMarkdown(deltas, baseline, 'abc123')
-    expect(md).toContain('| File | Coverage | Delta |')
+    expect(md).toContain('| File | Stmts | Delta |')
     expect(md).toContain('src/a.ts')
     expect(md).toContain('80.0% → 85.0%')
     expect(md).toContain('+5.0% ↗')
@@ -142,7 +167,7 @@ describe('buildMarkdown', () => {
     const deltas = [{baseline: null, current: 70, delta: null, displayName: 'src/b.ts'}]
     const md = buildMarkdown(deltas, null, null)
     expect(md).not.toContain('| Delta |')
-    expect(md).toContain('| File | Coverage |')
+    expect(md).toContain('| File | Stmts |')
     expect(md).toContain('new → 70.0%')
     expect(md).toContain('No baseline available')
   })
