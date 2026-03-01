@@ -71,6 +71,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+      # Node 24 required: runs .ts files directly via built-in type stripping
       - name: Setup Environment
         uses: ./.github/actions/setup
         with:

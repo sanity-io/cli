@@ -2,6 +2,7 @@
   "extends": "@repo/tsconfig/base.json",
   "include": ["./src"],
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "rootDir": "."
   }
 }
