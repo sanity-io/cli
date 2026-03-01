@@ -2,7 +2,7 @@ import {getGlobalCliClient} from '@sanity/cli-core'
 
 import {type UserGrantsResponse} from '../types/grants.js'
 
-export const GRANTS_API_VERSION = '2021-06-07'
+export const GRANTS_API_VERSION = '2025-01-01'
 
 export async function getUserGrants(): Promise<UserGrantsResponse> {
   const client = await getGlobalCliClient({
