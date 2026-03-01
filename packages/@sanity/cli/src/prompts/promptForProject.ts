@@ -29,7 +29,7 @@ export async function promptForProject(options: PromptForProjectOptions = {}): P
     listProjects(),
     requiredPermissions ? getUserGrants() : undefined,
   ]).catch((error) => {
-    spin.fail('Failed to fetch projects')
+    spin.fail(requiredPermissions ? 'Failed to fetch projects or permissions' : 'Failed to fetch projects')
     throw error
   })
 

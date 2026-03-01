@@ -6,6 +6,7 @@ import {promptForProject} from '../promptForProject.js'
 const mockListProjects = vi.hoisted(() => vi.fn())
 const mockGetUserGrants = vi.hoisted(() => vi.fn())
 const mockSelect = vi.hoisted(() => vi.fn())
+const mockSpinnerFail = vi.hoisted(() => vi.fn().mockReturnThis())
 
 vi.mock('../../services/projects.js', () => ({
   listProjects: mockListProjects,
@@ -21,7 +22,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
     ...actual,
     select: mockSelect,
     spinner: vi.fn(() => ({
-      fail: vi.fn().mockReturnThis(),
+      fail: mockSpinnerFail,
       start: vi.fn().mockReturnThis(),
       succeed: vi.fn().mockReturnThis(),
     })),
@@ -192,6 +193,23 @@ describe('promptForProject', () => {
     mockListProjects.mockRejectedValue(new Error('Network error'))
 
     await expect(promptForProject()).rejects.toThrow('Network error')
+  })
+
+  test('shows "Failed to fetch projects" when listProjects fails', async () => {
+    mockListProjects.mockRejectedValue(new Error('Network error'))
+
+    await expect(promptForProject()).rejects.toThrow()
+    expect(mockSpinnerFail).toHaveBeenCalledWith('Failed to fetch projects')
+  })
+
+  test('shows "Failed to fetch projects or permissions" when getUserGrants fails', async () => {
+    mockListProjects.mockResolvedValue([makeProject('proj-1', 'My Project', '2024-01-01')])
+    mockGetUserGrants.mockRejectedValue(new Error('Forbidden'))
+
+    await expect(
+      promptForProject({requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}]}),
+    ).rejects.toThrow()
+    expect(mockSpinnerFail).toHaveBeenCalledWith('Failed to fetch projects or permissions')
   })
 
   test('throws when all projects are filtered out by permissions', async () => {
