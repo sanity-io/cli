@@ -5,7 +5,7 @@ import {styleText} from 'node:util'
 import {fileExists, SanityCommand, subdebug} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 import {createPublishedId} from '@sanity/id-utils'
-import {camelCase} from 'lodash-es'
+import camelCase from 'lodash-es/camelCase.js'
 
 import {getMediaLibraryConfig} from '../../actions/media/getMediaLibraryConfig.js'
 import {NO_MEDIA_LIBRARY_ASPECTS_PATH} from '../../util/errorMessages.js'

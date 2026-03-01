@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {padEnd} from 'lodash-es'
+import padEnd from 'lodash-es/padEnd.js'
 
 import {type ModuleVersionResult} from './types.js'
 

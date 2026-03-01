@@ -1,6 +1,6 @@
 import {subdebug} from '@sanity/cli-core'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
-import {groupBy} from 'lodash-es'
+import groupBy from 'lodash-es/groupBy.js'
 
 import {getMediaLibraries} from '../services/mediaLibraries.js'
 

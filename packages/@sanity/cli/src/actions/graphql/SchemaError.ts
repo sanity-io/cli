@@ -2,7 +2,7 @@ import {type Output} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {generateHelpUrl} from '@sanity/generate-help-url'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
-import {upperFirst} from 'lodash-es'
+import upperFirst from 'lodash-es/upperFirst.js'
 
 export class SchemaError extends Error {
   problemGroups: SchemaValidationProblemGroup[]

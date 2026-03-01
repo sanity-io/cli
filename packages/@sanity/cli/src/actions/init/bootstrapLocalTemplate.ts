@@ -4,7 +4,7 @@ import {styleText} from 'node:util'
 
 import {Output, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {deburr} from 'lodash-es'
+import deburr from 'lodash-es/deburr.js'
 
 import {studioDependencies} from '../../studioDependencies.js'
 import {copy} from '../../util/copy.js'

@@ -1,4 +1,4 @@
-import {omit} from 'lodash-es'
+import omit from 'lodash-es/omit.js'
 
 import {type BuiltInValidationReporter, Level} from '../../types.js'
 

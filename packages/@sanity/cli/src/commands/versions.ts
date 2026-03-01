@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {SanityCommand} from '@sanity/cli-core'
-import {padStart} from 'lodash-es'
+import padStart from 'lodash-es/padStart.js'
 
 import {findSanityModulesVersions} from '../actions/versions/findSanityModulesVersions.js'
 import {getDisplayName, getFormatters} from '../actions/versions/getFormatters.js'

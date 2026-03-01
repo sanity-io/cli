@@ -3,7 +3,7 @@ import {dirname, isAbsolute, relative} from 'node:path'
 import {type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {watch as chokidarWatch, type FSWatcher} from 'chokidar'
-import {debounce} from 'lodash-es'
+import debounce from 'lodash-es/debounce.js'
 import {glob} from 'tinyglobby'
 
 import {formatSchemaValidation} from './formatSchemaValidation.js'

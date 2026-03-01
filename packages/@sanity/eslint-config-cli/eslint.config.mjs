@@ -179,6 +179,16 @@ export default defineConfig(
               message: 'Use `util.styleText` from Node.js instead.',
               name: 'chalk',
             },
+            {
+              message:
+                'Import from subpath instead to avoid barrel import. Example: `import {fn} from \'date-fns/fn\'`.',
+              name: 'date-fns',
+            },
+            {
+              message:
+                'Import from subpath instead to avoid barrel import. Example: `import fn from \'lodash-es/fn.js\'`.',
+              name: 'lodash-es',
+            },
           ],
         },
       ],

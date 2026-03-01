@@ -2,7 +2,8 @@ import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {size, sortBy} from 'lodash-es'
+import size from 'lodash-es/size.js'
+import sortBy from 'lodash-es/sortBy.js'
 
 import {listProjects} from '../../services/projects.js'
 

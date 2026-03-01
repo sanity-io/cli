@@ -3,7 +3,7 @@ import {styleText} from 'node:util'
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 import {Table} from 'console-table-printer'
-import {sortBy} from 'lodash-es'
+import sortBy from 'lodash-es/sortBy.js'
 
 import {getMembersForProject} from '../../actions/users/getMembersForProject.js'
 import {NO_PROJECT_ID} from '../../util/errorMessages.js'
