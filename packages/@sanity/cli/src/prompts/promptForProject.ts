@@ -1,4 +1,4 @@
-import {subdebug} from '@sanity/cli-core'
+import {isInteractive, NonInteractiveError, subdebug} from '@sanity/cli-core'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
 
 import {getUserGrants} from '../services/grants.js'
@@ -20,6 +20,10 @@ interface PromptForProjectOptions {
  * summary item indicating how many projects were hidden due to insufficient permissions.
  */
 export async function promptForProject(options: PromptForProjectOptions = {}): Promise<string> {
+  if (!isInteractive()) {
+    throw new NonInteractiveError('select')
+  }
+
   const {requiredPermissions} = options
 
   debug('Fetching projects and grants')

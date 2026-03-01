@@ -16,6 +16,15 @@ vi.mock('../../services/grants.js', () => ({
   getUserGrants: mockGetUserGrants,
 }))
 
+// Mock isInteractive to return true since these tests exercise the interactive prompt logic
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
+  return {
+    ...actual,
+    isInteractive: vi.fn().mockReturnValue(true),
+  }
+})
+
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
@@ -263,5 +272,16 @@ describe('promptForProject', () => {
       name: '1 other project hidden',
       value: '',
     })
+  })
+
+  test('throws NonInteractiveError in non-interactive environment without making API calls', async () => {
+    const {isInteractive} = await import('@sanity/cli-core')
+    vi.mocked(isInteractive).mockReturnValue(false)
+
+    await expect(promptForProject()).rejects.toThrow(
+      'Cannot run "select" prompt in a non-interactive environment',
+    )
+    expect(mockListProjects).not.toHaveBeenCalled()
+    expect(mockGetUserGrants).not.toHaveBeenCalled()
   })
 })

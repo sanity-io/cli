@@ -6,6 +6,7 @@ import {DATASET_API_VERSION, type DatasetAliasDefinition} from '../../../service
 import {ListDatasetCommand} from '../list.js'
 
 const mockListDatasets = vi.hoisted(() => vi.fn())
+const mockGetProjectCliClient = vi.hoisted(() => vi.fn())
 const testProjectId = vi.hoisted(() => 'test-project')
 const testToken = vi.hoisted(() => 'test-token')
 
@@ -18,14 +19,16 @@ vi.mock('@sanity/cli-core', async () => {
     token: testToken,
   })
 
+  mockGetProjectCliClient.mockResolvedValue({
+    datasets: {
+      list: mockListDatasets,
+    } as never,
+    request: testClient.request,
+  })
+
   return {
     ...actual,
-    getProjectCliClient: vi.fn().mockResolvedValue({
-      datasets: {
-        list: mockListDatasets,
-      } as never,
-      request: testClient.request,
-    }),
+    getProjectCliClient: mockGetProjectCliClient,
   }
 })
 
@@ -175,6 +178,10 @@ describe('#dataset:list', () => {
 
     expect(error).toBeUndefined()
     expect(stdout).toContain('production')
+    // Verify the flag project ID is passed through to the client factory
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+      expect.objectContaining({projectId: 'other-project'}),
+    )
   })
 
   test('uses -p short flag when provided', async () => {
@@ -192,6 +199,10 @@ describe('#dataset:list', () => {
 
     expect(error).toBeUndefined()
     expect(stdout).toContain('staging')
+    // Verify the short flag project ID is passed through to the client factory
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+      expect.objectContaining({projectId: 'other-project'}),
+    )
   })
 
   test('handles API errors when listing datasets ', async () => {

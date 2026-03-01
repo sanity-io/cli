@@ -108,8 +108,6 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }),
   }
 
-  private projectId!: string
-
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(CopyDatasetCommand)
 
@@ -123,18 +121,16 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
         }),
     })
 
-    this.projectId = projectId
-
     // Route to appropriate mode
     if (flags.list) {
-      return this.handleListMode(flags)
+      return this.handleListMode(projectId, flags)
     }
 
     if (flags.attach) {
-      return this.handleAttachMode(flags.attach)
+      return this.handleAttachMode(projectId, flags.attach)
     }
 
-    return this.handleCopyMode(args, flags)
+    return this.handleCopyMode(projectId, args, flags)
   }
 
   private displayCopyJobsTable(jobs: DatasetCopyJob[]): void {
@@ -200,7 +196,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     table.printTable()
   }
 
-  private async handleAttachMode(jobId: string): Promise<void> {
+  private async handleAttachMode(projectId: string, jobId: string): Promise<void> {
     copyDatasetDebug('Attaching to copy job %s', jobId)
 
     if (!jobId || typeof jobId !== 'string' || jobId.trim() === '') {
@@ -208,7 +204,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }
 
     try {
-      await this.subscribeToProgress(jobId)
+      await this.subscribeToProgress(projectId, jobId)
       this.log(`Job ${styleText('green', jobId)} completed`)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -218,6 +214,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
   }
 
   private async handleCopyMode(
+    projectId: string,
     args: {source?: string; target?: string},
     flags: {detach?: boolean; 'skip-history'?: boolean},
   ): Promise<void> {
@@ -236,7 +233,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
     let datasetsResponse
     try {
-      datasetsResponse = await listDatasets(this.projectId)
+      datasetsResponse = await listDatasets(projectId)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       copyDatasetDebug('Failed to fetch datasets: %s', message, error)
@@ -286,7 +283,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
       }
 
       const response = await copyDataset({
-        projectId: this.projectId,
+        projectId,
         skipHistory,
         sourceDataset,
         targetDataset,
@@ -298,7 +295,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
         return
       }
 
-      await this.subscribeToProgress(response.jobId)
+      await this.subscribeToProgress(projectId, response.jobId)
       this.log(`Job ${styleText('green', response.jobId)} completed`)
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
@@ -307,14 +304,14 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }
   }
 
-  private async handleListMode(flags: {limit?: number; offset?: number}): Promise<void> {
+  private async handleListMode(projectId: string, flags: {limit?: number; offset?: number}): Promise<void> {
     copyDatasetDebug('Listing dataset copy jobs')
 
     try {
       const jobs = await listDatasetCopyJobs({
         limit: flags.limit,
         offset: flags.offset,
-        projectId: this.projectId,
+        projectId,
       })
 
       if (jobs.length === 0) {
@@ -330,12 +327,12 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }
   }
 
-  private async subscribeToProgress(jobId: string): Promise<void> {
+  private async subscribeToProgress(projectId: string, jobId: string): Promise<void> {
     let currentProgress = 0
     const spin = spinner('').start()
 
     return new Promise<void>((resolve, reject) => {
-      const subscription = followCopyJobProgress({jobId, projectId: this.projectId}).subscribe({
+      const subscription = followCopyJobProgress({jobId, projectId}).subscribe({
         complete: () => {
           spin.succeed('Copy finished.')
           resolve()

@@ -132,7 +132,15 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
         return await options.fallback()
       } catch (err) {
         if (!(err instanceof NonInteractiveError)) throw err
-        // Fall through to throw the more helpful error with suggestions
+        // Non-interactive: throw with actionable suggestions
+        throw new ProjectRootNotFoundError('Unable to determine project ID', {
+          cause: err,
+          suggestions: [
+            ...(hasProjectFlag ? ['Providing a project ID: --project-id <project-id>'] : []),
+            'Running this command from within a Sanity project directory',
+            'Running in an interactive terminal to get a project selection prompt',
+          ],
+        })
       }
     }
 

@@ -13,9 +13,12 @@ import {isRecord} from '../util/isRecord.js'
  * @internal
  */
 export class ProjectRootNotFoundError extends CLIError {
-  constructor(message: string, options?: {suggestions?: string[]}) {
+  constructor(message: string, options?: {cause?: Error; suggestions?: string[]}) {
     super(message, {code: 'PROJECT_ROOT_NOT_FOUND', exit: 1, suggestions: options?.suggestions})
     this.name = 'ProjectRootNotFoundError'
+    if (options?.cause) {
+      this.cause = options.cause
+    }
   }
 }
 
