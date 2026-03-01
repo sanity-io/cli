@@ -3,17 +3,16 @@ import {isInteractive, SanityCommand} from '@sanity/cli-core'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import get from 'lodash-es/get.js'
 
-import {extractFromSanitySchema} from '../../actions/graphql/extractFromSanitySchema.js'
+import {extractGraphQLAPIs} from '../../actions/graphql/extractGraphQLAPIs.js'
 import gen1 from '../../actions/graphql/gen1/index.js'
 import gen2 from '../../actions/graphql/gen2/index.js'
 import gen3 from '../../actions/graphql/gen3/index.js'
-import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
 import {graphqlDebug} from '../../actions/graphql/graphqlDebug.js'
 import {resolveApiGeneration} from '../../actions/graphql/resolveApiGeneration.js'
 import {SchemaError} from '../../actions/graphql/SchemaError.js'
 import {
+  type ExtractedGraphQLAPI,
   type GeneratedApiSpecification,
-  type ResolvedGraphQLAPI,
   type ValidationResponse,
 } from '../../actions/graphql/types.js'
 import {
@@ -115,14 +114,17 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
     const workDir = (await this.getProjectRoot()).directory
 
-    let apiDefs: ResolvedGraphQLAPI[] = []
+    let apiDefs: ExtractedGraphQLAPI[] = []
     let spin: ReturnType<typeof spinner>
 
     try {
-      apiDefs = await getGraphQLAPIs(workDir)
+      apiDefs = await extractGraphQLAPIs(workDir, {
+        nonNullDocumentFieldsFlag,
+        withUnionCache,
+      })
     } catch (error) {
-      debug('Failed to get GraphQL APIs', error)
-      this.error('Failed to get GraphQL APIs', {exit: 1})
+      debug('Failed to resolve GraphQL APIs', error)
+      this.error('Failed to resolve GraphQL APIs', {exit: 1})
     }
 
     const hasMultipleApis = flags.api ? flags.api.length > 1 : apiDefs.length > 1
@@ -207,7 +209,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       index++
 
       const {apiName, dataset, tag} = this.getApiIdentifiers(apiDef, datasetFlag, tagFlag)
-      const {nonNullDocumentFields, playground, projectId, schema} = apiDef
+      const {playground, projectId} = apiDef
       spin = spinner(`Generating GraphQL API: ${apiName}`).start()
 
       if (!dataset) {
@@ -257,30 +259,33 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         spin,
       })
 
+      // Handle extraction errors (computed in worker)
+      if (apiDef.schemaErrors) {
+        spin.fail()
+        new SchemaError(apiDef.schemaErrors).print(this.output)
+        this.error('Failed to extract schema', {exit: 1})
+      }
+
+      if (apiDef.extractionError) {
+        debug('Failed to extract schema', apiDef.extractionError)
+        spin.fail()
+        this.error(`Failed to extract schema: ${apiDef.extractionError}`, {exit: 1})
+      }
+
+      if (!apiDef.extracted) {
+        spin.fail()
+        this.error('Failed to extract schema: No extraction result', {exit: 1})
+      }
+
       let apiSpec: GeneratedApiSpecification
       try {
         const generateSchema = generations[generation]
-        const extracted = extractFromSanitySchema(schema, {
-          // Allow CLI flag to override configured setting
-          nonNullDocumentFields:
-            nonNullDocumentFieldsFlag === undefined
-              ? nonNullDocumentFields
-              : nonNullDocumentFieldsFlag,
-          withUnionCache,
-        })
-
-        apiSpec = generateSchema(extracted, {filterSuffix: apiDef.filterSuffix})
+        apiSpec = generateSchema(apiDef.extracted, {filterSuffix: apiDef.filterSuffix})
       } catch (err) {
-        debug('Failed to extract schema', err)
+        debug('Failed to generate schema', err)
         spin.fail()
-
-        if (err instanceof SchemaError) {
-          err.print(this.output)
-          this.error('Failed to extract schema', {exit: 1})
-        } else {
-          const message = err instanceof Error ? err.message : 'Unknown error'
-          this.error(`Failed to extract schema: ${message}`, {exit: 1})
-        }
+        const message = err instanceof Error ? err.message : 'Unknown error'
+        this.error(`Failed to generate schema: ${message}`, {exit: 1})
       }
 
       let valid: ValidationResponse | undefined
@@ -395,7 +400,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
     }
   }
 
-  private getApiIdentifiers(apiDef: ResolvedGraphQLAPI, datasetFlag?: string, tagFlag?: string) {
+  private getApiIdentifiers(apiDef: ExtractedGraphQLAPI, datasetFlag?: string, tagFlag?: string) {
     const dataset = datasetFlag || apiDef.dataset
     const tag = tagFlag || apiDef.tag || 'default'
     const apiName = [dataset, tag].join('/')

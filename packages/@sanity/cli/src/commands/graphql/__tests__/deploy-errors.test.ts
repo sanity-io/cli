@@ -169,7 +169,7 @@ describe('#graphql:deploy errors', {timeout: 60 * 1000}, () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('handles getGraphQLAPIs failure with invalid schema', async () => {
+  test('handles failure with invalid schema', async () => {
     // Create a separate fixture for this test to avoid affecting other tests
     const testCwd = await testFixture('basic-studio')
 
@@ -198,7 +198,8 @@ export const schemaTypes = [
     const {error} = await testCommand(GraphQLDeployCommand, [])
 
     expect(error).toBeDefined()
-    expect(error?.message).toContain('Failed to get GraphQL APIs')
+    // Error may come from schema extraction (worker catches per-API) or from resolving APIs
+    expect(error?.message).toMatch(/Failed to (resolve GraphQL APIs|extract schema)/)
     expect(error?.oclif?.exit).toBe(1)
 
     process.chdir(cwd)

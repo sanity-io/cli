@@ -1,4 +1,4 @@
-import {type Schema} from '@sanity/types'
+import {type SchemaValidationProblemGroup} from '@sanity/types'
 
 export const internal = Symbol('internal')
 
@@ -98,17 +98,23 @@ interface ResolvedSerializableProperties {
   schemaTypes: SchemaDefinitionish[]
 }
 
-export interface ResolvedSourceProperties {
-  dataset: string
-  projectId: string
-  schema: Schema
-}
-
 export type TypeResolvedGraphQLAPI = Omit<GraphQLAPIConfig, 'source' | 'workspace'> &
   ResolvedSerializableProperties
 
-export type ResolvedGraphQLAPI = Omit<GraphQLAPIConfig, 'source' | 'workspace'> &
-  ResolvedSourceProperties
+export interface ExtractedGraphQLAPI {
+  dataset: string
+  projectId: string
+
+  extracted?: ApiSpecification
+  extractionError?: string
+  filterSuffix?: string
+  generation?: string
+  id?: string
+  nonNullDocumentFields?: boolean
+  playground?: boolean
+  schemaErrors?: SchemaValidationProblemGroup[]
+  tag?: string
+}
 
 interface ConvertedNode {
   description: string
