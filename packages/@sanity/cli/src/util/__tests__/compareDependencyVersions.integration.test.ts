@@ -30,10 +30,7 @@ describe('compareDependencyVersions (integration)', {timeout: 30_000}, () => {
   })
 
   it('fetches remote versions from the CDN and returns mismatches', async () => {
-    const result = await compareDependencyVersions(
-      [{name: 'sanity', version: '3.0.0'}],
-      workDir,
-    )
+    const result = await compareDependencyVersions([{name: 'sanity', version: '3.0.0'}], workDir)
 
     // The CDN should resolve to a version newer than 3.0.0
     expect(result.mismatched).toHaveLength(1)

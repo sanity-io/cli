@@ -16,7 +16,9 @@ interface ExtractAppManifestOptions {
  * We don't need to parse very complicated information like schemas and tools,
  * and we submit the manifest as a multipart form field instead of writing a file.
  */
-export async function extractAppManifest(options: ExtractAppManifestOptions): Promise<AppManifest | undefined> {
+export async function extractAppManifest(
+  options: ExtractAppManifestOptions,
+): Promise<AppManifest | undefined> {
   const {workDir} = options
 
   const spin = spinner('Extracting manifest').start()
