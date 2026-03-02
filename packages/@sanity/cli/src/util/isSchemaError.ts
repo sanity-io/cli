@@ -1,6 +1,15 @@
-import {type Schema} from '@sanity/types'
+import {type Schema, type SchemaValidationProblemGroup} from '@sanity/types'
 
-export function isSchemaError(err: unknown): err is {schema: Schema} {
+/**
+ * Detects errors thrown by Sanity's `resolveConfig()` / `getStudioWorkspaces()` where
+ * schema validation problems are embedded on the thrown error object as `schema._validation`.
+ *
+ * The return type asserts both the full `Schema` (needed by validateSchema.worker.ts) and
+ * that `_validation` is a `SchemaValidationProblemGroup[]` array (validated by the guard).
+ */
+export function isSchemaError(
+  err: unknown,
+): err is {schema: Schema & {_validation: SchemaValidationProblemGroup[]}} {
   return (
     err !== null &&
     typeof err === 'object' &&

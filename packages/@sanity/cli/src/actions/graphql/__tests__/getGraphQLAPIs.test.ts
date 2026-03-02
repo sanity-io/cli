@@ -6,8 +6,12 @@ const mockGetCliConfig = vi.hoisted(() => vi.fn())
 const mockFindStudioConfigPath = vi.hoisted(() => vi.fn())
 const mockStudioWorkerTask = vi.hoisted(() => vi.fn())
 
+const mockIsMainThread = vi.hoisted(() => ({value: true}))
+
 vi.mock('node:worker_threads', () => ({
-  isMainThread: true,
+  get isMainThread() {
+    return mockIsMainThread.value
+  },
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => ({
@@ -20,6 +24,12 @@ vi.mock('@sanity/cli-core', async (importOriginal) => ({
 describe('getGraphQLAPIs', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    mockIsMainThread.value = true
+  })
+
+  test('throws when called from a worker thread', async () => {
+    mockIsMainThread.value = false
+    await expect(getGraphQLAPIs('/test')).rejects.toThrow('must be called from the main thread')
   })
 
   test('calls studioWorkerTask with correct parameters', async () => {

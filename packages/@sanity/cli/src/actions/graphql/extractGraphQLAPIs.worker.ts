@@ -115,7 +115,16 @@ async function main() {
         const errorGroups = validation
           .map((g) => ({...g, problems: g.problems.filter((p) => p.severity === 'error')}))
           .filter((g) => g.problems.length > 0)
-        results.push({...apiBase, schemaErrors: errorGroups.length > 0 ? errorGroups : validation})
+        const groups = errorGroups.length > 0 ? errorGroups : validation
+        if (groups.length > 0) {
+          results.push({...apiBase, schemaErrors: groups})
+        } else {
+          // _validation was empty — fall through to generic error with the message
+          results.push({
+            ...apiBase,
+            extractionError: err instanceof Error ? err.message : String(err),
+          })
+        }
       } else {
         debug(
           'Schema extraction failed for %s/%s: %O',

@@ -225,7 +225,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
       // Handle extraction errors early (computed in worker), before network calls and prompts.
       // Continue the loop so all API errors are reported — don't exit on the first failure.
-      if (apiDef.schemaErrors) {
+      if (apiDef.schemaErrors?.length) {
         spin.fail()
         this.warn(`Schema errors in ${apiName}:`)
         new SchemaError(apiDef.schemaErrors).print(this.output)
