@@ -348,8 +348,15 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
         spin.succeed()
       } else if (dryRun) {
-        spin.succeed()
-        this.log('GraphQL API is valid and has no breaking changes')
+        // isResultValid() already set the spinner state (succeed or warn).
+        // Check whether changes were forced so we print the correct message.
+        const {breakingChanges, dangerousChanges} = this.filterChanges(valid)
+        if (breakingChanges.length > 0 || dangerousChanges.length > 0) {
+          this.renderBreakingChanges(valid)
+          this.log('Forced with `--force`, skipping deploy (dry run)')
+        } else {
+          this.log('GraphQL API is valid and has no breaking changes')
+        }
         continue
       }
 

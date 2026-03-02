@@ -107,7 +107,7 @@ async function main() {
       if (err instanceof SchemaError) {
         results.push({...apiBase, schemaErrors: err.problemGroups})
       } else {
-        debug('Schema extraction failed for %s/%s', apiBase.dataset, apiBase.tag ?? 'default', err)
+        debug('Schema extraction failed for %s/%s: %O', apiBase.dataset, apiBase.tag ?? 'default', err)
         results.push({
           ...apiBase,
           extractionError: err instanceof Error ? err.message : String(err),
