@@ -394,6 +394,25 @@ importers:
 
   packages/@repo/tsconfig: {}
 
+  packages/@repo/upload-docs:
+    dependencies:
+      '@sanity/client':
+        specifier: ^7.16.0
+        version: 7.16.0(debug@4.4.3)
+      '@sanity/id-utils':
+        specifier: ^1.0.0
+        version: 1.0.0
+    devDependencies:
+      '@repo/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^22.0.0
+        version: 22.19.7
+      tsx:
+        specifier: ^4.0.0
+        version: 4.21.0
+
   packages/@sanity/cli:
     dependencies:
       '@babel/traverse':
@@ -14474,11 +14493,11 @@ snapshots:
 
   '@types/follow-redirects@1.14.4':
     dependencies:
-      '@types/node': 25.0.10
+      '@types/node': 22.19.7
 
   '@types/gunzip-maybe@1.4.3':
     dependencies:
-      '@types/node': 25.0.10
+      '@types/node': 22.19.7
 
   '@types/hast@3.0.4':
     dependencies:
@@ -14488,7 +14507,7 @@ snapshots:
 
   '@types/jsdom@28.0.0':
     dependencies:
-      '@types/node': 25.0.10
+      '@types/node': 22.19.7
       '@types/tough-cookie': 4.0.5
       parse5: 7.3.0
       undici-types: 7.22.0
@@ -14511,7 +14530,7 @@ snapshots:
 
   '@types/mute-stream@0.0.4':
     dependencies:
-      '@types/node': 25.0.10
+      '@types/node': 22.19.7
 
   '@types/node@20.19.35':
     dependencies:
@@ -14565,12 +14584,12 @@ snapshots:
 
   '@types/tar-fs@2.0.4':
     dependencies:
-      '@types/node': 25.0.10
+      '@types/node': 22.19.7
       '@types/tar-stream': 3.1.4
 
   '@types/tar-stream@3.1.4':
     dependencies:
-      '@types/node': 25.0.10
+      '@types/node': 22.19.7
 
   '@types/tough-cookie@4.0.5': {}
 
@@ -16459,7 +16478,7 @@ snapshots:
 
   eval@0.1.8:
     dependencies:
-      '@types/node': 25.0.10
+      '@types/node': 22.19.7
       require-like: 0.1.2
 
   event-source-polyfill@1.0.31: {}
