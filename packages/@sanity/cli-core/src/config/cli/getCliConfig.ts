@@ -5,21 +5,39 @@ import {findPathForFiles} from '../util/findConfigsPaths.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'
 
+const cache = new Map<string, Promise<CliConfig>>()
+
 /**
  * Get the CLI config for a project, given the root path.
  *
- * We really want to avoid loading the CLI config in the main thread, as we'll need
- * TypeScript loading logic, potentially with ts path aliases, syntax extensions and all
- * sorts of nonsense. Thus, we _attempt_ to use a worker thread - but have to fall back
- * to using the main thread if not possible. This can be the case if the configuration
- * contains non-serializable properties, such as functions. This is unfortunately used
- * by the vite config, for example.
+ * Results are cached in-memory keyed by rootPath for the lifetime of the
+ * process. Since the CLI always runs from a single project root, the config
+ * won't change during a command's execution, so caching avoids redundant
+ * filesystem reads and jiti imports from the prerun hook, SanityCommand
+ * helpers, and action files.
+ *
+ * If loading fails the cached promise is evicted so the next call retries.
  *
  * @param rootPath - Root path for the project, eg where `sanity.cli.(ts|js)` is located.
  * @returns The CLI config
  * @internal
  */
-export async function getCliConfig(rootPath: string): Promise<CliConfig> {
+export function getCliConfig(rootPath: string): Promise<CliConfig> {
+  const cached = cache.get(rootPath)
+  if (cached) {
+    return cached
+  }
+
+  const promise = loadCliConfig(rootPath).catch((err) => {
+    cache.delete(rootPath)
+    throw err
+  })
+
+  cache.set(rootPath, promise)
+  return promise
+}
+
+async function loadCliConfig(rootPath: string): Promise<CliConfig> {
   const paths = await findPathForFiles(rootPath, ['sanity.cli.ts', 'sanity.cli.js'])
   const configPaths = paths.filter((path) => path.exists)
 
