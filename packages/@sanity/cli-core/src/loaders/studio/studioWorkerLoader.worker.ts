@@ -73,7 +73,7 @@ function isHttpsUrl(id: string): boolean {
 
 const defaultViteConfig: InlineConfig = {
   build: {target: 'node'},
-  configFile: false, // @todo Should use `vite` prop from `sanity.cli.ts` (if any)
+  configFile: false,
   // Inject environment variables as compile-time constants for Vite
   define: Object.fromEntries(
     Object.entries(studioEnvVars).map(([key, value]) => [
@@ -81,7 +81,6 @@ const defaultViteConfig: InlineConfig = {
       JSON.stringify(value),
     ]),
   ),
-  // TODO: Combine with `determineIsApp` from `@sanity/cli`
   envPrefix: cliConfig && 'app' in cliConfig ? 'SANITY_APP_' : 'SANITY_STUDIO_',
   esbuild: {
     jsx: 'automatic',
@@ -105,6 +104,7 @@ const defaultViteConfig: InlineConfig = {
   },
 }
 
+// Merge the CLI config's Vite config with the default Vite config
 let viteConfig = defaultViteConfig
 if (typeof cliConfig?.vite === 'function') {
   viteConfig = (await cliConfig.vite(viteConfig, {
@@ -127,7 +127,6 @@ await server.pluginContainer.buildStart({})
 // Load environment variables from `.env` files in the same way as Vite does.
 // Note that Sanity also provides environment variables through `process.env.*` for compat reasons,
 // and so we need to do the same here.
-// @todo is this in line with sanity?
 const env = loadEnv(server.config.mode, server.config.envDir, viteConfig.envPrefix ?? '')
 for (const key in env) {
   process.env[key] ??= env[key]

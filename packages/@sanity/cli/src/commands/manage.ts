@@ -18,7 +18,6 @@ export class ManageCommand extends SanityCommand<typeof ManageCommand> {
 
     if (!projectId) {
       const projectRoot = await this.getProjectRoot()
-      // TODO: Move this to a util or baseclass
       const config = await getStudioConfig(projectRoot.directory, {resolvePlugins: false})
       if (!Array.isArray(config) && config.projectId) {
         projectId = config.projectId

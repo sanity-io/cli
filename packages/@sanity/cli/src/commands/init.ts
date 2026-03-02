@@ -1,4 +1,3 @@
-// @Todo will remove by time migration of this command is complete
 import {existsSync} from 'node:fs'
 import {mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
