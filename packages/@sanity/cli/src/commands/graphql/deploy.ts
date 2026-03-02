@@ -184,7 +184,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       }
 
       if (apiDef.id) {
-        if (typeof apiDef.id !== 'string' || !apiIdRegex.test(apiDef.id)) {
+        if (!apiIdRegex.test(apiDef.id)) {
           this.error(
             `Invalid GraphQL API id "${apiDef.id}" - only a-z, 0-9, underscore and dashes are allowed`,
             {exit: 1},

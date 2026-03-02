@@ -92,17 +92,23 @@ function extractSourceMetadata(
   const sources: SourceMetadata[] = []
   for (const source of config.unstable_sources) {
     if (typeof source !== 'object' || source === null) continue
-    if (!('projectId' in source) || typeof source.projectId !== 'string') continue
-    if (!('dataset' in source) || typeof source.dataset !== 'string') continue
 
     const sourceName =
       'name' in source && typeof source.name === 'string' ? source.name : 'default'
 
-    sources.push({
-      dataset: source.dataset,
-      name: sourceName,
-      projectId: source.projectId,
-    })
+    // Sources can inherit projectId/dataset from the parent workspace (e.g. when
+    // only `name` and `schema` are specified in `unstable_sources`). Fall back to
+    // the workspace-level values when the source doesn't define its own.
+    const projectId =
+      'projectId' in source && typeof source.projectId === 'string'
+        ? source.projectId
+        : workspaceDefaults.projectId
+    const dataset =
+      'dataset' in source && typeof source.dataset === 'string'
+        ? source.dataset
+        : workspaceDefaults.dataset
+
+    sources.push({dataset, name: sourceName, projectId})
   }
 
   // Fall back to workspace-level metadata if no valid sources were found

@@ -19,7 +19,7 @@ interface WorkerData {
   configPath: string
   workDir: string
 
-  cliConfig?: {api?: unknown; graphql?: GraphQLAPIConfig[]}
+  cliConfig?: {graphql?: GraphQLAPIConfig[]}
   nonNullDocumentFieldsFlag?: boolean
   withUnionCache?: boolean
 }
