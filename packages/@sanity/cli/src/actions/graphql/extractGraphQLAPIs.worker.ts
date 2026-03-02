@@ -106,8 +106,23 @@ async function main() {
     } catch (err) {
       if (err instanceof SchemaError) {
         results.push({...apiBase, schemaErrors: err.problemGroups})
+      } else if (isSchemaError(err)) {
+        // Sanity's internal schema error from createSchema() — different class from our
+        // SchemaError, but carries structured validation data on err.schema._validation.
+        // This is low-probability since getStudioWorkspaces() above already validated,
+        // but createSchema() on filtered types could still surface issues.
+        const validation = err.schema._validation ?? []
+        const errorGroups = validation
+          .map((g) => ({...g, problems: g.problems.filter((p) => p.severity === 'error')}))
+          .filter((g) => g.problems.length > 0)
+        results.push({...apiBase, schemaErrors: errorGroups.length > 0 ? errorGroups : validation})
       } else {
-        debug('Schema extraction failed for %s/%s: %O', apiBase.dataset, apiBase.tag ?? 'default', err)
+        debug(
+          'Schema extraction failed for %s/%s: %O',
+          apiBase.dataset,
+          apiBase.tag ?? 'default',
+          err,
+        )
         results.push({
           ...apiBase,
           extractionError: err instanceof Error ? err.message : String(err),

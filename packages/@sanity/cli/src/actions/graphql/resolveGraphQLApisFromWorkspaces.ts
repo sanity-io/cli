@@ -1,5 +1,5 @@
 import {type Schema} from '@sanity/types'
-import {isPlainObject} from 'lodash-es'
+import isPlainObject from 'lodash-es/isPlainObject.js'
 import {oneline} from 'oneline'
 
 import {

@@ -227,6 +227,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       // Continue the loop so all API errors are reported — don't exit on the first failure.
       if (apiDef.schemaErrors) {
         spin.fail()
+        this.warn(`Schema errors in ${apiName}:`)
         new SchemaError(apiDef.schemaErrors).print(this.output)
         hasErrors = true
         continue
