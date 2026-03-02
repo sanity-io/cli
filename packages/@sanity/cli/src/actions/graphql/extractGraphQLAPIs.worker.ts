@@ -115,11 +115,11 @@ async function main() {
         const errorGroups = validation
           .map((g) => ({...g, problems: g.problems.filter((p) => p.severity === 'error')}))
           .filter((g) => g.problems.length > 0)
-        const groups = errorGroups.length > 0 ? errorGroups : validation
-        if (groups.length > 0) {
-          results.push({...apiBase, schemaErrors: groups})
+        if (errorGroups.length > 0) {
+          results.push({...apiBase, schemaErrors: errorGroups})
         } else {
-          // _validation was empty — fall through to generic error with the message
+          // Warning-only or empty _validation — fall through to generic error with the
+          // message, matching the global path which re-throws warning-only errors.
           results.push({
             ...apiBase,
             extractionError: err instanceof Error ? err.message : String(err),

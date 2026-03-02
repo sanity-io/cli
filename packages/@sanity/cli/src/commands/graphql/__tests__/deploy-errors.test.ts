@@ -198,8 +198,10 @@ export const schemaTypes = [
     const {error} = await testCommand(GraphQLDeployCommand, [])
 
     expect(error).toBeDefined()
-    // Error may come from schema extraction (worker catches per-API) or from resolving APIs
-    expect(error?.message).toMatch(/Failed to (resolve GraphQL APIs|extract schema)/)
+    // An invalid type reference triggers schema validation errors during resolveConfig()
+    // inside getStudioWorkspaces(). The worker sends configErrors, and the main thread
+    // throws SchemaError, which deploy catches and prints with formatted output.
+    expect(error?.message).toContain('Fix the schema errors above and try again')
     expect(error?.oclif?.exit).toBe(1)
 
     process.chdir(cwd)
