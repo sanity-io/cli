@@ -332,12 +332,20 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     const spin = spinner('').start()
 
     return new Promise<void>((resolve, reject) => {
+      const sigintHandler = () => {
+        subscription.unsubscribe()
+        spin.fail('Copy interrupted.')
+        exit(130)
+      }
+
       const subscription = followCopyJobProgress({jobId, projectId}).subscribe({
         complete: () => {
+          process.off('SIGINT', sigintHandler)
           spin.succeed('Copy finished.')
           resolve()
         },
         error: (err) => {
+          process.off('SIGINT', sigintHandler)
           spin.fail('Copy failed.')
           reject(err)
         },
@@ -349,12 +357,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
         },
       })
 
-      // Cleanup on process termination - use 'once' to prevent memory leaks
-      process.once('SIGINT', () => {
-        subscription.unsubscribe()
-        spin.fail('Copy interrupted.')
-        exit(130)
-      })
+      process.once('SIGINT', sigintHandler)
     })
   }
 }

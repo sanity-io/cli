@@ -97,10 +97,8 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    *
    * @returns The project ID.
    */
-  protected async getProjectId(options?: {
-    fallback?: () => Promise<string>
-  }): Promise<string> {
-    const hasProjectFlag = 'project-id' in this.ctor.flags
+  protected async getProjectId(options?: {fallback?: () => Promise<string>}): Promise<string> {
+    const hasProjectFlag = this.ctor.flags != null && 'project-id' in this.ctor.flags
 
     // Check --project-id flag first
     if (hasProjectFlag) {
@@ -196,5 +194,4 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
   protected resolveIsInteractive(): boolean {
     return isInteractive()
   }
-
 }
