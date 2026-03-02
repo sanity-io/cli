@@ -60,11 +60,16 @@ function isNoExistingCommentError(stderr: string): boolean {
 }
 
 function postComment(body: string): void {
+  const prNumber = process.env.PR_NUMBER
+  if (!prNumber) {
+    throw new Error('PR_NUMBER environment variable is required to post comments')
+  }
+
   const tmpFile = join(tmpdir(), `coverage-delta-${Date.now()}.md`)
   writeFileSync(tmpFile, body)
   try {
     // Try to edit existing coverage comment, fall back to creating new one
-    const edit = spawnSync('gh', ['pr', 'comment', '--edit-last', '--body-file', tmpFile], {
+    const edit = spawnSync('gh', ['pr', 'comment', prNumber, '--edit-last', '--body-file', tmpFile], {
       encoding: 'utf8',
     })
 
@@ -76,7 +81,7 @@ function postComment(body: string): void {
     }
 
     // No existing comment — create a new one
-    const create = spawnSync('gh', ['pr', 'comment', '--body-file', tmpFile], {
+    const create = spawnSync('gh', ['pr', 'comment', prNumber, '--body-file', tmpFile], {
       encoding: 'utf8',
       stdio: 'inherit',
     })
