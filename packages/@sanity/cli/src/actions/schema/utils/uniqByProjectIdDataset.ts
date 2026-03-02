@@ -1,4 +1,4 @@
-import {uniqBy} from 'lodash-es'
+import uniqBy from 'lodash-es/uniqBy.js'
 import {type Workspace} from 'sanity'
 
 export function uniqByProjectIdDataset(workspaces: Workspace[]) {

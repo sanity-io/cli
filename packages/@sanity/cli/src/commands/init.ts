@@ -20,7 +20,7 @@ import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 import {execa, type Options} from 'execa'
-import {deburr} from 'lodash-es'
+import deburr from 'lodash-es/deburr.js'
 
 import {getProviderName} from '../actions/auth/getProviderName.js'
 import {login} from '../actions/auth/login/login.js'

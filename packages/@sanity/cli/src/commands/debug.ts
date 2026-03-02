@@ -3,7 +3,8 @@ import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
 import {formatObject, printKeyValue, SanityCommand} from '@sanity/cli-core'
-import {omit, padStart} from 'lodash-es'
+import omit from 'lodash-es/omit.js'
+import padStart from 'lodash-es/padStart.js'
 
 import {gatherDebugInfo} from '../actions/debug/gatherDebugInfo.js'
 import {getGlobalConfigLocation} from '../actions/debug/getGlobalConfigLocation.js'

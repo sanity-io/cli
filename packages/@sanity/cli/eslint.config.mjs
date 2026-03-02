@@ -19,9 +19,19 @@ export default [
     ignores: ['**/*.test.ts'],
     rules: {
       'no-restricted-imports': [
-        'warn',
+        'error',
         {
           paths: [
+            {
+              message:
+                'Import from subpath instead to avoid barrel import. Example: `import {fn} from \'date-fns/fn\'`.',
+              name: 'date-fns',
+            },
+            {
+              message:
+                'Import from subpath instead to avoid barrel import. Example: `import fn from \'lodash-es/fn.js\'`.',
+              name: 'lodash-es',
+            },
             {
               allowTypeImports: true,
               message:

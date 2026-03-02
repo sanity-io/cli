@@ -1,7 +1,7 @@
 import {Flags} from '@oclif/core'
 import {isInteractive, SanityCommand} from '@sanity/cli-core'
 import {confirm, spinner} from '@sanity/cli-core/ux'
-import {get} from 'lodash-es'
+import get from 'lodash-es/get.js'
 
 import {extractFromSanitySchema} from '../../actions/graphql/extractFromSanitySchema.js'
 import gen1 from '../../actions/graphql/gen1/index.js'

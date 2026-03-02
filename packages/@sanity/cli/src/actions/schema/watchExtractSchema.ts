@@ -1,5 +1,6 @@
 import {getCliTelemetry, type Output} from '@sanity/cli-core'
-import {mean, once} from 'lodash-es'
+import mean from 'lodash-es/mean.js'
+import once from 'lodash-es/once.js'
 
 import {SchemaExtractionWatchModeTrace} from '../../telemetry/extractSchema.telemetry.js'
 import {DEFAULT_WATCH_PATTERNS, startExtractSchemaWatcher} from './extractSchemaWatcher.js'

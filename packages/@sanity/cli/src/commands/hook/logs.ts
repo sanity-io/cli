@@ -3,7 +3,7 @@ import {inspect, styleText} from 'node:util'
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
-import {groupBy} from 'lodash-es'
+import groupBy from 'lodash-es/groupBy.js'
 
 import {formatFailure} from '../../actions/hook/formatFailure.js'
 import {type DeliveryAttempt, type Hook, type HookMessage} from '../../actions/hook/types'
