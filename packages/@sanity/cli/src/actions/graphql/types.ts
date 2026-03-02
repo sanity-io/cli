@@ -11,12 +11,10 @@ export interface ApiSpecification {
   types: (ConvertedType | ConvertedUnion)[]
 }
 
+/**
+ * @public
+ */
 export interface GraphQLAPIConfig {
-  /**
-   * Dataset name for this API
-   */
-  dataset?: string
-
   /**
    * Suffix to use for generated filter types.
    *
@@ -49,11 +47,6 @@ export interface GraphQLAPIConfig {
    * Optional, defaults to `true` in development mode,  `false` otherwise
    */
   playground?: boolean
-
-  /**
-   * Project ID for this API
-   */
-  projectId?: string
 
   /**
    * Name of source containing the schema to deploy, within the configured workspace

@@ -4,9 +4,7 @@ import {Readable} from 'node:stream'
 import {pipeline} from 'node:stream/promises'
 
 import {readPackageJson} from '@sanity/cli-core'
-import {boxen} from '@sanity/cli-core/ux'
 import {getTempPath} from '@sanity/cli-test'
-import {diff} from '@vitest/utils/diff'
 import gunzipMaybe from 'gunzip-maybe'
 import {extract} from 'tar-fs'
 import ts from 'typescript'
@@ -18,7 +16,7 @@ function getPackagePath(tmpDir: string, version: string) {
   return join(tmpDir, `sanity-cli-${version}`, 'package')
 }
 
-const OLD_CLI_VERSION = '5.6.0'
+const OLD_CLI_VERSION = '5.12.0'
 
 // Convert web stream to async iterable for use with Readable.from()
 async function* streamToAsyncIterable(
@@ -88,11 +86,31 @@ async function extractTypes(typesPath: string) {
   const exportedTypes: string[] = []
 
   ts.forEachChild(sourceFile, (node) => {
+    // Handle `export interface Foo { ... }` and `export type Foo = ...`
     if (
       (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) &&
       node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
     ) {
       exportedTypes.push(node.name.text)
+    }
+
+    // Handle type re-exports: `export type { Foo }` and `export { type Foo }`
+    // Note: this only works on source files where the `type` keyword is preserved.
+    // In .d.ts files built by api-extractor, `type` is stripped from re-exports.
+    if (ts.isExportDeclaration(node) && node.exportClause && ts.isNamedExports(node.exportClause)) {
+      if (node.isTypeOnly) {
+        // `export type { Foo, Bar }` — all specifiers are types
+        for (const specifier of node.exportClause.elements) {
+          exportedTypes.push(specifier.name.text)
+        }
+      } else {
+        // `export { type Foo, bar }` — only specifiers marked as type
+        for (const specifier of node.exportClause.elements) {
+          if (specifier.isTypeOnly) {
+            exportedTypes.push(specifier.name.text)
+          }
+        }
+      }
     }
   })
 
@@ -125,26 +143,49 @@ test('should match exports of the current cli package', async () => {
   )
 })
 
-// Note: This is intentionally disabled for now as the type exports are not yet fully migrated to the new CLI.
-test('should match type exports of the current cli package', async () => {
+test('should include type exports of the old (v5) cli package', async () => {
+  // These types are explicitly dropped from the new CLI. This is a breaking change, thus the v6.
+  // Some of these are simply not possible to export anymore - CLI framework is completely different,
+  // and other types should never have been exported in the first place, as they are internal
+  // implementation details that should not be used by external consumers. We keep track of these
+  // to avoid the old v5 CLI adding new types we're not aware of before we release v6.
+  const IGNORED_TYPES = new Set([
+    'CliApiClient',
+    'CliCommandAction',
+    'CliCommandArguments',
+    'CliCommandContext',
+    'CliCommandDefinition',
+    'CliCommandGroupDefinition',
+    'CliCommandRunner',
+    'CliOutputter',
+    'CliPrompter',
+    'CliStubbedYarn',
+    'CliUserConfig',
+    'CliYarnOptions',
+    'CommandRunnerOptions',
+    'GetCliClient',
+    'PackageJson',
+    'ReactCompilerConfig',
+    'ResolvedCliCommand',
+    'SanityClient',
+    'SanityCore',
+    'SanityJson',
+    'SanityModuleInternal',
+    'SanityUser',
+    'SinglePrompt',
+    'TelemetryUserProperties',
+  ])
+
   const oldCliTypeExports = await getSanityPackageTypeExports()
+  // Extract from source file (not built .d.ts) because api-extractor strips `type`
+  // keywords from re-exports, making it impossible to distinguish type vs value re-exports.
   const newCliTypeExports = await extractTypes(
-    join(import.meta.dirname, '..', '..', 'dist', 'exports', 'index.d.ts'),
+    join(import.meta.dirname, '..', 'exports', 'index.ts'),
   )
 
-  try {
-    expect(newCliTypeExports.toSorted()).toStrictEqual(oldCliTypeExports.toSorted())
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.log(
-      boxen(`!!!!!!! Old and New CLI Type Exports do not match !!!!!!!`, {
-        borderColor: 'red',
-        borderStyle: 'round',
-        margin: 1,
-        padding: 1,
-      }),
-    )
-    // eslint-disable-next-line no-console
-    console.log(diff(error.expected, error.actual))
+  const expectedOldTypes = oldCliTypeExports.filter((type) => !IGNORED_TYPES.has(type))
+
+  for (const expectedType of expectedOldTypes) {
+    expect(newCliTypeExports, `Missing type export: ${expectedType}`).toContain(expectedType)
   }
 })
