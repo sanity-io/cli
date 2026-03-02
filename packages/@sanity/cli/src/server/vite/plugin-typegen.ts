@@ -10,7 +10,9 @@ import {
   TypegenWatchModeTrace,
   TypesGeneratedTrace,
 } from '@sanity/codegen'
-import {debounce, mean, once} from 'lodash-es'
+import debounce from 'lodash-es/debounce.js'
+import mean from 'lodash-es/mean.js'
+import once from 'lodash-es/once.js'
 import picomatch from 'picomatch'
 import {type Plugin} from 'vite'
 

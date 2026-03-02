@@ -2,7 +2,9 @@ import path, {isAbsolute} from 'node:path'
 
 import {type CLITelemetryStore} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
-import {debounce, mean, once} from 'lodash-es'
+import debounce from 'lodash-es/debounce.js'
+import mean from 'lodash-es/mean.js'
+import once from 'lodash-es/once.js'
 import {type Plugin} from 'vite'
 
 import {formatSchemaValidation} from '../../actions/schema/formatSchemaValidation.js'
