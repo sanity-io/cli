@@ -4,7 +4,6 @@ import {confirm, select} from '@sanity/cli-core/ux'
 import {ClientError} from '@sanity/client'
 
 import {deleteToken, getTokens} from '../../services/tokens.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteTokenDebug = subdebug('tokens:delete')
 
@@ -58,9 +57,6 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
 
     // Ensure we have project context
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     this.projectId = projectId
 

@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {NonInteractiveError} from '../../util/NonInteractiveError.js'
+import {NonInteractiveError} from '../../errors/NonInteractiveError.js'
 
 const mockIsInteractive = vi.hoisted(() => vi.fn())
 

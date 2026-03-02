@@ -4,8 +4,9 @@ import {input} from '@sanity/cli-core/ux'
 
 import {processAliasName} from '../../../actions/dataset/processAliasName.js'
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {listAliases, removeAlias} from '../../../services/datasetAliases.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {projectIdFlag} from '../../../util/sharedFlags.js'
 
 const deleteAliasDebug = subdebug('dataset:alias:delete')
 
@@ -35,6 +36,7 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
   ]
 
   static override flags = {
+    ...projectIdFlag,
     force: Flags.boolean({
       description: 'Skip confirmation prompt and delete immediately',
       required: false,
@@ -45,10 +47,15 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
     const {args, flags} = await this.parse(DeleteAliasCommand)
     const {force} = flags
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'delete', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     const {apiName, displayName} = processAliasName(args.aliasName)
 

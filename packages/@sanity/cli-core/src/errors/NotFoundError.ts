@@ -1,4 +1,4 @@
-import {isRecord} from './isRecord.js'
+import {isRecord} from '../util/isRecord.js'
 
 /**
  * Error thrown when a file or directory is not found

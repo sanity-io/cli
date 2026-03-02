@@ -5,7 +5,6 @@ import {input, select} from '@sanity/cli-core/ux'
 import {type Role} from '../../actions/users/types.js'
 import {validateEmail} from '../../actions/users/validateEmail.js'
 import {getProjectRoles, inviteUser} from '../../services/projects.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const QUOTA_ERROR_MESSAGE =
   'Project is already at user quota, add billing details to the project in order to allow overage charges.'
@@ -50,9 +49,6 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
 
     const projectId = await this.getProjectId()
 
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     let roles: Role[]
     try {

@@ -1,7 +1,6 @@
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {type CorsOrigin, listCorsOrigins} from '../../services/cors.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const listCorsDebug = subdebug('cors:list')
 
@@ -18,9 +17,6 @@ export class List extends SanityCommand<typeof List> {
     await this.parse(List)
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     let origins: CorsOrigin[]
     try {

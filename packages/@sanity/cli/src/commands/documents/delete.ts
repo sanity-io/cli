@@ -2,7 +2,6 @@ import {Args, Flags} from '@oclif/core'
 import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteDocumentDebug = subdebug('documents:delete')
 
@@ -65,9 +64,6 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
     const cliConfig = await this.getCliConfig()
     const projectId = await this.getProjectId()
 
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(

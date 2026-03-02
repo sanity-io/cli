@@ -58,7 +58,7 @@ describe('#media:import', () => {
       },
     })
 
-    expect(error?.message).toContain('does not contain a project identifier')
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

@@ -10,7 +10,7 @@ import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
-import {NO_MEDIA_LIBRARY_ASPECTS_PATH, NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {NO_MEDIA_LIBRARY_ASPECTS_PATH} from '../../../util/errorMessages.js'
 import {MediaDeployAspectCommand} from '../deploy-aspect.js'
 
 const mockFsAccess = vi.hoisted(() => vi.fn())
@@ -205,7 +205,7 @@ describe('#media:deploy-aspect', () => {
         },
       },
       description: 'project ID is not configured',
-      expectedError: NO_PROJECT_ID,
+      expectedError: 'Unable to determine project ID',
     },
     {
       config: {

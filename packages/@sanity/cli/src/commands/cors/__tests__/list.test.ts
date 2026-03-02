@@ -3,7 +3,6 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {CORS_API_VERSION} from '../../../services/cors.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {List} from '../list.js'
 
 const testProjectId = 'test-project'
@@ -128,7 +127,7 @@ describe('#list', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
   })
 
   test('throws error when project ID is null', async () => {
@@ -140,7 +139,7 @@ describe('#list', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
   })
 
   test('throws error when project ID is empty string', async () => {
@@ -152,7 +151,7 @@ describe('#list', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
   })
 
   test('handles non-array API response', async () => {

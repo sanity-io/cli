@@ -1,12 +1,12 @@
 import fs from 'node:fs/promises'
 
-import {type CliConfig, getProjectCliClient} from '@sanity/cli-core'
+import {type CliConfig, getProjectCliClient, ProjectRootNotFoundError} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {exportDataset, type ExportResult} from '@sanity/export'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {DatasetExportCommand} from '../export.js'
 
 vi.mock('@sanity/export', () => ({
@@ -37,11 +37,21 @@ vi.mock('@sanity/cli-core', async () => {
   }
 })
 
+vi.mock('../../../prompts/promptForProject.js', async () => {
+  const {NonInteractiveError} = await vi.importActual<typeof import('@sanity/cli-core')>(
+    '@sanity/cli-core',
+  )
+  return {
+    promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
+  }
+})
+
 const mockExportDataset = vi.mocked(exportDataset)
 const mockInput = vi.mocked(input)
 const mockSelect = vi.mocked(select)
 const mockFs = vi.mocked(fs)
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
+const mockPromptForProject = vi.mocked(promptForProject)
 
 const TEST_CONFIG = {
   DATASET: 'production',
@@ -255,6 +265,37 @@ describe('#dataset:export', () => {
       )
     })
 
+    test('prompts for dataset when project was selected via prompt outside a project directory', async () => {
+      // Simulates: user is outside a project directory, selects project interactively.
+      // getCliConfig() throws ProjectRootNotFoundError for both getProjectId and dataset
+      // selection — the fix ensures the second throw is silently swallowed and we fall
+      // through to promptForDataset instead of surfacing "Failed to select dataset".
+      mockPromptForProject.mockResolvedValueOnce(TEST_CONFIG.PROJECT_ID)
+      mockGetProjectCliClient.mockResolvedValue({
+        datasets: {
+          list: vi.fn().mockResolvedValue([{name: 'production'}, {name: 'staging'}]),
+        },
+      } as never)
+      mockSelect.mockResolvedValueOnce('staging')
+      mockInput.mockResolvedValueOnce('staging.tar.gz')
+      mockFs.stat.mockRejectedValue(new Error('File not found'))
+
+      const {error} = await testCommand(DatasetExportCommand, [], {
+        mocks: {
+          cliConfigError: new ProjectRootNotFoundError('No project root found'),
+          token: defaultMocks.token,
+        },
+      })
+
+      expect(error).toBeUndefined()
+      expect(mockSelect).toHaveBeenCalledWith(
+        expect.objectContaining({message: 'Select the dataset name:'}),
+      )
+      expect(mockExportDataset).toHaveBeenCalledWith(
+        expect.objectContaining({dataset: 'staging'}),
+      )
+    })
+
     test('validates dataset exists in project', async () => {
       const {mocks} = createTestContext({datasets: [{name: 'production'}]})
 
@@ -412,7 +453,7 @@ describe('#dataset:export', () => {
         mocks,
       })
 
-      expect(error?.message).toEqual(NO_PROJECT_ID)
+      expect(error?.message).toContain('Unable to determine project ID')
       expect(error?.oclif?.exit).toBe(1)
     })
 

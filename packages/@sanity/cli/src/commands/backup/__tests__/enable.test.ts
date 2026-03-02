@@ -5,7 +5,6 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {BACKUP_API_VERSION} from '../../../actions/backup/constants.js'
 import {NEW_DATASET_VALUE} from '../../../prompts/promptForDataset.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {EnableBackupCommand} from '../enable.js'
 
 const mockListDatasets = vi.hoisted(() => vi.fn())
@@ -108,7 +107,7 @@ describe('#backup:enable', () => {
       },
     })
 
-    expect(error?.message).toContain(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

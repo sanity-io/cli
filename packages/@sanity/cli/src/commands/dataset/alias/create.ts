@@ -4,11 +4,12 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
 import {promptForDatasetAliasName} from '../../../prompts/promptForDatasetAliasName.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {selectDataset} from '../../../prompts/selectDataset.js'
 import {ALIAS_PREFIX, createAlias, listAliases} from '../../../services/datasetAliases.js'
 import {listDatasets} from '../../../services/datasets.js'
 import {getProjectFeatures} from '../../../services/getProjectFeatures.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {projectIdFlag} from '../../../util/sharedFlags.js'
 
 const createAliasDebug = subdebug('dataset:alias:create')
 
@@ -28,6 +29,10 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
 
   static override examples = [
     {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123 conference conf-2025',
+      description: 'Create alias in a specific project',
+    },
+    {
       command: '<%= config.bin %> <%= command.id %>',
       description: 'Create an alias with interactive prompts',
     },
@@ -45,13 +50,22 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
     },
   ]
 
+  static override flags = {
+    ...projectIdFlag,
+  }
+
   public async run(): Promise<void> {
     const {args} = await this.parse(CreateAliasCommand)
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'create', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     let canCreateAlias = false
     try {

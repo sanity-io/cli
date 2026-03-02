@@ -4,7 +4,7 @@ import {join} from 'node:path'
 
 import {register} from 'tsx/esm/api'
 
-import {NotFoundError} from '../../util/NotFoundError.js'
+import {NotFoundError} from '../../errors/NotFoundError.js'
 import {tryGetDefaultExport} from '../../util/tryGetDefaultExport.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'

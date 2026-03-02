@@ -5,8 +5,9 @@ import {SanityCommand, subdebug, waitForAsync} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {getEmbeddingsSettings, setEmbeddingsSettings} from '../../../services/embeddings.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {projectIdFlag} from '../../../util/sharedFlags.js'
 
 const debug = subdebug('dataset:embeddings:enable')
 
@@ -42,6 +43,7 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
   ]
 
   static override flags = {
+    ...projectIdFlag,
     projection: Flags.string({
       description: 'GROQ projection defining which fields to embed (e.g. "{ title, body }")',
       required: false,
@@ -57,10 +59,15 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
     let {dataset} = args
     const {projection, wait} = flags
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'update', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     try {
       ;({dataset} = await resolveDataset({dataset, projectId}))

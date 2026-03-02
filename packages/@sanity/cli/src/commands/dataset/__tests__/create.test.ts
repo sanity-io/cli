@@ -41,6 +41,15 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
+vi.mock('../../../prompts/promptForProject.js', async () => {
+  const {NonInteractiveError} = await vi.importActual<typeof import('@sanity/cli-core')>(
+    '@sanity/cli-core',
+  )
+  return {
+    promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
+  }
+})
+
 const defaultMocks = {
   cliConfig: {api: {projectId: testProjectId}},
   projectRoot: {
@@ -350,7 +359,7 @@ describe('#dataset:create', () => {
       },
     })
 
-    expect(error?.message).toContain('sanity.cli.ts does not contain a project identifier')
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 })

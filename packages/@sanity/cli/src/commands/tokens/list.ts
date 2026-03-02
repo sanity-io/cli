@@ -4,7 +4,6 @@ import {Table} from 'console-table-printer'
 
 import {type Token} from '../../actions/tokens/types.js'
 import {getTokens} from '../../services/tokens.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
 
 const listTokenDebug = subdebug('tokens:list')
@@ -35,9 +34,6 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
 
     // Ensure we have project context
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     let tokens: Token[]
     try {

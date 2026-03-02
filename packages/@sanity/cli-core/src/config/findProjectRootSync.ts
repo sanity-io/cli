@@ -1,5 +1,6 @@
 import {dirname, resolve} from 'node:path'
 
+import {ProjectRootNotFoundError} from '../errors/ProjectRootNotFoundError.js'
 import {findAppConfigPathSync, findStudioConfigPathSync} from './util/configPathsSync.js'
 import {ProjectRootResult} from './util/recursivelyResolveProjectRoot.js'
 
@@ -66,9 +67,12 @@ export function findProjectRootSync(cwd: string): ProjectRootResult {
       return appProjectRoot
     }
 
-    // If nothing is found throw an error
-    throw new Error(`No project root found in ${cwd}`)
+    // If nothing is found throw a specific error
+    throw new ProjectRootNotFoundError(`No project root found in ${cwd}`)
   } catch (err: unknown) {
+    if (err instanceof ProjectRootNotFoundError) {
+      throw err
+    }
     const message = err instanceof Error ? err.message : `${err}`
     throw new Error(`Error occurred trying to resolve project root:\n${message}`)
   }

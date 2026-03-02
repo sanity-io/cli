@@ -2,7 +2,6 @@ import {getSanityUrl, SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
 import {getProjectById} from '../../services/projects.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const createHookDebug = subdebug('hook:create')
 
@@ -17,9 +16,6 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
 
   public async run() {
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     let projectInfo: {organizationId?: string | null}
     try {

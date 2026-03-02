@@ -9,7 +9,6 @@ import {NEW_DATASET_VALUE, promptForDataset} from '../../prompts/promptForDatase
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {setBackup} from '../../services/backup.js'
 import {createDataset, listDatasets} from '../../services/datasets.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const enableBackupDebug = subdebug('backup:enable')
 
@@ -39,9 +38,6 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
     let {dataset} = args
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     let datasets: DatasetsResponse
 

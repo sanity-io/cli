@@ -1,6 +1,6 @@
 import {debug} from '../../debug.js'
+import {NotFoundError} from '../../errors/NotFoundError.js'
 import {importModule} from '../../util/importModule.js'
-import {NotFoundError} from '../../util/NotFoundError.js'
 import {findPathForFiles} from '../util/findConfigsPaths.js'
 import {cliConfigSchema} from './schemas.js'
 import {type CliConfig} from './types/cliConfig.js'

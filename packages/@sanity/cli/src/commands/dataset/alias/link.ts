@@ -6,10 +6,11 @@ import {processAliasName} from '../../../actions/dataset/processAliasName.js'
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
 import {promptForDatasetAliasName} from '../../../prompts/promptForDatasetAliasName.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {selectDataset} from '../../../prompts/selectDataset.js'
 import {listAliases, updateAlias} from '../../../services/datasetAliases.js'
 import {listDatasets} from '../../../services/datasets.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {projectIdFlag} from '../../../util/sharedFlags.js'
 
 const linkAliasDebug = subdebug('dataset:alias:link')
 
@@ -51,6 +52,7 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
   ]
 
   static override flags = {
+    ...projectIdFlag,
     force: Flags.boolean({
       description: 'Skip confirmation prompt when relinking existing alias',
       required: false,
@@ -61,10 +63,15 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
     const {args, flags} = await this.parse(LinkAliasCommand)
     const {force} = flags
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'update', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     if (args.aliasName) {
       const {apiName} = processAliasName(args.aliasName)

@@ -2,7 +2,6 @@ import {Args, Flags} from '@oclif/core'
 import {colorizeJson, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const getDocumentDebug = subdebug('documents:get')
 
@@ -51,9 +50,6 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
     const cliConfig = await this.getCliConfig()
     const projectId = await this.getProjectId()
 
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(

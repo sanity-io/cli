@@ -2,7 +2,6 @@ import {input} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {DeleteDatasetCommand} from '../delete.js'
 
 const mockDeleteDataset = vi.hoisted(() => vi.fn())
@@ -28,6 +27,15 @@ vi.mock('@sanity/cli-core/ux', async () => {
   return {
     ...actual,
     input: vi.fn(),
+  }
+})
+
+vi.mock('../../../prompts/promptForProject.js', async () => {
+  const {NonInteractiveError} = await vi.importActual<typeof import('@sanity/cli-core')>(
+    '@sanity/cli-core',
+  )
+  return {
+    promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
   }
 })
 
@@ -107,7 +115,7 @@ describe('#dataset:delete', () => {
         cliConfig: {api: {projectId}},
       },
     })
-    expect(error?.message).toBe(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 
