@@ -5,7 +5,8 @@
   "description": "Parse @sanity/cli README.md and write structured reference docs to Sanity",
   "type": "module",
   "scripts": {
-    "update": "tsx src/index.ts ../../@sanity/cli/README.md"
+    "update": "tsx src/index.ts ../../@sanity/cli/README.md",
+    "update-manifest": "tsx src/manifest.ts ../../@sanity/cli/oclif.manifest.json"
   },
   "dependencies": {
     "@sanity/client": "^7.16.0",
