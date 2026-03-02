@@ -2,7 +2,12 @@ import {type Schema} from '@sanity/types'
 import {isPlainObject} from 'lodash-es'
 import {oneline} from 'oneline'
 
-import {type GraphQLAPIConfig, type SchemaDefinitionish, type TypeResolvedGraphQLAPI} from './types.js'
+import {
+  type ExtractedGraphQLAPI,
+  type GraphQLAPIConfig,
+  type SchemaDefinitionish,
+  type TypeResolvedGraphQLAPI,
+} from './types.js'
 
 export interface Source {
   dataset: string
@@ -13,6 +18,16 @@ export interface Source {
 
 export interface Workspace extends Source {
   unstable_sources: Source[]
+}
+
+/**
+ * Minimal workspace metadata — enough for resolving API identifiers without compiling schemas.
+ * This matches the raw workspace shape from `defineConfig()` before `resolveConfig()` processes it.
+ */
+export interface WorkspaceMetadata {
+  dataset: string
+  name: string
+  projectId: string
 }
 
 interface ResolveGraphQLApisOptions {
@@ -59,6 +74,83 @@ export function resolveGraphQLApis({
   // Explicity defined config
   const apiDefs = validateCliConfig(cliConfig?.graphql || [])
   return resolveGraphQLAPIsFromConfig(apiDefs, workspaces)
+}
+
+/**
+ * Resolve GraphQL API metadata (projectId, dataset, tag, etc.) from raw workspace configs
+ * without compiling schemas. This is used when we only need API identifiers, not schema types —
+ * e.g. for `graphql undeploy --api` or `graphql list`.
+ */
+export function resolveGraphQLApiMetadata({
+  cliConfig,
+  workspaces,
+}: {
+  cliConfig?: {graphql?: GraphQLAPIConfig[]}
+  workspaces: WorkspaceMetadata[]
+}): ExtractedGraphQLAPI[] {
+  const multiWorkspace = workspaces.length > 1
+  const hasGraphQLConfig = Boolean(cliConfig?.graphql)
+
+  if (workspaces.length === 0) {
+    throw new Error('No studio configuration found')
+  }
+
+  // We can only automatically configure if there is a single workspace in play
+  if (multiWorkspace && !hasGraphQLConfig) {
+    throw new Error(oneline`
+      Multiple workspaces/sources configured.
+      You must define an array of GraphQL APIs in \`sanity.cli.ts\` or \`sanity.cli.js\`
+      and specify which workspace/source to use.
+    `)
+  }
+
+  // No config is defined, but we have a single workspace, so use that
+  if (!hasGraphQLConfig) {
+    const {dataset, projectId} = workspaces[0]
+    return [{dataset, projectId}]
+  }
+
+  // Explicitly defined config
+  const apiDefs = validateCliConfig(cliConfig?.graphql || [])
+  return resolveGraphQLApiMetadataFromConfig(apiDefs, workspaces)
+}
+
+function resolveGraphQLApiMetadataFromConfig(
+  apiDefs: GraphQLAPIConfig[],
+  workspaces: WorkspaceMetadata[],
+): ExtractedGraphQLAPI[] {
+  const resolvedApis: ExtractedGraphQLAPI[] = []
+
+  for (const apiDef of apiDefs) {
+    const {workspace: workspaceName} = apiDef
+    if (!workspaceName && workspaces.length > 1) {
+      throw new Error(
+        'Must define `workspace` name in GraphQL API config when multiple workspaces are defined',
+      )
+    }
+
+    const workspace =
+      !workspaceName && workspaces.length === 1
+        ? workspaces[0]
+        : workspaces.find((space) => space.name === (workspaceName || 'default'))
+
+    if (!workspace) {
+      throw new Error(`Workspace "${workspaceName || 'default'}" not found`)
+    }
+
+    resolvedApis.push({
+      dataset: apiDef.dataset ?? workspace.dataset,
+      filterSuffix: apiDef.filterSuffix,
+      generation: apiDef.generation,
+      id: apiDef.id,
+      nonNullDocumentFields: apiDef.nonNullDocumentFields,
+      playground: apiDef.playground,
+      projectId: apiDef.projectId ?? workspace.projectId,
+      tag: apiDef.tag,
+    })
+  }
+
+  return resolvedApis
 }
 
 function resolveGraphQLAPIsFromConfig(

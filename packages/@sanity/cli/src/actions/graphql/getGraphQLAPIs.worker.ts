@@ -1,15 +1,17 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {getStudioWorkspaces} from '@sanity/cli-core'
+import {doImport} from '@sanity/cli-core'
 
-import {isSchemaError} from '../../util/isSchemaError.js'
-import {resolveGraphQLApis} from './resolveGraphQLApisFromWorkspaces.js'
-import {type GraphQLAPIConfig, type GraphQLWorkerResult} from './types.js'
+import {
+  resolveGraphQLApiMetadata,
+  type WorkspaceMetadata,
+} from './resolveGraphQLApisFromWorkspaces.js'
+import {type GraphQLAPIConfig} from './types.js'
 
 interface WorkerData {
   configPath: string
 
-  cliConfig?: {api?: unknown; graphql?: GraphQLAPIConfig[]}
+  cliConfig?: {graphql?: GraphQLAPIConfig[]}
 }
 
 const {cliConfig, configPath} = workerData as WorkerData
@@ -19,37 +21,70 @@ async function main() {
     throw new Error('This module must be run as a worker thread')
   }
 
-  // Load workspaces — this loads sanity.config.ts through Vite
-  let workspaces
-  try {
-    workspaces = await getStudioWorkspaces(configPath)
-  } catch (err) {
-    if (isSchemaError(err)) {
-      const validation = err.schema._validation ?? []
-      const configErrors = validation.filter((g) =>
-        g.problems.some((p) => p.severity === 'error'),
-      )
-      parentPort.postMessage({apis: [], configErrors} satisfies GraphQLWorkerResult)
-      return
+  // Import the raw config through Vite (via studioWorkerTask) — handles TS paths, browser globals.
+  // We skip resolveConfig() entirely to avoid schema compilation — we only need workspace metadata.
+  let config: unknown = await doImport(configPath)
+
+  // Handle both direct config exports and default exports (same logic as getStudioWorkspaces)
+  if (!isStudioConfig(config)) {
+    if (
+      typeof config === 'object' &&
+      config !== null &&
+      'default' in config &&
+      isStudioConfig(config.default)
+    ) {
+      config = config.default
+    } else {
+      throw new TypeError(`Invalid studio config format in "${configPath}"`)
     }
-    throw err
   }
 
-  // Resolve which GraphQL APIs exist from workspace + CLI config
-  const resolvedApis = resolveGraphQLApis({cliConfig, workspaces})
+  const configs: unknown[] = Array.isArray(config) ? config : [config]
+  const workspaces = configs.map((ws) => toWorkspaceMetadata(ws))
 
-  const apis = resolvedApis.map((api) => ({
-    dataset: api.dataset,
-    filterSuffix: api.filterSuffix,
-    generation: api.generation,
-    id: api.id,
-    nonNullDocumentFields: api.nonNullDocumentFields,
-    playground: api.playground,
-    projectId: api.projectId,
-    tag: api.tag,
-  }))
+  const apis = resolveGraphQLApiMetadata({cliConfig, workspaces})
+  parentPort.postMessage(apis)
+}
 
-  parentPort.postMessage({apis} satisfies GraphQLWorkerResult)
+/**
+ * Minimal studio config shape check — matches the logic in cli-core's isStudioConfig.
+ * Checks that the value (or each item in an array) has string `projectId` and `dataset`.
+ */
+function isStudioConfig(value: unknown): boolean {
+  if (Array.isArray(value)) {
+    return value.every((item) => isStudioConfig(item))
+  }
+
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'projectId' in value &&
+    typeof value.projectId === 'string' &&
+    'dataset' in value &&
+    typeof value.dataset === 'string'
+  )
+}
+
+function toWorkspaceMetadata(config: unknown): WorkspaceMetadata {
+  if (typeof config !== 'object' || config === null) {
+    throw new Error('Invalid workspace config: expected an object')
+  }
+
+  if (!('projectId' in config) || typeof config.projectId !== 'string') {
+    throw new Error('Invalid workspace config: missing or invalid projectId')
+  }
+
+  if (!('dataset' in config) || typeof config.dataset !== 'string') {
+    throw new Error('Invalid workspace config: missing or invalid dataset')
+  }
+
+  const name = 'name' in config && typeof config.name === 'string' ? config.name : 'default'
+
+  return {
+    dataset: config.dataset,
+    name,
+    projectId: config.projectId,
+  }
 }
 
 await main()
