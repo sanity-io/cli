@@ -100,11 +100,7 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
   protected async getProjectId(options?: {
     fallback?: () => Promise<string>
   }): Promise<string> {
-    const hasProjectFlag =
-      'flags' in this.constructor &&
-      typeof this.constructor.flags === 'object' &&
-      this.constructor.flags !== null &&
-      'project-id' in this.constructor.flags
+    const hasProjectFlag = 'project-id' in this.ctor.flags
 
     // Check --project-id flag first
     if (hasProjectFlag) {

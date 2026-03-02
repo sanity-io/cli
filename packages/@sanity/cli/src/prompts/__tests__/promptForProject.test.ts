@@ -3,24 +3,23 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {promptForProject} from '../promptForProject.js'
 
-const mockListProjects = vi.hoisted(() => vi.fn())
-const mockGetUserGrants = vi.hoisted(() => vi.fn())
+const mockProjectsList = vi.hoisted(() => vi.fn())
+const mockRequest = vi.hoisted(() => vi.fn())
 const mockSelect = vi.hoisted(() => vi.fn())
 const mockSpinnerFail = vi.hoisted(() => vi.fn().mockReturnThis())
 
-vi.mock('../../services/projects.js', () => ({
-  listProjects: mockListProjects,
-}))
-
-vi.mock('../../services/grants.js', () => ({
-  getUserGrants: mockGetUserGrants,
-}))
-
-// Mock isInteractive to return true since these tests exercise the interactive prompt logic
+// Mock @sanity/cli-core with getGlobalCliClient returning a client that has
+// projects.list() (used by listProjects service) and request() (used by getUserGrants service)
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
   return {
     ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      projects: {
+        list: mockProjectsList,
+      },
+      request: mockRequest,
+    }),
     isInteractive: vi.fn().mockReturnValue(true),
   }
 })
@@ -47,7 +46,7 @@ const makeProject = (id: string, displayName: string, createdAt: string) =>
 
 describe('promptForProject', () => {
   test('shows projects sorted by creation date descending', async () => {
-    mockListProjects.mockResolvedValue([
+    mockProjectsList.mockResolvedValue([
       makeProject('older', 'Older Project', '2024-01-01T00:00:00Z'),
       makeProject('newer', 'Newer Project', '2024-06-01T00:00:00Z'),
     ])
@@ -65,7 +64,7 @@ describe('promptForProject', () => {
   })
 
   test('returns the selected project id', async () => {
-    mockListProjects.mockResolvedValue([makeProject('proj-1', 'My Project', '2024-01-01')])
+    mockProjectsList.mockResolvedValue([makeProject('proj-1', 'My Project', '2024-01-01')])
     mockSelect.mockResolvedValue('proj-1')
 
     const result = await promptForProject()
@@ -74,17 +73,17 @@ describe('promptForProject', () => {
   })
 
   test('does not fetch grants when no requiredPermissions provided', async () => {
-    mockListProjects.mockResolvedValue([makeProject('proj-1', 'My Project', '2024-01-01')])
+    mockProjectsList.mockResolvedValue([makeProject('proj-1', 'My Project', '2024-01-01')])
     mockSelect.mockResolvedValue('proj-1')
 
     await promptForProject()
 
-    expect(mockGetUserGrants).not.toHaveBeenCalled()
+    expect(mockRequest).not.toHaveBeenCalled()
   })
 
   test('fetches grants when requiredPermissions provided', async () => {
-    mockListProjects.mockResolvedValue([makeProject('proj-1', 'My Project', '2024-01-01')])
-    mockGetUserGrants.mockResolvedValue({
+    mockProjectsList.mockResolvedValue([makeProject('proj-1', 'My Project', '2024-01-01')])
+    mockRequest.mockResolvedValue({
       organizations: {},
       projects: {
         'proj-1': {
@@ -98,16 +97,16 @@ describe('promptForProject', () => {
       requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
     })
 
-    expect(mockGetUserGrants).toHaveBeenCalled()
+    expect(mockRequest).toHaveBeenCalled()
   })
 
   test('hides projects without required permissions and shows summary', async () => {
-    mockListProjects.mockResolvedValue([
+    mockProjectsList.mockResolvedValue([
       makeProject('permitted', 'Permitted Project', '2024-06-01'),
       makeProject('denied-1', 'Denied One', '2024-03-01'),
       makeProject('denied-2', 'Denied Two', '2024-01-01'),
     ])
-    mockGetUserGrants.mockResolvedValue({
+    mockRequest.mockResolvedValue({
       organizations: {},
       projects: {
         'denied-1': {
@@ -137,11 +136,11 @@ describe('promptForProject', () => {
   })
 
   test('shows singular "project" when only one is hidden', async () => {
-    mockListProjects.mockResolvedValue([
+    mockProjectsList.mockResolvedValue([
       makeProject('permitted', 'Permitted', '2024-06-01'),
       makeProject('denied', 'Denied', '2024-01-01'),
     ])
-    mockGetUserGrants.mockResolvedValue({
+    mockRequest.mockResolvedValue({
       organizations: {},
       projects: {
         permitted: {
@@ -164,11 +163,11 @@ describe('promptForProject', () => {
   })
 
   test('shows no summary when all projects are permitted', async () => {
-    mockListProjects.mockResolvedValue([
+    mockProjectsList.mockResolvedValue([
       makeProject('proj-1', 'Project One', '2024-06-01'),
       makeProject('proj-2', 'Project Two', '2024-01-01'),
     ])
-    mockGetUserGrants.mockResolvedValue({
+    mockRequest.mockResolvedValue({
       organizations: {},
       projects: {
         'proj-1': {
@@ -191,7 +190,7 @@ describe('promptForProject', () => {
   })
 
   test('throws when no projects exist', async () => {
-    mockListProjects.mockResolvedValue([])
+    mockProjectsList.mockResolvedValue([])
 
     await expect(promptForProject()).rejects.toThrow(
       'No projects found. Create a project at https://www.sanity.io/manage',
@@ -199,21 +198,21 @@ describe('promptForProject', () => {
   })
 
   test('propagates fetch errors', async () => {
-    mockListProjects.mockRejectedValue(new Error('Network error'))
+    mockProjectsList.mockRejectedValue(new Error('Network error'))
 
     await expect(promptForProject()).rejects.toThrow('Network error')
   })
 
   test('shows "Failed to fetch projects" when listProjects fails', async () => {
-    mockListProjects.mockRejectedValue(new Error('Network error'))
+    mockProjectsList.mockRejectedValue(new Error('Network error'))
 
     await expect(promptForProject()).rejects.toThrow()
     expect(mockSpinnerFail).toHaveBeenCalledWith('Failed to fetch projects')
   })
 
   test('shows "Failed to fetch projects or permissions" when getUserGrants fails', async () => {
-    mockListProjects.mockResolvedValue([makeProject('proj-1', 'My Project', '2024-01-01')])
-    mockGetUserGrants.mockRejectedValue(new Error('Forbidden'))
+    mockProjectsList.mockResolvedValue([makeProject('proj-1', 'My Project', '2024-01-01')])
+    mockRequest.mockRejectedValue(new Error('Forbidden'))
 
     await expect(
       promptForProject({requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}]}),
@@ -222,11 +221,11 @@ describe('promptForProject', () => {
   })
 
   test('throws when all projects are filtered out by permissions', async () => {
-    mockListProjects.mockResolvedValue([
+    mockProjectsList.mockResolvedValue([
       makeProject('denied-1', 'Denied One', '2024-06-01'),
       makeProject('denied-2', 'Denied Two', '2024-01-01'),
     ])
-    mockGetUserGrants.mockResolvedValue({
+    mockRequest.mockResolvedValue({
       organizations: {},
       projects: {},
     })
@@ -239,11 +238,11 @@ describe('promptForProject', () => {
   })
 
   test('requires all permissions for a project to be shown', async () => {
-    mockListProjects.mockResolvedValue([
+    mockProjectsList.mockResolvedValue([
       makeProject('full', 'Full Access', '2024-06-01'),
       makeProject('partial', 'Partial Access', '2024-01-01'),
     ])
-    mockGetUserGrants.mockResolvedValue({
+    mockRequest.mockResolvedValue({
       organizations: {},
       projects: {
         full: {
@@ -281,7 +280,7 @@ describe('promptForProject', () => {
     await expect(promptForProject()).rejects.toThrow(
       'Cannot run "select" prompt in a non-interactive environment',
     )
-    expect(mockListProjects).not.toHaveBeenCalled()
-    expect(mockGetUserGrants).not.toHaveBeenCalled()
+    expect(mockProjectsList).not.toHaveBeenCalled()
+    expect(mockRequest).not.toHaveBeenCalled()
   })
 })

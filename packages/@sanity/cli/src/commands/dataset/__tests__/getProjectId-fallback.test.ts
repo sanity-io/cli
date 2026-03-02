@@ -1,4 +1,4 @@
-import {NonInteractiveError} from '@sanity/cli-core'
+import {NonInteractiveError, ProjectRootNotFoundError} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -110,7 +110,7 @@ describe('getProjectId fallback', () => {
 
     const {error, stdout} = await testCommand(ListDatasetCommand, [], {
       mocks: {
-        // No projectRoot — findProjectRoot will throw ProjectRootNotFoundError
+        cliConfigError: new ProjectRootNotFoundError('No project root found'),
         isInteractive: true,
         token: 'test-token',
       },
@@ -128,7 +128,7 @@ describe('getProjectId fallback', () => {
 
     const {error} = await testCommand(ListDatasetCommand, [], {
       mocks: {
-        // No projectRoot — findProjectRoot will throw ProjectRootNotFoundError
+        cliConfigError: new ProjectRootNotFoundError('No project root found'),
         isInteractive: false,
         token: 'test-token',
       },
