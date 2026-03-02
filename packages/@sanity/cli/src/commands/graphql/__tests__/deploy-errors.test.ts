@@ -194,21 +194,24 @@ export const schemaTypes = [
 `
     await writeFile(join(testCwd, 'schemaTypes', 'index.ts'), invalidSchema)
 
-    try {
-      process.chdir(testCwd)
-      const {error} = await testCommand(GraphQLDeployCommand, [])
+    const {error} = await testCommand(GraphQLDeployCommand, [], {
+      mocks: {
+        projectRoot: {
+          directory: testCwd,
+          path: join(testCwd, 'sanity.config.ts'),
+          type: 'studio',
+        },
+      },
+    })
 
-      expect(error).toBeDefined()
-      // A self-referencing type (type: 'incorrectType' with name: 'incorrectType') triggers
-      // either schema validation errors or a worker crash depending on the Sanity version.
-      // Both paths end up in deploy's catch block with a message containing one of these.
-      expect(error?.message).toMatch(
-        /Fix the schema errors above and try again|Failed to resolve GraphQL APIs/,
-      )
-      expect(error?.oclif?.exit).toBe(1)
-    } finally {
-      process.chdir(cwd)
-    }
+    expect(error).toBeDefined()
+    // A self-referencing type (type: 'incorrectType' with name: 'incorrectType') triggers
+    // either schema validation errors or a worker crash depending on the Sanity version.
+    // Both paths end up in deploy's catch block with a message containing one of these.
+    expect(error?.message).toMatch(
+      /Fix the schema errors above and try again|Failed to resolve GraphQL APIs/,
+    )
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('handles validateGraphQLAPI network error with response body', async () => {
