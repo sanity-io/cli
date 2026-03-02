@@ -42,6 +42,14 @@ async function main() {
       const configErrors = validation.filter((g) =>
         g.problems.some((p) => p.severity === 'error'),
       )
+
+      // Only treat error-severity problems as schema errors. If the validation
+      // only contains warnings, re-throw the original error so it isn't silently
+      // swallowed — warnings alone should not block deployment.
+      if (configErrors.length === 0) {
+        throw err
+      }
+
       parentPort.postMessage({apis: [], configErrors} satisfies GraphQLWorkerResult)
       return
     }

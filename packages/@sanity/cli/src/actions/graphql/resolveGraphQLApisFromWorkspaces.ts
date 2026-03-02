@@ -71,7 +71,7 @@ export function resolveGraphQLApis({
     return [{dataset, projectId, schemaTypes: getStrippedSchemaTypes(schema)}]
   }
 
-  // Explicity defined config
+  // Explicitly defined config
   const apiDefs = validateCliConfig(cliConfig?.graphql || [])
   return resolveGraphQLAPIsFromConfig(apiDefs, workspaces)
 }

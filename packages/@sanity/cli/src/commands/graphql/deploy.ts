@@ -128,7 +128,8 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         this.error('Fix the schema errors above and try again', {exit: 1})
       }
       debug('Failed to resolve GraphQL APIs', error)
-      this.error('Failed to resolve GraphQL APIs', {exit: 1})
+      const message = error instanceof Error ? error.message : String(error)
+      this.error(`Failed to resolve GraphQL APIs: ${message}`, {exit: 1})
     }
 
     const hasMultipleApis = flags.api ? flags.api.length > 1 : apiDefs.length > 1
