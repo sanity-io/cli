@@ -186,7 +186,7 @@ describe('graphql undeploy', () => {
     const {stdout} = await testCommand(Undeploy, ['--api', 'ios'], {mocks: defaultMocks})
 
     expect(stdout).toBe('GraphQL API deleted\n')
-    expect(mockGetGraphQLAPIs).toHaveBeenCalledWith(process.cwd())
+    expect(mockGetGraphQLAPIs).toHaveBeenCalledWith('/test/path')
   })
 
   test('throws error when --api flag references non-existent API', async () => {

@@ -76,7 +76,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
 
     // If specifying --api, use it for the flags not provided
     if (apiFlag) {
-      const workDir = process.cwd()
+      const workDir = (await this.getProjectRoot()).directory
       const apiDefs = await getGraphQLAPIs(workDir)
       const apiDef = apiDefs.find((def) => def.id === apiFlag)
 
