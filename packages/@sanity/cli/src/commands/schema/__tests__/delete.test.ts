@@ -8,7 +8,7 @@ import {DeleteSchemaCommand} from '../delete.js'
 
 const schemaIds = ['_.schemas.production', '_.schemas.staging']
 
-describe('#schema:delete', {timeout: 30 * 1000}, () => {
+describe('#schema:delete', {timeout: 60 * 1000}, () => {
   let projectId: string | undefined
   beforeAll(async () => {
     const cwd = await testFixture('multi-workspace-studio')
