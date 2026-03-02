@@ -2,7 +2,6 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {type Hook} from '../../actions/hook/types'
 import {listHooksForProject} from '../../services/hooks.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const listHookDebug = subdebug('hook:list')
 
@@ -18,9 +17,6 @@ export class List extends SanityCommand<typeof List> {
   public async run() {
     // Ensure we have project context
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     let hooks: Hook[]
     try {

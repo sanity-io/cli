@@ -4,7 +4,6 @@ import {select} from '@sanity/cli-core/ux'
 
 import {type Hook} from '../../actions/hook/types'
 import {deleteHookForProject, listHooksForProject} from '../../services/hooks.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteHookDebug = subdebug('hook:delete')
 
@@ -33,9 +32,6 @@ export class Delete extends SanityCommand<typeof Delete> {
     const {args} = await this.parse(Delete)
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     // Get the hook ID to delete
     const hookId = await this.promptForHook(args.name, projectId)

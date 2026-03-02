@@ -6,7 +6,6 @@ import {confirm} from '@sanity/cli-core/ux'
 
 import {selectMediaLibrary} from '../../prompts/selectMediaLibrary.js'
 import {deleteAspect} from '../../services/mediaLibraries.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteAspectDebug = subdebug('media:delete-aspect')
 
@@ -44,9 +43,6 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
     const {'media-library-id': mediaLibraryIdFlag, yes: skipConfirmation} = this.flags
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     try {
       let mediaLibraryId = mediaLibraryIdFlag

@@ -9,7 +9,7 @@ import {getMediaLibraryConfig} from '../../actions/media/getMediaLibraryConfig.j
 import {importAspects} from '../../actions/media/importAspects.js'
 import {selectMediaLibrary} from '../../prompts/selectMediaLibrary.js'
 import {deployAspects} from '../../services/mediaLibraries.js'
-import {NO_MEDIA_LIBRARY_ASPECTS_PATH, NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {NO_MEDIA_LIBRARY_ASPECTS_PATH} from '../../util/errorMessages.js'
 import {pluralize} from '../../util/pluralize.js'
 
 const deployAspectDebug = subdebug('media:deploy-aspect')
@@ -71,9 +71,6 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
     }
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     try {
       // Determine target media library

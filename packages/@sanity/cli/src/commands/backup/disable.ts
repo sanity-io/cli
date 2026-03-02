@@ -8,7 +8,6 @@ import {type DatasetsResponse} from '@sanity/client'
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {setBackup} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const disableBackupDebug = subdebug('backup:disable')
 
@@ -38,9 +37,6 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
     let {dataset} = args
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     let datasets: DatasetsResponse
 

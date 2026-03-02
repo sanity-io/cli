@@ -11,7 +11,6 @@ import prettyMs from 'pretty-ms'
 import {promptForMediaLibrary} from '../../prompts/promptForMediaLibrary.js'
 import {getMediaLibraries} from '../../services/mediaLibraries.js'
 import {absolutify} from '../../util/absolutify.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const noop = () => null
 const exportDebug = subdebug('media:export')
@@ -65,11 +64,6 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
 
     const projectId = await this.getProjectId()
 
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {
-        exit: 1,
-      })
-    }
 
     const projectClient = await getProjectCliClient({
       apiVersion: 'v2025-02-19',

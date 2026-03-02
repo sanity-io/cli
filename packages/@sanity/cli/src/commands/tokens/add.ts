@@ -4,7 +4,6 @@ import {input, select} from '@sanity/cli-core/ux'
 
 import {validateRole} from '../../actions/tokens/validateRole.js'
 import {createToken, getTokenRoles} from '../../services/tokens.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const tokensAddDebug = subdebug('tokens:add')
 
@@ -59,9 +58,6 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
     const {json, role} = flags
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     try {
       const label = givenLabel || (await this.promptForLabel())

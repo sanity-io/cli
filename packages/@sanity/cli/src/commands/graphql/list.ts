@@ -7,7 +7,6 @@ import {
   type GraphQLEndpoint,
   listGraphQLEndpoints,
 } from '../../services/graphql.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const listGraphQLDebug = subdebug('graphql:list')
 
@@ -24,9 +23,6 @@ export class List extends SanityCommand<typeof List> {
     await this.parse(List)
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     let endpoints: GraphQLEndpoint[] | undefined
     try {

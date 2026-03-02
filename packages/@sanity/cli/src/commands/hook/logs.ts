@@ -12,7 +12,6 @@ import {
   getHookMessagesForProject,
   getHooksForProject,
 } from '../../services/hooks.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const logsHookDebug = subdebug('hook:logs')
 
@@ -49,9 +48,6 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
 
     // Ensure we have project context
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     // Get hooks for the project
     let hooks: Hook[]

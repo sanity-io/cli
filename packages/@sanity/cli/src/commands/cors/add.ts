@@ -9,7 +9,6 @@ import {oneline} from 'oneline'
 
 import {filterAndValidateOrigin} from '../../actions/cors/filterAndValidateOrigin.js'
 import {createCorsOrigin} from '../../services/cors.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const addCorsDebug = subdebug('cors:add')
 
@@ -53,9 +52,6 @@ export class Add extends SanityCommand<typeof Add> {
 
     // Ensure we have project context
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     // Check if the origin argument looks like a file path and warn
     try {

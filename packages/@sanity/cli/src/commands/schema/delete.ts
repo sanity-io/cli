@@ -4,7 +4,6 @@ import {parseStringFlag, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
 import {parseIds} from '../../actions/schema/utils/schemaStoreValidation.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const deleteSchemaDebug = subdebug('schema:delete')
 
@@ -61,9 +60,6 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       const workDir = await this.getProjectRoot()
       const projectId = await this.getProjectId()
 
-      if (!projectId) {
-        this.error(NO_PROJECT_ID, {exit: 1})
-      }
 
       await deleteSchemaAction({
         configPath: workDir.path,

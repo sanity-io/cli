@@ -8,7 +8,6 @@ import {isAfter, isValid, lightFormat, parse} from 'date-fns'
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const listBackupDebug = subdebug('backup:list')
 
@@ -68,9 +67,6 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     let {dataset} = args
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     let datasets: DatasetsResponse
 

@@ -10,7 +10,6 @@ import {importer, type State} from '../../actions/media/importMedia.js'
 import {importMediaDebug} from '../../actions/media/importMediaDebug.js'
 import {promptForMediaLibrary} from '../../prompts/promptForMediaLibrary.js'
 import {getMediaLibraries} from '../../services/mediaLibraries.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand> {
   static override args = {
@@ -56,11 +55,6 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
     const cliConfig = await this.getCliConfig()
     const dataset = cliConfig.api?.dataset
 
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {
-        exit: 1,
-      })
-    }
 
     let mediaLibraries
     try {

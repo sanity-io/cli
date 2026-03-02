@@ -6,7 +6,6 @@ import {Table} from 'console-table-printer'
 import {sortBy} from 'lodash-es'
 
 import {getMembersForProject} from '../../actions/users/getMembersForProject.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const sortFields = ['id', 'name', 'role', 'date']
 
@@ -58,9 +57,6 @@ export class List extends SanityCommand<typeof List> {
 
     const projectId = await this.getProjectId()
 
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     const members = await getMembersForProject({
       includeInvitations: invitations,

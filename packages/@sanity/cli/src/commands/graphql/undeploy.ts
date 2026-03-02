@@ -4,7 +4,6 @@ import {confirm} from '@sanity/cli-core/ux'
 
 import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
 import {deleteGraphQLAPI} from '../../services/graphql.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const undeployGraphqlDebug = subdebug('graphql:undeploy')
 
@@ -98,9 +97,6 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
     // Get projectId from config if not specified
     if (!projectId) {
       projectId = await this.getProjectId()
-      if (!projectId) {
-        this.error(NO_PROJECT_ID, {exit: 1})
-      }
     }
 
     // Get dataset from CLI config if not specified

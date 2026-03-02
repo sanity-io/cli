@@ -4,7 +4,6 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {formatFailure} from '../../actions/hook/formatFailure.js'
 import {type DeliveryAttempt} from '../../actions/hook/types.js'
 import {getHookAttempt} from '../../services/hooks.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const attemptDebug = subdebug('hook:attempt')
 
@@ -29,9 +28,6 @@ export class AttemptHookCommand extends SanityCommand<typeof AttemptHookCommand>
     const {attemptId} = args
 
     const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     let attempt: DeliveryAttempt
     try {

@@ -2,7 +2,6 @@ import {Args, Flags} from '@oclif/core'
 import {colorizeJson, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 
 const queryDocumentDebug = subdebug('documents:query')
 
@@ -68,9 +67,6 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
     const targetProject = project || configProjectId
     const requireUser = !anonymous
 
-    if (!targetProject) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
 
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(
