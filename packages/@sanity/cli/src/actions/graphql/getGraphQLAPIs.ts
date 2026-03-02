@@ -2,7 +2,8 @@ import {isMainThread} from 'node:worker_threads'
 
 import {type CliConfig, findStudioConfigPath, getCliConfig, studioWorkerTask} from '@sanity/cli-core'
 
-import {type ExtractedGraphQLAPI} from './types.js'
+import {SchemaError} from './SchemaError.js'
+import {type ExtractedGraphQLAPI, type GraphQLWorkerResult} from './types.js'
 
 export async function getGraphQLAPIs(workDir: string): Promise<ExtractedGraphQLAPI[]> {
   if (!isMainThread) {
@@ -12,7 +13,7 @@ export async function getGraphQLAPIs(workDir: string): Promise<ExtractedGraphQLA
   const cliConfig = await getCliConfig(workDir)
   const configPath = await findStudioConfigPath(workDir)
 
-  return studioWorkerTask<ExtractedGraphQLAPI[]>(
+  const result = await studioWorkerTask<GraphQLWorkerResult>(
     new URL('getGraphQLAPIs.worker.js', import.meta.url),
     {
       name: 'getGraphQLAPIs',
@@ -23,6 +24,12 @@ export async function getGraphQLAPIs(workDir: string): Promise<ExtractedGraphQLA
       },
     },
   )
+
+  if (result.configErrors?.length) {
+    throw new SchemaError(result.configErrors)
+  }
+
+  return result.apis
 }
 
 function extractGraphQLConfig(config: CliConfig) {

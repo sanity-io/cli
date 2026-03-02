@@ -116,6 +116,12 @@ export interface ExtractedGraphQLAPI {
   tag?: string
 }
 
+export interface GraphQLWorkerResult {
+  apis: ExtractedGraphQLAPI[]
+
+  configErrors?: SchemaValidationProblemGroup[]
+}
+
 interface ConvertedNode {
   description: string
   fields: ConvertedFieldDefinition[]

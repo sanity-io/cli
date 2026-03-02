@@ -4,6 +4,7 @@ import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getGraphQLAPIs} from '../../../actions/graphql/getGraphQLAPIs.js'
+import {SchemaError} from '../../../actions/graphql/SchemaError.js'
 import {GRAPHQL_API_VERSION} from '../../../services/graphql.js'
 import {Undeploy} from '../undeploy.js'
 
@@ -328,6 +329,33 @@ describe('graphql undeploy', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('catches SchemaError from getGraphQLAPIs when using --api flag', async () => {
+    const problemGroups = [
+      {
+        path: [{kind: 'type' as const, name: 'post', type: 'document'}],
+        problems: [{message: 'Unknown type: "nonExistent"', severity: 'error' as const}],
+      },
+    ]
+
+    mockGetGraphQLAPIs.mockRejectedValueOnce(new SchemaError(problemGroups))
+
+    const {error, stderr} = await testCommand(Undeploy, ['--api', 'ios'], {mocks: defaultMocks})
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Fix the schema errors above and try again')
+    expect(error?.oclif?.exit).toBe(1)
+    expect(stderr).toContain('Found errors in schema:')
+  })
+
+  test('rethrows non-SchemaError from getGraphQLAPIs when using --api flag', async () => {
+    mockGetGraphQLAPIs.mockRejectedValueOnce(new Error('Worker crashed'))
+
+    const {error} = await testCommand(Undeploy, ['--api', 'ios'], {mocks: defaultMocks})
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toBe('Worker crashed')
+  })
+
   describe('outside project context', () => {
     const noProjectRootMocks = {
       cliConfigError: new ProjectRootNotFoundError('No project root found'),
@@ -373,5 +401,4 @@ describe('graphql undeploy', () => {
       expect(error?.message).toContain('Dataset is required')
       expect(error?.oclif?.exit).toBe(1)
     })
-  })
 })

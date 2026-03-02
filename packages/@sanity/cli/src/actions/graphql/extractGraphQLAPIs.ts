@@ -2,7 +2,14 @@ import {isMainThread} from 'node:worker_threads'
 
 import {type CliConfig, findStudioConfigPath, getCliConfig, studioWorkerTask} from '@sanity/cli-core'
 
-import {type ApiSpecification, type ConvertedType, type ExtractedGraphQLAPI, internal} from './types.js'
+import {SchemaError} from './SchemaError.js'
+import {
+  type ApiSpecification,
+  type ConvertedType,
+  type ExtractedGraphQLAPI,
+  type GraphQLWorkerResult,
+  internal,
+} from './types.js'
 
 export async function extractGraphQLAPIs(
   workDir: string,
@@ -15,7 +22,7 @@ export async function extractGraphQLAPIs(
   const cliConfig = await getCliConfig(workDir)
   const configPath = await findStudioConfigPath(workDir)
 
-  const results = await studioWorkerTask<ExtractedGraphQLAPI[]>(
+  const result = await studioWorkerTask<GraphQLWorkerResult>(
     new URL('extractGraphQLAPIs.worker.js', import.meta.url),
     {
       name: 'extractGraphQLAPIs',
@@ -30,15 +37,19 @@ export async function extractGraphQLAPIs(
     },
   )
 
+  if (result.configErrors?.length) {
+    throw new SchemaError(result.configErrors)
+  }
+
   // Restore Symbol-keyed [internal] properties that were serialized as string keys
   // for postMessage. The gen3 schema generator reads type[internal] for deprecation info.
-  for (const api of results) {
+  for (const api of result.apis) {
     if (api.extracted) {
       deserializeInternalSymbols(api.extracted)
     }
   }
 
-  return results
+  return result.apis
 }
 
 function extractGraphQLConfig(config: CliConfig) {

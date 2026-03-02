@@ -3,6 +3,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
+import {SchemaError} from '../../actions/graphql/SchemaError.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {deleteGraphQLAPI} from '../../services/graphql.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
@@ -77,7 +78,16 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
     // If specifying --api, use it for the flags not provided
     if (apiFlag) {
       const workDir = process.cwd()
-      const apiDefs = await getGraphQLAPIs(workDir)
+      let apiDefs
+      try {
+        apiDefs = await getGraphQLAPIs(workDir)
+      } catch (error) {
+        if (error instanceof SchemaError) {
+          error.print(this.output)
+          this.error('Fix the schema errors above and try again', {exit: 1})
+        }
+        throw error
+      }
       const apiDef = apiDefs.find((def) => def.id === apiFlag)
 
       if (!apiDef) {

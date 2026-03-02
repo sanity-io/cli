@@ -2,12 +2,9 @@ import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
 import {getStudioWorkspaces} from '@sanity/cli-core'
 
+import {isSchemaError} from '../../util/isSchemaError.js'
 import {resolveGraphQLApis} from './resolveGraphQLApisFromWorkspaces.js'
-import {type ExtractedGraphQLAPI, type GraphQLAPIConfig} from './types.js'
-
-if (isMainThread || !parentPort) {
-  throw new Error('This module must be run as a worker thread')
-}
+import {type GraphQLAPIConfig, type GraphQLWorkerResult} from './types.js'
 
 interface WorkerData {
   configPath: string
@@ -17,21 +14,42 @@ interface WorkerData {
 
 const {cliConfig, configPath} = workerData as WorkerData
 
-// Load workspaces — this loads sanity.config.ts through Vite
-const workspaces = await getStudioWorkspaces(configPath)
+async function main() {
+  if (isMainThread || !parentPort) {
+    throw new Error('This module must be run as a worker thread')
+  }
 
-// Resolve which GraphQL APIs exist from workspace + CLI config
-const resolvedApis = resolveGraphQLApis({cliConfig, workspaces})
+  // Load workspaces — this loads sanity.config.ts through Vite
+  let workspaces
+  try {
+    workspaces = await getStudioWorkspaces(configPath)
+  } catch (err) {
+    if (isSchemaError(err)) {
+      const validation = err.schema._validation ?? []
+      const configErrors = validation.filter((g) =>
+        g.problems.some((p) => p.severity === 'error'),
+      )
+      parentPort.postMessage({apis: [], configErrors} satisfies GraphQLWorkerResult)
+      return
+    }
+    throw err
+  }
 
-const results: ExtractedGraphQLAPI[] = resolvedApis.map((api) => ({
-  dataset: api.dataset,
-  filterSuffix: api.filterSuffix,
-  generation: api.generation,
-  id: api.id,
-  nonNullDocumentFields: api.nonNullDocumentFields,
-  playground: api.playground,
-  projectId: api.projectId,
-  tag: api.tag,
-}))
+  // Resolve which GraphQL APIs exist from workspace + CLI config
+  const resolvedApis = resolveGraphQLApis({cliConfig, workspaces})
 
-parentPort.postMessage(results)
+  const apis = resolvedApis.map((api) => ({
+    dataset: api.dataset,
+    filterSuffix: api.filterSuffix,
+    generation: api.generation,
+    id: api.id,
+    nonNullDocumentFields: api.nonNullDocumentFields,
+    playground: api.playground,
+    projectId: api.projectId,
+    tag: api.tag,
+  }))
+
+  parentPort.postMessage({apis} satisfies GraphQLWorkerResult)
+}
+
+await main()

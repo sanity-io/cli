@@ -123,6 +123,10 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         withUnionCache,
       })
     } catch (error) {
+      if (error instanceof SchemaError) {
+        error.print(this.output)
+        this.error('Fix the schema errors above and try again', {exit: 1})
+      }
       debug('Failed to resolve GraphQL APIs', error)
       this.error('Failed to resolve GraphQL APIs', {exit: 1})
     }

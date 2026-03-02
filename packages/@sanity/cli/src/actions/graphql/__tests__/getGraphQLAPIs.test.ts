@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {getGraphQLAPIs} from '../getGraphQLAPIs.js'
+import {SchemaError} from '../SchemaError.js'
 
 const mockGetCliConfig = vi.hoisted(() => vi.fn())
 const mockFindStudioConfigPath = vi.hoisted(() => vi.fn())
@@ -28,9 +29,9 @@ describe('getGraphQLAPIs', () => {
       graphql: [{id: 'api1'}],
     })
     mockFindStudioConfigPath.mockResolvedValue('/path/to/sanity.config.ts')
-    mockStudioWorkerTask.mockResolvedValue([
-      {dataset: 'production', projectId: 'test-project', tag: 'default'},
-    ])
+    mockStudioWorkerTask.mockResolvedValue({
+      apis: [{dataset: 'production', projectId: 'test-project', tag: 'default'}],
+    })
 
     const result = await getGraphQLAPIs('/test/workdir')
 
@@ -63,7 +64,7 @@ describe('getGraphQLAPIs', () => {
       vite: () => ({}),
     })
     mockFindStudioConfigPath.mockResolvedValue('/config')
-    mockStudioWorkerTask.mockResolvedValue([])
+    mockStudioWorkerTask.mockResolvedValue({apis: []})
 
     await getGraphQLAPIs('/test/workdir')
 
@@ -79,13 +80,40 @@ describe('getGraphQLAPIs', () => {
     mockGetCliConfig.mockResolvedValue({api: {}})
     mockFindStudioConfigPath.mockResolvedValue('/config')
 
-    const workerResult = [
+    const apis = [
       {dataset: 'production', id: 'api1', projectId: 'p1', tag: 'default'},
       {dataset: 'staging', id: 'api2', projectId: 'p1', tag: 'staging'},
     ]
-    mockStudioWorkerTask.mockResolvedValue(workerResult)
+    mockStudioWorkerTask.mockResolvedValue({apis})
 
     const result = await getGraphQLAPIs('/test/workdir')
-    expect(result).toEqual(workerResult)
+    expect(result).toEqual(apis)
+  })
+
+  test('throws SchemaError when worker returns configErrors', async () => {
+    mockGetCliConfig.mockResolvedValue({api: {}})
+    mockFindStudioConfigPath.mockResolvedValue('/config')
+
+    const configErrors = [
+      {
+        path: [{kind: 'type', name: 'post', type: 'document'}],
+        problems: [{message: 'Unknown type: "nonExistent"', severity: 'error'}],
+      },
+    ]
+    mockStudioWorkerTask.mockResolvedValue({apis: [], configErrors})
+
+    const error: unknown = await getGraphQLAPIs('/test/workdir').catch((err) => err)
+    expect(error).toBeInstanceOf(SchemaError)
+    expect(error).toHaveProperty('message', 'Schema errors encountered')
+  })
+
+  test('does not throw when configErrors is empty', async () => {
+    mockGetCliConfig.mockResolvedValue({api: {}})
+    mockFindStudioConfigPath.mockResolvedValue('/config')
+
+    mockStudioWorkerTask.mockResolvedValue({apis: [], configErrors: []})
+
+    const result = await getGraphQLAPIs('/test/workdir')
+    expect(result).toEqual([])
   })
 })

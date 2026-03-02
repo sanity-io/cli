@@ -1,6 +1,7 @@
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {extractGraphQLAPIs} from '../extractGraphQLAPIs.js'
+import {SchemaError} from '../SchemaError.js'
 import {type ConvertedType, type ExtractedGraphQLAPI, internal} from '../types.js'
 
 const mockGetCliConfig = vi.hoisted(() => vi.fn())
@@ -33,7 +34,7 @@ describe('extractGraphQLAPIs', () => {
 
   test('calls studioWorkerTask with correct parameters', async () => {
     setupMocks()
-    mockStudioWorkerTask.mockResolvedValue([])
+    mockStudioWorkerTask.mockResolvedValue({apis: []})
 
     await extractGraphQLAPIs('/test/workdir', {
       nonNullDocumentFieldsFlag: true,
@@ -59,7 +60,7 @@ describe('extractGraphQLAPIs', () => {
 
   test('passes undefined options when not specified', async () => {
     setupMocks()
-    mockStudioWorkerTask.mockResolvedValue([])
+    mockStudioWorkerTask.mockResolvedValue({apis: []})
 
     await extractGraphQLAPIs('/test/workdir', {})
 
@@ -72,7 +73,7 @@ describe('extractGraphQLAPIs', () => {
     test('restores __internal string keys to Symbol-keyed [internal] properties', async () => {
       setupMocks()
 
-      const workerResult: ExtractedGraphQLAPI[] = [
+      const apis: ExtractedGraphQLAPI[] = [
         {
           dataset: 'production',
           extracted: {
@@ -90,7 +91,7 @@ describe('extractGraphQLAPIs', () => {
           projectId: 'p1',
         },
       ]
-      mockStudioWorkerTask.mockResolvedValue(workerResult)
+      mockStudioWorkerTask.mockResolvedValue({apis})
 
       const result = await extractGraphQLAPIs('/test/workdir', {})
 
@@ -103,7 +104,7 @@ describe('extractGraphQLAPIs', () => {
     test('does not modify types without __internal', async () => {
       setupMocks()
 
-      const workerResult: ExtractedGraphQLAPI[] = [
+      const apis: ExtractedGraphQLAPI[] = [
         {
           dataset: 'production',
           extracted: {
@@ -120,7 +121,7 @@ describe('extractGraphQLAPIs', () => {
           projectId: 'p1',
         },
       ]
-      mockStudioWorkerTask.mockResolvedValue(workerResult)
+      mockStudioWorkerTask.mockResolvedValue({apis})
 
       const result = await extractGraphQLAPIs('/test/workdir', {})
 
@@ -131,19 +132,46 @@ describe('extractGraphQLAPIs', () => {
     test('skips deserialization for APIs without extracted data', async () => {
       setupMocks()
 
-      const workerResult: ExtractedGraphQLAPI[] = [
+      const apis: ExtractedGraphQLAPI[] = [
         {
           dataset: 'production',
           extractionError: 'Schema compilation failed',
           projectId: 'p1',
         },
       ]
-      mockStudioWorkerTask.mockResolvedValue(workerResult)
+      mockStudioWorkerTask.mockResolvedValue({apis})
 
       const result = await extractGraphQLAPIs('/test/workdir', {})
 
       expect(result[0].extracted).toBeUndefined()
       expect(result[0].extractionError).toBe('Schema compilation failed')
+    })
+  })
+
+  describe('config errors', () => {
+    test('throws SchemaError when worker returns configErrors', async () => {
+      setupMocks()
+
+      const configErrors = [
+        {
+          path: [{kind: 'type', name: 'badType', type: 'object'}],
+          problems: [{message: 'Unknown type: "missing"', severity: 'error'}],
+        },
+      ]
+      mockStudioWorkerTask.mockResolvedValue({apis: [], configErrors})
+
+      const error: unknown = await extractGraphQLAPIs('/test/workdir', {}).catch((err) => err)
+      expect(error).toBeInstanceOf(SchemaError)
+      expect(error).toHaveProperty('message', 'Schema errors encountered')
+    })
+
+    test('does not throw when configErrors is empty', async () => {
+      setupMocks()
+
+      mockStudioWorkerTask.mockResolvedValue({apis: [], configErrors: []})
+
+      const result = await extractGraphQLAPIs('/test/workdir', {})
+      expect(result).toEqual([])
     })
   })
 })
