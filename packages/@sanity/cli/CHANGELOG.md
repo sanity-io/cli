@@ -1,5 +1,42 @@
 # Changelog
 
+## [6.0.0-alpha.18](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.17...cli-v6.0.0-alpha.18) (2026-03-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* refactor promisyWorker to take a url instead of a worker ([#477](https://github.com/sanity-io/cli/issues/477))
+
+### Features
+
+* adapt binary in help output based on execution env ([#467](https://github.com/sanity-io/cli/issues/467)) ([a01ee3c](https://github.com/sanity-io/cli/commit/a01ee3c0f397d3344dd2eefe86750e5438bfbf67))
+* **cli-core:** add non-interactive environment detection for prompts ([#470](https://github.com/sanity-io/cli/issues/470)) ([e9dc8fb](https://github.com/sanity-io/cli/commit/e9dc8fbc8c57b7b99d27fdf5ec6b1aa92a7ca740))
+* **dataset:** add embeddings configuration commands ([35c720d](https://github.com/sanity-io/cli/commit/35c720d43bb0ef795dbf624ea2475c5d83a6689e))
+* refactor promisyWorker to take a url instead of a worker ([#477](https://github.com/sanity-io/cli/issues/477)) ([382820a](https://github.com/sanity-io/cli/commit/382820a51e5e8ce45ff9510c6d8703c6a71b1a91))
+
+
+### Bug Fixes
+
+* add missing `appId` warning to app build ([#486](https://github.com/sanity-io/cli/issues/486)) ([a05e45d](https://github.com/sanity-io/cli/commit/a05e45d6e91930e5440c4a353a145aefb8574b8b))
+* align exports with old cli ([#503](https://github.com/sanity-io/cli/issues/503)) ([fa0b9a7](https://github.com/sanity-io/cli/commit/fa0b9a7a76f21b65ca87b6f5c115a66d33093c21))
+* **cli:** align studio dependency requirements with old cli ([#466](https://github.com/sanity-io/cli/issues/466)) ([9b1cd9b](https://github.com/sanity-io/cli/commit/9b1cd9b0f487aeee8fdab5bf87126b9c125a1b3e))
+* **cli:** replace install-peerdeps with getPeerDependencies in yarn init ([#478](https://github.com/sanity-io/cli/issues/478)) ([9b50ff3](https://github.com/sanity-io/cli/commit/9b50ff3316ec487db1e9882c3fe1e463c987eebe))
+* **deps:** update dependency @sanity/runtime-cli to v14 ([#474](https://github.com/sanity-io/cli/issues/474)) ([d1c66dd](https://github.com/sanity-io/cli/commit/d1c66dd9314569a881100de2e8d419922493a586))
+* **deps:** update dependency tar to ^7.5.9 ([#472](https://github.com/sanity-io/cli/issues/472)) ([5bb3311](https://github.com/sanity-io/cli/commit/5bb331156f12d9a19b96199d42abc256295024d4))
+* **deps:** update oclif-tooling ([#469](https://github.com/sanity-io/cli/issues/469)) ([9152fd3](https://github.com/sanity-io/cli/commit/9152fd30c23ca7b7e39db72406fd845b409f9309))
+* handle prereleases in build/deploy/dev commands ([#454](https://github.com/sanity-io/cli/issues/454)) ([dbd23a6](https://github.com/sanity-io/cli/commit/dbd23a68427827fa2c9c7af10e531a8cc0c9c861))
+* warn when env var overrides configured basePath in build and dev ([#482](https://github.com/sanity-io/cli/issues/482)) ([8e3f838](https://github.com/sanity-io/cli/commit/8e3f8388f46cbbb1efa2793751941ffa343d56d1))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.17
+  * devDependencies
+    * @sanity/cli-test bumped to 0.0.2-alpha.16
+    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.3
+
 ## [6.0.0-alpha.17](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.16...cli-v6.0.0-alpha.17) (2026-02-24)
 
 

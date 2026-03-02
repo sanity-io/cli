@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.2-alpha.16](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.15...cli-test-v0.0.2-alpha.16) (2026-03-02)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.17
+    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.3
+  * peerDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.17
+
 ## [0.0.2-alpha.15](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.14...cli-test-v0.0.2-alpha.15) (2026-02-24)
 
 
