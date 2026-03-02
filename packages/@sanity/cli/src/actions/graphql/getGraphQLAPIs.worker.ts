@@ -60,6 +60,11 @@ function toWorkspaceMetadata(config: unknown): WorkspaceMetadata {
     throw new Error('Invalid workspace config: missing or invalid dataset')
   }
 
+  // Default to 'default' when no name is specified — this matches the convention used by
+  // resolveConfig() in the full-compile path (extractGraphQLAPIs). Both paths must agree on
+  // this default so that workspace lookup in resolveGraphQLApiMetadata/resolveGraphQLApis
+  // produces the same match. If Sanity's resolveConfig() ever changes this convention,
+  // this default must be updated to match.
   const name = 'name' in config && typeof config.name === 'string' ? config.name : 'default'
   const sources = extractSourceMetadata(config, {dataset: config.dataset, name, projectId: config.projectId})
 

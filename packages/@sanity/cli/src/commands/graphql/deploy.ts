@@ -124,10 +124,11 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       })
     } catch (error) {
       if (error instanceof SchemaError) {
+        debug('Schema validation errors: %O', error.problemGroups)
         error.print(this.output)
         this.error('Fix the schema errors above and try again', {exit: 1})
       }
-      debug('Failed to resolve GraphQL APIs', error)
+      debug('Failed to resolve GraphQL APIs: %O', error)
       const message = error instanceof Error ? error.message : String(error)
       this.error(`Failed to resolve GraphQL APIs: ${message}`, {exit: 1})
     }

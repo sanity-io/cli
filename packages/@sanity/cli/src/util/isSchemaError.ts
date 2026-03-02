@@ -7,6 +7,7 @@ export function isSchemaError(err: unknown): err is {schema: Schema} {
     'schema' in err &&
     err.schema !== null &&
     typeof err.schema === 'object' &&
-    '_validation' in err.schema
+    '_validation' in err.schema &&
+    Array.isArray(err.schema._validation)
   )
 }

@@ -147,47 +147,68 @@ export function resolveGraphQLApiMetadata({
   return resolveGraphQLApiMetadataFromConfig(apiDefs, workspaces)
 }
 
+/**
+ * Shared workspace/source resolution logic for both the metadata and full-compile paths.
+ *
+ * Both `resolveGraphQLAPIsFromConfig` and `resolveGraphQLApiMetadataFromConfig` need to
+ * resolve the workspace and source for each GraphQL API config entry. This helper
+ * extracts that shared logic so bug fixes and edge-case handling apply to both paths.
+ */
+function resolveWorkspaceAndSource<
+  TWorkspace extends {name: string},
+  TSource extends {name: string},
+>(
+  apiDef: GraphQLAPIConfig,
+  workspaces: TWorkspace[],
+  getSources: (workspace: TWorkspace) => TSource[],
+): {source: TSource; workspace: TWorkspace} {
+  const {source: sourceName, workspace: workspaceName} = apiDef
+
+  if (!workspaceName && workspaces.length > 1) {
+    throw new Error(
+      'Must define `workspace` name in GraphQL API config when multiple workspaces are defined',
+    )
+  }
+
+  // If we only have a single workspace defined, we can assume that is the intended one,
+  // even if no `workspace` is defined for the GraphQL API
+  const workspace =
+    !workspaceName && workspaces.length === 1
+      ? workspaces[0]
+      : workspaces.find((space) => space.name === (workspaceName || 'default'))
+
+  if (!workspace) {
+    throw new Error(`Workspace "${workspaceName || 'default'}" not found`)
+  }
+
+  const sources = getSources(workspace)
+
+  // If we only have a single source defined, we can assume that is the intended one,
+  // even if no `source` is defined for the GraphQL API
+  const source =
+    !sourceName && sources.length === 1
+      ? sources[0]
+      : sources.find((src) => src.name === (sourceName || 'default'))
+
+  if (!source) {
+    throw new Error(
+      `Source "${sourceName || 'default'}" not found in workspace "${
+        workspaceName || 'default'
+      }"`,
+    )
+  }
+
+  return {source, workspace}
+}
+
 function resolveGraphQLApiMetadataFromConfig(
   apiDefs: GraphQLAPIConfig[],
   workspaces: WorkspaceMetadata[],
 ): ExtractedGraphQLAPI[] {
-  const resolvedApis: ExtractedGraphQLAPI[] = []
+  return apiDefs.map((apiDef) => {
+    const {source} = resolveWorkspaceAndSource(apiDef, workspaces, (ws) => ws.sources)
 
-  for (const apiDef of apiDefs) {
-    const {source: sourceName, workspace: workspaceName} = apiDef
-    if (!workspaceName && workspaces.length > 1) {
-      throw new Error(
-        'Must define `workspace` name in GraphQL API config when multiple workspaces are defined',
-      )
-    }
-
-    // If we only have a single workspace defined, we can assume that is the intended one,
-    // even if no `workspace` is defined for the GraphQL API
-    const workspace =
-      !workspaceName && workspaces.length === 1
-        ? workspaces[0]
-        : workspaces.find((space) => space.name === (workspaceName || 'default'))
-
-    if (!workspace) {
-      throw new Error(`Workspace "${workspaceName || 'default'}" not found`)
-    }
-
-    // If we only have a single source defined, we can assume that is the intended one,
-    // even if no `source` is defined for the GraphQL API
-    const source =
-      !sourceName && workspace.sources.length === 1
-        ? workspace.sources[0]
-        : workspace.sources.find((src) => src.name === (sourceName || 'default'))
-
-    if (!source) {
-      throw new Error(
-        `Source "${sourceName || 'default'}" not found in workspace "${
-          workspaceName || 'default'
-        }"`,
-      )
-    }
-
-    resolvedApis.push({
+    return {
       dataset: apiDef.dataset ?? source.dataset,
       filterSuffix: apiDef.filterSuffix,
       generation: apiDef.generation,
@@ -196,61 +217,24 @@ function resolveGraphQLApiMetadataFromConfig(
       playground: apiDef.playground,
       projectId: apiDef.projectId ?? source.projectId,
       tag: apiDef.tag,
-    })
-  }
-
-  return resolvedApis
+    }
+  })
 }
 
 function resolveGraphQLAPIsFromConfig(
   apiDefs: GraphQLAPIConfig[],
   workspaces: Workspace[],
 ): TypeResolvedGraphQLAPI[] {
-  const resolvedApis: TypeResolvedGraphQLAPI[] = []
+  return apiDefs.map((apiDef) => {
+    const {source} = resolveWorkspaceAndSource(apiDef, workspaces, (ws) => ws.unstable_sources)
 
-  for (const apiDef of apiDefs) {
-    const {source: sourceName, workspace: workspaceName} = apiDef
-    if (!workspaceName && workspaces.length > 1) {
-      throw new Error(
-        'Must define `workspace` name in GraphQL API config when multiple workspaces are defined',
-      )
-    }
-
-    // If we only have a single workspace defined, we can assume that is the intended one,
-    // even if no `workspace` is defined for the GraphQL API
-    const workspace =
-      !workspaceName && workspaces.length === 1
-        ? workspaces[0]
-        : workspaces.find((space) => space.name === (workspaceName || 'default'))
-
-    if (!workspace) {
-      throw new Error(`Workspace "${workspaceName || 'default'}" not found`)
-    }
-
-    // If we only have a single source defined, we can assume that is the intended one,
-    // even if no `source` is defined for the GraphQL API
-    const source =
-      !sourceName && workspace.unstable_sources.length === 1
-        ? workspace.unstable_sources[0]
-        : workspace.unstable_sources.find((src) => src.name === (sourceName || 'default'))
-
-    if (!source) {
-      throw new Error(
-        `Source "${sourceName || 'default'}" not found in workspace "${
-          workspaceName || 'default'
-        }"`,
-      )
-    }
-
-    resolvedApis.push({
+    return {
       ...apiDef,
       dataset: apiDef.dataset ?? source.dataset,
       projectId: apiDef.projectId ?? source.projectId,
       schemaTypes: getStrippedSchemaTypes(source.schema),
-    })
-  }
-
-  return resolvedApis
+    }
+  })
 }
 
 function validateCliConfig(
