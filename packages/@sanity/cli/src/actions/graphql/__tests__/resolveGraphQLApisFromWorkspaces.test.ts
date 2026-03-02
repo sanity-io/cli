@@ -1,7 +1,12 @@
 import {type Schema} from '@sanity/types'
 import {describe, expect, test} from 'vitest'
 
-import {resolveGraphQLApis, type Workspace} from '../resolveGraphQLApisFromWorkspaces.js'
+import {
+  resolveGraphQLApiMetadata,
+  resolveGraphQLApis,
+  type Workspace,
+  type WorkspaceMetadata,
+} from '../resolveGraphQLApisFromWorkspaces.js'
 
 function createMockSchema(types: {name: string; type: string}[] = []): Schema {
   return {
@@ -238,6 +243,203 @@ describe('resolveGraphQLApis', () => {
 
       const result = resolveGraphQLApis({workspaces: [workspace]})
       expect(result[0].schemaTypes).toEqual([])
+    })
+  })
+})
+
+function createWorkspaceMetadata(
+  overrides: Partial<WorkspaceMetadata> = {},
+): WorkspaceMetadata {
+  return {
+    dataset: 'production',
+    name: 'default',
+    projectId: 'proj1',
+    ...overrides,
+  }
+}
+
+describe('resolveGraphQLApiMetadata', () => {
+  describe('single workspace, no config', () => {
+    test('returns metadata from the single workspace', () => {
+      const ws = createWorkspaceMetadata()
+      const result = resolveGraphQLApiMetadata({workspaces: [ws]})
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({dataset: 'production', projectId: 'proj1'})
+    })
+
+    test('does not include extracted or schemaErrors', () => {
+      const ws = createWorkspaceMetadata()
+      const result = resolveGraphQLApiMetadata({workspaces: [ws]})
+
+      expect(result[0].extracted).toBeUndefined()
+      expect(result[0].schemaErrors).toBeUndefined()
+      expect(result[0].extractionError).toBeUndefined()
+    })
+  })
+
+  describe('error cases', () => {
+    test('throws when no workspaces are provided', () => {
+      expect(() => resolveGraphQLApiMetadata({workspaces: []})).toThrow(
+        'No studio configuration found',
+      )
+    })
+
+    test('throws when multiple workspaces without graphql config', () => {
+      const ws1 = createWorkspaceMetadata({name: 'ws1'})
+      const ws2 = createWorkspaceMetadata({name: 'ws2'})
+
+      expect(() => resolveGraphQLApiMetadata({workspaces: [ws1, ws2]})).toThrow(
+        'Multiple workspaces/sources configured',
+      )
+    })
+  })
+
+  describe('with graphql config', () => {
+    test('resolves metadata from explicit workspace', () => {
+      const ws = createWorkspaceMetadata({dataset: 'staging', name: 'studio', projectId: 'p1'})
+
+      const result = resolveGraphQLApiMetadata({
+        cliConfig: {graphql: [{id: 'my-api', tag: 'v1', workspace: 'studio'}]},
+        workspaces: [ws],
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({
+        dataset: 'staging',
+        id: 'my-api',
+        projectId: 'p1',
+        tag: 'v1',
+      })
+    })
+
+    test('infers single workspace when workspace name not specified', () => {
+      const ws = createWorkspaceMetadata({name: 'my-studio'})
+
+      const result = resolveGraphQLApiMetadata({
+        cliConfig: {graphql: [{tag: 'default'}]},
+        workspaces: [ws],
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({dataset: 'production', projectId: 'proj1'})
+    })
+
+    test('uses apiDef dataset/projectId when specified', () => {
+      const ws = createWorkspaceMetadata({dataset: 'production', projectId: 'proj1'})
+
+      const result = resolveGraphQLApiMetadata({
+        cliConfig: {graphql: [{dataset: 'override-ds', projectId: 'override-proj'}]},
+        workspaces: [ws],
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({dataset: 'override-ds', projectId: 'override-proj'})
+    })
+
+    test('falls back to workspace dataset/projectId when apiDef omits them', () => {
+      const ws = createWorkspaceMetadata({dataset: 'ws-dataset', projectId: 'ws-proj'})
+
+      const result = resolveGraphQLApiMetadata({
+        cliConfig: {graphql: [{tag: 'default'}]},
+        workspaces: [ws],
+      })
+
+      expect(result[0]).toMatchObject({dataset: 'ws-dataset', projectId: 'ws-proj'})
+    })
+
+    test('preserves all optional fields from apiDef', () => {
+      const ws = createWorkspaceMetadata()
+
+      const result = resolveGraphQLApiMetadata({
+        cliConfig: {
+          graphql: [
+            {
+              filterSuffix: 'Filter',
+              generation: 'gen3',
+              id: 'test-api',
+              nonNullDocumentFields: true,
+              playground: false,
+              tag: 'staging',
+            },
+          ],
+        },
+        workspaces: [ws],
+      })
+
+      expect(result[0]).toMatchObject({
+        filterSuffix: 'Filter',
+        generation: 'gen3',
+        id: 'test-api',
+        nonNullDocumentFields: true,
+        playground: false,
+        tag: 'staging',
+      })
+    })
+
+    test('resolves multiple APIs from config', () => {
+      const ws1 = createWorkspaceMetadata({dataset: 'prod', name: 'prod', projectId: 'p1'})
+      const ws2 = createWorkspaceMetadata({dataset: 'staging', name: 'staging', projectId: 'p1'})
+
+      const result = resolveGraphQLApiMetadata({
+        cliConfig: {
+          graphql: [
+            {id: 'prod-api', tag: 'default', workspace: 'prod'},
+            {id: 'staging-api', tag: 'staging', workspace: 'staging'},
+          ],
+        },
+        workspaces: [ws1, ws2],
+      })
+
+      expect(result).toHaveLength(2)
+      expect(result[0]).toMatchObject({dataset: 'prod', id: 'prod-api', tag: 'default'})
+      expect(result[1]).toMatchObject({dataset: 'staging', id: 'staging-api', tag: 'staging'})
+    })
+
+    test('throws when workspace name required but not specified', () => {
+      const ws1 = createWorkspaceMetadata({name: 'ws1'})
+      const ws2 = createWorkspaceMetadata({name: 'ws2'})
+
+      expect(() =>
+        resolveGraphQLApiMetadata({
+          cliConfig: {graphql: [{tag: 'default'}]},
+          workspaces: [ws1, ws2],
+        }),
+      ).toThrow('Must define `workspace` name')
+    })
+
+    test('throws when workspace not found', () => {
+      const ws = createWorkspaceMetadata({name: 'studio'})
+
+      expect(() =>
+        resolveGraphQLApiMetadata({
+          cliConfig: {graphql: [{workspace: 'nonexistent'}]},
+          workspaces: [ws],
+        }),
+      ).toThrow('Workspace "nonexistent" not found')
+    })
+
+    test('defaults workspace lookup to "default" when name not specified', () => {
+      const ws1 = createWorkspaceMetadata({name: 'default', projectId: 'default-proj'})
+      const ws2 = createWorkspaceMetadata({name: 'other', projectId: 'other-proj'})
+
+      const result = resolveGraphQLApiMetadata({
+        cliConfig: {graphql: [{workspace: 'default'}]},
+        workspaces: [ws1, ws2],
+      })
+
+      expect(result[0]).toMatchObject({projectId: 'default-proj'})
+    })
+
+    test('throws when graphql config is empty array', () => {
+      const ws = createWorkspaceMetadata()
+
+      expect(() =>
+        resolveGraphQLApiMetadata({
+          cliConfig: {graphql: []},
+          workspaces: [ws],
+        }),
+      ).toThrow('No GraphQL APIs defined')
     })
   })
 })
