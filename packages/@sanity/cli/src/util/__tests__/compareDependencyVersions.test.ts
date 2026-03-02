@@ -354,9 +354,9 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      await expect(
-        compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
-      ).rejects.toThrow(/Failed to fetch remote version for .+: getaddrinfo ENOTFOUND/)
+      await expect(compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir')).rejects.toThrow(
+        /Failed to fetch remote version for .+: getaddrinfo ENOTFOUND/,
+      )
     })
 
     it("should throw when response is missing the 'x-resolved-version' header", async () => {
@@ -371,9 +371,9 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      await expect(
-        compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
-      ).rejects.toThrow("Missing 'x-resolved-version' header")
+      await expect(compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir')).rejects.toThrow(
+        "Missing 'x-resolved-version' header",
+      )
     })
 
     it('should throw when response has an unexpected HTTP status code', async () => {
@@ -389,9 +389,9 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      await expect(
-        compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
-      ).rejects.toThrow('Unexpected HTTP response: 500 Internal Server Error')
+      await expect(compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir')).rejects.toThrow(
+        'Unexpected HTTP response: 500 Internal Server Error',
+      )
     })
   })
 
@@ -463,9 +463,9 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      await expect(
-        compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
-      ).rejects.toThrow('Failed to parse installed version for sanity')
+      await expect(compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir')).rejects.toThrow(
+        'Failed to parse installed version for sanity',
+      )
     })
   })
 
@@ -527,15 +527,10 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      const result = await compare(
-        [{name: 'sanity', version: '5.11.1-alpha.14'}],
-        '/test/workdir',
-      )
+      const result = await compare([{name: 'sanity', version: '5.11.1-alpha.14'}], '/test/workdir')
 
       expect(result.mismatched).toEqual([])
-      expect(result.unresolvedPrerelease).toEqual([
-        {pkg: 'sanity', version: '5.11.1-alpha.14'},
-      ])
+      expect(result.unresolvedPrerelease).toEqual([{pkg: 'sanity', version: '5.11.1-alpha.14'}])
     })
 
     it('should throw for non-prerelease package when remote returns 404', async () => {
@@ -551,9 +546,9 @@ describe('compareDependencyVersions', () => {
         version: '0.0.0',
       })
 
-      await expect(
-        compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir'),
-      ).rejects.toThrow('Failed to resolve remote version for sanity@3.40.0: package not found')
+      await expect(compare([{name: 'sanity', version: '3.40.0'}], '/test/workdir')).rejects.toThrow(
+        'Failed to resolve remote version for sanity@3.40.0: package not found',
+      )
     })
 
     it('should correctly split resolvable and prerelease packages', async () => {
@@ -589,9 +584,7 @@ describe('compareDependencyVersions', () => {
         '/test/workdir',
       )
 
-      expect(result.unresolvedPrerelease).toEqual([
-        {pkg: 'sanity', version: '5.11.1-alpha.14'},
-      ])
+      expect(result.unresolvedPrerelease).toEqual([{pkg: 'sanity', version: '5.11.1-alpha.14'}])
       expect(result.mismatched).toEqual([
         {
           installed: '3.30.0',
