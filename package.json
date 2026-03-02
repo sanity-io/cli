@@ -55,7 +55,7 @@
     "prettier": "catalog:",
     "prettier-plugin-packagejson": "^2.5.22",
     "rimraf": "catalog:",
-    "turbo": "^2.8.10",
+    "turbo": "^2.8.11",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
