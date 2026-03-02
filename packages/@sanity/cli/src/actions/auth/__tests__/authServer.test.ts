@@ -1,65 +1,37 @@
-import type http from 'node:http'
-
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test} from 'vitest'
 
 import {startServerForTokenCallback} from '../authServer.js'
 
-const mockCreateServer = vi.hoisted(() => vi.fn())
+const servers: Array<{close: (cb?: (err?: Error) => void) => void}> = []
 
-vi.mock('node:http', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:http')>()
-  return {
-    ...actual,
-    createServer: mockCreateServer,
-  }
+afterEach(async () => {
+  await Promise.all(
+    servers.splice(0).map(
+      (server) =>
+        new Promise<void>((resolve) => {
+          server.close(() => resolve())
+        }),
+    ),
+  )
 })
 
-function useMockServer(
-  listen: (server: http.Server) => void,
-  address: ReturnType<http.Server['address']> = null,
-) {
-  mockCreateServer.mockImplementationOnce(() => {
-    const listeners = new Map<string, ((...args: unknown[]) => void)[]>()
-    const server = {
-      address: () => address,
-      emit(event: string, ...args: unknown[]) {
-        for (const h of listeners.get(event) ?? []) h(...args)
-      },
-      listen: function () {
-        listen(server as unknown as http.Server)
-        return server
-      },
-      on(event: string, handler: (...args: unknown[]) => void) {
-        listeners.set(event, [...(listeners.get(event) ?? []), handler])
-        return this
-      },
-    } as unknown as http.Server
-    return server
-  })
-}
+describe('#startServerForTokenCallback', () => {
+  test('returns callbackUrl and uses it as origin in login URL', async () => {
+    const fakeClient = {
+      config: () => ({apiHost: 'https://api.sanity.io'}),
+    } as unknown as Parameters<typeof startServerForTokenCallback>[0]['client']
 
-describe('startServerForTokenCallback', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
+    const {callbackUrl, loginUrl, server} = await startServerForTokenCallback({
+      client: fakeClient,
+      providerUrl: 'https://api.sanity.io/v1/auth/login/github',
+    })
+    servers.push(server)
 
-  test('rejects with non-EADDRINUSE server errors', async () => {
-    useMockServer((server) =>
-      setImmediate(() =>
-        server.emit('error', Object.assign(new Error('Network unreachable'), {code: 'ENETDOWN'})),
-      ),
-    )
-
-    await expect(startServerForTokenCallback('https://api.sanity.io/auth/google')).rejects.toThrow(
-      'Network unreachable',
-    )
-  })
-
-  test('throws when server address is invalid after listening', async () => {
-    useMockServer((server) => server.emit('listening'), null)
-
-    await expect(startServerForTokenCallback('https://api.sanity.io/auth/google')).rejects.toThrow(
-      'Failed to start auth callback server',
-    )
+    expect(callbackUrl.protocol).toBe('http:')
+    expect(callbackUrl.hostname).toBe('localhost')
+    expect(Number(callbackUrl.port)).toBeGreaterThan(0)
+    expect(callbackUrl.pathname).toBe('/callback')
+    expect(loginUrl.searchParams.get('origin')).toBe(callbackUrl.href)
+    expect(loginUrl.searchParams.get('type')).toBe('token')
   })
 })

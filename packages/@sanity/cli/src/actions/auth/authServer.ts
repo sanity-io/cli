@@ -1,10 +1,8 @@
 import {createServer, type Server} from 'node:http'
 import os from 'node:os'
 
-import {getSanityUrl, subdebug} from '@sanity/cli-core'
-
-import {getTokenDetails} from '../../services/auth.js'
-import {type TokenDetails} from './types.js'
+import {subdebug} from '@sanity/cli-core'
+import {type SanityClient} from '@sanity/client'
 
 const debug = subdebug('auth')
 const callbackPorts = [4321, 4000, 3003, 1234, 8080, 13_333]
@@ -22,6 +20,16 @@ const platformNames: Record<string, string | undefined> = {
 }
 
 /**
+ * The response shape from /auth/fetch
+ *
+ * @internal
+ */
+interface TokenDetails {
+  label: string
+  token: string
+}
+
+/**
  * Start a local HTTP server and wait for a request to the auth callback endpoint.
  * This happens by the user being sent to a login page with a callback URL that points to
  * this local server. This request includes a short-lived "SID" (session ID) that we then
@@ -30,14 +38,17 @@ const platformNames: Record<string, string | undefined> = {
  *
  * If we fail to bind to the first port, we retry with the next port in the list.
  *
- * @param providerUrl - The URL of the login provider
- * @returns Resolves with HTTP server instance, a login URL to send user to, and a `token` promise
+ * @param options - Options for the server
+ * @returns Resolves with HTTP server instance, a login URL, a callback URL, and a `token` promise
  * @internal
  */
-export function startServerForTokenCallback(
-  providerUrl: string,
-): Promise<{loginUrl: URL; server: Server; token: Promise<TokenDetails>}> {
-  const sanityUrl = getSanityUrl()
+export function startServerForTokenCallback(options: {
+  client: SanityClient
+  providerUrl: string
+}): Promise<{callbackUrl: URL; loginUrl: URL; server: Server; token: Promise<TokenDetails>}> {
+  const {client, providerUrl} = options
+  const {apiHost} = client.config()
+  const domain = apiHost.includes('.sanity.work') ? 'www.sanity.work' : 'www.sanity.io'
 
   const attemptPorts = [...callbackPorts]
   let callbackPort = attemptPorts.shift()
@@ -54,8 +65,7 @@ export function startServerForTokenCallback(
     const server = createServer(async function onCallbackServerRequest(req, res) {
       function failLoginRequest(code = '') {
         res.writeHead(303, 'See Other', {
-          Connection: 'close',
-          Location: `${sanityUrl}/login/error${code ? `?error=${code}` : ''}`,
+          Location: `https://${domain}/login/error${code ? `?error=${code}` : ''}`,
         })
         res.end()
         server.close()
@@ -63,7 +73,7 @@ export function startServerForTokenCallback(
 
       const url = new URL(req.url || '/', `http://localhost:${callbackPort}`)
       if (url.pathname !== callbackEndpoint) {
-        res.writeHead(404, 'Not Found', {Connection: 'close', 'Content-Type': 'text/plain'})
+        res.writeHead(404, 'Not Found', {'Content-Type': 'text/plain'})
         res.write('404 Not Found')
         res.end()
         return
@@ -72,30 +82,25 @@ export function startServerForTokenCallback(
       const absoluteTokenUrl = url.searchParams.get('url')
       if (!absoluteTokenUrl) {
         failLoginRequest()
-        rejectToken(new Error('Missing callback URL'))
         return
       }
 
       const tokenUrl = new URL(absoluteTokenUrl)
       if (!tokenUrl.searchParams.has('sid')) {
         failLoginRequest('NO_SESSION_ID')
-        rejectToken(new Error('Missing session ID in callback'))
         return
       }
 
       let token: TokenDetails
       try {
-        token = await getTokenDetails(tokenUrl.search)
+        token = await client.request({uri: `/auth/fetch${tokenUrl.search}`})
       } catch (err) {
         failLoginRequest('UNRESOLVED_SESSION')
         rejectToken(err instanceof Error ? err : new Error(`Unknown error: ${err}`))
         return
       }
 
-      res.writeHead(303, 'See Other', {
-        Connection: 'close',
-        Location: `${sanityUrl}/login/success`,
-      })
+      res.writeHead(303, 'See Other', {Location: `https://${domain}/login/success`})
       res.end()
       server.close()
       resolveToken(token)
@@ -104,8 +109,9 @@ export function startServerForTokenCallback(
     server.on('listening', function onCallbackListen() {
       // Once the server is successfully listening on a port, we can return the promise.
       // We'll then await the _token promise_, while the server is running in the background.
-      const loginUrl = getLoginUrl(server, providerUrl)
-      resolve({loginUrl, server, token: tokenPromise})
+      const callbackUrl = getCallbackUrl(server)
+      const loginUrl = getLoginUrl(providerUrl, callbackUrl)
+      resolve({callbackUrl, loginUrl, server, token: tokenPromise})
     })
 
     server.on('error', function onCallbackServerError(err) {
@@ -129,24 +135,17 @@ export function startServerForTokenCallback(
 }
 
 /**
- * Get the login URL to send the user to for the given local auth token server.
+ * Get the login URL to send the user to for the given auth provider.
  *
  * The generated URL will include a label for the session that includes the
  * hostname and platform of the current computer, to help identify the session.
  *
- * @param server - The local auth token server
  * @param providerUrl - The URL of the login provider
+ * @param callbackUrl - The callback URL for the local auth token server
  * @returns The login URL
  * @internal
  */
-function getLoginUrl(server: Server, providerUrl: string): URL {
-  const serverUrl = server.address()
-  if (!serverUrl || typeof serverUrl === 'string') {
-    // Note: `serverUrl` is string only when binding to unix sockets,
-    // thus we can safely assume Something Is Wrong™ if it's a string
-    throw new Error('Failed to start auth callback server')
-  }
-
+function getLoginUrl(providerUrl: string, callbackUrl: URL): URL {
   // Build a login URL that redirects back back to OAuth flow on success
   const loginUrl = new URL(providerUrl)
 
@@ -159,7 +158,18 @@ function getLoginUrl(server: Server, providerUrl: string): URL {
 
   loginUrl.searchParams.set('type', 'token')
   loginUrl.searchParams.set('label', `${hostname} / ${platform}`)
-  loginUrl.searchParams.set('origin', `http://localhost:${serverUrl.port}${callbackEndpoint}`)
+  loginUrl.searchParams.set('origin', callbackUrl.href)
 
   return loginUrl
+}
+
+function getCallbackUrl(server: Server): URL {
+  const serverUrl = server.address()
+  if (!serverUrl || typeof serverUrl === 'string') {
+    // Note: `serverUrl` is string only when binding to unix sockets,
+    // thus we can safely assume Something Is Wrong™ if it's a string
+    throw new Error('Failed to start auth callback server')
+  }
+
+  return new URL(callbackEndpoint, `http://localhost:${serverUrl.port}`)
 }

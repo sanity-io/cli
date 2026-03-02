@@ -1,12 +1,9 @@
-import {subdebug} from '@sanity/cli-core'
-import {input, spinner, SpinnerInstance} from '@sanity/cli-core/ux'
+import {input, spinner} from '@sanity/cli-core/ux'
+import {type SanityClient} from '@sanity/client'
 
 import {promptForProviders} from '../../../prompts/promptForProviders.js'
-import {getProviders} from '../../../services/auth.js'
-import {type LoginProvider} from '../types.js'
+import {type LoginProvider, type ProvidersResponse} from '../types.js'
 import {getSSOProvider} from './getSSOProvider.js'
-
-const debug = subdebug('login:getProvider')
 
 /**
  * Prompt the user to select a login provider, or use the specified provider if given.
@@ -16,51 +13,53 @@ const debug = subdebug('login:getProvider')
  * @internal
  */
 export async function getProvider({
+  client,
   experimental,
   orgSlug,
   specifiedProvider,
 }: {
+  client: SanityClient
   experimental: boolean | undefined
   orgSlug: string | undefined
   specifiedProvider: string | undefined
 }): Promise<LoginProvider | undefined> {
-  let spin: SpinnerInstance | undefined
-
-  try {
-    if (orgSlug) {
-      return getSSOProvider(orgSlug)
+  if (specifiedProvider === 'vercel') {
+    return {
+      name: 'vercel',
+      title: 'Vercel',
+      url: new URL('/v1/auth/login/vercel', client.config().apiHost).href,
     }
+  }
 
-    spin = spinner('Fetching providers...').start()
-    // Fetch and prompt for login provider to use
-    let {providers} = await getProviders()
-    if (experimental) {
-      providers = [...providers, {name: 'sso', title: 'SSO', url: '_not_used_'}]
-    }
-    spin.stop()
+  if (orgSlug) {
+    return getSSOProvider(orgSlug)
+  }
 
-    if (specifiedProvider) {
-      const provider = providers.find((prov) => prov.name === specifiedProvider)
-      if (!provider) {
-        throw new Error(`Cannot find login provider with name "${specifiedProvider}"`)
-      }
-      return provider
-    }
+  // Fetch and prompt for login provider to use
+  const spin = spinner('Fetching providers...').start()
+  let {providers} = await client.request<ProvidersResponse>({uri: '/auth/providers'})
+  if (experimental) {
+    providers = [...providers, {name: 'sso', title: 'SSO', url: '_not_used_'}]
+  }
+  spin.stop()
 
-    if (providers.length === 0) {
-      return undefined
-    }
+  const providerNames = providers.map((prov) => prov.name)
 
-    const provider = await promptForProviders(providers)
-    if (provider.name === 'sso') {
-      const orgSlug = await input({message: 'Organization slug:'})
-      return getSSOProvider(orgSlug)
+  if (specifiedProvider && providerNames.includes(specifiedProvider)) {
+    const provider = providers.find((prov) => prov.name === specifiedProvider)
+
+    if (!provider) {
+      throw new Error(`Cannot find login provider with name "${specifiedProvider}"`)
     }
 
     return provider
-  } catch (err) {
-    spin?.stop()
-    debug('Error retrieving providers', err)
-    throw err
   }
+
+  const provider = await promptForProviders(providers)
+  if (provider.name === 'sso') {
+    const orgSlug = await input({message: 'Organization slug:'})
+    return getSSOProvider(orgSlug)
+  }
+
+  return provider
 }
