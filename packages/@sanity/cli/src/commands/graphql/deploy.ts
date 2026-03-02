@@ -221,6 +221,24 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         this.error(`No dataset specified for API at index ${index}`, {exit: 1})
       }
 
+      // Handle extraction errors early (computed in worker), before network calls and prompts
+      if (apiDef.schemaErrors) {
+        spin.fail()
+        new SchemaError(apiDef.schemaErrors).print(this.output)
+        this.error('Failed to extract schema', {exit: 1})
+      }
+
+      if (apiDef.extractionError) {
+        debug('Failed to extract schema', apiDef.extractionError)
+        spin.fail()
+        this.error(`Failed to extract schema: ${apiDef.extractionError}`, {exit: 1})
+      }
+
+      if (!apiDef.extracted) {
+        spin.fail()
+        this.error('Failed to extract schema: No extraction result', {exit: 1})
+      }
+
       let currentGeneration: string | undefined
       let playgroundEnabled: boolean | undefined
       try {
@@ -262,24 +280,6 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         playgroundCurrentlyEnabled: playgroundEnabled,
         spin,
       })
-
-      // Handle extraction errors (computed in worker)
-      if (apiDef.schemaErrors) {
-        spin.fail()
-        new SchemaError(apiDef.schemaErrors).print(this.output)
-        this.error('Failed to extract schema', {exit: 1})
-      }
-
-      if (apiDef.extractionError) {
-        debug('Failed to extract schema', apiDef.extractionError)
-        spin.fail()
-        this.error(`Failed to extract schema: ${apiDef.extractionError}`, {exit: 1})
-      }
-
-      if (!apiDef.extracted) {
-        spin.fail()
-        this.error('Failed to extract schema: No extraction result', {exit: 1})
-      }
 
       let apiSpec: GeneratedApiSpecification
       try {
