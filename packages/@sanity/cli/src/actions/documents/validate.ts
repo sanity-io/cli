@@ -1,10 +1,15 @@
 import {createStudioWorker, getGlobalCliClient} from '@sanity/cli-core'
 import {type ClientConfig} from '@sanity/client'
 import {type ValidationMarker} from '@sanity/types'
+import {WorkerChannelReceiver} from '@sanity/worker-channels'
 
-import {createReceiver, type WorkerChannelReceiver} from '../../util/workerChannels.js'
 import {DOCUMENTS_API_VERSION} from './constants.js'
-import {Level, type ValidateDocumentsWorkerData, type ValidationWorkerChannel} from './types.js'
+import {
+  Level,
+  type ValidateDocumentsWorkerData,
+  type ValidationReceiver,
+  type ValidationWorkerChannel,
+} from './types.js'
 
 interface ValidateDocumentsOptions<TReturn = unknown> {
   dataset?: string // override
@@ -13,7 +18,7 @@ interface ValidateDocumentsOptions<TReturn = unknown> {
   maxFetchConcurrency?: number
   ndjsonFilePath?: string
   projectId?: string // override
-  reporter?: (worker: WorkerChannelReceiver<ValidationWorkerChannel>) => TReturn
+  reporter?: (worker: ValidationReceiver) => TReturn
   studioHost?: string
   workDir?: string
   workspace?: string
@@ -27,7 +32,7 @@ interface DocumentValidationResult {
   revision: string
 }
 
-const defaultReporter = ({dispose, stream}: WorkerChannelReceiver<ValidationWorkerChannel>) => {
+const defaultReporter = ({dispose, stream}: ValidationReceiver) => {
   async function* createValidationGenerator() {
     for await (const {documentId, documentType, level, markers, revision} of stream.validation()) {
       const result: DocumentValidationResult = {
@@ -105,5 +110,15 @@ export async function validateDocuments(options: ValidateDocumentsOptions): Prom
     } satisfies ValidateDocumentsWorkerData,
   })
 
-  return reporter(createReceiver<ValidationWorkerChannel>(worker))
+  const receiver = WorkerChannelReceiver.from<ValidationWorkerChannel>(worker)
+  const validationReceiver: ValidationReceiver = {
+    dispose: async () => {
+      receiver.unsubscribe()
+      return worker.terminate()
+    },
+    event: receiver.event,
+    stream: receiver.stream,
+  }
+
+  return reporter(validationReceiver)
 }

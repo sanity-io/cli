@@ -8,6 +8,7 @@ import {workerData as _workerData, isMainThread, parentPort} from 'node:worker_t
 import {getStudioWorkspaces, isRecord, resolveLocalPackage} from '@sanity/cli-core'
 import {type ClientConfig, createClient, type SanityDocument} from '@sanity/client'
 import {type ValidationContext, type ValidationMarker} from '@sanity/types'
+import {WorkerChannelReporter} from '@sanity/worker-channels'
 import pMap from 'p-map'
 
 import {
@@ -27,7 +28,6 @@ import {
   REFERENCE_INTEGRITY_BATCH_SIZE,
   shouldIncludeDocument,
 } from '../../util/validation/validateDocumentsUtils.js'
-import {createReporter} from '../../util/workerChannels.js'
 import {type ValidateDocumentsWorkerData, type ValidationWorkerChannel} from './types.js'
 
 const {
@@ -47,7 +47,7 @@ if (isMainThread || !parentPort) {
   throw new Error('This module must be run as a worker thread')
 }
 
-const report = createReporter<ValidationWorkerChannel>(parentPort)
+const report = WorkerChannelReporter.from<ValidationWorkerChannel>(parentPort)
 
 // eslint-disable-next-line n/no-unsupported-features/node-builtins
 async function* readerToGenerator(reader: ReadableStreamDefaultReader<Uint8Array>) {
