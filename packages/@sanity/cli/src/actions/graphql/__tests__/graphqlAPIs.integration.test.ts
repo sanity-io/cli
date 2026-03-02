@@ -11,7 +11,6 @@ describe('graphql APIs integration', {timeout: 60_000}, () => {
 
   beforeAll(async () => {
     cwd = await testFixture('graphql-studio')
-    process.chdir(cwd)
 
     const cliConfig = await getCliConfig(cwd)
     projectId = cliConfig.api?.projectId ?? ''

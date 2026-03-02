@@ -4,6 +4,7 @@ import {doImport, isStudioConfig} from '@sanity/cli-core'
 
 import {
   resolveGraphQLApiMetadata,
+  type SourceMetadata,
   type WorkspaceMetadata,
 } from './resolveGraphQLApisFromWorkspaces.js'
 import {type GraphQLAPIConfig} from './types.js'
@@ -60,12 +61,52 @@ function toWorkspaceMetadata(config: unknown): WorkspaceMetadata {
   }
 
   const name = 'name' in config && typeof config.name === 'string' ? config.name : 'default'
+  const sources = extractSourceMetadata(config, {dataset: config.dataset, name, projectId: config.projectId})
 
   return {
     dataset: config.dataset,
     name,
     projectId: config.projectId,
+    sources,
   }
+}
+
+/**
+ * Extract source metadata from the raw workspace config.
+ *
+ * After `resolveConfig()`, each workspace has `unstable_sources` with full schema objects.
+ * The raw config from `defineConfig()` may also have `unstable_sources` if the user explicitly
+ * configured multiple sources. We extract only the metadata (name/dataset/projectId) we need.
+ *
+ * If no `unstable_sources` are present, we create a single default source from the workspace
+ * metadata — matching what `resolveConfig()` would produce for a single-source workspace.
+ */
+function extractSourceMetadata(
+  config: object,
+  workspaceDefaults: SourceMetadata,
+): SourceMetadata[] {
+  if (!('unstable_sources' in config) || !Array.isArray(config.unstable_sources)) {
+    return [workspaceDefaults]
+  }
+
+  const sources: SourceMetadata[] = []
+  for (const source of config.unstable_sources) {
+    if (typeof source !== 'object' || source === null) continue
+    if (!('projectId' in source) || typeof source.projectId !== 'string') continue
+    if (!('dataset' in source) || typeof source.dataset !== 'string') continue
+
+    const sourceName =
+      'name' in source && typeof source.name === 'string' ? source.name : 'default'
+
+    sources.push({
+      dataset: source.dataset,
+      name: sourceName,
+      projectId: source.projectId,
+    })
+  }
+
+  // Fall back to workspace-level metadata if no valid sources were found
+  return sources.length > 0 ? sources : [workspaceDefaults]
 }
 
 await main()

@@ -41,9 +41,9 @@ async function main() {
   } catch (err) {
     if (isSchemaError(err)) {
       const validation = err.schema._validation ?? []
-      const configErrors = validation.filter((g) =>
-        g.problems.some((p) => p.severity === 'error'),
-      )
+      const configErrors = validation
+        .map((g) => ({...g, problems: g.problems.filter((p) => p.severity === 'error')}))
+        .filter((g) => g.problems.length > 0)
 
       // Only treat error-severity problems as schema errors. If the validation
       // only contains warnings, re-throw the original error so it isn't silently

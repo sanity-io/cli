@@ -4,6 +4,7 @@ import {describe, expect, test} from 'vitest'
 import {
   resolveGraphQLApiMetadata,
   resolveGraphQLApis,
+  type SourceMetadata,
   type Workspace,
   type WorkspaceMetadata,
 } from '../resolveGraphQLApisFromWorkspaces.js'
@@ -248,13 +249,23 @@ describe('resolveGraphQLApis', () => {
 })
 
 function createWorkspaceMetadata(
-  overrides: Partial<WorkspaceMetadata> = {},
+  overrides: Omit<Partial<WorkspaceMetadata>, 'sources'> & {sources?: SourceMetadata[]} = {},
 ): WorkspaceMetadata {
-  return {
+  const {sources, ...rest} = overrides
+  const defaults = {
     dataset: 'production',
     name: 'default',
     projectId: 'proj1',
-    ...overrides,
+  }
+
+  const merged = {...defaults, ...rest}
+  const defaultSource = {dataset: merged.dataset, name: merged.name, projectId: merged.projectId}
+
+  return {
+    ...merged,
+    sources: sources
+      ? sources.map((s) => ({...defaultSource, ...s}))
+      : [defaultSource],
   }
 }
 
@@ -307,6 +318,29 @@ describe('resolveGraphQLApiMetadata', () => {
 
       expect(() => resolveGraphQLApiMetadata({workspaces: [ws1, ws2]})).toThrow(
         'Multiple workspaces/sources configured',
+      )
+    })
+
+    test('throws when multiple sources in single workspace without graphql config', () => {
+      const ws = createWorkspaceMetadata({
+        sources: [
+          {dataset: 'prod', name: 'source1', projectId: 'proj1'},
+          {dataset: 'staging', name: 'source2', projectId: 'proj1'},
+        ],
+      })
+
+      expect(() => resolveGraphQLApiMetadata({workspaces: [ws]})).toThrow(
+        'Multiple workspaces/sources configured',
+      )
+    })
+
+    test('throws when workspace has no sources', () => {
+      const ws = createWorkspaceMetadata({sources: []})
+      // Override sources to empty
+      ws.sources = []
+
+      expect(() => resolveGraphQLApiMetadata({workspaces: [ws]})).toThrow(
+        'No sources (project ID / dataset) configured',
       )
     })
   })
@@ -456,6 +490,104 @@ describe('resolveGraphQLApiMetadata', () => {
           workspaces: [ws],
         }),
       ).toThrow('No GraphQL APIs defined')
+    })
+
+    test('resolves metadata from explicit source', () => {
+      const ws = createWorkspaceMetadata({
+        name: 'studio',
+        sources: [
+          {dataset: 'production', name: 'main', projectId: 'p1'},
+          {dataset: 'staging', name: 'staging', projectId: 'p2'},
+        ],
+      })
+
+      const result = resolveGraphQLApiMetadata({
+        cliConfig: {graphql: [{source: 'staging', tag: 'v1', workspace: 'studio'}]},
+        workspaces: [ws],
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({
+        dataset: 'staging',
+        projectId: 'p2',
+        tag: 'v1',
+      })
+    })
+
+    test('infers single source when source name not specified', () => {
+      const ws = createWorkspaceMetadata({name: 'default'})
+
+      const result = resolveGraphQLApiMetadata({
+        cliConfig: {graphql: [{workspace: 'default'}]},
+        workspaces: [ws],
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({dataset: 'production', projectId: 'proj1'})
+    })
+
+    test('throws when source not found', () => {
+      const ws = createWorkspaceMetadata({
+        name: 'studio',
+        sources: [{dataset: 'production', name: 'main', projectId: 'proj1'}],
+      })
+
+      expect(() =>
+        resolveGraphQLApiMetadata({
+          cliConfig: {graphql: [{source: 'nonexistent', workspace: 'studio'}]},
+          workspaces: [ws],
+        }),
+      ).toThrow('Source "nonexistent" not found in workspace "studio"')
+    })
+
+    test('resolves multiple APIs from multiple sources', () => {
+      const ws = createWorkspaceMetadata({
+        name: 'default',
+        sources: [
+          {dataset: 'production', name: 'prod', projectId: 'p1'},
+          {dataset: 'staging', name: 'staging', projectId: 'p1'},
+        ],
+      })
+
+      const result = resolveGraphQLApiMetadata({
+        cliConfig: {
+          graphql: [
+            {source: 'prod', tag: 'default', workspace: 'default'},
+            {source: 'staging', tag: 'staging', workspace: 'default'},
+          ],
+        },
+        workspaces: [ws],
+      })
+
+      expect(result).toHaveLength(2)
+      expect(result[0]).toMatchObject({dataset: 'production', tag: 'default'})
+      expect(result[1]).toMatchObject({dataset: 'staging', tag: 'staging'})
+    })
+
+    test('falls back to source dataset/projectId when apiDef omits them', () => {
+      const ws = createWorkspaceMetadata({
+        sources: [{dataset: 'source-ds', name: 'default', projectId: 'source-proj'}],
+      })
+
+      const result = resolveGraphQLApiMetadata({
+        cliConfig: {graphql: [{tag: 'default'}]},
+        workspaces: [ws],
+      })
+
+      expect(result[0]).toMatchObject({dataset: 'source-ds', projectId: 'source-proj'})
+    })
+
+    test('apiDef dataset/projectId overrides source values', () => {
+      const ws = createWorkspaceMetadata({
+        sources: [{dataset: 'source-ds', name: 'default', projectId: 'source-proj'}],
+      })
+
+      const result = resolveGraphQLApiMetadata({
+        cliConfig: {graphql: [{dataset: 'override-ds', projectId: 'override-proj'}]},
+        workspaces: [ws],
+      })
+
+      expect(result[0]).toMatchObject({dataset: 'override-ds', projectId: 'override-proj'})
     })
   })
 })

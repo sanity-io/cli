@@ -9,8 +9,10 @@ export async function getGraphQLAPIs(workDir: string): Promise<ExtractedGraphQLA
     throw new Error('getGraphQLAPIs() must be called from the main thread')
   }
 
-  const cliConfig = await getCliConfig(workDir)
-  const configPath = await findStudioConfigPath(workDir)
+  const [cliConfig, configPath] = await Promise.all([
+    getCliConfig(workDir),
+    findStudioConfigPath(workDir),
+  ])
 
   return studioWorkerTask<ExtractedGraphQLAPI[]>(
     new URL('getGraphQLAPIs.worker.js', import.meta.url),

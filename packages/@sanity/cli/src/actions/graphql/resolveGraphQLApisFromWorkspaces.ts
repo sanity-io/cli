@@ -21,13 +21,27 @@ export interface Workspace extends Source {
 }
 
 /**
+ * Minimal source metadata — dataset/projectId pair for a source within a workspace.
+ */
+export interface SourceMetadata {
+  dataset: string
+  name: string
+  projectId: string
+}
+
+/**
  * Minimal workspace metadata — enough for resolving API identifiers without compiling schemas.
  * This matches the raw workspace shape from `defineConfig()` before `resolveConfig()` processes it.
+ *
+ * The `sources` array mirrors `Workspace.unstable_sources` from the full resolved config.
+ * When the raw config includes `unstable_sources`, they are extracted here. Otherwise, the
+ * workspace itself is used as a single default source (matching what `resolveConfig()` would do).
  */
 export interface WorkspaceMetadata {
   dataset: string
   name: string
   projectId: string
+  sources: SourceMetadata[]
 }
 
 interface ResolveGraphQLApisOptions {
@@ -88,6 +102,8 @@ export function resolveGraphQLApiMetadata({
   cliConfig?: {graphql?: GraphQLAPIConfig[]}
   workspaces: WorkspaceMetadata[]
 }): ExtractedGraphQLAPI[] {
+  const numSources = workspaces.reduce((count, ws) => count + ws.sources.length, 0)
+  const multiSource = numSources > 1
   const multiWorkspace = workspaces.length > 1
   const hasGraphQLConfig = Boolean(cliConfig?.graphql)
 
@@ -95,8 +111,12 @@ export function resolveGraphQLApiMetadata({
     throw new Error('No studio configuration found')
   }
 
-  // We can only automatically configure if there is a single workspace in play
-  if (multiWorkspace && !hasGraphQLConfig) {
+  if (numSources === 0) {
+    throw new Error('No sources (project ID / dataset) configured')
+  }
+
+  // We can only automatically configure if there is a single workspace + source in play
+  if ((multiWorkspace || multiSource) && !hasGraphQLConfig) {
     throw new Error(oneline`
       Multiple workspaces/sources configured.
       You must define an array of GraphQL APIs in \`sanity.cli.ts\` or \`sanity.cli.js\`
@@ -116,9 +136,9 @@ export function resolveGraphQLApiMetadata({
     }
   }
 
-  // No config is defined, but we have a single workspace, so use that
+  // No config is defined, but we have a single workspace + source, so use that
   if (!hasGraphQLConfig) {
-    const {dataset, projectId} = workspaces[0]
+    const {dataset, projectId} = workspaces[0].sources[0]
     return [{dataset, projectId}]
   }
 
@@ -134,13 +154,15 @@ function resolveGraphQLApiMetadataFromConfig(
   const resolvedApis: ExtractedGraphQLAPI[] = []
 
   for (const apiDef of apiDefs) {
-    const {workspace: workspaceName} = apiDef
+    const {source: sourceName, workspace: workspaceName} = apiDef
     if (!workspaceName && workspaces.length > 1) {
       throw new Error(
         'Must define `workspace` name in GraphQL API config when multiple workspaces are defined',
       )
     }
 
+    // If we only have a single workspace defined, we can assume that is the intended one,
+    // even if no `workspace` is defined for the GraphQL API
     const workspace =
       !workspaceName && workspaces.length === 1
         ? workspaces[0]
@@ -150,14 +172,29 @@ function resolveGraphQLApiMetadataFromConfig(
       throw new Error(`Workspace "${workspaceName || 'default'}" not found`)
     }
 
+    // If we only have a single source defined, we can assume that is the intended one,
+    // even if no `source` is defined for the GraphQL API
+    const source =
+      !sourceName && workspace.sources.length === 1
+        ? workspace.sources[0]
+        : workspace.sources.find((src) => src.name === (sourceName || 'default'))
+
+    if (!source) {
+      throw new Error(
+        `Source "${sourceName || 'default'}" not found in workspace "${
+          workspaceName || 'default'
+        }"`,
+      )
+    }
+
     resolvedApis.push({
-      dataset: apiDef.dataset ?? workspace.dataset,
+      dataset: apiDef.dataset ?? source.dataset,
       filterSuffix: apiDef.filterSuffix,
       generation: apiDef.generation,
       id: apiDef.id,
       nonNullDocumentFields: apiDef.nonNullDocumentFields,
       playground: apiDef.playground,
-      projectId: apiDef.projectId ?? workspace.projectId,
+      projectId: apiDef.projectId ?? source.projectId,
       tag: apiDef.tag,
     })
   }
