@@ -207,6 +207,21 @@ describe('resolveGraphQLApis', () => {
         }),
       ).toThrow('No GraphQL APIs defined')
     })
+
+    test('uses apiDef dataset/projectId overrides over source values', () => {
+      const workspace = createWorkspace({
+        name: 'default',
+        sources: [{dataset: 'source-ds', name: 'default', projectId: 'source-proj'}],
+      })
+
+      const result = resolveGraphQLApis({
+        cliConfig: {graphql: [{dataset: 'override-ds', projectId: 'override-proj'}]},
+        workspaces: [workspace],
+      })
+
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({dataset: 'override-ds', projectId: 'override-proj'})
+    })
   })
 
   describe('schema stripping', () => {

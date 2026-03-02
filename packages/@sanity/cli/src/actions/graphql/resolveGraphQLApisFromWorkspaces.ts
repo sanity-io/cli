@@ -244,8 +244,8 @@ function resolveGraphQLAPIsFromConfig(
 
     resolvedApis.push({
       ...apiDef,
-      dataset: source.dataset,
-      projectId: source.projectId,
+      dataset: apiDef.dataset ?? source.dataset,
+      projectId: apiDef.projectId ?? source.projectId,
       schemaTypes: getStrippedSchemaTypes(source.schema),
     })
   }
