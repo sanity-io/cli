@@ -1,6 +1,6 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {doImport} from '@sanity/cli-core'
+import {doImport, isStudioConfig} from '@sanity/cli-core'
 
 import {
   resolveGraphQLApiMetadata,
@@ -44,25 +44,6 @@ async function main() {
 
   const apis = resolveGraphQLApiMetadata({cliConfig, workspaces})
   parentPort.postMessage(apis)
-}
-
-/**
- * Minimal studio config shape check — matches the logic in cli-core's isStudioConfig.
- * Checks that the value (or each item in an array) has string `projectId` and `dataset`.
- */
-function isStudioConfig(value: unknown): boolean {
-  if (Array.isArray(value)) {
-    return value.every((item) => isStudioConfig(item))
-  }
-
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'projectId' in value &&
-    typeof value.projectId === 'string' &&
-    'dataset' in value &&
-    typeof value.dataset === 'string'
-  )
 }
 
 function toWorkspaceMetadata(config: unknown): WorkspaceMetadata {

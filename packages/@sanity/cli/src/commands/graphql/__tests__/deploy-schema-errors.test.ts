@@ -2,13 +2,23 @@ import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {SchemaError} from '../../../actions/graphql/SchemaError.js'
+import {type ExtractedGraphQLAPI} from '../../../actions/graphql/types.js'
 import {GraphQLDeployCommand} from '../deploy.js'
 
 const mockExtractGraphQLAPIs = vi.hoisted(() => vi.fn())
+const mockConfirm = vi.hoisted(() => vi.fn())
 
 vi.mock('../../../actions/graphql/extractGraphQLAPIs.js', () => ({
   extractGraphQLAPIs: mockExtractGraphQLAPIs,
 }))
+
+vi.mock('@sanity/cli-core/ux', async () => {
+  const actual = await vi.importActual('@sanity/cli-core/ux')
+  return {
+    ...actual,
+    confirm: mockConfirm,
+  }
+})
 
 const defaultMocks = {
   cliConfig: {api: {dataset: 'production', projectId: 'test-project'}},
@@ -92,5 +102,142 @@ describe('#graphql:deploy schema errors', () => {
     expect(error?.message).toContain('Failed to resolve GraphQL APIs')
     expect(error?.message).toContain('Multiple workspaces/sources configured')
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  describe('per-API extraction errors', () => {
+    test('reports per-API schema errors and exits with code 1', async () => {
+      const apis: ExtractedGraphQLAPI[] = [
+        {
+          dataset: 'production',
+          projectId: 'test-project',
+          schemaErrors: [
+            {
+              path: [{kind: 'type' as const, name: 'post', type: 'document'}],
+              problems: [{message: 'Unknown type: "badRef"', severity: 'error' as const}],
+            },
+          ],
+        },
+      ]
+      mockExtractGraphQLAPIs.mockResolvedValue(apis)
+
+      const {error, stderr} = await testCommand(GraphQLDeployCommand, [], {mocks: defaultMocks})
+
+      expect(error).toBeDefined()
+      expect(error?.oclif?.exit).toBe(1)
+      expect(stderr).toContain('Found errors in schema:')
+    })
+
+    test('reports per-API extraction errors and exits with code 1', async () => {
+      const apis: ExtractedGraphQLAPI[] = [
+        {
+          dataset: 'production',
+          extractionError: 'Cannot read properties of undefined',
+          projectId: 'test-project',
+        },
+      ]
+      mockExtractGraphQLAPIs.mockResolvedValue(apis)
+
+      const {error, stdout} = await testCommand(GraphQLDeployCommand, [], {mocks: defaultMocks})
+
+      expect(error).toBeDefined()
+      expect(error?.oclif?.exit).toBe(1)
+      expect(stdout).toContain('Cannot read properties of undefined')
+    })
+
+    test('reports all per-API errors instead of stopping at first', async () => {
+      const apis: ExtractedGraphQLAPI[] = [
+        {
+          dataset: 'production',
+          id: 'api-one',
+          projectId: 'test-project',
+          schemaErrors: [
+            {
+              path: [{kind: 'type' as const, name: 'post', type: 'document'}],
+              problems: [{message: 'Error in api-one', severity: 'error' as const}],
+            },
+          ],
+        },
+        {
+          dataset: 'staging',
+          extractionError: 'Error in api-two',
+          id: 'api-two',
+          projectId: 'test-project',
+        },
+      ]
+      mockExtractGraphQLAPIs.mockResolvedValue(apis)
+
+      const {error, stderr, stdout} = await testCommand(GraphQLDeployCommand, [], {
+        mocks: defaultMocks,
+      })
+
+      expect(error).toBeDefined()
+      expect(error?.oclif?.exit).toBe(1)
+      // Both errors should be reported, not just the first
+      expect(stderr).toContain('Found errors in schema:')
+      expect(stdout).toContain('Error in api-two')
+    })
+
+    test('handles missing extraction result', async () => {
+      const apis: ExtractedGraphQLAPI[] = [
+        {
+          dataset: 'production',
+          projectId: 'test-project',
+          // No extracted, no schemaErrors, no extractionError
+        },
+      ]
+      mockExtractGraphQLAPIs.mockResolvedValue(apis)
+
+      const {error, stdout} = await testCommand(GraphQLDeployCommand, [], {mocks: defaultMocks})
+
+      expect(error).toBeDefined()
+      expect(error?.oclif?.exit).toBe(1)
+      expect(stdout).toContain('No extraction result')
+    })
+  })
+
+  describe('multi-API flag override', () => {
+    const multiApiMocks = {
+      ...defaultMocks,
+      cliConfig: {
+        api: {dataset: 'production', projectId: 'test-project'},
+        graphql: [{id: 'api-1', tag: 'default'}, {id: 'api-2', tag: 'staging'}],
+      },
+    }
+
+    test('warns and prompts when flags override multiple APIs', async () => {
+      const apis: ExtractedGraphQLAPI[] = [
+        {dataset: 'production', extracted: {interfaces: [], types: []}, projectId: 'test-project'},
+        {dataset: 'staging', extracted: {interfaces: [], types: []}, projectId: 'test-project'},
+      ]
+      mockExtractGraphQLAPIs.mockResolvedValue(apis)
+      mockConfirm.mockResolvedValue(false)
+
+      const {error, stderr} = await testCommand(GraphQLDeployCommand, ['--tag', 'custom'], {
+        mocks: multiApiMocks,
+      })
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('Operation cancelled')
+      expect(stderr).toContain('--tag')
+      expect(stderr).toContain('for ALL APIs')
+    })
+
+    test('skips confirmation with --force when flags override multiple APIs', async () => {
+      const apis: ExtractedGraphQLAPI[] = [
+        {dataset: 'production', extracted: {interfaces: [], types: []}, projectId: 'test-project'},
+        {dataset: 'staging', extracted: {interfaces: [], types: []}, projectId: 'test-project'},
+      ]
+      mockExtractGraphQLAPIs.mockResolvedValue(apis)
+
+      const {stderr} = await testCommand(
+        GraphQLDeployCommand,
+        ['--tag', 'custom', '--force', '--dry-run'],
+        {mocks: multiApiMocks},
+      )
+
+      expect(stderr).toContain('--force specified, continuing')
+      // Should not prompt
+      expect(mockConfirm).not.toHaveBeenCalled()
+    })
   })
 })

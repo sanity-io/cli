@@ -104,6 +104,18 @@ export function resolveGraphQLApiMetadata({
     `)
   }
 
+  // Validate that workspaces have non-empty projectId/dataset.
+  // The worker's toWorkspaceMetadata validates this before constructing metadata,
+  // but assert here to make the invariant explicit.
+  for (const ws of workspaces) {
+    if (!ws.projectId || !ws.dataset) {
+      throw new Error(
+        `Workspace "${ws.name}" is missing a projectId or dataset. ` +
+          'Check your studio configuration.',
+      )
+    }
+  }
+
   // No config is defined, but we have a single workspace, so use that
   if (!hasGraphQLConfig) {
     const {dataset, projectId} = workspaces[0]

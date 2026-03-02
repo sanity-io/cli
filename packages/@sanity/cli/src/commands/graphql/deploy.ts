@@ -222,22 +222,28 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
         this.error(`No dataset specified for API at index ${index}`, {exit: 1})
       }
 
-      // Handle extraction errors early (computed in worker), before network calls and prompts
+      // Handle extraction errors early (computed in worker), before network calls and prompts.
+      // Continue the loop so all API errors are reported — don't exit on the first failure.
       if (apiDef.schemaErrors) {
         spin.fail()
         new SchemaError(apiDef.schemaErrors).print(this.output)
-        this.error('Failed to extract schema', {exit: 1})
+        hasErrors = true
+        continue
       }
 
       if (apiDef.extractionError) {
         debug('Failed to extract schema', apiDef.extractionError)
         spin.fail()
-        this.error(`Failed to extract schema: ${apiDef.extractionError}`, {exit: 1})
+        this.log(`Failed to extract schema for ${apiName}: ${apiDef.extractionError}`)
+        hasErrors = true
+        continue
       }
 
       if (!apiDef.extracted) {
         spin.fail()
-        this.error('Failed to extract schema: No extraction result', {exit: 1})
+        this.log(`Failed to extract schema for ${apiName}: No extraction result`)
+        hasErrors = true
+        continue
       }
 
       let currentGeneration: string | undefined

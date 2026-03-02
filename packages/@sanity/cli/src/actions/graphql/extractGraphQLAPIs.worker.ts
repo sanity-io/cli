@@ -1,6 +1,6 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {getStudioWorkspaces, resolveLocalPackage} from '@sanity/cli-core'
+import {getStudioWorkspaces, resolveLocalPackage, subdebug} from '@sanity/cli-core'
 
 import {isSchemaError} from '../../util/isSchemaError.js'
 import {extractFromSanitySchema} from './extractFromSanitySchema.js'
@@ -26,6 +26,8 @@ interface WorkerData {
 
 const {cliConfig, configPath, nonNullDocumentFieldsFlag, withUnionCache, workDir} =
   workerData as WorkerData
+
+const debug = subdebug('graphql:extractGraphQLAPIs:worker')
 
 async function main() {
   if (isMainThread || !parentPort) {
@@ -105,6 +107,7 @@ async function main() {
       if (err instanceof SchemaError) {
         results.push({...apiBase, schemaErrors: err.problemGroups})
       } else {
+        debug('Schema extraction failed for %s/%s', apiBase.dataset, apiBase.tag ?? 'default', err)
         results.push({
           ...apiBase,
           extractionError: err instanceof Error ? err.message : String(err),
