@@ -208,19 +208,19 @@ describe('resolveGraphQLApis', () => {
       ).toThrow('No GraphQL APIs defined')
     })
 
-    test('uses apiDef dataset/projectId overrides over source values', () => {
+    test('uses dataset/projectId from the resolved source', () => {
       const workspace = createWorkspace({
         name: 'default',
         sources: [{dataset: 'source-ds', name: 'default', projectId: 'source-proj'}],
       })
 
       const result = resolveGraphQLApis({
-        cliConfig: {graphql: [{dataset: 'override-ds', projectId: 'override-proj'}]},
+        cliConfig: {graphql: [{tag: 'default'}]},
         workspaces: [workspace],
       })
 
       expect(result).toHaveLength(1)
-      expect(result[0]).toMatchObject({dataset: 'override-ds', projectId: 'override-proj'})
+      expect(result[0]).toMatchObject({dataset: 'source-ds', projectId: 'source-proj'})
     })
   })
 
@@ -390,19 +390,7 @@ describe('resolveGraphQLApiMetadata', () => {
       expect(result[0]).toMatchObject({dataset: 'production', projectId: 'proj1'})
     })
 
-    test('uses apiDef dataset/projectId when specified', () => {
-      const ws = createWorkspaceMetadata({dataset: 'production', projectId: 'proj1'})
-
-      const result = resolveGraphQLApiMetadata({
-        cliConfig: {graphql: [{dataset: 'override-ds', projectId: 'override-proj'}]},
-        workspaces: [ws],
-      })
-
-      expect(result).toHaveLength(1)
-      expect(result[0]).toMatchObject({dataset: 'override-ds', projectId: 'override-proj'})
-    })
-
-    test('falls back to workspace dataset/projectId when apiDef omits them', () => {
+    test('uses dataset/projectId from workspace source', () => {
       const ws = createWorkspaceMetadata({dataset: 'ws-dataset', projectId: 'ws-proj'})
 
       const result = resolveGraphQLApiMetadata({
@@ -579,7 +567,7 @@ describe('resolveGraphQLApiMetadata', () => {
       expect(result[1]).toMatchObject({dataset: 'staging', tag: 'staging'})
     })
 
-    test('falls back to source dataset/projectId when apiDef omits them', () => {
+    test('uses dataset/projectId from the resolved source', () => {
       const ws = createWorkspaceMetadata({
         sources: [{dataset: 'source-ds', name: 'default', projectId: 'source-proj'}],
       })
@@ -590,19 +578,6 @@ describe('resolveGraphQLApiMetadata', () => {
       })
 
       expect(result[0]).toMatchObject({dataset: 'source-ds', projectId: 'source-proj'})
-    })
-
-    test('apiDef dataset/projectId overrides source values', () => {
-      const ws = createWorkspaceMetadata({
-        sources: [{dataset: 'source-ds', name: 'default', projectId: 'source-proj'}],
-      })
-
-      const result = resolveGraphQLApiMetadata({
-        cliConfig: {graphql: [{dataset: 'override-ds', projectId: 'override-proj'}]},
-        workspaces: [ws],
-      })
-
-      expect(result[0]).toMatchObject({dataset: 'override-ds', projectId: 'override-proj'})
     })
   })
 })

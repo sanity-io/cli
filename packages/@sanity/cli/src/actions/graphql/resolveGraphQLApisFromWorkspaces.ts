@@ -209,13 +209,13 @@ function resolveGraphQLApiMetadataFromConfig(
     const {source} = resolveWorkspaceAndSource(apiDef, workspaces, (ws) => ws.sources)
 
     return {
-      dataset: apiDef.dataset ?? source.dataset,
+      dataset: source.dataset,
       filterSuffix: apiDef.filterSuffix,
       generation: apiDef.generation,
       id: apiDef.id,
       nonNullDocumentFields: apiDef.nonNullDocumentFields,
       playground: apiDef.playground,
-      projectId: apiDef.projectId ?? source.projectId,
+      projectId: source.projectId,
       tag: apiDef.tag,
     }
   })
@@ -230,8 +230,8 @@ function resolveGraphQLAPIsFromConfig(
 
     return {
       ...apiDef,
-      dataset: apiDef.dataset ?? source.dataset,
-      projectId: apiDef.projectId ?? source.projectId,
+      dataset: source.dataset,
+      projectId: source.projectId,
       schemaTypes: getStrippedSchemaTypes(source.schema),
     }
   })
