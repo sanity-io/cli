@@ -126,19 +126,19 @@ describe('computeDeltas', () => {
 
 describe('formatDelta', () => {
   test('formats null as new', () => {
-    expect(formatDelta(null)).toBe('new ↗')
+    expect(formatDelta(null)).toBe('<font color="green">(new)</font>')
   })
 
   test('formats positive delta', () => {
-    expect(formatDelta(2.5)).toBe('+2.5% ↗')
+    expect(formatDelta(2.5)).toBe('<font color="green">(+&nbsp;2.5%)</font>')
   })
 
   test('formats negative delta', () => {
-    expect(formatDelta(-3.2)).toBe('-3.2% ↘')
+    expect(formatDelta(-3.2)).toBe('<font color="red">(-&nbsp;3.2%)</font>')
   })
 
   test('formats zero delta', () => {
-    expect(formatDelta(0)).toBe('±0% —')
+    expect(formatDelta(0)).toBe('<font color="green">(±0%)</font>')
   })
 })
 
@@ -153,22 +153,20 @@ describe('buildMarkdown', () => {
     expect(md).toContain('No covered files changed')
   })
 
-  test('includes delta column when baseline exists', () => {
+  test('includes delta in statements column when baseline exists', () => {
     const deltas = [{baseline: 80, current: 85, delta: 5, displayName: 'src/a.ts'}]
     const md = buildMarkdown(deltas, baseline, 'abc123')
-    expect(md).toContain('| File | Stmts | Delta |')
+    expect(md).toContain('| File | Statements |')
     expect(md).toContain('src/a.ts')
-    expect(md).toContain('80.0% → 85.0%')
-    expect(md).toContain('+5.0% ↗')
+    expect(md).toContain('85.0%&nbsp;<font color="green">(+&nbsp;5.0%)</font>')
     expect(md).toContain('abc123')
   })
 
-  test('omits delta column when no baseline', () => {
+  test('shows only percentage when no baseline', () => {
     const deltas = [{baseline: null, current: 70, delta: null, displayName: 'src/b.ts'}]
     const md = buildMarkdown(deltas, null, null)
-    expect(md).not.toContain('| Delta |')
-    expect(md).toContain('| File | Stmts |')
-    expect(md).toContain('new → 70.0%')
+    expect(md).toContain('| File | Statements |')
+    expect(md).toContain('| src/b.ts | 70.0% |')
     expect(md).toContain('No baseline available')
   })
 

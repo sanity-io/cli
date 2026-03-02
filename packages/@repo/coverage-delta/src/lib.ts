@@ -74,10 +74,10 @@ export function computeDeltas(
 }
 
 export function formatDelta(delta: number | null): string {
-  if (delta === null) return 'new ↗'
-  if (delta > 0) return `+${delta.toFixed(1)}% ↗`
-  if (delta < 0) return `${delta.toFixed(1)}% ↘`
-  return '±0% —'
+  if (delta === null) return '<font color="green">(new)</font>'
+  if (delta > 0) return `<font color="green">(+&nbsp;${delta.toFixed(1)}%)</font>`
+  if (delta < 0) return `<font color="red">(-&nbsp;${Math.abs(delta).toFixed(1)}%)</font>`
+  return '<font color="green">(±0%)</font>'
 }
 
 export function buildMarkdown(
@@ -91,18 +91,13 @@ export function buildMarkdown(
 
   const hasBaseline = baseline !== null
 
-  const headerRow = hasBaseline ? '| File | Stmts | Delta |' : '| File | Stmts |'
-  const separatorRow = hasBaseline ? '| ---- | ----- | ----- |' : '| ---- | ----- |'
+  const headerRow = '| File | Statements |'
+  const separatorRow = '| ---- | ---- |'
 
-  const rows = deltas.map(({baseline, current, delta, displayName}) => {
-    const coverage =
-      baseline === null
-        ? `new → ${current.toFixed(1)}%`
-        : `${baseline.toFixed(1)}% → ${current.toFixed(1)}%`
-
-    return hasBaseline
-      ? `| ${displayName} | ${coverage} | ${formatDelta(delta)} |`
-      : `| ${displayName} | ${coverage} |`
+  const rows = deltas.map(({current, delta, displayName}) => {
+    const pct = `${current.toFixed(1)}%`
+    const cell = hasBaseline ? `${pct}&nbsp;${formatDelta(delta)}` : pct
+    return `| ${displayName} | ${cell} |`
   })
 
   const count = deltas.length
