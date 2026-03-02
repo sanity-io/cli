@@ -16,6 +16,13 @@ export interface ApiSpecification {
  */
 export interface GraphQLAPIConfig {
   /**
+   * Override the dataset for this API.
+   *
+   * Optional — if not set, the dataset is resolved from the workspace/source configuration.
+   */
+  dataset?: string
+
+  /**
    * Suffix to use for generated filter types.
    *
    * Optional, Defaults to `Filter`.
@@ -47,6 +54,13 @@ export interface GraphQLAPIConfig {
    * Optional, defaults to `true` in development mode,  `false` otherwise
    */
   playground?: boolean
+
+  /**
+   * Override the project ID for this API.
+   *
+   * Optional — if not set, the project ID is resolved from the workspace/source configuration.
+   */
+  projectId?: string
 
   /**
    * Name of source containing the schema to deploy, within the configured workspace
