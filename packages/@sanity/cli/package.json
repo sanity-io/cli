@@ -163,7 +163,6 @@
     "@types/tar-stream": "^3.1.4",
     "@types/which": "^3.0.4",
     "@vitest/coverage-istanbul": "catalog:",
-    "@vitest/utils": "^4.0.18",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "catalog:",
     "nock": "catalog:",

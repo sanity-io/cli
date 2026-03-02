@@ -6,6 +6,9 @@
  */
 export type {PackageJson, ReadPackageJsonOptions} from '@sanity/cli-core'
 
+/**
+ * @public
+ */
 export interface CliApiConfig {
   dataset?: string
   projectId?: string
