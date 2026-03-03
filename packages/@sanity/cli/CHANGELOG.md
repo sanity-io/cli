@@ -1,5 +1,22 @@
 # Changelog
 
+## [6.0.0-alpha.20](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.19...cli-v6.0.0-alpha.20) (2026-03-03)
+
+
+### Bug Fixes
+
+* don't throw an error when telemetry is not initialized ([#518](https://github.com/sanity-io/cli/issues/518)) ([2b5b83f](https://github.com/sanity-io/cli/commit/2b5b83fd03db7c6e5add11b8e77767e4da2f3fca))
+* issue where CLI would error if root not found ([#535](https://github.com/sanity-io/cli/issues/535)) ([a0d9cb1](https://github.com/sanity-io/cli/commit/a0d9cb1aa545e03518b0b75f7e313044a4223762))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.19
+  * devDependencies
+    * @sanity/cli-test bumped to 0.1.0-alpha.17
+
 ## [6.0.0-alpha.19](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.18...cli-v6.0.0-alpha.19) (2026-03-03)
 
 
