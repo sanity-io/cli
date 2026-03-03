@@ -2,13 +2,22 @@ import {styleText} from 'node:util'
 
 import {type Hook} from '@oclif/core'
 import {warn} from '@oclif/core/ux'
-import {debug, findProjectRoot} from '@sanity/cli-core'
+import {debug, findProjectRoot, type ProjectRootResult} from '@sanity/cli-core'
 import {loadEnv} from 'vite'
 
 import {getSanityEnv} from '../../util/getSanityEnv.js'
 
 export const injectEnvVariables: Hook.Prerun = async function ({Command}) {
-  const workDir = await findProjectRoot(process.cwd())
+  let workDir: ProjectRootResult | undefined
+  try {
+    workDir = await findProjectRoot(process.cwd())
+  } catch {
+    // Accept not finding a project root
+  }
+
+  if (!workDir) {
+    return
+  }
 
   // Use `production` for `sanity build` / `sanity deploy`,
   // but default to `development` for everything else unless `SANITY_ACTIVE_ENV` is set

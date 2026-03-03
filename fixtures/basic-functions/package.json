@@ -1,0 +1,14 @@
+{
+  "name": "basic-functions",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@sanity/blueprints": "^0.12.2",
+    "@sanity/functions": "^1.2.0"
+  },
+  "devDependencies": {
+    "sanity": "catalog:"
+  }
+}

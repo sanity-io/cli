@@ -73,4 +73,19 @@ describe('#injectEnvVariables', () => {
 
     expect(stderr).toContain('Running in production environment')
   })
+
+  test('should not error when no project root is found', async () => {
+    const cwd = await testFixture('basic-functions')
+    process.chdir(cwd)
+
+    const {Command, config} = await getCommandAndConfig('learn')
+
+    const {error, stderr} = await testHook<'prerun'>(injectEnvVariables, {
+      Command,
+      config,
+    })
+
+    if (error) throw error
+    expect(stderr).not.toContain('Error: No project root found')
+  })
 })
