@@ -2,19 +2,25 @@
   "name": "@repo/upload-docs",
   "version": "1.0.0",
   "private": true,
-  "description": "Parse @sanity/cli README.md and write structured reference docs to Sanity",
+  "description": "Parse @sanity/cli commands and write structured reference docs to Sanity",
   "type": "module",
   "scripts": {
-    "update": "tsx src/index.ts ../../@sanity/cli/README.md",
-    "update-manifest": "tsx src/manifest.ts ../../@sanity/cli/oclif.manifest.json"
+    "lint": "eslint .",
+    "update": "tsx src/manifest.ts"
   },
   "dependencies": {
-    "@sanity/client": "^7.16.0",
-    "@sanity/id-utils": "^1.0.0"
+    "@oclif/core": "catalog:",
+    "@sanity/client": "catalog:",
+    "@sanity/eslint-config-cli": "workspace:*",
+    "@sanity/id-utils": "^1.0.0",
+    "lodash-es": "catalog:"
   },
   "devDependencies": {
     "@repo/tsconfig": "workspace:*",
-    "@types/node": "^22.0.0",
-    "tsx": "^4.0.0"
+    "@sanity/eslint-config-cli": "workspace:*",
+    "@types/lodash-es": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsx": "catalog:"
   }
 }
