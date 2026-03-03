@@ -55,9 +55,9 @@ export async function extractGraphQLAPIs(
 }
 
 function extractGraphQLConfig(config: CliConfig) {
-  return structuredClone({
+  return {
     graphql: config.graphql,
-  })
+  }
 }
 
 /**
