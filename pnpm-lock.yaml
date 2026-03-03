@@ -408,9 +408,6 @@ importers:
       '@sanity/client':
         specifier: ^7.16.0
         version: 7.16.0(debug@4.4.3)
-      '@sanity/eslint-config-cli':
-        specifier: workspace:*
-        version: link:../../@sanity/eslint-config-cli
       '@sanity/id-utils':
         specifier: ^1.0.0
         version: 1.0.0
@@ -421,6 +418,9 @@ importers:
       '@repo/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
+      '@sanity/eslint-config-cli':
+        specifier: workspace:*
+        version: link:../../@sanity/eslint-config-cli
       '@types/lodash-es':
         specifier: 'catalog:'
         version: 4.17.12
