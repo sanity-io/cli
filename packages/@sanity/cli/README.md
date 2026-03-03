@@ -119,7 +119,7 @@ Disable backup for a dataset.
 
 ```
 USAGE
-  $ pnpm exec sanity backup disable [DATASET]
+  $ sanity backup disable [DATASET]
 
 ARGUMENTS
   [DATASET]  Dataset name to disable backup for
@@ -130,14 +130,14 @@ DESCRIPTION
 EXAMPLES
   Interactively disable backup for a dataset
 
-    $ pnpm exec sanity backup disable
+    $ sanity backup disable
 
   Disable backup for the production dataset
 
-    $ pnpm exec sanity backup disable production
+    $ sanity backup disable production
 ```
 
-_See code: [src/commands/backup/disable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/backup/disable.ts)_
+_See code: [src/commands/backup/disable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/backup/disable.ts)_
 
 ## `sanity backup download [DATASET]`
 
@@ -145,7 +145,7 @@ Download a dataset backup to a local file.
 
 ```
 USAGE
-  $ pnpm exec sanity backup download [DATASET] [--backup-id <value>] [--concurrency <value>] [--out <value>] [--overwrite]
+  $ sanity backup download [DATASET] [--backup-id <value>] [--concurrency <value>] [--out <value>] [--overwrite]
 
 ARGUMENTS
   [DATASET]  Dataset name to download backup from
@@ -162,22 +162,22 @@ DESCRIPTION
 EXAMPLES
   Interactively download a backup
 
-    $ pnpm exec sanity backup download
+    $ sanity backup download
 
   Download a specific backup for the production dataset
 
-    $ pnpm exec sanity backup download production --backup-id 2024-01-01-backup-1
+    $ sanity backup download production --backup-id 2024-01-01-backup-1
 
   Download backup to a specific file
 
-    $ pnpm exec sanity backup download production --backup-id 2024-01-01-backup-2 --out /path/to/file
+    $ sanity backup download production --backup-id 2024-01-01-backup-2 --out /path/to/file
 
   Download backup and overwrite existing file
 
-    $ pnpm exec sanity backup download production --backup-id 2024-01-01-backup-3 --out /path/to/file --overwrite
+    $ sanity backup download production --backup-id 2024-01-01-backup-3 --out /path/to/file --overwrite
 ```
 
-_See code: [src/commands/backup/download.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/backup/download.ts)_
+_See code: [src/commands/backup/download.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/backup/download.ts)_
 
 ## `sanity backup enable [DATASET]`
 
@@ -185,7 +185,7 @@ Enable backup for a dataset.
 
 ```
 USAGE
-  $ pnpm exec sanity backup enable [DATASET]
+  $ sanity backup enable [DATASET]
 
 ARGUMENTS
   [DATASET]  Dataset name to enable backup for
@@ -196,14 +196,14 @@ DESCRIPTION
 EXAMPLES
   Interactively enable backup for a dataset
 
-    $ pnpm exec sanity backup enable
+    $ sanity backup enable
 
   Enable backup for the production dataset
 
-    $ pnpm exec sanity backup enable production
+    $ sanity backup enable production
 ```
 
-_See code: [src/commands/backup/enable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/backup/enable.ts)_
+_See code: [src/commands/backup/enable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/backup/enable.ts)_
 
 ## `sanity backup list [DATASET]`
 
@@ -211,7 +211,7 @@ List available backups for a dataset.
 
 ```
 USAGE
-  $ pnpm exec sanity backup list [DATASET] [--after <value>] [--before <value>] [-l <value>]
+  $ sanity backup list [DATASET] [--after <value>] [--before <value>] [-l <value>]
 
 ARGUMENTS
   [DATASET]  Dataset name to list backups for
@@ -227,22 +227,22 @@ DESCRIPTION
 EXAMPLES
   List backups for a dataset interactively
 
-    $ pnpm exec sanity backup list
+    $ sanity backup list
 
   List backups for the production dataset
 
-    $ pnpm exec sanity backup list production
+    $ sanity backup list production
 
   List up to 50 backups for the production dataset
 
-    $ pnpm exec sanity backup list production --limit 50
+    $ sanity backup list production --limit 50
 
   List up to 10 backups created after 2024-01-31
 
-    $ pnpm exec sanity backup list production --after 2024-01-31 --limit 10
+    $ sanity backup list production --after 2024-01-31 --limit 10
 ```
 
-_See code: [src/commands/backup/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/backup/list.ts)_
+_See code: [src/commands/backup/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/backup/list.ts)_
 
 ## `sanity blueprints add TYPE`
 
@@ -250,7 +250,7 @@ Add a function resource to a Blueprint
 
 ```
 USAGE
-  $ pnpm exec sanity blueprints add TYPE [--example <value> | -n <value> | --fn-type
+  $ sanity blueprints add TYPE [--example <value> | -n <value> | --fn-type
     document-create|document-delete|document-update|document-publish|media-library-asset-create|media-library-asset-upda
     te|media-library-asset-delete... | --language ts|js | --javascript | --fn-helpers | --fn-installer
     skip|npm|pnpm|yarn] [-i | ]
@@ -283,18 +283,18 @@ DESCRIPTION
   After adding a function, use 'functions dev' to test locally, then 'blueprints deploy' to publish it.
 
 EXAMPLES
-  $ pnpm exec sanity blueprints add function
+  $ sanity blueprints add function
 
-  $ pnpm exec sanity blueprints add function --helpers
+  $ sanity blueprints add function --helpers
 
-  $ pnpm exec sanity blueprints add function --name my-function
+  $ sanity blueprints add function --name my-function
 
-  $ pnpm exec sanity blueprints add function --name my-function --fn-type document-create
+  $ sanity blueprints add function --name my-function --fn-type document-create
 
-  $ pnpm exec sanity blueprints add function --name my-function --fn-type document-create --fn-type document-update --lang js
+  $ sanity blueprints add function --name my-function --fn-type document-create --fn-type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/blueprints/add.ts)_
 
 ## `sanity blueprints config`
 
@@ -302,7 +302,7 @@ View or edit the local Blueprint configuration
 
 ```
 USAGE
-  $ pnpm exec sanity blueprints config [--project-id <value> -e] [--stack <value> ]
+  $ sanity blueprints config [--project-id <value> -e] [--stack <value> ]
 
 FLAGS
   -e, --edit                Modify the configuration interactively, or directly when combined with ID flags.
@@ -320,16 +320,16 @@ DESCRIPTION
   If you need to switch your Blueprint to a different Stack, use --edit --stack.
 
 EXAMPLES
-  $ pnpm exec sanity blueprints config
+  $ sanity blueprints config
 
-  $ pnpm exec sanity blueprints config --edit
+  $ sanity blueprints config --edit
 
-  $ pnpm exec sanity blueprints config --edit --project-id <projectId>
+  $ sanity blueprints config --edit --project-id <projectId>
 
-  $ pnpm exec sanity blueprints config --edit --project-id <projectId> --stack <name-or-id>
+  $ sanity blueprints config --edit --project-id <projectId> --stack <name-or-id>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/config.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/blueprints/config.ts)_
 
 ## `sanity blueprints deploy`
 
@@ -337,7 +337,7 @@ Deploy the local Blueprint to the remote Stack
 
 ```
 USAGE
-  $ pnpm exec sanity blueprints deploy [--stack <value>] [--no-wait]
+  $ sanity blueprints deploy [--stack <value>] [--no-wait]
 
 FLAGS
   --no-wait        Do not wait for Stack deployment to complete
@@ -357,12 +357,12 @@ DESCRIPTION
   Set SANITY_ASSET_TIMEOUT (seconds) to override the 60-second timeout for processing resource assets.
 
 EXAMPLES
-  $ pnpm exec sanity blueprints deploy
+  $ sanity blueprints deploy
 
-  $ pnpm exec sanity blueprints deploy --no-wait
+  $ sanity blueprints deploy --no-wait
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/deploy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/blueprints/deploy.ts)_
 
 ## `sanity blueprints destroy`
 
@@ -370,7 +370,7 @@ Destroy the remote Stack deployment and its resources (will not delete local fil
 
 ```
 USAGE
-  $ pnpm exec sanity blueprints destroy [--project-id <value> --stack <value> --force] [--no-wait]
+  $ sanity blueprints destroy [--project-id <value> --stack <value> --force] [--no-wait]
 
 FLAGS
   --force               Force Stack destruction (skip confirmation)
@@ -389,12 +389,12 @@ DESCRIPTION
   Use this to clean up test environments or decommission a Stack you no longer need.
 
 EXAMPLES
-  $ pnpm exec sanity blueprints destroy
+  $ sanity blueprints destroy
 
-  $ pnpm exec sanity blueprints destroy --stack <name-or-id> --project-id <projectId> --force --no-wait
+  $ sanity blueprints destroy --stack <name-or-id> --project-id <projectId> --force --no-wait
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/destroy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/blueprints/destroy.ts)_
 
 ## `sanity blueprints doctor`
 
@@ -402,7 +402,7 @@ Diagnose potential issues with local Blueprint and remote Stack configuration
 
 ```
 USAGE
-  $ pnpm exec sanity blueprints doctor [--json] [-p <value>] [--verbose] [--fix]
+  $ sanity blueprints doctor [--json] [-p <value>] [--verbose] [--fix]
 
 FLAGS
   -p, --path=<value>  [env: SANITY_BLUEPRINT_PATH] Path to a Blueprint file or directory containing one
@@ -420,7 +420,7 @@ DESCRIPTION
   issues.
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/doctor.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/blueprints/doctor.ts)_
 
 ## `sanity blueprints info`
 
@@ -428,7 +428,7 @@ Show information about the local Blueprint's remote Stack deployment
 
 ```
 USAGE
-  $ pnpm exec sanity blueprints info [--stack <value>]
+  $ sanity blueprints info [--stack <value>]
 
 FLAGS
   --stack=<value>  Stack name or ID to use instead of the locally configured Stack
@@ -445,12 +445,12 @@ DESCRIPTION
   Run 'blueprints stacks' to see all available Stacks in your project or organization.
 
 EXAMPLES
-  $ pnpm exec sanity blueprints info
+  $ sanity blueprints info
 
-  $ pnpm exec sanity blueprints info --stack <name-or-id>
+  $ sanity blueprints info --stack <name-or-id>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/info.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/blueprints/info.ts)_
 
 ## `sanity blueprints init [DIR]`
 
@@ -458,7 +458,7 @@ Initialize a local Blueprint and optionally provision a remote Stack deployment
 
 ```
 USAGE
-  $ pnpm exec sanity blueprints init [DIR] [--verbose] [--dir <value>] [--example <value> | --blueprint-type json|js|ts |
+  $ sanity blueprints init [DIR] [--verbose] [--dir <value>] [--example <value> | --blueprint-type json|js|ts |
     --stack-id <value> | --stack-name <value>] [--project-id <value>]
 
 ARGUMENTS
@@ -489,18 +489,18 @@ DESCRIPTION
   After initialization, use 'blueprints plan' to preview changes, then 'blueprints deploy' to apply them.
 
 EXAMPLES
-  $ pnpm exec sanity blueprints init
+  $ sanity blueprints init
 
-  $ pnpm exec sanity blueprints init [directory]
+  $ sanity blueprints init [directory]
 
-  $ pnpm exec sanity blueprints init --blueprint-type <json|js|ts>
+  $ sanity blueprints init --blueprint-type <json|js|ts>
 
-  $ pnpm exec sanity blueprints init --blueprint-type <json|js|ts> --project-id <projectId> --stack-id <stackId>
+  $ sanity blueprints init --blueprint-type <json|js|ts> --project-id <projectId> --stack-id <stackId>
 
-  $ pnpm exec sanity blueprints init --blueprint-type <json|js|ts> --stack-name <stackName>
+  $ sanity blueprints init --blueprint-type <json|js|ts> --stack-name <stackName>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/init.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/blueprints/init.ts)_
 
 ## `sanity blueprints logs`
 
@@ -508,7 +508,7 @@ Display logs for the current Blueprint's Stack deployment
 
 ```
 USAGE
-  $ pnpm exec sanity blueprints logs [--stack <value>] [-w]
+  $ sanity blueprints logs [--stack <value>] [-w]
 
 FLAGS
   -w, --watch          Watch for new Stack logs (streaming mode)
@@ -524,12 +524,12 @@ DESCRIPTION
   If you're not seeing expected logs, verify your Stack is deployed with 'blueprints info'.
 
 EXAMPLES
-  $ pnpm exec sanity blueprints logs
+  $ sanity blueprints logs
 
-  $ pnpm exec sanity blueprints logs --watch
+  $ sanity blueprints logs --watch
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/blueprints/logs.ts)_
 
 ## `sanity blueprints plan`
 
@@ -537,7 +537,7 @@ Enumerate resources to be deployed to the remote Stack - will not modify any res
 
 ```
 USAGE
-  $ pnpm exec sanity blueprints plan [--stack <value>]
+  $ sanity blueprints plan [--stack <value>]
 
 FLAGS
   --stack=<value>  Stack name or ID to use instead of the locally configured Stack
@@ -552,10 +552,10 @@ DESCRIPTION
   run 'blueprints deploy' to apply changes.
 
 EXAMPLES
-  $ pnpm exec sanity blueprints plan
+  $ sanity blueprints plan
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/plan.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/blueprints/plan.ts)_
 
 ## `sanity blueprints stacks`
 
@@ -563,7 +563,7 @@ List all remote Stack deployments (defaults to the current Blueprint's project s
 
 ```
 USAGE
-  $ pnpm exec sanity blueprints stacks [--project-id <value> | ]
+  $ sanity blueprints stacks [--project-id <value> | ]
 
 FLAGS
   --project-id=<value>  Project ID to show Stack deployments for
@@ -577,14 +577,14 @@ DESCRIPTION
   audit what's deployed across your project.
 
 EXAMPLES
-  $ pnpm exec sanity blueprints stacks
+  $ sanity blueprints stacks
 
-  $ pnpm exec sanity blueprints stacks --project-id <projectId>
+  $ sanity blueprints stacks --project-id <projectId>
 
-  $ pnpm exec sanity blueprints stacks --organization-id <organizationId>
+  $ sanity blueprints stacks --organization-id <organizationId>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/blueprints/stacks.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/blueprints/stacks.ts)_
 
 ## `sanity build [OUTPUTDIR]`
 
@@ -592,7 +592,7 @@ Builds the Sanity Studio configuration into a static bundle
 
 ```
 USAGE
-  $ pnpm exec sanity build [OUTPUTDIR] [--auto-updates] [--minify] [--source-maps] [--stats] [-y]
+  $ sanity build [OUTPUTDIR] [--auto-updates] [--minify] [--source-maps] [--stats] [-y]
 
 ARGUMENTS
   [OUTPUTDIR]  Output directory
@@ -608,12 +608,12 @@ DESCRIPTION
   Builds the Sanity Studio configuration into a static bundle
 
 EXAMPLES
-  $ pnpm exec sanity build
+  $ sanity build
 
-  $ pnpm exec sanity build --no-minify --source-maps
+  $ sanity build --no-minify --source-maps
 ```
 
-_See code: [src/commands/build.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/build.ts)_
+_See code: [src/commands/build.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/build.ts)_
 
 ## `sanity codemod [CODEMODNAME]`
 
@@ -621,7 +621,7 @@ Updates Sanity Studio codebase with a code modification script
 
 ```
 USAGE
-  $ pnpm exec sanity codemod [CODEMODNAME] [--dry] [--extensions <value>] [--no-verify]
+  $ sanity codemod [CODEMODNAME] [--dry] [--extensions <value>] [--no-verify]
 
 ARGUMENTS
   [CODEMODNAME]  Name of the codemod to run
@@ -637,14 +637,14 @@ DESCRIPTION
 EXAMPLES
   Show available code mods
 
-    $ pnpm exec sanity codemod
+    $ sanity codemod
 
   Run codemod to transform react-icons imports (dry run)
 
-    $ pnpm exec sanity codemod reactIconsV3 --dry
+    $ sanity codemod reactIconsV3 --dry
 ```
 
-_See code: [src/commands/codemod.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/codemod.ts)_
+_See code: [src/commands/codemod.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/codemod.ts)_
 
 ## `sanity cors add ORIGIN`
 
@@ -652,7 +652,7 @@ Allow a new origin to use your project API through CORS
 
 ```
 USAGE
-  $ pnpm exec sanity cors add ORIGIN [--credentials]
+  $ sanity cors add ORIGIN [--credentials]
 
 ARGUMENTS
   ORIGIN  Origin to allow (e.g., https://example.com)
@@ -666,18 +666,18 @@ DESCRIPTION
 EXAMPLES
   Interactively add a CORS origin
 
-    $ pnpm exec sanity cors add
+    $ sanity cors add
 
   Add a localhost origin without credentials
 
-    $ pnpm exec sanity cors add http://localhost:3000 --no-credentials
+    $ sanity cors add http://localhost:3000 --no-credentials
 
   Add a production origin with credentials allowed
 
-    $ pnpm exec sanity cors add https://myapp.com --credentials
+    $ sanity cors add https://myapp.com --credentials
 ```
 
-_See code: [src/commands/cors/add.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/cors/add.ts)_
+_See code: [src/commands/cors/add.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/cors/add.ts)_
 
 ## `sanity cors delete [ORIGIN]`
 
@@ -685,7 +685,7 @@ Delete an existing CORS origin from your project
 
 ```
 USAGE
-  $ pnpm exec sanity cors delete [ORIGIN]
+  $ sanity cors delete [ORIGIN]
 
 ARGUMENTS
   [ORIGIN]  Origin to delete (will prompt if not provided)
@@ -696,14 +696,14 @@ DESCRIPTION
 EXAMPLES
   Interactively select and delete a CORS origin
 
-    $ pnpm exec sanity cors delete
+    $ sanity cors delete
 
   Delete a specific CORS origin
 
-    $ pnpm exec sanity cors delete https://example.com
+    $ sanity cors delete https://example.com
 ```
 
-_See code: [src/commands/cors/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/cors/delete.ts)_
+_See code: [src/commands/cors/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/cors/delete.ts)_
 
 ## `sanity cors list`
 
@@ -711,7 +711,7 @@ List all origins allowed to access the API for this project
 
 ```
 USAGE
-  $ pnpm exec sanity cors list
+  $ sanity cors list
 
 DESCRIPTION
   List all origins allowed to access the API for this project
@@ -719,10 +719,10 @@ DESCRIPTION
 EXAMPLES
   List CORS origins for the current project
 
-    $ pnpm exec sanity cors list
+    $ sanity cors list
 ```
 
-_See code: [src/commands/cors/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/cors/list.ts)_
+_See code: [src/commands/cors/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/cors/list.ts)_
 
 ## `sanity dataset alias create [ALIASNAME] [TARGETDATASET]`
 
@@ -730,7 +730,7 @@ Create a dataset alias within your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset alias create [ALIASNAME] [TARGETDATASET] [-p <value>]
+  $ sanity dataset alias create [ALIASNAME] [TARGETDATASET] [-p <value>]
 
 ARGUMENTS
   [ALIASNAME]      Dataset alias name to create
@@ -745,26 +745,26 @@ DESCRIPTION
 EXAMPLES
   Create alias in a specific project
 
-    $ pnpm exec sanity dataset alias create --project-id abc123 conference conf-2025
+    $ sanity dataset alias create --project-id abc123 conference conf-2025
 
   Create an alias with interactive prompts
 
-    $ pnpm exec sanity dataset alias create
+    $ sanity dataset alias create
 
   Create alias named "conference" with interactive dataset selection
 
-    $ pnpm exec sanity dataset alias create conference
+    $ sanity dataset alias create conference
 
   Create alias "conference" linked to "conf-2025" dataset
 
-    $ pnpm exec sanity dataset alias create conference conf-2025
+    $ sanity dataset alias create conference conf-2025
 
   Create alias with explicit ~ prefix
 
-    $ pnpm exec sanity dataset alias create ~conference conf-2025
+    $ sanity dataset alias create ~conference conf-2025
 ```
 
-_See code: [src/commands/dataset/alias/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/alias/create.ts)_
+_See code: [src/commands/dataset/alias/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/alias/create.ts)_
 
 ## `sanity dataset alias delete ALIASNAME`
 
@@ -772,7 +772,7 @@ Delete a dataset alias within your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset alias delete ALIASNAME [-p <value>] [--force]
+  $ sanity dataset alias delete ALIASNAME [-p <value>] [--force]
 
 ARGUMENTS
   ALIASNAME  Dataset alias name to delete
@@ -787,18 +787,18 @@ DESCRIPTION
 EXAMPLES
   Delete alias named "conference" with confirmation prompt
 
-    $ pnpm exec sanity dataset alias delete conference
+    $ sanity dataset alias delete conference
 
   Delete alias with explicit ~ prefix
 
-    $ pnpm exec sanity dataset alias delete ~conference
+    $ sanity dataset alias delete ~conference
 
   Delete alias named "conference" without confirmation prompt
 
-    $ pnpm exec sanity dataset alias delete conference --force
+    $ sanity dataset alias delete conference --force
 ```
 
-_See code: [src/commands/dataset/alias/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/alias/delete.ts)_
+_See code: [src/commands/dataset/alias/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/alias/delete.ts)_
 
 ## `sanity dataset alias link [ALIASNAME] [TARGETDATASET]`
 
@@ -806,7 +806,7 @@ Link a dataset alias to a dataset within your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset alias link [ALIASNAME] [TARGETDATASET] [-p <value>] [--force]
+  $ sanity dataset alias link [ALIASNAME] [TARGETDATASET] [-p <value>] [--force]
 
 ARGUMENTS
   [ALIASNAME]      Dataset alias name to link
@@ -822,26 +822,26 @@ DESCRIPTION
 EXAMPLES
   Link an alias with interactive prompts
 
-    $ pnpm exec sanity dataset alias link
+    $ sanity dataset alias link
 
   Link alias named "conference" with interactive dataset selection
 
-    $ pnpm exec sanity dataset alias link conference
+    $ sanity dataset alias link conference
 
   Link alias "conference" to "conf-2025" dataset
 
-    $ pnpm exec sanity dataset alias link conference conf-2025
+    $ sanity dataset alias link conference conf-2025
 
   Link alias with explicit ~ prefix
 
-    $ pnpm exec sanity dataset alias link ~conference conf-2025
+    $ sanity dataset alias link ~conference conf-2025
 
   Force link without confirmation (skip relink prompt)
 
-    $ pnpm exec sanity dataset alias link conference conf-2025 --force
+    $ sanity dataset alias link conference conf-2025 --force
 ```
 
-_See code: [src/commands/dataset/alias/link.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/alias/link.ts)_
+_See code: [src/commands/dataset/alias/link.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/alias/link.ts)_
 
 ## `sanity dataset alias unlink [ALIASNAME]`
 
@@ -849,7 +849,7 @@ Unlink a dataset alias from its dataset within your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset alias unlink [ALIASNAME] [-p <value>] [--force]
+  $ sanity dataset alias unlink [ALIASNAME] [-p <value>] [--force]
 
 ARGUMENTS
   [ALIASNAME]  Dataset alias name to unlink
@@ -864,22 +864,22 @@ DESCRIPTION
 EXAMPLES
   Unlink an alias with interactive selection
 
-    $ pnpm exec sanity dataset alias unlink
+    $ sanity dataset alias unlink
 
   Unlink alias "conference" with confirmation prompt
 
-    $ pnpm exec sanity dataset alias unlink conference
+    $ sanity dataset alias unlink conference
 
   Unlink alias with explicit ~ prefix
 
-    $ pnpm exec sanity dataset alias unlink ~conference
+    $ sanity dataset alias unlink ~conference
 
   Unlink alias "conference" without confirmation prompt
 
-    $ pnpm exec sanity dataset alias unlink conference --force
+    $ sanity dataset alias unlink conference --force
 ```
 
-_See code: [src/commands/dataset/alias/unlink.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/alias/unlink.ts)_
+_See code: [src/commands/dataset/alias/unlink.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/alias/unlink.ts)_
 
 ## `sanity dataset copy [SOURCE] [TARGET]`
 
@@ -887,7 +887,7 @@ Manages dataset copying, including starting a new copy job, listing copy jobs an
 
 ```
 USAGE
-  $ pnpm exec sanity dataset copy [SOURCE] [TARGET] [-p <value>] [--attach <value> | --list | --detach | --skip-history]
+  $ sanity dataset copy [SOURCE] [TARGET] [-p <value>] [--attach <value> | --list | --detach | --skip-history]
     [--limit <value> ] [--offset <value> ]
 
 ARGUMENTS
@@ -910,38 +910,38 @@ DESCRIPTION
 EXAMPLES
   Interactively copy a dataset
 
-    $ pnpm exec sanity dataset copy
+    $ sanity dataset copy
 
   Copy from source-dataset (prompts for target)
 
-    $ pnpm exec sanity dataset copy source-dataset
+    $ sanity dataset copy source-dataset
 
   Copy from source-dataset to target-dataset
 
-    $ pnpm exec sanity dataset copy source-dataset target-dataset
+    $ sanity dataset copy source-dataset target-dataset
 
   Copy without preserving document history (faster for large datasets)
 
-    $ pnpm exec sanity dataset copy --skip-history source target
+    $ sanity dataset copy --skip-history source target
 
   Start copy job without waiting for completion
 
-    $ pnpm exec sanity dataset copy --detach source target
+    $ sanity dataset copy --detach source target
 
   Attach to a running copy job to follow progress
 
-    $ pnpm exec sanity dataset copy --attach <job-id>
+    $ sanity dataset copy --attach <job-id>
 
   List all dataset copy jobs
 
-    $ pnpm exec sanity dataset copy --list
+    $ sanity dataset copy --list
 
   List copy jobs with pagination
 
-    $ pnpm exec sanity dataset copy --list --offset 2 --limit 10
+    $ sanity dataset copy --list --offset 2 --limit 10
 ```
 
-_See code: [src/commands/dataset/copy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/copy.ts)_
+_See code: [src/commands/dataset/copy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/copy.ts)_
 
 ## `sanity dataset create [NAME]`
 
@@ -949,7 +949,7 @@ Create a new dataset within your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset create [NAME] [-p <value>] [--embeddings-projection <value> --embeddings] [--visibility
+  $ sanity dataset create [NAME] [-p <value>] [--embeddings-projection <value> --embeddings] [--visibility
     custom|private|public]
 
 ARGUMENTS
@@ -968,18 +968,18 @@ DESCRIPTION
 EXAMPLES
   Interactively create a dataset
 
-    $ pnpm exec sanity dataset create
+    $ sanity dataset create
 
   Create a dataset named "my-dataset"
 
-    $ pnpm exec sanity dataset create my-dataset
+    $ sanity dataset create my-dataset
 
   Create a private dataset named "my-dataset"
 
-    $ pnpm exec sanity dataset create my-dataset --visibility private
+    $ sanity dataset create my-dataset --visibility private
 ```
 
-_See code: [src/commands/dataset/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/create.ts)_
+_See code: [src/commands/dataset/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/create.ts)_
 
 ## `sanity dataset delete DATASETNAME`
 
@@ -987,7 +987,7 @@ Delete a dataset within your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset delete DATASETNAME [-p <value>] [--force]
+  $ sanity dataset delete DATASETNAME [-p <value>] [--force]
 
 ARGUMENTS
   DATASETNAME  Dataset name to delete
@@ -1002,14 +1002,14 @@ DESCRIPTION
 EXAMPLES
   Delete a specific dataset
 
-    $ pnpm exec sanity dataset delete my-dataset
+    $ sanity dataset delete my-dataset
 
   Delete a specific dataset without confirmation
 
-    $ pnpm exec sanity dataset delete my-dataset --force
+    $ sanity dataset delete my-dataset --force
 ```
 
-_See code: [src/commands/dataset/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/delete.ts)_
+_See code: [src/commands/dataset/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/delete.ts)_
 
 ## `sanity dataset embeddings disable [DATASET]`
 
@@ -1017,7 +1017,7 @@ Disable embeddings for a dataset
 
 ```
 USAGE
-  $ pnpm exec sanity dataset embeddings disable [DATASET] [-p <value>]
+  $ sanity dataset embeddings disable [DATASET] [-p <value>]
 
 ARGUMENTS
   [DATASET]  Dataset name to disable embeddings for
@@ -1031,10 +1031,10 @@ DESCRIPTION
 EXAMPLES
   Disable embeddings for the production dataset
 
-    $ pnpm exec sanity dataset embeddings disable production
+    $ sanity dataset embeddings disable production
 ```
 
-_See code: [src/commands/dataset/embeddings/disable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/embeddings/disable.ts)_
+_See code: [src/commands/dataset/embeddings/disable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/embeddings/disable.ts)_
 
 ## `sanity dataset embeddings enable [DATASET]`
 
@@ -1042,7 +1042,7 @@ Enable embeddings for a dataset
 
 ```
 USAGE
-  $ pnpm exec sanity dataset embeddings enable [DATASET] [-p <value>] [--projection <value>] [--wait]
+  $ sanity dataset embeddings enable [DATASET] [-p <value>] [--projection <value>] [--wait]
 
 ARGUMENTS
   [DATASET]  Dataset name to enable embeddings for
@@ -1058,18 +1058,18 @@ DESCRIPTION
 EXAMPLES
   Enable embeddings for the production dataset
 
-    $ pnpm exec sanity dataset embeddings enable production
+    $ sanity dataset embeddings enable production
 
   Enable embeddings with a specific projection
 
-    $ pnpm exec sanity dataset embeddings enable production --projection "{ title, body }"
+    $ sanity dataset embeddings enable production --projection "{ title, body }"
 
   Enable embeddings and wait for processing to complete
 
-    $ pnpm exec sanity dataset embeddings enable production --wait
+    $ sanity dataset embeddings enable production --wait
 ```
 
-_See code: [src/commands/dataset/embeddings/enable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/embeddings/enable.ts)_
+_See code: [src/commands/dataset/embeddings/enable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/embeddings/enable.ts)_
 
 ## `sanity dataset embeddings status [DATASET]`
 
@@ -1077,7 +1077,7 @@ Show embeddings settings and status for a dataset
 
 ```
 USAGE
-  $ pnpm exec sanity dataset embeddings status [DATASET] [-p <value>]
+  $ sanity dataset embeddings status [DATASET] [-p <value>]
 
 ARGUMENTS
   [DATASET]  The name of the dataset to check embeddings status for
@@ -1091,10 +1091,10 @@ DESCRIPTION
 EXAMPLES
   Show embeddings status for the production dataset
 
-    $ pnpm exec sanity dataset embeddings status production
+    $ sanity dataset embeddings status production
 ```
 
-_See code: [src/commands/dataset/embeddings/status.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/embeddings/status.ts)_
+_See code: [src/commands/dataset/embeddings/status.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/embeddings/status.ts)_
 
 ## `sanity dataset export [NAME] [DESTINATION]`
 
@@ -1102,7 +1102,7 @@ Export dataset to local filesystem as a gzipped tarball. Assets failing with HTT
 
 ```
 USAGE
-  $ pnpm exec sanity dataset export [NAME] [DESTINATION] [-p <value>] [--asset-concurrency <value>] [--mode stream|cursor]
+  $ sanity dataset export [NAME] [DESTINATION] [-p <value>] [--asset-concurrency <value>] [--mode stream|cursor]
     [--no-assets] [--no-compress] [--no-drafts] [--overwrite] [--raw] [--types <value>]
 
 ARGUMENTS
@@ -1130,22 +1130,22 @@ DESCRIPTION
 EXAMPLES
   Export dataset "moviedb" to localPath.tar.gz
 
-    $ pnpm exec sanity dataset export moviedb localPath.tar.gz
+    $ sanity dataset export moviedb localPath.tar.gz
 
   Export dataset without assets
 
-    $ pnpm exec sanity dataset export moviedb assetless.tar.gz --no-assets
+    $ sanity dataset export moviedb assetless.tar.gz --no-assets
 
   Export raw documents without asset reference rewriting
 
-    $ pnpm exec sanity dataset export staging staging.tar.gz --raw
+    $ sanity dataset export staging staging.tar.gz --raw
 
   Export specific document types
 
-    $ pnpm exec sanity dataset export staging staging.tar.gz --types products,shops
+    $ sanity dataset export staging staging.tar.gz --types products,shops
 ```
 
-_See code: [src/commands/dataset/export.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/export.ts)_
+_See code: [src/commands/dataset/export.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/export.ts)_
 
 ## `sanity dataset import SOURCE`
 
@@ -1153,7 +1153,7 @@ Import documents to a Sanity dataset
 
 ```
 USAGE
-  $ pnpm exec sanity dataset import SOURCE -p <value> -d <value> [-t <value>] [--replace | --missing] [--allow-failing-assets]
+  $ sanity dataset import SOURCE -p <value> -d <value> [-t <value>] [--replace | --missing] [--allow-failing-assets]
     [--allow-assets-in-different-dataset] [--replace-assets] [--skip-cross-dataset-references]
     [--allow-replacement-characters] [--allow-system-documents] [--asset-concurrency <value>]
 
@@ -1180,14 +1180,14 @@ DESCRIPTION
 EXAMPLES
   Import "./my-dataset.ndjson" into dataset "staging"
 
-    $ pnpm exec sanity dataset import -p myPrOj -d staging -t someSecretToken my-dataset.ndjson
+    $ sanity dataset import -p myPrOj -d staging -t someSecretToken my-dataset.ndjson
 
   Import into dataset "test" from stdin, read token from env var
 
     cat my-dataset.ndjson | sanity dataset import -p myPrOj -d test -
 ```
 
-_See code: [src/commands/dataset/import.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/import.ts)_
+_See code: [src/commands/dataset/import.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/import.ts)_
 
 ## `sanity dataset list`
 
@@ -1195,7 +1195,7 @@ List datasets of your project
 
 ```
 USAGE
-  $ pnpm exec sanity dataset list [-p <value>]
+  $ sanity dataset list [-p <value>]
 
 FLAGS
   -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
@@ -1206,14 +1206,14 @@ DESCRIPTION
 EXAMPLES
   List datasets of your project
 
-    $ pnpm exec sanity dataset list
+    $ sanity dataset list
 
   List datasets for a specific project
 
-    $ pnpm exec sanity dataset list --project-id abc123
+    $ sanity dataset list --project-id abc123
 ```
 
-_See code: [src/commands/dataset/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/list.ts)_
+_See code: [src/commands/dataset/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/list.ts)_
 
 ## `sanity dataset visibility get DATASET`
 
@@ -1221,7 +1221,7 @@ Get the visibility of a dataset
 
 ```
 USAGE
-  $ pnpm exec sanity dataset visibility get DATASET [-p <value>]
+  $ sanity dataset visibility get DATASET [-p <value>]
 
 ARGUMENTS
   DATASET  The name of the dataset to get visibility for
@@ -1235,10 +1235,10 @@ DESCRIPTION
 EXAMPLES
   Check the visibility of a dataset
 
-    $ pnpm exec sanity dataset visibility get my-dataset
+    $ sanity dataset visibility get my-dataset
 ```
 
-_See code: [src/commands/dataset/visibility/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/visibility/get.ts)_
+_See code: [src/commands/dataset/visibility/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/visibility/get.ts)_
 
 ## `sanity dataset visibility set DATASET MODE`
 
@@ -1246,7 +1246,7 @@ Set the visibility of a dataset
 
 ```
 USAGE
-  $ pnpm exec sanity dataset visibility set DATASET MODE [-p <value>]
+  $ sanity dataset visibility set DATASET MODE [-p <value>]
 
 ARGUMENTS
   DATASET  The name of the dataset to set visibility for
@@ -1261,14 +1261,14 @@ DESCRIPTION
 EXAMPLES
   Make a dataset private
 
-    $ pnpm exec sanity dataset visibility set my-dataset private
+    $ sanity dataset visibility set my-dataset private
 
   Make a dataset public
 
-    $ pnpm exec sanity dataset visibility set my-dataset public
+    $ sanity dataset visibility set my-dataset public
 ```
 
-_See code: [src/commands/dataset/visibility/set.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dataset/visibility/set.ts)_
+_See code: [src/commands/dataset/visibility/set.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dataset/visibility/set.ts)_
 
 ## `sanity debug`
 
@@ -1276,7 +1276,7 @@ Provides diagnostic info for Sanity Studio troubleshooting
 
 ```
 USAGE
-  $ pnpm exec sanity debug [--secrets]
+  $ sanity debug [--secrets]
 
 FLAGS
   --secrets  Include API keys in output
@@ -1285,12 +1285,12 @@ DESCRIPTION
   Provides diagnostic info for Sanity Studio troubleshooting
 
 EXAMPLES
-  $ pnpm exec sanity debug
+  $ sanity debug
 
-  $ pnpm exec sanity debug --secrets
+  $ sanity debug --secrets
 ```
 
-_See code: [src/commands/debug.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/debug.ts)_
+_See code: [src/commands/debug.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/debug.ts)_
 
 ## `sanity deploy [SOURCEDIR]`
 
@@ -1298,7 +1298,7 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ pnpm exec sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--minify] [--schema-required] [--source-maps]
+  $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--minify] [--schema-required] [--source-maps]
     [--verbose] [-y]
 
 ARGUMENTS
@@ -1319,18 +1319,18 @@ DESCRIPTION
 EXAMPLES
   Build and deploy the studio to Sanity hosting
 
-    $ pnpm exec sanity deploy
+    $ sanity deploy
 
   Deploys non-minified build with source maps
 
-    $ pnpm exec sanity deploy --no-minify --source-maps
+    $ sanity deploy --no-minify --source-maps
 
   Fail fast on schema store fails - for when other services rely on the stored schema
 
-    $ pnpm exec sanity deploy --schema-required
+    $ sanity deploy --schema-required
 ```
 
-_See code: [src/commands/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/deploy.ts)_
+_See code: [src/commands/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/deploy.ts)_
 
 ## `sanity dev`
 
@@ -1338,7 +1338,7 @@ Starts a local development server for Sanity Studio with live reloading
 
 ```
 USAGE
-  $ pnpm exec sanity dev [--auto-updates] [--host <value>] [--load-in-dashboard] [--port <value>]
+  $ sanity dev [--auto-updates] [--host <value>] [--load-in-dashboard] [--port <value>]
 
 FLAGS
   --[no-]auto-updates       Automatically update Sanity Studio dependencies.
@@ -1350,14 +1350,14 @@ DESCRIPTION
   Starts a local development server for Sanity Studio with live reloading
 
 EXAMPLES
-  $ pnpm exec sanity dev --host=0.0.0.0
+  $ sanity dev --host=0.0.0.0
 
-  $ pnpm exec sanity dev --port=1942
+  $ sanity dev --port=1942
 
-  $ pnpm exec sanity dev --load-in-dashboard
+  $ sanity dev --load-in-dashboard
 ```
 
-_See code: [src/commands/dev.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/dev.ts)_
+_See code: [src/commands/dev.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/dev.ts)_
 
 ## `sanity docs browse`
 
@@ -1365,13 +1365,13 @@ Open Sanity docs in a web browser
 
 ```
 USAGE
-  $ pnpm exec sanity docs browse
+  $ sanity docs browse
 
 DESCRIPTION
   Open Sanity docs in a web browser
 ```
 
-_See code: [src/commands/docs/browse.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/docs/browse.ts)_
+_See code: [src/commands/docs/browse.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/docs/browse.ts)_
 
 ## `sanity docs read PATH`
 
@@ -1379,7 +1379,7 @@ Read an article in terminal
 
 ```
 USAGE
-  $ pnpm exec sanity docs read PATH [--web]
+  $ sanity docs read PATH [--web]
 
 ARGUMENTS
   PATH  Path or URL to article, found in search results and docs content as links
@@ -1393,22 +1393,22 @@ DESCRIPTION
 EXAMPLES
   Read as markdown in terminal
 
-    $ pnpm exec sanity docs read /docs/studio/installation
+    $ sanity docs read /docs/studio/installation
 
   Read using full URL
 
-    $ pnpm exec sanity docs read https://www.sanity.io/docs/studio/installation
+    $ sanity docs read https://www.sanity.io/docs/studio/installation
 
   Open in web browser
 
-    $ pnpm exec sanity docs read /docs/studio/installation --web
+    $ sanity docs read /docs/studio/installation --web
 
   Open using full URL in web browser
 
-    $ pnpm exec sanity docs read https://www.sanity.io/docs/studio/installation -w
+    $ sanity docs read https://www.sanity.io/docs/studio/installation -w
 ```
 
-_See code: [src/commands/docs/read.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/docs/read.ts)_
+_See code: [src/commands/docs/read.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/docs/read.ts)_
 
 ## `sanity docs search QUERY`
 
@@ -1416,7 +1416,7 @@ Search Sanity docs
 
 ```
 USAGE
-  $ pnpm exec sanity docs search QUERY [--limit <value>]
+  $ sanity docs search QUERY [--limit <value>]
 
 ARGUMENTS
   QUERY  Search query for documentation
@@ -1430,18 +1430,18 @@ DESCRIPTION
 EXAMPLES
   Search for documentation about schemas
 
-    $ pnpm exec sanity docs search schema
+    $ sanity docs search schema
 
   Search with phrase
 
-    $ pnpm exec sanity docs search "groq functions"
+    $ sanity docs search "groq functions"
 
   Limit search results
 
-    $ pnpm exec sanity docs search "deployment" --limit=5
+    $ sanity docs search "deployment" --limit=5
 ```
 
-_See code: [src/commands/docs/search.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/docs/search.ts)_
+_See code: [src/commands/docs/search.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/docs/search.ts)_
 
 ## `sanity documents create [FILE]`
 
@@ -1449,7 +1449,7 @@ Create one or more documents
 
 ```
 USAGE
-  $ pnpm exec sanity documents create [FILE] [-d <value>] [--id <value>] [--json5] [--missing] [--replace] [--watch]
+  $ sanity documents create [FILE] [-d <value>] [--id <value>] [--json5] [--missing] [--replace] [--watch]
 
 ARGUMENTS
   [FILE]  JSON file to create document(s) from
@@ -1468,24 +1468,24 @@ DESCRIPTION
 EXAMPLES
   Create the document specified in "myDocument.json"
 
-    $ pnpm exec sanity documents create myDocument.json
+    $ sanity documents create myDocument.json
 
   Open configured $EDITOR and create the specified document(s)
 
-    $ pnpm exec sanity documents create
+    $ sanity documents create
 
   Fetch document with the ID "myDocId" and open configured $EDITOR with the current document content (if any). Replace
   document with the edited version when the editor closes
 
-    $ pnpm exec sanity documents create --id myDocId --replace
+    $ sanity documents create --id myDocId --replace
 
   Open configured $EDITOR and replace the document with the given content on each save. Use JSON5 file extension and
   parser for simplified syntax.
 
-    $ pnpm exec sanity documents create --id myDocId --watch --replace --json5
+    $ sanity documents create --id myDocId --watch --replace --json5
 ```
 
-_See code: [src/commands/documents/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/documents/create.ts)_
+_See code: [src/commands/documents/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/documents/create.ts)_
 
 ## `sanity documents delete ID [IDS]`
 
@@ -1493,7 +1493,7 @@ Delete one or more documents from the projects configured dataset
 
 ```
 USAGE
-  $ pnpm exec sanity documents delete ID... [IDS...] [--dataset <value>]
+  $ sanity documents delete ID... [IDS...] [--dataset <value>]
 
 ARGUMENTS
   ID...     Document ID to delete
@@ -1508,22 +1508,22 @@ DESCRIPTION
 EXAMPLES
   Delete the document with the ID "myDocId"
 
-    $ pnpm exec sanity documents delete myDocId
+    $ sanity documents delete myDocId
 
   ID wrapped in double or single quote works equally well
 
-    $ pnpm exec sanity documents delete 'myDocId'
+    $ sanity documents delete 'myDocId'
 
   Delete document with ID "someDocId" from dataset "blog"
 
-    $ pnpm exec sanity documents delete --dataset=blog someDocId
+    $ sanity documents delete --dataset=blog someDocId
 
   Delete the document with ID "doc1" and "doc2"
 
-    $ pnpm exec sanity documents delete doc1 doc2
+    $ sanity documents delete doc1 doc2
 ```
 
-_See code: [src/commands/documents/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/documents/delete.ts)_
+_See code: [src/commands/documents/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/documents/delete.ts)_
 
 ## `sanity documents get DOCUMENTID`
 
@@ -1531,7 +1531,7 @@ Get and print a document by ID
 
 ```
 USAGE
-  $ pnpm exec sanity documents get DOCUMENTID [-d <value>] [--pretty]
+  $ sanity documents get DOCUMENTID [-d <value>] [--pretty]
 
 ARGUMENTS
   DOCUMENTID  Document ID to retrieve
@@ -1546,18 +1546,18 @@ DESCRIPTION
 EXAMPLES
   Get the document with ID "myDocId"
 
-    $ pnpm exec sanity documents get myDocId
+    $ sanity documents get myDocId
 
   Get document with colorized JSON output
 
-    $ pnpm exec sanity documents get myDocId --pretty
+    $ sanity documents get myDocId --pretty
 
   Get document from a specific dataset
 
-    $ pnpm exec sanity documents get myDocId --dataset production
+    $ sanity documents get myDocId --dataset production
 ```
 
-_See code: [src/commands/documents/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/documents/get.ts)_
+_See code: [src/commands/documents/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/documents/get.ts)_
 
 ## `sanity documents query QUERY`
 
@@ -1565,7 +1565,7 @@ Query for documents
 
 ```
 USAGE
-  $ pnpm exec sanity documents query QUERY [--anonymous] [--api-version <value>] [-d <value>] [--pretty] [-p <value>]
+  $ sanity documents query QUERY [--anonymous] [--api-version <value>] [-d <value>] [--pretty] [-p <value>]
 
 ARGUMENTS
   QUERY  GROQ query to run against the dataset
@@ -1583,18 +1583,18 @@ DESCRIPTION
 EXAMPLES
   Fetch 5 documents of type "movie"
 
-    $ pnpm exec sanity documents query '*[_type == "movie"][0..4]'
+    $ sanity documents query '*[_type == "movie"][0..4]'
 
   Fetch title of the oldest movie in the dataset named "staging"
 
-    $ pnpm exec sanity documents query '*[_type == "movie"]|order(releaseDate asc)[0]{title}' --dataset staging
+    $ sanity documents query '*[_type == "movie"]|order(releaseDate asc)[0]{title}' --dataset staging
 
   Use API version v2021-06-07 and do a query
 
-    $ pnpm exec sanity documents query '*[_id == "header"] { "headerText": pt::text(body) }' --api-version v2021-06-07
+    $ sanity documents query '*[_id == "header"] { "headerText": pt::text(body) }' --api-version v2021-06-07
 ```
 
-_See code: [src/commands/documents/query.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/documents/query.ts)_
+_See code: [src/commands/documents/query.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/documents/query.ts)_
 
 ## `sanity documents validate`
 
@@ -1602,7 +1602,7 @@ Validate documents in a dataset against the studio schema
 
 ```
 USAGE
-  $ pnpm exec sanity documents validate [-d <value>] [--file <value>] [--format <value>] [--level error|warning|info]
+  $ sanity documents validate [-d <value>] [--file <value>] [--format <value>] [--level error|warning|info]
     [--max-custom-validation-concurrency <value>] [--max-fetch-concurrency <value>] [--workspace <value>] [-y]
 
 FLAGS
@@ -1628,22 +1628,22 @@ DESCRIPTION
 EXAMPLES
   Validates all documents in a Sanity project with more than one workspace
 
-    $ pnpm exec sanity documents validate --workspace default
+    $ sanity documents validate --workspace default
 
   Override the dataset specified in the workspace
 
-    $ pnpm exec sanity documents validate --workspace default --dataset staging
+    $ sanity documents validate --workspace default --dataset staging
 
   Save the results of the report into a file
 
-    $ pnpm exec sanity documents validate --yes > report.txt
+    $ sanity documents validate --yes > report.txt
 
   Report out info level validation markers too
 
-    $ pnpm exec sanity documents validate --level info
+    $ sanity documents validate --level info
 ```
 
-_See code: [src/commands/documents/validate.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/documents/validate.ts)_
+_See code: [src/commands/documents/validate.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/documents/validate.ts)_
 
 ## `sanity exec SCRIPT`
 
@@ -1651,7 +1651,7 @@ Executes a script within the Sanity Studio context
 
 ```
 USAGE
-  $ pnpm exec sanity exec SCRIPT... [--mock-browser-env] [--with-user-token]
+  $ sanity exec SCRIPT... [--mock-browser-env] [--with-user-token]
 
 ARGUMENTS
   SCRIPT...  Path to the script to execute
@@ -1666,25 +1666,25 @@ DESCRIPTION
 EXAMPLES
   Run the script at some/script.js in Sanity context
 
-    $ pnpm exec sanity exec some/script.js
+    $ sanity exec some/script.js
 
   Run the script at migrations/fullname.ts and configure `getCliClient()` from `sanity/cli` to include the current
   user's token
 
-    $ pnpm exec sanity exec migrations/fullname.ts --with-user-token
+    $ sanity exec migrations/fullname.ts --with-user-token
 
   Run the script at scripts/browserScript.js in a mock browser environment
 
-    $ pnpm exec sanity exec scripts/browserScript.js --mock-browser-env
+    $ sanity exec scripts/browserScript.js --mock-browser-env
 
   Pass arbitrary arguments to scripts by separating them with a `--`. Arguments are available in `process.argv` as
   they would in regular node scripts (eg the following command would yield a `process.argv` of: `['/path/to/node',
   '/path/to/myscript.js', '--dry-run', 'positional-argument']`)
 
-    $ pnpm exec sanity exec --mock-browser-env myscript.js -- --dry-run positional-argument
+    $ sanity exec --mock-browser-env myscript.js -- --dry-run positional-argument
 ```
 
-_See code: [src/commands/exec.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/exec.ts)_
+_See code: [src/commands/exec.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/exec.ts)_
 
 ## `sanity functions add`
 
@@ -1692,7 +1692,7 @@ Add a Function to your Blueprint
 
 ```
 USAGE
-  $ pnpm exec sanity functions add [--example <value> | -n <value> |  | --language ts|js | --javascript |  | ] [--type
+  $ sanity functions add [--example <value> | -n <value> |  | --language ts|js | --javascript |  | ] [--type
     document-create|document-delete|document-update|document-publish|media-library-asset-create|media-library-asset-upda
     te|media-library-asset-delete... ] [--helpers] [--installer skip|npm|pnpm|yarn] [-i | ]
 
@@ -1722,18 +1722,18 @@ DESCRIPTION
   After adding, use 'functions dev' to test locally, then 'blueprints deploy' to publish.
 
 EXAMPLES
-  $ pnpm exec sanity functions add
+  $ sanity functions add
 
-  $ pnpm exec sanity functions add --helpers
+  $ sanity functions add --helpers
 
-  $ pnpm exec sanity functions add --name my-function
+  $ sanity functions add --name my-function
 
-  $ pnpm exec sanity functions add --name my-function --type document-create
+  $ sanity functions add --name my-function --type document-create
 
-  $ pnpm exec sanity functions add --name my-function --type document-create --type document-update --lang js
+  $ sanity functions add --name my-function --type document-create --type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/functions/add.ts)_
 
 ## `sanity functions dev`
 
@@ -1741,7 +1741,7 @@ Start the Sanity Function emulator
 
 ```
 USAGE
-  $ pnpm exec sanity functions dev [-h <value>] [-p <value>] [-t <value>]
+  $ sanity functions dev [-h <value>] [-p <value>] [-t <value>]
 
 FLAGS
   -h, --host=<value>     The local network interface at which to listen. [default: "localhost"]
@@ -1762,12 +1762,12 @@ DESCRIPTION
   To invoke a function with the CLI, use 'functions test'.
 
 EXAMPLES
-  $ pnpm exec sanity functions dev --host 127.0.0.1 --port 8974
+  $ sanity functions dev --host 127.0.0.1 --port 8974
 
-  $ pnpm exec sanity functions dev --timeout 60
+  $ sanity functions dev --timeout 60
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/dev.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/functions/dev.ts)_
 
 ## `sanity functions env add NAME KEY VALUE`
 
@@ -1775,7 +1775,7 @@ Add or set an environment variable for a deployed function
 
 ```
 USAGE
-  $ pnpm exec sanity functions env add NAME KEY VALUE
+  $ sanity functions env add NAME KEY VALUE
 
 ARGUMENTS
   NAME   The name of the Sanity Function
@@ -1791,10 +1791,10 @@ DESCRIPTION
   Changes take effect on the next function invocation.
 
 EXAMPLES
-  $ pnpm exec sanity functions env add MyFunction API_URL https://api.example.com/
+  $ sanity functions env add MyFunction API_URL https://api.example.com/
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/env/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/functions/env/add.ts)_
 
 ## `sanity functions env list NAME`
 
@@ -1802,7 +1802,7 @@ List environment variables for a deployed function
 
 ```
 USAGE
-  $ pnpm exec sanity functions env list NAME
+  $ sanity functions env list NAME
 
 ARGUMENTS
   NAME  The name of the Sanity Function
@@ -1815,10 +1815,10 @@ DESCRIPTION
   Use 'functions env add' to set variables or 'functions env remove' to delete them.
 
 EXAMPLES
-  $ pnpm exec sanity functions env list MyFunction
+  $ sanity functions env list MyFunction
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/env/list.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/functions/env/list.ts)_
 
 ## `sanity functions env remove NAME KEY`
 
@@ -1826,7 +1826,7 @@ Remove an environment variable from a deployed function
 
 ```
 USAGE
-  $ pnpm exec sanity functions env remove NAME KEY
+  $ sanity functions env remove NAME KEY
 
 ARGUMENTS
   NAME  The name of the Sanity Function
@@ -1841,10 +1841,10 @@ DESCRIPTION
   Use 'functions env list' to see current variables before removing.
 
 EXAMPLES
-  $ pnpm exec sanity functions env remove MyFunction API_URL
+  $ sanity functions env remove MyFunction API_URL
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/env/remove.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/functions/env/remove.ts)_
 
 ## `sanity functions logs [NAME]`
 
@@ -1852,7 +1852,7 @@ Retrieve or delete logs for a Sanity Function
 
 ```
 USAGE
-  $ pnpm exec sanity functions logs [NAME] [--stack <value>] [-u] [-f [-d | -l <value> | -j]] [-w]
+  $ sanity functions logs [NAME] [--stack <value>] [-u] [-f [-d | -l <value> | -j]] [-w]
 
 ARGUMENTS
   [NAME]  The name of the Sanity Function
@@ -1875,16 +1875,16 @@ DESCRIPTION
   unless --force is specified).
 
 EXAMPLES
-  $ pnpm exec sanity functions logs <name>
+  $ sanity functions logs <name>
 
-  $ pnpm exec sanity functions logs <name> --json
+  $ sanity functions logs <name> --json
 
-  $ pnpm exec sanity functions logs <name> --limit 100
+  $ sanity functions logs <name> --limit 100
 
-  $ pnpm exec sanity functions logs <name> --delete
+  $ sanity functions logs <name> --delete
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/functions/logs.ts)_
 
 ## `sanity functions test [NAME]`
 
@@ -1892,7 +1892,7 @@ Invoke a local Sanity Function
 
 ```
 USAGE
-  $ pnpm exec sanity functions test [NAME] [--data-before <value> | [-d <value> | -f <value> | --document-id <value>] |  |  |
+  $ sanity functions test [NAME] [--data-before <value> | [-d <value> | -f <value> | --document-id <value>] |  |  |
     --file-before <value> | --file-after <value> | --document-id-before <value> | --document-id-after <value>]
     [--data-after <value> |  |  |  |  |  |  | ] [-e create|update|delete] [-t <value>] [-a <value>] [--with-user-token]
     [--media-library-id <value> | --project-id <value> | --dataset <value>]
@@ -1929,16 +1929,16 @@ DESCRIPTION
   events, use the before/after flag pairs to simulate document changes.
 
 EXAMPLES
-  $ pnpm exec sanity functions test <name> --data '{ "id": 1 }'
+  $ sanity functions test <name> --data '{ "id": 1 }'
 
-  $ pnpm exec sanity functions test <name> --file 'payload.json'
+  $ sanity functions test <name> --file 'payload.json'
 
-  $ pnpm exec sanity functions test <name> --data '{ "id": 1 }' --timeout 60
+  $ sanity functions test <name> --data '{ "id": 1 }' --timeout 60
 
-  $ pnpm exec sanity functions test <name> --event update --data-before '{ "title": "before" }' --data-after '{ "title": "after" }'
+  $ sanity functions test <name> --event update --data-before '{ "title": "before" }' --data-after '{ "title": "after" }'
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.1.0/src/commands/functions/test.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.2.0/src/commands/functions/test.ts)_
 
 ## `sanity graphql deploy`
 
@@ -1946,7 +1946,7 @@ Deploy a GraphQL API from the current Sanity schema
 
 ```
 USAGE
-  $ pnpm exec sanity graphql deploy [--api <value>...] [--dataset <value>] [--dry-run] [--force] [--generation gen1|gen2|gen3]
+  $ sanity graphql deploy [--api <value>...] [--dataset <value>] [--dry-run] [--force] [--generation gen1|gen2|gen3]
     [--non-null-document-fields] [--playground] [--tag <value>] [--with-union-cache]
 
 FLAGS
@@ -1968,22 +1968,22 @@ DESCRIPTION
 EXAMPLES
   Deploy all defined GraphQL APIs
 
-    $ pnpm exec sanity graphql deploy
+    $ sanity graphql deploy
 
   Validate defined GraphQL APIs, check for breaking changes, skip deploy
 
-    $ pnpm exec sanity graphql deploy --dry-run
+    $ sanity graphql deploy --dry-run
 
   Deploy only the GraphQL APIs with the IDs "staging" and "ios"
 
-    $ pnpm exec sanity graphql deploy --api staging --api ios
+    $ sanity graphql deploy --api staging --api ios
 
   Deploy all defined GraphQL APIs, overriding any playground setting
 
-    $ pnpm exec sanity graphql deploy --playground
+    $ sanity graphql deploy --playground
 ```
 
-_See code: [src/commands/graphql/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/graphql/deploy.ts)_
+_See code: [src/commands/graphql/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/graphql/deploy.ts)_
 
 ## `sanity graphql list`
 
@@ -1991,7 +1991,7 @@ List all GraphQL endpoints deployed for this project
 
 ```
 USAGE
-  $ pnpm exec sanity graphql list
+  $ sanity graphql list
 
 DESCRIPTION
   List all GraphQL endpoints deployed for this project
@@ -1999,10 +1999,10 @@ DESCRIPTION
 EXAMPLES
   List GraphQL endpoints for the current project
 
-    $ pnpm exec sanity graphql list
+    $ sanity graphql list
 ```
 
-_See code: [src/commands/graphql/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/graphql/list.ts)_
+_See code: [src/commands/graphql/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/graphql/list.ts)_
 
 ## `sanity graphql undeploy`
 
@@ -2010,7 +2010,7 @@ Remove a deployed GraphQL API
 
 ```
 USAGE
-  $ pnpm exec sanity graphql undeploy [--api <value>] [--dataset <value>] [--force] [--project <value>] [--tag <value>]
+  $ sanity graphql undeploy [--api <value>] [--dataset <value>] [--force] [--project <value>] [--tag <value>]
 
 FLAGS
   --api=<value>      Undeploy API with this ID (project, dataset and tag flags take precedence)
@@ -2025,26 +2025,26 @@ DESCRIPTION
 EXAMPLES
   Undeploy GraphQL API for current project and dataset
 
-    $ pnpm exec sanity graphql undeploy
+    $ sanity graphql undeploy
 
   Undeploy API with ID "ios"
 
-    $ pnpm exec sanity graphql undeploy --api ios
+    $ sanity graphql undeploy --api ios
 
   Undeploy GraphQL API for staging dataset
 
-    $ pnpm exec sanity graphql undeploy --dataset staging
+    $ sanity graphql undeploy --dataset staging
 
   Undeploy GraphQL API for staging dataset with "next" tag
 
-    $ pnpm exec sanity graphql undeploy --dataset staging --tag next
+    $ sanity graphql undeploy --dataset staging --tag next
 
   Undeploy GraphQL API without confirmation prompt
 
-    $ pnpm exec sanity graphql undeploy --force
+    $ sanity graphql undeploy --force
 ```
 
-_See code: [src/commands/graphql/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/graphql/undeploy.ts)_
+_See code: [src/commands/graphql/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/graphql/undeploy.ts)_
 
 ## `sanity help [COMMAND]`
 
@@ -2052,7 +2052,7 @@ Display help for sanity.
 
 ```
 USAGE
-  $ pnpm exec sanity help [COMMAND...] [-n]
+  $ sanity help [COMMAND...] [-n]
 
 ARGUMENTS
   [COMMAND...]  Command to show help for.
@@ -2072,7 +2072,7 @@ Print details of a given webhook delivery attempt
 
 ```
 USAGE
-  $ pnpm exec sanity hook attempt ATTEMPTID
+  $ sanity hook attempt ATTEMPTID
 
 ARGUMENTS
   ATTEMPTID  The delivery attempt ID to get details for
@@ -2083,10 +2083,10 @@ DESCRIPTION
 EXAMPLES
   Print details of webhook delivery attempt with ID abc123
 
-    $ pnpm exec sanity hook attempt abc123
+    $ sanity hook attempt abc123
 ```
 
-_See code: [src/commands/hook/attempt.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/hook/attempt.ts)_
+_See code: [src/commands/hook/attempt.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/hook/attempt.ts)_
 
 ## `sanity hook create`
 
@@ -2094,7 +2094,7 @@ Create a new webhook for the current project
 
 ```
 USAGE
-  $ pnpm exec sanity hook create
+  $ sanity hook create
 
 DESCRIPTION
   Create a new webhook for the current project
@@ -2102,10 +2102,10 @@ DESCRIPTION
 EXAMPLES
   Create a new webhook for the current project
 
-    $ pnpm exec sanity hook create
+    $ sanity hook create
 ```
 
-_See code: [src/commands/hook/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/hook/create.ts)_
+_See code: [src/commands/hook/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/hook/create.ts)_
 
 ## `sanity hook delete [NAME]`
 
@@ -2113,7 +2113,7 @@ Delete a hook within your project
 
 ```
 USAGE
-  $ pnpm exec sanity hook delete [NAME]
+  $ sanity hook delete [NAME]
 
 ARGUMENTS
   [NAME]  Name of hook to delete (will prompt if not provided)
@@ -2124,14 +2124,14 @@ DESCRIPTION
 EXAMPLES
   Interactively select and delete a hook
 
-    $ pnpm exec sanity hook delete
+    $ sanity hook delete
 
   Delete a specific hook by name
 
-    $ pnpm exec sanity hook delete my-hook
+    $ sanity hook delete my-hook
 ```
 
-_See code: [src/commands/hook/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/hook/delete.ts)_
+_See code: [src/commands/hook/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/hook/delete.ts)_
 
 ## `sanity hook list`
 
@@ -2139,7 +2139,7 @@ List hooks for a given project
 
 ```
 USAGE
-  $ pnpm exec sanity hook list
+  $ sanity hook list
 
 DESCRIPTION
   List hooks for a given project
@@ -2147,10 +2147,10 @@ DESCRIPTION
 EXAMPLES
   List hooks for a given project
 
-    $ pnpm exec sanity hook list
+    $ sanity hook list
 ```
 
-_See code: [src/commands/hook/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/hook/list.ts)_
+_See code: [src/commands/hook/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/hook/list.ts)_
 
 ## `sanity hook logs [NAME]`
 
@@ -2158,7 +2158,7 @@ List latest log entries for a given hook
 
 ```
 USAGE
-  $ pnpm exec sanity hook logs [NAME] [--detailed]
+  $ sanity hook logs [NAME] [--detailed]
 
 ARGUMENTS
   [NAME]  Name of the hook to show logs for
@@ -2172,14 +2172,14 @@ DESCRIPTION
 EXAMPLES
   List latest log entries for a given hook
 
-    $ pnpm exec sanity hook logs
+    $ sanity hook logs
 
   List latest log entries for a specific hook by name
 
-    $ pnpm exec sanity hook logs [NAME]
+    $ sanity hook logs [NAME]
 ```
 
-_See code: [src/commands/hook/logs.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/hook/logs.ts)_
+_See code: [src/commands/hook/logs.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/hook/logs.ts)_
 
 ## `sanity init`
 
@@ -2187,7 +2187,7 @@ Initialize a new Sanity Studio, project and/or app
 
 ```
 USAGE
-  $ pnpm exec sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dataset
+  $ sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dataset
     <name> | --dataset-default] [--env <filename> | ] [--git <message> | ] [--mcp] [--nextjs-add-config-files]
     [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>] [--output-path <path> | ] [--overwrite-files]
     [--package-manager <manager> | ] [--project <id> | --create-project <name>] [--provider <provider>] [--template
@@ -2228,27 +2228,27 @@ DESCRIPTION
   Initialize a new Sanity Studio, project and/or app
 
 EXAMPLES
-  $ pnpm exec sanity init
+  $ sanity init
 
   Initialize a new project with a public dataset named "production"
 
-    $ pnpm exec sanity init --dataset-default
+    $ sanity init --dataset-default
 
   Initialize a project with the given project ID and dataset to the given path
 
-    $ pnpm exec sanity init -y --project abc123 --dataset production --output-path ~/myproj
+    $ sanity init -y --project abc123 --dataset production --output-path ~/myproj
 
   Initialize a project with the given project ID and dataset using the moviedb template to the given path
 
-    $ pnpm exec sanity init -y --project abc123 --dataset staging --template moviedb --output-path .
+    $ sanity init -y --project abc123 --dataset staging --template moviedb --output-path .
 
   Create a brand new project with name "Movies Unlimited"
 
-    $ pnpm exec sanity init -y --create-project "Movies Unlimited" --dataset moviedb --visibility private --template moviedb \
+    $ sanity init -y --create-project "Movies Unlimited" --dataset moviedb --visibility private --template moviedb \
       --output-path /Users/espenh/movies-unlimited
 ```
 
-_See code: [src/commands/init.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/init.ts)_
+_See code: [src/commands/init.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/init.ts)_
 
 ## `sanity install [PACKAGES]`
 
@@ -2256,7 +2256,7 @@ Installs dependencies for Sanity Studio project
 
 ```
 USAGE
-  $ pnpm exec sanity install [PACKAGES...]
+  $ sanity install [PACKAGES...]
 
 ARGUMENTS
   [PACKAGES...]  Packages to install
@@ -2265,14 +2265,14 @@ DESCRIPTION
   Installs dependencies for Sanity Studio project
 
 EXAMPLES
-  $ pnpm exec sanity install
+  $ sanity install
 
-  $ pnpm exec sanity install @sanity/vision
+  $ sanity install @sanity/vision
 
-  $ pnpm exec sanity install some-package another-package
+  $ sanity install some-package another-package
 ```
 
-_See code: [src/commands/install.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/install.ts)_
+_See code: [src/commands/install.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/install.ts)_
 
 ## `sanity learn`
 
@@ -2280,13 +2280,13 @@ Opens Sanity Learn in your web browser
 
 ```
 USAGE
-  $ pnpm exec sanity learn
+  $ sanity learn
 
 DESCRIPTION
   Opens Sanity Learn in your web browser
 ```
 
-_See code: [src/commands/learn.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/learn.ts)_
+_See code: [src/commands/learn.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/learn.ts)_
 
 ## `sanity login`
 
@@ -2294,7 +2294,7 @@ Authenticates the CLI for access to Sanity projects
 
 ```
 USAGE
-  $ pnpm exec sanity login [--open] [--provider <providerId>] [--sso <slug>]
+  $ sanity login [--open] [--provider <providerId>] [--sso <slug>]
 
 FLAGS
   --[no-]open              Open a browser window to log in (`--no-open` only prints URL)
@@ -2307,18 +2307,18 @@ DESCRIPTION
 EXAMPLES
   Log in using default settings
 
-    $ pnpm exec sanity login
+    $ sanity login
 
   Log in using Single Sign-On with the "my-organization" slug
 
-    $ pnpm exec sanity login --sso my-organization
+    $ sanity login --sso my-organization
 
   Login with GitHub provider, but do not open a browser window automatically
 
-    $ pnpm exec sanity login --provider github --no-open
+    $ sanity login --provider github --no-open
 ```
 
-_See code: [src/commands/login.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/login.ts)_
+_See code: [src/commands/login.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/login.ts)_
 
 ## `sanity logout`
 
@@ -2326,13 +2326,13 @@ Logs out the CLI from the current user session
 
 ```
 USAGE
-  $ pnpm exec sanity logout
+  $ sanity logout
 
 DESCRIPTION
   Logs out the CLI from the current user session
 ```
 
-_See code: [src/commands/logout.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/logout.ts)_
+_See code: [src/commands/logout.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/logout.ts)_
 
 ## `sanity manage`
 
@@ -2340,13 +2340,13 @@ Opens project management interface in your web browser
 
 ```
 USAGE
-  $ pnpm exec sanity manage
+  $ sanity manage
 
 DESCRIPTION
   Opens project management interface in your web browser
 ```
 
-_See code: [src/commands/manage.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/manage.ts)_
+_See code: [src/commands/manage.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/manage.ts)_
 
 ## `sanity manifest extract`
 
@@ -2354,7 +2354,7 @@ Extracts the studio configuration as one or more JSON manifest files.
 
 ```
 USAGE
-  $ pnpm exec sanity manifest extract [--path <value>]
+  $ sanity manifest extract [--path <value>]
 
 FLAGS
   --path=<value>  [default: /dist/static] Optional path to specify destination directory of the manifest files
@@ -2367,14 +2367,14 @@ DESCRIPTION
 EXAMPLES
   Extracts manifests
 
-    $ pnpm exec sanity manifest extract
+    $ sanity manifest extract
 
   Extracts manifests into /public/static
 
-    $ pnpm exec sanity manifest extract --path /public/static
+    $ sanity manifest extract --path /public/static
 ```
 
-_See code: [src/commands/manifest/extract.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/manifest/extract.ts)_
+_See code: [src/commands/manifest/extract.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/manifest/extract.ts)_
 
 ## `sanity mcp configure`
 
@@ -2382,7 +2382,7 @@ Configure Sanity MCP server for AI editors (Claude Code, Codex CLI, Cursor, Gemi
 
 ```
 USAGE
-  $ pnpm exec sanity mcp configure
+  $ sanity mcp configure
 
 DESCRIPTION
   Configure Sanity MCP server for AI editors (Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code)
@@ -2390,10 +2390,10 @@ DESCRIPTION
 EXAMPLES
   Configure Sanity MCP server for detected AI editors
 
-    $ pnpm exec sanity mcp configure
+    $ sanity mcp configure
 ```
 
-_See code: [src/commands/mcp/configure.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/mcp/configure.ts)_
+_See code: [src/commands/mcp/configure.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/mcp/configure.ts)_
 
 ## `sanity media create-aspect`
 
@@ -2401,7 +2401,7 @@ Create a new aspect definition file
 
 ```
 USAGE
-  $ pnpm exec sanity media create-aspect
+  $ sanity media create-aspect
 
 DESCRIPTION
   Create a new aspect definition file
@@ -2409,10 +2409,10 @@ DESCRIPTION
 EXAMPLES
   Create a new aspect definition file
 
-    $ pnpm exec sanity media create-aspect
+    $ sanity media create-aspect
 ```
 
-_See code: [src/commands/media/create-aspect.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/media/create-aspect.ts)_
+_See code: [src/commands/media/create-aspect.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/media/create-aspect.ts)_
 
 ## `sanity media delete-aspect ASPECTNAME`
 
@@ -2420,7 +2420,7 @@ Undeploy an aspect
 
 ```
 USAGE
-  $ pnpm exec sanity media delete-aspect ASPECTNAME [--media-library-id <value>] [--yes]
+  $ sanity media delete-aspect ASPECTNAME [--media-library-id <value>] [--yes]
 
 ARGUMENTS
   ASPECTNAME  Name of the aspect to delete
@@ -2435,10 +2435,10 @@ DESCRIPTION
 EXAMPLES
   Delete the aspect named "someAspect"
 
-    $ pnpm exec sanity media delete-aspect someAspect
+    $ sanity media delete-aspect someAspect
 ```
 
-_See code: [src/commands/media/delete-aspect.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/media/delete-aspect.ts)_
+_See code: [src/commands/media/delete-aspect.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/media/delete-aspect.ts)_
 
 ## `sanity media deploy-aspect [ASPECTNAME]`
 
@@ -2446,7 +2446,7 @@ Deploy an aspect
 
 ```
 USAGE
-  $ pnpm exec sanity media deploy-aspect [ASPECTNAME] [--all] [--media-library-id <value>]
+  $ sanity media deploy-aspect [ASPECTNAME] [--all] [--media-library-id <value>]
 
 ARGUMENTS
   [ASPECTNAME]  Name of the aspect to deploy
@@ -2461,14 +2461,14 @@ DESCRIPTION
 EXAMPLES
   Deploy the aspect named "someAspect"
 
-    $ pnpm exec sanity media deploy-aspect someAspect
+    $ sanity media deploy-aspect someAspect
 
   Deploy all aspects
 
-    $ pnpm exec sanity media deploy-aspect --all
+    $ sanity media deploy-aspect --all
 ```
 
-_See code: [src/commands/media/deploy-aspect.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/media/deploy-aspect.ts)_
+_See code: [src/commands/media/deploy-aspect.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/media/deploy-aspect.ts)_
 
 ## `sanity media export [DESTINATION]`
 
@@ -2476,7 +2476,7 @@ Export an archive of all file and image assets including their aspect data from 
 
 ```
 USAGE
-  $ pnpm exec sanity media export [DESTINATION] [--asset-concurrency <value>] [--media-library-id <value>] [--no-compress]
+  $ sanity media export [DESTINATION] [--asset-concurrency <value>] [--media-library-id <value>] [--no-compress]
     [--overwrite]
 
 ARGUMENTS
@@ -2495,18 +2495,18 @@ DESCRIPTION
 EXAMPLES
   Export media library interactively
 
-    $ pnpm exec sanity media export
+    $ sanity media export
 
   Export media library to output.tar.gz
 
-    $ pnpm exec sanity media export output.tar.gz
+    $ sanity media export output.tar.gz
 
   Export specific media library
 
-    $ pnpm exec sanity media export --media-library-id my-library-id
+    $ sanity media export --media-library-id my-library-id
 ```
 
-_See code: [src/commands/media/export.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/media/export.ts)_
+_See code: [src/commands/media/export.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/media/export.ts)_
 
 ## `sanity media import SOURCE`
 
@@ -2514,7 +2514,7 @@ Import a set of assets to the target media library.
 
 ```
 USAGE
-  $ pnpm exec sanity media import SOURCE [--media-library-id <value>] [--replace-aspects]
+  $ sanity media import SOURCE [--media-library-id <value>] [--replace-aspects]
 
 ARGUMENTS
   SOURCE  Image file or folder to import from
@@ -2530,18 +2530,18 @@ DESCRIPTION
 EXAMPLES
   Import all assets from the "products" directory
 
-    $ pnpm exec sanity media import products
+    $ sanity media import products
 
   Import all assets from "gallery" archive
 
-    $ pnpm exec sanity media import gallery.tar.gz
+    $ sanity media import gallery.tar.gz
 
   Import all assets from the "products" directory and replace aspects
 
-    $ pnpm exec sanity media import products --replace-aspects
+    $ sanity media import products --replace-aspects
 ```
 
-_See code: [src/commands/media/import.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/media/import.ts)_
+_See code: [src/commands/media/import.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/media/import.ts)_
 
 ## `sanity migration create [TITLE]`
 
@@ -2549,7 +2549,7 @@ Create a new migration within your project
 
 ```
 USAGE
-  $ pnpm exec sanity migration create [TITLE]
+  $ sanity migration create [TITLE]
 
 ARGUMENTS
   [TITLE]  Title of migration
@@ -2560,11 +2560,11 @@ DESCRIPTION
 EXAMPLES
   Create a new migration, prompting for title and options
 
-    $ pnpm exec sanity migration create
+    $ sanity migration create
 
   Create a new migration with the provided title, prompting for options
 
-    $ pnpm exec sanity migration create "Rename field from location to address"
+    $ sanity migration create "Rename field from location to address"
 ```
 
 _See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/create.ts)_
@@ -2575,7 +2575,7 @@ List available migrations
 
 ```
 USAGE
-  $ pnpm exec sanity migration list
+  $ sanity migration list
 
 DESCRIPTION
   List available migrations
@@ -2583,7 +2583,7 @@ DESCRIPTION
 EXAMPLES
   List all available migrations in the project
 
-    $ pnpm exec sanity migration list
+    $ sanity migration list
 ```
 
 _See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/list.ts)_
@@ -2594,7 +2594,7 @@ Run a migration against a dataset
 
 ```
 USAGE
-  $ pnpm exec sanity migration run [ID] [--api-version <value>] [--concurrency <value>] [--confirm] [--dataset <value>]
+  $ sanity migration run [ID] [--api-version <value>] [--concurrency <value>] [--confirm] [--dataset <value>]
     [--dry-run] [--from-export <value>] [--progress] [--project <value>]
 
 ARGUMENTS
@@ -2619,15 +2619,15 @@ DESCRIPTION
 EXAMPLES
   dry run the migration
 
-    $ pnpm exec sanity migration run <id>
+    $ sanity migration run <id>
 
   execute the migration against a dataset
 
-    $ pnpm exec sanity migration run <id> --no-dry-run --project xyz --dataset staging
+    $ sanity migration run <id> --no-dry-run --project xyz --dataset staging
 
   execute the migration using a dataset export as the source
 
-    $ pnpm exec sanity migration run <id> --from-export=production.tar.gz --no-dry-run --project xyz --dataset staging
+    $ sanity migration run <id> --from-export=production.tar.gz --no-dry-run --project xyz --dataset staging
 ```
 
 _See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/run.ts)_
@@ -2638,7 +2638,7 @@ Get an OpenAPI specification by slug
 
 ```
 USAGE
-  $ pnpm exec sanity openapi get SLUG [--format yaml|json] [-w]
+  $ sanity openapi get SLUG [--format yaml|json] [-w]
 
 ARGUMENTS
   SLUG  Slug of the OpenAPI specification to retrieve
@@ -2654,22 +2654,22 @@ DESCRIPTION
 EXAMPLES
   Get a specification (YAML format, default)
 
-    $ pnpm exec sanity openapi get query
+    $ sanity openapi get query
 
   Get specification in JSON format
 
-    $ pnpm exec sanity openapi get query --format=json
+    $ sanity openapi get query --format=json
 
   Open specification in browser
 
-    $ pnpm exec sanity openapi get query --web
+    $ sanity openapi get query --web
 
   Pipe to file
 
-    $ pnpm exec sanity openapi get query > query-api.yaml
+    $ sanity openapi get query > query-api.yaml
 ```
 
-_See code: [src/commands/openapi/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/openapi/get.ts)_
+_See code: [src/commands/openapi/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/openapi/get.ts)_
 
 ## `sanity openapi list`
 
@@ -2677,7 +2677,7 @@ List all available OpenAPI specifications
 
 ```
 USAGE
-  $ pnpm exec sanity openapi list [--json] [-w]
+  $ sanity openapi list [--json] [-w]
 
 FLAGS
   -w, --web   Open HTTP Reference in web browser
@@ -2689,18 +2689,18 @@ DESCRIPTION
 EXAMPLES
   List all available OpenAPI specs
 
-    $ pnpm exec sanity openapi list
+    $ sanity openapi list
 
   List with JSON output
 
-    $ pnpm exec sanity openapi list --json
+    $ sanity openapi list --json
 
   Open HTTP Reference in browser
 
-    $ pnpm exec sanity openapi list --web
+    $ sanity openapi list --web
 ```
 
-_See code: [src/commands/openapi/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/openapi/list.ts)_
+_See code: [src/commands/openapi/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/openapi/list.ts)_
 
 ## `sanity preview [OUTPUTDIR]`
 
@@ -2708,7 +2708,7 @@ Starts a server to preview a production build
 
 ```
 USAGE
-  $ pnpm exec sanity preview [OUTPUTDIR] [--host <value>] [--port <value>]
+  $ sanity preview [OUTPUTDIR] [--host <value>] [--port <value>]
 
 ARGUMENTS
   [OUTPUTDIR]  Output directory
@@ -2721,17 +2721,17 @@ DESCRIPTION
   Starts a server to preview a production build
 
 ALIASES
-  $ pnpm exec sanity start
+  $ sanity start
 
 EXAMPLES
-  $ pnpm exec sanity preview --host=0.0.0.0
+  $ sanity preview --host=0.0.0.0
 
-  $ pnpm exec sanity preview --port=1942
+  $ sanity preview --port=1942
 
-  $ pnpm exec sanity preview some/build-output-dir
+  $ sanity preview some/build-output-dir
 ```
 
-_See code: [src/commands/preview.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/preview.ts)_
+_See code: [src/commands/preview.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/preview.ts)_
 
 ## `sanity projects create [PROJECTNAME]`
 
@@ -2739,7 +2739,7 @@ Create a new Sanity project
 
 ```
 USAGE
-  $ pnpm exec sanity projects create [PROJECTNAME] [--dataset <value>] [--dataset-visibility private|public] [--json]
+  $ sanity projects create [PROJECTNAME] [--dataset <value>] [--dataset-visibility private|public] [--json]
     [--organization <slug|id>] [-y]
 
 ARGUMENTS
@@ -2760,26 +2760,26 @@ DESCRIPTION
 EXAMPLES
   Interactively create a project
 
-    $ pnpm exec sanity projects create
+    $ sanity projects create
 
   Create a project named "My New Project"
 
-    $ pnpm exec sanity projects create "My New Project"
+    $ sanity projects create "My New Project"
 
   Create a project in a specific organization
 
-    $ pnpm exec sanity projects create "My Project" --organization=my-org
+    $ sanity projects create "My Project" --organization=my-org
 
   Create a project with a private dataset named "staging"
 
-    $ pnpm exec sanity projects create "My Project" --dataset=staging --dataset-visibility=private
+    $ sanity projects create "My Project" --dataset=staging --dataset-visibility=private
 
   Create a project non-interactively with JSON output
 
-    $ pnpm exec sanity projects create "CI Project" --yes --json
+    $ sanity projects create "CI Project" --yes --json
 ```
 
-_See code: [src/commands/projects/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/projects/create.ts)_
+_See code: [src/commands/projects/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/projects/create.ts)_
 
 ## `sanity projects list`
 
@@ -2787,7 +2787,7 @@ Lists projects connected to your user
 
 ```
 USAGE
-  $ pnpm exec sanity projects list [--order asc|desc] [--sort id|members|name|url|created]
+  $ sanity projects list [--order asc|desc] [--sort id|members|name|url|created]
 
 FLAGS
   --order=<option>  [default: desc]
@@ -2801,14 +2801,14 @@ DESCRIPTION
 EXAMPLES
   List projects
 
-    $ pnpm exec sanity projects list
+    $ sanity projects list
 
   List all users of the project, but exclude pending invitations and robots
 
-    $ pnpm exec sanity projects list --sort=members --order=asc
+    $ sanity projects list --sort=members --order=asc
 ```
 
-_See code: [src/commands/projects/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/projects/list.ts)_
+_See code: [src/commands/projects/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/projects/list.ts)_
 
 ## `sanity schema delete`
 
@@ -2816,7 +2816,7 @@ Delete schema documents by id
 
 ```
 USAGE
-  $ pnpm exec sanity schema delete --ids <value> [--dataset <value>] [--verbose]
+  $ sanity schema delete --ids <value> [--dataset <value>] [--verbose]
 
 FLAGS
   --dataset=<value>  Delete schemas from a specific dataset
@@ -2829,14 +2829,14 @@ DESCRIPTION
 EXAMPLES
   Delete a single schema
 
-    $ pnpm exec sanity schema delete --ids sanity.workspace.schema.workspaceName
+    $ sanity schema delete --ids sanity.workspace.schema.workspaceName
 
   Delete multiple schemas
 
-    $ pnpm exec sanity schema delete --ids sanity.workspace.schema.workspaceName,prefix.sanity.workspace.schema.otherWorkspace
+    $ sanity schema delete --ids sanity.workspace.schema.workspaceName,prefix.sanity.workspace.schema.otherWorkspace
 ```
 
-_See code: [src/commands/schema/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/schema/delete.ts)_
+_See code: [src/commands/schema/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/schema/delete.ts)_
 
 ## `sanity schema deploy`
 
@@ -2844,7 +2844,7 @@ Deploy schema documents into workspace datasets.
 
 ```
 USAGE
-  $ pnpm exec sanity schema deploy [--extract-manifest] [--manifest-dir <directory>] [--tag <tag>] [--verbose] [--workspace
+  $ sanity schema deploy [--extract-manifest] [--manifest-dir <directory>] [--tag <tag>] [--verbose] [--workspace
     <name>]
 
 FLAGS
@@ -2865,14 +2865,14 @@ DESCRIPTION
 EXAMPLES
   Deploy all workspace schemas
 
-    $ pnpm exec sanity schema deploy
+    $ sanity schema deploy
 
   Deploy the schema for only the workspace "default"
 
-    $ pnpm exec sanity schema deploy --workspace default
+    $ sanity schema deploy --workspace default
 ```
 
-_See code: [src/commands/schema/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/schema/deploy.ts)_
+_See code: [src/commands/schema/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/schema/deploy.ts)_
 
 ## `sanity schema extract`
 
@@ -2880,7 +2880,7 @@ Extracts a JSON representation of a Sanity schema within a Studio context.
 
 ```
 USAGE
-  $ pnpm exec sanity schema extract [--enforce-required-fields] [--format <format>] [--path <value>] [--watch]
+  $ sanity schema extract [--enforce-required-fields] [--format <format>] [--path <value>] [--watch]
     [--watch-patterns <glob>...] [--workspace <name>]
 
 FLAGS
@@ -2900,18 +2900,18 @@ DESCRIPTION
 EXAMPLES
   Extracts schema types in a Sanity project with more than one workspace
 
-    $ pnpm exec sanity schema extract --workspace default
+    $ sanity schema extract --workspace default
 
   Watch mode - re-extract on changes
 
-    $ pnpm exec sanity schema extract --watch
+    $ sanity schema extract --watch
 
   Watch with custom glob patterns
 
-    $ pnpm exec sanity schema extract --watch --watch-patterns "lib/**/*.ts"
+    $ sanity schema extract --watch --watch-patterns "lib/**/*.ts"
 ```
 
-_See code: [src/commands/schema/extract.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/schema/extract.ts)_
+_See code: [src/commands/schema/extract.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/schema/extract.ts)_
 
 ## `sanity schema list`
 
@@ -2919,7 +2919,7 @@ Lists all schemas in the current dataset.
 
 ```
 USAGE
-  $ pnpm exec sanity schema list [--id <schema_id>] [--json]
+  $ sanity schema list [--id <schema_id>] [--json]
 
 FLAGS
   --id=<schema_id>  Fetch a single schema by id
@@ -2936,22 +2936,22 @@ DESCRIPTION
 EXAMPLES
   List all schemas found in any workspace dataset in a table
 
-    $ pnpm exec sanity schema list
+    $ sanity schema list
 
   Get a schema for a given id
 
-    $ pnpm exec sanity schema list --id _.schemas.workspaceName
+    $ sanity schema list --id _.schemas.workspaceName
 
   Get stored schemas as pretty-printed json-array
 
-    $ pnpm exec sanity schema list --json
+    $ sanity schema list --json
 
   Get singular stored schema as pretty-printed json-object
 
-    $ pnpm exec sanity schema list --json --id _.schemas.workspaceName
+    $ sanity schema list --json --id _.schemas.workspaceName
 ```
 
-_See code: [src/commands/schema/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/schema/list.ts)_
+_See code: [src/commands/schema/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/schema/list.ts)_
 
 ## `sanity schema validate`
 
@@ -2959,7 +2959,7 @@ Validates all schema types specified in a workspace
 
 ```
 USAGE
-  $ pnpm exec sanity schema validate [--debug-metafile-path <value>] [--format pretty|ndjson|json] [--level error|warning]
+  $ sanity schema validate [--debug-metafile-path <value>] [--format pretty|ndjson|json] [--level error|warning]
     [--workspace <value>]
 
 FLAGS
@@ -2979,22 +2979,22 @@ DESCRIPTION
 EXAMPLES
   Validates all schema types in a Sanity project with more than one workspace
 
-    $ pnpm exec sanity schema validate --workspace default
+    $ sanity schema validate --workspace default
 
   Save the results of the report into a file
 
-    $ pnpm exec sanity schema validate > report.txt
+    $ sanity schema validate > report.txt
 
   Report out only errors
 
-    $ pnpm exec sanity schema validate --level error
+    $ sanity schema validate --level error
 
   Generate a report which can be analyzed with https://esbuild.github.io/analyze/
 
-    $ pnpm exec sanity schema validate --debug-metafile-path metafile.json
+    $ sanity schema validate --debug-metafile-path metafile.json
 ```
 
-_See code: [src/commands/schema/validate.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/schema/validate.ts)_
+_See code: [src/commands/schema/validate.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/schema/validate.ts)_
 
 ## `sanity start [OUTPUTDIR]`
 
@@ -3002,7 +3002,7 @@ Starts a server to preview a production build
 
 ```
 USAGE
-  $ pnpm exec sanity start [OUTPUTDIR] [--host <value>] [--port <value>]
+  $ sanity start [OUTPUTDIR] [--host <value>] [--port <value>]
 
 ARGUMENTS
   [OUTPUTDIR]  Output directory
@@ -3015,14 +3015,14 @@ DESCRIPTION
   Starts a server to preview a production build
 
 ALIASES
-  $ pnpm exec sanity start
+  $ sanity start
 
 EXAMPLES
-  $ pnpm exec sanity start --host=0.0.0.0
+  $ sanity start --host=0.0.0.0
 
-  $ pnpm exec sanity start --port=1942
+  $ sanity start --port=1942
 
-  $ pnpm exec sanity start some/build-output-dir
+  $ sanity start some/build-output-dir
 ```
 
 ## `sanity telemetry disable`
@@ -3031,7 +3031,7 @@ Disable telemetry for your logged in user
 
 ```
 USAGE
-  $ pnpm exec sanity telemetry disable
+  $ sanity telemetry disable
 
 DESCRIPTION
   Disable telemetry for your logged in user
@@ -3039,10 +3039,10 @@ DESCRIPTION
 EXAMPLES
   Disable telemetry for your logged in user
 
-    $ pnpm exec sanity telemetry telemetry disable
+    $ sanity telemetry telemetry disable
 ```
 
-_See code: [src/commands/telemetry/disable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/telemetry/disable.ts)_
+_See code: [src/commands/telemetry/disable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/telemetry/disable.ts)_
 
 ## `sanity telemetry enable`
 
@@ -3050,7 +3050,7 @@ Enable telemetry for your logged in user
 
 ```
 USAGE
-  $ pnpm exec sanity telemetry enable
+  $ sanity telemetry enable
 
 DESCRIPTION
   Enable telemetry for your logged in user
@@ -3058,10 +3058,10 @@ DESCRIPTION
 EXAMPLES
   Enable telemetry for your logged in user
 
-    $ pnpm exec sanity telemetry telemetry enable
+    $ sanity telemetry telemetry enable
 ```
 
-_See code: [src/commands/telemetry/enable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/telemetry/enable.ts)_
+_See code: [src/commands/telemetry/enable.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/telemetry/enable.ts)_
 
 ## `sanity telemetry status`
 
@@ -3069,7 +3069,7 @@ Check telemetry consent status for your logged in user
 
 ```
 USAGE
-  $ pnpm exec sanity telemetry status
+  $ sanity telemetry status
 
 DESCRIPTION
   Check telemetry consent status for your logged in user
@@ -3077,10 +3077,10 @@ DESCRIPTION
 EXAMPLES
   Check telemetry consent status for your logged in user
 
-    $ pnpm exec sanity telemetry telemetry status
+    $ sanity telemetry telemetry status
 ```
 
-_See code: [src/commands/telemetry/status.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/telemetry/status.ts)_
+_See code: [src/commands/telemetry/status.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/telemetry/status.ts)_
 
 ## `sanity tokens add [LABEL]`
 
@@ -3088,7 +3088,7 @@ Create a new API token for this project
 
 ```
 USAGE
-  $ pnpm exec sanity tokens add [LABEL] [--json] [--role viewer] [-y]
+  $ sanity tokens add [LABEL] [--json] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
@@ -3104,22 +3104,22 @@ DESCRIPTION
 EXAMPLES
   Create a token with a label
 
-    $ pnpm exec sanity tokens add "My API Token"
+    $ sanity tokens add "My API Token"
 
   Create a token with editor role
 
-    $ pnpm exec sanity tokens add "My API Token" --role=editor
+    $ sanity tokens add "My API Token" --role=editor
 
   Create a token in unattended mode
 
-    $ pnpm exec sanity tokens add "CI Token" --role=editor --yes
+    $ sanity tokens add "CI Token" --role=editor --yes
 
   Output token information as JSON
 
-    $ pnpm exec sanity tokens add "API Token" --json
+    $ sanity tokens add "API Token" --json
 ```
 
-_See code: [src/commands/tokens/add.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/tokens/add.ts)_
+_See code: [src/commands/tokens/add.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/tokens/add.ts)_
 
 ## `sanity tokens delete [TOKENID]`
 
@@ -3127,7 +3127,7 @@ Delete an API token from this project
 
 ```
 USAGE
-  $ pnpm exec sanity tokens delete [TOKENID] [--yes]
+  $ sanity tokens delete [TOKENID] [--yes]
 
 ARGUMENTS
   [TOKENID]  Token ID to delete (will prompt if not provided)
@@ -3141,18 +3141,18 @@ DESCRIPTION
 EXAMPLES
   Interactively select and delete a token
 
-    $ pnpm exec sanity tokens delete
+    $ sanity tokens delete
 
   Delete a specific token by ID
 
-    $ pnpm exec sanity tokens delete silJ2lFmK6dONB
+    $ sanity tokens delete silJ2lFmK6dONB
 
   Delete a specific token without confirmation prompt
 
-    $ pnpm exec sanity tokens delete silJ2lFmK6dONB --yes
+    $ sanity tokens delete silJ2lFmK6dONB --yes
 ```
 
-_See code: [src/commands/tokens/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/tokens/delete.ts)_
+_See code: [src/commands/tokens/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/tokens/delete.ts)_
 
 ## `sanity tokens list`
 
@@ -3160,7 +3160,7 @@ List API tokens for the current project
 
 ```
 USAGE
-  $ pnpm exec sanity tokens list [--json]
+  $ sanity tokens list [--json]
 
 FLAGS
   --json  Output tokens in JSON format
@@ -3171,14 +3171,14 @@ DESCRIPTION
 EXAMPLES
   List tokens for the current project
 
-    $ pnpm exec sanity tokens list
+    $ sanity tokens list
 
   List tokens in JSON format
 
-    $ pnpm exec sanity tokens list --json
+    $ sanity tokens list --json
 ```
 
-_See code: [src/commands/tokens/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/tokens/list.ts)_
+_See code: [src/commands/tokens/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/tokens/list.ts)_
 
 ## `sanity typegen generate`
 
@@ -3186,7 +3186,7 @@ Sanity TypeGen
 
 ```
 USAGE
-  $ pnpm exec sanity typegen generate [--config-path <value>] [--watch]
+  $ sanity typegen generate [--config-path <value>] [--watch]
 
 FLAGS
   --config-path=<value>  [Default: sanity-typegen.json] Specifies the path to the typegen configuration file. This file
@@ -3221,7 +3221,7 @@ EXAMPLES
   Generate TypeScript type definitions from a Sanity Studio schema extracted using the `sanity schema extract`
   command.
 
-    $ pnpm exec sanity typegen generate
+    $ sanity typegen generate
 ```
 
 _See code: [@sanity/codegen](https://github.com/sanity-io/codegen/blob/v5.10.1/src/commands/typegen/generate.ts)_
@@ -3232,7 +3232,7 @@ Removes the deployed Sanity Studio/App from Sanity hosting
 
 ```
 USAGE
-  $ pnpm exec sanity undeploy [-y]
+  $ sanity undeploy [-y]
 
 FLAGS
   -y, --yes  Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
@@ -3241,7 +3241,7 @@ DESCRIPTION
   Removes the deployed Sanity Studio/App from Sanity hosting
 ```
 
-_See code: [src/commands/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/undeploy.ts)_
+_See code: [src/commands/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/undeploy.ts)_
 
 ## `sanity users invite [EMAIL]`
 
@@ -3249,7 +3249,7 @@ Invite a new user to the project
 
 ```
 USAGE
-  $ pnpm exec sanity users invite [EMAIL] [--role <value>]
+  $ sanity users invite [EMAIL] [--role <value>]
 
 ARGUMENTS
   [EMAIL]  Email address to invite
@@ -3263,18 +3263,18 @@ DESCRIPTION
 EXAMPLES
   Invite a new user to the project (prompt for details)
 
-    $ pnpm exec sanity users invite
+    $ sanity users invite
 
   Send a new user invite to the email "pippi@sanity.io", prompt for role
 
-    $ pnpm exec sanity users invite pippi@sanity.io
+    $ sanity users invite pippi@sanity.io
 
   Send a new user invite to the email "pippi@sanity.io", as administrator
 
-    $ pnpm exec sanity users invite pippi@sanity.io --role administrator
+    $ sanity users invite pippi@sanity.io --role administrator
 ```
 
-_See code: [src/commands/users/invite.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/users/invite.ts)_
+_See code: [src/commands/users/invite.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/users/invite.ts)_
 
 ## `sanity users list`
 
@@ -3282,7 +3282,7 @@ List all users of the project
 
 ```
 USAGE
-  $ pnpm exec sanity users list [--invitations] [--order asc|desc] [--robots] [--sort id|name|role|date]
+  $ sanity users list [--invitations] [--order asc|desc] [--robots] [--sort id|name|role|date]
 
 FLAGS
   --[no-]invitations  Includes or excludes pending invitations
@@ -3298,18 +3298,18 @@ DESCRIPTION
 EXAMPLES
   List all users of the project
 
-    $ pnpm exec sanity users list
+    $ sanity users list
 
   List all users of the project, but exclude pending invitations and robots
 
-    $ pnpm exec sanity users list --no-invitations --no-robots
+    $ sanity users list --no-invitations --no-robots
 
   List all users, sorted by role
 
-    $ pnpm exec sanity users list --sort role
+    $ sanity users list --sort role
 ```
 
-_See code: [src/commands/users/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/users/list.ts)_
+_See code: [src/commands/users/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/users/list.ts)_
 
 ## `sanity versions`
 
@@ -3317,15 +3317,15 @@ Shows installed versions of Sanity Studio and components
 
 ```
 USAGE
-  $ pnpm exec sanity versions
+  $ sanity versions
 
 DESCRIPTION
   Shows installed versions of Sanity Studio and components
 
 EXAMPLES
-  $ pnpm exec sanity versions
+  $ sanity versions
 ```
 
-_See code: [src/commands/versions.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.17/src/commands/versions.ts)_
+_See code: [src/commands/versions.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.19/src/commands/versions.ts)_
 
 <!-- commandsstop -->
