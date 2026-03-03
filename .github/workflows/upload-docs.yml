@@ -2,11 +2,8 @@ name: Upload Docs
 
 on:
   workflow_dispatch: # Allows manual triggering of the workflow
-  push:
-    branches:
-      - main
-    paths:
-      - packages/@sanity/cli/README.md
+  release:
+    types: [published]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
