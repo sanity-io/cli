@@ -1,5 +1,36 @@
 # Changelog
 
+## [6.0.0-alpha.19](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.18...cli-v6.0.0-alpha.19) (2026-03-03)
+
+
+### Features
+
+* add `--project-id` flag + prompts for dataset commands ([#500](https://github.com/sanity-io/cli/issues/500)) ([b264fa2](https://github.com/sanity-io/cli/commit/b264fa2b6996cbd195620ee730fd9bc6e6f12288))
+* **dev:** missing critical features for `dev` command ([#442](https://github.com/sanity-io/cli/issues/442)) ([1acf0b0](https://github.com/sanity-io/cli/commit/1acf0b0be58dcfe87e7d2d8b7430389884bc16d4))
+
+
+### Bug Fixes
+
+* **deps:** update dependency open to v11 ([#517](https://github.com/sanity-io/cli/issues/517)) ([aff4cd7](https://github.com/sanity-io/cli/commit/aff4cd789a1340d813c1ba28f3d7e795d8c0cc5f))
+* **deps:** update dependency which to v6 ([#520](https://github.com/sanity-io/cli/issues/520)) ([20a5ef1](https://github.com/sanity-io/cli/commit/20a5ef193682f075c12bfdeb8b3ad1ed3cbc1216))
+* **deps:** update sanity-tooling ([#523](https://github.com/sanity-io/cli/issues/523)) ([0353b67](https://github.com/sanity-io/cli/commit/0353b6731a9bbed495a9131087b4dbdc73a6b045))
+* **lint:** turn off string raw rule for tests ([#508](https://github.com/sanity-io/cli/issues/508)) ([157df2d](https://github.com/sanity-io/cli/commit/157df2dd0a92e91cdf04df2ba170952441f044f9))
+
+
+### Performance Improvements
+
+* cache reading cli config multiple times ([#506](https://github.com/sanity-io/cli/issues/506)) ([6222972](https://github.com/sanity-io/cli/commit/62229723b612fffd4da6d8621e29d4a0606c1e08))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.18
+  * devDependencies
+    * @sanity/cli-test bumped to 0.1.0-alpha.16
+    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.4
+
 ## [6.0.0-alpha.18](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.17...cli-v6.0.0-alpha.18) (2026-03-02)
 
 

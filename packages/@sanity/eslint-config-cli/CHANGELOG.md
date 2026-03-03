@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.0-alpha.4](https://github.com/sanity-io/cli/compare/eslint-config-cli-v0.0.0-alpha.3...eslint-config-cli-v0.0.0-alpha.4) (2026-03-03)
+
+
+### Bug Fixes
+
+* **lint:** turn off string raw rule for tests ([#508](https://github.com/sanity-io/cli/issues/508)) ([157df2d](https://github.com/sanity-io/cli/commit/157df2dd0a92e91cdf04df2ba170952441f044f9))
+
 ## [0.0.0-alpha.3](https://github.com/sanity-io/cli/compare/eslint-config-cli-v0.0.0-alpha.2...eslint-config-cli-v0.0.0-alpha.3) (2026-03-02)
 
 
