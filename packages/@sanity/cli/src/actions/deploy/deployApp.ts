@@ -104,9 +104,9 @@ export async function deployApp(options: DeployAppOptions) {
     spin = spinner('Deploying...').start()
     await createDeployment({
       applicationId: userApplication.id,
+      appManifest: manifest,
       isApp: true,
       isAutoUpdating,
-      manifest,
       tarball,
       version: installedSdkVersion,
     })

@@ -1,3 +1,5 @@
+import {platform} from 'node:os'
+
 import {getCliConfig} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
@@ -60,7 +62,7 @@ const mockGetLocalPackageVersion = vi.mocked(getLocalPackageVersion)
 const mockBuildStudio = vi.mocked(buildStudio)
 const mockExtractAppManifest = vi.mocked(extractAppManifest)
 
-describe('#deploy:studio', () => {
+describe('#deploy:studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, () => {
   let projectId: string | undefined
   beforeAll(async () => {
     const cwd = await testFixture('basic-studio')

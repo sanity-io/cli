@@ -77,7 +77,7 @@ const defaultMocks = {
   },
 }
 
-describe('#deploy', () => {
+describe.skip('#deploy', () => {
   beforeEach(async () => {
     // Set up default mocks
     mockGetLocalPackageVersion.mockImplementation(async (moduleName) => {

@@ -12,7 +12,6 @@ import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {buildStudio} from '../build/buildStudio.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
-import {extractManifest} from '../manifest/extractManifest.js'
 import {generateManifest} from '../manifest/generateManifest.js'
 import {deploySchemas} from '../schema/deploySchemas.js'
 import {checkDir} from './checkDir.js'
@@ -86,10 +85,24 @@ export async function deployStudio(options: DeployAppOptions) {
         verbose: flags.verbose,
         workDir,
       })
-      await extractManifest(`${sourceDir}/static`)
     }
 
     const studioManifest = await generateManifest()
+
+    if (flags.verbose) {
+      if (studioManifest) {
+        for (const workspace of studioManifest.workspaces) {
+          output.log(
+            styleText(
+              'gray',
+              `↳ projectId: ${workspace.projectId}, dataset: ${workspace.dataset}, schemaDescriptorId: ${workspace.schemaDescriptorId}`,
+            ),
+          )
+        }
+      } else {
+        output.log(styleText('gray', `↳ No workspaces found`))
+      }
+    }
 
     let tarball
 
