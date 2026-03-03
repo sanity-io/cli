@@ -56,7 +56,7 @@ catalog:
   '@swc/core': ^1.15.17
   '@swc/cli': ^0.8.0
   rimraf: ^6.0.1
-  '@sanity/pkg-utils': ^10.4.4
+  '@sanity/pkg-utils': ^10.4.5
 
   # Type Definitions
   '@types/node': ^20.19.35
