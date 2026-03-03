@@ -1,7 +1,5 @@
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 
-export const internal = Symbol('internal')
-
 export interface Deprecation {
   deprecationReason: string
 }
@@ -221,9 +219,9 @@ export interface ConvertedType extends Partial<Deprecation> {
     dataset: string
     typeNames: string[]
   }
+  _internal?: Partial<Deprecation>
   description?: string
   interfaces?: string[]
-  [internal]?: Partial<Deprecation>
   isReference?: boolean
   originalName?: string
 }

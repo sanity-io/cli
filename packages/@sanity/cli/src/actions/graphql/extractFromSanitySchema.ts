@@ -26,7 +26,6 @@ import {
   type ConvertedType,
   type ConvertedUnion,
   type Deprecation,
-  internal,
 } from './types.js'
 
 const skipTypes = new Set(['document', 'reference'])
@@ -358,7 +357,7 @@ export function extractFromSanitySchema(
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             }) as any),
       ),
-      [internal]: {
+      _internal: {
         ...getDeprecation(def),
       },
       kind: 'Type',

@@ -1,4 +1,4 @@
-import {isUnion} from '../helpers.js'
+import {isUnion, stripInternalMeta} from '../helpers.js'
 import {
   type ApiCustomizationOptions,
   type ApiSpecification,
@@ -28,9 +28,13 @@ const gen3 = (
     sortings.filter((node): node is InputObjectType => node.kind === 'InputObject'),
     options,
   )
-  const graphqlTypes = [...extracted.types, ...filters, ...sortings]
 
-  return {generation: 'gen3', interfaces: extracted.interfaces, queries, types: graphqlTypes}
+  return {
+    generation: 'gen3',
+    interfaces: extracted.interfaces,
+    queries,
+    types: [...stripInternalMeta(extracted.types), ...filters, ...sortings],
+  }
 }
 
 export default gen3

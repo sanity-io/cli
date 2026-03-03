@@ -5,7 +5,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {type ExtractWorkerData, type ExtractWorkerDeps} from '../extractGraphQLAPIs.js'
 import {SchemaError} from '../SchemaError.js'
-import {type ApiSpecification, type ConvertedType, internal} from '../types.js'
+import {type ApiSpecification} from '../types.js'
 
 // Mock extractFromSanitySchema — the real implementation requires a full compiled Sanity schema
 const mockExtractFromSanitySchema = vi.hoisted(() => vi.fn())
@@ -303,43 +303,6 @@ describe('extractGraphQLAPIsWorker', () => {
           }),
         ],
       })
-    })
-  })
-
-  describe('serializeInternalSymbols', () => {
-    test('converts Symbol-keyed [internal] to __internal string key', async () => {
-      const {serializeInternalSymbols} = await import('../extractGraphQLAPIs.js')
-
-      const type: ConvertedType = {
-        fields: [],
-        [internal]: {deprecationReason: 'Use newType instead'},
-        kind: 'Type',
-        name: 'TestType',
-        type: 'Object',
-      }
-      const extracted: ApiSpecification = {interfaces: [], types: [type]}
-
-      serializeInternalSymbols(extracted)
-
-      const record = type as unknown as Record<string, unknown>
-      expect(record.__internal).toEqual({deprecationReason: 'Use newType instead'})
-    })
-
-    test('does not add __internal when Symbol key is absent', async () => {
-      const {serializeInternalSymbols} = await import('../extractGraphQLAPIs.js')
-
-      const type: ConvertedType = {
-        fields: [],
-        kind: 'Type',
-        name: 'RegularType',
-        type: 'Object',
-      }
-      const extracted: ApiSpecification = {interfaces: [], types: [type]}
-
-      serializeInternalSymbols(extracted)
-
-      const record = type as unknown as Record<string, unknown>
-      expect(record.__internal).toBeUndefined()
     })
   })
 

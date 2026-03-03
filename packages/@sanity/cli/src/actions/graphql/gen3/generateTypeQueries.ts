@@ -7,7 +7,6 @@ import {
   type ConvertedUnion,
   type Deprecation,
   type InputObjectType,
-  internal,
   type QueryDefinition,
 } from '../types.js'
 import {getFilterFieldName} from './utils.js'
@@ -115,9 +114,9 @@ export function generateTypeQueries(
 }
 
 function getDeprecation(type: ConvertedType): Partial<Deprecation> {
-  return type[internal]?.deprecationReason
+  return type._internal?.deprecationReason
     ? {
-        deprecationReason: type[internal].deprecationReason,
+        deprecationReason: type._internal.deprecationReason,
       }
     : {}
 }

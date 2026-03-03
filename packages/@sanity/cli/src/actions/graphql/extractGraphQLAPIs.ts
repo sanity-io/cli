@@ -13,12 +13,9 @@ import {extractFromSanitySchema} from './extractFromSanitySchema.js'
 import {resolveGraphQLApis, type Workspace} from './resolveGraphQLApisFromWorkspaces.js'
 import {SchemaError} from './SchemaError.js'
 import {
-  type ApiSpecification,
-  type ConvertedType,
   type ExtractedGraphQLAPI,
   type GraphQLAPIConfig,
   type GraphQLWorkerResult,
-  internal,
   type SchemaDefinitionish,
 } from './types.js'
 
@@ -58,35 +55,12 @@ export async function extractGraphQLAPIs(
     throw new SchemaError(result.configErrors)
   }
 
-  // Restore Symbol-keyed [internal] properties that were serialized as string keys
-  // for postMessage. The gen3 schema generator reads type[internal] for deprecation info.
-  for (const api of result.apis) {
-    if (api.extracted) {
-      deserializeInternalSymbols(api.extracted)
-    }
-  }
-
   return result.apis
 }
 
 function extractGraphQLConfig(config: CliConfig) {
   return {
     graphql: config.graphql,
-  }
-}
-
-/**
- * Restore Symbol-keyed [internal] properties from string keys after postMessage deserialization.
- * The worker converts `[internal]` (Symbol) to `__internal` (string) before postMessage,
- * since the structured clone algorithm strips Symbol keys.
- */
-function deserializeInternalSymbols(extracted: ApiSpecification): void {
-  for (const type of extracted.types) {
-    const record = type as unknown as Record<string, unknown>
-    if ('__internal' in record) {
-      ;(type as ConvertedType)[internal] = record.__internal as ConvertedType[typeof internal]
-      delete record.__internal
-    }
   }
 }
 
@@ -181,10 +155,6 @@ export async function extractGraphQLAPIsWorker(
         withUnionCache,
       })
 
-      // Symbol-keyed [internal] properties are stripped by the structured clone algorithm
-      // used by postMessage. Convert them to string keys so they survive serialization.
-      serializeInternalSymbols(extracted)
-
       results.push({...apiBase, extracted})
     } catch (err) {
       if (err instanceof SchemaError) {
@@ -224,19 +194,4 @@ export async function extractGraphQLAPIsWorker(
   }
 
   port.postMessage({apis: results} satisfies GraphQLWorkerResult)
-}
-
-/**
- * Convert Symbol-keyed [internal] properties to string keys for postMessage serialization.
- * Symbol keys are stripped by the structured clone algorithm used by postMessage.
- * The main thread restores them via deserializeInternalSymbols in the orchestrator.
- */
-export function serializeInternalSymbols(extracted: ApiSpecification): void {
-  for (const type of extracted.types) {
-    if (internal in type) {
-      ;(type as unknown as Record<string, unknown>).__internal = (
-        type as unknown as Record<symbol, unknown>
-      )[internal]
-    }
-  }
 }

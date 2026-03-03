@@ -27,3 +27,20 @@ export function isDocumentType(
     type.interfaces.includes('Document')
   )
 }
+
+/**
+ * Strip `_internal` metadata from extracted types before sending to the API.
+ * This property carries pipeline-internal data (e.g. deprecation info for query generation)
+ * and must not be included in the deployed schema.
+ */
+export function stripInternalMeta(
+  types: (ConvertedType | ConvertedUnion)[],
+): (ConvertedType | ConvertedUnion)[] {
+  return types.map((type) => {
+    if ('_internal' in type) {
+      const {_internal, ...rest} = type
+      return rest
+    }
+    return type
+  })
+}

@@ -2,7 +2,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {extractGraphQLAPIs} from '../extractGraphQLAPIs.js'
 import {SchemaError} from '../SchemaError.js'
-import {type ConvertedType, type ExtractedGraphQLAPI, internal} from '../types.js'
+import {type ExtractedGraphQLAPI} from '../types.js'
 
 const mockGetCliConfig = vi.hoisted(() => vi.fn())
 const mockFindStudioConfigPath = vi.hoisted(() => vi.fn())
@@ -67,85 +67,6 @@ describe('extractGraphQLAPIs', () => {
     const workerData = mockStudioWorkerTask.mock.calls[0][1].workerData
     expect(workerData.nonNullDocumentFieldsFlag).toBeUndefined()
     expect(workerData.withUnionCache).toBeUndefined()
-  })
-
-  describe('symbol deserialization', () => {
-    test('restores __internal string keys to Symbol-keyed [internal] properties', async () => {
-      setupMocks()
-
-      const apis: ExtractedGraphQLAPI[] = [
-        {
-          dataset: 'production',
-          extracted: {
-            interfaces: [],
-            types: [
-              {
-                __internal: {deprecationReason: 'Use newType instead'},
-                fields: [],
-                kind: 'Type',
-                name: 'OldType',
-                type: 'Object',
-              } as unknown as ConvertedType,
-            ],
-          },
-          projectId: 'p1',
-        },
-      ]
-      mockStudioWorkerTask.mockResolvedValue({apis})
-
-      const result = await extractGraphQLAPIs('/test/workdir', {})
-
-      const type = result[0].extracted!.types[0] as ConvertedType
-      expect(type[internal]).toEqual({deprecationReason: 'Use newType instead'})
-      // __internal string key should be removed
-      expect('__internal' in (type as unknown as Record<string, unknown>)).toBe(false)
-    })
-
-    test('does not modify types without __internal', async () => {
-      setupMocks()
-
-      const apis: ExtractedGraphQLAPI[] = [
-        {
-          dataset: 'production',
-          extracted: {
-            interfaces: [],
-            types: [
-              {
-                fields: [],
-                kind: 'Type',
-                name: 'RegularType',
-                type: 'Object',
-              } as ConvertedType,
-            ],
-          },
-          projectId: 'p1',
-        },
-      ]
-      mockStudioWorkerTask.mockResolvedValue({apis})
-
-      const result = await extractGraphQLAPIs('/test/workdir', {})
-
-      const type = result[0].extracted!.types[0] as ConvertedType
-      expect(type[internal]).toBeUndefined()
-    })
-
-    test('skips deserialization for APIs without extracted data', async () => {
-      setupMocks()
-
-      const apis: ExtractedGraphQLAPI[] = [
-        {
-          dataset: 'production',
-          extractionError: 'Schema compilation failed',
-          projectId: 'p1',
-        },
-      ]
-      mockStudioWorkerTask.mockResolvedValue({apis})
-
-      const result = await extractGraphQLAPIs('/test/workdir', {})
-
-      expect(result[0].extracted).toBeUndefined()
-      expect(result[0].extractionError).toBe('Schema compilation failed')
-    })
   })
 
   describe('config errors', () => {
