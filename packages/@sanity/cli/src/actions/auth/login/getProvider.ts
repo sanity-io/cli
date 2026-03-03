@@ -1,4 +1,3 @@
-import {CLIError} from '@oclif/core/errors'
 import {subdebug} from '@sanity/cli-core'
 import {input, spinner, SpinnerInstance} from '@sanity/cli-core/ux'
 
@@ -29,7 +28,7 @@ export async function getProvider({
 
   try {
     if (orgSlug) {
-      return await getSSOProvider(orgSlug)
+      return getSSOProvider(orgSlug)
     }
 
     spin = spinner('Fetching providers...').start()
@@ -55,16 +54,13 @@ export async function getProvider({
     const provider = await promptForProviders(providers)
     if (provider.name === 'sso') {
       const orgSlug = await input({message: 'Organization slug:'})
-      return await getSSOProvider(orgSlug)
+      return getSSOProvider(orgSlug)
     }
 
     return provider
   } catch (err) {
     spin?.stop()
     debug('Error retrieving providers', err)
-    throw new CLIError(
-      `Error retrieving providers: ${err instanceof Error ? err.message : String(err)}`,
-      {exit: 1},
-    )
+    throw err
   }
 }

@@ -1,5 +1,10 @@
-import {CLIError} from '@oclif/core/errors'
-import {type CLITelemetryStore, getCliToken, type Output, setConfig} from '@sanity/cli-core'
+import {
+  type CLITelemetryStore,
+  getCliToken,
+  type Output,
+  setConfig,
+  subdebug,
+} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import open from 'open'
 
@@ -8,6 +13,8 @@ import {LoginTrace} from '../../../telemetry/login.telemetry.js'
 import {canLaunchBrowser} from '../../../util/canLaunchBrowser.js'
 import {startServerForTokenCallback} from '../authServer.js'
 import {getProvider} from './getProvider.js'
+
+const debug = subdebug('login')
 
 interface LoginOptions {
   output: Output
@@ -47,7 +54,7 @@ export async function login(options: LoginOptions) {
   trace.log({provider: provider?.name, step: 'selectProvider'})
 
   if (provider === undefined) {
-    throw new CLIError('No authentication providers found', {exit: 1})
+    throw new Error('No authentication providers found')
   }
 
   const {loginUrl, server, token: tokenPromise} = await startServerForTokenCallback(provider.url)
@@ -74,9 +81,8 @@ export async function login(options: LoginOptions) {
   } catch (err: unknown) {
     spin.stop()
     trace.error(err as Error)
-    throw err instanceof Error
-      ? new CLIError(`Login failed: ${err.message}`, {exit: 1})
-      : new CLIError(`${err}`, {exit: 1})
+    debug('Error retrieving token', err)
+    throw err instanceof Error ? new Error(`Login failed: ${err.message}`) : new Error(`${err}`)
   } finally {
     await new Promise<void>((resolve) => {
       server.close(() => resolve())

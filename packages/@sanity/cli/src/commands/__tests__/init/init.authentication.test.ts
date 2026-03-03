@@ -215,4 +215,19 @@ describe('#init: authentication', () => {
     if (error) throw error
     expect(mockLogin).toHaveBeenCalled()
   })
+
+  test('throws error when login fails', async () => {
+    mockGetById.mockRejectedValueOnce(new Error('Invalid token'))
+    mockLogin.mockRejectedValueOnce(new Error('No authentication providers found'))
+
+    const {error} = await testCommand(InitCommand, [], {
+      mocks: {
+        ...defaultMocks,
+        isInteractive: true,
+      },
+    })
+
+    expect(error?.message).toBe('Error logging in: No authentication providers found')
+    expect(error?.oclif?.exit).toBe(1)
+  })
 })

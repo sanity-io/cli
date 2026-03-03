@@ -1,7 +1,6 @@
 import http from 'node:http'
 
-import {getCliToken, setConfig} from '@sanity/cli-core'
-import {mockApi, testCommand} from '@sanity/cli-test'
+import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -13,6 +12,8 @@ import {LoginCommand} from '../login.js'
 // Hoisted mocks for user prompts
 const mockInput = vi.hoisted(() => vi.fn())
 const mockSelect = vi.hoisted(() => vi.fn())
+const mockedGetCliToken = vi.hoisted(() => vi.fn())
+const mockedSetConfig = vi.hoisted(() => vi.fn())
 
 // Mock user interaction prompts
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -33,27 +34,25 @@ vi.mock('../../util/canLaunchBrowser.js', () => ({
 }))
 
 // Mock CLI core functions with real test client for HTTP
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  const {createTestClient: createClient} = await import('@sanity/cli-test')
-  const testClient = createClient({
+vi.mock('@sanity/cli-core', async () => {
+  const actual = await vi.importActual('@sanity/cli-core')
+
+  const testClient = createTestClient({
     apiVersion: 'v2025-09-23',
     token: undefined,
   })
 
   return {
     ...actual,
-    getCliToken: vi.fn(),
+    getCliToken: mockedGetCliToken,
     getGlobalCliClient: vi.fn().mockResolvedValue({
       request: testClient.request,
       withConfig: vi.fn().mockReturnValue({request: testClient.request}),
     }),
-    setConfig: vi.fn(),
+    setConfig: mockedSetConfig,
   }
 })
 
-const mockedGetCliToken = vi.mocked(getCliToken)
-const mockedSetConfig = vi.mocked(setConfig)
 const mockedOpen = vi.mocked(open)
 const mockedCanLaunchBrowser = vi.mocked(canLaunchBrowser)
 
