@@ -1,6 +1,7 @@
 import {join} from 'node:path'
 
 import {convertToSystemPath} from '@sanity/cli-test'
+import {noopLogger} from '@sanity/telemetry'
 import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -361,7 +362,7 @@ describe('#getViteConfig', () => {
       configPath: '/mock/config/path',
       enforceRequiredFields: true,
       outputPath: 'custom-schema.json',
-      telemetryLogger: undefined,
+      telemetryLogger: noopLogger,
       workDir: mockTestCwd,
       workspaceName: 'production',
     })
@@ -413,7 +414,7 @@ describe('#getViteConfig', () => {
         generates: 'sanity.types.ts',
         schema: 'custom-schema.json',
       },
-      telemetryLogger: undefined,
+      telemetryLogger: noopLogger,
       workDir: mockTestCwd,
     })
     expect(typegenPlugin).toBeDefined()

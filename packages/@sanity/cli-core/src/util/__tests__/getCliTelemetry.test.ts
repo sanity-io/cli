@@ -1,5 +1,5 @@
-import {CLIError} from '@oclif/core/errors'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {noopLogger} from '@sanity/telemetry'
+import {afterEach, describe, expect, test} from 'vitest'
 
 import {type CLITelemetryStore} from '../../telemetry/types.js'
 import {
@@ -11,7 +11,6 @@ import {
 
 describe('#getCliTelemetry', () => {
   afterEach(() => {
-    vi.unstubAllEnvs()
     clearCliTelemetry()
   })
 
@@ -27,40 +26,10 @@ describe('#getCliTelemetry', () => {
     expect(result).toBe(mockTelemetry)
   })
 
-  test('throws CLIError when not initialized and TEST env is falsy', () => {
-    vi.stubEnv('TEST', '')
-
-    expect(() => getCliTelemetry()).toThrow(CLIError)
-    expect(() => getCliTelemetry()).toThrow('CLI telemetry not initialized')
-  })
-
-  test('returns undefined without throwing when TEST env is truthy', () => {
-    vi.stubEnv('TEST', 'true')
-
+  test('returns noop logger when not initialized', () => {
     const result = getCliTelemetry()
 
-    expect(result).toBeUndefined()
-  })
-
-  test('returns undefined when TEST env is set to any truthy value', () => {
-    vi.stubEnv('TEST', '1')
-
-    const result = getCliTelemetry()
-
-    expect(result).toBeUndefined()
-  })
-
-  test('returns cliTelemetry even when TEST env is set', () => {
-    const mockTelemetry = {
-      log: () => {},
-    } as unknown as CLITelemetryStore
-
-    setCliTelemetry(mockTelemetry)
-    vi.stubEnv('TEST', 'true')
-
-    const result = getCliTelemetry()
-
-    expect(result).toBe(mockTelemetry)
+    expect(result).toBe(noopLogger)
   })
 
   test('uses Symbol.for to ensure global registry consistency', () => {
