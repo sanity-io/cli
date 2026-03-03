@@ -124,7 +124,7 @@ describe('#graphql:deploy schema errors', () => {
 
       expect(error).toBeDefined()
       expect(error?.oclif?.exit).toBe(1)
-      expect(stderr).toContain('Found errors in schema:')
+      expect(stderr).toContain('Schema errors in production/default:')
     })
 
     test('reports per-API extraction errors and exits with code 1', async () => {
@@ -173,7 +173,7 @@ describe('#graphql:deploy schema errors', () => {
       expect(error).toBeDefined()
       expect(error?.oclif?.exit).toBe(1)
       // Both errors should be reported, not just the first
-      expect(stderr).toContain('Found errors in schema:')
+      expect(stderr).toContain('Schema errors in production/default:')
       expect(stdout).toContain('Error in api-two')
     })
 

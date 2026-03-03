@@ -124,7 +124,7 @@ export function resolveGraphQLApiMetadata({
     `)
   }
 
-  // Validate that workspaces have non-empty projectId/dataset.
+  // Validate that workspaces and their sources have non-empty projectId/dataset.
   // The worker's toWorkspaceMetadata validates this before constructing metadata,
   // but assert here to make the invariant explicit.
   for (const ws of workspaces) {
@@ -133,6 +133,14 @@ export function resolveGraphQLApiMetadata({
         `Workspace "${ws.name}" is missing a projectId or dataset. ` +
           'Check your studio configuration.',
       )
+    }
+    for (const source of ws.sources) {
+      if (!source.projectId || !source.dataset) {
+        throw new Error(
+          `Source "${source.name}" in workspace "${ws.name}" is missing a projectId or dataset. ` +
+            'Check your studio configuration.',
+        )
+      }
     }
   }
 

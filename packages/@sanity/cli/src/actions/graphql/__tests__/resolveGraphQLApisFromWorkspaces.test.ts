@@ -327,6 +327,26 @@ describe('resolveGraphQLApiMetadata', () => {
       )
     })
 
+    test('throws when source has empty projectId', () => {
+      const ws = createWorkspaceMetadata({
+        sources: [{dataset: 'production', name: 'default', projectId: ''}],
+      })
+
+      expect(() => resolveGraphQLApiMetadata({workspaces: [ws]})).toThrow(
+        'Source "default" in workspace "default" is missing a projectId or dataset',
+      )
+    })
+
+    test('throws when source has empty dataset', () => {
+      const ws = createWorkspaceMetadata({
+        sources: [{dataset: '', name: 'my-source', projectId: 'proj1'}],
+      })
+
+      expect(() => resolveGraphQLApiMetadata({workspaces: [ws]})).toThrow(
+        'Source "my-source" in workspace "default" is missing a projectId or dataset',
+      )
+    })
+
     test('throws when multiple workspaces without graphql config', () => {
       const ws1 = createWorkspaceMetadata({name: 'ws1'})
       const ws2 = createWorkspaceMetadata({name: 'ws2'})

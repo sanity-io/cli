@@ -105,11 +105,11 @@ function extractSourceMetadata(
     // only `name` and `schema` are specified in `unstable_sources`). Fall back to
     // the workspace-level values when the source doesn't define its own.
     const projectId =
-      'projectId' in source && typeof source.projectId === 'string'
+      'projectId' in source && typeof source.projectId === 'string' && source.projectId
         ? source.projectId
         : workspaceDefaults.projectId
     const dataset =
-      'dataset' in source && typeof source.dataset === 'string'
+      'dataset' in source && typeof source.dataset === 'string' && source.dataset
         ? source.dataset
         : workspaceDefaults.dataset
 

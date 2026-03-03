@@ -31,7 +31,7 @@ describe('SchemaError', () => {
     expect(error.problemGroups).toBe(groups)
   })
 
-  test('print() warns with header and logs formatted validation', () => {
+  test('print() warns with default header and logs formatted validation', () => {
     const groups: SchemaValidationProblemGroup[] = [
       {
         path: [{kind: 'type', name: 'post', type: 'document'}],
@@ -51,6 +51,28 @@ describe('SchemaError', () => {
 
     expect(output.warn).toHaveBeenCalledWith('Found errors in schema:\n')
     expect(mockFormatSchemaValidation).toHaveBeenCalledWith(groups)
+    expect(output.log).toHaveBeenCalledWith('<formatted output>')
+  })
+
+  test('print() uses custom label when provided', () => {
+    const groups: SchemaValidationProblemGroup[] = [
+      {
+        path: [{kind: 'type', name: 'post', type: 'document'}],
+        problems: [{message: 'Unknown type: "nonExistent"', severity: 'error'}],
+      },
+    ]
+    mockFormatSchemaValidation.mockReturnValue('<formatted output>')
+
+    const output: Output = {
+      error: vi.fn() as unknown as Output['error'],
+      log: vi.fn(),
+      warn: vi.fn(),
+    }
+
+    const error = new SchemaError(groups)
+    error.print(output, 'Schema errors in production/default')
+
+    expect(output.warn).toHaveBeenCalledWith('Schema errors in production/default:\n')
     expect(output.log).toHaveBeenCalledWith('<formatted output>')
   })
 })

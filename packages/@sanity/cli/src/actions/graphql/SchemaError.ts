@@ -12,8 +12,8 @@ export class SchemaError extends Error {
     this.problemGroups = problemGroups
   }
 
-  print(output: Output): void {
-    output.warn('Found errors in schema:\n')
+  print(output: Output, label?: string): void {
+    output.warn(`${label ?? 'Found errors in schema'}:\n`)
     output.log(formatSchemaValidation(this.problemGroups))
   }
 }
