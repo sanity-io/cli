@@ -2,6 +2,7 @@ import {describe, expect, test} from 'vitest'
 
 import {
   buildMarkdown,
+  buildOverallCoverage,
   computeDeltas,
   findCoverageKey,
   formatDelta,
@@ -142,20 +143,94 @@ describe('formatDelta', () => {
   })
 })
 
+describe('buildOverallCoverage', () => {
+  test('renders all four metrics with deltas when baseline exists', () => {
+    const current: CoverageSummary = {total: fileData(85)}
+    const baseline: CoverageSummary = {total: fileData(80)}
+    const md = buildOverallCoverage(current, baseline)
+
+    expect(md).toContain('### Overall Coverage')
+    expect(md).toContain('| Metric | Coverage |')
+    expect(md).toContain('| Statements | 85.0%&nbsp;<font color="green">(+&nbsp;5.0%)</font> |')
+    expect(md).toContain('| Branches | 85.0%&nbsp;<font color="green">(+&nbsp;5.0%)</font> |')
+    expect(md).toContain('| Functions | 85.0%&nbsp;<font color="green">(+&nbsp;5.0%)</font> |')
+    expect(md).toContain('| Lines | 85.0%&nbsp;<font color="green">(+&nbsp;5.0%)</font> |')
+  })
+
+  test('renders only percentages when no baseline', () => {
+    const current: CoverageSummary = {total: fileData(75)}
+    const md = buildOverallCoverage(current, null)
+
+    expect(md).toContain('| Statements | 75.0% |')
+    expect(md).toContain('| Branches | 75.0% |')
+    expect(md).toContain('| Functions | 75.0% |')
+    expect(md).toContain('| Lines | 75.0% |')
+  })
+
+  test('renders negative deltas', () => {
+    const current: CoverageSummary = {total: fileData(70)}
+    const baseline: CoverageSummary = {total: fileData(80)}
+    const md = buildOverallCoverage(current, baseline)
+
+    expect(md).toContain('| Statements | 70.0%&nbsp;<font color="red">(-&nbsp;10.0%)</font> |')
+  })
+
+  test('renders zero deltas', () => {
+    const current: CoverageSummary = {total: fileData(80)}
+    const baseline: CoverageSummary = {total: fileData(80)}
+    const md = buildOverallCoverage(current, baseline)
+
+    expect(md).toContain('| Statements | 80.0%&nbsp;<font color="green">(±0%)</font> |')
+  })
+
+  test('handles mixed metric values', () => {
+    const current: CoverageSummary = {
+      total: {
+        branches: metric(60),
+        functions: metric(90),
+        lines: metric(82),
+        statements: metric(85),
+      },
+    }
+    const baseline: CoverageSummary = {
+      total: {
+        branches: metric(65),
+        functions: metric(85),
+        lines: metric(80),
+        statements: metric(80),
+      },
+    }
+    const md = buildOverallCoverage(current, baseline)
+
+    expect(md).toContain('| Statements | 85.0%&nbsp;<font color="green">(+&nbsp;5.0%)</font> |')
+    expect(md).toContain('| Branches | 60.0%&nbsp;<font color="red">(-&nbsp;5.0%)</font> |')
+    expect(md).toContain('| Functions | 90.0%&nbsp;<font color="green">(+&nbsp;5.0%)</font> |')
+    expect(md).toContain('| Lines | 82.0%&nbsp;<font color="green">(+&nbsp;2.0%)</font> |')
+  })
+})
+
 describe('buildMarkdown', () => {
+  const current: CoverageSummary = {
+    'src/a.ts': fileData(85),
+    'src/b.ts': fileData(70),
+    total: fileData(82),
+  }
+
   const baseline: CoverageSummary = {
     'src/a.ts': fileData(80),
     total: fileData(80),
   }
 
-  test('returns empty message when no deltas', () => {
-    const md = buildMarkdown([], baseline, 'abc123')
+  test('returns empty message when no deltas and includes overall coverage', () => {
+    const md = buildMarkdown([], current, baseline, 'abc123')
     expect(md).toContain('No covered files changed')
+    expect(md).toContain('### Overall Coverage')
+    expect(md).toContain('| Statements |')
   })
 
   test('includes delta in statements column when baseline exists', () => {
     const deltas = [{baseline: 80, current: 85, delta: 5, displayName: 'src/a.ts'}]
-    const md = buildMarkdown(deltas, baseline, 'abc123')
+    const md = buildMarkdown(deltas, current, baseline, 'abc123')
     expect(md).toContain('| File | Statements |')
     expect(md).toContain('src/a.ts')
     expect(md).toContain('85.0%&nbsp;<font color="green">(+&nbsp;5.0%)</font>')
@@ -163,8 +238,12 @@ describe('buildMarkdown', () => {
   })
 
   test('shows only percentage when no baseline', () => {
+    const noBaselineCurrent: CoverageSummary = {
+      'src/b.ts': fileData(70),
+      total: fileData(70),
+    }
     const deltas = [{baseline: null, current: 70, delta: null, displayName: 'src/b.ts'}]
-    const md = buildMarkdown(deltas, null, null)
+    const md = buildMarkdown(deltas, noBaselineCurrent, null, null)
     expect(md).toContain('| File | Statements |')
     expect(md).toContain('| src/b.ts | 70.0% |')
     expect(md).toContain('No baseline available')
@@ -172,7 +251,7 @@ describe('buildMarkdown', () => {
 
   test('uses singular "file" for single delta', () => {
     const deltas = [{baseline: 80, current: 85, delta: 5, displayName: 'src/a.ts'}]
-    const md = buildMarkdown(deltas, baseline, 'abc123')
+    const md = buildMarkdown(deltas, current, baseline, 'abc123')
     expect(md).toContain('1 changed file')
   })
 
@@ -181,7 +260,30 @@ describe('buildMarkdown', () => {
       {baseline: 80, current: 85, delta: 5, displayName: 'src/a.ts'},
       {baseline: null, current: 70, delta: null, displayName: 'src/b.ts'},
     ]
-    const md = buildMarkdown(deltas, baseline, 'abc123')
+    const md = buildMarkdown(deltas, current, baseline, 'abc123')
     expect(md).toContain('2 changed files')
+  })
+
+  test('includes overall coverage section at the bottom', () => {
+    const deltas = [{baseline: 80, current: 85, delta: 5, displayName: 'src/a.ts'}]
+    const md = buildMarkdown(deltas, current, baseline, 'abc123')
+    const deltaTableIdx = md.indexOf('| File | Statements |')
+    const overallIdx = md.indexOf('### Overall Coverage')
+    expect(overallIdx).toBeGreaterThan(deltaTableIdx)
+  })
+
+  test('overall section shows deltas when baseline exists', () => {
+    const deltas = [{baseline: 80, current: 85, delta: 5, displayName: 'src/a.ts'}]
+    const md = buildMarkdown(deltas, current, baseline, 'abc123')
+    expect(md).toContain('### Overall Coverage')
+    expect(md).toContain('| Statements | 82.0%&nbsp;<font color="green">(+&nbsp;2.0%)</font> |')
+  })
+
+  test('overall section shows only percentages when no baseline', () => {
+    const noBaselineCurrent: CoverageSummary = {total: fileData(75)}
+    const deltas = [{baseline: null, current: 75, delta: null, displayName: 'src/a.ts'}]
+    const md = buildMarkdown(deltas, noBaselineCurrent, null, null)
+    expect(md).toContain('### Overall Coverage')
+    expect(md).toContain('| Statements | 75.0% |')
   })
 })
