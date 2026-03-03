@@ -1,4 +1,4 @@
-import {Worker} from 'node:worker_threads'
+import {Worker, type WorkerOptions} from 'node:worker_threads'
 
 import {subdebug} from '../debug.js'
 
