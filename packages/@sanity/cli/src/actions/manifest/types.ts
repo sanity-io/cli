@@ -1,3 +1,4 @@
+import {ClientConfig} from '@sanity/client'
 import {type SanityDocumentLike} from '@sanity/types'
 import {type MediaLibraryConfig, type Workspace} from 'sanity'
 import {z} from 'zod'
@@ -146,3 +147,12 @@ export interface StoredWorkspaceSchema extends SanityDocumentLike {
 export const extractManifestWorkerData = z.object({configPath: z.string(), workDir: z.string()})
 
 export type ExtractManifestWorkerData = z.infer<typeof extractManifestWorkerData>
+
+export const generateManifestWorkerData = z.object({
+  clientConfig: z.custom<Partial<ClientConfig>>(),
+  configPath: z.string(),
+  sanityVersion: z.string(),
+  workDir: z.string(),
+})
+
+export type GenerateManifestWorkerData = z.infer<typeof generateManifestWorkerData>

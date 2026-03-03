@@ -12,6 +12,9 @@ import {promisifyWorker} from '../../util/promisifyWorker.js'
  */
 interface StudioWorkerTaskOptions extends RequireProps<WorkerOptions, 'name'> {
   studioRootPath: string
+
+  /** Optional timeout in milliseconds. If the worker does not respond within this time, it will be terminated and the promise rejected. */
+  timeout?: number
 }
 
 /**
@@ -52,7 +55,7 @@ export function studioWorkerTask<T = unknown>(
     throw new Error('Studio worker tasks must include `.worker.(js|ts)` in path')
   }
 
-  const {studioRootPath, ...workerOptions} = options
+  const {studioRootPath, timeout, ...workerOptions} = options
   return promisifyWorker<T>(new URL('studioWorkerLoader.worker.js', import.meta.url), {
     ...workerOptions,
     env: {
@@ -60,6 +63,7 @@ export function studioWorkerTask<T = unknown>(
       STUDIO_WORKER_STUDIO_ROOT_PATH: studioRootPath,
       STUDIO_WORKER_TASK_FILE: normalizedFilePath,
     },
+    timeout,
   })
 }
 

@@ -12,6 +12,8 @@ import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {buildStudio} from '../build/buildStudio.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
+import {extractManifest} from '../manifest/extractManifest.js'
+import {generateManifest} from '../manifest/generateManifest.js'
 import {deploySchemas} from '../schema/deploySchemas.js'
 import {checkDir} from './checkDir.js'
 import {createExternalStudioUserApplication} from './createExternalStudioUserApplication.js'
@@ -84,7 +86,10 @@ export async function deployStudio(options: DeployAppOptions) {
         verbose: flags.verbose,
         workDir,
       })
+      await extractManifest(`${sourceDir}/static`)
     }
+
+    const studioManifest = await generateManifest()
 
     let tarball
 
@@ -112,6 +117,7 @@ export async function deployStudio(options: DeployAppOptions) {
       isApp: false,
       isAutoUpdating,
       projectId,
+      studioManifest,
       tarball,
       version: installedSanityVersion,
     })

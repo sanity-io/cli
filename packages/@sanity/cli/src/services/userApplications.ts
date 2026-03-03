@@ -3,6 +3,7 @@ import {type Gzip} from 'node:zlib'
 
 import {debug, getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
+import {type StudioManifest} from 'sanity'
 
 import {appManifestHasData} from '../actions/manifest/extractAppManifest.js'
 import {type AppManifest} from '../actions/manifest/types.js'
@@ -208,19 +209,19 @@ interface CreateDeploymentOptions {
   tarball: Gzip | undefined
   version: string
 
+  appManifest?: AppManifest
   isApp?: boolean
-
-  manifest?: AppManifest
-
   projectId?: string
+  studioManifest?: StudioManifest
 }
 
 export async function createDeployment({
   applicationId,
+  appManifest,
   isApp,
   isAutoUpdating,
-  manifest,
   projectId,
+  studioManifest,
   tarball,
   version,
 }: CreateDeploymentOptions): Promise<{location: string}> {
@@ -232,8 +233,11 @@ export async function createDeployment({
   const formData = new FormData()
   formData.append('isAutoUpdating', isAutoUpdating.toString())
   formData.append('version', version)
-  if (isApp && appManifestHasData(manifest)) {
-    formData.append('manifest', JSON.stringify(manifest))
+  if (isApp && appManifestHasData(appManifest)) {
+    formData.append('manifest', JSON.stringify(appManifest))
+  }
+  if (studioManifest) {
+    formData.append('manifest', JSON.stringify(studioManifest))
   }
 
   if (tarball) {
