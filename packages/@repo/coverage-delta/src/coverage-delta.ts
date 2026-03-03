@@ -30,7 +30,7 @@ async function main(): Promise<void> {
 
   const changedFiles = getChangedFiles()
   const deltas = computeDeltas(current, baseline, changedFiles)
-  const rawMarkdown = buildMarkdown(deltas, baseline, baselineSha)
+  const rawMarkdown = buildMarkdown(deltas, current, baseline, baselineSha)
   const formatted = await format(rawMarkdown, {parser: 'markdown'})
 
   const isPullRequest = process.env.GITHUB_EVENT_NAME === 'pull_request'
@@ -69,15 +69,21 @@ function postComment(body: string): void {
   writeFileSync(tmpFile, body)
   try {
     // Try to edit existing coverage comment, fall back to creating new one
-    const edit = spawnSync('gh', ['pr', 'comment', prNumber, '--edit-last', '--body-file', tmpFile], {
-      encoding: 'utf8',
-    })
+    const edit = spawnSync(
+      'gh',
+      ['pr', 'comment', prNumber, '--edit-last', '--body-file', tmpFile],
+      {
+        encoding: 'utf8',
+      },
+    )
 
     if (edit.status === 0) return
 
     const editStderr = (edit.stderr ?? '').trim()
     if (!isNoExistingCommentError(editStderr)) {
-      throw new Error(`Failed to edit coverage comment: ${editStderr || `gh exited with status ${edit.status}`}`)
+      throw new Error(
+        `Failed to edit coverage comment: ${editStderr || `gh exited with status ${edit.status}`}`,
+      )
     }
 
     // No existing comment — create a new one
