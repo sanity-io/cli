@@ -21,7 +21,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions/setup
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Upload docs
         run: pnpm docs:upload
