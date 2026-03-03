@@ -66,7 +66,11 @@ function toWorkspaceMetadata(config: unknown): WorkspaceMetadata {
   // produces the same match. If Sanity's resolveConfig() ever changes this convention,
   // this default must be updated to match.
   const name = 'name' in config && typeof config.name === 'string' ? config.name : 'default'
-  const sources = extractSourceMetadata(config, {dataset: config.dataset, name, projectId: config.projectId})
+  const sources = extractSourceMetadata(config, {
+    dataset: config.dataset,
+    name,
+    projectId: config.projectId,
+  })
 
   return {
     dataset: config.dataset,
@@ -98,8 +102,7 @@ function extractSourceMetadata(
   for (const source of config.unstable_sources) {
     if (typeof source !== 'object' || source === null) continue
 
-    const sourceName =
-      'name' in source && typeof source.name === 'string' ? source.name : 'default'
+    const sourceName = 'name' in source && typeof source.name === 'string' ? source.name : 'default'
 
     // Sources can inherit projectId/dataset from the parent workspace (e.g. when
     // only `name` and `schema` are specified in `unstable_sources`). Fall back to

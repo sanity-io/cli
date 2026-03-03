@@ -1,4 +1,4 @@
-import {type MessagePort, isMainThread} from 'node:worker_threads'
+import {isMainThread, type MessagePort} from 'node:worker_threads'
 
 import {
   type CliConfig,

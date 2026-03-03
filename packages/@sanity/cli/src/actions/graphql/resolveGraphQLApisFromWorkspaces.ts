@@ -200,9 +200,7 @@ function resolveWorkspaceAndSource<
 
   if (!source) {
     throw new Error(
-      `Source "${sourceName || 'default'}" not found in workspace "${
-        workspaceName || 'default'
-      }"`,
+      `Source "${sourceName || 'default'}" not found in workspace "${workspaceName || 'default'}"`,
     )
   }
 

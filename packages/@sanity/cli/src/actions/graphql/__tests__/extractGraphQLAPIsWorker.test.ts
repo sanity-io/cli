@@ -59,10 +59,7 @@ function createMockDeps(overrides?: Partial<ExtractWorkerDeps>): ExtractWorkerDe
   }
 }
 
-function makeSchemaLikeError(
-  message: string,
-  validation: SchemaValidationProblemGroup[],
-): unknown {
+function makeSchemaLikeError(message: string, validation: SchemaValidationProblemGroup[]): unknown {
   const err = new Error(message)
   ;(err as unknown as Record<string, unknown>).schema = {_validation: validation}
   return err
@@ -100,9 +97,9 @@ describe('extractGraphQLAPIsWorker', () => {
         },
       ]
       const deps = createMockDeps({
-        getStudioWorkspaces: vi.fn().mockRejectedValue(
-          makeSchemaLikeError('Schema error', configErrors),
-        ),
+        getStudioWorkspaces: vi
+          .fn()
+          .mockRejectedValue(makeSchemaLikeError('Schema error', configErrors)),
       })
 
       await extractGraphQLAPIsWorker(port, createWorkerData(), deps)
@@ -294,7 +291,6 @@ describe('extractGraphQLAPIsWorker', () => {
       setupSingleApi()
 
       mockExtractFromSanitySchema.mockImplementation(() => {
-         
         throw 'string error'
       })
 

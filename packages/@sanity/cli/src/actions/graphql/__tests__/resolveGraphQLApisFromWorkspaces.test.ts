@@ -16,7 +16,7 @@ function createMockSchema(types: {name: string; type: string}[] = []): Schema {
 }
 
 function createWorkspace(
-  overrides: Partial<Workspace> & {sources?: Partial<Workspace['unstable_sources'][number]>[]}= {},
+  overrides: Partial<Workspace> & {sources?: Partial<Workspace['unstable_sources'][number]>[]} = {},
 ): Workspace {
   const {sources, ...rest} = overrides
   const defaultSource = {
@@ -31,9 +31,7 @@ function createWorkspace(
     name: 'default',
     projectId: 'proj1',
     schema: createMockSchema(),
-    unstable_sources: sources
-      ? sources.map((s) => ({...defaultSource, ...s}))
-      : [defaultSource],
+    unstable_sources: sources ? sources.map((s) => ({...defaultSource, ...s})) : [defaultSource],
     ...rest,
   }
 }
@@ -55,9 +53,7 @@ describe('resolveGraphQLApis', () => {
 
   describe('error cases', () => {
     test('throws when no workspaces are provided', () => {
-      expect(() => resolveGraphQLApis({workspaces: []})).toThrow(
-        'No studio configuration found',
-      )
+      expect(() => resolveGraphQLApis({workspaces: []})).toThrow('No studio configuration found')
     })
 
     test('throws when workspace has no sources', () => {
@@ -278,9 +274,7 @@ function createWorkspaceMetadata(
 
   return {
     ...merged,
-    sources: sources
-      ? sources.map((s) => ({...defaultSource, ...s}))
-      : [defaultSource],
+    sources: sources ? sources.map((s) => ({...defaultSource, ...s})) : [defaultSource],
   }
 }
 

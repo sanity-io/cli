@@ -58,9 +58,7 @@ describe('getGraphQLAPIs', () => {
       }),
     )
 
-    expect(result).toEqual([
-      {dataset: 'production', projectId: 'test-project', tag: 'default'},
-    ])
+    expect(result).toEqual([{dataset: 'production', projectId: 'test-project', tag: 'default'}])
   })
 
   test('passes only graphql from CLI config to worker', async () => {
