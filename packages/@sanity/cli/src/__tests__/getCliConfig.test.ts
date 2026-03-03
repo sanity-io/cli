@@ -2,8 +2,7 @@ import {readdirSync} from 'node:fs'
 import {dirname, join} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
-import {getCliConfig} from '@sanity/cli-core'
-import {describe, expect, test} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 const FIXTURES_DIR = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -16,12 +15,18 @@ const fixtureNames = readdirSync(FIXTURES_DIR, {withFileTypes: true})
   .toSorted()
 
 describe('#getCliConfig', () => {
+  afterEach(() => {
+    vi.resetModules()
+  })
+
   test('should error when both ts and js files are present', async () => {
+    const {getCliConfig} = await import('@sanity/cli-core')
     const cwd = join(FIXTURES_DIR, 'error-both-ts-and-js')
     await expect(getCliConfig(cwd)).rejects.toThrow('Multiple CLI config files found')
   })
 
   test.each(fixtureNames)('%s', async (fixtureName) => {
+    const {getCliConfig} = await import('@sanity/cli-core')
     const cwd = join(FIXTURES_DIR, fixtureName)
 
     const config = await getCliConfig(cwd)
