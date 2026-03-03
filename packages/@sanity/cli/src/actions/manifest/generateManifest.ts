@@ -1,14 +1,11 @@
 import {findProjectRoot, getGlobalCliClient, studioWorkerTask} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {type ClientConfig} from '@sanity/client'
-import {minutesToMilliseconds} from 'date-fns/minutesToMilliseconds'
 import {type StudioManifest} from 'sanity'
 
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {manifestDebug} from './debug.js'
 import {type GenerateManifestWorkerData} from './types.js'
-
-const GENERATE_MANIFEST_WORKER_TIMEOUT_MS = minutesToMilliseconds(5)
 
 interface GenerateManifestWorkerSuccess {
   /** The final studio manifest for deployment registration */
@@ -59,7 +56,6 @@ export async function generateManifest(): Promise<StudioManifest | undefined> {
       {
         name: 'generateManifest',
         studioRootPath: workDir,
-        timeout: GENERATE_MANIFEST_WORKER_TIMEOUT_MS,
         workerData: {
           clientConfig: structuredClone(clientConfig),
           configPath,
