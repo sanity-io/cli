@@ -347,6 +347,9 @@ export function extractFromSanitySchema(
       : fields
 
     return {
+      _internal: {
+        ...getDeprecation(def),
+      },
       description: getDescription(def),
       fields: objectFields.map((field) =>
         isArrayOfBlocks(field)
@@ -357,9 +360,6 @@ export function extractFromSanitySchema(
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             }) as any),
       ),
-      _internal: {
-        ...getDeprecation(def),
-      },
       kind: 'Type',
       name,
       type: 'Object',

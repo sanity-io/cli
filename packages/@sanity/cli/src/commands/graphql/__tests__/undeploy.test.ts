@@ -382,4 +382,5 @@ describe('graphql undeploy', () => {
       expect(error?.message).toContain('Dataset is required')
       expect(error?.oclif?.exit).toBe(1)
     })
+  })
 })

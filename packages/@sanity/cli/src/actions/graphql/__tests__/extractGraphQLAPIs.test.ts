@@ -2,7 +2,6 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {extractGraphQLAPIs} from '../extractGraphQLAPIs.js'
 import {SchemaError} from '../SchemaError.js'
-import {type ExtractedGraphQLAPI} from '../types.js'
 
 const mockGetCliConfig = vi.hoisted(() => vi.fn())
 const mockFindStudioConfigPath = vi.hoisted(() => vi.fn())

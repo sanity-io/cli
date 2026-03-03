@@ -215,11 +215,11 @@ export interface ConvertedType extends Partial<Deprecation> {
   name: string
   type: string
 
+  _internal?: Partial<Deprecation>
   crossDatasetReferenceMetadata?: {
     dataset: string
     typeNames: string[]
   }
-  _internal?: Partial<Deprecation>
   description?: string
   interfaces?: string[]
   isReference?: boolean
