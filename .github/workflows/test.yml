@@ -99,7 +99,7 @@ jobs:
 
       - name: Save coverage baseline to cache
         if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: coverage/baseline
           key: coverage-main-${{ github.sha }}
@@ -107,7 +107,7 @@ jobs:
       # The exact key won't match on PRs (PR SHA ≠ main SHA); restore-keys picks up the latest main entry.
       - name: Restore main branch coverage baseline
         if: github.event_name == 'pull_request'
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: coverage/baseline
           key: coverage-main-${{ github.sha }}
