@@ -24,12 +24,12 @@ export default [
           paths: [
             {
               message:
-                'Import from subpath instead to avoid barrel import. Example: `import {fn} from \'date-fns/fn\'`.',
+                "Import from subpath instead to avoid barrel import. Example: `import {fn} from 'date-fns/fn'`.",
               name: 'date-fns',
             },
             {
               message:
-                'Import from subpath instead to avoid barrel import. Example: `import fn from \'lodash-es/fn.js\'`.',
+                "Import from subpath instead to avoid barrel import. Example: `import fn from 'lodash-es/fn.js'`.",
               name: 'lodash-es',
             },
             {
@@ -47,12 +47,6 @@ export default [
     files: ['test/__fixtures__/**/*.ts'],
     rules: {
       'import/no-unresolved': 'off',
-    },
-  },
-  {
-    files: ['**/*.test.ts'],
-    rules: {
-      'unicorn/prefer-string-raw': 'off',
     },
   },
 ]

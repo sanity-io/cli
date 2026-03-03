@@ -181,12 +181,12 @@ export default defineConfig(
             },
             {
               message:
-                'Import from subpath instead to avoid barrel import. Example: `import {fn} from \'date-fns/fn\'`.',
+                "Import from subpath instead to avoid barrel import. Example: `import {fn} from 'date-fns/fn'`.",
               name: 'date-fns',
             },
             {
               message:
-                'Import from subpath instead to avoid barrel import. Example: `import fn from \'lodash-es/fn.js\'`.',
+                "Import from subpath instead to avoid barrel import. Example: `import fn from 'lodash-es/fn.js'`.",
               name: 'lodash-es',
             },
           ],
@@ -299,6 +299,7 @@ export default defineConfig(
     files: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*.ts'],
     rules: {
       'no-restricted-syntax': 'off',
+      'unicorn/prefer-string-raw': 'off',
     },
   },
   {
