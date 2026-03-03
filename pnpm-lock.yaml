@@ -206,6 +206,19 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  fixtures/basic-functions:
+    dependencies:
+      '@sanity/blueprints':
+        specifier: ^0.12.2
+        version: 0.12.2
+      '@sanity/functions':
+        specifier: ^1.2.0
+        version: 1.2.0
+    devDependencies:
+      sanity:
+        specifier: 'catalog:'
+        version: 5.13.0(patch_hash=f45538e520454c996f2933a0e550b0a4fe8bac1933ab23f473904946e02e7a02)(@emotion/is-prop-valid@1.4.0)(@noble/hashes@2.0.1)(@types/node@25.0.10)(@types/react@19.2.14)(immer@11.1.4)(jiti@2.6.1)(lightningcss@1.31.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+
   fixtures/basic-studio:
     dependencies:
       '@sanity/vision':
@@ -3645,6 +3658,10 @@ packages:
     resolution: {integrity: sha512-lbBm5DnpFMDnbxoARU8ig0wZqe/mWyTtDu08z9OXDGyDl2dZJxAZt3DWxx1ndiWzEIoNKIyLFjpaNc2CazuK0w==}
     engines: {node: '>=20.19 <22 || >=22.12'}
     hasBin: true
+
+  '@sanity/functions@1.2.0':
+    resolution: {integrity: sha512-d8iVuruYKsgYI/KFbAVqjtnotnW3DDwgtOir1tqBJYVxxjPxH7JLiho26Kq6HWd/+N0wZHZEv+uz1aQa+T21kQ==}
+    engines: {node: '>=20'}
 
   '@sanity/generate-help-url@4.0.0':
     resolution: {integrity: sha512-Ooa4xkLT3TLaX+mw/13fq3IeGdnAkx4rbpVASvRVixzBBvvcL6jPqj50fjlCd+EhgB5GRXBCNNAy/hWXwjZEUA==}
@@ -13249,6 +13266,8 @@ snapshots:
       - bare-abort-controller
       - react-native-b4a
       - supports-color
+
+  '@sanity/functions@1.2.0': {}
 
   '@sanity/generate-help-url@4.0.0': {}
 
