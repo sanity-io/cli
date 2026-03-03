@@ -3,7 +3,7 @@ import {type MessagePort} from 'node:worker_threads'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {type ExtractWorkerData, type ExtractWorkerDeps} from '../extractGraphQLAPIsWorker.js'
+import {type ExtractWorkerData, type ExtractWorkerDeps} from '../extractGraphQLAPIs.js'
 import {SchemaError} from '../SchemaError.js'
 import {type ApiSpecification, type ConvertedType, internal} from '../types.js'
 
@@ -69,7 +69,7 @@ function makeSchemaLikeError(
 }
 
 async function loadWorker() {
-  const mod = await import('../extractGraphQLAPIsWorker.js')
+  const mod = await import('../extractGraphQLAPIs.js')
   return mod.extractGraphQLAPIsWorker
 }
 
@@ -312,7 +312,7 @@ describe('extractGraphQLAPIsWorker', () => {
 
   describe('serializeInternalSymbols', () => {
     test('converts Symbol-keyed [internal] to __internal string key', async () => {
-      const {serializeInternalSymbols} = await import('../extractGraphQLAPIsWorker.js')
+      const {serializeInternalSymbols} = await import('../extractGraphQLAPIs.js')
 
       const type: ConvertedType = {
         fields: [],
@@ -330,7 +330,7 @@ describe('extractGraphQLAPIsWorker', () => {
     })
 
     test('does not add __internal when Symbol key is absent', async () => {
-      const {serializeInternalSymbols} = await import('../extractGraphQLAPIsWorker.js')
+      const {serializeInternalSymbols} = await import('../extractGraphQLAPIs.js')
 
       const type: ConvertedType = {
         fields: [],

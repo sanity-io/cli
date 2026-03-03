@@ -248,7 +248,7 @@ importers:
     dependencies:
       '@sanity/vision':
         specifier: 'catalog:'
-        version: 5.12.0(@babel/runtime@7.28.6)(@codemirror/lint@6.9.2)(@codemirror/theme-one-dark@6.1.3)(@emotion/is-prop-valid@1.4.0)(codemirror@6.0.2)(react-dom@19.2.4(react@19.2.4))(react-is@19.2.4)(react@19.2.4)(sanity@5.12.0(patch_hash=f45538e520454c996f2933a0e550b0a4fe8bac1933ab23f473904946e02e7a02)(@emotion/is-prop-valid@1.4.0)(@noble/hashes@2.0.1)(@types/node@25.0.10)(@types/react@19.2.14)(immer@11.1.4)(jiti@2.6.1)(lightningcss@1.31.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2))(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
+        version: 5.13.0(@babel/runtime@7.28.6)(@codemirror/lint@6.9.2)(@codemirror/theme-one-dark@6.1.3)(@emotion/is-prop-valid@1.4.0)(codemirror@6.0.2)(react-dom@19.2.4(react@19.2.4))(react-is@19.2.4)(react@19.2.4)(sanity@5.13.0(patch_hash=f45538e520454c996f2933a0e550b0a4fe8bac1933ab23f473904946e02e7a02)(@emotion/is-prop-valid@1.4.0)(@noble/hashes@2.0.1)(@types/node@25.0.10)(@types/react@19.2.14)(immer@11.1.4)(jiti@2.6.1)(lightningcss@1.31.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2))(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       react:
         specifier: ^19.2.3
         version: 19.2.4
@@ -257,7 +257,7 @@ importers:
         version: 19.2.4(react@19.2.4)
       sanity:
         specifier: 'catalog:'
-        version: 5.12.0(patch_hash=f45538e520454c996f2933a0e550b0a4fe8bac1933ab23f473904946e02e7a02)(@emotion/is-prop-valid@1.4.0)(@noble/hashes@2.0.1)(@types/node@25.0.10)(@types/react@19.2.14)(immer@11.1.4)(jiti@2.6.1)(lightningcss@1.31.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+        version: 5.13.0(patch_hash=f45538e520454c996f2933a0e550b0a4fe8bac1933ab23f473904946e02e7a02)(@emotion/is-prop-valid@1.4.0)(@noble/hashes@2.0.1)(@types/node@25.0.10)(@types/react@19.2.14)(immer@11.1.4)(jiti@2.6.1)(lightningcss@1.31.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
       styled-components:
         specifier: ^6.3.8
         version: 6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
