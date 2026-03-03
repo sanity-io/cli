@@ -1,68 +1,28 @@
-/* eslint-disable no-console */
 /**
  * manifest.ts
  *
- * Reads oclif.manifest.json and writes/updates Sanity documents
+ * Loads CLI commands via generateCommands() and writes/updates Sanity documents
  * for each CLI command group. All changes are batched into a content release.
  *
- * Usage: npx tsx manifest.ts <path-to-oclif.manifest.json> [--dry-run]
+ * Usage: npx tsx manifest.ts [--dry-run]
  *
  * Requires: SANITY_DOCS_API_TOKEN env var (unless --dry-run)
  * Pass in SANITY_PROJECT_ID and SANITY_DATASET to use a different project/dataset
  */
 
-import {readFileSync} from 'node:fs'
-
 import {createClient, type SanityClient, type SanityDocument} from '@sanity/client'
 import {createPublishedId, createVersionId} from '@sanity/id-utils'
 
+import {type CommandInfo, generateCommands} from './generateCommands.js'
+
 // ── Types ──────────────────────────────────────────────────────────────
-
-interface OclifFlag {
-  char?: string
-  description?: string
-  hidden?: boolean
-  name: string
-  required?: boolean
-  type: 'boolean' | 'option'
-}
-
-interface OclifArg {
-  description?: string
-  hidden?: boolean
-  name: string
-  options?: string[]
-  required?: boolean
-}
-
-interface OclifExample {
-  command: string
-  description?: string
-}
-
-interface OclifCommand {
-  aliases?: string[]
-  args?: Record<string, OclifArg>
-  description?: string
-  examples?: OclifExample[]
-  flags?: Record<string, OclifFlag>
-  hidden?: boolean
-  id: string
-  state?: string
-  strict?: boolean
-  summary?: string
-}
-
-interface OclifManifest {
-  commands: Record<string, OclifCommand>
-  version?: string
-}
 
 interface CommandEntry {
   description: string
   fullCommand: string
   helpText: string
   name: string
+
   subcommands?: CommandEntry[]
 }
 
@@ -70,6 +30,7 @@ interface CommandGroup {
   command: string
   description: string
   subcommands: CommandEntry[]
+
   fullCommand?: string
   helpText?: string
 }
@@ -125,27 +86,19 @@ function makeHeading(
 // ── Help Text Generation ───────────────────────────────────────────────
 
 /**
- * Convert an oclif command ID (colon-separated) to a CLI usage string.
- * e.g. "backup:enable" → "sanity backup enable"
- */
-function commandIdToUsage(id: string): string {
-  return `sanity ${id.replaceAll(':', ' ')}`
-}
-
-/**
- * Build a help text string from a structured oclif command definition.
+ * Build a help text string from a CommandInfo object.
  * Produces output in the same format as `sanity <command> --help`.
  */
-function buildHelpText(cmd: OclifCommand): string {
+function buildHelpText(cmd: CommandInfo): string {
   const lines: string[] = []
 
   // USAGE
-  const args = Object.values(cmd.args ?? {}).filter((a) => !a.hidden)
+  const args = Object.values(cmd.args).filter((a) => !a.hidden)
   const argsPart = args
     .map((a) => (a.required ? a.name.toUpperCase() : `[${a.name.toUpperCase()}]`))
     .join(' ')
 
-  lines.push('USAGE', `  $ ${commandIdToUsage(cmd.id)}${argsPart ? ` ${argsPart}` : ''}`, '')
+  lines.push('USAGE', `  $ sanity ${cmd.fullCommand}${argsPart ? ` ${argsPart}` : ''}`, '')
 
   // ARGUMENTS
   if (args.length > 0) {
@@ -158,7 +111,7 @@ function buildHelpText(cmd: OclifCommand): string {
   }
 
   // FLAGS
-  const flags = Object.values(cmd.flags ?? {}).filter((f) => !f.hidden)
+  const flags = Object.values(cmd.flags).filter((f) => !f.hidden)
   if (flags.length > 0) {
     lines.push('FLAGS')
     for (const flag of flags) {
@@ -176,41 +129,41 @@ function buildHelpText(cmd: OclifCommand): string {
   }
 
   // EXAMPLES
-  if (cmd.examples && cmd.examples.length > 0) {
+  if (cmd.examples.length > 0) {
     lines.push('EXAMPLES')
     for (const ex of cmd.examples) {
-      if (ex.description) {
-        lines.push(`  ${ex.description}`, '')
+      if (typeof ex === 'string') {
+        lines.push(`    ${ex}`, '')
+      } else {
+        if (ex.description) {
+          lines.push(`  ${ex.description}`, '')
+        }
+        lines.push(`    ${ex.command}`, '')
       }
-      lines.push(`    ${ex.command}`, '')
     }
   }
 
   return lines.join('\n').trimEnd()
 }
 
-// ── Manifest Parsing ───────────────────────────────────────────────────
+// ── Command Grouping ──────────────────────────────────────────────────
 
 /**
- * Group oclif manifest commands into CommandGroup objects.
+ * Group CommandInfo[] into CommandGroup objects.
  *
  * Command hierarchy uses colon separators in the command ID:
  * - "build"                  → standalone group
  * - "backup:enable"          → group "backup" with subcommand "enable"
  * - "dataset:alias:create"   → group "dataset" → sub-group "alias" → action "create"
  */
-function groupManifestCommands(manifest: OclifManifest): CommandGroup[] {
+function groupCommands(commands: CommandInfo[]): CommandGroup[] {
   const groupMap = new Map<string, CommandGroup>()
   const groupOrder: string[] = []
-
-  const commands = Object.values(manifest.commands)
-    .filter((cmd) => !cmd.hidden)
-    .sort((a, b) => a.id.localeCompare(b.id))
 
   for (const cmd of commands) {
     const parts = cmd.id.split(':')
     const groupName = parts[0]
-    const description = cmd.summary ?? cmd.description ?? ''
+    const description = cmd.description
 
     if (!groupMap.has(groupName)) {
       groupMap.set(groupName, {command: groupName, description: '', subcommands: []})
@@ -220,21 +173,18 @@ function groupManifestCommands(manifest: OclifManifest): CommandGroup[] {
     const group = groupMap.get(groupName)!
 
     if (parts.length === 1) {
-      // Root-level command (e.g. "build", "debug", "deploy")
-      group.fullCommand = commandIdToUsage(cmd.id)
+      group.fullCommand = `sanity ${cmd.fullCommand}`
       group.helpText = buildHelpText(cmd)
       if (!group.description) group.description = description
     } else if (parts.length === 2) {
-      // Direct subcommand (e.g. "backup:enable")
       group.subcommands.push({
         description,
-        fullCommand: commandIdToUsage(cmd.id),
+        fullCommand: `sanity ${cmd.fullCommand}`,
         helpText: buildHelpText(cmd),
         name: parts[1],
       })
       if (!group.description) group.description = description
     } else {
-      // Deep-nested subcommand (e.g. "dataset:alias:create")
       const subGroupName = parts[1]
       const actionName = parts.slice(2).join(' ')
 
@@ -253,7 +203,7 @@ function groupManifestCommands(manifest: OclifManifest): CommandGroup[] {
       subGroup.subcommands ??= []
       subGroup.subcommands.push({
         description,
-        fullCommand: commandIdToUsage(cmd.id),
+        fullCommand: `sanity ${cmd.fullCommand}`,
         helpText: buildHelpText(cmd),
         name: actionName,
       })
@@ -263,15 +213,6 @@ function groupManifestCommands(manifest: OclifManifest): CommandGroup[] {
   }
 
   return groupOrder.map((name) => groupMap.get(name)!)
-}
-
-function parseManifest(content: string): CommandGroup[] {
-  const manifest = JSON.parse(content) as OclifManifest
-  const groups = groupManifestCommands(manifest)
-  console.log(
-    `Parsed ${Object.keys(manifest.commands).length} commands into ${groups.length} command groups`,
-  )
-  return groups
 }
 
 // ── Heading Key Preservation ──────────────────────────────────────────
@@ -398,9 +339,7 @@ function mergeContent(
 
   const introBlocks = existingContent.slice(0, firstCodeIdx)
   const middleBlocks =
-    commandsH2Idx > firstCodeIdx + 1
-      ? existingContent.slice(firstCodeIdx + 1, commandsH2Idx)
-      : []
+    commandsH2Idx > firstCodeIdx + 1 ? existingContent.slice(firstCodeIdx + 1, commandsH2Idx) : []
 
   if (commandsSection.length === 0) {
     if (commandsH2Idx !== -1) {
@@ -433,12 +372,6 @@ function buildNewDocument(group: CommandGroup, slug: string): Record<string, unk
 async function main() {
   const args = process.argv.slice(2)
   const dryRun = args.includes('--dry-run')
-  const manifestPath = args.find((a) => !a.startsWith('--'))
-
-  if (!manifestPath) {
-    console.error('Usage: npx tsx manifest.ts <path-to-oclif.manifest.json> [--dry-run]')
-    process.exit(1)
-  }
 
   const token = process.env.SANITY_DOCS_API_TOKEN
   if (!token && !dryRun) {
@@ -446,7 +379,9 @@ async function main() {
     process.exit(1)
   }
 
-  const groups = parseManifest(readFileSync(manifestPath, 'utf8'))
+  const commands = await generateCommands()
+  const groups = groupCommands(commands)
+  console.log(`Loaded ${commands.length} commands into ${groups.length} command groups`)
 
   const client: SanityClient = createClient({
     apiVersion: API_VERSION,
@@ -474,9 +409,9 @@ async function main() {
   let created = 0
   let skipped = 0
 
-  const CLI_DOCS_QUERY = /* groq */ `*[_type == "article" && automationId match "cli-*-reference"]`
-  const existingDocs: SanityDocument[] = dryRun ? [] : await client.fetch(CLI_DOCS_QUERY)
-  const existingDocMap = new Map(existingDocs.map((doc) => [doc.automationId, doc]))
+  const CLI_DOCS_QUERY = /* groq */ `*[_type == "article" && defined(automationId)]`
+  const existingDocs = await client.fetch(CLI_DOCS_QUERY)
+  const existingDocMap = new Map(existingDocs.map((doc: SanityDocument) => [doc.automationId, doc]))
 
   const tx = client.transaction()
 
@@ -489,7 +424,7 @@ async function main() {
       continue
     }
 
-    const existingDoc = existingDocMap.get(`cli-${group.command}-reference`)
+    const existingDoc = existingDocMap.get(`cli-${group.command}-reference`) as SanityDocument
 
     if (existingDoc) {
       if (dryRun) {
@@ -497,7 +432,10 @@ async function main() {
       } else {
         const existingContent = (existingDoc.content as Record<string, unknown>[]) || []
         const headingKeyMap = buildHeadingKeyMap(existingContent)
-        const mergedContent = applyExistingKeys(mergeContent(existingContent, newBlocks), headingKeyMap)
+        const mergedContent = applyExistingKeys(
+          mergeContent(existingContent, newBlocks),
+          headingKeyMap,
+        )
 
         const vId = createVersionId(releaseId, existingDoc._id)
         tx.create({...existingDoc, _id: vId})
@@ -532,14 +470,12 @@ async function main() {
     }
   }
 
-  if (!dryRun) {
-    try {
-      console.log(`Committing transaction...`)
-      await tx.commit({autoGenerateArrayKeys: true})
-    } catch (error) {
-      console.error(`Error committing transaction: ${error}`)
-      process.exit(1)
-    }
+  try {
+    console.log(`Committing transaction...`)
+    await tx.commit({autoGenerateArrayKeys: true})
+  } catch (error) {
+    console.error(`Error committing transaction: ${error}`)
+    process.exit(1)
   }
 
   console.log(`\n── Summary ──`)

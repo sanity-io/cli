@@ -46,6 +46,9 @@ const baseConfig = {
       ignoreDependencies: ['@sanity/cli'],
       project,
     },
+    'packages/@repo/upload-docs': {
+      project,
+    },
     'packages/@sanity/cli': {
       entry: [
         // Commands
