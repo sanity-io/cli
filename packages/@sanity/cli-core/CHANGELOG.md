@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.0-alpha.19](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.18...cli-core-v0.1.0-alpha.19) (2026-03-03)
+
+
+### Bug Fixes
+
+* allow not getting default imports from importModule ([#521](https://github.com/sanity-io/cli/issues/521)) ([f6d8ba9](https://github.com/sanity-io/cli/commit/f6d8ba9760109414ebb0d4af04fd8726fafa92ab))
+* don't throw an error when telemetry is not initialized ([#518](https://github.com/sanity-io/cli/issues/518)) ([2b5b83f](https://github.com/sanity-io/cli/commit/2b5b83fd03db7c6e5add11b8e77767e4da2f3fca))
+
 ## [0.1.0-alpha.18](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.17...cli-core-v0.1.0-alpha.18) (2026-03-03)
 
 

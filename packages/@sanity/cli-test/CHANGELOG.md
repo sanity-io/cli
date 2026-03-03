@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.0-alpha.17](https://github.com/sanity-io/cli/compare/cli-test-v0.1.0-alpha.16...cli-test-v0.1.0-alpha.17) (2026-03-03)
+
+
+### Bug Fixes
+
+* issue where CLI would error if root not found ([#535](https://github.com/sanity-io/cli/issues/535)) ([a0d9cb1](https://github.com/sanity-io/cli/commit/a0d9cb1aa545e03518b0b75f7e313044a4223762))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.19
+  * peerDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.19
+
 ## [0.1.0-alpha.16](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.16...cli-test-v0.1.0-alpha.16) (2026-03-03)
 
 
