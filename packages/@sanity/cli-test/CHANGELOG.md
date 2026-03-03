@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.1.0-alpha.16](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.16...cli-test-v0.1.0-alpha.16) (2026-03-03)
+
+
+### Features
+
+* add `--project-id` flag + prompts for dataset commands ([#500](https://github.com/sanity-io/cli/issues/500)) ([b264fa2](https://github.com/sanity-io/cli/commit/b264fa2b6996cbd195620ee730fd9bc6e6f12288))
+
+
+### Bug Fixes
+
+* **deps:** update dependency esbuild to ^0.27.3 ([#528](https://github.com/sanity-io/cli/issues/528)) ([d6ef3bf](https://github.com/sanity-io/cli/commit/d6ef3bf526cf78c9fef035323491c83d3c1968d0))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.18
+    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.4
+  * peerDependencies
+    * @sanity/cli-core bumped to 0.1.0-alpha.18
+
 ## [0.0.2-alpha.16](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.15...cli-test-v0.0.2-alpha.16) (2026-03-02)
 
 

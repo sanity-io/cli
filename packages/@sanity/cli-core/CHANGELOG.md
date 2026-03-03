@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.1.0-alpha.18](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.17...cli-core-v0.1.0-alpha.18) (2026-03-03)
+
+
+### Features
+
+* add `--project-id` flag + prompts for dataset commands ([#500](https://github.com/sanity-io/cli/issues/500)) ([b264fa2](https://github.com/sanity-io/cli/commit/b264fa2b6996cbd195620ee730fd9bc6e6f12288))
+* **dev:** missing critical features for `dev` command ([#442](https://github.com/sanity-io/cli/issues/442)) ([1acf0b0](https://github.com/sanity-io/cli/commit/1acf0b0be58dcfe87e7d2d8b7430389884bc16d4))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @inquirer/prompts to ^8.3.0 ([#519](https://github.com/sanity-io/cli/issues/519)) ([d13245c](https://github.com/sanity-io/cli/commit/d13245c80de94728e3b5d07cbb7caceda48cf9de))
+
+
+### Performance Improvements
+
+* cache reading cli config multiple times ([#506](https://github.com/sanity-io/cli/issues/506)) ([6222972](https://github.com/sanity-io/cli/commit/62229723b612fffd4da6d8621e29d4a0606c1e08))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.4
+
 ## [0.1.0-alpha.17](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.16...cli-core-v0.1.0-alpha.17) (2026-03-02)
 
 
