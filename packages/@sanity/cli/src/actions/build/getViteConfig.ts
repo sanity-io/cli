@@ -1,6 +1,11 @@
 import path from 'node:path'
 
-import {type UserViteConfig} from '@sanity/cli-core'
+import {
+  type CliConfig,
+  findProjectRoot,
+  getCliTelemetry,
+  type UserViteConfig,
+} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
@@ -10,6 +15,8 @@ import {type ConfigEnv, type InlineConfig, mergeConfig, type Rollup} from 'vite'
 import {sanityBuildEntries} from '../../server/vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from '../../server/vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from '../../server/vite/plugin-sanity-runtime-rewrite.js'
+import {sanitySchemaExtractionPlugin} from '../../server/vite/plugin-schema-extraction.js'
+import {sanityTypegenPlugin} from '../../server/vite/plugin-typegen.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 import {
   getAppEnvironmentVariables,
@@ -50,6 +57,10 @@ interface ViteOptions {
    */
   outputDir?: string
   /**
+   * Schema extraction configuration
+   */
+  schemaExtraction?: CliConfig['schemaExtraction']
+  /**
    * HTTP development server configuration
    */
   server?: {host?: string; port?: number}
@@ -57,6 +68,10 @@ interface ViteOptions {
    * Whether or not to enable source maps
    */
   sourceMap?: boolean
+  /**
+   * Typegen configuration
+   */
+  typegen?: CliConfig['typegen']
 }
 
 /**
@@ -74,9 +89,11 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     mode,
     outputDir,
     reactCompiler,
+    schemaExtraction,
     server,
     // default to `true` when `mode=development`
     sourceMap = options.mode === 'development',
+    typegen,
   } = options
 
   const basePath = normalizeBasePath(rawBasePath)
@@ -85,6 +102,8 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   if (!sanityCliPkgPath) {
     throw new Error('Unable to resolve `@sanity/cli` module root')
   }
+
+  const configPath = (await findProjectRoot(cwd)).path
 
   const customFaviconsPath = path.join(cwd, 'static')
   const defaultFaviconsPath = path.join(path.dirname(sanityCliPkgPath), 'static', 'favicons')
@@ -105,8 +124,10 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     cacheDir: 'node_modules/.sanity/vite',
     configFile: false,
     define: {
+      __SANITY_BUILD_TIMESTAMP__: JSON.stringify(Date.now()),
       __SANITY_STAGING__: process.env.SANITY_INTERNAL_ENV === 'staging',
       'process.env.MODE': JSON.stringify(mode),
+      'process.env.PKG_BUILD_VERSION': JSON.stringify(process.env.PKG_BUILD_VERSION),
       /**
        * Yes, double negatives are confusing.
        * The default value of `SC_DISABLE_SPEEDY` is `process.env.NODE_ENV === 'production'`: https://github.com/styled-components/styled-components/blob/99c02f52d69e8e509c0bf012cadee7f8e819a6dd/packages/styled-components/src/constants.ts#L34
@@ -124,14 +145,45 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     mode,
     plugins: [
       viteReact(
-        reactCompiler ? {babel: {plugins: [['babel-plugin-react-compiler', reactCompiler]]}} : {},
+        reactCompiler
+          ? {
+              babel: {
+                generatorOpts: {compact: true},
+                plugins: [['babel-plugin-react-compiler', reactCompiler]],
+              },
+            }
+          : {},
       ),
       sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
       sanityRuntimeRewritePlugin(),
       sanityBuildEntries({basePath, cwd, importMap, isApp}),
+      // Add schema extraction when enabled
+      ...(schemaExtraction?.enabled
+        ? [
+            sanitySchemaExtractionPlugin({
+              additionalPatterns: schemaExtraction.watchPatterns,
+              configPath,
+              enforceRequiredFields: schemaExtraction.enforceRequiredFields,
+              outputPath: schemaExtraction.path,
+              telemetryLogger: getCliTelemetry(),
+              workDir: cwd,
+              workspaceName: schemaExtraction.workspace,
+            }),
+          ]
+        : []),
+      // Add typegen when enabled
+      ...(typegen?.enabled
+        ? [
+            sanityTypegenPlugin({
+              config: typegen,
+              telemetryLogger: getCliTelemetry(),
+              workDir: cwd,
+            }),
+          ]
+        : []),
     ],
     resolve: {
-      dedupe: ['styled-components'],
+      dedupe: ['react', 'react-dom', 'sanity', 'styled-components'],
     },
     root: cwd,
     server: {
@@ -140,6 +192,17 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       // Only enable strict port for studio,
       // since apps can run on any port
       strictPort: isApp ? false : true,
+
+      /**
+       * Significantly speed up startup time,
+       * and most importantly eliminates the `new dependencies optimized: foobar. optimized dependencies changed. reloading`
+       * types of initial reload loops that otherwise happen as vite discovers deps that need to be optimized.
+       * This option starts the traversal up front, and warms up the dep tree required to render the userland sanity.config.ts file,
+       * and thus avoids frustrating reload loops.
+       */
+      warmup: {
+        clientFiles: ['./.sanity/runtime/app.js'],
+      },
     },
   }
 

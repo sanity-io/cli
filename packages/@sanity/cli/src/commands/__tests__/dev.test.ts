@@ -25,6 +25,12 @@ vi.mock('../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
 
+vi.mock('../../actions/dev/getDashboardAppUrl.js', () => ({
+  getDashboardAppURL: vi
+    .fn()
+    .mockResolvedValue('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340'),
+}))
+
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {

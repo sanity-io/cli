@@ -12,12 +12,11 @@ import {compareDependencyVersions} from '../../util/compareDependencyVersions.js
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
-import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {checkRequiredDependencies} from '../build/checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from '../build/checkStudioDependencyVersions.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {devDebug} from './devDebug.js'
-import {getCoreAppURL} from './getCoreAppUrl.js'
+import {getDashboardAppURL} from './getDashboardAppUrl.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 import {type DevActionOptions} from './types.js'
 
@@ -63,14 +62,6 @@ export async function startStudioDevServer(
       output.warn(`Failed to compare local versions against auto-updating versions: ${err}`)
     }
 
-    if (!appId) {
-      warnAboutMissingAppId({
-        appType: 'studio',
-        output,
-        projectId,
-      })
-    }
-
     if (result?.unresolvedPrerelease.length) {
       for (const mod of result.unresolvedPrerelease) {
         output.warn(
@@ -107,6 +98,10 @@ export async function startStudioDevServer(
     }
   }
 
+  if (cliConfig?.schemaExtraction?.enabled) {
+    output.log(`${logSymbols.info} Running dev server with schema extraction enabled`)
+  }
+
   const config = getDevServerConfig({cliConfig, flags, output, workDir})
 
   if (loadInDashboard) {
@@ -140,7 +135,7 @@ export async function startStudioDevServer(
       output.log(
         styleText(
           ['blue', 'underline'],
-          getCoreAppURL({
+          await getDashboardAppURL({
             httpHost,
             httpPort: port,
             organizationId: organizationId!,
