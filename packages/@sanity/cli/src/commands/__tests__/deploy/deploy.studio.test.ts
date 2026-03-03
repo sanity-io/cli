@@ -1,5 +1,3 @@
-import {platform} from 'node:os'
-
 import {getCliConfig} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
@@ -33,6 +31,10 @@ vi.mock('../../../actions/manifest/extractAppManifest.js', () => ({
   extractAppManifest: vi.fn(),
 }))
 
+vi.mock('../../../actions/manifest/generateManifest.js', () => ({
+  generateManifest: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
@@ -62,7 +64,7 @@ const mockGetLocalPackageVersion = vi.mocked(getLocalPackageVersion)
 const mockBuildStudio = vi.mocked(buildStudio)
 const mockExtractAppManifest = vi.mocked(extractAppManifest)
 
-describe('#deploy:studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, () => {
+describe('#deploy:studio', () => {
   let projectId: string | undefined
   beforeAll(async () => {
     const cwd = await testFixture('basic-studio')
