@@ -58,7 +58,7 @@
   "dependencies": {
     "@swc/core": "catalog:",
     "ansis": "^4.2.0",
-    "esbuild": "^0.27.2",
+    "esbuild": "^0.27.3",
     "nock": "catalog:",
     "ora": "catalog:",
     "tinyglobby": "catalog:"
