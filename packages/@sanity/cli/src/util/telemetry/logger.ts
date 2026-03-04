@@ -9,8 +9,15 @@ import {
 import {telemetryStoreDebug} from './telemetryStoreDebug.js'
 import {createTrace} from './trace.js'
 
-// Sample rate tracking for log events
+// Process-wide sample rate tracking for log events, shared across all logger instances
+// to deduplicate events regardless of which logger emits them.
+// Use resetLogSampleTracker() in tests to prevent state leaking between test runs.
 const logSampleTracker = new Map<string, number>()
+
+/** @public Reset sample rate tracking state. Intended for use in tests only. */
+export function resetLogSampleTracker(): void {
+  logSampleTracker.clear()
+}
 
 /**
  * Creates a telemetry logger that emits events via the provided emit function

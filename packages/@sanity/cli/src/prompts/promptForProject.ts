@@ -33,7 +33,9 @@ export async function promptForProject(options: PromptForProjectOptions = {}): P
     listProjects(),
     requiredPermissions ? getUserGrants() : undefined,
   ]).catch((error) => {
-    spin.fail(requiredPermissions ? 'Failed to fetch projects or permissions' : 'Failed to fetch projects')
+    spin.fail(
+      requiredPermissions ? 'Failed to fetch projects or permissions' : 'Failed to fetch projects',
+    )
     throw error
   })
 
@@ -51,9 +53,7 @@ export async function promptForProject(options: PromptForProjectOptions = {}): P
 
   const sorted = projects.toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
 
-  const choices: Array<
-    Separator | {disabled?: string; name: string; value: string}
-  > = []
+  const choices: Array<Separator | {disabled?: string; name: string; value: string}> = []
   let insufficientCount = 0
 
   for (const project of sorted) {
@@ -67,20 +67,15 @@ export async function promptForProject(options: PromptForProjectOptions = {}): P
 
   if (insufficientCount > 0) {
     if (choices.length === 0) {
-      throw new Error(
-        'None of your projects have sufficient permissions for this operation',
-      )
+      throw new Error('None of your projects have sufficient permissions for this operation')
     }
 
     const suffix = insufficientCount === 1 ? 'project' : 'projects'
-    choices.push(
-      new Separator(),
-      {
-        disabled: '(insufficient permissions)',
-        name: `${insufficientCount} other ${suffix} hidden`,
-        value: '',
-      },
-    )
+    choices.push(new Separator(), {
+      disabled: '(insufficient permissions)',
+      name: `${insufficientCount} other ${suffix} hidden`,
+      value: '',
+    })
   }
 
   return select({

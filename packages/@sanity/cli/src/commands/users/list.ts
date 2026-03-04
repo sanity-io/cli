@@ -57,7 +57,6 @@ export class List extends SanityCommand<typeof List> {
 
     const projectId = await this.getProjectId()
 
-
     const members = await getMembersForProject({
       includeInvitations: invitations,
       includeRobots: robots,

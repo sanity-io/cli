@@ -49,7 +49,6 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
 
     const projectId = await this.getProjectId()
 
-
     let roles: Role[]
     try {
       roles = (await getProjectRoles(projectId)).filter((role) => role.appliesToUsers)

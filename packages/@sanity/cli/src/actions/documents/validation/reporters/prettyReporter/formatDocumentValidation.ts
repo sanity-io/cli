@@ -1,10 +1,10 @@
 import {styleText} from 'node:util'
 
-import {convertToTree, formatTree, maxKeyLength, type Tree} from '@sanity/cli-core/tree'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {type Path, type ValidationMarker} from '@sanity/types'
 
 import {Level} from '../../../types'
+import {convertToTree, formatTree, maxKeyLength, type Tree} from './tree.js'
 import {type DocumentValidationResult, isTty, levelValues} from './util.js'
 
 interface FormatDocumentValidationOptions extends DocumentValidationResult {

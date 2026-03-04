@@ -215,7 +215,9 @@ describe('promptForProject', () => {
     mockRequest.mockRejectedValue(new Error('Forbidden'))
 
     await expect(
-      promptForProject({requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}]}),
+      promptForProject({
+        requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+      }),
     ).rejects.toThrow()
     expect(mockSpinnerFail).toHaveBeenCalledWith('Failed to fetch projects or permissions')
   })
@@ -247,7 +249,12 @@ describe('promptForProject', () => {
       projects: {
         full: {
           'sanity.project.datasets': [
-            {grants: [{name: 'read', params: {}}, {name: 'create', params: {}}]},
+            {
+              grants: [
+                {name: 'read', params: {}},
+                {name: 'create', params: {}},
+              ],
+            },
           ],
         },
         partial: {

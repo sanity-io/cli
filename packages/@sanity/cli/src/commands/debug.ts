@@ -2,10 +2,11 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {formatObject, printKeyValue, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 import omit from 'lodash-es/omit.js'
 import padStart from 'lodash-es/padStart.js'
 
+import {formatObject, printKeyValue} from '../actions/debug/formatters.js'
 import {gatherDebugInfo} from '../actions/debug/gatherDebugInfo.js'
 import {getGlobalConfigLocation} from '../actions/debug/getGlobalConfigLocation.js'
 import {getDisplayName, getFormatters} from '../actions/versions/getFormatters.js'

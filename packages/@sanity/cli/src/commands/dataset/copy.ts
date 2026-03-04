@@ -306,7 +306,10 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }
   }
 
-  private async handleListMode(projectId: string, flags: {limit?: number; offset?: number}): Promise<void> {
+  private async handleListMode(
+    projectId: string,
+    flags: {limit?: number; offset?: number},
+  ): Promise<void> {
     copyDatasetDebug('Listing dataset copy jobs')
 
     try {

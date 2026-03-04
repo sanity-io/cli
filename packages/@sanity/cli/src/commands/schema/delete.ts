@@ -1,6 +1,6 @@
 import {Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {parseStringFlag, SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
 import {parseIds} from '../../actions/schema/utils/schemaStoreValidation.js'
@@ -25,7 +25,10 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
   static override flags = {
     dataset: Flags.string({
       description: 'Delete schemas from a specific dataset',
-      parse: async (input) => parseStringFlag('dataset', input),
+      parse: async (input) => {
+        if (!input) throw new Error('dataset argument is empty')
+        return input
+      },
     }),
     'extract-manifest': Flags.boolean({
       allowNo: true,
@@ -60,7 +63,6 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       const workDir = await this.getProjectRoot()
       const projectId = await this.getProjectId()
 
-
       await deleteSchemaAction({
         configPath: workDir.path,
         dataset,
@@ -76,7 +78,10 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       }
 
       deleteSchemaDebug('Error deleting schemas', error)
-      this.error(`Failed to delete schemas: ${error.message}`, {exit: 1})
+      this.error(
+        `Failed to delete schemas: ${error instanceof Error ? error.message : String(error)}`,
+        {exit: 1},
+      )
     }
   }
 }

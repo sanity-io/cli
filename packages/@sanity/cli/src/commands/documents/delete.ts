@@ -64,7 +64,6 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
     const cliConfig = await this.getCliConfig()
     const projectId = await this.getProjectId()
 
-
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(
         'No dataset specified. Either configure a dataset in sanity.cli.ts or use the --dataset flag',

@@ -55,7 +55,6 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
     const cliConfig = await this.getCliConfig()
     const dataset = cliConfig.api?.dataset
 
-
     let mediaLibraries
     try {
       mediaLibraries = await getMediaLibraries(projectId)

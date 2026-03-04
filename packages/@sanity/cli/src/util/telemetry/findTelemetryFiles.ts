@@ -1,9 +1,8 @@
 import {join} from 'node:path'
 
+import {getTelemetryBaseInfo, normalizePath} from '@sanity/cli-core'
 import {glob} from 'tinyglobby'
 
-import {normalizePath} from '../util/normalizePath.js'
-import {getTelemetryBaseInfo} from './getTelemetryBaseInfo.js'
 import {telemetryStoreDebug} from './telemetryStoreDebug.js'
 
 /**

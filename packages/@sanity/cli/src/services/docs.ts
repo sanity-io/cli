@@ -32,7 +32,7 @@ function isSearchResult(obj: unknown): obj is SearchResult {
 }
 
 export async function readDoc(options: ReadDocOptions): Promise<string> {
-  const url = `${getSanityUrl()}${options.path}.md`
+  const url = getSanityUrl(`${options.path}.md`)
 
   const response = await fetch(url, {
     headers: {
@@ -55,7 +55,7 @@ export async function readDoc(options: ReadDocOptions): Promise<string> {
 export async function searchDocs(options: SearchDocsOptions): Promise<SearchResult[]> {
   const {limit = 10, query} = options
 
-  const baseUrl = `${getSanityUrl()}/docs/api/search/semantic`
+  const baseUrl = getSanityUrl('/docs/api/search/semantic')
   const url = new URL(baseUrl)
   url.searchParams.set('query', query)
 

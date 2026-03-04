@@ -1,6 +1,7 @@
 import {join} from 'node:path'
 
-import {getTelemetryBaseInfo} from './getTelemetryBaseInfo.js'
+import {getTelemetryBaseInfo} from '@sanity/cli-core'
+
 import {telemetryStoreDebug} from './telemetryStoreDebug.js'
 
 /**

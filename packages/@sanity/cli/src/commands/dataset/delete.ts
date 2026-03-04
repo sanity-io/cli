@@ -48,9 +48,7 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
     const projectId = await this.getProjectId({
       fallback: () =>
         promptForProject({
-          requiredPermissions: [
-            {grant: 'delete', permission: 'sanity.project.datasets'},
-          ],
+          requiredPermissions: [{grant: 'delete', permission: 'sanity.project.datasets'}],
         }),
     })
 

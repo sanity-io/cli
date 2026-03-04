@@ -38,9 +38,8 @@ vi.mock('@sanity/cli-core', async () => {
 // Mock promptForProject to simulate non-interactive behavior (throws NonInteractiveError)
 // so that getProjectId falls through to the standard error in tests without a project ID.
 vi.mock('../../../prompts/promptForProject.js', async () => {
-  const {NonInteractiveError} = await vi.importActual<typeof import('@sanity/cli-core')>(
-    '@sanity/cli-core',
-  )
+  const {NonInteractiveError} =
+    await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
   return {
     promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
   }

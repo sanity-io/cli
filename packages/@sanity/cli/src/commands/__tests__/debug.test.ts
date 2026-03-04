@@ -1,4 +1,4 @@
-import {getCliToken, getConfig} from '@sanity/cli-core'
+import {getCliToken, getCliUserConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -13,7 +13,7 @@ vi.mock('@sanity/cli-core', async () => {
   return {
     ...actual,
     getCliToken: vi.fn(),
-    getConfig: vi.fn(),
+    getCliUserConfig: vi.fn(),
   }
 })
 
@@ -49,7 +49,7 @@ afterEach(() => {
 describe('#debug', () => {
   test('shows debug information with authentication and config details', async () => {
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
       if (key === 'telemetryConsent')
         return {
@@ -105,7 +105,7 @@ describe('#debug', () => {
 
   test('shows redacted auth token by default', async () => {
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
       return undefined
     })
@@ -120,7 +120,7 @@ describe('#debug', () => {
 
   test('shows actual auth token with --secrets flag', async () => {
     vi.mocked(getCliToken).mockResolvedValue('secret-token-12345')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'secret-token-12345'
       return undefined
     })
@@ -140,7 +140,7 @@ describe('#debug', () => {
 
   test('handles unauthenticated user', async () => {
     vi.mocked(getCliToken).mockResolvedValue(undefined)
-    vi.mocked(getConfig).mockImplementation(async () => undefined)
+    vi.mocked(getCliUserConfig).mockImplementation(async () => undefined)
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     const {stdout} = await testCommand(Debug, [], {
@@ -156,7 +156,7 @@ describe('#debug', () => {
 
   test('shows package versions with update information', async () => {
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
       return undefined
     })
@@ -213,7 +213,7 @@ describe('#debug', () => {
   test('displays user information when user is present', async () => {
     // Mock authentication
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
       return undefined
     })
@@ -248,7 +248,7 @@ describe('#debug', () => {
   test('displays project information when project is present', async () => {
     // Mock authentication
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
       return undefined
     })
@@ -293,7 +293,7 @@ describe('#debug', () => {
   test('handles case when no project config is present', async () => {
     // Mock authentication
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
       return undefined
     })
@@ -328,7 +328,7 @@ describe('#debug', () => {
   test('handles case when no versions are present', async () => {
     // Mock authentication
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
       return undefined
     })
@@ -384,8 +384,8 @@ describe('#debug', () => {
   test('handles global config error gracefully', async () => {
     // Mock authentication
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    // Mock getConfig to throw an error
-    vi.mocked(getConfig).mockRejectedValue(new Error('Config access error'))
+    // Mock getCliUserConfig to throw an error
+    vi.mocked(getCliUserConfig).mockRejectedValue(new Error('Config access error'))
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     // Mock the /me API endpoint to return user info
@@ -422,7 +422,7 @@ describe('#debug', () => {
   test('handles user API error and shows error message', async () => {
     // Mock authentication
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
       return undefined
     })
@@ -449,7 +449,7 @@ describe('#debug', () => {
   test('handles project API error and continues gracefully', async () => {
     // Mock authentication
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
       return undefined
     })
@@ -486,7 +486,7 @@ describe('#debug', () => {
   test('handles project with null response and shows error', async () => {
     // Mock authentication
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
       return undefined
     })
@@ -523,7 +523,7 @@ describe('#debug', () => {
   test('handles project with no members array gracefully', async () => {
     // Mock authentication
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
       return undefined
     })
@@ -562,7 +562,7 @@ describe('#debug', () => {
   test('handles project member with no roles gracefully', async () => {
     // Mock authentication
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getConfig).mockImplementation(async (key: string) => {
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
       return undefined
     })

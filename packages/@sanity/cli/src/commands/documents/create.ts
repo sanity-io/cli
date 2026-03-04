@@ -84,7 +84,6 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     const cliConfig = await this.getCliConfig()
     const projectId = await this.getProjectId()
 
-
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(
         'No dataset specified. Either configure a dataset in sanity.cli.ts or use the --dataset flag',

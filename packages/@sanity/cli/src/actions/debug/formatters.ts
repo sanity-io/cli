@@ -1,6 +1,10 @@
+import {inspect} from 'node:util'
+
 import {ux} from '@oclif/core'
 
-import {formatObject} from './formatObject.js'
+export function formatObject(obj: unknown): string {
+  return inspect(obj, {colors: true, depth: +Infinity})
+}
 
 export function printKeyValue(obj: Record<string, unknown>): void {
   let printedLines = 0

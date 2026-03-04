@@ -1,13 +1,13 @@
 import {rm} from 'node:fs/promises'
 
+import {type ConsentInformation} from '@sanity/cli-core'
 import {type TelemetryEvent} from '@sanity/telemetry'
 import {catchError, defer, from, lastValueFrom, mergeMap, of, reduce, switchMap, tap} from 'rxjs'
 
-import {readNDJSON} from '../util/readNDJSON.js'
 import {cleanupOldTelemetryFiles} from './cleanupOldTelemetryFiles.js'
 import {findTelemetryFiles} from './findTelemetryFiles.js'
+import {readNDJSON} from './readNDJSON.js'
 import {telemetryStoreDebug} from './telemetryStoreDebug.js'
-import {type ConsentInformation} from './types.js'
 
 interface FlushTelemetryFilesOptions {
   resolveConsent: () => Promise<ConsentInformation>
@@ -51,9 +51,8 @@ export async function flushTelemetryFiles(options: FlushTelemetryFilesOptions): 
           }),
         ),
       ),
-      // of() is not same as of(undefined) in rxjs
-      // eslint-disable-next-line unicorn/no-useless-undefined
-      switchMap(() => of(undefined)),
+      // Collect all deletions into a single completion value
+      reduce(() => undefined as void, undefined as void),
     )
   }
 
@@ -68,7 +67,7 @@ export async function flushTelemetryFiles(options: FlushTelemetryFilesOptions): 
         switchMap((filePaths) => {
           if (filePaths.length === 0) {
             telemetryStoreDebug('No telemetry files found, nothing to flush')
-            return of({allEvents: [], consent: currentConsent, filesToDelete: []})
+            return of({allEvents: [], consent: currentConsent, emptyFiles: [], filesToDelete: []})
           }
 
           telemetryStoreDebug('Found %d telemetry files to process', filePaths.length)
@@ -87,53 +86,68 @@ export async function flushTelemetryFiles(options: FlushTelemetryFilesOptions): 
                   telemetryStoreDebug('Error reading file %s: %o', filePath, error)
                   return of([])
                 }),
-                switchMap((events) => of({events, filePath: events.length > 0 ? filePath : ''})),
+                switchMap((events) => of({events, filePath})),
               )
             }),
             reduce(
-              (acc: {allEvents: TelemetryEvent[]; filesToDelete: string[]}, current) => {
-                if (current.filePath) {
+              (
+                acc: {allEvents: TelemetryEvent[]; emptyFiles: string[]; filesToDelete: string[]},
+                current,
+              ) => {
+                if (current.events.length > 0) {
                   acc.allEvents.push(...current.events)
                   acc.filesToDelete.push(current.filePath)
+                } else {
+                  acc.emptyFiles.push(current.filePath)
                 }
                 return acc
               },
-              {allEvents: [], filesToDelete: []},
+              {allEvents: [], emptyFiles: [], filesToDelete: []},
             ),
             switchMap((result) => of({...result, consent: currentConsent})),
           )
         }),
       )
     }),
-    switchMap(({allEvents, consent, filesToDelete}) => {
+    switchMap(({allEvents, consent, emptyFiles, filesToDelete}) => {
       telemetryStoreDebug(
-        'Found %d total events to flush from %d files',
+        'Found %d total events to flush from %d files (%d empty)',
         allEvents.length,
         filesToDelete.length,
+        emptyFiles.length,
       )
+
+      // Always clean up empty files regardless of consent or event count
+      const cleanupEmpty$ =
+        emptyFiles.length > 0 ? deleteFiles(emptyFiles, 'empty files') : of(undefined as void)
 
       if (consent.status !== 'granted' || allEvents.length === 0) {
         if (consent.status === 'granted') {
-          telemetryStoreDebug('No events to send, cleaning up empty files')
-          return deleteFiles(filesToDelete, 'empty files')
+          telemetryStoreDebug('No events to send, cleaning up files')
+          return cleanupEmpty$
         } else {
           telemetryStoreDebug(
             'Consent not granted (%s), cleaning up %d files without sending events',
             consent.status,
             filesToDelete.length,
           )
-          return deleteFiles(filesToDelete, `without sending (consent: ${consent.status})`)
+          return deleteFiles(
+            [...filesToDelete, ...emptyFiles],
+            `without sending (consent: ${consent.status})`,
+          )
         }
       }
 
-      // Send events and then delete files
+      // Send events and then delete all files (including empty ones)
       telemetryStoreDebug('Sending %d events to backend', allEvents.length)
 
       return defer(() => from(options.sendEvents(allEvents))).pipe(
         tap(() => {
           telemetryStoreDebug('Successfully sent events, deleting %d files', filesToDelete.length)
         }),
-        switchMap(() => deleteFiles(filesToDelete, 'after successful send')),
+        switchMap(() =>
+          deleteFiles([...filesToDelete, ...emptyFiles], 'after successful send'),
+        ),
       )
     }),
     tap(() => {

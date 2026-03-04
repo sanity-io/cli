@@ -1,6 +1,7 @@
-import {createExpiringConfig, getUserConfig, isCi, subdebug} from '@sanity/cli-core'
+import {getUserConfig, isCi, subdebug} from '@sanity/cli-core'
 import semver from 'semver'
 
+import {createExpiringConfig} from '../createExpiringConfig.js'
 import {fetchLatestVersion} from './fetchLatestVersion.js'
 import {showUpdateNotification} from './showNotificationUpdate.js'
 

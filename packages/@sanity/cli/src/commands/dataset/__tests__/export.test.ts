@@ -38,9 +38,8 @@ vi.mock('@sanity/cli-core', async () => {
 })
 
 vi.mock('../../../prompts/promptForProject.js', async () => {
-  const {NonInteractiveError} = await vi.importActual<typeof import('@sanity/cli-core')>(
-    '@sanity/cli-core',
-  )
+  const {NonInteractiveError} =
+    await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
   return {
     promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
   }
@@ -291,9 +290,7 @@ describe('#dataset:export', () => {
       expect(mockSelect).toHaveBeenCalledWith(
         expect.objectContaining({message: 'Select the dataset name:'}),
       )
-      expect(mockExportDataset).toHaveBeenCalledWith(
-        expect.objectContaining({dataset: 'staging'}),
-      )
+      expect(mockExportDataset).toHaveBeenCalledWith(expect.objectContaining({dataset: 'staging'}))
     })
 
     test('validates dataset exists in project', async () => {

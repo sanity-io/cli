@@ -64,7 +64,6 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
 
     const projectId = await this.getProjectId()
 
-
     const projectClient = await getProjectCliClient({
       apiVersion: 'v2025-02-19',
       projectId,

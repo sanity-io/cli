@@ -67,7 +67,6 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
     const targetProject = project || configProjectId
     const requireUser = !anonymous
 
-
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(
         'No dataset specified. Either configure a dataset in sanity.cli.ts or use the --dataset flag',
