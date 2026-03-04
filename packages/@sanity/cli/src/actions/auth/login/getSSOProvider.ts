@@ -34,7 +34,7 @@ export async function getSSOProvider(orgSlug: string): Promise<LoginProvider | u
 
     return samlProviderToLoginProvider(selectedProvider)
   } catch (err) {
-    debug('Error retrieving SSO Providers', err)
+    debug('Error retrieving SSO Providers: %O', err)
     throw err
   }
 }

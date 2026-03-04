@@ -81,7 +81,7 @@ export async function login(options: LoginOptions) {
   } catch (err: unknown) {
     spin.stop()
     trace.error(err as Error)
-    debug('Error retrieving token', err)
+    debug('Error retrieving token: %O', err)
     throw err
   } finally {
     await new Promise<void>((resolve) => {
