@@ -19,10 +19,6 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
       command: '<%= config.bin %> <%= command.id %> --provider github --no-open',
       description: 'Login with GitHub provider, but do not open a browser window automatically',
     },
-    {
-      command: '<%= config.bin %> <%= command.id %> --vercel',
-      description: 'Login with the Vercel SSO integration',
-    },
   ]
   static override flags = {
     experimental: Flags.boolean({
@@ -41,10 +37,6 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
     sso: Flags.string({
       description: 'Log in using Single Sign-On, using the given organization slug',
       helpValue: '<slug>',
-    }),
-    vercel: Flags.boolean({
-      default: false,
-      description: 'Log in using the Vercel provider',
     }),
   } satisfies FlagInput
 

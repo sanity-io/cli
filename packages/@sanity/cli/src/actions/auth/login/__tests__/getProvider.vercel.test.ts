@@ -36,8 +36,7 @@ describe('#getProvider vercel provider', () => {
       client,
       experimental: false,
       orgSlug: 'acme',
-      specifiedProvider: 'github',
-      useVercel: true,
+      specifiedProvider: 'vercel',
     })
 
     expect(provider).toEqual({

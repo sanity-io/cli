@@ -97,7 +97,7 @@ describe('#login vercel provider', () => {
   })
 
   test('uses Schengen Vercel provider and bypasses provider selection', async () => {
-    await login({open: false, output, telemetry, vercel: true})
+    await login({open: false, output, provider: 'vercel', telemetry})
 
     expect(mockedGetProvider).toHaveBeenCalledWith({
       client: expect.anything(),
