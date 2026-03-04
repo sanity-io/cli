@@ -132,6 +132,25 @@ describe('bootstrapRemoteTemplate', () => {
         expect.objectContaining({origin: 'http://localhost:8080'}),
       )
     })
+
+    test('logs newly added CORS origins but not the pre-seeded default port', async () => {
+      mocks.getDefaultPortForFramework.mockReturnValue(3000)
+
+      await bootstrapRemoteTemplate(baseOpts)
+
+      const logCalls = vi.mocked(mockOutput.log).mock.calls.flat()
+      expect(logCalls.some((msg) => msg.includes('localhost:3000'))).toBe(true)
+      expect(logCalls.some((msg) => msg.includes('localhost:3333'))).toBe(false)
+    })
+
+    test('logs nothing for CORS when the only port is the pre-seeded default (3333)', async () => {
+      mocks.getDefaultPortForFramework.mockReturnValue(3333)
+
+      await bootstrapRemoteTemplate(baseOpts)
+
+      const logCalls = vi.mocked(mockOutput.log).mock.calls.flat()
+      expect(logCalls.some((msg) => msg.includes('CORS origins added'))).toBe(false)
+    })
   })
 
   describe('template validation', () => {

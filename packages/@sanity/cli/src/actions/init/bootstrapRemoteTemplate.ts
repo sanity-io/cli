@@ -128,9 +128,10 @@ export async function bootstrapRemoteTemplate(opts: BootstrapRemoteOptions): Pro
   await updateInitialTemplateMetadata(variables.projectId, `external-${name}`)
 
   spin.succeed()
-  if (corsAdded.length > 0) {
+  const newlyAddedPorts = corsAdded.slice(1)
+  if (newlyAddedPorts.length > 0) {
     output.log(
-      `${logSymbols.success} CORS origins added (${corsAdded.map((p) => `localhost:${p}`).join(', ')})`,
+      `${logSymbols.success} CORS origins added (${newlyAddedPorts.map((p) => `localhost:${p}`).join(', ')})`,
     )
   }
   if (readToken) output.log(`${logSymbols.success} API token generated (${READ_TOKEN_LABEL})`)
