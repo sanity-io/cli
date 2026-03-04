@@ -102,6 +102,7 @@ export default defineConfig(
         'error',
         {
           argsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
         },
       ],
       '@typescript-eslint/no-useless-constructor': 'error',
@@ -270,6 +271,7 @@ export default defineConfig(
         {
           args: 'after-used',
           argsIgnorePattern: '^_',
+          ignoreRestSiblings: true,
           vars: 'all',
           varsIgnorePattern: '^_',
         },
