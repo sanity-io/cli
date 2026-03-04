@@ -103,8 +103,7 @@ describe('#login vercel provider', () => {
       client: expect.anything(),
       experimental: undefined,
       orgSlug: undefined,
-      specifiedProvider: undefined,
-      useVercel: true,
+      specifiedProvider: 'vercel',
     })
     expect(mockedStartServerForTokenCallback).toHaveBeenCalledWith({
       client: expect.anything(),
