@@ -1,3 +1,5 @@
+import {getRunningPackageManager} from '@sanity/cli-core/package-manager'
+
 import {analyzeIssues} from './analyzeIssues.js'
 import {detectGlobalInstallations} from './detectGlobals.js'
 import {collectPackageInfo} from './detectPackages.js'
@@ -6,7 +8,7 @@ import {type CliInstallationInfo, type ExecutionContext, type SanityPackage} fro
 
 const SANITY_PACKAGES: SanityPackage[] = ['sanity', '@sanity/cli']
 
-export interface DetectCliInstallationOptions {
+interface DetectCliInstallationOptions {
   cwd?: string
 }
 
@@ -61,18 +63,7 @@ function detectExecutionContext(
   const binaryPath = process.argv[1] ?? null
 
   // Check npm_config_user_agent for package manager
-  const userAgent = process.env.npm_config_user_agent ?? ''
-  let packageManager: ExecutionContext['packageManager'] = null
-
-  if (userAgent.includes('pnpm')) {
-    packageManager = 'pnpm'
-  } else if (userAgent.includes('yarn')) {
-    packageManager = 'yarn'
-  } else if (userAgent.includes('bun')) {
-    packageManager = 'bun'
-  } else if (/^npm\//.test(userAgent)) {
-    packageManager = 'npm'
-  }
+  const packageManager: ExecutionContext['packageManager'] = getRunningPackageManager() ?? null
 
   // Determine if we're running from global, local, or npx
   let resolvedFrom: ExecutionContext['resolvedFrom'] = 'unknown'
