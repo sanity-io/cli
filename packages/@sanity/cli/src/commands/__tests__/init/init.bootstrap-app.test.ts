@@ -71,9 +71,8 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('@vercel/fs-detectors', () => ({
+vi.mock('../../../util/detectFramework.js', () => ({
   detectFrameworkRecord: vi.fn().mockResolvedValue(undefined),
-  LocalFileSystemDetector: vi.fn(),
 }))
 
 vi.mock('../../../util/getProjectDefaults.js', () => ({

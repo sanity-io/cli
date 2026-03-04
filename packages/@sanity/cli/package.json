@@ -89,7 +89,6 @@
     "@sanity/ui": "^3.1.13",
     "@sanity/worker-channels": "^2.0.0",
     "@vercel/frameworks": "3.8.4",
-    "@vercel/fs-detectors": "5.5.2",
     "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
     "console-table-printer": "^2.15.0",

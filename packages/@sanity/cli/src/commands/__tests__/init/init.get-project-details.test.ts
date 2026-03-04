@@ -17,9 +17,8 @@ const mocks = vi.hoisted(() => ({
   select: vi.fn(),
 }))
 
-vi.mock('@vercel/fs-detectors', () => ({
+vi.mock('../../../util/detectFramework.js', () => ({
   detectFrameworkRecord: vi.fn().mockResolvedValue(null),
-  LocalFileSystemDetector: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
