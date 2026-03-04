@@ -34,7 +34,7 @@ export function promisifyWorker<T = unknown>(
     let settled = false
     let timeoutId: ReturnType<typeof setTimeout> | undefined
 
-    if (timeout !== undefined) {
+    if (timeout !== undefined && timeout > 0) {
       timeoutId = setTimeout(() => {
         settled = true
         void worker.terminate()

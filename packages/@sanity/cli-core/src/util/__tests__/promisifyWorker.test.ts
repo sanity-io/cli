@@ -39,6 +39,7 @@ const TEST_WORKER_URL = new URL('file:///test-worker.js')
 describe('promisifyWorker', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    vi.useRealTimers()
   })
 
   test('resolves with the first message from the worker', async () => {
@@ -199,8 +200,7 @@ describe('promisifyWorker', () => {
     vi.advanceTimersByTime(500)
 
     await expect(promise).rejects.toThrow('Worker timed out after 500ms')
-
-    vi.useRealTimers()
+    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
   })
 
   test('cleans up timer after an error', async () => {
@@ -215,8 +215,6 @@ describe('promisifyWorker', () => {
 
     expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
-
-    vi.useRealTimers()
   })
 
   test('cleans up timer after a messageerror', async () => {
@@ -231,8 +229,6 @@ describe('promisifyWorker', () => {
 
     expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
-
-    vi.useRealTimers()
   })
 
   test('cleans up timer after receiving a message', async () => {
@@ -247,7 +243,5 @@ describe('promisifyWorker', () => {
 
     expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
     expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
-
-    vi.useRealTimers()
   })
 })
