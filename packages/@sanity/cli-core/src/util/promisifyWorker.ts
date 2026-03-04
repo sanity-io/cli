@@ -4,6 +4,11 @@ import {subdebug} from '../debug.js'
 
 const debug = subdebug('promisifyWorker')
 
+interface PromisifyWorkerOptions extends WorkerOptions {
+  /** Optional timeout in milliseconds. If the worker does not respond within this time, it will be terminated and the promise rejected. */
+  timeout?: number
+}
+
 /**
  * Creates a Node.js Worker from the given file path and options, and wraps it
  * in a Promise that resolves with the first message the worker sends, and
@@ -16,16 +21,31 @@ const debug = subdebug('promisifyWorker')
  * @throws If the worker emits an error, a message deserialization error, or exits with a non-zero code
  * @internal
  */
-export function promisifyWorker<T = unknown>(filePath: URL, options?: WorkerOptions): Promise<T> {
-  const worker = new Worker(filePath, options)
+export function promisifyWorker<T = unknown>(
+  filePath: URL,
+  options?: PromisifyWorkerOptions,
+): Promise<T> {
+  const {timeout, ...workerOptions} = options ?? {}
+  const worker = new Worker(filePath, workerOptions)
 
   const fileName = `[${filePath.pathname}]`
 
   return new Promise<T>((resolve, reject) => {
     let settled = false
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+
+    if (timeout !== undefined) {
+      timeoutId = setTimeout(() => {
+        settled = true
+        void worker.terminate()
+        worker.removeAllListeners()
+        reject(new Error(`Worker timed out after ${timeout}ms`))
+      }, timeout)
+    }
 
     worker.addListener('error', function onWorkerError(err) {
       settled = true
+      clearTimeout(timeoutId)
       debug(`Worker error: ${err.message}`, err)
       reject(new Error(`Worker error: ${err.message}`, {cause: err}))
       cleanup()
@@ -33,6 +53,7 @@ export function promisifyWorker<T = unknown>(filePath: URL, options?: WorkerOpti
     // No cleanup() here — the worker is already dead after exiting,
     // so there is nothing to terminate or remove listeners from.
     worker.addListener('exit', function onWorkerExit(code) {
+      clearTimeout(timeoutId)
       if (code > 0) {
         debug(`${fileName} exited with code ${code}`)
         reject(new Error(`Worker exited with code ${code}`))
@@ -43,12 +64,14 @@ export function promisifyWorker<T = unknown>(filePath: URL, options?: WorkerOpti
     })
     worker.addListener('messageerror', function onWorkerMessageError(err) {
       settled = true
+      clearTimeout(timeoutId)
       debug(`${fileName} message error: ${err.message}`, err)
       reject(new Error(`Failed to deserialize worker message: ${err}`))
       cleanup()
     })
     worker.addListener('message', function onWorkerMessage(message) {
       settled = true
+      clearTimeout(timeoutId)
       debug(`${fileName} message %o`, message)
       resolve(message)
       cleanup()

@@ -190,4 +190,64 @@ describe('promisifyWorker', () => {
 
     await expect(promise).resolves.toBe('result')
   })
+
+  test('rejects with error when timeout expires', async () => {
+    vi.useFakeTimers()
+
+    const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test', timeout: 500})
+
+    vi.advanceTimersByTime(500)
+
+    await expect(promise).rejects.toThrow('Worker timed out after 500ms')
+
+    vi.useRealTimers()
+  })
+
+  test('cleans up timer after an error', async () => {
+    vi.useFakeTimers()
+
+    const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test', timeout: 1000})
+
+    lastCreatedWorker.emit('error', new Error('fail'))
+    await promise.catch(() => {})
+
+    vi.advanceTimersByTime(1000)
+
+    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+
+    vi.useRealTimers()
+  })
+
+  test('cleans up timer after a messageerror', async () => {
+    vi.useFakeTimers()
+
+    const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test', timeout: 1000})
+
+    lastCreatedWorker.emit('messageerror', new Error('bad message'))
+    await promise.catch(() => {})
+
+    vi.advanceTimersByTime(1000)
+
+    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+
+    vi.useRealTimers()
+  })
+
+  test('cleans up timer after receiving a message', async () => {
+    vi.useFakeTimers()
+
+    const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test', timeout: 1000})
+
+    lastCreatedWorker.emit('message', 'result')
+    await promise
+
+    vi.advanceTimersByTime(1000)
+
+    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+
+    vi.useRealTimers()
+  })
 })
