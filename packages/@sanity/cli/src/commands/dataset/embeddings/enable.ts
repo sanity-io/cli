@@ -7,7 +7,7 @@ import {spinner} from '@sanity/cli-core/ux'
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
 import {getEmbeddingsSettings, setEmbeddingsSettings} from '../../../services/embeddings.js'
-import {projectIdFlag} from '../../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const debug = subdebug('dataset:embeddings:enable')
 
@@ -43,7 +43,9 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to enable embeddings for (overrides CLI configuration)',
+    }),
     projection: Flags.string({
       description: 'GROQ projection defining which fields to embed (e.g. "{ title, body }")',
       required: false,

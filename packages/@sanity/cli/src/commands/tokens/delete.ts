@@ -3,7 +3,9 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm, select} from '@sanity/cli-core/ux'
 import {ClientError} from '@sanity/client'
 
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {deleteToken, getTokens} from '../../services/tokens.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteTokenDebug = subdebug('tokens:delete')
 
@@ -30,9 +32,16 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
       command: '<%= config.bin %> <%= command.id %> silJ2lFmK6dONB --yes',
       description: 'Delete a specific token without confirmation prompt',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      description: 'Delete a token from a specific project',
+    },
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to delete token from (overrides CLI configuration)',
+    }),
     yes: Flags.boolean({
       aliases: ['y'],
       description: 'Skip confirmation prompt (unattended mode)',
@@ -56,7 +65,12 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
     }
 
     // Ensure we have project context
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'delete', permission: 'sanity.project.tokens'}],
+        }),
+    })
 
     this.projectId = projectId
 

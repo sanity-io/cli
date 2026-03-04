@@ -4,7 +4,9 @@ import {input, select} from '@sanity/cli-core/ux'
 
 import {type Role} from '../../actions/users/types.js'
 import {validateEmail} from '../../actions/users/validateEmail.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {getProjectRoles, inviteUser} from '../../services/projects.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const QUOTA_ERROR_MESSAGE =
   'Project is already at user quota, add billing details to the project in order to allow overage charges.'
@@ -34,9 +36,16 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
       command: '<%= config.bin %> <%= command.id %> pippi@sanity.io --role administrator',
       description: 'Send a new user invite to the email "pippi@sanity.io", as administrator',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> pippi@sanity.io --project-id abc123',
+      description: 'Invite a user to a specific project',
+    },
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to invite user to (overrides CLI configuration)',
+    }),
     role: Flags.string({
       description: 'Role to invite the user as',
       required: false,
@@ -47,8 +56,15 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
     const {email: selectedEmail} = this.args
     const {role: selectedRole} = this.flags
 
-    const projectId = await this.getProjectId()
-
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.roles'},
+            {grant: 'invite', permission: 'sanity.project.members'},
+          ],
+        }),
+    })
 
     let roles: Role[]
     try {

@@ -3,8 +3,10 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {Table} from 'console-table-printer'
 
 import {type Token} from '../../actions/tokens/types.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {getTokens} from '../../services/tokens.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listTokenDebug = subdebug('tokens:list')
 
@@ -19,8 +21,15 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
       command: '<%= config.bin %> <%= command.id %> --json',
       description: 'List tokens in JSON format',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      description: 'List tokens for a specific project',
+    },
   ]
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to list tokens for (overrides CLI configuration)',
+    }),
     json: Flags.boolean({
       default: false,
       description: 'Output tokens in JSON format',
@@ -33,7 +42,12 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     const outputJson = json ?? false
 
     // Ensure we have project context
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.tokens'}],
+        }),
+    })
 
     let tokens: Token[]
     try {

@@ -2,11 +2,13 @@ import {styleText} from 'node:util'
 
 import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {
   GRAPHQL_API_VERSION,
   type GraphQLEndpoint,
   listGraphQLEndpoints,
 } from '../../services/graphql.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listGraphQLDebug = subdebug('graphql:list')
 
@@ -17,12 +19,24 @@ export class List extends SanityCommand<typeof List> {
       command: '<%= config.bin %> <%= command.id %>',
       description: 'List GraphQL endpoints for the current project',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      description: 'List GraphQL endpoints for a specific project',
+    },
   ]
+
+  static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to list GraphQL endpoints for (overrides CLI configuration)',
+    }),
+  }
 
   public async run(): Promise<void> {
     await this.parse(List)
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () => promptForProject({}),
+    })
 
     let endpoints: GraphQLEndpoint[] | undefined
     try {

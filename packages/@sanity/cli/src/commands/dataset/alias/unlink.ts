@@ -7,7 +7,7 @@ import {validateDatasetAliasName} from '../../../actions/dataset/validateDataset
 import {promptForDatasetAliasName} from '../../../prompts/promptForDatasetAliasName.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
 import {listAliases, unlinkAlias} from '../../../services/datasetAliases.js'
-import {projectIdFlag} from '../../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const unlinkAliasDebug = subdebug('dataset:alias:unlink')
 
@@ -41,7 +41,9 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to unlink dataset alias in (overrides CLI configuration)',
+    }),
     force: Flags.boolean({
       description: 'Skip confirmation prompt and unlink immediately',
       required: false,

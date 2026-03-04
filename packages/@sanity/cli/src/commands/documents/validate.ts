@@ -9,6 +9,7 @@ import {confirm, logSymbols} from '@sanity/cli-core/ux'
 import {type Level} from '../../actions/documents/types.js'
 import {validateDocuments} from '../../actions/documents/validate.js'
 import {reporters} from '../../actions/documents/validation/reporters/index.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocumentsCommand> {
   static description = 'Validate documents in a dataset against the studio schema'
@@ -33,8 +34,10 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
   ]
 
   static flags = {
-    dataset: Flags.string({
-      char: 'd',
+    ...getProjectIdFlag({
+      description: 'Project ID to validate documents for (overrides CLI configuration)',
+    }),
+    ...getDatasetFlag({
       description:
         'Override the dataset used. By default, this is derived from the given workspace',
     }),
@@ -48,7 +51,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     }),
     level: Flags.custom<Level>({
       default: 'warning',
-      description: 'The minimum level reported out. Defaults to warning',
+      description: 'The minimum level reported. Defaults to warning',
       options: ['error', 'warning', 'info'],
     })(),
     'max-custom-validation-concurrency': Flags.integer({
@@ -78,6 +81,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       level,
       'max-custom-validation-concurrency': maxCustomValidationConcurrency,
       'max-fetch-concurrency': maxFetchConcurrency,
+      'project-id': projectId,
       workspace,
     } = flags
     const unattendedMode = Boolean(flags.yes)
@@ -155,6 +159,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
         maxCustomValidationConcurrency,
         maxFetchConcurrency,
         ndjsonFilePath,
+        projectId,
         reporter: (worker) => {
           const reporter =
             format && format in reporters

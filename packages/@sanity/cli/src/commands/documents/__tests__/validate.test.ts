@@ -205,6 +205,22 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
       expect(parsed.length).toBe(0)
     })
 
+    test('accepts --project-id flag and passes it through to validation', async () => {
+      const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
+        '--yes',
+        '--file',
+        VALID_DOCS_PATH,
+        '--format',
+        'json',
+        '--project-id',
+        'override-project',
+      ])
+
+      if (error) throw error
+      const parsed = JSON.parse(stdout)
+      expect(Array.isArray(parsed)).toBe(true)
+    })
+
     test('reports validation errors for documents with type mismatches', async () => {
       const {error, stdout} = await testCommand(ValidateDocumentsCommand, [
         '--yes',

@@ -4,7 +4,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
 import {getEmbeddingsSettings} from '../../../services/embeddings.js'
-import {projectIdFlag} from '../../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const debug = subdebug('dataset:embeddings:status')
 
@@ -28,7 +28,9 @@ export class DatasetEmbeddingsStatusCommand extends SanityCommand<
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to check embeddings status for (overrides CLI configuration)',
+    }),
   }
 
   public async run(): Promise<void> {

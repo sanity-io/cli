@@ -4,6 +4,8 @@ import {parseStringFlag, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
 import {parseIds} from '../../actions/schema/utils/schemaStoreValidation.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteSchemaDebug = subdebug('schema:delete')
 
@@ -23,6 +25,9 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to delete schema from (overrides CLI configuration)',
+    }),
     dataset: Flags.string({
       description: 'Delete schemas from a specific dataset',
       parse: async (input) => parseStringFlag('dataset', input),
@@ -58,8 +63,12 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
 
     try {
       const workDir = await this.getProjectRoot()
-      const projectId = await this.getProjectId()
-
+      const projectId = await this.getProjectId({
+        fallback: () =>
+          promptForProject({
+            requiredPermissions: [{grant: 'deployStudio', permission: 'sanity.project'}],
+          }),
+      })
 
       await deleteSchemaAction({
         configPath: workDir.path,

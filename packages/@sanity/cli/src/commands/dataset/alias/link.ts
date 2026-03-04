@@ -10,7 +10,7 @@ import {promptForProject} from '../../../prompts/promptForProject.js'
 import {selectDataset} from '../../../prompts/selectDataset.js'
 import {listAliases, updateAlias} from '../../../services/datasetAliases.js'
 import {listDatasets} from '../../../services/datasets.js'
-import {projectIdFlag} from '../../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const linkAliasDebug = subdebug('dataset:alias:link')
 
@@ -52,7 +52,9 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to link dataset alias in (overrides CLI configuration)',
+    }),
     force: Flags.boolean({
       description: 'Skip confirmation prompt when relinking existing alias',
       required: false,

@@ -6,7 +6,7 @@ import {processAliasName} from '../../../actions/dataset/processAliasName.js'
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
 import {listAliases, removeAlias} from '../../../services/datasetAliases.js'
-import {projectIdFlag} from '../../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const deleteAliasDebug = subdebug('dataset:alias:delete')
 
@@ -36,7 +36,9 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to delete dataset alias from (overrides CLI configuration)',
+    }),
     force: Flags.boolean({
       description: 'Skip confirmation prompt and delete immediately',
       required: false,

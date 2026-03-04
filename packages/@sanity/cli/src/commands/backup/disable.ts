@@ -6,8 +6,10 @@ import {select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {setBackup} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const disableBackupDebug = subdebug('backup:disable')
 
@@ -32,11 +34,25 @@ export class DisableBackupCommand extends SanityCommand<typeof DisableBackupComm
     },
   ]
 
+  static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to disable backups for (overrides CLI configuration)',
+    }),
+  }
+
   public async run(): Promise<void> {
     const {args} = await this.parse(DisableBackupCommand)
     let {dataset} = args
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'update', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     let datasets: DatasetsResponse
 

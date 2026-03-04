@@ -1,6 +1,8 @@
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {type CorsOrigin, listCorsOrigins} from '../../services/cors.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listCorsDebug = subdebug('cors:list')
 
@@ -11,12 +13,27 @@ export class List extends SanityCommand<typeof List> {
       command: '<%= config.bin %> <%= command.id %>',
       description: 'List CORS origins for the current project',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      description: 'List CORS origins for a specific project',
+    },
   ]
+
+  static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to list CORS origins for (overrides CLI configuration)',
+    }),
+  }
 
   public async run(): Promise<void> {
     await this.parse(List)
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.cors'}],
+        }),
+    })
 
     let origins: CorsOrigin[]
     try {

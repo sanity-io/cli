@@ -1,19 +1,64 @@
 import {Flags} from '@oclif/core'
 
 /**
- * Shared `--project-id` / `-p` flag for commands that can operate on
- * a project without requiring a local Sanity project directory.
+ * Properties that callers may override when using shared flag getters.
+ * Locked properties (char, parse, name, helpValue) are excluded to ensure
+ * consistent behavior across all commands.
  */
-export const projectIdFlag = {
-  'project-id': Flags.string({
-    char: 'p',
-    description: 'Project ID to use. Overrides the project ID from the Sanity config.',
-    parse: async (input) => {
-      const trimmed = input.trim()
-      if (trimmed === '') {
-        throw new Error('Project ID cannot be empty')
-      }
-      return trimmed
-    },
-  }),
+interface FlagOverrides {
+  dependsOn?: string[]
+  description?: string
+  env?: string
+  exclusive?: string[]
+  helpValue?: string | string[]
+  hidden?: boolean
+  required?: boolean
+}
+
+/**
+ * Returns a `--project-id` / `-p` flag definition.
+ *
+ * Locked: flag name (`project-id`), char (`p`), `helpValue` (`<id>`), and parse (trims + validates non-empty).
+ * All other oclif flag properties (description, helpValue, etc.) can be overridden.
+ */
+export function getProjectIdFlag(overrides?: FlagOverrides) {
+  return {
+    'project-id': Flags.string({
+      description: 'Project ID to use (overrides CLI configuration)',
+      helpValue: '<id>',
+      ...overrides,
+      char: 'p',
+      parse: async (input: string) => {
+        const trimmed = input.trim()
+        if (trimmed === '') {
+          throw new Error('`--project-id` cannot be empty if provided')
+        }
+        return trimmed
+      },
+    }),
+  }
+}
+
+/**
+ * Returns a `--dataset` / `-d` flag definition.
+ *
+ * Locked: flag name (`dataset`), char (`d`), `helpValue` (`<name>`), and parse (trims + validates non-empty).
+ * All other oclif flag properties (description, helpValue, etc.) can be overridden.
+ */
+export function getDatasetFlag(overrides?: FlagOverrides) {
+  return {
+    dataset: Flags.string({
+      description: 'Dataset to use (overrides CLI configuration)',
+      helpValue: '<name>',
+      ...overrides,
+      char: 'd',
+      parse: async (input: string) => {
+        const trimmed = input.trim()
+        if (trimmed === '') {
+          throw new Error('`--dataset` cannot be empty if provided')
+        }
+        return trimmed
+      },
+    }),
+  }
 }

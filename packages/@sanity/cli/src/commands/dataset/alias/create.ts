@@ -9,7 +9,7 @@ import {selectDataset} from '../../../prompts/selectDataset.js'
 import {ALIAS_PREFIX, createAlias, listAliases} from '../../../services/datasetAliases.js'
 import {listDatasets} from '../../../services/datasets.js'
 import {getProjectFeatures} from '../../../services/getProjectFeatures.js'
-import {projectIdFlag} from '../../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const createAliasDebug = subdebug('dataset:alias:create')
 
@@ -51,7 +51,9 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to create dataset alias in (overrides CLI configuration)',
+    }),
   }
 
   public async run(): Promise<void> {

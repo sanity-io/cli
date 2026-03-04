@@ -3,7 +3,9 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {deleteGraphQLAPI} from '../../services/graphql.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const undeployGraphqlDebug = subdebug('graphql:undeploy')
 
@@ -34,20 +36,22 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to undeploy GraphQL API from (overrides CLI configuration)',
+    }),
     api: Flags.string({
       description: 'Undeploy API with this ID (project, dataset and tag flags take precedence)',
       required: false,
     }),
-    dataset: Flags.string({
-      description: 'Dataset to undeploy GraphQL API from',
-      required: false,
-    }),
+    ...getDatasetFlag({description: 'Dataset to undeploy GraphQL API from'}),
     force: Flags.boolean({
       description: 'Skip confirmation prompt',
       required: false,
     }),
     project: Flags.string({
+      deprecated: {to: 'project-id'},
       description: 'Project ID to delete GraphQL API for',
+      hidden: true,
       required: false,
     }),
     tag: Flags.string({
@@ -60,6 +64,10 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
   public async run(): Promise<void> {
     const {flags} = await this.parse(Undeploy)
     const {api: apiFlag, dataset: datasetFlag, force, project: projectFlag, tag: tagFlag} = flags
+
+    if (projectFlag) {
+      this.warn('The --project flag is deprecated. Use --project-id instead.')
+    }
 
     let projectId = projectFlag
     let dataset = datasetFlag
@@ -76,7 +84,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
       }
 
       if (projectId && projectId !== apiDef.projectId) {
-        this.warn(`Both --api and --project specified, using --project ${projectId}`)
+        this.warn(`Both --api and --project/--project-id specified, using project ${projectId}`)
       } else {
         projectId = apiDef.projectId
       }
@@ -96,7 +104,12 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
 
     // Get projectId from config if not specified
     if (!projectId) {
-      projectId = await this.getProjectId()
+      projectId = await this.getProjectId({
+        fallback: () =>
+          promptForProject({
+            requiredPermissions: [{grant: 'manage', permission: 'sanity.project.graphql'}],
+          }),
+      })
     }
 
     // Get dataset from CLI config if not specified

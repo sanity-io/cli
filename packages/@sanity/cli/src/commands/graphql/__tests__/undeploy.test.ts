@@ -263,7 +263,8 @@ describe('graphql undeploy', () => {
     )
 
     expect(stdout).toBe('GraphQL API deleted\n')
-    expect(stderr).toContain('Both --api and --project specified, using --project test-project')
+    expect(stderr).toContain('Both --api and --project/--project-id specified, using project')
+    expect(stderr).toContain('test-project')
   })
 
   test('warns when both --api and --tag are specified', async () => {

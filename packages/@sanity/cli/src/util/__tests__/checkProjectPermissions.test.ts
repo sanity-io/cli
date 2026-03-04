@@ -17,7 +17,12 @@ describe('getProjectsWithPermissions', () => {
     const grants = makeGrants({
       'project-a': {
         'sanity.project.datasets': [
-          {grants: [{name: 'read', params: {}}, {name: 'create', params: {}}]},
+          {
+            grants: [
+              {name: 'read', params: {}},
+              {name: 'create', params: {}},
+            ],
+          },
         ],
       },
       'project-b': {

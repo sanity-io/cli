@@ -7,7 +7,7 @@ import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
-import {projectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const createDatasetDebug = subdebug('dataset:create')
 
@@ -39,7 +39,9 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to create dataset in (overrides CLI configuration)',
+    }),
     embeddings: Flags.boolean({
       default: false,
       description: 'Enable embeddings for this dataset',

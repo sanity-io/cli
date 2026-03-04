@@ -3,7 +3,9 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
 import {type Hook} from '../../actions/hook/types'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {deleteHookForProject, listHooksForProject} from '../../services/hooks.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteHookDebug = subdebug('hook:delete')
 
@@ -26,12 +28,27 @@ export class Delete extends SanityCommand<typeof Delete> {
       command: '<%= config.bin %> <%= command.id %> my-hook',
       description: 'Delete a specific hook by name',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      description: 'Delete a hook from a specific project',
+    },
   ]
+
+  static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to delete webhook from (overrides CLI configuration)',
+    }),
+  }
 
   public async run(): Promise<void> {
     const {args} = await this.parse(Delete)
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'delete', permission: 'sanity.project.webhooks'}],
+        }),
+    })
 
     // Get the hook ID to delete
     const hookId = await this.promptForHook(args.name, projectId)

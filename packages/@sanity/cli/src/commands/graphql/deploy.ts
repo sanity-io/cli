@@ -22,6 +22,7 @@ import {
   getCurrentSchemaProps,
   validateGraphQLAPI,
 } from '../../services/graphql.js'
+import {getDatasetFlag} from '../../util/sharedFlags.js'
 
 interface DeployTask {
   dataset: string
@@ -71,9 +72,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       description: 'Only deploy API with this ID. Can be specified multiple times.',
       multiple: true,
     }),
-    dataset: Flags.string({
-      description: 'Deploy API for the given dataset',
-    }),
+    ...getDatasetFlag({description: 'Deploy API for the given dataset'}),
     'dry-run': Flags.boolean({
       default: false,
       description: 'Validate defined GraphQL APIs, check for breaking changes, skip deploy',

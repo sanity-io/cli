@@ -5,7 +5,7 @@ import {DatasetsResponse} from '@sanity/client'
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
 import {editDatasetAcl, listDatasets} from '../../../services/datasets.js'
-import {projectIdFlag} from '../../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const setDatasetVisibilityDebug = subdebug('dataset:visibility:set')
 
@@ -36,7 +36,9 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to set dataset visibility for (overrides CLI configuration)',
+    }),
   }
 
   public async run(): Promise<void> {

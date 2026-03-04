@@ -3,7 +3,9 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {formatFailure} from '../../actions/hook/formatFailure.js'
 import {type DeliveryAttempt} from '../../actions/hook/types.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {getHookAttempt} from '../../services/hooks.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const attemptDebug = subdebug('hook:attempt')
 
@@ -21,13 +23,28 @@ export class AttemptHookCommand extends SanityCommand<typeof AttemptHookCommand>
       command: '<%= config.bin %> <%= command.id %> abc123',
       description: 'Print details of webhook delivery attempt with ID abc123',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> abc123 --project-id myproject',
+      description: 'Get attempt details for a specific project',
+    },
   ]
+
+  static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to view webhook attempt for (overrides CLI configuration)',
+    }),
+  }
 
   public async run() {
     const {args} = await this.parse(AttemptHookCommand)
     const {attemptId} = args
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.webhooks'}],
+        }),
+    })
 
     let attempt: DeliveryAttempt
     try {
