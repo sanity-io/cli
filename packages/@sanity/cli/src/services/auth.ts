@@ -9,7 +9,7 @@ import {
 export const AUTH_API_VERSION = 'v2025-09-23'
 
 async function getUnauthenticatedClient() {
-  return (await getGlobalCliClient({apiVersion: AUTH_API_VERSION})).withConfig({token: undefined})
+  return getGlobalCliClient({apiVersion: AUTH_API_VERSION, unauthenticated: true})
 }
 
 /**
