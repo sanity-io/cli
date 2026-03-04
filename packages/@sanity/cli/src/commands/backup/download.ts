@@ -1,12 +1,12 @@
 import {createWriteStream} from 'node:fs'
-import {mkdir, mkdtemp} from 'node:fs/promises'
+import {access, mkdir, mkdtemp} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import path from 'node:path'
 import {finished} from 'node:stream/promises'
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {fileExists, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 import {boxen, confirm, input, select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import pMap from 'p-map'
@@ -284,7 +284,10 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       out = path.join(out, defaultOutFileName)
     }
 
-    const exists = await fileExists(out)
+    const exists = await access(out).then(
+      () => true,
+      () => false,
+    )
     // If the file already exists, ask for confirmation if it should be overwritten.
     if (!this.flags.overwrite && exists) {
       const shouldOverwrite = await confirm({

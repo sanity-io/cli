@@ -2,12 +2,16 @@ import {appendFileSync} from 'node:fs'
 import {mkdir} from 'node:fs/promises'
 import {dirname} from 'node:path'
 
+import {
+  type CLITelemetryStore,
+  type ConsentInformation,
+  type TelemetryUserProperties,
+} from '@sanity/cli-core'
 import {type TelemetryEvent} from '@sanity/telemetry'
 
 import {generateTelemetryFilePath} from './generateTelemetryFilePath.js'
 import {createLogger} from './logger.js'
 import {telemetryStoreDebug} from './telemetryStoreDebug.js'
-import {type CLITelemetryStore, type ConsentInformation, TelemetryUserProperties} from './types.js'
 
 /**
  * FILE MANAGEMENT STRATEGY:

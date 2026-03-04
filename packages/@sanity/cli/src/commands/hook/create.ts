@@ -42,7 +42,9 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
     }
 
     const organizationId = projectInfo.organizationId || 'personal'
-    const manageUrl = `${getSanityUrl()}/organizations/${organizationId}/project/${projectId}/api/webhooks/new`
+    const manageUrl = getSanityUrl(
+      `/organizations/${organizationId}/project/${projectId}/api/webhooks/new`,
+    )
 
     this.log(`Opening ${manageUrl}`)
 

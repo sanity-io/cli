@@ -2,7 +2,7 @@ import {
   type CLITelemetryStore,
   getCliToken,
   type Output,
-  setConfig,
+  setCliUserConfig,
   subdebug,
 } from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
@@ -90,10 +90,10 @@ export async function login(options: LoginOptions) {
   }
 
   // Store the token
-  await setConfig('authToken', authToken)
+  await setCliUserConfig('authToken', authToken)
 
   // Clear cached telemetry consent
-  await setConfig('telemetryConsent', undefined)
+  await setCliUserConfig('telemetryConsent', undefined)
 
   // If we had a session previously, attempt to clear it
   if (hasExistingToken) {

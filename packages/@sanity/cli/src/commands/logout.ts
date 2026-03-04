@@ -1,4 +1,4 @@
-import {getCliToken, SanityCommand, setConfig} from '@sanity/cli-core'
+import {getCliToken, SanityCommand, setCliUserConfig} from '@sanity/cli-core'
 import {isHttpError} from '@sanity/client'
 
 import {logout} from '../services/auth.js'
@@ -33,8 +33,8 @@ export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
   }
 
   private clearConfig() {
-    setConfig('authToken', undefined)
-    setConfig('telemetryConsent', undefined)
+    setCliUserConfig('authToken', undefined)
+    setCliUserConfig('telemetryConsent', undefined)
 
     this.log('Logged out successfully')
   }

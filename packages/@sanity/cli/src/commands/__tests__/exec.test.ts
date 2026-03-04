@@ -3,7 +3,7 @@ import {copyFile, mkdir, rm} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
 
-import {setConfig} from '@sanity/cli-core'
+import {setCliUserConfig} from '@sanity/cli-core'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -41,22 +41,11 @@ vi.mock('node:child_process', async (importOriginal) => {
 async function setupTestAuth(token: string): Promise<{cleanup: () => Promise<void>}> {
   await mkdir(TEST_CONFIG_DIR, {recursive: true})
 
-  // Use cli-core's setConfig to write token to config file
-  // Need to set env vars so it writes to the test config path
-  const originalConfigPath = process.env.SANITY_CLI_CONFIG_PATH
+  // Use cli-core's setCliUserConfig to write token to config file
+  // Temporarily point config path to test location via stubEnv
+  vi.stubEnv('SANITY_CLI_CONFIG_PATH', TEST_CONFIG_PATH)
 
-  process.env.SANITY_CLI_CONFIG_PATH = TEST_CONFIG_PATH
-
-  try {
-    await setConfig('authToken', token)
-  } finally {
-    // Restore original env vars
-    if (originalConfigPath) {
-      process.env.SANITY_CLI_CONFIG_PATH = originalConfigPath
-    } else {
-      delete process.env.SANITY_CLI_CONFIG_PATH
-    }
-  }
+  await setCliUserConfig('authToken', token)
 
   return {cleanup: () => rm(TEST_CONFIG_DIR, {force: true, recursive: true})}
 }

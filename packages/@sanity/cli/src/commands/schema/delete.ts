@@ -82,7 +82,10 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       }
 
       deleteSchemaDebug('Error deleting schemas', error)
-      this.error(`Failed to delete schemas: ${error.message}`, {exit: 1})
+      this.error(
+        `Failed to delete schemas: ${error instanceof Error ? error.message : String(error)}`,
+        {exit: 1},
+      )
     }
   }
 }

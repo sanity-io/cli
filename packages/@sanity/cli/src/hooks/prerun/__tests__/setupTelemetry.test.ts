@@ -1,5 +1,5 @@
 import {type ChildProcess, spawn} from 'node:child_process'
-import {mkdir} from 'node:fs/promises'
+import {mkdir, readFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
@@ -7,15 +7,12 @@ import {type Config} from '@oclif/core'
 import {
   clearCliTelemetry,
   CLI_TELEMETRY_SYMBOL,
-  createTelemetryStore,
   findProjectRoot,
-  flushTelemetryFiles,
   getCliConfig,
   getCliTelemetry,
   getUserConfig,
   isCi,
   normalizePath,
-  readNDJSON,
 } from '@sanity/cli-core'
 import {createTestToken, testHook} from '@sanity/cli-test'
 import {type TelemetryEvent, type TelemetryLogEvent} from '@sanity/telemetry'
@@ -24,7 +21,19 @@ import {glob} from 'tinyglobby'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
+import {createTelemetryStore} from '../../../util/telemetry/createTelemetryStore.js'
+import {flushTelemetryFiles} from '../../../util/telemetry/flushTelemetryFiles.js'
 import {setupTelemetry} from '../setupTelemetry.js'
+
+async function readNDJSON<T>(filePath: string): Promise<T[]> {
+  const content = await readFile(filePath, 'utf8')
+  if (!content.trim()) return []
+  return content
+    .trim()
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as T)
+}
 
 // Mock external dependencies
 vi.mock('node:os', () => ({tmpdir: vi.fn()}))
@@ -143,6 +152,10 @@ describe('setupTelemetry integration test', () => {
    *
    * The test creates a direct telemetry store instance to verify the core
    * functionality works correctly in isolation.
+   *
+   * TODO: Fix async initialization so setupTelemetry itself writes telemetry
+   * files, then update the lifecycle test to verify end-to-end without a
+   * separately created store.
    */
   let testDir: string
   let telemetryPath: string

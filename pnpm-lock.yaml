@@ -616,6 +616,9 @@ importers:
       tsx:
         specifier: 'catalog:'
         version: 4.21.0
+      typeid-js:
+        specifier: ^1.2.0
+        version: 1.2.0
       vite:
         specifier: 'catalog:'
         version: 7.3.1(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
@@ -743,9 +746,6 @@ importers:
       '@sanity/client':
         specifier: ^7.16.0
         version: 7.16.0(debug@4.4.3)
-      '@sanity/types':
-        specifier: 'catalog:'
-        version: 5.13.0(@types/react@19.2.14)(debug@4.4.3)
       babel-plugin-react-compiler:
         specifier: ^1.0.0
         version: 1.0.0
@@ -785,15 +785,9 @@ importers:
       rxjs:
         specifier: 'catalog:'
         version: 7.8.2
-      tinyglobby:
-        specifier: 'catalog:'
-        version: 0.2.15
       tsx:
         specifier: 'catalog:'
         version: 4.21.0
-      typeid-js:
-        specifier: ^1.2.0
-        version: 1.2.0
       vite:
         specifier: 'catalog:'
         version: 7.3.1(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)

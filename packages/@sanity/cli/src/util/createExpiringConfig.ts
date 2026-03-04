@@ -1,17 +1,25 @@
-import type ConfigStore from 'configstore'
+/**
+ * Minimal interface for a config store that supports get/set/delete operations.
+ * Compatible with the `configstore` package.
+ */
+interface ConfigStoreApi {
+  delete: (key: string) => void
+  get: (key: string) => unknown
+  set: (key: string, value: unknown) => void
+}
 
 interface ExpiringConfigValue {
   updatedAt: number
   value: unknown
 }
 
-export interface ExpiringConfigOptions<Type> {
+interface ExpiringConfigOptions<Type> {
   /** Fetch value */
   fetchValue: () => Promise<Type> | Type
   /** Config key */
   key: string
   /** Config store */
-  store: ConfigStore
+  store: ConfigStoreApi
   /** TTL (milliseconds) */
   ttl: number
 
@@ -29,7 +37,7 @@ export interface ExpiringConfigOptions<Type> {
   validateValue?: (value: unknown) => value is Type
 }
 
-export interface ExpiringConfigApi<Type> {
+interface ExpiringConfigApi<Type> {
   /**
    * Delete the cached value.
    */

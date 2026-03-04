@@ -11,9 +11,11 @@ const getDefaultDashboardURL = ({
   organizationId: string
   url: string
 }): string => {
-  return `${getSanityUrl()}/@${organizationId}?${new URLSearchParams({
-    dev: url,
-  }).toString()}`
+  return getSanityUrl(
+    `/@${organizationId}?${new URLSearchParams({
+      dev: url,
+    }).toString()}`,
+  )
 }
 
 /**
@@ -40,7 +42,7 @@ export const getDashboardAppURL = async ({
     })
 
     const res = await globalThis.fetch(
-      `${getSanityUrl()}/api/dashboard/mode/development/resolve-url?${queryParams.toString()}`,
+      getSanityUrl(`/api/dashboard/mode/development/resolve-url?${queryParams.toString()}`),
       {
         signal: abortController.signal,
       },

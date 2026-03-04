@@ -1,7 +1,8 @@
-import {createExpiringConfig, getGlobalCliClient, getUserConfig} from '@sanity/cli-core'
+import {getGlobalCliClient, getUserConfig} from '@sanity/cli-core'
 import {type TelemetryEvent} from '@sanity/telemetry'
 
 import {telemetryDebug} from '../actions/telemetry/telemetryDebug.js'
+import {createExpiringConfig} from '../util/createExpiringConfig.js'
 
 export const TELEMETRY_API_VERSION = 'v2026-01-22'
 
