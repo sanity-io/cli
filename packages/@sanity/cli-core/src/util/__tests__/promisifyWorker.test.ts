@@ -200,7 +200,9 @@ describe('promisifyWorker', () => {
     vi.advanceTimersByTime(500)
 
     await expect(promise).rejects.toThrow('Worker timed out after 500ms')
+
     expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
   })
 
   test('cleans up timer after an error', async () => {

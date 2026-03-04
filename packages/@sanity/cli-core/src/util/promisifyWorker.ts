@@ -37,9 +37,9 @@ export function promisifyWorker<T = unknown>(
     if (timeout !== undefined && timeout > 0) {
       timeoutId = setTimeout(() => {
         settled = true
+        reject(new Error(`Worker timed out after ${timeout}ms`))
         void worker.terminate()
         worker.removeAllListeners()
-        reject(new Error(`Worker timed out after ${timeout}ms`))
       }, timeout)
     }
 
