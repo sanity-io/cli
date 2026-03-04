@@ -39,6 +39,12 @@ jobs:
         shell: bash
         run: echo "TURBO_FORCE=true" >> $GITHUB_ENV
 
+      - name: Restore Vitest cache
+        uses: actions/cache@v5
+        with:
+          path: node_modules/.vite
+          key: vitest-cache-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}
+
       - name: Test on ${{ matrix.os }}
         shell: bash
         env:
