@@ -1,27 +1,27 @@
 import {type Output} from '@sanity/cli-core'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {bootstrapRemoteTemplate} from '../bootstrapRemoteTemplate.js'
 
 const mocks = vi.hoisted(() => ({
-  applyEnvVariables: vi.fn().mockResolvedValue(undefined),
-  checkIfNeedsApiToken: vi.fn().mockResolvedValue(false),
-  createCorsOrigin: vi.fn().mockResolvedValue({}),
-  createToken: vi.fn().mockResolvedValue({key: 'test-token'}),
-  detectFrameworkRecord: vi.fn().mockResolvedValue(null),
-  downloadAndExtractRepo: vi.fn().mockResolvedValue(undefined),
+  applyEnvVariables: vi.fn(),
+  checkIfNeedsApiToken: vi.fn(),
+  createCorsOrigin: vi.fn(),
+  createToken: vi.fn(),
+  detectFrameworkRecord: vi.fn(),
+  downloadAndExtractRepo: vi.fn(),
   getDefaultPortForFramework: vi.fn(),
-  getGitHubRawContentUrl: vi
-    .fn()
-    .mockReturnValue('https://raw.githubusercontent.com/sanity-io/test-template/main/'),
-  getMonoRepo: vi.fn().mockResolvedValue(null),
-  tryApplyPackageName: vi.fn().mockResolvedValue(undefined),
+  getGitHubRawContentUrl: vi.fn(),
+  getMonoRepo: vi.fn(),
+  mkdir: vi.fn(),
+  spinner: vi.fn(),
+  tryApplyPackageName: vi.fn(),
   tryGitInit: vi.fn(),
-  updateInitialTemplateMetadata: vi.fn().mockResolvedValue(undefined),
-  validateTemplate: vi.fn().mockResolvedValue({isValid: true}),
+  updateInitialTemplateMetadata: vi.fn(),
+  validateTemplate: vi.fn(),
 }))
 
-vi.mock('node:fs/promises', () => ({mkdir: vi.fn().mockResolvedValue(undefined)}))
+vi.mock('node:fs/promises', () => ({mkdir: mocks.mkdir}))
 
 vi.mock('@sanity/template-validator', () => ({
   getMonoRepo: mocks.getMonoRepo,
@@ -38,7 +38,7 @@ vi.mock('@vercel/fs-detectors', () => ({
 
 vi.mock('@sanity/cli-core/ux', () => ({
   logSymbols: {success: '✔'},
-  spinner: vi.fn().mockReturnValue({start: vi.fn().mockReturnThis(), succeed: vi.fn()}),
+  spinner: mocks.spinner,
 }))
 
 vi.mock('../../../services/cors.js', () => ({createCorsOrigin: mocks.createCorsOrigin}))
@@ -81,14 +81,31 @@ const baseOpts = {
 }
 
 describe('bootstrapRemoteTemplate', () => {
+  beforeEach(() => {
+    mocks.applyEnvVariables.mockResolvedValue(undefined)
+    mocks.checkIfNeedsApiToken.mockResolvedValue(false)
+    mocks.createCorsOrigin.mockResolvedValue({})
+    mocks.createToken.mockResolvedValue({key: 'test-token'})
+    mocks.detectFrameworkRecord.mockResolvedValue(null)
+    mocks.downloadAndExtractRepo.mockResolvedValue(undefined)
+    mocks.getDefaultPortForFramework.mockReturnValue(3000)
+    mocks.getGitHubRawContentUrl.mockReturnValue(
+      'https://raw.githubusercontent.com/sanity-io/test-template/main/',
+    )
+    mocks.getMonoRepo.mockResolvedValue(null)
+    mocks.mkdir.mockResolvedValue(undefined)
+    mocks.spinner.mockReturnValue({start: vi.fn().mockReturnThis(), succeed: vi.fn()})
+    mocks.tryApplyPackageName.mockResolvedValue(undefined)
+    mocks.updateInitialTemplateMetadata.mockResolvedValue(undefined)
+    mocks.validateTemplate.mockResolvedValue({isValid: true})
+  })
+
   afterEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   describe('CORS origin setup', () => {
     test('adds CORS origin for a framework port that is not the Sanity default (3333)', async () => {
-      mocks.getDefaultPortForFramework.mockReturnValue(3000)
-
       await bootstrapRemoteTemplate(baseOpts)
 
       expect(mocks.createCorsOrigin).toHaveBeenCalledOnce()
@@ -134,8 +151,6 @@ describe('bootstrapRemoteTemplate', () => {
     })
 
     test('logs newly added CORS origins but not the pre-seeded default port', async () => {
-      mocks.getDefaultPortForFramework.mockReturnValue(3000)
-
       await bootstrapRemoteTemplate(baseOpts)
 
       const logCalls = vi.mocked(mockOutput.log).mock.calls.flat()
@@ -182,7 +197,6 @@ describe('bootstrapRemoteTemplate', () => {
       mocks.checkIfNeedsApiToken.mockImplementation((_path: string, type: string) =>
         Promise.resolve(type === 'read'),
       )
-      mocks.getDefaultPortForFramework.mockReturnValue(3000)
 
       await bootstrapRemoteTemplate(baseOpts)
 
@@ -194,7 +208,6 @@ describe('bootstrapRemoteTemplate', () => {
       mocks.checkIfNeedsApiToken.mockImplementation((_path: string, type: string) =>
         Promise.resolve(type === 'write'),
       )
-      mocks.getDefaultPortForFramework.mockReturnValue(3000)
 
       await bootstrapRemoteTemplate(baseOpts)
 
@@ -203,9 +216,6 @@ describe('bootstrapRemoteTemplate', () => {
     })
 
     test('does not create any tokens when the template requires none', async () => {
-      mocks.checkIfNeedsApiToken.mockResolvedValue(false)
-      mocks.getDefaultPortForFramework.mockReturnValue(3000)
-
       await bootstrapRemoteTemplate(baseOpts)
 
       expect(mocks.createToken).not.toHaveBeenCalled()
