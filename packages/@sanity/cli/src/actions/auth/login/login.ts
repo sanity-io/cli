@@ -82,7 +82,7 @@ export async function login(options: LoginOptions) {
     spin.stop()
     trace.error(err as Error)
     debug('Error retrieving token', err)
-    throw err instanceof Error ? new Error(`Login failed: ${err.message}`) : new Error(`${err}`)
+    throw err
   } finally {
     await new Promise<void>((resolve) => {
       server.close(() => resolve())

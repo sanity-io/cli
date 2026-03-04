@@ -761,7 +761,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         await login({output: this.output, telemetry: this._trace.newContext('login')})
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error)
-        this.error(`Error logging in: ${message}`, {exit: 1})
+        this.error(`Login failed: ${message}`, {exit: 1})
       }
     }
 

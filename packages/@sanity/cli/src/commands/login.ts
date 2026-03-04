@@ -48,7 +48,7 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
       this.log('Login successful')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
-      this.error(`Error logging in: ${message}`, {exit: 1})
+      this.error(`Login failed: ${message}`, {exit: 1})
     }
   }
 }

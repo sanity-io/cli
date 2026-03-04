@@ -227,7 +227,7 @@ describe('#init: authentication', () => {
       },
     })
 
-    expect(error?.message).toBe('Error logging in: No authentication providers found')
+    expect(error?.message).toBe('Login failed: No authentication providers found')
     expect(error?.oclif?.exit).toBe(1)
   })
 })
