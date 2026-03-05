@@ -52,11 +52,11 @@ function toWorkspaceMetadata(config: unknown): WorkspaceMetadata {
     throw new Error('Invalid workspace config: expected an object')
   }
 
-  if (!('projectId' in config) || typeof config.projectId !== 'string') {
+  if (!('projectId' in config) || !config.projectId || typeof config.projectId !== 'string') {
     throw new Error('Invalid workspace config: missing or invalid projectId')
   }
 
-  if (!('dataset' in config) || typeof config.dataset !== 'string') {
+  if (!('dataset' in config) || !config.dataset || typeof config.dataset !== 'string') {
     throw new Error('Invalid workspace config: missing or invalid dataset')
   }
 

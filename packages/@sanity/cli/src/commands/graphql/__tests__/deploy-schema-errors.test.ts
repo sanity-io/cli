@@ -200,7 +200,10 @@ describe('#graphql:deploy schema errors', () => {
       ...defaultMocks,
       cliConfig: {
         api: {dataset: 'production', projectId: 'test-project'},
-        graphql: [{id: 'api-1', tag: 'default'}, {id: 'api-2', tag: 'staging'}],
+        graphql: [
+          {id: 'api-1', tag: 'default'},
+          {id: 'api-2', tag: 'staging'},
+        ],
       },
     }
 
