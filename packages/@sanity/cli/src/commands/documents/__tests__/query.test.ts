@@ -102,6 +102,26 @@ describe('#documents:query', () => {
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
   })
 
+  test('--project-id flag overrides CLI config projectId', async () => {
+    const mockResults = [{_id: 'test', title: 'Test'}]
+
+    mockFetch.mockResolvedValue(mockResults)
+
+    const {stdout} = await testCommand(
+      QueryDocumentCommand,
+      ['*[_type == "movie"]', '--project-id', 'flag-project'],
+      {
+        mocks: defaultMocks,
+      },
+    )
+
+    expect(stdout).toContain('"_id": "test"')
+    // Verify that --project-id ('flag-project') was used, not config ('test-project')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+      expect.objectContaining({projectId: 'flag-project'}),
+    )
+  })
+
   test('uses deprecated --project flag when no --project-id or config', async () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
 
