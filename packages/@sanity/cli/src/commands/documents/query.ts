@@ -71,13 +71,10 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
       this.warn('The --project flag is deprecated. Use --project-id instead.')
     }
 
-    // Get project configuration — --project-id (via getProjectId) takes precedence over deprecated --project
     const cliConfig = await this.getCliConfig()
     const projectId = await this.getProjectId({
-      fallback: async () => {
-        if (deprecatedProject) return deprecatedProject
-        return promptForProject({})
-      },
+      deprecatedFlagName: 'project',
+      fallback: () => promptForProject({}),
     })
 
     const requireUser = !anonymous

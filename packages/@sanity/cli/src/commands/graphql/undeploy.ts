@@ -70,7 +70,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
       this.warn('The --project flag is deprecated. Use --project-id instead.')
     }
 
-    let projectId = projectFlag
+    let projectId: string | undefined
     let dataset = datasetFlag
     let tag = tagFlag
 
@@ -102,6 +102,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
     // Get projectId from config if not specified
     if (!projectId) {
       projectId = await this.getProjectId({
+        deprecatedFlagName: 'project',
         fallback: () =>
           promptForProject({
             requiredPermissions: [{grant: 'manage', permission: 'sanity.project.graphql'}],

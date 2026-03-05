@@ -123,6 +123,27 @@ describe('#documents:query', () => {
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
   })
 
+  test('deprecated --project flag overrides CLI config projectId', async () => {
+    const mockResults = [{_id: 'test', title: 'Test'}]
+
+    mockFetch.mockResolvedValue(mockResults)
+
+    const {stderr, stdout} = await testCommand(
+      QueryDocumentCommand,
+      ['*[_type == "movie"]', '--project', 'override-project'],
+      {
+        mocks: defaultMocks,
+      },
+    )
+
+    expect(stdout).toContain('"_id": "test"')
+    expect(stderr).toContain('--project flag is deprecated')
+    // Verify that --project ('override-project') was used, not config ('test-project')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+      expect.objectContaining({projectId: 'override-project'}),
+    )
+  })
+
   test('--project-id takes precedence over deprecated --project', async () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
 
