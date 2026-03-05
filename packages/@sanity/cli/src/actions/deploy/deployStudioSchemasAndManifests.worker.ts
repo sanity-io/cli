@@ -15,7 +15,7 @@ if (isMainThread || !parentPort) {
 
 const debug = subdebug('deployStudioSchemasAndManifests.worker')
 
-const {configPath, outPath, verbose, workDir} =
+const {configPath, isExternal, outPath, schemaRequired, verbose, workDir} =
   deployStudioSchemasAndManifestsWorkerData.parse(workerData)
 
 try {
@@ -27,14 +27,10 @@ try {
     throw new Error('No workspaces found')
   }
 
-  await Promise.all([
-    writeWorkspaceToDist(workspaces),
-    // Updates the workspaces schemas to /schemas endpoint
-    updateWorkspacesSchemas({
-      verbose,
-      workspaces,
-    }),
-  ])
+  debug('Handling deployment for %s', isExternal ? 'external' : 'internal')
+  await (isExternal
+    ? handleExternalDeployment(workspaces, schemaRequired)
+    : handleInternalDeployment(workspaces))
 
   parentPort.postMessage({
     type: 'success',
@@ -58,4 +54,44 @@ async function writeWorkspaceToDist(workspaces: Workspace[]) {
     workDir,
     workspaceManifests,
   })
+}
+
+/**
+ * External deployments:
+ * 1. Update the workspace schemas to the /schemas endpoint IF --schema-required is passed
+ * 2. Update server-side schemas
+ */
+function handleExternalDeployment(workspaces: Workspace[], schemaRequired: boolean) {
+  const tasks = []
+
+  if (schemaRequired) {
+    tasks.push(
+      updateWorkspacesSchemas({
+        verbose,
+        workspaces,
+      }),
+    )
+  }
+
+  return Promise.all(tasks)
+}
+
+/**
+ *
+ * Internal deployments:
+ * 1. Write the workspace manifests to the dist directory
+ * 2. Update the workspaces schemas to the /schemas endpoint
+ * 3. Update server-side schemas
+ *
+ * @param workspaces - The workspaces to deploy
+ */
+function handleInternalDeployment(workspaces: Workspace[]) {
+  return Promise.all([
+    writeWorkspaceToDist(workspaces),
+    // Updates the workspaces schemas to /schemas endpoint
+    updateWorkspacesSchemas({
+      verbose,
+      workspaces,
+    }),
+  ])
 }

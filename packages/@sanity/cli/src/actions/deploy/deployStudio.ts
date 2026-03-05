@@ -31,6 +31,9 @@ export async function deployStudio(options: DeployAppOptions) {
   const installedSanityVersion = await getLocalPackageVersion('sanity', workDir)
   const isAutoUpdating = shouldAutoUpdate({cliConfig, flags, output})
 
+  const isExternal = !!flags.external
+  // const urlType: 'external' | 'internal' = isExternal ? 'external' : 'internal'
+
   if (!installedSanityVersion) {
     output.error(`Failed to find installed sanity version`, {exit: 1})
     return
@@ -64,8 +67,8 @@ export async function deployStudio(options: DeployAppOptions) {
 
     deployDebug('Found user application', userApplication)
 
-    // Always build the project, unless --no-build is passed
-    const shouldBuild = flags.build
+    // Always build the project, unless --no-build is passed or --external is passed
+    const shouldBuild = flags.build && !isExternal
     if (shouldBuild) {
       deployDebug(`Building studio`)
       await buildStudio({
@@ -81,9 +84,9 @@ export async function deployStudio(options: DeployAppOptions) {
 
     await deployStudioSchemasAndManifests({
       configPath,
+      isExternal,
       outPath: `${sourceDir}/static`,
       schemaRequired: flags['schema-required'],
-      shouldBuild,
       verbose: flags.verbose,
       workDir,
     })

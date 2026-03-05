@@ -8,11 +8,6 @@ import {SchemaDeploy} from '../../telemetry/extractSchema.telemetry.js'
 import {SchemaExtractionError} from '../schema/utils/SchemaExtractionError.js'
 import {type DeployStudioSchemasAndManifestsWorkerData} from './types.js'
 
-interface DeployStudioSchemasAndManifestsOptions extends DeployStudioSchemasAndManifestsWorkerData {
-  schemaRequired: boolean
-  shouldBuild: boolean
-}
-
 type DeployStudioSchemasAndManifestsWorkerMessage =
   | {
       error: string
@@ -31,14 +26,16 @@ const debug = subdebug('deployStudioSchemasAndManifests')
  * 3. Creates a studio manifest, uploads it to user application and lexicon
  */
 export async function deployStudioSchemasAndManifests(
-  options: DeployStudioSchemasAndManifestsOptions,
+  options: DeployStudioSchemasAndManifestsWorkerData,
 ): Promise<void> {
-  const {configPath, outPath, schemaRequired, shouldBuild, verbose, workDir} = options
+  const {configPath, isExternal, outPath, schemaRequired, verbose, workDir} = options
 
   const trace = getCliTelemetry().trace(SchemaDeploy, {
-    extractManifest: shouldBuild,
+    // If the studio is externally hosted, we don't need to extract the manifest
+    extractManifest: !isExternal,
     manifestDir: outPath,
     schemaRequired,
+    // Deploy command does not take these flags this is leftover from the shared code
     tag: undefined,
     workspaceName: undefined,
   })
@@ -52,7 +49,9 @@ export async function deployStudioSchemasAndManifests(
         studioRootPath: workDir,
         workerData: {
           configPath,
+          isExternal,
           outPath,
+          schemaRequired,
           verbose,
           workDir,
         } satisfies DeployStudioSchemasAndManifestsWorkerData,

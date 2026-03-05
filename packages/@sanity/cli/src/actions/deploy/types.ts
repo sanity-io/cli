@@ -15,7 +15,9 @@ export interface DeployAppOptions {
 
 export const deployStudioSchemasAndManifestsWorkerData = z.object({
   configPath: z.string(),
+  isExternal: z.boolean(),
   outPath: z.string(),
+  schemaRequired: z.boolean(),
   verbose: z.boolean(),
   workDir: z.string(),
 })
