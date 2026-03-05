@@ -1,5 +1,5 @@
 import {type ChildProcess, spawn} from 'node:child_process'
-import {mkdir, readFile} from 'node:fs/promises'
+import {mkdir} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
@@ -23,17 +23,8 @@ import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
 import {createTelemetryStore} from '../../../util/telemetry/createTelemetryStore.js'
 import {flushTelemetryFiles} from '../../../util/telemetry/flushTelemetryFiles.js'
+import {readNDJSON} from '../../../util/telemetry/readNDJSON.js'
 import {setupTelemetry} from '../setupTelemetry.js'
-
-async function readNDJSON<T>(filePath: string): Promise<T[]> {
-  const content = await readFile(filePath, 'utf8')
-  if (!content.trim()) return []
-  return content
-    .trim()
-    .split('\n')
-    .filter(Boolean)
-    .map((line) => JSON.parse(line) as T)
-}
 
 // Mock external dependencies
 vi.mock('node:os', () => ({tmpdir: vi.fn()}))

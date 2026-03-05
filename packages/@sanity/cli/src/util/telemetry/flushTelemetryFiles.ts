@@ -2,7 +2,18 @@ import {rm} from 'node:fs/promises'
 
 import {type ConsentInformation} from '@sanity/cli-core'
 import {type TelemetryEvent} from '@sanity/telemetry'
-import {catchError, defer, from, lastValueFrom, mergeMap, of, reduce, switchMap, tap} from 'rxjs'
+import {
+  catchError,
+  defer,
+  from,
+  lastValueFrom,
+  map,
+  mergeMap,
+  of,
+  reduce,
+  switchMap,
+  tap,
+} from 'rxjs'
 
 import {cleanupOldTelemetryFiles} from './cleanupOldTelemetryFiles.js'
 import {findTelemetryFiles} from './findTelemetryFiles.js'
@@ -86,7 +97,7 @@ export async function flushTelemetryFiles(options: FlushTelemetryFilesOptions): 
                   telemetryStoreDebug('Error reading file %s: %o', filePath, error)
                   return of([])
                 }),
-                switchMap((events) => of({events, filePath})),
+                map((events) => ({events, filePath})),
               )
             }),
             reduce(
@@ -104,7 +115,7 @@ export async function flushTelemetryFiles(options: FlushTelemetryFilesOptions): 
               },
               {allEvents: [], emptyFiles: [], filesToDelete: []},
             ),
-            switchMap((result) => of({...result, consent: currentConsent})),
+            map((result) => ({...result, consent: currentConsent})),
           )
         }),
       )
@@ -145,15 +156,13 @@ export async function flushTelemetryFiles(options: FlushTelemetryFilesOptions): 
         tap(() => {
           telemetryStoreDebug('Successfully sent events, deleting %d files', filesToDelete.length)
         }),
-        switchMap(() =>
-          deleteFiles([...filesToDelete, ...emptyFiles], 'after successful send'),
-        ),
+        switchMap(() => deleteFiles([...filesToDelete, ...emptyFiles], 'after successful send')),
       )
     }),
     tap(() => {
       telemetryStoreDebug('Standalone flush operation completed successfully')
     }),
-    switchMap(() => of(undefined as void)),
+    map(() => undefined as void),
     catchError((error) => {
       telemetryStoreDebug('Error during standalone flush operation: %o', error)
       throw error

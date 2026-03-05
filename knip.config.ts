@@ -9,7 +9,6 @@ const baseConfig = {
 
     // See `helpClass` in `oclif.config.js`
     'packages/@sanity/cli/src/SanityHelp.ts',
-
   ],
   workspaces: {
     'fixtures/*': {
@@ -47,12 +46,12 @@ const baseConfig = {
       ignoreBinaries: ['sanity'],
       project,
     },
-    'packages/@repo/coverage-delta': {
-      project,
-    },
     'packages/@repo/command-extractor': {
       // Needed for npx to work
       ignoreDependencies: ['@sanity/cli'],
+      project,
+    },
+    'packages/@repo/coverage-delta': {
       project,
     },
     'packages/@sanity/cli': {
