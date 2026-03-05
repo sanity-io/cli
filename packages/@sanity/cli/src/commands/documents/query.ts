@@ -71,7 +71,8 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
       pretty,
     } = flags
 
-    const cliConfig = await this.getCliConfig()
+    const cliConfig = await this.tryGetCliConfig()
+
     const projectId = await this.getProjectId({
       deprecatedFlagName: 'project',
       fallback: () => promptForProject({}),

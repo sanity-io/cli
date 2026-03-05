@@ -57,7 +57,8 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
     const replaceAspects = flags['replace-aspects']
 
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
-    const cliConfig = await this.getCliConfig()
+
+    const cliConfig = await this.tryGetCliConfig()
     const dataset = cliConfig.api?.dataset
 
     let mediaLibraries

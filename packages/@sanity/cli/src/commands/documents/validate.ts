@@ -3,7 +3,7 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {ProjectRootNotFoundError, SanityCommand} from '@sanity/cli-core'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 
 import {type Level} from '../../actions/documents/types.js'
@@ -90,8 +90,20 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     } = flags
     const unattendedMode = Boolean(flags.yes)
 
-    const cliConfig = await this.getCliConfig()
-    const workDir = (await this.getProjectRoot()).directory
+    const cliConfig = await this.tryGetCliConfig()
+
+    let workDir: string
+    try {
+      workDir = (await this.getProjectRoot()).directory
+    } catch (err) {
+      if (err instanceof ProjectRootNotFoundError) {
+        this.error(
+          'This command must be run from within a Sanity project directory (requires studio schema for validation)',
+          {exit: 1},
+        )
+      }
+      throw err
+    }
 
     if (!unattendedMode) {
       this.log(

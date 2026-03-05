@@ -3,12 +3,7 @@ import path from 'node:path'
 import {type Writable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
-import {
-  getProjectCliClient,
-  ProjectRootNotFoundError,
-  SanityCommand,
-  subdebug,
-} from '@sanity/cli-core'
+import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {boxen, input, spinner} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/export'
@@ -131,14 +126,8 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     if (!dataset) {
       try {
         // Get default dataset from config (only available when running from a project directory)
-        let defaultDataset: string | undefined
-        try {
-          const cliConfig = await this.getCliConfig()
-          defaultDataset = cliConfig.api?.dataset
-        } catch (err) {
-          if (!(err instanceof ProjectRootNotFoundError)) throw err
-          // Not inside a project directory — no default dataset available
-        }
+        const cliConfig = await this.tryGetCliConfig()
+        const defaultDataset = cliConfig.api?.dataset
 
         if (defaultDataset) {
           dataset = defaultDataset

@@ -1,3 +1,4 @@
+import {ProjectRootNotFoundError} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -214,5 +215,63 @@ describe('#documents:delete', () => {
     })
 
     expect(stdout).toContain('Deleted 2 documents')
+  })
+
+  describe('outside project context', () => {
+    const noProjectRootMocks = {
+      cliConfigError: new ProjectRootNotFoundError('No project root found'),
+      token: 'test-token',
+    }
+
+    test('works with --project-id and --dataset flags when no project root', async () => {
+      const mockDelete = vi.fn()
+      const mockCommit = vi.fn().mockResolvedValue({
+        results: [{id: 'test-doc', operation: 'delete'}],
+      })
+      mockTransaction.mockReturnValue({
+        commit: mockCommit,
+        delete: mockDelete,
+      })
+
+      const {error, stdout} = await testCommand(
+        DeleteDocumentCommand,
+        ['test-doc', '--project-id', 'ext-project', '--dataset', 'ext-dataset'],
+        {mocks: noProjectRootMocks},
+      )
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('Deleted 1 document')
+      expect(mockDelete).toHaveBeenCalledWith('test-doc')
+      expect(mockCommit).toHaveBeenCalled()
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dataset: 'ext-dataset',
+          projectId: 'ext-project',
+        }),
+      )
+    })
+
+    test('errors when no project root and no --project-id', async () => {
+      const {error} = await testCommand(
+        DeleteDocumentCommand,
+        ['test-doc', '--dataset', 'ext-dataset'],
+        {mocks: noProjectRootMocks},
+      )
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Unable to determine project ID')
+    })
+
+    test('errors when no project root with --project-id but no --dataset', async () => {
+      const {error} = await testCommand(
+        DeleteDocumentCommand,
+        ['test-doc', '--project-id', 'ext-project'],
+        {mocks: noProjectRootMocks},
+      )
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('No dataset specified')
+      expect(error?.oclif?.exit).toBe(1)
+    })
   })
 })
