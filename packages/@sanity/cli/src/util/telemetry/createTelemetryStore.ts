@@ -21,7 +21,7 @@ import {telemetryStoreDebug} from './telemetryStoreDebug.js'
  * 1. WRITING (per session):
  *    - Each CLI session gets a unique file: telemetry-\{hash\}-\{env\}-\{sessionId\}.ndjson
  *    - Prevents write conflicts when multiple CLI commands run simultaneously
- *    - Events are written using an RxJS queue for ordered processing with retry logic
+ *    - Events are written synchronously via appendFileSync for reliability during process exit
  *
  * 2. FLUSHING (aggregate all sessions):
  *    - findTelemetryFiles() discovers ALL telemetry files for user/environment
@@ -35,6 +35,12 @@ import {telemetryStoreDebug} from './telemetryStoreDebug.js'
 
 interface CreateTelemetryStoreOptions {
   resolveConsent: () => Promise<ConsentInformation>
+}
+
+/** Extended store type that exposes the init promise for testing. */
+export interface TestableTelemetryStore extends CLITelemetryStore {
+  /** @internal Exposed only for test synchronization — not part of the public API. */
+  _initialized: Promise<void>
 }
 
 /**
@@ -54,15 +60,18 @@ interface CreateTelemetryStoreOptions {
 export function createTelemetryStore(
   sessionId: string,
   options: CreateTelemetryStoreOptions,
-): CLITelemetryStore {
+): TestableTelemetryStore {
   telemetryStoreDebug('Creating telemetry store with sessionId: %s', sessionId)
 
   let cachedConsent: ConsentInformation | null = null
   let filePath: string | null = null
+  let initialized = false
+  const pendingEvents: TelemetryEvent[] = []
+
+  /** Maximum number of events to buffer during initialization */
+  const MAX_PENDING_EVENTS = 100
 
   const initializeConsent = async () => {
-    if (cachedConsent) return
-
     try {
       cachedConsent = await options.resolveConsent()
       telemetryStoreDebug('Cached consent status: %s', cachedConsent.status)
@@ -73,8 +82,6 @@ export function createTelemetryStore(
   }
 
   const initializeFilePath = async () => {
-    if (filePath) return
-
     try {
       filePath = await generateTelemetryFilePath(sessionId)
       telemetryStoreDebug('Generated file path: %s', filePath)
@@ -87,7 +94,7 @@ export function createTelemetryStore(
     }
   }
 
-  const emit = (event: TelemetryEvent) => {
+  const writeEvent = (event: TelemetryEvent) => {
     if (!cachedConsent || cachedConsent.status !== 'granted') {
       if (cachedConsent) {
         telemetryStoreDebug(
@@ -95,8 +102,6 @@ export function createTelemetryStore(
           cachedConsent.status,
           event.type,
         )
-      } else {
-        telemetryStoreDebug('Consent not resolved, skipping event: %s', event.type)
       }
       return
     }
@@ -124,17 +129,42 @@ export function createTelemetryStore(
     }
   }
 
+  const flushPendingEvents = () => {
+    if (pendingEvents.length === 0) return
+
+    telemetryStoreDebug('Flushing %d pending events', pendingEvents.length)
+    const events = pendingEvents.splice(0)
+    for (const event of events) {
+      writeEvent(event)
+    }
+  }
+
+  const emit = (event: TelemetryEvent) => {
+    if (!initialized) {
+      if (pendingEvents.length < MAX_PENDING_EVENTS) {
+        telemetryStoreDebug('Buffering event during init: %s', event.type)
+        pendingEvents.push(event)
+      } else {
+        telemetryStoreDebug('Pending event buffer full, dropping event: %s', event.type)
+      }
+      return
+    }
+
+    writeEvent(event)
+  }
+
   const logger = createLogger<TelemetryUserProperties>(sessionId, emit)
 
-  // Initialize both consent and file path concurrently
-  Promise.allSettled([initializeConsent(), initializeFilePath()]).then((results) => {
-    for (const [index, result] of results.entries()) {
-      if (result.status === 'rejected') {
-        const type = index === 0 ? 'consent' : 'file path'
-        telemetryStoreDebug('Error initializing %s: %o', type, result.reason)
-      }
-    }
+  // Initialize both consent and file path concurrently, then flush buffered events.
+  // Both initializeConsent and initializeFilePath handle errors internally (never reject),
+  // so we simply await both and then flush.
+  const initPromise = Promise.all([initializeConsent(), initializeFilePath()]).then(() => {
+    initialized = true
+    flushPendingEvents()
   })
 
-  return logger
+  // Expose init promise for testing — not part of the public API
+  const store: TestableTelemetryStore = Object.assign(logger, {_initialized: initPromise})
+
+  return store
 }
