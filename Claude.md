@@ -31,7 +31,7 @@ All these commands are run from the root of the repo.
 - pnpm test --coverage - runs unit tests that generates coverage reports at the root in `coverage` folder
 - pnpm check:types - checks typescript types
 - pnpm check:lint - checks for formatting and eslint issues.
-- pnpm depcheck - Checks for any extra dependency, files or unnecessary exports
+- pnpm check:deps - Checks for any extra dependency, files or unnecessary exports
 - pnpm build:cli - builds the project
 - pnpm watch:cli - builds the project in watch mode (rebuilds on changes)
 
