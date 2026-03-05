@@ -15,11 +15,15 @@ import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {checkDir} from './checkDir.js'
 import {createStudioUserApplication} from './createStudioUserApplication.js'
 import {deployDebug} from './deployDebug.js'
+import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
 import {findUserApplicationForStudio} from './findUserApplicationForStudio.js'
 import {type DeployAppOptions} from './types.js'
 
 export async function deployStudio(options: DeployAppOptions) {
-  const {cliConfig, flags, output, sourceDir, workDir} = options
+  const {cliConfig, flags, output, projectRoot, sourceDir} = options
+
+  const workDir = projectRoot.directory
+  const configPath = projectRoot.path
 
   const appHost = cliConfig.studioHost
   const appId = getAppId(cliConfig)
@@ -74,6 +78,15 @@ export async function deployStudio(options: DeployAppOptions) {
         workDir,
       })
     }
+
+    await deployStudioSchemasAndManifests({
+      configPath,
+      outPath: `${sourceDir}/static`,
+      schemaRequired: flags['schema-required'],
+      shouldBuild,
+      verbose: flags.verbose,
+      workDir,
+    })
 
     // TODO: Implement schema deployment
     // await deploySchemasAction(

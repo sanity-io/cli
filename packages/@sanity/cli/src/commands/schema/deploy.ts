@@ -71,7 +71,6 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
       const workDir = (await this.getProjectRoot()).directory
 
       await deploySchemas({
-        output: this.output,
         tag,
         verbose: flags['verbose'],
         workDir,

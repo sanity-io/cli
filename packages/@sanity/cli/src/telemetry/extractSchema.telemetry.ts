@@ -23,6 +23,15 @@ type SchemaExtractionWatchModeAttributes =
       step: 'started'
     }
 
+interface SchemaDeployTraceData {
+  manifestDir: string
+  schemaRequired: boolean
+
+  extractManifest?: boolean
+  idPrefix?: string
+  workspaceName?: string
+}
+
 export const SchemaExtractedTrace = defineTrace<SchemaExtractedTraceAttributes>({
   description: 'Trace emitted when extracting schema',
   name: 'Schema Extracted',
@@ -33,4 +42,11 @@ export const SchemaExtractionWatchModeTrace = defineTrace<SchemaExtractionWatchM
   description: 'Trace emitted when schema extraction watch mode is run',
   name: 'Schema Extraction Watch Mode',
   version: 0,
+})
+
+export const SchemaDeploy = defineTrace<SchemaDeployTraceData>({
+  description:
+    'Schema deploy action was executed, either via sanity schema deploy or as sanity deploy',
+  name: 'Schema deploy action executed',
+  version: 1,
 })

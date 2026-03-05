@@ -26,7 +26,9 @@ import {type DeployAppOptions} from './types.js'
  * @internal
  */
 export async function deployApp(options: DeployAppOptions) {
-  const {cliConfig, flags, output, sourceDir, workDir} = options
+  const {cliConfig, flags, output, projectRoot, sourceDir} = options
+
+  const workDir = projectRoot.directory
 
   const organizationId = cliConfig.app?.organizationId
   const appId = getAppId(cliConfig)

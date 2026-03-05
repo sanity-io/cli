@@ -1,4 +1,5 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type CliConfig, type Output, type ProjectRootResult} from '@sanity/cli-core'
+import {z} from 'zod'
 
 import {DeployCommand} from '../../commands/deploy.js'
 
@@ -8,6 +9,17 @@ export interface DeployAppOptions {
   cliConfig: CliConfig
   flags: DeployFlags
   output: Output
+  projectRoot: ProjectRootResult
   sourceDir: string
-  workDir: string
 }
+
+export const deployStudioSchemasAndManifestsWorkerData = z.object({
+  configPath: z.string(),
+  outPath: z.string(),
+  verbose: z.boolean(),
+  workDir: z.string(),
+})
+
+export type DeployStudioSchemasAndManifestsWorkerData = z.infer<
+  typeof deployStudioSchemasAndManifestsWorkerData
+>

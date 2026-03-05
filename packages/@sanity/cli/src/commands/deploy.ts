@@ -76,11 +76,11 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     const {flags} = await this.parse(DeployCommand)
 
     const cliConfig = await this.getCliConfig()
-    const workDir = (await this.getProjectRoot()).directory
+    const projectRoot = await this.getProjectRoot()
 
     const isApp = determineIsApp(cliConfig)
 
-    const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
+    const defaultOutputDir = path.resolve(path.join(projectRoot.directory, 'dist'))
     const sourceDir = path.resolve(process.cwd(), this.args.sourceDir || defaultOutputDir)
 
     if (this.args.sourceDir && this.args.sourceDir !== 'dist') {
@@ -111,8 +111,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         cliConfig,
         flags,
         output: this.output,
+        projectRoot,
         sourceDir,
-        workDir,
       })
     } else {
       deployDebug('Deploying studio')
@@ -120,8 +120,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         cliConfig,
         flags,
         output: this.output,
+        projectRoot,
         sourceDir,
-        workDir,
       })
     }
   }
