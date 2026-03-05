@@ -32,3 +32,4 @@ This will watch for changes in the `src` folder and rebuild the CLI on every cha
 
 To test the specific commands you can navigate to `fixtures` and run `npx sanity <command>`. Since everything is watching for changes no need to rebuild when trying new commands.
 
+
