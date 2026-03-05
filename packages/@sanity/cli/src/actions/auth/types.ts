@@ -26,3 +26,11 @@ export interface SamlLoginProvider {
 export interface ProvidersResponse {
   providers: LoginProvider[]
 }
+
+/**
+ * @internal
+ */
+export interface TokenDetails {
+  label: string
+  token: string
+}
