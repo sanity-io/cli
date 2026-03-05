@@ -40,7 +40,8 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
       description: 'Project ID to undeploy GraphQL API from (overrides CLI configuration)',
     }),
     api: Flags.string({
-      description: 'Undeploy API with this ID (project, dataset and tag flags take precedence)',
+      description: 'Undeploy API with this ID',
+      exclusive: ['project-id', 'project'],
       required: false,
     }),
     ...getDatasetFlag({description: 'Dataset to undeploy GraphQL API from'}),
@@ -83,11 +84,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
         this.error(`GraphQL API "${apiFlag}" not found`, {exit: 1})
       }
 
-      if (projectId && projectId !== apiDef.projectId) {
-        this.warn(`Both --api and --project/--project-id specified, using project ${projectId}`)
-      } else {
-        projectId = apiDef.projectId
-      }
+      projectId = apiDef.projectId
 
       if (dataset && dataset !== apiDef.dataset) {
         this.warn(`Both --api and --dataset specified, using --dataset ${dataset}`)

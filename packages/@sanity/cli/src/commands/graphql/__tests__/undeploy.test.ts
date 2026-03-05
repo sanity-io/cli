@@ -236,35 +236,24 @@ describe('graphql undeploy', () => {
     expect(stderr).toContain('Both --api and --dataset specified, using --dataset staging')
   })
 
-  test('warns when both --api and --project are specified', async () => {
-    mockConfirm.mockResolvedValue(true)
+  test('errors when both --api and --project are specified', async () => {
+    const {error} = await testCommand(Undeploy, ['--api', 'ios', '--project', 'test-project'], {
+      mocks: defaultMocks,
+    })
 
-    mockGetGraphQLAPIs.mockResolvedValueOnce([
-      {
-        dataset: 'production',
-        id: 'ios',
-        projectId: 'ios-project',
-        schema,
-        tag: 'default',
-      },
-    ])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('cannot also be provided when using --api')
+  })
 
-    mockApi({
-      apiVersion: GRAPHQL_API_VERSION,
-      method: 'delete',
-      projectId: 'test-project',
-      uri: '/apis/graphql/production/default',
-    }).reply(204)
-
-    const {stderr, stdout} = await testCommand(
+  test('errors when both --api and --project-id are specified', async () => {
+    const {error} = await testCommand(
       Undeploy,
-      ['--api', 'ios', '--project', 'test-project'],
+      ['--api', 'ios', '--project-id', 'test-project'],
       {mocks: defaultMocks},
     )
 
-    expect(stdout).toBe('GraphQL API deleted\n')
-    expect(stderr).toContain('Both --api and --project/--project-id specified, using project')
-    expect(stderr).toContain('test-project')
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('cannot also be provided when using --api')
   })
 
   test('warns when both --api and --tag are specified', async () => {
