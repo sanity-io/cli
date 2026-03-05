@@ -39,6 +39,7 @@ const TEST_WORKER_URL = new URL('file:///test-worker.js')
 describe('promisifyWorker', () => {
   afterEach(() => {
     vi.clearAllMocks()
+    vi.useRealTimers()
   })
 
   test('resolves with the first message from the worker', async () => {
@@ -189,5 +190,60 @@ describe('promisifyWorker', () => {
     lastCreatedWorker.emit('exit', 1)
 
     await expect(promise).resolves.toBe('result')
+  })
+
+  test('rejects with error when timeout expires', async () => {
+    vi.useFakeTimers()
+
+    const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test', timeout: 500})
+
+    vi.advanceTimersByTime(500)
+
+    await expect(promise).rejects.toThrow('Worker timed out after 500ms')
+
+    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+  })
+
+  test('cleans up timer after an error', async () => {
+    vi.useFakeTimers()
+
+    const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test', timeout: 1000})
+
+    lastCreatedWorker.emit('error', new Error('fail'))
+    await promise.catch(() => {})
+
+    vi.advanceTimersByTime(1000)
+
+    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+  })
+
+  test('cleans up timer after a messageerror', async () => {
+    vi.useFakeTimers()
+
+    const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test', timeout: 1000})
+
+    lastCreatedWorker.emit('messageerror', new Error('bad message'))
+    await promise.catch(() => {})
+
+    vi.advanceTimersByTime(1000)
+
+    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
+  })
+
+  test('cleans up timer after receiving a message', async () => {
+    vi.useFakeTimers()
+
+    const promise = promisifyWorker(TEST_WORKER_URL, {name: 'test', timeout: 1000})
+
+    lastCreatedWorker.emit('message', 'result')
+    await promise
+
+    vi.advanceTimersByTime(1000)
+
+    expect(lastCreatedWorker.terminate).toHaveBeenCalledOnce()
+    expect(lastCreatedWorker.removeAllListeners).toHaveBeenCalledOnce()
   })
 })
