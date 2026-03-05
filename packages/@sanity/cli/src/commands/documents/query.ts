@@ -64,12 +64,7 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
       'api-version': apiVersion,
       dataset,
       pretty,
-      project: deprecatedProject,
     } = flags
-
-    if (deprecatedProject) {
-      this.warn('The --project flag is deprecated. Use --project-id instead.')
-    }
 
     const cliConfig = await this.getCliConfig()
     const projectId = await this.getProjectId({

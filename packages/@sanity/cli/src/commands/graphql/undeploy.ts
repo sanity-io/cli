@@ -64,11 +64,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(Undeploy)
-    const {api: apiFlag, dataset: datasetFlag, force, project: projectFlag, tag: tagFlag} = flags
-
-    if (projectFlag) {
-      this.warn('The --project flag is deprecated. Use --project-id instead.')
-    }
+    const {api: apiFlag, dataset: datasetFlag, force, tag: tagFlag} = flags
 
     let projectId: string | undefined
     let dataset = datasetFlag

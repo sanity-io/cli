@@ -119,7 +119,7 @@ describe('#documents:query', () => {
     )
 
     expect(stdout).toContain('"_id": "test"')
-    expect(stderr).toContain('--project flag is deprecated')
+    expect(stderr).toContain('"project" flag has been deprecated')
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
   })
 
@@ -137,7 +137,7 @@ describe('#documents:query', () => {
     )
 
     expect(stdout).toContain('"_id": "test"')
-    expect(stderr).toContain('--project flag is deprecated')
+    expect(stderr).toContain('"project" flag has been deprecated')
     // Verify that --project ('override-project') was used, not config ('test-project')
     expect(mockGetProjectCliClient).toHaveBeenCalledWith(
       expect.objectContaining({projectId: 'override-project'}),
@@ -158,7 +158,7 @@ describe('#documents:query', () => {
     )
 
     expect(stdout).toContain('"_id": "test"')
-    expect(stderr).toContain('--project flag is deprecated')
+    expect(stderr).toContain('"project" flag has been deprecated')
     // Verify that --project-id ('new-id') was used, not --project ('old-id')
     expect(mockGetProjectCliClient).toHaveBeenCalledWith(
       expect.objectContaining({projectId: 'new-id'}),
