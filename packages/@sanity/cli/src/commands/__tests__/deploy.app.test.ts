@@ -75,8 +75,8 @@ describe('#deploy app', () => {
   beforeEach(async () => {
     // Set up default mocks
     mockGetLocalPackageVersion.mockImplementation(async (moduleName) => {
-      if (moduleName === 'sanity') return '3.0.0' // for studio deployments
-      if (moduleName === '@sanity/sdk-react') return '1.0.0' // for app deployments
+      if (moduleName === 'sanity') return '3.0.0'
+      if (moduleName === '@sanity/sdk-react') return '1.0.0'
       return null
     })
     mockCheckDir.mockResolvedValue()

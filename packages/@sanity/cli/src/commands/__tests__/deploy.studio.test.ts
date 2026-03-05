@@ -5,7 +5,6 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildStudio} from '../../actions/build/buildStudio.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
-import {extractAppManifest} from '../../actions/manifest/extractAppManifest.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {DeployCommand} from '../deploy.js'
@@ -18,11 +17,6 @@ vi.mock('../../actions/build/buildStudio.js', () => ({
 
 vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
-}))
-
-vi.mock('../../actions/manifest/extractAppManifest.js', () => ({
-  appManifestHasData: vi.fn(),
-  extractAppManifest: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -52,19 +46,16 @@ const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
 const mockGetLocalPackageVersion = vi.mocked(getLocalPackageVersion)
 const mockBuildStudio = vi.mocked(buildStudio)
-const mockExtractAppManifest = vi.mocked(extractAppManifest)
 
 describe('#deploy studio', () => {
   beforeEach(async () => {
     // Set up default mocks
     mockGetLocalPackageVersion.mockImplementation(async (moduleName) => {
-      if (moduleName === 'sanity') return '3.0.0' // for studio deployments
-      if (moduleName === '@sanity/sdk-react') return '1.0.0' // for app deployments
+      if (moduleName === 'sanity') return '3.0.0'
+      if (moduleName === '@sanity/sdk-react') return '1.0.0'
       return null
     })
     mockCheckDir.mockResolvedValue()
-    // Default to empty manifest for app deployments
-    mockExtractAppManifest.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -645,8 +636,37 @@ describe('#deploy studio', () => {
 
     const projectId = 'test-project-id'
     const studioHost = 'test-studio'
+    const studioAppId = 'studio-app-id'
+    const deploymentId = 'deployment-id'
 
-    const {stderr} = await testCommand(DeployCommand, ['--auto-updates'], {
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {
+        appHost: studioHost,
+        appType: 'studio',
+      },
+      uri: `/projects/${projectId}/user-applications`,
+    }).reply(200, {
+      appHost: studioHost,
+      createdAt: '2024-01-01T00:00:00Z',
+      id: studioAppId,
+      projectId,
+      title: 'Test Studio',
+      type: 'studio',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {
+        appType: 'studio',
+      },
+      uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+    }).reply(201, {id: deploymentId}, {location: `https://${studioHost}.sanity.studio`})
+
+    const {error, stderr} = await testCommand(DeployCommand, ['--auto-updates'], {
       config: {root: cwd},
       mocks: {
         cliConfig: {
@@ -658,6 +678,7 @@ describe('#deploy studio', () => {
       },
     })
 
+    if (error) throw error
     expect(stderr).toContain('Warning: The --auto-updates flag is deprecated')
   })
 
