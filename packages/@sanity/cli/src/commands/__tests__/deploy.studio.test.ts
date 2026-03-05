@@ -23,7 +23,6 @@ vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
     ...actual,
-    confirm: vi.fn(),
     input: vi.fn(),
     select: vi.fn(),
   }
@@ -52,7 +51,6 @@ describe('#deploy studio', () => {
     // Set up default mocks
     mockGetLocalPackageVersion.mockImplementation(async (moduleName) => {
       if (moduleName === 'sanity') return '3.0.0'
-      if (moduleName === '@sanity/sdk-react') return '1.0.0'
       return null
     })
     mockCheckDir.mockResolvedValue()
