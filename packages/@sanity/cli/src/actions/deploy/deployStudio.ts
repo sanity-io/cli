@@ -1,6 +1,6 @@
 import {basename, dirname} from 'node:path'
 import {styleText} from 'node:util'
-import {createGzip} from 'node:zlib'
+import {createGzip, type Gzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
 import {spinner} from '@sanity/cli-core/ux'
@@ -32,7 +32,7 @@ export async function deployStudio(options: DeployAppOptions) {
   const isAutoUpdating = shouldAutoUpdate({cliConfig, flags, output})
 
   const isExternal = !!flags.external
-  // const urlType: 'external' | 'internal' = isExternal ? 'external' : 'internal'
+  const urlType: 'external' | 'internal' = isExternal ? 'external' : 'internal'
 
   if (!installedSanityVersion) {
     output.error(`Failed to find installed sanity version`, {exit: 1})
@@ -52,15 +52,20 @@ export async function deployStudio(options: DeployAppOptions) {
       appId,
       output,
       projectId,
+      urlType,
     })
 
     if (!userApplication) {
-      // otherwise, prompt the user for a hostname
-      output.log('Your project has not been assigned a studio hostname.')
-      output.log('To deploy your Sanity Studio to our hosted sanity.studio service,')
-      output.log('you will need one. Please enter the part you want to use.')
+      if (isExternal) {
+        output.log('Your project has not been registered with an external studio URL.')
+        output.log('Please enter the full URL where your studio is hosted.')
+      } else {
+        output.log('Your project has not been assigned a studio hostname.')
+        output.log('To deploy your Sanity Studio to our hosted sanity.studio service,')
+        output.log('you will need one. Please enter the part you want to use.')
+      }
 
-      userApplication = await createStudioUserApplication(projectId)
+      userApplication = await createStudioUserApplication({projectId, urlType})
 
       deployDebug('Created user application', userApplication)
     }
@@ -102,23 +107,27 @@ export async function deployStudio(options: DeployAppOptions) {
     //   {...context, manifestExtractor: createManifestExtractor(context)},
     // )
 
-    // Ensure that the directory exists, is a directory and seems to have valid content
-    spin = spin.start()
-    try {
-      await checkDir(sourceDir)
-      spin.succeed()
-    } catch (err) {
-      spin.fail()
-      deployDebug('Error checking directory', err)
-      output.error('Error checking directory', {exit: 1})
+    let tarball: Gzip | undefined
+
+    if (!isExternal) {
+      // Ensure that the directory exists, is a directory and seems to have valid content
+      spin = spin.start()
+      try {
+        await checkDir(sourceDir)
+        spin.succeed()
+      } catch (err) {
+        spin.fail()
+        deployDebug('Error checking directory', err)
+        output.error('Error checking directory', {exit: 1})
+      }
+
+      // Create a tarball of the given directory
+      const parentDir = dirname(sourceDir)
+      const base = basename(sourceDir)
+      tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
     }
 
-    // Create a tarball of the given directory
-    const parentDir = dirname(sourceDir)
-    const base = basename(sourceDir)
-    const tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
-
-    spin = spinner('Deploying to sanity.studio').start()
+    spin = spinner(isExternal ? 'Registering studio' : 'Deploying to sanity.studio').start()
 
     const {location} = await createDeployment({
       applicationId: userApplication.id,
@@ -131,8 +140,11 @@ export async function deployStudio(options: DeployAppOptions) {
 
     spin.succeed()
 
-    // And let the user know we're done
-    output.log(`\nSuccess! Studio deployed to ${styleText('cyan', location || 'unknown URL')}`)
+    if (isExternal) {
+      output.log(`\nSuccess! Studio registered at ${styleText('cyan', location || 'unknown URL')}`)
+    } else {
+      output.log(`\nSuccess! Studio deployed to ${styleText('cyan', location || 'unknown URL')}`)
+    }
 
     if (!appId) {
       output.log(`\nAdd ${styleText('cyan', `deployment: { appId: '${userApplication.id}' }`)}`)
