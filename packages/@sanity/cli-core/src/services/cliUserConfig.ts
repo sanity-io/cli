@@ -78,13 +78,10 @@ export async function getCliUserConfig<P extends keyof CliUserConfig>(
     throw new Error(`No schema defined for config property "${prop}"`)
   }
 
-  const {error, success} = valueSchema.safeParse(config[prop])
+  const {success} = valueSchema.safeParse(config[prop])
   if (!success) {
-    const message = error.issues
-      .map(({message, path}) => `[${path.join('.')}] ${message}`)
-      .join('\n')
-
-    throw new Error(`Invalid value for config property "${prop}": ${message}`)
+    debug('Ignoring invalid stored value for "%s", returning undefined', prop)
+    return undefined as CliUserConfig[P]
   }
 
   return config[prop]
