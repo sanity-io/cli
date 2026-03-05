@@ -3,9 +3,9 @@ import {beforeEach, describe, expect, test, vi} from 'vitest'
 import {createExpiringConfig} from '../createExpiringConfig.js'
 
 interface MockConfigStore {
-  delete: ReturnType<typeof vi.fn>
-  get: ReturnType<typeof vi.fn>
-  set: ReturnType<typeof vi.fn>
+  delete: ReturnType<typeof vi.fn<(key: string) => void>>
+  get: ReturnType<typeof vi.fn<(key: string) => unknown>>
+  set: ReturnType<typeof vi.fn<(key: string, value: unknown) => void>>
 }
 
 describe('createExpiringConfig', () => {
