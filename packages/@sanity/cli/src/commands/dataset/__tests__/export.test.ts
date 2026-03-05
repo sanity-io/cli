@@ -293,6 +293,49 @@ describe('#dataset:export', () => {
       expect(mockExportDataset).toHaveBeenCalledWith(expect.objectContaining({dataset: 'staging'}))
     })
 
+    test('exports with --project-id flag and dataset arg when outside project directory', async () => {
+      mockGetProjectCliClient.mockResolvedValue({
+        datasets: {
+          list: vi.fn().mockResolvedValue([{name: 'production'}]),
+        },
+      } as never)
+      mockFs.stat.mockRejectedValue(new Error('File not found'))
+
+      const {error, stdout} = await testCommand(
+        DatasetExportCommand,
+        ['production', 'output.tar.gz', '--project-id', 'flag-project'],
+        {
+          mocks: {
+            cliConfigError: new ProjectRootNotFoundError('No project root found'),
+            token: defaultMocks.token,
+          },
+        },
+      )
+
+      expect(error).toBeUndefined()
+      expect(stdout).toContain('projectId: flag-project')
+      expect(stdout).toContain('dataset: production')
+      expect(mockExportDataset).toHaveBeenCalledWith(
+        expect.objectContaining({dataset: 'production'}),
+      )
+    })
+
+    test('errors when outside project directory and no --project-id', async () => {
+      const {error} = await testCommand(
+        DatasetExportCommand,
+        ['production', 'output.tar.gz'],
+        {
+          mocks: {
+            cliConfigError: new ProjectRootNotFoundError('No project root found'),
+            token: defaultMocks.token,
+          },
+        },
+      )
+
+      expect(error?.message).toContain('Unable to determine project ID')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
     test('validates dataset exists in project', async () => {
       const {mocks} = createTestContext({datasets: [{name: 'production'}]})
 

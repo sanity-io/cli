@@ -3,7 +3,7 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {ProjectRootNotFoundError, SanityCommand} from '@sanity/cli-core'
+import {type CliConfig, ProjectRootNotFoundError, SanityCommand} from '@sanity/cli-core'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 
 import {type Level} from '../../actions/documents/types.js'
@@ -90,11 +90,12 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     } = flags
     const unattendedMode = Boolean(flags.yes)
 
-    const cliConfig = await this.tryGetCliConfig()
-
     let workDir: string
+    let cliConfig: CliConfig
     try {
-      workDir = (await this.getProjectRoot()).directory
+      const root = await this.getProjectRoot()
+      workDir = root.directory
+      cliConfig = await this.getCliConfig()
     } catch (err) {
       if (err instanceof ProjectRootNotFoundError) {
         this.error(
@@ -184,7 +185,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
 
           return reporter({flags, output: this.output, worker})
         },
-        studioHost: cliConfig?.studioHost,
+        studioHost: cliConfig.studioHost,
         workDir,
         workspace,
       })
