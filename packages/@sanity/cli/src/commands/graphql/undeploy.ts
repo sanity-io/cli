@@ -33,6 +33,10 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
       command: '<%= config.bin %> <%= command.id %> --force',
       description: 'Undeploy GraphQL API without confirmation prompt',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123 --dataset production',
+      description: 'Undeploy GraphQL API for a specific project and dataset',
+    },
   ]
 
   static override flags = {

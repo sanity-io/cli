@@ -32,6 +32,11 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
         '<%= config.bin %> <%= command.id %> \'*[_id == "header"] { "headerText": pt::text(body) }\' --api-version v2021-06-07',
       description: 'Use API version v2021-06-07 and do a query',
     },
+    {
+      command:
+        '<%= config.bin %> <%= command.id %> \'*[_type == "post"]\' --project-id abc123 --dataset production',
+      description: 'Query documents in a specific project and dataset',
+    },
   ]
 
   static override flags = {
