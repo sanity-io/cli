@@ -18,13 +18,13 @@ export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
     try {
       await logout()
 
-      this.clearConfig()
+      await this.clearConfig()
     } catch (error) {
       // In the case of session timeouts or missing sessions, we'll get a 401
       // This is an acceptable situation seen from a logout perspective - all we
       // need to do in this case is clear the session from the view of the CLI
       if (isHttpError(error) && error.response.statusCode === 401) {
-        this.clearConfig()
+        await this.clearConfig()
         return
       }
       const err = error instanceof Error ? error : new Error(`${error}`)
@@ -32,9 +32,11 @@ export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
     }
   }
 
-  private clearConfig() {
-    setCliUserConfig('authToken', undefined)
-    setCliUserConfig('telemetryConsent', undefined)
+  private async clearConfig() {
+    await Promise.all([
+      setCliUserConfig('authToken', undefined),
+      setCliUserConfig('telemetryConsent', undefined),
+    ])
 
     this.log('Logged out successfully')
   }

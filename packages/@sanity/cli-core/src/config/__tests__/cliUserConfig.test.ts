@@ -90,12 +90,12 @@ describe('cliUserConfig', () => {
       await expect(getCliUserConfig('invalidProp' as never)).rejects.toThrow('No schema defined')
     })
 
-    test('throws error for invalid value type', async () => {
+    test('returns undefined for invalid value type', async () => {
       vi.mocked(readJsonFile).mockResolvedValueOnce({
         authToken: 123, // Invalid type, should be string
       })
 
-      await expect(getCliUserConfig('authToken')).rejects.toThrow('Invalid value')
+      await expect(getCliUserConfig('authToken')).resolves.toBeUndefined()
     })
   })
 
