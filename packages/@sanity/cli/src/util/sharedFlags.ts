@@ -10,7 +10,6 @@ interface FlagOverrides {
   description?: string
   env?: string
   exclusive?: string[]
-  helpValue?: string | string[]
   hidden?: boolean
   required?: boolean
 }
@@ -19,7 +18,7 @@ interface FlagOverrides {
  * Returns a `--project-id` / `-p` flag definition.
  *
  * Locked: flag name (`project-id`), char (`p`), `helpValue` (`<id>`), and parse (trims + validates non-empty).
- * All other oclif flag properties (description, helpValue, etc.) can be overridden.
+ * All other oclif flag properties (description, etc.) can be overridden.
  */
 export function getProjectIdFlag(overrides?: FlagOverrides) {
   return {
@@ -43,7 +42,7 @@ export function getProjectIdFlag(overrides?: FlagOverrides) {
  * Returns a `--dataset` / `-d` flag definition.
  *
  * Locked: flag name (`dataset`), char (`d`), `helpValue` (`<name>`), and parse (trims + validates non-empty).
- * All other oclif flag properties (description, helpValue, etc.) can be overridden.
+ * All other oclif flag properties (description, etc.) can be overridden.
  */
 export function getDatasetFlag(overrides?: FlagOverrides) {
   return {

@@ -17,14 +17,17 @@ const defaultMocks = {
 }
 
 const mockFetch = vi.hoisted(() => vi.fn())
+const mockGetProjectCliClient = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({
+    fetch: mockFetch,
+  }),
+)
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
   return {
     ...actual,
-    getProjectCliClient: vi.fn().mockResolvedValue({
-      fetch: mockFetch,
-    }),
+    getProjectCliClient: mockGetProjectCliClient,
   }
 })
 
@@ -99,21 +102,46 @@ describe('#documents:query', () => {
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
   })
 
-  test('uses project flag to override config', async () => {
+  test('uses deprecated --project flag when no --project-id or config', async () => {
     const mockResults = [{_id: 'test', title: 'Test'}]
 
     mockFetch.mockResolvedValue(mockResults)
 
-    const {stdout} = await testCommand(
+    const {stderr, stdout} = await testCommand(
       QueryDocumentCommand,
       ['*[_type == "movie"]', '--project', 'other-project'],
+      {
+        mocks: {
+          ...defaultMocks,
+          cliConfig: {api: {dataset: testDataset}},
+        },
+      },
+    )
+
+    expect(stdout).toContain('"_id": "test"')
+    expect(stderr).toContain('--project flag is deprecated')
+    expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
+  })
+
+  test('--project-id takes precedence over deprecated --project', async () => {
+    const mockResults = [{_id: 'test', title: 'Test'}]
+
+    mockFetch.mockResolvedValue(mockResults)
+
+    const {stderr, stdout} = await testCommand(
+      QueryDocumentCommand,
+      ['*[_type == "movie"]', '--project-id', 'new-id', '--project', 'old-id'],
       {
         mocks: defaultMocks,
       },
     )
 
     expect(stdout).toContain('"_id": "test"')
-    expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
+    expect(stderr).toContain('--project flag is deprecated')
+    // Verify that --project-id ('new-id') was used, not --project ('old-id')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+      expect.objectContaining({projectId: 'new-id'}),
+    )
   })
 
   test('uses anonymous flag to skip authentication', async () => {
