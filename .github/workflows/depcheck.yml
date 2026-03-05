@@ -27,4 +27,4 @@ jobs:
           node-version: 20
 
       - name: Depcheck
-        run: pnpm depcheck
+        run: pnpm check:deps
