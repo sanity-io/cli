@@ -95,9 +95,16 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    * If the fallback throws a `NonInteractiveError` (e.g. because the terminal is
    * not interactive), it falls through to the standard error with suggestions.
    *
+   * Optionally accepts a `deprecatedFlagName` for commands that have a deprecated
+   * flag (e.g. `--project`) that should be checked after `--project-id` but before
+   * the CLI config.
+   *
    * @returns The project ID.
    */
-  protected async getProjectId(options?: {fallback?: () => Promise<string>}): Promise<string> {
+  protected async getProjectId(options?: {
+    deprecatedFlagName?: string
+    fallback?: () => Promise<string>
+  }): Promise<string> {
     const hasProjectFlag = this.ctor.flags != null && 'project-id' in this.ctor.flags
 
     // Check --project-id flag first
@@ -108,6 +115,17 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
           : undefined
 
       if (flagProjectId) return flagProjectId
+    }
+
+    // Check deprecated flag (e.g. --project) before CLI config
+    if (options?.deprecatedFlagName) {
+      const deprecatedValue =
+        options.deprecatedFlagName in this.flags &&
+        typeof this.flags[options.deprecatedFlagName] === 'string'
+          ? (this.flags[options.deprecatedFlagName] as string)
+          : undefined
+
+      if (deprecatedValue) return deprecatedValue
     }
 
     // Fall back to CLI config

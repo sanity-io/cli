@@ -7,10 +7,12 @@ import {isAssetAspect, type SchemaValidationProblem} from '@sanity/types'
 
 import {getMediaLibraryConfig} from '../../actions/media/getMediaLibraryConfig.js'
 import {importAspects} from '../../actions/media/importAspects.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {selectMediaLibrary} from '../../prompts/selectMediaLibrary.js'
 import {deployAspects} from '../../services/mediaLibraries.js'
 import {NO_MEDIA_LIBRARY_ASPECTS_PATH} from '../../util/errorMessages.js'
 import {pluralize} from '../../util/pluralize.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deployAspectDebug = subdebug('media:deploy-aspect')
 
@@ -36,6 +38,9 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to deploy media aspect to (overrides CLI configuration)',
+    }),
     all: Flags.boolean({
       description: 'Deploy all aspects',
       required: false,
@@ -70,7 +75,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: 1})
     }
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     try {
       // Determine target media library

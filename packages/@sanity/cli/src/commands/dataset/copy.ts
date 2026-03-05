@@ -21,7 +21,7 @@ import {
   listDatasetCopyJobs,
   listDatasets,
 } from '../../services/datasets.js'
-import {projectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const copyDatasetDebug = subdebug('dataset:copy')
 
@@ -76,7 +76,9 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to copy dataset in (overrides CLI configuration)',
+    }),
     attach: Flags.string({
       description: 'Attach to the running copy process to show progress',
       exclusive: ['list', 'detach', 'skip-history'],
@@ -306,7 +308,10 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }
   }
 
-  private async handleListMode(projectId: string, flags: {limit?: number; offset?: number}): Promise<void> {
+  private async handleListMode(
+    projectId: string,
+    flags: {limit?: number; offset?: number},
+  ): Promise<void> {
     copyDatasetDebug('Listing dataset copy jobs')
 
     try {

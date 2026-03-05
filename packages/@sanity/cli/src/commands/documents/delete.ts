@@ -1,7 +1,9 @@
-import {Args, Flags} from '@oclif/core'
+import {Args} from '@oclif/core'
 import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteDocumentDebug = subdebug('documents:delete')
 
@@ -36,12 +38,15 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
       command: '<%= config.bin %> <%= command.id %> doc1 doc2',
       description: 'Delete the document with ID "doc1" and "doc2"',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> myDocId --project-id abc123',
+      description: 'Delete a document from a specific project',
+    },
   ]
 
   static override flags = {
-    dataset: Flags.string({
-      description: 'NAME to override dataset',
-    }),
+    ...getProjectIdFlag({description: 'Project ID to delete from (overrides CLI configuration)'}),
+    ...getDatasetFlag({description: 'Dataset to delete from (overrides CLI configuration)'}),
   }
 
   // Disable strict mode to allow for more flexible input
@@ -62,8 +67,7 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
 
     // Get project configuration
     const cliConfig = await this.getCliConfig()
-    const projectId = await this.getProjectId()
-
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(

@@ -4,7 +4,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {validateDatasetName} from '../../../actions/dataset/validateDatasetName.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
 import {listDatasets} from '../../../services/datasets.js'
-import {projectIdFlag} from '../../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const getDebug = subdebug('dataset:visibility:get')
 
@@ -26,7 +26,9 @@ export class DatasetVisibilityGetCommand extends SanityCommand<typeof DatasetVis
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to get dataset visibility for (overrides CLI configuration)',
+    }),
   }
 
   public async run(): Promise<void> {

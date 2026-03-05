@@ -6,7 +6,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
 import {setEmbeddingsSettings} from '../../../services/embeddings.js'
-import {projectIdFlag} from '../../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const debug = subdebug('dataset:embeddings:disable')
 
@@ -30,7 +30,9 @@ export class DatasetEmbeddingsDisableCommand extends SanityCommand<
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to disable embeddings for (overrides CLI configuration)',
+    }),
   }
 
   public async run(): Promise<void> {

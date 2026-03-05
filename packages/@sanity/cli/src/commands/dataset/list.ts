@@ -2,7 +2,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasetAliases, listDatasets} from '../../services/datasets.js'
-import {projectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listDatasetDebug = subdebug('dataset:list')
 
@@ -21,7 +21,9 @@ export class ListDatasetCommand extends SanityCommand<typeof ListDatasetCommand>
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to list datasets for (overrides CLI configuration)',
+    }),
   }
 
   public async run(): Promise<void> {

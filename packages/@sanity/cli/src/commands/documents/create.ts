@@ -14,7 +14,9 @@ import isPlainObject from 'lodash-es/isPlainObject.js'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {getEditor, registerUnlinkOnSigInt} from '../../actions/documents/editor.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {isIdentifiedSanityDocument, isSanityDocumentish} from '../../util/isSanityDocumentish.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 export type MutationOperationName = 'create' | 'createIfNotExists' | 'createOrReplace'
 
@@ -49,12 +51,18 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
       description:
         'Open configured $EDITOR and replace the document with the given content on each save. Use JSON5 file extension and parser for simplified syntax.',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> myDocument.json --project-id abc123',
+      description: 'Create documents in a specific project',
+    },
   ]
 
   static override flags = {
-    dataset: Flags.string({
-      char: 'd',
-      description: 'Dataset to create document(s) in (overrides config)',
+    ...getProjectIdFlag({
+      description: 'Project ID to create document(s) in (overrides CLI configuration)',
+    }),
+    ...getDatasetFlag({
+      description: 'Dataset to create document(s) in (overrides CLI configuration)',
     }),
     id: Flags.string({
       description:
@@ -82,8 +90,7 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     const {file} = args
     const {dataset, id, json5: useJson5, missing, replace, watch} = flags
     const cliConfig = await this.getCliConfig()
-    const projectId = await this.getProjectId()
-
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(

@@ -9,6 +9,7 @@ import {confirm, logSymbols} from '@sanity/cli-core/ux'
 import {type Level} from '../../actions/documents/types.js'
 import {validateDocuments} from '../../actions/documents/validate.js'
 import {reporters} from '../../actions/documents/validation/reporters/index.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocumentsCommand> {
   static description = 'Validate documents in a dataset against the studio schema'
@@ -30,11 +31,17 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       command: '<%= config.bin %> <%= command.id %> --level info',
       description: 'Report out info level validation markers too',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123 --dataset production',
+      description: 'Validate documents in a specific project and dataset',
+    },
   ]
 
   static flags = {
-    dataset: Flags.string({
-      char: 'd',
+    ...getProjectIdFlag({
+      description: 'Override the project ID used. By default, this is derived from the given workspace',
+    }),
+    ...getDatasetFlag({
       description:
         'Override the dataset used. By default, this is derived from the given workspace',
     }),
@@ -48,7 +55,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     }),
     level: Flags.custom<Level>({
       default: 'warning',
-      description: 'The minimum level reported out. Defaults to warning',
+      description: 'The minimum level reported. Defaults to warning',
       options: ['error', 'warning', 'info'],
     })(),
     'max-custom-validation-concurrency': Flags.integer({
@@ -57,7 +64,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     }),
     'max-fetch-concurrency': Flags.integer({
       default: 25,
-      description: 'Specify how many `client.fetch` requests are allow concurrency at once',
+      description: 'Specify how many `client.fetch` requests are allowed to run concurrently',
     }),
     workspace: Flags.string({
       description: 'The name of the workspace to use when downloading and validating all documents',
@@ -78,6 +85,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       level,
       'max-custom-validation-concurrency': maxCustomValidationConcurrency,
       'max-fetch-concurrency': maxFetchConcurrency,
+      'project-id': projectId,
       workspace,
     } = flags
     const unattendedMode = Boolean(flags.yes)
@@ -155,6 +163,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
         maxCustomValidationConcurrency,
         maxFetchConcurrency,
         ndjsonFilePath,
+        projectId,
         reporter: (worker) => {
           const reporter =
             format && format in reporters

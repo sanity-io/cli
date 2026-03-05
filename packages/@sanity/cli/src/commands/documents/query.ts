@@ -2,6 +2,8 @@ import {Args, Flags} from '@oclif/core'
 import {colorizeJson, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const queryDocumentDebug = subdebug('documents:query')
 
@@ -30,9 +32,16 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
         '<%= config.bin %> <%= command.id %> \'*[_id == "header"] { "headerText": pt::text(body) }\' --api-version v2021-06-07',
       description: 'Use API version v2021-06-07 and do a query',
     },
+    {
+      command:
+        '<%= config.bin %> <%= command.id %> \'*[_type == "post"]\' --project-id abc123 --dataset production',
+      description: 'Query documents in a specific project and dataset',
+    },
   ]
 
   static override flags = {
+    ...getProjectIdFlag({description: 'Project ID to query (overrides CLI configuration)'}),
+    ...getDatasetFlag({description: 'Dataset to query (overrides CLI configuration)'}),
     anonymous: Flags.boolean({
       default: false,
       description: 'Send the query without any authorization token',
@@ -41,32 +50,34 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
       description: `API version to use (defaults to ${DOCUMENTS_API_VERSION})`,
       env: 'SANITY_CLI_QUERY_API_VERSION',
     }),
-    dataset: Flags.string({
-      char: 'd',
-      description: 'Dataset to query (overrides config)',
-    }),
     pretty: Flags.boolean({
       default: false,
       description: 'Colorize JSON output',
     }),
     project: Flags.string({
-      char: 'p',
-      description: 'Project ID to query (overrides config)',
+      deprecated: {to: 'project-id'},
+      description: 'Project ID to query (overrides CLI configuration)',
+      hidden: true,
     }),
   }
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(QueryDocumentCommand)
     const {query} = args
-    const {anonymous, 'api-version': apiVersion, dataset, pretty, project} = flags
+    const {
+      anonymous,
+      'api-version': apiVersion,
+      dataset,
+      pretty,
+    } = flags
 
-    // Get project configuration
     const cliConfig = await this.getCliConfig()
-    const configProjectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      deprecatedFlagName: 'project',
+      fallback: () => promptForProject({}),
+    })
 
-    const targetProject = project || configProjectId
     const requireUser = !anonymous
-
 
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(
@@ -86,7 +97,7 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
       const projectClient = await getProjectCliClient({
         apiVersion: targetApiVersion,
         dataset: targetDataset,
-        projectId: targetProject,
+        projectId,
         requireUser,
       })
 

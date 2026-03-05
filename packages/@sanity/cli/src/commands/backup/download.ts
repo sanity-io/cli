@@ -22,10 +22,12 @@ import {type File, PaginatedGetBackupStream} from '../../actions/backup/fetchNex
 import {newProgress} from '../../actions/backup/progressSpinner.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDataset} from '../../prompts/promptForDataset.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {type BackupItem, listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
 import {humanFileSize} from '../../util/humanFileSize.js'
 import {isPathDirName} from '../../util/isPathDirName.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const DEFAULT_DOWNLOAD_CONCURRENCY = 10
 const MAX_DOWNLOAD_CONCURRENCY = 24
@@ -72,6 +74,9 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to download backup from (overrides CLI configuration)',
+    }),
     'backup-id': Flags.string({
       description: 'The backup ID to download',
     }),
@@ -92,7 +97,12 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
     const {args} = await this.parse(DownloadBackupCommand)
     let {dataset} = args
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+        }),
+    })
 
     let datasets: DatasetsResponse
 

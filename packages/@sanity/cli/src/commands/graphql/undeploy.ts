@@ -3,7 +3,9 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {getGraphQLAPIs} from '../../actions/graphql/getGraphQLAPIs.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {deleteGraphQLAPI} from '../../services/graphql.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const undeployGraphqlDebug = subdebug('graphql:undeploy')
 
@@ -31,23 +33,30 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
       command: '<%= config.bin %> <%= command.id %> --force',
       description: 'Undeploy GraphQL API without confirmation prompt',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123 --dataset production',
+      description: 'Undeploy GraphQL API for a specific project and dataset',
+    },
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to undeploy GraphQL API from (overrides CLI configuration)',
+    }),
     api: Flags.string({
-      description: 'Undeploy API with this ID (project, dataset and tag flags take precedence)',
+      description: 'Undeploy API with this ID',
+      exclusive: ['project-id', 'project'],
       required: false,
     }),
-    dataset: Flags.string({
-      description: 'Dataset to undeploy GraphQL API from',
-      required: false,
-    }),
+    ...getDatasetFlag({description: 'Dataset to undeploy GraphQL API from'}),
     force: Flags.boolean({
       description: 'Skip confirmation prompt',
       required: false,
     }),
     project: Flags.string({
+      deprecated: {to: 'project-id'},
       description: 'Project ID to delete GraphQL API for',
+      hidden: true,
       required: false,
     }),
     tag: Flags.string({
@@ -59,9 +68,9 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(Undeploy)
-    const {api: apiFlag, dataset: datasetFlag, force, project: projectFlag, tag: tagFlag} = flags
+    const {api: apiFlag, dataset: datasetFlag, force, tag: tagFlag} = flags
 
-    let projectId = projectFlag
+    let projectId: string | undefined
     let dataset = datasetFlag
     let tag = tagFlag
 
@@ -75,11 +84,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
         this.error(`GraphQL API "${apiFlag}" not found`, {exit: 1})
       }
 
-      if (projectId && projectId !== apiDef.projectId) {
-        this.warn(`Both --api and --project specified, using --project ${projectId}`)
-      } else {
-        projectId = apiDef.projectId
-      }
+      projectId = apiDef.projectId
 
       if (dataset && dataset !== apiDef.dataset) {
         this.warn(`Both --api and --dataset specified, using --dataset ${dataset}`)
@@ -96,7 +101,13 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
 
     // Get projectId from config if not specified
     if (!projectId) {
-      projectId = await this.getProjectId()
+      projectId = await this.getProjectId({
+        deprecatedFlagName: 'project',
+        fallback: () =>
+          promptForProject({
+            requiredPermissions: [{grant: 'manage', permission: 'sanity.project.graphql'}],
+          }),
+      })
     }
 
     // Get dataset from CLI config if not specified

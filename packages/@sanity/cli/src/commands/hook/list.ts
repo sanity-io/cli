@@ -1,7 +1,9 @@
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {type Hook} from '../../actions/hook/types'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {listHooksForProject} from '../../services/hooks.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listHookDebug = subdebug('hook:list')
 
@@ -12,11 +14,26 @@ export class List extends SanityCommand<typeof List> {
       command: '<%= config.bin %> <%= command.id %>',
       description: 'List hooks for a given project',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      description: 'List hooks for a specific project',
+    },
   ]
+
+  static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to list webhooks for (overrides CLI configuration)',
+    }),
+  }
 
   public async run() {
     // Ensure we have project context
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.webhooks'}],
+        }),
+    })
 
     let hooks: Hook[]
     try {

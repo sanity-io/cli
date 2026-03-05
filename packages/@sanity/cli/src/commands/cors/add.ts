@@ -8,7 +8,9 @@ import {confirm, logSymbols} from '@sanity/cli-core/ux'
 import {oneline} from 'oneline'
 
 import {filterAndValidateOrigin} from '../../actions/cors/filterAndValidateOrigin.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {createCorsOrigin} from '../../services/cors.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const addCorsDebug = subdebug('cors:add')
 
@@ -35,9 +37,16 @@ export class Add extends SanityCommand<typeof Add> {
       command: '<%= config.bin %> <%= command.id %> https://myapp.com --credentials',
       description: 'Add a production origin with credentials allowed',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> https://myapp.com --project-id abc123',
+      description: 'Add a CORS origin for a specific project',
+    },
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to add CORS origin to (overrides CLI configuration)',
+    }),
     credentials: Flags.boolean({
       allowNo: true,
       default: undefined,
@@ -51,7 +60,12 @@ export class Add extends SanityCommand<typeof Add> {
     const {origin} = args
 
     // Ensure we have project context
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'create', permission: 'sanity.project.cors'}],
+        }),
+    })
 
     // Check if the origin argument looks like a file path and warn
     try {

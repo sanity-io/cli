@@ -19,7 +19,7 @@ import {promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasets} from '../../services/datasets.js'
 import {absolutify} from '../../util/absolutify.js'
-import {projectIdFlag} from '../../util/sharedFlags.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const noop = () => null
 const exportDebug = subdebug('dataset:export')
@@ -59,7 +59,9 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
   ]
 
   static override flags = {
-    ...projectIdFlag,
+    ...getProjectIdFlag({
+      description: 'Project ID to export dataset from (overrides CLI configuration)',
+    }),
     'asset-concurrency': Flags.integer({
       default: 8,
       description: 'Concurrent number of asset downloads',

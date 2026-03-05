@@ -9,8 +9,10 @@ import {lightFormat} from 'date-fns/lightFormat'
 import {parse} from 'date-fns/parse'
 
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const listBackupDebug = subdebug('backup:list')
 
@@ -52,6 +54,9 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to list backups for (overrides CLI configuration)',
+    }),
     after: Flags.string({
       description: 'Only return backups after this date (inclusive, YYYY-MM-DD format)',
     }),
@@ -69,7 +74,12 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     const {args, flags} = await this.parse(ListBackupCommand)
     let {dataset} = args
 
-    const projectId = await this.getProjectId()
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+        }),
+    })
 
     let datasets: DatasetsResponse
 
