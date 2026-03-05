@@ -119,10 +119,13 @@ Disable backup for a dataset.
 
 ```
 USAGE
-  $ sanity backup disable [DATASET]
+  $ sanity backup disable [DATASET] [-p <id>]
 
 ARGUMENTS
   [DATASET]  Dataset name to disable backup for
+
+FLAGS
+  -p, --project-id=<id>  Project ID to disable backups for (overrides CLI configuration)
 
 DESCRIPTION
   Disable backup for a dataset.
@@ -145,16 +148,18 @@ Download a dataset backup to a local file.
 
 ```
 USAGE
-  $ sanity backup download [DATASET] [--backup-id <value>] [--concurrency <value>] [--out <value>] [--overwrite]
+  $ sanity backup download [DATASET] [-p <id>] [--backup-id <value>] [--concurrency <value>] [--out <value>]
+    [--overwrite]
 
 ARGUMENTS
   [DATASET]  Dataset name to download backup from
 
 FLAGS
-  --backup-id=<value>    The backup ID to download
-  --concurrency=<value>  [default: 10] Concurrent number of backup item downloads (max: 24)
-  --out=<value>          The file or directory path the backup should download to
-  --overwrite            Allows overwriting of existing backup file
+  -p, --project-id=<id>      Project ID to download backup from (overrides CLI configuration)
+      --backup-id=<value>    The backup ID to download
+      --concurrency=<value>  [default: 10] Concurrent number of backup item downloads (max: 24)
+      --out=<value>          The file or directory path the backup should download to
+      --overwrite            Allows overwriting of existing backup file
 
 DESCRIPTION
   Download a dataset backup to a local file.
@@ -185,10 +190,13 @@ Enable backup for a dataset.
 
 ```
 USAGE
-  $ sanity backup enable [DATASET]
+  $ sanity backup enable [DATASET] [-p <id>]
 
 ARGUMENTS
   [DATASET]  Dataset name to enable backup for
+
+FLAGS
+  -p, --project-id=<id>  Project ID to enable backups for (overrides CLI configuration)
 
 DESCRIPTION
   Enable backup for a dataset.
@@ -211,15 +219,16 @@ List available backups for a dataset.
 
 ```
 USAGE
-  $ sanity backup list [DATASET] [--after <value>] [--before <value>] [-l <value>]
+  $ sanity backup list [DATASET] [-p <id>] [--after <value>] [--before <value>] [-l <value>]
 
 ARGUMENTS
   [DATASET]  Dataset name to list backups for
 
 FLAGS
-  -l, --limit=<value>   [default: 30] Maximum number of backups returned
-      --after=<value>   Only return backups after this date (inclusive, YYYY-MM-DD format)
-      --before=<value>  Only return backups before this date (exclusive, YYYY-MM-DD format)
+  -l, --limit=<value>    [default: 30] Maximum number of backups returned
+  -p, --project-id=<id>  Project ID to list backups for (overrides CLI configuration)
+      --after=<value>    Only return backups after this date (inclusive, YYYY-MM-DD format)
+      --before=<value>   Only return backups before this date (exclusive, YYYY-MM-DD format)
 
 DESCRIPTION
   List available backups for a dataset.
@@ -652,13 +661,14 @@ Allow a new origin to use your project API through CORS
 
 ```
 USAGE
-  $ sanity cors add ORIGIN [--credentials]
+  $ sanity cors add ORIGIN [-p <id>] [--credentials]
 
 ARGUMENTS
   ORIGIN  Origin to allow (e.g., https://example.com)
 
 FLAGS
-  --[no-]credentials  Allow credentials (token/cookie) to be sent from this origin
+  -p, --project-id=<id>   Project ID to add CORS origin to (overrides CLI configuration)
+      --[no-]credentials  Allow credentials (token/cookie) to be sent from this origin
 
 DESCRIPTION
   Allow a new origin to use your project API through CORS
@@ -675,6 +685,10 @@ EXAMPLES
   Add a production origin with credentials allowed
 
     $ sanity cors add https://myapp.com --credentials
+
+  Add a CORS origin for a specific project
+
+    $ sanity cors add https://myapp.com --project-id abc123
 ```
 
 _See code: [src/commands/cors/add.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/cors/add.ts)_
@@ -685,10 +699,13 @@ Delete an existing CORS origin from your project
 
 ```
 USAGE
-  $ sanity cors delete [ORIGIN]
+  $ sanity cors delete [ORIGIN] [-p <id>]
 
 ARGUMENTS
   [ORIGIN]  Origin to delete (will prompt if not provided)
+
+FLAGS
+  -p, --project-id=<id>  Project ID to delete CORS origin from (overrides CLI configuration)
 
 DESCRIPTION
   Delete an existing CORS origin from your project
@@ -701,6 +718,10 @@ EXAMPLES
   Delete a specific CORS origin
 
     $ sanity cors delete https://example.com
+
+  Delete a CORS origin from a specific project
+
+    $ sanity cors delete --project-id abc123
 ```
 
 _See code: [src/commands/cors/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/cors/delete.ts)_
@@ -711,7 +732,10 @@ List all origins allowed to access the API for this project
 
 ```
 USAGE
-  $ sanity cors list
+  $ sanity cors list [-p <id>]
+
+FLAGS
+  -p, --project-id=<id>  Project ID to list CORS origins for (overrides CLI configuration)
 
 DESCRIPTION
   List all origins allowed to access the API for this project
@@ -720,6 +744,10 @@ EXAMPLES
   List CORS origins for the current project
 
     $ sanity cors list
+
+  List CORS origins for a specific project
+
+    $ sanity cors list --project-id abc123
 ```
 
 _See code: [src/commands/cors/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/cors/list.ts)_
@@ -730,14 +758,14 @@ Create a dataset alias within your project
 
 ```
 USAGE
-  $ sanity dataset alias create [ALIASNAME] [TARGETDATASET] [-p <value>]
+  $ sanity dataset alias create [ALIASNAME] [TARGETDATASET] [-p <id>]
 
 ARGUMENTS
   [ALIASNAME]      Dataset alias name to create
   [TARGETDATASET]  Target dataset name to link the alias to
 
 FLAGS
-  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+  -p, --project-id=<id>  Project ID to create dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
   Create a dataset alias within your project
@@ -772,14 +800,14 @@ Delete a dataset alias within your project
 
 ```
 USAGE
-  $ sanity dataset alias delete ALIASNAME [-p <value>] [--force]
+  $ sanity dataset alias delete ALIASNAME [-p <id>] [--force]
 
 ARGUMENTS
   ALIASNAME  Dataset alias name to delete
 
 FLAGS
-  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
-      --force               Skip confirmation prompt and delete immediately
+  -p, --project-id=<id>  Project ID to delete dataset alias from (overrides CLI configuration)
+      --force            Skip confirmation prompt and delete immediately
 
 DESCRIPTION
   Delete a dataset alias within your project
@@ -806,15 +834,15 @@ Link a dataset alias to a dataset within your project
 
 ```
 USAGE
-  $ sanity dataset alias link [ALIASNAME] [TARGETDATASET] [-p <value>] [--force]
+  $ sanity dataset alias link [ALIASNAME] [TARGETDATASET] [-p <id>] [--force]
 
 ARGUMENTS
   [ALIASNAME]      Dataset alias name to link
   [TARGETDATASET]  Target dataset name to link the alias to
 
 FLAGS
-  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
-      --force               Skip confirmation prompt when relinking existing alias
+  -p, --project-id=<id>  Project ID to link dataset alias in (overrides CLI configuration)
+      --force            Skip confirmation prompt when relinking existing alias
 
 DESCRIPTION
   Link a dataset alias to a dataset within your project
@@ -849,14 +877,14 @@ Unlink a dataset alias from its dataset within your project
 
 ```
 USAGE
-  $ sanity dataset alias unlink [ALIASNAME] [-p <value>] [--force]
+  $ sanity dataset alias unlink [ALIASNAME] [-p <id>] [--force]
 
 ARGUMENTS
   [ALIASNAME]  Dataset alias name to unlink
 
 FLAGS
-  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
-      --force               Skip confirmation prompt and unlink immediately
+  -p, --project-id=<id>  Project ID to unlink dataset alias in (overrides CLI configuration)
+      --force            Skip confirmation prompt and unlink immediately
 
 DESCRIPTION
   Unlink a dataset alias from its dataset within your project
@@ -887,7 +915,7 @@ Manages dataset copying, including starting a new copy job, listing copy jobs an
 
 ```
 USAGE
-  $ sanity dataset copy [SOURCE] [TARGET] [-p <value>] [--attach <value> | --list | --detach | --skip-history]
+  $ sanity dataset copy [SOURCE] [TARGET] [-p <id>] [--attach <value> | --list | --detach | --skip-history]
     [--limit <value> ] [--offset <value> ]
 
 ARGUMENTS
@@ -895,13 +923,13 @@ ARGUMENTS
   [TARGET]  Name of the dataset to copy to
 
 FLAGS
-  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
-      --attach=<value>      Attach to the running copy process to show progress
-      --detach              Start the copy without waiting for it to finish
-      --limit=<value>       Maximum number of jobs returned (default 10, max 1000)
-      --list                Lists all dataset copy jobs
-      --offset=<value>      Start position in the list of jobs (default 0)
-      --skip-history        Don't preserve document history on copy
+  -p, --project-id=<id>  Project ID to copy dataset in (overrides CLI configuration)
+      --attach=<value>   Attach to the running copy process to show progress
+      --detach           Start the copy without waiting for it to finish
+      --limit=<value>    Maximum number of jobs returned (default 10, max 1000)
+      --list             Lists all dataset copy jobs
+      --offset=<value>   Start position in the list of jobs (default 0)
+      --skip-history     Don't preserve document history on copy
 
 DESCRIPTION
   Manages dataset copying, including starting a new copy job, listing copy jobs and following the progress of a running
@@ -949,14 +977,14 @@ Create a new dataset within your project
 
 ```
 USAGE
-  $ sanity dataset create [NAME] [-p <value>] [--embeddings-projection <value> --embeddings] [--visibility
+  $ sanity dataset create [NAME] [-p <id>] [--embeddings-projection <value> --embeddings] [--visibility
     custom|private|public]
 
 ARGUMENTS
   [NAME]  Name of the dataset to create
 
 FLAGS
-  -p, --project-id=<value>             Project ID to use. Overrides the project ID from the Sanity config.
+  -p, --project-id=<id>                Project ID to create dataset in (overrides CLI configuration)
       --embeddings                     Enable embeddings for this dataset
       --embeddings-projection=<value>  GROQ projection for embeddings indexing (e.g. "{ title, body }")
       --visibility=<option>            Set visibility for this dataset (custom/private/public)
@@ -987,14 +1015,14 @@ Delete a dataset within your project
 
 ```
 USAGE
-  $ sanity dataset delete DATASETNAME [-p <value>] [--force]
+  $ sanity dataset delete DATASETNAME [-p <id>] [--force]
 
 ARGUMENTS
   DATASETNAME  Dataset name to delete
 
 FLAGS
-  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
-      --force               Do not prompt for delete confirmation - forcefully delete
+  -p, --project-id=<id>  Project ID to delete dataset from (overrides CLI configuration)
+      --force            Do not prompt for delete confirmation - forcefully delete
 
 DESCRIPTION
   Delete a dataset within your project
@@ -1017,13 +1045,13 @@ Disable embeddings for a dataset
 
 ```
 USAGE
-  $ sanity dataset embeddings disable [DATASET] [-p <value>]
+  $ sanity dataset embeddings disable [DATASET] [-p <id>]
 
 ARGUMENTS
   [DATASET]  Dataset name to disable embeddings for
 
 FLAGS
-  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+  -p, --project-id=<id>  Project ID to disable embeddings for (overrides CLI configuration)
 
 DESCRIPTION
   Disable embeddings for a dataset
@@ -1042,13 +1070,13 @@ Enable embeddings for a dataset
 
 ```
 USAGE
-  $ sanity dataset embeddings enable [DATASET] [-p <value>] [--projection <value>] [--wait]
+  $ sanity dataset embeddings enable [DATASET] [-p <id>] [--projection <value>] [--wait]
 
 ARGUMENTS
   [DATASET]  Dataset name to enable embeddings for
 
 FLAGS
-  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+  -p, --project-id=<id>     Project ID to enable embeddings for (overrides CLI configuration)
       --projection=<value>  GROQ projection defining which fields to embed (e.g. "{ title, body }")
       --wait                Wait for embeddings processing to complete before returning
 
@@ -1077,13 +1105,13 @@ Show embeddings settings and status for a dataset
 
 ```
 USAGE
-  $ sanity dataset embeddings status [DATASET] [-p <value>]
+  $ sanity dataset embeddings status [DATASET] [-p <id>]
 
 ARGUMENTS
   [DATASET]  The name of the dataset to check embeddings status for
 
 FLAGS
-  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+  -p, --project-id=<id>  Project ID to check embeddings status for (overrides CLI configuration)
 
 DESCRIPTION
   Show embeddings settings and status for a dataset
@@ -1102,7 +1130,7 @@ Export dataset to local filesystem as a gzipped tarball. Assets failing with HTT
 
 ```
 USAGE
-  $ sanity dataset export [NAME] [DESTINATION] [-p <value>] [--asset-concurrency <value>] [--mode stream|cursor]
+  $ sanity dataset export [NAME] [DESTINATION] [-p <id>] [--asset-concurrency <value>] [--mode stream|cursor]
     [--no-assets] [--no-compress] [--no-drafts] [--overwrite] [--raw] [--types <value>]
 
 ARGUMENTS
@@ -1110,7 +1138,7 @@ ARGUMENTS
   [DESTINATION]  Output destination file path
 
 FLAGS
-  -p, --project-id=<value>         Project ID to use. Overrides the project ID from the Sanity config.
+  -p, --project-id=<id>            Project ID to export dataset from (overrides CLI configuration)
       --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
       --mode=<option>              [default: stream] Mode to export documents with `cursor` might be more performant for
                                    larger datasets, but might not be as accurate if the dataset is being modified during
@@ -1195,10 +1223,10 @@ List datasets of your project
 
 ```
 USAGE
-  $ sanity dataset list [-p <value>]
+  $ sanity dataset list [-p <id>]
 
 FLAGS
-  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+  -p, --project-id=<id>  Project ID to list datasets for (overrides CLI configuration)
 
 DESCRIPTION
   List datasets of your project
@@ -1221,13 +1249,13 @@ Get the visibility of a dataset
 
 ```
 USAGE
-  $ sanity dataset visibility get DATASET [-p <value>]
+  $ sanity dataset visibility get DATASET [-p <id>]
 
 ARGUMENTS
   DATASET  The name of the dataset to get visibility for
 
 FLAGS
-  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+  -p, --project-id=<id>  Project ID to get dataset visibility for (overrides CLI configuration)
 
 DESCRIPTION
   Get the visibility of a dataset
@@ -1246,14 +1274,14 @@ Set the visibility of a dataset
 
 ```
 USAGE
-  $ sanity dataset visibility set DATASET MODE [-p <value>]
+  $ sanity dataset visibility set DATASET MODE [-p <id>]
 
 ARGUMENTS
   DATASET  The name of the dataset to set visibility for
   MODE     (public|private) The visibility mode to set
 
 FLAGS
-  -p, --project-id=<value>  Project ID to use. Overrides the project ID from the Sanity config.
+  -p, --project-id=<id>  Project ID to set dataset visibility for (overrides CLI configuration)
 
 DESCRIPTION
   Set the visibility of a dataset
@@ -1449,13 +1477,14 @@ Create one or more documents
 
 ```
 USAGE
-  $ sanity documents create [FILE] [-d <value>] [--id <value>] [--json5] [--missing] [--replace] [--watch]
+  $ sanity documents create [FILE] [-p <id>] [-d <name>] [--id <value>] [--json5] [--missing] [--replace] [--watch]
 
 ARGUMENTS
   [FILE]  JSON file to create document(s) from
 
 FLAGS
-  -d, --dataset=<value>  Dataset to create document(s) in (overrides config)
+  -d, --dataset=<name>   Dataset to create document(s) in (overrides CLI configuration)
+  -p, --project-id=<id>  Project ID to create document(s) in (overrides CLI configuration)
       --id=<value>       Specify a document ID to use. Will fetch remote document ID and populate editor.
       --json5            Use JSON5 file type to allow a "simplified" version of JSON
       --missing          On duplicate document IDs, don't modify the target document(s)
@@ -1483,6 +1512,10 @@ EXAMPLES
   parser for simplified syntax.
 
     $ sanity documents create --id myDocId --watch --replace --json5
+
+  Create documents in a specific project
+
+    $ sanity documents create myDocument.json --project-id abc123
 ```
 
 _See code: [src/commands/documents/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/documents/create.ts)_
@@ -1493,14 +1526,15 @@ Delete one or more documents from the projects configured dataset
 
 ```
 USAGE
-  $ sanity documents delete ID... [IDS...] [--dataset <value>]
+  $ sanity documents delete ID... [IDS...] [-p <id>] [-d <name>]
 
 ARGUMENTS
   ID...     Document ID to delete
   [IDS...]  Additional document IDs to delete
 
 FLAGS
-  --dataset=<value>  NAME to override dataset
+  -d, --dataset=<name>   Dataset to delete from (overrides CLI configuration)
+  -p, --project-id=<id>  Project ID to delete from (overrides CLI configuration)
 
 DESCRIPTION
   Delete one or more documents from the projects configured dataset
@@ -1521,6 +1555,10 @@ EXAMPLES
   Delete the document with ID "doc1" and "doc2"
 
     $ sanity documents delete doc1 doc2
+
+  Delete a document from a specific project
+
+    $ sanity documents delete myDocId --project-id abc123
 ```
 
 _See code: [src/commands/documents/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/documents/delete.ts)_
@@ -1531,13 +1569,14 @@ Get and print a document by ID
 
 ```
 USAGE
-  $ sanity documents get DOCUMENTID [-d <value>] [--pretty]
+  $ sanity documents get DOCUMENTID [-p <id>] [-d <name>] [--pretty]
 
 ARGUMENTS
   DOCUMENTID  Document ID to retrieve
 
 FLAGS
-  -d, --dataset=<value>  Dataset to get document from (overrides config)
+  -d, --dataset=<name>   Dataset to get document from (overrides CLI configuration)
+  -p, --project-id=<id>  Project ID to get document from (overrides CLI configuration)
       --pretty           Colorize JSON output
 
 DESCRIPTION
@@ -1555,6 +1594,10 @@ EXAMPLES
   Get document from a specific dataset
 
     $ sanity documents get myDocId --dataset production
+
+  Get a document from a specific project
+
+    $ sanity documents get myDocId --project-id abc123
 ```
 
 _See code: [src/commands/documents/get.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/documents/get.ts)_
@@ -1565,14 +1608,14 @@ Query for documents
 
 ```
 USAGE
-  $ sanity documents query QUERY [--anonymous] [--api-version <value>] [-d <value>] [--pretty] [-p <value>]
+  $ sanity documents query QUERY [-p <id>] [-d <name>] [--anonymous] [--api-version <value>] [--pretty]
 
 ARGUMENTS
   QUERY  GROQ query to run against the dataset
 
 FLAGS
-  -d, --dataset=<value>      Dataset to query (overrides config)
-  -p, --project=<value>      Project ID to query (overrides config)
+  -d, --dataset=<name>       Dataset to query (overrides CLI configuration)
+  -p, --project-id=<id>      Project ID to query (overrides CLI configuration)
       --anonymous            Send the query without any authorization token
       --api-version=<value>  [env: SANITY_CLI_QUERY_API_VERSION] API version to use (defaults to 2025-08-15)
       --pretty               Colorize JSON output
@@ -1592,6 +1635,10 @@ EXAMPLES
   Use API version v2021-06-07 and do a query
 
     $ sanity documents query '*[_id == "header"] { "headerText": pt::text(body) }' --api-version v2021-06-07
+
+  Query documents in a specific project and dataset
+
+    $ sanity documents query '*[_type == "post"]' --project-id abc123 --dataset production
 ```
 
 _See code: [src/commands/documents/query.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/documents/query.ts)_
@@ -1602,23 +1649,24 @@ Validate documents in a dataset against the studio schema
 
 ```
 USAGE
-  $ sanity documents validate [-d <value>] [--file <value>] [--format <value>] [--level error|warning|info]
+  $ sanity documents validate [-p <id>] [-d <name>] [--file <value>] [--format <value>] [--level error|warning|info]
     [--max-custom-validation-concurrency <value>] [--max-fetch-concurrency <value>] [--workspace <value>] [-y]
 
 FLAGS
-  -d, --dataset=<value>                            Override the dataset used. By default, this is derived from the given
+  -d, --dataset=<name>                             Override the dataset used. By default, this is derived from the given
                                                    workspace
+  -p, --project-id=<id>                            Override the project ID used. By default, this is derived from the
+                                                   given workspace
   -y, --yes                                        Skips the first confirmation prompt
       --file=<value>                               Provide a path to either an .ndjson file or a tarball containing an
                                                    .ndjson file
       --format=<value>                             The output format used to print the found validation markers and
                                                    report progress
-      --level=<option>                             [default: warning] The minimum level reported out. Defaults to
-                                                   warning
+      --level=<option>                             [default: warning] The minimum level reported. Defaults to warning
                                                    <options: error|warning|info>
       --max-custom-validation-concurrency=<value>  [default: 5] Specify how many custom validators can run concurrently
-      --max-fetch-concurrency=<value>              [default: 25] Specify how many `client.fetch` requests are allow
-                                                   concurrency at once
+      --max-fetch-concurrency=<value>              [default: 25] Specify how many `client.fetch` requests are allowed to
+                                                   run concurrently
       --workspace=<value>                          The name of the workspace to use when downloading and validating all
                                                    documents
 
@@ -1641,6 +1689,10 @@ EXAMPLES
   Report out info level validation markers too
 
     $ sanity documents validate --level info
+
+  Validate documents in a specific project and dataset
+
+    $ sanity documents validate --project-id abc123 --dataset production
 ```
 
 _See code: [src/commands/documents/validate.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/documents/validate.ts)_
@@ -1946,21 +1998,21 @@ Deploy a GraphQL API from the current Sanity schema
 
 ```
 USAGE
-  $ sanity graphql deploy [--api <value>...] [--dataset <value>] [--dry-run] [--force] [--generation gen1|gen2|gen3]
+  $ sanity graphql deploy [--api <value>...] [-d <name>] [--dry-run] [--force] [--generation gen1|gen2|gen3]
     [--non-null-document-fields] [--playground] [--tag <value>] [--with-union-cache]
 
 FLAGS
-  --api=<value>...            Only deploy API with this ID. Can be specified multiple times.
-  --dataset=<value>           Deploy API for the given dataset
-  --dry-run                   Validate defined GraphQL APIs, check for breaking changes, skip deploy
-  --force                     Deploy API without confirming breaking changes
-  --generation=<option>       API generation to deploy (defaults to "gen3")
-                              <options: gen1|gen2|gen3>
-  --non-null-document-fields  Use non-null document fields (_id, _type etc)
-  --[no-]playground           Enable GraphQL playground for easier debugging
-  --tag=<value>               Deploy API(s) to given tag (defaults to "default")
-  --with-union-cache          Enable union cache that optimizes schema generation for schemas with many self referencing
-                              types
+  -d, --dataset=<name>            Deploy API for the given dataset
+      --api=<value>...            Only deploy API with this ID. Can be specified multiple times.
+      --dry-run                   Validate defined GraphQL APIs, check for breaking changes, skip deploy
+      --force                     Deploy API without confirming breaking changes
+      --generation=<option>       API generation to deploy (defaults to "gen3")
+                                  <options: gen1|gen2|gen3>
+      --non-null-document-fields  Use non-null document fields (_id, _type etc)
+      --[no-]playground           Enable GraphQL playground for easier debugging
+      --tag=<value>               Deploy API(s) to given tag (defaults to "default")
+      --with-union-cache          Enable union cache that optimizes schema generation for schemas with many self
+                                  referencing types
 
 DESCRIPTION
   Deploy a GraphQL API from the current Sanity schema
@@ -1991,7 +2043,10 @@ List all GraphQL endpoints deployed for this project
 
 ```
 USAGE
-  $ sanity graphql list
+  $ sanity graphql list [-p <id>]
+
+FLAGS
+  -p, --project-id=<id>  Project ID to list GraphQL endpoints for (overrides CLI configuration)
 
 DESCRIPTION
   List all GraphQL endpoints deployed for this project
@@ -2000,6 +2055,10 @@ EXAMPLES
   List GraphQL endpoints for the current project
 
     $ sanity graphql list
+
+  List GraphQL endpoints for a specific project
+
+    $ sanity graphql list --project-id abc123
 ```
 
 _See code: [src/commands/graphql/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/graphql/list.ts)_
@@ -2010,14 +2069,14 @@ Remove a deployed GraphQL API
 
 ```
 USAGE
-  $ sanity graphql undeploy [--api <value>] [--dataset <value>] [--force] [--project <value>] [--tag <value>]
+  $ sanity graphql undeploy [--api <value> | -p <id> | ] [-d <name>] [--force] [--tag <value>]
 
 FLAGS
-  --api=<value>      Undeploy API with this ID (project, dataset and tag flags take precedence)
-  --dataset=<value>  Dataset to undeploy GraphQL API from
-  --force            Skip confirmation prompt
-  --project=<value>  Project ID to delete GraphQL API for
-  --tag=<value>      [default: default] Tag to undeploy GraphQL API from
+  -d, --dataset=<name>   Dataset to undeploy GraphQL API from
+  -p, --project-id=<id>  Project ID to undeploy GraphQL API from (overrides CLI configuration)
+      --api=<value>      Undeploy API with this ID
+      --force            Skip confirmation prompt
+      --tag=<value>      [default: default] Tag to undeploy GraphQL API from
 
 DESCRIPTION
   Remove a deployed GraphQL API
@@ -2042,6 +2101,10 @@ EXAMPLES
   Undeploy GraphQL API without confirmation prompt
 
     $ sanity graphql undeploy --force
+
+  Undeploy GraphQL API for a specific project and dataset
+
+    $ sanity graphql undeploy --project-id abc123 --dataset production
 ```
 
 _See code: [src/commands/graphql/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/graphql/undeploy.ts)_
@@ -2072,10 +2135,13 @@ Print details of a given webhook delivery attempt
 
 ```
 USAGE
-  $ sanity hook attempt ATTEMPTID
+  $ sanity hook attempt ATTEMPTID [-p <id>]
 
 ARGUMENTS
   ATTEMPTID  The delivery attempt ID to get details for
+
+FLAGS
+  -p, --project-id=<id>  Project ID to view webhook attempt for (overrides CLI configuration)
 
 DESCRIPTION
   Print details of a given webhook delivery attempt
@@ -2084,6 +2150,10 @@ EXAMPLES
   Print details of webhook delivery attempt with ID abc123
 
     $ sanity hook attempt abc123
+
+  Get attempt details for a specific project
+
+    $ sanity hook attempt abc123 --project-id myproject
 ```
 
 _See code: [src/commands/hook/attempt.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/hook/attempt.ts)_
@@ -2094,7 +2164,10 @@ Create a new webhook for the current project
 
 ```
 USAGE
-  $ sanity hook create
+  $ sanity hook create [-p <id>]
+
+FLAGS
+  -p, --project-id=<id>  Project ID to create webhook for (overrides CLI configuration)
 
 DESCRIPTION
   Create a new webhook for the current project
@@ -2103,6 +2176,10 @@ EXAMPLES
   Create a new webhook for the current project
 
     $ sanity hook create
+
+  Create a webhook for a specific project
+
+    $ sanity hook create --project-id abc123
 ```
 
 _See code: [src/commands/hook/create.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/hook/create.ts)_
@@ -2113,10 +2190,13 @@ Delete a hook within your project
 
 ```
 USAGE
-  $ sanity hook delete [NAME]
+  $ sanity hook delete [NAME] [-p <id>]
 
 ARGUMENTS
   [NAME]  Name of hook to delete (will prompt if not provided)
+
+FLAGS
+  -p, --project-id=<id>  Project ID to delete webhook from (overrides CLI configuration)
 
 DESCRIPTION
   Delete a hook within your project
@@ -2129,6 +2209,10 @@ EXAMPLES
   Delete a specific hook by name
 
     $ sanity hook delete my-hook
+
+  Delete a hook from a specific project
+
+    $ sanity hook delete --project-id abc123
 ```
 
 _See code: [src/commands/hook/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/hook/delete.ts)_
@@ -2139,7 +2223,10 @@ List hooks for a given project
 
 ```
 USAGE
-  $ sanity hook list
+  $ sanity hook list [-p <id>]
+
+FLAGS
+  -p, --project-id=<id>  Project ID to list webhooks for (overrides CLI configuration)
 
 DESCRIPTION
   List hooks for a given project
@@ -2148,6 +2235,10 @@ EXAMPLES
   List hooks for a given project
 
     $ sanity hook list
+
+  List hooks for a specific project
+
+    $ sanity hook list --project-id abc123
 ```
 
 _See code: [src/commands/hook/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/hook/list.ts)_
@@ -2158,13 +2249,14 @@ List latest log entries for a given hook
 
 ```
 USAGE
-  $ sanity hook logs [NAME] [--detailed]
+  $ sanity hook logs [NAME] [-p <id>] [--detailed]
 
 ARGUMENTS
   [NAME]  Name of the hook to show logs for
 
 FLAGS
-  --detailed  Include detailed payload and attempts
+  -p, --project-id=<id>  Project ID to view webhook logs for (overrides CLI configuration)
+      --detailed         Include detailed payload and attempts
 
 DESCRIPTION
   List latest log entries for a given hook
@@ -2177,6 +2269,10 @@ EXAMPLES
   List latest log entries for a specific hook by name
 
     $ sanity hook logs [NAME]
+
+  List hook logs for a specific project
+
+    $ sanity hook logs --project-id abc123
 ```
 
 _See code: [src/commands/hook/logs.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/hook/logs.ts)_
@@ -2420,14 +2516,15 @@ Undeploy an aspect
 
 ```
 USAGE
-  $ sanity media delete-aspect ASPECTNAME [--media-library-id <value>] [--yes]
+  $ sanity media delete-aspect ASPECTNAME [-p <id>] [--media-library-id <value>] [--yes]
 
 ARGUMENTS
   ASPECTNAME  Name of the aspect to delete
 
 FLAGS
-  --media-library-id=<value>  The id of the target media library
-  --yes                       Skip confirmation prompt
+  -p, --project-id=<id>           Project ID to delete media aspect from (overrides CLI configuration)
+      --media-library-id=<value>  The id of the target media library
+      --yes                       Skip confirmation prompt
 
 DESCRIPTION
   Undeploy an aspect
@@ -2446,14 +2543,15 @@ Deploy an aspect
 
 ```
 USAGE
-  $ sanity media deploy-aspect [ASPECTNAME] [--all] [--media-library-id <value>]
+  $ sanity media deploy-aspect [ASPECTNAME] [-p <id>] [--all] [--media-library-id <value>]
 
 ARGUMENTS
   [ASPECTNAME]  Name of the aspect to deploy
 
 FLAGS
-  --all                       Deploy all aspects
-  --media-library-id=<value>  The id of the target media library
+  -p, --project-id=<id>           Project ID to deploy media aspect to (overrides CLI configuration)
+      --all                       Deploy all aspects
+      --media-library-id=<value>  The id of the target media library
 
 DESCRIPTION
   Deploy an aspect
@@ -2476,17 +2574,18 @@ Export an archive of all file and image assets including their aspect data from 
 
 ```
 USAGE
-  $ sanity media export [DESTINATION] [--asset-concurrency <value>] [--media-library-id <value>] [--no-compress]
-    [--overwrite]
+  $ sanity media export [DESTINATION] [-p <id>] [--asset-concurrency <value>] [--media-library-id <value>]
+    [--no-compress] [--overwrite]
 
 ARGUMENTS
   [DESTINATION]  Output destination file path
 
 FLAGS
-  --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
-  --media-library-id=<value>   The id of the target media library
-  --no-compress                Skips compressing tarball entries (still generates a gzip file)
-  --overwrite                  Overwrite any file with the same name
+  -p, --project-id=<id>            Project ID to export media from (overrides CLI configuration)
+      --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
+      --media-library-id=<value>   The id of the target media library
+      --no-compress                Skips compressing tarball entries (still generates a gzip file)
+      --overwrite                  Overwrite any file with the same name
 
 DESCRIPTION
   Export an archive of all file and image assets including their aspect data from the target media library. Video assets
@@ -2514,15 +2613,16 @@ Import a set of assets to the target media library.
 
 ```
 USAGE
-  $ sanity media import SOURCE [--media-library-id <value>] [--replace-aspects]
+  $ sanity media import SOURCE [-p <id>] [--media-library-id <value>] [--replace-aspects]
 
 ARGUMENTS
   SOURCE  Image file or folder to import from
 
 FLAGS
-  --media-library-id=<value>  The id of the target media library
-  --replace-aspects           Replace existing aspect data. All versions will be replaced (e.g. published and draft
-                              aspect data)
+  -p, --project-id=<id>           Project ID to import media to (overrides CLI configuration)
+      --media-library-id=<value>  The id of the target media library
+      --replace-aspects           Replace existing aspect data. All versions will be replaced (e.g. published and draft
+                                  aspect data)
 
 DESCRIPTION
   Import a set of assets to the target media library.
@@ -2816,12 +2916,13 @@ Delete schema documents by id
 
 ```
 USAGE
-  $ sanity schema delete --ids <value> [--dataset <value>] [--verbose]
+  $ sanity schema delete --ids <value> [-p <id>] [--dataset <value>] [--verbose]
 
 FLAGS
-  --dataset=<value>  Delete schemas from a specific dataset
-  --ids=<value>      (required) Comma-separated list of schema ids to delete
-  --verbose          Enable verbose logging
+  -p, --project-id=<id>  Project ID to delete schema from (overrides CLI configuration)
+      --dataset=<value>  Delete schemas from a specific dataset
+      --ids=<value>      (required) Comma-separated list of schema ids to delete
+      --verbose          Enable verbose logging
 
 DESCRIPTION
   Delete schema documents by id
@@ -3088,15 +3189,16 @@ Create a new API token for this project
 
 ```
 USAGE
-  $ sanity tokens add [LABEL] [--json] [--role viewer] [-y]
+  $ sanity tokens add [LABEL] [-p <id>] [--json] [--role viewer] [-y]
 
 ARGUMENTS
   [LABEL]  Label for the new token
 
 FLAGS
-  -y, --yes          Skip prompts and use defaults (unattended mode)
-      --json         Output as JSON
-      --role=viewer  Role to assign to the token
+  -p, --project-id=<id>  Project ID to add token to (overrides CLI configuration)
+  -y, --yes              Skip prompts and use defaults (unattended mode)
+      --json             Output as JSON
+      --role=viewer      Role to assign to the token
 
 DESCRIPTION
   Create a new API token for this project
@@ -3117,6 +3219,10 @@ EXAMPLES
   Output token information as JSON
 
     $ sanity tokens add "API Token" --json
+
+  Create a token for a specific project
+
+    $ sanity tokens add "My Token" --project-id abc123 --role=editor
 ```
 
 _See code: [src/commands/tokens/add.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/tokens/add.ts)_
@@ -3127,13 +3233,14 @@ Delete an API token from this project
 
 ```
 USAGE
-  $ sanity tokens delete [TOKENID] [--yes]
+  $ sanity tokens delete [TOKENID] [-p <id>] [--yes]
 
 ARGUMENTS
   [TOKENID]  Token ID to delete (will prompt if not provided)
 
 FLAGS
-  --yes  Skip confirmation prompt (unattended mode)
+  -p, --project-id=<id>  Project ID to delete token from (overrides CLI configuration)
+      --yes              Skip confirmation prompt (unattended mode)
 
 DESCRIPTION
   Delete an API token from this project
@@ -3150,6 +3257,10 @@ EXAMPLES
   Delete a specific token without confirmation prompt
 
     $ sanity tokens delete silJ2lFmK6dONB --yes
+
+  Delete a token from a specific project
+
+    $ sanity tokens delete --project-id abc123
 ```
 
 _See code: [src/commands/tokens/delete.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/tokens/delete.ts)_
@@ -3160,10 +3271,11 @@ List API tokens for the current project
 
 ```
 USAGE
-  $ sanity tokens list [--json]
+  $ sanity tokens list [-p <id>] [--json]
 
 FLAGS
-  --json  Output tokens in JSON format
+  -p, --project-id=<id>  Project ID to list tokens for (overrides CLI configuration)
+      --json             Output tokens in JSON format
 
 DESCRIPTION
   List API tokens for the current project
@@ -3176,6 +3288,10 @@ EXAMPLES
   List tokens in JSON format
 
     $ sanity tokens list --json
+
+  List tokens for a specific project
+
+    $ sanity tokens list --project-id abc123
 ```
 
 _See code: [src/commands/tokens/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/tokens/list.ts)_
@@ -3249,13 +3365,14 @@ Invite a new user to the project
 
 ```
 USAGE
-  $ sanity users invite [EMAIL] [--role <value>]
+  $ sanity users invite [EMAIL] [-p <id>] [--role <value>]
 
 ARGUMENTS
   [EMAIL]  Email address to invite
 
 FLAGS
-  --role=<value>  Role to invite the user as
+  -p, --project-id=<id>  Project ID to invite user to (overrides CLI configuration)
+      --role=<value>     Role to invite the user as
 
 DESCRIPTION
   Invite a new user to the project
@@ -3272,6 +3389,10 @@ EXAMPLES
   Send a new user invite to the email "pippi@sanity.io", as administrator
 
     $ sanity users invite pippi@sanity.io --role administrator
+
+  Invite a user to a specific project
+
+    $ sanity users invite pippi@sanity.io --project-id abc123
 ```
 
 _See code: [src/commands/users/invite.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/users/invite.ts)_
@@ -3282,15 +3403,16 @@ List all users of the project
 
 ```
 USAGE
-  $ sanity users list [--invitations] [--order asc|desc] [--robots] [--sort id|name|role|date]
+  $ sanity users list [-p <id>] [--invitations] [--order asc|desc] [--robots] [--sort id|name|role|date]
 
 FLAGS
-  --[no-]invitations  Includes or excludes pending invitations
-  --order=<option>    [default: asc] Sort output ascending/descending
-                      <options: asc|desc>
-  --[no-]robots       Includes or excludes robots (token users)
-  --sort=<option>     [default: date] Sort users by specified column
-                      <options: id|name|role|date>
+  -p, --project-id=<id>   Project ID to list users for (overrides CLI configuration)
+      --[no-]invitations  Includes or excludes pending invitations
+      --order=<option>    [default: asc] Sort output ascending/descending
+                          <options: asc|desc>
+      --[no-]robots       Includes or excludes robots (token users)
+      --sort=<option>     [default: date] Sort users by specified column
+                          <options: id|name|role|date>
 
 DESCRIPTION
   List all users of the project
@@ -3307,6 +3429,10 @@ EXAMPLES
   List all users, sorted by role
 
     $ sanity users list --sort role
+
+  List users for a specific project
+
+    $ sanity users list --project-id abc123
 ```
 
 _See code: [src/commands/users/list.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/users/list.ts)_
