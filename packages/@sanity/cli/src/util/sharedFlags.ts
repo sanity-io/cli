@@ -10,6 +10,7 @@ interface FlagOverrides {
   description?: string
   env?: string
   exclusive?: string[]
+  helpGroup?: string
   hidden?: boolean
   required?: boolean
 }
@@ -24,6 +25,7 @@ export function getProjectIdFlag(overrides?: FlagOverrides) {
   return {
     'project-id': Flags.string({
       description: 'Project ID to use (overrides CLI configuration)',
+      helpGroup: 'OVERRIDE',
       helpValue: '<id>',
       ...overrides,
       char: 'p',
@@ -48,6 +50,7 @@ export function getDatasetFlag(overrides?: FlagOverrides) {
   return {
     dataset: Flags.string({
       description: 'Dataset to use (overrides CLI configuration)',
+      helpGroup: 'OVERRIDE',
       helpValue: '<name>',
       ...overrides,
       char: 'd',
