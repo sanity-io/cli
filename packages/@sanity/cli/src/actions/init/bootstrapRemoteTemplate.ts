@@ -5,10 +5,10 @@ import {Output, subdebug} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {getMonoRepo, GitHubFileReader, validateTemplate} from '@sanity/template-validator'
 import {type Framework, frameworks} from '@vercel/frameworks'
-import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 
 import {createCorsOrigin} from '../../services/cors.js'
 import {createToken} from '../../services/tokens.js'
+import {detectFrameworkRecord} from '../../util/detectFramework.js'
 import {getDefaultPortForFramework} from '../../util/frameworkPort.js'
 import {type GenerateConfigOptions} from './createStudioConfig.js'
 import {tryGitInit} from './git.js'
@@ -98,7 +98,7 @@ export async function bootstrapRemoteTemplate(opts: BootstrapRemoteOptions): Pro
     const packagePath = join(outputPath, pkg)
     const packageFramework: Framework | null = await detectFrameworkRecord({
       frameworkList: frameworks as readonly Framework[],
-      fs: new LocalFileSystemDetector(packagePath),
+      rootPath: packagePath,
     })
 
     const port = getDefaultPortForFramework(packageFramework?.slug)

@@ -49,12 +49,11 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('@vercel/fs-detectors', () => ({
+vi.mock('../../../util/detectFramework.js', () => ({
   detectFrameworkRecord: vi.fn().mockResolvedValue({
     name: 'Next.js',
     slug: 'nextjs',
   }),
-  LocalFileSystemDetector: vi.fn(),
 }))
 
 vi.mock('../../../actions/auth/login/login.js', () => ({
