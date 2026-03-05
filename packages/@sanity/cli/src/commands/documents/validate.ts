@@ -35,7 +35,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
 
   static flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to validate documents for (overrides CLI configuration)',
+      description: 'Override the project ID used. By default, this is derived from the given workspace',
     }),
     ...getDatasetFlag({
       description:
@@ -60,7 +60,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     }),
     'max-fetch-concurrency': Flags.integer({
       default: 25,
-      description: 'Specify how many `client.fetch` requests are allow concurrency at once',
+      description: 'Specify how many `client.fetch` requests are allowed to run concurrently',
     }),
     workspace: Flags.string({
       description: 'The name of the workspace to use when downloading and validating all documents',
