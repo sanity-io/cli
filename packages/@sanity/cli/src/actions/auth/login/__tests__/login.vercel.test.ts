@@ -34,9 +34,6 @@ vi.mock('../getProvider.js', () => ({
 vi.mock('../../../../util/canLaunchBrowser.js', () => ({
   canLaunchBrowser: vi.fn(() => true),
 }))
-vi.mock('../../../../services/auth.js', () => ({
-  logout: vi.fn(),
-}))
 
 const mockedGetCliToken = vi.mocked(getCliToken)
 const mockedSetConfig = vi.mocked(setConfig)

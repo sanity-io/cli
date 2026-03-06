@@ -1,14 +1,17 @@
+import {createTestClient} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {promptForProviders} from '../../../../prompts/promptForProviders.js'
-import {getVercelProviderUrl} from '../../../../services/auth.js'
 import {getProvider} from '../getProvider.js'
 import {getSSOProvider} from '../getSSOProvider.js'
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  const {client} = createTestClient({apiVersion: 'v2025-09-23'})
+
   return {
     ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue(client),
     subdebug: vi.fn(() => vi.fn()),
   }
 })
@@ -30,14 +33,8 @@ vi.mock('../../../../prompts/promptForProviders.js', () => ({
   promptForProviders: vi.fn(),
 }))
 
-vi.mock('../../../../services/auth.js', () => ({
-  getProviders: vi.fn(),
-  getVercelProviderUrl: vi.fn(),
-}))
-
 const mockedGetSSOProvider = vi.mocked(getSSOProvider)
 const mockedPromptForProviders = vi.mocked(promptForProviders)
-const mockedGetVercelProviderUrl = vi.mocked(getVercelProviderUrl)
 
 describe('#getProvider vercel provider', () => {
   afterEach(() => {
@@ -45,20 +42,19 @@ describe('#getProvider vercel provider', () => {
   })
 
   test('returns Vercel provider and skips provider selection flow', async () => {
-    mockedGetVercelProviderUrl.mockResolvedValue('https://api.sanity.io/v1/auth/login/vercel')
-
     const provider = await getProvider({
       experimental: false,
       orgSlug: 'acme',
       specifiedProvider: 'vercel',
     })
 
-    expect(provider).toEqual({
+    expect(provider).toMatchObject({
       name: 'vercel',
       title: 'Vercel',
-      url: 'https://api.sanity.io/v1/auth/login/vercel',
     })
-    expect(mockedGetVercelProviderUrl).toHaveBeenCalled()
+    const url = new URL(provider!.url)
+    expect(url.protocol).toBe('https:')
+    expect(url.pathname).toBe('/v1/auth/login/vercel')
     expect(mockedGetSSOProvider).not.toHaveBeenCalled()
     expect(mockedPromptForProviders).not.toHaveBeenCalled()
   })
