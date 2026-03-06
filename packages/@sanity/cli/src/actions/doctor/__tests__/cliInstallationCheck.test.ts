@@ -41,19 +41,19 @@ describe('cliInstallationCheck', () => {
     expect(infoMessages.filter((m) => m.text.startsWith('Running CLI from:'))).toHaveLength(0)
   })
 
-  test('returns error status when version conflicts exist', async () => {
+  test('returns error status when sanity is declared but not installed', async () => {
     const cwd = path.join(fixturesDir, 'standalone-npm')
 
     const result = await cliInstallationCheck.run({cwd})
 
-    // standalone-npm declares sanity@^3.67.0 but has no node_modules of its own.
-    // Node resolution finds the monorepo's packages, which are alpha versions,
-    // so version-mismatch issues are expected.
+    // standalone-npm declares sanity@^3.67.0 but has no node_modules.
+    // With workspace-root bounded search, sanity won't be found as installed,
+    // so we expect a declared-not-installed error.
     expect(result.status).toBe('error')
     const errorMsg = result.messages.find((m) => m.type === 'error')
-    expect(errorMsg).toBeDefined()
-    expect(errorMsg?.text).toBeDefined()
-    expect(errorMsg?.suggestions).toBeDefined()
+    if (!errorMsg) throw new Error('Expected an error message')
+    expect(errorMsg.text).toBeDefined()
+    expect(errorMsg.suggestions).toBeDefined()
   })
 
   test('shows issue messages with suggestions when problems exist', async () => {
@@ -65,7 +65,7 @@ describe('cliInstallationCheck', () => {
     const issueMessages = result.messages.filter((m) => m.type === 'warning' || m.type === 'error')
     expect(issueMessages.length).toBeGreaterThan(0)
 
-    // Each issue should have a suggestion
+    // Each warning/error issue should have a suggestion
     for (const msg of issueMessages) {
       expect(msg.suggestions?.length).toBeGreaterThan(0)
     }

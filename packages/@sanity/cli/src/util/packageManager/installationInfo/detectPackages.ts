@@ -133,6 +133,7 @@ export async function findPackageOverride(
 export async function findInstalledPackage(
   packageName: SanityPackage,
   startDir: string,
+  workspaceRoot: string,
 ): Promise<InstalledPackage | null> {
   let currentDir = path.resolve(startDir)
   const fsRoot = path.parse(currentDir).root
@@ -157,6 +158,11 @@ export async function findInstalledPackage(
           return nestedResult
         }
       }
+    }
+
+    // Stop at workspace root
+    if (currentDir === workspaceRoot) {
+      break
     }
 
     currentDir = path.dirname(currentDir)
@@ -252,7 +258,7 @@ export async function collectPackageInfo(
   const [declared, override, installed] = await Promise.all([
     findPackageDeclaration(packageName, startDir, workspaceInfo),
     findPackageOverride(packageName, workspaceInfo),
-    findInstalledPackage(packageName, startDir),
+    findInstalledPackage(packageName, startDir, workspaceInfo.root),
   ])
 
   return {declared, installed, override}

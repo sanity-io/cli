@@ -165,7 +165,7 @@ describe('findInstalledPackage', () => {
   test('finds sanity in pnpm nested structure', async () => {
     const cwd = pnpmFixture
 
-    const result = await findInstalledPackage('sanity', cwd)
+    const result = await findInstalledPackage('sanity', cwd, cwd)
 
     expect(result).not.toBeNull()
     expect(result?.version).toBe('5.4.0')
@@ -175,7 +175,7 @@ describe('findInstalledPackage', () => {
   test('finds @sanity/cli nested inside sanity node_modules (pnpm)', async () => {
     const cwd = pnpmFixture
 
-    const result = await findInstalledPackage('@sanity/cli', cwd)
+    const result = await findInstalledPackage('@sanity/cli', cwd, cwd)
 
     expect(result).not.toBeNull()
     expect(result?.version).toBe('5.4.0')
@@ -184,16 +184,13 @@ describe('findInstalledPackage', () => {
     expect(result?.path).toContain(expectedSuffix)
   })
 
-  test('returns null when @sanity/cli is not found in nested or top-level', async () => {
+  test('returns null when @sanity/cli is not found within workspace root', async () => {
     const cwd = path.join(fixturesDir, 'standalone-npm')
 
-    // standalone-npm has no node_modules, and sanity from the parent monorepo
-    // doesn't have @sanity/cli nested (because this monorepo IS the CLI)
-    const result = await findInstalledPackage('@sanity/cli', cwd)
+    // standalone-npm has no node_modules. With the workspace root set to cwd,
+    // the search stops there instead of walking up to the monorepo.
+    const result = await findInstalledPackage('@sanity/cli', cwd, cwd)
 
-    // This will find @sanity/cli in the parent monorepo's node_modules
-    // which is actually correct behavior - we're testing the walk-up works
-    // The key thing is it doesn't crash
-    expect(result === null || result.version).toBeTruthy()
+    expect(result).toBeNull()
   })
 })

@@ -164,7 +164,6 @@ function getChecks(
     error(message, {exit: 1})
   }
 
-  // After validation, all remaining names are known checks
   const validNames = checkNames.filter((name) => isKnownCheck(name))
 
   return validNames.length > 0
