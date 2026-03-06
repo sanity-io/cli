@@ -1,9 +1,17 @@
-import {type SanityClient} from '@sanity/client'
-import {describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {promptForProviders} from '../../../../prompts/promptForProviders.js'
+import {getVercelProviderUrl} from '../../../../services/auth.js'
 import {getProvider} from '../getProvider.js'
 import {getSSOProvider} from '../getSSOProvider.js'
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    subdebug: vi.fn(() => vi.fn()),
+  }
+})
 
 vi.mock('@sanity/cli-core/ux', () => ({
   input: vi.fn(),
@@ -22,18 +30,24 @@ vi.mock('../../../../prompts/promptForProviders.js', () => ({
   promptForProviders: vi.fn(),
 }))
 
+vi.mock('../../../../services/auth.js', () => ({
+  getProviders: vi.fn(),
+  getVercelProviderUrl: vi.fn(),
+}))
+
 const mockedGetSSOProvider = vi.mocked(getSSOProvider)
 const mockedPromptForProviders = vi.mocked(promptForProviders)
+const mockedGetVercelProviderUrl = vi.mocked(getVercelProviderUrl)
 
 describe('#getProvider vercel provider', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
   test('returns Vercel provider and skips provider selection flow', async () => {
-    const client = {
-      config: vi.fn(() => ({apiHost: 'https://api.sanity.io'})),
-      request: vi.fn(),
-    } as unknown as SanityClient
+    mockedGetVercelProviderUrl.mockResolvedValue('https://api.sanity.io/v1/auth/login/vercel')
 
     const provider = await getProvider({
-      client,
       experimental: false,
       orgSlug: 'acme',
       specifiedProvider: 'vercel',
@@ -44,7 +58,7 @@ describe('#getProvider vercel provider', () => {
       title: 'Vercel',
       url: 'https://api.sanity.io/v1/auth/login/vercel',
     })
-    expect(client.request).not.toHaveBeenCalled()
+    expect(mockedGetVercelProviderUrl).toHaveBeenCalled()
     expect(mockedGetSSOProvider).not.toHaveBeenCalled()
     expect(mockedPromptForProviders).not.toHaveBeenCalled()
   })
