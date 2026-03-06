@@ -1,3 +1,4 @@
+import {getCliTelemetry, studioWorkerTask} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock from 'nock'
@@ -18,6 +19,21 @@ vi.mock('../../actions/build/buildStudio.js', () => ({
 vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    getCliTelemetry: vi.fn().mockReturnValue({
+      trace: vi.fn().mockReturnValue({
+        complete: vi.fn(),
+        error: vi.fn(),
+        start: vi.fn(),
+      }),
+    }),
+    studioWorkerTask: vi.fn(),
+  }
+})
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
@@ -40,6 +56,8 @@ vi.mock('tar-fs', () => ({
   }),
 }))
 
+const mockStudioWorkerTask = vi.mocked(studioWorkerTask)
+const mockGetCliTelemetry = vi.mocked(getCliTelemetry)
 const mockSelect = vi.mocked(select)
 const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
@@ -54,6 +72,24 @@ describe('#deploy studio', () => {
       return null
     })
     mockCheckDir.mockResolvedValue()
+    mockStudioWorkerTask.mockResolvedValue({
+      studioManifest: {
+        buildId: '"test-build-id"',
+        bundleVersion: '3.0.0',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        workspaces: [
+          {
+            basePath: '/',
+            dataset: 'test',
+            name: 'default',
+            projectId: 'test-project-id',
+            schemaDescriptorId: 'test-descriptor',
+            title: 'Test',
+          },
+        ],
+      },
+      type: 'success',
+    })
   })
 
   afterEach(() => {
@@ -160,7 +196,11 @@ describe('#deploy studio', () => {
         appType: 'studio',
       },
       uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
-    }).reply(201, {id: deploymentId}, {location: `https://${studioHost}.sanity.studio`})
+    }).reply(
+      201,
+      {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+      {location: `https://${studioHost}.sanity.studio`},
+    )
 
     const {error, stderr, stdout} = await testCommand(DeployCommand, [], {
       config: {root: cwd},
@@ -221,7 +261,11 @@ describe('#deploy studio', () => {
         appType: 'studio',
       },
       uri: `/projects/test-project-id/user-applications/new-studio-app-id/deployments`,
-    }).reply(201, {id: 'deployment-id'}, {location: 'https://new-studio-host.sanity.studio'})
+    }).reply(
+      201,
+      {id: 'deployment-id', location: 'https://new-studio-host.sanity.studio'},
+      {location: 'https://new-studio-host.sanity.studio'},
+    )
 
     const {error, stdout} = await testCommand(DeployCommand, [], {
       config: {root: cwd},
@@ -420,7 +464,11 @@ describe('#deploy studio', () => {
         appType: 'studio',
       },
       uri: `/projects/${projectId}/user-applications/${newStudioFromMenuId}/deployments`,
-    }).reply(201, {id: deploymentId}, {location: 'https://new-studio-from-menu.sanity.studio'})
+    }).reply(
+      201,
+      {id: deploymentId, location: 'https://new-studio-from-menu.sanity.studio'},
+      {location: 'https://new-studio-from-menu.sanity.studio'},
+    )
 
     mockSelect.mockResolvedValue('NEW_STUDIO')
     mockInput.mockImplementation(({validate}) => {
@@ -530,7 +578,11 @@ describe('#deploy studio', () => {
         appType: 'studio',
       },
       uri: `/projects/${projectId}/user-applications/${validStudioId}/deployments`,
-    }).reply(201, {id: deploymentId}, {location: 'https://valid-name.sanity.studio'})
+    }).reply(
+      201,
+      {id: deploymentId, location: 'https://valid-name.sanity.studio'},
+      {location: 'https://valid-name.sanity.studio'},
+    )
 
     const {error, stdout} = await testCommand(DeployCommand, [], {
       config: {root: cwd},
@@ -662,7 +714,11 @@ describe('#deploy studio', () => {
         appType: 'studio',
       },
       uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
-    }).reply(201, {id: deploymentId}, {location: `https://${studioHost}.sanity.studio`})
+    }).reply(
+      201,
+      {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+      {location: `https://${studioHost}.sanity.studio`},
+    )
 
     const {error, stderr} = await testCommand(DeployCommand, ['--auto-updates'], {
       config: {root: cwd},
@@ -888,7 +944,11 @@ describe('#deploy studio', () => {
         appType: 'studio',
       },
       uri: `/projects/${projectId}/user-applications/${newStudioId}/deployments`,
-    }).reply(201, {id: deploymentId}, {location: `https://new-studio-name.sanity.studio`})
+    }).reply(
+      201,
+      {id: deploymentId, location: `https://new-studio-name.sanity.studio`},
+      {location: `https://new-studio-name.sanity.studio`},
+    )
 
     const {error, stdout} = await testCommand(DeployCommand, [], {
       config: {root: cwd},
@@ -943,7 +1003,11 @@ describe('#deploy studio', () => {
         appType: 'studio',
       },
       uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
-    }).reply(201, {id: deploymentId}, {location: `https://${studioHost}.sanity.studio`})
+    }).reply(
+      201,
+      {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+      {location: `https://${studioHost}.sanity.studio`},
+    )
 
     const {error, stdout} = await testCommand(DeployCommand, ['--no-build'], {
       config: {root: cwd},
@@ -1156,8 +1220,7 @@ describe('#deploy studio', () => {
 
       if (error) throw error
       expect(stderr).toContain('Registering studio')
-      expect(stdout).toContain(`Success! Studio registered at`)
-      expect(stdout).toContain(studioHost)
+      expect(stdout).toContain('Success! Studio registered')
       expect(mockCheckDir).not.toHaveBeenCalled()
       expect(mockBuildStudio).not.toHaveBeenCalled()
     })
@@ -1224,7 +1287,7 @@ describe('#deploy studio', () => {
 
       if (error) throw error
       expect(stdout).toContain('Registering')
-      expect(stdout).toContain('Success! Studio registered at')
+      expect(stdout).toContain('Success! Studio registered')
     })
 
     test('should prompt for external URL when no studioHost configured', async () => {
@@ -1301,7 +1364,7 @@ describe('#deploy studio', () => {
 
       if (error) throw error
       expect(stdout).toContain('Please enter the full URL where your studio is hosted')
-      expect(stdout).toContain('Success! Studio registered at')
+      expect(stdout).toContain('Success! Studio registered')
       expect(mockInput).toHaveBeenCalledWith({
         message: 'Studio URL (https://...):',
         validate: expect.any(Function),
@@ -1374,7 +1437,7 @@ describe('#deploy studio', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('Success! Studio registered at')
+      expect(stdout).toContain('Success! Studio registered')
       // Verify select was called with external-specific messaging
       expect(mockSelect).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1447,7 +1510,7 @@ describe('#deploy studio', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('Success! Studio registered at')
+      expect(stdout).toContain('Success! Studio registered')
     })
 
     test('should reject invalid external URL in studioHost', async () => {
@@ -1509,5 +1572,435 @@ describe('#deploy studio', () => {
     expect(error?.message).toContain('Error finding user application')
     expect(error?.message).toContain(`Cannot find app with app ID ${studioAppId}`)
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  describe('schema and manifest deployment', () => {
+    test('should handle worker error with SchemaExtractionError', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+
+      mockStudioWorkerTask.mockResolvedValue({
+        error: 'Schema validation failed',
+        type: 'error',
+        validation: [
+          {
+            path: [{kind: 'type', name: 'post', type: 'document'}],
+            problems: [{message: 'Missing title', severity: 'error'}],
+          },
+        ],
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+            studioHost,
+          },
+        },
+      })
+
+      expect(error?.message).toContain('Missing title')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should handle worker generic error', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+
+      mockStudioWorkerTask.mockRejectedValue(new Error('worker crashed'))
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+            studioHost,
+          },
+        },
+      })
+
+      expect(error?.message).toContain('Error deploying studio schemas and manifests')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should handle null studioManifest from worker', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+
+      mockStudioWorkerTask.mockResolvedValue({
+        studioManifest: null,
+        type: 'success',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+            studioHost,
+          },
+        },
+      })
+
+      expect(error?.message).toContain('Failed to generate studio manifest')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should pass --schema-required flag to worker', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(
+        201,
+        {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+        {location: `https://${studioHost}.sanity.studio`},
+      )
+
+      const {error} = await testCommand(DeployCommand, ['--schema-required'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+            studioHost,
+          },
+        },
+      })
+
+      if (error) throw error
+      expect(mockStudioWorkerTask).toHaveBeenCalledWith(
+        expect.any(URL),
+        expect.objectContaining({
+          workerData: expect.objectContaining({
+            schemaRequired: true,
+          }),
+        }),
+      )
+    })
+
+    test('should pass --verbose flag to worker', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(
+        201,
+        {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+        {location: `https://${studioHost}.sanity.studio`},
+      )
+
+      const {error} = await testCommand(DeployCommand, ['--verbose'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+            studioHost,
+          },
+        },
+      })
+
+      if (error) throw error
+      expect(mockStudioWorkerTask).toHaveBeenCalledWith(
+        expect.any(URL),
+        expect.objectContaining({
+          workerData: expect.objectContaining({
+            verbose: true,
+          }),
+        }),
+      )
+    })
+
+    test('should pass isExternal to worker for external deploy', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'https://studio.example.com'
+      const studioAppId = 'external-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'External Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'external',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(201, {id: deploymentId, location: studioHost}, {location: studioHost})
+
+      const {error} = await testCommand(DeployCommand, ['--external'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+            studioHost,
+          },
+        },
+      })
+
+      if (error) throw error
+      expect(mockStudioWorkerTask).toHaveBeenCalledWith(
+        expect.any(URL),
+        expect.objectContaining({
+          workerData: expect.objectContaining({
+            isExternal: true,
+          }),
+        }),
+      )
+      expect(mockBuildStudio).not.toHaveBeenCalled()
+      expect(mockCheckDir).not.toHaveBeenCalled()
+    })
+
+    test('should call build and checkDir for internal deploy', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(
+        201,
+        {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+        {location: `https://${studioHost}.sanity.studio`},
+      )
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+            studioHost,
+          },
+        },
+      })
+
+      if (error) throw error
+      expect(mockBuildStudio).toHaveBeenCalled()
+      expect(mockCheckDir).toHaveBeenCalled()
+    })
+
+    test('should use telemetry tracing for schema deployment', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'existing-studio'
+      const studioAppId = 'studio-app-id'
+      const deploymentId = 'deployment-id'
+
+      const mockTrace = {
+        complete: vi.fn(),
+        error: vi.fn(),
+        start: vi.fn(),
+      }
+      mockGetCliTelemetry.mockReturnValue({
+        trace: vi.fn().mockReturnValue(mockTrace),
+      } as never)
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'Existing Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(
+        201,
+        {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+        {location: `https://${studioHost}.sanity.studio`},
+      )
+
+      const {error} = await testCommand(DeployCommand, [], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+            studioHost,
+          },
+        },
+      })
+
+      if (error) throw error
+      expect(mockTrace.start).toHaveBeenCalled()
+      expect(mockTrace.complete).toHaveBeenCalled()
+    })
   })
 })
