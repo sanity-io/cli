@@ -6,7 +6,7 @@ import {CLIError} from '@oclif/core/errors'
 import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
-import {createDeployment} from '../../services/userApplications.js'
+import {createDeployment, updateUserApplication} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
@@ -100,11 +100,37 @@ export async function deployApp(options: DeployAppOptions) {
     const tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
     let manifest: AppManifest | undefined
     try {
-      manifest = await extractAppManifest({flags, workDir})
+      manifest = await extractAppManifest({workDir})
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
       deployDebug('Error extracting app manifest', err)
-      output.warn(`Error extracting app manifest: ${message}`)
+    }
+
+    // Sync app title from manifest when it has changed (Brett user-applications)
+    if (manifest?.title !== undefined && manifest.title !== userApplication.title) {
+      deployDebug('Updating application title from manifest', {
+        from: userApplication.title,
+        to: manifest.title,
+      })
+      const existing = userApplication.title
+      output.log(
+        existing
+          ? `Updating title from "${existing}" to "${manifest.title}"`
+          : `Setting application title to "${manifest.title}"`,
+      )
+      spin = spinner(`Updating application title...`).start()
+      try {
+        userApplication = await updateUserApplication({
+          applicationId: userApplication.id,
+          appType: 'coreApp',
+          body: {title: manifest.title},
+        })
+        spin.succeed()
+      } catch (err) {
+        spin.fail()
+        const message = err instanceof Error ? err.message : String(err)
+        deployDebug('Error updating application title', {message})
+        output.warn(`Error updating application title: ${message}`)
+      }
     }
 
     spin = spinner('Deploying...').start()
