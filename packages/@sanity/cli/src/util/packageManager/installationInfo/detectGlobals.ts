@@ -99,7 +99,9 @@ async function queryNpmGlobals(): Promise<GlobalInstallation[]> {
           isActive: false, // Will be set later
           packageManager: 'npm',
           packageName: pkg,
-          path: dep.resolved || null,
+          // npm's `resolved` is a tarball URL, not a filesystem path.
+          // Path-based matching is handled by the npm fallback in markActiveInstallation.
+          path: null,
           version: dep.version,
         })
       }

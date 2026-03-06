@@ -798,6 +798,38 @@ describe('analyzeIssues', () => {
     expect(issues.filter((i) => i.type === 'global-local-mismatch')).toHaveLength(0)
   })
 
+  test('excludes @sanity/cli from global-local-mismatch check entirely', () => {
+    // @sanity/cli should never produce global-local-mismatch — only global-cli-incompatible.
+    // This test ensures the `name !== '@sanity/cli'` guard in the mismatch check works.
+    const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
+      '@sanity/cli': {
+        declared: null,
+        installed: {
+          cliDependencyRange: null,
+          path: '/project/node_modules/@sanity/cli',
+          version: '5.33.0',
+        },
+        override: null,
+      },
+    }
+
+    const globals: GlobalInstallation[] = [
+      {
+        isActive: true,
+        packageManager: 'npm',
+        packageName: '@sanity/cli',
+        path: null,
+        version: '4.0.0', // Different major version
+      },
+    ]
+
+    const issues = analyzeIssues(packages, defaultWorkspace, globals)
+
+    // Without sanity installed, global-cli-incompatible won't fire either,
+    // so no issues at all — the key assertion is no global-local-mismatch.
+    expect(issues.filter((i) => i.type === 'global-local-mismatch')).toHaveLength(0)
+  })
+
   test('reports error when @sanity/cli is not installed but required by sanity', () => {
     const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
       sanity: {
