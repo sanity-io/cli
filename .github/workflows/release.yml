@@ -16,17 +16,23 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read # for checkout
+  id-token: write # to enable use of OIDC for npm provenance
 
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # for checkout
+      id-token: write # to enable use of OIDC for npm provenance
     outputs:
       published: ${{ steps.changesets.outputs.published }}
       publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
       hasChangesets: ${{ steps.changesets.outputs.hasChangesets }}
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     steps:
       - name: Generate GitHub App Token
         id: generate_token
@@ -37,35 +43,59 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ steps.generate_token.outputs.token }}
+          persist-credentials: false
+
+      - name: Get app token user id
+        id: get-user-id
+        run: echo "user-id=$(gh api "/users/${{ steps.generate_token.outputs.app-slug }}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+      - name: Setup git user
+        run: |
+          git config --global user.name '${{ steps.generate_token.outputs.app-slug }}[bot]'
+          git config --global user.email '${{ steps.get-user-id.outputs.user-id }}+${{ steps.generate_token.outputs.app-slug }}[bot]@users.noreply.github.com'
 
       - name: Setup Environment
         uses: ./.github/actions/setup
         with:
           node-version: 20
 
-      - name: Set publishing config
-        run: pnpm config set '//registry.npmjs.org/:_authToken' "${NODE_AUTH_TOKEN}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+      - name: Update npm to use trusted publishing (OIDC)
+        run: npm install -g npm@latest
+
+      - name: Authenticate with private npm
+        if: ${{ secrets.NPM_PUBLISH_TOKEN != '' }}
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_PUBLISH_TOKEN }}" > ~/.npmrc
+
+      - run: pnpm install
+
+      - name: Remove npm auth
+        if: ${{ secrets.NPM_PUBLISH_TOKEN != '' }}
+        run: rm -f ~/.npmrc
 
       - name: Create Release Pull Request or Publish
         id: changesets
-        uses: changesets/action@v1
+        uses: changesets/action@c48e67d110a68bc90ccf1098e9646092baacaa87 # v1.6.0
         with:
           version: pnpm version-packages
           publish: pnpm release
           title: 'chore: version packages'
           commit: 'chore: version packages'
           createGithubReleases: true
+          setupGitUser: false
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
-          NPM_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+          NPM_CONFIG_PROVENANCE: ${{ github.event.repository.visibility == 'public' && 'true' || 'false' }}
 
       - name: Force Publish
         if: ${{ github.event.inputs.publish == 'true' && steps.changesets.outputs.hasChangesets == 'false' }}
         run: pnpm release
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+          NPM_CONFIG_PROVENANCE: ${{ github.event.repository.visibility == 'public' && 'true' || 'false' }}
 
       - name: Summary
         if: ${{ steps.changesets.outputs.published == 'true' || github.event.inputs.publish == 'true' }}

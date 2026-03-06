@@ -839,9 +839,9 @@ If you need to force-publish without new changesets:
 3. Check **Force publish packages to NPM**
 4. Click **Run workflow**
 
-### Pre-releases
+### npm Dist Tags
 
-`@sanity/cli` is currently published with the `alpha` npm dist tag. Other packages (`@sanity/cli-core`, `@sanity/cli-test`, `@sanity/eslint-config-cli`) publish with the `latest` tag.
+All packages publish with the `latest` npm dist tag.
 
 ## Resources
 

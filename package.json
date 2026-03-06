@@ -34,7 +34,7 @@
     "docs:upload": "pnpm --filter=@repo/upload-docs run update",
     "format": "oxfmt",
     "prepare": "husky",
-    "publish-packages": "node scripts/publish.mjs",
+    "publish-packages": "changeset publish",
     "publint": "turbo run publint",
     "pretest": "pnpm run build:cli",
     "release": "pnpm build:cli && pnpm publish-packages",
