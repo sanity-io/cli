@@ -54,20 +54,12 @@
   ],
   "packages": {
     "packages/@sanity/cli-core": {
-      "bump-minor-pre-major": true,
       "component": "cli-core",
-      "prerelease": true,
-      "prerelease-type": "alpha",
-      "release-type": "node",
-      "versioning": "prerelease"
+      "release-type": "node"
     },
     "packages/@sanity/cli-test": {
-      "bump-minor-pre-major": true,
       "component": "cli-test",
-      "prerelease": true,
-      "prerelease-type": "alpha",
-      "release-type": "node",
-      "versioning": "prerelease"
+      "release-type": "node"
     },
     "packages/@sanity/cli": {
       "bump-minor-pre-major": true,
@@ -78,12 +70,8 @@
       "versioning": "prerelease"
     },
     "packages/@sanity/eslint-config-cli": {
-      "bump-minor-pre-major": true,
       "component": "eslint-config-cli",
-      "prerelease": true,
-      "prerelease-type": "alpha",
-      "release-type": "node",
-      "versioning": "prerelease"
+      "release-type": "node"
     }
   },
   "plugins": [
