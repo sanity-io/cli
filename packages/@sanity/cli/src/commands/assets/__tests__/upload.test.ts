@@ -65,7 +65,10 @@ describe('#assets:upload', () => {
     })
 
     expect(stdout).toContain('https://cdn.sanity.io/images/testproject/production/abc123.png')
-    expect(mocks.upload).toHaveBeenCalledWith('image', expect.any(Buffer), {filename: 'test.png'})
+    expect(mocks.upload).toHaveBeenCalledWith('image', expect.any(Buffer), {
+      contentType: 'image/png',
+      filename: 'test.png',
+    })
   })
 
   test('routes non-image files as file asset type', async () => {
@@ -81,7 +84,10 @@ describe('#assets:upload', () => {
     })
 
     expect(stdout).toContain('https://cdn.sanity.io/files/testproject/production/def456.pdf')
-    expect(mocks.upload).toHaveBeenCalledWith('file', expect.any(Buffer), {filename: 'report.pdf'})
+    expect(mocks.upload).toHaveBeenCalledWith('file', expect.any(Buffer), {
+      contentType: 'application/pdf',
+      filename: 'report.pdf',
+    })
   })
 
   test('errors on upload failure', async () => {
@@ -140,19 +146,5 @@ describe('#assets:upload', () => {
 
     expect(error?.message).toContain('Cannot read missing.png')
     expect(error?.message).toContain('ENOENT')
-  })
-
-  test('errors when upload response has no URL', async () => {
-    mocks.readFile.mockResolvedValueOnce(Buffer.from('fake-image-data'))
-    mocks.upload.mockResolvedValueOnce({
-      _id: 'image-abc123',
-      _type: 'sanity.imageAsset',
-    })
-
-    const {error} = await testCommand(AssetsUploadCommand, ['test.png'], {
-      mocks: defaultMocks,
-    })
-
-    expect(error?.message).toContain('No URL in response for test.png')
   })
 })

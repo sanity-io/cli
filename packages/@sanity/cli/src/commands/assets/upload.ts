@@ -4,7 +4,19 @@ import {basename, extname} from 'node:path'
 import {Args, Flags} from '@oclif/core'
 import {getProjectCliClient, SanityCommand} from '@sanity/cli-core'
 
-const IMAGE_EXTENSIONS = new Set(['.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp'])
+const CONTENT_TYPES: Record<string, string> = {
+  '.gif': 'image/gif',
+  '.jpeg': 'image/jpeg',
+  '.jpg': 'image/jpeg',
+  '.pdf': 'application/pdf',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
+}
+
+const IMAGE_CONTENT_TYPES = new Set(
+  Object.values(CONTENT_TYPES).filter((t) => t.startsWith('image/')),
+)
 
 export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadCommand> {
   static override args = {
@@ -79,7 +91,8 @@ export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadComman
     for (const file of files) {
       const ext = extname(file).toLowerCase()
       const filename = basename(file)
-      const assetType = IMAGE_EXTENSIONS.has(ext) ? 'image' : 'file'
+      const contentType = CONTENT_TYPES[ext] || 'application/octet-stream'
+      const assetType = IMAGE_CONTENT_TYPES.has(contentType) ? 'image' : 'file'
 
       let body: Buffer
       try {
@@ -91,7 +104,7 @@ export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadComman
 
       let doc
       try {
-        doc = await client.assets.upload(assetType, body, {filename})
+        doc = await client.assets.upload(assetType, body, {contentType, filename})
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)
         this.error(`Failed to upload ${filename}: ${message}`, {exit: 1})
