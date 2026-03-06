@@ -74,14 +74,13 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
 
     if (flags.json) {
       this.log(JSON.stringify(results, null, 2))
-      return
-    }
+    } else {
+      for (const check of results.checks) {
+        this.printCheck(check)
+      }
 
-    for (const check of results.checks) {
-      this.printCheck(check)
+      this.printSummary(results.summary)
     }
-
-    this.printSummary(results.summary)
 
     // Exit with error code if any checks failed
     if (results.summary.errors > 0) {

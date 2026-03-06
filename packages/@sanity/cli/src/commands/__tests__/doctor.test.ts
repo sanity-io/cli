@@ -75,14 +75,15 @@ describe('doctor command', () => {
     expect(stdout).toMatch(/\d+ error/)
   })
 
-  test('outputs JSON with errors when issues exist', async () => {
+  test('outputs JSON with errors and exits with code 1 when issues exist', async () => {
     const cwd = path.join(fixturesDir, 'standalone-npm')
     process.chdir(cwd)
 
-    const {stdout} = await testCommand(DoctorCommand, ['--json'])
+    const {error, stdout} = await testCommand(DoctorCommand, ['--json'])
 
     const json = JSON.parse(stdout)
     expect(json.summary.errors).toBeGreaterThan(0)
     expect(json.checks.some((c: {status: string}) => c.status === 'error')).toBe(true)
+    expect(error?.oclif?.exit).toBe(1)
   })
 })
