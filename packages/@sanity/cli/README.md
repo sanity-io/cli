@@ -124,7 +124,7 @@ USAGE
 ARGUMENTS
   [DATASET]  Dataset name to disable backup for
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to disable backups for (overrides CLI configuration)
 
 DESCRIPTION
@@ -155,11 +155,13 @@ ARGUMENTS
   [DATASET]  Dataset name to download backup from
 
 FLAGS
-  -p, --project-id=<id>      Project ID to download backup from (overrides CLI configuration)
-      --backup-id=<value>    The backup ID to download
-      --concurrency=<value>  [default: 10] Concurrent number of backup item downloads (max: 24)
-      --out=<value>          The file or directory path the backup should download to
-      --overwrite            Allows overwriting of existing backup file
+  --backup-id=<value>    The backup ID to download
+  --concurrency=<value>  [default: 10] Concurrent number of backup item downloads (max: 24)
+  --out=<value>          The file or directory path the backup should download to
+  --overwrite            Allows overwriting of existing backup file
+
+OVERRIDE FLAGS
+  -p, --project-id=<id>  Project ID to download backup from (overrides CLI configuration)
 
 DESCRIPTION
   Download a dataset backup to a local file.
@@ -195,7 +197,7 @@ USAGE
 ARGUMENTS
   [DATASET]  Dataset name to enable backup for
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to enable backups for (overrides CLI configuration)
 
 DESCRIPTION
@@ -225,10 +227,12 @@ ARGUMENTS
   [DATASET]  Dataset name to list backups for
 
 FLAGS
-  -l, --limit=<value>    [default: 30] Maximum number of backups returned
+  -l, --limit=<value>   [default: 30] Maximum number of backups returned
+      --after=<value>   Only return backups after this date (inclusive, YYYY-MM-DD format)
+      --before=<value>  Only return backups before this date (exclusive, YYYY-MM-DD format)
+
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list backups for (overrides CLI configuration)
-      --after=<value>    Only return backups after this date (inclusive, YYYY-MM-DD format)
-      --before=<value>   Only return backups before this date (exclusive, YYYY-MM-DD format)
 
 DESCRIPTION
   List available backups for a dataset.
@@ -667,8 +671,10 @@ ARGUMENTS
   ORIGIN  Origin to allow (e.g., https://example.com)
 
 FLAGS
-  -p, --project-id=<id>   Project ID to add CORS origin to (overrides CLI configuration)
-      --[no-]credentials  Allow credentials (token/cookie) to be sent from this origin
+  --[no-]credentials  Allow credentials (token/cookie) to be sent from this origin
+
+OVERRIDE FLAGS
+  -p, --project-id=<id>  Project ID to add CORS origin to (overrides CLI configuration)
 
 DESCRIPTION
   Allow a new origin to use your project API through CORS
@@ -704,7 +710,7 @@ USAGE
 ARGUMENTS
   [ORIGIN]  Origin to delete (will prompt if not provided)
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete CORS origin from (overrides CLI configuration)
 
 DESCRIPTION
@@ -734,7 +740,7 @@ List all origins allowed to access the API for this project
 USAGE
   $ sanity cors list [-p <id>]
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list CORS origins for (overrides CLI configuration)
 
 DESCRIPTION
@@ -764,7 +770,7 @@ ARGUMENTS
   [ALIASNAME]      Dataset alias name to create
   [TARGETDATASET]  Target dataset name to link the alias to
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to create dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
@@ -806,8 +812,10 @@ ARGUMENTS
   ALIASNAME  Dataset alias name to delete
 
 FLAGS
+  --force  Skip confirmation prompt and delete immediately
+
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete dataset alias from (overrides CLI configuration)
-      --force            Skip confirmation prompt and delete immediately
 
 DESCRIPTION
   Delete a dataset alias within your project
@@ -841,8 +849,10 @@ ARGUMENTS
   [TARGETDATASET]  Target dataset name to link the alias to
 
 FLAGS
+  --force  Skip confirmation prompt when relinking existing alias
+
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to link dataset alias in (overrides CLI configuration)
-      --force            Skip confirmation prompt when relinking existing alias
 
 DESCRIPTION
   Link a dataset alias to a dataset within your project
@@ -883,8 +893,10 @@ ARGUMENTS
   [ALIASNAME]  Dataset alias name to unlink
 
 FLAGS
+  --force  Skip confirmation prompt and unlink immediately
+
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to unlink dataset alias in (overrides CLI configuration)
-      --force            Skip confirmation prompt and unlink immediately
 
 DESCRIPTION
   Unlink a dataset alias from its dataset within your project
@@ -923,13 +935,15 @@ ARGUMENTS
   [TARGET]  Name of the dataset to copy to
 
 FLAGS
+  --attach=<value>  Attach to the running copy process to show progress
+  --detach          Start the copy without waiting for it to finish
+  --limit=<value>   Maximum number of jobs returned (default 10, max 1000)
+  --list            Lists all dataset copy jobs
+  --offset=<value>  Start position in the list of jobs (default 0)
+  --skip-history    Don't preserve document history on copy
+
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to copy dataset in (overrides CLI configuration)
-      --attach=<value>   Attach to the running copy process to show progress
-      --detach           Start the copy without waiting for it to finish
-      --limit=<value>    Maximum number of jobs returned (default 10, max 1000)
-      --list             Lists all dataset copy jobs
-      --offset=<value>   Start position in the list of jobs (default 0)
-      --skip-history     Don't preserve document history on copy
 
 DESCRIPTION
   Manages dataset copying, including starting a new copy job, listing copy jobs and following the progress of a running
@@ -984,11 +998,13 @@ ARGUMENTS
   [NAME]  Name of the dataset to create
 
 FLAGS
-  -p, --project-id=<id>                Project ID to create dataset in (overrides CLI configuration)
-      --embeddings                     Enable embeddings for this dataset
-      --embeddings-projection=<value>  GROQ projection for embeddings indexing (e.g. "{ title, body }")
-      --visibility=<option>            Set visibility for this dataset (custom/private/public)
-                                       <options: custom|private|public>
+  --embeddings                     Enable embeddings for this dataset
+  --embeddings-projection=<value>  GROQ projection for embeddings indexing (e.g. "{ title, body }")
+  --visibility=<option>            Set visibility for this dataset (custom/private/public)
+                                   <options: custom|private|public>
+
+OVERRIDE FLAGS
+  -p, --project-id=<id>  Project ID to create dataset in (overrides CLI configuration)
 
 DESCRIPTION
   Create a new dataset within your project
@@ -1021,8 +1037,10 @@ ARGUMENTS
   DATASETNAME  Dataset name to delete
 
 FLAGS
+  --force  Do not prompt for delete confirmation - forcefully delete
+
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete dataset from (overrides CLI configuration)
-      --force            Do not prompt for delete confirmation - forcefully delete
 
 DESCRIPTION
   Delete a dataset within your project
@@ -1050,7 +1068,7 @@ USAGE
 ARGUMENTS
   [DATASET]  Dataset name to disable embeddings for
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to disable embeddings for (overrides CLI configuration)
 
 DESCRIPTION
@@ -1076,9 +1094,11 @@ ARGUMENTS
   [DATASET]  Dataset name to enable embeddings for
 
 FLAGS
-  -p, --project-id=<id>     Project ID to enable embeddings for (overrides CLI configuration)
-      --projection=<value>  GROQ projection defining which fields to embed (e.g. "{ title, body }")
-      --wait                Wait for embeddings processing to complete before returning
+  --projection=<value>  GROQ projection defining which fields to embed (e.g. "{ title, body }")
+  --wait                Wait for embeddings processing to complete before returning
+
+OVERRIDE FLAGS
+  -p, --project-id=<id>  Project ID to enable embeddings for (overrides CLI configuration)
 
 DESCRIPTION
   Enable embeddings for a dataset
@@ -1110,7 +1130,7 @@ USAGE
 ARGUMENTS
   [DATASET]  The name of the dataset to check embeddings status for
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to check embeddings status for (overrides CLI configuration)
 
 DESCRIPTION
@@ -1138,18 +1158,20 @@ ARGUMENTS
   [DESTINATION]  Output destination file path
 
 FLAGS
-  -p, --project-id=<id>            Project ID to export dataset from (overrides CLI configuration)
-      --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
-      --mode=<option>              [default: stream] Mode to export documents with `cursor` might be more performant for
-                                   larger datasets, but might not be as accurate if the dataset is being modified during
-                                   export
-                                   <options: stream|cursor>
-      --no-assets                  Export only non-asset documents and remove references to image assets
-      --no-compress                Skips compressing tarball entries (still generates a gzip file)
-      --no-drafts                  Export only published versions of documents
-      --overwrite                  Overwrite any file with the same name
-      --raw                        Extract only documents, without rewriting asset references
-      --types=<value>              Defines which document types to export (comma-separated)
+  --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
+  --mode=<option>              [default: stream] Mode to export documents with `cursor` might be more performant for
+                               larger datasets, but might not be as accurate if the dataset is being modified during
+                               export
+                               <options: stream|cursor>
+  --no-assets                  Export only non-asset documents and remove references to image assets
+  --no-compress                Skips compressing tarball entries (still generates a gzip file)
+  --no-drafts                  Export only published versions of documents
+  --overwrite                  Overwrite any file with the same name
+  --raw                        Extract only documents, without rewriting asset references
+  --types=<value>              Defines which document types to export (comma-separated)
+
+OVERRIDE FLAGS
+  -p, --project-id=<id>  Project ID to export dataset from (overrides CLI configuration)
 
 DESCRIPTION
   Export dataset to local filesystem as a gzipped tarball. Assets failing with HTTP status codes 401, 403 and 404 upon
@@ -1225,7 +1247,7 @@ List datasets of your project
 USAGE
   $ sanity dataset list [-p <id>]
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list datasets for (overrides CLI configuration)
 
 DESCRIPTION
@@ -1254,7 +1276,7 @@ USAGE
 ARGUMENTS
   DATASET  The name of the dataset to get visibility for
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to get dataset visibility for (overrides CLI configuration)
 
 DESCRIPTION
@@ -1280,7 +1302,7 @@ ARGUMENTS
   DATASET  The name of the dataset to set visibility for
   MODE     (public|private) The visibility mode to set
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to set dataset visibility for (overrides CLI configuration)
 
 DESCRIPTION
@@ -1483,13 +1505,15 @@ ARGUMENTS
   [FILE]  JSON file to create document(s) from
 
 FLAGS
+  --id=<value>  Specify a document ID to use. Will fetch remote document ID and populate editor.
+  --json5       Use JSON5 file type to allow a "simplified" version of JSON
+  --missing     On duplicate document IDs, don't modify the target document(s)
+  --replace     On duplicate document IDs, replace existing document with specified document(s)
+  --watch       Write the documents whenever the target file or buffer changes
+
+OVERRIDE FLAGS
   -d, --dataset=<name>   Dataset to create document(s) in (overrides CLI configuration)
   -p, --project-id=<id>  Project ID to create document(s) in (overrides CLI configuration)
-      --id=<value>       Specify a document ID to use. Will fetch remote document ID and populate editor.
-      --json5            Use JSON5 file type to allow a "simplified" version of JSON
-      --missing          On duplicate document IDs, don't modify the target document(s)
-      --replace          On duplicate document IDs, replace existing document with specified document(s)
-      --watch            Write the documents whenever the target file or buffer changes
 
 DESCRIPTION
   Create one or more documents
@@ -1532,7 +1556,7 @@ ARGUMENTS
   ID...     Document ID to delete
   [IDS...]  Additional document IDs to delete
 
-FLAGS
+OVERRIDE FLAGS
   -d, --dataset=<name>   Dataset to delete from (overrides CLI configuration)
   -p, --project-id=<id>  Project ID to delete from (overrides CLI configuration)
 
@@ -1575,9 +1599,11 @@ ARGUMENTS
   DOCUMENTID  Document ID to retrieve
 
 FLAGS
+  --pretty  Colorize JSON output
+
+OVERRIDE FLAGS
   -d, --dataset=<name>   Dataset to get document from (overrides CLI configuration)
   -p, --project-id=<id>  Project ID to get document from (overrides CLI configuration)
-      --pretty           Colorize JSON output
 
 DESCRIPTION
   Get and print a document by ID
@@ -1614,11 +1640,13 @@ ARGUMENTS
   QUERY  GROQ query to run against the dataset
 
 FLAGS
-  -d, --dataset=<name>       Dataset to query (overrides CLI configuration)
-  -p, --project-id=<id>      Project ID to query (overrides CLI configuration)
-      --anonymous            Send the query without any authorization token
-      --api-version=<value>  [env: SANITY_CLI_QUERY_API_VERSION] API version to use (defaults to 2025-08-15)
-      --pretty               Colorize JSON output
+  --anonymous            Send the query without any authorization token
+  --api-version=<value>  [env: SANITY_CLI_QUERY_API_VERSION] API version to use (defaults to 2025-08-15)
+  --pretty               Colorize JSON output
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>   Dataset to query (overrides CLI configuration)
+  -p, --project-id=<id>  Project ID to query (overrides CLI configuration)
 
 DESCRIPTION
   Query for documents
@@ -1653,10 +1681,6 @@ USAGE
     [--max-custom-validation-concurrency <value>] [--max-fetch-concurrency <value>] [--workspace <value>] [-y]
 
 FLAGS
-  -d, --dataset=<name>                             Override the dataset used. By default, this is derived from the given
-                                                   workspace
-  -p, --project-id=<id>                            Override the project ID used. By default, this is derived from the
-                                                   given workspace
   -y, --yes                                        Skips the first confirmation prompt
       --file=<value>                               Provide a path to either an .ndjson file or a tarball containing an
                                                    .ndjson file
@@ -1669,6 +1693,10 @@ FLAGS
                                                    run concurrently
       --workspace=<value>                          The name of the workspace to use when downloading and validating all
                                                    documents
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>   Override the dataset used. By default, this is derived from the given workspace
+  -p, --project-id=<id>  Override the project ID used. By default, this is derived from the given workspace
 
 DESCRIPTION
   Validate documents in a dataset against the studio schema
@@ -2002,17 +2030,19 @@ USAGE
     [--non-null-document-fields] [--playground] [--tag <value>] [--with-union-cache]
 
 FLAGS
-  -d, --dataset=<name>            Deploy API for the given dataset
-      --api=<value>...            Only deploy API with this ID. Can be specified multiple times.
-      --dry-run                   Validate defined GraphQL APIs, check for breaking changes, skip deploy
-      --force                     Deploy API without confirming breaking changes
-      --generation=<option>       API generation to deploy (defaults to "gen3")
-                                  <options: gen1|gen2|gen3>
-      --non-null-document-fields  Use non-null document fields (_id, _type etc)
-      --[no-]playground           Enable GraphQL playground for easier debugging
-      --tag=<value>               Deploy API(s) to given tag (defaults to "default")
-      --with-union-cache          Enable union cache that optimizes schema generation for schemas with many self
-                                  referencing types
+  --api=<value>...            Only deploy API with this ID. Can be specified multiple times.
+  --dry-run                   Validate defined GraphQL APIs, check for breaking changes, skip deploy
+  --force                     Deploy API without confirming breaking changes
+  --generation=<option>       API generation to deploy (defaults to "gen3")
+                              <options: gen1|gen2|gen3>
+  --non-null-document-fields  Use non-null document fields (_id, _type etc)
+  --[no-]playground           Enable GraphQL playground for easier debugging
+  --tag=<value>               Deploy API(s) to given tag (defaults to "default")
+  --with-union-cache          Enable union cache that optimizes schema generation for schemas with many self referencing
+                              types
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>  Deploy API for the given dataset
 
 DESCRIPTION
   Deploy a GraphQL API from the current Sanity schema
@@ -2045,7 +2075,7 @@ List all GraphQL endpoints deployed for this project
 USAGE
   $ sanity graphql list [-p <id>]
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list GraphQL endpoints for (overrides CLI configuration)
 
 DESCRIPTION
@@ -2072,11 +2102,13 @@ USAGE
   $ sanity graphql undeploy [--api <value> | -p <id> | ] [-d <name>] [--force] [--tag <value>]
 
 FLAGS
+  --api=<value>  Undeploy API with this ID
+  --force        Skip confirmation prompt
+  --tag=<value>  [default: default] Tag to undeploy GraphQL API from
+
+OVERRIDE FLAGS
   -d, --dataset=<name>   Dataset to undeploy GraphQL API from
   -p, --project-id=<id>  Project ID to undeploy GraphQL API from (overrides CLI configuration)
-      --api=<value>      Undeploy API with this ID
-      --force            Skip confirmation prompt
-      --tag=<value>      [default: default] Tag to undeploy GraphQL API from
 
 DESCRIPTION
   Remove a deployed GraphQL API
@@ -2140,7 +2172,7 @@ USAGE
 ARGUMENTS
   ATTEMPTID  The delivery attempt ID to get details for
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to view webhook attempt for (overrides CLI configuration)
 
 DESCRIPTION
@@ -2166,7 +2198,7 @@ Create a new webhook for the current project
 USAGE
   $ sanity hook create [-p <id>]
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to create webhook for (overrides CLI configuration)
 
 DESCRIPTION
@@ -2195,7 +2227,7 @@ USAGE
 ARGUMENTS
   [NAME]  Name of hook to delete (will prompt if not provided)
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete webhook from (overrides CLI configuration)
 
 DESCRIPTION
@@ -2225,7 +2257,7 @@ List hooks for a given project
 USAGE
   $ sanity hook list [-p <id>]
 
-FLAGS
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list webhooks for (overrides CLI configuration)
 
 DESCRIPTION
@@ -2255,8 +2287,10 @@ ARGUMENTS
   [NAME]  Name of the hook to show logs for
 
 FLAGS
+  --detailed  Include detailed payload and attempts
+
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to view webhook logs for (overrides CLI configuration)
-      --detailed         Include detailed payload and attempts
 
 DESCRIPTION
   List latest log entries for a given hook
@@ -2522,9 +2556,11 @@ ARGUMENTS
   ASPECTNAME  Name of the aspect to delete
 
 FLAGS
-  -p, --project-id=<id>           Project ID to delete media aspect from (overrides CLI configuration)
-      --media-library-id=<value>  The id of the target media library
-      --yes                       Skip confirmation prompt
+  --media-library-id=<value>  The id of the target media library
+  --yes                       Skip confirmation prompt
+
+OVERRIDE FLAGS
+  -p, --project-id=<id>  Project ID to delete media aspect from (overrides CLI configuration)
 
 DESCRIPTION
   Undeploy an aspect
@@ -2549,9 +2585,11 @@ ARGUMENTS
   [ASPECTNAME]  Name of the aspect to deploy
 
 FLAGS
-  -p, --project-id=<id>           Project ID to deploy media aspect to (overrides CLI configuration)
-      --all                       Deploy all aspects
-      --media-library-id=<value>  The id of the target media library
+  --all                       Deploy all aspects
+  --media-library-id=<value>  The id of the target media library
+
+OVERRIDE FLAGS
+  -p, --project-id=<id>  Project ID to deploy media aspect to (overrides CLI configuration)
 
 DESCRIPTION
   Deploy an aspect
@@ -2581,11 +2619,13 @@ ARGUMENTS
   [DESTINATION]  Output destination file path
 
 FLAGS
-  -p, --project-id=<id>            Project ID to export media from (overrides CLI configuration)
-      --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
-      --media-library-id=<value>   The id of the target media library
-      --no-compress                Skips compressing tarball entries (still generates a gzip file)
-      --overwrite                  Overwrite any file with the same name
+  --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
+  --media-library-id=<value>   The id of the target media library
+  --no-compress                Skips compressing tarball entries (still generates a gzip file)
+  --overwrite                  Overwrite any file with the same name
+
+OVERRIDE FLAGS
+  -p, --project-id=<id>  Project ID to export media from (overrides CLI configuration)
 
 DESCRIPTION
   Export an archive of all file and image assets including their aspect data from the target media library. Video assets
@@ -2619,10 +2659,12 @@ ARGUMENTS
   SOURCE  Image file or folder to import from
 
 FLAGS
-  -p, --project-id=<id>           Project ID to import media to (overrides CLI configuration)
-      --media-library-id=<value>  The id of the target media library
-      --replace-aspects           Replace existing aspect data. All versions will be replaced (e.g. published and draft
-                                  aspect data)
+  --media-library-id=<value>  The id of the target media library
+  --replace-aspects           Replace existing aspect data. All versions will be replaced (e.g. published and draft
+                              aspect data)
+
+OVERRIDE FLAGS
+  -p, --project-id=<id>  Project ID to import media to (overrides CLI configuration)
 
 DESCRIPTION
   Import a set of assets to the target media library.
@@ -2916,13 +2958,15 @@ Delete schema documents by id
 
 ```
 USAGE
-  $ sanity schema delete --ids <value> [-p <id>] [--dataset <value>] [--verbose]
+  $ sanity schema delete --ids <value> [-p <id>] [-d <name>] [--verbose]
 
 FLAGS
+  --ids=<value>  (required) Comma-separated list of schema ids to delete
+  --verbose      Enable verbose logging
+
+OVERRIDE FLAGS
+  -d, --dataset=<name>   Delete schemas from a specific dataset (overrides CLI configuration)
   -p, --project-id=<id>  Project ID to delete schema from (overrides CLI configuration)
-      --dataset=<value>  Delete schemas from a specific dataset
-      --ids=<value>      (required) Comma-separated list of schema ids to delete
-      --verbose          Enable verbose logging
 
 DESCRIPTION
   Delete schema documents by id
@@ -3195,10 +3239,12 @@ ARGUMENTS
   [LABEL]  Label for the new token
 
 FLAGS
+  -y, --yes          Skip prompts and use defaults (unattended mode)
+      --json         Output as JSON
+      --role=viewer  Role to assign to the token
+
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to add token to (overrides CLI configuration)
-  -y, --yes              Skip prompts and use defaults (unattended mode)
-      --json             Output as JSON
-      --role=viewer      Role to assign to the token
 
 DESCRIPTION
   Create a new API token for this project
@@ -3239,8 +3285,10 @@ ARGUMENTS
   [TOKENID]  Token ID to delete (will prompt if not provided)
 
 FLAGS
+  --yes  Skip confirmation prompt (unattended mode)
+
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete token from (overrides CLI configuration)
-      --yes              Skip confirmation prompt (unattended mode)
 
 DESCRIPTION
   Delete an API token from this project
@@ -3274,8 +3322,10 @@ USAGE
   $ sanity tokens list [-p <id>] [--json]
 
 FLAGS
+  --json  Output tokens in JSON format
+
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list tokens for (overrides CLI configuration)
-      --json             Output tokens in JSON format
 
 DESCRIPTION
   List API tokens for the current project
@@ -3371,8 +3421,10 @@ ARGUMENTS
   [EMAIL]  Email address to invite
 
 FLAGS
+  --role=<value>  Role to invite the user as
+
+OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to invite user to (overrides CLI configuration)
-      --role=<value>     Role to invite the user as
 
 DESCRIPTION
   Invite a new user to the project
@@ -3406,13 +3458,15 @@ USAGE
   $ sanity users list [-p <id>] [--invitations] [--order asc|desc] [--robots] [--sort id|name|role|date]
 
 FLAGS
-  -p, --project-id=<id>   Project ID to list users for (overrides CLI configuration)
-      --[no-]invitations  Includes or excludes pending invitations
-      --order=<option>    [default: asc] Sort output ascending/descending
-                          <options: asc|desc>
-      --[no-]robots       Includes or excludes robots (token users)
-      --sort=<option>     [default: date] Sort users by specified column
-                          <options: id|name|role|date>
+  --[no-]invitations  Includes or excludes pending invitations
+  --order=<option>    [default: asc] Sort output ascending/descending
+                      <options: asc|desc>
+  --[no-]robots       Includes or excludes robots (token users)
+  --sort=<option>     [default: date] Sort users by specified column
+                      <options: id|name|role|date>
+
+OVERRIDE FLAGS
+  -p, --project-id=<id>  Project ID to list users for (overrides CLI configuration)
 
 DESCRIPTION
   List all users of the project
