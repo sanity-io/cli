@@ -103,6 +103,7 @@ pnpm check:lint      # ESLint + Prettier
 pnpm check:deps      # Unused dependencies
 pnpm test            # Run all tests
 pnpm test --coverage # Coverage report
+pnpm changeset       # Add a changeset (if your change affects published packages)
 ```
 
 ---
@@ -770,6 +771,102 @@ npx sanity dev
 - The PR comment updates with new URLs on subsequent commits
 - Preview packages remain available as long as the PR is open
 - Preview packages are automatically cleaned up after the PR is closed
+
+---
+
+## Releasing
+
+This project uses [Changesets](https://github.com/changesets/changesets) for version management and publishing.
+
+### Automatic Changesets (Conventional Commits)
+
+For **bot PRs** (Renovate, Dependabot), changesets are **automatically generated** from conventional commit messages — no manual steps needed. The `changesets-from-conventional-commits` workflow parses commit messages and creates the appropriate changeset files:
+
+- `feat:` → minor bump
+- `fix:` → patch bump
+- `feat!:` or `BREAKING CHANGE:` → major bump
+
+This also works for any PR that follows [Conventional Commits](https://www.conventionalcommits.org/) format.
+
+### Manual Changesets
+
+For human-authored PRs, you can either:
+
+1. **Rely on conventional commits** — if your PR commit messages follow the conventional format, changesets will be auto-generated
+2. **Manually add a changeset** for more control over the changelog entry:
+
+```bash
+pnpm changeset
+```
+
+This will prompt you to:
+
+1. **Select packages** that are affected by your change
+2. **Choose a bump type** (patch, minor, or major)
+3. **Write a summary** of the change (this becomes the changelog entry)
+
+A markdown file will be created in the `.changeset/` directory. Commit this file with your PR.
+
+### When a Changeset is Needed
+
+- **Always** for `feat:`, `fix:`, `perf:`, and `revert:` commits
+- **Not needed** for `chore:`, `refactor:`, `test:`, `docs:`, `style:`, `build:`, `ci:` commits (unless they affect the public API)
+
+### Bump Type Guide
+
+| Change Type             | Bump    | Example                              |
+| ----------------------- | ------- | ------------------------------------ |
+| New feature             | `minor` | New command, new flag                |
+| Bug fix                 | `patch` | Fix crash, fix incorrect output      |
+| Breaking change         | `major` | Remove command, change flag behavior |
+| Performance improvement | `patch` | Faster startup, less memory          |
+
+### How Releases Work
+
+1. **PRs with changesets** are merged to `main`
+2. The **Release workflow** automatically creates a "Version Packages" PR that:
+   - Bumps package versions based on accumulated changesets
+   - Updates `CHANGELOG.md` files
+   - Removes consumed changeset files
+3. **Merging the Version Packages PR** triggers publishing to npm
+4. **GitHub Releases** are automatically created for each published package
+
+### Snapshot Releases
+
+Snapshot releases publish ephemeral versions (e.g., `0.0.0-20260327120000`) under a custom npm dist tag for testing:
+
+1. Go to **Actions** → **Snapshot Release** workflow
+2. Click **Run workflow**
+3. Optionally set the **tag** (default: `snapshot`) and **forceBump** (if no changesets exist)
+4. Install with `npm install @sanity/cli@snapshot`
+
+### Prerelease Mode
+
+For sustained prerelease cycles (alpha, beta, rc):
+
+```bash
+pnpm pre:enter alpha     # enter prerelease mode
+# ... merge PRs with changesets as normal ...
+pnpm version-packages    # produces 1.0.0-alpha.0, -alpha.1, etc.
+pnpm release             # publishes under the "alpha" dist tag
+pnpm pre:exit            # exit prerelease mode, next release is stable
+```
+
+### Emergency Publishing
+
+If you need to force-publish all packages without pending changesets:
+
+1. Go to **Actions** → **Snapshot Release** workflow
+2. Set **forceBump** to the desired bump type (patch/minor/major)
+3. This creates real versions, publishes to `latest`, commits the version bump to `main`, and creates GitHub releases
+
+### npm Dist Tags
+
+| Release type     | Dist tag               | Example                            |
+| ---------------- | ---------------------- | ---------------------------------- |
+| Standard release | `latest`               | `npm install @sanity/cli`          |
+| Snapshot release | `snapshot` (or custom) | `npm install @sanity/cli@snapshot` |
+| Prerelease       | `alpha`, `beta`, etc.  | `npm install @sanity/cli@alpha`    |
 
 ## Resources
 
