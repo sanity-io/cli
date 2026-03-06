@@ -51,6 +51,9 @@ const baseConfig = {
       ignoreDependencies: ['@sanity/cli'],
       project,
     },
+    'packages/@repo/coverage-delta': {
+      project,
+    },
     'packages/@sanity/cli': {
       entry: [
         // Commands

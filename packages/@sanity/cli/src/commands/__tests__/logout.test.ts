@@ -1,4 +1,4 @@
-import {getCliToken, setConfig} from '@sanity/cli-core'
+import {getCliToken, setCliUserConfig} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -11,12 +11,12 @@ vi.mock('@sanity/cli-core', async () => {
   return {
     ...actual,
     getCliToken: vi.fn(),
-    setConfig: vi.fn(),
+    setCliUserConfig: vi.fn(),
   }
 })
 
 const mockedGetCliToken = vi.mocked(getCliToken)
-const mockedSetConfig = vi.mocked(setConfig)
+const mockedSetConfig = vi.mocked(setCliUserConfig)
 
 afterEach(() => {
   vi.clearAllMocks()

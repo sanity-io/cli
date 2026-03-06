@@ -5,7 +5,7 @@ import readline from 'node:readline'
 import {Readable} from 'node:stream'
 import {workerData as _workerData, isMainThread, parentPort} from 'node:worker_threads'
 
-import {getStudioWorkspaces, isRecord, resolveLocalPackage} from '@sanity/cli-core'
+import {getStudioWorkspaces, resolveLocalPackage} from '@sanity/cli-core'
 import {type ClientConfig, createClient, type SanityDocument} from '@sanity/client'
 import {type ValidationContext, type ValidationMarker} from '@sanity/types'
 import {WorkerChannelReporter} from '@sanity/worker-channels'
@@ -289,8 +289,7 @@ async function main() {
             return markerValue <= flagLevelValue
           })
       } catch (err) {
-        const errorMessage =
-          isRecord(err) && typeof err.message === 'string' ? err.message : 'Unknown error'
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error'
 
         const message = `Exception occurred while validating value: ${errorMessage}`
 

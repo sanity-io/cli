@@ -1,25 +1,27 @@
-import type ConfigStore from 'configstore'
-
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {createExpiringConfig} from '../createExpiringConfig.js'
 
+interface MockConfigStore {
+  delete: ReturnType<typeof vi.fn<(key: string) => void>>
+  get: ReturnType<typeof vi.fn<(key: string) => unknown>>
+  set: ReturnType<typeof vi.fn<(key: string, value: unknown) => void>>
+}
+
 describe('createExpiringConfig', () => {
-  let mockStore: ConfigStore
+  let mockStore: MockConfigStore
   let fetchValue: ReturnType<typeof vi.fn<() => unknown>>
   let onCacheHit: ReturnType<typeof vi.fn<() => void>>
   let onFetch: ReturnType<typeof vi.fn<() => void>>
   let onRevalidate: ReturnType<typeof vi.fn<() => void>>
 
   beforeEach(() => {
-    // Mock ConfigStore
     mockStore = {
       delete: vi.fn(),
       get: vi.fn(),
       set: vi.fn(),
-    } as unknown as ConfigStore
+    }
 
-    // Reset all mocks
     fetchValue = vi.fn<() => unknown>()
     onCacheHit = vi.fn<() => void>()
     onFetch = vi.fn<() => void>()
@@ -38,8 +40,7 @@ describe('createExpiringConfig', () => {
       ttl: 5000,
     })
 
-    // Mock empty cache
-    vi.mocked(mockStore.get).mockReturnValue(undefined)
+    mockStore.get.mockReturnValue(undefined)
 
     const result = await config.get()
 
@@ -69,8 +70,7 @@ describe('createExpiringConfig', () => {
       ttl,
     })
 
-    // Mock cached value that hasn't expired
-    vi.mocked(mockStore.get).mockReturnValue({
+    mockStore.get.mockReturnValue({
       updatedAt,
       value: cachedValue,
     })
@@ -100,8 +100,7 @@ describe('createExpiringConfig', () => {
       ttl,
     })
 
-    // Mock expired cached value
-    vi.mocked(mockStore.get).mockReturnValue({
+    mockStore.get.mockReturnValue({
       updatedAt,
       value: 'old-value',
     })
@@ -147,8 +146,7 @@ describe('createExpiringConfig', () => {
       ttl: 5000,
     })
 
-    // Mock empty cache
-    vi.mocked(mockStore.get).mockReturnValue(undefined)
+    mockStore.get.mockReturnValue(undefined)
 
     // Start multiple concurrent get() calls
     const promise1 = config.get()
@@ -178,8 +176,7 @@ describe('createExpiringConfig', () => {
       ttl: 5000,
     })
 
-    // Mock empty cache
-    vi.mocked(mockStore.get).mockReturnValue(undefined)
+    mockStore.get.mockReturnValue(undefined)
 
     const result = await config.get()
 
@@ -196,8 +193,7 @@ describe('createExpiringConfig', () => {
       ttl: 5000,
     })
 
-    // Mock empty cache
-    vi.mocked(mockStore.get).mockReturnValue(undefined)
+    mockStore.get.mockReturnValue(undefined)
 
     await expect(config.get()).rejects.toThrow('Fetch failed')
     expect(fetchValue).toHaveBeenCalledOnce()
@@ -213,8 +209,7 @@ describe('createExpiringConfig', () => {
       ttl: 5000,
     })
 
-    // Mock empty cache
-    vi.mocked(mockStore.get).mockReturnValue(undefined)
+    mockStore.get.mockReturnValue(undefined)
 
     const result = await config.get()
 
@@ -237,7 +232,7 @@ describe('createExpiringConfig', () => {
 
     // Mock cached value that would be immediately expired
     // Use a timestamp from 1ms ago to ensure it's > ttl (0)
-    vi.mocked(mockStore.get).mockReturnValue({
+    mockStore.get.mockReturnValue({
       updatedAt: Date.now() - 1,
       value: 'old-value',
     })
@@ -258,8 +253,7 @@ describe('createExpiringConfig', () => {
       ttl: 5000,
     })
 
-    // Mock empty cache
-    vi.mocked(mockStore.get).mockReturnValue(undefined)
+    mockStore.get.mockReturnValue(undefined)
 
     const result = await config.get()
 
@@ -278,7 +272,7 @@ describe('createExpiringConfig', () => {
     })
 
     // Mock cached value without updatedAt (invalid cache entry)
-    vi.mocked(mockStore.get).mockReturnValue({
+    mockStore.get.mockReturnValue({
       value: 'old-value',
       // updatedAt is missing
     })
@@ -301,7 +295,7 @@ describe('createExpiringConfig', () => {
     })
 
     // Mock cached entry without value property
-    vi.mocked(mockStore.get).mockReturnValue({
+    mockStore.get.mockReturnValue({
       updatedAt: Date.now(),
       // value is missing
     })
@@ -323,8 +317,7 @@ describe('createExpiringConfig', () => {
       ttl: 5000,
     })
 
-    // Mock empty cache
-    vi.mocked(mockStore.get).mockReturnValue(undefined)
+    mockStore.get.mockReturnValue(undefined)
 
     await config.get()
 
@@ -346,13 +339,13 @@ describe('createExpiringConfig', () => {
     })
 
     // Mock empty cache for first request
-    vi.mocked(mockStore.get).mockReturnValueOnce(undefined)
+    mockStore.get.mockReturnValueOnce(undefined)
 
     // First request should fetch
     const result1 = await config.get()
 
     // Mock cache populated for subsequent request
-    vi.mocked(mockStore.get).mockReturnValueOnce({
+    mockStore.get.mockReturnValueOnce({
       updatedAt: Date.now(),
       value: testValue,
     })
@@ -385,7 +378,7 @@ describe('createExpiringConfig', () => {
     })
 
     // Cached entry that is not expired but invalid per validateValue
-    vi.mocked(mockStore.get).mockReturnValue({
+    mockStore.get.mockReturnValue({
       updatedAt: Date.now(),
       value: invalidCached,
     })
@@ -410,7 +403,7 @@ describe('createExpiringConfig', () => {
     })
 
     // Empty cache
-    vi.mocked(mockStore.get).mockReturnValue(undefined)
+    mockStore.get.mockReturnValue(undefined)
 
     await expect(config.get()).rejects.toThrow('Fetched value is invalid')
     expect(onFetch).toHaveBeenCalledOnce()
@@ -430,7 +423,7 @@ describe('createExpiringConfig', () => {
       validateValue: validateValue as unknown as (value: unknown) => value is string,
     })
 
-    vi.mocked(mockStore.get).mockReturnValue({
+    mockStore.get.mockReturnValue({
       updatedAt: Date.now(),
       value: cachedValue,
     })
@@ -456,7 +449,7 @@ describe('createExpiringConfig', () => {
     })
 
     // Cached value that has expired but is otherwise valid in shape and passes validate
-    vi.mocked(mockStore.get).mockReturnValue({
+    mockStore.get.mockReturnValue({
       updatedAt: Date.now() - 10,
       value: 'stale',
     })

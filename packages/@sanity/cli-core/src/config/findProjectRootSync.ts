@@ -14,7 +14,7 @@ import {ProjectRootResult} from './util/recursivelyResolveProjectRoot.js'
  * @returns An object if config is found, false otherwise
  * @internal
  */
-export function recursivelyResolveProjectRootSync(
+function recursivelyResolveProjectRootSync(
   basePath: string,
   findConfigFn: (path: string) => string | undefined,
   projectType: 'app' | 'studio',

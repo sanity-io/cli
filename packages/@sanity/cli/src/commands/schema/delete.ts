@@ -28,7 +28,9 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
     ...getProjectIdFlag({
       description: 'Project ID to delete schema from (overrides CLI configuration)',
     }),
-    ...getDatasetFlag({description: 'Delete schemas from a specific dataset (overrides CLI configuration)'}),
+    ...getDatasetFlag({
+      description: 'Delete schemas from a specific dataset (overrides CLI configuration)',
+    }),
     'extract-manifest': Flags.boolean({
       allowNo: true,
       default: true,
@@ -82,7 +84,10 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       }
 
       deleteSchemaDebug('Error deleting schemas', error)
-      this.error(`Failed to delete schemas: ${error.message}`, {exit: 1})
+      this.error(
+        `Failed to delete schemas: ${error instanceof Error ? error.message : String(error)}`,
+        {exit: 1},
+      )
     }
   }
 }

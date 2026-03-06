@@ -1,7 +1,8 @@
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {parseStringFlag, SanityCommand} from '@sanity/cli-core'
+import {CLIError} from '@oclif/core/errors'
+import {SanityCommand} from '@sanity/cli-core'
 
 import {deploySchemas} from '../../actions/schema/deploySchemas.js'
 import {formatSchemaValidation} from '../../actions/schema/formatSchemaValidation.js'
@@ -55,7 +56,10 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
     workspace: Flags.string({
       description: 'The name of the workspace to deploy a schema for',
       helpValue: '<name>',
-      parse: async (input) => parseStringFlag('workspace', input),
+      parse: async (input) => {
+        if (!input) throw new CLIError('workspace argument cannot be empty if specified', {exit: 1})
+        return input
+      },
     }),
   }
 

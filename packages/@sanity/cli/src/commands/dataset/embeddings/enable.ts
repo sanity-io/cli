@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug, waitForAsync} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
@@ -105,7 +105,7 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
     let interval = INITIAL_POLL_INTERVAL_MS
 
     while (Date.now() < deadline) {
-      await waitForAsync(interval)
+      await new Promise<void>((resolve) => setTimeout(resolve, interval))
       interval = Math.min(interval * 1.5, MAX_POLL_INTERVAL_MS)
 
       let settings

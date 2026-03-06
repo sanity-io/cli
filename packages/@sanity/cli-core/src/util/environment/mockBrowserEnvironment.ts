@@ -1,3 +1,4 @@
+// TODO(SDK-983): Consider moving to @sanity/cli — only used there
 import {getStudioEnvironmentVariables} from './getStudioEnvironmentVariables.js'
 import {setupBrowserStubs} from './setupBrowserStubs.js'
 

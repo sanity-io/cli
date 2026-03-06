@@ -269,9 +269,7 @@ describe('#media:import', () => {
       }
       mockSpinner.mockReturnValue(mockSpinnerInstance as never)
 
-      mocks.importer.mockReturnValue(
-        of({asset: {originalFilename: 'img1.jpg'}, fileCount: 1}),
-      )
+      mocks.importer.mockReturnValue(of({asset: {originalFilename: 'img1.jpg'}, fileCount: 1}))
 
       const {error} = await testCommand(
         MediaImportCommand,

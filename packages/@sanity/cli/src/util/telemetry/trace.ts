@@ -29,7 +29,7 @@ export function createTrace<Data, Context = unknown, UserProperties = unknown>(
   let isCompleted = false
 
   const emitTraceEvent = (type: string, data?: Data | Error) => {
-    if (isCompleted && type !== 'trace.start') return
+    if (isCompleted) return
 
     const baseEvent = {
       context: context as Context,

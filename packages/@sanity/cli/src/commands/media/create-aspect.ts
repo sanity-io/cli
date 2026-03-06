@@ -1,8 +1,8 @@
-import fs, {mkdir} from 'node:fs/promises'
+import fs, {access, mkdir} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {fileExists, SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {input} from '@sanity/cli-core/ux'
 import {createPublishedId} from '@sanity/id-utils'
 import camelCase from 'lodash-es/camelCase.js'
@@ -47,7 +47,10 @@ export class MediaCreateAspectCommand extends SanityCommand<typeof MediaCreateAs
         recursive: true,
       })
 
-      const destinationPathExists = await fileExists(destinationPath)
+      const destinationPathExists = await access(destinationPath).then(
+        () => true,
+        () => false,
+      )
       if (destinationPathExists) {
         this.error(`A file already exists at ${styleText('bold', relativeDestinationPath)}`, {
           exit: 1,

@@ -38,7 +38,10 @@ type CliUserConfig = z.infer<z.ZodObject<typeof cliUserConfigSchema>>
  * @param value - The value to set
  * @internal
  */
-export async function setConfig<P extends keyof CliUserConfig>(prop: P, value: CliUserConfig[P]) {
+export async function setCliUserConfig<P extends keyof CliUserConfig>(
+  prop: P,
+  value: CliUserConfig[P],
+) {
   const config = await readConfig()
   const valueSchema = cliUserConfigSchema[prop]
   if (!valueSchema) {
@@ -66,20 +69,19 @@ export async function setConfig<P extends keyof CliUserConfig>(prop: P, value: C
  * @returns The value of the given property
  * @internal
  */
-export async function getConfig<P extends keyof CliUserConfig>(prop: P): Promise<CliUserConfig[P]> {
+export async function getCliUserConfig<P extends keyof CliUserConfig>(
+  prop: P,
+): Promise<CliUserConfig[P]> {
   const config = await readConfig()
   const valueSchema = cliUserConfigSchema[prop]
   if (!valueSchema) {
     throw new Error(`No schema defined for config property "${prop}"`)
   }
 
-  const {error, success} = valueSchema.safeParse(config[prop])
+  const {success} = valueSchema.safeParse(config[prop])
   if (!success) {
-    const message = error.issues
-      .map(({message, path}) => `[${path.join('.')}] ${message}`)
-      .join('\n')
-
-    throw new Error(`Invalid value for config property "${prop}": ${message}`)
+    debug('Ignoring invalid stored value for "%s", returning undefined', prop)
+    return undefined as CliUserConfig[P]
   }
 
   return config[prop]
