@@ -1,6 +1,10 @@
 import semver from 'semver'
 
-import {getGlobalUninstallCommand, getLocalRemoveCommand} from './commands.js'
+import {
+  getGlobalUninstallCommand,
+  getLocalRemoveCommand,
+  getLocalUpdateCommand,
+} from './commands.js'
 import {
   type GlobalInstallation,
   type Issue,
@@ -128,7 +132,7 @@ export function analyzeIssues(
           message: `Installed @sanity/cli@${installedVersion} does not satisfy sanity's requirement of ${expectedCliRange}.`,
           packageName: '@sanity/cli',
           severity: 'error',
-          suggestion: `Run: ${pm} install`,
+          suggestion: `Run: ${getLocalUpdateCommand(pm, '@sanity/cli')}`,
           type: 'cli-version-incompatible',
         })
       }

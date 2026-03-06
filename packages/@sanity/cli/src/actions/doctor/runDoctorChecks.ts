@@ -1,4 +1,5 @@
 import {
+  type CheckResult,
   type CheckResultWithMeta,
   type DoctorCheck,
   type DoctorContext,
@@ -13,7 +14,15 @@ export async function runDoctorChecks(
 
   // Run checks sequentially (some may depend on earlier results in the future)
   for (const check of checks) {
-    const result = await check.run(context)
+    let result: CheckResult
+    try {
+      result = await check.run(context)
+    } catch (err) {
+      result = {
+        messages: [{text: err instanceof Error ? err.message : String(err), type: 'error'}],
+        status: 'error',
+      }
+    }
     results.push({
       ...result,
       name: check.name,

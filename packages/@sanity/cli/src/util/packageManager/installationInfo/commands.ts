@@ -17,6 +17,23 @@ export function getGlobalUninstallCommand(pm: LockfileType, packageName: string)
   }
 }
 
+export function getLocalUpdateCommand(pm: LockfileType, packageName: string): string {
+  switch (pm) {
+    case 'bun': {
+      return `bun update ${packageName}`
+    }
+    case 'npm': {
+      return `npm update ${packageName}`
+    }
+    case 'pnpm': {
+      return `pnpm update ${packageName}`
+    }
+    case 'yarn': {
+      return `yarn upgrade ${packageName}`
+    }
+  }
+}
+
 export function getLocalRemoveCommand(pm: LockfileType, packageName: string): string {
   switch (pm) {
     case 'bun': {
