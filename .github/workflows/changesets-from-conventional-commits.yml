@@ -7,7 +7,8 @@ on:
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 permissions:
-  contents: read # for checkout
+  contents: write # for pushing changeset files to PR branch
+  pull-requests: write
 
 jobs:
   changeset:

@@ -16,7 +16,8 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: read # for checkout
+  contents: write # for version bump commits and tags
+  pull-requests: write # for creating Version Packages PR
   id-token: write # to enable use of OIDC for npm provenance
 
 jobs:
@@ -24,7 +25,8 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     permissions:
-      contents: read # for checkout
+      contents: write
+      pull-requests: write
       id-token: write # to enable use of OIDC for npm provenance
     outputs:
       published: ${{ steps.changesets.outputs.published }}
@@ -116,7 +118,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Mark SDK issues as done
-        uses: sanity-io/mark-issues-done-action@main
+        uses: sanity-io/mark-issues-done-action@88e6a3e6bc5a9c86d45873c4dba3302a4cafcb65 # main
         with:
           linear_api_key: ${{ secrets.LINEAR_API_KEY }}
           repository_name: ${{ github.event.repository.name }}
