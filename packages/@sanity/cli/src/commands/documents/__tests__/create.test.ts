@@ -943,7 +943,7 @@ describe('#documents:create', () => {
         {mocks: noProjectRootMocks},
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Created:')
       expect(stdout).toContain('test-doc')
       expect(mockGetProjectCliClient).toHaveBeenCalledWith(

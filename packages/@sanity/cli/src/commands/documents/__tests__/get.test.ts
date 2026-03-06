@@ -189,7 +189,7 @@ describe('#documents:get', () => {
         {mocks: noProjectRootMocks},
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('"_id": "test-doc"')
       expect(stdout).toContain('"title": "Test Post"')
       expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
@@ -231,7 +231,7 @@ describe('#documents:get', () => {
         {mocks: defaultMocks},
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('"_id": "test-doc"')
       expect(mockGetProjectCliClient).toHaveBeenCalledWith(
         expect.objectContaining({projectId: 'override-project'}),

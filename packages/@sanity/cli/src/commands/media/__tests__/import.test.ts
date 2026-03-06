@@ -287,6 +287,7 @@ describe('#media:import', () => {
         mocks: noProjectRootMocks,
       })
 
+      expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Unable to determine project ID')
       expect(error?.oclif?.exit).toBe(1)
     })

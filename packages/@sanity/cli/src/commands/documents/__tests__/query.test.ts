@@ -328,7 +328,7 @@ describe('#documents:query', () => {
         },
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('"_id": "doc1"')
       expect(stdout).toContain('"title": "Hello"')
       expect(mockFetch).toHaveBeenCalledWith('*[_type == "post"]')

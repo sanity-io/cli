@@ -357,12 +357,13 @@ describe('graphql undeploy', () => {
         uri: '/apis/graphql/staging/default',
       }).reply(204)
 
-      const {stdout} = await testCommand(
+      const {error, stdout} = await testCommand(
         Undeploy,
         ['--project-id', 'flag-project', '--dataset', 'staging'],
         {mocks: noProjectRootMocks},
       )
 
+      if (error) throw error
       expect(stdout).toBe('GraphQL API deleted\n')
     })
 

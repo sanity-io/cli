@@ -239,7 +239,7 @@ describe('#documents:delete', () => {
         {mocks: noProjectRootMocks},
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('Deleted 1 document')
       expect(mockDelete).toHaveBeenCalledWith('test-doc')
       expect(mockCommit).toHaveBeenCalled()
@@ -260,6 +260,7 @@ describe('#documents:delete', () => {
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Unable to determine project ID')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('errors when no project root with --project-id but no --dataset', async () => {

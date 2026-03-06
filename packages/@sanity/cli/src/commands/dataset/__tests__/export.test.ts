@@ -312,7 +312,7 @@ describe('#dataset:export', () => {
         },
       )
 
-      expect(error).toBeUndefined()
+      if (error) throw error
       expect(stdout).toContain('projectId: flag-project')
       expect(stdout).toContain('dataset: production')
       expect(mockExportDataset).toHaveBeenCalledWith(
@@ -332,6 +332,7 @@ describe('#dataset:export', () => {
         },
       )
 
+      expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Unable to determine project ID')
       expect(error?.oclif?.exit).toBe(1)
     })
