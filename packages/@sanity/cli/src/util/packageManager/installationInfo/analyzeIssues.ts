@@ -78,7 +78,7 @@ export function analyzeIssues(
             issues.push({
               message: `${name} version mismatch: global ${globalMatch.version} (${globalMatch.packageManager}) vs local ${info.installed.version}.`,
               packageName: name,
-              severity: 'warning',
+              severity: globalMatch.isActive ? 'warning' : 'info',
               suggestion: `Run: ${getGlobalUninstallCommand(globalMatch.packageManager, name)}`,
               type: 'global-local-mismatch',
             })
@@ -160,7 +160,7 @@ export function analyzeIssues(
         issues.push({
           message: `Global @sanity/cli@${global.version} (installed via ${global.packageManager}) is incompatible with local sanity@${sanityInfo.installed.version} (requires @sanity/cli ${compatRange}).`,
           packageName: '@sanity/cli',
-          severity: 'warning',
+          severity: global.isActive ? 'warning' : 'info',
           suggestion: `Run: ${getGlobalUninstallCommand(global.packageManager, '@sanity/cli')}`,
           type: 'global-cli-incompatible',
         })

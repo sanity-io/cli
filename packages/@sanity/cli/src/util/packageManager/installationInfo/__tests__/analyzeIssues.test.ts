@@ -279,8 +279,45 @@ describe('analyzeIssues', () => {
     const issues = analyzeIssues(packages, defaultWorkspace, globals)
     const mismatches = issues.filter((i) => i.type === 'global-local-mismatch')
     expect(mismatches).toHaveLength(2)
+    // Active global → warning, inactive global → info
+    expect(mismatches[0].severity).toBe('warning')
     expect(mismatches[0].suggestion).toContain('npm uninstall -g')
+    expect(mismatches[1].severity).toBe('info')
     expect(mismatches[1].suggestion).toContain('pnpm remove -g')
+  })
+
+  test('uses info severity for inactive global-local-mismatch', () => {
+    const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
+      sanity: {
+        declared: {
+          declaredVersionRange: '^4.0.0',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^4.0.0',
+        },
+        installed: {
+          cliDependencyRange: null,
+          path: '/project/node_modules/sanity',
+          version: '4.0.0',
+        },
+        override: null,
+      },
+    }
+
+    const globals: GlobalInstallation[] = [
+      {
+        isActive: false,
+        packageManager: 'pnpm',
+        packageName: 'sanity',
+        path: null,
+        version: '3.0.0',
+      },
+    ]
+
+    const issues = analyzeIssues(packages, defaultWorkspace, globals)
+    const mismatch = issues.find((i) => i.type === 'global-local-mismatch')
+    expect(mismatch).toBeDefined()
+    expect(mismatch?.severity).toBe('info')
   })
 
   test('does not flag global-local-mismatch for minor/patch differences', () => {
@@ -373,7 +410,7 @@ describe('analyzeIssues', () => {
     expect(issue?.severity).toBe('info')
   })
 
-  test('detects global-cli-incompatible when global @sanity/cli is too old for local sanity', () => {
+  test('detects global-cli-incompatible with info severity for inactive global', () => {
     const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
       sanity: {
         declared: {
@@ -396,7 +433,7 @@ describe('analyzeIssues', () => {
         isActive: false,
         packageManager: 'npm',
         packageName: '@sanity/cli',
-        path: '/usr/local/lib/node_modules/@sanity/cli',
+        path: null,
         version: '5.0.0', // Too old — doesn't satisfy ^5.33.0
       },
     ]
@@ -405,10 +442,45 @@ describe('analyzeIssues', () => {
 
     expect(issues.some((i) => i.type === 'global-cli-incompatible')).toBe(true)
     const issue = issues.find((i) => i.type === 'global-cli-incompatible')
-    expect(issue?.severity).toBe('warning')
+    // Inactive global → info, not warning
+    expect(issue?.severity).toBe('info')
     expect(issue?.message).toContain('5.0.0')
     expect(issue?.message).toContain('npm')
     expect(issue?.suggestion).toContain('npm uninstall -g')
+  })
+
+  test('detects global-cli-incompatible with warning severity for active global', () => {
+    const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
+      sanity: {
+        declared: {
+          declaredVersionRange: '^3.67.0',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^3.67.0',
+        },
+        installed: {
+          cliDependencyRange: '5.33.0',
+          path: '/project/node_modules/sanity',
+          version: '3.67.0',
+        },
+        override: null,
+      },
+    }
+
+    const globals: GlobalInstallation[] = [
+      {
+        isActive: true,
+        packageManager: 'npm',
+        packageName: '@sanity/cli',
+        path: null,
+        version: '5.0.0',
+      },
+    ]
+
+    const issues = analyzeIssues(packages, defaultWorkspace, globals)
+
+    const issue = issues.find((i) => i.type === 'global-cli-incompatible')
+    expect(issue?.severity).toBe('warning')
   })
 
   test('does not flag global-cli-incompatible when global version satisfies range', () => {
