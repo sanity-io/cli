@@ -611,6 +611,80 @@ describe('analyzeIssues', () => {
     expect(issues.some((i) => i.type === 'redundant-cli-dependency')).toBe(false)
   })
 
+  test('skips conflict check for git+https: protocol', () => {
+    const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
+      '@sanity/cli': {
+        declared: {
+          declaredVersionRange: 'git+https://github.com/sanity-io/cli.git',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: 'git+https://github.com/sanity-io/cli.git',
+        },
+        installed: {
+          cliDependencyRange: null,
+          path: '/project/node_modules/@sanity/cli',
+          version: '5.33.0',
+        },
+        override: null,
+      },
+      sanity: {
+        declared: {
+          declaredVersionRange: '^3.67.0',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^3.67.0',
+        },
+        installed: {
+          cliDependencyRange: '^5.33.0',
+          path: '/project/node_modules/sanity',
+          version: '3.67.0',
+        },
+        override: null,
+      },
+    }
+
+    const issues = analyzeIssues(packages, defaultWorkspace, [])
+    expect(issues.some((i) => i.type === 'conflicting-cli-dependency')).toBe(false)
+    expect(issues.some((i) => i.type === 'redundant-cli-dependency')).toBe(false)
+  })
+
+  test('skips conflict check for github: protocol', () => {
+    const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
+      '@sanity/cli': {
+        declared: {
+          declaredVersionRange: 'github:sanity-io/cli',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: 'github:sanity-io/cli',
+        },
+        installed: {
+          cliDependencyRange: null,
+          path: '/project/node_modules/@sanity/cli',
+          version: '5.33.0',
+        },
+        override: null,
+      },
+      sanity: {
+        declared: {
+          declaredVersionRange: '^3.67.0',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^3.67.0',
+        },
+        installed: {
+          cliDependencyRange: '^5.33.0',
+          path: '/project/node_modules/sanity',
+          version: '3.67.0',
+        },
+        override: null,
+      },
+    }
+
+    const issues = analyzeIssues(packages, defaultWorkspace, [])
+    expect(issues.some((i) => i.type === 'conflicting-cli-dependency')).toBe(false)
+    expect(issues.some((i) => i.type === 'redundant-cli-dependency')).toBe(false)
+  })
+
   test('skips conflict check for file: protocol', () => {
     const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
       '@sanity/cli': {

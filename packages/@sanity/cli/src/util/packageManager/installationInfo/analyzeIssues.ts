@@ -33,7 +33,10 @@ export function analyzeIssues(
   }
 
   // Check each package for issues
-  for (const [name, info] of Object.entries(packages) as [SanityPackage, PackageInfo][]) {
+  for (const [name, info] of Object.entries(packages) as [
+    SanityPackage,
+    PackageInfo | undefined,
+  ][]) {
     if (!info) continue
 
     // declared-not-installed
@@ -166,10 +169,22 @@ export function analyzeIssues(
 
 /**
  * Protocols and prefixes that are not semver ranges.
- * Includes local package references (workspace:, file:, portal:, link:) and
- * catalog: which may appear as an unresolved range when pnpm catalog lookup fails.
+ * Includes local package references (workspace:, file:, portal:, link:),
+ * catalog: which may appear as an unresolved range when pnpm catalog lookup fails,
+ * and git/URL-based dependency specifiers.
  */
-const NON_SEMVER_PROTOCOLS = ['workspace:', 'file:', 'portal:', 'link:', 'catalog:']
+const NON_SEMVER_PROTOCOLS = [
+  'workspace:',
+  'file:',
+  'portal:',
+  'link:',
+  'catalog:',
+  'git+',
+  'git:',
+  'github:',
+  'https:',
+  'http:',
+]
 
 function isNonSemverProtocol(range: string): boolean {
   return NON_SEMVER_PROTOCOLS.some((p) => range.startsWith(p))

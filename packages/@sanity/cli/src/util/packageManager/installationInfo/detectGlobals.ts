@@ -152,8 +152,13 @@ async function queryPnpmGlobals(): Promise<GlobalInstallation[]> {
 }
 
 async function queryYarnGlobals(): Promise<GlobalInstallation[]> {
-  // Yarn classic uses `yarn global list`
-  // Yarn berry has different global handling
+  // `yarn global list` only works with Yarn Classic (v1).
+  // Yarn Berry (v2+) removed global installs entirely — the command errors or
+  // produces no output. Because `reject: false` is set, the call returns
+  // empty stdout and we gracefully return []. This means Yarn Berry global
+  // installations (if any exist via third-party plugins) are invisible here.
+  // A version check (via getYarnMajorVersion) could skip the call entirely,
+  // but since it already degrades gracefully the cost is just a failed exec.
   try {
     const result = await execa('yarn', ['global', 'list', '--json'], {
       reject: false,

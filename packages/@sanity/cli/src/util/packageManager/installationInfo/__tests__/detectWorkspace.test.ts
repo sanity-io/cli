@@ -68,6 +68,51 @@ describe('detectWorkspace', () => {
         type: 'npm',
       })
     })
+
+    test('detects yarn workspaces from nested package (with yarn.lock)', async () => {
+      const cwd = path.join(fixturesDir, 'yarn-workspaces', 'packages', 'studio')
+      const result = await detectWorkspace(cwd)
+
+      expect(result.type).toBe('yarn-workspaces')
+      expect(result.root).toBe(path.join(fixturesDir, 'yarn-workspaces'))
+      expect(result.nearestPackageJson).toBe(path.join(cwd, 'package.json'))
+      expect(result.lockfile).toEqual({
+        path: path.join(fixturesDir, 'yarn-workspaces', 'yarn.lock'),
+        type: 'yarn',
+      })
+    })
+
+    test('detects yarn workspaces via .yarnrc.yml when no lockfile exists', async () => {
+      const cwd = path.join(fixturesDir, 'yarn-workspaces-no-lockfile', 'packages', 'studio')
+      const result = await detectWorkspace(cwd)
+
+      expect(result.type).toBe('yarn-workspaces')
+      expect(result.root).toBe(path.join(fixturesDir, 'yarn-workspaces-no-lockfile'))
+      expect(result.nearestPackageJson).toBe(path.join(cwd, 'package.json'))
+      expect(result.lockfile).toBeNull()
+    })
+  })
+
+  describe('no workspace fallback', () => {
+    test('returns startDir as root when no lockfile or workspace config is found', async () => {
+      // We need a directory where walking up never finds a lockfile or workspace config.
+      // Create a temp directory to isolate from the test fixtures.
+      const os = await import('node:os')
+      const fs = await import('node:fs/promises')
+      const isolatedDir = await fs.mkdtemp(path.join(os.tmpdir(), 'detect-ws-'))
+      const pkgPath = path.join(isolatedDir, 'package.json')
+      await fs.writeFile(pkgPath, JSON.stringify({name: 'isolated', version: '1.0.0'}))
+
+      try {
+        const result = await detectWorkspace(isolatedDir)
+
+        expect(result.type).toBe('standalone')
+        expect(result.root).toBe(isolatedDir)
+        expect(result.lockfile).toBeNull()
+      } finally {
+        await fs.rm(isolatedDir, {recursive: true})
+      }
+    })
   })
 
   describe('multiple lockfiles', () => {
