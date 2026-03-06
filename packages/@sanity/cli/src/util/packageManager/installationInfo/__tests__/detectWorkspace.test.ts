@@ -79,5 +79,14 @@ describe('detectWorkspace', () => {
       // Should use the first lockfile found (npm takes precedence or alphabetical)
       expect(result.lockfile).not.toBeNull()
     })
+
+    test('does not flag multiple lockfiles when both are bun variants', async () => {
+      const cwd = path.join(fixturesDir, 'bun-dual-lockfiles')
+      const result = await detectWorkspace(cwd)
+
+      // bun.lock + bun.lockb both map to 'bun' — not a true multi-lockfile situation
+      expect(result.hasMultipleLockfiles).toBe(false)
+      expect(result.lockfile?.type).toBe('bun')
+    })
   })
 })

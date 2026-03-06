@@ -24,7 +24,7 @@ describe('cliInstallationCheck', () => {
   })
 
   test('shows success message with version when no issues found', async () => {
-    const cwd = path.join(fixturesDir, 'pnpm-nested-deps')
+    const cwd = path.join(fixturesDir, 'clean-npm-install')
 
     const result = await cliInstallationCheck.run({cwd})
 
@@ -41,15 +41,19 @@ describe('cliInstallationCheck', () => {
     expect(infoMessages.filter((m) => m.text.startsWith('Running CLI from:'))).toHaveLength(0)
   })
 
-  test('returns error status when package is declared but not installed', async () => {
+  test('returns error status when version conflicts exist', async () => {
     const cwd = path.join(fixturesDir, 'standalone-npm')
 
     const result = await cliInstallationCheck.run({cwd})
 
-    // standalone-npm has sanity declared but no node_modules
-    // so it should report an issue (though it may find it in parent monorepo)
-    expect(result.status).toBeDefined()
-    expect(result.messages.length).toBeGreaterThan(0)
+    // standalone-npm declares sanity@^3.67.0 but has no node_modules of its own.
+    // Node resolution finds the monorepo's packages, which are alpha versions,
+    // so version-mismatch issues are expected.
+    expect(result.status).toBe('error')
+    const errorMsg = result.messages.find((m) => m.type === 'error')
+    expect(errorMsg).toBeDefined()
+    expect(errorMsg?.text).toBeDefined()
+    expect(errorMsg?.suggestions).toBeDefined()
   })
 
   test('shows issue messages with suggestions when problems exist', async () => {

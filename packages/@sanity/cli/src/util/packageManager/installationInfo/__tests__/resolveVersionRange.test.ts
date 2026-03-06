@@ -94,6 +94,40 @@ describe('resolveVersionRange', () => {
       expect(result).toBe('^3.67.0')
     })
 
+    test('resolves catalog: from catalogs.default when top-level catalog is absent', async () => {
+      const workspaceRoot = path.join(fixturesDir, 'pnpm-workspace-with-catalogs-default')
+      const workspaceInfo: WorkspaceInfo = {
+        hasMultipleLockfiles: false,
+        lockfile: {
+          path: path.join(workspaceRoot, 'pnpm-lock.yaml'),
+          type: 'pnpm',
+        },
+        nearestPackageJson: path.join(workspaceRoot, 'package.json'),
+        root: workspaceRoot,
+        type: 'pnpm-workspaces',
+      }
+
+      const result = await resolveVersionRange('catalog:', 'sanity', workspaceInfo)
+      expect(result).toBe('^3.68.0')
+    })
+
+    test('resolves catalog:default from catalogs.default when top-level catalog is absent', async () => {
+      const workspaceRoot = path.join(fixturesDir, 'pnpm-workspace-with-catalogs-default')
+      const workspaceInfo: WorkspaceInfo = {
+        hasMultipleLockfiles: false,
+        lockfile: {
+          path: path.join(workspaceRoot, 'pnpm-lock.yaml'),
+          type: 'pnpm',
+        },
+        nearestPackageJson: path.join(workspaceRoot, 'package.json'),
+        root: workspaceRoot,
+        type: 'pnpm-workspaces',
+      }
+
+      const result = await resolveVersionRange('catalog:default', 'sanity', workspaceInfo)
+      expect(result).toBe('^3.68.0')
+    })
+
     test('returns original value if package not found in catalog', async () => {
       const workspaceRoot = path.join(fixturesDir, 'pnpm-workspace-with-catalog')
       const workspaceInfo: WorkspaceInfo = {

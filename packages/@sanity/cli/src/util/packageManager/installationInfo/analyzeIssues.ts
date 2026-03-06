@@ -4,6 +4,7 @@ import {getGlobalUninstallCommand, getLocalRemoveCommand} from './commands.js'
 import {
   type GlobalInstallation,
   type Issue,
+  type LockfileType,
   type PackageInfo,
   type SanityPackage,
   type WorkspaceInfo,
@@ -18,7 +19,7 @@ export function analyzeIssues(
   globals: GlobalInstallation[],
 ): Issue[] {
   const issues: Issue[] = []
-  const pm = workspace.lockfile?.type || 'npm'
+  const pm: LockfileType = workspace.lockfile?.type ?? inferPackageManager(workspace.type)
 
   // Check for multiple lockfiles
   if (workspace.hasMultipleLockfiles) {
@@ -57,18 +58,26 @@ export function analyzeIssues(
       })
     }
 
-    // global-local-mismatch
-    const globalMatch = globals.find((g) => g.packageName === name)
-    if (globalMatch && info.installed && globalMatch.version !== info.installed.version) {
-      issues.push({
-        message: `${name} version mismatch: global ${globalMatch.version} vs local ${info.installed.version}.`,
-        packageName: name,
-        severity: 'warning',
-        suggestion: globalMatch.isActive
-          ? 'Consider updating the global installation or using npx to use the local version.'
-          : null,
-        type: 'global-local-mismatch',
-      })
+    // global-local-mismatch — only warn on major version differences
+    // Check all global installations, not just the first match.
+    // Skip @sanity/cli here — global-cli-incompatible (below) handles it with
+    // better context by checking against sanity's actual required range.
+    if (info.installed && name !== '@sanity/cli') {
+      const localMajor = semver.parse(info.installed.version)?.major
+      if (localMajor !== undefined) {
+        for (const globalMatch of globals.filter((g) => g.packageName === name)) {
+          const globalMajor = semver.parse(globalMatch.version)?.major
+          if (globalMajor !== undefined && globalMajor !== localMajor) {
+            issues.push({
+              message: `${name} version mismatch: global ${globalMatch.version} (${globalMatch.packageManager}) vs local ${info.installed.version}.`,
+              packageName: name,
+              severity: 'warning',
+              suggestion: `Run: ${getGlobalUninstallCommand(globalMatch.packageManager, name)}`,
+              type: 'global-local-mismatch',
+            })
+          }
+        }
+      }
     }
   }
 
@@ -79,12 +88,15 @@ export function analyzeIssues(
   if (sanityInfo?.installed?.cliDependencyRange) {
     const expectedCliRange = sanityInfo.installed.cliDependencyRange
 
-    // Check if @sanity/cli is explicitly declared with an incompatible version
-    if (cliInfo?.declared) {
+    // Check if @sanity/cli is explicitly declared with an incompatible version.
+    // Skip when the declared range uses a non-semver protocol (workspace:*, file:,
+    // portal:, link:) — these are local package references, not version conflicts.
+    if (cliInfo?.declared && !isNonSemverProtocol(cliInfo.declared.versionRange)) {
       const declaredRange = cliInfo.declared.versionRange
-      // Check if the declared range could conflict with what sanity expects
-      if (rangesOverlap(declaredRange, expectedCliRange)) {
-        // Declared but compatible - redundant
+      // Only flag as redundant when every version in the declared range also
+      // satisfies the required range. semver.subset('^5.0.0', '^5.33.0') → false,
+      // so a too-wide range is correctly classified as conflicting.
+      if (safeSubset(declaredRange, expectedCliRange)) {
         issues.push({
           message: `@sanity/cli is listed as a dependency but is already provided by sanity. Remove it to avoid version conflicts.`,
           packageName: '@sanity/cli',
@@ -103,8 +115,10 @@ export function analyzeIssues(
       }
     }
 
-    // Check if installed @sanity/cli satisfies sanity's requirement
-    if (cliInfo?.installed) {
+    // Check if installed @sanity/cli satisfies sanity's requirement.
+    // Skip if we already flagged a conflicting declaration — that's the root cause.
+    const hasConflictingDeclaration = issues.some((i) => i.type === 'conflicting-cli-dependency')
+    if (cliInfo?.installed && !hasConflictingDeclaration) {
       const installedVersion = cliInfo.installed.version
       if (!semver.satisfies(installedVersion, expectedCliRange)) {
         issues.push({
@@ -115,6 +129,18 @@ export function analyzeIssues(
           type: 'cli-version-incompatible',
         })
       }
+    }
+
+    // Check if @sanity/cli is missing entirely (not declared, not installed)
+    // This indicates a broken node_modules state since sanity depends on @sanity/cli.
+    if (!cliInfo?.installed && !cliInfo?.declared) {
+      issues.push({
+        message: `@sanity/cli is not installed. It is required by sanity@${sanityInfo.installed.version}.`,
+        packageName: '@sanity/cli',
+        severity: 'error',
+        suggestion: `Run: ${pm} install`,
+        type: 'cli-not-installed',
+      })
     }
 
     // Check global @sanity/cli compatibility with local sanity
@@ -139,36 +165,36 @@ export function analyzeIssues(
 }
 
 /**
- * Check if two semver ranges have any potential overlap.
- * This is a simplified check - it doesn't guarantee perfect accuracy
- * but catches obvious conflicts like "^4.0.0" vs "^5.0.0".
+ * Protocols and prefixes that are not semver ranges.
+ * Includes local package references (workspace:, file:, portal:, link:) and
+ * catalog: which may appear as an unresolved range when pnpm catalog lookup fails.
  */
-function rangesOverlap(range1: string, range2: string): boolean {
-  // Try to find a version that satisfies both ranges
-  // Start with common versions and work from there
-  const testVersions = [
-    // Extract major versions and test around them
-    ...extractMajorVersions(range1),
-    ...extractMajorVersions(range2),
-  ]
+const NON_SEMVER_PROTOCOLS = ['workspace:', 'file:', 'portal:', 'link:', 'catalog:']
 
-  for (const major of testVersions) {
-    // Test a few versions in this major
-    for (const minor of [0, 50, 99]) {
-      for (const patch of [0, 1]) {
-        const version = `${major}.${minor}.${patch}`
-        if (
-          semver.valid(version) &&
-          semver.satisfies(version, range1) &&
-          semver.satisfies(version, range2)
-        ) {
-          return true
-        }
-      }
-    }
+function isNonSemverProtocol(range: string): boolean {
+  return NON_SEMVER_PROTOCOLS.some((p) => range.startsWith(p))
+}
+
+/**
+ * Infers the package manager from the workspace type when no lockfile is present.
+ */
+function inferPackageManager(workspaceType: WorkspaceInfo['type']): LockfileType {
+  if (workspaceType.startsWith('pnpm')) return 'pnpm'
+  if (workspaceType.startsWith('yarn')) return 'yarn'
+  if (workspaceType.startsWith('bun')) return 'bun'
+  return 'npm'
+}
+
+/**
+ * Safe wrapper around semver.subset that returns false for non-semver ranges
+ * like workspace:*, catalog:, file:, or git URLs instead of throwing.
+ */
+function safeSubset(sub: string, sup: string): boolean {
+  try {
+    return semver.subset(sub, sup)
+  } catch {
+    return false
   }
-
-  return false
 }
 
 /**
@@ -185,17 +211,4 @@ function toCaretRange(range: string): string {
     return `^${range}`
   }
   return range
-}
-
-function extractMajorVersions(range: string): number[] {
-  const majors: number[] = []
-  // Match common patterns like ^5.0.0, ~4.1.0, >=3.0.0, 2.0.0
-  const matches = range.matchAll(/(\d+)\.\d+\.\d+/g)
-  for (const match of matches) {
-    const major = Number.parseInt(match[1], 10)
-    if (!Number.isNaN(major)) {
-      majors.push(major)
-    }
-  }
-  return [...new Set(majors)]
 }

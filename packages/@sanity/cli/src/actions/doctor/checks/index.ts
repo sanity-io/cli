@@ -7,13 +7,15 @@ import {cliInstallationCheck} from './cliInstallation.js'
  *
  * @internal
  */
-export const doctorChecks: Record<string, DoctorCheck> = {
+export const doctorChecks = {
   cli: cliInstallationCheck,
-}
+} satisfies Record<string, DoctorCheck>
+
+export type DoctorCheckName = keyof typeof doctorChecks
 
 /**
  * List of keys for known checks, used for validation
  *
  * @internal
  */
-export const KNOWN_CHECKS = Object.keys(doctorChecks)
+export const KNOWN_CHECKS: DoctorCheckName[] = Object.keys(doctorChecks) as DoctorCheckName[]

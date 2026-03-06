@@ -4,7 +4,7 @@ import {Args, Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
-import {doctorChecks, KNOWN_CHECKS} from '../actions/doctor/checks/index.js'
+import {type DoctorCheckName, doctorChecks, KNOWN_CHECKS} from '../actions/doctor/checks/index.js'
 import {runDoctorChecks} from '../actions/doctor/runDoctorChecks.js'
 import {
   type CheckMessage,
@@ -28,6 +28,8 @@ const MESSAGE_SYMBOLS: Record<MessageType, string> = {
 }
 
 export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
+  // Declared for oclif help-text generation only (shows valid options in --help).
+  // Runtime validation uses argv + getChecks() because strict=false allows variadic args.
   static override args = {
     checks: Args.string({
       description: 'Checks to enable (defaults to all)',
@@ -140,12 +142,16 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
   }
 }
 
+function isKnownCheck(name: string): name is DoctorCheckName {
+  return (KNOWN_CHECKS as readonly string[]).includes(name)
+}
+
 function getChecks(
   argv: unknown[],
   error: (message: string, options?: {exit: number}) => never,
 ): Array<DoctorCheck> {
   const checkNames = argv.map((item) => `${item}`)
-  const unknownChecks = checkNames.filter((check) => !KNOWN_CHECKS.includes(check))
+  const unknownChecks = checkNames.filter((check) => !isKnownCheck(check))
 
   if (unknownChecks.length > 0) {
     const list = new Intl.ListFormat('en-US', {style: 'long', type: 'unit'})
@@ -158,7 +164,10 @@ function getChecks(
     error(message, {exit: 1})
   }
 
-  return checkNames.length > 0
-    ? checkNames.map((check) => doctorChecks[check])
+  // After validation, all remaining names are known checks
+  const validNames = checkNames.filter((name) => isKnownCheck(name))
+
+  return validNames.length > 0
+    ? validNames.map((check) => doctorChecks[check])
     : Object.values(doctorChecks)
 }

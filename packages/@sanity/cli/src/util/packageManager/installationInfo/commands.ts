@@ -1,6 +1,6 @@
-import {type PackageManager} from './types.js'
+import {type LockfileType} from './types.js'
 
-export function getGlobalUninstallCommand(pm: PackageManager, packageName: string): string {
+export function getGlobalUninstallCommand(pm: LockfileType, packageName: string): string {
   switch (pm) {
     case 'bun': {
       return `bun remove -g ${packageName}`
@@ -14,13 +14,10 @@ export function getGlobalUninstallCommand(pm: PackageManager, packageName: strin
     case 'yarn': {
       return `yarn global remove ${packageName}`
     }
-    default: {
-      return `# Uninstall global package: ${packageName}`
-    }
   }
 }
 
-export function getLocalRemoveCommand(pm: PackageManager, packageName: string): string {
+export function getLocalRemoveCommand(pm: LockfileType, packageName: string): string {
   switch (pm) {
     case 'bun': {
       return `bun remove ${packageName}`
@@ -33,9 +30,6 @@ export function getLocalRemoveCommand(pm: PackageManager, packageName: string): 
     }
     case 'yarn': {
       return `yarn remove ${packageName}`
-    }
-    default: {
-      return `# Remove package: ${packageName}`
     }
   }
 }

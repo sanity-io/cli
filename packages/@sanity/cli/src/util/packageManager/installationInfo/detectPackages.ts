@@ -4,6 +4,7 @@ import {fileURLToPath, pathToFileURL} from 'node:url'
 
 import {resolve as resolveImport} from 'import-meta-resolve'
 
+import {readJsonFile} from './readJsonFile.js'
 import {resolveVersionRange} from './resolveVersionRange.js'
 import {
   type InstalledPackage,
@@ -255,13 +256,4 @@ export async function collectPackageInfo(
   ])
 
   return {declared, installed, override}
-}
-
-async function readJsonFile<T>(filePath: string): Promise<T | null> {
-  try {
-    const content = await fs.readFile(filePath, 'utf8')
-    return JSON.parse(content) as T
-  } catch {
-    return null
-  }
 }

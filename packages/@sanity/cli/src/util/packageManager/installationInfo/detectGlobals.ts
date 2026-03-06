@@ -1,9 +1,34 @@
 import {execa} from 'execa'
 import which from 'which'
 
-import {type GlobalInstallation, type PackageManager, type SanityPackage} from './types.js'
+import {type GlobalInstallation, type LockfileType, type SanityPackage} from './types.js'
 
 const SANITY_PACKAGES: SanityPackage[] = ['sanity', '@sanity/cli']
+
+/**
+ * Tries to parse JSON from command output that may contain non-JSON prefix lines
+ * (e.g. npm warnings printed before JSON). Returns null if parsing fails.
+ */
+function tryParseJson<T>(stdout: string): T | null {
+  // First, try parsing the full output
+  try {
+    return JSON.parse(stdout) as T
+  } catch {
+    // Fall through
+  }
+
+  // Try to find the start of JSON content (first { or [)
+  const jsonStart = stdout.search(/[{[]/)
+  if (jsonStart > 0) {
+    try {
+      return JSON.parse(stdout.slice(jsonStart)) as T
+    } catch {
+      // Fall through
+    }
+  }
+
+  return null
+}
 
 interface NpmListOutput {
   dependencies?: Record<
@@ -15,10 +40,8 @@ interface NpmListOutput {
   >
 }
 
-interface PnpmListItem {
-  name: string
-  version: string
-
+interface PnpmListProject {
+  dependencies?: Record<string, {path?: string; version: string}>
   path?: string
 }
 
@@ -27,17 +50,17 @@ interface PnpmListItem {
  * Runs queries in parallel for efficiency.
  */
 export async function detectGlobalInstallations(): Promise<GlobalInstallation[]> {
-  // Find which binary is active in PATH
-  const activeBinaryPath = await findActiveBinaryPath()
-
   // Query all package managers in parallel
-  const [npmGlobals, pnpmGlobals, yarnGlobals] = await Promise.all([
+  const [activeBinaryPath, npmGlobals, pnpmGlobals, yarnGlobals, bunGlobals] = await Promise.all([
+    // Find which binary is active in PATH
+    findActiveBinaryPath(),
     queryNpmGlobals(),
     queryPnpmGlobals(),
     queryYarnGlobals(),
+    queryBunGlobals(),
   ])
 
-  const allGlobals = [...npmGlobals, ...pnpmGlobals, ...yarnGlobals]
+  const allGlobals = [...npmGlobals, ...pnpmGlobals, ...yarnGlobals, ...bunGlobals]
 
   // Mark which installation is active
   return markActiveInstallation(allGlobals, activeBinaryPath)
@@ -62,7 +85,11 @@ async function queryNpmGlobals(): Promise<GlobalInstallation[]> {
       return []
     }
 
-    const output = JSON.parse(result.stdout) as NpmListOutput
+    const output = tryParseJson<NpmListOutput>(result.stdout)
+    if (!output) {
+      return []
+    }
+
     const globals: GlobalInstallation[] = []
 
     for (const pkg of SANITY_PACKAGES) {
@@ -72,7 +99,7 @@ async function queryNpmGlobals(): Promise<GlobalInstallation[]> {
           isActive: false, // Will be set later
           packageManager: 'npm',
           packageName: pkg,
-          path: dep.resolved || getNpmGlobalPath(pkg),
+          path: dep.resolved || null,
           version: dep.version,
         })
       }
@@ -95,18 +122,26 @@ async function queryPnpmGlobals(): Promise<GlobalInstallation[]> {
       return []
     }
 
-    const output = JSON.parse(result.stdout) as PnpmListItem[]
+    const output = tryParseJson<PnpmListProject[]>(result.stdout)
+    if (!output) {
+      return []
+    }
+
     const globals: GlobalInstallation[] = []
 
-    for (const item of output) {
-      if (SANITY_PACKAGES.includes(item.name as SanityPackage)) {
-        globals.push({
-          isActive: false,
-          packageManager: 'pnpm',
-          packageName: item.name as SanityPackage,
-          path: item.path || getPnpmGlobalPath(item.name),
-          version: item.version,
-        })
+    for (const project of output) {
+      if (!project.dependencies) continue
+      for (const pkg of SANITY_PACKAGES) {
+        const dep = project.dependencies[pkg]
+        if (dep) {
+          globals.push({
+            isActive: false,
+            packageManager: 'pnpm',
+            packageName: pkg,
+            path: dep.path || null,
+            version: dep.version,
+          })
+        }
       }
     }
 
@@ -137,23 +172,77 @@ async function queryYarnGlobals(): Promise<GlobalInstallation[]> {
       try {
         const entry = JSON.parse(line) as {data: string; type: string}
         if (entry.type === 'info' && entry.data) {
-          // Parse "package@version" format
+          // Yarn classic emits: "\"sanity@3.67.0\" has binaries:\n  - sanity"
+          // Extract the quoted "package@version" portion.
           for (const pkg of SANITY_PACKAGES) {
-            const pattern = new RegExp(`^${pkg.replace('/', String.raw`\/`)}@(.+)$`)
-            const match = entry.data.match(pattern)
-            if (match) {
-              globals.push({
-                isActive: false,
-                packageManager: 'yarn',
-                packageName: pkg,
-                path: getYarnGlobalPath(pkg),
-                version: match[1],
-              })
+            const prefix = `"${pkg}@`
+            if (entry.data.startsWith(prefix)) {
+              const closingQuote = entry.data.indexOf('"', prefix.length)
+              if (closingQuote !== -1) {
+                globals.push({
+                  isActive: false,
+                  packageManager: 'yarn',
+                  packageName: pkg,
+                  path: null,
+                  version: entry.data.slice(prefix.length, closingQuote),
+                })
+              }
             }
           }
         }
       } catch {
         // Skip malformed lines
+      }
+    }
+
+    return globals
+  } catch {
+    return []
+  }
+}
+
+interface BunListOutput {
+  dependencies?: Record<
+    string,
+    {
+      resolved: string
+      version: string
+    }
+  >
+}
+
+// NOTE: As of Bun 1.2, `bun pm ls` does not support --json or -g flags.
+// The --json flag is parsed but not implemented (see oven-sh/bun#26222).
+// This function will silently return [] until bun adds JSON output support,
+// which is the intended graceful degradation.
+async function queryBunGlobals(): Promise<GlobalInstallation[]> {
+  try {
+    const result = await execa('bun', ['pm', 'ls', '-g', '--json'], {
+      reject: false,
+      timeout: 10_000,
+    })
+
+    if (!result.stdout) {
+      return []
+    }
+
+    const output = tryParseJson<BunListOutput>(result.stdout)
+    if (!output) {
+      return []
+    }
+
+    const globals: GlobalInstallation[] = []
+
+    for (const pkg of SANITY_PACKAGES) {
+      const dep = output.dependencies?.[pkg]
+      if (dep) {
+        globals.push({
+          isActive: false,
+          packageManager: 'bun',
+          packageName: pkg,
+          path: dep.resolved || null,
+          version: dep.version,
+        })
       }
     }
 
@@ -172,13 +261,22 @@ function markActiveInstallation(
   }
 
   // Determine which package manager the active binary belongs to
-  // by checking path patterns. Order matters - check more specific patterns first.
-  let activePackageManager: PackageManager | null = null
+  // by checking path patterns. Check specific pm patterns first, then
+  // fall back to npm if the path doesn't match any — npm binaries end up
+  // in generic locations (nvm, homebrew, custom prefix) that can't be
+  // pattern-matched, so we treat "unrecognised path" as npm when npm
+  // globals exist.
+  let activePackageManager: LockfileType | null = null
 
+  // bun patterns — check before pnpm/yarn since bun paths are distinctive
+  if (activeBinaryPath.includes('/.bun/') || activeBinaryPath.includes('\\.bun\\')) {
+    activePackageManager = 'bun'
+  }
   // pnpm patterns
-  if (
+  else if (
     activeBinaryPath.includes('/pnpm/') ||
     activeBinaryPath.includes('\\.pnpm\\') ||
+    activeBinaryPath.includes('\\pnpm\\') ||
     activeBinaryPath.includes('/.pnpm-global/') ||
     activeBinaryPath.includes('\\.pnpm-global\\')
   ) {
@@ -192,34 +290,19 @@ function markActiveInstallation(
   ) {
     activePackageManager = 'yarn'
   }
-  // npm patterns - most common case, check last
-  // npm typically installs to /usr/local/bin, /usr/bin, or %AppData%/npm on Windows
-  else if (
-    activeBinaryPath.includes('/lib/node_modules/') ||
-    activeBinaryPath.includes('\\npm\\') ||
-    activeBinaryPath.includes('/usr/local/bin/') ||
-    activeBinaryPath.includes('/usr/bin/')
-  ) {
+  // npm fallback — npm installs binaries to generic system paths
+  // (e.g. ~/.nvm/versions/node/*/bin/, /opt/homebrew/bin/, /usr/local/bin/)
+  // that aren't distinguishable by pattern. If no other pm matched and
+  // npm globals were found, assume npm.
+  else if (globals.some((g) => g.packageManager === 'npm')) {
     activePackageManager = 'npm'
   }
 
   return globals.map((g) => ({
     ...g,
-    // Mark as active if it's from the detected package manager and is the sanity package
-    // (since that's what `which sanity` finds)
-    isActive: g.packageManager === activePackageManager && g.packageName === 'sanity',
+    // Mark as active if it's from the detected package manager.
+    // Both `sanity` and `@sanity/cli` provide a `sanity` binary,
+    // so either package from the active pm is considered active.
+    isActive: g.packageManager === activePackageManager,
   }))
-}
-
-function getNpmGlobalPath(pkg: string): string {
-  // Best effort path - actual path depends on system
-  return `/usr/local/lib/node_modules/${pkg}`
-}
-
-function getPnpmGlobalPath(pkg: string): string {
-  return `~/.local/share/pnpm/global/node_modules/${pkg}`
-}
-
-function getYarnGlobalPath(pkg: string): string {
-  return `~/.config/yarn/global/node_modules/${pkg}`
 }

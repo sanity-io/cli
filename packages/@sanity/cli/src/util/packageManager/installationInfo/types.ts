@@ -1,6 +1,14 @@
 import {type PackageManager} from '../packageManagerChoice.js'
 
-export type WorkspaceType = 'npm-workspaces' | 'pnpm-workspaces' | 'standalone' | 'yarn-workspaces'
+/** Lockfile types — excludes 'manual' since lockfiles always map to a real package manager. */
+export type LockfileType = Exclude<PackageManager, 'manual'>
+
+export type WorkspaceType =
+  | 'bun-workspaces'
+  | 'npm-workspaces'
+  | 'pnpm-workspaces'
+  | 'standalone'
+  | 'yarn-workspaces'
 
 export type SanityPackage = '@sanity/cli' | 'sanity'
 
@@ -22,9 +30,9 @@ export interface WorkspaceInfo {
   hasMultipleLockfiles: boolean
   lockfile: {
     path: string
-    type: PackageManager
+    type: LockfileType
   } | null
-  nearestPackageJson: string
+  nearestPackageJson: string | null
   root: string
   type: WorkspaceType
 }
@@ -56,13 +64,15 @@ export interface InstalledPackage {
 
 export interface GlobalInstallation {
   isActive: boolean
-  packageManager: PackageManager
+  packageManager: LockfileType
   packageName: SanityPackage
-  path: string
+  /** Filesystem path to the global installation, or null when it can't be determined. */
+  path: string | null
   version: string
 }
 
 export type IssueType =
+  | 'cli-not-installed'
   | 'cli-version-incompatible'
   | 'conflicting-cli-dependency'
   | 'declared-not-installed'

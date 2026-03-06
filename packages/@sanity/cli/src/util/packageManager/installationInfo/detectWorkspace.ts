@@ -1,21 +1,25 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import {type PackageManager, type WorkspaceInfo, type WorkspaceType} from './types.js'
+import {readJsonFile} from './readJsonFile.js'
+import {type LockfileType, type WorkspaceInfo, type WorkspaceType} from './types.js'
 
 interface LockfileInfo {
   path: string
-  type: PackageManager
+  type: LockfileType
 }
 
-const LOCKFILE_MAP: Record<string, PackageManager> = {
+const LOCKFILE_MAP: Record<string, LockfileType> = {
+  'bun.lock': 'bun',
   'bun.lockb': 'bun',
   'package-lock.json': 'npm',
   'pnpm-lock.yaml': 'pnpm',
   'yarn.lock': 'yarn',
 }
 
-const LOCKFILE_NAMES = Object.keys(LOCKFILE_MAP)
+// Explicit detection order: determines which lockfile is preferred when multiple exist.
+// pnpm > npm > yarn > bun — pnpm first because it's most common in Sanity projects.
+const LOCKFILE_NAMES = ['pnpm-lock.yaml', 'package-lock.json', 'yarn.lock', 'bun.lock', 'bun.lockb']
 
 /**
  * Detects workspace configuration by walking up from the given directory.
@@ -32,7 +36,7 @@ export async function detectWorkspace(cwd: string): Promise<WorkspaceInfo> {
     return {
       hasMultipleLockfiles: false,
       lockfile: null,
-      nearestPackageJson: path.join(cwd, 'package.json'),
+      nearestPackageJson: null,
       root: cwd,
       type: 'standalone',
     }
@@ -42,9 +46,12 @@ export async function detectWorkspace(cwd: string): Promise<WorkspaceInfo> {
   // This also finds lockfiles along the way
   const {lockfiles, root, type} = await findWorkspaceRoot(path.dirname(nearestPackageJson))
 
-  const hasMultipleLockfiles = lockfiles.length > 1
+  // De-duplicate by package manager type: bun.lock + bun.lockb both map to 'bun'
+  // and should not trigger a false "multiple lockfiles" warning.
+  const uniquePmTypes = new Set(lockfiles.map((l) => l.type))
+  const hasMultipleLockfiles = uniquePmTypes.size > 1
 
-  // Use the first lockfile found (npm > yarn > pnpm > bun by object key order)
+  // Use the first lockfile found (ordered by LOCKFILE_NAMES priority)
   const lockfile = lockfiles.length > 0 ? lockfiles[0] : null
 
   return {
@@ -96,18 +103,7 @@ async function findWorkspaceRoot(
       if (await fileExists(packageJsonPath)) {
         const packageJson = await readJsonFile(packageJsonPath)
         if (packageJson?.workspaces) {
-          // Determine workspace type based on lockfile
-          if (lockfiles.some((l) => l.type === 'yarn')) {
-            return {lockfiles, root: currentDir, type: 'yarn-workspaces'}
-          }
-          if (lockfiles.some((l) => l.type === 'npm')) {
-            return {lockfiles, root: currentDir, type: 'npm-workspaces'}
-          }
-          if (lockfiles.some((l) => l.type === 'pnpm')) {
-            return {lockfiles, root: currentDir, type: 'pnpm-workspaces'}
-          }
-          // Default to npm if no recognized lockfile
-          return {lockfiles, root: currentDir, type: 'npm-workspaces'}
+          return {lockfiles, root: currentDir, type: getWorkspaceType(lockfiles)}
         }
       }
 
@@ -115,15 +111,15 @@ async function findWorkspaceRoot(
       return {lockfiles, root: currentDir, type: 'standalone'}
     }
 
-    // No lockfile at this level, check for workspace markers before going up
-    // This handles the case where we're in a nested package that doesn't have its own lockfile
+    // No lockfile at this level, check for workspace markers before going up.
+    // This handles the case where we're in a nested package that doesn't have
+    // its own lockfile, or a fresh checkout before `install` has been run.
+    // We already know lockfiles is [] for this dir, so don't re-query.
 
     // Check for pnpm-workspace.yaml
     const pnpmWorkspacePath = path.join(currentDir, 'pnpm-workspace.yaml')
     if (await fileExists(pnpmWorkspacePath)) {
-      // This is a pnpm workspace root, find its lockfile
-      const rootLockfiles = await findLockfiles(currentDir)
-      return {lockfiles: rootLockfiles, root: currentDir, type: 'pnpm-workspaces'}
+      return {lockfiles: [], root: currentDir, type: 'pnpm-workspaces'}
     }
 
     // Check for package.json with workspaces field
@@ -131,18 +127,14 @@ async function findWorkspaceRoot(
     if (await fileExists(packageJsonPath)) {
       const packageJson = await readJsonFile(packageJsonPath)
       if (packageJson?.workspaces) {
-        // This is a workspace root, find its lockfile
-        const rootLockfiles = await findLockfiles(currentDir)
-        if (rootLockfiles.some((l) => l.type === 'yarn')) {
-          return {lockfiles: rootLockfiles, root: currentDir, type: 'yarn-workspaces'}
+        // Without a lockfile we can't determine the workspace type from
+        // lockfile presence. Check for .yarnrc.yml to distinguish yarn
+        // from npm before falling back to npm-workspaces.
+        const yarnrcPath = path.join(currentDir, '.yarnrc.yml')
+        if (await fileExists(yarnrcPath)) {
+          return {lockfiles: [], root: currentDir, type: 'yarn-workspaces'}
         }
-        if (rootLockfiles.some((l) => l.type === 'npm')) {
-          return {lockfiles: rootLockfiles, root: currentDir, type: 'npm-workspaces'}
-        }
-        if (rootLockfiles.some((l) => l.type === 'pnpm')) {
-          return {lockfiles: rootLockfiles, root: currentDir, type: 'pnpm-workspaces'}
-        }
-        return {lockfiles: rootLockfiles, root: currentDir, type: 'npm-workspaces'}
+        return {lockfiles: [], root: currentDir, type: 'npm-workspaces'}
       }
     }
 
@@ -151,6 +143,19 @@ async function findWorkspaceRoot(
 
   // No workspace or lockfile found, use the starting directory as root
   return {lockfiles: [], root: startDir, type: 'standalone'}
+}
+
+/**
+ * Determines the workspace type from the lockfiles found at the workspace root.
+ * Checks yarn first (since npm workspaces also use package.json#workspaces),
+ * then npm, then pnpm, defaulting to npm-workspaces.
+ */
+function getWorkspaceType(lockfiles: LockfileInfo[]): WorkspaceType {
+  if (lockfiles.some((l) => l.type === 'yarn')) return 'yarn-workspaces'
+  if (lockfiles.some((l) => l.type === 'npm')) return 'npm-workspaces'
+  if (lockfiles.some((l) => l.type === 'pnpm')) return 'pnpm-workspaces'
+  if (lockfiles.some((l) => l.type === 'bun')) return 'bun-workspaces'
+  return 'npm-workspaces'
 }
 
 async function findLockfiles(dir: string): Promise<LockfileInfo[]> {
@@ -175,14 +180,5 @@ async function fileExists(filePath: string): Promise<boolean> {
     return true
   } catch {
     return false
-  }
-}
-
-async function readJsonFile(filePath: string): Promise<Record<string, unknown> | null> {
-  try {
-    const content = await fs.readFile(filePath, 'utf8')
-    return JSON.parse(content) as Record<string, unknown>
-  } catch {
-    return null
   }
 }

@@ -49,9 +49,12 @@ async function resolveCatalogRange(
     const content = await fs.readFile(pnpmWorkspacePath, 'utf8')
     const config = yaml.parse(content) as PnpmWorkspaceConfig
 
+    // pnpm supports the default catalog in two places:
+    // 1. Top-level `catalog:` key
+    // 2. Under `catalogs: { default: { ... } }`
     const version =
-      catalogName === 'default' || catalogName === ''
-        ? config.catalog?.[packageName]
+      catalogName === 'default'
+        ? (config.catalog?.[packageName] ?? config.catalogs?.['default']?.[packageName])
         : config.catalogs?.[catalogName]?.[packageName]
 
     if (version) {

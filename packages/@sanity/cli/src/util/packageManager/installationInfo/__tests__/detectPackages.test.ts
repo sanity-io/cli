@@ -1,7 +1,8 @@
+import fs from 'node:fs'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterAll, afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
 import {
   findInstalledPackage,
@@ -131,12 +132,38 @@ describe('findPackageOverride', () => {
 })
 
 describe('findInstalledPackage', () => {
+  // pnpm uses symlinks: node_modules/sanity -> .pnpm/sanity@5.4.0/node_modules/sanity
+  // Git cannot store symlinks reliably, so we create them for the test.
+  const pnpmFixture = path.join(fixturesDir, 'pnpm-nested-deps')
+  const sanityLink = path.join(pnpmFixture, 'node_modules', 'sanity')
+  const sanityTarget = path.join(
+    pnpmFixture,
+    'node_modules',
+    '.pnpm',
+    'sanity@5.4.0',
+    'node_modules',
+    'sanity',
+  )
+
+  beforeAll(() => {
+    // Ensure node_modules dir exists
+    fs.mkdirSync(path.join(pnpmFixture, 'node_modules'), {recursive: true})
+    // Remove existing flat dir or stale symlink
+    fs.rmSync(sanityLink, {force: true, recursive: true})
+    // Create pnpm-style symlink
+    fs.symlinkSync(sanityTarget, sanityLink, 'junction')
+  })
+
+  afterAll(() => {
+    fs.rmSync(sanityLink, {force: true, recursive: true})
+  })
+
   afterEach(() => {
     vi.clearAllMocks()
   })
 
   test('finds sanity in pnpm nested structure', async () => {
-    const cwd = path.join(fixturesDir, 'pnpm-nested-deps')
+    const cwd = pnpmFixture
 
     const result = await findInstalledPackage('sanity', cwd)
 
@@ -146,14 +173,15 @@ describe('findInstalledPackage', () => {
   })
 
   test('finds @sanity/cli nested inside sanity node_modules (pnpm)', async () => {
-    const cwd = path.join(fixturesDir, 'pnpm-nested-deps')
+    const cwd = pnpmFixture
 
     const result = await findInstalledPackage('@sanity/cli', cwd)
 
     expect(result).not.toBeNull()
     expect(result?.version).toBe('5.4.0')
     // In pnpm, @sanity/cli is a sibling to sanity in the .pnpm/.../node_modules folder
-    expect(result?.path).toContain('.pnpm/sanity@5.4.0/node_modules/@sanity/cli')
+    const expectedSuffix = path.join('.pnpm', 'sanity@5.4.0', 'node_modules', '@sanity', 'cli')
+    expect(result?.path).toContain(expectedSuffix)
   })
 
   test('returns null when @sanity/cli is not found in nested or top-level', async () => {
