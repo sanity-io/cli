@@ -32,10 +32,12 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
     }),
     provider: Flags.string({
       description: 'Log in using the given provider',
+      exclusive: ['sso'],
       helpValue: '<providerId>',
     }),
     sso: Flags.string({
       description: 'Log in using Single Sign-On, using the given organization slug',
+      exclusive: ['provider'],
       helpValue: '<slug>',
     }),
   } satisfies FlagInput

@@ -112,6 +112,13 @@ describe('#login', () => {
   describe('Provider Selection', () => {
     // Error/early-exit tests first (no auth server started, so no port conflicts)
 
+    test('errors when --provider and --sso are both specified', async () => {
+      const {error} = await testCommand(LoginCommand, ['--provider', 'github', '--sso', 'my-org'])
+
+      expect(error).toBeDefined()
+      expect(error?.message).toContain('--provider=github cannot also be provided when using --sso')
+    })
+
     test('throws error for invalid --provider flag', async () => {
       mockedGetCliToken.mockResolvedValue('')
 
