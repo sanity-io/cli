@@ -28,8 +28,6 @@ interface SchemaDeployTraceData {
   schemaRequired: boolean
 
   extractManifest?: boolean
-  idPrefix?: string
-  workspaceName?: string
 }
 
 export const SchemaExtractedTrace = defineTrace<SchemaExtractedTraceAttributes>({

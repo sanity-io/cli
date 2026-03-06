@@ -37,9 +37,6 @@ export async function deployStudioSchemasAndManifests(
     extractManifest: !isExternal,
     manifestDir: outPath,
     schemaRequired,
-    // Deploy command does not take these flags this is leftover from the shared code
-    tag: undefined,
-    workspaceName: undefined,
   })
 
   try {

@@ -58,14 +58,13 @@ export async function uploadSchemaToLexicon(
       debug('Uploading schema to lexicon for workspace %o', {
         dataset: workspace.dataset,
         projectId: workspace.projectId,
-        schema: workspace.schema,
       })
       const descriptorId = await uploadSchema(workspace.schema, workspaceClient)
 
       if (!descriptorId) {
-        // spin.fail(
-        //   'Failed to get schema descriptor ID for workspace "${workspace.name}": upload returned empty result',
-        // )
+        spin.fail(
+          'Failed to get schema descriptor ID for workspace "${workspace.name}": upload returned empty result',
+        )
         throw new Error(
           `Failed to get schema descriptor ID for workspace "${workspace.name}": upload returned empty result`,
         )

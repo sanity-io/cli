@@ -28,7 +28,7 @@ export class ExtractManifestCommand extends SanityCommand<typeof ExtractManifest
 
   static override flags = {
     path: Flags.string({
-      default: '/dist/static',
+      default: 'dist/static',
       description: 'Optional path to specify destination directory of the manifest files',
     }),
   }

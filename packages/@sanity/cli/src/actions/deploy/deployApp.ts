@@ -45,6 +45,10 @@ export async function deployApp(options: DeployAppOptions) {
     return
   }
 
+  if (flags.external) {
+    output.warn('Deploying an app to an external host is not supported. Skipping...')
+  }
+
   let spin = spinner('Verifying local content...')
 
   try {
