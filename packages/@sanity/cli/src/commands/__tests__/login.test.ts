@@ -13,7 +13,7 @@ import {LoginCommand} from '../login.js'
 const mockInput = vi.hoisted(() => vi.fn())
 const mockSelect = vi.hoisted(() => vi.fn())
 const mockedGetCliToken = vi.hoisted(() => vi.fn())
-const mockedSetConfig = vi.hoisted(() => vi.fn())
+const mockedSetCliUserConfig = vi.hoisted(() => vi.fn())
 
 // Mock user interaction prompts
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -49,7 +49,7 @@ vi.mock('@sanity/cli-core', async () => {
       request: testClient.request,
       withConfig: vi.fn().mockReturnValue({request: testClient.request}),
     }),
-    setConfig: mockedSetConfig,
+    setCliUserConfig: mockedSetCliUserConfig,
   }
 })
 
@@ -185,9 +185,9 @@ describe('#login', () => {
       expect(mockedOpen).toHaveBeenCalledWith(expect.stringContaining('auth/google'))
 
       // Token stored, telemetry cleared, correct order
-      expect(mockedSetConfig).toHaveBeenCalledTimes(2)
-      expect(mockedSetConfig.mock.calls[0]).toEqual(['authToken', 'new-auth-token'])
-      expect(mockedSetConfig.mock.calls[1]).toEqual(['telemetryConsent', undefined])
+      expect(mockedSetCliUserConfig).toHaveBeenCalledTimes(2)
+      expect(mockedSetCliUserConfig.mock.calls[0]).toEqual(['authToken', 'new-auth-token'])
+      expect(mockedSetCliUserConfig.mock.calls[1]).toEqual(['telemetryConsent', undefined])
     })
 
     test('prompts user to select from multiple providers', async () => {
@@ -807,7 +807,7 @@ describe('#login', () => {
       const {error} = await commandPromise
 
       expect(error).toBeUndefined()
-      expect(mockedSetConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
+      expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
     })
 
     test('handles session invalidation errors gracefully', async () => {
@@ -827,7 +827,7 @@ describe('#login', () => {
 
       expect(error).toBeUndefined()
       expect(stderr).not.toContain('Failed to invalidate previous session')
-      expect(mockedSetConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
+      expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
     })
 
     test('warns on non-401 error when invalidating session', async () => {
@@ -847,7 +847,7 @@ describe('#login', () => {
 
       expect(error).toBeUndefined()
       expect(stderr).toContain('Failed to invalidate previous session')
-      expect(mockedSetConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
+      expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
     })
   })
 })
