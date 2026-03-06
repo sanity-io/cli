@@ -39,7 +39,8 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
 
   static flags = {
     ...getProjectIdFlag({
-      description: 'Override the project ID used. By default, this is derived from the given workspace',
+      description:
+        'Override the project ID used. By default, this is derived from the given workspace',
     }),
     ...getDatasetFlag({
       description:

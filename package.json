@@ -21,8 +21,9 @@
   "scripts": {
     "build": "turbo run build build:types",
     "build:cli": "turbo run build build:types --filter=./packages/**",
-    "check": "npm run check:lint && npm run check:types && npm run check:deps",
+    "check": "npm run check:format && npm run check:lint && npm run check:types && npm run check:deps",
     "check:deps": "knip",
+    "check:format": "prettier --check .",
     "check:lint": "turbo run lint -- --fix",
     "check:types": "turbo run check:types --filter=@sanity/cli --filter=@sanity/cli-core",
     "clean": "rimraf packages/@sanity/*/lib packages/*/lib packages/@sanity/*/dist packages/*/dist",

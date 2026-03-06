@@ -38,9 +38,7 @@ describe('getUserGrants', () => {
       organizations: {},
       projects: {
         'project-a': {
-          'sanity.project.datasets': [
-            {grants: [{name: 'read', params: {}}]},
-          ],
+          'sanity.project.datasets': [{grants: [{name: 'read', params: {}}]}],
         },
       },
     }

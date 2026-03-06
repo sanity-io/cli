@@ -64,12 +64,7 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(QueryDocumentCommand)
     const {query} = args
-    const {
-      anonymous,
-      'api-version': apiVersion,
-      dataset,
-      pretty,
-    } = flags
+    const {anonymous, 'api-version': apiVersion, dataset, pretty} = flags
 
     const cliConfig = await this.getCliConfig()
     const projectId = await this.getProjectId({
