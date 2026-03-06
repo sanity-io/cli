@@ -273,11 +273,12 @@ describe('#media:import', () => {
         of({asset: {originalFilename: 'img1.jpg'}, fileCount: 1}),
       )
 
-      await testCommand(
+      const {error} = await testCommand(
         MediaImportCommand,
         ['test-source', '--project-id', 'flag-project', '--media-library-id', 'test-media-library'],
         {mocks: noProjectRootMocks},
       )
+      if (error) throw error
 
       expect(mockSpinnerInstance.succeed).toHaveBeenCalledWith('Imported 1 assets')
     })

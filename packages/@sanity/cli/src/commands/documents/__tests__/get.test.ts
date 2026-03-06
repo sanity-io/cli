@@ -202,6 +202,7 @@ describe('#documents:get', () => {
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Unable to determine project ID')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('errors when outside project context with --project-id but no --dataset', async () => {
