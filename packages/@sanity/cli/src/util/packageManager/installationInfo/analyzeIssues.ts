@@ -191,7 +191,7 @@ function inferPackageManager(workspaceType: WorkspaceInfo['type']): LockfileType
  */
 function safeSubset(sub: string, sup: string): boolean {
   try {
-    return semver.subset(sub, sup)
+    return semver.subset(sub, sup) ?? false
   } catch {
     return false
   }

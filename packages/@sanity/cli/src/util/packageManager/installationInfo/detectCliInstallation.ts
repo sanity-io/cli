@@ -77,11 +77,23 @@ function detectExecutionContext(
     ) {
       resolvedFrom = 'npx'
     }
+    // Check if there's an active global installation whose path matches
+    // the binary path. This must come before the node_modules check because
+    // npm global installs also contain node_modules in their path
+    // (e.g. ~/.nvm/.../lib/node_modules/sanity/bin/sanity.js).
+    else if (
+      globalInstallations.some(
+        (g) => g.isActive && g.path !== null && binaryPath.startsWith(g.path),
+      )
+    ) {
+      resolvedFrom = 'global'
+    }
     // Check if running from node_modules (local)
     else if (binaryPath.includes('node_modules')) {
       resolvedFrom = 'local'
     }
-    // Check if there's an active global installation
+    // Fallback: if there's an active global installation but we couldn't
+    // match by path (e.g. path is null), still classify as global
     else if (globalInstallations.some((g) => g.isActive)) {
       resolvedFrom = 'global'
     }
