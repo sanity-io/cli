@@ -778,9 +778,22 @@ npx sanity dev
 
 This project uses [Changesets](https://github.com/changesets/changesets) for version management and publishing.
 
-### Adding a Changeset
+### Automatic Changesets (Conventional Commits)
 
-When you make a change that should be released, add a changeset:
+For **bot PRs** (Renovate, Dependabot), changesets are **automatically generated** from conventional commit messages — no manual steps needed. The `changesets-from-conventional-commits` workflow parses commit messages and creates the appropriate changeset files:
+
+- `feat:` → minor bump
+- `fix:` → patch bump
+- `feat!:` or `BREAKING CHANGE:` → major bump
+
+This also works for any PR that follows [Conventional Commits](https://www.conventionalcommits.org/) format.
+
+### Manual Changesets
+
+For human-authored PRs, you can either:
+
+1. **Rely on conventional commits** — if your PR commit messages follow the conventional format, changesets will be auto-generated
+2. **Manually add a changeset** for more control over the changelog entry:
 
 ```bash
 pnpm changeset
@@ -793,7 +806,7 @@ This will prompt you to:
 
 A markdown file will be created in the `.changeset/` directory. Commit this file with your PR.
 
-### When to Add a Changeset
+### When a Changeset is Needed
 
 - **Always** for `feat:`, `fix:`, `perf:`, and `revert:` commits
 - **Not needed** for `chore:`, `refactor:`, `test:`, `docs:`, `style:`, `build:`, `ci:` commits (unless they affect the public API)
