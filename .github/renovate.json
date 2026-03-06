@@ -3,6 +3,7 @@
   "extends": ["local>sanity-io/renovate-config"],
   "ignorePresets": ["github>sanity-io/renovate-config:group-non-major"],
   "schedule": ["before 5am"],
+  "minimumReleaseAge": "3 days",
   "prConcurrentLimit": 3,
   "automerge": true,
   "dependencyDashboardApproval": false,
@@ -90,6 +91,17 @@
       "matchDepTypes": ["dependencies", "peerDependencies"],
       "rangeStrategy": "bump",
       "semanticCommitType": "fix"
+    },
+    {
+      "description": "Disable minimumReleaseAge for trusted packages (keep in sync with pnpm-workspace.yaml minimumReleaseAgeExclude)",
+      "matchPackageNames": [
+        "@portabletext/*",
+        "@sanity/*",
+        "groq-js",
+        "groq",
+        "sanity"
+      ],
+      "minimumReleaseAge": "0 days"
     }
   ]
 }
