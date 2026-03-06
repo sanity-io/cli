@@ -103,6 +103,7 @@ pnpm check:lint      # ESLint + Prettier
 pnpm check:deps      # Unused dependencies
 pnpm test            # Run all tests
 pnpm test --coverage # Coverage report
+pnpm changeset       # Add a changeset (if your change affects published packages)
 ```
 
 ---
@@ -770,6 +771,64 @@ npx sanity dev
 - The PR comment updates with new URLs on subsequent commits
 - Preview packages remain available as long as the PR is open
 - Preview packages are automatically cleaned up after the PR is closed
+
+---
+
+## Releasing
+
+This project uses [Changesets](https://github.com/changesets/changesets) for version management and publishing.
+
+### Adding a Changeset
+
+When you make a change that should be released, add a changeset:
+
+```bash
+pnpm changeset
+```
+
+This will prompt you to:
+1. **Select packages** that are affected by your change
+2. **Choose a bump type** (patch, minor, or major)
+3. **Write a summary** of the change (this becomes the changelog entry)
+
+A markdown file will be created in the `.changeset/` directory. Commit this file with your PR.
+
+### When to Add a Changeset
+
+- **Always** for `feat:`, `fix:`, `perf:`, and `revert:` commits
+- **Not needed** for `chore:`, `refactor:`, `test:`, `docs:`, `style:`, `build:`, `ci:` commits (unless they affect the public API)
+
+### Bump Type Guide
+
+| Change Type | Bump | Example |
+|-------------|------|---------|
+| New feature | `minor` | New command, new flag |
+| Bug fix | `patch` | Fix crash, fix incorrect output |
+| Breaking change | `major` | Remove command, change flag behavior |
+| Performance improvement | `patch` | Faster startup, less memory |
+
+### How Releases Work
+
+1. **PRs with changesets** are merged to `main`
+2. The **Release workflow** automatically creates a "Version Packages" PR that:
+   - Bumps package versions based on accumulated changesets
+   - Updates `CHANGELOG.md` files
+   - Removes consumed changeset files
+3. **Merging the Version Packages PR** triggers publishing to npm
+4. **GitHub Releases** are automatically created for each published package
+
+### Manual Publishing
+
+If you need to force-publish without new changesets:
+
+1. Go to **Actions** → **Release** workflow
+2. Click **Run workflow**
+3. Check **Force publish packages to NPM**
+4. Click **Run workflow**
+
+### Pre-releases
+
+`@sanity/cli` is currently published with the `alpha` npm dist tag. Other packages (`@sanity/cli-core`, `@sanity/cli-test`, `@sanity/eslint-config-cli`) publish with the `latest` tag.
 
 ## Resources
 
