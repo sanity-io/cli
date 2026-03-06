@@ -8,9 +8,7 @@ function isCoverageMetric(value: unknown): value is {pct: number} {
   )
 }
 
-function isFileCoverageData(
-  value: unknown,
-): value is {
+function isFileCoverageData(value: unknown): value is {
   branches: {pct: number}
   functions: {pct: number}
   lines: {pct: number}

@@ -246,11 +246,9 @@ describe('graphql undeploy', () => {
   })
 
   test('errors when both --api and --project-id are specified', async () => {
-    const {error} = await testCommand(
-      Undeploy,
-      ['--api', 'ios', '--project-id', 'test-project'],
-      {mocks: defaultMocks},
-    )
+    const {error} = await testCommand(Undeploy, ['--api', 'ios', '--project-id', 'test-project'], {
+      mocks: defaultMocks,
+    })
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('cannot also be provided when using --api')

@@ -116,9 +116,7 @@ describe('#documents:validate flag passthrough', () => {
     ])
 
     if (error) throw error
-    expect(mocks.validateDocuments).toHaveBeenCalledWith(
-      expect.objectContaining({level: 'error'}),
-    )
+    expect(mocks.validateDocuments).toHaveBeenCalledWith(expect.objectContaining({level: 'error'}))
   })
 
   test('passes --max-custom-validation-concurrency to validateDocuments action', async () => {

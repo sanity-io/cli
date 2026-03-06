@@ -30,6 +30,9 @@ jobs:
         if: github.run_attempt > 1
         run: echo "TURBO_FORCE=true" >> $GITHUB_ENV
 
+      - name: Format Check
+        run: pnpm check:format
+
       - name: Lint
         run: pnpm check:lint
 
