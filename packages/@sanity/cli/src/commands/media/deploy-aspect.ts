@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {ProjectRootNotFoundError, SanityCommand, subdebug} from '@sanity/cli-core'
+import {type CliConfig, ProjectRootNotFoundError, SanityCommand, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {isAssetAspect, type SchemaValidationProblem} from '@sanity/types'
 
@@ -68,7 +68,7 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       this.error('Specified both an aspect name and `--all`.', {exit: 1})
     }
 
-    let cliConfig
+    let cliConfig: CliConfig
     try {
       cliConfig = await this.getCliConfig()
     } catch (err) {

@@ -1,5 +1,6 @@
 import {basename} from 'node:path'
 
+import {ProjectRootNotFoundError} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {
@@ -194,6 +195,21 @@ describe('#media:deploy-aspect', () => {
     const {error} = await testCommand(MediaDeployAspectCommand, args, {mocks: defaultMocks})
 
     expect(error?.message).toContain(expectedError)
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('errors when run outside a Sanity project directory', async () => {
+    const {error} = await testCommand(MediaDeployAspectCommand, ['--all'], {
+      mocks: {
+        cliConfigError: new ProjectRootNotFoundError('No project root found'),
+        token: 'test-token',
+      },
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain(
+      'This command must be run from within a Sanity project directory',
+    )
     expect(error?.oclif?.exit).toBe(1)
   })
 
