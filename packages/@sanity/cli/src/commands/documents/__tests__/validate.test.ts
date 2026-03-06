@@ -255,12 +255,16 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
 
   describe('outside project context', () => {
     test('errors when run outside a Sanity project directory', async () => {
-      const {error} = await testCommand(ValidateDocumentsCommand, ['--yes', '--file', VALID_DOCS_PATH], {
-        mocks: {
-          cliConfigError: new ProjectRootNotFoundError('No project root found'),
-          token: 'test-token',
+      const {error} = await testCommand(
+        ValidateDocumentsCommand,
+        ['--yes', '--file', VALID_DOCS_PATH],
+        {
+          mocks: {
+            cliConfigError: new ProjectRootNotFoundError('No project root found'),
+            token: 'test-token',
+          },
         },
-      })
+      )
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain(

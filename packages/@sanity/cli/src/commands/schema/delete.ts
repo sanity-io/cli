@@ -28,7 +28,9 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
     ...getProjectIdFlag({
       description: 'Project ID to delete schema from (overrides CLI configuration)',
     }),
-    ...getDatasetFlag({description: 'Delete schemas from a specific dataset (overrides CLI configuration)'}),
+    ...getDatasetFlag({
+      description: 'Delete schemas from a specific dataset (overrides CLI configuration)',
+    }),
     'extract-manifest': Flags.boolean({
       allowNo: true,
       default: true,

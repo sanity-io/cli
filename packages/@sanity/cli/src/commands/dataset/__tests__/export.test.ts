@@ -321,16 +321,12 @@ describe('#dataset:export', () => {
     })
 
     test('errors when outside project directory and no --project-id', async () => {
-      const {error} = await testCommand(
-        DatasetExportCommand,
-        ['production', 'output.tar.gz'],
-        {
-          mocks: {
-            cliConfigError: new ProjectRootNotFoundError('No project root found'),
-            token: defaultMocks.token,
-          },
+      const {error} = await testCommand(DatasetExportCommand, ['production', 'output.tar.gz'], {
+        mocks: {
+          cliConfigError: new ProjectRootNotFoundError('No project root found'),
+          token: defaultMocks.token,
         },
-      )
+      })
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Unable to determine project ID')
