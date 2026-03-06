@@ -52,8 +52,8 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
     const {documentId} = args
     const {dataset, pretty} = flags
 
-    // Get project configuration
-    const cliConfig = await this.getCliConfig()
+    const cliConfig = await this.tryGetCliConfig()
+
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     if (!cliConfig.api?.dataset && !dataset) {

@@ -195,7 +195,7 @@ test('with mockApi', async () => {
 
   const {error, stdout} = await testCommand(MyCommand, [])
 
-  expect(error).toBeUndefined()
+  if (error) throw error
   expect(stdout).toContain('project-123')
 })
 ```
@@ -244,6 +244,8 @@ When writing tests for CLI commands, follow these rules strictly:
 3. **Use hoisted mocks** - Use `vi.hoisted(() => vi.fn())` for client method mocks
 4. **Clear mocks in afterEach** - Always include `vi.clearAllMocks()` in `afterEach()`
 5. **Test error cases** - Include both success and error scenarios
+6. **Use `if (error) throw error`** in success tests - NOT `expect(error).toBeUndefined()`. This gives better stack traces on failure.
+7. **Assert `expect(error).toBeInstanceOf(Error)`** in error tests - along with exit code and message assertions
 
 #### NEVER:
 

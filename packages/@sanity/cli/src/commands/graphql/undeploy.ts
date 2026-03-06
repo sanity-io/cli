@@ -112,7 +112,7 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
 
     // Get dataset from CLI config if not specified
     if (!dataset) {
-      const cliConfig = await this.getCliConfig()
+      const cliConfig = await this.tryGetCliConfig()
       dataset = cliConfig.api?.dataset
     }
 

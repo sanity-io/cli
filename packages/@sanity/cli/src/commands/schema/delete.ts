@@ -1,11 +1,11 @@
 import {Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {parseStringFlag, SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
 import {parseIds} from '../../actions/schema/utils/schemaStoreValidation.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
-import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteSchemaDebug = subdebug('schema:delete')
 
@@ -28,10 +28,7 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
     ...getProjectIdFlag({
       description: 'Project ID to delete schema from (overrides CLI configuration)',
     }),
-    dataset: Flags.string({
-      description: 'Delete schemas from a specific dataset',
-      parse: async (input) => parseStringFlag('dataset', input),
-    }),
+    ...getDatasetFlag({description: 'Delete schemas from a specific dataset (overrides CLI configuration)'}),
     'extract-manifest': Flags.boolean({
       allowNo: true,
       default: true,

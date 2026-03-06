@@ -1,3 +1,4 @@
+import {ProjectRootNotFoundError} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -301,5 +302,67 @@ describe('#documents:query', () => {
 
     expect(stdout).toContain('"_id": "test"')
     expect(mockFetch).toHaveBeenCalledWith('*[_type == "movie"]')
+  })
+
+  describe('outside project context', () => {
+    const noProjectRootMocks = {
+      cliConfigError: new ProjectRootNotFoundError('No project root found'),
+      token: 'test-token',
+    }
+
+    afterEach(() => {
+      vi.clearAllMocks()
+      vi.unstubAllEnvs()
+    })
+
+    test('works with --project-id and --dataset flags when no project root', async () => {
+      const mockResults = [{_id: 'doc1', _type: 'post', title: 'Hello'}]
+
+      mockFetch.mockResolvedValue(mockResults)
+
+      const {error, stdout} = await testCommand(
+        QueryDocumentCommand,
+        ['*[_type == "post"]', '--project-id', 'flag-project', '--dataset', 'staging'],
+        {
+          mocks: noProjectRootMocks,
+        },
+      )
+
+      if (error) throw error
+      expect(stdout).toContain('"_id": "doc1"')
+      expect(stdout).toContain('"title": "Hello"')
+      expect(mockFetch).toHaveBeenCalledWith('*[_type == "post"]')
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({dataset: 'staging', projectId: 'flag-project'}),
+      )
+    })
+
+    test('errors when no project root and no --project-id', async () => {
+      const {error} = await testCommand(
+        QueryDocumentCommand,
+        ['*[_type == "post"]', '--dataset', 'production'],
+        {
+          mocks: noProjectRootMocks,
+        },
+      )
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Unable to determine project ID')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('errors when no project root with --project-id but no --dataset', async () => {
+      const {error} = await testCommand(
+        QueryDocumentCommand,
+        ['*[_type == "post"]', '--project-id', 'flag-project'],
+        {
+          mocks: noProjectRootMocks,
+        },
+      )
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('No dataset specified')
+      expect(error?.oclif?.exit).toBe(1)
+    })
   })
 })

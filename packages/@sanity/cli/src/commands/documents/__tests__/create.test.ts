@@ -3,7 +3,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 
-import {getProjectCliClient} from '@sanity/cli-core'
+import {getProjectCliClient, ProjectRootNotFoundError} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {watch as chokidarWatch} from 'chokidar'
 import {execa, execaSync} from 'execa'
@@ -920,5 +920,60 @@ describe('#documents:create', () => {
         expect(mockTransaction).toHaveBeenCalledWith([{create: mockDoc}])
       }),
     )
+  })
+
+  describe('outside project context', () => {
+    const noProjectRootMocks = {
+      cliConfigError: new ProjectRootNotFoundError('No project root found'),
+      token: 'test-token',
+    }
+
+    test('works with --project-id and --dataset flags when no project root', async () => {
+      const mockDoc = {_id: 'test-doc', _type: 'post', title: 'Test Post'}
+      const mockTransaction = vi.fn().mockReturnValue({
+        commit: vi.fn().mockResolvedValue({results: [{id: 'test-doc', operation: 'create'}]}),
+      })
+      mockGetProjectCliClient.mockResolvedValue({transaction: mockTransaction} as never)
+      mockFs.readFile.mockResolvedValue(JSON.stringify(mockDoc))
+      mockJson5.parse.mockReturnValue(mockDoc)
+
+      const {error, stdout} = await testCommand(
+        CreateDocumentCommand,
+        ['test-doc.json', '--project-id', 'my-project', '--dataset', 'production'],
+        {mocks: noProjectRootMocks},
+      )
+
+      if (error) throw error
+      expect(stdout).toContain('Created:')
+      expect(stdout).toContain('test-doc')
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dataset: 'production',
+          projectId: 'my-project',
+        }),
+      )
+    })
+
+    test('errors when no project root and no --project-id', async () => {
+      const {error} = await testCommand(CreateDocumentCommand, ['test-doc.json'], {
+        mocks: noProjectRootMocks,
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Unable to determine project ID')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('errors when no project root with --project-id but no --dataset', async () => {
+      const {error} = await testCommand(
+        CreateDocumentCommand,
+        ['test-doc.json', '--project-id', 'my-project'],
+        {mocks: noProjectRootMocks},
+      )
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('No dataset specified')
+      expect(error?.oclif?.exit).toBe(1)
+    })
   })
 })

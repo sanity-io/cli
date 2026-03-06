@@ -212,4 +212,21 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
   protected resolveIsInteractive(): boolean {
     return isInteractive()
   }
+
+  /**
+   * Get the CLI config, returning an empty config if no project root is found.
+   *
+   * Use this instead of `getCliConfig()` in commands that can operate without a
+   * project directory (e.g. when `--project-id` and `--dataset` flags are provided).
+   *
+   * @returns The CLI config, or an empty config object if no project root is found.
+   */
+  protected async tryGetCliConfig(): Promise<CliConfig> {
+    try {
+      return await this.getCliConfig()
+    } catch (err) {
+      if (!(err instanceof ProjectRootNotFoundError)) throw err
+      return {}
+    }
+  }
 }

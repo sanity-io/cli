@@ -89,7 +89,9 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     const {args, flags} = await this.parse(CreateDocumentCommand)
     const {file} = args
     const {dataset, id, json5: useJson5, missing, replace, watch} = flags
-    const cliConfig = await this.getCliConfig()
+
+    const cliConfig = await this.tryGetCliConfig()
+
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     if (!cliConfig.api?.dataset && !dataset) {

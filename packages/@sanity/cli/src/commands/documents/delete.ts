@@ -65,8 +65,9 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
       this.error('Document ID must be specified', {exit: 1})
     }
 
-    // Get project configuration
-    const cliConfig = await this.getCliConfig()
+    // Get project configuration (may not exist when running outside a project directory)
+    const cliConfig = await this.tryGetCliConfig()
+
     const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     if (!cliConfig.api?.dataset && !dataset) {

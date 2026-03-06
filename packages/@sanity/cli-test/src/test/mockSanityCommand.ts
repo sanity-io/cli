@@ -91,6 +91,13 @@ export function mockSanityCommand<T extends typeof SanityCommand<typeof Command>
     }
 
     protected getProjectRoot(): Promise<ProjectRootResult> {
+      if (
+        options.cliConfigError &&
+        'name' in options.cliConfigError &&
+        options.cliConfigError.name === 'ProjectRootNotFoundError'
+      ) {
+        return Promise.reject(options.cliConfigError)
+      }
       if (options.projectRoot) {
         return Promise.resolve(options.projectRoot)
       }

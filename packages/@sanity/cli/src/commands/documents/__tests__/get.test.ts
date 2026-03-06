@@ -1,3 +1,4 @@
+import {ProjectRootNotFoundError} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -17,14 +18,17 @@ const defaultMocks = {
 }
 
 const mockGetDocument = vi.hoisted(() => vi.fn())
+const mockGetProjectCliClient = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({
+    getDocument: mockGetDocument,
+  }),
+)
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
   return {
     ...actual,
-    getProjectCliClient: vi.fn().mockResolvedValue({
-      getDocument: mockGetDocument,
-    }),
+    getProjectCliClient: mockGetProjectCliClient,
   }
 })
 
@@ -162,5 +166,77 @@ describe('#documents:get', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Missing 1 required arg')
     expect(error?.oclif?.exit).toBe(2)
+  })
+
+  describe('outside project context', () => {
+    const noProjectRootMocks = {
+      cliConfigError: new ProjectRootNotFoundError('No project root found'),
+      token: 'test-token',
+    }
+
+    test('works with --project-id and --dataset flags when there is no project root', async () => {
+      const mockDoc = {
+        _id: 'test-doc',
+        _type: 'post',
+        title: 'Test Post',
+      }
+
+      mockGetDocument.mockResolvedValue(mockDoc)
+
+      const {error, stdout} = await testCommand(
+        GetDocumentCommand,
+        ['test-doc', '--project-id', 'flag-project', '--dataset', 'flag-dataset'],
+        {mocks: noProjectRootMocks},
+      )
+
+      if (error) throw error
+      expect(stdout).toContain('"_id": "test-doc"')
+      expect(stdout).toContain('"title": "Test Post"')
+      expect(mockGetDocument).toHaveBeenCalledWith('test-doc')
+    })
+
+    test('errors when outside project context and no --project-id provided', async () => {
+      const {error} = await testCommand(GetDocumentCommand, ['test-doc'], {
+        mocks: noProjectRootMocks,
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Unable to determine project ID')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('errors when outside project context with --project-id but no --dataset', async () => {
+      const {error} = await testCommand(
+        GetDocumentCommand,
+        ['test-doc', '--project-id', 'flag-project'],
+        {mocks: noProjectRootMocks},
+      )
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('No dataset specified')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('--project-id flag overrides CLI config projectId', async () => {
+      const mockDoc = {
+        _id: 'test-doc',
+        _type: 'post',
+        title: 'Test Post',
+      }
+
+      mockGetDocument.mockResolvedValue(mockDoc)
+
+      const {error, stdout} = await testCommand(
+        GetDocumentCommand,
+        ['test-doc', '--project-id', 'override-project'],
+        {mocks: defaultMocks},
+      )
+
+      if (error) throw error
+      expect(stdout).toContain('"_id": "test-doc"')
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({projectId: 'override-project'}),
+      )
+    })
   })
 })
