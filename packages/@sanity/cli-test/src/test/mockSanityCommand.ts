@@ -1,10 +1,5 @@
 import {type Command} from '@oclif/core'
-import {
-  type CliConfig,
-  isProjectRootNotFoundError,
-  type ProjectRootResult,
-  SanityCommand,
-} from '@sanity/cli-core'
+import {type CliConfig, type ProjectRootResult, SanityCommand} from '@sanity/cli-core'
 
 import {convertToSystemPath} from '../utils/paths.js'
 import {createTestToken} from './createTestToken.js'
@@ -96,7 +91,11 @@ export function mockSanityCommand<T extends typeof SanityCommand<typeof Command>
     }
 
     protected getProjectRoot(): Promise<ProjectRootResult> {
-      if (options.cliConfigError && isProjectRootNotFoundError(options.cliConfigError)) {
+      if (
+        options.cliConfigError &&
+        'name' in options.cliConfigError &&
+        options.cliConfigError.name === 'ProjectRootNotFoundError'
+      ) {
         return Promise.reject(options.cliConfigError)
       }
       if (options.projectRoot) {
