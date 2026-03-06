@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {ux} from '@oclif/core/ux'
 import {getCliTelemetry, studioWorkerTask, subdebug} from '@sanity/cli-core'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
+import {type StudioManifest} from 'sanity'
 
 import {SchemaDeploy} from '../../telemetry/extractSchema.telemetry.js'
 import {SchemaExtractionError} from '../schema/utils/SchemaExtractionError.js'
@@ -15,6 +16,7 @@ type DeployStudioSchemasAndManifestsWorkerMessage =
       validation?: SchemaValidationProblemGroup[]
     }
   | {
+      studioManifest: StudioManifest | null
       type: 'success'
     }
 
@@ -27,8 +29,8 @@ const debug = subdebug('deployStudioSchemasAndManifests')
  */
 export async function deployStudioSchemasAndManifests(
   options: DeployStudioSchemasAndManifestsWorkerData,
-): Promise<void> {
-  const {configPath, isExternal, outPath, schemaRequired, verbose, workDir} = options
+): Promise<StudioManifest | null> {
+  const {configPath, isExternal, outPath, projectId, schemaRequired, verbose, workDir} = options
 
   const trace = getCliTelemetry().trace(SchemaDeploy, {
     // If the studio is externally hosted, we don't need to extract the manifest
@@ -45,12 +47,18 @@ export async function deployStudioSchemasAndManifests(
     const result = await studioWorkerTask<DeployStudioSchemasAndManifestsWorkerMessage>(
       new URL('deployStudioSchemasAndManifests.worker.js', import.meta.url),
       {
+        env: {
+          ...process.env,
+          // Enables color output in the worker
+          FORCE_COLOR: '1',
+        },
         name: 'deployStudioSchemasAndManifests',
         studioRootPath: workDir,
         workerData: {
           configPath,
           isExternal,
           outPath,
+          projectId,
           schemaRequired,
           verbose,
           workDir,
@@ -66,16 +74,12 @@ export async function deployStudioSchemasAndManifests(
     }
 
     trace.complete()
-  } catch (err) {
-    trace.error(err)
-    if (schemaRequired) {
-      throw err
-    } else {
-      ux.stdout(`↳ Error when storing schemas:\n  ${err.message}`)
-    }
-  } finally {
     ux.stdout(
       `${styleText('gray', '↳ List deployed schemas with:')} ${styleText('cyan', 'sanity schema list')}`,
     )
+    return result.studioManifest
+  } catch (err) {
+    trace.error(err)
+    throw err
   }
 }

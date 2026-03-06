@@ -1,6 +1,7 @@
 import {styleText} from 'node:util'
 
 import {ux} from '@oclif/core/ux'
+import {spinner} from '@sanity/cli-core/ux'
 import partition from 'lodash-es/partition.js'
 import {type Workspace} from 'sanity'
 
@@ -41,7 +42,7 @@ export async function updateWorkspacesSchemas(args: {
     )
   }
 
-  ux.stdout(`Deployed ${fulfilledUpdates.length}/${workspaces.length} schemas`)
+  spinner(`Deployed ${fulfilledUpdates.length}/${workspaces.length} schemas`).succeed()
 }
 
 /**

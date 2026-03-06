@@ -73,6 +73,8 @@ export async function getGlobalCliClient({
 
   return createClient({
     ...(apiHost ? {apiHost} : {}),
+    // Suppress browser token warning since we mock browser environment in workers
+    ignoreBrowserTokenWarning: true,
     requester,
     requestTagPrefix: CLI_REQUEST_TAG_PREFIX,
     token,
@@ -139,6 +141,8 @@ export async function getProjectCliClient({
 
   return createClient({
     ...(apiHost ? {apiHost} : {}),
+    // Suppress browser token warning since we mock browser environment in workers
+    ignoreBrowserTokenWarning: true,
     requester,
     requestTagPrefix: CLI_REQUEST_TAG_PREFIX,
     token,

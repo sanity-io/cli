@@ -4,6 +4,7 @@ import {createGzip, type Gzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
 import {spinner} from '@sanity/cli-core/ux'
+import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
 
 import {createDeployment} from '../../services/userApplications.js'
@@ -12,6 +13,8 @@ import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {buildStudio} from '../build/buildStudio.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
+import {formatSchemaValidation} from '../schema/formatSchemaValidation.js'
+import {SchemaExtractionError} from '../schema/utils/SchemaExtractionError.js'
 import {checkDir} from './checkDir.js'
 import {createStudioUserApplication} from './createStudioUserApplication.js'
 import {deployDebug} from './deployDebug.js'
@@ -87,25 +90,33 @@ export async function deployStudio(options: DeployAppOptions) {
       })
     }
 
-    await deployStudioSchemasAndManifests({
-      configPath,
-      isExternal,
-      outPath: `${sourceDir}/static`,
-      schemaRequired: flags['schema-required'],
-      verbose: flags.verbose,
-      workDir,
-    })
+    let studioManifest: StudioManifest | null = null
+    try {
+      studioManifest = await deployStudioSchemasAndManifests({
+        configPath,
+        isExternal,
+        outPath: `${sourceDir}/static`,
+        projectId,
+        schemaRequired: flags['schema-required'],
+        verbose: flags.verbose,
+        workDir,
+      })
+    } catch (error) {
+      deployDebug('Error deploying studio schemas and manifests', error)
+      if (error instanceof SchemaExtractionError) {
+        output.error(formatSchemaValidation(error.validation || []), {exit: 1})
+        return
+      }
+      output.error(`Error deploying studio schemas and manifests: ${error}`, {exit: 1})
+      return
+    }
 
-    // TODO: Implement schema deployment
-    // await deploySchemasAction(
-    //   {
-    //     'extract-manifest': shouldBuild,
-    //     'manifest-dir': `${sourceDir}/static`,
-    //     'schema-required': flags['schema-required'],
-    //     'verbose': flags.verbose,
-    //   },
-    //   {...context, manifestExtractor: createManifestExtractor(context)},
-    // )
+    if (!studioManifest) {
+      output.error('Failed to generate studio manifest. Please check your schemas and manifests.', {
+        exit: 1,
+      })
+      return
+    }
 
     let tarball: Gzip | undefined
 
@@ -133,6 +144,7 @@ export async function deployStudio(options: DeployAppOptions) {
       applicationId: userApplication.id,
       isApp: false,
       isAutoUpdating,
+      manifest: studioManifest,
       projectId,
       tarball,
       version: installedSanityVersion,
@@ -141,15 +153,24 @@ export async function deployStudio(options: DeployAppOptions) {
     spin.succeed()
 
     if (isExternal) {
-      output.log(`\nSuccess! Studio registered at ${styleText('cyan', location || 'unknown URL')}`)
+      output.log(`\nSuccess! Studio registered`)
     } else {
-      output.log(`\nSuccess! Studio deployed to ${styleText('cyan', location || 'unknown URL')}`)
+      output.log(`\nSuccess! Studio deployed to ${styleText('cyan', location)}`)
     }
 
     if (!appId) {
-      output.log(`\nAdd ${styleText('cyan', `deployment: { appId: '${userApplication.id}' }`)}`)
-      output.log(`to sanity.cli.js or sanity.cli.ts`)
-      output.log(`to avoid prompting on next deploy.`)
+      const example = `Example:
+export default defineCliConfig({
+  //…
+  deployment: {
+    ${styleText('cyan', `appId: '${userApplication.id}'`)},
+  },
+  //…
+})`
+      output.log(`\nAdd ${styleText('cyan', `appId: '${userApplication.id}'`)}`)
+      output.log(`to the \`deployment\` section in sanity.cli.js or sanity.cli.ts`)
+      output.log(`to avoid prompting for application id on next deploy.`)
+      output.log(`\n${example}`)
     }
   } catch (error) {
     // if the error is a CLIError, we can just output the message and exit
