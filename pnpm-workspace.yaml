@@ -67,6 +67,7 @@ minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@portabletext/*'
   - '@sanity/*'
+  - '@types/*'
   - '@rexxars/jiti'
   - 'groq-js'
   - 'groq'
