@@ -81,7 +81,7 @@
     "@sanity/id-utils": "^1.0.0",
     "@sanity/import": "^4.1.3",
     "@sanity/migrate": "^5.2.5",
-    "@sanity/runtime-cli": "^14.2.0",
+    "@sanity/runtime-cli": "^14.4.0",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
     "@sanity/template-validator": "^3.0.0",
