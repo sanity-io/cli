@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import {execa} from 'execa'
 import which from 'which'
 
@@ -38,6 +40,14 @@ interface NpmListOutput {
       version: string
     }
   >
+  /** Global lib directory (e.g. /usr/local/lib on Unix). */
+  path?: string
+}
+
+interface NpmGlobalsResult {
+  globals: GlobalInstallation[]
+  /** npm's global lib directory, used to verify the active binary belongs to npm. */
+  libDir: string | null
 }
 
 interface PnpmListProject {
@@ -51,7 +61,7 @@ interface PnpmListProject {
  */
 export async function detectGlobalInstallations(): Promise<GlobalInstallation[]> {
   // Query all package managers in parallel
-  const [activeBinaryPath, npmGlobals, pnpmGlobals, yarnGlobals, bunGlobals] = await Promise.all([
+  const [activeBinaryPath, npmResult, pnpmGlobals, yarnGlobals, bunGlobals] = await Promise.all([
     // Find which binary is active in PATH
     findActiveBinaryPath(),
     queryNpmGlobals(),
@@ -60,10 +70,10 @@ export async function detectGlobalInstallations(): Promise<GlobalInstallation[]>
     queryBunGlobals(),
   ])
 
-  const allGlobals = [...npmGlobals, ...pnpmGlobals, ...yarnGlobals, ...bunGlobals]
+  const allGlobals = [...npmResult.globals, ...pnpmGlobals, ...yarnGlobals, ...bunGlobals]
 
   // Mark which installation is active
-  return markActiveInstallation(allGlobals, activeBinaryPath)
+  return markActiveInstallation(allGlobals, activeBinaryPath, npmResult.libDir)
 }
 
 async function findActiveBinaryPath(): Promise<string | null> {
@@ -74,7 +84,7 @@ async function findActiveBinaryPath(): Promise<string | null> {
   }
 }
 
-async function queryNpmGlobals(): Promise<GlobalInstallation[]> {
+async function queryNpmGlobals(): Promise<NpmGlobalsResult> {
   try {
     const result = await execa('npm', ['list', '-g', '--depth=0', '--json'], {
       reject: false,
@@ -82,12 +92,12 @@ async function queryNpmGlobals(): Promise<GlobalInstallation[]> {
     })
 
     if (!result.stdout) {
-      return []
+      return {globals: [], libDir: null}
     }
 
     const output = tryParseJson<NpmListOutput>(result.stdout)
     if (!output) {
-      return []
+      return {globals: [], libDir: null}
     }
 
     const globals: GlobalInstallation[] = []
@@ -100,16 +110,15 @@ async function queryNpmGlobals(): Promise<GlobalInstallation[]> {
           packageManager: 'npm',
           packageName: pkg,
           // npm's `resolved` is a tarball URL, not a filesystem path.
-          // Path-based matching is handled by the npm fallback in markActiveInstallation.
           path: null,
           version: dep.version,
         })
       }
     }
 
-    return globals
+    return {globals, libDir: output.path ?? null}
   } catch {
-    return []
+    return {globals: [], libDir: null}
   }
 }
 
@@ -262,6 +271,7 @@ async function queryBunGlobals(): Promise<GlobalInstallation[]> {
 function markActiveInstallation(
   globals: GlobalInstallation[],
   activeBinaryPath: string | null,
+  npmLibDir: string | null,
 ): GlobalInstallation[] {
   if (!activeBinaryPath) {
     return globals
@@ -269,10 +279,7 @@ function markActiveInstallation(
 
   // Determine which package manager the active binary belongs to
   // by checking path patterns. Check specific pm patterns first, then
-  // fall back to npm if the path doesn't match any — npm binaries end up
-  // in generic locations (nvm, homebrew, custom prefix) that can't be
-  // pattern-matched, so we treat "unrecognised path" as npm when npm
-  // globals exist.
+  // verify against npm's actual global bin directory.
   let activePackageManager: LockfileType | null = null
 
   // bun patterns — check before pnpm/yarn since bun paths are distinctive
@@ -297,11 +304,12 @@ function markActiveInstallation(
   ) {
     activePackageManager = 'yarn'
   }
-  // npm fallback — npm installs binaries to generic system paths
-  // (e.g. ~/.nvm/versions/node/*/bin/, /opt/homebrew/bin/, /usr/local/bin/)
-  // that aren't distinguishable by pattern. If no other pm matched and
-  // npm globals were found, assume npm.
-  else if (globals.some((g) => g.packageManager === 'npm')) {
+  // npm — verify the binary is actually in npm's global bin directory.
+  // `npm list -g --json` reports a `path` (the global lib dir, e.g. /usr/local/lib).
+  // On Unix, bins are at <prefix>/bin (sibling of lib). On Windows, bins are in
+  // the same directory as lib. If we can't determine the bin dir (no path in output),
+  // fall back to assuming npm when npm globals exist.
+  else if (npmLibDir ? isInNpmBinDir(activeBinaryPath, npmLibDir) : hasNpmGlobals(globals)) {
     activePackageManager = 'npm'
   }
 
@@ -312,4 +320,21 @@ function markActiveInstallation(
     // so either package from the active pm is considered active.
     isActive: g.packageManager === activePackageManager,
   }))
+}
+
+function hasNpmGlobals(globals: GlobalInstallation[]): boolean {
+  return globals.some((g) => g.packageManager === 'npm')
+}
+
+/**
+ * Checks whether a binary path is inside npm's global bin directory.
+ * On Unix: lib is at `<prefix>/lib`, bins at `<prefix>/bin` (sibling dirs).
+ * On Windows: lib and bins share the same directory.
+ */
+function isInNpmBinDir(binaryPath: string, npmLibDir: string): boolean {
+  const binaryDir = path.dirname(binaryPath)
+  // Unix: bins at <prefix>/bin, lib at <prefix>/lib → sibling directories
+  const unixBinDir = path.join(path.dirname(npmLibDir), 'bin')
+  // Windows: bins and lib share the same directory
+  return binaryDir === unixBinDir || binaryDir === npmLibDir
 }

@@ -20,8 +20,7 @@ describe('detectGlobalInstallations', () => {
   })
 
   test('detects npm global installation', async () => {
-    // Mock which to find sanity in npm's lib/node_modules path
-    mockWhich.mockResolvedValue('/usr/local/lib/node_modules/.bin/sanity')
+    mockWhich.mockResolvedValue('/usr/local/bin/sanity')
 
     // Mock npm list -g
     mockExeca.mockImplementation((cmd: string, args: string[]) => {
@@ -30,10 +29,11 @@ describe('detectGlobalInstallations', () => {
           stdout: JSON.stringify({
             dependencies: {
               sanity: {
-                resolved: '/usr/local/lib/node_modules/sanity',
+                resolved: 'https://registry.npmjs.org/sanity/-/sanity-3.67.0.tgz',
                 version: '3.67.0',
               },
             },
+            path: '/usr/local/lib',
           }),
         })
       }
@@ -53,7 +53,7 @@ describe('detectGlobalInstallations', () => {
   })
 
   test('detects multiple global installations from different package managers', async () => {
-    mockWhich.mockResolvedValue('/usr/local/lib/node_modules/.bin/sanity')
+    mockWhich.mockResolvedValue('/usr/local/bin/sanity')
 
     mockExeca.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
@@ -62,6 +62,7 @@ describe('detectGlobalInstallations', () => {
             dependencies: {
               sanity: {version: '3.67.0'},
             },
+            path: '/usr/local/lib',
           }),
         })
       }
@@ -154,19 +155,16 @@ describe('detectGlobalInstallations', () => {
   })
 
   test('marks the installation matching which as active', async () => {
-    // which returns npm's lib/node_modules path
-    mockWhich.mockResolvedValue('/usr/local/lib/node_modules/.bin/sanity')
+    mockWhich.mockResolvedValue('/usr/local/bin/sanity')
 
     mockExeca.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
         return Promise.resolve({
           stdout: JSON.stringify({
             dependencies: {
-              sanity: {
-                resolved: '/usr/local/lib/node_modules/sanity',
-                version: '3.67.0',
-              },
+              sanity: {version: '3.67.0'},
             },
+            path: '/usr/local/lib',
           }),
         })
       }
@@ -199,7 +197,7 @@ describe('detectGlobalInstallations', () => {
   })
 
   test('marks @sanity/cli as active when it is the only global from the active pm', async () => {
-    mockWhich.mockResolvedValue('/usr/local/lib/node_modules/.bin/sanity')
+    mockWhich.mockResolvedValue('/usr/local/bin/sanity')
 
     mockExeca.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
@@ -208,6 +206,7 @@ describe('detectGlobalInstallations', () => {
             dependencies: {
               '@sanity/cli': {version: '5.33.0'},
             },
+            path: '/usr/local/lib',
           }),
         })
       }
@@ -226,7 +225,7 @@ describe('detectGlobalInstallations', () => {
   })
 
   test('handles npm output with warning prefix before JSON', async () => {
-    mockWhich.mockResolvedValue('/usr/local/lib/node_modules/.bin/sanity')
+    mockWhich.mockResolvedValue('/usr/local/bin/sanity')
 
     mockExeca.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
@@ -237,6 +236,7 @@ describe('detectGlobalInstallations', () => {
               dependencies: {
                 sanity: {version: '3.67.0'},
               },
+              path: '/usr/local/lib',
             },
           )}`,
         })
@@ -255,7 +255,7 @@ describe('detectGlobalInstallations', () => {
   })
 
   test('marks npm as active for nvm binary path', async () => {
-    // nvm installs to ~/.nvm/versions/node/*/bin/ — no npm-specific pattern
+    // nvm: binary at <prefix>/bin, lib at <prefix>/lib
     mockWhich.mockResolvedValue('/home/user/.nvm/versions/node/v20.11.0/bin/sanity')
 
     mockExeca.mockImplementation((cmd: string, args: string[]) => {
@@ -265,6 +265,7 @@ describe('detectGlobalInstallations', () => {
             dependencies: {
               sanity: {version: '3.67.0'},
             },
+            path: '/home/user/.nvm/versions/node/v20.11.0/lib',
           }),
         })
       }
@@ -292,6 +293,7 @@ describe('detectGlobalInstallations', () => {
             dependencies: {
               sanity: {version: '3.67.0'},
             },
+            path: '/opt/homebrew/lib',
           }),
         })
       }
@@ -303,6 +305,34 @@ describe('detectGlobalInstallations', () => {
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
       isActive: true,
+      packageManager: 'npm',
+      packageName: 'sanity',
+    })
+  })
+
+  test('does not mark npm as active when binary is from a different tool manager', async () => {
+    // Volta shim at ~/.volta/bin — not in npm's bin dir
+    mockWhich.mockResolvedValue('/home/user/.volta/bin/sanity')
+
+    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === 'npm' && args.includes('list')) {
+        return Promise.resolve({
+          stdout: JSON.stringify({
+            dependencies: {
+              sanity: {version: '3.67.0'},
+            },
+            path: '/home/user/.volta/tools/image/node/20.11.0/lib',
+          }),
+        })
+      }
+      return Promise.reject(new Error('Command not found'))
+    })
+
+    const result = await detectGlobalInstallations()
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      isActive: false,
       packageManager: 'npm',
       packageName: 'sanity',
     })

@@ -128,11 +128,18 @@ export function analyzeIssues(
     if (cliInfo?.installed && !hasConflictingDeclaration) {
       const installedVersion = cliInfo.installed.version
       if (!semver.satisfies(installedVersion, expectedCliRange)) {
+        // When @sanity/cli is a direct dependency, updating it directly works.
+        // When it's only transitive (provided by sanity), `npm update @sanity/cli`
+        // won't help — a clean reinstall is the most reliable fix.
+        const suggestion = cliInfo.declared
+          ? `Run: ${getLocalUpdateCommand(pm, '@sanity/cli')}`
+          : `Run: ${pm} install`
+
         issues.push({
           message: `Installed @sanity/cli@${installedVersion} does not satisfy sanity's requirement of ${expectedCliRange}.`,
           packageName: '@sanity/cli',
           severity: 'error',
-          suggestion: `Run: ${getLocalUpdateCommand(pm, '@sanity/cli')}`,
+          suggestion,
           type: 'cli-version-incompatible',
         })
       }

@@ -73,6 +73,50 @@ describe('analyzeIssues', () => {
     expect(issues.some((i) => i.type === 'cli-version-incompatible')).toBe(true)
     const issue = issues.find((i) => i.type === 'cli-version-incompatible')
     expect(issue?.severity).toBe('error')
+    // When @sanity/cli is transitive (not declared), suggest a clean reinstall
+    expect(issue?.suggestion).toContain('npm install')
+  })
+
+  test('suggests updating @sanity/cli directly when it is a declared dependency', () => {
+    const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
+      '@sanity/cli': {
+        declared: {
+          declaredVersionRange: '^5.35.0',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^5.35.0',
+        },
+        installed: {
+          cliDependencyRange: null,
+          path: '/project/node_modules/@sanity/cli',
+          // Stale lockfile: installed 5.34.0 doesn't satisfy ^5.35.0.
+          // Declared range matches required, so no conflicting-cli-dependency.
+          version: '5.34.0',
+        },
+        override: null,
+      },
+      sanity: {
+        declared: {
+          declaredVersionRange: '^3.68.0',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^3.68.0',
+        },
+        installed: {
+          cliDependencyRange: '^5.35.0',
+          path: '/project/node_modules/sanity',
+          version: '3.68.0',
+        },
+        override: null,
+      },
+    }
+
+    const issues = analyzeIssues(packages, defaultWorkspace, [])
+
+    const issue = issues.find((i) => i.type === 'cli-version-incompatible')
+    expect(issue).toBeDefined()
+    // When @sanity/cli is declared directly, suggest updating it
+    expect(issue?.suggestion).toContain('npm update @sanity/cli')
   })
 
   test('detects conflicting-cli-dependency when declared version is incompatible', () => {
