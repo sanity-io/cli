@@ -27,6 +27,7 @@ const appSanityUiTemplate: ProjectTemplate = {
     dev: 'sanity dev',
     start: 'sanity start',
   },
+  type: 'module',
 }
 
 export default appSanityUiTemplate

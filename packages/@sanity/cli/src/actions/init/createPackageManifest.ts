@@ -4,6 +4,7 @@ const manifestPropOrder = [
   'name',
   'private',
   'version',
+  'type',
   'description',
   'main',
   'author',
@@ -48,11 +49,18 @@ export function createPackageManifest(data: CreatePackageManifestOptions): strin
         },
       }
 
+  const type = data.type
+    ? {
+        type: data.type,
+      }
+    : {}
+
   const pkg: PackageJson = {
     ...getCommonManifest(data),
 
     keywords: ['sanity'],
     main: 'package.json',
+    ...type,
     scripts: data.scripts || {
       build: 'sanity build',
       deploy: 'sanity deploy',

@@ -113,6 +113,7 @@ export async function bootstrapLocalTemplate(
     isAppTemplate,
     name: packageJsonName,
     scripts: template.scripts,
+    type: template.type,
   })
 
   // ...and a studio config (`sanity.config.[ts|js]`)

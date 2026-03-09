@@ -37,6 +37,7 @@ const packageJsonSchema = z.looseObject({
     })
     .optional(),
   scripts: z.record(z.string(), z.string()).optional(),
+  type: z.enum(['module', 'commonjs']).optional(),
 })
 
 /**
