@@ -298,7 +298,7 @@ function markActiveInstallation(
   }
   // yarn patterns
   else if (
-    activeBinaryPath.includes('/yarn/') ||
+    activeBinaryPath.includes('/.yarn/') ||
     activeBinaryPath.includes('\\.yarn\\') ||
     activeBinaryPath.includes('/.config/yarn/')
   ) {

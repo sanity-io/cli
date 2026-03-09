@@ -113,7 +113,7 @@ export function analyzeIssues(
         })
       } else {
         issues.push({
-          message: `@sanity/cli is declared as ${declaredRange} but sanity requires ${expectedCliRange}.`,
+          message: `@sanity/cli is declared as ${declaredRange} but sanity requires ${expectedCliRange}. Sanity provides @sanity/cli automatically — removing the explicit declaration lets sanity manage the correct version.`,
           packageName: '@sanity/cli',
           severity: 'error',
           suggestion: `Run: ${getLocalRemoveCommand(pm, '@sanity/cli')}`,

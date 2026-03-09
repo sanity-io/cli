@@ -102,7 +102,7 @@ describe('detectCliInstallation', () => {
   })
 
   test('detects global installation', async () => {
-    mockWhich.mockResolvedValue('/usr/local/lib/node_modules/.bin/sanity')
+    mockWhich.mockResolvedValue('/usr/local/bin/sanity')
     mockExeca.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
         return Promise.resolve({
@@ -110,6 +110,7 @@ describe('detectCliInstallation', () => {
             dependencies: {
               sanity: {version: '3.67.0'},
             },
+            path: '/usr/local/lib',
           }),
         })
       }

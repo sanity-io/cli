@@ -7,7 +7,7 @@ import {
 } from '../types.js'
 
 export const cliInstallationCheck: DoctorCheck = {
-  name: 'cli-installation',
+  name: 'cli',
   title: 'CLI Installation',
 
   async run(context: DoctorContext): Promise<CheckResult> {

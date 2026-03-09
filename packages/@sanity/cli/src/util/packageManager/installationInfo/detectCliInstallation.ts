@@ -88,14 +88,16 @@ function detectExecutionContext(
     ) {
       resolvedFrom = 'global'
     }
+    // Fallback: if there's an active global installation but we couldn't
+    // match by path (e.g. npm globals where path is null), still classify
+    // as global. This must come before the node_modules check because npm
+    // global paths also contain node_modules (e.g. /usr/local/lib/node_modules/...).
+    else if (globalInstallations.some((g) => g.isActive)) {
+      resolvedFrom = 'global'
+    }
     // Check if running from node_modules (local)
     else if (binaryPath.includes('node_modules')) {
       resolvedFrom = 'local'
-    }
-    // Fallback: if there's an active global installation but we couldn't
-    // match by path (e.g. path is null), still classify as global
-    else if (globalInstallations.some((g) => g.isActive)) {
-      resolvedFrom = 'global'
     }
   }
 
