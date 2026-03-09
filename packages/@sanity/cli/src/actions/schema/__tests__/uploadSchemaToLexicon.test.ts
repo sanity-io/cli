@@ -1,4 +1,5 @@
 import {resolveLocalPackage} from '@sanity/cli-core'
+import {type Workspace} from 'sanity'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {getLocalPackageVersion} from '../../../util/getLocalPackageVersion.js'
@@ -39,7 +40,7 @@ function createWorkspace(overrides: Record<string, unknown> = {}) {
     schema: {_original: {types: []}},
     title: 'Test Workspace',
     ...overrides,
-  } as never
+  } as unknown as Workspace
 }
 
 afterEach(() => {
@@ -52,7 +53,7 @@ describe('uploadSchemaToLexicon', () => {
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
-    } as never)
+    })
     mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
     mockUploadSchema.mockResolvedValue('descriptor-123')
     mockGenerateStudioManifest.mockResolvedValue({
@@ -87,7 +88,7 @@ describe('uploadSchemaToLexicon', () => {
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
-    } as never)
+    })
     mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
     mockUploadSchema.mockResolvedValueOnce('descriptor-1').mockResolvedValueOnce('descriptor-2')
     mockGenerateStudioManifest.mockResolvedValue({
@@ -138,7 +139,7 @@ describe('uploadSchemaToLexicon', () => {
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
-    } as never)
+    })
     mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
     mockUploadSchema.mockResolvedValue('')
 
@@ -156,7 +157,7 @@ describe('uploadSchemaToLexicon', () => {
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
-    } as never)
+    })
     mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
     mockUploadSchema.mockRejectedValue(new Error('Network error'))
 
@@ -174,7 +175,7 @@ describe('uploadSchemaToLexicon', () => {
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
-    } as never)
+    })
 
     await expect(
       uploadSchemaToLexicon({
@@ -190,7 +191,7 @@ describe('uploadSchemaToLexicon', () => {
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
-    } as never)
+    } as unknown)
     mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
     mockUploadSchema.mockResolvedValue('descriptor-123')
     mockGenerateStudioManifest.mockResolvedValue({
@@ -214,7 +215,7 @@ describe('uploadSchemaToLexicon', () => {
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
-    } as never)
+    })
     mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
     mockUploadSchema.mockResolvedValue('descriptor-123')
     mockGenerateStudioManifest.mockResolvedValue({
@@ -256,7 +257,7 @@ describe('uploadSchemaToLexicon', () => {
     mockResolveLocalPackage.mockResolvedValue({
       generateStudioManifest: mockGenerateStudioManifest,
       uploadSchema: mockUploadSchema,
-    } as never)
+    })
     mockWithConfig.mockReturnValue({withConfig: mockWithConfig})
     mockUploadSchema.mockResolvedValue('descriptor-123')
     mockGenerateStudioManifest.mockResolvedValue({

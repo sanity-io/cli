@@ -105,17 +105,14 @@ export async function deployStudio(options: DeployAppOptions) {
       deployDebug('Error deploying studio schemas and manifests', error)
       if (error instanceof SchemaExtractionError) {
         output.error(formatSchemaValidation(error.validation || []), {exit: 1})
-        return
       }
       output.error(`Error deploying studio schemas and manifests: ${error}`, {exit: 1})
-      return
     }
 
     if (!studioManifest) {
       output.error('Failed to generate studio manifest. Please check your schemas and manifests.', {
         exit: 1,
       })
-      return
     }
 
     let tarball: Gzip | undefined

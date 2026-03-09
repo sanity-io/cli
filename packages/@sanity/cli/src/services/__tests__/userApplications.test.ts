@@ -135,6 +135,33 @@ describe('createUserApplication', () => {
     })
     expect(app).toBe(result)
   })
+
+  test('sends POST with organizationId for core app', async () => {
+    const result = {appHost: 'my-app', id: 'new-core-id', urlType: 'internal'}
+    mockClient.request.mockResolvedValueOnce(result)
+
+    const app = await createUserApplication({
+      appType: 'coreApp',
+      body: {
+        appHost: 'my-app',
+        type: 'coreApp',
+        urlType: 'internal',
+      },
+      organizationId: 'org-123',
+    })
+
+    expect(mockClient.request).toHaveBeenCalledWith({
+      body: {
+        appHost: 'my-app',
+        type: 'coreApp',
+        urlType: 'internal',
+      },
+      method: 'POST',
+      query: {appType: 'coreApp', organizationId: 'org-123'},
+      uri: '/user-applications',
+    })
+    expect(app).toBe(result)
+  })
 })
 
 describe('createDeployment', () => {

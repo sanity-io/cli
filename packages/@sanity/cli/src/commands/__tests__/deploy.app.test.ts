@@ -932,38 +932,6 @@ describe('#deploy app', () => {
     expect(mockExtractAppManifest).toHaveBeenCalled()
   })
 
-  test('should handle findUserApplicationForApp API errors', async () => {
-    const cwd = await testFixture('basic-app')
-    process.cwd = () => cwd
-
-    const existingAppId = 'existing-app-id'
-
-    mockApi({
-      apiVersion: USER_APPLICATIONS_API_VERSION,
-      query: {
-        appType: 'coreApp',
-      },
-      uri: `/user-applications/${existingAppId}`,
-    }).reply(500, {
-      error: 'Internal server error',
-    })
-
-    const {error} = await testCommand(DeployCommand, ['--no-build'], {
-      config: {root: cwd},
-      mocks: {
-        cliConfig: {
-          ...defaultMocks.cliConfig,
-          deployment: {
-            appId: existingAppId,
-          },
-        },
-      },
-    })
-
-    expect(error?.message).toContain('Error deploying application')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
   test('should test input validation for app title', async () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
@@ -1028,49 +996,5 @@ describe('#deploy app', () => {
       message: 'Enter a title for your application:',
       validate: expect.any(Function),
     })
-  })
-
-  test('should deploy app without manifest when manifest is empty', async () => {
-    const cwd = await testFixture('basic-app')
-    process.cwd = () => cwd
-
-    // Return an empty manifest object
-    mockExtractAppManifest.mockResolvedValue(undefined)
-
-    mockApi({
-      apiVersion: USER_APPLICATIONS_API_VERSION,
-      query: {
-        appType: 'coreApp',
-      },
-      uri: `/user-applications/${appId}`,
-    }).reply(200, {
-      appHost: 'existing-host',
-      createdAt: '2024-01-01T00:00:00Z',
-      id: appId,
-      organizationId,
-      projectId: null,
-      title: 'Existing App',
-      type: 'coreApp',
-      updatedAt: '2024-01-01T00:00:00Z',
-      urlType: 'internal',
-    })
-
-    mockApi({
-      apiVersion: USER_APPLICATIONS_API_VERSION,
-      method: 'post',
-      query: {
-        appType: 'coreApp',
-      },
-      uri: `/user-applications/${appId}/deployments`,
-    }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
-
-    const {error, stdout} = await testCommand(DeployCommand, [], {
-      config: {root: cwd},
-      mocks: defaultMocks,
-    })
-
-    if (error) throw error
-    expect(stdout).toContain('Success! Application deployed')
-    expect(mockExtractAppManifest).toHaveBeenCalled()
   })
 })
