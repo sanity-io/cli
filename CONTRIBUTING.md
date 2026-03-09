@@ -800,6 +800,7 @@ pnpm changeset
 ```
 
 This will prompt you to:
+
 1. **Select packages** that are affected by your change
 2. **Choose a bump type** (patch, minor, or major)
 3. **Write a summary** of the change (this becomes the changelog entry)
@@ -813,12 +814,12 @@ A markdown file will be created in the `.changeset/` directory. Commit this file
 
 ### Bump Type Guide
 
-| Change Type | Bump | Example |
-|-------------|------|---------|
-| New feature | `minor` | New command, new flag |
-| Bug fix | `patch` | Fix crash, fix incorrect output |
-| Breaking change | `major` | Remove command, change flag behavior |
-| Performance improvement | `patch` | Faster startup, less memory |
+| Change Type             | Bump    | Example                              |
+| ----------------------- | ------- | ------------------------------------ |
+| New feature             | `minor` | New command, new flag                |
+| Bug fix                 | `patch` | Fix crash, fix incorrect output      |
+| Breaking change         | `major` | Remove command, change flag behavior |
+| Performance improvement | `patch` | Faster startup, less memory          |
 
 ### How Releases Work
 
