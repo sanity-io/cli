@@ -1,66 +1,28 @@
 import {isMainThread} from 'node:worker_threads'
 
-import {
-  type CliConfig,
-  getCliConfig,
-  getStudioConfig,
-  promisifyWorker,
-  resolveLocalPackage,
-} from '@sanity/cli-core'
+import {findStudioConfigPath, getCliConfig, studioWorkerTask} from '@sanity/cli-core'
 
-import {
-  type ResolvedGraphQLAPI,
-  type ResolvedSourceProperties,
-  type SchemaDefinitionish,
-  type TypeResolvedGraphQLAPI,
-} from './types.js'
+import {type ExtractedGraphQLAPI} from './types.js'
 
-export async function getGraphQLAPIs(workDir: string): Promise<ResolvedGraphQLAPI[]> {
+export async function getGraphQLAPIs(workDir: string): Promise<ExtractedGraphQLAPI[]> {
   if (!isMainThread) {
     throw new Error('getGraphQLAPIs() must be called from the main thread')
   }
 
-  // Resolve `sanity` local to the project in order to avoid using incompatible versions, and to avoid circular dependencies
-  const {createSchema} = await resolveLocalPackage<typeof import('sanity')>('sanity', workDir)
+  const [cliConfig, configPath] = await Promise.all([
+    getCliConfig(workDir),
+    findStudioConfigPath(workDir),
+  ])
 
-  const defaultSchema = createSchema({name: 'default', types: []})
-  const defaultTypes = defaultSchema.getTypeNames()
-  const isCustomType = (type: SchemaDefinitionish) => !defaultTypes.includes(type.name)
-
-  const apis = await getApisWithSchemaTypes(workDir)
-  const resolved = apis.map(
-    ({schemaTypes, ...api}): ResolvedSourceProperties => ({
-      schema: createSchema({
-        name: 'default',
-        types: schemaTypes.filter((element) => isCustomType(element)),
-      }),
-      ...api,
-    }),
-  )
-
-  return resolved
-}
-
-async function getApisWithSchemaTypes(workDir: string): Promise<TypeResolvedGraphQLAPI[]> {
-  const cliConfig = await getCliConfig(workDir)
-  const workspaces = await getStudioConfig(workDir, {resolvePlugins: true})
-
-  return promisifyWorker<TypeResolvedGraphQLAPI[]>(
+  return studioWorkerTask<ExtractedGraphQLAPI[]>(
     new URL('getGraphQLAPIs.worker.js', import.meta.url),
     {
-      env: process.env,
+      name: 'getGraphQLAPIs',
+      studioRootPath: workDir,
       workerData: {
-        cliConfig: extractGraphQLConfig(cliConfig),
-        workDir,
-        workspaces,
+        cliConfig: {graphql: cliConfig.graphql},
+        configPath,
       },
     },
   )
-}
-
-function extractGraphQLConfig(config: CliConfig) {
-  return structuredClone({
-    api: config.api,
-    graphql: config.graphql,
-  })
 }

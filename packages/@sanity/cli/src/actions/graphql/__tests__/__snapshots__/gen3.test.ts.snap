@@ -580,7 +580,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "Author",
       "originalName": "author",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -726,7 +725,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "Block",
       "originalName": "block",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -794,7 +792,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "CdrPersonReference",
       "originalName": "cdrPersonReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -903,7 +900,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "Code",
       "originalName": "code",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -1002,7 +998,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "Color",
       "originalName": "color",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -1117,7 +1112,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "CrossDatasetReference",
       "originalName": "crossDatasetReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -1307,9 +1301,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "DeprecatedObject",
       "originalName": "deprecatedObject",
       "type": "Object",
-      Symbol(internal): {
-        "deprecationReason": "This object type has been deprecated",
-      },
     },
     {
       "fields": [
@@ -1426,9 +1417,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "DocumentActionsTest",
       "originalName": "documentActionsTest",
       "type": "Object",
-      Symbol(internal): {
-        "deprecationReason": "Entire \`Document actions\` document type deprecated",
-      },
     },
     {
       "fields": [
@@ -1639,7 +1627,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "DocumentWithCdrField",
       "originalName": "documentWithCdrField",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -1758,7 +1745,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "File",
       "originalName": "file",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -1879,7 +1865,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "Geopoint",
       "originalName": "geopoint",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -1966,7 +1951,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "GlobalDocumentReference",
       "originalName": "globalDocumentReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -2054,7 +2038,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "HslaColor",
       "originalName": "hslaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -2160,7 +2143,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "HsvaColor",
       "originalName": "hsvaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -2304,7 +2286,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "Image",
       "originalName": "image",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -2434,7 +2415,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "MuxVideo",
       "originalName": "mux.video",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "description": undefined,
@@ -2479,7 +2459,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "MuxVideoAsset",
       "originalName": "mux.videoAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -2739,7 +2718,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "ObjectWithNestedArray",
       "originalName": "objectWithNestedArray",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -2899,7 +2877,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "PertEstimate",
       "originalName": "pertEstimate",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -3037,7 +3014,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "Poppers",
       "originalName": "poppers",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -3175,7 +3151,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "RgbaColor",
       "originalName": "rgbaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -3277,7 +3252,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "SanityAssetSourceData",
       "originalName": "sanity.assetSourceData",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -3446,7 +3420,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "SanityFileAsset",
       "originalName": "sanity.fileAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -3755,7 +3728,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "SanityImageAsset",
       "originalName": "sanity.imageAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4001,7 +3973,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "SanityImageCrop",
       "originalName": "sanity.imageCrop",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4102,7 +4073,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "SanityImageDimensions",
       "originalName": "sanity.imageDimensions",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4199,7 +4169,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "SanityImageHotspot",
       "originalName": "sanity.imageHotspot",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4322,7 +4291,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "SanityImageMetadata",
       "originalName": "sanity.imageMetadata",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4472,7 +4440,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "SanityImagePalette",
       "originalName": "sanity.imagePalette",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4605,7 +4572,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "SanityImagePaletteSwatch",
       "originalName": "sanity.imagePaletteSwatch",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4713,7 +4679,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "Slug",
       "originalName": "slug",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4802,7 +4767,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema 1`] 
       "name": "Span",
       "originalName": "span",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -5433,7 +5397,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "Author",
       "originalName": "author",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -5579,7 +5542,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "Block",
       "originalName": "block",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -5647,7 +5609,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "CdrPersonReference",
       "originalName": "cdrPersonReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -5756,7 +5717,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "Code",
       "originalName": "code",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -5855,7 +5815,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "Color",
       "originalName": "color",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -5970,7 +5929,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "CrossDatasetReference",
       "originalName": "crossDatasetReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -6160,9 +6118,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "DeprecatedObject",
       "originalName": "deprecatedObject",
       "type": "Object",
-      Symbol(internal): {
-        "deprecationReason": "This object type has been deprecated",
-      },
     },
     {
       "fields": [
@@ -6279,9 +6234,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "DocumentActionsTest",
       "originalName": "documentActionsTest",
       "type": "Object",
-      Symbol(internal): {
-        "deprecationReason": "Entire \`Document actions\` document type deprecated",
-      },
     },
     {
       "fields": [
@@ -6492,7 +6444,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "DocumentWithCdrField",
       "originalName": "documentWithCdrField",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -6611,7 +6562,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "File",
       "originalName": "file",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -6732,7 +6682,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "Geopoint",
       "originalName": "geopoint",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -6819,7 +6768,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "GlobalDocumentReference",
       "originalName": "globalDocumentReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -6907,7 +6855,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "HslaColor",
       "originalName": "hslaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -7013,7 +6960,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "HsvaColor",
       "originalName": "hsvaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -7157,7 +7103,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "Image",
       "originalName": "image",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -7287,7 +7232,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "MuxVideo",
       "originalName": "mux.video",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "description": undefined,
@@ -7332,7 +7276,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "MuxVideoAsset",
       "originalName": "mux.videoAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -7592,7 +7535,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "ObjectWithNestedArray",
       "originalName": "objectWithNestedArray",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -7752,7 +7694,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "PertEstimate",
       "originalName": "pertEstimate",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -7890,7 +7831,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "Poppers",
       "originalName": "poppers",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -8028,7 +7968,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "RgbaColor",
       "originalName": "rgbaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -8130,7 +8069,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "SanityAssetSourceData",
       "originalName": "sanity.assetSourceData",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -8299,7 +8237,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "SanityFileAsset",
       "originalName": "sanity.fileAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -8608,7 +8545,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "SanityImageAsset",
       "originalName": "sanity.imageAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -8854,7 +8790,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "SanityImageCrop",
       "originalName": "sanity.imageCrop",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -8955,7 +8890,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "SanityImageDimensions",
       "originalName": "sanity.imageDimensions",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -9052,7 +8986,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "SanityImageHotspot",
       "originalName": "sanity.imageHotspot",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -9175,7 +9108,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "SanityImageMetadata",
       "originalName": "sanity.imageMetadata",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -9325,7 +9257,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "SanityImagePalette",
       "originalName": "sanity.imagePalette",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -9458,7 +9389,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "SanityImagePaletteSwatch",
       "originalName": "sanity.imagePaletteSwatch",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -9566,7 +9496,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "Slug",
       "originalName": "slug",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -9655,7 +9584,6 @@ exports[`GraphQL - Generation 3 > Should be able to generate graphql schema with
       "name": "Span",
       "originalName": "span",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -12544,7 +12472,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "Block",
       "originalName": "block",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -12606,7 +12533,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "CrossDatasetReference",
       "originalName": "crossDatasetReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -12848,7 +12774,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "File",
       "originalName": "file",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -12969,7 +12894,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "Geopoint",
       "originalName": "geopoint",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -13056,7 +12980,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "GlobalDocumentReference",
       "originalName": "globalDocumentReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -13182,7 +13105,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "Image",
       "originalName": "image",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -13321,7 +13243,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityAssetSourceData",
       "originalName": "sanity.assetSourceData",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -13490,7 +13411,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityFileAsset",
       "originalName": "sanity.fileAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -13799,7 +13719,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImageAsset",
       "originalName": "sanity.imageAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -14045,7 +13964,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImageCrop",
       "originalName": "sanity.imageCrop",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -14146,7 +14064,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImageDimensions",
       "originalName": "sanity.imageDimensions",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -14243,7 +14160,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImageHotspot",
       "originalName": "sanity.imageHotspot",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -14366,7 +14282,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImageMetadata",
       "originalName": "sanity.imageMetadata",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -14516,7 +14431,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImagePalette",
       "originalName": "sanity.imagePalette",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -14649,7 +14563,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImagePaletteSwatch",
       "originalName": "sanity.imagePaletteSwatch",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -14792,7 +14705,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType0",
       "originalName": "schemaType0",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -14970,7 +14882,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType1",
       "originalName": "schemaType1",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "description": undefined,
@@ -15030,7 +14941,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType10",
       "originalName": "schemaType10",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -15161,7 +15071,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType11",
       "originalName": "schemaType11",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -15292,7 +15201,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType12",
       "originalName": "schemaType12",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -15423,7 +15331,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType13",
       "originalName": "schemaType13",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -15554,7 +15461,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType14",
       "originalName": "schemaType14",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -15685,7 +15591,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType15",
       "originalName": "schemaType15",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -15816,7 +15721,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType16",
       "originalName": "schemaType16",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -15947,7 +15851,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType17",
       "originalName": "schemaType17",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -16078,7 +15981,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType18",
       "originalName": "schemaType18",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -16209,7 +16111,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType19",
       "originalName": "schemaType19",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -16411,7 +16312,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType2",
       "originalName": "schemaType2",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "description": undefined,
@@ -16471,7 +16371,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType20",
       "originalName": "schemaType20",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -16602,7 +16501,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType21",
       "originalName": "schemaType21",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -16733,7 +16631,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType22",
       "originalName": "schemaType22",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -16864,7 +16761,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType23",
       "originalName": "schemaType23",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -16995,7 +16891,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType24",
       "originalName": "schemaType24",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -17126,7 +17021,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType25",
       "originalName": "schemaType25",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -17257,7 +17151,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType26",
       "originalName": "schemaType26",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -17388,7 +17281,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType27",
       "originalName": "schemaType27",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -17519,7 +17411,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType28",
       "originalName": "schemaType28",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -17650,7 +17541,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType29",
       "originalName": "schemaType29",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -17852,7 +17742,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType3",
       "originalName": "schemaType3",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "description": undefined,
@@ -17912,7 +17801,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType30",
       "originalName": "schemaType30",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -18043,7 +17931,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType31",
       "originalName": "schemaType31",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -18174,7 +18061,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType32",
       "originalName": "schemaType32",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -18305,7 +18191,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType33",
       "originalName": "schemaType33",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -18436,7 +18321,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType34",
       "originalName": "schemaType34",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -18567,7 +18451,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType35",
       "originalName": "schemaType35",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -18698,7 +18581,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType36",
       "originalName": "schemaType36",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -18829,7 +18711,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType37",
       "originalName": "schemaType37",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -18960,7 +18841,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType38",
       "originalName": "schemaType38",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -19091,7 +18971,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType39",
       "originalName": "schemaType39",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -19293,7 +19172,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType4",
       "originalName": "schemaType4",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -19424,7 +19302,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType5",
       "originalName": "schemaType5",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -19555,7 +19432,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType6",
       "originalName": "schemaType6",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -19686,7 +19562,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType7",
       "originalName": "schemaType7",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -19817,7 +19692,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType8",
       "originalName": "schemaType8",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -19948,7 +19822,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType9",
       "originalName": "schemaType9",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -20069,7 +19942,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "Span",
       "originalName": "span",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -22958,7 +22830,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "Block",
       "originalName": "block",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -23020,7 +22891,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "CrossDatasetReference",
       "originalName": "crossDatasetReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -23262,7 +23132,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "File",
       "originalName": "file",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -23383,7 +23252,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "Geopoint",
       "originalName": "geopoint",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -23470,7 +23338,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "GlobalDocumentReference",
       "originalName": "globalDocumentReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -23596,7 +23463,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "Image",
       "originalName": "image",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -23735,7 +23601,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityAssetSourceData",
       "originalName": "sanity.assetSourceData",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -23904,7 +23769,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityFileAsset",
       "originalName": "sanity.fileAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -24213,7 +24077,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImageAsset",
       "originalName": "sanity.imageAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -24459,7 +24322,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImageCrop",
       "originalName": "sanity.imageCrop",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -24560,7 +24422,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImageDimensions",
       "originalName": "sanity.imageDimensions",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -24657,7 +24518,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImageHotspot",
       "originalName": "sanity.imageHotspot",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -24780,7 +24640,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImageMetadata",
       "originalName": "sanity.imageMetadata",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -24930,7 +24789,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImagePalette",
       "originalName": "sanity.imagePalette",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -25063,7 +24921,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SanityImagePaletteSwatch",
       "originalName": "sanity.imagePaletteSwatch",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -25206,7 +25063,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType0",
       "originalName": "schemaType0",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -25384,7 +25240,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType1",
       "originalName": "schemaType1",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "description": undefined,
@@ -25444,7 +25299,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType10",
       "originalName": "schemaType10",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -25575,7 +25429,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType11",
       "originalName": "schemaType11",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -25706,7 +25559,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType12",
       "originalName": "schemaType12",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -25837,7 +25689,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType13",
       "originalName": "schemaType13",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -25968,7 +25819,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType14",
       "originalName": "schemaType14",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -26099,7 +25949,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType15",
       "originalName": "schemaType15",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -26230,7 +26079,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType16",
       "originalName": "schemaType16",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -26361,7 +26209,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType17",
       "originalName": "schemaType17",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -26492,7 +26339,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType18",
       "originalName": "schemaType18",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -26623,7 +26469,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType19",
       "originalName": "schemaType19",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -26825,7 +26670,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType2",
       "originalName": "schemaType2",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "description": undefined,
@@ -26885,7 +26729,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType20",
       "originalName": "schemaType20",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -27016,7 +26859,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType21",
       "originalName": "schemaType21",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -27147,7 +26989,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType22",
       "originalName": "schemaType22",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -27278,7 +27119,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType23",
       "originalName": "schemaType23",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -27409,7 +27249,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType24",
       "originalName": "schemaType24",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -27540,7 +27379,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType25",
       "originalName": "schemaType25",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -27671,7 +27509,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType26",
       "originalName": "schemaType26",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -27802,7 +27639,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType27",
       "originalName": "schemaType27",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -27933,7 +27769,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType28",
       "originalName": "schemaType28",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -28064,7 +27899,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType29",
       "originalName": "schemaType29",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -28266,7 +28100,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType3",
       "originalName": "schemaType3",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "description": undefined,
@@ -28326,7 +28159,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType30",
       "originalName": "schemaType30",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -28457,7 +28289,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType31",
       "originalName": "schemaType31",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -28588,7 +28419,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType32",
       "originalName": "schemaType32",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -28719,7 +28549,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType33",
       "originalName": "schemaType33",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -28850,7 +28679,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType34",
       "originalName": "schemaType34",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -28981,7 +28809,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType35",
       "originalName": "schemaType35",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -29112,7 +28939,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType36",
       "originalName": "schemaType36",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -29243,7 +29069,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType37",
       "originalName": "schemaType37",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -29374,7 +29199,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType38",
       "originalName": "schemaType38",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -29505,7 +29329,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType39",
       "originalName": "schemaType39",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -29707,7 +29530,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType4",
       "originalName": "schemaType4",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -29838,7 +29660,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType5",
       "originalName": "schemaType5",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -29969,7 +29790,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType6",
       "originalName": "schemaType6",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -30100,7 +29920,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType7",
       "originalName": "schemaType7",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -30231,7 +30050,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType8",
       "originalName": "schemaType8",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -30362,7 +30180,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "SchemaType9",
       "originalName": "schemaType9",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -30483,7 +30300,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'manySelfRefsSchema
       "name": "Span",
       "originalName": "span",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -31114,7 +30930,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Author",
       "originalName": "author",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -31260,7 +31075,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Block",
       "originalName": "block",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -31328,7 +31142,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "CdrPersonReference",
       "originalName": "cdrPersonReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -31437,7 +31250,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Code",
       "originalName": "code",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -31536,7 +31348,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Color",
       "originalName": "color",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -31651,7 +31462,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "CrossDatasetReference",
       "originalName": "crossDatasetReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -31841,9 +31651,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "DeprecatedObject",
       "originalName": "deprecatedObject",
       "type": "Object",
-      Symbol(internal): {
-        "deprecationReason": "This object type has been deprecated",
-      },
     },
     {
       "fields": [
@@ -31960,9 +31767,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "DocumentActionsTest",
       "originalName": "documentActionsTest",
       "type": "Object",
-      Symbol(internal): {
-        "deprecationReason": "Entire \`Document actions\` document type deprecated",
-      },
     },
     {
       "fields": [
@@ -32173,7 +31977,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "DocumentWithCdrField",
       "originalName": "documentWithCdrField",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -32292,7 +32095,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "File",
       "originalName": "file",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -32413,7 +32215,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Geopoint",
       "originalName": "geopoint",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -32500,7 +32301,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "GlobalDocumentReference",
       "originalName": "globalDocumentReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -32588,7 +32388,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "HslaColor",
       "originalName": "hslaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -32694,7 +32493,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "HsvaColor",
       "originalName": "hsvaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -32838,7 +32636,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Image",
       "originalName": "image",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -32968,7 +32765,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "MuxVideo",
       "originalName": "mux.video",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "description": undefined,
@@ -33013,7 +32809,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "MuxVideoAsset",
       "originalName": "mux.videoAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -33273,7 +33068,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "ObjectWithNestedArray",
       "originalName": "objectWithNestedArray",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -33433,7 +33227,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "PertEstimate",
       "originalName": "pertEstimate",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -33571,7 +33364,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Poppers",
       "originalName": "poppers",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -33709,7 +33501,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "RgbaColor",
       "originalName": "rgbaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -33811,7 +33602,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityAssetSourceData",
       "originalName": "sanity.assetSourceData",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -33980,7 +33770,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityFileAsset",
       "originalName": "sanity.fileAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -34289,7 +34078,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImageAsset",
       "originalName": "sanity.imageAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -34535,7 +34323,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImageCrop",
       "originalName": "sanity.imageCrop",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -34636,7 +34423,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImageDimensions",
       "originalName": "sanity.imageDimensions",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -34733,7 +34519,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImageHotspot",
       "originalName": "sanity.imageHotspot",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -34856,7 +34641,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImageMetadata",
       "originalName": "sanity.imageMetadata",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -35006,7 +34790,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImagePalette",
       "originalName": "sanity.imagePalette",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -35139,7 +34922,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImagePaletteSwatch",
       "originalName": "sanity.imagePaletteSwatch",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -35247,7 +35029,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Slug",
       "originalName": "slug",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -35336,7 +35117,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Span",
       "originalName": "span",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -35967,7 +35747,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Author",
       "originalName": "author",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -36113,7 +35892,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Block",
       "originalName": "block",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -36181,7 +35959,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "CdrPersonReference",
       "originalName": "cdrPersonReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -36290,7 +36067,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Code",
       "originalName": "code",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -36389,7 +36165,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Color",
       "originalName": "color",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -36504,7 +36279,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "CrossDatasetReference",
       "originalName": "crossDatasetReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -36694,9 +36468,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "DeprecatedObject",
       "originalName": "deprecatedObject",
       "type": "Object",
-      Symbol(internal): {
-        "deprecationReason": "This object type has been deprecated",
-      },
     },
     {
       "fields": [
@@ -36813,9 +36584,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "DocumentActionsTest",
       "originalName": "documentActionsTest",
       "type": "Object",
-      Symbol(internal): {
-        "deprecationReason": "Entire \`Document actions\` document type deprecated",
-      },
     },
     {
       "fields": [
@@ -37026,7 +36794,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "DocumentWithCdrField",
       "originalName": "documentWithCdrField",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -37145,7 +36912,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "File",
       "originalName": "file",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -37266,7 +37032,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Geopoint",
       "originalName": "geopoint",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -37353,7 +37118,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "GlobalDocumentReference",
       "originalName": "globalDocumentReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -37441,7 +37205,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "HslaColor",
       "originalName": "hslaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -37547,7 +37310,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "HsvaColor",
       "originalName": "hsvaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -37691,7 +37453,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Image",
       "originalName": "image",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -37821,7 +37582,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "MuxVideo",
       "originalName": "mux.video",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "description": undefined,
@@ -37866,7 +37626,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "MuxVideoAsset",
       "originalName": "mux.videoAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -38126,7 +37885,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "ObjectWithNestedArray",
       "originalName": "objectWithNestedArray",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -38286,7 +38044,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "PertEstimate",
       "originalName": "pertEstimate",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -38424,7 +38181,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Poppers",
       "originalName": "poppers",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -38562,7 +38318,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "RgbaColor",
       "originalName": "rgbaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -38664,7 +38419,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityAssetSourceData",
       "originalName": "sanity.assetSourceData",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -38833,7 +38587,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityFileAsset",
       "originalName": "sanity.fileAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -39142,7 +38895,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImageAsset",
       "originalName": "sanity.imageAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -39388,7 +39140,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImageCrop",
       "originalName": "sanity.imageCrop",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -39489,7 +39240,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImageDimensions",
       "originalName": "sanity.imageDimensions",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -39586,7 +39336,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImageHotspot",
       "originalName": "sanity.imageHotspot",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -39709,7 +39458,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImageMetadata",
       "originalName": "sanity.imageMetadata",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -39859,7 +39607,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImagePalette",
       "originalName": "sanity.imagePalette",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -39992,7 +39739,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "SanityImagePaletteSwatch",
       "originalName": "sanity.imagePaletteSwatch",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -40100,7 +39846,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Slug",
       "originalName": "slug",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -40189,7 +39934,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'testStudioSchema' 
       "name": "Span",
       "originalName": "span",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -40720,7 +40464,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "A",
       "originalName": "a",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -40872,7 +40615,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "B",
       "originalName": "b",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -40995,7 +40737,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "Block",
       "originalName": "block",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -41057,7 +40798,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "CrossDatasetReference",
       "originalName": "crossDatasetReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -41299,7 +41039,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "File",
       "originalName": "file",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -41420,7 +41159,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "Geopoint",
       "originalName": "geopoint",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -41507,7 +41245,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "GlobalDocumentReference",
       "originalName": "globalDocumentReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -41633,7 +41370,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "Image",
       "originalName": "image",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -41772,7 +41508,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityAssetSourceData",
       "originalName": "sanity.assetSourceData",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -41941,7 +41676,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityFileAsset",
       "originalName": "sanity.fileAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -42250,7 +41984,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImageAsset",
       "originalName": "sanity.imageAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -42496,7 +42229,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImageCrop",
       "originalName": "sanity.imageCrop",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -42597,7 +42329,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImageDimensions",
       "originalName": "sanity.imageDimensions",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -42694,7 +42425,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImageHotspot",
       "originalName": "sanity.imageHotspot",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -42817,7 +42547,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImageMetadata",
       "originalName": "sanity.imageMetadata",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -42967,7 +42696,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImagePalette",
       "originalName": "sanity.imagePalette",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -43100,7 +42828,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImagePaletteSwatch",
       "originalName": "sanity.imagePaletteSwatch",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -43233,7 +42960,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "Span",
       "originalName": "span",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -43352,7 +43078,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "Union",
       "originalName": "union",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -43909,7 +43634,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "A",
       "originalName": "a",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -44061,7 +43785,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "B",
       "originalName": "b",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -44184,7 +43907,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "Block",
       "originalName": "block",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -44246,7 +43968,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "CrossDatasetReference",
       "originalName": "crossDatasetReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -44488,7 +44209,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "File",
       "originalName": "file",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -44609,7 +44329,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "Geopoint",
       "originalName": "geopoint",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -44696,7 +44415,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "GlobalDocumentReference",
       "originalName": "globalDocumentReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -44822,7 +44540,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "Image",
       "originalName": "image",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -44961,7 +44678,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityAssetSourceData",
       "originalName": "sanity.assetSourceData",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -45130,7 +44846,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityFileAsset",
       "originalName": "sanity.fileAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -45439,7 +45154,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImageAsset",
       "originalName": "sanity.imageAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -45685,7 +45399,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImageCrop",
       "originalName": "sanity.imageCrop",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -45786,7 +45499,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImageDimensions",
       "originalName": "sanity.imageDimensions",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -45883,7 +45595,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImageHotspot",
       "originalName": "sanity.imageHotspot",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -46006,7 +45717,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImageMetadata",
       "originalName": "sanity.imageMetadata",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -46156,7 +45866,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImagePalette",
       "originalName": "sanity.imagePalette",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -46289,7 +45998,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "SanityImagePaletteSwatch",
       "originalName": "sanity.imagePaletteSwatch",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -46422,7 +46130,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "Span",
       "originalName": "span",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -46541,7 +46248,6 @@ exports[`GraphQL - Generation 3 > Union cache: sanitySchema: 'unionRefsSchema' >
       "name": "Union",
       "originalName": "union",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [

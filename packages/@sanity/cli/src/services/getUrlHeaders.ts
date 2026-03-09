@@ -14,10 +14,8 @@ export async function getUrlHeaders(url: string, headers = {}): Promise<Record<s
     headers,
     maxRedirects: 0,
     method: 'HEAD',
-    stream: true,
     url,
   })
 
-  response.body.resume()
   return response.headers
 }

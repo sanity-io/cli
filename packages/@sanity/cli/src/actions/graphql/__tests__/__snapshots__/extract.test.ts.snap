@@ -43,6 +43,7 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
   ],
   "types": [
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -127,9 +128,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "Author",
       "originalName": "author",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -170,9 +171,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "Block",
       "originalName": "block",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "crossDatasetReferenceMetadata": {
         "dataset": "production",
         "typeNames": [
@@ -216,9 +217,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "CdrPersonReference",
       "originalName": "cdrPersonReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -259,9 +260,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "Code",
       "originalName": "code",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -301,9 +302,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "Color",
       "originalName": "color",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -341,9 +342,11 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "CrossDatasetReference",
       "originalName": "crossDatasetReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {
+        "deprecationReason": "This object type has been deprecated",
+      },
       "description": undefined,
       "fields": [
         {
@@ -381,11 +384,11 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "DeprecatedObject",
       "originalName": "deprecatedObject",
       "type": "Object",
-      Symbol(internal): {
-        "deprecationReason": "This object type has been deprecated",
-      },
     },
     {
+      "_internal": {
+        "deprecationReason": "Entire \`Document actions\` document type deprecated",
+      },
       "description": undefined,
       "fields": [
         {
@@ -443,11 +446,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "DocumentActionsTest",
       "originalName": "documentActionsTest",
       "type": "Object",
-      Symbol(internal): {
-        "deprecationReason": "Entire \`Document actions\` document type deprecated",
-      },
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -514,9 +515,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "DocumentWithCdrField",
       "originalName": "documentWithCdrField",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -544,9 +545,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "File",
       "originalName": "file",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -579,9 +580,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "Geopoint",
       "originalName": "geopoint",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -609,9 +610,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "GlobalDocumentReference",
       "originalName": "globalDocumentReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -649,9 +650,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "HslaColor",
       "originalName": "hslaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -689,9 +690,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "HsvaColor",
       "originalName": "hsvaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -727,9 +728,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "Image",
       "originalName": "image",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -753,9 +754,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "MuxVideo",
       "originalName": "mux.video",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -798,9 +799,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "MuxVideoAsset",
       "originalName": "mux.videoAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -948,9 +949,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "ObjectWithNestedArray",
       "originalName": "objectWithNestedArray",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -988,9 +989,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "PertEstimate",
       "originalName": "pertEstimate",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1060,9 +1061,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "Poppers",
       "originalName": "poppers",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1100,9 +1101,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "RgbaColor",
       "originalName": "rgbaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1136,9 +1137,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "SanityAssetSourceData",
       "originalName": "sanity.assetSourceData",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1248,9 +1249,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "SanityFileAsset",
       "originalName": "sanity.fileAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1369,9 +1370,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "SanityImageAsset",
       "originalName": "sanity.imageAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1409,9 +1410,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "SanityImageCrop",
       "originalName": "sanity.imageCrop",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1444,9 +1445,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "SanityImageDimensions",
       "originalName": "sanity.imageDimensions",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1484,9 +1485,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "SanityImageHotspot",
       "originalName": "sanity.imageHotspot",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1541,9 +1542,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "SanityImageMetadata",
       "originalName": "sanity.imageMetadata",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1589,9 +1590,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "SanityImagePalette",
       "originalName": "sanity.imagePalette",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1629,9 +1630,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "SanityImagePaletteSwatch",
       "originalName": "sanity.imagePaletteSwatch",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1654,9 +1655,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "Slug",
       "originalName": "slug",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1687,7 +1688,6 @@ exports[`GraphQL - Schema extraction > Should be able to extract a simple schema
       "name": "Span",
       "originalName": "span",
       "type": "Object",
-      Symbol(internal): {},
     },
   ],
 }
@@ -1736,6 +1736,7 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
   ],
   "types": [
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1786,7 +1787,6 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "A",
       "originalName": "a",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [],
@@ -1808,6 +1808,7 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       ],
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1858,9 +1859,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "B",
       "originalName": "b",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1901,9 +1902,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "Block",
       "originalName": "block",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1941,9 +1942,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "CrossDatasetReference",
       "originalName": "crossDatasetReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -1971,9 +1972,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "File",
       "originalName": "file",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2006,9 +2007,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "Geopoint",
       "originalName": "geopoint",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2036,9 +2037,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "GlobalDocumentReference",
       "originalName": "globalDocumentReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2074,9 +2075,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "Image",
       "originalName": "image",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2109,9 +2110,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "SanityAssetSourceData",
       "originalName": "sanity.assetSourceData",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2221,9 +2222,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "SanityFileAsset",
       "originalName": "sanity.fileAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2342,9 +2343,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "SanityImageAsset",
       "originalName": "sanity.imageAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2382,9 +2383,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "SanityImageCrop",
       "originalName": "sanity.imageCrop",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2417,9 +2418,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "SanityImageDimensions",
       "originalName": "sanity.imageDimensions",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2457,9 +2458,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "SanityImageHotspot",
       "originalName": "sanity.imageHotspot",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2514,9 +2515,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "SanityImageMetadata",
       "originalName": "sanity.imageMetadata",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2562,9 +2563,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "SanityImagePalette",
       "originalName": "sanity.imagePalette",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2602,9 +2603,9 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "SanityImagePaletteSwatch",
       "originalName": "sanity.imagePaletteSwatch",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2635,7 +2636,6 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "Span",
       "originalName": "span",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "children": {
@@ -2650,6 +2650,7 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "originalName": "title",
     },
     {
+      "_internal": {},
       "description": undefined,
       "fields": [
         {
@@ -2709,7 +2710,6 @@ exports[`GraphQL - Schema extraction > Should be able to extract schema with uni
       "name": "Union",
       "originalName": "union",
       "type": "Object",
-      Symbol(internal): {},
     },
   ],
 }

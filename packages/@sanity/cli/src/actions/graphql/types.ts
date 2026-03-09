@@ -1,6 +1,4 @@
-import {type Schema} from '@sanity/types'
-
-export const internal = Symbol('internal')
+import {type SchemaValidationProblemGroup} from '@sanity/types'
 
 export interface Deprecation {
   deprecationReason: string
@@ -98,17 +96,29 @@ interface ResolvedSerializableProperties {
   schemaTypes: SchemaDefinitionish[]
 }
 
-export interface ResolvedSourceProperties {
-  dataset: string
-  projectId: string
-  schema: Schema
-}
-
 export type TypeResolvedGraphQLAPI = Omit<GraphQLAPIConfig, 'source' | 'workspace'> &
   ResolvedSerializableProperties
 
-export type ResolvedGraphQLAPI = Omit<GraphQLAPIConfig, 'source' | 'workspace'> &
-  ResolvedSourceProperties
+export interface ExtractedGraphQLAPI {
+  dataset: string
+  projectId: string
+
+  extracted?: ApiSpecification
+  extractionError?: string
+  filterSuffix?: string
+  generation?: string
+  id?: string
+  nonNullDocumentFields?: boolean
+  playground?: boolean
+  schemaErrors?: SchemaValidationProblemGroup[]
+  tag?: string
+}
+
+export interface GraphQLWorkerResult {
+  apis: ExtractedGraphQLAPI[]
+
+  configErrors?: SchemaValidationProblemGroup[]
+}
 
 interface ConvertedNode {
   description: string
@@ -205,13 +215,13 @@ export interface ConvertedType extends Partial<Deprecation> {
   name: string
   type: string
 
+  _internal?: Partial<Deprecation>
   crossDatasetReferenceMetadata?: {
     dataset: string
     typeNames: string[]
   }
   description?: string
   interfaces?: string[]
-  [internal]?: Partial<Deprecation>
   isReference?: boolean
   originalName?: string
 }

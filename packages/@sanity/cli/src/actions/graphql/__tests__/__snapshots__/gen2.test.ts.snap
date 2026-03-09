@@ -536,7 +536,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "Author",
       "originalName": "author",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -682,7 +681,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "Block",
       "originalName": "block",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -750,7 +748,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "CdrPersonReference",
       "originalName": "cdrPersonReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -859,7 +856,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "Code",
       "originalName": "code",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -958,7 +954,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "Color",
       "originalName": "color",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -1073,7 +1068,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "CrossDatasetReference",
       "originalName": "crossDatasetReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -1263,9 +1257,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "DeprecatedObject",
       "originalName": "deprecatedObject",
       "type": "Object",
-      Symbol(internal): {
-        "deprecationReason": "This object type has been deprecated",
-      },
     },
     {
       "fields": [
@@ -1382,9 +1373,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "DocumentActionsTest",
       "originalName": "documentActionsTest",
       "type": "Object",
-      Symbol(internal): {
-        "deprecationReason": "Entire \`Document actions\` document type deprecated",
-      },
     },
     {
       "fields": [
@@ -1550,7 +1538,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "DocumentWithCdrField",
       "originalName": "documentWithCdrField",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -1669,7 +1656,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "File",
       "originalName": "file",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -1790,7 +1776,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "Geopoint",
       "originalName": "geopoint",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -1877,7 +1862,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "GlobalDocumentReference",
       "originalName": "globalDocumentReference",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -1965,7 +1949,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "HslaColor",
       "originalName": "hslaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -2071,7 +2054,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "HsvaColor",
       "originalName": "hsvaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -2215,7 +2197,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "Image",
       "originalName": "image",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -2345,7 +2326,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "MuxVideo",
       "originalName": "mux.video",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "description": undefined,
@@ -2390,7 +2370,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "MuxVideoAsset",
       "originalName": "mux.videoAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -2650,7 +2629,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "ObjectWithNestedArray",
       "originalName": "objectWithNestedArray",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -2810,7 +2788,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "PertEstimate",
       "originalName": "pertEstimate",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -2948,7 +2925,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "Poppers",
       "originalName": "poppers",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -3086,7 +3062,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "RgbaColor",
       "originalName": "rgbaColor",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -3188,7 +3163,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "SanityAssetSourceData",
       "originalName": "sanity.assetSourceData",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -3357,7 +3331,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "SanityFileAsset",
       "originalName": "sanity.fileAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -3666,7 +3639,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "SanityImageAsset",
       "originalName": "sanity.imageAsset",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -3912,7 +3884,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "SanityImageCrop",
       "originalName": "sanity.imageCrop",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4013,7 +3984,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "SanityImageDimensions",
       "originalName": "sanity.imageDimensions",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4110,7 +4080,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "SanityImageHotspot",
       "originalName": "sanity.imageHotspot",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4233,7 +4202,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "SanityImageMetadata",
       "originalName": "sanity.imageMetadata",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4383,7 +4351,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "SanityImagePalette",
       "originalName": "sanity.imagePalette",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4516,7 +4483,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "SanityImagePaletteSwatch",
       "originalName": "sanity.imagePaletteSwatch",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4607,7 +4573,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "Slug",
       "originalName": "slug",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [
@@ -4696,7 +4661,6 @@ exports[`GraphQL - Generation 2 > Should be able to generate graphql schema 1`] 
       "name": "Span",
       "originalName": "span",
       "type": "Object",
-      Symbol(internal): {},
     },
     {
       "fields": [

@@ -1,8 +1,7 @@
 import {type Output} from '@sanity/cli-core'
-import {logSymbols} from '@sanity/cli-core/ux'
-import {generateHelpUrl} from '@sanity/generate-help-url'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
-import upperFirst from 'lodash-es/upperFirst.js'
+
+import {formatSchemaValidation} from '../schema/formatSchemaValidation.js'
 
 export class SchemaError extends Error {
   problemGroups: SchemaValidationProblemGroup[]
@@ -13,35 +12,8 @@ export class SchemaError extends Error {
     this.problemGroups = problemGroups
   }
 
-  print(output: Output): void {
-    output.warn('Uh oh… found errors in schema:\n')
-
-    for (const group of this.problemGroups) {
-      for (const problem of group.problems) {
-        const icon = logSymbols[problem.severity] || logSymbols.info
-
-        let message = `${icon} ${upperFirst(problem.severity)}: ${getPath(group.path)}\n${problem.message}`
-        if (problem.helpId) {
-          message += `\nSee ${generateHelpUrl(problem.helpId)}`
-        }
-
-        output.log(message)
-      }
-    }
+  print(output: Output, label?: string): void {
+    output.warn(`${label ?? 'Found errors in schema'}:\n`)
+    output.log(formatSchemaValidation(this.problemGroups))
   }
-}
-
-function getPath(path: SchemaValidationProblemGroup['path']) {
-  return path
-    .map((segment) => {
-      if (segment.kind === 'type' && segment.name && segment.type) {
-        return `${segment.name} - (${segment.type})`
-      }
-      if (segment.kind === 'property' && segment.name) {
-        return segment.name
-      }
-      return null
-    })
-    .filter(Boolean)
-    .join(' / ')
 }
