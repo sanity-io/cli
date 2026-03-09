@@ -1,3 +1,4 @@
+import {stripInternalMeta} from '../helpers.js'
 import {
   type ApiSpecification,
   type GeneratedApiSpecification,
@@ -14,9 +15,13 @@ const gen2 = (extracted: ApiSpecification): GeneratedApiSpecification => {
     extracted.types,
     sortings.filter((node): node is InputObjectType => node.kind === 'InputObject'),
   )
-  const types = [...extracted.types, ...filters, ...sortings]
 
-  return {generation: 'gen2', interfaces: extracted.interfaces, queries, types}
+  return {
+    generation: 'gen2',
+    interfaces: extracted.interfaces,
+    queries,
+    types: [...stripInternalMeta(extracted.types), ...filters, ...sortings],
+  }
 }
 
 export default gen2

@@ -169,7 +169,7 @@ describe('#graphql:deploy errors', {timeout: 60 * 1000}, () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('handles getGraphQLAPIs failure with invalid schema', async () => {
+  test('handles failure with invalid schema', async () => {
     // Create a separate fixture for this test to avoid affecting other tests
     const testCwd = await testFixture('basic-studio')
 
@@ -194,14 +194,24 @@ export const schemaTypes = [
 `
     await writeFile(join(testCwd, 'schemaTypes', 'index.ts'), invalidSchema)
 
-    process.chdir(testCwd)
-    const {error} = await testCommand(GraphQLDeployCommand, [])
+    const {error} = await testCommand(GraphQLDeployCommand, [], {
+      mocks: {
+        projectRoot: {
+          directory: testCwd,
+          path: join(testCwd, 'sanity.config.ts'),
+          type: 'studio',
+        },
+      },
+    })
 
     expect(error).toBeDefined()
-    expect(error?.message).toContain('Failed to get GraphQL APIs')
+    // A self-referencing type (type: 'incorrectType' with name: 'incorrectType') triggers
+    // either schema validation errors or a worker crash depending on the Sanity version.
+    // Both paths end up in deploy's catch block with a message containing one of these.
+    expect(error?.message).toMatch(
+      /Fix the schema errors above and try again|Failed to resolve GraphQL APIs/,
+    )
     expect(error?.oclif?.exit).toBe(1)
-
-    process.chdir(cwd)
   })
 
   test('handles validateGraphQLAPI network error with response body', async () => {

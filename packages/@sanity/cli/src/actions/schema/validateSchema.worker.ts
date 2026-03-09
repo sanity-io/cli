@@ -14,6 +14,7 @@ import {
 } from '@sanity/types'
 
 import {getWorkspace} from '../../util/getWorkspace.js'
+import {isSchemaError} from '../../util/isSchemaError.js'
 import {type SerializedSchemaDebug, type SerializedTypeDebug} from './types.js'
 
 /** @internal */
@@ -128,17 +129,6 @@ function getSerializedSchemaDebug(set: SetSynchronization<string>): SerializedSc
 
 function isEncodableObject(val: EncodableValue | undefined): val is EncodableObject {
   return typeof val === 'object' && val !== null && !Array.isArray(val)
-}
-
-function isSchemaError(err: unknown): err is {schema: Schema} {
-  return (
-    err !== null &&
-    typeof err === 'object' &&
-    'schema' in err &&
-    err.schema !== null &&
-    typeof err.schema === 'object' &&
-    '_validation' in err.schema
-  )
 }
 
 function getSerializedTypeDebug(typeDef: EncodableObject): SerializedTypeDebug {

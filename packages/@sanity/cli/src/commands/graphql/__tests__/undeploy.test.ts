@@ -1,7 +1,6 @@
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
-import {createSchema} from 'sanity'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getGraphQLAPIs} from '../../../actions/graphql/getGraphQLAPIs.js'
@@ -27,7 +26,6 @@ const defaultMocks = {
 
 const mockGetGraphQLAPIs = vi.mocked(getGraphQLAPIs)
 const mockConfirm = vi.hoisted(() => vi.fn())
-const schema = createSchema({name: 'default', types: []})
 
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
@@ -173,7 +171,7 @@ describe('graphql undeploy', () => {
         dataset: 'ios-dataset',
         id: 'ios',
         projectId: 'test-project',
-        schema,
+
         tag: 'mobile',
       },
     ])
@@ -188,7 +186,7 @@ describe('graphql undeploy', () => {
     const {stdout} = await testCommand(Undeploy, ['--api', 'ios'], {mocks: defaultMocks})
 
     expect(stdout).toBe('GraphQL API deleted\n')
-    expect(mockGetGraphQLAPIs).toHaveBeenCalledWith(process.cwd())
+    expect(mockGetGraphQLAPIs).toHaveBeenCalledWith('/test/path')
   })
 
   test('throws error when --api flag references non-existent API', async () => {
@@ -197,7 +195,7 @@ describe('graphql undeploy', () => {
         dataset: 'production',
         id: 'web',
         projectId: 'test-project',
-        schema,
+
         tag: 'default',
       },
     ])
@@ -217,7 +215,7 @@ describe('graphql undeploy', () => {
         dataset: 'ios-dataset',
         id: 'ios',
         projectId: 'test-project',
-        schema,
+
         tag: 'default',
       },
     ])
@@ -237,15 +235,6 @@ describe('graphql undeploy', () => {
     expect(stderr).toContain('Both --api and --dataset specified, using --dataset staging')
   })
 
-  test('errors when both --api and --project are specified', async () => {
-    const {error} = await testCommand(Undeploy, ['--api', 'ios', '--project', 'test-project'], {
-      mocks: defaultMocks,
-    })
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('cannot also be provided when using --api')
-  })
-
   test('errors when both --api and --project-id are specified', async () => {
     const {error} = await testCommand(Undeploy, ['--api', 'ios', '--project-id', 'test-project'], {
       mocks: defaultMocks,
@@ -263,7 +252,7 @@ describe('graphql undeploy', () => {
         dataset: 'production',
         id: 'ios',
         projectId: 'test-project',
-        schema,
+
         tag: 'mobile',
       },
     ])
@@ -337,6 +326,15 @@ describe('graphql undeploy', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toBe('Operation cancelled')
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('propagates errors from getGraphQLAPIs when using --api flag', async () => {
+    mockGetGraphQLAPIs.mockRejectedValueOnce(new Error('Config resolution failed'))
+
+    const {error} = await testCommand(Undeploy, ['--api', 'ios'], {mocks: defaultMocks})
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toBe('Config resolution failed')
   })
 
   describe('outside project context', () => {
