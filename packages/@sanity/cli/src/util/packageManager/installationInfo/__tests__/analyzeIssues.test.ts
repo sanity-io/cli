@@ -73,8 +73,8 @@ describe('analyzeIssues', () => {
     expect(issues.some((i) => i.type === 'cli-version-incompatible')).toBe(true)
     const issue = issues.find((i) => i.type === 'cli-version-incompatible')
     expect(issue?.severity).toBe('error')
-    // When @sanity/cli is transitive (not declared), suggest a clean reinstall
-    expect(issue?.suggestion).toContain('npm install')
+    // When @sanity/cli is transitive (not declared), suggest updating it
+    expect(issue?.suggestion).toContain('npm update @sanity/cli')
   })
 
   test('suggests updating @sanity/cli directly when it is a declared dependency', () => {

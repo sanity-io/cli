@@ -159,19 +159,15 @@ function getWorkspaceType(lockfiles: LockfileInfo[]): WorkspaceType {
 }
 
 async function findLockfiles(dir: string): Promise<LockfileInfo[]> {
-  const lockfiles: LockfileInfo[] = []
-
-  for (const lockfileName of LOCKFILE_NAMES) {
-    const lockfilePath = path.join(dir, lockfileName)
-    if (await fileExists(lockfilePath)) {
-      lockfiles.push({
-        path: lockfilePath,
-        type: LOCKFILE_MAP[lockfileName],
-      })
-    }
-  }
-
-  return lockfiles
+  const results = await Promise.all(
+    LOCKFILE_NAMES.map(async (name) => {
+      const lockfilePath = path.join(dir, name)
+      return (await fileExists(lockfilePath))
+        ? {path: lockfilePath, type: LOCKFILE_MAP[name]}
+        : null
+    }),
+  )
+  return results.filter((r): r is LockfileInfo => r !== null)
 }
 
 async function fileExists(filePath: string): Promise<boolean> {

@@ -131,9 +131,7 @@ export function analyzeIssues(
         // When @sanity/cli is a direct dependency, updating it directly works.
         // When it's only transitive (provided by sanity), `npm update @sanity/cli`
         // won't help — a clean reinstall is the most reliable fix.
-        const suggestion = cliInfo.declared
-          ? `Run: ${getLocalUpdateCommand(pm, '@sanity/cli')}`
-          : `Run: ${pm} install`
+        const suggestion = `Run: ${getLocalUpdateCommand(pm, '@sanity/cli')}`
 
         issues.push({
           message: `Installed @sanity/cli@${installedVersion} does not satisfy sanity's requirement of ${expectedCliRange}.`,
