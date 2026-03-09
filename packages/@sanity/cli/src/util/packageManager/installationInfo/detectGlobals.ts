@@ -332,9 +332,12 @@ function hasNpmGlobals(globals: GlobalInstallation[]): boolean {
  * On Windows: lib and bins share the same directory.
  */
 function isInNpmBinDir(binaryPath: string, npmLibDir: string): boolean {
-  const binaryDir = path.dirname(binaryPath)
+  // Normalize paths first — on Windows, path.dirname preserves forward slashes
+  // but path.join converts to backslashes, causing mismatches without this.
+  const binaryDir = path.dirname(path.normalize(binaryPath))
+  const normalizedLibDir = path.normalize(npmLibDir)
   // Unix: bins at <prefix>/bin, lib at <prefix>/lib → sibling directories
-  const unixBinDir = path.join(path.dirname(npmLibDir), 'bin')
+  const unixBinDir = path.join(path.dirname(normalizedLibDir), 'bin')
   // Windows: bins and lib share the same directory
-  return binaryDir === unixBinDir || binaryDir === npmLibDir
+  return binaryDir === unixBinDir || binaryDir === normalizedLibDir
 }
