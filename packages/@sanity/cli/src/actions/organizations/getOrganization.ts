@@ -68,7 +68,7 @@ export async function getOrganization({
   const withAttach = withGrantInfo.filter(({hasAttachGrant}) => hasAttachGrant)
 
   debug('User has attach access to %d organizations.', withAttach.length)
-  const organizationChoices = getOrganizationChoices(withAttach)
+  const organizationChoices = getOrganizationChoices(withGrantInfo)
 
   // In unattended mode  use defaults without prompting
   if (isUnattended) {

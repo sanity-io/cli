@@ -1448,7 +1448,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     const withAttach = withGrantInfo.filter(({hasAttachGrant}) => hasAttachGrant)
 
     debug('User has attach access to %d organizations.', withAttach.length)
-    const organizationChoices = getOrganizationChoices(withAttach)
+    const organizationChoices = getOrganizationChoices(withGrantInfo)
 
     // If the user only has a single organization (and they have attach access to it),
     // we'll default to that one. Otherwise, we'll default to the organization with the
