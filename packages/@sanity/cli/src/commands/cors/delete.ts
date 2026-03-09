@@ -2,8 +2,9 @@ import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {type CorsOrigin, deleteCorsOrigin, listCorsOrigins} from '../../services/cors.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteCorsDebug = subdebug('cors:delete')
 
@@ -26,16 +27,28 @@ export class Delete extends SanityCommand<typeof Delete> {
       command: '<%= config.bin %> <%= command.id %> https://example.com',
       description: 'Delete a specific CORS origin',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      description: 'Delete a CORS origin from a specific project',
+    },
   ]
+
+  static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to delete CORS origin from (overrides CLI configuration)',
+    }),
+  }
 
   public async run(): Promise<void> {
     const {args} = await this.parse(Delete)
 
     // Ensure we have project context
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'delete', permission: 'sanity.project.cors'}],
+        }),
+    })
 
     // Get the origin ID to delete
     const originId = await this.promptForOrigin(args.origin, projectId)

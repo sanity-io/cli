@@ -1,3 +1,4 @@
+import {ProjectRootNotFoundError} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {createSchema} from 'sanity'
@@ -5,7 +6,6 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getGraphQLAPIs} from '../../../actions/graphql/getGraphQLAPIs.js'
 import {GRAPHQL_API_VERSION} from '../../../services/graphql.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Undeploy} from '../undeploy.js'
 
 // Mock getGraphQLAPIs
@@ -237,34 +237,22 @@ describe('graphql undeploy', () => {
     expect(stderr).toContain('Both --api and --dataset specified, using --dataset staging')
   })
 
-  test('warns when both --api and --project are specified', async () => {
-    mockConfirm.mockResolvedValue(true)
+  test('errors when both --api and --project are specified', async () => {
+    const {error} = await testCommand(Undeploy, ['--api', 'ios', '--project', 'test-project'], {
+      mocks: defaultMocks,
+    })
 
-    mockGetGraphQLAPIs.mockResolvedValueOnce([
-      {
-        dataset: 'production',
-        id: 'ios',
-        projectId: 'ios-project',
-        schema,
-        tag: 'default',
-      },
-    ])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('cannot also be provided when using --api')
+  })
 
-    mockApi({
-      apiVersion: GRAPHQL_API_VERSION,
-      method: 'delete',
-      projectId: 'test-project',
-      uri: '/apis/graphql/production/default',
-    }).reply(204)
+  test('errors when both --api and --project-id are specified', async () => {
+    const {error} = await testCommand(Undeploy, ['--api', 'ios', '--project-id', 'test-project'], {
+      mocks: defaultMocks,
+    })
 
-    const {stderr, stdout} = await testCommand(
-      Undeploy,
-      ['--api', 'ios', '--project', 'test-project'],
-      {mocks: defaultMocks},
-    )
-
-    expect(stdout).toBe('GraphQL API deleted\n')
-    expect(stderr).toContain('Both --api and --project specified, using --project test-project')
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('cannot also be provided when using --api')
   })
 
   test('warns when both --api and --tag are specified', async () => {
@@ -304,7 +292,7 @@ describe('graphql undeploy', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 
@@ -349,5 +337,52 @@ describe('graphql undeploy', () => {
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toBe('Operation cancelled')
     expect(error?.oclif?.exit).toBe(1)
+  })
+
+  describe('outside project context', () => {
+    const noProjectRootMocks = {
+      cliConfigError: new ProjectRootNotFoundError('No project root found'),
+      token: 'test-token',
+    }
+
+    test('works with --project-id and --dataset flags when no project root', async () => {
+      mockConfirm.mockResolvedValueOnce(true)
+
+      mockApi({
+        apiVersion: GRAPHQL_API_VERSION,
+        method: 'delete',
+        projectId: 'flag-project',
+        uri: '/apis/graphql/staging/default',
+      }).reply(204)
+
+      const {error, stdout} = await testCommand(
+        Undeploy,
+        ['--project-id', 'flag-project', '--dataset', 'staging'],
+        {mocks: noProjectRootMocks},
+      )
+
+      if (error) throw error
+      expect(stdout).toBe('GraphQL API deleted\n')
+    })
+
+    test('errors when no project root and no --project-id', async () => {
+      const {error} = await testCommand(Undeploy, ['--dataset', 'staging', '--force'], {
+        mocks: noProjectRootMocks,
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Unable to determine project ID')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('errors when no project root with --project-id but no --dataset', async () => {
+      const {error} = await testCommand(Undeploy, ['--project-id', 'flag-project', '--force'], {
+        mocks: noProjectRootMocks,
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Dataset is required')
+      expect(error?.oclif?.exit).toBe(1)
+    })
   })
 })

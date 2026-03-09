@@ -1,16 +1,18 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {type CliConfig, ProjectRootNotFoundError, SanityCommand, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {isAssetAspect, type SchemaValidationProblem} from '@sanity/types'
 
 import {getMediaLibraryConfig} from '../../actions/media/getMediaLibraryConfig.js'
 import {importAspects} from '../../actions/media/importAspects.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {selectMediaLibrary} from '../../prompts/selectMediaLibrary.js'
 import {deployAspects} from '../../services/mediaLibraries.js'
-import {NO_MEDIA_LIBRARY_ASPECTS_PATH, NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {NO_MEDIA_LIBRARY_ASPECTS_PATH} from '../../util/errorMessages.js'
 import {pluralize} from '../../util/pluralize.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deployAspectDebug = subdebug('media:deploy-aspect')
 
@@ -36,6 +38,9 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to deploy media aspect to (overrides CLI configuration)',
+    }),
     all: Flags.boolean({
       description: 'Deploy all aspects',
       required: false,
@@ -63,17 +68,25 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
       this.error('Specified both an aspect name and `--all`.', {exit: 1})
     }
 
-    const cliConfig = await this.getCliConfig()
+    let cliConfig: CliConfig
+    try {
+      cliConfig = await this.getCliConfig()
+    } catch (err) {
+      if (err instanceof ProjectRootNotFoundError) {
+        this.error(
+          'This command must be run from within a Sanity project directory (requires media library configuration)',
+          {exit: 1},
+        )
+      }
+      throw err
+    }
     const mediaLibrary = getMediaLibraryConfig(cliConfig)
 
     if (!mediaLibrary?.aspectsPath) {
       this.error(NO_MEDIA_LIBRARY_ASPECTS_PATH, {exit: 1})
     }
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     try {
       // Determine target media library

@@ -23,6 +23,11 @@ const baseConfig = {
       ignoreBinaries: ['sanity'],
       project,
     },
+    'fixtures/basic-functions': {
+      entry: ['sanity.blueprint.ts', 'functions/**/*.{js,jsx,ts,tsx}'],
+      // Used for CLI
+      ignoreDependencies: ['sanity'],
+    },
     'fixtures/prebuilt-app': {
       entry: ['sanity.cli.ts', 'src/App.tsx'],
       // Binary is overridden by the CLI package
@@ -44,6 +49,9 @@ const baseConfig = {
     'packages/@repo/command-extractor': {
       // Needed for npx to work
       ignoreDependencies: ['@sanity/cli'],
+      project,
+    },
+    'packages/@repo/coverage-delta': {
       project,
     },
     'packages/@repo/upload-docs': {

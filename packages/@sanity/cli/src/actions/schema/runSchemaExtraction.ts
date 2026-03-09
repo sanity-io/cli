@@ -21,7 +21,7 @@ type ExtractSchemaWorkerMessage = ExtractSchemaWorkerError | ExtractSchemaWorker
  * Throws SchemaExtractionError on failure.
  */
 export async function runSchemaExtraction(
-  extractOptions: ExtractOptions,
+  extractOptions: Omit<ExtractOptions, 'watchPatterns'>,
 ): Promise<ReturnType<typeof extractSchemaInternal>> {
   const {configPath, enforceRequiredFields, format, outputPath, workspace} = extractOptions
 

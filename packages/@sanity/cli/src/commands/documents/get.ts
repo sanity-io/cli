@@ -2,7 +2,8 @@ import {Args, Flags} from '@oclif/core'
 import {colorizeJson, getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const getDocumentDebug = subdebug('documents:get')
 
@@ -29,13 +30,17 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
       command: '<%= config.bin %> <%= command.id %> myDocId --dataset production',
       description: 'Get document from a specific dataset',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> myDocId --project-id abc123',
+      description: 'Get a document from a specific project',
+    },
   ]
 
   static override flags = {
-    dataset: Flags.string({
-      char: 'd',
-      description: 'Dataset to get document from (overrides config)',
+    ...getProjectIdFlag({
+      description: 'Project ID to get document from (overrides CLI configuration)',
     }),
+    ...getDatasetFlag({description: 'Dataset to get document from (overrides CLI configuration)'}),
     pretty: Flags.boolean({
       default: false,
       description: 'Colorize JSON output',
@@ -47,13 +52,9 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
     const {documentId} = args
     const {dataset, pretty} = flags
 
-    // Get project configuration
-    const cliConfig = await this.getCliConfig()
-    const projectId = await this.getProjectId()
+    const cliConfig = await this.tryGetCliConfig()
 
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     if (!cliConfig.api?.dataset && !dataset) {
       this.error(

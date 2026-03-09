@@ -3,7 +3,6 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {CORS_API_VERSION, type CorsOrigin} from '../../../services/cors.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {Delete} from '../delete.js'
 
 const createCorsOrigin = (
@@ -188,7 +187,7 @@ describe('#cors:delete', () => {
       },
     })
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

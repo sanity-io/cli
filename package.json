@@ -21,7 +21,9 @@
   "scripts": {
     "build": "turbo run build build:types",
     "build:cli": "turbo run build build:types --filter=./packages/**",
-    "check": "npm run check:lint && npm run check:types",
+    "check": "npm run check:format && npm run check:lint && npm run check:types && npm run check:deps",
+    "check:deps": "knip",
+    "check:format": "prettier --check .",
     "check:lint": "turbo run lint -- --fix",
     "check:types": "turbo run check:types --filter=@sanity/cli --filter=@sanity/cli-core",
     "clean": "rimraf packages/@sanity/*/lib packages/*/lib packages/@sanity/*/dist packages/*/dist",
@@ -54,13 +56,13 @@
     "knip": "^5.85.0",
     "lint-staged": "^16.2.7",
     "prettier": "catalog:",
-    "prettier-plugin-packagejson": "^2.5.22",
+    "prettier-plugin-packagejson": "^3.0.0",
     "rimraf": "catalog:",
     "turbo": "^2.8.11",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "packageManager": "pnpm@10.30.1",
+  "packageManager": "pnpm@10.30.3",
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
   },
@@ -71,7 +73,7 @@
     ],
     "overrides": {
       "@sanity/cli": "workspace:*",
-      "create-sanity>@sanity/cli": "^5.12.0"
+      "create-sanity>@sanity/cli": "^5.13.0"
     },
     "patchedDependencies": {
       "sanity": "patches/sanity.patch"

@@ -4,7 +4,6 @@ import {fileURLToPath} from 'node:url'
 import {type Hook} from '@oclif/core'
 import {
   type CliConfig,
-  createTelemetryStore,
   debug,
   findProjectRoot,
   getCliConfig,
@@ -18,6 +17,7 @@ import {telemetryDisclosure} from '../../actions/telemetry/telemetryDisclosure.j
 import {CliCommandTelemetry, type CLITraceData} from '../../telemetry/cli.telemetry.js'
 import {detectRuntime} from '../../util/detectRuntime.js'
 import {parseArguments} from '../../util/parseArguments.js'
+import {createTelemetryStore} from '../../util/telemetry/createTelemetryStore.js'
 
 export const setupTelemetry: Hook.Prerun = async function ({config}) {
   // Show telemetry disclosure

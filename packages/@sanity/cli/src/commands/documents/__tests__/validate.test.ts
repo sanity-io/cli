@@ -1,6 +1,6 @@
 import {resolve} from 'node:path'
 
-import {type CliConfig, getCliConfig} from '@sanity/cli-core'
+import {type CliConfig, getCliConfig, ProjectRootNotFoundError} from '@sanity/cli-core'
 import {testCommand, testFixture} from '@sanity/cli-test'
 import {afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -250,6 +250,27 @@ describe('#documents:validate', {timeout: 60 * 1000}, () => {
           expect(marker.level).toBe('error')
         }
       }
+    })
+  })
+
+  describe('outside project context', () => {
+    test('errors when run outside a Sanity project directory', async () => {
+      const {error} = await testCommand(
+        ValidateDocumentsCommand,
+        ['--yes', '--file', VALID_DOCS_PATH],
+        {
+          mocks: {
+            cliConfigError: new ProjectRootNotFoundError('No project root found'),
+            token: 'test-token',
+          },
+        },
+      )
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain(
+        'This command must be run from within a Sanity project directory',
+      )
+      expect(error?.oclif?.exit).toBe(1)
     })
   })
 

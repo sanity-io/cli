@@ -3,8 +3,9 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 
 import {validateRole} from '../../actions/tokens/validateRole.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {createToken, getTokenRoles} from '../../services/tokens.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const tokensAddDebug = subdebug('tokens:add')
 
@@ -35,9 +36,14 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
       command: '<%= config.bin %> <%= command.id %> "API Token" --json',
       description: 'Output token information as JSON',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> "My Token" --project-id abc123 --role=editor',
+      description: 'Create a token for a specific project',
+    },
   ]
 
   static override flags = {
+    ...getProjectIdFlag({description: 'Project ID to add token to (overrides CLI configuration)'}),
     json: Flags.boolean({
       default: false,
       description: 'Output as JSON',
@@ -58,10 +64,15 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
     const {label: givenLabel} = args
     const {json, role} = flags
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.roles'},
+            {grant: 'create', permission: 'sanity.project.tokens'},
+          ],
+        }),
+    })
 
     try {
       const label = givenLabel || (await this.promptForLabel())

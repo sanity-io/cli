@@ -1,6 +1,7 @@
 import {join} from 'node:path'
 
 import {convertToSystemPath} from '@sanity/cli-test'
+import {noopLogger} from '@sanity/telemetry'
 import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -9,6 +10,9 @@ import {
   finalizeViteConfig,
   getViteConfig,
 } from '../getViteConfig.js'
+
+const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
+const mockTypegenPlugin = vi.hoisted(() => vi.fn())
 
 // Mock all external dependencies
 vi.mock('read-package-up', () => ({
@@ -55,6 +59,26 @@ vi.mock('../../../server/vite/plugin-sanity-favicons.js', () => ({
 vi.mock('../../../server/vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
+
+vi.mock('../../../server/vite/plugin-schema-extraction.js', () => ({
+  sanitySchemaExtractionPlugin: mockExtractSchemaPlugin.mockReturnValue({
+    name: 'sanity/schema-extraction',
+  }),
+}))
+
+vi.mock('../../../server/vite/plugin-typegen.js', () => ({
+  sanityTypegenPlugin: mockTypegenPlugin.mockReturnValue({
+    name: 'sanity/typegen',
+  }),
+}))
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    findProjectRoot: vi.fn().mockResolvedValue({path: '/mock/config/path'}),
+  }
+})
 
 const mockTestCwd = convertToSystemPath('/test/cwd')
 const mockSanityPath = convertToSystemPath('/mock/path/to/sanity')
@@ -107,12 +131,13 @@ describe('#getViteConfig', () => {
     expect(config.define).toMatchObject({
       __SANITY_STAGING__: false,
       'process.env.MODE': '"development"',
+      'process.env.PKG_BUILD_VERSION': undefined,
       'process.env.SC_DISABLE_SPEEDY': '"false"',
       'process.env.STUDIO_VAR': '"studio-value"',
     })
 
     expect(config.plugins).toHaveLength(4)
-    expect(config.resolve?.dedupe).toEqual(['styled-components'])
+    expect(config.resolve?.dedupe).toEqual(['react', 'react-dom', 'sanity', 'styled-components'])
   })
 
   test('should create vite config for app mode', async () => {
@@ -227,6 +252,9 @@ describe('#getViteConfig', () => {
 
     expect(viteReact).toHaveBeenCalledWith({
       babel: {
+        generatorOpts: {
+          compact: true,
+        },
         plugins: [['babel-plugin-react-compiler', reactCompilerConfig]],
       },
     })
@@ -307,6 +335,110 @@ describe('#getViteConfig', () => {
       defaultFaviconsPath: join(mockSanityPath, 'static/favicons'),
       staticUrlPath: '/studio/static',
     })
+  })
+
+  test('should include schema extraction plugin when enabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+      schemaExtraction: {
+        enabled: true,
+        enforceRequiredFields: true,
+        path: 'custom-schema.json',
+        watchPatterns: ['custom/**/*.ts'],
+        workspace: 'production',
+      },
+    }
+
+    const config = await getViteConfig(options)
+
+    const schemaPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/schema-extraction',
+    )
+
+    expect(mockExtractSchemaPlugin).toHaveBeenCalledWith({
+      additionalPatterns: ['custom/**/*.ts'],
+      configPath: '/mock/config/path',
+      enforceRequiredFields: true,
+      outputPath: 'custom-schema.json',
+      telemetryLogger: noopLogger,
+      workDir: mockTestCwd,
+      workspaceName: 'production',
+    })
+    expect(schemaPlugin).toBeDefined()
+  })
+
+  test('should not include schema extraction plugin when disabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+      schemaExtraction: {
+        enabled: false,
+        path: 'schema.json',
+      },
+    }
+
+    const config = await getViteConfig(options)
+
+    const schemaPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/schema-extraction',
+    )
+
+    expect(mockExtractSchemaPlugin).not.toHaveBeenCalled()
+    expect(schemaPlugin).toBeUndefined()
+  })
+
+  test('should include typegen plugin when enabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+      typegen: {
+        enabled: true,
+        generates: 'sanity.types.ts',
+        schema: 'custom-schema.json',
+      },
+    }
+
+    const config = await getViteConfig(options)
+
+    const typegenPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/typegen',
+    )
+
+    expect(mockTypegenPlugin).toHaveBeenCalledWith({
+      config: {
+        enabled: true,
+        generates: 'sanity.types.ts',
+        schema: 'custom-schema.json',
+      },
+      telemetryLogger: noopLogger,
+      workDir: mockTestCwd,
+    })
+    expect(typegenPlugin).toBeDefined()
+  })
+
+  test('should not include typegen plugin when disabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+      typegen: {
+        enabled: false,
+        generates: 'sanity.types.ts',
+      },
+    }
+
+    const config = await getViteConfig(options)
+
+    const typegenPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/typegen',
+    )
+
+    expect(mockTypegenPlugin).not.toHaveBeenCalled()
+    expect(typegenPlugin).toBeUndefined()
   })
 })
 

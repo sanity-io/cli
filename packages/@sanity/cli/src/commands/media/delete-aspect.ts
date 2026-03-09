@@ -4,9 +4,10 @@ import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {selectMediaLibrary} from '../../prompts/selectMediaLibrary.js'
 import {deleteAspect} from '../../services/mediaLibraries.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteAspectDebug = subdebug('media:delete-aspect')
 
@@ -28,6 +29,9 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to delete media aspect from (overrides CLI configuration)',
+    }),
     'media-library-id': Flags.string({
       description: 'The id of the target media library',
       required: false,
@@ -43,10 +47,7 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
     const {aspectName} = this.args
     const {'media-library-id': mediaLibraryIdFlag, yes: skipConfirmation} = this.flags
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     try {
       let mediaLibraryId = mediaLibraryIdFlag

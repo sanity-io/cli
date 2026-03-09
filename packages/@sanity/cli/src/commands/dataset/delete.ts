@@ -5,9 +5,10 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {input, logSymbols} from '@sanity/cli-core/ux'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {deleteDataset} from '../../services/datasets.js'
 import {getProjectById} from '../../services/projects.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteDatasetDebug = subdebug('dataset:delete')
 
@@ -33,6 +34,9 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to delete dataset from (overrides CLI configuration)',
+    }),
     force: Flags.boolean({
       description: 'Do not prompt for delete confirmation - forcefully delete',
       required: false,
@@ -43,10 +47,12 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
     const {args, flags} = await this.parse(DeleteDatasetCommand)
     const {force} = flags
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'delete', permission: 'sanity.project.datasets'}],
+        }),
+    })
 
     const datasetName = args.datasetName
 

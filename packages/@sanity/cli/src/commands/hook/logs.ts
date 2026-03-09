@@ -7,12 +7,13 @@ import groupBy from 'lodash-es/groupBy.js'
 
 import {formatFailure} from '../../actions/hook/formatFailure.js'
 import {type DeliveryAttempt, type Hook, type HookMessage} from '../../actions/hook/types'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {
   getHookAttemptsForProject,
   getHookMessagesForProject,
   getHooksForProject,
 } from '../../services/hooks.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const logsHookDebug = subdebug('hook:logs')
 
@@ -35,9 +36,16 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
       command: '<%= config.bin %> <%= command.id %> [NAME]',
       description: 'List latest log entries for a specific hook by name',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      description: 'List hook logs for a specific project',
+    },
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to view webhook logs for (overrides CLI configuration)',
+    }),
     detailed: Flags.boolean({
       description: 'Include detailed payload and attempts',
       required: false,
@@ -48,10 +56,12 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     const {args, flags} = await this.parse(LogsHookCommand)
 
     // Ensure we have project context
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.webhooks'}],
+        }),
+    })
 
     // Get hooks for the project
     let hooks: Hook[]

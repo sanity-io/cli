@@ -1,14 +1,15 @@
 import {fileURLToPath, pathToFileURL} from 'node:url'
 
-import {createJiti} from '@rexxars/jiti'
+import {createJiti, type JitiResolveOptions} from '@rexxars/jiti'
 
 import {subdebug} from '../debug.js'
 
 interface ImportModuleOptions {
   /**
    * Whether to return the default export of the module.
+   * Default: true
    */
-  default?: true
+  default?: boolean
 
   /**
    * Path to the tsconfig file to use for the import. If not provided, the tsconfig
@@ -44,5 +45,12 @@ export async function importModule<T = unknown>(
 
   debug(`Loading module: ${fileURLToPath(fileURL)}`, {tsconfigPath})
 
-  return jiti.import<T>(fileURLToPath(fileURL), {default: returnDefault})
+  const jitiOptions: JitiResolveOptions & {default?: true} = {}
+
+  // If the default option is true, add it to the jiti options
+  if (returnDefault) {
+    jitiOptions.default = true
+  }
+
+  return jiti.import<T>(fileURLToPath(fileURL), jitiOptions)
 }

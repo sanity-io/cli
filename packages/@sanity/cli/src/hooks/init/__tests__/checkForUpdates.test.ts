@@ -1,6 +1,6 @@
 import {getUserConfig, isCi} from '@sanity/cli-core'
 import {testFixture, testHook} from '@sanity/cli-test'
-import {beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
 import {checkForUpdates} from '../checkForUpdates.js'
@@ -40,21 +40,23 @@ vi.mock('../../../util/update/isInstalledUsingYarn.js', () => ({
 }))
 
 const mockIsCi = vi.mocked(isCi)
+const originalIsTTY = process.stdout.isTTY
 
 describe('#checkForUpdates', () => {
   beforeEach(() => {
-    vi.stubGlobal('process', {
-      ...process,
-      stdout: {...process.stdout, isTTY: true},
-    })
-
     vi.resetAllMocks()
     vi.unstubAllEnvs()
     mockIsCi.mockReturnValue(false)
     mockIsInstalledGlobally.default = false
     mockIsInstalledUsingYarn.mockReturnValue(false)
+    process.stdout.isTTY = true
 
     mockConfigStore.clear()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    process.stdout.isTTY = originalIsTTY
   })
 
   test('returns early if running on CI', async () => {
@@ -87,11 +89,7 @@ describe('#checkForUpdates', () => {
 
   test('returns early if not TTY', async () => {
     const {config} = await getCommandAndConfig('help')
-
-    vi.stubGlobal('process', {
-      ...process,
-      stdout: {...process.stdout, isTTY: false},
-    })
+    process.stdout.isTTY = false
 
     await testHook<'init'>(checkForUpdates, {
       config,

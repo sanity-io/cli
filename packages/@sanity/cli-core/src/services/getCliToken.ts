@@ -1,4 +1,4 @@
-import {getConfig} from './cliUserConfig.js'
+import {getCliUserConfig} from './cliUserConfig.js'
 
 let cachedToken: string | undefined
 
@@ -19,6 +19,6 @@ export async function getCliToken(): Promise<string | undefined> {
     return cachedToken
   }
 
-  cachedToken = await getConfig('authToken')
+  cachedToken = await getCliUserConfig('authToken')
   return cachedToken
 }

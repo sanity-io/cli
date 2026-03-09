@@ -1,7 +1,7 @@
-import {CLIError} from '@oclif/core/errors'
+import {ux} from '@oclif/core'
+import {noopLogger} from '@sanity/telemetry'
 
 import {type CLITelemetryStore} from '../telemetry/types.js'
-import {isTrueish} from './isTrueish.js'
 
 /**
  * @public
@@ -19,13 +19,13 @@ type GlobalWithTelemetry = typeof globalThis & {
  */
 export function getCliTelemetry(): CLITelemetryStore {
   const global = globalThis as GlobalWithTelemetry
-  // This should never happen, but just in case.
-  // Ignore this error in tests to avoid failing tests as tests don't run to
-  if (!global[CLI_TELEMETRY_SYMBOL] && !isTrueish(process.env.TEST)) {
-    throw new CLIError('CLI telemetry not initialized', {exit: 1})
+  // This should never happen, but if it does, we return a noop logger to avoid errors.
+  if (!global[CLI_TELEMETRY_SYMBOL]) {
+    ux.warn('CLI telemetry not initialized, returning noop logger')
+    return noopLogger
   }
 
-  return global[CLI_TELEMETRY_SYMBOL] as CLITelemetryStore
+  return global[CLI_TELEMETRY_SYMBOL]
 }
 
 /**

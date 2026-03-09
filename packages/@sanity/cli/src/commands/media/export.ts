@@ -9,9 +9,10 @@ import {exportDataset, type ExportOptions, type ExportProgress} from '@sanity/ex
 import prettyMs from 'pretty-ms'
 
 import {promptForMediaLibrary} from '../../prompts/promptForMediaLibrary.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {getMediaLibraries} from '../../services/mediaLibraries.js'
 import {absolutify} from '../../util/absolutify.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const noop = () => null
 const exportDebug = subdebug('media:export')
@@ -42,6 +43,9 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to export media from (overrides CLI configuration)',
+    }),
     'asset-concurrency': Flags.integer({
       default: 8,
       description: 'Concurrent number of asset downloads',
@@ -63,13 +67,7 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
     const {args, flags} = await this.parse(MediaExportCommand)
     const {destination: targetDestination} = args
 
-    const projectId = await this.getProjectId()
-
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {
-        exit: 1,
-      })
-    }
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
     const projectClient = await getProjectCliClient({
       apiVersion: 'v2025-02-19',

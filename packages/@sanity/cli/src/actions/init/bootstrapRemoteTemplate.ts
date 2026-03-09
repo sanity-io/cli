@@ -5,10 +5,10 @@ import {Output, subdebug} from '@sanity/cli-core'
 import {logSymbols, spinner} from '@sanity/cli-core/ux'
 import {getMonoRepo, GitHubFileReader, validateTemplate} from '@sanity/template-validator'
 import {type Framework, frameworks} from '@vercel/frameworks'
-import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 
 import {createCorsOrigin} from '../../services/cors.js'
 import {createToken} from '../../services/tokens.js'
+import {detectFrameworkRecord} from '../../util/detectFramework.js'
 import {getDefaultPortForFramework} from '../../util/frameworkPort.js'
 import {type GenerateConfigOptions} from './createStudioConfig.js'
 import {tryGitInit} from './git.js'
@@ -98,11 +98,11 @@ export async function bootstrapRemoteTemplate(opts: BootstrapRemoteOptions): Pro
     const packagePath = join(outputPath, pkg)
     const packageFramework: Framework | null = await detectFrameworkRecord({
       frameworkList: frameworks as readonly Framework[],
-      fs: new LocalFileSystemDetector(packagePath),
+      rootPath: packagePath,
     })
 
     const port = getDefaultPortForFramework(packageFramework?.slug)
-    if (corsAdded.includes(port)) {
+    if (!corsAdded.includes(port)) {
       debug('Setting CORS origin to http://localhost:%d', port)
       await createCorsOrigin({
         allowCredentials: true,
@@ -128,9 +128,10 @@ export async function bootstrapRemoteTemplate(opts: BootstrapRemoteOptions): Pro
   await updateInitialTemplateMetadata(variables.projectId, `external-${name}`)
 
   spin.succeed()
-  if (corsAdded.length > 0) {
+  const newlyAddedPorts = corsAdded.slice(1)
+  if (newlyAddedPorts.length > 0) {
     output.log(
-      `${logSymbols.success} CORS origins added (${corsAdded.map((p) => `localhost:${p}`).join(', ')})`,
+      `${logSymbols.success} CORS origins added (${newlyAddedPorts.map((p) => `localhost:${p}`).join(', ')})`,
     )
   }
   if (readToken) output.log(`${logSymbols.success} API token generated (${READ_TOKEN_LABEL})`)

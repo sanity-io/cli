@@ -3,7 +3,7 @@ import {styleText} from 'node:util'
 import {startDevServer} from '../../server/devServer.js'
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
 import {devDebug} from './devDebug.js'
-import {getCoreAppURL} from './getCoreAppUrl.js'
+import {getDashboardAppURL} from './getDashboardAppUrl.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 import {type DevActionOptions} from './types.js'
 
@@ -39,15 +39,14 @@ export async function startAppDevServer(
     const {port} = server.config.server
     const httpHost = config.httpHost || 'localhost'
 
-    const coreAppUrl = getCoreAppURL({
+    const dashboardAppUrl = await getDashboardAppURL({
       httpHost,
       httpPort: port,
       organizationId,
     })
-
     output.log(`Dev server started on port ${port}`)
     output.log(`View your app in the Sanity dashboard here:`)
-    output.log(styleText(['blue', 'underline'], coreAppUrl))
+    output.log(styleText(['blue', 'underline'], dashboardAppUrl))
 
     return {close}
   } catch (err) {

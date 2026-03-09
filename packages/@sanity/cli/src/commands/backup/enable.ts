@@ -7,9 +7,10 @@ import {type DatasetsResponse} from '@sanity/client'
 import {assertDatasetExists} from '../../actions/backup/assertDatasetExist.js'
 import {NEW_DATASET_VALUE, promptForDataset} from '../../prompts/promptForDataset.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {setBackup} from '../../services/backup.js'
 import {createDataset, listDatasets} from '../../services/datasets.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const enableBackupDebug = subdebug('backup:enable')
 
@@ -34,14 +35,25 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
     },
   ]
 
+  static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to enable backups for (overrides CLI configuration)',
+    }),
+  }
+
   public async run(): Promise<void> {
     const {args} = await this.parse(EnableBackupCommand)
     let {dataset} = args
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'update', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     let datasets: DatasetsResponse
 

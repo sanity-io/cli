@@ -17,7 +17,6 @@ import {type DatasetAclMode, isHttpError} from '@sanity/client'
 import {DatasetImportCommand} from '@sanity/import'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
-import {detectFrameworkRecord, LocalFileSystemDetector} from '@vercel/fs-detectors'
 import {execa, type Options} from 'execa'
 import deburr from 'lodash-es/deburr.js'
 
@@ -74,6 +73,7 @@ import {getPlanId, getPlanIdFromCoupon} from '../services/plans.js'
 import {createProject, listProjects, updateProjectInitializedAt} from '../services/projects.js'
 import {getCliUser} from '../services/user.js'
 import {CLIInitStepCompleted, type InitStepResult} from '../telemetry/init.telemetry.js'
+import {detectFrameworkRecord} from '../util/detectFramework.js'
 import {absolutify, validateEmptyPath} from '../util/fsUtils.js'
 import {getProjectDefaults} from '../util/getProjectDefaults.js'
 import {getPeerDependencies} from '../util/packageManager/getPeerDependencies.js'
@@ -323,7 +323,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     const detectedFramework = await detectFrameworkRecord({
       frameworkList: frameworks as readonly Framework[],
-      fs: new LocalFileSystemDetector(process.cwd()),
+      rootPath: process.cwd(),
     })
     const isNextJs = detectedFramework?.slug === 'nextjs'
 
@@ -757,7 +757,12 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
       this._trace.log({step: 'login'})
 
-      await login({output: this.output, telemetry: this._trace.newContext('login')})
+      try {
+        await login({output: this.output, telemetry: this._trace.newContext('login')})
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        this.error(`Login failed: ${message}`, {exit: 1})
+      }
     }
 
     user = await getCliUser()

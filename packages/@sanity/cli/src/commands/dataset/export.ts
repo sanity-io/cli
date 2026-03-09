@@ -11,9 +11,10 @@ import prettyMs from 'pretty-ms'
 
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDataset} from '../../prompts/promptForDataset.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasets} from '../../services/datasets.js'
 import {absolutify} from '../../util/absolutify.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const noop = () => null
 const exportDebug = subdebug('dataset:export')
@@ -53,6 +54,9 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to export dataset from (overrides CLI configuration)',
+    }),
     'asset-concurrency': Flags.integer({
       default: 8,
       description: 'Concurrent number of asset downloads',
@@ -93,14 +97,12 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     const {destination: targetDestination, name: targetDataset} = args
 
     // Get project configuration
-    const cliConfig = await this.getCliConfig()
-    const projectId = await this.getProjectId()
-
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {
-        exit: 1,
-      })
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+        }),
+    })
 
     const projectClient = await getProjectCliClient({
       apiVersion: '2023-05-26',
@@ -121,22 +123,24 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
 
     // Determine dataset name
     let dataset = targetDataset
-    try {
-      if (!dataset) {
-        // Get default dataset from config
+    if (!dataset) {
+      try {
+        // Get default dataset from config (only available when running from a project directory)
+        const cliConfig = await this.tryGetCliConfig()
         const defaultDataset = cliConfig.api?.dataset
+
         if (defaultDataset) {
           dataset = defaultDataset
           this.log(`Using default dataset: ${dataset}`)
         } else {
           dataset = await promptForDataset({allowCreation: false, datasets})
         }
+      } catch (error) {
+        exportDebug('Error selecting dataset', error)
+        this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
+          exit: 1,
+        })
       }
-    } catch (error) {
-      exportDebug('Error selecting dataset', error)
-      this.error(`Failed to select dataset:\n${error instanceof Error ? error.message : error}`, {
-        exit: 1,
-      })
     }
 
     // Validate dataset name

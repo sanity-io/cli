@@ -2,8 +2,9 @@ import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {getEmbeddingsSettings} from '../../../services/embeddings.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const debug = subdebug('dataset:embeddings:status')
 
@@ -26,14 +27,22 @@ export class DatasetEmbeddingsStatusCommand extends SanityCommand<
     },
   ]
 
+  static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to check embeddings status for (overrides CLI configuration)',
+    }),
+  }
+
   public async run(): Promise<void> {
     const {args} = await this.parse(DatasetEmbeddingsStatusCommand)
     let {dataset} = args
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+        }),
+    })
 
     try {
       ;({dataset} = await resolveDataset({dataset, projectId}))

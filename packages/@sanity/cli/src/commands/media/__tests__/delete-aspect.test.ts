@@ -4,7 +4,6 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {MediaDeleteAspectCommand} from '../delete-aspect.js'
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -61,7 +60,7 @@ describe('#media:delete-aspect', () => {
       },
     })
 
-    expect(error?.message).toContain(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

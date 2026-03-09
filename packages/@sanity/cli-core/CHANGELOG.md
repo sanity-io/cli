@@ -1,5 +1,63 @@
 # Changelog
 
+## [0.1.0-alpha.19](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.18...cli-core-v0.1.0-alpha.19) (2026-03-03)
+
+
+### Bug Fixes
+
+* allow not getting default imports from importModule ([#521](https://github.com/sanity-io/cli/issues/521)) ([f6d8ba9](https://github.com/sanity-io/cli/commit/f6d8ba9760109414ebb0d4af04fd8726fafa92ab))
+* don't throw an error when telemetry is not initialized ([#518](https://github.com/sanity-io/cli/issues/518)) ([2b5b83f](https://github.com/sanity-io/cli/commit/2b5b83fd03db7c6e5add11b8e77767e4da2f3fca))
+
+## [0.1.0-alpha.18](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.17...cli-core-v0.1.0-alpha.18) (2026-03-03)
+
+
+### Features
+
+* add `--project-id` flag + prompts for dataset commands ([#500](https://github.com/sanity-io/cli/issues/500)) ([b264fa2](https://github.com/sanity-io/cli/commit/b264fa2b6996cbd195620ee730fd9bc6e6f12288))
+* **dev:** missing critical features for `dev` command ([#442](https://github.com/sanity-io/cli/issues/442)) ([1acf0b0](https://github.com/sanity-io/cli/commit/1acf0b0be58dcfe87e7d2d8b7430389884bc16d4))
+
+
+### Bug Fixes
+
+* **deps:** update dependency @inquirer/prompts to ^8.3.0 ([#519](https://github.com/sanity-io/cli/issues/519)) ([d13245c](https://github.com/sanity-io/cli/commit/d13245c80de94728e3b5d07cbb7caceda48cf9de))
+
+
+### Performance Improvements
+
+* cache reading cli config multiple times ([#506](https://github.com/sanity-io/cli/issues/506)) ([6222972](https://github.com/sanity-io/cli/commit/62229723b612fffd4da6d8621e29d4a0606c1e08))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.4
+
+## [0.1.0-alpha.17](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.16...cli-core-v0.1.0-alpha.17) (2026-03-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* refactor promisyWorker to take a url instead of a worker ([#477](https://github.com/sanity-io/cli/issues/477))
+
+### Features
+
+* **cli-core:** add non-interactive environment detection for prompts ([#470](https://github.com/sanity-io/cli/issues/470)) ([e9dc8fb](https://github.com/sanity-io/cli/commit/e9dc8fbc8c57b7b99d27fdf5ec6b1aa92a7ca740))
+* **dataset:** add embeddings configuration commands ([35c720d](https://github.com/sanity-io/cli/commit/35c720d43bb0ef795dbf624ea2475c5d83a6689e))
+* refactor promisyWorker to take a url instead of a worker ([#477](https://github.com/sanity-io/cli/issues/477)) ([382820a](https://github.com/sanity-io/cli/commit/382820a51e5e8ce45ff9510c6d8703c6a71b1a91))
+
+
+### Bug Fixes
+
+* use `stdin`, not `stdout` for interactive checks ([#479](https://github.com/sanity-io/cli/issues/479)) ([287c082](https://github.com/sanity-io/cli/commit/287c0829cb9434239f1fb04f2ce301780653d7b0))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.3
+
 ## [0.1.0-alpha.16](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0-alpha.15...cli-core-v0.1.0-alpha.16) (2026-02-24)
 
 

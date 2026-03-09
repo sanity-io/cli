@@ -20,9 +20,8 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-vi.mock('@vercel/fs-detectors', () => ({
+vi.mock('../../../util/detectFramework.js', () => ({
   detectFrameworkRecord: mockDetectedFramework,
-  LocalFileSystemDetector: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {

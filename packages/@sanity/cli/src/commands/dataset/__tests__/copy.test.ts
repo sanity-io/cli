@@ -8,25 +8,32 @@ import {DATASET_API_VERSION, followCopyJobProgress} from '../../../services/data
 import {CopyDatasetCommand} from '../copy.js'
 
 const mockListDatasets = vi.hoisted(() => vi.fn())
+const mockGetProjectCliClient = vi.hoisted(() => vi.fn())
 const testProjectId = vi.hoisted(() => 'test-project')
 const testToken = vi.hoisted(() => 'test-token')
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  const testClient = createTestClient({
-    apiVersion: 'v2025-09-16',
-    projectId: testProjectId,
-    token: testToken,
+
+  // Dynamically create a test client based on the projectId passed to getProjectCliClient,
+  // so that HTTP requests target the correct host (e.g. other-project.api.sanity.io).
+  mockGetProjectCliClient.mockImplementation((options?: {projectId?: string}) => {
+    const client = createTestClient({
+      apiVersion: 'v2025-09-16',
+      projectId: options?.projectId ?? testProjectId,
+      token: testToken,
+    })
+    return Promise.resolve({
+      datasets: {
+        list: mockListDatasets,
+      } as never,
+      request: client.request,
+    })
   })
 
   return {
     ...actual,
-    getProjectCliClient: vi.fn().mockResolvedValue({
-      datasets: {
-        list: mockListDatasets,
-      } as never,
-      request: testClient.request,
-    }),
+    getProjectCliClient: mockGetProjectCliClient,
   }
 })
 
@@ -36,6 +43,14 @@ vi.mock('@sanity/cli-core/ux', async () => {
     ...actual,
     input: vi.fn(),
     select: vi.fn(),
+  }
+})
+
+vi.mock('../../../prompts/promptForProject.js', async () => {
+  const {NonInteractiveError} =
+    await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
+  return {
+    promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select')),
   }
 })
 
@@ -484,6 +499,32 @@ describe('#dataset:copy', () => {
     })
   })
 
+  test('uses --project-id flag when provided', async () => {
+    mockListDatasets.mockResolvedValue([
+      createMockDataset('production'),
+      createMockDataset('staging'),
+    ])
+    mockApi({
+      apiVersion: DATASET_API_VERSION,
+      method: 'put',
+      projectId: 'other-project',
+      uri: `/datasets/production/copy`,
+    }).reply(200, {jobId: 'job-other'})
+    mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
+
+    const {error, stdout} = await testCommand(
+      CopyDatasetCommand,
+      ['--project-id', 'other-project', 'production', 'backup'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeUndefined()
+    expect(stdout).toContain('Job job-other started')
+    expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+      expect.objectContaining({projectId: 'other-project'}),
+    )
+  })
+
   test('errors when no project ID is found', async () => {
     const {error} = await testCommand(CopyDatasetCommand, ['production', 'backup'], {
       mocks: {
@@ -492,7 +533,7 @@ describe('#dataset:copy', () => {
       },
     })
 
-    expect(error?.message).toContain('sanity.cli.ts does not contain a project identifier')
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 })

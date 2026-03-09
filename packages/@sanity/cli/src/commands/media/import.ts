@@ -9,8 +9,9 @@ import {type OperatorFunction, pipe, scan, tap} from 'rxjs'
 import {importer, type State} from '../../actions/media/importMedia.js'
 import {importMediaDebug} from '../../actions/media/importMediaDebug.js'
 import {promptForMediaLibrary} from '../../prompts/promptForMediaLibrary.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {getMediaLibraries} from '../../services/mediaLibraries.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand> {
   static override args = {
@@ -38,6 +39,9 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to import media to (overrides CLI configuration)',
+    }),
     'media-library-id': Flags.string({
       description: 'The id of the target media library',
     }),
@@ -52,15 +56,10 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
     const {source} = args
     const replaceAspects = flags['replace-aspects']
 
-    const projectId = await this.getProjectId()
-    const cliConfig = await this.getCliConfig()
-    const dataset = cliConfig.api?.dataset
+    const projectId = await this.getProjectId({fallback: () => promptForProject({})})
 
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {
-        exit: 1,
-      })
-    }
+    const cliConfig = await this.tryGetCliConfig()
+    const dataset = cliConfig.api?.dataset
 
     let mediaLibraries
     try {

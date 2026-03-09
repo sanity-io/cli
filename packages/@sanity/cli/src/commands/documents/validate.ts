@@ -3,12 +3,13 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {type CliConfig, ProjectRootNotFoundError, SanityCommand} from '@sanity/cli-core'
 import {confirm, logSymbols} from '@sanity/cli-core/ux'
 
 import {type Level} from '../../actions/documents/types.js'
 import {validateDocuments} from '../../actions/documents/validate.js'
 import {reporters} from '../../actions/documents/validation/reporters/index.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocumentsCommand> {
   static description = 'Validate documents in a dataset against the studio schema'
@@ -30,11 +31,18 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       command: '<%= config.bin %> <%= command.id %> --level info',
       description: 'Report out info level validation markers too',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123 --dataset production',
+      description: 'Validate documents in a specific project and dataset',
+    },
   ]
 
   static flags = {
-    dataset: Flags.string({
-      char: 'd',
+    ...getProjectIdFlag({
+      description:
+        'Override the project ID used. By default, this is derived from the given workspace',
+    }),
+    ...getDatasetFlag({
       description:
         'Override the dataset used. By default, this is derived from the given workspace',
     }),
@@ -48,7 +56,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     }),
     level: Flags.custom<Level>({
       default: 'warning',
-      description: 'The minimum level reported out. Defaults to warning',
+      description: 'The minimum level reported. Defaults to warning',
       options: ['error', 'warning', 'info'],
     })(),
     'max-custom-validation-concurrency': Flags.integer({
@@ -57,7 +65,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     }),
     'max-fetch-concurrency': Flags.integer({
       default: 25,
-      description: 'Specify how many `client.fetch` requests are allow concurrency at once',
+      description: 'Specify how many `client.fetch` requests are allowed to run concurrently',
     }),
     workspace: Flags.string({
       description: 'The name of the workspace to use when downloading and validating all documents',
@@ -78,12 +86,26 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
       level,
       'max-custom-validation-concurrency': maxCustomValidationConcurrency,
       'max-fetch-concurrency': maxFetchConcurrency,
+      'project-id': projectId,
       workspace,
     } = flags
     const unattendedMode = Boolean(flags.yes)
 
-    const cliConfig = await this.getCliConfig()
-    const workDir = (await this.getProjectRoot()).directory
+    let workDir: string
+    let cliConfig: CliConfig
+    try {
+      const root = await this.getProjectRoot()
+      workDir = root.directory
+      cliConfig = await this.getCliConfig()
+    } catch (err) {
+      if (err instanceof ProjectRootNotFoundError) {
+        this.error(
+          'This command must be run from within a Sanity project directory (requires studio schema for validation)',
+          {exit: 1},
+        )
+      }
+      throw err
+    }
 
     if (!unattendedMode) {
       this.log(
@@ -155,6 +177,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
         maxCustomValidationConcurrency,
         maxFetchConcurrency,
         ndjsonFilePath,
+        projectId,
         reporter: (worker) => {
           const reporter =
             format && format in reporters
@@ -163,7 +186,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
 
           return reporter({flags, output: this.output, worker})
         },
-        studioHost: cliConfig?.studioHost,
+        studioHost: cliConfig.studioHost,
         workDir,
         workspace,
       })

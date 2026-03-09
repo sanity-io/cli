@@ -5,6 +5,8 @@ import {type CliConfig} from './config/cli/types/cliConfig.js'
 import {findProjectRoot} from './config/findProjectRoot.js'
 import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'
 import {subdebug} from './debug.js'
+import {NonInteractiveError} from './errors/NonInteractiveError.js'
+import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
 import {
   getGlobalCliClient,
   getProjectCliClient,
@@ -84,14 +86,82 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
   }
 
   /**
-   * Get the project ID from the CLI config.
+   * Get the project ID from passed flags or (if not provided) the CLI config.
    *
-   * @returns The project ID or `undefined` if it's not set.
+   * Optionally accepts a `fallback` function that is called when no project ID
+   * can be determined from flags or config. This allows commands to provide
+   * interactive project selection while keeping the prompt logic in the CLI package.
+   *
+   * If the fallback throws a `NonInteractiveError` (e.g. because the terminal is
+   * not interactive), it falls through to the standard error with suggestions.
+   *
+   * Optionally accepts a `deprecatedFlagName` for commands that have a deprecated
+   * flag (e.g. `--project`) that should be checked after `--project-id` but before
+   * the CLI config.
+   *
+   * @returns The project ID.
    */
-  protected async getProjectId(): Promise<string | undefined> {
-    const config = await this.getCliConfig()
+  protected async getProjectId(options?: {
+    deprecatedFlagName?: string
+    fallback?: () => Promise<string>
+  }): Promise<string> {
+    const hasProjectFlag = this.ctor.flags != null && 'project-id' in this.ctor.flags
 
-    return config.api?.projectId
+    // Check --project-id flag first
+    if (hasProjectFlag) {
+      const flagProjectId =
+        'project-id' in this.flags && typeof this.flags['project-id'] === 'string'
+          ? this.flags['project-id']
+          : undefined
+
+      if (flagProjectId) return flagProjectId
+    }
+
+    // Check deprecated flag (e.g. --project) before CLI config
+    if (options?.deprecatedFlagName) {
+      const deprecatedValue =
+        options.deprecatedFlagName in this.flags &&
+        typeof this.flags[options.deprecatedFlagName] === 'string'
+          ? (this.flags[options.deprecatedFlagName] as string)
+          : undefined
+
+      if (deprecatedValue) return deprecatedValue
+    }
+
+    // Fall back to CLI config
+    try {
+      const config = await this.getCliConfig()
+      const configProjectId = config.api?.projectId
+      if (configProjectId) return configProjectId
+    } catch (err) {
+      if (!(err instanceof ProjectRootNotFoundError)) throw err
+      // No project root — fall through to fallback/error
+    }
+
+    // Offer interactive selection if a fallback was provided
+    if (options?.fallback) {
+      try {
+        return await options.fallback()
+      } catch (err) {
+        if (!(err instanceof NonInteractiveError)) throw err
+        // Non-interactive: throw with actionable suggestions
+        throw new ProjectRootNotFoundError('Unable to determine project ID', {
+          cause: err,
+          suggestions: [
+            ...(hasProjectFlag ? ['Providing a project ID: --project-id <project-id>'] : []),
+            'Running this command from within a Sanity project directory',
+            'Running in an interactive terminal to get a project selection prompt',
+          ],
+        })
+      }
+    }
+
+    throw new ProjectRootNotFoundError('Unable to determine project ID', {
+      suggestions: [
+        ...(hasProjectFlag ? ['Providing a project ID: --project-id <project-id>'] : []),
+        'Running this command from within a Sanity project directory',
+      ],
+    })
   }
 
   /**
@@ -141,5 +211,22 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    */
   protected resolveIsInteractive(): boolean {
     return isInteractive()
+  }
+
+  /**
+   * Get the CLI config, returning an empty config if no project root is found.
+   *
+   * Use this instead of `getCliConfig()` in commands that can operate without a
+   * project directory (e.g. when `--project-id` and `--dataset` flags are provided).
+   *
+   * @returns The CLI config, or an empty config object if no project root is found.
+   */
+  protected async tryGetCliConfig(): Promise<CliConfig> {
+    try {
+      return await this.getCliConfig()
+    } catch (err) {
+      if (!(err instanceof ProjectRootNotFoundError)) throw err
+      return {}
+    }
   }
 }

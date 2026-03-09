@@ -8,7 +8,6 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {MediaExportCommand} from '../export.js'
 
 vi.mock('@sanity/export', () => ({
@@ -366,7 +365,7 @@ describe('#media:export', () => {
   test.each([
     {
       args: [TEST_OUTPUTS.TAR_GZ],
-      errorMessage: NO_PROJECT_ID,
+      errorMessage: 'Unable to determine project ID',
       scenario: 'no project ID is found',
       setup: {projectId: ''},
     },

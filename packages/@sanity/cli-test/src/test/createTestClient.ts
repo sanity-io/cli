@@ -15,7 +15,7 @@ export interface CreateTestClientOptions extends ClientConfig {
   /**
    * Authentication token
    */
-  token: string
+  token?: string
 }
 
 /**

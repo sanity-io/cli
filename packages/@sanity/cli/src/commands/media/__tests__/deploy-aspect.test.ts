@@ -1,5 +1,6 @@
 import {basename} from 'node:path'
 
+import {ProjectRootNotFoundError} from '@sanity/cli-core'
 import {select} from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {
@@ -10,7 +11,7 @@ import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
-import {NO_MEDIA_LIBRARY_ASPECTS_PATH, NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {NO_MEDIA_LIBRARY_ASPECTS_PATH} from '../../../util/errorMessages.js'
 import {MediaDeployAspectCommand} from '../deploy-aspect.js'
 
 const mockFsAccess = vi.hoisted(() => vi.fn())
@@ -197,6 +198,21 @@ describe('#media:deploy-aspect', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('errors when run outside a Sanity project directory', async () => {
+    const {error} = await testCommand(MediaDeployAspectCommand, ['--all'], {
+      mocks: {
+        cliConfigError: new ProjectRootNotFoundError('No project root found'),
+        token: 'test-token',
+      },
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain(
+      'This command must be run from within a Sanity project directory',
+    )
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
   test.each([
     {
       config: {
@@ -205,7 +221,7 @@ describe('#media:deploy-aspect', () => {
         },
       },
       description: 'project ID is not configured',
-      expectedError: NO_PROJECT_ID,
+      expectedError: 'Unable to determine project ID',
     },
     {
       config: {

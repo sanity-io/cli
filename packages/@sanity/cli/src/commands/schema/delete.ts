@@ -1,10 +1,11 @@
 import {Flags} from '@oclif/core'
 import {CLIError} from '@oclif/core/errors'
-import {parseStringFlag, SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
 import {parseIds} from '../../actions/schema/utils/schemaStoreValidation.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const deleteSchemaDebug = subdebug('schema:delete')
 
@@ -24,9 +25,11 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
   ]
 
   static override flags = {
-    dataset: Flags.string({
-      description: 'Delete schemas from a specific dataset',
-      parse: async (input) => parseStringFlag('dataset', input),
+    ...getProjectIdFlag({
+      description: 'Project ID to delete schema from (overrides CLI configuration)',
+    }),
+    ...getDatasetFlag({
+      description: 'Delete schemas from a specific dataset (overrides CLI configuration)',
     }),
     'extract-manifest': Flags.boolean({
       allowNo: true,
@@ -59,11 +62,12 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
 
     try {
       const workDir = await this.getProjectRoot()
-      const projectId = await this.getProjectId()
-
-      if (!projectId) {
-        this.error(NO_PROJECT_ID, {exit: 1})
-      }
+      const projectId = await this.getProjectId({
+        fallback: () =>
+          promptForProject({
+            requiredPermissions: [{grant: 'deployStudio', permission: 'sanity.project'}],
+          }),
+      })
 
       await deleteSchemaAction({
         configPath: workDir.path,
@@ -80,7 +84,10 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
       }
 
       deleteSchemaDebug('Error deleting schemas', error)
-      this.error(`Failed to delete schemas: ${error.message}`, {exit: 1})
+      this.error(
+        `Failed to delete schemas: ${error instanceof Error ? error.message : String(error)}`,
+        {exit: 1},
+      )
     }
   }
 }

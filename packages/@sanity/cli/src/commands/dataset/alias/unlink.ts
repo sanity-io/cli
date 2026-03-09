@@ -5,8 +5,9 @@ import {input} from '@sanity/cli-core/ux'
 import {processAliasName} from '../../../actions/dataset/processAliasName.js'
 import {validateDatasetAliasName} from '../../../actions/dataset/validateDatasetAliasName.js'
 import {promptForDatasetAliasName} from '../../../prompts/promptForDatasetAliasName.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {listAliases, unlinkAlias} from '../../../services/datasetAliases.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const unlinkAliasDebug = subdebug('dataset:alias:unlink')
 
@@ -40,6 +41,9 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to unlink dataset alias in (overrides CLI configuration)',
+    }),
     force: Flags.boolean({
       description: 'Skip confirmation prompt and unlink immediately',
       required: false,
@@ -50,10 +54,15 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
     const {args, flags} = await this.parse(UnlinkAliasCommand)
     const {force} = flags
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'update', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     try {
       const aliasNameInput = args.aliasName || (await promptForDatasetAliasName())

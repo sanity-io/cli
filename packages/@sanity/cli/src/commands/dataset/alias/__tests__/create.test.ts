@@ -4,8 +4,12 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DATASET_API_VERSION} from '../../../../services/datasets.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../../services/getProjectFeatures.js'
-import {NO_PROJECT_ID} from '../../../../util/errorMessages.js'
 import {CreateAliasCommand} from '../create.js'
+
+vi.mock('../../../../prompts/promptForProject.js', async () => {
+  const {NonInteractiveError} = await import('@sanity/cli-core')
+  return {promptForProject: vi.fn().mockRejectedValue(new NonInteractiveError('select'))}
+})
 
 const mockListDatasets = vi.hoisted(() => vi.fn())
 const testProjectId = vi.hoisted(() => 'test-project')
@@ -190,7 +194,7 @@ describe('#dataset:alias:create', () => {
       },
     })
 
-    expect(error?.message).toContain(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 

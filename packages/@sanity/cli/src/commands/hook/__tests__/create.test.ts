@@ -2,7 +2,6 @@ import {testCommand} from '@sanity/cli-test'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {CreateHookCommand} from '../create.js'
 
 vi.mock('open', () => ({
@@ -89,7 +88,7 @@ describe('#hook:create', () => {
     })
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
   })
 
   test('handles open failure gracefully', async () => {

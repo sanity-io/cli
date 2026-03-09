@@ -4,9 +4,10 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {createDataset} from '../../actions/dataset/create.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const createDatasetDebug = subdebug('dataset:create')
 
@@ -38,6 +39,9 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to create dataset in (overrides CLI configuration)',
+    }),
     embeddings: Flags.boolean({
       default: false,
       description: 'Enable embeddings for this dataset',
@@ -58,10 +62,15 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     const {visibility} = flags
 
     // Ensure we have project context
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'create', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     // Get dataset name from args or prompt
     let {name: datasetName} = args

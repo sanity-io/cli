@@ -1,12 +1,12 @@
 import {createWriteStream} from 'node:fs'
-import {mkdir, mkdtemp} from 'node:fs/promises'
+import {access, mkdir, mkdtemp} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import path from 'node:path'
 import {finished} from 'node:stream/promises'
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {fileExists, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 import {boxen, confirm, input, select} from '@sanity/cli-core/ux'
 import {type DatasetsResponse} from '@sanity/client'
 import pMap from 'p-map'
@@ -22,11 +22,12 @@ import {type File, PaginatedGetBackupStream} from '../../actions/backup/fetchNex
 import {newProgress} from '../../actions/backup/progressSpinner.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDataset} from '../../prompts/promptForDataset.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {type BackupItem, listBackups} from '../../services/backup.js'
 import {listDatasets} from '../../services/datasets.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
 import {humanFileSize} from '../../util/humanFileSize.js'
 import {isPathDirName} from '../../util/isPathDirName.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const DEFAULT_DOWNLOAD_CONCURRENCY = 10
 const MAX_DOWNLOAD_CONCURRENCY = 24
@@ -73,6 +74,9 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to download backup from (overrides CLI configuration)',
+    }),
     'backup-id': Flags.string({
       description: 'The backup ID to download',
     }),
@@ -93,10 +97,12 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
     const {args} = await this.parse(DownloadBackupCommand)
     let {dataset} = args
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [{grant: 'read', permission: 'sanity.project.datasets'}],
+        }),
+    })
 
     let datasets: DatasetsResponse
 
@@ -278,7 +284,10 @@ ${styleText('bold', 'backupId')}: ${styleText('cyan', opts.backupId)}`,
       out = path.join(out, defaultOutFileName)
     }
 
-    const exists = await fileExists(out)
+    const exists = await access(out).then(
+      () => true,
+      () => false,
+    )
     // If the file already exists, ask for confirmation if it should be overwritten.
     if (!this.flags.overwrite && exists) {
       const shouldOverwrite = await confirm({

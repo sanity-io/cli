@@ -10,9 +10,8 @@ const mocks = vi.hoisted(() => ({
   getGitHubRepoInfo: vi.fn(),
 }))
 
-vi.mock('@vercel/fs-detectors', () => ({
+vi.mock('../../../util/detectFramework.js', () => ({
   detectFrameworkRecord: mocks.detectFrameworkRecord,
-  LocalFileSystemDetector: vi.fn(),
 }))
 
 vi.mock('../../../actions/init/remoteTemplate.js', () => ({

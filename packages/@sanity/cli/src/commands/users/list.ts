@@ -6,7 +6,8 @@ import {Table} from 'console-table-printer'
 import sortBy from 'lodash-es/sortBy.js'
 
 import {getMembersForProject} from '../../actions/users/getMembersForProject.js'
-import {NO_PROJECT_ID} from '../../util/errorMessages.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
+import {getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const sortFields = ['id', 'name', 'role', 'date']
 
@@ -29,8 +30,15 @@ export class List extends SanityCommand<typeof List> {
       command: '<%= config.bin %> <%= command.id %> --sort role',
       description: 'List all users, sorted by role',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --project-id abc123',
+      description: 'List users for a specific project',
+    },
   ]
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to list users for (overrides CLI configuration)',
+    }),
     invitations: Flags.boolean({
       allowNo: true,
       default: true,
@@ -56,11 +64,15 @@ export class List extends SanityCommand<typeof List> {
   public async run(): Promise<void> {
     const {invitations, order, robots, sort} = this.flags
 
-    const projectId = await this.getProjectId()
-
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project'},
+            {grant: 'read', permission: 'sanity.project.members'},
+          ],
+        }),
+    })
 
     const members = await getMembersForProject({
       includeInvitations: invitations,

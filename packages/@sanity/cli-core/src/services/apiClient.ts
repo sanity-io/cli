@@ -33,6 +33,13 @@ export interface GlobalCliClientOptions extends ClientConfig {
    * Throws an error if `true` and user is not authenticated.
    */
   requireUser?: boolean
+
+  /**
+   * Whether to skip reading the stored CLI token. When `true`, the client will
+   * have no token unless one is explicitly provided.
+   * Default: `false`.
+   */
+  unauthenticated?: boolean
 }
 
 /**
@@ -46,6 +53,7 @@ export interface GlobalCliClientOptions extends ClientConfig {
 export async function getGlobalCliClient({
   requireUser,
   token: providedToken,
+  unauthenticated,
   ...config
 }: GlobalCliClientOptions): Promise<SanityClient> {
   const requester = defaultRequester.clone()
@@ -55,8 +63,8 @@ export async function getGlobalCliClient({
 
   const apiHost = apiHosts[sanityEnv]
 
-  // Use the provided token if it is set, otherwise get the token from the config file
-  const token = providedToken || (await getCliToken())
+  // Use the provided token if set, otherwise fall back to the stored CLI token (unless unauthenticated)
+  const token = providedToken || (unauthenticated ? undefined : await getCliToken())
 
   // If the token is not set and requireUser is true, throw an error
   if (!token && requireUser) {

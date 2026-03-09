@@ -13,6 +13,11 @@ export interface MockSanityCommandOptions {
    */
   cliConfig?: CliConfig
   /**
+   * When provided, getCliConfig() will throw this error instead of returning a config.
+   * Useful for simulating running outside a project directory.
+   */
+  cliConfigError?: Error
+  /**
    * Mock whether the terminal is interactive (used by isUnattended)
    */
   isInteractive?: boolean
@@ -76,6 +81,9 @@ export function mockSanityCommand<T extends typeof SanityCommand<typeof Command>
   // @ts-expect-error - TypeScript struggles with abstract class subclassing
   class MockedCommand extends CommandClass {
     protected getCliConfig(): Promise<CliConfig> {
+      if (options.cliConfigError) {
+        return Promise.reject(options.cliConfigError)
+      }
       if (options.cliConfig) {
         return Promise.resolve(options.cliConfig)
       }
@@ -83,6 +91,13 @@ export function mockSanityCommand<T extends typeof SanityCommand<typeof Command>
     }
 
     protected getProjectRoot(): Promise<ProjectRootResult> {
+      if (
+        options.cliConfigError &&
+        'name' in options.cliConfigError &&
+        options.cliConfigError.name === 'ProjectRootNotFoundError'
+      ) {
+        return Promise.reject(options.cliConfigError)
+      }
       if (options.projectRoot) {
         return Promise.resolve(options.projectRoot)
       }

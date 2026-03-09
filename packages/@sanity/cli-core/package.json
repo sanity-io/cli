@@ -1,6 +1,6 @@
 {
   "name": "@sanity/cli-core",
-  "version": "0.1.0-alpha.16",
+  "version": "0.1.0",
   "description": "Sanity CLI core package",
   "keywords": [
     "sanity",
@@ -26,10 +26,6 @@
     ".": {
       "source": "./src/index.ts",
       "default": "./dist/index.js"
-    },
-    "./tree": {
-      "source": "./src/_exports/tree.ts",
-      "default": "./dist/_exports/tree.js"
     },
     "./ux": {
       "source": "./src/_exports/ux.ts",
@@ -59,11 +55,10 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
-    "@inquirer/prompts": "^8.2.0",
+    "@inquirer/prompts": "^8.3.0",
     "@oclif/core": "catalog:",
     "@rexxars/jiti": "^2.6.2",
     "@sanity/client": "catalog:",
-    "@sanity/types": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",
     "boxen": "^8.0.1",
     "configstore": "^7.0.0",
@@ -77,9 +72,7 @@
     "ora": "catalog:",
     "read-package-up": "catalog:",
     "rxjs": "catalog:",
-    "tinyglobby": "catalog:",
     "tsx": "catalog:",
-    "typeid-js": "^1.2.0",
     "vite": "catalog:",
     "vite-node": "^5.3.0",
     "zod": "catalog:"

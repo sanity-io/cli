@@ -1,12 +1,13 @@
 import {styleText} from 'node:util'
 
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug, waitForAsync} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
+import {promptForProject} from '../../../prompts/promptForProject.js'
 import {getEmbeddingsSettings, setEmbeddingsSettings} from '../../../services/embeddings.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
+import {getProjectIdFlag} from '../../../util/sharedFlags.js'
 
 const debug = subdebug('dataset:embeddings:enable')
 
@@ -42,6 +43,9 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
   ]
 
   static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to enable embeddings for (overrides CLI configuration)',
+    }),
     projection: Flags.string({
       description: 'GROQ projection defining which fields to embed (e.g. "{ title, body }")',
       required: false,
@@ -57,10 +61,15 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
     let {dataset} = args
     const {projection, wait} = flags
 
-    const projectId = await this.getProjectId()
-    if (!projectId) {
-      this.error(NO_PROJECT_ID, {exit: 1})
-    }
+    const projectId = await this.getProjectId({
+      fallback: () =>
+        promptForProject({
+          requiredPermissions: [
+            {grant: 'read', permission: 'sanity.project.datasets'},
+            {grant: 'update', permission: 'sanity.project.datasets'},
+          ],
+        }),
+    })
 
     try {
       ;({dataset} = await resolveDataset({dataset, projectId}))
@@ -96,7 +105,7 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
     let interval = INITIAL_POLL_INTERVAL_MS
 
     while (Date.now() < deadline) {
-      await waitForAsync(interval)
+      await new Promise<void>((resolve) => setTimeout(resolve, interval))
       interval = Math.min(interval * 1.5, MAX_POLL_INTERVAL_MS)
 
       let settings

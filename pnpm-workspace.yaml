@@ -12,14 +12,14 @@ catalog:
   # Linting
   eslint: ^9.39.3
   '@eslint/compat': ^2.0.2
-  publint: ^0.3.17
+  publint: ^0.3.18
   prettier: ^3.8.1
 
   # Sanity
-  sanity: ^5.12.0
-  '@sanity/vision': ^5.12.0
-  '@sanity/types': ^5.12.0
-  '@sanity/schema': ^5.12.0
+  sanity: ^5.13.0
+  '@sanity/vision': ^5.13.0
+  '@sanity/types': ^5.13.0
+  '@sanity/schema': ^5.13.0
   '@sanity/client': ^7.16.0
   '@sanity/codegen': ^5.10.1
   '@sanity/telemetry': ^0.8.1
@@ -36,7 +36,7 @@ catalog:
   nock: ^14.0.11
 
   # CLI Framework
-  '@oclif/core': ^4.8.1
+  '@oclif/core': ^4.8.3
   '@oclif/plugin-help': ^6.2.37
   '@oclif/plugin-not-found': ^3.2.74
 
@@ -55,13 +55,13 @@ catalog:
   '@types/lodash-es': ^4.17.12
 
   # Build Tools
-  '@swc/core': ^1.15.13
+  '@swc/core': ^1.15.18
   '@swc/cli': ^0.8.0
   rimraf: ^6.0.1
-  '@sanity/pkg-utils': ^10.4.4
+  '@sanity/pkg-utils': ^10.4.8
 
   # Type Definitions
-  '@types/node': ^20.19.35
+  '@types/node': ^20.19.37
   '@types/debug': ^4.1.12
   '@types/jsdom': ^28.0.0
 
@@ -69,6 +69,7 @@ minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@portabletext/*'
   - '@sanity/*'
+  - '@types/*'
   - '@rexxars/jiti'
   - 'groq-js'
   - 'groq'

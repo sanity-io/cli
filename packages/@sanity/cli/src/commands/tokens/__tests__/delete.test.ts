@@ -4,7 +4,6 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {TOKENS_API_VERSION} from '../../../actions/tokens/constants.js'
 import {type Token} from '../../../actions/tokens/types.js'
-import {NO_PROJECT_ID} from '../../../util/errorMessages.js'
 import {DeleteTokensCommand} from '../delete.js'
 
 // Test fixtures
@@ -294,7 +293,7 @@ describe('#tokens:delete', () => {
       },
     })
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toEqual(NO_PROJECT_ID)
+    expect(error?.message).toContain('Unable to determine project ID')
     expect(error?.oclif?.exit).toBe(1)
   })
 
