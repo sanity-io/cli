@@ -8,6 +8,8 @@ import {spinner} from '@sanity/cli-core/ux'
 import {sanityImport} from '@sanity/import'
 import prettyMs from 'pretty-ms'
 
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+
 interface ProgressEvent {
   step: string
 
@@ -94,20 +96,17 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
     'asset-concurrency': Flags.integer({
       description: 'Number of parallel asset imports',
     }),
-    dataset: Flags.string({
-      char: 'd',
-      description: 'Dataset to import to',
-      required: true,
-    }),
+    ...getDatasetFlag({description: 'Dataset to import to', required: true, semantics: 'specify'}),
     missing: Flags.boolean({
       default: false,
       description: 'Skip documents that already exist',
       exclusive: ['replace'],
     }),
+    ...getProjectIdFlag({description: 'Project ID to import to', semantics: 'specify'}),
     project: Flags.string({
-      char: 'p',
+      deprecated: {to: 'project-id'},
       description: 'Project ID to import to',
-      required: true,
+      hidden: true,
     }),
     replace: Flags.boolean({
       default: false,
@@ -154,12 +153,18 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       'asset-concurrency': assetConcurrency,
       dataset,
       missing,
-      project: projectId,
+      project,
+      'project-id': projectIdFlag,
       replace,
       'replace-assets': replaceAssets,
       'skip-cross-dataset-references': skipCrossDatasetReferences,
       token,
     } = flags
+
+    const projectId = projectIdFlag ?? project
+    if (!projectId) {
+      this.error('Missing required flag --project-id', {exit: 1})
+    }
 
     const {source} = args
 

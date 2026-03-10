@@ -27,7 +27,8 @@ export class DatasetVisibilityGetCommand extends SanityCommand<typeof DatasetVis
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to get dataset visibility for (overrides CLI configuration)',
+      description: 'Project ID to get dataset visibility for',
+      semantics: 'override',
     }),
   }
 

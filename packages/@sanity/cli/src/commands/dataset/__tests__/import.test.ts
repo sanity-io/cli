@@ -42,7 +42,7 @@ const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
 const BASE_FLAGS = [
   'test-source.ndjson',
-  '--project',
+  '--project-id',
   'test-project',
   '--dataset',
   'test-dataset',
@@ -86,7 +86,7 @@ describe('#dataset:import', () => {
 
       const {error, stdout} = await testCommand(ImportDatasetCommand, [
         'https://example.com/data.ndjson',
-        '--project',
+        '--project-id',
         'test-project',
         '--dataset',
         'test-dataset',
@@ -104,7 +104,7 @@ describe('#dataset:import', () => {
 
       const {error, stdout} = await testCommand(ImportDatasetCommand, [
         '-',
-        '--project',
+        '--project-id',
         'test-project',
         '--dataset',
         'test-dataset',
@@ -172,7 +172,7 @@ describe('#dataset:import', () => {
     test('errors when token is not provided', async () => {
       const {error} = await testCommand(ImportDatasetCommand, [
         'test-source.ndjson',
-        '--project',
+        '--project-id',
         'test-project',
         '--dataset',
         'test-dataset',
@@ -308,6 +308,30 @@ describe('#dataset:import', () => {
         projectId: 'test-project',
         token: 'test-token',
       })
+    })
+  })
+
+  describe('deprecated flags', () => {
+    test('supports deprecated --project flag', async () => {
+      mockSanityImport.mockResolvedValueOnce({numDocs: 1, warnings: []})
+
+      const {error, stdout} = await testCommand(ImportDatasetCommand, [
+        'test-source.ndjson',
+        '--project',
+        'test-project',
+        '--dataset',
+        'test-dataset',
+        '--token',
+        'test-token',
+      ])
+
+      if (error) throw error
+      expect(stdout).toContain('Done! Imported 1 documents')
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectId: 'test-project',
+        }),
+      )
     })
   })
 })

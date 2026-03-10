@@ -40,7 +40,8 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to create dataset in (overrides CLI configuration)',
+      description: 'Project ID to create dataset in',
+      semantics: 'override',
     }),
     embeddings: Flags.boolean({
       default: false,

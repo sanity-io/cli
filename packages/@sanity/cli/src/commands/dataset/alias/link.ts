@@ -53,7 +53,8 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to link dataset alias in (overrides CLI configuration)',
+      description: 'Project ID to link dataset alias in',
+      semantics: 'override',
     }),
     force: Flags.boolean({
       description: 'Skip confirmation prompt when relinking existing alias',

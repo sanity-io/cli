@@ -37,7 +37,8 @@ export class List extends SanityCommand<typeof List> {
   ]
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to list users for (overrides CLI configuration)',
+      description: 'Project ID to list users for',
+      semantics: 'override',
     }),
     invitations: Flags.boolean({
       allowNo: true,

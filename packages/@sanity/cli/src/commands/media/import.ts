@@ -40,7 +40,8 @@ export class MediaImportCommand extends SanityCommand<typeof MediaImportCommand>
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to import media to (overrides CLI configuration)',
+      description: 'Project ID to import media to',
+      semantics: 'override',
     }),
     'media-library-id': Flags.string({
       description: 'The id of the target media library',

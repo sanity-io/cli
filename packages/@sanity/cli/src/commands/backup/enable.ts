@@ -37,7 +37,8 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to enable backups for (overrides CLI configuration)',
+      description: 'Project ID to enable backups for',
+      semantics: 'override',
     }),
   }
 

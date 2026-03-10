@@ -22,7 +22,8 @@ export class ListDatasetCommand extends SanityCommand<typeof ListDatasetCommand>
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to list datasets for (overrides CLI configuration)',
+      description: 'Project ID to list datasets for',
+      semantics: 'override',
     }),
   }
 

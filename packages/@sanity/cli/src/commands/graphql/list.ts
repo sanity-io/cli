@@ -27,7 +27,8 @@ export class List extends SanityCommand<typeof List> {
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to list GraphQL endpoints for (overrides CLI configuration)',
+      description: 'Project ID to list GraphQL endpoints for',
+      semantics: 'override',
     }),
   }
 

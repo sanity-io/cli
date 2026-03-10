@@ -21,7 +21,8 @@ export class List extends SanityCommand<typeof List> {
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to list CORS origins for (overrides CLI configuration)',
+      description: 'Project ID to list CORS origins for',
+      semantics: 'override',
     }),
   }
 

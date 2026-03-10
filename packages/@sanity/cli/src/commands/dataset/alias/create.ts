@@ -52,7 +52,8 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to create dataset alias in (overrides CLI configuration)',
+      description: 'Project ID to create dataset alias in',
+      semantics: 'override',
     }),
   }
 

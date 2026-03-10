@@ -40,7 +40,8 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to delete token from (overrides CLI configuration)',
+      description: 'Project ID to delete token from',
+      semantics: 'override',
     }),
     yes: Flags.boolean({
       aliases: ['y'],

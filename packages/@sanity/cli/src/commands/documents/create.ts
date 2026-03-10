@@ -59,10 +59,12 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to create document(s) in (overrides CLI configuration)',
+      description: 'Project ID to create document(s) in',
+      semantics: 'override',
     }),
     ...getDatasetFlag({
-      description: 'Dataset to create document(s) in (overrides CLI configuration)',
+      description: 'Dataset to create document(s) in',
+      semantics: 'override',
     }),
     id: Flags.string({
       description:

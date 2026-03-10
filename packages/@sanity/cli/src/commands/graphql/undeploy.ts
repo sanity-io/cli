@@ -41,14 +41,15 @@ export class Undeploy extends SanityCommand<typeof Undeploy> {
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to undeploy GraphQL API from (overrides CLI configuration)',
+      description: 'Project ID to undeploy GraphQL API from',
+      semantics: 'override',
     }),
     api: Flags.string({
       description: 'Undeploy API with this ID',
       exclusive: ['project-id', 'project'],
       required: false,
     }),
-    ...getDatasetFlag({description: 'Dataset to undeploy GraphQL API from'}),
+    ...getDatasetFlag({description: 'Dataset to undeploy GraphQL API from', semantics: 'override'}),
     force: Flags.boolean({
       description: 'Skip confirmation prompt',
       required: false,
