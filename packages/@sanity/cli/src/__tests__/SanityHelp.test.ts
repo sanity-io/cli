@@ -1,57 +1,6 @@
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {guessBinCommand, prefixBinName, replaceInitWithCreateCommand} from '../SanityHelp.js'
-
-describe('guessBinCommand', () => {
-  afterEach(() => {
-    vi.unstubAllEnvs()
-  })
-
-  test('returns "npx sanity" for npm', () => {
-    vi.stubEnv('npm_config_user_agent', 'npm/10.2.0 node/v20.10.0 darwin arm64')
-    expect(guessBinCommand()).toBe('npx sanity')
-  })
-
-  test('returns "pnpm exec sanity" for pnpm', () => {
-    vi.stubEnv('npm_config_user_agent', 'pnpm/8.15.1 npm/? node/v20.10.0 darwin arm64')
-    expect(guessBinCommand()).toBe('pnpm exec sanity')
-  })
-
-  test('returns "bunx sanity" for bun', () => {
-    vi.stubEnv('npm_config_user_agent', 'bun/1.0.25 npm/? node/v20.10.0 darwin arm64')
-    expect(guessBinCommand()).toBe('bunx sanity')
-  })
-
-  test('returns "yarn sanity" for yarn 1.x', () => {
-    vi.stubEnv('npm_config_user_agent', 'yarn/1.22.19 npm/? node/v20.10.0 darwin arm64')
-    expect(guessBinCommand()).toBe('yarn sanity')
-  })
-
-  test('returns "yarn run sanity" for yarn 2+', () => {
-    vi.stubEnv('npm_config_user_agent', 'yarn/2.4.3 npm/? node/v20.10.0 darwin arm64')
-    expect(guessBinCommand()).toBe('yarn run sanity')
-  })
-
-  test('returns "yarn run sanity" for yarn 3+', () => {
-    vi.stubEnv('npm_config_user_agent', 'yarn/3.6.1 npm/? node/v20.10.0 darwin arm64')
-    expect(guessBinCommand()).toBe('yarn run sanity')
-  })
-
-  test('returns "yarn run sanity" for yarn 4+', () => {
-    vi.stubEnv('npm_config_user_agent', 'yarn/4.1.0 npm/? node/v20.10.0 darwin arm64')
-    expect(guessBinCommand()).toBe('yarn run sanity')
-  })
-
-  test('returns "sanity" when no package manager is detected', () => {
-    vi.stubEnv('npm_config_user_agent', '')
-    expect(guessBinCommand()).toBe('sanity')
-  })
-
-  test('returns "sanity" when npm_config_user_agent is not set', () => {
-    vi.stubEnv('npm_config_user_agent', undefined as unknown as string)
-    expect(guessBinCommand()).toBe('sanity')
-  })
-})
+import {prefixBinName, replaceInitWithCreateCommand} from '../SanityHelp.js'
 
 describe('prefixBinName', () => {
   afterEach(() => {
@@ -333,7 +282,7 @@ describe('replaceInitWithCreateCommand + prefixBinName interaction', () => {
     const afterCreate = replaceInitWithCreateCommand(makeInitHelp())
     const result = prefixBinName(afterCreate)
 
-    // With unknown PM, guessBinCommand returns "sanity" so prefixBinName is a no-op
+    // With unknown PM, getBinCommand returns "sanity" so prefixBinName is a no-op
     expect(result).toBe(afterCreate)
   })
 })

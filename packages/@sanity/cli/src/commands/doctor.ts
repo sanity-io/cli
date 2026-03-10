@@ -1,0 +1,165 @@
+import {styleText} from 'node:util'
+
+import {Args, Flags} from '@oclif/core'
+import {SanityCommand} from '@sanity/cli-core'
+import {logSymbols} from '@sanity/cli-core/ux'
+
+import {type DoctorCheckName, doctorChecks, KNOWN_CHECKS} from '../actions/doctor/checks/index.js'
+import {runDoctorChecks} from '../actions/doctor/runDoctorChecks.js'
+import {
+  type CheckMessage,
+  type CheckResultStatus,
+  type CheckResultWithMeta,
+  type DoctorCheck,
+  type MessageType,
+} from '../actions/doctor/types.js'
+
+const STATUS_SYMBOLS: Record<CheckResultStatus, string> = {
+  error: logSymbols.error,
+  passed: logSymbols.success,
+  warning: logSymbols.warning,
+}
+
+const MESSAGE_SYMBOLS: Record<MessageType, string> = {
+  error: logSymbols.error,
+  info: logSymbols.info,
+  success: logSymbols.success,
+  warning: logSymbols.warning,
+}
+
+export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
+  // strict=false allows variadic args — validation is handled by getChecks().
+  // options is omitted here because oclif's help formatter uses it for display,
+  // but actual validation is done explicitly in getChecks() for clear error messages.
+  static override args = {
+    checks: Args.string({
+      description: `Checks to enable (defaults to all). Valid: ${KNOWN_CHECKS.join(', ')}`,
+      multiple: true,
+      required: false,
+    }),
+  }
+
+  static override description = 'Run diagnostics on your Sanity project'
+
+  static override examples = [
+    '<%= config.bin %> <%= command.id %>',
+    {command: '<%= config.bin %> <%= command.id %> --json', description: 'Output results as JSON'},
+    {
+      command: '<%= config.bin %> <%= command.id %> cli',
+      description: 'Only run CLI-related diagnostics',
+    },
+  ]
+
+  static override flags = {
+    json: Flags.boolean({
+      char: 'j',
+      default: false,
+      description: 'Output results as JSON',
+    }),
+  }
+
+  // Needed for variable argument count
+  static override strict = false
+
+  public async run(): Promise<void> {
+    const {argv, flags} = await this.parse(DoctorCommand)
+
+    const checks = getChecks(argv)
+    const cwd = process.cwd()
+
+    if (!flags.json) {
+      this.log('Running diagnostics...\n')
+    }
+
+    const results = await runDoctorChecks({cwd}, checks)
+
+    if (flags.json) {
+      this.log(JSON.stringify(results, null, 2))
+    } else {
+      for (const check of results.checks) {
+        this.printCheck(check)
+      }
+
+      this.printSummary(results.summary)
+    }
+
+    // Exit with error code if any checks failed
+    if (results.summary.errors > 0) {
+      this.exit(1)
+    }
+  }
+
+  private printCheck(check: CheckResultWithMeta): void {
+    const symbol = STATUS_SYMBOLS[check.status]
+    const title =
+      check.status === 'passed'
+        ? check.title
+        : styleText(check.status === 'error' ? 'red' : 'yellow', check.title)
+
+    this.log(`${symbol} ${title}`)
+
+    for (const message of check.messages) {
+      this.printMessage(message)
+    }
+
+    this.log('') // Empty line between checks
+  }
+
+  private printMessage(message: CheckMessage): void {
+    const symbol = MESSAGE_SYMBOLS[message.type]
+    const text =
+      message.type === 'error'
+        ? styleText('red', message.text)
+        : message.type === 'warning'
+          ? styleText('yellow', message.text)
+          : message.text
+
+    this.log(`  ${symbol} ${text}`)
+
+    if (message.suggestions?.length) {
+      for (const suggestion of message.suggestions) {
+        this.log(`    ${styleText('dim', '→')} ${suggestion}`)
+      }
+    }
+  }
+
+  private printSummary(summary: {errors: number; passed: number; warnings: number}): void {
+    const parts: string[] = []
+
+    if (summary.passed > 0) {
+      parts.push(styleText('green', `${summary.passed} passed`))
+    }
+    if (summary.warnings > 0) {
+      parts.push(
+        styleText('yellow', `${summary.warnings} warning${summary.warnings === 1 ? '' : 's'}`),
+      )
+    }
+    if (summary.errors > 0) {
+      parts.push(styleText('red', `${summary.errors} error${summary.errors === 1 ? '' : 's'}`))
+    }
+
+    this.log(`Summary: ${parts.join(', ')}`)
+  }
+}
+
+function getChecks(argv: unknown[]): Array<DoctorCheck> {
+  // strict=false means oclif does NOT validate Args.string({ options }) — we must
+  // validate explicitly. Filter to string args that aren't flags.
+  const stringArgs = argv.filter(
+    (item): item is string => typeof item === 'string' && !item.startsWith('-'),
+  )
+
+  const unknownChecks = stringArgs.filter(
+    (item) => !(KNOWN_CHECKS as readonly string[]).includes(item),
+  )
+  if (unknownChecks.length > 0) {
+    throw new Error(
+      `Unknown check${unknownChecks.length === 1 ? '' : 's'}: ${unknownChecks.join(', ')}. Valid checks: ${KNOWN_CHECKS.join(', ')}`,
+    )
+  }
+
+  const checkNames = stringArgs as DoctorCheckName[]
+  return checkNames.length > 0
+    ? checkNames.map((check) => doctorChecks[check])
+    : Object.values(doctorChecks)
+}

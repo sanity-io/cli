@@ -1,6 +1,7 @@
 import path from 'node:path'
 
 import {isInteractive} from '@sanity/cli-core'
+import {getRunningPackageManager} from '@sanity/cli-core/package-manager'
 import {select} from '@sanity/cli-core/ux'
 // eslint-disable-next-line unicorn/no-named-default
 import {default as preferredPM} from 'preferred-pm'
@@ -175,30 +176,4 @@ async function getMostLikelyInstalledPackageManager(
   const installed = await getAvailablePackageManagers(rootDir)
   const running = getRunningPackageManager()
   return running && installed.includes(running) ? running : undefined
-}
-
-function getRunningPackageManager(): PackageManager | undefined {
-  // Yes, the env var is lowercase - it is set by the package managers themselves
-  const agent = process.env.npm_config_user_agent || ''
-
-  if (agent.includes('yarn')) {
-    return 'yarn'
-  }
-
-  if (agent.includes('pnpm')) {
-    return 'pnpm'
-  }
-
-  if (agent.includes('bun')) {
-    return 'bun'
-  }
-
-  // Both yarn and pnpm does a `npm/?` thing, thus the slightly different match here
-  // Theoretically not needed since we check for yarn/pnpm above, but in case other
-  // package managers do the same thing, we'll (hopefully) catch them here.
-  if (/^npm\/\d/.test(agent)) {
-    return 'npm'
-  }
-
-  return undefined
 }

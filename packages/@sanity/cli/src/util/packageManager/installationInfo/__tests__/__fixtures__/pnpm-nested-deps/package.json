@@ -1,0 +1,7 @@
+{
+  "name": "pnpm-nested-deps-project",
+  "version": "1.0.0",
+  "dependencies": {
+    "sanity": "^5.4.0"
+  }
+}

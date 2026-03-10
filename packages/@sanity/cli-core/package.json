@@ -40,6 +40,10 @@
       "source": "./src/_exports/request.ts",
       "default": "./dist/_exports/request.js"
     },
+    "./package-manager": {
+      "source": "./src/_exports/package-manager.ts",
+      "default": "./dist/_exports/package-manager.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
