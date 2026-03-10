@@ -12,6 +12,7 @@ import {
   type UserApplication,
 } from '../../services/userApplications.js'
 import {deployDebug} from './deployDebug.js'
+import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 interface FindUserApplicationForStudioOptions {
   output: Output
@@ -19,10 +20,11 @@ interface FindUserApplicationForStudioOptions {
 
   appHost?: string
   appId?: string
+  urlType?: 'external' | 'internal'
 }
 
 export async function findUserApplicationForStudio(options: FindUserApplicationForStudioOptions) {
-  const {appHost, appId, output, projectId} = options
+  const {appHost, appId, output, projectId, urlType = 'internal'} = options
 
   const spin = spinner('Checking project info').start()
 
@@ -32,6 +34,7 @@ export async function findUserApplicationForStudio(options: FindUserApplicationF
     output,
     projectId,
     spin,
+    urlType,
   })
 
   spin.succeed()
@@ -47,10 +50,12 @@ export async function findUserApplicationForStudio(options: FindUserApplicationF
   // Get existing user applications (if any),
   // based on the configured project ID
   if (projectId) {
-    userApplications = await getUserApplications({
+    const allApps = await getUserApplications({
       appType: 'studio',
       projectId,
     })
+    // Filter by urlType so external deploys only see external studios and vice versa
+    userApplications = allApps?.filter((app) => app.urlType === urlType) ?? []
   }
 
   // If no applications are found, return null
@@ -60,18 +65,21 @@ export async function findUserApplicationForStudio(options: FindUserApplicationF
 
   // If there are user applications, allow the user to select one of the existing host names,
   // or to create a new one
+  const newLabel =
+    urlType === 'external' ? 'Register new external studio URL' : 'Create new studio hostname'
+  const selectMessage =
+    urlType === 'external'
+      ? 'Select existing external studio, or register a new one'
+      : 'Select existing studio hostname, or create a new one'
+
   const choices = userApplications.map((app) => ({
     name: app.title ?? app.appHost,
     value: app.appHost,
   }))
 
   const selected = await select({
-    choices: [
-      {name: 'Create new studio hostname', value: 'NEW_STUDIO'},
-      new Separator(),
-      ...choices,
-    ],
-    message: 'Select existing studio hostname, or create a new one',
+    choices: [{name: newLabel, value: 'NEW_STUDIO'}, new Separator(), ...choices],
+    message: selectMessage,
   })
 
   // If the user wants to create a new deployed application, return null
@@ -87,6 +95,7 @@ interface FindUserApplicationFromConfigOptions {
   output: Output
   projectId: string
   spin: SpinnerInstance
+  urlType: 'external' | 'internal'
 
   appHost?: string
   appId?: string
@@ -95,7 +104,7 @@ interface FindUserApplicationFromConfigOptions {
 async function findUserApplication(
   options: FindUserApplicationFromConfigOptions,
 ): Promise<UserApplication | null> {
-  const {appHost, appId, output, projectId} = options
+  const {appHost, appId, output, projectId, urlType} = options
   let {spin} = options
 
   let userApplication: UserApplication | null = null
@@ -120,8 +129,24 @@ async function findUserApplication(
 
   // As a fallback, if studioHost (deprecated) is configured, check for apps with that host
   if (appHost) {
+    // For external URLs, validate and normalize before lookup/creation
+    const resolvedHost = urlType === 'external' ? normalizeUrl(appHost) : appHost
+
+    if (urlType === 'external') {
+      const validation = validateUrl(resolvedHost)
+      if (validation !== true) {
+        spin.fail()
+        output.error(validation, {exit: 1})
+        return null
+      }
+    }
+
     try {
-      userApplication = await getUserApplication({appHost, isSdkApp: false, projectId})
+      userApplication = await getUserApplication({
+        appHost: resolvedHost,
+        isSdkApp: false,
+        projectId,
+      })
 
       // We've found the application — return it
       if (userApplication) {
@@ -130,17 +155,24 @@ async function findUserApplication(
 
       // Otherwise, try to create an app with the configured host
       try {
-        output.log('Your project has not been assigned a studio hostname.')
-        output.log(`Creating https://${appHost}.sanity.studio`)
+        if (urlType === 'external') {
+          output.log('Your project has not been registered with an external studio URL.')
+          output.log(`Registering ${resolvedHost}`)
+        } else {
+          output.log('Your project has not been assigned a studio hostname.')
+          output.log(`Creating https://${resolvedHost}.sanity.studio`)
+        }
         output.log('')
-        spin = spinner('Creating studio hostname').start()
+        spin = spinner(
+          urlType === 'external' ? 'Registering external studio' : 'Creating studio hostname',
+        ).start()
 
         const response = await createUserApplication({
           appType: 'studio',
           body: {
-            appHost,
+            appHost: resolvedHost,
             type: 'studio',
-            urlType: 'internal',
+            urlType,
           },
           projectId,
         })

@@ -1,18 +1,12 @@
-import {styleText} from 'node:util'
-
-import {type Output, studioWorkerTask} from '@sanity/cli-core'
+import {studioWorkerTask} from '@sanity/cli-core'
 import {type SchemaValidationProblemGroup} from '@sanity/types'
 import {type Workspace} from 'sanity'
 
-import {updateSchemas} from '../../services/schemas.js'
-import {CURRENT_WORKSPACE_SCHEMA_VERSION, type StoredWorkspaceSchema} from '../manifest/types.js'
 import {type ExtractWorkspaceWorkerData} from './types.js'
+import {updateWorkspacesSchemas} from './updateWorkspaceSchema.js'
 import {SchemaExtractionError} from './utils/SchemaExtractionError.js'
-import {SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
-import {getWorkspaceSchemaId} from './utils/workspaceSchemaId.js'
 
 interface DeploySchemasOptions {
-  output: Output
   verbose: boolean
   workDir: string
 
@@ -32,7 +26,7 @@ type ExtractWorkspaceWorkerMessage =
     }
 
 export async function deploySchemas(options: DeploySchemasOptions): Promise<void> {
-  const {output, tag, verbose, workDir, workspaceName} = options
+  const {tag, verbose, workDir, workspaceName} = options
 
   const result = await studioWorkerTask<ExtractWorkspaceWorkerMessage>(
     new URL('extractSanityWorkspace.worker.js', import.meta.url),
@@ -60,82 +54,9 @@ export async function deploySchemas(options: DeploySchemasOptions): Promise<void
     throw error
   }
 
-  /* Known caveat: we _don't_ rollback failed operations or partial success */
-  const results = await Promise.allSettled(
-    workspaces.map(async (workspace): Promise<void> => {
-      await updateWorkspaceSchema({
-        output,
-        tag,
-        verbose,
-        workspace,
-      })
-    }),
-  )
-
-  const fulfilledUpdates = results.filter((result) => result.status === 'fulfilled')
-  const rejectedUpdates = results.filter((result) => result.status === 'rejected')
-
-  if (rejectedUpdates.length > 0) {
-    throw new Error(
-      `Failed to deploy ${rejectedUpdates.length}/${workspaces.length} schemas. Successfully deployed ${fulfilledUpdates.length}/${workspaces.length} schemas.`,
-    )
-  }
-
-  output.log(`Deployed ${fulfilledUpdates.length}/${workspaces.length} schemas`)
-}
-
-async function updateWorkspaceSchema(args: {
-  output: Output
-  tag?: string
-  verbose: boolean
-  workspace: Workspace
-}) {
-  const {output, tag, verbose, workspace} = args
-
-  const {dataset, projectId} = workspace
-
-  const {idWarning, safeBaseId: id} = getWorkspaceSchemaId({
+  await updateWorkspacesSchemas({
     tag,
-    workspaceName: workspace.name,
+    verbose,
+    workspaces,
   })
-
-  if (idWarning) output.warn(idWarning)
-
-  try {
-    await updateSchemas<Omit<StoredWorkspaceSchema, '_id' | '_type'>[]>(dataset, projectId, [
-      {
-        // the API will stringify the schema – we send as JSON
-        schema: workspace.schema,
-        tag,
-        version: CURRENT_WORKSPACE_SCHEMA_VERSION,
-        workspace: {
-          name: workspace.name,
-          title: workspace.title,
-        },
-      },
-    ])
-
-    if (verbose) {
-      output.log(
-        styleText('gray', `↳ schemaId: ${id}, projectId: ${projectId}, dataset: ${dataset}`),
-      )
-    }
-  } catch (err) {
-    if ('statusCode' in err && err?.statusCode === 401) {
-      output.warn(
-        `↳ No permissions to write schema for workspace "${workspace.name}" in dataset "${workspace.dataset}". ${
-          SCHEMA_PERMISSION_HELP_TEXT
-        }:\n  ${styleText('red', `${err.message}`)}`,
-      )
-    } else {
-      output.log(
-        styleText(
-          'red',
-          `↳ Error deploying schema for workspace "${workspace.name}":\n  ${styleText('red', `${err.message}`)}`,
-        ),
-      )
-    }
-
-    throw err
-  }
 }

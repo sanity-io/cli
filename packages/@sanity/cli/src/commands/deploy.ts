@@ -33,6 +33,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       description:
         'Fail fast on schema store fails - for when other services rely on the stored schema',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --external',
+      description: 'Register an externally hosted studio (studioHost contains full URL)',
+    },
   ]
 
   static override flags = {
@@ -46,6 +50,11 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       default: true,
       description:
         "Don't build the studio prior to deploy, instead deploying the version currently in `dist/`",
+    }),
+    external: Flags.boolean({
+      default: false,
+      description: 'Register an externally hosted studio',
+      exclusive: ['source-maps', 'minify', 'build'],
     }),
     minify: Flags.boolean({
       allowNo: true,
@@ -76,14 +85,15 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     const {flags} = await this.parse(DeployCommand)
 
     const cliConfig = await this.getCliConfig()
-    const workDir = (await this.getProjectRoot()).directory
+    const projectRoot = await this.getProjectRoot()
 
     const isApp = determineIsApp(cliConfig)
 
-    const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
+    const defaultOutputDir = path.resolve(path.join(projectRoot.directory, 'dist'))
     const sourceDir = path.resolve(process.cwd(), this.args.sourceDir || defaultOutputDir)
 
-    if (this.args.sourceDir && this.args.sourceDir !== 'dist') {
+    // Skip the directory check if the studio is externally hosted
+    if (this.args.sourceDir && this.args.sourceDir !== 'dist' && !flags.external) {
       let relativeOutput = path.relative(process.cwd(), sourceDir)
       if (relativeOutput[0] !== '.') {
         relativeOutput = `./${relativeOutput}`
@@ -111,8 +121,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         cliConfig,
         flags,
         output: this.output,
+        projectRoot,
         sourceDir,
-        workDir,
       })
     } else {
       deployDebug('Deploying studio')
@@ -120,8 +130,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
         cliConfig,
         flags,
         output: this.output,
+        projectRoot,
         sourceDir,
-        workDir,
       })
     }
   }

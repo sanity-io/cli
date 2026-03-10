@@ -29,9 +29,9 @@ describe('#schema:deploy', {timeout: 60 * 1000}, () => {
         uri: `/projects/${projectId}/datasets/test/schemas`,
       }).reply(200, {})
 
-      const {error, stdout} = await testCommand(DeploySchemaCommand, [])
+      const {error, stderr, stdout} = await testCommand(DeploySchemaCommand, [])
 
-      expect(stdout).toContain('Deployed 1/1 schemas')
+      expect(stderr).toContain('Deployed 1/1 schemas')
       expect(stdout).toContain('sanity schema list')
       if (error) throw error
     })
@@ -58,9 +58,9 @@ describe('#schema:deploy', {timeout: 60 * 1000}, () => {
         uri: `/projects/${projectId}/datasets/test/schemas`,
       }).reply(200, {})
 
-      const {error, stdout} = await testCommand(DeploySchemaCommand, ['--tag', 'mytag'])
+      const {error, stderr} = await testCommand(DeploySchemaCommand, ['--tag', 'mytag'])
 
-      expect(stdout).toContain('Deployed 1/1 schemas')
+      expect(stderr).toContain('Deployed 1/1 schemas')
       if (error) throw error
     })
 
@@ -162,9 +162,9 @@ describe('#schema:deploy', {timeout: 60 * 1000}, () => {
         uri: `/projects/${projectId}/datasets/staging/schemas`,
       }).reply(200, {})
 
-      const {error, stdout} = await testCommand(DeploySchemaCommand, [])
+      const {error, stderr, stdout} = await testCommand(DeploySchemaCommand, [])
 
-      expect(stdout).toContain('Deployed 2/2 schemas')
+      expect(stderr).toContain('Deployed 2/2 schemas')
       expect(stdout).toContain('sanity schema list')
       if (error) throw error
     })
@@ -176,9 +176,9 @@ describe('#schema:deploy', {timeout: 60 * 1000}, () => {
         uri: `/projects/${projectId}/datasets/test/schemas`,
       }).reply(200, {})
 
-      const {error, stdout} = await testCommand(DeploySchemaCommand, ['--workspace', 'production'])
+      const {error, stderr} = await testCommand(DeploySchemaCommand, ['--workspace', 'production'])
 
-      expect(stdout).toContain('Deployed 1/1 schemas')
+      expect(stderr).toContain('Deployed 1/1 schemas')
       if (error) throw error
     })
 
@@ -189,9 +189,9 @@ describe('#schema:deploy', {timeout: 60 * 1000}, () => {
         uri: `/projects/${projectId}/datasets/staging/schemas`,
       }).reply(200, {})
 
-      const {error, stdout} = await testCommand(DeploySchemaCommand, ['--workspace', 'staging'])
+      const {error, stderr} = await testCommand(DeploySchemaCommand, ['--workspace', 'staging'])
 
-      expect(stdout).toContain('Deployed 1/1 schemas')
+      expect(stderr).toContain('Deployed 1/1 schemas')
       if (error) throw error
     })
 
@@ -233,9 +233,9 @@ describe('#schema:deploy', {timeout: 60 * 1000}, () => {
         uri: `/projects/${projectId}/datasets/staging/schemas`,
       }).reply(200, {})
 
-      const {error, stdout} = await testCommand(DeploySchemaCommand, ['--verbose'])
+      const {error, stderr, stdout} = await testCommand(DeploySchemaCommand, ['--verbose'])
 
-      expect(stdout).toContain('Deployed 2/2 schemas')
+      expect(stderr).toContain('Deployed 2/2 schemas')
       expect(stdout).toContain('dataset: test')
       expect(stdout).toContain('dataset: staging')
       if (error) throw error
@@ -248,14 +248,14 @@ describe('#schema:deploy', {timeout: 60 * 1000}, () => {
         uri: `/projects/${projectId}/datasets/test/schemas`,
       }).reply(200, {})
 
-      const {error, stdout} = await testCommand(DeploySchemaCommand, [
+      const {error, stderr} = await testCommand(DeploySchemaCommand, [
         '--workspace',
         'production',
         '--tag',
         'mytag',
       ])
 
-      expect(stdout).toContain('Deployed 1/1 schemas')
+      expect(stderr).toContain('Deployed 1/1 schemas')
       if (error) throw error
     })
   })

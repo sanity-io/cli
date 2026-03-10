@@ -3,6 +3,7 @@ import {input} from '@sanity/cli-core/ux'
 
 import {createUserApplication, type UserApplication} from '../../services/userApplications.js'
 import {deployDebug} from './deployDebug.js'
+import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 // TODO: replace with `Promise.withResolvers()` once it lands in node 22
 function promiseWithResolvers<T>() {
@@ -15,22 +16,43 @@ function promiseWithResolvers<T>() {
   return {promise, reject, resolve}
 }
 
-export async function createStudioUserApplication(projectId: string) {
+interface CreateStudioUserApplicationOptions {
+  projectId: string
+
+  urlType?: 'external' | 'internal'
+}
+
+export async function createStudioUserApplication(options: CreateStudioUserApplicationOptions) {
+  const {projectId, urlType = 'internal'} = options
   const {promise, resolve} = promiseWithResolvers<UserApplication>()
 
+  const isExternal = urlType === 'external'
+
   await input({
-    message: 'Studio hostname (<value>.sanity.studio):',
+    message: isExternal ? 'Studio URL (https://...):' : 'Studio hostname (<value>.sanity.studio):',
     // if a string is returned here, it is relayed to the user and prompt allows
     // the user to try again until this function returns true
     validate: async (inp: string) => {
-      const appHost = inp.replace(/\.sanity\.studio$/i, '')
+      let appHost: string
+
+      if (isExternal) {
+        const normalized = normalizeUrl(inp)
+        const validation = validateUrl(normalized)
+        if (validation !== true) {
+          return validation
+        }
+        appHost = normalized
+      } else {
+        appHost = inp.replace(/\.sanity\.studio$/i, '')
+      }
+
       try {
         const response = await createUserApplication({
           appType: 'studio',
           body: {
             appHost,
             type: 'studio',
-            urlType: 'internal',
+            urlType,
           },
           projectId,
         })

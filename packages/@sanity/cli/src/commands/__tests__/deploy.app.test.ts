@@ -931,4 +931,70 @@ describe('#deploy app', () => {
     expect(stdout).toContain('Success! Application deployed')
     expect(mockExtractAppManifest).toHaveBeenCalled()
   })
+
+  test('should test input validation for app title', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const newAppId = 'new-app-id'
+    const deploymentId = 'deployment-id'
+
+    mockInput.mockResolvedValue('Valid App Title')
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {
+        appType: 'coreApp',
+        organizationId,
+      },
+      uri: `/user-applications`,
+    }).reply(200, [])
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {
+        appType: 'coreApp',
+        organizationId,
+      },
+      uri: `/user-applications`,
+    }).reply(200, {
+      appHost: 'generated-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: newAppId,
+      organizationId,
+      projectId: null,
+      title: 'Valid App Title',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {
+        appType: 'coreApp',
+      },
+      uri: `/user-applications/${newAppId}/deployments`,
+    }).reply(201, {id: deploymentId}, {location: 'https://generated-host.sanity.app/'})
+
+    const {error} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          app: {
+            organizationId,
+          },
+        },
+      },
+    })
+
+    if (error) throw error
+
+    expect(mockInput).toHaveBeenCalledWith({
+      message: 'Enter a title for your application:',
+      validate: expect.any(Function),
+    })
+  })
 })

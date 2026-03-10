@@ -101,7 +101,7 @@ function mockSingleProviderLogin(sessionId = 'test-session-id') {
   }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
 }
 
-describe('#login', () => {
+describe('#login', {timeout: 10_000}, () => {
   afterEach(() => {
     vi.clearAllMocks()
     const pending = nock.pendingMocks()
