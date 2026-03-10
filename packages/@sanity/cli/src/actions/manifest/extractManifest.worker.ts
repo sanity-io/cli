@@ -1,9 +1,9 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
 import {getStudioWorkspaces, subdebug} from '@sanity/cli-core'
+import {extractCreateWorkspaceManifest} from '@sanity/schema/_internal'
 
 import {extractValidationFromSchemaError} from '../schema/utils/extractValidationFromSchemaError.js'
-import {extractWorkspaceManifest} from './extractWorkspaceManifest.js'
 import {extractManifestWorkerData} from './types.js'
 
 if (isMainThread || !parentPort) {
@@ -18,7 +18,11 @@ try {
   debug('Extracting workspace manifests from config path %s', configPath)
   const workspaces = await getStudioWorkspaces(configPath)
   debug('Workspaces %o', workspaces)
-  const workspaceManifests = await extractWorkspaceManifest(workspaces, workDir)
+  const workspaceManifests = await Promise.all(
+    workspaces.map(async (workspace) => {
+      return await extractCreateWorkspaceManifest(workspace)
+    }),
+  )
 
   parentPort.postMessage({
     type: 'success',

@@ -1,10 +1,11 @@
 import {findProjectRoot, getTimer, studioWorkerTask} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
+import {type CreateWorkspaceManifest} from '@sanity/schema/_internal'
 
 import {type ExtractSchemaWorkerError} from '../schema/types.js'
 import {SchemaExtractionError} from '../schema/utils/SchemaExtractionError.js'
 import {manifestDebug} from './debug.js'
-import {type CreateWorkspaceManifest, type ExtractManifestWorkerData} from './types'
+import {type ExtractManifestWorkerData} from './types'
 import {writeManifestFile} from './writeManifestFile.js'
 
 const CREATE_TIMER = 'create-manifest'

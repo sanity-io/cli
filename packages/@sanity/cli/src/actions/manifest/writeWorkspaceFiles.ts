@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto'
 import {writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 
-import {type CreateWorkspaceManifest, type ManifestWorkspaceFile} from './types.js'
+import {type CreateWorkspaceManifest, type ManifestWorkspaceFile} from '@sanity/schema/_internal'
 
 const SCHEMA_FILENAME_SUFFIX = '.create-schema.json'
 const TOOLS_FILENAME_SUFFIX = '.create-tools.json'

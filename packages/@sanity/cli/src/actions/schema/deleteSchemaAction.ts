@@ -2,13 +2,13 @@ import {styleText} from 'node:util'
 
 import {CLIError} from '@oclif/core/errors'
 import {type Output, studioWorkerTask} from '@sanity/cli-core'
+import {type ParsedWorkspaceSchemaId} from '@sanity/schema/_internal'
 import {type Workspace} from 'sanity'
 
 import {deleteSchema} from '../../services/schemas.js'
-import {isDefined} from '../manifest/schemaTypeHelpers.js'
+import {isDefined} from '../../util/isDefined.js'
 import {type UniqWorkspaceWorkerData} from './types.js'
 import {getDatasetsOutString, getStringList} from './utils/schemaStoreOutStrings.js'
-import {type WorkspaceSchemaId} from './utils/schemaStoreValidation.js'
 
 // Native implementation instead of lodash/uniq
 function uniq<T>(array: T[]): T[] {
@@ -17,7 +17,7 @@ function uniq<T>(array: T[]): T[] {
 
 interface DeleteSchemasOptions {
   configPath: string
-  ids: WorkspaceSchemaId[]
+  ids: ParsedWorkspaceSchemaId[]
   output: Output
   projectId: string
   verbose: boolean

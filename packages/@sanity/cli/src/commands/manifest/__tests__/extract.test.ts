@@ -3,9 +3,9 @@ import {mkdtemp, readdir, readFile, writeFile} from 'node:fs/promises'
 import {join, resolve} from 'node:path'
 
 import {getTempPath, testCommand, testFixture} from '@sanity/cli-test'
+import {type CreateManifest} from '@sanity/schema/_internal'
 import {describe, expect, test} from 'vitest'
 
-import {type CreateManifest} from '../../../actions/manifest/types.js'
 import {ExtractManifestCommand} from '../extract.js'
 
 describe('#manifest:extract', {timeout: 60 * 1000}, () => {

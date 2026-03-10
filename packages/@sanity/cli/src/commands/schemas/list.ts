@@ -1,9 +1,9 @@
 import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
+import {parseWorkspaceSchemaId} from '@sanity/schema/_internal'
 
 import {listSchemas} from '../../actions/schema/listSchemas.js'
 import {schemasListDebug} from '../../actions/schema/utils/debug.js'
-import {parseWorkspaceSchemaId} from '../../actions/schema/utils/schemaStoreValidation.js'
 
 const description = `
 Lists all schemas in the current dataset.
@@ -67,7 +67,7 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
       const projectRoot = await this.getProjectRoot()
 
       const errors: string[] = []
-      const id = parseWorkspaceSchemaId(errors, flags.id)?.schemaId
+      const id = parseWorkspaceSchemaId(flags.id ?? '', errors)?.schemaId
       if (errors.length > 0) {
         this.error(`Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`, {
           exit: 1,
