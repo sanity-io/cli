@@ -44,7 +44,8 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to enable embeddings for (overrides CLI configuration)',
+      description: 'Project ID to enable embeddings for',
+      semantics: 'override',
     }),
     projection: Flags.string({
       description: 'GROQ projection defining which fields to embed (e.g. "{ title, body }")',

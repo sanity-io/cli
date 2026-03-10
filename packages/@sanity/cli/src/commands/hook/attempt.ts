@@ -31,7 +31,8 @@ export class AttemptHookCommand extends SanityCommand<typeof AttemptHookCommand>
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to view webhook attempt for (overrides CLI configuration)',
+      description: 'Project ID to view webhook attempt for',
+      semantics: 'override',
     }),
   }
 

@@ -45,8 +45,8 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
   ]
 
   static override flags = {
-    ...getProjectIdFlag({description: 'Project ID to delete from (overrides CLI configuration)'}),
-    ...getDatasetFlag({description: 'Dataset to delete from (overrides CLI configuration)'}),
+    ...getProjectIdFlag({description: 'Project ID to delete from', semantics: 'override'}),
+    ...getDatasetFlag({description: 'Dataset to delete from', semantics: 'override'}),
   }
 
   // Disable strict mode to allow for more flexible input

@@ -43,7 +43,7 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
   ]
 
   static override flags = {
-    ...getProjectIdFlag({description: 'Project ID to add token to (overrides CLI configuration)'}),
+    ...getProjectIdFlag({description: 'Project ID to add token to', semantics: 'override'}),
     json: Flags.boolean({
       default: false,
       description: 'Output as JSON',

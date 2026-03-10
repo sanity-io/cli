@@ -40,8 +40,8 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
   ]
 
   static override flags = {
-    ...getProjectIdFlag({description: 'Project ID to query (overrides CLI configuration)'}),
-    ...getDatasetFlag({description: 'Dataset to query (overrides CLI configuration)'}),
+    ...getProjectIdFlag({description: 'Project ID to query', semantics: 'override'}),
+    ...getDatasetFlag({description: 'Dataset to query', semantics: 'override'}),
     anonymous: Flags.boolean({
       default: false,
       description: 'Send the query without any authorization token',
@@ -56,7 +56,7 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
     }),
     project: Flags.string({
       deprecated: {to: 'project-id'},
-      description: 'Project ID to query (overrides CLI configuration)',
+      description: 'Project ID to query',
       hidden: true,
     }),
   }

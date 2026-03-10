@@ -55,7 +55,8 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to list backups for (overrides CLI configuration)',
+      description: 'Project ID to list backups for',
+      semantics: 'override',
     }),
     after: Flags.string({
       description: 'Only return backups after this date (inclusive, YYYY-MM-DD format)',

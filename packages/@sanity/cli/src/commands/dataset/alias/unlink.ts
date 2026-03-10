@@ -42,7 +42,8 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to unlink dataset alias in (overrides CLI configuration)',
+      description: 'Project ID to unlink dataset alias in',
+      semantics: 'override',
     }),
     force: Flags.boolean({
       description: 'Skip confirmation prompt and unlink immediately',

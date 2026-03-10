@@ -55,7 +55,8 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to export dataset from (overrides CLI configuration)',
+      description: 'Project ID to export dataset from',
+      semantics: 'override',
     }),
     'asset-concurrency': Flags.integer({
       default: 8,

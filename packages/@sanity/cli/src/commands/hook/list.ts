@@ -22,7 +22,8 @@ export class List extends SanityCommand<typeof List> {
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to list webhooks for (overrides CLI configuration)',
+      description: 'Project ID to list webhooks for',
+      semantics: 'override',
     }),
   }
 

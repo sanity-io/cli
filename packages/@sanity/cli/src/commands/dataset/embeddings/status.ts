@@ -29,7 +29,8 @@ export class DatasetEmbeddingsStatusCommand extends SanityCommand<
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to check embeddings status for (overrides CLI configuration)',
+      description: 'Project ID to check embeddings status for',
+      semantics: 'override',
     }),
   }
 

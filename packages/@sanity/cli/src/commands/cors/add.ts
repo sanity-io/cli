@@ -45,7 +45,8 @@ export class Add extends SanityCommand<typeof Add> {
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to add CORS origin to (overrides CLI configuration)',
+      description: 'Project ID to add CORS origin to',
+      semantics: 'override',
     }),
     credentials: Flags.boolean({
       allowNo: true,

@@ -71,7 +71,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       description: 'Only deploy API with this ID. Can be specified multiple times.',
       multiple: true,
     }),
-    ...getDatasetFlag({description: 'Deploy API for the given dataset'}),
+    ...getDatasetFlag({description: 'Deploy API for the given dataset', semantics: 'specify'}),
     'dry-run': Flags.boolean({
       default: false,
       description: 'Validate defined GraphQL APIs, check for breaking changes, skip deploy',

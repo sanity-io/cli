@@ -35,7 +35,8 @@ export class Delete extends SanityCommand<typeof Delete> {
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to delete CORS origin from (overrides CLI configuration)',
+      description: 'Project ID to delete CORS origin from',
+      semantics: 'override',
     }),
   }
 
