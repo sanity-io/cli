@@ -25,10 +25,12 @@ vi.mock('../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
 
+const mockGetDashboardAppURL = vi.hoisted(() =>
+  vi.fn().mockResolvedValue('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340'),
+)
+
 vi.mock('../../actions/dev/getDashboardAppUrl.js', () => ({
-  getDashboardAppURL: vi
-    .fn()
-    .mockResolvedValue('https://www.sanity.io/@test-org?dev=http%3A%2F%2Flocalhost%3A5340'),
+  getDashboardAppURL: mockGetDashboardAppURL,
 }))
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -161,6 +163,12 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       vi.stubEnv('SANITY_APP_SERVER_HOSTNAME', '127.0.0.1')
       vi.stubEnv('SANITY_APP_SERVER_PORT', '5350')
 
+      mockGetDashboardAppURL.mockImplementationOnce(({httpHost, httpPort}) =>
+        Promise.resolve(
+          `https://www.sanity.io/@test-org?dev=http%3A%2F%2F${httpHost}%3A${httpPort}`,
+        ),
+      )
+
       const cwd = await testFixture('basic-app')
       process.cwd = () => cwd
 
@@ -172,6 +180,11 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       if (error) throw error
       expect(stdout).toContain('Dev server started on port 5350')
       expect(stdout).toContain('127.0.0.1')
+      expect(mockGetDashboardAppURL).toHaveBeenCalledWith({
+        httpHost: '127.0.0.1',
+        httpPort: 5350,
+        organizationId: 'org-id',
+      })
       await tryCloseServer(result)
     })
 
