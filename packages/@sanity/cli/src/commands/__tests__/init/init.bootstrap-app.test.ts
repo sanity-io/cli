@@ -246,15 +246,6 @@ describe('#init: bootstrap-app-initialization', () => {
       uri: '/organizations',
     }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
 
-    // Mock organization grants check for attach permission
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations/org-1/grants',
-    }).reply(200, {
-      'sanity.organization.projects': [{grants: [{name: 'attach'}]}],
-    })
-
     // select is called once for organization selection (template comes from --template flag)
     mocks.select.mockResolvedValueOnce('org-1') // organization
 

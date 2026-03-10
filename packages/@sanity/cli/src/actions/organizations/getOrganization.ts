@@ -7,6 +7,7 @@ import {
   listOrganizations,
   type ProjectOrganization,
 } from '../../services/organizations.js'
+import {getDefaultOrganizationId} from './getDefaultOrganizationId.js'
 import {getOrganizationChoices} from './getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from './getOrganizationsWithAttachGrantInfo.js'
 
@@ -79,10 +80,7 @@ export async function getOrganization({
   // If the user only has a single organization (and they have attach access to it),
   // we'll default to that one. Otherwise, we'll default to the organization with the
   // same name as the user if it exists.
-  const defaultOrganizationId =
-    withAttach.length === 1
-      ? withAttach[0].organization.id
-      : organizations.find((org) => org.name === user?.name)?.id
+  const defaultOrganizationId = getDefaultOrganizationId(withAttach, organizations, user)
 
   const chosenOrg = await select({
     choices: organizationChoices,
