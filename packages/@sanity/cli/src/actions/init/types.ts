@@ -14,5 +14,6 @@ export interface ProjectTemplate {
   entry?: string
   importPrompt?: string
   scripts?: Record<string, string>
+  type?: 'commonjs' | 'module'
   typescriptOnly?: boolean
 }

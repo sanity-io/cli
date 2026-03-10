@@ -234,6 +234,90 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(error?.oclif?.exit).toBe(0)
   })
 
+  test('initializes app-quickstart template with app-specific output', async () => {
+    // Reset select mock to clear any unconsumed mockResolvedValueOnce from prior tests
+    mocks.select.mockReset()
+
+    // Mock organizations endpoint with app-specific query params
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      query: {includeImplicitMemberships: 'true', includeMembers: 'true'},
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    // Mock organization grants check for attach permission
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations/org-1/grants',
+    }).reply(200, {
+      'sanity.organization.projects': [{grants: [{name: 'attach'}]}],
+    })
+
+    // select is called once for organization selection (template comes from --template flag)
+    mocks.select.mockResolvedValueOnce('org-1') // organization
+
+    mockApi({
+      apiVersion: MCP_JOURNEY_API_VERSION,
+      method: 'get',
+      uri: '/journey/mcp/post-init-prompt',
+    }).reply(200, {
+      message: 'Setup your Cursor IDE',
+    })
+
+    const {stdout} = await testCommand(
+      InitCommand,
+      [
+        '--template=app-quickstart',
+        '--output-path=/test/output',
+        '--package-manager=npm',
+        '--typescript',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+
+    expect(mocks.bootstrapTemplate).toHaveBeenCalledWith({
+      autoUpdates: true,
+      bearerToken: undefined,
+      dataset: '',
+      organizationId: 'org-1',
+      output: expect.any(Object),
+      outputPath: convertToSystemPath('/test/output'),
+      overwriteFiles: undefined,
+      packageName: '',
+      projectId: '',
+      projectName: 'test-project',
+      remoteTemplateInfo: undefined,
+      templateName: 'app-quickstart',
+      useTypeScript: true,
+    })
+
+    // App-specific success message (not Studio message)
+    expect(stdout).toContain('Your custom app has been scaffolded')
+    expect(stdout).not.toContain('Your Studio has been created')
+
+    // App-specific guidance
+    expect(stdout).toContain('src/App.tsx')
+    expect(stdout).toContain('https://www.sanity.io/docs/app-sdk/sdk-configuration')
+
+    // App-specific commands (not Studio commands)
+    expect(stdout).toContain('npx sanity dev')
+    expect(stdout).toContain('npx sanity deploy')
+    expect(stdout).toContain('npx sanity docs browse')
+    expect(stdout).not.toContain('npx sanity manage')
+    expect(stdout).not.toContain('npx sanity help')
+
+    // MCP setup message
+    expect(stdout).toContain('Setup your Cursor IDE')
+    expect(stdout).toContain('Learn more: https://mcp.sanity.io')
+  })
+
   test('initializes app in unattended mode', async () => {
     // Mock to resolve correctly up to initializing nextjs app
     mockApi({
