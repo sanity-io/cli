@@ -1,4 +1,4 @@
-import {getCliToken, setConfig} from '@sanity/cli-core'
+import {getCliToken, setCliUserConfig} from '@sanity/cli-core'
 import open from 'open'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -11,7 +11,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   return {
     ...actual,
     getCliToken: vi.fn(),
-    setConfig: vi.fn(),
+    setCliUserConfig: vi.fn(),
     subdebug: vi.fn(() => vi.fn()),
   }
 })
@@ -36,7 +36,7 @@ vi.mock('../../../../util/canLaunchBrowser.js', () => ({
 }))
 
 const mockedGetCliToken = vi.mocked(getCliToken)
-const mockedSetConfig = vi.mocked(setConfig)
+const mockedSetCliUserConfig = vi.mocked(setCliUserConfig)
 const mockedStartServerForTokenCallback = vi.mocked(startServerForTokenCallback)
 const mockedGetProvider = vi.mocked(getProvider)
 const mockedOpen = vi.mocked(open)
@@ -57,7 +57,7 @@ const telemetry = {
 describe('#login vercel provider', () => {
   beforeEach(() => {
     mockedGetCliToken.mockResolvedValue(undefined)
-    mockedSetConfig.mockResolvedValue(undefined)
+    mockedSetCliUserConfig.mockResolvedValue(undefined)
     mockedGetProvider.mockResolvedValue({
       name: 'vercel',
       title: 'Vercel',
@@ -102,6 +102,6 @@ describe('#login vercel provider', () => {
       ),
     )
     expect(mockedOpen).not.toHaveBeenCalled()
-    expect(mockedSetConfig).toHaveBeenCalledWith('authToken', 'test-token')
+    expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'test-token')
   })
 })
