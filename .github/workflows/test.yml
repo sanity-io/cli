@@ -1,9 +1,7 @@
 name: Test
 
 on:
-  # Build on pushes to branches that have a PR (including drafts)
   pull_request:
-  # Build on pushes to the main branch
   push:
     branches:
       - main
@@ -13,7 +11,41 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      should_run: ${{ github.event_name == 'push' || steps.filter.outputs.code == 'true' }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3
+        id: filter
+        with:
+          predicate-quantifier: 'every'
+          filters: |
+            code:
+              - '**'
+              - '!**/*.md'
+              - '!LICENSE'
+              - '!.editorconfig'
+              - '!.prettierrc'
+              - '!.prettierignore'
+              - '!.claude/**'
+              - '!.cursor/**'
+              - '!.gitignore'
+              - '!.husky/**'
+              - '!.changeset/**'
+              - '!.github/workflows/**'
+              - '!knip.config.ts'
+              - '!commitlint.config.ts'
+              - '!release-please-config.json'
+              - '!.release-please-manifest.json'
+
   test:
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
     runs-on: ${{ matrix.os }}
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -70,8 +102,8 @@ jobs:
           retention-days: 1
 
   report-coverage:
-    if: ${{ !cancelled() }}
-    needs: test
+    needs: [changes, test]
+    if: ${{ !cancelled() && needs.changes.outputs.should_run == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -129,3 +161,20 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: node packages/@repo/coverage-delta/src/coverage-delta.ts
+
+  test-status:
+    if: always()
+    needs: [changes, test, report-coverage]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check status
+        run: |
+          # Fail if any needed job failed or was cancelled
+          results=("${{ needs.changes.result }}" "${{ needs.test.result }}" "${{ needs.report-coverage.result }}")
+          for result in "${results[@]}"; do
+            if [ "$result" == "failure" ] || [ "$result" == "cancelled" ]; then
+              echo "Job failed or was cancelled: $result"
+              exit 1
+            fi
+          done
+          echo "All jobs passed or were skipped"
