@@ -17,7 +17,7 @@ interface ProgressEvent {
 }
 
 function getAssetsBase(source: string): string | undefined {
-  if (/^https:\/\//i.test(source) || source === '-') {
+  if (/^https?:\/\//i.test(source) || source === '-') {
     return undefined
   }
 
@@ -136,7 +136,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
   private stepStart?: number
 
   private static async getStream(source: string): Promise<NodeJS.ReadableStream> {
-    if (/^https:\/\//i.test(source)) {
+    if (/^https?:\/\//i.test(source)) {
       return getUriStream(source)
     }
 
