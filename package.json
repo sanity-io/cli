@@ -41,7 +41,7 @@
     "watch:cli": "turbo run watch --filter=@sanity/cli --filter=@sanity/cli*"
   },
   "resolutions": {
-    "@sanity/client": "^7.16.0"
+    "@sanity/client": "^7.17.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.2",
