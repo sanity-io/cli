@@ -1,3 +1,5 @@
+import {getYarnMajorVersion} from '@sanity/cli-core/package-manager'
+
 import {type LockfileType} from './types.js'
 
 export function getGlobalUninstallCommand(pm: LockfileType, packageName: string): string {
@@ -29,7 +31,9 @@ export function getLocalUpdateCommand(pm: LockfileType, packageName: string): st
       return `pnpm update ${packageName}`
     }
     case 'yarn': {
-      return `yarn upgrade ${packageName}`
+      const yarnMajor = getYarnMajorVersion()
+      const cmd = yarnMajor !== undefined && yarnMajor >= 2 ? 'up' : 'upgrade'
+      return `yarn ${cmd} ${packageName}`
     }
   }
 }

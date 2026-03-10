@@ -1,10 +1,15 @@
-import {describe, expect, test} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {
   getGlobalUninstallCommand,
   getLocalRemoveCommand,
   getLocalUpdateCommand,
 } from '../commands.js'
+
+const mockGetYarnMajorVersion = vi.hoisted(() => vi.fn())
+vi.mock('@sanity/cli-core/package-manager', () => ({
+  getYarnMajorVersion: mockGetYarnMajorVersion,
+}))
 
 describe('getGlobalUninstallCommand', () => {
   test('generates npm global uninstall command', () => {
@@ -43,6 +48,10 @@ describe('getLocalRemoveCommand', () => {
 })
 
 describe('getLocalUpdateCommand', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
   test('generates npm update command', () => {
     expect(getLocalUpdateCommand('npm', '@sanity/cli')).toBe('npm update @sanity/cli')
   })
@@ -51,7 +60,18 @@ describe('getLocalUpdateCommand', () => {
     expect(getLocalUpdateCommand('pnpm', '@sanity/cli')).toBe('pnpm update @sanity/cli')
   })
 
-  test('generates yarn upgrade command', () => {
+  test('generates yarn classic upgrade command', () => {
+    mockGetYarnMajorVersion.mockReturnValue(1)
+    expect(getLocalUpdateCommand('yarn', '@sanity/cli')).toBe('yarn upgrade @sanity/cli')
+  })
+
+  test('generates yarn berry up command', () => {
+    mockGetYarnMajorVersion.mockReturnValue(4)
+    expect(getLocalUpdateCommand('yarn', '@sanity/cli')).toBe('yarn up @sanity/cli')
+  })
+
+  test('falls back to yarn upgrade when version is unknown', () => {
+    mockGetYarnMajorVersion.mockReturnValue(undefined)
     expect(getLocalUpdateCommand('yarn', '@sanity/cli')).toBe('yarn upgrade @sanity/cli')
   })
 
