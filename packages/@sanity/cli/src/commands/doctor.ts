@@ -28,11 +28,11 @@ const MESSAGE_SYMBOLS: Record<MessageType, string> = {
 }
 
 export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
-  // Declared for oclif help-text generation only (shows valid options in --help).
   // Runtime validation uses argv + getChecks() because strict=false allows variadic args.
   static override args = {
     checks: Args.string({
       description: 'Checks to enable (defaults to all)',
+      multiple: true,
       options: KNOWN_CHECKS,
       required: false,
     }),
