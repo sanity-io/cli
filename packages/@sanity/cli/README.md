@@ -2424,7 +2424,7 @@ Authenticates the CLI for access to Sanity projects
 
 ```
 USAGE
-  $ sanity login [--open] [--provider <providerId>] [--sso <slug>]
+  $ sanity login [--open] [--provider <providerId> | --sso <slug>]
 
 FLAGS
   --[no-]open              Open a browser window to log in (`--no-open` only prints URL)
@@ -2446,10 +2446,6 @@ EXAMPLES
   Login with GitHub provider, but do not open a browser window automatically
 
     $ sanity login --provider github --no-open
-
-  Login with the Vercel SSO integration
-
-    $ sanity login --provider vercel
 ```
 
 _See code: [src/commands/login.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.21/src/commands/login.ts)_
