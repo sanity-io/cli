@@ -131,7 +131,7 @@ export function analyzeIssues(
     const hasConflictingDeclaration = issues.some((i) => i.type === 'conflicting-cli-dependency')
     if (cliInfo?.installed && !hasConflictingDeclaration && !cliInfo.override) {
       const installedVersion = cliInfo.installed.version
-      if (!semver.satisfies(installedVersion, expectedCliRange)) {
+      if (!safeSatisfies(installedVersion, expectedCliRange)) {
         issues.push({
           message: `Installed @sanity/cli@${installedVersion} does not satisfy sanity's requirement of ${expectedCliRange}.`,
           packageName: '@sanity/cli',
@@ -160,7 +160,7 @@ export function analyzeIssues(
     for (const global of globals) {
       if (global.packageName !== '@sanity/cli') continue
 
-      if (!semver.satisfies(global.version, compatRange)) {
+      if (!safeSatisfies(global.version, compatRange)) {
         issues.push({
           message: `Global @sanity/cli@${global.version} (installed via ${global.packageManager}) is incompatible with local sanity@${sanityInfo.installed.version} (requires @sanity/cli ${compatRange}).`,
           packageName: '@sanity/cli',
@@ -206,6 +206,18 @@ function inferPackageManager(workspaceType: WorkspaceInfo['type']): LockfileType
   if (workspaceType.startsWith('yarn')) return 'yarn'
   if (workspaceType.startsWith('bun')) return 'bun'
   return 'npm'
+}
+
+/**
+ * Safe wrapper around semver.satisfies that returns false for non-semver
+ * versions or ranges (workspace:*, catalog:, file:, git URLs) instead of throwing.
+ */
+function safeSatisfies(version: string, range: string): boolean {
+  try {
+    return semver.satisfies(version, range)
+  } catch {
+    return false
+  }
 }
 
 /**

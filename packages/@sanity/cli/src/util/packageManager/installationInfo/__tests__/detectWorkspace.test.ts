@@ -95,6 +95,16 @@ describe('detectWorkspace', () => {
       })
     })
 
+    test('detects bun workspaces via bunfig.toml when no lockfile exists', async () => {
+      const cwd = path.join(fixturesDir, 'bun-workspaces-no-lockfile', 'packages', 'studio')
+      const result = await detectWorkspace(cwd)
+
+      expect(result.type).toBe('bun-workspaces')
+      expect(result.root).toBe(path.join(fixturesDir, 'bun-workspaces-no-lockfile'))
+      expect(result.nearestPackageJson).toBe(path.join(cwd, 'package.json'))
+      expect(result.lockfile).toBeNull()
+    })
+
     test('detects yarn workspaces via .yarnrc.yml when no lockfile exists', async () => {
       const cwd = path.join(fixturesDir, 'yarn-workspaces-no-lockfile', 'packages', 'studio')
       const result = await detectWorkspace(cwd)

@@ -133,11 +133,15 @@ async function findWorkspaceRoot(
       const packageJson = await readJsonFile(packageJsonPath)
       if (packageJson?.workspaces) {
         // Without a lockfile we can't determine the workspace type from
-        // lockfile presence. Check for .yarnrc.yml to distinguish yarn
-        // from npm before falling back to npm-workspaces.
+        // lockfile presence. Check for PM-specific config files to
+        // distinguish the workspace type before falling back to npm-workspaces.
         const yarnrcPath = path.join(currentDir, '.yarnrc.yml')
         if (await fileExists(yarnrcPath)) {
           return {lockfiles: [], root: currentDir, type: 'yarn-workspaces'}
+        }
+        const bunfigPath = path.join(currentDir, 'bunfig.toml')
+        if (await fileExists(bunfigPath)) {
+          return {lockfiles: [], root: currentDir, type: 'bun-workspaces'}
         }
         return {lockfiles: [], root: currentDir, type: 'npm-workspaces'}
       }

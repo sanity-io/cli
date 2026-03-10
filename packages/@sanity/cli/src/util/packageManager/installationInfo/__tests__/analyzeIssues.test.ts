@@ -1010,6 +1010,73 @@ describe('analyzeIssues', () => {
     expect(issues.filter((i) => i.type === 'global-local-mismatch')).toHaveLength(0)
   })
 
+  test('does not throw when cliDependencyRange is a non-semver protocol (cli-version-incompatible)', () => {
+    const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
+      '@sanity/cli': {
+        declared: null,
+        installed: {
+          cliDependencyRange: null,
+          path: '/project/node_modules/@sanity/cli',
+          version: '5.33.0',
+        },
+        override: null,
+      },
+      sanity: {
+        declared: {
+          declaredVersionRange: '^3.67.0',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^3.67.0',
+        },
+        installed: {
+          cliDependencyRange: 'workspace:*', // Non-semver — would throw in semver.satisfies()
+          path: '/project/node_modules/sanity',
+          version: '3.67.0',
+        },
+        override: null,
+      },
+    }
+
+    // Should not throw
+    const issues = analyzeIssues(packages, defaultWorkspace, [])
+    // safeSatisfies returns false for non-semver, so it flags as incompatible
+    expect(issues.some((i) => i.type === 'cli-version-incompatible')).toBe(true)
+  })
+
+  test('does not throw when cliDependencyRange is a non-semver protocol (global-cli-incompatible)', () => {
+    const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
+      sanity: {
+        declared: {
+          declaredVersionRange: '^3.67.0',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^3.67.0',
+        },
+        installed: {
+          cliDependencyRange: 'workspace:*', // Non-semver — would throw in semver.satisfies()
+          path: '/project/node_modules/sanity',
+          version: '3.67.0',
+        },
+        override: null,
+      },
+    }
+
+    const globals: GlobalInstallation[] = [
+      {
+        isActive: true,
+        packageManager: 'npm',
+        packageName: '@sanity/cli',
+        path: null,
+        version: '5.33.0',
+      },
+    ]
+
+    // Should not throw
+    const issues = analyzeIssues(packages, defaultWorkspace, globals)
+    // safeSatisfies returns false for non-semver, so it flags as incompatible
+    expect(issues.some((i) => i.type === 'global-cli-incompatible')).toBe(true)
+  })
+
   test('reports error when @sanity/cli is not installed but required by sanity', () => {
     const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
       sanity: {
