@@ -46,11 +46,11 @@ import {
 import {type VersionedFramework} from '../actions/init/types.js'
 import {EditorName} from '../actions/mcp/editorConfigs.js'
 import {setupMCP} from '../actions/mcp/setupMCP.js'
-import {getDefaultOrganizationId} from '../actions/organizations/getDefaultOrganizationId.js'
+import {findOrganizationByUserName} from '../actions/organizations/findOrganizationByUserName.js'
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'
-import {OrganizationChoices} from '../actions/organizations/types.js'
+import {type OrganizationChoices} from '../actions/organizations/types.js'
 import {
   promptForAppendEnv,
   promptForConfigFiles,
@@ -1457,7 +1457,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       defaultOrganizationId =
         organizations.length === 1
           ? organizations[0].id
-          : organizations.find((org) => org.name === user?.name)?.id
+          : findOrganizationByUserName(organizations, user)
     } else {
       // For studio projects, check which organizations the user can attach projects to
       debug(`User has ${organizations.length} organization(s), checking attach access`)
@@ -1466,7 +1466,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
       debug('User has attach access to %d organizations.', withAttach.length)
       organizationChoices = getOrganizationChoices(withGrantInfo)
-      defaultOrganizationId = getDefaultOrganizationId(withAttach, organizations, user)
+      defaultOrganizationId =
+        withAttach.length === 1
+          ? withAttach[0].organization.id
+          : findOrganizationByUserName(organizations, user)
     }
 
     const chosenOrg = await select({
