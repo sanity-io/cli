@@ -7,6 +7,7 @@ import {
   listOrganizations,
   type ProjectOrganization,
 } from '../../services/organizations.js'
+import {findOrganizationByUserName} from './findOrganizationByUserName.js'
 import {getOrganizationChoices} from './getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from './getOrganizationsWithAttachGrantInfo.js'
 
@@ -68,7 +69,7 @@ export async function getOrganization({
   const withAttach = withGrantInfo.filter(({hasAttachGrant}) => hasAttachGrant)
 
   debug('User has attach access to %d organizations.', withAttach.length)
-  const organizationChoices = getOrganizationChoices(withAttach)
+  const organizationChoices = getOrganizationChoices(withGrantInfo)
 
   // In unattended mode  use defaults without prompting
   if (isUnattended) {
@@ -82,7 +83,7 @@ export async function getOrganization({
   const defaultOrganizationId =
     withAttach.length === 1
       ? withAttach[0].organization.id
-      : organizations.find((org) => org.name === user?.name)?.id
+      : findOrganizationByUserName(organizations, user)
 
   const chosenOrg = await select({
     choices: organizationChoices,

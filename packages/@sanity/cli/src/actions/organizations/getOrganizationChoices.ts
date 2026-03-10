@@ -1,21 +1,32 @@
-import {type OrganizationWithGrant} from '../../services/organizations.js'
+import {Separator} from '@sanity/cli-core/ux'
 
-export function getOrganizationChoices(withGrantInfo: OrganizationWithGrant[]): Array<{
-  disabled: boolean | string
-  name: string
-  value: string
-}> {
-  const choices = withGrantInfo.map(({hasAttachGrant, organization}) => ({
-    disabled: hasAttachGrant ? false : 'Insufficient permissions',
-    name: `${organization.name} [${organization.id}]`,
-    value: organization.id,
-  }))
+import {type OrganizationWithGrant, type ProjectOrganization} from '../../services/organizations.js'
+import {type OrganizationChoices} from './types.js'
 
-  choices.push(
-    {disabled: true, name: '─────────', value: '---separator---'},
-    {disabled: false, name: 'Create new organization', value: '-new-'},
-    {disabled: true, name: '─────────', value: '---separator2---'},
-  )
+function isOrganizationWithGrant(
+  org: OrganizationWithGrant | ProjectOrganization,
+): org is OrganizationWithGrant {
+  return 'hasAttachGrant' in org
+}
 
-  return choices
+export function getOrganizationChoices(organizations: ProjectOrganization[]): OrganizationChoices
+export function getOrganizationChoices(organizations: OrganizationWithGrant[]): OrganizationChoices
+export function getOrganizationChoices(
+  organizations: OrganizationWithGrant[] | ProjectOrganization[],
+): OrganizationChoices {
+  const choices = organizations.map((org) => {
+    if (isOrganizationWithGrant(org)) {
+      return {
+        disabled: org.hasAttachGrant ? false : 'Insufficient permissions',
+        name: `${org.organization.name} [${org.organization.id}]`,
+        value: org.organization.id,
+      }
+    }
+    return {name: `${org.name} [${org.id}]`, value: org.id}
+  })
+
+  return [
+    {name: 'Create new organization', value: '-new-'},
+    ...(choices.length > 0 ? [new Separator(), ...choices] : []),
+  ]
 }

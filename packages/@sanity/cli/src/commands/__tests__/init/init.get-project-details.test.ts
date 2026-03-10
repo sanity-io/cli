@@ -149,17 +149,6 @@ describe('#init: get project details', () => {
       },
     ])
 
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      uri: '/organizations/org-123/grants',
-    }).reply(200, {
-      'sanity.organization.projects': [
-        {
-          grants: [{name: 'attach'}],
-        },
-      ],
-    })
-
     mocks.select.mockResolvedValueOnce('org-123')
 
     setupInitSuccessMocks('')
