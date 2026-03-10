@@ -6,6 +6,8 @@ import zlib from 'node:zlib'
 import {type SanityDocument} from '@sanity/types'
 import tar from 'tar-stream'
 
+import {isTar} from './isTar.js'
+
 const HEADER_SIZE = 300
 
 // https://github.com/kevva/is-gzip/blob/13dab7c877787bd5cff9de5482b1736f00df99c6/index.js
@@ -15,15 +17,6 @@ const isGzip = (buf: Buffer) =>
 // https://github.com/watson/is-deflate/blob/f9e8f0c7814eed715e13e29e97c69acee319686a/index.js
 const isDeflate = (buf: Buffer) =>
   buf.length >= 2 && buf[0] === 0x78 && (buf[1] === 1 || buf[1] === 0x9c || buf[1] === 0xda)
-
-// https://github.com/kevva/is-tar/blob/d295ffa2002a5d415946fc3d49f024ace8c28bd3/index.js
-const isTar = (buf: Buffer) =>
-  buf.length >= 262 &&
-  buf[257] === 0x75 &&
-  buf[258] === 0x73 &&
-  buf[259] === 0x74 &&
-  buf[260] === 0x61 &&
-  buf[261] === 0x72
 
 async function* extract<TReturn>(
   stream: AsyncIterable<Buffer>,

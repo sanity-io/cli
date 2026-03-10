@@ -542,9 +542,6 @@ importers:
       is-installed-globally:
         specifier: ^1.0.0
         version: 1.0.0
-      is-tar:
-        specifier: ^1.0.0
-        version: 1.0.0
       isomorphic-dompurify:
         specifier: ^2.32.0
         version: 2.35.0(@noble/hashes@2.0.1)

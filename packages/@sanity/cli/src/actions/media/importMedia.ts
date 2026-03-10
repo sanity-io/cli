@@ -12,8 +12,6 @@ import {type SanityClient} from '@sanity/client'
 import {type FileAsset, type ImageAsset, type SanityDocument} from '@sanity/types'
 import gunzipMaybe from 'gunzip-maybe'
 // @ts-expect-error `peek-stream` module currently untyped
-import isTar from 'is-tar'
-// @ts-expect-error `peek-stream` module currently untyped
 import peek from 'peek-stream'
 import {
   catchError,
@@ -34,6 +32,7 @@ import tar from 'tar-fs'
 import {glob} from 'tinyglobby'
 
 import {findNdjsonEntry} from '../../util/findNdjsonEntry.js'
+import {isTar} from '../../util/isTar.js'
 import {importMediaDebug} from './importMediaDebug.js'
 
 const DEFAULT_CONCURRENCY = 6
