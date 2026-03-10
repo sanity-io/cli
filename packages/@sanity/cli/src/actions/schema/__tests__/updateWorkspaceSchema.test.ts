@@ -1,3 +1,4 @@
+import {type Workspace} from 'sanity'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {updateWorkspacesSchemas} from '../updateWorkspaceSchema.js'
@@ -22,7 +23,7 @@ function createWorkspace(overrides: Record<string, unknown> = {}) {
     schema: {_original: {types: []}},
     title: 'Test Workspace',
     ...overrides,
-  } as never
+  } as unknown as Workspace
 }
 
 afterEach(() => {

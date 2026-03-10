@@ -31,7 +31,7 @@ async function main() {
 
     debug('Handling deployment for %s', isExternal ? 'external' : 'internal')
 
-    let studioManifest: StudioManifest | null | void = null
+    let studioManifest: StudioManifest | null = null
 
     if (isExternal) {
       ;[studioManifest] = await handleExternalDeployment({
@@ -90,7 +90,7 @@ async function writeWorkspaceToDist({
  * 1. Update the workspace schemas to the /schemas endpoint IF --schema-required is passed
  * 2. Update server-side schemas
  */
-function handleExternalDeployment({
+async function handleExternalDeployment({
   projectId,
   schemaRequired,
   verbose,
@@ -102,26 +102,18 @@ function handleExternalDeployment({
   verbose: boolean
   workDir: string
   workspaces: Workspace[]
-}) {
-  const tasks: Promise<StudioManifest | null | void>[] = [
+}): Promise<[StudioManifest | null]> {
+  const [studioManifest] = await Promise.all([
     uploadSchemaToLexicon({
       projectId,
       verbose,
       workDir,
       workspaces,
     }),
-  ]
+    schemaRequired ? updateWorkspacesSchemas({verbose, workspaces}) : undefined,
+  ])
 
-  if (schemaRequired) {
-    tasks.push(
-      updateWorkspacesSchemas({
-        verbose,
-        workspaces,
-      }),
-    )
-  }
-
-  return Promise.all(tasks)
+  return [studioManifest]
 }
 
 /**
@@ -133,7 +125,7 @@ function handleExternalDeployment({
  *
  * @param workspaces - The workspaces to deploy
  */
-function handleInternalDeployment({
+async function handleInternalDeployment({
   outPath,
   projectId,
   verbose,
@@ -145,8 +137,8 @@ function handleInternalDeployment({
   verbose: boolean
   workDir: string
   workspaces: Workspace[]
-}) {
-  return Promise.all([
+}): Promise<[StudioManifest | null]> {
+  const [studioManifest] = await Promise.all([
     uploadSchemaToLexicon({
       projectId,
       verbose,
@@ -160,6 +152,8 @@ function handleInternalDeployment({
       workspaces,
     }),
   ])
+
+  return [studioManifest]
 }
 
 await main()

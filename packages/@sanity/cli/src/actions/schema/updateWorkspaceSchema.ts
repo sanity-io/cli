@@ -80,17 +80,22 @@ async function updateWorkspaceSchema(args: {tag?: string; verbose: boolean; work
       )
     }
   } catch (err) {
-    if ('statusCode' in err && err?.statusCode === 401) {
+    const message = err instanceof Error ? err.message : String(err)
+    if (
+      err instanceof Error &&
+      'statusCode' in err &&
+      (err as {statusCode: unknown}).statusCode === 401
+    ) {
       ux.warn(
         `↳ No permissions to write schema for workspace "${workspace.name}" in dataset "${workspace.dataset}". ${
           SCHEMA_PERMISSION_HELP_TEXT
-        }:\n  ${styleText('red', `${err.message}`)}`,
+        }:\n  ${styleText('red', message)}`,
       )
     } else {
       ux.stdout(
         styleText(
           'red',
-          `↳ Error deploying schema for workspace "${workspace.name}":\n  ${styleText('red', `${err.message}`)}`,
+          `↳ Error deploying schema for workspace "${workspace.name}":\n  ${styleText('red', message)}`,
         ),
       )
     }

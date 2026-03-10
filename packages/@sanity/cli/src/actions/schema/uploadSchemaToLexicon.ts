@@ -30,92 +30,96 @@ export async function uploadSchemaToLexicon(
   const {projectId, verbose, workDir, workspaces} = options
   const spin = spinner('Generating studio manifest').start()
 
-  const schemaDescriptors = new Map<string, string>()
+  try {
+    const schemaDescriptors = new Map<string, string>()
 
-  const client = await getProjectCliClient({
-    apiVersion: SCHEMA_API_VERSION,
-    projectId,
-    requestTagPrefix: 'sanity.cli.deploy',
-    requireUser: true,
-  })
-
-  const [bundleVersion, {generateStudioManifest, uploadSchema}] = await Promise.all([
-    getLocalPackageVersion('sanity', workDir),
-    resolveLocalPackage<typeof import('sanity')>('sanity', workDir),
-  ])
-
-  if (!bundleVersion) {
-    throw new Error('Failed to find sanity version')
-  }
-
-  for (const workspace of workspaces) {
-    const workspaceClient = client.withConfig({
-      dataset: workspace.dataset,
-      projectId: workspace.projectId,
+    const client = await getProjectCliClient({
+      apiVersion: SCHEMA_API_VERSION,
+      projectId,
+      requestTagPrefix: 'sanity.cli.deploy',
+      requireUser: true,
     })
 
-    try {
-      debug('Uploading schema to lexicon for workspace %o', {
+    const [bundleVersion, {generateStudioManifest, uploadSchema}] = await Promise.all([
+      getLocalPackageVersion('sanity', workDir),
+      resolveLocalPackage<typeof import('sanity')>('sanity', workDir),
+    ])
+
+    if (!bundleVersion) {
+      throw new Error('Failed to find sanity version')
+    }
+
+    for (const workspace of workspaces) {
+      const workspaceClient = client.withConfig({
         dataset: workspace.dataset,
         projectId: workspace.projectId,
       })
-      const descriptorId = await uploadSchema(workspace.schema, workspaceClient)
 
-      if (!descriptorId) {
+      try {
+        debug('Uploading schema to lexicon for workspace %o', {
+          dataset: workspace.dataset,
+          projectId: workspace.projectId,
+        })
+        const descriptorId = await uploadSchema(workspace.schema, workspaceClient)
+
+        if (!descriptorId) {
+          throw new Error(
+            `Failed to get schema descriptor ID for workspace "${workspace.name}": upload returned empty result`,
+          )
+        }
+
+        schemaDescriptors.set(workspace.name, descriptorId)
+        debug(
+          `Uploaded schema for workspace "${workspace.name}" to Lexicon with descriptor ID: ${descriptorId}`,
+        )
+      } catch (error) {
+        debug('Error uploading schema to lexicon for workspace %o', error)
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error'
         throw new Error(
-          `Failed to get schema descriptor ID for workspace "${workspace.name}": upload returned empty result`,
+          `Failed to upload schema for workspace "${workspace.name}": ${errorMessage}`,
+          {cause: error},
         )
       }
-
-      schemaDescriptors.set(workspace.name, descriptorId)
-      debug(
-        `Uploaded schema for workspace "${workspace.name}" to Lexicon with descriptor ID: ${descriptorId}`,
-      )
-    } catch (error) {
-      debug('Error uploading schema to lexicon for workspace %o', error)
-      spin.fail(error instanceof Error ? error.message : 'Unknown error')
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      throw new Error(
-        `Failed to upload schema for workspace "${workspace.name}": ${errorMessage}`,
-        {cause: error},
-      )
     }
-  }
 
-  // Generate studio manifest using the shared utility
-  const manifest = await generateStudioManifest({
-    buildId: JSON.stringify(Date.now()),
-    bundleVersion,
-    resolveIcon: async (workspace) =>
-      // @todo replace with import from @sanity/schema/_internal in future
-      (await resolveIcon({
-        icon: workspace.icon,
-        subtitle: workspace.subtitle,
-        title: workspace.title || workspace.name || 'default',
-        workDir,
-      })) ?? undefined,
-    resolveSchemaDescriptorId: (workspace) => schemaDescriptors.get(workspace.name),
-    workspaces,
-  })
+    // Generate studio manifest using the shared utility
+    const manifest = await generateStudioManifest({
+      buildId: JSON.stringify(Date.now()),
+      bundleVersion,
+      resolveIcon: async (workspace) =>
+        // @todo replace with import from @sanity/schema/_internal in future
+        (await resolveIcon({
+          icon: workspace.icon,
+          subtitle: workspace.subtitle,
+          title: workspace.title || workspace.name || 'default',
+          workDir,
+        })) ?? undefined,
+      resolveSchemaDescriptorId: (workspace) => schemaDescriptors.get(workspace.name),
+      workspaces,
+    })
 
-  spin.succeed('Generated studio manifest')
+    spin.succeed('Generated studio manifest')
 
-  const studioManifest = manifest.workspaces.length === 0 ? null : manifest
+    const studioManifest = manifest.workspaces.length === 0 ? null : manifest
 
-  if (verbose) {
-    if (studioManifest) {
-      for (const workspace of studioManifest.workspaces) {
-        ux.stdout(
-          styleText(
-            'gray',
-            `↳ projectId: ${workspace.projectId}, dataset: ${workspace.dataset}, schemaDescriptorId: ${workspace.schemaDescriptorId}`,
-          ),
-        )
+    if (verbose) {
+      if (studioManifest) {
+        for (const workspace of studioManifest.workspaces) {
+          ux.stdout(
+            styleText(
+              'gray',
+              `↳ projectId: ${workspace.projectId}, dataset: ${workspace.dataset}, schemaDescriptorId: ${workspace.schemaDescriptorId}`,
+            ),
+          )
+        }
+      } else {
+        ux.stdout(`${styleText('gray', '↳ No workspaces found')}`)
       }
-    } else {
-      ux.stdout(`${styleText('gray', '↳ No workspaces found')}`)
     }
-  }
 
-  return studioManifest
+    return studioManifest
+  } catch (error) {
+    spin.fail(error instanceof Error ? error.message : 'Unknown error')
+    throw error
+  }
 }
