@@ -14,6 +14,7 @@ describe('analyzeIssues', () => {
     nearestPackageJson: '/project/package.json',
     root: '/project',
     type: 'standalone',
+    yarnBerry: false,
   }
 
   test('detects declared-not-installed issue', () => {

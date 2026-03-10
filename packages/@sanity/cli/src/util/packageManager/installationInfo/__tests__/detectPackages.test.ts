@@ -27,6 +27,7 @@ describe('findPackageDeclaration', () => {
       nearestPackageJson: path.join(cwd, 'package.json'),
       root: cwd,
       type: 'standalone',
+      yarnBerry: false,
     }
 
     const result = await findPackageDeclaration('sanity', cwd, workspaceInfo)
@@ -46,6 +47,7 @@ describe('findPackageDeclaration', () => {
       nearestPackageJson: path.join(cwd, 'package.json'),
       root: cwd,
       type: 'standalone',
+      yarnBerry: false,
     }
 
     const result = await findPackageDeclaration('@sanity/cli', cwd, workspaceInfo)
@@ -62,6 +64,7 @@ describe('findPackageDeclaration', () => {
       nearestPackageJson: path.join(cwd, 'package.json'),
       root: workspaceRoot,
       type: 'pnpm-workspaces',
+      yarnBerry: false,
     }
 
     const result = await findPackageDeclaration('sanity', cwd, workspaceInfo)
@@ -87,6 +90,7 @@ describe('findPackageOverride', () => {
       nearestPackageJson: path.join(cwd, 'package.json'),
       root: cwd,
       type: 'standalone',
+      yarnBerry: false,
     }
 
     const result = await findPackageOverride('@sanity/cli', workspaceInfo)
@@ -105,6 +109,7 @@ describe('findPackageOverride', () => {
       nearestPackageJson: path.join(cwd, 'package.json'),
       root: cwd,
       type: 'standalone',
+      yarnBerry: false,
     }
 
     const result = await findPackageOverride('@sanity/cli', workspaceInfo)
@@ -123,6 +128,7 @@ describe('findPackageOverride', () => {
       nearestPackageJson: path.join(cwd, 'package.json'),
       root: cwd,
       type: 'standalone',
+      yarnBerry: false,
     }
 
     const result = await findPackageOverride('@sanity/cli', workspaceInfo)

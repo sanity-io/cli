@@ -39,6 +39,7 @@ export async function detectWorkspace(cwd: string): Promise<WorkspaceInfo> {
       nearestPackageJson: null,
       root: cwd,
       type: 'standalone',
+      yarnBerry: false,
     }
   }
 
@@ -54,12 +55,16 @@ export async function detectWorkspace(cwd: string): Promise<WorkspaceInfo> {
   // Use the first lockfile found (ordered by LOCKFILE_NAMES priority)
   const lockfile = lockfiles.length > 0 ? lockfiles[0] : null
 
+  // .yarnrc.yml only exists in Yarn Berry (v2+) projects
+  const yarnBerry = await fileExists(path.join(root, '.yarnrc.yml'))
+
   return {
     hasMultipleLockfiles,
     lockfile,
     nearestPackageJson,
     root,
     type,
+    yarnBerry,
   }
 }
 

@@ -19,7 +19,16 @@ export function getGlobalUninstallCommand(pm: LockfileType, packageName: string)
   }
 }
 
-export function getLocalUpdateCommand(pm: LockfileType, packageName: string): string {
+interface UpdateCommandOptions {
+  /** Whether the project uses Yarn Berry (v2+), determined from .yarnrc.yml. */
+  yarnBerry?: boolean
+}
+
+export function getLocalUpdateCommand(
+  pm: LockfileType,
+  packageName: string,
+  options?: UpdateCommandOptions,
+): string {
   switch (pm) {
     case 'bun': {
       return `bun update ${packageName}`
@@ -31,11 +40,17 @@ export function getLocalUpdateCommand(pm: LockfileType, packageName: string): st
       return `pnpm update ${packageName}`
     }
     case 'yarn': {
-      const yarnMajor = getYarnMajorVersion()
-      const cmd = yarnMajor !== undefined && yarnMajor >= 2 ? 'up' : 'upgrade'
-      return `yarn ${cmd} ${packageName}`
+      // Prefer project-level detection (.yarnrc.yml) over process user-agent,
+      // since the doctor command may be invoked via a different package manager.
+      const isBerry = options?.yarnBerry ?? isYarnBerryFromProcess()
+      return `yarn ${isBerry ? 'up' : 'upgrade'} ${packageName}`
     }
   }
+}
+
+function isYarnBerryFromProcess(): boolean {
+  const yarnMajor = getYarnMajorVersion()
+  return yarnMajor !== undefined && yarnMajor >= 2
 }
 
 export function getLocalRemoveCommand(pm: LockfileType, packageName: string): string {

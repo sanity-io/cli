@@ -24,6 +24,7 @@ export function analyzeIssues(
 ): Issue[] {
   const issues: Issue[] = []
   const pm: LockfileType = workspace.lockfile?.type ?? inferPackageManager(workspace.type)
+  const updateOptions = {yarnBerry: workspace.yarnBerry}
 
   // Check for multiple lockfiles
   if (workspace.hasMultipleLockfiles) {
@@ -134,7 +135,7 @@ export function analyzeIssues(
           message: `Installed @sanity/cli@${installedVersion} does not satisfy sanity's requirement of ${expectedCliRange}.`,
           packageName: '@sanity/cli',
           severity: 'error',
-          suggestion: `Run: ${getLocalUpdateCommand(pm, '@sanity/cli')}`,
+          suggestion: `Run: ${getLocalUpdateCommand(pm, '@sanity/cli', updateOptions)}`,
           type: 'cli-version-incompatible',
         })
       }

@@ -60,12 +60,12 @@ describe('getLocalUpdateCommand', () => {
     expect(getLocalUpdateCommand('pnpm', '@sanity/cli')).toBe('pnpm update @sanity/cli')
   })
 
-  test('generates yarn classic upgrade command', () => {
+  test('generates yarn classic upgrade command from process user-agent', () => {
     mockGetYarnMajorVersion.mockReturnValue(1)
     expect(getLocalUpdateCommand('yarn', '@sanity/cli')).toBe('yarn upgrade @sanity/cli')
   })
 
-  test('generates yarn berry up command', () => {
+  test('generates yarn berry up command from process user-agent', () => {
     mockGetYarnMajorVersion.mockReturnValue(4)
     expect(getLocalUpdateCommand('yarn', '@sanity/cli')).toBe('yarn up @sanity/cli')
   })
@@ -73,6 +73,22 @@ describe('getLocalUpdateCommand', () => {
   test('falls back to yarn upgrade when version is unknown', () => {
     mockGetYarnMajorVersion.mockReturnValue(undefined)
     expect(getLocalUpdateCommand('yarn', '@sanity/cli')).toBe('yarn upgrade @sanity/cli')
+  })
+
+  test('uses yarnBerry option over process user-agent', () => {
+    // Even when process says Yarn 1, yarnBerry option (from .yarnrc.yml) takes precedence
+    mockGetYarnMajorVersion.mockReturnValue(1)
+    expect(getLocalUpdateCommand('yarn', '@sanity/cli', {yarnBerry: true})).toBe(
+      'yarn up @sanity/cli',
+    )
+  })
+
+  test('uses yarn upgrade when yarnBerry option is false', () => {
+    // Even when process says Yarn 4, explicit yarnBerry: false means Classic
+    mockGetYarnMajorVersion.mockReturnValue(4)
+    expect(getLocalUpdateCommand('yarn', '@sanity/cli', {yarnBerry: false})).toBe(
+      'yarn upgrade @sanity/cli',
+    )
   })
 
   test('generates bun update command', () => {

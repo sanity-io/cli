@@ -35,6 +35,8 @@ export interface WorkspaceInfo {
   nearestPackageJson: string | null
   root: string
   type: WorkspaceType
+  /** True when .yarnrc.yml exists at workspace root (Yarn Berry / v2+). */
+  yarnBerry: boolean
 }
 
 export interface PackageInfo {

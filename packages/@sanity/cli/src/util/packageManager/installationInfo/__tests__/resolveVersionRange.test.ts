@@ -22,6 +22,7 @@ describe('resolveVersionRange', () => {
         nearestPackageJson: '/some/path/package.json',
         root: '/some/path',
         type: 'standalone',
+        yarnBerry: false,
       }
 
       const result = await resolveVersionRange('^3.67.0', 'sanity', workspaceInfo)
@@ -35,6 +36,7 @@ describe('resolveVersionRange', () => {
         nearestPackageJson: '/some/path/package.json',
         root: '/some/path',
         type: 'pnpm-workspaces',
+        yarnBerry: false,
       }
 
       const result = await resolveVersionRange('workspace:*', 'sanity', workspaceInfo)
@@ -54,6 +56,7 @@ describe('resolveVersionRange', () => {
         nearestPackageJson: path.join(workspaceRoot, 'packages', 'studio', 'package.json'),
         root: workspaceRoot,
         type: 'pnpm-workspaces',
+        yarnBerry: false,
       }
 
       const result = await resolveVersionRange('catalog:', 'sanity', workspaceInfo)
@@ -71,6 +74,7 @@ describe('resolveVersionRange', () => {
         nearestPackageJson: path.join(workspaceRoot, 'packages', 'studio', 'package.json'),
         root: workspaceRoot,
         type: 'pnpm-workspaces',
+        yarnBerry: false,
       }
 
       const result = await resolveVersionRange('catalog:', '@sanity/cli', workspaceInfo)
@@ -88,6 +92,7 @@ describe('resolveVersionRange', () => {
         nearestPackageJson: path.join(workspaceRoot, 'packages', 'studio', 'package.json'),
         root: workspaceRoot,
         type: 'pnpm-workspaces',
+        yarnBerry: false,
       }
 
       const result = await resolveVersionRange('catalog:default', 'sanity', workspaceInfo)
@@ -105,6 +110,7 @@ describe('resolveVersionRange', () => {
         nearestPackageJson: path.join(workspaceRoot, 'package.json'),
         root: workspaceRoot,
         type: 'pnpm-workspaces',
+        yarnBerry: false,
       }
 
       const result = await resolveVersionRange('catalog:', 'sanity', workspaceInfo)
@@ -122,6 +128,7 @@ describe('resolveVersionRange', () => {
         nearestPackageJson: path.join(workspaceRoot, 'package.json'),
         root: workspaceRoot,
         type: 'pnpm-workspaces',
+        yarnBerry: false,
       }
 
       const result = await resolveVersionRange('catalog:default', 'sanity', workspaceInfo)
@@ -139,6 +146,7 @@ describe('resolveVersionRange', () => {
         nearestPackageJson: path.join(workspaceRoot, 'packages', 'studio', 'package.json'),
         root: workspaceRoot,
         type: 'pnpm-workspaces',
+        yarnBerry: false,
       }
 
       const result = await resolveVersionRange('catalog:', 'unknown-package', workspaceInfo)
