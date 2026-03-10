@@ -1,4 +1,4 @@
-import semverCompare from 'semver-compare'
+import semver from 'semver'
 
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {type CodeMod} from './types.js'
@@ -27,7 +27,7 @@ export const reactIconsV3: CodeMod = {
       throw new Error('Could not find react-icons declared as dependency in package.json')
     }
 
-    if (semverCompare(dependencyVersion, '3.0.0') < 0) {
+    if (semver.compare(dependencyVersion, '3.0.0') < 0) {
       throw new Error('react-icons declared in package.json dependencies is lower than 3.0.0')
     }
   },
