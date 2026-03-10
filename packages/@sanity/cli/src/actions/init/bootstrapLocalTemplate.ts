@@ -6,7 +6,6 @@ import {Output, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import deburr from 'lodash-es/deburr.js'
 
-import {studioDependencies} from '../../studioDependencies.js'
 import {copy} from '../../util/copy.js'
 import {resolveLatestVersions} from '../../util/resolveLatestVersions.js'
 import {createAppCliConfig} from './createAppCliConfig.js'
@@ -14,6 +13,8 @@ import {createCliConfig} from './createCliConfig.js'
 import {createPackageManifest} from './createPackageManifest.js'
 import {createStudioConfig, type GenerateConfigOptions} from './createStudioConfig.js'
 import {determineAppTemplate} from './determineAppTemplate.js'
+import {sdkAppDependencies} from './sdkAppDependencies.js'
+import {studioDependencies} from './studioDependencies.js'
 import templates from './templates/index.js'
 import {type ProjectTemplate} from './types.js'
 import {updateInitialTemplateMetadata} from './updateInitialTemplateMetadata.js'
@@ -70,8 +71,8 @@ export async function bootstrapLocalTemplate(
   // Resolve latest versions of Sanity-dependencies
   spin = spinner('Resolving latest module versions').start()
   const dependencyVersions = await resolveLatestVersions({
-    ...(isAppTemplate ? {} : studioDependencies.dependencies),
-    ...(isAppTemplate ? {} : studioDependencies.devDependencies),
+    ...(isAppTemplate ? sdkAppDependencies.dependencies : studioDependencies.dependencies),
+    ...(isAppTemplate ? sdkAppDependencies.devDependencies : studioDependencies.devDependencies),
     ...template.dependencies,
     ...template.devDependencies,
   })
@@ -80,7 +81,7 @@ export async function bootstrapLocalTemplate(
   // Use the resolved version for the given dependency
   const dependencies: Record<string, string> = {}
   for (const dependency of Object.keys({
-    ...(isAppTemplate ? {} : studioDependencies.dependencies),
+    ...(isAppTemplate ? sdkAppDependencies.dependencies : studioDependencies.dependencies),
     ...template.dependencies,
   })) {
     dependencies[dependency] = dependencyVersions[dependency]
@@ -88,7 +89,7 @@ export async function bootstrapLocalTemplate(
 
   const devDependencies: Record<string, string> = {}
   for (const dependency of Object.keys({
-    ...(isAppTemplate ? {} : studioDependencies.devDependencies),
+    ...(isAppTemplate ? sdkAppDependencies.devDependencies : studioDependencies.devDependencies),
     ...template.devDependencies,
   })) {
     devDependencies[dependency] = dependencyVersions[dependency]
@@ -144,12 +145,10 @@ export async function bootstrapLocalTemplate(
       writeFileIfNotExists(`sanity.cli.${codeExt}`, cliConfig),
       writeFileIfNotExists('package.json', packageManifest),
 
-      isAppTemplate
-        ? Promise.resolve(null)
-        : writeFileIfNotExists(
-            'eslint.config.mjs',
-            `import studio from '@sanity/eslint-config-studio'\n\nexport default [...studio]\n`,
-          ),
+      writeFileIfNotExists(
+        'eslint.config.mjs',
+        `import studio from '@sanity/eslint-config-studio'\n\nexport default [...studio]\n`,
+      ),
     ].filter(Boolean),
   )
 

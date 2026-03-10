@@ -64,7 +64,7 @@ export function createPackageManifest(data: CreatePackageManifestOptions): strin
     scripts: data.scripts || {
       build: 'sanity build',
       deploy: 'sanity deploy',
-      'deploy-graphql': 'sanity graphql deploy',
+      ...(isAppTemplate ? {} : {'deploy-graphql': 'sanity graphql deploy'}),
       dev: 'sanity dev',
       start: 'sanity start',
     },
