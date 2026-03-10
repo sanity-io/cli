@@ -10,8 +10,8 @@ packages:
 
 catalog:
   # Linting
-  eslint: ^9.39.3
-  '@eslint/compat': ^2.0.2
+  eslint: ^9.39.4
+  '@eslint/compat': ^2.0.3
   publint: ^0.3.18
   prettier: ^3.8.1
 
