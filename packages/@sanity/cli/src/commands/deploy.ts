@@ -53,9 +53,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     }),
     external: Flags.boolean({
       default: false,
-      description: `Register an externally hosted studio
-      Note: Ignores --source-maps, --no-minify, and --no-build flags
-      Note: Schema deployment is skipped unless --schema-required is also passed`,
+      description: 'Register an externally hosted studio',
+      exclusive: ['source-maps', 'minify', 'build'],
     }),
     minify: Flags.boolean({
       allowNo: true,

@@ -65,7 +65,7 @@ export async function deployStudio(options: DeployAppOptions) {
       } else {
         output.log('Your project has not been assigned a studio hostname.')
         output.log('To deploy your Sanity Studio to our hosted sanity.studio service,')
-        output.log('you will need one. Please enter the part you want to use.')
+        output.log('you will need one. Please enter the subdomain you want to use.')
       }
 
       userApplication = await createStudioUserApplication({projectId, urlType})

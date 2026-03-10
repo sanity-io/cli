@@ -46,8 +46,8 @@ export async function deployStudioSchemasAndManifests(
       {
         env: {
           ...process.env,
-          // Enables color output in the worker
-          FORCE_COLOR: '1',
+          // Workers don't inherit TTY state — propagate color support from parent
+          ...(process.stdout.isTTY && !process.env.NO_COLOR ? {FORCE_COLOR: '1'} : {}),
         },
         name: 'deployStudioSchemasAndManifests',
         studioRootPath: workDir,
