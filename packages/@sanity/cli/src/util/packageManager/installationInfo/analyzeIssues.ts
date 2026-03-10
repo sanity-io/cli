@@ -144,7 +144,7 @@ export function analyzeIssues(
 
     // Check if @sanity/cli is missing entirely (not declared, not installed)
     // This indicates a broken node_modules state since sanity depends on @sanity/cli.
-    if (!cliInfo?.installed && !cliInfo?.declared) {
+    if (!cliInfo?.installed && !cliInfo?.declared && !cliInfo?.override) {
       issues.push({
         message: `@sanity/cli is not installed. It is required by sanity@${sanityInfo.installed.version}.`,
         packageName: '@sanity/cli',

@@ -1105,4 +1105,38 @@ describe('analyzeIssues', () => {
     )
     expect(cliNotInstalled?.suggestion).toBe('Run: npm install')
   })
+
+  test('skips cli-not-installed when override is in effect', () => {
+    const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
+      '@sanity/cli': {
+        declared: null,
+        installed: null,
+        override: {
+          mechanism: 'npm-overrides',
+          packageJsonPath: '/project/package.json',
+          versionRange: 'workspace:*',
+        },
+      },
+      sanity: {
+        declared: {
+          declaredVersionRange: '^3.67.0',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^3.67.0',
+        },
+        installed: {
+          cliDependencyRange: '^5.33.0',
+          path: '/project/node_modules/sanity',
+          version: '3.67.0',
+        },
+        override: null,
+      },
+    }
+
+    const issues = analyzeIssues(packages, defaultWorkspace, [])
+
+    // Should get override-in-effect but NOT cli-not-installed
+    expect(issues.some((i) => i.type === 'override-in-effect')).toBe(true)
+    expect(issues.some((i) => i.type === 'cli-not-installed')).toBe(false)
+  })
 })
