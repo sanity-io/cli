@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.0 (2026-03-10)
+
+
+### Features
+
+* add a eslint-config-cli package ([#226](https://github.com/sanity-io/cli/issues/226)) ([2980003](https://github.com/sanity-io/cli/commit/2980003fc8d1b3935f436f7e29c00207e65db6fc))
+* **cli-core:** add non-interactive environment detection for prompts ([#470](https://github.com/sanity-io/cli/issues/470)) ([e9dc8fb](https://github.com/sanity-io/cli/commit/e9dc8fbc8c57b7b99d27fdf5ec6b1aa92a7ca740))
+
+
+### Bug Fixes
+
+* add no-console lint rule ([7823696](https://github.com/sanity-io/cli/commit/78236965ebdd784d01384b96b23bc590eeaaa325))
+* **deps:** update dependency eslint-plugin-tsdoc to ^0.5.2 ([#574](https://github.com/sanity-io/cli/issues/574)) ([b560592](https://github.com/sanity-io/cli/commit/b560592b60062df7f040ed05b92af2d18011c1bc))
+* **deps:** update dependency eslint-plugin-unicorn to v63 ([#487](https://github.com/sanity-io/cli/issues/487)) ([38d21b5](https://github.com/sanity-io/cli/commit/38d21b54c1fd0812f8f821e2ca8d34fea52f9e92))
+* **deps:** update eslint-tooling ([#485](https://github.com/sanity-io/cli/issues/485)) ([37e4dae](https://github.com/sanity-io/cli/commit/37e4daef4dd6b88370b19c55ea0fb908f09bdcaf))
+* **deps:** update eslint-tooling ([#578](https://github.com/sanity-io/cli/issues/578)) ([40c5f75](https://github.com/sanity-io/cli/commit/40c5f75bbd1f2cd593a935c875b0e15f4bdc287d))
+* **lint:** turn off string raw rule for tests ([#508](https://github.com/sanity-io/cli/issues/508)) ([157df2d](https://github.com/sanity-io/cli/commit/157df2dd0a92e91cdf04df2ba170952441f044f9))
+
 ## [0.0.0-alpha.4](https://github.com/sanity-io/cli/compare/eslint-config-cli-v0.0.0-alpha.3...eslint-config-cli-v0.0.0-alpha.4) (2026-03-03)
 
 

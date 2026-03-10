@@ -1,5 +1,45 @@
 # Changelog
 
+## [6.0.0-alpha.21](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.20...cli-v6.0.0-alpha.21) (2026-03-10)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cli-core:** Renamed members: `setConfig` → `setCliUserConfig`, `getConfig` → `getCliUserConfig`
+
+### Features
+
+* add `--project-id`, `--dataset` flag to all relevant commands ([#548](https://github.com/sanity-io/cli/issues/548)) ([3e77ceb](https://github.com/sanity-io/cli/commit/3e77ceb7c47266460007f21eb91c9603b3647f39))
+* **cli-core:** improve and reduce `@sanity/cli-core` public API ([#546](https://github.com/sanity-io/cli/issues/546)) ([e861a86](https://github.com/sanity-io/cli/commit/e861a861937e4b690e3d20798a0fc1cb2223135e))
+* sdk templates are ESM by default ([#576](https://github.com/sanity-io/cli/issues/576)) ([d31796f](https://github.com/sanity-io/cli/commit/d31796f606edce77d2f5c0f189477159b73e5d13))
+
+
+### Bug Fixes
+
+* allow commands to run outside project context with --project-id/--dataset flags ([#558](https://github.com/sanity-io/cli/issues/558)) ([b3281c0](https://github.com/sanity-io/cli/commit/b3281c07a52493e280f53e56d6b7d1fabc11460a))
+* correct inverted CORS guard in bootstrapRemoteTemplate ([#547](https://github.com/sanity-io/cli/issues/547)) ([5382dfe](https://github.com/sanity-io/cli/commit/5382dfef002601825cb7576140170778d646153f))
+* **deps:** replace tiny dependencies with inline utilities ([#583](https://github.com/sanity-io/cli/issues/583)) ([31c0937](https://github.com/sanity-io/cli/commit/31c0937cf266203999cc14b04d4d760df820ab91))
+* **deps:** update dependency semver to ^7.7.4 ([#587](https://github.com/sanity-io/cli/issues/587)) ([ab86f77](https://github.com/sanity-io/cli/commit/ab86f770d27b6cd6ebfb0acb791e464b65954937))
+* **deps:** update oclif-tooling ([#561](https://github.com/sanity-io/cli/issues/561)) ([1f551d2](https://github.com/sanity-io/cli/commit/1f551d2ea701f15feff71e8af72739755179ba03))
+* **deps:** update sanity-tooling ([#573](https://github.com/sanity-io/cli/issues/573)) ([bd7e3b0](https://github.com/sanity-io/cli/commit/bd7e3b0f77be51b9c616c1a39b8e15356dc00fc6))
+* only show users projects they have access to ([#582](https://github.com/sanity-io/cli/issues/582)) ([0c2b8c9](https://github.com/sanity-io/cli/commit/0c2b8c9b65ac109bdee5d3d986d2de20b1a8cbdd))
+* replace @vercel/fs-detectors with inline implementation ([#544](https://github.com/sanity-io/cli/issues/544)) ([c476f04](https://github.com/sanity-io/cli/commit/c476f04622caf3c871cf5adac525e184f4e4ebc4))
+
+
+### Performance Improvements
+
+* speed up graphql commands ([#502](https://github.com/sanity-io/cli/issues/502)) ([a52d59b](https://github.com/sanity-io/cli/commit/a52d59bbd8a1d621f942d1285eb593669de29326))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 1.0.0
+  * devDependencies
+    * @sanity/cli-test bumped to 0.2.0
+    * @sanity/eslint-config-cli bumped to 1.0.0
+
 ## [6.0.0-alpha.20](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.19...cli-v6.0.0-alpha.20) (2026-03-03)
 
 ### Bug Fixes
