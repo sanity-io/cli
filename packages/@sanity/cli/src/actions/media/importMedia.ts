@@ -31,8 +31,8 @@ import {
 import tar from 'tar-fs'
 import {glob} from 'tinyglobby'
 
-import {readNdjsonFile} from '../../util/findNdjsonEntry.js'
 import {isTar} from '../../util/isTar.js'
+import {buildNdjsonIndex} from './buildNdjsonIndex.js'
 import {importMediaDebug} from './importMediaDebug.js'
 
 const DEFAULT_CONCURRENCY = 6
@@ -83,12 +83,6 @@ export type AssetWithAspects<Asset extends ResolvedAsset = ResolvedAsset> = Asse
   aspects: unknown | undefined
 }
 
-interface AspectDataEntry {
-  filename: string
-
-  aspects?: unknown
-}
-
 interface Options {
   client: SanityClient
   replaceAspects: boolean
@@ -97,7 +91,7 @@ interface Options {
 }
 
 interface Context extends Options {
-  aspectsData: AspectDataEntry[]
+  aspectsIndex: Map<string, unknown>
   workingPath: string
 }
 
@@ -110,17 +104,19 @@ export function importer(options: Options): Observable<State> {
         throw new Error('No assets to import')
       }
 
-      // Read the ndjson file once upfront and cache the data to avoid creating
+      // Stream the ndjson file once and build an index to avoid creating
       // multiple read streams (which causes file descriptor leaks)
-      const aspectsDataPromise = readNdjsonFile<AspectDataEntry>(
+      const aspectsIndexPromise = buildNdjsonIndex(
         createReadStream(aspectsNdjsonPath),
+        'filename',
+        'aspects',
       )
 
-      return from(aspectsDataPromise).pipe(
-        mergeMap((aspectsData) => {
+      return from(aspectsIndexPromise).pipe(
+        mergeMap((aspectsIndex) => {
           const context: Context = {
             ...options,
-            aspectsData,
+            aspectsIndex,
             workingPath,
           }
 
@@ -304,18 +300,12 @@ function fetchExistingAssets({
  * @internal
  */
 function resolveAspectData({
-  aspectsData,
+  aspectsIndex,
 }: Context): OperatorFunction<ResolvedAsset, AssetWithAspects> {
-  return map((resolvedAsset) => {
-    const aspectsEntry = aspectsData.find(
-      (entry) => entry.filename === resolvedAsset.originalFilename,
-    )
-
-    return {
-      ...resolvedAsset,
-      aspects: aspectsEntry?.aspects,
-    }
-  })
+  return map((resolvedAsset) => ({
+    ...resolvedAsset,
+    aspects: aspectsIndex.get(resolvedAsset.originalFilename),
+  }))
 }
 
 // TODO: Batch mutations to reduce HTTP request count.
