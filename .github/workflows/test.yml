@@ -52,10 +52,39 @@ jobs:
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
     strategy:
       matrix:
-        node-version: [20, 22, 24]
-        shardIndex: [1, 2, 3, 4]
-        shardTotal: [4]
-        os: [ubuntu-latest, windows-8core]
+        include:
+          # Linux: 6 shards × 3 Node versions
+          - {os: ubuntu-latest, node-version: 20, shardIndex: 1, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 20, shardIndex: 2, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 20, shardIndex: 3, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 20, shardIndex: 4, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 20, shardIndex: 5, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 20, shardIndex: 6, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 22, shardIndex: 1, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 22, shardIndex: 2, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 22, shardIndex: 3, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 22, shardIndex: 4, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 22, shardIndex: 5, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 22, shardIndex: 6, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 24, shardIndex: 1, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 24, shardIndex: 2, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 24, shardIndex: 3, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 24, shardIndex: 4, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 24, shardIndex: 5, shardTotal: 6}
+          - {os: ubuntu-latest, node-version: 24, shardIndex: 6, shardTotal: 6}
+          # Windows: 4 shards × 3 Node versions
+          - {os: windows-8core, node-version: 20, shardIndex: 1, shardTotal: 4}
+          - {os: windows-8core, node-version: 20, shardIndex: 2, shardTotal: 4}
+          - {os: windows-8core, node-version: 20, shardIndex: 3, shardTotal: 4}
+          - {os: windows-8core, node-version: 20, shardIndex: 4, shardTotal: 4}
+          - {os: windows-8core, node-version: 22, shardIndex: 1, shardTotal: 4}
+          - {os: windows-8core, node-version: 22, shardIndex: 2, shardTotal: 4}
+          - {os: windows-8core, node-version: 22, shardIndex: 3, shardTotal: 4}
+          - {os: windows-8core, node-version: 22, shardIndex: 4, shardTotal: 4}
+          - {os: windows-8core, node-version: 24, shardIndex: 1, shardTotal: 4}
+          - {os: windows-8core, node-version: 24, shardIndex: 2, shardTotal: 4}
+          - {os: windows-8core, node-version: 24, shardIndex: 3, shardTotal: 4}
+          - {os: windows-8core, node-version: 24, shardIndex: 4, shardTotal: 4}
       fail-fast: false
 
     steps:
