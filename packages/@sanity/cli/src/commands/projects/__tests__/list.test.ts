@@ -15,6 +15,7 @@ describe('#list', () => {
   test('displays projects correctly', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
+      query: {onlyExplicitMembership: 'true'},
       uri: '/projects',
     }).reply(200, [
       {
@@ -39,6 +40,7 @@ describe('#list', () => {
   test('sorts by members when --sort members is specified', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
+      query: {onlyExplicitMembership: 'true'},
       uri: '/projects',
     }).reply(200, [
       {
@@ -83,6 +85,7 @@ describe('#list', () => {
   test('sorts in ascending order when --order asc is specified', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
+      query: {onlyExplicitMembership: 'true'},
       uri: '/projects',
     }).reply(200, [
       {
@@ -124,6 +127,7 @@ describe('#list', () => {
   test('displays an error if the API request fails', async () => {
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
+      query: {onlyExplicitMembership: 'true'},
       uri: '/projects',
     }).reply(500, {message: 'Internal Server Error'})
 

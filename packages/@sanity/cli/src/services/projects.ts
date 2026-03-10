@@ -95,13 +95,17 @@ export async function inviteUser({email, projectId, role}: InviteUserOptions) {
   })
 }
 
-export async function listProjects() {
+export async function listProjects({
+  onlyExplicitMembership = true,
+}: {
+  onlyExplicitMembership?: boolean
+} = {}) {
   const client = await getGlobalCliClient({
     apiVersion: PROJECTS_API_VERSION,
     requireUser: true,
   })
 
-  return client.projects.list()
+  return client.projects.list({onlyExplicitMembership})
 }
 
 export async function getProjectInvites(projectId: string) {
