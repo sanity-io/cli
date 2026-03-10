@@ -23,7 +23,7 @@ export function analyzeIssues(
   globals: GlobalInstallation[],
 ): Issue[] {
   const issues: Issue[] = []
-  const pm: LockfileType = workspace.lockfile?.type ?? inferPackageManager(workspace.type)
+  const pm: LockfileType = workspace.lockfile?.type ?? inferPackageManager(workspace)
   const updateOptions = {yarnBerry: workspace.yarnBerry}
 
   // Check for multiple lockfiles
@@ -199,12 +199,16 @@ function isNonSemverProtocol(range: string): boolean {
 }
 
 /**
- * Infers the package manager from the workspace type when no lockfile is present.
+ * Infers the package manager from workspace info when no lockfile is present.
+ * Uses both the workspace type (which captures workspace config markers like
+ * pnpm-workspace.yaml) and the yarnBerry flag (which captures .yarnrc.yml
+ * even for standalone projects).
  */
-function inferPackageManager(workspaceType: WorkspaceInfo['type']): LockfileType {
-  if (workspaceType.startsWith('pnpm')) return 'pnpm'
-  if (workspaceType.startsWith('yarn')) return 'yarn'
-  if (workspaceType.startsWith('bun')) return 'bun'
+function inferPackageManager(workspace: WorkspaceInfo): LockfileType {
+  if (workspace.type.startsWith('pnpm')) return 'pnpm'
+  if (workspace.type.startsWith('yarn')) return 'yarn'
+  if (workspace.type.startsWith('bun')) return 'bun'
+  if (workspace.yarnBerry) return 'yarn'
   return 'npm'
 }
 

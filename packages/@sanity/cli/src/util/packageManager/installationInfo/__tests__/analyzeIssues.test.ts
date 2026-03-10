@@ -42,6 +42,36 @@ describe('analyzeIssues', () => {
     expect(issues[0].suggestion).toContain('npm install')
   })
 
+  test('declared-not-installed suggests yarn install for Yarn Berry project without lockfile', () => {
+    const yarnBerryWorkspace: WorkspaceInfo = {
+      hasMultipleLockfiles: false,
+      lockfile: null,
+      nearestPackageJson: '/project/package.json',
+      root: '/project',
+      type: 'standalone',
+      yarnBerry: true,
+    }
+
+    const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
+      sanity: {
+        declared: {
+          declaredVersionRange: '^3.67.0',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^3.67.0',
+        },
+        installed: null,
+        override: null,
+      },
+    }
+
+    const issues = analyzeIssues(packages, yarnBerryWorkspace, [])
+
+    const issue = issues.find((i) => i.type === 'declared-not-installed')
+    expect(issue).toBeDefined()
+    expect(issue?.suggestion).toBe('Run: yarn install')
+  })
+
   test('skips declared-not-installed when override is in effect', () => {
     const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
       '@sanity/cli': {
