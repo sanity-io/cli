@@ -1,0 +1,25 @@
+{
+  "name": "@repo/upload-docs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Parse @sanity/cli commands and write structured reference docs to Sanity",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "update": "tsx src/manifest.ts"
+  },
+  "dependencies": {
+    "@oclif/core": "catalog:",
+    "@sanity/client": "catalog:",
+    "@sanity/id-utils": "^1.0.0",
+    "lodash-es": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:*",
+    "@types/lodash-es": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsx": "catalog:"
+  }
+}

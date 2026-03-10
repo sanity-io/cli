@@ -51,6 +51,8 @@ catalog:
   rxjs: ^7.8.2
   tinyglobby: ^0.2.15
   'import-meta-resolve': ^4.2.0
+  lodash-es: ^4.17.23
+  '@types/lodash-es': ^4.17.12
 
   # Build Tools
   '@swc/core': ^1.15.18

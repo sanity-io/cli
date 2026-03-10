@@ -54,6 +54,9 @@ const baseConfig = {
     'packages/@repo/coverage-delta': {
       project,
     },
+    'packages/@repo/upload-docs': {
+      project,
+    },
     'packages/@sanity/cli': {
       entry: [
         // Commands
