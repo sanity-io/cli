@@ -127,7 +127,7 @@
     "recast": "^0.23.11",
     "rimraf": "catalog:",
     "rxjs": "catalog:",
-    "semver": "^7.7.2",
+    "semver": "^7.7.4",
     "smol-toml": "^1.6.0",
     "tar": "^7.5.9",
     "tar-fs": "^3.1.0",
