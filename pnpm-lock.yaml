@@ -582,9 +582,6 @@ importers:
       is-installed-globally:
         specifier: ^1.0.0
         version: 1.0.0
-      is-tar:
-        specifier: ^1.0.0
-        version: 1.0.0
       isomorphic-dompurify:
         specifier: ^2.32.0
         version: 2.35.0(@noble/hashes@2.0.1)
@@ -660,9 +657,6 @@ importers:
       semver:
         specifier: ^7.7.2
         version: 7.7.4
-      semver-compare:
-        specifier: ^1.0.0
-        version: 1.0.0
       smol-toml:
         specifier: ^1.6.0
         version: 1.6.0
@@ -751,9 +745,6 @@ importers:
       '@types/semver':
         specifier: ^7.7.1
         version: 7.7.1
-      '@types/semver-compare':
-        specifier: ^1.0.3
-        version: 1.0.3
       '@types/tar-fs':
         specifier: ^2.0.4
         version: 2.0.4
@@ -4428,9 +4419,6 @@ packages:
 
   '@types/resolve@1.20.2':
     resolution: {integrity: sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==}
-
-  '@types/semver-compare@1.0.3':
-    resolution: {integrity: sha512-mVZkB2QjXmZhh+MrtwMlJ8BqUnmbiSkpd88uOWskfwB8yitBT0tBRAKt+41VRgZD9zr9Sc+Xs02qGgvzd1Rq/Q==}
 
   '@types/semver@7.7.1':
     resolution: {integrity: sha512-FmgJfu+MOcQ370SD0ev7EI8TlCAfKYU+B4m5T3yXc1CiRN94g/SZPtsCkk506aUDtlMnFZvasDwHHUcZUEaYuA==}
@@ -8405,9 +8393,6 @@ packages:
   seek-bzip@2.0.0:
     resolution: {integrity: sha512-SMguiTnYrhpLdk3PwfzHeotrcwi8bNV4iemL9tx9poR/yeaMYwB9VzR1w7b57DuWpuqR8n6oZboi0hj3AxZxQg==}
     hasBin: true
-
-  semver-compare@1.0.0:
-    resolution: {integrity: sha512-YM3/ITh2MJ5MtzaM429anh+x2jiLVjqILF4m4oyQB18W7Ggea7BfqdH/wGMK7dDiMghv/6WG7znWMwUDzJiXow==}
 
   semver-regex@4.0.5:
     resolution: {integrity: sha512-hunMQrEy1T6Jr2uEVjrAIqjwWcQTgOAcIM52C8MY1EZSD3DDNft04XzvYKPqjED65bNVVko0YI38nYeEHCX3yw==}
@@ -14501,8 +14486,6 @@ snapshots:
 
   '@types/resolve@1.20.2': {}
 
-  '@types/semver-compare@1.0.3': {}
-
   '@types/semver@7.7.1': {}
 
   '@types/shallow-equals@1.0.3': {}
@@ -19263,8 +19246,6 @@ snapshots:
   seek-bzip@2.0.0:
     dependencies:
       commander: 6.2.1
-
-  semver-compare@1.0.0: {}
 
   semver-regex@4.0.5: {}
 
