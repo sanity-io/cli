@@ -1,8 +1,8 @@
 import {subdebug} from '@sanity/cli-core'
-import {input, spinner, SpinnerInstance} from '@sanity/cli-core/ux'
+import {input, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 
 import {promptForProviders} from '../../../prompts/promptForProviders.js'
-import {getProviders} from '../../../services/auth.js'
+import {getProviders, getVercelProviderUrl} from '../../../services/auth.js'
 import {type LoginProvider} from '../types.js'
 import {getSSOProvider} from './getSSOProvider.js'
 
@@ -24,6 +24,14 @@ export async function getProvider({
   orgSlug: string | undefined
   specifiedProvider: string | undefined
 }): Promise<LoginProvider | undefined> {
+  if (specifiedProvider === 'vercel') {
+    return {
+      name: 'vercel',
+      title: 'Vercel',
+      url: await getVercelProviderUrl(),
+    }
+  }
+
   let spin: SpinnerInstance | undefined
 
   try {

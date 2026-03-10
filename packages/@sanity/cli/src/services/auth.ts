@@ -33,6 +33,11 @@ export async function getProviders() {
   return client.request<ProvidersResponse>({uri: '/auth/providers'})
 }
 
+export async function getVercelProviderUrl() {
+  const client = (await getUnauthenticatedClient()).withConfig({apiVersion: 'v1'})
+  return client.getUrl('/auth/login/vercel')
+}
+
 export async function getSSOProviders(orgSlug: string) {
   const client = await getUnauthenticatedClient()
 
