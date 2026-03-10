@@ -12,6 +12,9 @@ concurrency:
 jobs:
   upload-docs:
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.event.release.tag_name, 'cli-v')
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}

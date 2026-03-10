@@ -438,7 +438,8 @@ async function main() {
         )
 
         const vId = createVersionId(releaseId, existingDoc._id)
-        tx.create({...existingDoc, _id: vId})
+        const {_createdAt, _updatedAt, _rev, ...docWithoutSystemFields} = existingDoc
+        tx.create({...docWithoutSystemFields, _id: vId})
         tx.patch(vId, {
           set: {
             automationId: `cli-${group.command}-reference`,
