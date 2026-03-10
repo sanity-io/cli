@@ -307,9 +307,10 @@ function markActiveInstallation(
   // npm — verify the binary is actually in npm's global bin directory.
   // `npm list -g --json` reports a `path` (the global lib dir, e.g. /usr/local/lib).
   // On Unix, bins are at <prefix>/bin (sibling of lib). On Windows, bins are in
-  // the same directory as lib. If we can't determine the bin dir (no path in output),
-  // fall back to assuming npm when npm globals exist.
-  else if (npmLibDir ? isInNpmBinDir(activeBinaryPath, npmLibDir) : hasNpmGlobals(globals)) {
+  // the same directory as lib. When npmLibDir is null (npm didn't report a path),
+  // we can't verify — leave activePackageManager as null rather than guessing,
+  // since incorrectly marking npm as active could misclassify local installs.
+  else if (npmLibDir && isInNpmBinDir(activeBinaryPath, npmLibDir)) {
     activePackageManager = 'npm'
   }
 
@@ -320,10 +321,6 @@ function markActiveInstallation(
     // so either package from the active pm is considered active.
     isActive: g.packageManager === activePackageManager,
   }))
-}
-
-function hasNpmGlobals(globals: GlobalInstallation[]): boolean {
-  return globals.some((g) => g.packageManager === 'npm')
 }
 
 /**

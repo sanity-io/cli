@@ -454,6 +454,44 @@ describe('analyzeIssues', () => {
     expect(issue?.severity).toBe('info')
   })
 
+  test('skips cli-version-incompatible when override is in effect', () => {
+    const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
+      '@sanity/cli': {
+        declared: null,
+        installed: {
+          cliDependencyRange: null,
+          path: '/project/node_modules/@sanity/cli',
+          version: '5.30.0', // Doesn't satisfy ^5.33.0
+        },
+        override: {
+          mechanism: 'npm-overrides',
+          packageJsonPath: '/project/package.json',
+          versionRange: '5.30.0',
+        },
+      },
+      sanity: {
+        declared: {
+          declaredVersionRange: '^3.67.0',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^3.67.0',
+        },
+        installed: {
+          cliDependencyRange: '^5.33.0',
+          path: '/project/node_modules/sanity',
+          version: '3.67.0',
+        },
+        override: null,
+      },
+    }
+
+    const issues = analyzeIssues(packages, defaultWorkspace, [])
+
+    // Should get override-in-effect but NOT cli-version-incompatible
+    expect(issues.some((i) => i.type === 'override-in-effect')).toBe(true)
+    expect(issues.some((i) => i.type === 'cli-version-incompatible')).toBe(false)
+  })
+
   test('detects global-cli-incompatible with info severity for inactive global', () => {
     const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
       sanity: {

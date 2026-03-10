@@ -338,6 +338,36 @@ describe('detectGlobalInstallations', () => {
     })
   })
 
+  test('does not mark npm as active when npmLibDir is null', async () => {
+    // npm didn't report a path field — we can't verify the binary belongs to npm,
+    // so we should not guess. Previously, this would fall back to hasNpmGlobals()
+    // and incorrectly mark npm globals as active.
+    mockWhich.mockResolvedValue('/some/unknown/path/sanity')
+
+    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+      if (cmd === 'npm' && args.includes('list')) {
+        return Promise.resolve({
+          stdout: JSON.stringify({
+            dependencies: {
+              sanity: {version: '3.67.0'},
+            },
+            // No path field — npmLibDir will be null
+          }),
+        })
+      }
+      return Promise.reject(new Error('Command not found'))
+    })
+
+    const result = await detectGlobalInstallations()
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      isActive: false,
+      packageManager: 'npm',
+      packageName: 'sanity',
+    })
+  })
+
   test('does not mark npm as active when no npm globals exist', async () => {
     // Generic path but only pnpm globals — should not assume npm
     mockWhich.mockResolvedValue('/some/unknown/path/sanity')

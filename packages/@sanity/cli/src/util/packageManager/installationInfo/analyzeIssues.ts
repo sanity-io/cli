@@ -124,20 +124,17 @@ export function analyzeIssues(
 
     // Check if installed @sanity/cli satisfies sanity's requirement.
     // Skip if we already flagged a conflicting declaration — that's the root cause.
+    // Skip if an override is in effect — the user already knows about it, and
+    // suggesting an update would be misleading since the override controls the version.
     const hasConflictingDeclaration = issues.some((i) => i.type === 'conflicting-cli-dependency')
-    if (cliInfo?.installed && !hasConflictingDeclaration) {
+    if (cliInfo?.installed && !hasConflictingDeclaration && !cliInfo.override) {
       const installedVersion = cliInfo.installed.version
       if (!semver.satisfies(installedVersion, expectedCliRange)) {
-        // When @sanity/cli is a direct dependency, updating it directly works.
-        // When it's only transitive (provided by sanity), `npm update @sanity/cli`
-        // won't help — a clean reinstall is the most reliable fix.
-        const suggestion = `Run: ${getLocalUpdateCommand(pm, '@sanity/cli')}`
-
         issues.push({
           message: `Installed @sanity/cli@${installedVersion} does not satisfy sanity's requirement of ${expectedCliRange}.`,
           packageName: '@sanity/cli',
           severity: 'error',
-          suggestion,
+          suggestion: `Run: ${getLocalUpdateCommand(pm, '@sanity/cli')}`,
           type: 'cli-version-incompatible',
         })
       }
