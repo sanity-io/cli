@@ -82,6 +82,19 @@ describe('detectWorkspace', () => {
       })
     })
 
+    test('detects bun workspaces from nested package', async () => {
+      const cwd = path.join(fixturesDir, 'bun-workspaces', 'packages', 'studio')
+      const result = await detectWorkspace(cwd)
+
+      expect(result.type).toBe('bun-workspaces')
+      expect(result.root).toBe(path.join(fixturesDir, 'bun-workspaces'))
+      expect(result.nearestPackageJson).toBe(path.join(cwd, 'package.json'))
+      expect(result.lockfile).toEqual({
+        path: path.join(fixturesDir, 'bun-workspaces', 'bun.lock'),
+        type: 'bun',
+      })
+    })
+
     test('detects yarn workspaces via .yarnrc.yml when no lockfile exists', async () => {
       const cwd = path.join(fixturesDir, 'yarn-workspaces-no-lockfile', 'packages', 'studio')
       const result = await detectWorkspace(cwd)

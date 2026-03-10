@@ -42,6 +42,31 @@ describe('analyzeIssues', () => {
     expect(issues[0].suggestion).toContain('npm install')
   })
 
+  test('skips declared-not-installed when override is in effect', () => {
+    const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
+      '@sanity/cli': {
+        declared: {
+          declaredVersionRange: '^5.30.0',
+          dependencyType: 'dependencies',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^5.30.0',
+        },
+        installed: null, // Not installed, but override exists
+        override: {
+          mechanism: 'npm-overrides',
+          packageJsonPath: '/project/package.json',
+          versionRange: '^5.30.0',
+        },
+      },
+    }
+
+    const issues = analyzeIssues(packages, defaultWorkspace, [])
+
+    // Should get override-in-effect but NOT declared-not-installed
+    expect(issues.some((i) => i.type === 'override-in-effect')).toBe(true)
+    expect(issues.some((i) => i.type === 'declared-not-installed')).toBe(false)
+  })
+
   test('detects cli-version-incompatible issue', () => {
     const packages: Partial<Record<'@sanity/cli' | 'sanity', PackageInfo>> = {
       '@sanity/cli': {

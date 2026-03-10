@@ -152,13 +152,13 @@ async function findWorkspaceRoot(
 
 /**
  * Determines the workspace type from the lockfiles found at the workspace root.
- * Checks yarn first (since npm workspaces also use package.json#workspaces),
- * then npm, then pnpm, defaulting to npm-workspaces.
+ * Uses the same priority order as LOCKFILE_NAMES (pnpm, npm, yarn, bun)
+ * so that workspace.type and workspace.lockfile.type always agree.
  */
 function getWorkspaceType(lockfiles: LockfileInfo[]): WorkspaceType {
-  if (lockfiles.some((l) => l.type === 'yarn')) return 'yarn-workspaces'
-  if (lockfiles.some((l) => l.type === 'npm')) return 'npm-workspaces'
   if (lockfiles.some((l) => l.type === 'pnpm')) return 'pnpm-workspaces'
+  if (lockfiles.some((l) => l.type === 'npm')) return 'npm-workspaces'
+  if (lockfiles.some((l) => l.type === 'yarn')) return 'yarn-workspaces'
   if (lockfiles.some((l) => l.type === 'bun')) return 'bun-workspaces'
   return 'npm-workspaces'
 }

@@ -44,17 +44,6 @@ export function analyzeIssues(
   ][]) {
     if (!info) continue
 
-    // declared-not-installed
-    if (info.declared && !info.installed) {
-      issues.push({
-        message: `${name} is declared in package.json but not installed.`,
-        packageName: name,
-        severity: 'error',
-        suggestion: `Run: ${pm} install`,
-        type: 'declared-not-installed',
-      })
-    }
-
     // override-in-effect
     if (info.override) {
       issues.push({
@@ -63,6 +52,18 @@ export function analyzeIssues(
         severity: 'info',
         suggestion: null,
         type: 'override-in-effect',
+      })
+    }
+
+    // declared-not-installed — skip when an override is in effect, since the
+    // override may explain the unusual state and the user already sees override-in-effect.
+    if (info.declared && !info.installed && !info.override) {
+      issues.push({
+        message: `${name} is declared in package.json but not installed.`,
+        packageName: name,
+        severity: 'error',
+        suggestion: `Run: ${pm} install`,
+        type: 'declared-not-installed',
       })
     }
 
