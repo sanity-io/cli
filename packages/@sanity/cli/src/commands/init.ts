@@ -14,7 +14,6 @@ import {
 } from '@sanity/cli-core'
 import {confirm, input, logSymbols, select, Separator, spinner} from '@sanity/cli-core/ux'
 import {type DatasetAclMode, isHttpError} from '@sanity/client'
-import {DatasetImportCommand} from '@sanity/import'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import {execa, type Options} from 'execa'
@@ -85,6 +84,7 @@ import {
   getPartialEnvWithNpmPath,
   type PackageManager,
 } from '../util/packageManager/packageManagerChoice.js'
+import {ImportDatasetCommand} from './dataset/import.js'
 
 const debug = subdebug('init')
 
@@ -568,7 +568,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       if (!token) {
         this.error('Authentication required to import dataset', {exit: 1})
       }
-      await DatasetImportCommand.run(
+      await ImportDatasetCommand.run(
         [template.datasetUrl, '--project', projectId, '--dataset', datasetName, '--token', token],
         {
           root: outputPath,
