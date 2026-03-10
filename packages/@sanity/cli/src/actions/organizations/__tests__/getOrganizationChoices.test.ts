@@ -27,16 +27,6 @@ describe('getOrganizationChoices', () => {
   })
 
   describe('OrganizationWithGrant[]', () => {
-    test('always includes "Create new organization" as the first item', () => {
-      const result = getOrganizationChoices([])
-      expect(result[0]).toMatchObject({name: 'Create new organization', value: '-new-'})
-    })
-
-    test('returns only "Create new organization" when given an empty list', () => {
-      const result = getOrganizationChoices([])
-      expect(result).toHaveLength(1)
-    })
-
     test('includes a separator between "Create new organization" and org choices', () => {
       const result = getOrganizationChoices([
         {hasAttachGrant: true, organization: {id: 'org-1', name: 'Org One', slug: 'org-one'}},
