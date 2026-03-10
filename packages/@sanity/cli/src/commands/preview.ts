@@ -26,12 +26,10 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
 
   static override flags = {
     host: Flags.string({
-      default: 'localhost',
-      description: 'The local network interface at which to listen.',
+      description: '[default: localhost]: The local network interface at which to listen.',
     }),
     port: Flags.string({
-      default: '3333',
-      description: 'TCP port to start server on.',
+      description: '[default: 3333]: TCP port to start server on.',
     }),
   }
 

@@ -61,6 +61,7 @@ const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
   afterEach(() => {
     vi.clearAllMocks()
+    vi.unstubAllEnvs()
   })
 
   test('shows an error for invalid flags', async () => {
@@ -154,6 +155,46 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       expect(error).toBeDefined()
       expect(error?.message).toContain('Apps require an organization ID (orgId)')
       expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should fallback to env variables when host and port flags not set', async () => {
+      vi.stubEnv('SANITY_APP_SERVER_HOSTNAME', '127.0.0.1')
+      vi.stubEnv('SANITY_APP_SERVER_PORT', '5350')
+
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+
+      const {error, result, stdout} = await testCommand(DevCommand, [], {
+        config: {root: cwd},
+        mocks: {isInteractive: true},
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Dev server started on port 5350')
+      expect(stdout).toContain('127.0.0.1')
+      await tryCloseServer(result)
+    })
+
+    test('should fallback to config variables when host and port flags not set', async () => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+
+      const {error, result, stdout} = await testCommand(DevCommand, [], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            server: {
+              hostname: '127.0.0.1',
+              port: 5351,
+            },
+          },
+          isInteractive: true,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('http://127.0.0.1:5351')
+      await tryCloseServer(result)
     })
   })
 
@@ -405,6 +446,45 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Failed to parse installed Sanity version')
+    })
+
+    test('should fallback to env variables when host and port flags not set', async () => {
+      vi.stubEnv('SANITY_STUDIO_SERVER_HOSTNAME', '127.0.0.1')
+      vi.stubEnv('SANITY_STUDIO_SERVER_PORT', '5350')
+
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const {error, result, stdout} = await testCommand(DevCommand, [], {
+        config: {root: cwd},
+        mocks: {isInteractive: true},
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('http://127.0.0.1:5350')
+      await tryCloseServer(result)
+    })
+
+    test('should fallback to config variables when host and port flags not set', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const {error, result, stdout} = await testCommand(DevCommand, [], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            server: {
+              hostname: '127.0.0.1',
+              port: 5351,
+            },
+          },
+          isInteractive: true,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('http://127.0.0.1:5351')
+      await tryCloseServer(result)
     })
   })
 

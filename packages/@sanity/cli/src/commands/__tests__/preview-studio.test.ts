@@ -4,7 +4,7 @@ import {platform} from 'node:os'
 import {join} from 'node:path'
 
 import {convertToSystemPath, testCommand, testFixture} from '@sanity/cli-test'
-import {describe, expect, test} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {closeServer, tryCloseServer} from '../../../test/testUtils.js'
 import {PreviewCommand} from '../preview.js'
@@ -16,6 +16,10 @@ describe(
     timeout: (platform() === 'win32' ? 60 : 30) * 1000,
   },
   () => {
+    afterEach(() => {
+      vi.unstubAllEnvs()
+    })
+
     test('should preview a valid build', async () => {
       const cwd = await testFixture('prebuilt-studio')
 
@@ -149,6 +153,45 @@ describe(
       expect(error).toBeDefined()
       expect(error?.message).toContain('Failed to start preview server')
       expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('should fallback to env variables when host and port flags not set', async () => {
+      vi.stubEnv('SANITY_STUDIO_SERVER_HOSTNAME', '127.0.0.1')
+      vi.stubEnv('SANITY_STUDIO_SERVER_PORT', '4340')
+
+      const cwd = await testFixture('prebuilt-studio')
+      process.chdir(cwd)
+
+      const {error, result, stdout} = await testCommand(PreviewCommand, [], {
+        config: {root: cwd},
+      })
+
+      await tryCloseServer(result)
+
+      if (error) throw error
+      expect(stdout).toContain('http://127.0.0.1:4340/')
+    })
+
+    test('should fallback to config variables when host and port flags not set', async () => {
+      const cwd = await testFixture('prebuilt-studio')
+      process.chdir(cwd)
+
+      const {error, result, stdout} = await testCommand(PreviewCommand, [], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            server: {
+              hostname: '127.0.0.1',
+              port: 4341,
+            },
+          },
+        },
+      })
+
+      await tryCloseServer(result)
+
+      if (error) throw error
+      expect(stdout).toContain('http://127.0.0.1:4341/')
     })
 
     test('should throw an error if port is already in use', async () => {
