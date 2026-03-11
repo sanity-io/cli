@@ -100,8 +100,11 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<FSWat
     path.relative(runtimeDir, path.resolve(cwd, entry || './src/App')),
   )
 
-  if (isApp && relativeEntry && output) {
-    const {hasLegacyPattern, warningMessage} = await detectLegacySanityApp(relativeEntry, cwd)
+  if (isApp && output) {
+    const {hasLegacyPattern, warningMessage} = await detectLegacySanityApp(
+      entry || './src/App',
+      cwd,
+    )
     if (hasLegacyPattern && warningMessage) {
       output.warn(warningMessage)
     }
