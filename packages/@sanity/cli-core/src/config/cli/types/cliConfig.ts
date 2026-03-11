@@ -3,6 +3,10 @@ import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-comp
 
 import {type UserViteConfig} from './userViteConfig'
 
+interface AppResource {
+  dataset: string
+  projectId: string
+}
 /**
  * @public
  */
@@ -23,6 +27,8 @@ export interface CliConfig {
     id?: string
     /** The ID for the Sanity organization that manages this application */
     organizationId?: string
+    /** The named project/dataset resources that the app will access */
+    resources?: Record<string, AppResource>
     /** The title of the custom app. Used in Dashboard and in the browser tab */
     title?: string
   }

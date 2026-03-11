@@ -28,26 +28,38 @@ renderStudio(
 const appEntryModule = `
 // This file is auto-generated on 'sanity dev'
 // Modifications to this file is automatically discarded
-import {createRoot} from 'react-dom/client'
 import {createElement} from 'react'
+import {renderSanityApp} from '@sanity/sdk-react'
 import App from %ENTRY%
 
-const root = createRoot(document.getElementById('root'))
-const element = createElement(App)
-root.render(element)
+const resources = %RESOURCES%
+const options = {
+  reactStrictMode: %REACT_STRICT_MODE%
+}
+
+renderSanityApp(
+  document.getElementById('root'),
+  resources,
+  options,
+  createElement(App)
+)
 `
 
 export function getEntryModule(options: {
+  appResources?: unknown
   basePath?: string
   entry?: string
   isApp?: boolean
   reactStrictMode: boolean
   relativeConfigLocation: string | null
 }): string {
-  const {basePath, entry, isApp, reactStrictMode, relativeConfigLocation} = options
+  const {appResources, basePath, entry, isApp, reactStrictMode, relativeConfigLocation} = options
 
   if (isApp) {
-    return appEntryModule.replace(/%ENTRY%/, JSON.stringify(entry || './src/App'))
+    return appEntryModule
+      .replace(/%ENTRY%/, JSON.stringify(entry || './src/App'))
+      .replace(/%RESOURCES%/, JSON.stringify(appResources || {}))
+      .replace(/%REACT_STRICT_MODE%/, JSON.stringify(Boolean(reactStrictMode)))
   }
 
   const sourceModule = relativeConfigLocation ? entryModule : noConfigEntryModule
