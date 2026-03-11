@@ -6,6 +6,7 @@ import {
   createUserApplication,
   deleteUserApplication,
   getUserApplication,
+  updateUserApplication,
 } from '../userApplications.js'
 
 vi.mock(import('@sanity/cli-core'), async (importOriginal) => {
@@ -248,5 +249,31 @@ describe('createDeployment', () => {
         method: 'POST',
       }),
     )
+  })
+})
+
+describe('updateUserApplication', () => {
+  test('sends PATCH request with body and appType', async () => {
+    const updated = {
+      appHost: 'my-host',
+      id: '123',
+      title: 'New Title',
+      type: 'coreApp' as const,
+    }
+    mockClient.request.mockResolvedValueOnce(updated)
+
+    const result = await updateUserApplication({
+      applicationId: '123',
+      appType: 'coreApp',
+      body: {title: 'New Title'},
+    })
+
+    expect(mockClient.request).toHaveBeenCalledWith({
+      body: {title: 'New Title'},
+      method: 'PATCH',
+      query: {appType: 'coreApp'},
+      uri: '/user-applications/123',
+    })
+    expect(result).toBe(updated)
   })
 })

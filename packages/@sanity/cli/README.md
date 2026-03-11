@@ -307,7 +307,7 @@ EXAMPLES
   $ sanity blueprints add function --name my-function --fn-type document-create --fn-type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/blueprints/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/blueprints/add.ts)_
 
 ## `sanity blueprints config`
 
@@ -342,7 +342,7 @@ EXAMPLES
   $ sanity blueprints config --edit --project-id <projectId> --stack <name-or-id>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/blueprints/config.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/blueprints/config.ts)_
 
 ## `sanity blueprints deploy`
 
@@ -367,15 +367,19 @@ DESCRIPTION
 
   Use --no-wait to queue the deployment and return immediately without waiting for completion.
 
+  Use --fn-installer to force which package manager to use when deploying functions.
+
   Set SANITY_ASSET_TIMEOUT (seconds) to override the 60-second timeout for processing resource assets.
 
 EXAMPLES
   $ sanity blueprints deploy
 
   $ sanity blueprints deploy --no-wait
+
+  $ sanity blueprints deploy --fn-installer npm
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/blueprints/deploy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/blueprints/deploy.ts)_
 
 ## `sanity blueprints destroy`
 
@@ -407,7 +411,7 @@ EXAMPLES
   $ sanity blueprints destroy --stack <name-or-id> --project-id <projectId> --force --no-wait
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/blueprints/destroy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/blueprints/destroy.ts)_
 
 ## `sanity blueprints doctor`
 
@@ -433,7 +437,7 @@ DESCRIPTION
   issues.
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/blueprints/doctor.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/blueprints/doctor.ts)_
 
 ## `sanity blueprints info`
 
@@ -463,7 +467,7 @@ EXAMPLES
   $ sanity blueprints info --stack <name-or-id>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/blueprints/info.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/blueprints/info.ts)_
 
 ## `sanity blueprints init [DIR]`
 
@@ -513,7 +517,7 @@ EXAMPLES
   $ sanity blueprints init --blueprint-type <json|js|ts> --stack-name <stackName>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/blueprints/init.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/blueprints/init.ts)_
 
 ## `sanity blueprints logs`
 
@@ -542,7 +546,7 @@ EXAMPLES
   $ sanity blueprints logs --watch
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/blueprints/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/blueprints/logs.ts)_
 
 ## `sanity blueprints plan`
 
@@ -568,7 +572,7 @@ EXAMPLES
   $ sanity blueprints plan
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/blueprints/plan.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/blueprints/plan.ts)_
 
 ## `sanity blueprints stacks`
 
@@ -597,7 +601,7 @@ EXAMPLES
   $ sanity blueprints stacks --organization-id <organizationId>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/blueprints/stacks.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/blueprints/stacks.ts)_
 
 ## `sanity build [OUTPUTDIR]`
 
@@ -1203,9 +1207,9 @@ Import documents to a Sanity dataset
 
 ```
 USAGE
-  $ sanity dataset import SOURCE -p <value> -d <value> [-t <value>] [--replace | --missing] [--allow-failing-assets]
-    [--allow-assets-in-different-dataset] [--replace-assets] [--skip-cross-dataset-references]
-    [--allow-replacement-characters] [--allow-system-documents] [--asset-concurrency <value>]
+  $ sanity dataset import SOURCE -d <value> -p <value> [--allow-assets-in-different-dataset]
+    [--allow-failing-assets] [--allow-replacement-characters] [--allow-system-documents] [--asset-concurrency <value>]
+    [--missing | --replace] [--replace-assets] [--skip-cross-dataset-references] [-t <value>]
 
 ARGUMENTS
   SOURCE  Source file (use "-" for stdin)
@@ -1348,8 +1352,8 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--minify] [--schema-required] [--source-maps]
-    [--verbose] [-y]
+  $ sanity deploy [SOURCEDIR] [--auto-updates] [--external | --source-maps | --minify | --build]
+    [--schema-required] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
@@ -1358,6 +1362,7 @@ FLAGS
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
       --[no-]build         Don't build the studio prior to deploy, instead deploying the version currently in `dist/`
+      --external           Register an externally hosted studio
       --[no-]minify        Skip minifying built JavaScript (speeds up build, increases size of bundle)
       --schema-required    Fail-fast deployment if schema store fails
       --source-maps        Enable source maps for built bundles (increases size of bundle)
@@ -1378,6 +1383,10 @@ EXAMPLES
   Fail fast on schema store fails - for when other services rely on the stored schema
 
     $ sanity deploy --schema-required
+
+  Register an externally hosted studio (studioHost contains full URL)
+
+    $ sanity deploy --external
 ```
 
 _See code: [src/commands/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.21/src/commands/deploy.ts)_
@@ -1813,7 +1822,7 @@ EXAMPLES
   $ sanity functions add --name my-function --type document-create --type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/functions/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/functions/add.ts)_
 
 ## `sanity functions dev`
 
@@ -1847,7 +1856,7 @@ EXAMPLES
   $ sanity functions dev --timeout 60
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/functions/dev.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/functions/dev.ts)_
 
 ## `sanity functions env add NAME KEY VALUE`
 
@@ -1874,7 +1883,7 @@ EXAMPLES
   $ sanity functions env add MyFunction API_URL https://api.example.com/
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/functions/env/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/functions/env/add.ts)_
 
 ## `sanity functions env list NAME`
 
@@ -1898,7 +1907,7 @@ EXAMPLES
   $ sanity functions env list MyFunction
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/functions/env/list.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/functions/env/list.ts)_
 
 ## `sanity functions env remove NAME KEY`
 
@@ -1924,7 +1933,7 @@ EXAMPLES
   $ sanity functions env remove MyFunction API_URL
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/functions/env/remove.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/functions/env/remove.ts)_
 
 ## `sanity functions logs [NAME]`
 
@@ -1964,7 +1973,7 @@ EXAMPLES
   $ sanity functions logs <name> --delete
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/functions/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/functions/logs.ts)_
 
 ## `sanity functions test [NAME]`
 
@@ -2018,7 +2027,7 @@ EXAMPLES
   $ sanity functions test <name> --event update --data-before '{ "title": "before" }' --data-after '{ "title": "after" }'
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.4.0/src/commands/functions/test.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.0/src/commands/functions/test.ts)_
 
 ## `sanity graphql deploy`
 
@@ -2487,7 +2496,7 @@ USAGE
   $ sanity manifest extract [--path <value>]
 
 FLAGS
-  --path=<value>  [default: /dist/static] Optional path to specify destination directory of the manifest files
+  --path=<value>  [default: dist/static] Optional path to specify destination directory of the manifest files
 
 DESCRIPTION
   Extracts the studio configuration as one or more JSON manifest files.
@@ -2709,7 +2718,7 @@ EXAMPLES
     $ sanity migration create "Rename field from location to address"
 ```
 
-_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/create.ts)_
+_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v6.0.0/src/commands/migration/create.ts)_
 
 ## `sanity migration list`
 
@@ -2728,7 +2737,7 @@ EXAMPLES
     $ sanity migration list
 ```
 
-_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/list.ts)_
+_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v6.0.0/src/commands/migration/list.ts)_
 
 ## `sanity migration run [ID]`
 
@@ -2772,7 +2781,7 @@ EXAMPLES
     $ sanity migration run <id> --from-export=production.tar.gz --no-dry-run --project xyz --dataset staging
 ```
 
-_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/run.ts)_
+_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v6.0.0/src/commands/migration/run.ts)_
 
 ## `sanity openapi get SLUG`
 
@@ -3390,7 +3399,7 @@ EXAMPLES
     $ sanity typegen generate
 ```
 
-_See code: [@sanity/codegen](https://github.com/sanity-io/codegen/blob/v5.10.1/src/commands/typegen/generate.ts)_
+_See code: [@sanity/codegen](https://github.com/sanity-io/codegen/blob/v6.0.0/src/commands/typegen/generate.ts)_
 
 ## `sanity undeploy`
 

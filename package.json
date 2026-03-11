@@ -31,7 +31,6 @@
     "depcheck": "knip",
     "dev": "turbo run dev",
     "docs:upload": "pnpm --filter=@repo/upload-docs run update",
-    "extract-commands": "turbo run extract-commands",
     "format": "oxfmt",
     "prepare": "husky",
     "publint": "turbo run publint",
@@ -72,7 +71,7 @@
     ],
     "overrides": {
       "@sanity/cli": "workspace:*",
-      "create-sanity>@sanity/cli": "^5.13.0"
+      "create-sanity>@sanity/cli": "^5.14.1"
     },
     "patchedDependencies": {
       "sanity": "patches/sanity.patch"

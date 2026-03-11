@@ -22,7 +22,6 @@ vi.mock('../../actions/deploy/checkDir.js', () => ({
 }))
 
 vi.mock('../../actions/manifest/extractAppManifest.js', () => ({
-  appManifestHasData: vi.fn(),
   extractAppManifest: vi.fn(),
 }))
 
@@ -200,6 +199,116 @@ describe('#deploy app', () => {
     expect(stderr).toContain('Verifying local content')
     expect(stderr).toContain('Deploying...')
 
+    expect(stdout).toContain('Success! Application deployed')
+  })
+
+  test('should PATCH user-application when manifest title differs from existing app title', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockExtractAppManifest.mockResolvedValue({
+      title: 'New Title From Manifest',
+      version: '1',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appType: 'coreApp'},
+      uri: `/user-applications/${appId}`,
+    }).reply(200, {
+      appHost: 'existing-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: appId,
+      organizationId: 'org-id',
+      projectId: null,
+      title: 'Existing App',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'patch',
+      query: {appType: 'coreApp'},
+      uri: `/user-applications/${appId}`,
+    }).reply(200, {
+      appHost: 'existing-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: appId,
+      organizationId: 'org-id',
+      projectId: null,
+      title: 'New Title From Manifest',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {appType: 'coreApp'},
+      uri: `/user-applications/${appId}/deployments`,
+    }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
+
+    const {error, stderr, stdout} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {
+        ...defaultMocks,
+        token: 'test-token',
+      },
+    })
+
+    if (error) throw error
+    expect(stdout).toContain('Updating title from "Existing App" to "New Title From Manifest"')
+    expect(stderr).toContain('Updating application title')
+    expect(stdout).toContain('Success! Application deployed')
+  })
+
+  test('does not PATCH when manifest title matches existing app title', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const sameTitle = 'Test App'
+    mockExtractAppManifest.mockResolvedValue({
+      title: sameTitle,
+      version: '1',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      query: {appType: 'coreApp'},
+      uri: `/user-applications/${appId}`,
+    }).reply(200, {
+      appHost: 'existing-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: appId,
+      organizationId: 'org-id',
+      projectId: null,
+      title: sameTitle,
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    // No PATCH mock - deploy should go straight to POST deployments
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {appType: 'coreApp'},
+      uri: `/user-applications/${appId}/deployments`,
+    }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
+
+    const {error, stderr, stdout} = await testCommand(DeployCommand, [], {
+      config: {root: cwd},
+      mocks: {
+        ...defaultMocks,
+        token: 'test-token',
+      },
+    })
+
+    if (error) throw error
+    expect(stderr).not.toContain('Updating application title')
     expect(stdout).toContain('Success! Application deployed')
   })
 
@@ -908,6 +1017,24 @@ describe('#deploy app', () => {
       organizationId,
       projectId: null,
       title: 'Existing App',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    // Manifest title differs from existing app, so deploy PATCHes to update title
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'patch',
+      query: {appType: 'coreApp'},
+      uri: `/user-applications/${appId}`,
+    }).reply(200, {
+      appHost: 'existing-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: appId,
+      organizationId,
+      projectId: null,
+      title: 'Test App',
       type: 'coreApp',
       updatedAt: '2024-01-01T00:00:00Z',
       urlType: 'internal',
