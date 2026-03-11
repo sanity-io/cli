@@ -641,7 +641,7 @@ importers:
         version: 7.5.11
       tar-fs:
         specifier: ^3.1.0
-        version: 3.1.1
+        version: 3.1.2
       tar-stream:
         specifier: ^3.1.7
         version: 3.1.7
@@ -839,9 +839,6 @@ importers:
       '@repo/tsconfig':
         specifier: workspace:*
         version: link:../../@repo/tsconfig
-      '@sanity/codegen':
-        specifier: 'catalog:'
-        version: 6.0.0(@oclif/core@4.8.3)(@sanity/cli-core@1.0.0(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2))(@sanity/telemetry@0.8.1(react@19.2.4))
       '@sanity/eslint-config-cli':
         specifier: workspace:*
         version: link:../eslint-config-cli
@@ -999,7 +996,7 @@ importers:
     dependencies:
       '@sanity/cli':
         specifier: ^5.14.1
-        version: 5.14.1(@noble/hashes@2.0.1)(@types/node@25.0.10)(@types/react@19.2.14)(babel-plugin-react-compiler@1.0.0)(jiti@2.6.1)(lightningcss@1.31.1)(react@19.2.4)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
+        version: 5.14.1(@noble/hashes@2.0.1)(@types/node@25.0.10)(babel-plugin-react-compiler@1.0.0)(jiti@2.6.1)(lightningcss@1.31.1)(react@19.2.4)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
       import-meta-resolve:
         specifier: 'catalog:'
         version: 4.2.0
@@ -3738,12 +3735,6 @@ packages:
 
   '@sanity/cli-core@0.1.0-alpha.15':
     resolution: {integrity: sha512-so4AQnqMsILSd5aIe+l3aO6BxifwSTT6dX0YKZIuyZpPtIxJWpwQpmlTEdQFLa6GGKo7J0jq5DmtSxJtNlgE5A==}
-    engines: {node: '>=20.19.1 <22 || >=22.12'}
-    peerDependencies:
-      '@sanity/telemetry': '>=0.8.1 <0.9.0'
-
-  '@sanity/cli-core@1.0.0':
-    resolution: {integrity: sha512-M+1oQfJacgEaMUrGCa/1NOI4mahVRgmV+K1VsKVP/smBWvXmy8cJ1xuHHlr8jftv4SSBmiI5mQL6AunEab/wVg==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     peerDependencies:
       '@sanity/telemetry': '>=0.8.1 <0.9.0'
@@ -8874,9 +8865,6 @@ packages:
   tar-fs@2.1.4:
     resolution: {integrity: sha512-mDAjwmZdh7LTT6pNleZ05Yt65HC3E+NiQzl672vQG38jIrehtJk/J3mNwIg+vShQPcLF/LV7CMnDW6vjj6sfYQ==}
 
-  tar-fs@3.1.1:
-    resolution: {integrity: sha512-LZA0oaPOc2fVo82Txf3gw+AkEd38szODlptMYejQUhndHMLQ9M059uXR+AfS7DNo0NpINvSqDsvyaCrBVkptWg==}
-
   tar-fs@3.1.2:
     resolution: {integrity: sha512-QGxxTxxyleAdyM3kpFs14ymbYmNFrfY+pHj7Z8FgtbZ7w2//VAgLMac7sT6nRpIHjppXO2AwwEOg0bPFVRcmXw==}
 
@@ -13068,46 +13056,7 @@ snapshots:
       - utf-8-validate
       - yaml
 
-  '@sanity/cli-core@1.0.0(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2)':
-    dependencies:
-      '@inquirer/prompts': 8.3.0(@types/node@20.19.37)
-      '@oclif/core': 4.8.3
-      '@rexxars/jiti': 2.6.2
-      '@sanity/client': 7.17.0(debug@4.4.3)
-      '@sanity/telemetry': 0.8.1(react@19.2.4)
-      babel-plugin-react-compiler: 1.0.0
-      boxen: 8.0.1
-      configstore: 7.1.0
-      debug: 4.4.3(supports-color@8.1.1)
-      get-it: 8.7.0(debug@4.4.3)
-      get-tsconfig: 4.13.6
-      import-meta-resolve: 4.2.0
-      jsdom: 28.1.0(@noble/hashes@2.0.1)
-      json-lexer: 1.2.0
-      log-symbols: 7.0.1
-      ora: 9.3.0
-      read-package-up: 12.0.0
-      rxjs: 7.8.2
-      tsx: 4.21.0
-      vite: 7.3.1(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
-      vite-node: 5.3.0(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
-      zod: 4.3.6
-    transitivePeerDependencies:
-      - '@noble/hashes'
-      - '@types/node'
-      - canvas
-      - jiti
-      - less
-      - lightningcss
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - supports-color
-      - terser
-      - yaml
-
-  '@sanity/cli@5.14.1(@noble/hashes@2.0.1)(@types/node@25.0.10)(@types/react@19.2.14)(babel-plugin-react-compiler@1.0.0)(jiti@2.6.1)(lightningcss@1.31.1)(react@19.2.4)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)':
+  '@sanity/cli@5.14.1(@noble/hashes@2.0.1)(@types/node@25.0.10)(babel-plugin-react-compiler@1.0.0)(jiti@2.6.1)(lightningcss@1.31.1)(react@19.2.4)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)':
     dependencies:
       '@babel/parser': 7.29.0
       '@babel/traverse': 7.29.0
@@ -13283,34 +13232,6 @@ snapshots:
       - terser
       - utf-8-validate
       - yaml
-
-  '@sanity/codegen@6.0.0(@oclif/core@4.8.3)(@sanity/cli-core@1.0.0(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2))(@sanity/telemetry@0.8.1(react@19.2.4))':
-    dependencies:
-      '@babel/core': 7.29.0
-      '@babel/generator': 7.29.0
-      '@babel/preset-env': 7.28.6(@babel/core@7.29.0)
-      '@babel/preset-react': 7.28.5(@babel/core@7.29.0)
-      '@babel/preset-typescript': 7.28.5(@babel/core@7.29.0)
-      '@babel/register': 7.28.6(@babel/core@7.29.0)
-      '@babel/traverse': 7.29.0
-      '@babel/types': 7.29.0
-      '@oclif/core': 4.8.3
-      '@sanity/cli-core': 1.0.0(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2)
-      '@sanity/telemetry': 0.8.1(react@19.2.4)
-      '@sanity/worker-channels': 2.0.0
-      chokidar: 3.6.0
-      debug: 4.4.3(supports-color@8.1.1)
-      globby: 11.1.0
-      groq: 5.11.0
-      groq-js: 1.29.0
-      json5: 2.2.3
-      lodash-es: 4.17.23
-      prettier: 3.8.1
-      reselect: 5.1.1
-      tsconfig-paths: 4.2.0
-      zod: 4.3.6
-    transitivePeerDependencies:
-      - supports-color
 
   '@sanity/codegen@6.0.0(@oclif/core@4.8.3)(@sanity/cli-core@packages+@sanity+cli-core)(@sanity/telemetry@0.8.1(react@19.2.4))':
     dependencies:
@@ -13520,7 +13441,7 @@ snapshots:
   '@sanity/insert-menu@3.0.4(@emotion/is-prop-valid@1.4.0)(@sanity/types@5.14.1(@types/react@19.2.14)(debug@4.4.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))':
     dependencies:
       '@sanity/icons': 3.7.4(react@19.2.4)
-      '@sanity/types': 5.14.1(@types/react@19.2.14)(debug@4.4.3)
+      '@sanity/types': 5.14.1(@types/react@19.2.14)
       '@sanity/ui': 3.1.13(@emotion/is-prop-valid@1.4.0)(react-dom@19.2.4(react@19.2.4))(react-is@19.2.4)(react@19.2.4)(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       lodash-es: 4.17.23
       react: 19.2.4
@@ -13926,7 +13847,7 @@ snapshots:
       '@sanity/client': 7.17.0(debug@4.4.3)
       '@sanity/message-protocol': 0.18.2
       '@sanity/sdk': 2.6.0(@types/react@19.2.14)(immer@11.1.4)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
-      '@sanity/types': 5.14.1(@types/react@19.2.14)(debug@4.4.3)
+      '@sanity/types': 5.14.1(@types/react@19.2.14)
       '@types/lodash-es': 4.17.12
       groq: 3.88.1-typegen-experimental.0
       lodash-es: 4.17.23
@@ -13975,7 +13896,7 @@ snapshots:
       '@sanity/json-match': 1.0.5
       '@sanity/message-protocol': 0.18.2
       '@sanity/mutate': 0.12.6(debug@4.4.3)
-      '@sanity/types': 5.14.1(@types/react@19.2.14)(debug@4.4.3)
+      '@sanity/types': 5.14.1(@types/react@19.2.14)
       groq: 3.88.1-typegen-experimental.0
       groq-js: 1.29.0
       lodash-es: 4.17.23
@@ -14009,6 +13930,14 @@ snapshots:
       yaml: 2.8.2
 
   '@sanity/types@3.99.0(@types/react@19.2.14)(debug@4.4.3)':
+    dependencies:
+      '@sanity/client': 7.17.0(debug@4.4.3)
+      '@sanity/media-library-types': 1.2.0
+      '@types/react': 19.2.14
+    transitivePeerDependencies:
+      - debug
+
+  '@sanity/types@5.14.1(@types/react@19.2.14)':
     dependencies:
       '@sanity/client': 7.17.0(debug@4.4.3)
       '@sanity/media-library-types': 1.2.0
@@ -14099,7 +14028,7 @@ snapshots:
     dependencies:
       '@sanity/client': 7.17.0(debug@4.4.3)
     optionalDependencies:
-      '@sanity/types': 5.14.1(@types/react@19.2.14)(debug@4.4.3)
+      '@sanity/types': 5.14.1(@types/react@19.2.14)
 
   '@sanity/worker-channels@1.1.0': {}
 
@@ -19368,7 +19297,7 @@ snapshots:
       '@sanity/schema': 5.14.1(@types/react@19.2.14)(debug@4.4.3)
       '@sanity/sdk': 2.1.2(@types/react@19.2.14)(debug@4.4.3)(immer@11.1.4)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
       '@sanity/telemetry': 0.8.1(react@19.2.4)
-      '@sanity/types': 5.14.1(@types/react@19.2.14)(debug@4.4.3)
+      '@sanity/types': 5.14.1(@types/react@19.2.14)
       '@sanity/ui': 3.1.13(@emotion/is-prop-valid@1.4.0)(react-dom@19.2.4(react@19.2.4))(react-is@19.2.4)(react@19.2.4)(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))
       '@sanity/util': 5.14.1(@types/react@19.2.14)(debug@4.4.3)
       '@sanity/uuid': 3.0.2
@@ -19855,18 +19784,6 @@ snapshots:
       mkdirp-classic: 0.5.3
       pump: 3.0.3
       tar-stream: 2.2.0
-
-  tar-fs@3.1.1:
-    dependencies:
-      pump: 3.0.3
-      tar-stream: 3.1.7
-    optionalDependencies:
-      bare-fs: 4.5.2
-      bare-path: 3.0.0
-    transitivePeerDependencies:
-      - bare-abort-controller
-      - bare-buffer
-      - react-native-b4a
 
   tar-fs@3.1.2:
     dependencies:

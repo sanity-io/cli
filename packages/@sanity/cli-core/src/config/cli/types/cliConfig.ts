@@ -1,7 +1,14 @@
-import {type TypeGenConfig} from '@sanity/codegen'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 
 import {type UserViteConfig} from './userViteConfig'
+
+export interface TypeGenConfig {
+  formatGeneratedCode: boolean
+  generates: string
+  overloadClientMethods: boolean
+  path: string | string[]
+  schema: string
+}
 
 /**
  * @public

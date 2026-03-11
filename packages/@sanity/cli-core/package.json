@@ -88,7 +88,6 @@
     "@eslint/compat": "catalog:",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
-    "@sanity/codegen": "catalog:",
     "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
     "@sanity/telemetry": "catalog:",
