@@ -9,7 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "prettier": "catalog:"
+    "oxfmt": "^0.35.0"
   },
   "devDependencies": {
     "@repo/tsconfig": "workspace:*",

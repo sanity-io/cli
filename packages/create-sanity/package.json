@@ -3,29 +3,29 @@
   "version": "5.2.2",
   "description": "Initialize a new Sanity project",
   "keywords": [
-    "sanity",
     "cms",
+    "content",
+    "create-sanity",
     "headless",
     "realtime",
-    "content",
-    "create-sanity"
+    "sanity"
   ],
   "homepage": "https://www.sanity.io/",
   "bugs": {
     "url": "https://github.com/sanity-io/cli/issues"
   },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sanity-io/cli.git",
     "directory": "packages/create-sanity"
   },
-  "license": "MIT",
-  "author": "Sanity.io <hello@sanity.io>",
-  "type": "module",
   "bin": "./index.js",
   "files": [
     "index.js"
   ],
+  "type": "module",
   "scripts": {
     "publint": "publint",
     "test": "vitest"

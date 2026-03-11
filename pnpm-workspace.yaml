@@ -13,7 +13,6 @@ catalog:
   eslint: ^9.39.4
   '@eslint/compat': ^2.0.3
   publint: ^0.3.18
-  prettier: ^3.8.1
 
   # Sanity
   sanity: ^5.14.1
