@@ -1,8 +1,7 @@
-import {type TypeGenConfig} from '@sanity/codegen'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {z} from 'zod'
 
-import {type CliConfig} from './types/cliConfig'
+import {type CliConfig, type TypeGenConfig} from './types/cliConfig'
 import {type UserViteConfig} from './types/userViteConfig'
 
 /**
