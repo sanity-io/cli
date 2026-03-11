@@ -7,10 +7,32 @@ import {type UserViteConfig} from './userViteConfig'
  * A named project/dataset resource that the app will access.
  * @public
  */
-export interface AppResource {
+export interface AppDatasetResource {
   dataset: string
   projectId: string
 }
+
+/**
+ * A named canvas resource that the app will access.
+ * @public
+ */
+export interface AppCanvasResource {
+  canvasId: string
+}
+
+/**
+ * A named media library resource that the app will access.
+ * @public
+ */
+export interface AppMediaLibraryResource {
+  mediaLibraryId: string
+}
+
+/**
+ * A named app resource that the app will access.
+ * @public
+ */
+export type AppResource = AppCanvasResource | AppDatasetResource | AppMediaLibraryResource
 
 /**
  * @public
