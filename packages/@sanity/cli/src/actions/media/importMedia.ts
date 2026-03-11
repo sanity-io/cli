@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto'
-import {createReadStream, type ReadStream} from 'node:fs'
+import {createReadStream} from 'node:fs'
 import fs, {mkdtemp} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import path from 'node:path'
@@ -31,8 +31,8 @@ import {
 import tar from 'tar-fs'
 import {glob} from 'tinyglobby'
 
-import {findNdjsonEntry} from '../../util/findNdjsonEntry.js'
 import {isTar} from '../../util/isTar.js'
+import {buildNdjsonIndex} from './buildNdjsonIndex.js'
 import {importMediaDebug} from './importMediaDebug.js'
 
 const DEFAULT_CONCURRENCY = 6
@@ -91,7 +91,7 @@ interface Options {
 }
 
 interface Context extends Options {
-  ndjson: () => ReadStream
+  aspectsIndex: Map<string, unknown>
   workingPath: string
 }
 
@@ -104,23 +104,35 @@ export function importer(options: Options): Observable<State> {
         throw new Error('No assets to import')
       }
 
-      const context: Context = {
-        ...options,
-        ndjson: () => createReadStream(aspectsNdjsonPath),
-        workingPath,
-      }
+      // Stream the ndjson file once and build an index to avoid creating
+      // multiple read streams (which causes file descriptor leaks)
+      const aspectsIndexPromise = buildNdjsonIndex(
+        createReadStream(aspectsNdjsonPath),
+        'filename',
+        'aspects',
+      )
 
-      return from(files).pipe(
-        switchMap((file) => zip(of<'file'>('file'), of(file))),
-        mergeWith(from(images).pipe(switchMap((file) => zip(of<'image'>('image'), of(file))))),
-        fetchExistingAssets(context),
-        uploadAsset(context),
-        resolveAspectData(context),
-        setAspects(context),
-        map((asset) => ({
-          asset,
-          fileCount,
-        })),
+      return from(aspectsIndexPromise).pipe(
+        mergeMap((aspectsIndex) => {
+          const context: Context = {
+            ...options,
+            aspectsIndex,
+            workingPath,
+          }
+
+          return from(files).pipe(
+            switchMap((file) => zip(of<'file'>('file'), of(file))),
+            mergeWith(from(images).pipe(switchMap((file) => zip(of<'image'>('image'), of(file))))),
+            fetchExistingAssets(context),
+            uploadAsset(context),
+            resolveAspectData(context),
+            setAspects(context),
+            map((asset) => ({
+              asset,
+              fileCount,
+            })),
+          )
+        }),
       )
     }),
   )
@@ -283,28 +295,17 @@ function fetchExistingAssets({
 }
 
 /**
- * Find the first matching entry in the provided NDJSON stream and attach it to the asset object.
+ * Find the first matching entry in the cached aspect data and attach it to the asset object.
  *
  * @internal
  */
-function resolveAspectData({ndjson}: Context): OperatorFunction<ResolvedAsset, AssetWithAspects> {
-  return mergeMap((resolvedAsset) =>
-    from(
-      findNdjsonEntry<{aspects: unknown}>(
-        ndjson(),
-        (line) =>
-          typeof line === 'object' &&
-          line !== null &&
-          'filename' in line &&
-          line.filename === resolvedAsset.originalFilename,
-      ),
-    ).pipe(
-      map((aspectsFromImport) => ({
-        ...resolvedAsset,
-        aspects: aspectsFromImport?.aspects,
-      })),
-    ),
-  )
+function resolveAspectData({
+  aspectsIndex,
+}: Context): OperatorFunction<ResolvedAsset, AssetWithAspects> {
+  return map((resolvedAsset) => ({
+    ...resolvedAsset,
+    aspects: aspectsIndex.get(resolvedAsset.originalFilename),
+  }))
 }
 
 // TODO: Batch mutations to reduce HTTP request count.
