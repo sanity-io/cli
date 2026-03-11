@@ -91,7 +91,7 @@ vi.mock('../../../util/getProjectDefaults.js', () => ({
   getProjectDefaults: vi.fn().mockResolvedValue({
     author: undefined,
     description: '',
-    gitRemote: '',
+    gitRemote: undefined,
     license: 'UNLICENSED',
     projectName: 'test-project',
   }),
