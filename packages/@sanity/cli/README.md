@@ -2718,7 +2718,7 @@ EXAMPLES
     $ sanity migration create "Rename field from location to address"
 ```
 
-_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/create.ts)_
+_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v6.0.0/src/commands/migration/create.ts)_
 
 ## `sanity migration list`
 
@@ -2737,7 +2737,7 @@ EXAMPLES
     $ sanity migration list
 ```
 
-_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/list.ts)_
+_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v6.0.0/src/commands/migration/list.ts)_
 
 ## `sanity migration run [ID]`
 
@@ -2781,7 +2781,7 @@ EXAMPLES
     $ sanity migration run <id> --from-export=production.tar.gz --no-dry-run --project xyz --dataset staging
 ```
 
-_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v5.2.5/src/commands/migration/run.ts)_
+_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v6.0.0/src/commands/migration/run.ts)_
 
 ## `sanity openapi get SLUG`
 
@@ -3399,7 +3399,7 @@ EXAMPLES
     $ sanity typegen generate
 ```
 
-_See code: [@sanity/codegen](https://github.com/sanity-io/codegen/blob/v5.10.1/src/commands/typegen/generate.ts)_
+_See code: [@sanity/codegen](https://github.com/sanity-io/codegen/blob/v6.0.0/src/commands/typegen/generate.ts)_
 
 ## `sanity undeploy`
 
