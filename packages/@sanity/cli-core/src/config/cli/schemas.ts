@@ -21,6 +21,23 @@ export const cliConfigSchema = z.object({
       icon: z.optional(z.string()),
       id: z.optional(z.string()),
       organizationId: z.optional(z.string()),
+      resources: z.optional(
+        z.record(
+          z.string(),
+          z.union([
+            z.object({
+              dataset: z.string(),
+              projectId: z.string(),
+            }),
+            z.object({
+              mediaLibraryId: z.string(),
+            }),
+            z.object({
+              canvasId: z.string(),
+            }),
+          ]),
+        ),
+      ),
       title: z.optional(z.string()),
     }),
   ),
