@@ -1203,9 +1203,9 @@ Import documents to a Sanity dataset
 
 ```
 USAGE
-  $ sanity dataset import SOURCE -p <value> -d <value> [-t <value>] [--replace | --missing] [--allow-failing-assets]
-    [--allow-assets-in-different-dataset] [--replace-assets] [--skip-cross-dataset-references]
-    [--allow-replacement-characters] [--allow-system-documents] [--asset-concurrency <value>]
+  $ sanity dataset import SOURCE -d <value> -p <value> [--allow-assets-in-different-dataset]
+    [--allow-failing-assets] [--allow-replacement-characters] [--allow-system-documents] [--asset-concurrency <value>]
+    [--missing | --replace] [--replace-assets] [--skip-cross-dataset-references] [-t <value>]
 
 ARGUMENTS
   SOURCE  Source file (use "-" for stdin)
@@ -1348,8 +1348,8 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 
 ```
 USAGE
-  $ sanity deploy [SOURCEDIR] [--auto-updates] [--build] [--minify] [--schema-required] [--source-maps]
-    [--verbose] [-y]
+  $ sanity deploy [SOURCEDIR] [--auto-updates] [--external | --source-maps | --minify | --build]
+    [--schema-required] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
@@ -1358,6 +1358,7 @@ FLAGS
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
       --[no-]build         Don't build the studio prior to deploy, instead deploying the version currently in `dist/`
+      --external           Register an externally hosted studio
       --[no-]minify        Skip minifying built JavaScript (speeds up build, increases size of bundle)
       --schema-required    Fail-fast deployment if schema store fails
       --source-maps        Enable source maps for built bundles (increases size of bundle)
@@ -1378,6 +1379,10 @@ EXAMPLES
   Fail fast on schema store fails - for when other services rely on the stored schema
 
     $ sanity deploy --schema-required
+
+  Register an externally hosted studio (studioHost contains full URL)
+
+    $ sanity deploy --external
 ```
 
 _See code: [src/commands/deploy.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.21/src/commands/deploy.ts)_
@@ -2487,7 +2492,7 @@ USAGE
   $ sanity manifest extract [--path <value>]
 
 FLAGS
-  --path=<value>  [default: /dist/static] Optional path to specify destination directory of the manifest files
+  --path=<value>  [default: dist/static] Optional path to specify destination directory of the manifest files
 
 DESCRIPTION
   Extracts the studio configuration as one or more JSON manifest files.
