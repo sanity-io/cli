@@ -47,6 +47,7 @@ coverage/
 .vitest-reports/
 
 # Claude
-.claude/
+.claude/*
+!.claude/settings.json
 .worktrees/
 /docs/plans
