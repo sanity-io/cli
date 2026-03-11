@@ -31,7 +31,6 @@
     "depcheck": "knip",
     "dev": "turbo run dev",
     "docs:upload": "pnpm --filter=@repo/upload-docs run update",
-    "extract-commands": "turbo run extract-commands",
     "format": "prettier --write .",
     "prepare": "husky",
     "publint": "turbo run publint",
