@@ -18,11 +18,12 @@ export default defineCliConfig({
 `
 
 interface GenerateCliConfigOptions {
-  dataset: string
   entry: string
-  projectId: string
+
+  dataset?: string
 
   organizationId?: string
+  projectId?: string
 }
 
 export function createAppCliConfig(options: GenerateCliConfigOptions): string {
