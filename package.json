@@ -4,26 +4,26 @@
   "private": true,
   "description": "Command line tool monorepo for Sanity",
   "keywords": [
-    "sanity",
-    "cli"
+    "cli",
+    "sanity"
   ],
   "homepage": "https://github.com/sanity-io/cli#readme",
   "bugs": {
     "url": "https://github.com/sanity-io/cli/issues"
   },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/sanity-io/cli.git"
   },
-  "license": "MIT",
-  "author": "Sanity.io <hello@sanity.io>",
   "type": "module",
   "scripts": {
     "build": "turbo run build build:types",
     "build:cli": "turbo run build build:types --filter=./packages/**",
     "check": "npm run check:format && npm run check:lint && npm run check:types && npm run check:deps",
     "check:deps": "knip",
-    "check:format": "prettier --check .",
+    "check:format": "oxfmt --check",
     "check:lint": "turbo run lint -- --fix",
     "check:types": "turbo run check:types --filter=@sanity/cli --filter=@sanity/cli-core",
     "clean": "rimraf packages/@sanity/*/lib packages/*/lib packages/@sanity/*/dist packages/*/dist",
@@ -31,7 +31,7 @@
     "depcheck": "knip",
     "dev": "turbo run dev",
     "docs:upload": "pnpm --filter=@repo/upload-docs run update",
-    "format": "prettier --write .",
+    "format": "oxfmt",
     "prepare": "husky",
     "publint": "turbo run publint",
     "pretest": "pnpm run build:cli",
@@ -39,9 +39,6 @@
     "pretest:watch": "pnpm run build:cli",
     "test:watch": "vitest",
     "watch:cli": "turbo run watch --filter=@sanity/cli --filter=@sanity/cli*"
-  },
-  "resolutions": {
-    "@sanity/client": "^7.17.0"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.4.2",
@@ -54,17 +51,19 @@
     "husky": "^9.1.7",
     "knip": "^5.85.0",
     "lint-staged": "^16.2.7",
-    "prettier": "catalog:",
-    "prettier-plugin-packagejson": "^3.0.0",
+    "oxfmt": "^0.35.0",
     "rimraf": "catalog:",
     "turbo": "^2.8.11",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "packageManager": "pnpm@10.30.3",
+  "resolutions": {
+    "@sanity/client": "^7.17.0"
+  },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
   },
+  "packageManager": "pnpm@10.30.3",
   "pnpm": {
     "onlyBuiltDependencies": [
       "@swc/core",

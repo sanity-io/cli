@@ -38,9 +38,10 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to get document from (overrides CLI configuration)',
+      description: 'Project ID to get document from',
+      semantics: 'override',
     }),
-    ...getDatasetFlag({description: 'Dataset to get document from (overrides CLI configuration)'}),
+    ...getDatasetFlag({description: 'Dataset to get document from', semantics: 'override'}),
     pretty: Flags.boolean({
       default: false,
       description: 'Colorize JSON output',

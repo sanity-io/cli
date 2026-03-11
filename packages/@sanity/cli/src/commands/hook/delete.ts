@@ -36,7 +36,8 @@ export class Delete extends SanityCommand<typeof Delete> {
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to delete webhook from (overrides CLI configuration)',
+      description: 'Project ID to delete webhook from',
+      semantics: 'override',
     }),
   }
 

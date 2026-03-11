@@ -3,33 +3,36 @@
   "version": "1.0.0",
   "description": "Shared ESLint configuration for Sanity CLI packages",
   "keywords": [
-    "sanity",
     "cli",
-    "eslint",
     "config",
+    "eslint",
     "linting",
+    "sanity",
     "typescript"
   ],
   "homepage": "https://github.com/sanity-io/cli",
   "bugs": "https://github.com/sanity-io/cli/issues",
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sanity-io/cli.git",
     "directory": "packages/@sanity/eslint-config-cli"
   },
-  "license": "MIT",
-  "author": "Sanity.io <hello@sanity.io>",
-  "sideEffects": false,
-  "type": "module",
-  "exports": {
-    ".": "./eslint.config.mjs",
-    "./package.json": "./package.json"
-  },
-  "main": "eslint.config.mjs",
   "files": [
     "eslint.config.mjs",
     "README.md"
   ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "eslint.config.mjs",
+  "exports": {
+    ".": "./eslint.config.mjs",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "publint": "publint"
   },
@@ -51,8 +54,5 @@
   },
   "peerDependencies": {
     "eslint": "^9.0.0"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

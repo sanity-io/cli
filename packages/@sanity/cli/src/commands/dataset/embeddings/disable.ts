@@ -31,7 +31,8 @@ export class DatasetEmbeddingsDisableCommand extends SanityCommand<
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to disable embeddings for (overrides CLI configuration)',
+      description: 'Project ID to disable embeddings for',
+      semantics: 'override',
     }),
   }
 

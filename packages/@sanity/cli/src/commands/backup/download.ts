@@ -75,7 +75,8 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to download backup from (overrides CLI configuration)',
+      description: 'Project ID to download backup from',
+      semantics: 'override',
     }),
     'backup-id': Flags.string({
       description: 'The backup ID to download',

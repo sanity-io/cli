@@ -44,7 +44,8 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to export media from (overrides CLI configuration)',
+      description: 'Project ID to export media from',
+      semantics: 'override',
     }),
     'asset-concurrency': Flags.integer({
       default: 8,

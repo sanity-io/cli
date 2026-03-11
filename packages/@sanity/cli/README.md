@@ -42,7 +42,7 @@ Code for sanity cli
 - [`sanity dataset embeddings enable [DATASET]`](#sanity-dataset-embeddings-enable-dataset)
 - [`sanity dataset embeddings status [DATASET]`](#sanity-dataset-embeddings-status-dataset)
 - [`sanity dataset export [NAME] [DESTINATION]`](#sanity-dataset-export-name-destination)
-- [`sanity dataset import SOURCE`](#sanity-dataset-import-source)
+- [`sanity dataset import SOURCE [TARGETDATASET]`](#sanity-dataset-import-source-targetdataset)
 - [`sanity dataset list`](#sanity-dataset-list)
 - [`sanity dataset visibility get DATASET`](#sanity-dataset-visibility-get-dataset)
 - [`sanity dataset visibility set DATASET MODE`](#sanity-dataset-visibility-set-dataset-mode)
@@ -52,6 +52,7 @@ Code for sanity cli
 - [`sanity docs browse`](#sanity-docs-browse)
 - [`sanity docs read PATH`](#sanity-docs-read-path)
 - [`sanity docs search QUERY`](#sanity-docs-search-query)
+- [`sanity doctor [CHECKS]`](#sanity-doctor-checks)
 - [`sanity documents create [FILE]`](#sanity-documents-create-file)
 - [`sanity documents delete ID [IDS]`](#sanity-documents-delete-id-ids)
 - [`sanity documents get DOCUMENTID`](#sanity-documents-get-documentid)
@@ -1201,22 +1202,22 @@ EXAMPLES
 
 _See code: [src/commands/dataset/export.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.21/src/commands/dataset/export.ts)_
 
-## `sanity dataset import SOURCE`
+## `sanity dataset import SOURCE [TARGETDATASET]`
 
 Import documents to a Sanity dataset
 
 ```
 USAGE
-  $ sanity dataset import SOURCE -d <value> -p <value> [--allow-assets-in-different-dataset]
-    [--allow-failing-assets] [--allow-replacement-characters] [--allow-system-documents] [--asset-concurrency <value>]
-    [--missing | --replace] [--replace-assets] [--skip-cross-dataset-references] [-t <value>]
+  $ sanity dataset import SOURCE [TARGETDATASET] [--allow-assets-in-different-dataset] [--allow-failing-assets]
+    [--allow-replacement-characters] [--allow-system-documents] [--asset-concurrency <value>] [-d <name>] [--missing |
+    --replace] [-p <id>] [--replace-assets] [--skip-cross-dataset-references] [-t <value>]
 
 ARGUMENTS
-  SOURCE  Source file (use "-" for stdin)
+  SOURCE           Source file (use "-" for stdin)
+  [TARGETDATASET]  Target dataset (prefer --dataset flag instead)
 
 FLAGS
-  -d, --dataset=<value>                    (required) Dataset to import to
-  -p, --project=<value>                    (required) Project ID to import to
+  -d, --dataset=<name>                     Dataset to import to
   -t, --token=<value>                      [env: SANITY_IMPORT_TOKEN] Token to authenticate with
       --allow-assets-in-different-dataset  Allow asset documents to reference different project/dataset
       --allow-failing-assets               Skip assets that cannot be fetched/uploaded
@@ -1228,17 +1229,24 @@ FLAGS
       --replace-assets                     Skip reuse of existing assets
       --skip-cross-dataset-references      Skips references to other datasets
 
+OVERRIDE FLAGS
+  -p, --project-id=<id>  Project ID to import to (overrides CLI configuration)
+
 DESCRIPTION
   Import documents to a Sanity dataset
 
 EXAMPLES
   Import "./my-dataset.ndjson" into dataset "staging"
 
-    $ sanity dataset import -p myPrOj -d staging -t someSecretToken my-dataset.ndjson
+    $ sanity dataset import -d staging -t someSecretToken my-dataset.ndjson
 
-  Import into dataset "test" from stdin, read token from env var
+  Import into dataset "test" from stdin
 
-    cat my-dataset.ndjson | sanity dataset import -p myPrOj -d test -
+    cat my-dataset.ndjson | sanity dataset import -d test -t someToken -
+
+  Import with explicit project ID (overrides CLI configuration)
+
+    $ sanity dataset import -p projectId -d staging -t someSecretToken my-dataset.ndjson
 ```
 
 _See code: [src/commands/dataset/import.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.21/src/commands/dataset/import.ts)_
@@ -1502,6 +1510,37 @@ EXAMPLES
 
 _See code: [src/commands/docs/search.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.21/src/commands/docs/search.ts)_
 
+## `sanity doctor [CHECKS]`
+
+Run diagnostics on your Sanity project
+
+```
+USAGE
+  $ sanity doctor [CHECKS...] [-j]
+
+ARGUMENTS
+  [CHECKS...]  Checks to enable (defaults to all). Valid: cli
+
+FLAGS
+  -j, --json  Output results as JSON
+
+DESCRIPTION
+  Run diagnostics on your Sanity project
+
+EXAMPLES
+  $ sanity doctor
+
+  Output results as JSON
+
+    $ sanity doctor --json
+
+  Only run CLI-related diagnostics
+
+    $ sanity doctor cli
+```
+
+_See code: [src/commands/doctor.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.21/src/commands/doctor.ts)_
+
 ## `sanity documents create [FILE]`
 
 Create one or more documents
@@ -1690,6 +1729,10 @@ USAGE
     [--max-custom-validation-concurrency <value>] [--max-fetch-concurrency <value>] [--workspace <value>] [-y]
 
 FLAGS
+  -d, --dataset=<name>                             Override the dataset used. By default, this is derived from the given
+                                                   workspace
+  -p, --project-id=<id>                            Override the project ID used. By default, this is derived from the
+                                                   given workspace
   -y, --yes                                        Skips the first confirmation prompt
       --file=<value>                               Provide a path to either an .ndjson file or a tarball containing an
                                                    .ndjson file
@@ -1702,10 +1745,6 @@ FLAGS
                                                    run concurrently
       --workspace=<value>                          The name of the workspace to use when downloading and validating all
                                                    documents
-
-OVERRIDE FLAGS
-  -d, --dataset=<name>   Override the dataset used. By default, this is derived from the given workspace
-  -p, --project-id=<id>  Override the project ID used. By default, this is derived from the given workspace
 
 DESCRIPTION
   Validate documents in a dataset against the studio schema
@@ -2039,19 +2078,17 @@ USAGE
     [--non-null-document-fields] [--playground] [--tag <value>] [--with-union-cache]
 
 FLAGS
-  --api=<value>...            Only deploy API with this ID. Can be specified multiple times.
-  --dry-run                   Validate defined GraphQL APIs, check for breaking changes, skip deploy
-  --force                     Deploy API without confirming breaking changes
-  --generation=<option>       API generation to deploy (defaults to "gen3")
-                              <options: gen1|gen2|gen3>
-  --non-null-document-fields  Use non-null document fields (_id, _type etc)
-  --[no-]playground           Enable GraphQL playground for easier debugging
-  --tag=<value>               Deploy API(s) to given tag (defaults to "default")
-  --with-union-cache          Enable union cache that optimizes schema generation for schemas with many self referencing
-                              types
-
-OVERRIDE FLAGS
-  -d, --dataset=<name>  Deploy API for the given dataset
+  -d, --dataset=<name>            Deploy API for the given dataset
+      --api=<value>...            Only deploy API with this ID. Can be specified multiple times.
+      --dry-run                   Validate defined GraphQL APIs, check for breaking changes, skip deploy
+      --force                     Deploy API without confirming breaking changes
+      --generation=<option>       API generation to deploy (defaults to "gen3")
+                                  <options: gen1|gen2|gen3>
+      --non-null-document-fields  Use non-null document fields (_id, _type etc)
+      --[no-]playground           Enable GraphQL playground for easier debugging
+      --tag=<value>               Deploy API(s) to given tag (defaults to "default")
+      --with-union-cache          Enable union cache that optimizes schema generation for schemas with many self
+                                  referencing types
 
 DESCRIPTION
   Deploy a GraphQL API from the current Sanity schema
@@ -2116,7 +2153,7 @@ FLAGS
   --tag=<value>  [default: default] Tag to undeploy GraphQL API from
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Dataset to undeploy GraphQL API from
+  -d, --dataset=<name>   Dataset to undeploy GraphQL API from (overrides CLI configuration)
   -p, --project-id=<id>  Project ID to undeploy GraphQL API from (overrides CLI configuration)
 
 DESCRIPTION
@@ -2194,7 +2231,7 @@ EXAMPLES
 
   Get attempt details for a specific project
 
-    $ sanity hook attempt abc123 --project-id myproject
+    $ sanity hook attempt abc123 --project-id projectId
 ```
 
 _See code: [src/commands/hook/attempt.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.21/src/commands/hook/attempt.ts)_
@@ -2970,11 +3007,11 @@ USAGE
   $ sanity schema delete --ids <value> [-p <id>] [-d <name>] [--verbose]
 
 FLAGS
-  --ids=<value>  (required) Comma-separated list of schema ids to delete
-  --verbose      Enable verbose logging
+  -d, --dataset=<name>  Delete schemas from a specific dataset
+      --ids=<value>     (required) Comma-separated list of schema ids to delete
+      --verbose         Enable verbose logging
 
 OVERRIDE FLAGS
-  -d, --dataset=<name>   Delete schemas from a specific dataset (overrides CLI configuration)
   -p, --project-id=<id>  Project ID to delete schema from (overrides CLI configuration)
 
 DESCRIPTION

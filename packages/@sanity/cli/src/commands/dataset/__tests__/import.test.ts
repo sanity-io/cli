@@ -1,6 +1,6 @@
 import {Readable} from 'node:stream'
 
-import {getProjectCliClient} from '@sanity/cli-core'
+import {getProjectCliClient, ProjectRootNotFoundError} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {sanityImport} from '@sanity/import'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -40,18 +40,21 @@ vi.mock('node:fs', async () => {
 const mockSanityImport = vi.mocked(sanityImport)
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
 
-const BASE_FLAGS = [
-  'test-source.ndjson',
-  '--project',
-  'test-project',
-  '--dataset',
-  'test-dataset',
-  '--token',
-  'test-token',
-]
+const defaultMocks = {
+  cliConfig: {api: {dataset: 'test-dataset', projectId: 'test-project'}},
+  projectRoot: {
+    directory: '/test/path',
+    path: '/test/path/sanity.config.ts',
+    type: 'studio' as const,
+  },
+  token: 'test-token',
+}
+
+const BASE_FLAGS = ['test-source.ndjson', '--dataset', 'test-dataset', '--token', 'test-token']
 
 describe('#dataset:import', () => {
   afterEach(() => {
+    vi.useRealTimers()
     vi.clearAllMocks()
   })
 
@@ -59,7 +62,9 @@ describe('#dataset:import', () => {
     test('imports from a file source', async () => {
       mockSanityImport.mockResolvedValueOnce({numDocs: 42, warnings: []})
 
-      const {error, stdout} = await testCommand(ImportDatasetCommand, BASE_FLAGS)
+      const {error, stdout} = await testCommand(ImportDatasetCommand, BASE_FLAGS, {
+        mocks: defaultMocks,
+      })
 
       if (error) throw error
       expect(stdout).toContain('Done! Imported 42 documents to dataset "test-dataset"')
@@ -84,15 +89,11 @@ describe('#dataset:import', () => {
     test('imports from a URL source', async () => {
       mockSanityImport.mockResolvedValueOnce({numDocs: 3, warnings: []})
 
-      const {error, stdout} = await testCommand(ImportDatasetCommand, [
-        'https://example.com/data.ndjson',
-        '--project',
-        'test-project',
-        '--dataset',
-        'test-dataset',
-        '--token',
-        'test-token',
-      ])
+      const {error, stdout} = await testCommand(
+        ImportDatasetCommand,
+        ['https://example.com/data.ndjson', '--dataset', 'test-dataset', '--token', 'test-token'],
+        {mocks: defaultMocks},
+      )
 
       if (error) throw error
       expect(stdout).toContain('Done! Imported 3 documents to dataset "test-dataset"')
@@ -102,15 +103,11 @@ describe('#dataset:import', () => {
     test('imports from stdin when source is "-"', async () => {
       mockSanityImport.mockResolvedValueOnce({numDocs: 5, warnings: []})
 
-      const {error, stdout} = await testCommand(ImportDatasetCommand, [
-        '-',
-        '--project',
-        'test-project',
-        '--dataset',
-        'test-dataset',
-        '--token',
-        'test-token',
-      ])
+      const {error, stdout} = await testCommand(
+        ImportDatasetCommand,
+        ['-', '--dataset', 'test-dataset', '--token', 'test-token'],
+        {mocks: defaultMocks},
+      )
 
       if (error) throw error
       expect(stdout).toContain('Done! Imported 5 documents to dataset "test-dataset"')
@@ -118,11 +115,147 @@ describe('#dataset:import', () => {
     })
   })
 
+  describe('dataset resolution', () => {
+    test('uses --dataset flag', async () => {
+      mockSanityImport.mockResolvedValueOnce({numDocs: 1, warnings: []})
+
+      const {error} = await testCommand(
+        ImportDatasetCommand,
+        ['test-source.ndjson', '--dataset', 'my-dataset', '--token', 'test-token'],
+        {mocks: defaultMocks},
+      )
+
+      if (error) throw error
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({dataset: 'my-dataset'}),
+      )
+    })
+
+    test('accepts positional dataset argument for backwards compatibility', async () => {
+      mockSanityImport.mockResolvedValueOnce({numDocs: 1, warnings: []})
+
+      const {error, stderr} = await testCommand(
+        ImportDatasetCommand,
+        ['test-source.ndjson', 'positional-dataset', '--token', 'test-token'],
+        {mocks: defaultMocks},
+      )
+
+      if (error) throw error
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({dataset: 'positional-dataset'}),
+      )
+      expect(stderr).toContain('Positional dataset argument is deprecated')
+      expect(stderr).toContain('--dataset')
+    })
+
+    test('--dataset flag takes precedence over positional argument', async () => {
+      mockSanityImport.mockResolvedValueOnce({numDocs: 1, warnings: []})
+
+      const {error, stderr} = await testCommand(
+        ImportDatasetCommand,
+        [
+          'test-source.ndjson',
+          'positional-dataset',
+          '--dataset',
+          'flag-dataset',
+          '--token',
+          'test-token',
+        ],
+        {mocks: defaultMocks},
+      )
+
+      if (error) throw error
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({dataset: 'flag-dataset'}),
+      )
+      expect(stderr).not.toContain('Positional dataset argument is deprecated')
+    })
+
+    test('errors when no dataset is provided via flag or positional arg', async () => {
+      const {error} = await testCommand(
+        ImportDatasetCommand,
+        ['test-source.ndjson', '--token', 'test-token'],
+        {mocks: defaultMocks},
+      )
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Missing dataset')
+      expect(error?.message).toContain('--dataset')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+  })
+
+  describe('project ID resolution', () => {
+    test('falls back to CLI config project ID', async () => {
+      mockSanityImport.mockResolvedValueOnce({numDocs: 1, warnings: []})
+
+      const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS, {
+        mocks: defaultMocks,
+      })
+
+      if (error) throw error
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({projectId: 'test-project'}),
+      )
+    })
+
+    test('--project-id flag overrides CLI config', async () => {
+      mockSanityImport.mockResolvedValueOnce({numDocs: 1, warnings: []})
+
+      const {error} = await testCommand(
+        ImportDatasetCommand,
+        [...BASE_FLAGS, '--project-id', 'flag-project'],
+        {mocks: defaultMocks},
+      )
+
+      if (error) throw error
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({projectId: 'flag-project'}),
+      )
+    })
+
+    test('supports deprecated --project flag', async () => {
+      mockSanityImport.mockResolvedValueOnce({numDocs: 1, warnings: []})
+
+      const {error, stderr} = await testCommand(
+        ImportDatasetCommand,
+        [...BASE_FLAGS, '--project', 'deprecated-project'],
+        {
+          mocks: {
+            ...defaultMocks,
+            cliConfig: {api: {dataset: 'test-dataset'}},
+          },
+        },
+      )
+
+      if (error) throw error
+      expect(stderr).toContain('"project" flag has been deprecated')
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith(
+        expect.objectContaining({projectId: 'deprecated-project'}),
+      )
+    })
+
+    test('errors when no project root and no --project-id', async () => {
+      const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS, {
+        mocks: {
+          cliConfigError: new ProjectRootNotFoundError('No project root found'),
+          token: 'test-token',
+        },
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Unable to determine project ID')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+  })
+
   describe('operation flags', () => {
     test('--replace sets createOrReplace operation', async () => {
       mockSanityImport.mockResolvedValueOnce({numDocs: 10, warnings: []})
 
-      const {error} = await testCommand(ImportDatasetCommand, [...BASE_FLAGS, '--replace'])
+      const {error} = await testCommand(ImportDatasetCommand, [...BASE_FLAGS, '--replace'], {
+        mocks: defaultMocks,
+      })
 
       if (error) throw error
       expect(mockSanityImport).toHaveBeenCalledWith(
@@ -137,7 +270,9 @@ describe('#dataset:import', () => {
     test('--missing sets createIfNotExists operation', async () => {
       mockSanityImport.mockResolvedValueOnce({numDocs: 10, warnings: []})
 
-      const {error} = await testCommand(ImportDatasetCommand, [...BASE_FLAGS, '--missing'])
+      const {error} = await testCommand(ImportDatasetCommand, [...BASE_FLAGS, '--missing'], {
+        mocks: defaultMocks,
+      })
 
       if (error) throw error
       expect(mockSanityImport).toHaveBeenCalledWith(
@@ -152,11 +287,11 @@ describe('#dataset:import', () => {
     test('--asset-concurrency is passed through', async () => {
       mockSanityImport.mockResolvedValueOnce({numDocs: 10, warnings: []})
 
-      const {error} = await testCommand(ImportDatasetCommand, [
-        ...BASE_FLAGS,
-        '--asset-concurrency',
-        '4',
-      ])
+      const {error} = await testCommand(
+        ImportDatasetCommand,
+        [...BASE_FLAGS, '--asset-concurrency', '4'],
+        {mocks: defaultMocks},
+      )
 
       if (error) throw error
       expect(mockSanityImport).toHaveBeenCalledWith(
@@ -170,13 +305,11 @@ describe('#dataset:import', () => {
 
   describe('error handling', () => {
     test('errors when token is not provided', async () => {
-      const {error} = await testCommand(ImportDatasetCommand, [
-        'test-source.ndjson',
-        '--project',
-        'test-project',
-        '--dataset',
-        'test-dataset',
-      ])
+      const {error} = await testCommand(
+        ImportDatasetCommand,
+        ['test-source.ndjson', '--dataset', 'test-dataset'],
+        {mocks: defaultMocks},
+      )
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('--token')
@@ -186,7 +319,9 @@ describe('#dataset:import', () => {
     test('handles import failure', async () => {
       mockSanityImport.mockRejectedValueOnce(new Error('Connection timeout'))
 
-      const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS)
+      const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS, {
+        mocks: defaultMocks,
+      })
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Connection timeout')
@@ -194,23 +329,24 @@ describe('#dataset:import', () => {
     })
 
     test('clears spinInterval on error after onProgress starts', async () => {
-      vi.useFakeTimers()
-      try {
-        mockSanityImport.mockImplementationOnce(async (_stream, opts) => {
-          // Trigger onProgress with a non-computable step to start spinInterval
-          opts.onProgress!({step: 'Importing documents'})
-          throw new Error('Import failed mid-progress')
-        })
+      const clearIntervalSpy = vi.spyOn(globalThis, 'clearInterval')
 
-        const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS)
+      mockSanityImport.mockImplementationOnce(async (_stream, opts) => {
+        // Trigger onProgress with a non-computable step to start spinInterval
+        opts.onProgress!({step: 'Importing documents'})
+        throw new Error('Import failed mid-progress')
+      })
 
-        expect(error).toBeInstanceOf(Error)
-        expect(error?.message).toContain('Import failed mid-progress')
-        // Verify no pending timers remain (spinInterval was cleared)
-        expect(vi.getTimerCount()).toBe(0)
-      } finally {
-        vi.useRealTimers()
-      }
+      const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS, {
+        mocks: defaultMocks,
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Import failed mid-progress')
+      // Verify clearInterval was called to clean up the spinInterval
+      expect(clearIntervalSpy).toHaveBeenCalled()
+
+      clearIntervalSpy.mockRestore()
     })
 
     test('handles ReplacementCharError with hint about --allow-replacement-characters', async () => {
@@ -218,7 +354,9 @@ describe('#dataset:import', () => {
       replacementError.name = 'ReplacementCharError'
       mockSanityImport.mockRejectedValueOnce(replacementError)
 
-      const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS)
+      const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS, {
+        mocks: defaultMocks,
+      })
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('unicode replacement characters')
@@ -231,7 +369,9 @@ describe('#dataset:import', () => {
     test('passes onProgress callback to sanityImport', async () => {
       mockSanityImport.mockResolvedValueOnce({numDocs: 10, warnings: []})
 
-      const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS)
+      const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS, {
+        mocks: defaultMocks,
+      })
 
       if (error) throw error
       expect(mockSanityImport).toHaveBeenCalledWith(
@@ -252,7 +392,9 @@ describe('#dataset:import', () => {
         return {numDocs: 20, warnings: []}
       })
 
-      const {error, stdout} = await testCommand(ImportDatasetCommand, BASE_FLAGS)
+      const {error, stdout} = await testCommand(ImportDatasetCommand, BASE_FLAGS, {
+        mocks: defaultMocks,
+      })
 
       if (error) throw error
       expect(stdout).toContain('Done! Imported 20 documents')
@@ -274,7 +416,9 @@ describe('#dataset:import', () => {
         ] as unknown as Array<{message: string}>,
       })
 
-      const {error, stderr} = await testCommand(ImportDatasetCommand, BASE_FLAGS)
+      const {error, stderr} = await testCommand(ImportDatasetCommand, BASE_FLAGS, {
+        mocks: defaultMocks,
+      })
 
       if (error) throw error
       expect(stderr).toContain('Failed to import the following assets')
@@ -288,7 +432,9 @@ describe('#dataset:import', () => {
         warnings: [{message: 'Some non-asset warning'}],
       })
 
-      const {error, stderr} = await testCommand(ImportDatasetCommand, BASE_FLAGS)
+      const {error, stderr} = await testCommand(ImportDatasetCommand, BASE_FLAGS, {
+        mocks: defaultMocks,
+      })
 
       if (error) throw error
       expect(stderr).not.toContain('Failed to import')
@@ -299,7 +445,9 @@ describe('#dataset:import', () => {
     test('creates client with correct options', async () => {
       mockSanityImport.mockResolvedValueOnce({numDocs: 0, warnings: []})
 
-      const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS)
+      const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS, {
+        mocks: defaultMocks,
+      })
 
       if (error) throw error
       expect(mockGetProjectCliClient).toHaveBeenCalledWith({

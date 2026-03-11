@@ -1,0 +1,7 @@
+{
+  "name": "standalone-pnpm-project",
+  "version": "1.0.0",
+  "dependencies": {
+    "sanity": "^3.67.0"
+  }
+}

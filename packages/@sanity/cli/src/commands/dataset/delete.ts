@@ -35,7 +35,8 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to delete dataset from (overrides CLI configuration)',
+      description: 'Project ID to delete dataset from',
+      semantics: 'override',
     }),
     force: Flags.boolean({
       description: 'Do not prompt for delete confirmation - forcefully delete',

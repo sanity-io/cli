@@ -2,6 +2,8 @@
 
 # dependencies
 node_modules
+# Allow node_modules in test fixtures (needed for install detection tests)
+!**/__fixtures__/**/node_modules
 .pnp
 .pnp.js
 
@@ -49,3 +51,4 @@ coverage/
 # Claude
 .claude/
 .worktrees/
+/docs/plans

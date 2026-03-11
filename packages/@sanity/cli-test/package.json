@@ -3,25 +3,31 @@
   "version": "0.2.0",
   "description": "Sanity CLI test helpers and utilities",
   "keywords": [
-    "sanity",
+    "cli",
     "cms",
+    "content",
     "headless",
     "realtime",
-    "content",
-    "cli",
+    "sanity",
     "tool"
   ],
   "homepage": "https://github.com/sanity-io/cli",
   "bugs": "https://github.com/sanity-io/cli/issues",
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sanity-io/cli.git",
     "directory": "packages/@sanity/cli-test"
   },
-  "license": "MIT",
-  "author": "Sanity.io <hello@sanity.io>",
-  "sideEffects": false,
+  "files": [
+    "./dist",
+    "./fixtures"
+  ],
   "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "source": "./src/index.ts",
@@ -33,12 +39,9 @@
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "./dist",
-    "./fixtures"
-  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "prebuild": "pnpm run clean",
     "build": "pnpm run build:js && pnpm run copy:fixtures",
@@ -80,7 +83,7 @@
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "yaml": "^2.8.2"
+    "yaml": "catalog:"
   },
   "peerDependencies": {
     "@oclif/core": "^4.0.0",
@@ -90,8 +93,5 @@
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

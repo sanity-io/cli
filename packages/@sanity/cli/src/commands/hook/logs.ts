@@ -44,7 +44,8 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to view webhook logs for (overrides CLI configuration)',
+      description: 'Project ID to view webhook logs for',
+      semantics: 'override',
     }),
     detailed: Flags.boolean({
       description: 'Include detailed payload and attempts',

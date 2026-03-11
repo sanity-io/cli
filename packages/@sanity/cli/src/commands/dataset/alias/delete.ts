@@ -37,7 +37,8 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to delete dataset alias from (overrides CLI configuration)',
+      description: 'Project ID to delete dataset alias from',
+      semantics: 'override',
     }),
     force: Flags.boolean({
       description: 'Skip confirmation prompt and delete immediately',

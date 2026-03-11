@@ -30,7 +30,8 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to delete media aspect from (overrides CLI configuration)',
+      description: 'Project ID to delete media aspect from',
+      semantics: 'override',
     }),
     'media-library-id': Flags.string({
       description: 'The id of the target media library',

@@ -1,0 +1,6 @@
+{
+  "name": "bun-dual-lockfiles",
+  "dependencies": {
+    "sanity": "^3.67.0"
+  }
+}

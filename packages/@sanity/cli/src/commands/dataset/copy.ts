@@ -77,7 +77,8 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to copy dataset in (overrides CLI configuration)',
+      description: 'Project ID to copy dataset in',
+      semantics: 'override',
     }),
     attach: Flags.string({
       description: 'Attach to the running copy process to show progress',

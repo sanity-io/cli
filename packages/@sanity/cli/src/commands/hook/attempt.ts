@@ -24,14 +24,15 @@ export class AttemptHookCommand extends SanityCommand<typeof AttemptHookCommand>
       description: 'Print details of webhook delivery attempt with ID abc123',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> abc123 --project-id myproject',
+      command: '<%= config.bin %> <%= command.id %> abc123 --project-id projectId',
       description: 'Get attempt details for a specific project',
     },
   ]
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to view webhook attempt for (overrides CLI configuration)',
+      description: 'Project ID to view webhook attempt for',
+      semantics: 'override',
     }),
   }
 

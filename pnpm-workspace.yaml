@@ -13,7 +13,6 @@ catalog:
   eslint: ^9.39.4
   '@eslint/compat': ^2.0.3
   publint: ^0.3.18
-  prettier: ^3.8.1
 
   # Sanity
   sanity: ^5.14.1
@@ -45,14 +44,15 @@ catalog:
   jsdom: ^28.1.0
   zod: ^4.3.6
   'get-tsconfig': ^4.13.6
+  'import-meta-resolve': ^4.2.0
   execa: ^9.6.0
   read-package-up: ^12.0.0
   ora: ^9.0.0
   rxjs: ^7.8.2
   tinyglobby: ^0.2.15
-  'import-meta-resolve': ^4.2.0
   lodash-es: ^4.17.23
   '@types/lodash-es': ^4.17.12
+  yaml: ^2.8.2
 
   # Build Tools
   '@swc/core': ^1.15.18
@@ -70,10 +70,13 @@ minimumReleaseAgeExclude:
   - '@portabletext/*'
   - '@sanity/*'
   - '@types/*'
-  - '@rexxars/jiti'
+  - 'data-uri-to-buffer@7.0.0'
+  - 'get-latest-version@6.0.1'
+  - 'get-uri@7.0.0'
   - 'groq-js'
   - 'groq'
   - 'react-rx'
   - 'sanity'
   - 'use-effect-event'
-  - 'get-latest-version@6.0.1'
+  # Renovate security update: tar@7.5.11
+  - tar@7.5.11

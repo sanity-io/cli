@@ -39,7 +39,8 @@ export class MediaDeployAspectCommand extends SanityCommand<typeof MediaDeployAs
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to deploy media aspect to (overrides CLI configuration)',
+      description: 'Project ID to deploy media aspect to',
+      semantics: 'override',
     }),
     all: Flags.boolean({
       description: 'Deploy all aspects',

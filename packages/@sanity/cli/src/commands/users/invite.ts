@@ -44,7 +44,8 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to invite user to (overrides CLI configuration)',
+      description: 'Project ID to invite user to',
+      semantics: 'override',
     }),
     role: Flags.string({
       description: 'Role to invite the user as',

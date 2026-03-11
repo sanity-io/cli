@@ -22,7 +22,8 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
 
   static override flags = {
     ...getProjectIdFlag({
-      description: 'Project ID to create webhook for (overrides CLI configuration)',
+      description: 'Project ID to create webhook for',
+      semantics: 'override',
     }),
   }
 

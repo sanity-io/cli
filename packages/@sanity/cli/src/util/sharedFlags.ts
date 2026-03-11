@@ -1,11 +1,29 @@
 import {Flags} from '@oclif/core'
 
 /**
- * Properties that callers may override when using shared flag getters.
+ * Controls how the flag relates to CLI configuration:
+ *
+ * - `'override'` — The command falls back to CLI config (sanity.cli.ts) when the flag is not
+ *   provided. The flag description automatically gets an " (overrides CLI configuration)" suffix,
+ *   and `helpGroup` defaults to `'OVERRIDE'`.
+ *
+ * - `'specify'` — The command does NOT fall back to CLI config; the flag is simply how the user
+ *   provides the value. No suffix is appended, and no default `helpGroup` is set.
+ */
+type FlagSemantics = 'override' | 'specify'
+
+/**
+ * Options accepted by the shared flag getters.
  * Locked properties (char, parse, name, helpValue) are excluded to ensure
  * consistent behavior across all commands.
  */
-interface FlagOverrides {
+interface SharedFlagOptions {
+  /**
+   * Controls description suffix and default helpGroup.
+   * @see {@link FlagSemantics}
+   */
+  semantics: FlagSemantics
+
   dependsOn?: string[]
   description?: string
   env?: string
@@ -15,19 +33,24 @@ interface FlagOverrides {
   required?: boolean
 }
 
+const OVERRIDE_SUFFIX = ' (overrides CLI configuration)'
+
 /**
  * Returns a `--project-id` / `-p` flag definition.
  *
  * Locked: flag name (`project-id`), char (`p`), `helpValue` (`<id>`), and parse (trims + validates non-empty).
- * All other oclif flag properties (description, etc.) can be overridden.
  */
-export function getProjectIdFlag(overrides?: FlagOverrides) {
+export function getProjectIdFlag(options: SharedFlagOptions) {
+  const {description: baseDescription, helpGroup, semantics, ...rest} = options
+  const isOverride = semantics === 'override'
+  const description = (baseDescription ?? 'Project ID to use') + (isOverride ? OVERRIDE_SUFFIX : '')
+
   return {
     'project-id': Flags.string({
-      description: 'Project ID to use (overrides CLI configuration)',
-      helpGroup: 'OVERRIDE',
+      description,
+      helpGroup: helpGroup ?? (isOverride ? 'OVERRIDE' : undefined),
       helpValue: '<id>',
-      ...overrides,
+      ...rest,
       char: 'p',
       parse: async (input: string) => {
         const trimmed = input.trim()
@@ -44,15 +67,18 @@ export function getProjectIdFlag(overrides?: FlagOverrides) {
  * Returns a `--dataset` / `-d` flag definition.
  *
  * Locked: flag name (`dataset`), char (`d`), `helpValue` (`<name>`), and parse (trims + validates non-empty).
- * All other oclif flag properties (description, etc.) can be overridden.
  */
-export function getDatasetFlag(overrides?: FlagOverrides) {
+export function getDatasetFlag(options: SharedFlagOptions) {
+  const {description: baseDescription, helpGroup, semantics, ...rest} = options
+  const isOverride = semantics === 'override'
+  const description = (baseDescription ?? 'Dataset to use') + (isOverride ? OVERRIDE_SUFFIX : '')
+
   return {
     dataset: Flags.string({
-      description: 'Dataset to use (overrides CLI configuration)',
-      helpGroup: 'OVERRIDE',
+      description,
+      helpGroup: helpGroup ?? (isOverride ? 'OVERRIDE' : undefined),
       helpValue: '<name>',
-      ...overrides,
+      ...rest,
       char: 'd',
       parse: async (input: string) => {
         const trimmed = input.trim()
