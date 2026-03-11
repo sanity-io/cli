@@ -45,8 +45,7 @@ export async function detectLegacySanityApp(
 
     // Check for SanityApp import from @sanity/sdk-react
     const hasSanityAppImport =
-      /import\s+{[^}]*\bSanityApp\b[^}]*}\s+from\s+['"]@sanity\/sdk-react['"]/.test(fileContent) ||
-      /import\s+{[^}]*\bSanityApp\b[^}]*}\s+from\s+["']@sanity\/sdk-react["']/.test(fileContent)
+      /import\s+{[^}]*\bSanityApp\b[^}]*}\s+from\s+['"]@sanity\/sdk-react['"]/.test(fileContent)
 
     // Check for <SanityApp usage in JSX
     const hasSanityAppUsage = /<SanityApp\b/.test(fileContent)

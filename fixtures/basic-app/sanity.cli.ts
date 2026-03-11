@@ -4,7 +4,6 @@ export default defineCliConfig({
   app: {
     entry: './src/App.tsx',
     organizationId: 'org-id',
-    // @ts-expect-error - resources is not yet in the published sanity package CliConfig types
     resources: {
       default: {
         dataset: 'test',

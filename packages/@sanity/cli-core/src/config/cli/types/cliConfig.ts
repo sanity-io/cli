@@ -3,10 +3,15 @@ import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-comp
 
 import {type UserViteConfig} from './userViteConfig'
 
-interface AppResource {
+/**
+ * A named project/dataset resource that the app will access.
+ * @public
+ */
+export interface AppResource {
   dataset: string
   projectId: string
 }
+
 /**
  * @public
  */

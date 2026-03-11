@@ -1,3 +1,5 @@
+import {type AppResource} from '@sanity/cli-core'
+
 const entryModule = `
 // This file is auto-generated on 'sanity dev'
 // Modifications to this file is automatically discarded
@@ -46,7 +48,7 @@ renderSanityApp(
 `
 
 export function getEntryModule(options: {
-  appResources?: unknown
+  appResources?: Record<string, AppResource>
   basePath?: string
   entry?: string
   isApp?: boolean
