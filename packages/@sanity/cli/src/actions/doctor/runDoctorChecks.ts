@@ -31,10 +31,23 @@ export async function runDoctorChecks(
   }
 
   // Calculate summary
-  const summary = {
-    errors: results.filter((r) => r.status === 'error').length,
-    passed: results.filter((r) => r.status === 'passed').length,
-    warnings: results.filter((r) => r.status === 'warning').length,
+  const summary = {errors: 0, passed: 0, warnings: 0}
+  for (const result of results) {
+    switch (result.status) {
+      case 'error': {
+        summary.errors++
+        break
+      }
+      case 'passed': {
+        summary.passed++
+        break
+      }
+      case 'warning': {
+        summary.warnings++
+        break
+      }
+      // No default
+    }
   }
 
   return {checks: results, summary}
