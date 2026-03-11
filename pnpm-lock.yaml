@@ -19,8 +19,8 @@ catalogs:
       specifier: ^3.2.74
       version: 3.2.74
     '@sanity/codegen':
-      specifier: ^5.10.1
-      version: 5.10.1
+      specifier: ^6.0.0
+      version: 6.0.0
     '@sanity/pkg-utils':
       specifier: ^10.4.8
       version: 10.4.8
@@ -476,7 +476,7 @@ importers:
         version: 7.17.0(debug@4.4.3)
       '@sanity/codegen':
         specifier: 'catalog:'
-        version: 5.10.1(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(@types/react@19.2.14)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2)
+        version: 6.0.0(@oclif/core@4.8.3)(@sanity/cli-core@packages+@sanity+cli-core)(@sanity/telemetry@0.8.1(react@19.2.4))
       '@sanity/descriptors':
         specifier: ^1.3.0
         version: 1.3.0
@@ -493,8 +493,8 @@ importers:
         specifier: ^4.1.3
         version: 4.1.3(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(@types/react@19.2.14)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2)
       '@sanity/migrate':
-        specifier: ^5.2.5
-        version: 5.2.5(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(@types/react@19.2.14)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(xstate@5.28.0)(yaml@2.8.2)
+        specifier: ^6.0.0
+        version: 6.0.0(@oclif/core@4.8.3)(@sanity/cli-core@packages+@sanity+cli-core)(@types/react@19.2.14)(xstate@5.28.0)
       '@sanity/runtime-cli':
         specifier: ^14.5.0
         version: 14.5.0(@types/node@20.19.37)(debug@4.4.3)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
@@ -844,7 +844,7 @@ importers:
         version: link:../../@repo/tsconfig
       '@sanity/codegen':
         specifier: 'catalog:'
-        version: 5.10.1(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(@types/react@19.2.14)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2)
+        version: 6.0.0(@oclif/core@4.8.3)(@sanity/cli-core@1.0.0(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2))(@sanity/telemetry@0.8.1(react@19.2.4))
       '@sanity/eslint-config-cli':
         specifier: workspace:*
         version: link:../eslint-config-cli
@@ -3623,6 +3623,12 @@ packages:
     peerDependencies:
       '@sanity/telemetry': '>=0.8.1 <0.9.0'
 
+  '@sanity/cli-core@1.0.0':
+    resolution: {integrity: sha512-M+1oQfJacgEaMUrGCa/1NOI4mahVRgmV+K1VsKVP/smBWvXmy8cJ1xuHHlr8jftv4SSBmiI5mQL6AunEab/wVg==}
+    engines: {node: '>=20.19.1 <22 || >=22.12'}
+    peerDependencies:
+      '@sanity/telemetry': '>=0.8.1 <0.9.0'
+
   '@sanity/cli@5.14.1':
     resolution: {integrity: sha512-fgMZcobVdtiq9pQqrERzf8zsHvauFlBrp0dozgJ7rN9uVGFKXG+opMdQYAwyyk+FmYdBp91fUWXDTnC5yGziZg==}
     engines: {node: '>=20.19 <22 || >=22.12'}
@@ -3651,6 +3657,14 @@ packages:
     hasBin: true
     peerDependencies:
       '@sanity/telemetry': ^0.8.0
+
+  '@sanity/codegen@6.0.0':
+    resolution: {integrity: sha512-mxnbIdevDEn013El+QzA5OqRUQB9dKvqYeRcuzs1qLdoKXl+//lthxk3O+S4OiIpuAyX3/Su9Cik1WmK/KaqUA==}
+    engines: {node: '>=20.19 <22 || >=22.12'}
+    peerDependencies:
+      '@oclif/core': ^4.8.0
+      '@sanity/cli-core': ^1
+      '@sanity/telemetry': ^0.8.1
 
   '@sanity/color@3.0.6':
     resolution: {integrity: sha512-2TjYEvOftD0v7ukx3Csdh9QIu44P2z7NDJtlC3qITJRYV36J7R6Vfd3trVhFnN77/7CZrGjqngrtohv8VqO5nw==}
@@ -3764,6 +3778,13 @@ packages:
     resolution: {integrity: sha512-9tgTiRmprtETtrYU21RBGwaP4uxcdtJJmEHqExh2ZYbZdyj4kCr9ToDU1xb4f0+Iq4czkokVCnfIUEeCmImi4A==}
     engines: {node: '>=20.19 <22 || >=22.12'}
     hasBin: true
+
+  '@sanity/migrate@6.0.0':
+    resolution: {integrity: sha512-UNerOkcU3EQc8ugCKrujkV8XjGUwgYOymv4wxe8COce+nWABOTXvWByrQZvzkQT4qep4kbfPvx48YeT9XQfEzA==}
+    engines: {node: '>=20.19 <22 || >=22.12'}
+    peerDependencies:
+      '@oclif/core': ^4.8.1
+      '@sanity/cli-core': ^1
 
   '@sanity/mutate@0.12.6':
     resolution: {integrity: sha512-Ai9Dy0C79yUALnuLe0ealwqgz11T+ngpWCzTyZv01xdjB6coQo+KoM8E0FeRTK5Zr/IAgKphYuYLU5DFCB9cGw==}
@@ -6400,8 +6421,8 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
-  groq-js@1.27.1:
-    resolution: {integrity: sha512-75Ckwdqw/VXf06pHKhSiwi8HbU2L+HQQzyZHvKbNPuW8z5f+D6srNBkTpSxO5cJy03bOC58FhjMeSsBD9AwgpA==}
+  groq-js@1.29.0:
+    resolution: {integrity: sha512-LP/O1GwdCpKk4X/+GtUNafOLvPMf8oU+kLbe6QdqUQQl/lOOirHcpS/Br6HRrb0VeVl9QKJzmS/dK7lHO1LYsg==}
     engines: {node: '>= 14'}
 
   groq@3.88.1-typegen-experimental.0:
@@ -12907,6 +12928,45 @@ snapshots:
       - utf-8-validate
       - yaml
 
+  '@sanity/cli-core@1.0.0(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2)':
+    dependencies:
+      '@inquirer/prompts': 8.3.0(@types/node@20.19.37)
+      '@oclif/core': 4.8.3
+      '@rexxars/jiti': 2.6.2
+      '@sanity/client': 7.17.0(debug@4.4.3)
+      '@sanity/telemetry': 0.8.1(react@19.2.4)
+      babel-plugin-react-compiler: 1.0.0
+      boxen: 8.0.1
+      configstore: 7.1.0
+      debug: 4.4.3(supports-color@8.1.1)
+      get-it: 8.7.0(debug@4.4.3)
+      get-tsconfig: 4.13.6
+      import-meta-resolve: 4.2.0
+      jsdom: 28.1.0(@noble/hashes@2.0.1)
+      json-lexer: 1.2.0
+      log-symbols: 7.0.1
+      ora: 9.3.0
+      read-package-up: 12.0.0
+      rxjs: 7.8.2
+      tsx: 4.21.0
+      vite: 7.3.1(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+      vite-node: 5.3.0(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2)
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - '@noble/hashes'
+      - '@types/node'
+      - canvas
+      - jiti
+      - less
+      - lightningcss
+      - sass
+      - sass-embedded
+      - stylus
+      - sugarss
+      - supports-color
+      - terser
+      - yaml
+
   '@sanity/cli@5.14.1(@noble/hashes@2.0.1)(@types/node@25.0.10)(babel-plugin-react-compiler@1.0.0)(jiti@2.6.1)(lightningcss@1.31.1)(react@19.2.4)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)':
     dependencies:
       '@babel/parser': 7.29.0
@@ -13015,7 +13075,7 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
       globby: 11.1.0
       groq: 5.11.0
-      groq-js: 1.27.1
+      groq-js: 1.29.0
       json5: 2.2.3
       lodash-es: 4.17.23
       prettier: 3.8.1
@@ -13059,7 +13119,7 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
       globby: 11.1.0
       groq: 5.11.0
-      groq-js: 1.27.1
+      groq-js: 1.29.0
       json5: 2.2.3
       lodash-es: 4.17.23
       prettier: 3.8.1
@@ -13103,7 +13163,7 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
       globby: 11.1.0
       groq: 5.11.0
-      groq-js: 1.27.1
+      groq-js: 1.29.0
       json5: 2.2.3
       lodash-es: 4.17.23
       prettier: 3.8.1
@@ -13127,6 +13187,62 @@ snapshots:
       - terser
       - utf-8-validate
       - yaml
+
+  '@sanity/codegen@6.0.0(@oclif/core@4.8.3)(@sanity/cli-core@1.0.0(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2))(@sanity/telemetry@0.8.1(react@19.2.4))':
+    dependencies:
+      '@babel/core': 7.29.0
+      '@babel/generator': 7.29.0
+      '@babel/preset-env': 7.28.6(@babel/core@7.29.0)
+      '@babel/preset-react': 7.28.5(@babel/core@7.29.0)
+      '@babel/preset-typescript': 7.28.5(@babel/core@7.29.0)
+      '@babel/register': 7.28.6(@babel/core@7.29.0)
+      '@babel/traverse': 7.29.0
+      '@babel/types': 7.29.0
+      '@oclif/core': 4.8.3
+      '@sanity/cli-core': 1.0.0(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2)
+      '@sanity/telemetry': 0.8.1(react@19.2.4)
+      '@sanity/worker-channels': 2.0.0
+      chokidar: 3.6.0
+      debug: 4.4.3(supports-color@8.1.1)
+      globby: 11.1.0
+      groq: 5.11.0
+      groq-js: 1.29.0
+      json5: 2.2.3
+      lodash-es: 4.17.23
+      prettier: 3.8.1
+      reselect: 5.1.1
+      tsconfig-paths: 4.2.0
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - supports-color
+
+  '@sanity/codegen@6.0.0(@oclif/core@4.8.3)(@sanity/cli-core@packages+@sanity+cli-core)(@sanity/telemetry@0.8.1(react@19.2.4))':
+    dependencies:
+      '@babel/core': 7.29.0
+      '@babel/generator': 7.29.0
+      '@babel/preset-env': 7.28.6(@babel/core@7.29.0)
+      '@babel/preset-react': 7.28.5(@babel/core@7.29.0)
+      '@babel/preset-typescript': 7.28.5(@babel/core@7.29.0)
+      '@babel/register': 7.28.6(@babel/core@7.29.0)
+      '@babel/traverse': 7.29.0
+      '@babel/types': 7.29.0
+      '@oclif/core': 4.8.3
+      '@sanity/cli-core': link:packages/@sanity/cli-core
+      '@sanity/telemetry': 0.8.1(react@19.2.4)
+      '@sanity/worker-channels': 2.0.0
+      chokidar: 3.6.0
+      debug: 4.4.3(supports-color@8.1.1)
+      globby: 11.1.0
+      groq: 5.11.0
+      groq-js: 1.29.0
+      json5: 2.2.3
+      lodash-es: 4.17.23
+      prettier: 3.8.1
+      reselect: 5.1.1
+      tsconfig-paths: 4.2.0
+      zod: 4.3.6
+    transitivePeerDependencies:
+      - supports-color
 
   '@sanity/color@3.0.6': {}
 
@@ -13331,7 +13447,7 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
       fast-fifo: 1.3.2
       get-tsconfig: 4.13.6
-      groq-js: 1.27.1
+      groq-js: 1.29.0
       lodash-es: 4.17.23
       p-map: 7.0.4
       tsx: 4.21.0
@@ -13369,7 +13485,7 @@ snapshots:
       debug: 4.4.3(supports-color@8.1.1)
       fast-fifo: 1.3.2
       get-tsconfig: 4.13.6
-      groq-js: 1.27.1
+      groq-js: 1.29.0
       lodash-es: 4.17.23
       p-map: 7.0.4
       tsx: 4.21.0
@@ -13392,6 +13508,26 @@ snapshots:
       - utf-8-validate
       - xstate
       - yaml
+
+  '@sanity/migrate@6.0.0(@oclif/core@4.8.3)(@sanity/cli-core@packages+@sanity+cli-core)(@types/react@19.2.14)(xstate@5.28.0)':
+    dependencies:
+      '@oclif/core': 4.8.3
+      '@sanity/cli-core': link:packages/@sanity/cli-core
+      '@sanity/client': 7.17.0(debug@4.4.3)
+      '@sanity/mutate': 0.16.1(debug@4.4.3)(xstate@5.28.0)
+      '@sanity/types': 5.14.1(@types/react@19.2.14)(debug@4.4.3)
+      '@sanity/util': 5.14.1(@types/react@19.2.14)(debug@4.4.3)
+      arrify: 2.0.1
+      console-table-printer: 2.15.0
+      debug: 4.4.3(supports-color@8.1.1)
+      fast-fifo: 1.3.2
+      groq-js: 1.29.0
+      lodash-es: 4.17.23
+      p-map: 7.0.4
+    transitivePeerDependencies:
+      - '@types/react'
+      - supports-color
+      - xstate
 
   '@sanity/mutate@0.12.6(debug@4.4.3)':
     dependencies:
@@ -13580,7 +13716,7 @@ snapshots:
       cardinal: 2.1.1
       empathic: 2.0.0
       eventsource: 4.1.0
-      groq-js: 1.27.1
+      groq-js: 1.29.0
       jiti: 2.6.1
       mime-types: 3.0.2
       ora: 9.3.0
@@ -13623,7 +13759,7 @@ snapshots:
       cardinal: 2.1.1
       empathic: 2.0.0
       eventsource: 4.1.0
-      groq-js: 1.27.1
+      groq-js: 1.29.0
       jiti: 2.6.1
       mime-types: 3.0.2
       ora: 9.3.0
@@ -13657,7 +13793,7 @@ snapshots:
       '@sanity/generate-help-url': 4.0.0
       '@sanity/types': 5.14.1(@types/react@19.2.14)(debug@4.4.3)
       arrify: 2.0.1
-      groq-js: 1.27.1
+      groq-js: 1.29.0
       humanize-list: 1.0.1
       leven: 3.1.0
       lodash-es: 4.17.23
@@ -13723,7 +13859,7 @@ snapshots:
       '@sanity/mutate': 0.12.6(debug@4.4.3)
       '@sanity/types': 5.14.1(@types/react@19.2.14)(debug@4.4.3)
       groq: 3.88.1-typegen-experimental.0
-      groq-js: 1.27.1
+      groq-js: 1.29.0
       lodash-es: 4.17.23
       reselect: 5.1.1
       rxjs: 7.8.2
@@ -16800,7 +16936,7 @@ snapshots:
 
   graceful-fs@4.2.11: {}
 
-  groq-js@1.27.1:
+  groq-js@1.29.0:
     dependencies:
       debug: 4.4.3(supports-color@8.1.1)
     transitivePeerDependencies:
@@ -18949,7 +19085,7 @@ snapshots:
       fast-deep-equal: 3.1.3
       form-data: 4.0.5
       get-it: 8.7.0(debug@4.4.3)
-      groq-js: 1.27.1
+      groq-js: 1.29.0
       gunzip-maybe: 1.4.2
       history: 5.3.0
       i18next: 23.16.8
@@ -19128,7 +19264,7 @@ snapshots:
       fast-deep-equal: 3.1.3
       form-data: 4.0.5
       get-it: 8.7.0(debug@4.4.3)
-      groq-js: 1.27.1
+      groq-js: 1.29.0
       gunzip-maybe: 1.4.2
       history: 5.3.0
       i18next: 23.16.8
