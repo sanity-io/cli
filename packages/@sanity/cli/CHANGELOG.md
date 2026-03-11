@@ -1,832 +1,529 @@
-# Changelog
+# Change Log
 
-## [6.0.0-alpha.21](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.20...cli-v6.0.0-alpha.21) (2026-03-10)
+All notable changes to this project will be documented in this file.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [5.14.1](https://github.com/sanity-io/sanity/compare/v5.14.0...v5.14.1) (2026-03-10)
 
-### ⚠ BREAKING CHANGES
+**Note:** Version bump only for package @sanity/cli
 
-* **cli-core:** Renamed members: `setConfig` → `setCliUserConfig`, `getConfig` → `getCliUserConfig`
+## [5.14.0](https://github.com/sanity-io/sanity/compare/v5.13.0...v5.14.0) (2026-03-10)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [5.13.0](https://github.com/sanity-io/sanity/compare/v5.12.0...v5.13.0) (2026-03-03)
 
 ### Features
 
-* add `--project-id`, `--dataset` flag to all relevant commands ([#548](https://github.com/sanity-io/cli/issues/548)) ([3e77ceb](https://github.com/sanity-io/cli/commit/3e77ceb7c47266460007f21eb91c9603b3647f39))
-* **cli-core:** improve and reduce `@sanity/cli-core` public API ([#546](https://github.com/sanity-io/cli/issues/546)) ([e861a86](https://github.com/sanity-io/cli/commit/e861a861937e4b690e3d20798a0fc1cb2223135e))
-* sdk templates are ESM by default ([#576](https://github.com/sanity-io/cli/issues/576)) ([d31796f](https://github.com/sanity-io/cli/commit/d31796f606edce77d2f5c0f189477159b73e5d13))
+* **cli:** upgrade blueprints doctor and plan ([#12258](https://github.com/sanity-io/sanity/issues/12258)) ([64d162e](https://github.com/sanity-io/sanity/commit/64d162ee2832b4ef2ee72779c8c390a44f9cfbde)) by Taylor Beseda (tbeseda@gmail.com)
 
+## [5.12.0](https://github.com/sanity-io/sanity/compare/v5.11.0...v5.12.0) (2026-02-24)
+
+### Features
+
+* **cli:** add Gemini, Codex and Copilot CLIs to MCP configure ([#12194](https://github.com/sanity-io/sanity/issues/12194)) ([093e716](https://github.com/sanity-io/sanity/commit/093e7165e77bce80e11e59e7a98f58524d363e43)) by James Woods (jwwoods01@gmail.com)
+* **cli:** upgrade blueprints commands ([#12226](https://github.com/sanity-io/sanity/issues/12226)) ([245a07f](https://github.com/sanity-io/sanity/commit/245a07ff585caf4c63536c47f7dd468c5c01205a)) by Taylor Beseda (tbeseda@gmail.com)
+
+## [5.11.0](https://github.com/sanity-io/sanity/compare/v5.10.0...v5.11.0) (2026-02-19)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [5.10.0](https://github.com/sanity-io/sanity/compare/v5.9.0...v5.10.0) (2026-02-17)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [5.9.0](https://github.com/sanity-io/sanity/compare/v5.8.1...v5.9.0) (2026-02-10)
+
+### Features
+
+* **cli:** add schema extraction to dev and build commands ([#11761](https://github.com/sanity-io/sanity/issues/11761)) ([c3a4cb1](https://github.com/sanity-io/sanity/commit/c3a4cb19e11147ba91a832420fed13504e8b58a4)) by Kristoffer Brabrand (kristoffer@brabrand.no)
 
 ### Bug Fixes
 
-* allow commands to run outside project context with --project-id/--dataset flags ([#558](https://github.com/sanity-io/cli/issues/558)) ([b3281c0](https://github.com/sanity-io/cli/commit/b3281c07a52493e280f53e56d6b7d1fabc11460a))
-* correct inverted CORS guard in bootstrapRemoteTemplate ([#547](https://github.com/sanity-io/cli/issues/547)) ([5382dfe](https://github.com/sanity-io/cli/commit/5382dfef002601825cb7576140170778d646153f))
-* **deps:** replace tiny dependencies with inline utilities ([#583](https://github.com/sanity-io/cli/issues/583)) ([31c0937](https://github.com/sanity-io/cli/commit/31c0937cf266203999cc14b04d4d760df820ab91))
-* **deps:** update dependency semver to ^7.7.4 ([#587](https://github.com/sanity-io/cli/issues/587)) ([ab86f77](https://github.com/sanity-io/cli/commit/ab86f770d27b6cd6ebfb0acb791e464b65954937))
-* **deps:** update oclif-tooling ([#561](https://github.com/sanity-io/cli/issues/561)) ([1f551d2](https://github.com/sanity-io/cli/commit/1f551d2ea701f15feff71e8af72739755179ba03))
-* **deps:** update sanity-tooling ([#573](https://github.com/sanity-io/cli/issues/573)) ([bd7e3b0](https://github.com/sanity-io/cli/commit/bd7e3b0f77be51b9c616c1a39b8e15356dc00fc6))
-* only show users projects they have access to ([#582](https://github.com/sanity-io/cli/issues/582)) ([0c2b8c9](https://github.com/sanity-io/cli/commit/0c2b8c9b65ac109bdee5d3d986d2de20b1a8cbdd))
-* replace @vercel/fs-detectors with inline implementation ([#544](https://github.com/sanity-io/cli/issues/544)) ([c476f04](https://github.com/sanity-io/cli/commit/c476f04622caf3c871cf5adac525e184f4e4ebc4))
+* update readLocalBlueprint signature ([#12097](https://github.com/sanity-io/sanity/issues/12097)) ([7a16694](https://github.com/sanity-io/sanity/commit/7a166946ce61e278eff9e83328a98aaf74b249b9)) by Simon MacDonald (simon.macdonald@gmail.com)
 
+### Reverts
 
-### Performance Improvements
+* rollback v5.9.0 version bump ([#12139](https://github.com/sanity-io/sanity/issues/12139)) ([4195d26](https://github.com/sanity-io/sanity/commit/4195d269f400347fb16765400842f765eb1625ec)) by Bjørge Næss (bjoerge@gmail.com)
 
-* speed up graphql commands ([#502](https://github.com/sanity-io/cli/issues/502)) ([a52d59b](https://github.com/sanity-io/cli/commit/a52d59bbd8a1d621f942d1285eb593669de29326))
+## [5.8.1](https://github.com/sanity-io/sanity/compare/v5.8.0...v5.8.1) (2026-02-05)
 
+### Bug Fixes
+
+* **deps:** update dependency @sanity/template-validator to ^2.4.5 ([#12076](https://github.com/sanity-io/sanity/issues/12076)) ([6da793e](https://github.com/sanity-io/sanity/commit/6da793e90e421abeea39533dde344295c8b52ebf)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+* **deps:** update dependency @sanity/template-validator to v3 ([#12092](https://github.com/sanity-io/sanity/issues/12092)) ([d889072](https://github.com/sanity-io/sanity/commit/d88907264bf0ac667a89097299c41c83a257b12e)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+
+## [5.8.0](https://github.com/sanity-io/sanity/compare/v5.7.0...v5.8.0) (2026-02-03)
+
+### Features
+
+* **cli:** add typegen to dev and build commands ([#11957](https://github.com/sanity-io/sanity/issues/11957)) ([dc6baae](https://github.com/sanity-io/sanity/commit/dc6baaed2d132e3d1fd020f0871d929fb9a34a5c)) by Kristoffer Brabrand (kristoffer@brabrand.no)
+* **cli:** add watch mode for typegen generate command ([#11867](https://github.com/sanity-io/sanity/issues/11867)) ([c22e65e](https://github.com/sanity-io/sanity/commit/c22e65eb958f98c47e2cdfc028618aa2fe512760)) by Kristoffer Brabrand (kristoffer@brabrand.no)
+
+## [5.7.0](https://github.com/sanity-io/sanity/compare/v5.6.0...v5.7.0) (2026-01-27)
+
+### Bug Fixes
+
+* **cli:** pass CLI project ID to runtime-cli if set, upgrade runtime-cli ([#11971](https://github.com/sanity-io/sanity/issues/11971)) ([539bf4a](https://github.com/sanity-io/sanity/commit/539bf4aca764cab92e0a0241a78eb599844f7d26)) by Espen Hovlandsdal (espen@hovlandsdal.com)
+
+## [5.6.0](https://github.com/sanity-io/sanity/compare/v5.5.0...v5.6.0) (2026-01-22)
+
+### Bug Fixes
+
+* **deps:** Update babel monorepo to ^7.28.6 ([#11876](https://github.com/sanity-io/sanity/issues/11876)) ([c86d4fb](https://github.com/sanity-io/sanity/commit/c86d4fb25421e864811dd09eae520d7d7d54a50f)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+* **test:** symlink in monorepo deps after installing ([#11905](https://github.com/sanity-io/sanity/issues/11905)) ([2b9d06b](https://github.com/sanity-io/sanity/commit/2b9d06bb967b1250a7ed6dab6a81a02c1f713c84)) by Kristoffer Brabrand (kristoffer@brabrand.no)
+
+## [5.5.0](https://github.com/sanity-io/sanity/compare/v5.4.0...v5.5.0) (2026-01-19)
+
+### Features
+
+* **cli:** allow configuring schemaExtraction in sanity.cli.ts ([#11824](https://github.com/sanity-io/sanity/issues/11824)) ([6fd624b](https://github.com/sanity-io/sanity/commit/6fd624bc580db4886fa23a087774034fc8f49bd5)) by Kristoffer Brabrand (kristoffer@brabrand.no)
+
+## [5.4.0](https://github.com/sanity-io/sanity/compare/v5.3.1...v5.4.0) (2026-01-15)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [5.3.1](https://github.com/sanity-io/sanity/compare/v5.3.0...v5.3.1) (2026-01-14)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [5.3.0](https://github.com/sanity-io/sanity/compare/v5.2.0...v5.3.0) (2026-01-13)
+
+### Features
+
+* **cli:** add mcp configuration support for zed and opencode ([#11747](https://github.com/sanity-io/sanity/issues/11747)) ([30121a5](https://github.com/sanity-io/sanity/commit/30121a5fe05f02f7588932a0327dfc848d7c0c1e)) by James Woods (jwwoods01@gmail.com)
+* GRO-4157 dynamic mcp init prompt ([#11555](https://github.com/sanity-io/sanity/issues/11555)) ([e6f4485](https://github.com/sanity-io/sanity/commit/e6f4485432679942aa53155363c97b73d77aceda)) by Matthew Ritter (matthew.ritter@sanity.io)
+* **typegen:** add ArrayOf utility type for inline object array members ([#11698](https://github.com/sanity-io/sanity/issues/11698)) ([895b404](https://github.com/sanity-io/sanity/commit/895b404899446c0dec5c5e130cefaa645fccde3e)) by Kristoffer Brabrand (kristoffer@brabrand.no)
+
+### Bug Fixes
+
+* **linter:** enforce no unnecessary boolean literal comparisons ([#11734](https://github.com/sanity-io/sanity/issues/11734)) ([94462ad](https://github.com/sanity-io/sanity/commit/94462ad1f55c5a809f030ab21db5148bf921726b)) by Cody Olsen (81981+stipsan@users.noreply.github.com)
+* **vitest:** migrate Date, Worker, and Observer mocking to v4 API ([#11754](https://github.com/sanity-io/sanity/issues/11754)) ([20caed1](https://github.com/sanity-io/sanity/commit/20caed10d7531f82167354623799371e580449be)) by Copilot (198982749+Copilot@users.noreply.github.com)
+
+## [5.2.0](https://github.com/sanity-io/sanity/compare/v5.1.0...v5.2.0) (2026-01-07)
+
+### Bug Fixes
+
+* **cli:** update init output docs command text ([#10074](https://github.com/sanity-io/sanity/issues/10074)) ([ad1c6bd](https://github.com/sanity-io/sanity/commit/ad1c6bd7065820824e333395194c7a486a9a06a3)) by Mark Michon (mark.michon@sanity.io)
+
+## [5.1.0](https://github.com/sanity-io/sanity/compare/v5.0.1...v5.1.0) (2025-12-22)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [5.0.1](https://github.com/sanity-io/sanity/compare/v5.0.0...v5.0.1) (2025-12-17)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [5.0.0](https://github.com/sanity-io/sanity/compare/v4.22.0...v5.0.0) (2025-12-16)
+
+### ⚠ BREAKING CHANGES
+
+* **typegen:** return same case when generating types (#11330)
+
+### Features
+
+* **typegen:** memoizations, refactoring add improved progress reporting ([#10294](https://github.com/sanity-io/sanity/issues/10294)) ([5d6ac17](https://github.com/sanity-io/sanity/commit/5d6ac171739442c4db418eed8176d1845cb8181a)), closes [#8950](https://github.com/sanity-io/sanity/issues/8950) by Kristoffer Brabrand (kristoffer@brabrand.no)
+* **typegen:** return same case when generating types ([#11330](https://github.com/sanity-io/sanity/issues/11330)) ([0402647](https://github.com/sanity-io/sanity/commit/0402647eb06a4dde3d1c93ebf70192c47ee52e36)) by Sindre Gulseth (sgulseth@gmail.com)
+
+## [4.22.0](https://github.com/sanity-io/sanity/compare/v4.21.1...v4.22.0) (2025-12-16)
+
+### Features
+
+* update mcp configured prompt text ([#11514](https://github.com/sanity-io/sanity/issues/11514)) ([b595fee](https://github.com/sanity-io/sanity/commit/b595fee91a0f780b99ab0adaa593839df30f6cf7)) by Matthew Ritter (matthew.ritter@sanity.io)
+
+### Bug Fixes
+
+* **cli:** telemetry in MCP commands ([#11487](https://github.com/sanity-io/sanity/issues/11487)) ([9e805d6](https://github.com/sanity-io/sanity/commit/9e805d64ae4e7f36c4bdc6632789cfd7aedab6a8)) by James Woods (jwwoods01@gmail.com)
+* **cli:** update runtime commands ([#11513](https://github.com/sanity-io/sanity/issues/11513)) ([6f9ae4f](https://github.com/sanity-io/sanity/commit/6f9ae4f90456f5b592363aba4c188b24f3d38d4c)) by Taylor Beseda (tbeseda@gmail.com)
+
+## [4.21.1](https://github.com/sanity-io/sanity/compare/v4.21.0...v4.21.1) (2025-12-11)
+
+### Bug Fixes
+
+* **cli:** blueprints doctor does not require existing blueprint config ([#11444](https://github.com/sanity-io/sanity/issues/11444)) ([b8d9a94](https://github.com/sanity-io/sanity/commit/b8d9a94e4b142aa2860b7ce0e928f3c7c72a257e)) by Taylor Beseda (tbeseda@gmail.com)
+* mcp cli wording ([#11457](https://github.com/sanity-io/sanity/issues/11457)) ([2aa0766](https://github.com/sanity-io/sanity/commit/2aa0766f7c5ad5f57c39a10525584489283a3a1f)) by James Woods (jwwoods01@gmail.com)
+
+## [4.21.0](https://github.com/sanity-io/sanity/compare/v4.20.3...v4.21.0) (2025-12-09)
+
+### Features
+
+* setup mcp on sanity init and add mcp add command to cli ([#11409](https://github.com/sanity-io/sanity/issues/11409)) ([4752fb1](https://github.com/sanity-io/sanity/commit/4752fb174ad862817d40e0eeba07074fa62d3801)) by James Woods (jwwoods01@gmail.com)
+* setup mcp on sanity init and add mcp add command to cli ([#11434](https://github.com/sanity-io/sanity/issues/11434)) ([e27bea7](https://github.com/sanity-io/sanity/commit/e27bea79c96cd743931f1d52cf9ceed52dd88f88)) by James Woods (jwwoods01@gmail.com)
+* Update runtime-cli to v12 ([#11410](https://github.com/sanity-io/sanity/issues/11410)) ([3fea96a](https://github.com/sanity-io/sanity/commit/3fea96acee0a8e5ccdd2c63a78eaa7fb273e39e0)) by Dave Sewell (snocorp@gmail.com)
+
+### Bug Fixes
+
+* **deps:** update dependency get-it to ^8.7.0 ([#11395](https://github.com/sanity-io/sanity/issues/11395)) ([5f4487a](https://github.com/sanity-io/sanity/commit/5f4487aff99167094b2d1ea91058a45771198833)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+* **deps:** update dependency groq-js to ^1.23.0 ([#11429](https://github.com/sanity-io/sanity/issues/11429)) ([b100ba4](https://github.com/sanity-io/sanity/commit/b100ba48cf49f31c0230c92095450aa0690e7d4b)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+
+## [4.20.3](https://github.com/sanity-io/sanity/compare/v4.20.2...v4.20.3) (2025-12-04)
+
+### Bug Fixes
+
+* **deps:** Update react monorepo to ^19.2.1 ([#11389](https://github.com/sanity-io/sanity/issues/11389)) ([ad157b1](https://github.com/sanity-io/sanity/commit/ad157b1e393f997d9c0dacdd964781169a95d2de)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+
+## [4.20.2](https://github.com/sanity-io/sanity/compare/v4.20.1...v4.20.2) (2025-12-04)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [4.20.1](https://github.com/sanity-io/sanity/compare/v4.20.0...v4.20.1) (2025-12-03)
+
+### Bug Fixes
+
+* **deps:** update dependency groq-js to ^1.22.0 ([#11366](https://github.com/sanity-io/sanity/issues/11366)) ([6976b77](https://github.com/sanity-io/sanity/commit/6976b77295f0959abc588fe24dbd45e246d4b217)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+* ERR_REQUIRE_CYCLE_MODULE on older node, and windows resolve regression ([#11385](https://github.com/sanity-io/sanity/issues/11385)) ([bfaa1c7](https://github.com/sanity-io/sanity/commit/bfaa1c7710e4d0c2f422689ca107a7f84c37c763)) by Cody Olsen (81981+stipsan@users.noreply.github.com)
+
+## [4.20.0](https://github.com/sanity-io/sanity/compare/v4.19.0...v4.20.0) (2025-12-02)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [4.19.0](https://github.com/sanity-io/sanity/compare/v4.18.0...v4.19.0) (2025-11-25)
+
+### Features
+
+* **cli:** add typegen configuration through cli config ([#11135](https://github.com/sanity-io/sanity/issues/11135)) ([cfd2d9c](https://github.com/sanity-io/sanity/commit/cfd2d9c26870a7dbfebfef97ac575507f7a0edbe)) by Kristoffer Brabrand (kristoffer@brabrand.no)
+
+## [4.18.0](https://github.com/sanity-io/sanity/compare/v4.17.0...v4.18.0) (2025-11-21)
+
+### Bug Fixes
+
+* **deps:** update dependency groq-js to ^1.21.0 ([#11216](https://github.com/sanity-io/sanity/issues/11216)) ([fc8f483](https://github.com/sanity-io/sanity/commit/fc8f4832c1a80162bdc54a229f66c3af911a3d21)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+
+## [4.17.0](https://github.com/sanity-io/sanity/compare/v4.16.0...v4.17.0) (2025-11-20)
+
+### Bug Fixes
+
+* **actions:** `onComplete` considered harmful, use local state instead ([#11199](https://github.com/sanity-io/sanity/issues/11199)) ([461f54d](https://github.com/sanity-io/sanity/commit/461f54d62f50ee96cc959ea97c023dbbda9d048e)) by Cody Olsen (81981+stipsan@users.noreply.github.com)
+
+## [4.16.0](https://github.com/sanity-io/sanity/compare/v4.15.0...v4.16.0) (2025-11-18)
+
+### Features
+
+* allow configuring sanity CLI config in testing ([#11133](https://github.com/sanity-io/sanity/issues/11133)) ([dd909ce](https://github.com/sanity-io/sanity/commit/dd909ce127696298e35a4810ed2c6cad9e4ffe40)) by Kristoffer Brabrand (kristoffer@brabrand.no)
+
+### Bug Fixes
+
+* **deps:** Update babel monorepo to ^7.28.5 ([#11181](https://github.com/sanity-io/sanity/issues/11181)) ([08d6e66](https://github.com/sanity-io/sanity/commit/08d6e66c0aa5cc7103da8e734c4bb151d9b0a179)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+* **deps:** upgrade react compiler to v1 ([#10834](https://github.com/sanity-io/sanity/issues/10834)) ([2573cb1](https://github.com/sanity-io/sanity/commit/2573cb15c224c762636500b339d0c2701aad1e68)) by Cody Olsen (81981+stipsan@users.noreply.github.com)
+* **functions:** support host flag in functions dev ([#11118](https://github.com/sanity-io/sanity/issues/11118)) ([9588b8b](https://github.com/sanity-io/sanity/commit/9588b8b805bdf4c1d911e7700be2f476a88a2f12)) by Simon MacDonald (simon.macdonald@gmail.com)
+
+## [4.15.0](https://github.com/sanity-io/sanity/compare/v4.14.2...v4.15.0) (2025-11-11)
+
+### Bug Fixes
+
+* **typegen:** allow generating types to absolute path ([#7620](https://github.com/sanity-io/sanity/issues/7620)) ([#11081](https://github.com/sanity-io/sanity/issues/11081)) ([f8b4e87](https://github.com/sanity-io/sanity/commit/f8b4e87fdb54a8d294a7ffc754cf5f662adfdaab)) by Kristoffer Brabrand (kristoffer@brabrand.no)
+
+### Reverts
+
+* **deps:** add patch-package as direct dependency ([#11085](https://github.com/sanity-io/sanity/issues/11085)) ([#11086](https://github.com/sanity-io/sanity/issues/11086)) ([45a5dbf](https://github.com/sanity-io/sanity/commit/45a5dbf56a174884032b212e4dc5b61cba1acb31)) by Bjørge Næss (bjoerge@gmail.com)
+
+## [4.14.2](https://github.com/sanity-io/sanity/compare/v4.14.1...v4.14.2) (2025-11-07)
+
+### Bug Fixes
+
+* **cli:** disable dynamic-import when running cli from local source ([#11078](https://github.com/sanity-io/sanity/issues/11078)) ([a30a092](https://github.com/sanity-io/sanity/commit/a30a0923467591cf1c57638d0e370bbbd0856d06)) by Kristoffer Brabrand (kristoffer@brabrand.no)
+* **deps:** add patch-package as direct dependency ([#11085](https://github.com/sanity-io/sanity/issues/11085)) ([3a6536c](https://github.com/sanity-io/sanity/commit/3a6536ca7c5fc64daec42057dc56a06c14cd74e2)) by Bjørge Næss (bjoerge@gmail.com)
+
+## [4.14.1](https://github.com/sanity-io/sanity/compare/v4.14.0...v4.14.1) (2025-11-06)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [4.14.0](https://github.com/sanity-io/sanity/compare/v4.13.0...v4.14.0) (2025-11-06)
+
+### Bug Fixes
+
+* **cli:** add new function test flag ([#11007](https://github.com/sanity-io/sanity/issues/11007)) ([22bd071](https://github.com/sanity-io/sanity/commit/22bd07126984e872f3fd3817f54c52a0da1114e9)) by Simon MacDonald (simon.macdonald@gmail.com)
+* **deps:** add `@babel/parser`, an implicit dep of `recast` ([#11042](https://github.com/sanity-io/sanity/issues/11042)) ([bc08d28](https://github.com/sanity-io/sanity/commit/bc08d286f2cf618152dd483765df70304a120155)) by Cody Olsen (81981+stipsan@users.noreply.github.com)
+* **deps:** update dependency @sanity/client to ^7.12.1 ([#11029](https://github.com/sanity-io/sanity/issues/11029)) ([df2aa67](https://github.com/sanity-io/sanity/commit/df2aa672f39c9a847e4102f1f0e18d240e1aa808)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+
+## [4.13.0](https://github.com/sanity-io/sanity/compare/v4.12.0...v4.13.0) (2025-11-03)
+
+### Features
+
+* Add shopify domain to shopify template ([#10983](https://github.com/sanity-io/sanity/issues/10983)) ([6138bda](https://github.com/sanity-io/sanity/commit/6138bda22905993b66b678d23d2ced43db23e060)) by Indrek Kärner (152283155+indrekkarner@users.noreply.github.com)
+* **cli/blueprints:** doctor command ([#10987](https://github.com/sanity-io/sanity/issues/10987)) ([7485f28](https://github.com/sanity-io/sanity/commit/7485f28d37a3b8dddd8b8f07b404fcbf3cbf0f33)) by Taylor Beseda (tbeseda@gmail.com)
+
+### Bug Fixes
+
+* **deps:** catalog vitest, jsdom add overrides ([a54467e](https://github.com/sanity-io/sanity/commit/a54467e2e5a2b6cd0fceb46b37f3143577cb45bc)) by Bjørge Næss (bjoerge@gmail.com)
+* use www for sanity website urls ([#10994](https://github.com/sanity-io/sanity/issues/10994)) ([de66f58](https://github.com/sanity-io/sanity/commit/de66f58229ed3999cd2c193cac6df48aa3046e58)) by Bjørge Næss (bjoerge@gmail.com)
+
+## [4.12.0](https://github.com/sanity-io/sanity/compare/v4.11.0...v4.12.0) (2025-10-28)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [4.11.0](https://github.com/sanity-io/sanity/compare/v4.10.3...v4.11.0) (2025-10-21)
+
+### Bug Fixes
+
+* **cli:** pipe stderr when installing dependencies ([#10839](https://github.com/sanity-io/sanity/issues/10839)) ([704a357](https://github.com/sanity-io/sanity/commit/704a357fc0c0e172fc9f4c5c44e5ed275e4895fe)) by Bjørge Næss (bjoerge@gmail.com)
+* **deps:** update dependency groq-js to ^1.20.0 ([#10852](https://github.com/sanity-io/sanity/issues/10852)) ([ae0f0c7](https://github.com/sanity-io/sanity/commit/ae0f0c78f89281b48f0dec0340ae55acf51c768b)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+
+## [4.10.3](https://github.com/sanity-io/sanity/compare/v4.10.2...v4.10.3) (2025-10-14)
+
+### Bug Fixes
+
+* **deps:** update dependency @sanity/client to ^7.12.0 ([#10802](https://github.com/sanity-io/sanity/issues/10802)) ([391127a](https://github.com/sanity-io/sanity/commit/391127adf802b946deba689f64099cb4ee306e61))
+
+## [4.10.2](https://github.com/sanity-io/sanity/compare/v4.10.1...v4.10.2) (2025-09-30)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [4.10.1](https://github.com/sanity-io/sanity/compare/v4.10.0...v4.10.1) (2025-09-25)
+
+### Bug Fixes
+
+* **deps:** update dependency groq-js to ^1.19.0 ([#10751](https://github.com/sanity-io/sanity/issues/10751)) ([0e61cf3](https://github.com/sanity-io/sanity/commit/0e61cf345b61c49a2408c40210e60aa165ea8a97))
+
+## [4.10.0](https://github.com/sanity-io/sanity/compare/v4.9.0...v4.10.0) (2025-09-23)
+
+### Bug Fixes
+
+* **deps:** update dependency @sanity/client to ^7.11.2 ([#10667](https://github.com/sanity-io/sanity/issues/10667)) ([3d3ea0d](https://github.com/sanity-io/sanity/commit/3d3ea0df4bad43af82ae6b10f0c2ca6c7270bfeb))
+* use generated react compiler typings ([#10672](https://github.com/sanity-io/sanity/issues/10672)) ([ac6c9a0](https://github.com/sanity-io/sanity/commit/ac6c9a09559c4ae33929f63f4379c73efec0f3f8))
+
+## [4.9.0](https://github.com/sanity-io/sanity/compare/v4.8.1...v4.9.0) (2025-09-16)
+
+### Features
+
+* **cli:** Add delta flags to functions test command ([#10607](https://github.com/sanity-io/sanity/issues/10607)) ([166f7af](https://github.com/sanity-io/sanity/commit/166f7afc022c20a0e773256f238ab26d9e85d050))
+* **init:** update next.js init template to next-sanity v11 ([#10610](https://github.com/sanity-io/sanity/issues/10610)) ([bd3d363](https://github.com/sanity-io/sanity/commit/bd3d3638612c4c605173390df495036a2a01fab6))
+
+## [4.8.1](https://github.com/sanity-io/sanity/compare/v4.8.0...v4.8.1) (2025-09-10)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [4.8.0](https://github.com/sanity-io/sanity/compare/v4.7.0...v4.8.0) (2025-09-10)
+
+### Bug Fixes
+
+* **deps:** Update babel monorepo to ^7.28.4 ([#10601](https://github.com/sanity-io/sanity/issues/10601)) ([cd6611a](https://github.com/sanity-io/sanity/commit/cd6611a87fc6f003434bb72629effd31f21a0ab2))
+* **deps:** update dependency @sanity/client to ^7.11.1 ([#10593](https://github.com/sanity-io/sanity/issues/10593)) ([96d3546](https://github.com/sanity-io/sanity/commit/96d35461db9de547e7ddd3d8987501ae41f9423d))
+
+## [4.7.0](https://github.com/sanity-io/sanity/compare/v4.6.1...v4.7.0) (2025-09-09)
+
+### Features
+
+* **cli:** Add & update docstrings to AppConfig type ([#10514](https://github.com/sanity-io/sanity/issues/10514)) ([5be6ca4](https://github.com/sanity-io/sanity/commit/5be6ca438fccdd1ac2a57444bcde7b3ff937afb8))
+
+### Bug Fixes
+
+* **cli:** warn if engine requirements not met ([#10461](https://github.com/sanity-io/sanity/issues/10461)) ([739e913](https://github.com/sanity-io/sanity/commit/739e9135ded8b6f9b0be4e5d1bf36a531944a249))
+* **deps:** update dependency @sanity/client to ^7.11.0 ([#10518](https://github.com/sanity-io/sanity/issues/10518)) ([5cfeba6](https://github.com/sanity-io/sanity/commit/5cfeba6b5d7f03c566740298ca4661c1066cc6aa))
+* **deps:** update dependency groq-js to ^1.18.0 ([#10576](https://github.com/sanity-io/sanity/issues/10576)) ([176527f](https://github.com/sanity-io/sanity/commit/176527ff1aa281cb7a890e9abe00185a60263f2a))
+
+## [4.6.1](https://github.com/sanity-io/sanity/compare/v4.6.0...v4.6.1) (2025-09-02)
+
+### Bug Fixes
+
+* **deps:** update dependency @sanity/client to ^7.10.0 ([#10465](https://github.com/sanity-io/sanity/issues/10465)) ([62103ca](https://github.com/sanity-io/sanity/commit/62103ca0e384f49317a8c25cdb578ca5895fbb1a))
+
+## [4.6.0](https://github.com/sanity-io/sanity/compare/v4.5.0...v4.6.0) (2025-08-26)
+
+### Features
+
+* support new Function document change events (`create`, `delete`, `update`) and filters (`includeDrafts` and `includeAllVersions`) ([#10413](https://github.com/sanity-io/sanity/issues/10413)) ([1835683](https://github.com/sanity-io/sanity/commit/1835683189abcfa49ffb06a4144ee59cf3ea16a1))
+
+### Bug Fixes
+
+* **deps:** update dependency @sanity/client to ^7.9.0 ([#10412](https://github.com/sanity-io/sanity/issues/10412)) ([392f5dc](https://github.com/sanity-io/sanity/commit/392f5dc710fd1184709b268a4cc40b6af2e37162))
+
+## [4.5.0](https://github.com/sanity-io/sanity/compare/v4.4.1...v4.5.0) (2025-08-19)
+
+### Bug Fixes
+
+* **deps:** Update babel monorepo to ^7.28.3 ([#10301](https://github.com/sanity-io/sanity/issues/10301)) ([cb6718b](https://github.com/sanity-io/sanity/commit/cb6718b8ef05a003336aa0ac7bf42d092d8205ae))
+
+## [4.4.1](https://github.com/sanity-io/sanity/compare/v4.4.0...v4.4.1) (2025-08-14)
+
+### Bug Fixes
+
+* allow v20 in node engines ([#10290](https://github.com/sanity-io/sanity/issues/10290)) ([73150e9](https://github.com/sanity-io/sanity/commit/73150e9befde5cb531279c9b206a08682df3ff38))
+
+## [4.4.0](https://github.com/sanity-io/sanity/compare/v4.3.0...v4.4.0) (2025-08-13)
+
+### Bug Fixes
+
+* **cli:** env vars not loading in sanity.cli when using vite callback ([#10186](https://github.com/sanity-io/sanity/issues/10186)) ([42122dc](https://github.com/sanity-io/sanity/commit/42122dc31534e8057a42cfc3c16cea46752346ac))
+* update engines to require node >=22.12.0 ([#10227](https://github.com/sanity-io/sanity/issues/10227)) ([c1b9fe2](https://github.com/sanity-io/sanity/commit/c1b9fe2b70ccbb9ff4bce0845dfaad25cafcd35a))
+
+## [4.3.0](https://github.com/sanity-io/sanity/compare/v4.2.0...v4.3.0) (2025-08-05)
+
+### Bug Fixes
+
+* **cli:** Add missing flag to blueprints add example ([#10089](https://github.com/sanity-io/sanity/issues/10089)) ([10c001a](https://github.com/sanity-io/sanity/commit/10c001aa5e394ddd17d7e7914760978594058e66))
+* **cli:** remove workspace version specifier ([#10109](https://github.com/sanity-io/sanity/issues/10109)) ([6a84ff7](https://github.com/sanity-io/sanity/commit/6a84ff7593f5b03b466770efb8fa1869adb112e5))
+* **deps:** update dependency @sanity/client to ^7.8.2 ([#10181](https://github.com/sanity-io/sanity/issues/10181)) ([f63be89](https://github.com/sanity-io/sanity/commit/f63be89404282e45a64b18acc2dee7585bd3dcf1))
+
+## [4.2.0](https://github.com/sanity-io/sanity/compare/v4.1.1...v4.2.0) (2025-07-29)
+
+### Features
+
+* **cli:** add openapi command group with list and get subcommands ([#9924](https://github.com/sanity-io/sanity/issues/9924)) ([9fa20e9](https://github.com/sanity-io/sanity/commit/9fa20e91afb911b5d913af08677fa87f86e6b143))
+
+### Bug Fixes
+
+* **deps:** Update babel monorepo ([#10045](https://github.com/sanity-io/sanity/issues/10045)) ([a47ceea](https://github.com/sanity-io/sanity/commit/a47ceea64da2afd82133a16008cdfdb7890af782))
+* **deps:** update dependency @sanity/client to ^7.8.1 ([#10066](https://github.com/sanity-io/sanity/issues/10066)) ([4e0d1c5](https://github.com/sanity-io/sanity/commit/4e0d1c53856b2e6bf6c61b3609fa8ba6fcd011dc))
+* **deps:** update dependency groq-js to ^1.17.3 ([#10069](https://github.com/sanity-io/sanity/issues/10069)) ([d74c4fb](https://github.com/sanity-io/sanity/commit/d74c4fb87eeae2bd18cd99a5df725c8469b8f8e7))
+* **deps:** update dependency next-sanity to v10 ([#9998](https://github.com/sanity-io/sanity/issues/9998)) ([226ab14](https://github.com/sanity-io/sanity/commit/226ab1460f763c89507401a38f59f005d7fbcfde))
+* **functions:** update help docs ([#10070](https://github.com/sanity-io/sanity/issues/10070)) ([02e95dd](https://github.com/sanity-io/sanity/commit/02e95dd0061fadfa312ee840e1cc715dcdd49397))
+
+## [4.1.1](https://github.com/sanity-io/sanity/compare/v4.1.0...v4.1.1) (2025-07-22)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [4.1.0](https://github.com/sanity-io/sanity/compare/v4.0.1...v4.1.0) (2025-07-21)
+
+### Bug Fixes
+
+* **deps:** update dependency @sanity/client to ^7.8.0 ([#9974](https://github.com/sanity-io/sanity/issues/9974)) ([abca37f](https://github.com/sanity-io/sanity/commit/abca37f07db11a1b97c53e6718f293542237a1ca))
+* **deps:** update dependency groq-js to ^1.17.2 ([#10020](https://github.com/sanity-io/sanity/issues/10020)) ([1c2dcb0](https://github.com/sanity-io/sanity/commit/1c2dcb096a8874e72bbc35e4a9fb7e1de7526eb0))
+
+## [4.0.1](https://github.com/sanity-io/sanity/compare/v4.0.0...v4.0.1) (2025-07-16)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [4.0.0](https://github.com/sanity-io/sanity/compare/v3.99.0...v4.0.0) (2025-07-14)
+
+### ⚠ BREAKING CHANGES
+
+* remove node 18, make base 20 (#9804)
+
+### Features
+
+* **cli): feat(cli:** add docs search and read commands ([#9910](https://github.com/sanity-io/sanity/issues/9910)) ([d2742dd](https://github.com/sanity-io/sanity/commit/d2742dd38013c3f5516ba15886471f0b89d786b8))
+
+### Bug Fixes
+
+* remove node 18, make base 20 ([#9804](https://github.com/sanity-io/sanity/issues/9804)) ([8fa2157](https://github.com/sanity-io/sanity/commit/8fa2157bf7d5f1390f0e1663cb32bb1ffd361188))
+
+## [3.99.0](https://github.com/sanity-io/sanity/compare/v3.98.1...v3.99.0) (2025-07-11)
+
+### Bug Fixes
+
+* **cli:** add document-id flag to functions test ([#9944](https://github.com/sanity-io/sanity/issues/9944)) ([b9e7fcd](https://github.com/sanity-io/sanity/commit/b9e7fcd9c017a2051b09e299e1d21ad1cb7eb37b))
+
+## <small>3.98.1 (2025-07-09)</small>
+
+* test: remove flag from cli token tests (#9925) ([6b4088a](https://github.com/sanity-io/sanity/commit/6b4088a)), closes [#9925](https://github.com/sanity-io/sanity/issues/9925)
+* test(cli): update to use pnpm to install instead of npm  (#9929) ([ebba8b0](https://github.com/sanity-io/sanity/commit/ebba8b0)), closes [#9929](https://github.com/sanity-io/sanity/issues/9929)
+
+## [3.98.0](https://github.com/sanity-io/sanity/compare/v3.97.1...v3.98.0) (2025-07-07)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [3.97.1](https://github.com/sanity-io/sanity/compare/v3.97.0...v3.97.1) (2025-07-04)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [3.97.0](https://github.com/sanity-io/sanity/compare/v3.96.0...v3.97.0) (2025-07-04)
+
+### Features
+
+* **cli:** add --project-id as alias of --project to init ([#9799](https://github.com/sanity-io/sanity/issues/9799)) ([af00ad2](https://github.com/sanity-io/sanity/commit/af00ad21343f9b93da1890c8d2be6c627726fd1f)) by Rune Botten (rbotten@gmail.com)
+* **cli:** add `sanity projects create` command ([#9830](https://github.com/sanity-io/sanity/issues/9830)) ([af20bbf](https://github.com/sanity-io/sanity/commit/af20bbf4af983f60e1a57c1a8c01ba2a7a90b597)) by Rune Botten (rbotten@gmail.com)
+* **cli:** add API tokens management commands ([#9821](https://github.com/sanity-io/sanity/issues/9821)) ([6494f59](https://github.com/sanity-io/sanity/commit/6494f59c505e9bafa69a01db09c1f0ebf4c93a62)) by Rune Botten (rbotten@gmail.com)
+
+### Bug Fixes
+
+* add with user token option to functions test command ([#9881](https://github.com/sanity-io/sanity/issues/9881)) ([fd2aa4c](https://github.com/sanity-io/sanity/commit/fd2aa4c9d25018ba66ada5b13d1e51b0d6f0a0dd)) by Simon MacDonald (simon.macdonald@gmail.com)
+
+## [3.96.0](https://github.com/sanity-io/sanity/compare/v3.95.0...v3.96.0) (2025-07-02)
+
+### Bug Fixes
+
+* **deps:** update dependency get-it to ^8.6.10 ([#9859](https://github.com/sanity-io/sanity/issues/9859)) ([3185e41](https://github.com/sanity-io/sanity/commit/3185e41f4a4044e3de78a6ffae81c20e008465a4)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+* Update runtime-cli dependency ([#9857](https://github.com/sanity-io/sanity/issues/9857)) ([45cf8f0](https://github.com/sanity-io/sanity/commit/45cf8f05a7cd81b5be7a3fce6a23b04e4928cb2d)) by Simon MacDonald (simon.macdonald@gmail.com)
+
+## [3.95.0](https://github.com/sanity-io/sanity/compare/v3.94.2...v3.95.0) (2025-06-25)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [3.94.2](https://github.com/sanity-io/sanity/compare/v3.94.1...v3.94.2) (2025-06-24)
+
+**Note:** Version bump only for package @sanity/cli
+
+## [3.94.1](https://github.com/sanity-io/sanity/compare/v3.94.0...v3.94.1) (2025-06-24)
+
+### Bug Fixes
+
+* **cli:** init unattended mode ([#9481](https://github.com/sanity-io/sanity/issues/9481)) ([feb8c15](https://github.com/sanity-io/sanity/commit/feb8c151ebdf4cae01e5f126936fe68238b02f41)) by Rune Botten (rbotten@gmail.com)
+
+## [3.94.0](https://github.com/sanity-io/sanity/compare/v3.93.0...v3.94.0) (2025-06-24)
+
+### Bug Fixes
+
+* **deps:** update dependency groq-js to ^1.17.1 ([#9766](https://github.com/sanity-io/sanity/issues/9766)) ([f915231](https://github.com/sanity-io/sanity/commit/f915231339443a233f4ff981dc7632dc8a0106aa)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+* stop publishing src folders to npm ([#9744](https://github.com/sanity-io/sanity/issues/9744)) ([e9296c1](https://github.com/sanity-io/sanity/commit/e9296c12d1c68ea912a309a6bfe6cb752172ba07)) by Cody Olsen (81981+stipsan@users.noreply.github.com)
+
+## [3.93.0](https://github.com/sanity-io/sanity/compare/v3.92.0...v3.93.0) (2025-06-17)
+
+### Features
+
+* **cli:** Improve guidance after SDK app init ([#9640](https://github.com/sanity-io/sanity/issues/9640)) ([52ea1d6](https://github.com/sanity-io/sanity/commit/52ea1d6df9f4ada9eb472d1cea718ac5aedbc929)) by Cole Peters (cole@colepeters.com)
+* **cli:** report error cause after catching CLI error ([b137973](https://github.com/sanity-io/sanity/commit/b1379735325373d96a7a11ad05ac2a91648b8979)) by Ash (ash@sanity.io)
+* **cli:** update runtime-cli and enable example flag ([#9652](https://github.com/sanity-io/sanity/issues/9652)) ([2daf089](https://github.com/sanity-io/sanity/commit/2daf089745f2556d35f0380279d441ee6d10c92b)) by Taylor Beseda (tbeseda@gmail.com)
+
+### Bug Fixes
+
+* **deps:** Update babel monorepo ([#9690](https://github.com/sanity-io/sanity/issues/9690)) ([6d52330](https://github.com/sanity-io/sanity/commit/6d523302ffa0232653baacde84bbf6244953f599)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+* **deps:** update dependency @sanity/client to ^7.6.0 ([#9649](https://github.com/sanity-io/sanity/issues/9649)) ([e41e814](https://github.com/sanity-io/sanity/commit/e41e8140d2de74151228f535181d368407aa9111)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+* update link to join community ([#9646](https://github.com/sanity-io/sanity/issues/9646)) ([608e0a2](https://github.com/sanity-io/sanity/commit/608e0a2db57391a57fe16cd1b79818ff46ac5811)) by Bjørge Næss (bjoerge@gmail.com)
+
+## [3.92.0](https://github.com/sanity-io/sanity/compare/v3.91.0...v3.92.0) (2025-06-10)
+
+### Features
+
+* **cli:** update React and friends for Studios created via init ([#9576](https://github.com/sanity-io/sanity/issues/9576)) ([0ebfbfe](https://github.com/sanity-io/sanity/commit/0ebfbfe4f5313141b38f7092ff198d564d1eb328)) by Bjørge Næss (bjoerge@gmail.com)
+
+### Bug Fixes
+
+* **cli:** do not create projects with undefined organizations ([#9548](https://github.com/sanity-io/sanity/issues/9548)) ([3717582](https://github.com/sanity-io/sanity/commit/37175828033f8c6a7e3302fa5e39d8a19b35c11a)) by Carolina Gonzalez (carolina@sanity.io)
+* **deps:** update dependency @sanity/client to ^7.4.1 ([#9563](https://github.com/sanity-io/sanity/issues/9563)) ([28995c1](https://github.com/sanity-io/sanity/commit/28995c11d7e920467e50116a5be97f215ab85fd2)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+* **deps:** update dependency @sanity/client to ^7.5.0 ([#9591](https://github.com/sanity-io/sanity/issues/9591)) ([f33154b](https://github.com/sanity-io/sanity/commit/f33154ba7336299ee0969a0a8db5bf106c3a7825)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+* DevEx improvements when using functions cli commands ([#9595](https://github.com/sanity-io/sanity/issues/9595)) ([844b3d4](https://github.com/sanity-io/sanity/commit/844b3d4b3a0cbfe1020b0815d67100a62f1841e1)) by Simon MacDonald (simon.macdonald@gmail.com)
+* speedup `sanity dev` by warming up the entry file ([#9567](https://github.com/sanity-io/sanity/issues/9567)) ([10dc15d](https://github.com/sanity-io/sanity/commit/10dc15df6a2d86515f53d3950dafb8462fac4073)) by Cody Olsen (81981+stipsan@users.noreply.github.com)
+
+## [3.91.0](https://github.com/sanity-io/sanity/compare/v3.90.0...v3.91.0) (2025-06-03)
+
+### Bug Fixes
+
+* **deps:** update dependency @sanity/client to ^7.4.0 ([#9527](https://github.com/sanity-io/sanity/issues/9527)) ([1184899](https://github.com/sanity-io/sanity/commit/1184899e50bf559e0f47db0e94df942a7fa7be3a)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+* **deps:** update dependency groq-js to ^1.17.0 ([#9507](https://github.com/sanity-io/sanity/issues/9507)) ([ceb86ec](https://github.com/sanity-io/sanity/commit/ceb86ecd0d98f5028f81d2909a92c94ad15e89c5)) by renovate[bot] (29139614+renovate[bot]@users.noreply.github.com)
+
+### Reverts
+
+* publish v3.91.0 ([#9546](https://github.com/sanity-io/sanity/issues/9546)) ([#9550](https://github.com/sanity-io/sanity/issues/9550)) ([d191e4c](https://github.com/sanity-io/sanity/commit/d191e4cdbccc68cda01f864c0290528df91d9571)) by Bjørge Næss (bjoerge@gmail.com)
+
+# Changelog
+
+## [3.86.1](https://github.com/sanity-io/sanity/compare/v3.86.0...v3.86.1) (2025-04-23)
+
+### Bug Fixes
+
+* **cli:** address comments from RUN-341 ([#9216](https://github.com/sanity-io/sanity/issues/9216)) ([58cfcae](https://github.com/sanity-io/sanity/commit/58cfcae3474cb7ffe5e34e22db3d10f5bf2b20fe))
 
 ### Dependencies
 
 * The following workspace dependencies were updated
   * dependencies
-    * @sanity/cli-core bumped to 1.0.0
+    * @sanity/codegen bumped to 3.86.1
+    * @sanity/util bumped to 3.86.1
   * devDependencies
-    * @sanity/cli-test bumped to 0.2.0
-    * @sanity/eslint-config-cli bumped to 1.0.0
+    * @sanity/types bumped to 3.86.1
 
-## [6.0.0-alpha.20](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.19...cli-v6.0.0-alpha.20) (2026-03-03)
-
-### Bug Fixes
-
-- don't throw an error when telemetry is not initialized ([#518](https://github.com/sanity-io/cli/issues/518)) ([2b5b83f](https://github.com/sanity-io/cli/commit/2b5b83fd03db7c6e5add11b8e77767e4da2f3fca))
-- issue where CLI would error if root not found ([#535](https://github.com/sanity-io/cli/issues/535)) ([a0d9cb1](https://github.com/sanity-io/cli/commit/a0d9cb1aa545e03518b0b75f7e313044a4223762))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.19
-  - devDependencies
-    - @sanity/cli-test bumped to 0.1.0-alpha.17
-
-## [6.0.0-alpha.19](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.18...cli-v6.0.0-alpha.19) (2026-03-03)
+## [3.86.0](https://github.com/sanity-io/sanity/compare/cli-v3.85.1...cli-v3.86.0) (2025-04-22)
 
 ### Features
 
-- add `--project-id` flag + prompts for dataset commands ([#500](https://github.com/sanity-io/cli/issues/500)) ([b264fa2](https://github.com/sanity-io/cli/commit/b264fa2b6996cbd195620ee730fd9bc6e6f12288))
-- **dev:** missing critical features for `dev` command ([#442](https://github.com/sanity-io/cli/issues/442)) ([1acf0b0](https://github.com/sanity-io/cli/commit/1acf0b0be58dcfe87e7d2d8b7430389884bc16d4))
-
-### Bug Fixes
-
-- **deps:** update dependency open to v11 ([#517](https://github.com/sanity-io/cli/issues/517)) ([aff4cd7](https://github.com/sanity-io/cli/commit/aff4cd789a1340d813c1ba28f3d7e795d8c0cc5f))
-- **deps:** update dependency which to v6 ([#520](https://github.com/sanity-io/cli/issues/520)) ([20a5ef1](https://github.com/sanity-io/cli/commit/20a5ef193682f075c12bfdeb8b3ad1ed3cbc1216))
-- **deps:** update sanity-tooling ([#523](https://github.com/sanity-io/cli/issues/523)) ([0353b67](https://github.com/sanity-io/cli/commit/0353b6731a9bbed495a9131087b4dbdc73a6b045))
-- **lint:** turn off string raw rule for tests ([#508](https://github.com/sanity-io/cli/issues/508)) ([157df2d](https://github.com/sanity-io/cli/commit/157df2dd0a92e91cdf04df2ba170952441f044f9))
-
-### Performance Improvements
-
-- cache reading cli config multiple times ([#506](https://github.com/sanity-io/cli/issues/506)) ([6222972](https://github.com/sanity-io/cli/commit/62229723b612fffd4da6d8621e29d4a0606c1e08))
+* **cli:** blueprints commands ([#9197](https://github.com/sanity-io/sanity/issues/9197)) ([e97fccb](https://github.com/sanity-io/sanity/commit/e97fccbde58692d48e538cf60e15e77e3f958a3a))
 
 ### Dependencies
 
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.18
-  - devDependencies
-    - @sanity/cli-test bumped to 0.1.0-alpha.16
-    - @sanity/eslint-config-cli bumped to 0.0.0-alpha.4
-
-## [6.0.0-alpha.18](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.17...cli-v6.0.0-alpha.18) (2026-03-02)
-
-### ⚠ BREAKING CHANGES
-
-- refactor promisyWorker to take a url instead of a worker ([#477](https://github.com/sanity-io/cli/issues/477))
-
-### Features
-
-- adapt binary in help output based on execution env ([#467](https://github.com/sanity-io/cli/issues/467)) ([a01ee3c](https://github.com/sanity-io/cli/commit/a01ee3c0f397d3344dd2eefe86750e5438bfbf67))
-- **cli-core:** add non-interactive environment detection for prompts ([#470](https://github.com/sanity-io/cli/issues/470)) ([e9dc8fb](https://github.com/sanity-io/cli/commit/e9dc8fbc8c57b7b99d27fdf5ec6b1aa92a7ca740))
-- **dataset:** add embeddings configuration commands ([35c720d](https://github.com/sanity-io/cli/commit/35c720d43bb0ef795dbf624ea2475c5d83a6689e))
-- refactor promisyWorker to take a url instead of a worker ([#477](https://github.com/sanity-io/cli/issues/477)) ([382820a](https://github.com/sanity-io/cli/commit/382820a51e5e8ce45ff9510c6d8703c6a71b1a91))
-
-### Bug Fixes
-
-- add missing `appId` warning to app build ([#486](https://github.com/sanity-io/cli/issues/486)) ([a05e45d](https://github.com/sanity-io/cli/commit/a05e45d6e91930e5440c4a353a145aefb8574b8b))
-- align exports with old cli ([#503](https://github.com/sanity-io/cli/issues/503)) ([fa0b9a7](https://github.com/sanity-io/cli/commit/fa0b9a7a76f21b65ca87b6f5c115a66d33093c21))
-- **cli:** align studio dependency requirements with old cli ([#466](https://github.com/sanity-io/cli/issues/466)) ([9b1cd9b](https://github.com/sanity-io/cli/commit/9b1cd9b0f487aeee8fdab5bf87126b9c125a1b3e))
-- **cli:** replace install-peerdeps with getPeerDependencies in yarn init ([#478](https://github.com/sanity-io/cli/issues/478)) ([9b50ff3](https://github.com/sanity-io/cli/commit/9b50ff3316ec487db1e9882c3fe1e463c987eebe))
-- **deps:** update dependency @sanity/runtime-cli to v14 ([#474](https://github.com/sanity-io/cli/issues/474)) ([d1c66dd](https://github.com/sanity-io/cli/commit/d1c66dd9314569a881100de2e8d419922493a586))
-- **deps:** update dependency tar to ^7.5.9 ([#472](https://github.com/sanity-io/cli/issues/472)) ([5bb3311](https://github.com/sanity-io/cli/commit/5bb331156f12d9a19b96199d42abc256295024d4))
-- **deps:** update oclif-tooling ([#469](https://github.com/sanity-io/cli/issues/469)) ([9152fd3](https://github.com/sanity-io/cli/commit/9152fd30c23ca7b7e39db72406fd845b409f9309))
-- handle prereleases in build/deploy/dev commands ([#454](https://github.com/sanity-io/cli/issues/454)) ([dbd23a6](https://github.com/sanity-io/cli/commit/dbd23a68427827fa2c9c7af10e531a8cc0c9c861))
-- warn when env var overrides configured basePath in build and dev ([#482](https://github.com/sanity-io/cli/issues/482)) ([8e3f838](https://github.com/sanity-io/cli/commit/8e3f8388f46cbbb1efa2793751941ffa343d56d1))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.17
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.16
-    - @sanity/eslint-config-cli bumped to 0.0.0-alpha.3
-
-## [6.0.0-alpha.17](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.16...cli-v6.0.0-alpha.17) (2026-02-24)
-
-### Bug Fixes
-
-- **cli:** add "Continue anyway" option to build version mismatch prompt ([#456](https://github.com/sanity-io/cli/issues/456)) ([b48373f](https://github.com/sanity-io/cli/commit/b48373f5f4f4a95a66a89ba81fd6aea313454ccb))
-- **deps:** update sanity-tooling ([#461](https://github.com/sanity-io/cli/issues/461)) ([3f92213](https://github.com/sanity-io/cli/commit/3f922132472231209f13d64faf1450499a74e77a))
-- issue with reading sanity config in various situations ([#460](https://github.com/sanity-io/cli/issues/460)) ([2a19272](https://github.com/sanity-io/cli/commit/2a1927290014aa901e067f4ad92bb41ecb0f2c66))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.16
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.15
-
-## [6.0.0-alpha.16](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.15...cli-v6.0.0-alpha.16) (2026-02-23)
-
-### Features
-
-- **cli-core:** export requester with shared middleware ([#451](https://github.com/sanity-io/cli/issues/451)) ([c506e8a](https://github.com/sanity-io/cli/commit/c506e8aa4a5b477b0f343b7408eb603b6d469cb1))
-
-### Bug Fixes
-
-- **build:** fixes issue with build failure on missing favicons ([#439](https://github.com/sanity-io/cli/issues/439)) ([aaa9c7c](https://github.com/sanity-io/cli/commit/aaa9c7c2909480716b02fc0a4e738bddad5532ca))
-- **cli:** pass appId to compareDependencyVersions for correct module URL ([#450](https://github.com/sanity-io/cli/issues/450)) ([a157cbc](https://github.com/sanity-io/cli/commit/a157cbc4363e787d7c415ab82124fb2fb11821f8))
-- **deps:** update dependency @babel/traverse to ^7.29.0 ([#455](https://github.com/sanity-io/cli/issues/455)) ([fdab51c](https://github.com/sanity-io/cli/commit/fdab51c49a6461c1c3225f7740d9f3d87f68828d))
-- **deps:** update dependency oclif to ^4.22.79 ([#443](https://github.com/sanity-io/cli/issues/443)) ([c6148e2](https://github.com/sanity-io/cli/commit/c6148e24fc88e5c6bcd590104096d911f22f6e92))
-- **deps:** update dependency read-package-up to v12 ([#447](https://github.com/sanity-io/cli/issues/447)) ([d2574f7](https://github.com/sanity-io/cli/commit/d2574f798e14333f32b26c5275b73b45abde5d4c))
-- **deps:** Update react monorepo to ^19.2.4 ([#444](https://github.com/sanity-io/cli/issues/444)) ([201513b](https://github.com/sanity-io/cli/commit/201513b2bf6a12c6b4f9bb2955bbf965f5a55306))
-- **deps:** update sanity-tooling ([#424](https://github.com/sanity-io/cli/issues/424)) ([ca6c758](https://github.com/sanity-io/cli/commit/ca6c75817f4ec011dc38edc09b4fbff050d6e087))
-- fixes issues with jsx in CLI code ([#457](https://github.com/sanity-io/cli/issues/457)) ([17ee663](https://github.com/sanity-io/cli/commit/17ee66348b959658a844307019c0dcd08741109c))
-- issues reading CLI config in CJS project ([#428](https://github.com/sanity-io/cli/issues/428)) ([42701d0](https://github.com/sanity-io/cli/commit/42701d001f46fe89761544725e668b070079f5ac))
-- make `--no-auto-updates` override `deployment.autoUpdates` ([#448](https://github.com/sanity-io/cli/issues/448)) ([a7c09e6](https://github.com/sanity-io/cli/commit/a7c09e63ed1da0f74ad6f292b66a0726242ffc15))
-- **users:** fixes issues with row alignment in users list ([#434](https://github.com/sanity-io/cli/issues/434)) ([9ff1150](https://github.com/sanity-io/cli/commit/9ff1150c0b67025382df36ae56ac21c3190805c6))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.15
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.14
-
-## [6.0.0-alpha.15](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.14...cli-v6.0.0-alpha.15) (2026-02-19)
-
-### Features
-
-- add Gemini CLI and GitHub Copilot CLI to MCP configure ([#427](https://github.com/sanity-io/cli/issues/427)) ([3c30306](https://github.com/sanity-io/cli/commit/3c30306fa27aa07e093d247cb0d865d5066eb738))
-
-### Bug Fixes
-
-- add more debug logging ([#437](https://github.com/sanity-io/cli/issues/437)) ([687bcbf](https://github.com/sanity-io/cli/commit/687bcbf2f00a0f8ccc5187a5b4a8ae41b166f1e8))
-- **deps:** upgrade `get-latest-version` to 6.0.1 ([#431](https://github.com/sanity-io/cli/issues/431)) ([21b8ca8](https://github.com/sanity-io/cli/commit/21b8ca8cbde7241d4609eeaf5bb11d7cfc04f127))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.14
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.13
-
-## [6.0.0-alpha.14](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.13...cli-v6.0.0-alpha.14) (2026-02-18)
-
-### Features
-
-- **schema:** moving latest updates to schema extract command ([#425](https://github.com/sanity-io/cli/issues/425)) ([b4f55ef](https://github.com/sanity-io/cli/commit/b4f55ef4267d3a173c2d11d9942a0608010148ff))
-
-### Bug Fixes
-
-- allow catalog-versioned styled components dependency ([#429](https://github.com/sanity-io/cli/issues/429)) ([7970af9](https://github.com/sanity-io/cli/commit/7970af922e96855c5ecb8c1c08494fe2d307797d))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.13
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.12
-
-## [6.0.0-alpha.13](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.12...cli-v6.0.0-alpha.13) (2026-02-18)
-
-### Bug Fixes
-
-- throw on error instead of using assertion ([#423](https://github.com/sanity-io/cli/issues/423)) ([36f3053](https://github.com/sanity-io/cli/commit/36f3053a3510a91c2e2187e63b767ebfeb97952f))
-
-## [6.0.0-alpha.12](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.11...cli-v6.0.0-alpha.12) (2026-02-13)
-
-### Features
-
-- **update:** oclif hook to notify of updated versions of CLI ([#374](https://github.com/sanity-io/cli/issues/374)) ([4172cbc](https://github.com/sanity-io/cli/commit/4172cbc548d51033208e534d98dd660113d7586d))
-
-### Bug Fixes
-
-- **build:** fixes issue with app build not failing for missing deps ([#409](https://github.com/sanity-io/cli/issues/409)) ([7a266fd](https://github.com/sanity-io/cli/commit/7a266fdf9fd6ad0acafcbd6770354a838b3d655e))
-- **cli:** set up telemetry even if project root/config not found ([#397](https://github.com/sanity-io/cli/issues/397)) ([0e4b9b2](https://github.com/sanity-io/cli/commit/0e4b9b268ea8d52dcd8581234880ea08552465a5))
-- **deps:** update dependency chokidar to v5 ([#411](https://github.com/sanity-io/cli/issues/411)) ([1dc251a](https://github.com/sanity-io/cli/commit/1dc251aefa436fcb5a84a9038e00ee6558eb9170))
-- **deps:** update sanity-tooling ([#403](https://github.com/sanity-io/cli/issues/403)) ([8ba4536](https://github.com/sanity-io/cli/commit/8ba45368a324c9e1145f6b4ec14327dffe702a08))
-- **deps:** update sanity-tooling ([#416](https://github.com/sanity-io/cli/issues/416)) ([66038c6](https://github.com/sanity-io/cli/commit/66038c64deeb9ce312bb37a39136371611a55882))
-- **manifest:** fixes manifest extract not working ([#382](https://github.com/sanity-io/cli/issues/382)) ([3d14632](https://github.com/sanity-io/cli/commit/3d14632ec71ba731214356e755ce0e0194d46f7f))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.12
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.11
-
-## [6.0.0-alpha.11](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.10...cli-v6.0.0-alpha.11) (2026-02-05)
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.11
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.10
-
-## [6.0.0-alpha.10](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.9...cli-v6.0.0-alpha.10) (2026-02-05)
-
-### Bug Fixes
-
-- add no-console lint rule ([7823696](https://github.com/sanity-io/cli/commit/78236965ebdd784d01384b96b23bc590eeaaa325))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.10
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.9
-    - @sanity/eslint-config-cli bumped to 0.0.0-alpha.2
-
-## [6.0.0-alpha.9](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.8...cli-v6.0.0-alpha.9) (2026-02-05)
-
-### Features
-
-- add typegen generate command ([#340](https://github.com/sanity-io/cli/issues/340)) ([3230469](https://github.com/sanity-io/cli/commit/32304690cedcb4215e02d128e90576a56846cc16))
-- allow making telemetry calls from CLI ([#346](https://github.com/sanity-io/cli/issues/346)) ([41ef21e](https://github.com/sanity-io/cli/commit/41ef21eb1c3d6c1854b91bb0c953aa8596e39566))
-- **graphql:** add graphql deploy command ([#366](https://github.com/sanity-io/cli/issues/366)) ([fdb407b](https://github.com/sanity-io/cli/commit/fdb407bd21a379cacf0141728c7b657fe596340a))
-- inject env variables before the commands are run ([#297](https://github.com/sanity-io/cli/issues/297)) ([eb01a5f](https://github.com/sanity-io/cli/commit/eb01a5f74c19824425cf83e0e95e6e5bc0857736))
-- make telemetry calls in commands ([#347](https://github.com/sanity-io/cli/issues/347)) ([6e22909](https://github.com/sanity-io/cli/commit/6e229091b41e581bf3ebe4be3540dca5a5b5c9c8))
-- **mcp:** moving latest updates from old cli ([#352](https://github.com/sanity-io/cli/issues/352)) ([92c3d3d](https://github.com/sanity-io/cli/commit/92c3d3df744a03bacff55b2c60ddf85749533c6b))
-- **projects:** migrating `projects create` command ([#336](https://github.com/sanity-io/cli/issues/336)) ([11e8592](https://github.com/sanity-io/cli/commit/11e8592fe57b8d54bc5f0a340f0b887052013cef))
-- show warnings before running commands ([#307](https://github.com/sanity-io/cli/issues/307)) ([b7422bb](https://github.com/sanity-io/cli/commit/b7422bbc5357da2e764e17e454f84eaa2ff043a6))
-
-### Bug Fixes
-
-- **core:** fixes issue with resolving plugins in studio config ([#349](https://github.com/sanity-io/cli/issues/349)) ([71689bf](https://github.com/sanity-io/cli/commit/71689bf6e0f36590d61b03c37c90527a61ec8224))
-- **deps:** update dependency @babel/traverse to ^7.28.6 ([#372](https://github.com/sanity-io/cli/issues/372)) ([9933c79](https://github.com/sanity-io/cli/commit/9933c79575847896c1256b031eee0f63f88f4727))
-- **deps:** update dependency @sanity/template-validator to v3 ([#393](https://github.com/sanity-io/cli/issues/393)) ([fdf07d5](https://github.com/sanity-io/cli/commit/fdf07d5014fdfe3ad0820cd66561267b55135d2f))
-- **deps:** update dependency console-table-printer to ^2.15.0 ([#373](https://github.com/sanity-io/cli/issues/373)) ([f8eb61b](https://github.com/sanity-io/cli/commit/f8eb61b45b05bb39a965bb15aaad62231abc3f7f))
-- **deps:** update dependency styled-components to ^6.3.8 ([#343](https://github.com/sanity-io/cli/issues/343)) ([453facf](https://github.com/sanity-io/cli/commit/453facf0e3599f4d1e03e243e9ef8c5796851ff2))
-- **deps:** update dependency tar to ^7.5.6 ([#338](https://github.com/sanity-io/cli/issues/338)) ([0361f0a](https://github.com/sanity-io/cli/commit/0361f0a906eb0a905ad67b1b7d53627694298b68))
-- **deps:** update oclif-tooling ([#335](https://github.com/sanity-io/cli/issues/335)) ([b4327e0](https://github.com/sanity-io/cli/commit/b4327e0f90d1c46a0ef18f1e402b6a8e798db394))
-- **deps:** update sanity-tooling ([#356](https://github.com/sanity-io/cli/issues/356)) ([651d330](https://github.com/sanity-io/cli/commit/651d330c473da4dcb838f772b2f5bd1eecb30e75))
-- **deps:** update sanity-tooling ([#370](https://github.com/sanity-io/cli/issues/370)) ([9ccdea8](https://github.com/sanity-io/cli/commit/9ccdea816a990899b15b06426e0c2a9d0701ecc9))
-- **deps:** update sanity-tooling ([#384](https://github.com/sanity-io/cli/issues/384)) ([361f505](https://github.com/sanity-io/cli/commit/361f50590154fcb7efc7e65dba996bd16789a6f9))
-- **deps:** update sanity-tooling ([#392](https://github.com/sanity-io/cli/issues/392)) ([d64d3d4](https://github.com/sanity-io/cli/commit/d64d3d4fd6507a8920158cb1f4822cae83607b6e))
-- **documents:** fixes documents validate not working ([#386](https://github.com/sanity-io/cli/issues/386)) ([9a3337b](https://github.com/sanity-io/cli/commit/9a3337bd1d6c4af799bd1ef729414f45de2e8d8a))
-- **schema:** fixes schema extract command ([#375](https://github.com/sanity-io/cli/issues/375)) ([6382401](https://github.com/sanity-io/cli/commit/63824011f8cd64bb2f0ec422e51701fc4c8e6140))
-- **schema:** fixes schema validate not working ([#376](https://github.com/sanity-io/cli/issues/376)) ([c4120aa](https://github.com/sanity-io/cli/commit/c4120aa134a2919f464041be603b3ed74cfeead5))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.9
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.8
-
-## [6.0.0-alpha.8](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.7...cli-v6.0.0-alpha.8) (2026-01-23)
-
-### Features
-
-- **init:** migrating nextjs and templated app setup to new cli ([#300](https://github.com/sanity-io/cli/issues/300)) ([d67ec4c](https://github.com/sanity-io/cli/commit/d67ec4c1da12b87d1b786119a744198fb3af229d))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.8
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.7
-
-## [6.0.0-alpha.7](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.6...cli-v6.0.0-alpha.7) (2026-01-20)
-
-### Features
-
-- **telemetry:** add telemetry store ([#112](https://github.com/sanity-io/cli/issues/112)) ([01b632c](https://github.com/sanity-io/cli/commit/01b632cb7e804dcb7fe3cc75ffcad610b3a3db0a))
-
-### Bug Fixes
-
-- **deps:** update dependency @sanity/runtime-cli to v13 ([#313](https://github.com/sanity-io/cli/issues/313)) ([71dd35a](https://github.com/sanity-io/cli/commit/71dd35a6ee224116f1dc6c461fd7cf452063633a))
-- **deps:** update sanity-tooling ([#292](https://github.com/sanity-io/cli/issues/292)) ([dfacca8](https://github.com/sanity-io/cli/commit/dfacca832f94a94b00e898b315e3fef567c90026))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.7
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.6
-
-## [6.0.0-alpha.6](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.5...cli-v6.0.0-alpha.6) (2026-01-16)
-
-### Features
-
-- **deploy:** add app manifest ([#274](https://github.com/sanity-io/cli/issues/274)) ([712650d](https://github.com/sanity-io/cli/commit/712650db1add4855dc9c849954e2b51b95b4ff3d))
-- **init:** moving project detail logic ([#243](https://github.com/sanity-io/cli/issues/243)) ([830ce32](https://github.com/sanity-io/cli/commit/830ce32981436e53330d1538fbbfce3bd31d5f5c))
-- **init:** moving templates for init to new cli ([#290](https://github.com/sanity-io/cli/issues/290)) ([fd42cd5](https://github.com/sanity-io/cli/commit/fd42cd597ef005690cd92035fce77a46be43e0a3))
-- **manifest:** make extractManifestSafe safe ([#271](https://github.com/sanity-io/cli/issues/271)) ([6ddb29c](https://github.com/sanity-io/cli/commit/6ddb29ce30338b32da88383a0f1d583113980fe4))
-
-### Bug Fixes
-
-- **debug:** fixes issue with debug showing incorrect info ([#253](https://github.com/sanity-io/cli/issues/253)) ([0592afd](https://github.com/sanity-io/cli/commit/0592afd53ca5719593a96a653373d4299e6057c6))
-- **ml:** fixes issues with importing aspects ([#291](https://github.com/sanity-io/cli/issues/291)) ([0f6b398](https://github.com/sanity-io/cli/commit/0f6b3985c312276195b4d92ba0fa9e3a8d3aa948))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.6
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.5
-
-## [6.0.0-alpha.5](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.4...cli-v6.0.0-alpha.5) (2026-01-09)
-
-### Features
-
-- migrate schema deploy ([#242](https://github.com/sanity-io/cli/issues/242)) ([268b256](https://github.com/sanity-io/cli/commit/268b2560dd189663498df40abe39f9149ccbc6b7))
-- migrate schema list ([#198](https://github.com/sanity-io/cli/issues/198)) ([62f46ac](https://github.com/sanity-io/cli/commit/62f46acf17905f9630a1540c58c724acf810a12a))
-
-### Bug Fixes
-
-- **deps:** update sanity-tooling ([#260](https://github.com/sanity-io/cli/issues/260)) ([c1d7c9d](https://github.com/sanity-io/cli/commit/c1d7c9d130a54f32aa85b3815a1dcecce73530af))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.5
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.4
-
-## [6.0.0-alpha.4](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.3...cli-v6.0.0-alpha.4) (2025-12-30)
-
-### Features
-
-- add a eslint-config-cli package ([#226](https://github.com/sanity-io/cli/issues/226)) ([2980003](https://github.com/sanity-io/cli/commit/2980003fc8d1b3935f436f7e29c00207e65db6fc))
-
-### Bug Fixes
-
-- **deps:** update dependency eventsource to ^4.1.0 ([#240](https://github.com/sanity-io/cli/issues/240)) ([6d3fc42](https://github.com/sanity-io/cli/commit/6d3fc42926e06af85a683bc2cbdd4c2db20a1ee3))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.4
-  - devDependencies
-    - @sanity/cli-test bumped to 0.0.2-alpha.3
-    - @sanity/eslint-config-cli bumped to 0.0.0-alpha.1
-
-## [6.0.0-alpha.3](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.2...cli-v6.0.0-alpha.3) (2025-12-24)
-
-### ⚠ BREAKING CHANGES
-
-- add ux core helpers ([#219](https://github.com/sanity-io/cli/issues/219))
-
-### Features
-
-- add CI specific token label ([#7934](https://github.com/sanity-io/cli/issues/7934)) ([8652165](https://github.com/sanity-io/cli/commit/86521650df38a7e393b4a747a211ff00d2105f45))
-- add CLI command to open Sanity Learn ([#7409](https://github.com/sanity-io/cli/issues/7409)) ([132d1c0](https://github.com/sanity-io/cli/commit/132d1c0455bd6939737eec524b587900b9571c06))
-- add cli core package for shared utils ([#61](https://github.com/sanity-io/cli/issues/61)) ([5d2af2a](https://github.com/sanity-io/cli/commit/5d2af2a8704f5ecfa73fb3d547e4671509fdbcdf))
-- add CLI options to enable auto-updating studios ([#6514](https://github.com/sanity-io/cli/issues/6514)) ([8dd7938](https://github.com/sanity-io/cli/commit/8dd79387c67f7bf410092eee49beb6da0d8556e5))
-- add cli-test package for test helpers ([#62](https://github.com/sanity-io/cli/issues/62)) ([e84a0bf](https://github.com/sanity-io/cli/commit/e84a0bfcf14fbcc2e5f7b3f97911e421b82bcf05))
-- add cliInitializedAt field to project metadata ([#6538](https://github.com/sanity-io/cli/issues/6538)) ([37e27c6](https://github.com/sanity-io/cli/commit/37e27c65a2a1bb61a4c952c07d93a77361ce5fec))
-- add codemod command ([#143](https://github.com/sanity-io/cli/issues/143)) ([b008a3d](https://github.com/sanity-io/cli/commit/b008a3de1012655300dfe395d5ddf7d7898fffb5))
-- add debug command ([#70](https://github.com/sanity-io/cli/issues/70)) ([4edb88d](https://github.com/sanity-io/cli/commit/4edb88d340d21150341b7d2a6197fb772b4fb395))
-- add defineCliConfig function ([#12](https://github.com/sanity-io/cli/issues/12)) ([109c93d](https://github.com/sanity-io/cli/commit/109c93d058a18142141794e42e55b551e78eac38))
-- add deploy command ([#56](https://github.com/sanity-io/cli/issues/56)) ([d37d050](https://github.com/sanity-io/cli/commit/d37d050b769c66f1381804355f16a62b1e908258))
-- add hook logs command ([#76](https://github.com/sanity-io/cli/issues/76)) ([d7c2f84](https://github.com/sanity-io/cli/commit/d7c2f846f4eb591e4b60c28b2ea16fa3c447fde0))
-- add import studio config util ([#185](https://github.com/sanity-io/cli/issues/185)) ([c1be611](https://github.com/sanity-io/cli/commit/c1be61110e7bb954ebdf580753dcdb555dcf55db))
-- add install command ([#82](https://github.com/sanity-io/cli/issues/82)) ([78dec5b](https://github.com/sanity-io/cli/commit/78dec5ba7e820ab8024a86fb5d8bde480c23d1aa))
-- add integration when creating a new project through cli ([#6639](https://github.com/sanity-io/cli/issues/6639)) ([6ea564c](https://github.com/sanity-io/cli/commit/6ea564ce252e00996dd15bb70bee0fe82e28736e))
-- add plugin for not found commands ([#25](https://github.com/sanity-io/cli/issues/25)) ([114e567](https://github.com/sanity-io/cli/commit/114e567bdf4ab81dd6d053a3d7e201dc274eca89))
-- add support for React Compiler beta ([#7702](https://github.com/sanity-io/cli/issues/7702)) ([ca0374d](https://github.com/sanity-io/cli/commit/ca0374df99ba2e29c8ffeb4a09b41e701d008623))
-- add undeploy command ([#39](https://github.com/sanity-io/cli/issues/39)) ([31ecf02](https://github.com/sanity-io/cli/commit/31ecf0228836b8db6829f41fd6a356ed223a4b45))
-- add ux core helpers ([#219](https://github.com/sanity-io/cli/issues/219)) ([d2a7d78](https://github.com/sanity-io/cli/commit/d2a7d7858a1c83792a02abb2cd95fe44cbe3b6ed))
-- **alias:** add dataset alias commands ([#131](https://github.com/sanity-io/cli/issues/131)) ([d5b4a6e](https://github.com/sanity-io/cli/commit/d5b4a6e8eaa12f345e66db8d21375a47931b46cd))
-- **backup:** add backup commands ([#102](https://github.com/sanity-io/cli/issues/102)) ([4428039](https://github.com/sanity-io/cli/commit/44280392cd07654a676d3acecee36ef39d4d7860))
-- **backup:** add backup download command ([#138](https://github.com/sanity-io/cli/issues/138)) ([6468291](https://github.com/sanity-io/cli/commit/6468291042085a7060f81197a413d95a88d26dd9))
-- **blueprints:** add blueprints and functions commands ([#99](https://github.com/sanity-io/cli/issues/99)) ([5e5f551](https://github.com/sanity-io/cli/commit/5e5f551f617d9bfdc85b95948a5fbea095d5e0d9))
-- **cli:** add build command ([#36](https://github.com/sanity-io/cli/issues/36)) ([3bd4b77](https://github.com/sanity-io/cli/commit/3bd4b778b7543ac34397c3ab2e31e9aeae02189d))
-- **cli:** add cors entry automatically for template package ([#8035](https://github.com/sanity-io/cli/issues/8035)) ([27254d2](https://github.com/sanity-io/cli/commit/27254d2b7837d29a199049a9bd818a7ecaedfe3d))
-- **cli:** add dev command ([#54](https://github.com/sanity-io/cli/issues/54)) ([d813342](https://github.com/sanity-io/cli/commit/d813342fd37422c785c74f6747af73a81f42fb18))
-- **cli:** add preview command ([#47](https://github.com/sanity-io/cli/issues/47)) ([68de8c6](https://github.com/sanity-io/cli/commit/68de8c62b7dd9f21d6b3370e3809ba2438dc58f1))
-- **cli:** add projects list command ([#26](https://github.com/sanity-io/cli/issues/26)) ([064ffcf](https://github.com/sanity-io/cli/commit/064ffcf2ee4778c54a82d86dfc1c3acafc3a0646))
-- **cli:** add SanityCliCommand base class and test helpers ([#13](https://github.com/sanity-io/cli/issues/13)) ([e192755](https://github.com/sanity-io/cli/commit/e192755191993326c821615621875841afb008c1))
-- **cli:** add start command ([#46](https://github.com/sanity-io/cli/issues/46)) ([86c7b24](https://github.com/sanity-io/cli/commit/86c7b2436eee27294670d5f3129440c110192fb7))
-- **cli:** Add support for exporting dataset with cursor ([#7068](https://github.com/sanity-io/cli/issues/7068)) ([27bc5e2](https://github.com/sanity-io/cli/commit/27bc5e28725a0b4fdf3370dfaad66cb2c6ae5f55))
-- **cli:** add support for remote templates with `--template` ([#7867](https://github.com/sanity-io/cli/issues/7867)) ([5752016](https://github.com/sanity-io/cli/commit/57520163df84de66b64c1a7c1f048ace00e3db86))
-- **cli:** add test-template for testing `--template` flag ([#7877](https://github.com/sanity-io/cli/issues/7877)) ([f4b8ae5](https://github.com/sanity-io/cli/commit/f4b8ae578b6f2437923d4d9a62c581db189f36a6))
-- **cli:** add users list command ([#23](https://github.com/sanity-io/cli/issues/23)) ([03bebfe](https://github.com/sanity-io/cli/commit/03bebfed93d8baad58b8401c2dbe6c83b0446c37))
-- **cli:** add versions command ([#18](https://github.com/sanity-io/cli/issues/18)) ([66a94c4](https://github.com/sanity-io/cli/commit/66a94c422ad2a6f9b442d849d0f11f31064062cf))
-- **cli:** add warning and docs for react-19 and Next.Js combined ([#7660](https://github.com/sanity-io/cli/issues/7660)) ([d672adb](https://github.com/sanity-io/cli/commit/d672adb80263f02cc1e6bc0397968f69821de605))
-- **cli:** allow credentials when adding CORS entry ([#8191](https://github.com/sanity-io/cli/issues/8191)) ([5368c2b](https://github.com/sanity-io/cli/commit/5368c2b14649245936935ca8399441e599665536))
-- **cli:** allow the ability to specify package manager in init command ([#6820](https://github.com/sanity-io/cli/issues/6820)) ([b06a5fa](https://github.com/sanity-io/cli/commit/b06a5fa67afbb213cc10855b9a1d9ee657e981e0))
-- **cli:** copy additions for remote project bootstrapper ([#8141](https://github.com/sanity-io/cli/issues/8141)) ([501de29](https://github.com/sanity-io/cli/commit/501de29b825b81c0ac5da911cd51e1387cf69595))
-- **cli:** customize help text if coming from `create-sanity` module ([e5678e7](https://github.com/sanity-io/cli/commit/e5678e78e177fc13dce37a33450a35906240e0a9))
-- **cli:** generate read token conditionally for remote template ([#7953](https://github.com/sanity-io/cli/issues/7953)) ([d037200](https://github.com/sanity-io/cli/commit/d037200c62030ced1132def7d0b6c2c472fa27a4))
-- **cli:** implement minimal init command boilerplate ([007225f](https://github.com/sanity-io/cli/commit/007225fd960adc8d170c38f87c430d920509f34c))
-- **cli:** misc copy changes ([#8003](https://github.com/sanity-io/cli/issues/8003)) ([fca9abd](https://github.com/sanity-io/cli/commit/fca9abddeee8e34b9ca6590a8ffb69706b8357b8))
-- **cli:** prepare nextjs starter template for live mode ([#7633](https://github.com/sanity-io/cli/issues/7633)) ([1374b91](https://github.com/sanity-io/cli/commit/1374b91f5ec8c5da277a5d7ea60a257ec7055527))
-- **cli:** prepare nextjs starter template for live mode ([#7633](https://github.com/sanity-io/cli/issues/7633)) ([483e05e](https://github.com/sanity-io/cli/commit/483e05e24c0b20f00f58c50bb06f18ea5def5759))
-- **cli:** remove .github dirs when initializing with a remote template ([#8036](https://github.com/sanity-io/cli/issues/8036)) ([ac5ed0a](https://github.com/sanity-io/cli/commit/ac5ed0a97ad9ceb7abdb0607ebc6bbbb76acefa3))
-- **cli:** remove is-builtin-module ([#6579](https://github.com/sanity-io/cli/issues/6579)) ([d8393e5](https://github.com/sanity-io/cli/commit/d8393e5bc78f31af7f12848f761a9a16119c500a))
-- **cli:** remove patching of tsconfig.json and thus silver-fleece dependency ([#8114](https://github.com/sanity-io/cli/issues/8114)) ([ac5105a](https://github.com/sanity-io/cli/commit/ac5105a82097a6ae01bc166fa2694b1f03854d8e))
-- **cli:** remove v2 init messaging ([#7887](https://github.com/sanity-io/cli/issues/7887)) ([b654255](https://github.com/sanity-io/cli/commit/b65425568ccb074098d067955f8a2aacc455884b))
-- **cli:** skip directories without .env.example when bootstrapping remote template ([#8216](https://github.com/sanity-io/cli/issues/8216)) ([e13bd8c](https://github.com/sanity-io/cli/commit/e13bd8c445381ce280d0badb60e52ad6fa50d87c))
-- **cli:** slim down remote test template ([#8224](https://github.com/sanity-io/cli/issues/8224)) ([29c556d](https://github.com/sanity-io/cli/commit/29c556da4e186b198823cd222c9a25cf54da3791))
-- **cli:** update CLI to use new deploy endpoint ([#7244](https://github.com/sanity-io/cli/issues/7244)) ([f8006d7](https://github.com/sanity-io/cli/commit/f8006d75f45de3d0acea8a7691e26204e1a8dbfc))
-- **cli:** use `@sanity/template-validator` package ([#8014](https://github.com/sanity-io/cli/issues/8014)) ([39cd2cf](https://github.com/sanity-io/cli/commit/39cd2cfb3b72e07eaf5a481cc0c0a30b26a59cce))
-- **cli:** use `@vercel/frameworks` in `bootstrapRemoteTemplate` ([#8001](https://github.com/sanity-io/cli/issues/8001)) ([8c91427](https://github.com/sanity-io/cli/commit/8c91427db7cdd46f8aeeb14d5e90ab622069012f))
-- **cli:** use auto-updates flag in init ([#7401](https://github.com/sanity-io/cli/issues/7401)) ([b145cfb](https://github.com/sanity-io/cli/commit/b145cfbb78bf41001f4a64383a68e810dd401712))
-- **codegen:** generate SanityQueries interface in @sanity/codegen ([#6997](https://github.com/sanity-io/cli/issues/6997)) ([#7304](https://github.com/sanity-io/cli/issues/7304)) ([eaa41b9](https://github.com/sanity-io/cli/commit/eaa41b9cf23d730ff335b92e779a31c0a06d1fc3))
-- **cors:** add cors add command ([#80](https://github.com/sanity-io/cli/issues/80)) ([ff62eb2](https://github.com/sanity-io/cli/commit/ff62eb211266e3404d51a7d025e9b54df59dcf3c))
-- **cors:** add cors delete command ([#81](https://github.com/sanity-io/cli/issues/81)) ([c0dcd56](https://github.com/sanity-io/cli/commit/c0dcd560c9bf1a36f4062e3773ff200ab80d6e21))
-- **cors:** add cors list command ([#78](https://github.com/sanity-io/cli/issues/78)) ([9aecd3d](https://github.com/sanity-io/cli/commit/9aecd3d72c15b8ad8b7418c8e1956da60bab446c))
-- **create-sanity:** spawn new `@sanity/cli` from `create-sanity` ([#50](https://github.com/sanity-io/cli/issues/50)) ([dfd1e35](https://github.com/sanity-io/cli/commit/dfd1e35f18f3cc330082c0211584ab3f61f58c6f))
-- **dataset:** add dataset copy command ([#157](https://github.com/sanity-io/cli/issues/157)) ([34e7800](https://github.com/sanity-io/cli/commit/34e7800b5bf142d763baaf7ecdafd2dc0e054035))
-- **dataset:** add dataset create command ([#130](https://github.com/sanity-io/cli/issues/130)) ([bf8a97c](https://github.com/sanity-io/cli/commit/bf8a97c70ae9022f248630f5ccac2a0a0da740ec))
-- **dataset:** add dataset delete command ([#125](https://github.com/sanity-io/cli/issues/125)) ([da8e4d9](https://github.com/sanity-io/cli/commit/da8e4d9652c5f1e909419d1fb8639a5ff2102e4d))
-- **dataset:** add dataset list command ([#129](https://github.com/sanity-io/cli/issues/129)) ([1db4136](https://github.com/sanity-io/cli/commit/1db4136d58a56696c5e860238493deaa681fa273))
-- **dataset:** add dataset visibility commands ([#126](https://github.com/sanity-io/cli/issues/126)) ([c83a7d2](https://github.com/sanity-io/cli/commit/c83a7d2aac246b96f3e2da710ac126deceecc44b))
-- **datasets:** add dataset import command ([#124](https://github.com/sanity-io/cli/issues/124)) ([510810f](https://github.com/sanity-io/cli/commit/510810f37491e9d43562f97e393bb132c847cb65))
-- **datasets:** add datasets export command ([#123](https://github.com/sanity-io/cli/issues/123)) ([0633345](https://github.com/sanity-io/cli/commit/0633345eec81679bfb9965e247ea830b913032ee))
-- **docs:** add docs commands ([#94](https://github.com/sanity-io/cli/issues/94)) ([e6b5500](https://github.com/sanity-io/cli/commit/e6b550043c316acd7b7c64367e92754a1105e4ca))
-- **documents:** add documents create command ([#106](https://github.com/sanity-io/cli/issues/106)) ([2a0ed33](https://github.com/sanity-io/cli/commit/2a0ed33a5a1bef47739a5de57379bf691a0d9221))
-- **documents:** add documents delete command ([#85](https://github.com/sanity-io/cli/issues/85)) ([8a8d542](https://github.com/sanity-io/cli/commit/8a8d542426c8c38dc3f1dec39d6924d1fd37ee57))
-- **documents:** add documents get command ([#84](https://github.com/sanity-io/cli/issues/84)) ([aeea660](https://github.com/sanity-io/cli/commit/aeea66066d688a5929f2f042e1e3977ec748224c))
-- **documents:** add documents query command ([#101](https://github.com/sanity-io/cli/issues/101)) ([564cb4a](https://github.com/sanity-io/cli/commit/564cb4afe09afca3908383fd74172d8a571bdb99))
-- **documents:** move documents validate command ([#182](https://github.com/sanity-io/cli/issues/182)) ([7d12569](https://github.com/sanity-io/cli/commit/7d12569520375e85bbb74fb171850c91bd5e699f))
-- embellish nextjs blog starter ([#7258](https://github.com/sanity-io/cli/issues/7258)) ([0e012cd](https://github.com/sanity-io/cli/commit/0e012cd644eeca4247d59e865a74722b84cb04a6))
-- **exec:** move cliClient ([#180](https://github.com/sanity-io/cli/issues/180)) ([47c89ea](https://github.com/sanity-io/cli/commit/47c89ea08ebceb575cb375f02b62ba5ccbf2f7c2))
-- **exec:** move exec command ([#186](https://github.com/sanity-io/cli/issues/186)) ([517a759](https://github.com/sanity-io/cli/commit/517a759dbc99c97e2d19dcf00ba653eb0fcadb23))
-- **graphql:** add graphql list command ([#139](https://github.com/sanity-io/cli/issues/139)) ([c77149e](https://github.com/sanity-io/cli/commit/c77149e8bab14938e2974d34d5b088157fd6f9b8))
-- **graphql:** migrate graphql undeploy command ([#194](https://github.com/sanity-io/cli/issues/194)) ([3915139](https://github.com/sanity-io/cli/commit/39151391c3b557a53ed26e03016d9b7f7683285a))
-- **hook:** add hook attempt endpoint ([#100](https://github.com/sanity-io/cli/issues/100)) ([0916eef](https://github.com/sanity-io/cli/commit/0916eef67ed979ce893aa27e438124e7e3b88931))
-- **hook:** add hook create command ([#74](https://github.com/sanity-io/cli/issues/74)) ([c2126e5](https://github.com/sanity-io/cli/commit/c2126e5e06fdb8500a6dc866285bcd27edc220f9))
-- **hook:** add hook delete command ([#89](https://github.com/sanity-io/cli/issues/89)) ([6100234](https://github.com/sanity-io/cli/commit/61002346669776a139eff85e9b734a324057901d))
-- **hook:** add hook list command ([#73](https://github.com/sanity-io/cli/issues/73)) ([088f222](https://github.com/sanity-io/cli/commit/088f222c79852a2d1f1c15fe6a2ec9a8bc043335))
-- improve clarity of undeploy output w/ apps ([#173](https://github.com/sanity-io/cli/issues/173)) ([4b17e0b](https://github.com/sanity-io/cli/commit/4b17e0bad91fbd8db158a3e6001f0cd8e5f44a48))
-- **init:** migration of init command setup, plan/coupon logic, and authentication logic ([#199](https://github.com/sanity-io/cli/issues/199)) ([012168e](https://github.com/sanity-io/cli/commit/012168eb03ab7e309918206511dc60c21dea573f))
-- **mcp:** add mcp configure command ([#203](https://github.com/sanity-io/cli/issues/203)) ([d07541e](https://github.com/sanity-io/cli/commit/d07541e79391257912e61e3f4b5c8c9c9953716c))
-- **media:** add media create-aspect command ([#144](https://github.com/sanity-io/cli/issues/144)) ([ea8224f](https://github.com/sanity-io/cli/commit/ea8224fccf50923134991effd1395ab6b800ece9))
-- **media:** add media delete-aspect command ([#152](https://github.com/sanity-io/cli/issues/152)) ([47025ad](https://github.com/sanity-io/cli/commit/47025ad8ef9ae379b6e1b8e2cf6f62b51124c0e3))
-- **media:** add media deploy-aspect command ([#160](https://github.com/sanity-io/cli/issues/160)) ([40444e7](https://github.com/sanity-io/cli/commit/40444e725d7d7bb79c971cc77c6d7a7d4d6b68ea))
-- **media:** add media export command ([#158](https://github.com/sanity-io/cli/issues/158)) ([87a5d39](https://github.com/sanity-io/cli/commit/87a5d395aeed4a496c321430d80de9358c9be4e0))
-- **media:** move import media command ([#171](https://github.com/sanity-io/cli/issues/171)) ([a739cf1](https://github.com/sanity-io/cli/commit/a739cf148d4de687c11e5e8a0d25fba657629269))
-- migrate auto update functionality from production CLI ([#209](https://github.com/sanity-io/cli/issues/209)) ([86f42c2](https://github.com/sanity-io/cli/commit/86f42c26c05ba81d8592b7d12b54ec824a453711))
-- migrate manifest extract command ([#187](https://github.com/sanity-io/cli/issues/187)) ([60137b1](https://github.com/sanity-io/cli/commit/60137b1e85ebf225c37cb691edfa3925d11bb38b))
-- migrate schema extract ([#190](https://github.com/sanity-io/cli/issues/190)) ([65a486e](https://github.com/sanity-io/cli/commit/65a486ee1681e4e80ad51df3c75247eb47e90a2b))
-- **migration:** add migration list command ([#167](https://github.com/sanity-io/cli/issues/167)) ([fd0a19d](https://github.com/sanity-io/cli/commit/fd0a19da10736f91fcb3f893e7eb3daf962882ec))
-- **migration:** move migration create command ([#166](https://github.com/sanity-io/cli/issues/166)) ([c1af277](https://github.com/sanity-io/cli/commit/c1af2774b488df538c334bcce68a2d49a4b41e5b))
-- **migration:** move run command to new CLI ([#174](https://github.com/sanity-io/cli/issues/174)) ([6ba3713](https://github.com/sanity-io/cli/commit/6ba3713b2c873c9ae065a41eab5f6e7bc902b1f5))
-- move mock browser utils ([#175](https://github.com/sanity-io/cli/issues/175)) ([db43757](https://github.com/sanity-io/cli/commit/db437572b2aaeba2920a419c9c55966567495751))
-- move tree util to core package ([#208](https://github.com/sanity-io/cli/issues/208)) ([83417a2](https://github.com/sanity-io/cli/commit/83417a2a004338e62a5f898f733c4d1732b36e9b))
-- move up call to PATCH metadata after bootstrapping template files ([#6828](https://github.com/sanity-io/cli/issues/6828)) ([b008b5d](https://github.com/sanity-io/cli/commit/b008b5deebe73da3a79c96c3d7e8f58f7e6a41e4))
-- **openapi:** add openapi get and list commands ([#110](https://github.com/sanity-io/cli/issues/110)) ([927e27e](https://github.com/sanity-io/cli/commit/927e27e7922c7b8457e3065c1e9a93212e2e3ea1))
-- parse cli config using Zod schema in `createCliConfig` ([547ac52](https://github.com/sanity-io/cli/commit/547ac528f7a762ee2295513eb09f6b2d439d8119))
-- **sanity:** studio manifests cont ([#7403](https://github.com/sanity-io/cli/issues/7403)) ([c8f755a](https://github.com/sanity-io/cli/commit/c8f755afc3fa1c21a1bac298fd78f2cbe77aa15f))
-- **schema:** move schema validate command ([#191](https://github.com/sanity-io/cli/issues/191)) ([11b746e](https://github.com/sanity-io/cli/commit/11b746ea0f4988bd35b8e4c83d0f930d4b8a7929))
-- set print width to 40 ([#6068](https://github.com/sanity-io/cli/issues/6068)) ([0193ce2](https://github.com/sanity-io/cli/commit/0193ce2dae84e02853e17521692ba7af1fb43437))
-- **telemetry:** add telemetry commands ([#75](https://github.com/sanity-io/cli/issues/75)) ([9f0ca66](https://github.com/sanity-io/cli/commit/9f0ca6688b61872c34a2eb396d2865ce3e085230))
-- **telemetry:** shows a disclosure in all CLI commands ([#69](https://github.com/sanity-io/cli/issues/69)) ([406024a](https://github.com/sanity-io/cli/commit/406024a2e55cd6ef59432bde22df5f6bd6de04cb))
-- throw helpful errors during deploy & improve CLI logging ([#177](https://github.com/sanity-io/cli/issues/177)) ([87129f6](https://github.com/sanity-io/cli/commit/87129f6d70a70b54cdea50c572bdb42c93b2eb81))
-- **tokens:** add tokens add command ([#87](https://github.com/sanity-io/cli/issues/87)) ([fc5ce91](https://github.com/sanity-io/cli/commit/fc5ce915659f2aa9e875699bad30134aadb38b81))
-- **tokens:** add tokens delete command ([#88](https://github.com/sanity-io/cli/issues/88)) ([2e2602e](https://github.com/sanity-io/cli/commit/2e2602ea351ed7b442ff1be889aca69498496d7b))
-- **tokens:** add tokens list command ([#86](https://github.com/sanity-io/cli/issues/86)) ([a1fa939](https://github.com/sanity-io/cli/commit/a1fa9392b1788d2f229e6815d018c06e416ece1f))
-- **typegen:** add all schema types exported union ([#6962](https://github.com/sanity-io/cli/issues/6962)) ([ca4c28b](https://github.com/sanity-io/cli/commit/ca4c28b51141517372560910ced9203c5fdf464f))
-- **typegen:** add optout for prettier formatting ([#6702](https://github.com/sanity-io/cli/issues/6702)) ([3310141](https://github.com/sanity-io/cli/commit/3310141fc3ed56057f046d3c503ca790fb394fa5))
-- **typegen:** set overload client methods to default to true ([#7390](https://github.com/sanity-io/cli/issues/7390)) ([d067205](https://github.com/sanity-io/cli/commit/d067205d3a91625822331e69e574235378b04b64))
-- update schema types formatting and init to include src ([#7094](https://github.com/sanity-io/cli/issues/7094)) ([6436fae](https://github.com/sanity-io/cli/commit/6436fae72576212fcbc97b0e6dd4090ec1ced089))
-- upgrade `sanity init` for Next.js to next-sanity v9 ([#6644](https://github.com/sanity-io/cli/issues/6644)) ([aeaa9ca](https://github.com/sanity-io/cli/commit/aeaa9ca1c8ce5708ad12778b920d2b7136904b18))
-- use eslint 9 for new studios ([#7978](https://github.com/sanity-io/cli/issues/7978)) ([8880e62](https://github.com/sanity-io/cli/commit/8880e624a908b8a60a940bc8741206af8296e58a))
-- **users:** add users invite command ([#108](https://github.com/sanity-io/cli/issues/108)) ([cfba720](https://github.com/sanity-io/cli/commit/cfba720c44da8686013c98c29e867f2692b48406))
-
-### Bug Fixes
-
-- add --legacy-peer-deps to next-sanity pacakge install ([#7806](https://github.com/sanity-io/cli/issues/7806)) ([f69d87e](https://github.com/sanity-io/cli/commit/f69d87efcfe81d011bceceefbd75201d28df0174))
-- allow passing more client options to methods ([#120](https://github.com/sanity-io/cli/issues/120)) ([5c131aa](https://github.com/sanity-io/cli/commit/5c131aa50ea24f017d74db89bf9675a52bf0b3a1))
-- allow using cli in sdk apps and add tests ([#27](https://github.com/sanity-io/cli/issues/27)) ([15554c6](https://github.com/sanity-io/cli/commit/15554c69cf7546e849420cf05d51de94a1f93fcd))
-- **cli:** align minimum node version in package with runtime check ([#30](https://github.com/sanity-io/cli/issues/30)) ([e64d763](https://github.com/sanity-io/cli/commit/e64d763c73d95b8c2e6d7bef11494b8db06a1322))
-- **cli:** don't prepend message about .env.local if creating .env.local ([#7288](https://github.com/sanity-io/cli/issues/7288)) ([1221967](https://github.com/sanity-io/cli/commit/1221967a432398f2c72406ce265655032ea13bff))
-- **cli:** outputters should respect %s ([#8037](https://github.com/sanity-io/cli/issues/8037)) ([d79d518](https://github.com/sanity-io/cli/commit/d79d51897a5e50d3aba3c864fa312daf173f6a03))
-- **cli:** remove v2 commands ([#5750](https://github.com/sanity-io/cli/issues/5750)) ([e42bdde](https://github.com/sanity-io/cli/commit/e42bddeb01be70d8c30bf99c921d9d7ac9835d38))
-- **CLI:** Set integration value for createProject directly in the createProject function ([#7021](https://github.com/sanity-io/cli/issues/7021)) ([cb4e293](https://github.com/sanity-io/cli/commit/cb4e2932ccefca0902541e387d3b870777a11da8))
-- **core:** error reporting consent tweaks ([#7131](https://github.com/sanity-io/cli/issues/7131)) ([50c62f4](https://github.com/sanity-io/cli/commit/50c62f414f69e0fd2326784e8f7b7c02787dddf8))
-- **core:** fixes issues with loading cli config ([#137](https://github.com/sanity-io/cli/issues/137)) ([8cf088e](https://github.com/sanity-io/cli/commit/8cf088e4afc06247dc82c09a6bceeb2b89f06c8b))
-- **deps:** bump `@sanity/pkg-utils` to `v6.10.7` ([#7277](https://github.com/sanity-io/cli/issues/7277)) ([6bfc2a8](https://github.com/sanity-io/cli/commit/6bfc2a82c4eca0d42f5513b73d8ad70a86e753ab))
-- **deps:** bump react + sanity dependencies ([#192](https://github.com/sanity-io/cli/issues/192)) ([8f8c009](https://github.com/sanity-io/cli/commit/8f8c009dbb63675d5fcfe10266dc24b118d4fcfa))
-- **deps:** deprecation warnings due to `glob` dependency ([#7977](https://github.com/sanity-io/cli/issues/7977)) ([8a30e2e](https://github.com/sanity-io/cli/commit/8a30e2e55e84c0b0f96aeda6de532910524ec87b))
-- **deps:** update dependency @inquirer/prompts to ^7.8.6 ([#140](https://github.com/sanity-io/cli/issues/140)) ([b481a84](https://github.com/sanity-io/cli/commit/b481a84d9a44b983c2cdca4bcda65bc7536ee483))
-- **deps:** update dependency @sanity/client to ^6.16.0 ([#6548](https://github.com/sanity-io/cli/issues/6548)) ([cf7a952](https://github.com/sanity-io/cli/commit/cf7a95243c140b18ce5137c3efb2630b2bee92ff))
-- **deps:** update dependency @sanity/client to ^6.17.2 ([#6567](https://github.com/sanity-io/cli/issues/6567)) ([617ecbf](https://github.com/sanity-io/cli/commit/617ecbf91ac7c622b1029f5cb507863b090cddd4))
-- **deps:** update dependency @sanity/client to ^6.18.0 ([#6604](https://github.com/sanity-io/cli/issues/6604)) ([41317be](https://github.com/sanity-io/cli/commit/41317be74a353b1d30840e163b4497e8aef9e826))
-- **deps:** update dependency @sanity/client to ^6.18.1 ([#6653](https://github.com/sanity-io/cli/issues/6653)) ([485a124](https://github.com/sanity-io/cli/commit/485a124988a3fbfa5486ad478d6eb919b1e9341f))
-- **deps:** update dependency @sanity/client to ^6.18.2 ([#6674](https://github.com/sanity-io/cli/issues/6674)) ([df6f0d3](https://github.com/sanity-io/cli/commit/df6f0d31e6255b03d20a2321c883d6bb679a1dfa))
-- **deps:** update dependency @sanity/client to ^6.18.3 ([#6762](https://github.com/sanity-io/cli/issues/6762)) ([fe84199](https://github.com/sanity-io/cli/commit/fe84199aa36fe15e92f3d12a2d9ecc2eccd9522a))
-- **deps:** update dependency @sanity/client to ^6.19.0 ([#6781](https://github.com/sanity-io/cli/issues/6781)) ([6dde803](https://github.com/sanity-io/cli/commit/6dde803ab1a446aebf0a5e05bf3c0117316f3de6))
-- **deps:** update dependency @sanity/client to ^6.20.0 ([#6886](https://github.com/sanity-io/cli/issues/6886)) ([d3a8ae6](https://github.com/sanity-io/cli/commit/d3a8ae6dafd1bbc58dcda198ff95db5a835ad977))
-- **deps:** update dependency @sanity/client to ^6.20.1 ([#7088](https://github.com/sanity-io/cli/issues/7088)) ([95eda1c](https://github.com/sanity-io/cli/commit/95eda1c0478bd2d553c809475a0c52c6458c62cb))
-- **deps:** update dependency @sanity/client to ^6.20.2 ([#7111](https://github.com/sanity-io/cli/issues/7111)) ([edbc0a2](https://github.com/sanity-io/cli/commit/edbc0a2019f7ff8f28f241f0feed39df1f71f5c6))
-- **deps:** update dependency @sanity/client to ^6.21.0 ([#7137](https://github.com/sanity-io/cli/issues/7137)) ([42a8505](https://github.com/sanity-io/cli/commit/42a850514afdb9cad3cea9db802b853ab80c16a0))
-- **deps:** update dependency @sanity/client to ^6.21.1 ([#7215](https://github.com/sanity-io/cli/issues/7215)) ([4390d55](https://github.com/sanity-io/cli/commit/4390d559fe4a943cffcd16c5ad18adc7438df552))
-- **deps:** update dependency @sanity/client to ^6.21.2 ([#7354](https://github.com/sanity-io/cli/issues/7354)) ([51da113](https://github.com/sanity-io/cli/commit/51da113d6f77ccd7b5dd9c20938edf8362d51381))
-- **deps:** update dependency @sanity/client to ^6.21.3 ([#7373](https://github.com/sanity-io/cli/issues/7373)) ([315a582](https://github.com/sanity-io/cli/commit/315a5828affddc7eda85e13488cfeba4849e827b))
-- **deps:** update dependency @sanity/client to ^6.22.0 ([#7522](https://github.com/sanity-io/cli/issues/7522)) ([92d738c](https://github.com/sanity-io/cli/commit/92d738ce6596a15e494becbb9969e80acbded031))
-- **deps:** update dependency @sanity/client to ^6.22.1 ([#7585](https://github.com/sanity-io/cli/issues/7585)) ([18a4421](https://github.com/sanity-io/cli/commit/18a4421ca2b6fd09900c2b596d847476586518ac))
-- **deps:** update dependency @sanity/client to ^6.22.2 ([#7625](https://github.com/sanity-io/cli/issues/7625)) ([ab91c84](https://github.com/sanity-io/cli/commit/ab91c843e908cb7358d635084f83c695144d1602))
-- **deps:** update dependency @sanity/client to ^6.22.3 ([#7766](https://github.com/sanity-io/cli/issues/7766)) ([95ac6bd](https://github.com/sanity-io/cli/commit/95ac6bd26b3b959fe355bc02da0b5564ae63d75f))
-- **deps:** update dependency @sanity/client to ^6.22.4 ([#7785](https://github.com/sanity-io/cli/issues/7785)) ([036656b](https://github.com/sanity-io/cli/commit/036656bbb8e098b251db45f7cbbdc55eb0b5d223))
-- **deps:** update dependency @sanity/client to ^6.22.5 ([#7837](https://github.com/sanity-io/cli/issues/7837)) ([9ecec64](https://github.com/sanity-io/cli/commit/9ecec64a3806cc6786d34c0e43385a96371a1798))
-- **deps:** update dependency @sanity/client to ^6.23.0 ([#7931](https://github.com/sanity-io/cli/issues/7931)) ([9205e43](https://github.com/sanity-io/cli/commit/9205e4366698fc6e176237b9f73b9bd89445f10b))
-- **deps:** update dependency @sanity/client to ^6.24.0 ([#7935](https://github.com/sanity-io/cli/issues/7935)) ([2a074e5](https://github.com/sanity-io/cli/commit/2a074e562073dba1ef85fd0fa14a4a3247ed382a))
-- **deps:** update dependency @sanity/client to ^6.24.1 ([#7938](https://github.com/sanity-io/cli/issues/7938)) ([b20186d](https://github.com/sanity-io/cli/commit/b20186d3ce5008122cf704fef689293da4c95ddb))
-- **deps:** update dependency @sanity/client to ^6.24.3 ([#8213](https://github.com/sanity-io/cli/issues/8213)) ([2c67a10](https://github.com/sanity-io/cli/commit/2c67a10894963088698a57d425b29771e6bc27ef))
-- **deps:** update dependency @sanity/icons to ^3.5.0 ([#7929](https://github.com/sanity-io/cli/issues/7929)) ([fffbc3e](https://github.com/sanity-io/cli/commit/fffbc3ecc7069a51ede9f6a309c7d8af6434d349))
-- **deps:** update dependency @sanity/icons to ^3.5.1 ([#7989](https://github.com/sanity-io/cli/issues/7989)) ([aa8cdb7](https://github.com/sanity-io/cli/commit/aa8cdb7669e903e9ab5c72dd87f30f9d57a0ebf6))
-- **deps:** update dependency @sanity/icons to ^3.5.2 ([#7991](https://github.com/sanity-io/cli/issues/7991)) ([08f4465](https://github.com/sanity-io/cli/commit/08f446591e9b3d8b962838cb373a509c92e7ebd4))
-- **deps:** update dependency @sanity/icons to ^3.5.3 ([#8071](https://github.com/sanity-io/cli/issues/8071)) ([3be3eb0](https://github.com/sanity-io/cli/commit/3be3eb0a591b84c06dace6cac652d79931a4f6d7))
-- **deps:** update dependency @sanity/icons to ^3.5.5 ([#8106](https://github.com/sanity-io/cli/issues/8106)) ([3106b8d](https://github.com/sanity-io/cli/commit/3106b8d2353912905cdf10e845318f38bee27ac1))
-- **deps:** update dependency @sanity/icons to ^3.5.6 ([#8129](https://github.com/sanity-io/cli/issues/8129)) ([0c99b03](https://github.com/sanity-io/cli/commit/0c99b03e1929c6f4a15577ede1d1d6fb88dde693))
-- **deps:** update dependency @sanity/icons to ^3.5.7 ([#8155](https://github.com/sanity-io/cli/issues/8155)) ([9b6f1a5](https://github.com/sanity-io/cli/commit/9b6f1a5f84a5572d0583870cf21c737828967a2d))
-- **deps:** update dependency @types/node to ^20.19.25 ([#178](https://github.com/sanity-io/cli/issues/178)) ([366c53b](https://github.com/sanity-io/cli/commit/366c53be94fa6470255857776098c542ffc2d132))
-- **deps:** update dependency debug to ^4.4.3 ([#154](https://github.com/sanity-io/cli/issues/154)) ([f1cf942](https://github.com/sanity-io/cli/commit/f1cf942572ba47b5f91652748fdfa05eecc8260d))
-- **deps:** update dependency form-data to ^4.0.5 ([#179](https://github.com/sanity-io/cli/issues/179)) ([e75775f](https://github.com/sanity-io/cli/commit/e75775f5013513fec60ced8b0456e50a27a20b2f))
-- **deps:** update dependency get-it to ^8.4.28 ([#6576](https://github.com/sanity-io/cli/issues/6576)) ([6050f46](https://github.com/sanity-io/cli/commit/6050f463d2d536b19e1d04dcb062b3d5e71f088d))
-- **deps:** update dependency get-it to ^8.4.29 ([#6603](https://github.com/sanity-io/cli/issues/6603)) ([ddcea20](https://github.com/sanity-io/cli/commit/ddcea206b825a506cb699c907a82607db43b0fee))
-- **deps:** update dependency get-it to ^8.4.30 ([#6676](https://github.com/sanity-io/cli/issues/6676)) ([6bcf2c0](https://github.com/sanity-io/cli/commit/6bcf2c05529f172e1c69d85997fa6d6890e3ac33))
-- **deps:** update dependency get-it to ^8.5.0 ([#6758](https://github.com/sanity-io/cli/issues/6758)) ([8fc8863](https://github.com/sanity-io/cli/commit/8fc8863fdaaa22c40f757c3bb96d6609a6dd32f9))
-- **deps:** update dependency get-it to ^8.6.0 ([#6884](https://github.com/sanity-io/cli/issues/6884)) ([3777d9f](https://github.com/sanity-io/cli/commit/3777d9fec9330c13cf31e3548b1f0b4161448d0d))
-- **deps:** update dependency get-it to ^8.6.2 ([#7052](https://github.com/sanity-io/cli/issues/7052)) ([289e7dd](https://github.com/sanity-io/cli/commit/289e7dd2fff080f5f44980d88c69fa70fa4f478c))
-- **deps:** update dependency get-it to ^8.6.3 ([#7108](https://github.com/sanity-io/cli/issues/7108)) ([5a67267](https://github.com/sanity-io/cli/commit/5a672673bc943f67063f4bb32573b714d7c189ef))
-- **deps:** update dependency get-it to ^8.6.4 ([#7353](https://github.com/sanity-io/cli/issues/7353)) ([779cc33](https://github.com/sanity-io/cli/commit/779cc335b431d863551cf40c737ad258f4c6b298))
-- **deps:** update dependency get-it to ^8.6.5 ([#7376](https://github.com/sanity-io/cli/issues/7376)) ([8509a68](https://github.com/sanity-io/cli/commit/8509a6891f6b27ebb36f2b4935d04d545c8bd2f4))
-- **deps:** update dependency get-it to ^8.6.6 ([#8221](https://github.com/sanity-io/cli/issues/8221)) ([189c2ad](https://github.com/sanity-io/cli/commit/189c2ad90317f2a2bed6b60546be7edea8dec4ad))
-- **deps:** update dependency get-it to ^8.7.0 ([#221](https://github.com/sanity-io/cli/issues/221)) ([ed31a30](https://github.com/sanity-io/cli/commit/ed31a30dc6965b07651a5bfda9cd0be9d9369c73))
-- **deps:** update dependency get-tsconfig to ^4.10.1 ([#31](https://github.com/sanity-io/cli/issues/31)) ([99bcddc](https://github.com/sanity-io/cli/commit/99bcddcacae0d4818d3d659b0ffa15dc90304a22))
-- **deps:** update dependency groq-js to ^1.10.0 ([#7053](https://github.com/sanity-io/cli/issues/7053)) ([d222180](https://github.com/sanity-io/cli/commit/d22218007c2dc6c3b85e2c48581fa161cd508207))
-- **deps:** update dependency groq-js to ^1.11.0 ([#7229](https://github.com/sanity-io/cli/issues/7229)) ([21854bd](https://github.com/sanity-io/cli/commit/21854bdf99fce46016c0d46015af0cf00c5632c2))
-- **deps:** update dependency groq-js to ^1.11.1 ([#7247](https://github.com/sanity-io/cli/issues/7247)) ([b59457d](https://github.com/sanity-io/cli/commit/b59457d38d217d0b01835f4246221433385b58ba))
-- **deps:** update dependency groq-js to ^1.12.0 ([#7252](https://github.com/sanity-io/cli/issues/7252)) ([5c04960](https://github.com/sanity-io/cli/commit/5c04960936693a78859e712f47ad927ce1d08ad4))
-- **deps:** update dependency groq-js to ^1.13.0 ([#7424](https://github.com/sanity-io/cli/issues/7424)) ([c7034d5](https://github.com/sanity-io/cli/commit/c7034d50ef9365ead3859e6157bc6951b765039f))
-- **deps:** update dependency groq-js to ^1.14.0 ([#7738](https://github.com/sanity-io/cli/issues/7738)) ([f4a6a65](https://github.com/sanity-io/cli/commit/f4a6a6547c9efe0f30854196291261910ac9dedc))
-- **deps:** update dependency groq-js to ^1.14.0 ([#7738](https://github.com/sanity-io/cli/issues/7738)) ([a4fc610](https://github.com/sanity-io/cli/commit/a4fc6102e7c4ad3ef6271ae5d922899adf4402fd))
-- **deps:** update dependency groq-js to ^1.14.1 ([#7910](https://github.com/sanity-io/cli/issues/7910)) ([de193d9](https://github.com/sanity-io/cli/commit/de193d9161f5ade797597356a06f3fc3324dea80))
-- **deps:** update dependency groq-js to ^1.14.2 ([#7985](https://github.com/sanity-io/cli/issues/7985)) ([b29b931](https://github.com/sanity-io/cli/commit/b29b9313abd28e64ce35f791e2c8dbdcd709f705))
-- **deps:** update dependency groq-js to ^1.9.0 ([#6655](https://github.com/sanity-io/cli/issues/6655)) ([055ddb8](https://github.com/sanity-io/cli/commit/055ddb8596ce5548cf297e6910f285ac5fe4ee41))
-- **deps:** update dependency vite to ^7.1.6 ([#136](https://github.com/sanity-io/cli/issues/136)) ([acf30f9](https://github.com/sanity-io/cli/commit/acf30f93345efe17572b83babbe9ebdb80917223))
-- **deps:** update dependency vite to v7 ([#133](https://github.com/sanity-io/cli/issues/133)) ([fd96f03](https://github.com/sanity-io/cli/commit/fd96f032e7f78fe5df45646dc70300953426c700))
-- **deps:** update oclif-tooling ([#116](https://github.com/sanity-io/cli/issues/116)) ([26a92ee](https://github.com/sanity-io/cli/commit/26a92eeeccbf6b92ab91fa08fedd09f2823cd8a3))
-- **deps:** update oclif-tooling ([#210](https://github.com/sanity-io/cli/issues/210)) ([66f8c47](https://github.com/sanity-io/cli/commit/66f8c47c6abac9aefbdd5d41ef0253d1ccf413b9))
-- **deps:** update oclif-tooling ([#22](https://github.com/sanity-io/cli/issues/22)) ([3480a7b](https://github.com/sanity-io/cli/commit/3480a7be5b32a536299cac932b1e69a453bdbc45))
-- **deps:** update sanity-tooling ([#117](https://github.com/sanity-io/cli/issues/117)) ([7543a82](https://github.com/sanity-io/cli/commit/7543a82ae8f9eb8e8acc759b6eda567fc2b49064))
-- **deps:** update sanity-tooling ([#149](https://github.com/sanity-io/cli/issues/149)) ([16213b1](https://github.com/sanity-io/cli/commit/16213b1c4aec3f4a8958a88c2ecbc59b418e65e1))
-- **deps:** update sanity-tooling ([#40](https://github.com/sanity-io/cli/issues/40)) ([0df98a6](https://github.com/sanity-io/cli/commit/0df98a6060ff054f68137128c732c1b2e4f4eb4d))
-- **deps:** update sanity-tooling ([#59](https://github.com/sanity-io/cli/issues/59)) ([04e502c](https://github.com/sanity-io/cli/commit/04e502c9d73603c4e831c95876fd96061d65311c))
-- **deps:** upgrade `vite` to v5 ([#5285](https://github.com/sanity-io/cli/issues/5285)) ([c45eac6](https://github.com/sanity-io/cli/commit/c45eac633c7c2c8710160fa51460f894d9aeccfd))
-- don't read/write ref during render ([#8077](https://github.com/sanity-io/cli/issues/8077)) ([76bf6b2](https://github.com/sanity-io/cli/commit/76bf6b2c3bacb3f80dce64f628d215255b5b1b6b))
-- **loader:** fixes importing TS config files ([#52](https://github.com/sanity-io/cli/issues/52)) ([218044a](https://github.com/sanity-io/cli/commit/218044ae48eb4a717c34c5ded5db6930eecc55df))
-- React 19 typings (finally) ([#8171](https://github.com/sanity-io/cli/issues/8171)) ([4283e94](https://github.com/sanity-io/cli/commit/4283e943af395ea35b6c02ae5ef88773fdc44150))
-- remove trailing commas when sanitizing ([#7007](https://github.com/sanity-io/cli/issues/7007)) ([94758bd](https://github.com/sanity-io/cli/commit/94758bdfa036852e5e54e664b28ee26fdbddb0df))
-- set `cliInitializedAt` even if project bootstrap fails ([#7558](https://github.com/sanity-io/cli/issues/7558)) ([d83a201](https://github.com/sanity-io/cli/commit/d83a201ea96d07ca4db1f03f5d112b47c2ce4eb0))
-- **typegen:** move type new line separator into formatter ([#6649](https://github.com/sanity-io/cli/issues/6649)) ([2f6f718](https://github.com/sanity-io/cli/commit/2f6f7180bc135620b785fb12a3a2b31fde8c1a7d))
-
-### Reverts
-
-- **cli:** use default ora options in spinner method ([#8038](https://github.com/sanity-io/cli/issues/8038)) ([432cee5](https://github.com/sanity-io/cli/commit/432cee5343a019f6278bb09e86ec9cd54a6d010e))
-
-## [6.0.0-alpha.2](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.1...cli-v6.0.0-alpha.2) (2025-12-24)
-
-### Bug Fixes
-
-- **deps:** update dependency get-it to ^8.7.0 ([#221](https://github.com/sanity-io/cli/issues/221)) ([ed31a30](https://github.com/sanity-io/cli/commit/ed31a30dc6965b07651a5bfda9cd0be9d9369c73))
-
-## [6.0.0-alpha.1](https://github.com/sanity-io/cli/compare/cli-v6.0.0-alpha.0...cli-v6.0.0-alpha.1) (2025-12-24)
-
-### ⚠ BREAKING CHANGES
-
-- add ux core helpers ([#219](https://github.com/sanity-io/cli/issues/219))
-
-### Features
-
-- add CI specific token label ([#7934](https://github.com/sanity-io/cli/issues/7934)) ([8652165](https://github.com/sanity-io/cli/commit/86521650df38a7e393b4a747a211ff00d2105f45))
-- add CLI command to open Sanity Learn ([#7409](https://github.com/sanity-io/cli/issues/7409)) ([132d1c0](https://github.com/sanity-io/cli/commit/132d1c0455bd6939737eec524b587900b9571c06))
-- add cli core package for shared utils ([#61](https://github.com/sanity-io/cli/issues/61)) ([5d2af2a](https://github.com/sanity-io/cli/commit/5d2af2a8704f5ecfa73fb3d547e4671509fdbcdf))
-- add CLI options to enable auto-updating studios ([#6514](https://github.com/sanity-io/cli/issues/6514)) ([8dd7938](https://github.com/sanity-io/cli/commit/8dd79387c67f7bf410092eee49beb6da0d8556e5))
-- add cli-test package for test helpers ([#62](https://github.com/sanity-io/cli/issues/62)) ([e84a0bf](https://github.com/sanity-io/cli/commit/e84a0bfcf14fbcc2e5f7b3f97911e421b82bcf05))
-- add cliInitializedAt field to project metadata ([#6538](https://github.com/sanity-io/cli/issues/6538)) ([37e27c6](https://github.com/sanity-io/cli/commit/37e27c65a2a1bb61a4c952c07d93a77361ce5fec))
-- add codemod command ([#143](https://github.com/sanity-io/cli/issues/143)) ([b008a3d](https://github.com/sanity-io/cli/commit/b008a3de1012655300dfe395d5ddf7d7898fffb5))
-- add debug command ([#70](https://github.com/sanity-io/cli/issues/70)) ([4edb88d](https://github.com/sanity-io/cli/commit/4edb88d340d21150341b7d2a6197fb772b4fb395))
-- add defineCliConfig function ([#12](https://github.com/sanity-io/cli/issues/12)) ([109c93d](https://github.com/sanity-io/cli/commit/109c93d058a18142141794e42e55b551e78eac38))
-- add deploy command ([#56](https://github.com/sanity-io/cli/issues/56)) ([d37d050](https://github.com/sanity-io/cli/commit/d37d050b769c66f1381804355f16a62b1e908258))
-- add hook logs command ([#76](https://github.com/sanity-io/cli/issues/76)) ([d7c2f84](https://github.com/sanity-io/cli/commit/d7c2f846f4eb591e4b60c28b2ea16fa3c447fde0))
-- add import studio config util ([#185](https://github.com/sanity-io/cli/issues/185)) ([c1be611](https://github.com/sanity-io/cli/commit/c1be61110e7bb954ebdf580753dcdb555dcf55db))
-- add install command ([#82](https://github.com/sanity-io/cli/issues/82)) ([78dec5b](https://github.com/sanity-io/cli/commit/78dec5ba7e820ab8024a86fb5d8bde480c23d1aa))
-- add integration when creating a new project through cli ([#6639](https://github.com/sanity-io/cli/issues/6639)) ([6ea564c](https://github.com/sanity-io/cli/commit/6ea564ce252e00996dd15bb70bee0fe82e28736e))
-- add plugin for not found commands ([#25](https://github.com/sanity-io/cli/issues/25)) ([114e567](https://github.com/sanity-io/cli/commit/114e567bdf4ab81dd6d053a3d7e201dc274eca89))
-- add support for React Compiler beta ([#7702](https://github.com/sanity-io/cli/issues/7702)) ([ca0374d](https://github.com/sanity-io/cli/commit/ca0374df99ba2e29c8ffeb4a09b41e701d008623))
-- add undeploy command ([#39](https://github.com/sanity-io/cli/issues/39)) ([31ecf02](https://github.com/sanity-io/cli/commit/31ecf0228836b8db6829f41fd6a356ed223a4b45))
-- add ux core helpers ([#219](https://github.com/sanity-io/cli/issues/219)) ([d2a7d78](https://github.com/sanity-io/cli/commit/d2a7d7858a1c83792a02abb2cd95fe44cbe3b6ed))
-- **alias:** add dataset alias commands ([#131](https://github.com/sanity-io/cli/issues/131)) ([d5b4a6e](https://github.com/sanity-io/cli/commit/d5b4a6e8eaa12f345e66db8d21375a47931b46cd))
-- **backup:** add backup commands ([#102](https://github.com/sanity-io/cli/issues/102)) ([4428039](https://github.com/sanity-io/cli/commit/44280392cd07654a676d3acecee36ef39d4d7860))
-- **backup:** add backup download command ([#138](https://github.com/sanity-io/cli/issues/138)) ([6468291](https://github.com/sanity-io/cli/commit/6468291042085a7060f81197a413d95a88d26dd9))
-- **blueprints:** add blueprints and functions commands ([#99](https://github.com/sanity-io/cli/issues/99)) ([5e5f551](https://github.com/sanity-io/cli/commit/5e5f551f617d9bfdc85b95948a5fbea095d5e0d9))
-- **cli:** add build command ([#36](https://github.com/sanity-io/cli/issues/36)) ([3bd4b77](https://github.com/sanity-io/cli/commit/3bd4b778b7543ac34397c3ab2e31e9aeae02189d))
-- **cli:** add cors entry automatically for template package ([#8035](https://github.com/sanity-io/cli/issues/8035)) ([27254d2](https://github.com/sanity-io/cli/commit/27254d2b7837d29a199049a9bd818a7ecaedfe3d))
-- **cli:** add dev command ([#54](https://github.com/sanity-io/cli/issues/54)) ([d813342](https://github.com/sanity-io/cli/commit/d813342fd37422c785c74f6747af73a81f42fb18))
-- **cli:** add preview command ([#47](https://github.com/sanity-io/cli/issues/47)) ([68de8c6](https://github.com/sanity-io/cli/commit/68de8c62b7dd9f21d6b3370e3809ba2438dc58f1))
-- **cli:** add projects list command ([#26](https://github.com/sanity-io/cli/issues/26)) ([064ffcf](https://github.com/sanity-io/cli/commit/064ffcf2ee4778c54a82d86dfc1c3acafc3a0646))
-- **cli:** add SanityCliCommand base class and test helpers ([#13](https://github.com/sanity-io/cli/issues/13)) ([e192755](https://github.com/sanity-io/cli/commit/e192755191993326c821615621875841afb008c1))
-- **cli:** add start command ([#46](https://github.com/sanity-io/cli/issues/46)) ([86c7b24](https://github.com/sanity-io/cli/commit/86c7b2436eee27294670d5f3129440c110192fb7))
-- **cli:** Add support for exporting dataset with cursor ([#7068](https://github.com/sanity-io/cli/issues/7068)) ([27bc5e2](https://github.com/sanity-io/cli/commit/27bc5e28725a0b4fdf3370dfaad66cb2c6ae5f55))
-- **cli:** add support for remote templates with `--template` ([#7867](https://github.com/sanity-io/cli/issues/7867)) ([5752016](https://github.com/sanity-io/cli/commit/57520163df84de66b64c1a7c1f048ace00e3db86))
-- **cli:** add test-template for testing `--template` flag ([#7877](https://github.com/sanity-io/cli/issues/7877)) ([f4b8ae5](https://github.com/sanity-io/cli/commit/f4b8ae578b6f2437923d4d9a62c581db189f36a6))
-- **cli:** add users list command ([#23](https://github.com/sanity-io/cli/issues/23)) ([03bebfe](https://github.com/sanity-io/cli/commit/03bebfed93d8baad58b8401c2dbe6c83b0446c37))
-- **cli:** add versions command ([#18](https://github.com/sanity-io/cli/issues/18)) ([66a94c4](https://github.com/sanity-io/cli/commit/66a94c422ad2a6f9b442d849d0f11f31064062cf))
-- **cli:** add warning and docs for react-19 and Next.Js combined ([#7660](https://github.com/sanity-io/cli/issues/7660)) ([d672adb](https://github.com/sanity-io/cli/commit/d672adb80263f02cc1e6bc0397968f69821de605))
-- **cli:** allow credentials when adding CORS entry ([#8191](https://github.com/sanity-io/cli/issues/8191)) ([5368c2b](https://github.com/sanity-io/cli/commit/5368c2b14649245936935ca8399441e599665536))
-- **cli:** allow the ability to specify package manager in init command ([#6820](https://github.com/sanity-io/cli/issues/6820)) ([b06a5fa](https://github.com/sanity-io/cli/commit/b06a5fa67afbb213cc10855b9a1d9ee657e981e0))
-- **cli:** copy additions for remote project bootstrapper ([#8141](https://github.com/sanity-io/cli/issues/8141)) ([501de29](https://github.com/sanity-io/cli/commit/501de29b825b81c0ac5da911cd51e1387cf69595))
-- **cli:** customize help text if coming from `create-sanity` module ([e5678e7](https://github.com/sanity-io/cli/commit/e5678e78e177fc13dce37a33450a35906240e0a9))
-- **cli:** generate read token conditionally for remote template ([#7953](https://github.com/sanity-io/cli/issues/7953)) ([d037200](https://github.com/sanity-io/cli/commit/d037200c62030ced1132def7d0b6c2c472fa27a4))
-- **cli:** implement minimal init command boilerplate ([007225f](https://github.com/sanity-io/cli/commit/007225fd960adc8d170c38f87c430d920509f34c))
-- **cli:** misc copy changes ([#8003](https://github.com/sanity-io/cli/issues/8003)) ([fca9abd](https://github.com/sanity-io/cli/commit/fca9abddeee8e34b9ca6590a8ffb69706b8357b8))
-- **cli:** prepare nextjs starter template for live mode ([#7633](https://github.com/sanity-io/cli/issues/7633)) ([1374b91](https://github.com/sanity-io/cli/commit/1374b91f5ec8c5da277a5d7ea60a257ec7055527))
-- **cli:** prepare nextjs starter template for live mode ([#7633](https://github.com/sanity-io/cli/issues/7633)) ([483e05e](https://github.com/sanity-io/cli/commit/483e05e24c0b20f00f58c50bb06f18ea5def5759))
-- **cli:** remove .github dirs when initializing with a remote template ([#8036](https://github.com/sanity-io/cli/issues/8036)) ([ac5ed0a](https://github.com/sanity-io/cli/commit/ac5ed0a97ad9ceb7abdb0607ebc6bbbb76acefa3))
-- **cli:** remove is-builtin-module ([#6579](https://github.com/sanity-io/cli/issues/6579)) ([d8393e5](https://github.com/sanity-io/cli/commit/d8393e5bc78f31af7f12848f761a9a16119c500a))
-- **cli:** remove patching of tsconfig.json and thus silver-fleece dependency ([#8114](https://github.com/sanity-io/cli/issues/8114)) ([ac5105a](https://github.com/sanity-io/cli/commit/ac5105a82097a6ae01bc166fa2694b1f03854d8e))
-- **cli:** remove v2 init messaging ([#7887](https://github.com/sanity-io/cli/issues/7887)) ([b654255](https://github.com/sanity-io/cli/commit/b65425568ccb074098d067955f8a2aacc455884b))
-- **cli:** skip directories without .env.example when bootstrapping remote template ([#8216](https://github.com/sanity-io/cli/issues/8216)) ([e13bd8c](https://github.com/sanity-io/cli/commit/e13bd8c445381ce280d0badb60e52ad6fa50d87c))
-- **cli:** slim down remote test template ([#8224](https://github.com/sanity-io/cli/issues/8224)) ([29c556d](https://github.com/sanity-io/cli/commit/29c556da4e186b198823cd222c9a25cf54da3791))
-- **cli:** update CLI to use new deploy endpoint ([#7244](https://github.com/sanity-io/cli/issues/7244)) ([f8006d7](https://github.com/sanity-io/cli/commit/f8006d75f45de3d0acea8a7691e26204e1a8dbfc))
-- **cli:** use `@sanity/template-validator` package ([#8014](https://github.com/sanity-io/cli/issues/8014)) ([39cd2cf](https://github.com/sanity-io/cli/commit/39cd2cfb3b72e07eaf5a481cc0c0a30b26a59cce))
-- **cli:** use `@vercel/frameworks` in `bootstrapRemoteTemplate` ([#8001](https://github.com/sanity-io/cli/issues/8001)) ([8c91427](https://github.com/sanity-io/cli/commit/8c91427db7cdd46f8aeeb14d5e90ab622069012f))
-- **cli:** use auto-updates flag in init ([#7401](https://github.com/sanity-io/cli/issues/7401)) ([b145cfb](https://github.com/sanity-io/cli/commit/b145cfbb78bf41001f4a64383a68e810dd401712))
-- **codegen:** generate SanityQueries interface in @sanity/codegen ([#6997](https://github.com/sanity-io/cli/issues/6997)) ([#7304](https://github.com/sanity-io/cli/issues/7304)) ([eaa41b9](https://github.com/sanity-io/cli/commit/eaa41b9cf23d730ff335b92e779a31c0a06d1fc3))
-- **cors:** add cors add command ([#80](https://github.com/sanity-io/cli/issues/80)) ([ff62eb2](https://github.com/sanity-io/cli/commit/ff62eb211266e3404d51a7d025e9b54df59dcf3c))
-- **cors:** add cors delete command ([#81](https://github.com/sanity-io/cli/issues/81)) ([c0dcd56](https://github.com/sanity-io/cli/commit/c0dcd560c9bf1a36f4062e3773ff200ab80d6e21))
-- **cors:** add cors list command ([#78](https://github.com/sanity-io/cli/issues/78)) ([9aecd3d](https://github.com/sanity-io/cli/commit/9aecd3d72c15b8ad8b7418c8e1956da60bab446c))
-- **create-sanity:** spawn new `@sanity/cli` from `create-sanity` ([#50](https://github.com/sanity-io/cli/issues/50)) ([dfd1e35](https://github.com/sanity-io/cli/commit/dfd1e35f18f3cc330082c0211584ab3f61f58c6f))
-- **dataset:** add dataset copy command ([#157](https://github.com/sanity-io/cli/issues/157)) ([34e7800](https://github.com/sanity-io/cli/commit/34e7800b5bf142d763baaf7ecdafd2dc0e054035))
-- **dataset:** add dataset create command ([#130](https://github.com/sanity-io/cli/issues/130)) ([bf8a97c](https://github.com/sanity-io/cli/commit/bf8a97c70ae9022f248630f5ccac2a0a0da740ec))
-- **dataset:** add dataset delete command ([#125](https://github.com/sanity-io/cli/issues/125)) ([da8e4d9](https://github.com/sanity-io/cli/commit/da8e4d9652c5f1e909419d1fb8639a5ff2102e4d))
-- **dataset:** add dataset list command ([#129](https://github.com/sanity-io/cli/issues/129)) ([1db4136](https://github.com/sanity-io/cli/commit/1db4136d58a56696c5e860238493deaa681fa273))
-- **dataset:** add dataset visibility commands ([#126](https://github.com/sanity-io/cli/issues/126)) ([c83a7d2](https://github.com/sanity-io/cli/commit/c83a7d2aac246b96f3e2da710ac126deceecc44b))
-- **datasets:** add dataset import command ([#124](https://github.com/sanity-io/cli/issues/124)) ([510810f](https://github.com/sanity-io/cli/commit/510810f37491e9d43562f97e393bb132c847cb65))
-- **datasets:** add datasets export command ([#123](https://github.com/sanity-io/cli/issues/123)) ([0633345](https://github.com/sanity-io/cli/commit/0633345eec81679bfb9965e247ea830b913032ee))
-- **docs:** add docs commands ([#94](https://github.com/sanity-io/cli/issues/94)) ([e6b5500](https://github.com/sanity-io/cli/commit/e6b550043c316acd7b7c64367e92754a1105e4ca))
-- **documents:** add documents create command ([#106](https://github.com/sanity-io/cli/issues/106)) ([2a0ed33](https://github.com/sanity-io/cli/commit/2a0ed33a5a1bef47739a5de57379bf691a0d9221))
-- **documents:** add documents delete command ([#85](https://github.com/sanity-io/cli/issues/85)) ([8a8d542](https://github.com/sanity-io/cli/commit/8a8d542426c8c38dc3f1dec39d6924d1fd37ee57))
-- **documents:** add documents get command ([#84](https://github.com/sanity-io/cli/issues/84)) ([aeea660](https://github.com/sanity-io/cli/commit/aeea66066d688a5929f2f042e1e3977ec748224c))
-- **documents:** add documents query command ([#101](https://github.com/sanity-io/cli/issues/101)) ([564cb4a](https://github.com/sanity-io/cli/commit/564cb4afe09afca3908383fd74172d8a571bdb99))
-- **documents:** move documents validate command ([#182](https://github.com/sanity-io/cli/issues/182)) ([7d12569](https://github.com/sanity-io/cli/commit/7d12569520375e85bbb74fb171850c91bd5e699f))
-- embellish nextjs blog starter ([#7258](https://github.com/sanity-io/cli/issues/7258)) ([0e012cd](https://github.com/sanity-io/cli/commit/0e012cd644eeca4247d59e865a74722b84cb04a6))
-- **exec:** move cliClient ([#180](https://github.com/sanity-io/cli/issues/180)) ([47c89ea](https://github.com/sanity-io/cli/commit/47c89ea08ebceb575cb375f02b62ba5ccbf2f7c2))
-- **exec:** move exec command ([#186](https://github.com/sanity-io/cli/issues/186)) ([517a759](https://github.com/sanity-io/cli/commit/517a759dbc99c97e2d19dcf00ba653eb0fcadb23))
-- **graphql:** add graphql list command ([#139](https://github.com/sanity-io/cli/issues/139)) ([c77149e](https://github.com/sanity-io/cli/commit/c77149e8bab14938e2974d34d5b088157fd6f9b8))
-- **graphql:** migrate graphql undeploy command ([#194](https://github.com/sanity-io/cli/issues/194)) ([3915139](https://github.com/sanity-io/cli/commit/39151391c3b557a53ed26e03016d9b7f7683285a))
-- **hook:** add hook attempt endpoint ([#100](https://github.com/sanity-io/cli/issues/100)) ([0916eef](https://github.com/sanity-io/cli/commit/0916eef67ed979ce893aa27e438124e7e3b88931))
-- **hook:** add hook create command ([#74](https://github.com/sanity-io/cli/issues/74)) ([c2126e5](https://github.com/sanity-io/cli/commit/c2126e5e06fdb8500a6dc866285bcd27edc220f9))
-- **hook:** add hook delete command ([#89](https://github.com/sanity-io/cli/issues/89)) ([6100234](https://github.com/sanity-io/cli/commit/61002346669776a139eff85e9b734a324057901d))
-- **hook:** add hook list command ([#73](https://github.com/sanity-io/cli/issues/73)) ([088f222](https://github.com/sanity-io/cli/commit/088f222c79852a2d1f1c15fe6a2ec9a8bc043335))
-- improve clarity of undeploy output w/ apps ([#173](https://github.com/sanity-io/cli/issues/173)) ([4b17e0b](https://github.com/sanity-io/cli/commit/4b17e0bad91fbd8db158a3e6001f0cd8e5f44a48))
-- **init:** migration of init command setup, plan/coupon logic, and authentication logic ([#199](https://github.com/sanity-io/cli/issues/199)) ([012168e](https://github.com/sanity-io/cli/commit/012168eb03ab7e309918206511dc60c21dea573f))
-- **mcp:** add mcp configure command ([#203](https://github.com/sanity-io/cli/issues/203)) ([d07541e](https://github.com/sanity-io/cli/commit/d07541e79391257912e61e3f4b5c8c9c9953716c))
-- **media:** add media create-aspect command ([#144](https://github.com/sanity-io/cli/issues/144)) ([ea8224f](https://github.com/sanity-io/cli/commit/ea8224fccf50923134991effd1395ab6b800ece9))
-- **media:** add media delete-aspect command ([#152](https://github.com/sanity-io/cli/issues/152)) ([47025ad](https://github.com/sanity-io/cli/commit/47025ad8ef9ae379b6e1b8e2cf6f62b51124c0e3))
-- **media:** add media deploy-aspect command ([#160](https://github.com/sanity-io/cli/issues/160)) ([40444e7](https://github.com/sanity-io/cli/commit/40444e725d7d7bb79c971cc77c6d7a7d4d6b68ea))
-- **media:** add media export command ([#158](https://github.com/sanity-io/cli/issues/158)) ([87a5d39](https://github.com/sanity-io/cli/commit/87a5d395aeed4a496c321430d80de9358c9be4e0))
-- **media:** move import media command ([#171](https://github.com/sanity-io/cli/issues/171)) ([a739cf1](https://github.com/sanity-io/cli/commit/a739cf148d4de687c11e5e8a0d25fba657629269))
-- migrate auto update functionality from production CLI ([#209](https://github.com/sanity-io/cli/issues/209)) ([86f42c2](https://github.com/sanity-io/cli/commit/86f42c26c05ba81d8592b7d12b54ec824a453711))
-- migrate manifest extract command ([#187](https://github.com/sanity-io/cli/issues/187)) ([60137b1](https://github.com/sanity-io/cli/commit/60137b1e85ebf225c37cb691edfa3925d11bb38b))
-- migrate schema extract ([#190](https://github.com/sanity-io/cli/issues/190)) ([65a486e](https://github.com/sanity-io/cli/commit/65a486ee1681e4e80ad51df3c75247eb47e90a2b))
-- **migration:** add migration list command ([#167](https://github.com/sanity-io/cli/issues/167)) ([fd0a19d](https://github.com/sanity-io/cli/commit/fd0a19da10736f91fcb3f893e7eb3daf962882ec))
-- **migration:** move migration create command ([#166](https://github.com/sanity-io/cli/issues/166)) ([c1af277](https://github.com/sanity-io/cli/commit/c1af2774b488df538c334bcce68a2d49a4b41e5b))
-- **migration:** move run command to new CLI ([#174](https://github.com/sanity-io/cli/issues/174)) ([6ba3713](https://github.com/sanity-io/cli/commit/6ba3713b2c873c9ae065a41eab5f6e7bc902b1f5))
-- move mock browser utils ([#175](https://github.com/sanity-io/cli/issues/175)) ([db43757](https://github.com/sanity-io/cli/commit/db437572b2aaeba2920a419c9c55966567495751))
-- move tree util to core package ([#208](https://github.com/sanity-io/cli/issues/208)) ([83417a2](https://github.com/sanity-io/cli/commit/83417a2a004338e62a5f898f733c4d1732b36e9b))
-- move up call to PATCH metadata after bootstrapping template files ([#6828](https://github.com/sanity-io/cli/issues/6828)) ([b008b5d](https://github.com/sanity-io/cli/commit/b008b5deebe73da3a79c96c3d7e8f58f7e6a41e4))
-- **openapi:** add openapi get and list commands ([#110](https://github.com/sanity-io/cli/issues/110)) ([927e27e](https://github.com/sanity-io/cli/commit/927e27e7922c7b8457e3065c1e9a93212e2e3ea1))
-- parse cli config using Zod schema in `createCliConfig` ([547ac52](https://github.com/sanity-io/cli/commit/547ac528f7a762ee2295513eb09f6b2d439d8119))
-- **sanity:** studio manifests cont ([#7403](https://github.com/sanity-io/cli/issues/7403)) ([c8f755a](https://github.com/sanity-io/cli/commit/c8f755afc3fa1c21a1bac298fd78f2cbe77aa15f))
-- **schema:** move schema validate command ([#191](https://github.com/sanity-io/cli/issues/191)) ([11b746e](https://github.com/sanity-io/cli/commit/11b746ea0f4988bd35b8e4c83d0f930d4b8a7929))
-- set print width to 40 ([#6068](https://github.com/sanity-io/cli/issues/6068)) ([0193ce2](https://github.com/sanity-io/cli/commit/0193ce2dae84e02853e17521692ba7af1fb43437))
-- **telemetry:** add telemetry commands ([#75](https://github.com/sanity-io/cli/issues/75)) ([9f0ca66](https://github.com/sanity-io/cli/commit/9f0ca6688b61872c34a2eb396d2865ce3e085230))
-- **telemetry:** shows a disclosure in all CLI commands ([#69](https://github.com/sanity-io/cli/issues/69)) ([406024a](https://github.com/sanity-io/cli/commit/406024a2e55cd6ef59432bde22df5f6bd6de04cb))
-- throw helpful errors during deploy & improve CLI logging ([#177](https://github.com/sanity-io/cli/issues/177)) ([87129f6](https://github.com/sanity-io/cli/commit/87129f6d70a70b54cdea50c572bdb42c93b2eb81))
-- **tokens:** add tokens add command ([#87](https://github.com/sanity-io/cli/issues/87)) ([fc5ce91](https://github.com/sanity-io/cli/commit/fc5ce915659f2aa9e875699bad30134aadb38b81))
-- **tokens:** add tokens delete command ([#88](https://github.com/sanity-io/cli/issues/88)) ([2e2602e](https://github.com/sanity-io/cli/commit/2e2602ea351ed7b442ff1be889aca69498496d7b))
-- **tokens:** add tokens list command ([#86](https://github.com/sanity-io/cli/issues/86)) ([a1fa939](https://github.com/sanity-io/cli/commit/a1fa9392b1788d2f229e6815d018c06e416ece1f))
-- **typegen:** add all schema types exported union ([#6962](https://github.com/sanity-io/cli/issues/6962)) ([ca4c28b](https://github.com/sanity-io/cli/commit/ca4c28b51141517372560910ced9203c5fdf464f))
-- **typegen:** add optout for prettier formatting ([#6702](https://github.com/sanity-io/cli/issues/6702)) ([3310141](https://github.com/sanity-io/cli/commit/3310141fc3ed56057f046d3c503ca790fb394fa5))
-- **typegen:** also search for queries in app and sanity folders ([#6475](https://github.com/sanity-io/cli/issues/6475)) ([104bd81](https://github.com/sanity-io/cli/commit/104bd813951bec82abd1cb1f72ad6df0de1e0714))
-- **typegen:** set overload client methods to default to true ([#7390](https://github.com/sanity-io/cli/issues/7390)) ([d067205](https://github.com/sanity-io/cli/commit/d067205d3a91625822331e69e574235378b04b64))
-- update schema types formatting and init to include src ([#7094](https://github.com/sanity-io/cli/issues/7094)) ([6436fae](https://github.com/sanity-io/cli/commit/6436fae72576212fcbc97b0e6dd4090ec1ced089))
-- upgrade `sanity init` for Next.js to next-sanity v9 ([#6644](https://github.com/sanity-io/cli/issues/6644)) ([aeaa9ca](https://github.com/sanity-io/cli/commit/aeaa9ca1c8ce5708ad12778b920d2b7136904b18))
-- use eslint 9 for new studios ([#7978](https://github.com/sanity-io/cli/issues/7978)) ([8880e62](https://github.com/sanity-io/cli/commit/8880e624a908b8a60a940bc8741206af8296e58a))
-- **users:** add users invite command ([#108](https://github.com/sanity-io/cli/issues/108)) ([cfba720](https://github.com/sanity-io/cli/commit/cfba720c44da8686013c98c29e867f2692b48406))
-
-### Bug Fixes
-
-- add --legacy-peer-deps to next-sanity pacakge install ([#7806](https://github.com/sanity-io/cli/issues/7806)) ([f69d87e](https://github.com/sanity-io/cli/commit/f69d87efcfe81d011bceceefbd75201d28df0174))
-- allow passing more client options to methods ([#120](https://github.com/sanity-io/cli/issues/120)) ([5c131aa](https://github.com/sanity-io/cli/commit/5c131aa50ea24f017d74db89bf9675a52bf0b3a1))
-- allow using cli in sdk apps and add tests ([#27](https://github.com/sanity-io/cli/issues/27)) ([15554c6](https://github.com/sanity-io/cli/commit/15554c69cf7546e849420cf05d51de94a1f93fcd))
-- **cli:** align minimum node version in package with runtime check ([#30](https://github.com/sanity-io/cli/issues/30)) ([e64d763](https://github.com/sanity-io/cli/commit/e64d763c73d95b8c2e6d7bef11494b8db06a1322))
-- **cli:** don't prepend message about .env.local if creating .env.local ([#7288](https://github.com/sanity-io/cli/issues/7288)) ([1221967](https://github.com/sanity-io/cli/commit/1221967a432398f2c72406ce265655032ea13bff))
-- **cli:** outputters should respect %s ([#8037](https://github.com/sanity-io/cli/issues/8037)) ([d79d518](https://github.com/sanity-io/cli/commit/d79d51897a5e50d3aba3c864fa312daf173f6a03))
-- **cli:** remove comments from moviedb template, hide location field ([#6488](https://github.com/sanity-io/cli/issues/6488)) ([4bf8c16](https://github.com/sanity-io/cli/commit/4bf8c16c05edeca32ca98f50fc8facef1514e890))
-- **cli:** remove v2 commands ([#5750](https://github.com/sanity-io/cli/issues/5750)) ([e42bdde](https://github.com/sanity-io/cli/commit/e42bddeb01be70d8c30bf99c921d9d7ac9835d38))
-- **CLI:** Set integration value for createProject directly in the createProject function ([#7021](https://github.com/sanity-io/cli/issues/7021)) ([cb4e293](https://github.com/sanity-io/cli/commit/cb4e2932ccefca0902541e387d3b870777a11da8))
-- **core:** error reporting consent tweaks ([#7131](https://github.com/sanity-io/cli/issues/7131)) ([50c62f4](https://github.com/sanity-io/cli/commit/50c62f414f69e0fd2326784e8f7b7c02787dddf8))
-- **core:** fixes issues with loading cli config ([#137](https://github.com/sanity-io/cli/issues/137)) ([8cf088e](https://github.com/sanity-io/cli/commit/8cf088e4afc06247dc82c09a6bceeb2b89f06c8b))
-- **deps:** bump `@sanity/pkg-utils` to `v6.10.7` ([#7277](https://github.com/sanity-io/cli/issues/7277)) ([6bfc2a8](https://github.com/sanity-io/cli/commit/6bfc2a82c4eca0d42f5513b73d8ad70a86e753ab))
-- **deps:** bump react + sanity dependencies ([#192](https://github.com/sanity-io/cli/issues/192)) ([8f8c009](https://github.com/sanity-io/cli/commit/8f8c009dbb63675d5fcfe10266dc24b118d4fcfa))
-- **deps:** deprecation warnings due to `glob` dependency ([#7977](https://github.com/sanity-io/cli/issues/7977)) ([8a30e2e](https://github.com/sanity-io/cli/commit/8a30e2e55e84c0b0f96aeda6de532910524ec87b))
-- **deps:** update dependency @inquirer/prompts to ^7.8.6 ([#140](https://github.com/sanity-io/cli/issues/140)) ([b481a84](https://github.com/sanity-io/cli/commit/b481a84d9a44b983c2cdca4bcda65bc7536ee483))
-- **deps:** update dependency @sanity/client to ^6.16.0 ([#6548](https://github.com/sanity-io/cli/issues/6548)) ([cf7a952](https://github.com/sanity-io/cli/commit/cf7a95243c140b18ce5137c3efb2630b2bee92ff))
-- **deps:** update dependency @sanity/client to ^6.17.2 ([#6567](https://github.com/sanity-io/cli/issues/6567)) ([617ecbf](https://github.com/sanity-io/cli/commit/617ecbf91ac7c622b1029f5cb507863b090cddd4))
-- **deps:** update dependency @sanity/client to ^6.18.0 ([#6604](https://github.com/sanity-io/cli/issues/6604)) ([41317be](https://github.com/sanity-io/cli/commit/41317be74a353b1d30840e163b4497e8aef9e826))
-- **deps:** update dependency @sanity/client to ^6.18.1 ([#6653](https://github.com/sanity-io/cli/issues/6653)) ([485a124](https://github.com/sanity-io/cli/commit/485a124988a3fbfa5486ad478d6eb919b1e9341f))
-- **deps:** update dependency @sanity/client to ^6.18.2 ([#6674](https://github.com/sanity-io/cli/issues/6674)) ([df6f0d3](https://github.com/sanity-io/cli/commit/df6f0d31e6255b03d20a2321c883d6bb679a1dfa))
-- **deps:** update dependency @sanity/client to ^6.18.3 ([#6762](https://github.com/sanity-io/cli/issues/6762)) ([fe84199](https://github.com/sanity-io/cli/commit/fe84199aa36fe15e92f3d12a2d9ecc2eccd9522a))
-- **deps:** update dependency @sanity/client to ^6.19.0 ([#6781](https://github.com/sanity-io/cli/issues/6781)) ([6dde803](https://github.com/sanity-io/cli/commit/6dde803ab1a446aebf0a5e05bf3c0117316f3de6))
-- **deps:** update dependency @sanity/client to ^6.20.0 ([#6886](https://github.com/sanity-io/cli/issues/6886)) ([d3a8ae6](https://github.com/sanity-io/cli/commit/d3a8ae6dafd1bbc58dcda198ff95db5a835ad977))
-- **deps:** update dependency @sanity/client to ^6.20.1 ([#7088](https://github.com/sanity-io/cli/issues/7088)) ([95eda1c](https://github.com/sanity-io/cli/commit/95eda1c0478bd2d553c809475a0c52c6458c62cb))
-- **deps:** update dependency @sanity/client to ^6.20.2 ([#7111](https://github.com/sanity-io/cli/issues/7111)) ([edbc0a2](https://github.com/sanity-io/cli/commit/edbc0a2019f7ff8f28f241f0feed39df1f71f5c6))
-- **deps:** update dependency @sanity/client to ^6.21.0 ([#7137](https://github.com/sanity-io/cli/issues/7137)) ([42a8505](https://github.com/sanity-io/cli/commit/42a850514afdb9cad3cea9db802b853ab80c16a0))
-- **deps:** update dependency @sanity/client to ^6.21.1 ([#7215](https://github.com/sanity-io/cli/issues/7215)) ([4390d55](https://github.com/sanity-io/cli/commit/4390d559fe4a943cffcd16c5ad18adc7438df552))
-- **deps:** update dependency @sanity/client to ^6.21.2 ([#7354](https://github.com/sanity-io/cli/issues/7354)) ([51da113](https://github.com/sanity-io/cli/commit/51da113d6f77ccd7b5dd9c20938edf8362d51381))
-- **deps:** update dependency @sanity/client to ^6.21.3 ([#7373](https://github.com/sanity-io/cli/issues/7373)) ([315a582](https://github.com/sanity-io/cli/commit/315a5828affddc7eda85e13488cfeba4849e827b))
-- **deps:** update dependency @sanity/client to ^6.22.0 ([#7522](https://github.com/sanity-io/cli/issues/7522)) ([92d738c](https://github.com/sanity-io/cli/commit/92d738ce6596a15e494becbb9969e80acbded031))
-- **deps:** update dependency @sanity/client to ^6.22.1 ([#7585](https://github.com/sanity-io/cli/issues/7585)) ([18a4421](https://github.com/sanity-io/cli/commit/18a4421ca2b6fd09900c2b596d847476586518ac))
-- **deps:** update dependency @sanity/client to ^6.22.2 ([#7625](https://github.com/sanity-io/cli/issues/7625)) ([ab91c84](https://github.com/sanity-io/cli/commit/ab91c843e908cb7358d635084f83c695144d1602))
-- **deps:** update dependency @sanity/client to ^6.22.3 ([#7766](https://github.com/sanity-io/cli/issues/7766)) ([95ac6bd](https://github.com/sanity-io/cli/commit/95ac6bd26b3b959fe355bc02da0b5564ae63d75f))
-- **deps:** update dependency @sanity/client to ^6.22.4 ([#7785](https://github.com/sanity-io/cli/issues/7785)) ([036656b](https://github.com/sanity-io/cli/commit/036656bbb8e098b251db45f7cbbdc55eb0b5d223))
-- **deps:** update dependency @sanity/client to ^6.22.5 ([#7837](https://github.com/sanity-io/cli/issues/7837)) ([9ecec64](https://github.com/sanity-io/cli/commit/9ecec64a3806cc6786d34c0e43385a96371a1798))
-- **deps:** update dependency @sanity/client to ^6.23.0 ([#7931](https://github.com/sanity-io/cli/issues/7931)) ([9205e43](https://github.com/sanity-io/cli/commit/9205e4366698fc6e176237b9f73b9bd89445f10b))
-- **deps:** update dependency @sanity/client to ^6.24.0 ([#7935](https://github.com/sanity-io/cli/issues/7935)) ([2a074e5](https://github.com/sanity-io/cli/commit/2a074e562073dba1ef85fd0fa14a4a3247ed382a))
-- **deps:** update dependency @sanity/client to ^6.24.1 ([#7938](https://github.com/sanity-io/cli/issues/7938)) ([b20186d](https://github.com/sanity-io/cli/commit/b20186d3ce5008122cf704fef689293da4c95ddb))
-- **deps:** update dependency @sanity/client to ^6.24.3 ([#8213](https://github.com/sanity-io/cli/issues/8213)) ([2c67a10](https://github.com/sanity-io/cli/commit/2c67a10894963088698a57d425b29771e6bc27ef))
-- **deps:** update dependency @sanity/icons to ^3.5.0 ([#7929](https://github.com/sanity-io/cli/issues/7929)) ([fffbc3e](https://github.com/sanity-io/cli/commit/fffbc3ecc7069a51ede9f6a309c7d8af6434d349))
-- **deps:** update dependency @sanity/icons to ^3.5.1 ([#7989](https://github.com/sanity-io/cli/issues/7989)) ([aa8cdb7](https://github.com/sanity-io/cli/commit/aa8cdb7669e903e9ab5c72dd87f30f9d57a0ebf6))
-- **deps:** update dependency @sanity/icons to ^3.5.2 ([#7991](https://github.com/sanity-io/cli/issues/7991)) ([08f4465](https://github.com/sanity-io/cli/commit/08f446591e9b3d8b962838cb373a509c92e7ebd4))
-- **deps:** update dependency @sanity/icons to ^3.5.3 ([#8071](https://github.com/sanity-io/cli/issues/8071)) ([3be3eb0](https://github.com/sanity-io/cli/commit/3be3eb0a591b84c06dace6cac652d79931a4f6d7))
-- **deps:** update dependency @sanity/icons to ^3.5.5 ([#8106](https://github.com/sanity-io/cli/issues/8106)) ([3106b8d](https://github.com/sanity-io/cli/commit/3106b8d2353912905cdf10e845318f38bee27ac1))
-- **deps:** update dependency @sanity/icons to ^3.5.6 ([#8129](https://github.com/sanity-io/cli/issues/8129)) ([0c99b03](https://github.com/sanity-io/cli/commit/0c99b03e1929c6f4a15577ede1d1d6fb88dde693))
-- **deps:** update dependency @sanity/icons to ^3.5.7 ([#8155](https://github.com/sanity-io/cli/issues/8155)) ([9b6f1a5](https://github.com/sanity-io/cli/commit/9b6f1a5f84a5572d0583870cf21c737828967a2d))
-- **deps:** update dependency @types/node to ^20.19.25 ([#178](https://github.com/sanity-io/cli/issues/178)) ([366c53b](https://github.com/sanity-io/cli/commit/366c53be94fa6470255857776098c542ffc2d132))
-- **deps:** update dependency debug to ^4.4.3 ([#154](https://github.com/sanity-io/cli/issues/154)) ([f1cf942](https://github.com/sanity-io/cli/commit/f1cf942572ba47b5f91652748fdfa05eecc8260d))
-- **deps:** update dependency form-data to ^4.0.5 ([#179](https://github.com/sanity-io/cli/issues/179)) ([e75775f](https://github.com/sanity-io/cli/commit/e75775f5013513fec60ced8b0456e50a27a20b2f))
-- **deps:** update dependency get-it to ^8.4.28 ([#6576](https://github.com/sanity-io/cli/issues/6576)) ([6050f46](https://github.com/sanity-io/cli/commit/6050f463d2d536b19e1d04dcb062b3d5e71f088d))
-- **deps:** update dependency get-it to ^8.4.29 ([#6603](https://github.com/sanity-io/cli/issues/6603)) ([ddcea20](https://github.com/sanity-io/cli/commit/ddcea206b825a506cb699c907a82607db43b0fee))
-- **deps:** update dependency get-it to ^8.4.30 ([#6676](https://github.com/sanity-io/cli/issues/6676)) ([6bcf2c0](https://github.com/sanity-io/cli/commit/6bcf2c05529f172e1c69d85997fa6d6890e3ac33))
-- **deps:** update dependency get-it to ^8.5.0 ([#6758](https://github.com/sanity-io/cli/issues/6758)) ([8fc8863](https://github.com/sanity-io/cli/commit/8fc8863fdaaa22c40f757c3bb96d6609a6dd32f9))
-- **deps:** update dependency get-it to ^8.6.0 ([#6884](https://github.com/sanity-io/cli/issues/6884)) ([3777d9f](https://github.com/sanity-io/cli/commit/3777d9fec9330c13cf31e3548b1f0b4161448d0d))
-- **deps:** update dependency get-it to ^8.6.2 ([#7052](https://github.com/sanity-io/cli/issues/7052)) ([289e7dd](https://github.com/sanity-io/cli/commit/289e7dd2fff080f5f44980d88c69fa70fa4f478c))
-- **deps:** update dependency get-it to ^8.6.3 ([#7108](https://github.com/sanity-io/cli/issues/7108)) ([5a67267](https://github.com/sanity-io/cli/commit/5a672673bc943f67063f4bb32573b714d7c189ef))
-- **deps:** update dependency get-it to ^8.6.4 ([#7353](https://github.com/sanity-io/cli/issues/7353)) ([779cc33](https://github.com/sanity-io/cli/commit/779cc335b431d863551cf40c737ad258f4c6b298))
-- **deps:** update dependency get-it to ^8.6.5 ([#7376](https://github.com/sanity-io/cli/issues/7376)) ([8509a68](https://github.com/sanity-io/cli/commit/8509a6891f6b27ebb36f2b4935d04d545c8bd2f4))
-- **deps:** update dependency get-it to ^8.6.6 ([#8221](https://github.com/sanity-io/cli/issues/8221)) ([189c2ad](https://github.com/sanity-io/cli/commit/189c2ad90317f2a2bed6b60546be7edea8dec4ad))
-- **deps:** update dependency get-tsconfig to ^4.10.1 ([#31](https://github.com/sanity-io/cli/issues/31)) ([99bcddc](https://github.com/sanity-io/cli/commit/99bcddcacae0d4818d3d659b0ffa15dc90304a22))
-- **deps:** update dependency groq-js to ^1.10.0 ([#7053](https://github.com/sanity-io/cli/issues/7053)) ([d222180](https://github.com/sanity-io/cli/commit/d22218007c2dc6c3b85e2c48581fa161cd508207))
-- **deps:** update dependency groq-js to ^1.11.0 ([#7229](https://github.com/sanity-io/cli/issues/7229)) ([21854bd](https://github.com/sanity-io/cli/commit/21854bdf99fce46016c0d46015af0cf00c5632c2))
-- **deps:** update dependency groq-js to ^1.11.1 ([#7247](https://github.com/sanity-io/cli/issues/7247)) ([b59457d](https://github.com/sanity-io/cli/commit/b59457d38d217d0b01835f4246221433385b58ba))
-- **deps:** update dependency groq-js to ^1.12.0 ([#7252](https://github.com/sanity-io/cli/issues/7252)) ([5c04960](https://github.com/sanity-io/cli/commit/5c04960936693a78859e712f47ad927ce1d08ad4))
-- **deps:** update dependency groq-js to ^1.13.0 ([#7424](https://github.com/sanity-io/cli/issues/7424)) ([c7034d5](https://github.com/sanity-io/cli/commit/c7034d50ef9365ead3859e6157bc6951b765039f))
-- **deps:** update dependency groq-js to ^1.14.0 ([#7738](https://github.com/sanity-io/cli/issues/7738)) ([f4a6a65](https://github.com/sanity-io/cli/commit/f4a6a6547c9efe0f30854196291261910ac9dedc))
-- **deps:** update dependency groq-js to ^1.14.0 ([#7738](https://github.com/sanity-io/cli/issues/7738)) ([a4fc610](https://github.com/sanity-io/cli/commit/a4fc6102e7c4ad3ef6271ae5d922899adf4402fd))
-- **deps:** update dependency groq-js to ^1.14.1 ([#7910](https://github.com/sanity-io/cli/issues/7910)) ([de193d9](https://github.com/sanity-io/cli/commit/de193d9161f5ade797597356a06f3fc3324dea80))
-- **deps:** update dependency groq-js to ^1.14.2 ([#7985](https://github.com/sanity-io/cli/issues/7985)) ([b29b931](https://github.com/sanity-io/cli/commit/b29b9313abd28e64ce35f791e2c8dbdcd709f705))
-- **deps:** update dependency groq-js to ^1.9.0 ([#6655](https://github.com/sanity-io/cli/issues/6655)) ([055ddb8](https://github.com/sanity-io/cli/commit/055ddb8596ce5548cf297e6910f285ac5fe4ee41))
-- **deps:** update dependency vite to ^7.1.6 ([#136](https://github.com/sanity-io/cli/issues/136)) ([acf30f9](https://github.com/sanity-io/cli/commit/acf30f93345efe17572b83babbe9ebdb80917223))
-- **deps:** update dependency vite to v7 ([#133](https://github.com/sanity-io/cli/issues/133)) ([fd96f03](https://github.com/sanity-io/cli/commit/fd96f032e7f78fe5df45646dc70300953426c700))
-- **deps:** update oclif-tooling ([#116](https://github.com/sanity-io/cli/issues/116)) ([26a92ee](https://github.com/sanity-io/cli/commit/26a92eeeccbf6b92ab91fa08fedd09f2823cd8a3))
-- **deps:** update oclif-tooling ([#210](https://github.com/sanity-io/cli/issues/210)) ([66f8c47](https://github.com/sanity-io/cli/commit/66f8c47c6abac9aefbdd5d41ef0253d1ccf413b9))
-- **deps:** update oclif-tooling ([#22](https://github.com/sanity-io/cli/issues/22)) ([3480a7b](https://github.com/sanity-io/cli/commit/3480a7be5b32a536299cac932b1e69a453bdbc45))
-- **deps:** update sanity-tooling ([#117](https://github.com/sanity-io/cli/issues/117)) ([7543a82](https://github.com/sanity-io/cli/commit/7543a82ae8f9eb8e8acc759b6eda567fc2b49064))
-- **deps:** update sanity-tooling ([#149](https://github.com/sanity-io/cli/issues/149)) ([16213b1](https://github.com/sanity-io/cli/commit/16213b1c4aec3f4a8958a88c2ecbc59b418e65e1))
-- **deps:** update sanity-tooling ([#40](https://github.com/sanity-io/cli/issues/40)) ([0df98a6](https://github.com/sanity-io/cli/commit/0df98a6060ff054f68137128c732c1b2e4f4eb4d))
-- **deps:** update sanity-tooling ([#59](https://github.com/sanity-io/cli/issues/59)) ([04e502c](https://github.com/sanity-io/cli/commit/04e502c9d73603c4e831c95876fd96061d65311c))
-- **deps:** upgrade `vite` to v5 ([#5285](https://github.com/sanity-io/cli/issues/5285)) ([c45eac6](https://github.com/sanity-io/cli/commit/c45eac633c7c2c8710160fa51460f894d9aeccfd))
-- don't read/write ref during render ([#8077](https://github.com/sanity-io/cli/issues/8077)) ([76bf6b2](https://github.com/sanity-io/cli/commit/76bf6b2c3bacb3f80dce64f628d215255b5b1b6b))
-- **loader:** fixes importing TS config files ([#52](https://github.com/sanity-io/cli/issues/52)) ([218044a](https://github.com/sanity-io/cli/commit/218044ae48eb4a717c34c5ded5db6930eecc55df))
-- React 19 typings (finally) ([#8171](https://github.com/sanity-io/cli/issues/8171)) ([4283e94](https://github.com/sanity-io/cli/commit/4283e943af395ea35b6c02ae5ef88773fdc44150))
-- remove trailing commas when sanitizing ([#7007](https://github.com/sanity-io/cli/issues/7007)) ([94758bd](https://github.com/sanity-io/cli/commit/94758bdfa036852e5e54e664b28ee26fdbddb0df))
-- set `cliInitializedAt` even if project bootstrap fails ([#7558](https://github.com/sanity-io/cli/issues/7558)) ([d83a201](https://github.com/sanity-io/cli/commit/d83a201ea96d07ca4db1f03f5d112b47c2ce4eb0))
-- **typegen:** move type new line separator into formatter ([#6649](https://github.com/sanity-io/cli/issues/6649)) ([2f6f718](https://github.com/sanity-io/cli/commit/2f6f7180bc135620b785fb12a3a2b31fde8c1a7d))
-
-### Reverts
-
-- **cli:** use default ora options in spinner method ([#8038](https://github.com/sanity-io/cli/issues/8038)) ([432cee5](https://github.com/sanity-io/cli/commit/432cee5343a019f6278bb09e86ec9cd54a6d010e))
-
-### Dependencies
-
-- The following workspace dependencies were updated
-  - dependencies
-    - @sanity/cli-core bumped to 0.1.0-alpha.3
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/codegen bumped to 3.86.0
+    * @sanity/util bumped to 3.86.0
+  * devDependencies
+    * @sanity/types bumped to 3.86.0
