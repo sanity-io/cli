@@ -40,7 +40,8 @@ jobs:
         run: pnpm --filter @sanity/cli readme
 
       - name: Format README
-        run: npx prettier --write packages/@sanity/cli/README.md
+
+        run: npx oxfmt packages/@sanity/cli/README.md
 
       - name: Create Pull Request
         id: create-pr

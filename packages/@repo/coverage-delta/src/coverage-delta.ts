@@ -4,7 +4,7 @@ import {existsSync, readFileSync, unlinkSync, writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
-import {format} from 'prettier'
+import {format} from 'oxfmt'
 
 import {buildMarkdown, computeDeltas, parseCoverageSummary} from './lib.ts'
 
@@ -31,7 +31,7 @@ async function main(): Promise<void> {
   const changedFiles = getChangedFiles()
   const deltas = computeDeltas(current, baseline, changedFiles)
   const rawMarkdown = buildMarkdown(deltas, current, baseline, baselineSha)
-  const formatted = await format(rawMarkdown, {parser: 'markdown'})
+  const {code: formatted} = await format('coverage.md', rawMarkdown)
 
   const isPullRequest = process.env.GITHUB_EVENT_NAME === 'pull_request'
   if (isPullRequest) {

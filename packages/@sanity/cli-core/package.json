@@ -3,25 +3,30 @@
   "version": "1.0.0",
   "description": "Sanity CLI core package",
   "keywords": [
-    "sanity",
+    "cli",
     "cms",
+    "content",
     "headless",
     "realtime",
-    "content",
-    "cli",
+    "sanity",
     "tool"
   ],
   "homepage": "https://github.com/sanity-io/cli",
   "bugs": "https://github.com/sanity-io/cli/issues",
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sanity-io/cli.git",
     "directory": "packages/@sanity/cli-core"
   },
-  "license": "MIT",
-  "author": "Sanity.io <hello@sanity.io>",
-  "sideEffects": false,
+  "files": [
+    "./dist"
+  ],
   "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "source": "./src/index.ts",
@@ -37,11 +42,9 @@
     },
     "./package.json": "./package.json"
   },
-  "main": "./dist/index.js",
-  "types": "dist/index.d.ts",
-  "files": [
-    "./dist"
-  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
     "build:types": "pkg-utils build --emitDeclarationOnly",
@@ -101,8 +104,5 @@
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }

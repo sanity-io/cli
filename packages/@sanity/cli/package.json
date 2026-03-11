@@ -3,38 +3,23 @@
   "version": "6.0.0-alpha.21",
   "description": "Sanity CLI tool for managing Sanity projects and organizations",
   "keywords": [
-    "sanity",
+    "cli",
     "cms",
+    "content",
     "headless",
     "realtime",
-    "content",
-    "cli",
+    "sanity",
     "tool"
   ],
   "homepage": "https://github.com/sanity-io/cli",
   "bugs": "https://github.com/sanity-io/cli/issues",
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sanity-io/cli.git",
     "directory": "packages/@sanity/cli"
   },
-  "license": "MIT",
-  "author": "Sanity.io <hello@sanity.io>",
-  "sideEffects": false,
-  "type": "module",
-  "exports": {
-    ".": {
-      "source": "./src/exports/index.ts",
-      "default": "./dist/exports/index.js"
-    },
-    "./_internal": {
-      "source": "./src/exports/_internal.ts",
-      "default": "./dist/exports/_internal.js"
-    },
-    "./package.json": "./package.json"
-  },
-  "main": "./dist/exports/index.js",
-  "types": "./dist/exports/index.d.ts",
   "bin": {
     "sanity": "./bin/run.js"
   },
@@ -47,6 +32,24 @@
     "./static",
     "./templates"
   ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/exports/index.js",
+  "types": "./dist/exports/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/exports/index.ts",
+      "default": "./dist/exports/index.js"
+    },
+    "./_internal": {
+      "source": "./src/exports/_internal.ts",
+      "default": "./dist/exports/_internal.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
     "postbuild": "pnpm run manifest:generate",
@@ -167,7 +170,6 @@
     "eslint": "catalog:",
     "nock": "catalog:",
     "oclif": "^4.22.85",
-    "prettier": "catalog:",
     "publint": "catalog:",
     "rimraf": "catalog:",
     "sanity": "catalog:",
@@ -177,8 +179,5 @@
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
-  },
-  "publishConfig": {
-    "access": "public"
   }
 }
