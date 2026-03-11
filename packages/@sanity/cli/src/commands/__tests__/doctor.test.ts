@@ -93,6 +93,7 @@ describe('doctor command', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Unknown check: nonexistent')
+    expect(error?.oclif?.exit).toBe(2)
   })
 
   test('outputs JSON with errors and exits with code 1 when issues exist', async () => {

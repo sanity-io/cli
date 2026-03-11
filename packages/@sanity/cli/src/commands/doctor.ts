@@ -11,6 +11,7 @@ import {
   type CheckResultStatus,
   type CheckResultWithMeta,
   type DoctorCheck,
+  type DoctorResults,
   type MessageType,
 } from '../actions/doctor/types.js'
 
@@ -64,7 +65,12 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
   public async run(): Promise<void> {
     const {argv, flags} = await this.parse(DoctorCommand)
 
-    const checks = getChecks(argv)
+    let checks: Array<DoctorCheck>
+    try {
+      checks = getChecks(argv)
+    } catch (err) {
+      this.error(err instanceof Error ? err.message : String(err), {exit: 2})
+    }
     const cwd = process.cwd()
 
     if (!flags.json) {
@@ -123,7 +129,7 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
     }
   }
 
-  private printSummary(summary: {errors: number; passed: number; warnings: number}): void {
+  private printSummary(summary: DoctorResults['summary']): void {
     const parts: string[] = []
 
     if (summary.passed > 0) {
