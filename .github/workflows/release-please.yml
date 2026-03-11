@@ -14,6 +14,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 jobs:
   release-please:
@@ -58,10 +59,14 @@ jobs:
       - name: Publish @sanity/cli (alpha)
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
         run: pnpm publish -r --filter="@sanity/cli" --tag alpha
+        env:
+          NPM_CONFIG_PROVENANCE: true
 
       - name: Publish packages (latest)
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
         run: pnpm publish -r --filter="@sanity/cli-core" --filter="@sanity/cli-test" --filter="@sanity/eslint-config-cli"
+        env:
+          NPM_CONFIG_PROVENANCE: true
 
       - name: Summary
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
