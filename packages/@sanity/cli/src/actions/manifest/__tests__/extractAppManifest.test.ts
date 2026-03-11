@@ -50,7 +50,7 @@ describe('extractAppManifest', () => {
     expect(mockReadFile).not.toHaveBeenCalled()
   })
 
-  test('reads icon from file path, sanitizes with DOMPurify, and inlines in manifest', async () => {
+  test('reads icon from file path and inlines in manifest', async () => {
     const workDir = '/project'
     mockGetCliConfig.mockResolvedValue({
       app: {icon: 'public/icon.svg', organizationId: 'org-1', title: 'My App'},

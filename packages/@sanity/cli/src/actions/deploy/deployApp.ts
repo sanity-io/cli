@@ -9,6 +9,7 @@ import {pack} from 'tar-fs'
 import {createDeployment, updateUserApplication} from '../../services/userApplications.js'
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
+import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {buildApp} from '../build/buildApp.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
@@ -103,6 +104,9 @@ export async function deployApp(options: DeployAppOptions) {
       manifest = await extractAppManifest({workDir})
     } catch (err) {
       deployDebug('Error extracting app manifest', err)
+      const message = getErrorMessage(err)
+      // manifests aren't strictly essential, so continue deploy
+      output.warn(`Error extracting app manifest: ${message}`)
     }
 
     // Sync app title from manifest when it has changed (Brett user-applications)
@@ -117,7 +121,7 @@ export async function deployApp(options: DeployAppOptions) {
           ? `Updating title from "${existing}" to "${manifest.title}"`
           : `Setting application title to "${manifest.title}"`,
       )
-      spin = spinner(`Updating application title...`).start()
+      spin = spinner(`Updating application title`).start()
       try {
         userApplication = await updateUserApplication({
           applicationId: userApplication.id,
@@ -127,7 +131,7 @@ export async function deployApp(options: DeployAppOptions) {
         spin.succeed()
       } catch (err) {
         spin.fail()
-        const message = err instanceof Error ? err.message : String(err)
+        const message = getErrorMessage(err)
         deployDebug('Error updating application title', {message})
         output.warn(`Error updating application title: ${message}`)
       }

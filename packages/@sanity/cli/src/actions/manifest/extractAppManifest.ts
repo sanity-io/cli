@@ -3,10 +3,8 @@ import {relative, resolve} from 'node:path'
 
 import {getCliConfig} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import DOMPurify from 'isomorphic-dompurify'
 
 import {getErrorMessage} from '../../util/getErrorMessage.js'
-import {config as purifyConfig} from './purifyConfig.js'
 import {type AppManifest} from './types.js'
 
 interface ExtractAppManifestOptions {
@@ -14,9 +12,9 @@ interface ExtractAppManifestOptions {
 }
 
 /**
- * Resolves app.icon from config (a file path) to a sanitized SVG string for the manifest.
- * Uses the same DOMPurify config as Studio icon resolution so we only allow safe SVG.
+ * Resolves app.icon from config (a file path) to an SVG string for the manifest.
  * The manifest expects the SVG string inline, not a path.
+ * Brett sanitizes SVGs so it's skipped here.
  */
 async function readIconFromPath(workDir: string, iconPath: string): Promise<string> {
   const resolvedPath = resolve(workDir, iconPath)
@@ -44,13 +42,7 @@ async function readIconFromPath(workDir: string, iconPath: string): Promise<stri
     )
   }
 
-  const sanitized = DOMPurify.sanitize(trimmed, purifyConfig)
-  if (!sanitized.trim()) {
-    throw new Error(
-      `Icon file at "${iconPath}" produced no valid SVG after sanitization. Check that the file contains allowed SVG elements and attributes.`,
-    )
-  }
-  return sanitized.trim()
+  return trimmed
 }
 
 /**
@@ -63,16 +55,14 @@ export async function extractAppManifest(
   options: ExtractAppManifestOptions,
 ): Promise<AppManifest | undefined> {
   const {workDir} = options
+  const {app} = await getCliConfig(workDir)
+  if (!app) {
+    return undefined
+  }
 
   const spin = spinner('Extracting manifest').start()
 
   try {
-    const {app} = await getCliConfig(workDir)
-    if (!app) {
-      spin.succeed('Manifest creation skipped: no app configuration found')
-      return undefined
-    }
-
     let icon: string | undefined
     if (app.icon) {
       icon = await readIconFromPath(workDir, app.icon)
