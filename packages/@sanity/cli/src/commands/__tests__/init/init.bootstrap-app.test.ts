@@ -10,6 +10,7 @@ import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
   bootstrapTemplate: vi.fn(),
+  confirm: vi.fn(),
   createOrAppendEnvVars: vi.fn(),
   installDeclaredPackages: vi.fn(),
   select: vi.fn(),
@@ -67,6 +68,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual('@sanity/cli-core/ux')
   return {
     ...actual,
+    confirm: mocks.confirm,
     select: mocks.select,
   }
 })
@@ -142,6 +144,8 @@ describe('#init: bootstrap-app-initialization', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
+    mocks.confirm.mockReset()
+    mocks.select.mockReset()
   })
   test('initializes app without env files', async () => {
     setupInitSuccessMocks()
@@ -235,9 +239,9 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(error?.oclif?.exit).toBe(0)
   })
 
-  test('initializes app-quickstart template with app-specific output', async () => {
-    // Reset select mock to clear any unconsumed mockResolvedValueOnce from prior tests
-    mocks.select.mockReset()
+  test('initializes app-quickstart template with app-specific output without a project selected', async () => {
+    // confirm is called to ask if user wants to select a project; user says no
+    mocks.confirm.mockResolvedValueOnce(false)
 
     // Mock organizations endpoint with app-specific query params
     mockApi({
@@ -291,7 +295,7 @@ describe('#init: bootstrap-app-initialization', () => {
     })
 
     // App-specific success message (not Studio message)
-    expect(stdout).toContain('Your custom app has been scaffolded')
+    expect(stdout).toContain('Your SDK App has been scaffolded')
     expect(stdout).not.toContain('Your Studio has been created')
 
     // App-specific guidance
@@ -308,6 +312,144 @@ describe('#init: bootstrap-app-initialization', () => {
     // MCP setup message
     expect(stdout).toContain('Setup your Cursor IDE')
     expect(stdout).toContain('Learn more: https://mcp.sanity.io')
+  })
+
+  test('initializes app-quickstart template with --project and --dataset flags when user confirms project selection', async () => {
+    // confirm is called to ask if user wants to select a project; user says yes
+    mocks.confirm.mockResolvedValueOnce(true)
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {cliInitializedAt: '2024-01-01T00:00:00Z'},
+    })
+
+    mockApi({
+      apiVersion: MCP_JOURNEY_API_VERSION,
+      method: 'get',
+      uri: '/journey/mcp/post-init-prompt',
+    }).reply(200, {message: 'Setup your Cursor IDE'})
+
+    const {stdout} = await testCommand(
+      InitCommand,
+      [
+        '--template=app-quickstart',
+        '--output-path=/test/output',
+        '--project=test',
+        '--dataset=test',
+        '--package-manager=npm',
+        '--typescript',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+
+    expect(mocks.bootstrapTemplate).toHaveBeenCalledWith({
+      autoUpdates: true,
+      bearerToken: undefined,
+      dataset: 'test',
+      organizationId: undefined,
+      output: expect.any(Object),
+      outputPath: convertToSystemPath('/test/output'),
+      overwriteFiles: undefined,
+      packageName: 'test-app',
+      projectId: 'test',
+      projectName: 'Test',
+      remoteTemplateInfo: undefined,
+      templateName: 'app-quickstart',
+      useTypeScript: true,
+    })
+
+    expect(stdout).toContain('Your SDK App has been scaffolded')
+    expect(stdout).not.toContain('Your Studio has been created')
+  })
+
+  test('initializes app-quickstart template when user confirms and interactively selects project and dataset', async () => {
+    // confirm is called to ask if user wants to select a project; user says yes
+    mocks.confirm.mockResolvedValueOnce(true)
+    mocks.select.mockResolvedValueOnce('test') // project selection
+    mocks.select.mockResolvedValueOnce('test') // dataset selection
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {cliInitializedAt: '2024-01-01T00:00:00Z'},
+    })
+
+    mockApi({
+      apiVersion: MCP_JOURNEY_API_VERSION,
+      method: 'get',
+      uri: '/journey/mcp/post-init-prompt',
+    }).reply(200, {message: 'Setup your Cursor IDE'})
+
+    const {stdout} = await testCommand(
+      InitCommand,
+      [
+        '--template=app-quickstart',
+        '--output-path=/test/output',
+        '--package-manager=npm',
+        '--typescript',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+
+    expect(mocks.bootstrapTemplate).toHaveBeenCalledWith({
+      autoUpdates: true,
+      bearerToken: undefined,
+      dataset: 'test',
+      organizationId: undefined,
+      output: expect.any(Object),
+      outputPath: convertToSystemPath('/test/output'),
+      overwriteFiles: undefined,
+      packageName: 'test-app',
+      projectId: 'test',
+      projectName: 'Test',
+      remoteTemplateInfo: undefined,
+      templateName: 'app-quickstart',
+      useTypeScript: true,
+    })
+
+    expect(stdout).toContain('Your SDK App has been scaffolded')
+    expect(stdout).not.toContain('Your Studio has been created')
   })
 
   test('initializes app in unattended mode', async () => {
