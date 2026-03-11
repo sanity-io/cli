@@ -79,7 +79,7 @@
     "@sanity/export": "^6.1.0",
     "@sanity/generate-help-url": "^4.0.0",
     "@sanity/id-utils": "^1.0.0",
-    "@sanity/import": "^4.1.3",
+    "@sanity/import": "^5.0.0",
     "@sanity/migrate": "^6.0.0",
     "@sanity/runtime-cli": "^14.5.0",
     "@sanity/schema": "catalog:",
