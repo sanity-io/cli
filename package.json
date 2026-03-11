@@ -70,8 +70,7 @@
       "esbuild"
     ],
     "overrides": {
-      "@sanity/cli": "workspace:*",
-      "create-sanity>@sanity/cli": "^5.14.1"
+      "@sanity/cli": "workspace:*"
     },
     "patchedDependencies": {
       "sanity": "patches/sanity.patch"
