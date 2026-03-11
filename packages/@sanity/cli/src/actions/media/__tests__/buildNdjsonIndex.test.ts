@@ -87,4 +87,17 @@ describe('buildNdjsonIndex', () => {
 
     await expect(buildNdjsonIndex(invalidStream, 'id', 'value')).rejects.toThrow()
   })
+
+  it('propagates stream errors and destroys the stream', async () => {
+    const errorStream = new Readable({
+      read() {
+        process.nextTick(() => this.destroy(new Error('EACCES: permission denied')))
+      },
+    })
+
+    await expect(buildNdjsonIndex(errorStream, 'id', 'value')).rejects.toThrow(
+      'EACCES: permission denied',
+    )
+    expect(errorStream.destroyed).toBe(true)
+  })
 })
