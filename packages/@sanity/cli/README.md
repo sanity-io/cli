@@ -1519,7 +1519,7 @@ USAGE
   $ sanity doctor [CHECKS...] [-j]
 
 ARGUMENTS
-  [CHECKS...]  (cli) Checks to enable (defaults to all)
+  [CHECKS...]  Checks to enable (defaults to all). Valid: cli
 
 FLAGS
   -j, --json  Output results as JSON
@@ -1539,7 +1539,7 @@ EXAMPLES
     $ sanity doctor cli
 ```
 
-_See code: [src/commands/doctor.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/doctor.ts)_
+_See code: [src/commands/doctor.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.21/src/commands/doctor.ts)_
 
 ## `sanity documents create [FILE]`
 
