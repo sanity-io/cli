@@ -3,6 +3,43 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.0.0](https://github.com/sanity-io/cli/compare/cli-v5.14.1...cli-v6.0.0) (2026-03-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* A small number of commands produce tabular output where v5 produces line-separated lists. Scripts that parse command output (e.g., tab-splitting to produce CSV-like data from users list) could be affected. In the future we will support --json for easier parsing
+* We removed some internal cli types. If your project relied on them, you might see build issues.
+* Some command output format changes
+
+### Features
+
+* A small number of commands produce tabular output where v5 produces line-separated lists. Scripts that parse command output (e.g., tab-splitting to produce CSV-like data from users list) could be affected. In the future we will support --json for easier parsing ([7515453](https://github.com/sanity-io/cli/commit/751545332ae7713964c81fd1f7e95bfb46a244f5))
+* Dataset embeddings configuration commands — New dataset embeddings commands to configure embeddings for datasets. ([7515453](https://github.com/sanity-io/cli/commit/751545332ae7713964c81fd1f7e95bfb46a244f5))
+* Global --project-id and --dataset flags — Run commands outside a project directory without needing a sanity.cli.ts config. ([#548](https://github.com/sanity-io/cli/issues/548), [#500](https://github.com/sanity-io/cli/issues/500), [#558](https://github.com/sanity-io/cli/issues/558)) ([7515453](https://github.com/sanity-io/cli/commit/751545332ae7713964c81fd1f7e95bfb46a244f5))
+* Non-interactive environment detection — Prompts detect CI/pipeline environments automatically, preventing hangs in automated workflows. ([#470](https://github.com/sanity-io/cli/issues/470)) ([7515453](https://github.com/sanity-io/cli/commit/751545332ae7713964c81fd1f7e95bfb46a244f5))
+* SDK templates are ESM by default — New SDK projects created via sanity init use ESM. ([#576](https://github.com/sanity-io/cli/issues/576)) ([7515453](https://github.com/sanity-io/cli/commit/751545332ae7713964c81fd1f7e95bfb46a244f5))
+* Some command output format changes ([7515453](https://github.com/sanity-io/cli/commit/751545332ae7713964c81fd1f7e95bfb46a244f5))
+* We removed some internal cli types. If your project relied on them, you might see build issues. ([7515453](https://github.com/sanity-io/cli/commit/751545332ae7713964c81fd1f7e95bfb46a244f5))
+
+
+### Bug Fixes
+
+* Boolean flags no longer get confused with commands that have positional arguments. ([7515453](https://github.com/sanity-io/cli/commit/751545332ae7713964c81fd1f7e95bfb46a244f5))
+* Extract manifest and deploy schemas on deploy. ([#563](https://github.com/sanity-io/cli/issues/563)) ([7515453](https://github.com/sanity-io/cli/commit/751545332ae7713964c81fd1f7e95bfb46a244f5))
+* Fix inverted CORS guard in bootstrapRemoteTemplate. ([#547](https://github.com/sanity-io/cli/issues/547)) ([7515453](https://github.com/sanity-io/cli/commit/751545332ae7713964c81fd1f7e95bfb46a244f5))
+* GraphQL and certain commands now support vite aliases. ([7515453](https://github.com/sanity-io/cli/commit/751545332ae7713964c81fd1f7e95bfb46a244f5))
+* Strict flag parsing. Unknown flags now produce an error and halt execution rather than being silently ignored. For example, passing --datset foo (a typo) previously had no effect; it now returns an error. ([7515453](https://github.com/sanity-io/cli/commit/751545332ae7713964c81fd1f7e95bfb46a244f5))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 1.0.1
+  * devDependencies
+    * @sanity/cli-test bumped to 0.2.1
+
 ## [5.14.1](https://github.com/sanity-io/sanity/compare/v5.14.0...v5.14.1) (2026-03-10)
 
 **Note:** Version bump only for package @sanity/cli

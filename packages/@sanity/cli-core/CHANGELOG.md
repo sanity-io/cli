@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/sanity-io/cli/compare/cli-core-v1.0.0...cli-core-v1.0.1) (2026-03-11)
+
+
+### Bug Fixes
+
+* inline typegen types to avoid circular deps ([#608](https://github.com/sanity-io/cli/issues/608)) ([f7e0020](https://github.com/sanity-io/cli/commit/f7e00209421cda3281daa9c8c3f842310b935eca))
+
 ## [1.0.0](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0...cli-core-v1.0.0) (2026-03-10)
 
 
