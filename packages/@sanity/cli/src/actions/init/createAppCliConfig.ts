@@ -7,12 +7,20 @@ export default defineCliConfig({
   app: {
     organizationId: '%organizationId%',
     entry: '%entry%',
+    resources: {
+      default: {
+        projectId: '%projectId%',
+        dataset: '%dataset%',
+      },
+    },
   },
 })
 `
 
 interface GenerateCliConfigOptions {
+  dataset: string
   entry: string
+  projectId: string
 
   organizationId?: string
 }
