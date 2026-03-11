@@ -80,7 +80,7 @@
     "@sanity/generate-help-url": "^4.0.0",
     "@sanity/id-utils": "^1.0.0",
     "@sanity/import": "^4.1.3",
-    "@sanity/migrate": "^5.2.5",
+    "@sanity/migrate": "^6.0.0",
     "@sanity/runtime-cli": "^14.5.0",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
