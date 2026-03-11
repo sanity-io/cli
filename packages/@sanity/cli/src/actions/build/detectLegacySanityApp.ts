@@ -21,7 +21,6 @@ export async function detectLegacySanityApp(
     // Try common extensions if the exact file doesn't exist
     const extensions = ['.tsx', '.ts', '.jsx', '.js']
     let fileContent: string | null = null
-    let resolvedPath = filePath
 
     // If filePath doesn't have an extension, try common ones
     if (path.extname(filePath)) {
@@ -32,7 +31,6 @@ export async function detectLegacySanityApp(
         const testPath = path.resolve(cwd, `${filePath}${ext}`)
         try {
           fileContent = await fs.readFile(testPath, 'utf8')
-          resolvedPath = testPath
           break
         } catch {
           // Try next extension
@@ -58,7 +56,7 @@ export async function detectLegacySanityApp(
     if (hasLegacyPattern) {
       return {
         hasLegacyPattern: true,
-        warningMessage: createWarningMessage(path.relative(cwd, resolvedPath)),
+        warningMessage: createWarningMessage(),
       }
     }
 
@@ -69,11 +67,11 @@ export async function detectLegacySanityApp(
   }
 }
 
-function createWarningMessage(relativePath: string): string {
+function createWarningMessage(): string {
   return `
 ⚠️  DEPRECATION WARNING: Legacy SanityApp pattern detected
 
-Your app component (${relativePath}) is using the legacy <SanityApp> pattern.
+Your app is using the legacy <SanityApp> pattern.
 The CLI now automatically wraps your app with SanityApp context, so you no longer
 need to include it in your component.
 

@@ -169,7 +169,7 @@ function App() {
     expect(result.hasLegacyPattern).toBe(true)
   })
 
-  test('includes relative path in warning message', async () => {
+  test('warning message mentions the legacy pattern', async () => {
     const mockContent = `
 import {SanityApp} from '@sanity/sdk-react'
 function App() {
@@ -180,7 +180,7 @@ function App() {
 
     const result = await detectLegacySanityApp('./src/components/App.tsx', mockCwd)
 
-    expect(result.warningMessage).toContain('src/components/App.tsx')
+    expect(result.warningMessage).toContain('SanityApp')
   })
 
   test('warning message includes migration instructions', async () => {

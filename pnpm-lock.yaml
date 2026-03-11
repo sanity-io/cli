@@ -189,9 +189,6 @@ importers:
 
   fixtures/basic-app:
     dependencies:
-      '@sanity/sdk':
-        specifier: ^2.6.0
-        version: 2.6.0(@types/react@19.2.14)(immer@11.1.4)(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
       '@sanity/sdk-react':
         specifier: ^2.6.0
         version: 2.6.0(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(use-sync-external-store@1.6.0(react@19.2.4))
