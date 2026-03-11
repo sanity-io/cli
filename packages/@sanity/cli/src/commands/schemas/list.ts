@@ -67,7 +67,10 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
       const projectRoot = await this.getProjectRoot()
 
       const errors: string[] = []
-      const id = parseWorkspaceSchemaId(flags.id ?? '', errors)?.schemaId
+      if (flags.id === '') {
+        errors.push('id argument is empty')
+      }
+      const id = flags.id ? parseWorkspaceSchemaId(flags.id, errors)?.schemaId : undefined
       if (errors.length > 0) {
         this.error(`Invalid arguments:\n${errors.map((error) => `  - ${error}`).join('\n')}`, {
           exit: 1,
