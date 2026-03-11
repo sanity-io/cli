@@ -490,8 +490,8 @@ importers:
         specifier: ^1.0.0
         version: 1.0.0
       '@sanity/import':
-        specifier: ^4.1.3
-        version: 4.1.3(@noble/hashes@2.0.1)(@sanity/telemetry@0.8.1(react@19.2.4))(@types/node@20.19.37)(@types/react@19.2.14)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.46.0)(yaml@2.8.2)
+        specifier: ^5.0.0
+        version: 5.0.0(@sanity/client@7.17.0(debug@4.4.3))(@types/react@19.2.14)
       '@sanity/migrate':
         specifier: ^6.0.0
         version: 6.0.0(@oclif/core@4.8.3)(@sanity/cli-core@packages+@sanity+cli-core)(@types/react@19.2.14)(xstate@5.28.0)
@@ -3735,6 +3735,12 @@ packages:
     resolution: {integrity: sha512-4qCANFUcpxK1wYhVEUYxlGwqkiMLZmSTSv1lJMheA/dL7KgPnDuf8WehRA+wDIkKl78PJVIWxUlErIPDgNie7Q==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     hasBin: true
+
+  '@sanity/import@5.0.0':
+    resolution: {integrity: sha512-Mxiva0TRqZQddrNOhrD3bA+CBXR3f7oxSmgQuiL557Q41VKR6GcPVcDu/w0Yl0YHBP158/HDdFaWmRAdHaHmxg==}
+    engines: {node: '>=20.19.1 <22 || >=22.12'}
+    peerDependencies:
+      '@sanity/client': ^7.17.0
 
   '@sanity/incompatible-plugin@1.0.5':
     resolution: {integrity: sha512-9JGAacbElUPy9Chghd+sllIiM3jAcraZdD65bWYWUVKkghOsf1L/+jFLz1rcAuvrA9o2s7Y+T75BNcXuLwRcvw==}
@@ -13393,6 +13399,25 @@ snapshots:
       - terser
       - utf-8-validate
       - yaml
+
+  '@sanity/import@5.0.0(@sanity/client@7.17.0(debug@4.4.3))(@types/react@19.2.14)':
+    dependencies:
+      '@sanity/asset-utils': 2.3.0
+      '@sanity/client': 7.17.0(debug@4.4.3)
+      '@sanity/generate-help-url': 4.0.0
+      '@sanity/mutator': 5.14.1(@types/react@19.2.14)
+      debug: 4.4.3(supports-color@8.1.1)
+      get-it: 8.7.0(debug@4.4.3)
+      get-uri: 6.0.5
+      gunzip-maybe: 1.4.2
+      lodash-es: 4.17.23
+      p-map: 7.0.4
+      split2: 4.2.0
+      tar-fs: 2.1.4
+      tinyglobby: 0.2.15
+    transitivePeerDependencies:
+      - '@types/react'
+      - supports-color
 
   '@sanity/incompatible-plugin@1.0.5(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
