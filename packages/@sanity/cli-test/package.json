@@ -83,7 +83,7 @@
     "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:",
-    "yaml": "^2.8.2"
+    "yaml": "catalog:"
   },
   "peerDependencies": {
     "@oclif/core": "^4.0.0",

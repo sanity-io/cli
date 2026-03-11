@@ -1,4 +1,5 @@
 import {Command, Help, Interfaces} from '@oclif/core'
+import {getBinCommand, getRunningPackageManager} from '@sanity/cli-core/package-manager'
 
 // Running `oclif readme`, we don't want to apply the `prefixBinName` transformation,
 // as it will include whatever pm was used to spawn the script in the generated readme.
@@ -43,25 +44,9 @@ export default class SanityHelp extends Help {
 /**
  * @internal
  */
-export function guessBinCommand(): string {
-  const pm = guessPackageManager()
-  if (pm === 'npm') return 'npx sanity'
-  if (pm === 'pnpm') return 'pnpm exec sanity'
-  if (pm === 'bun') return 'bunx sanity'
-  if (pm === 'yarn') {
-    const major = guessYarnMajorVersion()
-    if (major !== undefined && major >= 2) return 'yarn run sanity'
-    return 'yarn sanity'
-  }
-  return 'sanity'
-}
-
-/**
- * @internal
- */
 export function prefixBinName(help: string): string {
   if (IS_README_GENERATION) return help
-  const binCommand = guessBinCommand()
+  const binCommand = getBinCommand()
   if (binCommand === 'sanity') return help
   return help.replaceAll('$ sanity', `$ ${binCommand}`)
 }
@@ -89,7 +74,7 @@ export function replaceInitWithCreateCommand(help: string): string {
 }
 
 function guessCreateCommand() {
-  const pm = guessPackageManager()
+  const pm = getRunningPackageManager()
   if (pm === 'yarn') return `yarn create sanity`
   if (pm === 'bun') return `bun create sanity@latest`
   if (pm === 'pnpm') return `pnpm create sanity@latest`
@@ -97,20 +82,6 @@ function guessCreateCommand() {
 }
 
 function needsFlagSeparator() {
-  const pm = guessPackageManager()
+  const pm = getRunningPackageManager()
   return pm === 'npm' || !pm
-}
-
-function guessPackageManager() {
-  const ua = process.env.npm_config_user_agent || ''
-  if (ua.includes('pnpm')) return 'pnpm'
-  if (ua.includes('yarn')) return 'yarn'
-  if (ua.includes('bun')) return 'bun'
-  if (ua.includes('npm')) return 'npm'
-}
-
-function guessYarnMajorVersion(): number | undefined {
-  const ua = process.env.npm_config_user_agent || ''
-  const match = ua.match(/yarn\/(\d+)/)
-  return match ? Number.parseInt(match[1], 10) : undefined
 }

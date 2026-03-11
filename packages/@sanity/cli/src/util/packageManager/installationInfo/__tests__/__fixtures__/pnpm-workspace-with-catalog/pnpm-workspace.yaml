@@ -1,0 +1,6 @@
+packages:
+  - 'packages/*'
+
+catalog:
+  sanity: ^3.67.0
+  '@sanity/cli': ^5.33.0

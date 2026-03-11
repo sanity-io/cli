@@ -140,6 +140,7 @@
     "typeid-js": "^1.2.0",
     "vite": "catalog:",
     "which": "^6.0.1",
+    "yaml": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

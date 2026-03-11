@@ -1,0 +1,7 @@
+{
+  "name": "sanity-plugin-example",
+  "version": "1.0.0",
+  "peerDependencies": {
+    "sanity": "^3.0.0"
+  }
+}

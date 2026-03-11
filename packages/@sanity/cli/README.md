@@ -52,6 +52,7 @@ Code for sanity cli
 - [`sanity docs browse`](#sanity-docs-browse)
 - [`sanity docs read PATH`](#sanity-docs-read-path)
 - [`sanity docs search QUERY`](#sanity-docs-search-query)
+- [`sanity doctor [CHECKS]`](#sanity-doctor-checks)
 - [`sanity documents create [FILE]`](#sanity-documents-create-file)
 - [`sanity documents delete ID [IDS]`](#sanity-documents-delete-id-ids)
 - [`sanity documents get DOCUMENTID`](#sanity-documents-get-documentid)
@@ -1508,6 +1509,37 @@ EXAMPLES
 ```
 
 _See code: [src/commands/docs/search.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.21/src/commands/docs/search.ts)_
+
+## `sanity doctor [CHECKS]`
+
+Run diagnostics on your Sanity project
+
+```
+USAGE
+  $ sanity doctor [CHECKS...] [-j]
+
+ARGUMENTS
+  [CHECKS...]  (cli) Checks to enable (defaults to all)
+
+FLAGS
+  -j, --json  Output results as JSON
+
+DESCRIPTION
+  Run diagnostics on your Sanity project
+
+EXAMPLES
+  $ sanity doctor
+
+  Output results as JSON
+
+    $ sanity doctor --json
+
+  Only run CLI-related diagnostics
+
+    $ sanity doctor cli
+```
+
+_See code: [src/commands/doctor.ts](https://github.com/sanity-io/cli/blob/v6.0.0-alpha.20/src/commands/doctor.ts)_
 
 ## `sanity documents create [FILE]`
 

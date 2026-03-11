@@ -1,0 +1,10 @@
+{
+  "name": "with-yarn-resolutions",
+  "version": "1.0.0",
+  "dependencies": {
+    "sanity": "^3.67.0"
+  },
+  "resolutions": {
+    "@sanity/cli": "^5.30.0"
+  }
+}
