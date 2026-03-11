@@ -16,10 +16,10 @@ catalog:
   prettier: ^3.8.1
 
   # Sanity
-  sanity: ^5.13.0
-  '@sanity/vision': ^5.13.0
-  '@sanity/types': ^5.13.0
-  '@sanity/schema': ^5.13.0
+  sanity: ^5.14.1
+  '@sanity/vision': ^5.14.1
+  '@sanity/types': ^5.14.1
+  '@sanity/schema': ^5.14.1
   '@sanity/client': ^7.17.0
   '@sanity/codegen': ^5.10.1
   '@sanity/telemetry': ^0.8.1
