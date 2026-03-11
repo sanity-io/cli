@@ -5,7 +5,6 @@ import {debug, getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
 import {type StudioManifest} from 'sanity'
 
-import {appManifestHasData} from '../actions/manifest/extractAppManifest.js'
 import {type AppManifest} from '../actions/manifest/types.js'
 
 export const USER_APPLICATIONS_API_VERSION = 'v2024-08-01'
@@ -100,6 +99,36 @@ export async function deleteUserApplication({
 
   await client.request({
     method: 'DELETE',
+    query: {appType},
+    uri: `/user-applications/${applicationId}`,
+  })
+}
+
+interface UpdateUserApplicationBody {
+  title?: string
+}
+
+interface UpdateUserApplicationOptions {
+  applicationId: string
+  // Updating studio properties requires further UX thought
+  // (because of workspaces et al.)
+  appType: 'coreApp'
+  body: UpdateUserApplicationBody
+}
+
+export async function updateUserApplication({
+  applicationId,
+  appType,
+  body,
+}: UpdateUserApplicationOptions): Promise<UserApplication> {
+  const client = await getGlobalCliClient({
+    apiVersion: USER_APPLICATIONS_API_VERSION,
+    requireUser: true,
+  })
+
+  return client.request({
+    body,
+    method: 'PATCH',
     query: {appType},
     uri: `/user-applications/${applicationId}`,
   })
@@ -234,9 +263,7 @@ export async function createDeployment({
   const formData = new FormData()
   formData.append('isAutoUpdating', isAutoUpdating.toString())
   formData.append('version', version)
-  if (isApp && appManifestHasData(manifest as AppManifest)) {
-    formData.append('manifest', JSON.stringify(manifest))
-  } else if (manifest) {
+  if (manifest) {
     formData.append('manifest', JSON.stringify(manifest))
   }
 
