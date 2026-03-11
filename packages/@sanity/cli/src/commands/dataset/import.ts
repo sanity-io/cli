@@ -182,7 +182,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
 
     const {source, targetDataset: targetDatasetArg} = args
 
-    if (targetDatasetArg) {
+    if (targetDatasetArg && !datasetFlag) {
       this.warn(
         'Positional dataset argument is deprecated. Use the --dataset flag instead: --dataset <name>',
       )

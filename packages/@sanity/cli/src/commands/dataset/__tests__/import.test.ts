@@ -151,7 +151,7 @@ describe('#dataset:import', () => {
     test('--dataset flag takes precedence over positional argument', async () => {
       mockSanityImport.mockResolvedValueOnce({numDocs: 1, warnings: []})
 
-      const {error} = await testCommand(
+      const {error, stderr} = await testCommand(
         ImportDatasetCommand,
         [
           'test-source.ndjson',
@@ -168,6 +168,7 @@ describe('#dataset:import', () => {
       expect(mockGetProjectCliClient).toHaveBeenCalledWith(
         expect.objectContaining({dataset: 'flag-dataset'}),
       )
+      expect(stderr).not.toContain('Positional dataset argument is deprecated')
     })
 
     test('errors when no dataset is provided via flag or positional arg', async () => {
