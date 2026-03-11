@@ -165,6 +165,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       importMap,
       isApp: true,
       minify: Boolean(flags.minify),
+      output,
       outputDir,
       reactCompiler:
         cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
