@@ -8,6 +8,7 @@ import {spinner} from '@sanity/cli-core/ux'
 import {sanityImport} from '@sanity/import'
 import prettyMs from 'pretty-ms'
 
+import {promptForProject} from '../../prompts/promptForProject.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 interface ProgressEvent {
@@ -60,6 +61,10 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       description: 'Source file (use "-" for stdin)',
       required: true,
     }),
+    targetDataset: Args.string({
+      description: 'Target dataset (prefer --dataset flag instead)',
+      required: false,
+    }),
   }
 
   static override description = 'Import documents to a Sanity dataset'
@@ -67,12 +72,17 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
   static override examples = [
     {
       command:
-        '<%= config.bin %> <%= command.id %> -p myPrOj -d staging -t someSecretToken my-dataset.ndjson',
+        '<%= config.bin %> <%= command.id %> -d staging -t someSecretToken my-dataset.ndjson',
       description: 'Import "./my-dataset.ndjson" into dataset "staging"',
     },
     {
-      command: 'cat my-dataset.ndjson | <%= config.bin %> <%= command.id %> -p myPrOj -d test -',
-      description: 'Import into dataset "test" from stdin, read token from env var',
+      command: 'cat my-dataset.ndjson | <%= config.bin %> <%= command.id %> -d test -t someToken -',
+      description: 'Import into dataset "test" from stdin',
+    },
+    {
+      command:
+        '<%= config.bin %> <%= command.id %> -p projectId -d staging -t someSecretToken my-dataset.ndjson',
+      description: 'Import with explicit project ID (overrides CLI configuration)',
     },
   ]
 
@@ -96,13 +106,19 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
     'asset-concurrency': Flags.integer({
       description: 'Number of parallel asset imports',
     }),
-    ...getDatasetFlag({description: 'Dataset to import to', required: true, semantics: 'specify'}),
+    ...getDatasetFlag({
+      description: 'Dataset to import to',
+      semantics: 'specify',
+    }),
     missing: Flags.boolean({
       default: false,
       description: 'Skip documents that already exist',
       exclusive: ['replace'],
     }),
-    ...getProjectIdFlag({description: 'Project ID to import to', semantics: 'specify'}),
+    ...getProjectIdFlag({
+      description: 'Project ID to import to',
+      semantics: 'override',
+    }),
     project: Flags.string({
       deprecated: {to: 'project-id'},
       description: 'Project ID to import to',
@@ -151,22 +167,33 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       'allow-replacement-characters': allowReplacementCharacters,
       'allow-system-documents': allowSystemDocuments,
       'asset-concurrency': assetConcurrency,
-      dataset,
+      dataset: datasetFlag,
       missing,
-      project,
-      'project-id': projectIdFlag,
       replace,
       'replace-assets': replaceAssets,
       'skip-cross-dataset-references': skipCrossDatasetReferences,
       token,
     } = flags
 
-    const projectId = projectIdFlag ?? project
-    if (!projectId) {
-      this.error('Missing required flag --project-id', {exit: 1})
+    const projectId = await this.getProjectId({
+      deprecatedFlagName: 'project',
+      fallback: () => promptForProject({}),
+    })
+
+    const {source, targetDataset: targetDatasetArg} = args
+
+    if (targetDatasetArg) {
+      this.warn(
+        'Positional dataset argument is deprecated. Use the --dataset flag instead: --dataset <name>',
+      )
     }
 
-    const {source} = args
+    const dataset = datasetFlag ?? targetDatasetArg
+    if (!dataset) {
+      this.error('Missing dataset. Use the --dataset flag to specify a dataset: --dataset <name>', {
+        exit: 1,
+      })
+    }
 
     const tokenString: string | undefined = token
     if (!tokenString) {
