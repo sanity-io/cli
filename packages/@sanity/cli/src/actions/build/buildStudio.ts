@@ -224,7 +224,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     }
   } catch (error) {
     spin.fail()
-    trace.error(error)
+    trace.error(error instanceof Error ? error : new Error(String(error)))
     const message = error instanceof Error ? error.message : String(error)
     buildDebug(`Failed to build Sanity Studio`, {error})
     output.error(`Failed to build Sanity Studio: ${message}`, {exit: 1})

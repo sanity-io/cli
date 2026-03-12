@@ -177,7 +177,7 @@ ${styleText(
   } catch (error) {
     spin.clear()
     // Don't throw generic error if user cancels
-    if (error.name === 'ExitPromptError') {
+    if (error instanceof Error && error.name === 'ExitPromptError') {
       output.error('Deployment cancelled by user', {exit: 1})
       return
     }

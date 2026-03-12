@@ -104,21 +104,22 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
       }
     } catch (error) {
       spin.fail()
-      if (error.message === NO_APP_ID) {
+      const message = error instanceof Error ? error.message : String(error)
+      if (message === NO_APP_ID) {
         this.log('No application ID provided.')
         this.log('Please set id in `deployment.appId` in sanity.cli.js or sanity.cli.ts.')
         this.log('Nothing to undeploy.')
         return
       }
 
-      if (error.message === NO_APP_ID_OR_STUDIO_HOST) {
+      if (message === NO_APP_ID_OR_STUDIO_HOST) {
         this.log('No application ID or studio host provided.')
         this.log('Please set id in `deployment.appId` in sanity.cli.js or sanity.cli.ts.')
         this.log('Nothing to undeploy.')
         return
       }
 
-      this.error(error)
+      this.error(error instanceof Error ? error : String(error))
     }
   }
 }

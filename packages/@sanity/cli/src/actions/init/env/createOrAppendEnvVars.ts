@@ -41,7 +41,7 @@ export async function createOrAppendEnvVars({
       outputPath,
     })
   } catch (err) {
-    output.error(err)
+    output.error(err instanceof Error ? err : String(err))
     throw new CLIError('An error occurred while creating .env', {exit: 1})
   }
 }

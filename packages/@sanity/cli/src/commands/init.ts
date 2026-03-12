@@ -911,7 +911,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
           userAction: 'select',
         }
       }
-      this.error(`Failed to communicate with the Sanity API:\n${err.message}`, {exit: 1})
+      const message = err instanceof Error ? err.message : String(err)
+      this.error(`Failed to communicate with the Sanity API:\n${message}`, {exit: 1})
     }
 
     if (projects.length === 0 && this.isUnattended()) {

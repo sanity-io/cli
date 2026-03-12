@@ -171,7 +171,7 @@ export async function bootstrapLocalTemplate(
     try {
       await fs.writeFile(filePath, content, {flag: 'wx'})
     } catch (err) {
-      if (err.code === 'EEXIST') {
+      if (err instanceof Error && 'code' in err && err.code === 'EEXIST') {
         output.warn(`\n${styleText('yellow', '⚠')} File "${filePath}" already exists, skipping`)
       } else {
         throw err

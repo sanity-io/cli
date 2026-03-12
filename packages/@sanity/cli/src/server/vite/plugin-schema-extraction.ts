@@ -323,7 +323,7 @@ export function sanitySchemaExtractionPlugin(options: SchemaExtractionPluginOpti
           schemaTypesCount: schema.filter((type) => type.type === 'type').length,
         })
       } catch (err) {
-        trace?.error(err)
+        trace?.error(err instanceof Error ? err : new Error(String(err)))
         throw err
       } finally {
         trace?.complete()

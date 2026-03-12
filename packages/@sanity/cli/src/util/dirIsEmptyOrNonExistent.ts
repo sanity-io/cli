@@ -7,7 +7,7 @@ export async function dirIsEmptyOrNonExistent(sourceDir: string): Promise<boolea
       throw new Error(`Directory ${sourceDir} is not a directory`)
     }
   } catch (err) {
-    if (err.code === 'ENOENT') {
+    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
       return true
     }
 

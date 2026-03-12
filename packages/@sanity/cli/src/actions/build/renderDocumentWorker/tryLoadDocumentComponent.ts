@@ -23,8 +23,11 @@ export async function tryLoadDocumentComponent(studioRootPath: string) {
       }
     } catch (err) {
       // Allow "not found" errors
-      if (err.code !== 'ERR_MODULE_NOT_FOUND') {
-        buildDebug('Failed to load document component: %s', err.message)
+      if (!(err instanceof Error) || !('code' in err) || err.code !== 'ERR_MODULE_NOT_FOUND') {
+        buildDebug(
+          'Failed to load document component: %s',
+          err instanceof Error ? err.message : String(err),
+        )
         throw err
       }
 

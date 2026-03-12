@@ -161,6 +161,7 @@ export async function startStudioDevServer(
     return {close}
   } catch (err) {
     devDebug('Error starting studio dev server', err)
+    if (!(err instanceof Error)) throw err
     throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
   }
 }

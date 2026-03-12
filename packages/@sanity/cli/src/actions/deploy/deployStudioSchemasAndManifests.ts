@@ -76,7 +76,7 @@ export async function deployStudioSchemasAndManifests(
     )
     return result.studioManifest
   } catch (err) {
-    trace.error(err)
+    trace.error(err instanceof Error ? err : new Error(String(err)))
     throw err
   }
 }

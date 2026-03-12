@@ -2,6 +2,7 @@ import {PassThrough} from 'node:stream'
 import {type Gzip} from 'node:zlib'
 
 import {debug, getGlobalCliClient} from '@sanity/cli-core'
+import {isHttpError} from '@sanity/client'
 import FormData from 'form-data'
 import {type StudioManifest} from 'sanity'
 
@@ -74,7 +75,7 @@ export async function getUserApplication({
     const options = query ? {query, uri} : {uri}
     return await client.request(options)
   } catch (err) {
-    if (err?.statusCode === 404) {
+    if (isHttpError(err) && err.statusCode === 404) {
       return null
     }
 
@@ -177,7 +178,7 @@ export async function getUserApplications(
   } catch (error) {
     // User doesn't have permission to view applications for the org,
     // or the organization ID doesn’t exist
-    if (error?.statusCode === 403) {
+    if (isHttpError(error) && error.statusCode === 403) {
       throw error
     }
 

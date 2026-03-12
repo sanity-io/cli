@@ -46,7 +46,7 @@ export async function extractSchema(options: ExtractSchemaActionOptions): Promis
 
     trace.complete()
   } catch (err) {
-    trace.error(err)
+    trace.error(err instanceof Error ? err : new Error(String(err)))
     schemasExtractDebug('Failed to extract schema', err)
     spin.fail(
       enforceRequiredFields

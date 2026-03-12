@@ -190,7 +190,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     trace.complete()
   } catch (error) {
     spin.fail()
-    trace.error(error)
+    trace.error(error instanceof Error ? error : new Error(String(error)))
     const message = error instanceof Error ? error.message : String(error)
     buildDebug(`Failed to build Sanity application`, {error})
     output.error(`Failed to build Sanity application: ${message}`, {exit: 1})

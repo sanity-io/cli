@@ -15,7 +15,7 @@ async function tryReadDir(dir: string): Promise<string[]> {
     const content = await fs.readdir(dir)
     return content
   } catch (err) {
-    if (err.code === 'ENOENT') {
+    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
       return []
     }
 

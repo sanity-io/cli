@@ -4,6 +4,7 @@
 
 import {type Output} from '@sanity/cli-core'
 import {select, Separator, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
+import {isHttpError} from '@sanity/client'
 
 import {
   createUserApplication,
@@ -11,6 +12,7 @@ import {
   getUserApplications,
   type UserApplication,
 } from '../../services/userApplications.js'
+import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {deployDebug} from './deployDebug.js'
 import {normalizeUrl, validateUrl} from './urlUtils.js'
 
@@ -123,7 +125,7 @@ async function findUserApplication(
     } catch (error) {
       spin.fail()
       deployDebug('Error finding user application', error)
-      output.error(`Error finding user application: ${error?.message}`, {exit: 1})
+      output.error(`Error finding user application: ${getErrorMessage(error)}`, {exit: 1})
     }
   }
 
@@ -182,24 +184,28 @@ async function findUserApplication(
       } catch (e) {
         spin.fail()
         // if the name is taken, it should return a 409 so we relay to the user
-        if ([402, 409].includes(e?.statusCode)) {
-          output.error(e?.response?.body?.message || 'Bad request', {exit: 1})
+        if (isHttpError(e) && [402, 409].includes(e.statusCode)) {
+          const body = e.response.body
+          const message =
+            typeof body === 'object' &&
+            body !== null &&
+            'message' in body &&
+            typeof body.message === 'string'
+              ? body.message
+              : 'Bad request'
+          output.error(message, {exit: 1})
           return null
         }
         // otherwise, it's a fatal error
         deployDebug('Error creating user application from config', e)
-        output.error(
-          `Error creating user application from config: ${e instanceof Error ? e.message : e}`,
-          {exit: 1},
-        )
+        output.error(`Error creating user application from config: ${getErrorMessage(e)}`, {
+          exit: 1,
+        })
       }
     } catch (error) {
       spin.fail()
       deployDebug('Error finding user application', error)
-      output.error(
-        `Error finding user application: ${error instanceof Error ? error.message : error.toString()}`,
-        {exit: 1},
-      )
+      output.error(`Error finding user application: ${getErrorMessage(error)}`, {exit: 1})
     }
   }
 

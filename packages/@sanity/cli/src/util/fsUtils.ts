@@ -17,7 +17,7 @@ function pathIsEmpty(dir: string): boolean {
     const content = fs.readdirSync(dir)
     return content.length === 0
   } catch (err) {
-    if (err.code === 'ENOENT') {
+    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
       return true
     }
 
