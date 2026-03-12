@@ -43,7 +43,7 @@ import {
   sanityStudioTemplate,
 } from '../actions/init/templates/nextjs/index.js'
 import {type VersionedFramework} from '../actions/init/types.js'
-import {EditorName} from '../actions/mcp/editorConfigs.js'
+import {type EditorName} from '../actions/mcp/editorConfigs.js'
 import {setupMCP} from '../actions/mcp/setupMCP.js'
 import {findOrganizationByUserName} from '../actions/organizations/findOrganizationByUserName.js'
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'

@@ -70,29 +70,29 @@ export async function createMCPToken(): Promise<string> {
 export async function validateMCPToken(token: string): Promise<boolean> {
   const request = getMCPRequester()
 
-  try {
-    const res = await request({
-      body: '{}',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      method: 'POST',
-      url: MCP_SERVER_URL,
-    })
+  const res = await request({
+    body: '{}',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+    timeout: 1000,
+    url: MCP_SERVER_URL,
+  })
 
-    if (res.statusCode === 401 || res.statusCode === 403) {
-      debug('MCP token validation failed with %d', res.statusCode)
-      return false
-    }
-
-    // 406 (Not Acceptable) means auth passed but content negotiation failed —
-    // that's expected and means the token is valid
+  // 406 (Not Acceptable) means auth passed but content negotiation failed —
+  // that's expected and means the token is valid
+  if (res.statusCode === 406) {
     return true
-  } catch (err) {
-    debug('MCP token validation error: %s', err)
-    throw err
   }
+
+  if (res.statusCode === 401 || res.statusCode === 403) {
+    debug('MCP token validation failed with %d', res.statusCode)
+    return false
+  }
+
+  throw new Error(`Unexpected MCP validation response: ${res.statusCode}`)
 }
 
 /**
