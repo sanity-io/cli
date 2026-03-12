@@ -1,5 +1,5 @@
-import {join, resolve} from 'node:path'
-import {pathToFileURL} from 'node:url'
+import {dirname, join, resolve} from 'node:path'
+import {fileURLToPath, pathToFileURL} from 'node:url'
 
 import {type PackageJson} from '@sanity/cli-core'
 import {moduleResolve} from 'import-meta-resolve'
@@ -136,8 +136,11 @@ describe('getLocalPackageVersion', () => {
   })
 
   test('handles import.meta.url (file:// URL) by extracting the directory', async () => {
-    const importMetaUrl = 'file:///mock/work/dir/some-file.ts'
-    const expectedDir = '/mock/work/dir'
+    // Use a real absolute path so the test works on both Unix and Windows
+    const fakeSrcFile = resolve(mockWorkDir, 'some-file.ts')
+    const importMetaUrl = pathToFileURL(fakeSrcFile).href
+    // The function should dirname the file URL to get the containing directory
+    const expectedDir = dirname(fileURLToPath(importMetaUrl))
     const mockPackageUrl = pathToFileURL(
       resolve(expectedDir, 'node_modules', mockModuleId, 'package.json'),
     )
