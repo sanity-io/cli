@@ -883,7 +883,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       const existingDatasetNames = datasets.map((ds) => ds.name)
       debug('User wants to create a new dataset, prompting for name')
       if (opts.showDefaultConfigPrompt && !existingDatasetNames.includes('production')) {
-        this.log(datasetInfo)
         defaultConfig = await promptForDefaultConfig()
       }
 
