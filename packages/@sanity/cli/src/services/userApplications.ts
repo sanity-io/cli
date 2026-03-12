@@ -47,20 +47,17 @@ export async function getUserApplication({
   let query: Record<string, string | string[]> | undefined
   let uri: string
 
-  // set the uri
+  // set the uri and query
   if (isSdkApp) {
-    uri = appId ? `/user-applications/${appId}` : '/user-applications'
-  } else {
-    uri = appId
-      ? `/projects/${projectId}/user-applications/${appId}`
-      : `/projects/${projectId}/user-applications`
-  }
-
-  // set the query
-  if (isSdkApp) {
+    uri = `/user-applications/${appId}`
     query = {appType: 'coreApp'}
-  } else if (!appId) {
+  } else if (appId) {
+    uri = `/projects/${projectId}/user-applications/${appId}`
+  } else if (appHost) {
+    uri = `/projects/${projectId}/user-applications`
     query = {appHost, appType: 'studio'}
+  } else {
+    uri = `/projects/${projectId}/user-applications`
   }
 
   const client = await getGlobalCliClient({
