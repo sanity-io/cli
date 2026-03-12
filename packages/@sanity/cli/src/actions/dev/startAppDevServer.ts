@@ -51,6 +51,7 @@ export async function startAppDevServer(
     return {close}
   } catch (err) {
     devDebug('Error starting app dev server', err)
+    if (!(err instanceof Error)) throw err
     throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
   }
 }

@@ -4,6 +4,7 @@
 
 import {type CliConfig, type Output} from '@sanity/cli-core'
 import {select, Separator, spinner} from '@sanity/cli-core/ux'
+import {isHttpError} from '@sanity/client'
 
 import {
   getUserApplication,
@@ -104,7 +105,7 @@ export async function findUserApplicationForApp(
     return userApplications.find((app) => app.appHost === selected)!
   } catch (error) {
     // User can't access applications for the org
-    if (error?.statusCode === 403) {
+    if (isHttpError(error) && error.statusCode === 403) {
       spin.clear()
       deployDebug(
         'User does not have permission to get applications for the org, or the org ID is malformed/doesn’t exist',
@@ -126,7 +127,7 @@ export async function findUserApplicationForApp(
     // We've failed for some other reason
     spin.clear()
     deployDebug('Error finding user application for app', error)
-    output.error(error)
+    output.error(error instanceof Error ? error : String(error))
     return null
   }
 }

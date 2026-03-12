@@ -1,4 +1,5 @@
 import {input, spinner} from '@sanity/cli-core/ux'
+import {isHttpError} from '@sanity/client'
 import {customAlphabet} from 'nanoid'
 
 import {createUserApplication, type UserApplication} from '../../services/userApplications.js'
@@ -51,7 +52,7 @@ const tryCreateApp = async (title: string, organizationId: string) => {
     return response
   } catch (e) {
     // if the name is taken, generate a new one and try again
-    if ([402, 409].includes(e?.statusCode)) {
+    if (isHttpError(e) && [402, 409].includes(e.statusCode)) {
       deployDebug('App host taken, retrying with new host')
       return tryCreateApp(title, organizationId)
     }

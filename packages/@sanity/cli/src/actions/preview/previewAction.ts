@@ -21,6 +21,7 @@ export async function previewAction(options: PreviewActionOptions) {
     const server = await startPreviewServer(config)
     return server
   } catch (err) {
+    if (!(err instanceof Error)) throw err
     throw gracefulServerDeath('preview', config.httpHost, config.httpPort, err)
   }
 }

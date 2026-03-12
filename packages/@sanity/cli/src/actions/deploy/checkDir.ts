@@ -15,25 +15,24 @@ export async function checkDir(sourceDir: string): Promise<void> {
       throw new Error(`Directory ${sourceDir} is not a directory`)
     }
   } catch (err) {
-    const error = err.code === 'ENOENT' ? new Error(`Directory "${sourceDir}" does not exist`) : err
-
-    throw error
+    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
+      throw new Error(`Directory "${sourceDir}" does not exist`)
+    }
+    throw err
   }
 
   try {
     await stat(join(sourceDir, 'index.html'))
   } catch (err) {
-    const error =
-      err.code === 'ENOENT'
-        ? new Error(
-            [
-              `"${sourceDir}/index.html" does not exist -`,
-              '[SOURCE_DIR] must be a directory containing',
-              'a Sanity studio built using "sanity build"',
-            ].join(' '),
-          )
-        : err
-
-    throw error
+    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
+      throw new Error(
+        [
+          `"${sourceDir}/index.html" does not exist -`,
+          '[SOURCE_DIR] must be a directory containing',
+          'a Sanity studio built using "sanity build"',
+        ].join(' '),
+      )
+    }
+    throw err
   }
 }

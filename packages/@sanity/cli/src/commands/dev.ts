@@ -60,12 +60,10 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
       return result
     } catch (error) {
       devDebug(`Failed to start dev server`, error)
-      this.output.error(
-        styleText(['red', 'bgBlack'], `Failed to start dev server: ${error.message}`),
-        {
-          exit: 1,
-        },
-      )
+      const message = error instanceof Error ? error.message : String(error)
+      this.output.error(styleText(['red', 'bgBlack'], `Failed to start dev server: ${message}`), {
+        exit: 1,
+      })
     }
   }
 }

@@ -1,5 +1,6 @@
 import {CLIError} from '@oclif/core/errors'
 import {input} from '@sanity/cli-core/ux'
+import {isHttpError} from '@sanity/client'
 
 import {createUserApplication, type UserApplication} from '../../services/userApplications.js'
 import {deployDebug} from './deployDebug.js'
@@ -60,8 +61,16 @@ export async function createStudioUserApplication(options: CreateStudioUserAppli
         return true
       } catch (e) {
         // if the name is taken, it should return a 409 so we relay to the user
-        if ([402, 409].includes(e?.statusCode)) {
-          return e?.response?.body?.message || 'Bad request' // just in case
+        if (isHttpError(e) && [402, 409].includes(e.statusCode)) {
+          const body = e.response.body
+          const message =
+            typeof body === 'object' &&
+            body !== null &&
+            'message' in body &&
+            typeof body.message === 'string'
+              ? body.message
+              : 'Bad request'
+          return message
         }
 
         deployDebug('Error creating user application', e)

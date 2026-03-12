@@ -73,8 +73,17 @@ describe('getUserApplication', () => {
   })
 
   test('returns null on 404 error', async () => {
-    const error = new Error('not found') as Error & {statusCode: number}
-    error.statusCode = 404
+    const error = Object.assign(new Error('not found'), {
+      response: {
+        body: {message: 'not found'},
+        headers: {},
+        method: 'GET',
+        statusCode: 404,
+        statusMessage: 'Not Found',
+        url: '/user-applications/404',
+      },
+      statusCode: 404,
+    })
     mockClient.request.mockRejectedValueOnce(error)
 
     const app = await getUserApplication({appId: '404', isSdkApp: false, projectId: 'test-project'})

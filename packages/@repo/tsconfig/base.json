@@ -20,7 +20,7 @@
 
     // Settings
     "preserveConstEnums": true,
-    "useUnknownInCatchVariables": false,
+    "useUnknownInCatchVariables": true,
     "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
     "allowJs": true,
