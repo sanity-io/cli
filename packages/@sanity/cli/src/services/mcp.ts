@@ -74,7 +74,7 @@ export async function validateMCPToken(token: string): Promise<boolean> {
     const res = await request({
       body: '{}',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       method: 'POST',

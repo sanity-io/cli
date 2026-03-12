@@ -73,9 +73,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   await validateEditorTokens(editors)
 
   // 4. Check if there's anything actionable
-  const actionable = editors.filter(
-    (e) => !e.configured || e.authStatus !== 'valid',
-  )
+  const actionable = editors.filter((e) => !e.configured || e.authStatus !== 'valid')
 
   if (actionable.length === 0) {
     mcpDebug('All editors configured with valid credentials')

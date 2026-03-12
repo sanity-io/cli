@@ -38,9 +38,7 @@ describe('validateEditorTokens', () => {
   test('sets authStatus to valid for valid tokens', async () => {
     mockValidateMCPToken.mockResolvedValue(true)
 
-    const editors = [
-      makeEditor({configured: true, existingToken: 'valid-token', name: 'Cursor'}),
-    ]
+    const editors = [makeEditor({configured: true, existingToken: 'valid-token', name: 'Cursor'})]
 
     await validateEditorTokens(editors)
 
@@ -102,9 +100,7 @@ describe('validateEditorTokens', () => {
   test('treats network errors as unauthorized', async () => {
     mockValidateMCPToken.mockRejectedValue(new Error('Network error'))
 
-    const editors = [
-      makeEditor({configured: true, existingToken: 'some-token', name: 'Cursor'}),
-    ]
+    const editors = [makeEditor({configured: true, existingToken: 'some-token', name: 'Cursor'})]
 
     await validateEditorTokens(editors)
 
