@@ -33,30 +33,32 @@ export async function validateEditorTokens(editors: Editor[]): Promise<void> {
 
   debug('Validating %d unique token(s) across %d editor(s)', tokenToEditors.size, editors.length)
 
-  // Validate each unique token once
-  for (const [token, tokenEditors] of tokenToEditors) {
-    let status: AuthStatus
-    try {
-      const valid = await validateMCPToken(token)
-      status = valid ? 'valid' : 'unauthorized'
-    } catch (err) {
-      // Network errors, timeouts, or unexpected failures — assume the token
-      // is valid rather than falsely marking it as expired. We only mark
-      // tokens as unauthorized when the server explicitly says so (401/403).
-      debug('Token validation error (assuming valid): %s', err)
-      status = 'valid'
-    }
+  // Validate all unique tokens in parallel to avoid stacking timeouts
+  await Promise.all(
+    Array.from(tokenToEditors.entries()).map(async ([token, tokenEditors]) => {
+      let status: AuthStatus
+      try {
+        const valid = await validateMCPToken(token)
+        status = valid ? 'valid' : 'unauthorized'
+      } catch (err) {
+        // Network errors, timeouts, or unexpected failures — assume the token
+        // is valid rather than falsely marking it as expired. We only mark
+        // tokens as unauthorized when the server explicitly says so (401/403).
+        debug('Token validation error (assuming valid): %s', err)
+        status = 'valid'
+      }
 
-    debug(
-      'Token ending ...%s is %s (used by %s)',
-      token.slice(-4),
-      status,
-      tokenEditors.map((e) => e.name).join(', '),
-    )
+      debug(
+        'Token ending ...%s is %s (used by %s)',
+        token.slice(-4),
+        status,
+        tokenEditors.map((e) => e.name).join(', '),
+      )
 
-    // Apply status to all editors sharing this token
-    for (const editor of tokenEditors) {
-      editor.authStatus = status
-    }
-  }
+      // Apply status to all editors sharing this token
+      for (const editor of tokenEditors) {
+        editor.authStatus = status
+      }
+    }),
+  )
 }
