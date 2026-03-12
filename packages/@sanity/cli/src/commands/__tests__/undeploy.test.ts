@@ -84,6 +84,36 @@ describe('#undeploy', () => {
     expect(stdout).toContain('Remember to remove')
   })
 
+  test('shows reminder for deprecated app.id config', async () => {
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      query: {appType: 'coreApp'},
+      uri: '/user-applications/legacy-id',
+    }).reply(200, {
+      appHost: 'legacy-host',
+      id: 'legacy-id',
+    })
+
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      method: 'delete',
+      query: {appType: 'coreApp'},
+      uri: '/user-applications/legacy-id',
+    }).reply(200)
+
+    const {stdout} = await testCommand(UndeployCommand, ['--yes'], {
+      mocks: {
+        cliConfig: {
+          app: {id: 'legacy-id'},
+        },
+        token: 'test-token',
+      },
+    })
+
+    expect(stdout).toContain('Application undeploy scheduled')
+    expect(stdout).toContain('Remember to remove')
+  })
+
   test('does nothing if no application found', async () => {
     mockApi({
       apiVersion: 'v2024-08-01',
@@ -720,7 +750,7 @@ describe('#undeploy', () => {
       vi.mocked(select).mockResolvedValueOnce('studio-1')
       vi.mocked(confirm).mockResolvedValueOnce(false)
 
-      await testCommand(UndeployCommand, [], {
+      const {error, stdout} = await testCommand(UndeployCommand, [], {
         mocks: {
           cliConfig: {
             api: {projectId: 'test'},
@@ -730,7 +760,8 @@ describe('#undeploy', () => {
         },
       })
 
-      // No delete call should be made since prompt was rejected
+      if (error) throw error
+      expect(stdout).not.toContain('undeploy scheduled')
     })
   })
 })

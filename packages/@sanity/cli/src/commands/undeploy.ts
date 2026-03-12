@@ -27,7 +27,6 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
   }
 
   public async run(): Promise<void> {
-    await this.parse(UndeployCommand)
     const cliConfig = await this.getCliConfig()
     const isApp = determineIsApp(cliConfig)
 
@@ -67,7 +66,7 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
       `\n${styleText('bold', `${isApp ? 'Application' : 'Studio'} undeploy scheduled.`)} It might be a few minutes until ${label} is unavailable.`,
     )
 
-    if (cliConfig.deployment?.appId) {
+    if (getAppId(cliConfig)) {
       this.log(
         `\n${styleText('bold', 'Remember to remove `deployment.appId` from your sanity.cli.(ts|js)`')} to avoid errors when redeploying.`,
       )
