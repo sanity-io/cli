@@ -223,6 +223,8 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
 
       if (error) throw error
       expect(stdout).toContain('Sanity Studio using vite@')
+      expect(stdout).not.toContain('vite@null')
+      expect(stdout).toMatch(/vite@\d+\.\d+/)
       expect(stdout).toContain('ready in')
       expect(stdout).toContain('ms and running at http://localhost:5335')
       expect(stderr).toContain('Checking configuration files')

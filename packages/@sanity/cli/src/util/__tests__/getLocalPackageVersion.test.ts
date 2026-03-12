@@ -135,6 +135,29 @@ describe('getLocalPackageVersion', () => {
     expect(result).toBeNull()
   })
 
+  test('handles import.meta.url (file:// URL) by extracting the directory', async () => {
+    const importMetaUrl = 'file:///mock/work/dir/some-file.ts'
+    const expectedDir = '/mock/work/dir'
+    const mockPackageUrl = pathToFileURL(
+      resolve(expectedDir, 'node_modules', mockModuleId, 'package.json'),
+    )
+    const mockVersion = '3.0.0'
+
+    mockedModuleResolve.mockReturnValueOnce(mockPackageUrl)
+    mockReadPackageJson.mockResolvedValueOnce({
+      name: mockModuleId,
+      version: mockVersion,
+    } as PackageJson)
+
+    const result = await getLocalPackageVersion(mockModuleId, importMetaUrl)
+
+    expect(mockedModuleResolve).toHaveBeenCalledWith(
+      `${mockModuleId}/package.json`,
+      pathToFileURL(resolve(expectedDir, 'noop.js')),
+    )
+    expect(result).toBe(mockVersion)
+  })
+
   test('returns null when moduleResolve throws a non-fallback error', async () => {
     mockedModuleResolve.mockImplementationOnce(() => {
       throw createNodeError('ERR_MODULE_NOT_FOUND', 'Module not found')
