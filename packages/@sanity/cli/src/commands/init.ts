@@ -456,6 +456,16 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
     const mcpConfigured = mcpResult.configuredEditors
 
+    // Show checkmark for editors that were already configured
+    const {alreadyConfiguredEditors} = mcpResult
+    if (alreadyConfiguredEditors.length > 0) {
+      const label =
+        alreadyConfiguredEditors.length === 1
+          ? `${alreadyConfiguredEditors[0]} already configured for Sanity MCP`
+          : `${alreadyConfiguredEditors.length} editors already configured for Sanity MCP`
+      spinner(label).start().succeed()
+    }
+
     if (isNextJs) {
       await checkNextJsReactCompatibility({
         detectedFramework,

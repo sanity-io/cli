@@ -28,6 +28,8 @@ interface MCPSetupOptions {
 }
 
 interface MCPSetupResult {
+  /** Editors that were already configured with valid credentials (nothing to do) */
+  alreadyConfiguredEditors: EditorName[]
   configuredEditors: EditorName[]
   detectedEditors: EditorName[]
   skipped: boolean
@@ -46,6 +48,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   if (skip) {
     ux.warn('Skipping MCP configuration due to --no-mcp flag')
     return {
+      alreadyConfiguredEditors: [],
       configuredEditors: [],
       detectedEditors: [],
       skipped: true,
@@ -63,6 +66,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       ux.warn(NO_EDITORS_DETECTED_MESSAGE)
     }
     return {
+      alreadyConfiguredEditors: [],
       configuredEditors: [],
       detectedEditors,
       skipped: true,
@@ -77,10 +81,14 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
 
   if (actionable.length === 0) {
     mcpDebug('All editors configured with valid credentials')
+    const alreadyConfiguredEditors = editors
+      .filter((e) => e.configured && e.authStatus === 'valid')
+      .map((e) => e.name)
     if (explicit) {
       ux.stdout(`${logSymbols.success} All detected editors are already configured`)
     }
     return {
+      alreadyConfiguredEditors,
       configuredEditors: [],
       detectedEditors,
       skipped: true,
@@ -94,6 +102,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     // User deselected all editors
     ux.stdout('MCP configuration skipped')
     return {
+      alreadyConfiguredEditors: [],
       configuredEditors: [],
       detectedEditors,
       skipped: true,
@@ -120,6 +129,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       ux.warn(`Could not configure MCP: ${err.message}`)
       ux.warn('You can set up MCP manually later using https://mcp.sanity.io')
       return {
+        alreadyConfiguredEditors: [],
         configuredEditors: [],
         detectedEditors,
         error: err,
@@ -139,6 +149,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     ux.warn(`Could not configure MCP: ${err.message}`)
     ux.warn('You can set up MCP manually later using https://mcp.sanity.io')
     return {
+      alreadyConfiguredEditors: [],
       configuredEditors: [],
       detectedEditors,
       error: err,
@@ -150,6 +161,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   ux.stdout(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
 
   return {
+    alreadyConfiguredEditors: [],
     configuredEditors,
     detectedEditors,
     skipped: false,

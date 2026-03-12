@@ -3,6 +3,7 @@ import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {setupMCP} from '../../../actions/mcp/setupMCP.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {CREATE_PROJECT_API_VERSION, PROJECTS_API_VERSION} from '../../../services/projects.js'
@@ -99,6 +100,7 @@ vi.mock('../../../util/getProjectDefaults.js', () => ({
 
 vi.mock('../../../actions/mcp/setupMCP.js', () => ({
   setupMCP: vi.fn().mockResolvedValue({
+    alreadyConfiguredEditors: [],
     configuredEditors: [],
     detectedEditors: [],
     error: undefined,
@@ -334,5 +336,155 @@ describe('#init: create new project', () => {
 
     expect(spinnerSpy).toHaveBeenCalledWith('Creating organization')
     expect(spinnerSpy).toHaveBeenCalledWith('Creating dataset')
+  })
+
+  test('shows spinner for single already-configured MCP editor', async () => {
+    vi.mocked(setupMCP).mockResolvedValueOnce({
+      alreadyConfiguredEditors: ['VS Code'],
+      configuredEditors: [],
+      detectedEditors: ['VS Code'],
+      skipped: true,
+    })
+
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    mocks.listDatasets.mockResolvedValue([{aclMode: 'public', name: 'production'}])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/project-123',
+    }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
+
+    mocks.select.mockResolvedValueOnce('project-123')
+    mocks.select.mockResolvedValueOnce('production')
+
+    const spinnerSpy = vi.spyOn(cliUX, 'spinner')
+
+    await testCommand(
+      InitCommand,
+      [
+        '--output-path=./test-project',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
+      {mocks: {...defaultMocks, isInteractive: true}},
+    )
+
+    expect(spinnerSpy).toHaveBeenCalledWith('VS Code already configured for Sanity MCP')
+  })
+
+  test('shows spinner with count for multiple already-configured MCP editors', async () => {
+    vi.mocked(setupMCP).mockResolvedValueOnce({
+      alreadyConfiguredEditors: ['VS Code', 'Cursor'],
+      configuredEditors: [],
+      detectedEditors: ['VS Code', 'Cursor'],
+      skipped: true,
+    })
+
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    mocks.listDatasets.mockResolvedValue([{aclMode: 'public', name: 'production'}])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/project-123',
+    }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
+
+    mocks.select.mockResolvedValueOnce('project-123')
+    mocks.select.mockResolvedValueOnce('production')
+
+    const spinnerSpy = vi.spyOn(cliUX, 'spinner')
+
+    await testCommand(
+      InitCommand,
+      [
+        '--output-path=./test-project',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
+      {mocks: {...defaultMocks, isInteractive: true}},
+    )
+
+    expect(spinnerSpy).toHaveBeenCalledWith('2 editors already configured for Sanity MCP')
+  })
+
+  test('does not show already-configured spinner when no editors are pre-configured', async () => {
+    // Default mock already has alreadyConfiguredEditors: []
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    mocks.listDatasets.mockResolvedValue([{aclMode: 'public', name: 'production'}])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/project-123',
+    }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
+
+    mocks.select.mockResolvedValueOnce('project-123')
+    mocks.select.mockResolvedValueOnce('production')
+
+    const spinnerSpy = vi.spyOn(cliUX, 'spinner')
+
+    await testCommand(
+      InitCommand,
+      [
+        '--output-path=./test-project',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
+      {mocks: {...defaultMocks, isInteractive: true}},
+    )
+
+    const spinnerCalls = spinnerSpy.mock.calls.map((c) => c[0])
+    expect(spinnerCalls).not.toContainEqual(
+      expect.stringContaining('already configured for Sanity MCP'),
+    )
   })
 })
