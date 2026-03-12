@@ -43,7 +43,7 @@ import {
   sanityStudioTemplate,
 } from '../actions/init/templates/nextjs/index.js'
 import {type VersionedFramework} from '../actions/init/types.js'
-import {EditorName} from '../actions/mcp/editorConfigs.js'
+import {type EditorName} from '../actions/mcp/editorConfigs.js'
 import {setupMCP} from '../actions/mcp/setupMCP.js'
 import {findOrganizationByUserName} from '../actions/organizations/findOrganizationByUserName.js'
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
@@ -450,7 +450,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     })
 
     // Set up MCP integration
-    const mcpResult = await setupMCP(this.flags.mcp)
+    const mcpResult = await setupMCP({skip: !this.flags.mcp})
 
     this._trace.log({
       configuredEditors: mcpResult.configuredEditors,
@@ -462,6 +462,16 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       this._trace.error(mcpResult.error)
     }
     const mcpConfigured = mcpResult.configuredEditors
+
+    // Show checkmark for editors that were already configured
+    const {alreadyConfiguredEditors} = mcpResult
+    if (alreadyConfiguredEditors.length > 0) {
+      const label =
+        alreadyConfiguredEditors.length === 1
+          ? `${alreadyConfiguredEditors[0]} already configured for Sanity MCP`
+          : `${alreadyConfiguredEditors.length} editors already configured for Sanity MCP`
+      spinner(label).start().succeed()
+    }
 
     if (isNextJs) {
       await checkNextJsReactCompatibility({

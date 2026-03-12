@@ -108,6 +108,7 @@ vi.mock('../../../util/getProjectDefaults.js', () => ({
 
 vi.mock('../../../actions/mcp/setupMCP.js', () => ({
   setupMCP: vi.fn().mockResolvedValue({
+    alreadyConfiguredEditors: [],
     configuredEditors: ['Cursor'],
     detectedEditors: [],
     error: undefined,

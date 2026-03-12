@@ -17,7 +17,7 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
   public async run(): Promise<void> {
     const trace = this.telemetry.trace(MCPConfigureTrace)
     trace.start()
-    const mcpResult = await setupMCP(true)
+    const mcpResult = await setupMCP({explicit: true})
 
     trace.log({
       configuredEditors: mcpResult.configuredEditors,

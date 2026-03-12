@@ -825,7 +825,7 @@ describe('#mcp:configure', () => {
     })
   })
 
-  test('shows already installed status for configured editors', async () => {
+  test('skips prompt when all configured editors have valid auth', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       return String(path).includes('.cursor')
     })
@@ -844,8 +844,43 @@ describe('#mcp:configure', () => {
       }),
     )
 
+    // Token validation succeeds against MCP server
+    nock('https://mcp.sanity.io')
+      .post('/')
+      .reply(406, {error: {code: -32_000, message: 'Not Acceptable'}})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    // Should NOT prompt the user — everything is already configured
+    expect(mockCheckbox).not.toHaveBeenCalled()
+    expect(stdout).toContain('All detected editors are already configured')
+  })
+
+  test('shows auth expired annotation when configured token is invalid', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes('.cursor')
+    })
+
+    mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        mcpServers: {
+          Sanity: {
+            headers: {
+              Authorization: 'Bearer expired-token',
+            },
+            type: 'http',
+            url: 'https://mcp.sanity.io',
+          },
+        },
+      }),
+    )
+
+    // Token validation fails against MCP server
+    nock('https://mcp.sanity.io').post('/').reply(401, {error: 'invalid_token'})
+
     mockCheckbox.mockResolvedValue(['Cursor'])
 
+    // New token creation
     mockApi({
       apiVersion: MCP_API_VERSION,
       method: 'post',
@@ -864,13 +899,58 @@ describe('#mcp:configure', () => {
     expect(mockCheckbox).toHaveBeenCalledWith({
       choices: [
         {
-          checked: false, // Not pre-selected since already configured
-          name: 'Cursor (already installed)',
+          checked: true,
+          name: 'Cursor (auth expired)',
           value: 'Cursor',
         },
       ],
       message: 'Configure Sanity MCP server?',
     })
+  })
+
+  test('reuses valid token from another editor instead of creating new one', async () => {
+    // Detect both Cursor (configured with valid token) and Gemini (unconfigured)
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      const p = String(path)
+      return p.includes('.cursor') || p.includes('.gemini')
+    })
+
+    // Cursor has existing config with valid token, Gemini has empty config
+    mockReadFile.mockImplementation(async (filePath: unknown) => {
+      if (String(filePath).includes('.cursor')) {
+        return JSON.stringify({
+          mcpServers: {
+            Sanity: {
+              headers: {Authorization: 'Bearer valid-reusable-token'},
+              type: 'http',
+              url: 'https://mcp.sanity.io',
+            },
+          },
+        })
+      }
+      return '{}'
+    })
+
+    // Token validation succeeds against MCP server
+    nock('https://mcp.sanity.io')
+      .post('/')
+      .reply(406, {error: {code: -32_000, message: 'Not Acceptable'}})
+
+    // User selects only the unconfigured editor (Gemini CLI)
+    mockCheckbox.mockResolvedValue(['Gemini CLI'])
+
+    // NO /auth/session/create or /auth/fetch mocks — token should be reused
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    // Should write config with the reused token
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.gemini/settings.json')),
+      expect.stringContaining('valid-reusable-token'),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for Gemini CLI')
   })
 
   test('exits gracefully when user deselects all editors', async () => {
