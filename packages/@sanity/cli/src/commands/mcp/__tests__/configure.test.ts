@@ -845,7 +845,7 @@ describe('#mcp:configure', () => {
     )
 
     // Token validation succeeds against MCP server
-    nock('https://mcp.sanity.io').post('/').reply(200, {id: 1, jsonrpc: '2.0', result: {}})
+    nock('https://mcp.sanity.io').post('/').reply(406, {error: {code: -32000, message: 'Not Acceptable'}})
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
@@ -930,7 +930,7 @@ describe('#mcp:configure', () => {
     })
 
     // Token validation succeeds against MCP server
-    nock('https://mcp.sanity.io').post('/').reply(200, {id: 1, jsonrpc: '2.0', result: {}})
+    nock('https://mcp.sanity.io').post('/').reply(406, {error: {code: -32000, message: 'Not Acceptable'}})
 
     // User selects only the unconfigured editor (Gemini CLI)
     mockCheckbox.mockResolvedValue(['Gemini CLI'])

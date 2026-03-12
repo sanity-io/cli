@@ -43,31 +43,23 @@ export async function createMCPToken(): Promise<string> {
 }
 
 /**
- * Validate an MCP token by sending an `initialize` JSON-RPC request to the
- * MCP server. MCP tokens are scoped to mcp.sanity.io and are not valid
- * against api.sanity.io, so we must validate against the MCP server itself.
+ * Validate an MCP token against the MCP server.
  *
- * Returns true if the server responds with a successful initialize result,
- * false if 401/403 (invalid or expired token).
- * Throws on network errors or other unexpected failures.
+ * MCP tokens are scoped to mcp.sanity.io and are not valid against
+ * api.sanity.io, so we validate against the MCP server itself.
+ *
+ * Sends a minimal POST with just the Authorization header — the server
+ * checks auth before content negotiation, so a valid token gets 406
+ * (missing Accept header) while an invalid token gets 401. This avoids
+ * the cost of a full initialize handshake.
  *
  * @internal
  */
 export async function validateMCPToken(token: string): Promise<boolean> {
   try {
     const res = await fetch(MCP_SERVER_URL, {
-      body: JSON.stringify({
-        id: 1,
-        jsonrpc: '2.0',
-        method: 'initialize',
-        params: {
-          capabilities: {},
-          clientInfo: {name: 'sanity-cli', version: '1.0'},
-          protocolVersion: '2024-11-05',
-        },
-      }),
+      body: '{}',
       headers: {
-        'Accept': 'application/json',
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
@@ -79,11 +71,8 @@ export async function validateMCPToken(token: string): Promise<boolean> {
       return false
     }
 
-    if (!res.ok) {
-      debug('MCP token validation got unexpected status %d', res.status)
-      return false
-    }
-
+    // 406 (Not Acceptable) means auth passed but content negotiation failed —
+    // that's expected and means the token is valid
     return true
   } catch (err) {
     debug('MCP token validation error: %s', err)
