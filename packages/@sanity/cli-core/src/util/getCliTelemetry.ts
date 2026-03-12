@@ -14,6 +14,7 @@ type TraceErrorReporter = (error: Error) => void
 
 interface CliTelemetryState {
   logger: CLITelemetryStore
+
   reportTraceError?: TraceErrorReporter
 }
 
