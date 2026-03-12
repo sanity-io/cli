@@ -66,9 +66,13 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
       `\n${styleText('bold', `${isApp ? 'Application' : 'Studio'} undeploy scheduled.`)} It might be a few minutes until ${label} is unavailable.`,
     )
 
-    if (getAppId(cliConfig)) {
+    if (cliConfig.deployment?.appId) {
       this.log(
         `\n${styleText('bold', 'Remember to remove `deployment.appId` from your sanity.cli.(ts|js)`')} to avoid errors when redeploying.`,
+      )
+    } else if (cliConfig.app?.id) {
+      this.log(
+        `\n${styleText('bold', 'Remember to remove `app.id` from your sanity.cli.(ts|js)`')} to avoid errors when redeploying.`,
       )
     }
   }

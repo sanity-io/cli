@@ -81,7 +81,7 @@ describe('#undeploy', () => {
     })
 
     expect(stdout).toContain('Application undeploy scheduled')
-    expect(stdout).toContain('Remember to remove')
+    expect(stdout).toContain('Remember to remove `deployment.appId`')
   })
 
   test('shows reminder for deprecated app.id config', async () => {
@@ -111,7 +111,8 @@ describe('#undeploy', () => {
     })
 
     expect(stdout).toContain('Application undeploy scheduled')
-    expect(stdout).toContain('Remember to remove')
+    expect(stdout).toContain('Remember to remove `app.id`')
+    expect(stdout).not.toContain('deployment.appId')
   })
 
   test('does nothing if no application found', async () => {
