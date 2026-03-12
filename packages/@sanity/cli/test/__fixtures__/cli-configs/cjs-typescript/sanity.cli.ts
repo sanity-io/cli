@@ -1,4 +1,4 @@
-/* eslint-disable import/no-extraneous-dependencies, n/no-extraneous-import */
+/* eslint-disable n/no-extraneous-import */
 import {defineCliConfig} from 'sanity/cli'
 
 export default defineCliConfig({

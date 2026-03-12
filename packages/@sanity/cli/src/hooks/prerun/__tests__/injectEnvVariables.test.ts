@@ -3,8 +3,8 @@ import {join} from 'node:path'
 
 import {testFixture, testHook} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
+import {getCommandAndConfig} from '../../../../test/helpers/getCommandAndConfig.js'
 import {injectEnvVariables} from '../injectEnvVariables.js'
 
 // Finds the command to test, first loads the config and then finds the command

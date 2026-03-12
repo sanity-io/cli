@@ -1,6 +1,6 @@
 import {codeInput} from '@sanity/code-input'
 import {visionTool} from '@sanity/vision'
-// eslint-disable-next-line import/no-unresolved
+// eslint-disable-next-line import-x/no-unresolved
 import {theme} from 'https://themer.sanity.build/api/hues?preset=dew'
 import {defineConfig, defineField, defineType} from 'sanity'
 import {media} from 'sanity-plugin-media'

@@ -438,7 +438,7 @@ async function main() {
         )
 
         const vId = createVersionId(releaseId, existingDoc._id)
-        const {_createdAt, _updatedAt, _rev, ...docWithoutSystemFields} = existingDoc
+        const {_createdAt, _rev, _updatedAt, ...docWithoutSystemFields} = existingDoc
         tx.create({...docWithoutSystemFields, _id: vId})
         tx.patch(vId, {
           set: {
