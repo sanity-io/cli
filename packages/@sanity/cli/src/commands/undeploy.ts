@@ -123,12 +123,18 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
       return undefined
     }
 
-    const apps = await getUserApplications({appType: 'coreApp', organizationId})
-    if (!apps) {
+    let result: UserApplication[] | null
+    try {
+      result = await getUserApplications({appType: 'coreApp', organizationId})
+    } catch (err) {
+      spin.fail()
+      this.error(err instanceof Error ? err : String(err))
+    }
+    if (!result) {
       spin.fail()
       this.error('Failed to fetch applications for your organization.')
     }
-    if (apps.length === 0) {
+    if (result.length === 0) {
       spin.fail()
       this.log('No deployed applications found for your organization.')
       this.log('Nothing to undeploy.')
@@ -137,7 +143,7 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
 
     spin.info('No application ID configured')
 
-    const choices = apps.map((app) => ({
+    const choices = result.map((app) => ({
       name: app.title ? `${app.title} (${app.appHost})` : app.appHost,
       value: app.id,
     }))
@@ -147,7 +153,7 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
       message: 'Select an application to undeploy:',
     })
 
-    return apps.find((app) => app.id === selectedId)
+    return result.find((app) => app.id === selectedId)
   }
 
   private async promptForApplication(
@@ -157,14 +163,7 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
   ): Promise<UserApplication | undefined> {
     spin.text = isApp ? 'Looking for deployed applications...' : 'Looking for deployed studios...'
 
-    try {
-      return isApp
-        ? await this.promptForApp(spin, cliConfig)
-        : await this.promptForStudio(spin, cliConfig)
-    } catch (err) {
-      spin.fail()
-      this.error(err instanceof Error ? err : String(err))
-    }
+    return isApp ? this.promptForApp(spin, cliConfig) : this.promptForStudio(spin, cliConfig)
   }
 
   private async promptForStudio(
@@ -178,8 +177,14 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
       return undefined
     }
 
-    const studios = await getUserApplications({appType: 'studio', projectId})
-    if (!studios?.length) {
+    let studios: UserApplication[]
+    try {
+      studios = await getUserApplications({appType: 'studio', projectId})
+    } catch (err) {
+      spin.fail()
+      this.error(err instanceof Error ? err : String(err))
+    }
+    if (studios.length === 0) {
       spin.fail()
       this.log('No deployed studios found for your project.')
       this.log('Nothing to undeploy.')
