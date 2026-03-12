@@ -56,15 +56,9 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
-      - name: Publish @sanity/cli (alpha)
-        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
-        run: pnpm publish -r --filter="@sanity/cli" --tag alpha
-        env:
-          NPM_CONFIG_PROVENANCE: true
-
       - name: Publish packages (latest)
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
-        run: pnpm publish -r --filter="@sanity/cli-core" --filter="@sanity/cli-test" --filter="@sanity/eslint-config-cli"
+        run: pnpm publish -r --filter="@sanity/cli" --filter="@sanity/cli-core" --filter="@sanity/cli-test" --filter="@sanity/eslint-config-cli"
         env:
           NPM_CONFIG_PROVENANCE: true
 
@@ -73,12 +67,12 @@ jobs:
         run: |
           echo "## Published Packages 🚀" >> $GITHUB_STEP_SUMMARY
           echo "All CLI packages published:" >> $GITHUB_STEP_SUMMARY
-          echo "| Package | Version | Tag |" >> $GITHUB_STEP_SUMMARY
-          echo "|---------|---------|-----|" >> $GITHUB_STEP_SUMMARY
-          echo "| @sanity/cli-core | ${{ steps.release.outputs['packages/@sanity/cli-core--version'] || 'N/A' }} | latest |" >> $GITHUB_STEP_SUMMARY
-          echo "| @sanity/cli-test | ${{ steps.release.outputs['packages/@sanity/cli-test--version'] || 'N/A' }} | latest |" >> $GITHUB_STEP_SUMMARY
-          echo "| @sanity/cli | ${{ steps.release.outputs['packages/@sanity/cli--version'] || 'N/A' }} | alpha |" >> $GITHUB_STEP_SUMMARY
-          echo "| @sanity/eslint-config-cli | ${{ steps.release.outputs['packages/@sanity/eslint-config-cli--version'] || 'N/A' }} | latest |" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | Version |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|---------|" >> $GITHUB_STEP_SUMMARY
+          echo "| @sanity/cli-core | ${{ steps.release.outputs['packages/@sanity/cli-core--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| @sanity/cli-test | ${{ steps.release.outputs['packages/@sanity/cli-test--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| @sanity/cli | ${{ steps.release.outputs['packages/@sanity/cli--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| @sanity/eslint-config-cli | ${{ steps.release.outputs['packages/@sanity/eslint-config-cli--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
 
   post-release-steps:
     runs-on: ubuntu-latest
