@@ -25,12 +25,10 @@ export async function promptForMCPSetup(editors: Editor[]): Promise<Editor[] | n
     value: e.name,
   }))
 
-  const result = await checkbox({
+  const selectedNames = await checkbox({
     choices: editorChoices,
     message: 'Configure Sanity MCP server?',
   })
-
-  const selectedNames = result
 
   // User can deselect all to skip
   if (!selectedNames || selectedNames.length === 0) {

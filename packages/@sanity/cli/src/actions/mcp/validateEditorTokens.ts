@@ -31,11 +31,12 @@ export async function validateEditorTokens(editors: Editor[]): Promise<void> {
     return
   }
 
-  debug('Validating %d unique token(s) across %d editor(s)', tokenToEditors.size, editors.length)
+  const editorCount = [...tokenToEditors.values()].reduce((sum, eds) => sum + eds.length, 0)
+  debug('Validating %d unique token(s) across %d editor(s)', tokenToEditors.size, editorCount)
 
   // Validate all unique tokens in parallel to avoid stacking timeouts
   await Promise.all(
-    Array.from(tokenToEditors.entries()).map(async ([token, tokenEditors]) => {
+    [...tokenToEditors.entries()].map(async ([token, tokenEditors]) => {
       let status: AuthStatus
       try {
         const valid = await validateMCPToken(token)
