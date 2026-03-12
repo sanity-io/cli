@@ -567,7 +567,7 @@ describe('#undeploy', () => {
         uri: '/projects/test/user-applications',
       }).reply(200, [])
 
-      const {error, stdout} = await testCommand(UndeployCommand, [], {
+      const {error, stderr, stdout} = await testCommand(UndeployCommand, [], {
         mocks: {
           cliConfig: {
             api: {projectId: 'test'},
@@ -578,7 +578,7 @@ describe('#undeploy', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('No deployed studios found for your project.')
+      expect(stderr).toContain('No deployed studios found for your project.')
       expect(stdout).toContain('Nothing to undeploy.')
       expect(select).not.toHaveBeenCalled()
     })
@@ -590,7 +590,7 @@ describe('#undeploy', () => {
         uri: '/user-applications',
       }).reply(200, [])
 
-      const {error, stdout} = await testCommand(UndeployCommand, [], {
+      const {error, stderr, stdout} = await testCommand(UndeployCommand, [], {
         mocks: {
           cliConfig: {
             app: {organizationId: 'org-123'},
@@ -601,7 +601,7 @@ describe('#undeploy', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('No deployed applications found for your organization.')
+      expect(stderr).toContain('No deployed applications found for your organization.')
       expect(stdout).toContain('Nothing to undeploy.')
       expect(select).not.toHaveBeenCalled()
     })
@@ -625,7 +625,7 @@ describe('#undeploy', () => {
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.oclif?.exit).toBe(2)
-      expect(error?.message).toContain('Failed to fetch applications')
+      expect(error?.message).toContain('Internal server error')
     })
 
     test('shows error when studio listing API fails', async () => {

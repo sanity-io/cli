@@ -123,20 +123,15 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
       return undefined
     }
 
-    let result: UserApplication[] | null
+    let result: UserApplication[]
     try {
       result = await getUserApplications({appType: 'coreApp', organizationId})
     } catch (err) {
       spin.fail()
       this.error(err instanceof Error ? err : String(err))
     }
-    if (!result) {
-      spin.fail()
-      this.error('Failed to fetch applications for your organization.')
-    }
     if (result.length === 0) {
-      spin.fail()
-      this.log('No deployed applications found for your organization.')
+      spin.info('No deployed applications found for your organization.')
       this.log('Nothing to undeploy.')
       return undefined
     }
@@ -185,8 +180,7 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
       this.error(err instanceof Error ? err : String(err))
     }
     if (studios.length === 0) {
-      spin.fail()
-      this.log('No deployed studios found for your project.')
+      spin.info('No deployed studios found for your project.')
       this.log('Nothing to undeploy.')
       return undefined
     }
