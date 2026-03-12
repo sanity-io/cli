@@ -1,24 +1,29 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
-import getGitConfig from '@rexxars/gitconfiglocal'
 import {getCliToken, subdebug} from '@sanity/cli-core'
-import {getGitUserInfo} from 'git-user-info'
-import promiseProps from 'promise-props-recursive'
 
 import {getCliUser} from '../services/user.js'
+import {getGitRemoteOriginUrl, getGitUserInfo} from './gitConfig.js'
 
 const debug = subdebug('getProjectDefaults')
 
 interface ProjectDefaults {
   author: string | undefined
   description: string
-  gitRemote: string
+  gitRemote: string | undefined
   license: string
   projectName: string
 }
 
-export function getProjectDefaults({
+/**
+ * Gathers sensible defaults for a new Sanity project by reading git config,
+ * the current Sanity user, and the local directory/README. Used to pre-fill
+ * prompts during `sanity init`.
+ *
+ * @internal
+ */
+export async function getProjectDefaults({
   isPlugin,
   workDir,
 }: {
@@ -28,43 +33,28 @@ export function getProjectDefaults({
   const cwd = process.cwd()
   const isSanityRoot = workDir === cwd
 
-  return promiseProps({
+  const [author, gitRemote, description] = await Promise.all([
+    getUserInfo(),
+    isPlugin && isSanityRoot ? undefined : getGitRemoteOriginUrl(cwd),
+    getProjectDescription({isPlugin, isSanityRoot, outputDir: cwd}),
+  ])
+
+  return {
+    author,
+    description,
+    gitRemote,
     license: 'UNLICENSED',
-
-    author: getUserInfo(),
-
-    // Don't try to use git remote from main Sanity project for plugins
-    gitRemote: isPlugin && isSanityRoot ? '' : resolveGitRemote(cwd),
-
-    // Don't try to guess plugin name if we're initing from Sanity root
     projectName: isPlugin && isSanityRoot ? '' : path.basename(cwd),
-
-    // If we're initing a plugin, don't use description from Sanity readme
-    description: getProjectDescription({isPlugin, isSanityRoot, outputDir: cwd}),
-  })
-}
-
-async function resolveGitRemote(cwd: string): Promise<string | undefined> {
-  try {
-    await fs.stat(path.join(cwd, '.git'))
-    const cfg = await getGitConfig(cwd)
-    return cfg.remote && cfg.remote.origin && cfg.remote.origin.url
-  } catch {
-    return undefined
   }
 }
 
 async function getUserInfo(): Promise<string | undefined> {
   const user = await getGitUserInfo()
-  if (!user) {
-    return getSanityUserInfo()
-  }
-
-  if (user.name && user.email) {
+  if (user) {
     return `${user.name} <${user.email}>`
   }
 
-  return undefined
+  return getSanityUserInfo()
 }
 
 async function getSanityUserInfo(): Promise<string | undefined> {
