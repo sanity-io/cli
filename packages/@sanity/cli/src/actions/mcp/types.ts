@@ -4,15 +4,16 @@ import {type EditorName} from './editorConfigs.js'
 export type AuthStatus = 'unauthorized' | 'valid'
 
 export interface Editor {
+  configPath: string
+  /** Whether Sanity MCP is already configured for this editor */
+  configured: boolean
+  name: EditorName
+
   /**
    * Auth status of the existing token. Only set for editors that have
    * a Sanity MCP config with a token that has been validated against the API.
    */
   authStatus?: AuthStatus
-  configPath: string
-  /** Whether Sanity MCP is already configured for this editor */
-  configured: boolean
   /** The existing auth token found in the editor config, if any */
   existingToken?: string
-  name: EditorName
 }

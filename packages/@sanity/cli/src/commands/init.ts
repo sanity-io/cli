@@ -443,7 +443,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     })
 
     // Set up MCP integration
-    const mcpResult = await setupMCP(this.flags.mcp)
+    const mcpResult = await setupMCP({skip: !this.flags.mcp})
 
     this._trace.log({
       configuredEditors: mcpResult.configuredEditors,
