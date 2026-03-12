@@ -92,15 +92,17 @@ async function checkEditorConfig(name: EditorName, configPath: string): Promise<
  * Editors with unparseable configs are skipped to avoid data loss.
  */
 export async function detectAvailableEditors(): Promise<Editor[]> {
-  const editors: Editor[] = []
+  // Detect all editors in parallel to avoid stacking timeouts —
+  // CLI-based editors (Claude Code, Codex CLI, OpenCode) each have a
+  // 5s execa timeout, so sequential detection can add ~15s on machines
+  // where none are installed.
+  const results = await Promise.all(
+    Object.entries(EDITOR_CONFIGS).map(async ([name, config]) => {
+      const configPath = await config.detect()
+      if (!configPath) return null
+      return checkEditorConfig(name as EditorName, configPath)
+    }),
+  )
 
-  for (const [name, config] of Object.entries(EDITOR_CONFIGS)) {
-    const configPath = await config.detect()
-    if (configPath) {
-      const editor = await checkEditorConfig(name as EditorName, configPath)
-      if (editor) editors.push(editor)
-    }
-  }
-
-  return editors
+  return results.filter((editor): editor is Editor => editor !== null)
 }
