@@ -121,8 +121,7 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
   ): Promise<UserApplication | undefined> {
     const organizationId = cliConfig.app?.organizationId
     if (!organizationId) {
-      spin.fail()
-      this.log('No organization ID configured. Cannot list applications.')
+      spin.info('No organization ID configured. Cannot list applications.')
       return undefined
     }
 
@@ -170,8 +169,7 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
   ): Promise<UserApplication | undefined> {
     const projectId = cliConfig.api?.projectId
     if (!projectId) {
-      spin.fail()
-      this.log('No project ID configured. Cannot list studios.')
+      spin.info('No project ID configured. Cannot list studios.')
       return undefined
     }
 

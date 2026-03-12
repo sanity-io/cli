@@ -465,6 +465,20 @@ describe('#undeploy', () => {
     expect(stdout).toContain('Nothing to undeploy')
   })
 
+  test('errors when studio deployment.appId is set but projectId is missing', async () => {
+    const {error} = await testCommand(UndeployCommand, ['--yes'], {
+      mocks: {
+        cliConfig: {
+          deployment: {appId: 'some-app-id'},
+        },
+        token: 'test-token',
+      },
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('api.projectId')
+  })
+
   describe('interactive selection when no appId/studioHost configured', () => {
     test('lists studios and undeploys selected one', async () => {
       // List studios for the project
@@ -682,7 +696,7 @@ describe('#undeploy', () => {
     })
 
     test('shows error when no project ID configured (studio context)', async () => {
-      const {error, stdout} = await testCommand(UndeployCommand, [], {
+      const {error, stderr} = await testCommand(UndeployCommand, [], {
         mocks: {
           cliConfig: {},
           isInteractive: true,
@@ -691,12 +705,12 @@ describe('#undeploy', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('No project ID configured. Cannot list studios.')
+      expect(stderr).toContain('No project ID configured. Cannot list studios.')
       expect(select).not.toHaveBeenCalled()
     })
 
     test('shows error when no org ID configured (app context)', async () => {
-      const {error, stdout} = await testCommand(UndeployCommand, [], {
+      const {error, stderr} = await testCommand(UndeployCommand, [], {
         mocks: {
           cliConfig: {
             app: {},
@@ -707,7 +721,7 @@ describe('#undeploy', () => {
       })
 
       if (error) throw error
-      expect(stdout).toContain('No organization ID configured. Cannot list applications.')
+      expect(stderr).toContain('No organization ID configured. Cannot list applications.')
       expect(select).not.toHaveBeenCalled()
     })
 
