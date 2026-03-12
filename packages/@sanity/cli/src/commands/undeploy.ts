@@ -126,7 +126,7 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
     const apps = await getUserApplications({appType: 'coreApp', organizationId})
     if (!apps) {
       spin.fail()
-      this.error('Failed to fetch applications for your organization.', {exit: 1})
+      this.error('Failed to fetch applications for your organization.')
     }
     if (apps.length === 0) {
       spin.fail()
