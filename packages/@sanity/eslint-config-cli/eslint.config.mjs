@@ -1,7 +1,7 @@
 import eslint from '@eslint/js'
 import prettier from 'eslint-config-prettier'
 import {createTypeScriptImportResolver} from 'eslint-import-resolver-typescript'
-import importPlugin from 'eslint-plugin-import'
+import {importX} from 'eslint-plugin-import-x'
 import nodePlugin from 'eslint-plugin-n'
 import {configs as perfectionistConfigs} from 'eslint-plugin-perfectionist'
 import tsdoc from 'eslint-plugin-tsdoc'
@@ -15,8 +15,8 @@ export default defineConfig(
   configs.recommended,
   nodePlugin.configs['flat/recommended'],
   unicorn.configs['recommended'],
-  importPlugin.flatConfigs.recommended,
-  importPlugin.flatConfigs.typescript,
+  importX.flatConfigs.recommended,
+  importX.flatConfigs.typescript,
   perfectionistConfigs['recommended-natural'],
   {
     rules: {
@@ -110,17 +110,19 @@ export default defineConfig(
       'capitalized-comments': 0,
       curly: 0,
       'default-case': 0,
-      'import/consistent-type-specifier-style': ['error', 'prefer-inline'],
-      'import/first': 'error',
-      'import/newline-after-import': 'error',
-      'import/no-cycle': 'error',
-      'import/no-duplicates': [
+      'import-x/consistent-type-specifier-style': ['error', 'prefer-inline'],
+      'import-x/default': 'off',
+      'import-x/first': 'error',
+      'import-x/namespace': 'off',
+      'import-x/newline-after-import': 'error',
+      'import-x/no-cycle': 'error',
+      'import-x/no-duplicates': [
         'error',
         {
           'prefer-inline': true,
         },
       ],
-      'import/no-extraneous-dependencies': [
+      'import-x/no-extraneous-dependencies': [
         'error',
         {
           devDependencies: [
@@ -142,9 +144,9 @@ export default defineConfig(
           optionalDependencies: false,
         },
       ],
-      'import/no-self-import': 'error',
-      'import/no-unresolved': 'error',
-      'import/order': 'off',
+      'import-x/no-self-import': 'error',
+      'import-x/no-unresolved': 'error',
+      'import-x/order': 'off',
       'jsdoc/require-jsdoc': 'off',
       'jsdoc/require-param': 'off',
       'jsdoc/require-param-type': 'off',
@@ -278,23 +280,7 @@ export default defineConfig(
       ],
     },
     settings: {
-      'import/parsers': {
-        '@typescript-eslint/parser': ['.ts', '.tsx'],
-      },
-      'import/resolver': {
-        typescript: {
-          alwaysTryTypes: true,
-        },
-      },
-      'import/resolver-next': [
-        createTypeScriptImportResolver({
-          alwaysTryTypes: true,
-          extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts'],
-
-          // use an array of glob patterns
-          project: ['packages/*/tsconfig.json', 'fixtures/*/tsconfig.json'],
-        }),
-      ],
+      'import-x/resolver-next': [createTypeScriptImportResolver()],
     },
   },
   {
