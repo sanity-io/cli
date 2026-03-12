@@ -101,7 +101,6 @@ Code for sanity cli
 - [`sanity schema extract`](#sanity-schema-extract)
 - [`sanity schema list`](#sanity-schema-list)
 - [`sanity schema validate`](#sanity-schema-validate)
-- [`sanity start [OUTPUTDIR]`](#sanity-start-outputdir)
 - [`sanity telemetry disable`](#sanity-telemetry-disable)
 - [`sanity telemetry enable`](#sanity-telemetry-enable)
 - [`sanity telemetry status`](#sanity-telemetry-status)
@@ -2908,9 +2907,6 @@ FLAGS
 DESCRIPTION
   Starts a server to preview a production build
 
-ALIASES
-  $ sanity start
-
 EXAMPLES
   $ sanity preview --host=0.0.0.0
 
@@ -3186,35 +3182,6 @@ EXAMPLES
 ```
 
 _See code: [src/commands/schema/validate.ts](https://github.com/sanity-io/cli/blob/v6.0.0/src/commands/schema/validate.ts)_
-
-## `sanity start [OUTPUTDIR]`
-
-Starts a server to preview a production build
-
-```
-USAGE
-  $ sanity start [OUTPUTDIR] [--host <value>] [--port <value>]
-
-ARGUMENTS
-  [OUTPUTDIR]  Output directory
-
-FLAGS
-  --host=<value>  [default: localhost] The local network interface at which to listen.
-  --port=<value>  [default: 3333] TCP port to start server on.
-
-DESCRIPTION
-  Starts a server to preview a production build
-
-ALIASES
-  $ sanity start
-
-EXAMPLES
-  $ sanity start --host=0.0.0.0
-
-  $ sanity start --port=1942
-
-  $ sanity start some/build-output-dir
-```
 
 ## `sanity telemetry disable`
 
