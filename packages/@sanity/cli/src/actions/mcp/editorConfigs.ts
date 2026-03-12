@@ -12,6 +12,8 @@ interface EditorConfig {
   /** Returns the config file path if editor is detected, null otherwise */
   detect: () => Promise<string | null>
   format: 'jsonc' | 'toml'
+  /** Extracts the auth token from a parsed Sanity server config block */
+  readToken: (serverConfig: Record<string, unknown>) => string | undefined
 }
 
 const defaultHttpConfig = (token: string) => ({
@@ -126,6 +128,28 @@ async function detectZed(): Promise<string | null> {
   return configDir && existsSync(configDir) ? path.join(configDir, 'settings.json') : null
 }
 
+// -- Read token helpers --
+
+/**
+ * Extract a Bearer token from a headers-like object.
+ * Looks for `Authorization: "Bearer <token>"` and returns the token portion.
+ */
+function extractBearerToken(headers: unknown): string | undefined {
+  if (typeof headers !== 'object' || headers === null) return undefined
+  const auth = (headers as Record<string, unknown>).Authorization
+  if (typeof auth !== 'string') return undefined
+  const match = auth.match(/^Bearer\s+(.+)$/)
+  return match?.[1]
+}
+
+function readTokenFromHeaders(serverConfig: Record<string, unknown>): string | undefined {
+  return extractBearerToken(serverConfig.headers)
+}
+
+function readTokenFromHttpHeaders(serverConfig: Record<string, unknown>): string | undefined {
+  return extractBearerToken(serverConfig.http_headers)
+}
+
 // -- Build server config functions --
 
 function buildClaudeCodeServerConfig(token: string): Record<string, unknown> {
@@ -191,54 +215,63 @@ export const EDITOR_CONFIGS = {
     configKey: 'mcpServers',
     detect: detectClaudeCode,
     format: 'jsonc',
+    readToken: readTokenFromHeaders,
   },
   'Codex CLI': {
     buildServerConfig: buildCodexCliServerConfig,
     configKey: 'mcp_servers',
     detect: detectCodexCli,
     format: 'toml',
+    readToken: readTokenFromHttpHeaders,
   },
   Cursor: {
     buildServerConfig: buildCursorServerConfig,
     configKey: 'mcpServers',
     detect: detectCursor,
     format: 'jsonc',
+    readToken: readTokenFromHeaders,
   },
   'Gemini CLI': {
     buildServerConfig: buildGeminiCliServerConfig,
     configKey: 'mcpServers',
     detect: detectGeminiCli,
     format: 'jsonc',
+    readToken: readTokenFromHeaders,
   },
   'GitHub Copilot CLI': {
     buildServerConfig: buildGitHubCopilotCliServerConfig,
     configKey: 'mcpServers',
     detect: detectGitHubCopilotCli,
     format: 'jsonc',
+    readToken: readTokenFromHeaders,
   },
   OpenCode: {
     buildServerConfig: buildOpenCodeServerConfig,
     configKey: 'mcp',
     detect: detectOpenCode,
     format: 'jsonc',
+    readToken: readTokenFromHeaders,
   },
   'VS Code': {
     buildServerConfig: buildVSCodeServerConfig,
     configKey: 'servers',
     detect: detectVSCode,
     format: 'jsonc',
+    readToken: readTokenFromHeaders,
   },
   'VS Code Insiders': {
     buildServerConfig: buildVSCodeInsidersServerConfig,
     configKey: 'servers',
     detect: detectVSCodeInsiders,
     format: 'jsonc',
+    readToken: readTokenFromHeaders,
   },
   Zed: {
     buildServerConfig: buildZedServerConfig,
     configKey: 'context_servers',
     detect: detectZed,
     format: 'jsonc',
+    readToken: readTokenFromHeaders,
   },
 } satisfies Record<string, EditorConfig>
 
