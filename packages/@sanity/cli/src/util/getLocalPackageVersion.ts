@@ -17,7 +17,9 @@ export async function getLocalPackageVersion(
   workDir: string,
 ): Promise<string | null> {
   try {
-    const dirUrl = pathToFileURL(resolve(workDir, 'noop.js'))
+    // Convert file:// URLs to paths — workDir may be import.meta.url by mistake
+    const dir = workDir.startsWith('file://') ? fileURLToPath(workDir) : workDir
+    const dirUrl = pathToFileURL(resolve(dir, 'noop.js'))
 
     let packageJsonUrl: URL
     try {

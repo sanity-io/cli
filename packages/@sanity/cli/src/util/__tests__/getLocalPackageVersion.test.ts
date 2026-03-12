@@ -135,6 +135,30 @@ describe('getLocalPackageVersion', () => {
     expect(result).toBeNull()
   })
 
+  test('handles file:// URL as workDir by converting to path', async () => {
+    const fileUrl = 'file:///mock/work/dir/some-file.ts'
+    const convertedPath = '/mock/work/dir/some-file.ts'
+    const mockPackageUrl = pathToFileURL(
+      resolve(convertedPath, 'node_modules', mockModuleId, 'package.json'),
+    )
+    const mockVersion = '3.0.0'
+
+    mockedModuleResolve.mockReturnValueOnce(mockPackageUrl)
+    mockReadPackageJson.mockResolvedValueOnce({
+      name: mockModuleId,
+      version: mockVersion,
+    } as PackageJson)
+
+    const result = await getLocalPackageVersion(mockModuleId, fileUrl)
+
+    // The URL is converted to a path and noop.js is appended (moduleResolve walks up to find node_modules)
+    expect(mockedModuleResolve).toHaveBeenCalledWith(
+      `${mockModuleId}/package.json`,
+      pathToFileURL(resolve(convertedPath, 'noop.js')),
+    )
+    expect(result).toBe(mockVersion)
+  })
+
   test('returns null when moduleResolve throws a non-fallback error', async () => {
     mockedModuleResolve.mockImplementationOnce(() => {
       throw createNodeError('ERR_MODULE_NOT_FOUND', 'Module not found')

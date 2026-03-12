@@ -100,7 +100,7 @@ export async function startPreviewServer(options: PreviewServerOptions): Promise
 
   const startupDuration = Date.now() - startTime
 
-  const viteVersion = await getLocalPackageVersion('vite', import.meta.url)
+  const viteVersion = await getLocalPackageVersion('vite', workDir)
 
   info(
     `Sanity ${isApp ? 'application' : 'Studio'} ` +

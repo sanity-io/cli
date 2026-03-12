@@ -147,7 +147,7 @@ export async function startStudioDevServer(
       const url = `http://${httpHost || 'localhost'}:${port}${config.basePath}`
       const appType = 'Sanity Studio'
 
-      const viteVersion = await getLocalPackageVersion('vite', import.meta.url)
+      const viteVersion = await getLocalPackageVersion('vite', workDir)
       spin.succeed()
 
       loggerInfo(
