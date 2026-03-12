@@ -97,14 +97,14 @@ describe('validateEditorTokens', () => {
     expect(editors[1].authStatus).toBe('unauthorized')
   })
 
-  test('treats network errors as unauthorized', async () => {
+  test('treats network errors as valid (assumes credentials work)', async () => {
     mockValidateMCPToken.mockRejectedValue(new Error('Network error'))
 
     const editors = [makeEditor({configured: true, existingToken: 'some-token', name: 'Cursor'})]
 
     await validateEditorTokens(editors)
 
-    expect(editors[0].authStatus).toBe('unauthorized')
+    expect(editors[0].authStatus).toBe('valid')
   })
 
   test('skips editors without existingToken', async () => {

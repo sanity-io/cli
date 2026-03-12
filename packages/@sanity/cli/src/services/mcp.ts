@@ -70,6 +70,10 @@ export async function createMCPToken(): Promise<string> {
 export async function validateMCPToken(token: string): Promise<boolean> {
   const request = getMCPRequester()
 
+  // Use a 2500ms timeout — long enough for VPN/proxy/distant-region latency,
+  // short enough to not stall the init flow. If the request times out or the
+  // server returns an unexpected status, we assume the token is valid rather
+  // than falsely marking it as expired (see below).
   const res = await request({
     body: '{}',
     headers: {
@@ -77,22 +81,20 @@ export async function validateMCPToken(token: string): Promise<boolean> {
       'Content-Type': 'application/json',
     },
     method: 'POST',
-    timeout: 1000,
+    timeout: 2500,
     url: MCP_SERVER_URL,
   })
 
-  // 406 (Not Acceptable) means auth passed but content negotiation failed —
-  // that's expected and means the token is valid
-  if (res.statusCode === 406) {
-    return true
-  }
-
+  // 401/403 are the only responses that definitively mean "bad token".
+  // Everything else (406 = valid, 5xx = server issue, 2xx = unexpected)
+  // is treated as "assume valid" — we'd rather skip a re-auth prompt
+  // than force users to re-configure because of a transient server error.
   if (res.statusCode === 401 || res.statusCode === 403) {
     debug('MCP token validation failed with %d', res.statusCode)
     return false
   }
 
-  throw new Error(`Unexpected MCP validation response: ${res.statusCode}`)
+  return true
 }
 
 /**

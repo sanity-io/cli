@@ -40,10 +40,11 @@ export async function validateEditorTokens(editors: Editor[]): Promise<void> {
       const valid = await validateMCPToken(token)
       status = valid ? 'valid' : 'unauthorized'
     } catch (err) {
-      // Network errors or unexpected failures — treat as unauthorized
-      // since we can't confirm the token works
-      debug('Token validation error: %s', err)
-      status = 'unauthorized'
+      // Network errors, timeouts, or unexpected failures — assume the token
+      // is valid rather than falsely marking it as expired. We only mark
+      // tokens as unauthorized when the server explicitly says so (401/403).
+      debug('Token validation error (assuming valid): %s', err)
+      status = 'valid'
     }
 
     debug(

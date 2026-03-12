@@ -28,7 +28,7 @@ describe('validateMCPToken', () => {
           'Content-Type': 'application/json',
         },
         method: 'POST',
-        timeout: 1000,
+        timeout: 2500,
         url: MCP_SERVER_URL,
       }),
     )
@@ -50,28 +50,28 @@ describe('validateMCPToken', () => {
     expect(result).toBe(false)
   })
 
-  test('throws on unexpected status codes', async () => {
+  test('returns true on 500 server error (assumes valid)', async () => {
     mockRequest.mockResolvedValue({statusCode: 500})
 
-    await expect(validateMCPToken('some-token')).rejects.toThrow(
-      'Unexpected MCP validation response: 500',
-    )
+    const result = await validateMCPToken('some-token')
+
+    expect(result).toBe(true)
   })
 
-  test('throws on 503 server error', async () => {
+  test('returns true on 503 server error (assumes valid)', async () => {
     mockRequest.mockResolvedValue({statusCode: 503})
 
-    await expect(validateMCPToken('some-token')).rejects.toThrow(
-      'Unexpected MCP validation response: 503',
-    )
+    const result = await validateMCPToken('some-token')
+
+    expect(result).toBe(true)
   })
 
-  test('throws on 200 response (unexpected success)', async () => {
+  test('returns true on 200 response (unexpected but assumes valid)', async () => {
     mockRequest.mockResolvedValue({statusCode: 200})
 
-    await expect(validateMCPToken('some-token')).rejects.toThrow(
-      'Unexpected MCP validation response: 200',
-    )
+    const result = await validateMCPToken('some-token')
+
+    expect(result).toBe(true)
   })
 
   test('propagates network errors from the requester', async () => {
@@ -80,11 +80,11 @@ describe('validateMCPToken', () => {
     await expect(validateMCPToken('some-token')).rejects.toThrow('ETIMEDOUT')
   })
 
-  test('passes timeout of 1000ms in the request', async () => {
+  test('passes timeout of 2500ms in the request', async () => {
     mockRequest.mockResolvedValue({statusCode: 406})
 
     await validateMCPToken('any-token')
 
-    expect(mockRequest).toHaveBeenCalledWith(expect.objectContaining({timeout: 1000}))
+    expect(mockRequest).toHaveBeenCalledWith(expect.objectContaining({timeout: 2500}))
   })
 })
