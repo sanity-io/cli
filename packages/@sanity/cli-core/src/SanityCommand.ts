@@ -78,12 +78,12 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
 
   /**
    * Report real command errors to the CLI command trace.
-   * User aborts (SIGINT, ExitPromptError from) are not reported — the trace is left
+   * User aborts (SIGINT, ExitPromptError) are not reported — the trace is left
    * incomplete, which accurately represents that the command was interrupted.
    */
   protected override async catch(err: CommandError): Promise<void> {
-    // ExitPromptError is thrown by `@inquirer/prompt` when cancelling
-    // SIGINT is the standard signal for user interrupts (e.g. ctrl+c)
+    // ExitPromptError is thrown by `@inquirer/prompts` when the user cancels a prompt
+    // The `message === 'SIGINT'` check matches oclif's own convention (see handle.js in @oclif/core)
     if (err.name === 'ExitPromptError' || err.message === 'SIGINT') {
       // 130 is the standard exit code for script termination by Ctrl+C
       this.logToStderr(styleText('yellow', '\u{203A}') + ' Aborted by user')
