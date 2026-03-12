@@ -38,6 +38,7 @@ jobs:
               - '!.husky/**'
               - '!.changeset/**'
               - '!.github/workflows/**'
+              - '!.github/renovate.json'
               - '!knip.config.ts'
               - '!commitlint.config.ts'
               - '!release-please-config.json'
