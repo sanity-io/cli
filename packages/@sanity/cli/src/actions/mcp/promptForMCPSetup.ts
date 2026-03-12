@@ -2,15 +2,26 @@ import {checkbox} from '@sanity/cli-core/ux'
 
 import {type Editor} from './types.js'
 
+function getEditorLabel(editor: Editor): string {
+  if (editor.configured && editor.authStatus === 'unauthorized') {
+    return `${editor.name} (auth expired)`
+  }
+  if (editor.configured && !editor.existingToken) {
+    return `${editor.name} (missing credentials)`
+  }
+  return editor.name
+}
+
 /**
- * Prompt user to select which editors to configure
- * Shows existing config status - unconfigured editors are pre-selected,
- * configured editors show "(already installed)" and are not pre-selected
+ * Prompt user to select which editors to configure.
+ *
+ * Expects only actionable editors (unconfigured, or configured with
+ * invalid/missing credentials). Annotates entries with auth status.
  */
 export async function promptForMCPSetup(editors: Editor[]): Promise<Editor[] | null> {
   const editorChoices = editors.map((e) => ({
-    checked: !e.configured, // Only pre-select if NOT already configured
-    name: e.configured ? `${e.name} (already installed)` : e.name,
+    checked: true, // Pre-select all actionable editors
+    name: getEditorLabel(e),
     value: e.name,
   }))
 
