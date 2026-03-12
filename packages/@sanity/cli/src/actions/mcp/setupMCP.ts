@@ -142,9 +142,11 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   }
 
   // 7. Write configs for each selected editor
+  const configuredEditors: EditorName[] = []
   try {
     for (const editor of selected) {
       await writeMCPConfig(editor, token)
+      configuredEditors.push(editor.name)
     }
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
@@ -153,14 +155,13 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     ux.warn('You can set up MCP manually later using https://mcp.sanity.io')
     return {
       alreadyConfiguredEditors,
-      configuredEditors: [],
+      configuredEditors,
       detectedEditors,
       error: err,
       skipped: false,
     }
   }
 
-  const configuredEditors = selected.map((e) => e.name)
   ux.stdout(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
 
   return {
