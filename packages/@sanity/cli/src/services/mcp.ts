@@ -1,5 +1,4 @@
 import {getGlobalCliClient, subdebug} from '@sanity/cli-core'
-import {isHttpError} from '@sanity/client'
 
 export const MCP_API_VERSION = '2025-12-09'
 export const MCP_SERVER_URL = 'https://mcp.sanity.io'
@@ -44,27 +43,50 @@ export async function createMCPToken(): Promise<string> {
 }
 
 /**
- * Validate an MCP token by calling /users/me.
- * Returns true if the token is valid, false if 401/403.
+ * Validate an MCP token by sending an `initialize` JSON-RPC request to the
+ * MCP server. MCP tokens are scoped to mcp.sanity.io and are not valid
+ * against api.sanity.io, so we must validate against the MCP server itself.
+ *
+ * Returns true if the server responds with a successful initialize result,
+ * false if 401/403 (invalid or expired token).
  * Throws on network errors or other unexpected failures.
  *
  * @internal
  */
 export async function validateMCPToken(token: string): Promise<boolean> {
-  const client = await getGlobalCliClient({
-    apiVersion: MCP_API_VERSION,
-    token,
-    unauthenticated: true,
-  })
-
   try {
-    await client.users.getById('me')
-    return true
-  } catch (err) {
-    if (isHttpError(err) && (err.statusCode === 401 || err.statusCode === 403)) {
-      debug('Token validation failed with %d', err.statusCode)
+    const res = await fetch(MCP_SERVER_URL, {
+      body: JSON.stringify({
+        id: 1,
+        jsonrpc: '2.0',
+        method: 'initialize',
+        params: {
+          capabilities: {},
+          clientInfo: {name: 'sanity-cli', version: '1.0'},
+          protocolVersion: '2024-11-05',
+        },
+      }),
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      method: 'POST',
+    })
+
+    if (res.status === 401 || res.status === 403) {
+      debug('MCP token validation failed with %d', res.status)
       return false
     }
+
+    if (!res.ok) {
+      debug('MCP token validation got unexpected status %d', res.status)
+      return false
+    }
+
+    return true
+  } catch (err) {
+    debug('MCP token validation error: %s', err)
     throw err
   }
 }
