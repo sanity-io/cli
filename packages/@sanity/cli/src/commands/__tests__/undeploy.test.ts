@@ -628,6 +628,28 @@ describe('#undeploy', () => {
       expect(error?.message).toContain('Failed to fetch applications')
     })
 
+    test('shows error when studio listing API fails', async () => {
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        query: {appType: 'studio'},
+        uri: '/projects/test/user-applications',
+      }).reply(500, {message: 'Internal server error'})
+
+      const {error} = await testCommand(UndeployCommand, [], {
+        mocks: {
+          cliConfig: {
+            api: {projectId: 'test'},
+          },
+          isInteractive: true,
+          token: 'test-token',
+        },
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.oclif?.exit).toBe(2)
+      expect(error?.message).toContain('Internal server error')
+    })
+
     test('shows error when no project ID configured (studio context)', async () => {
       const {error, stdout} = await testCommand(UndeployCommand, [], {
         mocks: {
