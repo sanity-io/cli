@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.2](https://github.com/sanity-io/cli/compare/cli-test-v0.2.1...cli-test-v0.2.2) (2026-03-12)
+
+
+### Bug Fixes
+
+* don't treat user aborts as telemetry errors ([#624](https://github.com/sanity-io/cli/issues/624)) ([6cc7682](https://github.com/sanity-io/cli/commit/6cc7682030a7dea9dfb9a80aa691a2cfb52444b9))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 1.1.0
+  * peerDependencies
+    * @sanity/cli-core bumped to 1.1.0
+
 ## [0.2.1](https://github.com/sanity-io/cli/compare/cli-test-v0.2.0...cli-test-v0.2.1) (2026-03-11)
 
 

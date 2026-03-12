@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.0](https://github.com/sanity-io/cli/compare/cli-v6.0.0...cli-v6.1.0) (2026-03-12)
+
+
+### Features
+
+* **mcp:** improve mcp setup process ([#630](https://github.com/sanity-io/cli/issues/630)) ([27d8ba8](https://github.com/sanity-io/cli/commit/27d8ba86a8f506c8a56773fb65438ef6d33aae38))
+
+
+### Bug Fixes
+
+* don't treat user aborts as telemetry errors ([#624](https://github.com/sanity-io/cli/issues/624)) ([6cc7682](https://github.com/sanity-io/cli/commit/6cc7682030a7dea9dfb9a80aa691a2cfb52444b9))
+* hide `sanity start` alias from help text ([#620](https://github.com/sanity-io/cli/issues/620)) ([2447f63](https://github.com/sanity-io/cli/commit/2447f63595d2781c39a2c5ecb29abefdecda215b))
+* **init:** duplicate default dataset help text ([#627](https://github.com/sanity-io/cli/issues/627)) ([9cba643](https://github.com/sanity-io/cli/commit/9cba643428b42b3ec6a67f54ac181bb381844047))
+* mock getUserConfig in telemetry test and update debug namespace ([#631](https://github.com/sanity-io/cli/issues/631)) ([2f03a4c](https://github.com/sanity-io/cli/commit/2f03a4c797d8f4110b03a1d19f9ad18a63a2bcd5))
+* simplify git config retrieval, reduce dependencies ([#616](https://github.com/sanity-io/cli/issues/616)) ([b258394](https://github.com/sanity-io/cli/commit/b25839459c9a602d3937c2d85f7117ec884b8835))
+* vite version showing as null in dev/preview output ([349e7c9](https://github.com/sanity-io/cli/commit/349e7c9ee06d0d5129625ae6b2030ac7faf9006c))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 1.1.0
+  * devDependencies
+    * @sanity/cli-test bumped to 0.2.2
+
 ## [6.0.0](https://github.com/sanity-io/cli/compare/cli-v5.14.1...cli-v6.0.0) (2026-03-11)
 
 

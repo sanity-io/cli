@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.0](https://github.com/sanity-io/cli/compare/cli-core-v1.0.1...cli-core-v1.1.0) (2026-03-12)
+
+
+### Features
+
+* **mcp:** improve mcp setup process ([#630](https://github.com/sanity-io/cli/issues/630)) ([27d8ba8](https://github.com/sanity-io/cli/commit/27d8ba86a8f506c8a56773fb65438ef6d33aae38))
+
+
+### Bug Fixes
+
+* don't treat user aborts as telemetry errors ([#624](https://github.com/sanity-io/cli/issues/624)) ([6cc7682](https://github.com/sanity-io/cli/commit/6cc7682030a7dea9dfb9a80aa691a2cfb52444b9))
+* mock getUserConfig in telemetry test and update debug namespace ([#631](https://github.com/sanity-io/cli/issues/631)) ([2f03a4c](https://github.com/sanity-io/cli/commit/2f03a4c797d8f4110b03a1d19f9ad18a63a2bcd5))
+
 ## [1.0.1](https://github.com/sanity-io/cli/compare/cli-core-v1.0.0...cli-core-v1.0.1) (2026-03-11)
 
 
