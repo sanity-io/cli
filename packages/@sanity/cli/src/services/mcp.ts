@@ -1,4 +1,5 @@
 import {getGlobalCliClient, subdebug} from '@sanity/cli-core'
+import {createRequester} from '@sanity/cli-core/request'
 
 export const MCP_API_VERSION = '2025-12-09'
 export const MCP_SERVER_URL = 'https://mcp.sanity.io'
@@ -56,18 +57,23 @@ export async function createMCPToken(): Promise<string> {
  * @internal
  */
 export async function validateMCPToken(token: string): Promise<boolean> {
+  const request = createRequester({
+    middleware: {httpErrors: false, promise: {onlyBody: false}},
+  })
+
   try {
-    const res = await fetch(MCP_SERVER_URL, {
+    const res = await request({
       body: '{}',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       method: 'POST',
+      url: MCP_SERVER_URL,
     })
 
-    if (res.status === 401 || res.status === 403) {
-      debug('MCP token validation failed with %d', res.status)
+    if (res.statusCode === 401 || res.statusCode === 403) {
+      debug('MCP token validation failed with %d', res.statusCode)
       return false
     }
 
