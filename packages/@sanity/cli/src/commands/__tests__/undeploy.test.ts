@@ -377,6 +377,39 @@ describe('#undeploy', () => {
     })
 
     expect(stdout).toContain('Studio undeploy scheduled')
+    expect(stdout).toContain('Remember to remove')
+  })
+
+  test('handles delete failure', async () => {
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      query: {appHost: 'my-host', appType: 'studio'},
+      uri: '/projects/test/user-applications',
+    }).reply(200, {
+      appHost: 'my-host',
+      id: 'app-id',
+    })
+
+    mockApi({
+      apiVersion: 'v2024-08-01',
+      method: 'delete',
+      query: {appType: 'studio'},
+      uri: '/user-applications/app-id',
+    }).reply(500, {message: 'Delete failed'})
+
+    const {error, stderr} = await testCommand(UndeployCommand, ['--yes'], {
+      mocks: {
+        cliConfig: {
+          api: {projectId: 'test'},
+          studioHost: 'my-host',
+        },
+        token: 'test-token',
+      },
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Delete failed')
+    expect(stderr).toContain('Undeploying studio')
   })
 
   test('handles error when deployment.appId does not exist for the org', async () => {

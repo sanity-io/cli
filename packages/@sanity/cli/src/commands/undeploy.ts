@@ -46,10 +46,15 @@ export class UndeployCommand extends SanityCommand<typeof UndeployCommand> {
 
     // Delete and report
     const spin = spinner(`Undeploying ${isApp ? 'application' : 'studio'}`).start()
-    await deleteUserApplication({
-      applicationId: userApplication.id,
-      appType: isApp ? 'coreApp' : 'studio',
-    })
+    try {
+      await deleteUserApplication({
+        applicationId: userApplication.id,
+        appType: isApp ? 'coreApp' : 'studio',
+      })
+    } catch (err) {
+      spin.fail()
+      this.error(err instanceof Error ? err : String(err))
+    }
     spin.succeed()
 
     const label = isApp
