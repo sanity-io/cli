@@ -34,6 +34,8 @@ describe(
 
       if (error) throw error
       expect(stdout).toContain(`Sanity Studio using vite@`)
+      expect(stdout).not.toContain('vite@null')
+      expect(stdout).toMatch(/vite@\d+\.\d+/)
       expect(stdout).toContain(`ready in`)
       expect(stdout).toContain(`ms and running at http://localhost:4333/ (production preview mode)`)
     })
@@ -91,6 +93,8 @@ describe(
       if (error) throw error
       expect(stdout).toContain(`Using resolved base path from static build: /custom-base-path`)
       expect(stdout).toContain(`Sanity Studio using vite@`)
+      expect(stdout).not.toContain('vite@null')
+      expect(stdout).toMatch(/vite@\d+\.\d+/)
       expect(stdout).toContain(`ready in`)
       expect(stdout).toContain(
         `ms and running at http://localhost:4335/custom-base-path (production preview mode)`,
@@ -131,6 +135,8 @@ describe(
         `Could not determine base path from index.html, using "/" as default`,
       )
       expect(stdout).toContain(`Sanity Studio using vite@`)
+      expect(stdout).not.toContain('vite@null')
+      expect(stdout).toMatch(/vite@\d+\.\d+/)
       expect(stdout).toContain(`ready in`)
       expect(stdout).toContain(`ms and running at http://localhost:4336/ (production preview mode)`)
     })
