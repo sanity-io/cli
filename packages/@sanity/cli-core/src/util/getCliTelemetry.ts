@@ -5,36 +5,61 @@ import {type CLITelemetryStore} from '../telemetry/types.js'
 
 /**
  * @public
- * Symbol used to store the CLI telemetry store on globalThis.
- * Use `getCliTelemetry()` to access the store instead of accessing this directly.
+ * Symbol used to store CLI telemetry state on globalThis.
+ * Use the accessor functions instead of accessing this directly.
  */
 export const CLI_TELEMETRY_SYMBOL = Symbol.for('sanity.cli.telemetry')
 
+type TraceErrorReporter = (error: Error) => void
+
+interface CliTelemetryState {
+  logger: CLITelemetryStore
+  reportTraceError?: TraceErrorReporter
+}
+
 type GlobalWithTelemetry = typeof globalThis & {
-  [CLI_TELEMETRY_SYMBOL]?: CLITelemetryStore
+  [CLI_TELEMETRY_SYMBOL]?: CliTelemetryState
+}
+
+function getState(): CliTelemetryState | undefined {
+  return (globalThis as GlobalWithTelemetry)[CLI_TELEMETRY_SYMBOL]
 }
 
 /**
  * @public
  */
 export function getCliTelemetry(): CLITelemetryStore {
-  const global = globalThis as GlobalWithTelemetry
+  const state = getState()
   // This should never happen, but if it does, we return a noop logger to avoid errors.
-  if (!global[CLI_TELEMETRY_SYMBOL]) {
+  if (!state) {
     ux.warn('CLI telemetry not initialized, returning noop logger')
     return noopLogger
   }
 
-  return global[CLI_TELEMETRY_SYMBOL]
+  return state.logger
 }
 
 /**
- * Sets the global CLI telemetry store.
+ * Sets the global CLI telemetry state.
  * @internal
  */
-export function setCliTelemetry(telemetry: CLITelemetryStore): void {
-  const global = globalThis as GlobalWithTelemetry
-  global[CLI_TELEMETRY_SYMBOL] = telemetry
+export function setCliTelemetry(
+  telemetry: CLITelemetryStore,
+  options?: {reportTraceError?: TraceErrorReporter},
+): void {
+  ;(globalThis as GlobalWithTelemetry)[CLI_TELEMETRY_SYMBOL] = {
+    logger: telemetry,
+    reportTraceError: options?.reportTraceError,
+  }
+}
+
+/**
+ * Reports an error to the CLI command trace. Called from SanityCommand.catch()
+ * for real command errors (not user aborts).
+ * @internal
+ */
+export function reportCliTraceError(error: Error): void {
+  getState()?.reportTraceError?.(error)
 }
 
 /**
