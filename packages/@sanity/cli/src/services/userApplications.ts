@@ -60,9 +60,7 @@ export async function getUserApplication({
   if (isSdkApp) {
     query = {appType: 'coreApp'}
   } else if (!appId) {
-    // In practice, this function isn't called if we don't have at least one of appHost or appId,
-    // so the default case won't be called. But leaving this ternary in for now (from old CLI code) just in case.
-    query = appHost ? {appHost, appType: 'studio'} : {default: 'true'}
+    query = {appHost, appType: 'studio'}
   }
 
   const client = await getGlobalCliClient({
