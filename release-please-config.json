@@ -69,6 +69,10 @@
     "packages/@sanity/eslint-config-cli": {
       "component": "eslint-config-cli",
       "release-type": "node"
+    },
+    "packages/create-sanity": {
+      "component": "create-sanity",
+      "release-type": "node"
     }
   },
   "plugins": [
