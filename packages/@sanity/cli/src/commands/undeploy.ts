@@ -124,7 +124,11 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
     }
 
     const apps = await getUserApplications({appType: 'coreApp', organizationId})
-    if (!apps?.length) {
+    if (!apps) {
+      spin.fail()
+      this.error('Failed to fetch applications for your organization.', {exit: 1})
+    }
+    if (apps.length === 0) {
       spin.fail()
       this.log('No deployed applications found for your organization.')
       this.log('Nothing to undeploy.')
@@ -154,13 +158,12 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
     spin.text = isApp ? 'Looking for deployed applications...' : 'Looking for deployed studios...'
 
     try {
-      if (isApp) {
-        return await this.promptForApp(spin, cliConfig)
-      }
-      return await this.promptForStudio(spin, cliConfig)
+      return isApp
+        ? await this.promptForApp(spin, cliConfig)
+        : await this.promptForStudio(spin, cliConfig)
     } catch (err) {
       spin.fail()
-      this.error(err)
+      this.error(err instanceof Error ? err : String(err))
     }
   }
 
@@ -263,8 +266,7 @@ Are you ${styleText('red', 'sure')} you want to undeploy?`
       )
       if (!result) {
         spin.fail()
-        this.log('Your project has not been assigned an app ID or a studio hostname,')
-        this.log('or the `appId` or `studioHost` provided does not exist.')
+        this.log('The configured `appId` or `studioHost` does not exist.')
         this.log('Nothing to undeploy.')
         return undefined
       }
