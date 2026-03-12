@@ -1,5 +1,5 @@
-import {join, resolve} from 'node:path'
-import {pathToFileURL} from 'node:url'
+import {dirname, join, resolve} from 'node:path'
+import {fileURLToPath, pathToFileURL} from 'node:url'
 
 import {type PackageJson} from '@sanity/cli-core'
 import {moduleResolve} from 'import-meta-resolve'
@@ -133,6 +133,32 @@ describe('getLocalPackageVersion', () => {
     expect(mockedModuleResolve).toHaveBeenCalledTimes(2)
     expect(mockReadPackageJson).toHaveBeenCalledOnce()
     expect(result).toBeNull()
+  })
+
+  test('handles import.meta.url (file:// URL) by extracting the directory', async () => {
+    // Use a real absolute path so the test works on both Unix and Windows
+    const fakeSrcFile = resolve(mockWorkDir, 'some-file.ts')
+    const importMetaUrl = pathToFileURL(fakeSrcFile).href
+    // The function should dirname the file URL to get the containing directory
+    const expectedDir = dirname(fileURLToPath(importMetaUrl))
+    const mockPackageUrl = pathToFileURL(
+      resolve(expectedDir, 'node_modules', mockModuleId, 'package.json'),
+    )
+    const mockVersion = '3.0.0'
+
+    mockedModuleResolve.mockReturnValueOnce(mockPackageUrl)
+    mockReadPackageJson.mockResolvedValueOnce({
+      name: mockModuleId,
+      version: mockVersion,
+    } as PackageJson)
+
+    const result = await getLocalPackageVersion(mockModuleId, importMetaUrl)
+
+    expect(mockedModuleResolve).toHaveBeenCalledWith(
+      `${mockModuleId}/package.json`,
+      pathToFileURL(resolve(expectedDir, 'noop.js')),
+    )
+    expect(result).toBe(mockVersion)
   })
 
   test('returns null when moduleResolve throws a non-fallback error', async () => {

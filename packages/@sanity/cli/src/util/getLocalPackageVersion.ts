@@ -1,4 +1,4 @@
-import {join, normalize, resolve} from 'node:path'
+import {dirname, join, normalize, resolve} from 'node:path'
 import {fileURLToPath, pathToFileURL} from 'node:url'
 
 import {readPackageJson} from '@sanity/cli-core'
@@ -17,7 +17,9 @@ export async function getLocalPackageVersion(
   workDir: string,
 ): Promise<string | null> {
   try {
-    const dirUrl = pathToFileURL(resolve(workDir, 'noop.js'))
+    // Handle import.meta.url being passed instead of a directory path
+    const dir = workDir.startsWith('file://') ? dirname(fileURLToPath(workDir)) : workDir
+    const dirUrl = pathToFileURL(resolve(dir, 'noop.js'))
 
     let packageJsonUrl: URL
     try {
