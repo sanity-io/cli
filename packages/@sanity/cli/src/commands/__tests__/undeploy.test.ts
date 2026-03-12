@@ -430,7 +430,7 @@ describe('#undeploy', () => {
       },
     })
 
-    expect(stdout).toContain('Your project has not been assigned an app ID or a studio hostname')
+    expect(stdout).toContain('The configured `appId` or `studioHost` does not exist.')
     expect(stdout).toContain('Nothing to undeploy')
   })
 
@@ -604,6 +604,28 @@ describe('#undeploy', () => {
       expect(stdout).toContain('No deployed applications found for your organization.')
       expect(stdout).toContain('Nothing to undeploy.')
       expect(select).not.toHaveBeenCalled()
+    })
+
+    test('shows error when app listing API fails', async () => {
+      mockApi({
+        apiVersion: 'v2024-08-01',
+        query: {appType: 'coreApp', organizationId: 'org-123'},
+        uri: '/user-applications',
+      }).reply(500, {message: 'Internal server error'})
+
+      const {error} = await testCommand(UndeployCommand, [], {
+        mocks: {
+          cliConfig: {
+            app: {organizationId: 'org-123'},
+          },
+          isInteractive: true,
+          token: 'test-token',
+        },
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.oclif?.exit).toBe(2)
+      expect(error?.message).toContain('Failed to fetch applications')
     })
 
     test('shows error when no project ID configured (studio context)', async () => {
