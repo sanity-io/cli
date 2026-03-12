@@ -152,7 +152,7 @@ export async function getUserApplications(
         appType: 'studio'
         projectId?: string
       },
-): Promise<UserApplication[] | null> {
+): Promise<UserApplication[]> {
   const {appType} = options
   const client = await getGlobalCliClient({
     apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -169,21 +169,10 @@ export async function getUserApplications(
 
   const {organizationId} = options as {appType: 'coreApp'; organizationId?: string}
 
-  try {
-    return await client.request({
-      query: {appType: 'coreApp', organizationId: organizationId!},
-      uri: `/user-applications`,
-    })
-  } catch (error) {
-    // User doesn't have permission to view applications for the org,
-    // or the organization ID doesn’t exist
-    if (error?.statusCode === 403) {
-      throw error
-    }
-
-    debug('Error finding user applications', error)
-    return null
-  }
+  return await client.request({
+    query: {appType: 'coreApp', organizationId: organizationId!},
+    uri: `/user-applications`,
+  })
 }
 
 export async function createUserApplication(options: {
