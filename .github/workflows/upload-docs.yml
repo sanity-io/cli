@@ -25,6 +25,9 @@ jobs:
         uses: ./.github/actions/setup
         with:
           node-version: 24
+      
+      - name: Build CLI
+        run: pnpm build:cli
 
       - name: Upload docs
         run: pnpm docs:upload
