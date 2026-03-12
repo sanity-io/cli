@@ -1,11 +1,22 @@
 import {getGlobalCliClient, subdebug} from '@sanity/cli-core'
-import {createRequester} from '@sanity/cli-core/request'
+import {createRequester, type Requester} from '@sanity/cli-core/request'
 
 export const MCP_API_VERSION = '2025-12-09'
 export const MCP_SERVER_URL = 'https://mcp.sanity.io'
 export const MCP_JOURNEY_API_VERSION = 'v2024-02-23'
 
 const debug = subdebug('mcp:service')
+
+let mcpRequester: Requester | undefined
+
+function getMCPRequester(): Requester {
+  if (!mcpRequester) {
+    mcpRequester = createRequester({
+      middleware: {httpErrors: false, promise: {onlyBody: false}},
+    })
+  }
+  return mcpRequester
+}
 
 interface PostInitPromptResponse {
   message?: string
@@ -57,9 +68,7 @@ export async function createMCPToken(): Promise<string> {
  * @internal
  */
 export async function validateMCPToken(token: string): Promise<boolean> {
-  const request = createRequester({
-    middleware: {httpErrors: false, promise: {onlyBody: false}},
-  })
+  const request = getMCPRequester()
 
   try {
     const res = await request({
