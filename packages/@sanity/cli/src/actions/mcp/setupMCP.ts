@@ -13,7 +13,7 @@ const mcpDebug = subdebug('mcp:setup')
 
 const NO_EDITORS_DETECTED_MESSAGE = `Couldn't auto-configure Sanity MCP server for your editor. Visit ${MCP_SERVER_URL} for setup instructions.`
 
-export interface MCPSetupOptions {
+interface MCPSetupOptions {
   /**
    * Whether the user explicitly requested MCP configuration (e.g. `sanity mcp configure`).
    * When true, shows status messages even when there's nothing to do.
