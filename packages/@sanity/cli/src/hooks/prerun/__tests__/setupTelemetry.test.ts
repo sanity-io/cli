@@ -356,14 +356,14 @@ describe('setupTelemetry integration test', () => {
 
   test('ensures globalThis.cliTelemetry is set', async () => {
     const global = globalThis as typeof globalThis & {
-      [CLI_TELEMETRY_SYMBOL]?: unknown
+      [CLI_TELEMETRY_SYMBOL]?: {logger: unknown; reportTraceError?: unknown}
     }
     expect(global[CLI_TELEMETRY_SYMBOL]).toBeUndefined()
 
     await testHook<'prerun'>(setupTelemetry, {config})
 
     expect(global[CLI_TELEMETRY_SYMBOL]).toBeDefined()
-    expect(getCliTelemetry()).toEqual(global[CLI_TELEMETRY_SYMBOL])
+    expect(getCliTelemetry()).toEqual(global[CLI_TELEMETRY_SYMBOL]?.logger)
   })
 
   test('should initialize telemetry when project root is not found', async () => {

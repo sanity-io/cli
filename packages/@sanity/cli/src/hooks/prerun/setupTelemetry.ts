@@ -65,17 +65,17 @@ export const setupTelemetry: Hook.Prerun = async function ({config}) {
   const cliCommandTrace = telemetry.trace(CliCommandTelemetry, traceOptions)
   cliCommandTrace.start()
 
-  // Set the global telemetry store with new context
-  setCliTelemetry(cliCommandTrace.newContext(args.groupOrCommand))
+  // Set the global telemetry store and trace error reporter
+  setCliTelemetry(cliCommandTrace.newContext(args.groupOrCommand), {
+    reportTraceError: (error) => cliCommandTrace.error(error),
+  })
 
-  // Handle process exit - complete trace and spawn worker to flush all telemetry
+  // Handle process exit - complete trace on success, spawn worker to flush telemetry.
+  // On non-zero exit, the trace is either already errored (from SanityCommand.catch)
+  // or it was a user abort (SIGINT/ctrl+c) — left incomplete, matching old CLI behavior.
   process.once('exit', (status) => {
     if (status === 0) {
       cliCommandTrace.complete()
-    } else {
-      // TODO: Properly handle errors
-      // https://oclif.io/docs/error_handling/#error-handling-in-the-catch-method
-      cliCommandTrace.error(new Error('Process exited with status ' + status))
     }
 
     const workerPath = fileURLToPath(new URL('flushTelemetry.worker.js', import.meta.url))

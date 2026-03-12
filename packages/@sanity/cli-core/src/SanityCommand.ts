@@ -1,4 +1,7 @@
+import {styleText} from 'node:util'
+
 import {Command, Interfaces} from '@oclif/core'
+import {type CommandError} from '@oclif/core/interfaces'
 
 import {getCliConfig} from './config/cli/getCliConfig.js'
 import {type CliConfig} from './config/cli/types/cliConfig.js'
@@ -15,7 +18,7 @@ import {
 } from './services/apiClient.js'
 import {type CLITelemetryStore} from './telemetry/types.js'
 import {type Output} from './types.js'
-import {getCliTelemetry} from './util/getCliTelemetry.js'
+import {getCliTelemetry, reportCliTraceError} from './util/getCliTelemetry.js'
 import {isInteractive} from './util/isInteractive.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
@@ -72,6 +75,25 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    * @returns The telemetry store.
    */
   protected telemetry!: CLITelemetryStore
+
+  /**
+   * Report real command errors to the CLI command trace.
+   * User aborts (SIGINT, ExitPromptError from) are not reported — the trace is left
+   * incomplete, which accurately represents that the command was interrupted.
+   */
+  protected override async catch(err: CommandError): Promise<void> {
+    // ExitPromptError is thrown by `@inquirer/prompt` when cancelling
+    // SIGINT is the standard signal for user interrupts (e.g. ctrl+c)
+    if (err.name === 'ExitPromptError' || err.message === 'SIGINT') {
+      // 130 is the standard exit code for script termination by Ctrl+C
+      this.logToStderr(styleText('yellow', '\u{203A}') + ' Aborted by user')
+      return this.exit(130)
+    }
+
+    // In other cases, we _do_ want to report the error
+    reportCliTraceError(err)
+    return super.catch(err)
+  }
 
   /**
    * Get the CLI config.
