@@ -9,9 +9,6 @@ import {type PreviewServer} from '../server/previewServer.js'
 export const previewDebug = subdebug('preview')
 
 export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
-  // sanity start is an alias for sanity preview
-  static override aliases: string[] = ['start']
-
   static override args = {
     outputDir: Args.directory({description: 'Output directory'}),
   }
@@ -32,6 +29,8 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
       description: '[default: 3333] TCP port to start server on.',
     }),
   }
+
+  static override hiddenAliases: string[] = ['start']
 
   public async run(): Promise<PreviewServer | void> {
     const {args, flags} = await this.parse(PreviewCommand)
