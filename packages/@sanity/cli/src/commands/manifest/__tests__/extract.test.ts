@@ -53,6 +53,15 @@ describe('#manifest:extract', {timeout: 60 * 1000}, () => {
     const toolsContent = JSON.parse(await readFile(resolve(staticDir, toolsFilename), 'utf8'))
     expect(Array.isArray(toolsContent)).toBe(true)
     expect(toolsContent.some((tool: {name: string}) => tool.name === 'structure')).toBe(true)
+
+    // Verify workspace icon is resolved (default icon generated from title)
+    expect(manifest.workspaces[0].icon).toContain('<svg')
+
+    // Verify tool icons are resolved
+    const structureTool = toolsContent.find(
+      (tool: {name: string}) => tool.name === 'structure',
+    ) as {icon: string | null; name: string}
+    expect(structureTool.icon).toContain('<svg')
   })
 
   test('should extract manifest files with custom --path flag', async () => {

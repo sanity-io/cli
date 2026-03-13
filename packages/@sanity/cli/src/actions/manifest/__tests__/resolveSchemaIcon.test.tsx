@@ -4,12 +4,16 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {resolveSchemaIcon} from '../resolveSchemaIcon.js'
 
 const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
+const mockResolveLocalPackageFrom = vi.hoisted(() => vi.fn())
+const mockResolveLocalPackagePath = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
     resolveLocalPackage: mockResolveLocalPackage,
+    resolveLocalPackageFrom: mockResolveLocalPackageFrom,
+    resolveLocalPackagePath: mockResolveLocalPackagePath,
   }
 })
 
@@ -19,8 +23,17 @@ function setupMocks() {
   const mockTheme = {color: 'mock-theme'}
   const buildTheme = vi.fn().mockReturnValue(mockTheme)
   const createDefaultIcon = vi.fn().mockReturnValue(createElement('span', null, 'default'))
+  const fakeSanityUrl = new URL('file:///studio/project/node_modules/sanity/dist/index.js')
 
-  mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
+  mockResolveLocalPackagePath.mockImplementation((pkg: string) => {
+    if (pkg === 'sanity') return fakeSanityUrl
+    throw new Error(`Unexpected resolveLocalPackagePath call: ${pkg}`)
+  })
+
+  mockResolveLocalPackageFrom.mockImplementation(async (pkg: string, parentUrl: URL) => {
+    if (parentUrl !== fakeSanityUrl) {
+      throw new Error(`Unexpected parent URL: ${parentUrl.href}`)
+    }
     switch (pkg) {
       case '@sanity/ui': {
         return {ThemeProvider: MockThemeProvider}
@@ -28,16 +41,24 @@ function setupMocks() {
       case '@sanity/ui/theme': {
         return {buildTheme}
       }
-      case 'sanity': {
-        return {createDefaultIcon}
-      }
       default: {
-        throw new Error(`Unexpected package resolution: ${pkg}`)
+        throw new Error(`Unexpected resolveLocalPackageFrom call: ${pkg}`)
       }
     }
   })
 
-  return {buildTheme, createDefaultIcon, mockTheme}
+  mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
+    switch (pkg) {
+      case 'sanity': {
+        return {createDefaultIcon}
+      }
+      default: {
+        throw new Error(`Unexpected resolveLocalPackage call: ${pkg}`)
+      }
+    }
+  })
+
+  return {buildTheme, createDefaultIcon, fakeSanityUrl, mockTheme}
 }
 
 describe('resolveSchemaIcon', () => {
@@ -47,20 +68,21 @@ describe('resolveSchemaIcon', () => {
     vi.clearAllMocks()
   })
 
-  test('resolves @sanity/ui from the studio workDir', async () => {
-    setupMocks()
+  test('resolves @sanity/ui via sanity package location', async () => {
+    const {fakeSanityUrl} = setupMocks()
 
     await resolveSchemaIcon({title: 'Test', workDir})
 
-    expect(mockResolveLocalPackage).toHaveBeenCalledWith('@sanity/ui', workDir)
+    expect(mockResolveLocalPackagePath).toHaveBeenCalledWith('sanity', workDir)
+    expect(mockResolveLocalPackageFrom).toHaveBeenCalledWith('@sanity/ui', fakeSanityUrl)
   })
 
-  test('resolves @sanity/ui/theme from the studio workDir', async () => {
-    setupMocks()
+  test('resolves @sanity/ui/theme via sanity package location', async () => {
+    const {fakeSanityUrl} = setupMocks()
 
     await resolveSchemaIcon({title: 'Test', workDir})
 
-    expect(mockResolveLocalPackage).toHaveBeenCalledWith('@sanity/ui/theme', workDir)
+    expect(mockResolveLocalPackageFrom).toHaveBeenCalledWith('@sanity/ui/theme', fakeSanityUrl)
   })
 
   test('resolves sanity from the studio workDir when no icon is provided', async () => {

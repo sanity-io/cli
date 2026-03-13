@@ -4,12 +4,16 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {resolveIcon} from '../iconResolver.js'
 
 const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
+const mockResolveLocalPackageFrom = vi.hoisted(() => vi.fn())
+const mockResolveLocalPackagePath = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
     resolveLocalPackage: mockResolveLocalPackage,
+    resolveLocalPackageFrom: mockResolveLocalPackageFrom,
+    resolveLocalPackagePath: mockResolveLocalPackagePath,
   }
 })
 
@@ -32,11 +36,18 @@ function MockThemeProvider({children}: {children: unknown}) {
   return children
 }
 
+const fakeSanityUrl = new URL('file:///studio/project/node_modules/sanity/dist/index.js')
+
 function setupMocks(mockRenderToReadableStream: ReturnType<typeof vi.fn>) {
   const buildTheme = vi.fn().mockReturnValue({color: 'mock-theme'})
   const createDefaultIcon = vi.fn().mockReturnValue(createElement('span', null, 'default'))
 
-  mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
+  mockResolveLocalPackagePath.mockImplementation((pkg: string) => {
+    if (pkg === 'sanity') return fakeSanityUrl
+    throw new Error(`Unexpected resolveLocalPackagePath call: ${pkg}`)
+  })
+
+  mockResolveLocalPackageFrom.mockImplementation(async (pkg: string) => {
     switch (pkg) {
       case '@sanity/ui': {
         return {ThemeProvider: MockThemeProvider}
@@ -44,6 +55,14 @@ function setupMocks(mockRenderToReadableStream: ReturnType<typeof vi.fn>) {
       case '@sanity/ui/theme': {
         return {buildTheme}
       }
+      default: {
+        throw new Error(`Unexpected resolveLocalPackageFrom call: ${pkg}`)
+      }
+    }
+  })
+
+  mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
+    switch (pkg) {
       case 'react-dom/server': {
         return {renderToReadableStream: mockRenderToReadableStream}
       }
@@ -51,7 +70,7 @@ function setupMocks(mockRenderToReadableStream: ReturnType<typeof vi.fn>) {
         return {createDefaultIcon}
       }
       default: {
-        throw new Error(`Unexpected package resolution: ${pkg}`)
+        throw new Error(`Unexpected resolveLocalPackage call: ${pkg}`)
       }
     }
   })
@@ -102,9 +121,9 @@ describe('resolveIcon', () => {
   })
 
   test('returns null when package resolution fails', async () => {
-    mockResolveLocalPackage.mockRejectedValue(
-      new Error('Failed to resolve package "react-dom/server"'),
-    )
+    mockResolveLocalPackagePath.mockImplementation(() => {
+      throw new Error('Failed to resolve package "sanity"')
+    })
 
     const result = await resolveIcon({title: 'Test', workDir: '/studio/project'})
 

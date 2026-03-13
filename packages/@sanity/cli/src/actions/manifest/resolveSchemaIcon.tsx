@@ -1,4 +1,8 @@
-import {resolveLocalPackage} from '@sanity/cli-core'
+import {
+  resolveLocalPackage,
+  resolveLocalPackageFrom,
+  resolveLocalPackagePath,
+} from '@sanity/cli-core'
 import {type ComponentType, isValidElement, type ReactNode} from 'react'
 import {isValidElementType} from 'react-is'
 
@@ -18,6 +22,10 @@ interface SchemaIconProps {
  * React instance as the server renderer to avoid dual-React dispatcher issues,
  * so they are resolved from the studio's workDir rather than the CLI's own deps.
  *
+ * @sanity/ui is a transitive dependency of sanity and may not be directly
+ * accessible from the project root in strict package managers (pnpm, Yarn PnP).
+ * We resolve it relative to the sanity package's location in node_modules.
+ *
  * This function is async, but the returned element is a plain synchronous
  * component - no async server components required. This keeps compatibility
  * with both React 18 and React 19.
@@ -28,9 +36,12 @@ async function resolveSchemaIcon({
   title,
   workDir,
 }: SchemaIconProps): Promise<React.JSX.Element> {
+  // Resolve @sanity/ui via sanity's location, since it's a transitive dep
+  // that may not be directly accessible from the project root (pnpm strict mode)
+  const sanityUrl = resolveLocalPackagePath('sanity', workDir)
   const [{ThemeProvider}, {buildTheme}, normalizedIcon] = await Promise.all([
-    resolveLocalPackage<typeof import('@sanity/ui')>('@sanity/ui', workDir),
-    resolveLocalPackage<typeof import('@sanity/ui/theme')>('@sanity/ui/theme', workDir),
+    resolveLocalPackageFrom<typeof import('@sanity/ui')>('@sanity/ui', sanityUrl),
+    resolveLocalPackageFrom<typeof import('@sanity/ui/theme')>('@sanity/ui/theme', sanityUrl),
     normalizeIcon(icon, title, subtitle, workDir),
   ])
   const theme = buildTheme()
