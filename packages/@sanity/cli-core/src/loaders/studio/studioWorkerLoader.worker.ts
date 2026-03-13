@@ -1,5 +1,7 @@
+import {dirname, resolve as resolvePath} from 'node:path'
 import {isMainThread} from 'node:worker_threads'
 
+import {getTsconfig} from 'get-tsconfig'
 import {createServer, type InlineConfig, loadEnv, mergeConfig} from 'vite'
 import {ViteNodeRunner} from 'vite-node/client'
 import {ViteNodeServer} from 'vite-node/server'
@@ -47,6 +49,40 @@ try {
 }
 
 /**
+ * Reads tsconfig.json `paths` and converts them to Vite `resolve.alias` entries.
+ * This allows studio projects using path aliases (e.g. `"@/*": ["./src/*"]`) to work
+ * with CLI worker commands without requiring the user to manually add `vite-tsconfig-paths`.
+ */
+function getTsconfigPathAliases(studioRootPath: string): Record<string, string> {
+  const tsconfig = getTsconfig(studioRootPath)
+  if (!tsconfig) return {}
+
+  const {baseUrl, paths} = tsconfig.config.compilerOptions ?? {}
+  if (!paths) return {}
+
+  const tsconfigDir = dirname(tsconfig.path)
+  const base = baseUrl ? resolvePath(tsconfigDir, baseUrl) : tsconfigDir
+
+  const aliases: Record<string, string> = {}
+  for (const [pattern, targets] of Object.entries(paths)) {
+    if (!targets || targets.length === 0) continue
+    // Only the first target is used — multiple fallback targets are not supported
+    const target = targets[0]
+
+    if (pattern.endsWith('/*') && target.endsWith('/*')) {
+      // Wildcard: "@/*" => "./src/*" becomes "@" => "/abs/path/src"
+      aliases[pattern.slice(0, -2)] = resolvePath(base, target.slice(0, -2))
+    } else {
+      // Exact: "@utils" => "./src/utils/index"
+      aliases[pattern] = resolvePath(base, target)
+    }
+  }
+  // Sort by key length descending so more-specific aliases take precedence
+  // (e.g. "@lib" is matched before "@" when both exist)
+  return Object.fromEntries(Object.entries(aliases).toSorted(([a], [b]) => b.length - a.length))
+}
+
+/**
  * Fetches and caches modules from HTTP/HTTPS URLs.
  * Vite's SSR transform treats `https://` imports as external and bypasses the plugin
  * resolve pipeline entirely, so we intercept them at the ViteNodeRunner level instead.
@@ -71,6 +107,13 @@ function isHttpsUrl(id: string): boolean {
   return id.startsWith('https://')
 }
 
+let tsconfigAliases: Record<string, string> = {}
+try {
+  tsconfigAliases = getTsconfigPathAliases(rootPath)
+} catch (err) {
+  debug('Failed to read tsconfig paths: %o', err)
+}
+
 const defaultViteConfig: InlineConfig = {
   build: {target: 'node'},
   configFile: false,
@@ -89,6 +132,9 @@ const defaultViteConfig: InlineConfig = {
   optimizeDeps: {
     include: undefined,
     noDiscovery: true,
+  },
+  resolve: {
+    alias: tsconfigAliases,
   },
   root: rootPath,
   server: {
