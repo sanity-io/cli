@@ -6,8 +6,8 @@ export default {
   hooks: {
     init: ['./dist/hooks/init/checkForUpdates.js'],
     prerun: [
-      './dist/hooks/prerun/setupTelemetry.js',
       './dist/hooks/prerun/injectEnvVariables.js',
+      './dist/hooks/prerun/setupTelemetry.js',
       './dist/hooks/prerun/warnings.js',
     ],
   },

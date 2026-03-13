@@ -74,6 +74,22 @@ describe('#injectEnvVariables', () => {
     expect(stderr).toContain('Running in production environment')
   })
 
+  test('should inject SANITY_INTERNAL_ENV from .env', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
+    await writeFile(join(cwd, '.env'), 'SANITY_INTERNAL_ENV=staging')
+
+    const {Command, config} = await getCommandAndConfig('learn')
+
+    await testHook<'prerun'>(injectEnvVariables, {
+      Command,
+      config,
+    })
+
+    expect(process.env.SANITY_INTERNAL_ENV).toBe('staging')
+  })
+
   test('should not error when no project root is found', async () => {
     const cwd = await testFixture('basic-functions')
     process.chdir(cwd)

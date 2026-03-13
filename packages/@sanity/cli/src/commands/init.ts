@@ -77,6 +77,7 @@ import {CLIInitStepCompleted, type InitStepResult} from '../telemetry/init.telem
 import {detectFrameworkRecord} from '../util/detectFramework.js'
 import {absolutify, validateEmptyPath} from '../util/fsUtils.js'
 import {getProjectDefaults} from '../util/getProjectDefaults.js'
+import {getSanityEnv} from '../util/getSanityEnv.js'
 import {getPeerDependencies} from '../util/packageManager/getPeerDependencies.js'
 import {
   installDeclaredPackages,
@@ -505,6 +506,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         output: this.output,
         outputPath,
       })
+      await this.writeStagingEnvIfNeeded(outputPath)
       this.exit(0)
     }
 
@@ -591,6 +593,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     const useGit = this.flags.git === undefined || Boolean(this.flags.git)
     const commitMessage = this.flags.git
+    await this.writeStagingEnvIfNeeded(outputPath)
+
     // Try initializing a git repository
     if (useGit) {
       tryGitInit(outputPath, typeof commitMessage === 'string' ? commitMessage : undefined)
@@ -1374,6 +1378,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       )
     }
 
+    await this.writeStagingEnvIfNeeded(workDir)
     this.exit(0)
   }
 
@@ -1677,5 +1682,24 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         }
       }
     }
+  }
+
+  /**
+   * When running in a non-production Sanity environment (e.g. staging), write the
+   * `SANITY_INTERNAL_ENV` variable to a `.env` file in the output directory so that
+   * the bootstrapped project continues to target the same environment.
+   */
+  private async writeStagingEnvIfNeeded(outputPath: string) {
+    const sanityEnv = getSanityEnv()
+    if (sanityEnv === 'production') return
+
+    await createOrAppendEnvVars({
+      envVars: {INTERNAL_ENV: sanityEnv},
+      filename: '.env',
+      framework: null,
+      log: false,
+      output: this.output,
+      outputPath,
+    })
   }
 }
