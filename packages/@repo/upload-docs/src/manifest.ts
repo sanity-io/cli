@@ -102,12 +102,16 @@ function formatUsageFlag(flag: {
   char?: string
   helpValue?: string | string[]
   name: string
+  required?: boolean
   type: string
 }): string {
   if (flag.type === 'boolean') {
     return `[--${flag.name}]`
   }
   const val = getFlagValue(flag)
+  if (flag.required) {
+    return flag.char ? `-${flag.char} ${val}` : `--${flag.name} ${val}`
+  }
   return flag.char ? `[-${flag.char} ${val}]` : `[--${flag.name} ${val}]`
 }
 
