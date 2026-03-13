@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.1](https://github.com/sanity-io/cli/compare/cli-v6.1.0...cli-v6.1.1) (2026-03-13)
+
+
+### Bug Fixes
+
+* lazy-load icon resolver to avoid pulling in @sanity/ui at import time ([#636](https://github.com/sanity-io/cli/issues/636)) ([e2a6c6d](https://github.com/sanity-io/cli/commit/e2a6c6d5c430002a3effaf3fc822e3c8e070970c))
+
 ## [6.1.0](https://github.com/sanity-io/cli/compare/cli-v6.0.0...cli-v6.1.0) (2026-03-12)
 
 
