@@ -66,6 +66,7 @@ function getTsconfigPathAliases(studioRootPath: string): Record<string, string> 
   const aliases: Record<string, string> = {}
   for (const [pattern, targets] of Object.entries(paths)) {
     if (!targets || targets.length === 0) continue
+    // Only the first target is used — multiple fallback targets are not supported
     const target = targets[0]
 
     if (pattern.endsWith('/*') && target.endsWith('/*')) {
