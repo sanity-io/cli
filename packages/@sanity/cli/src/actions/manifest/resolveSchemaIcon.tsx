@@ -22,7 +22,7 @@ interface SchemaIconProps {
  * React instance as the server renderer to avoid dual-React dispatcher issues,
  * so they are resolved from the studio's workDir rather than the CLI's own deps.
  *
- * @sanity/ui is a transitive dependency of sanity and may not be directly
+ * `\@sanity/ui` is a transitive dependency of sanity and may not be directly
  * accessible from the project root in strict package managers (pnpm, Yarn PnP).
  * We resolve it relative to the sanity package's location in node_modules.
  *
