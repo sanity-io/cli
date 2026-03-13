@@ -19,7 +19,7 @@ export async function gatherDebugInfo(options: DebugInfoOptions): Promise<DebugI
   const [auth, globalConfig, projectConfigResult, versions] = await Promise.all([
     gatherAuthInfo(includeSecrets),
     gatherGlobalConfig(),
-    gatherProjectConfig(cliConfig),
+    cliConfig ? gatherProjectConfig(cliConfig) : Promise.resolve(),
     gatherVersionsInfo(projectRoot),
   ])
 
@@ -66,7 +66,13 @@ async function gatherProjectConfig(cliConfig: CliConfig): Promise<CliConfig | Er
   }
 }
 
-async function gatherVersionsInfo(projectRoot: ProjectRootResult): Promise<ModuleVersionResult[]> {
+async function gatherVersionsInfo(
+  projectRoot: ProjectRootResult | undefined,
+): Promise<ModuleVersionResult[] | undefined> {
+  if (!projectRoot) {
+    return undefined
+  }
+
   try {
     return await findSanityModulesVersions({cwd: projectRoot.directory})
   } catch {
@@ -75,7 +81,7 @@ async function gatherVersionsInfo(projectRoot: ProjectRootResult): Promise<Modul
 }
 
 async function gatherUserInfo(
-  projectConfig: CliConfig | Error,
+  projectConfig: CliConfig | Error | undefined,
   hasToken: boolean,
 ): Promise<Error | UserInfo | null> {
   if (!hasToken) {
@@ -88,7 +94,7 @@ async function gatherUserInfo(
      * Otherwise, get the user for the global client
      */
     const userInfo =
-      projectConfig instanceof Error || !projectConfig.api?.projectId
+      !projectConfig || projectConfig instanceof Error || !projectConfig.api?.projectId
         ? await getCliUser()
         : await getProjectUser(projectConfig.api.projectId)
 
@@ -103,11 +109,11 @@ async function gatherUserInfo(
 }
 
 async function gatherProjectInfo(
-  projectConfig: CliConfig | Error,
+  projectConfig: CliConfig | Error | undefined,
   hasToken: boolean,
   user: Error | UserInfo | null,
 ): Promise<Error | ProjectInfo | null> {
-  if (!hasToken || projectConfig instanceof Error) {
+  if (!hasToken || !projectConfig || projectConfig instanceof Error) {
     return null
   }
 

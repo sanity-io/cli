@@ -3,9 +3,9 @@ import {type CliConfig, type ProjectRootResult} from '@sanity/cli-core'
 import {type ModuleVersionResult} from '../versions/types.js'
 
 export interface DebugInfoOptions {
-  cliConfig: CliConfig
+  cliConfig: CliConfig | undefined
   includeSecrets: boolean
-  projectRoot: ProjectRootResult
+  projectRoot: ProjectRootResult | undefined
 }
 
 export interface UserInfo {
@@ -30,7 +30,7 @@ export interface DebugInfo {
   auth: AuthInfo
   globalConfig: Record<string, unknown>
   project: Error | ProjectInfo | null
-  projectConfig: CliConfig | Error
+  projectConfig: CliConfig | Error | undefined
   user: Error | UserInfo | null
-  versions: ModuleVersionResult[]
+  versions: ModuleVersionResult[] | undefined
 }

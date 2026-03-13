@@ -1,4 +1,4 @@
-import {getCliToken, getCliUserConfig} from '@sanity/cli-core'
+import {getCliToken, getCliUserConfig, ProjectRootNotFoundError} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -557,6 +557,60 @@ describe('#debug', () => {
     expect(stdout).toContain('Project:')
     expect(stdout).toContain("Display name: 'Test Project'")
     expect(stdout).toContain("Roles: [ '<none>' ]")
+  })
+
+  test('works outside a project directory (no project root)', async () => {
+    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
+    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
+      if (key === 'authToken') return 'mock-auth-token'
+      return undefined
+    })
+    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
+
+    // Mock the /me API endpoint (uses global API host since no project)
+    mockApi({apiVersion: USERS_API_VERSION, uri: '/users/me'}).reply(200, {
+      email: 'test@example.com',
+      id: 'user123',
+      name: 'Test User',
+    })
+
+    const {error, stdout} = await testCommand(Debug, [], {
+      mocks: {
+        cliConfigError: new ProjectRootNotFoundError('No project root found'),
+        token: 'mock-auth-token',
+      },
+    })
+
+    if (error) throw error
+    expect(stdout).toContain('User:')
+    expect(stdout).toContain("Email: 'test@example.com'")
+    expect(stdout).toContain('Authentication:')
+    expect(stdout).toContain('Global config')
+    // Should NOT contain project-specific sections
+    expect(stdout).not.toContain('Project:')
+    expect(stdout).not.toContain('Project config')
+    expect(stdout).not.toContain('Package versions:')
+  })
+
+  test('works outside a project directory when not logged in', async () => {
+    vi.mocked(getCliToken).mockResolvedValue(undefined)
+    vi.mocked(getCliUserConfig).mockImplementation(async () => undefined)
+    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
+
+    const {error, stdout} = await testCommand(Debug, [], {
+      mocks: {
+        cliConfigError: new ProjectRootNotFoundError('No project root found'),
+        token: undefined,
+      },
+    })
+
+    if (error) throw error
+    expect(stdout).toContain('User:')
+    expect(stdout).toContain('Not logged in')
+    expect(stdout).toContain('Global config')
+    expect(stdout).not.toContain('Authentication:')
+    expect(stdout).not.toContain('Project:')
+    expect(stdout).not.toContain('Package versions:')
   })
 
   test('handles project member with no roles gracefully', async () => {

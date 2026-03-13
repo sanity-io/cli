@@ -2,7 +2,7 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {Flags} from '@oclif/core'
-import {SanityCommand} from '@sanity/cli-core'
+import {ProjectRootNotFoundError, SanityCommand} from '@sanity/cli-core'
 import omit from 'lodash-es/omit.js'
 import padStart from 'lodash-es/padStart.js'
 
@@ -30,8 +30,14 @@ export class Debug extends SanityCommand<typeof Debug> {
     const {flags} = this
 
     try {
-      const projectRoot = await this.getProjectRoot()
-      const cliConfig = await this.getCliConfig()
+      let projectRoot
+      try {
+        projectRoot = await this.getProjectRoot()
+      } catch (err) {
+        if (!(err instanceof ProjectRootNotFoundError)) throw err
+      }
+
+      const cliConfig = projectRoot ? await this.getCliConfig() : undefined
 
       const {auth, globalConfig, project, projectConfig, user, versions} = await gatherDebugInfo({
         cliConfig,
@@ -81,10 +87,8 @@ export class Debug extends SanityCommand<typeof Debug> {
       this.log(`  ${formatObject(globalCfg).replaceAll('\n', '\n  ')}\n`)
 
       // Project configuration (projectDir/sanity.json)
-      if (projectConfig) {
-        const configLocation = projectConfig
-          ? ` (${styleText('yellow', path.relative(process.cwd(), projectRoot.path))})`
-          : ''
+      if (projectRoot && projectConfig) {
+        const configLocation = ` (${styleText('yellow', path.relative(process.cwd(), projectRoot.path))})`
 
         this.log(`Project config${configLocation}:`)
         this.log(`  ${formatObject(projectConfig).replaceAll('\n', '\n  ')}`)
