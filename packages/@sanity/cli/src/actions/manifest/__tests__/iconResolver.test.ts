@@ -16,6 +16,7 @@ function createMockStream(html: string) {
   const encoded = new TextEncoder().encode(html)
   let read = false
   return {
+    allReady: Promise.resolve(),
     getReader: () => ({
       read: async () => {
         if (read) return {done: true, value: undefined}
@@ -37,8 +38,9 @@ describe('resolveIcon', () => {
       .mockResolvedValue(
         createMockStream('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>'),
       )
-    mockResolveLocalPackage.mockResolvedValue({
-      renderToReadableStream: mockRenderToReadableStream,
+    mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
+      if (pkg === 'react-dom/server') return {renderToReadableStream: mockRenderToReadableStream}
+      throw new Error(`Unexpected package resolution: ${pkg}`)
     })
 
     await resolveIcon({title: 'Test', workDir: '/studio/project'})
@@ -52,8 +54,9 @@ describe('resolveIcon', () => {
       .mockResolvedValue(
         createMockStream('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>'),
       )
-    mockResolveLocalPackage.mockResolvedValue({
-      renderToReadableStream: mockRenderToReadableStream,
+    mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
+      if (pkg === 'react-dom/server') return {renderToReadableStream: mockRenderToReadableStream}
+      throw new Error(`Unexpected package resolution: ${pkg}`)
     })
 
     const result = await resolveIcon({title: 'Test', workDir: '/studio/project'})
@@ -66,8 +69,11 @@ describe('resolveIcon', () => {
   test('sanitizes the rendered HTML output', async () => {
     const maliciousHtml =
       '<svg xmlns="http://www.w3.org/2000/svg"><script>alert("xss")</script><path d="M0 0"/></svg>'
-    mockResolveLocalPackage.mockResolvedValue({
-      renderToReadableStream: vi.fn().mockResolvedValue(createMockStream(maliciousHtml)),
+    mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
+      if (pkg === 'react-dom/server') {
+        return {renderToReadableStream: vi.fn().mockResolvedValue(createMockStream(maliciousHtml))}
+      }
+      throw new Error(`Unexpected package resolution: ${pkg}`)
     })
 
     const result = await resolveIcon({title: 'Test', workDir: '/studio/project'})
@@ -87,8 +93,11 @@ describe('resolveIcon', () => {
   })
 
   test('returns null when rendering throws', async () => {
-    mockResolveLocalPackage.mockResolvedValue({
-      renderToReadableStream: vi.fn().mockRejectedValue(new Error('Render error')),
+    mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
+      if (pkg === 'react-dom/server') {
+        return {renderToReadableStream: vi.fn().mockRejectedValue(new Error('Render error'))}
+      }
+      throw new Error(`Unexpected package resolution: ${pkg}`)
     })
 
     const result = await resolveIcon({title: 'Test', workDir: '/studio/project'})
