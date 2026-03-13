@@ -1,7 +1,7 @@
 import {selectColor} from './colors.js'
 import {type DebugEnv, type DebugFunction, type Formatter} from './types.js'
 
-export interface DebugExports {
+interface DebugExports {
   createDebug: (namespace: string) => DebugFunction
   disable: () => string
   enable: (namespaces: string) => void

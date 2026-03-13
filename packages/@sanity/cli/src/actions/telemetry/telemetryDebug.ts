@@ -1,3 +1,3 @@
-import debugIt from 'debug'
+import {createDebug} from '@sanity/debug'
 
-export const telemetryDebug = debugIt('telemetry:sanity:cli')
+export const telemetryDebug = createDebug('telemetry:sanity:cli')

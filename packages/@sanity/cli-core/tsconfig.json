@@ -2,6 +2,9 @@
   "extends": "@repo/tsconfig/base.json",
   "include": ["./src"],
   "compilerOptions": {
-    "rootDir": "."
+    "rootDir": ".",
+    "paths": {
+      "@sanity/debug": ["./node_modules/@sanity/debug/src/index.ts"]
+    }
   }
 }

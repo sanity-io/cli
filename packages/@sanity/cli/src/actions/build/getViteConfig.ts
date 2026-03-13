@@ -4,11 +4,11 @@ import {
   type CliConfig,
   findProjectRoot,
   getCliTelemetry,
+  subdebug,
   type UserViteConfig,
 } from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
-import debug from 'debug'
 import {readPackageUp} from 'read-package-up'
 import {type ConfigEnv, type InlineConfig, mergeConfig, type Rollup} from 'vite'
 
@@ -23,6 +23,8 @@ import {
   getStudioEnvironmentVariables,
 } from './getStudioEnvironmentVariables.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
+
+const debug = subdebug('vite')
 
 interface ViteOptions {
   /**

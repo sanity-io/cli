@@ -1,11 +1,11 @@
-import debugIt from 'debug'
+import {createDebug} from '@sanity/debug'
 
 /**
  * `debug` instance for the CLI
  *
  * @internal
  */
-export const debug = debugIt('sanity:cli')
+export const debug = createDebug('sanity:cli')
 
 /**
  * Get a `debug` instance which extends the CLI debug instance with the given namespace,
