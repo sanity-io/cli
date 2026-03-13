@@ -1,12 +1,19 @@
 export * from './config/cli/getCliConfig.js'
 export * from './config/cli/getCliConfigSync.js'
-export {type CliConfig} from './config/cli/types/cliConfig.js'
+export {
+  type AppCanvasResource,
+  type AppDatasetResource,
+  type AppMediaLibraryResource,
+  type AppResource,
+  type CliConfig,
+} from './config/cli/types/cliConfig.js'
 export {type UserViteConfig} from './config/cli/types/userViteConfig.js'
 export * from './config/findProjectRoot.js'
 export * from './config/findProjectRootSync.js'
 export * from './config/studio/getStudioConfig.js'
 export * from './config/studio/getStudioWorkspaces.js'
 export * from './config/studio/isStudioConfig.js'
+export * from './config/util/findAppConfigPath.js'
 export * from './config/util/findConfigsPaths.js'
 export * from './config/util/findStudioConfigPath.js'
 export {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoot.js'

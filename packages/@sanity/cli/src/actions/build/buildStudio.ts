@@ -200,6 +200,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       cwd: workDir,
       importMap,
       minify: Boolean(flags.minify),
+      output,
       outputDir,
       reactCompiler:
         cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,

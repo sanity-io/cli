@@ -11,6 +11,37 @@ export interface TypeGenConfig {
 }
 
 /**
+ * A named project/dataset resource that the app will access.
+ * @public
+ */
+export interface AppDatasetResource {
+  dataset: string
+  projectId: string
+}
+
+/**
+ * A named canvas resource that the app will access.
+ * @public
+ */
+export interface AppCanvasResource {
+  canvasId: string
+}
+
+/**
+ * A named media library resource that the app will access.
+ * @public
+ */
+export interface AppMediaLibraryResource {
+  mediaLibraryId: string
+}
+
+/**
+ * A named app resource that the app will access.
+ * @public
+ */
+export type AppResource = AppCanvasResource | AppDatasetResource | AppMediaLibraryResource
+
+/**
  * @public
  */
 export interface CliConfig {
@@ -33,6 +64,8 @@ export interface CliConfig {
     id?: string
     /** The ID for the Sanity organization that manages this application */
     organizationId?: string
+    /** The named project/dataset resources that the app will access */
+    resources?: Record<string, AppResource>
     /** The title of the custom app, as it is seen in Dashboard UI */
     title?: string
   }
