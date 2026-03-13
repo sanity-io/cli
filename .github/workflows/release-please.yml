@@ -58,7 +58,7 @@ jobs:
 
       - name: Publish packages (latest)
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
-        run: pnpm publish -r --filter="@sanity/cli" --filter="@sanity/cli-core" --filter="@sanity/cli-test" --filter="@sanity/eslint-config-cli"
+        run: pnpm publish -r
         env:
           NPM_CONFIG_PROVENANCE: true
 
@@ -73,6 +73,7 @@ jobs:
           echo "| @sanity/cli-test | ${{ steps.release.outputs['packages/@sanity/cli-test--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| @sanity/cli | ${{ steps.release.outputs['packages/@sanity/cli--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| @sanity/eslint-config-cli | ${{ steps.release.outputs['packages/@sanity/eslint-config-cli--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| create-sanity | ${{ steps.release.outputs['packages/create-sanity--version'] || 'N/A' }} |" >> $GITHUB_STEP_SUMMARY
 
   post-release-steps:
     runs-on: ubuntu-latest
