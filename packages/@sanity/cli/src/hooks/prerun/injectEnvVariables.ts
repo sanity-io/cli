@@ -36,6 +36,9 @@ export const injectEnvVariables: Hook.Prerun = async function ({Command}) {
   const isApp = workDir.type === 'app'
   debug('Loading environment files using %s mode', mode)
 
-  const studioEnv = loadEnv(mode, workDir.directory, [isApp ? 'SANITY_APP_' : 'SANITY_STUDIO_'])
+  const studioEnv = loadEnv(mode, workDir.directory, [
+    isApp ? 'SANITY_APP_' : 'SANITY_STUDIO_',
+    'SANITY_INTERNAL_',
+  ])
   Object.assign(process.env, studioEnv)
 }
