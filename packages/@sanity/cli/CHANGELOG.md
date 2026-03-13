@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.3](https://github.com/sanity-io/cli/compare/cli-v6.1.2...cli-v6.1.3) (2026-03-13)
+
+
+### Bug Fixes
+
+* use non-deprecated `--project-id` flag for dataset import during init ([#661](https://github.com/sanity-io/cli/issues/661)) ([0b660b9](https://github.com/sanity-io/cli/commit/0b660b97c197bd07e5210700ffbacfa43af94e00))
+
 ## [6.1.2](https://github.com/sanity-io/cli/compare/cli-v6.1.1...cli-v6.1.2) (2026-03-13)
 
 
