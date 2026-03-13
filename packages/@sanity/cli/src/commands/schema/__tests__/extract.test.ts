@@ -220,4 +220,48 @@ describe('#schema:extract', {timeout: 60 * 1000}, () => {
     expect(stderr).toContain('Extracted schema')
     expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
   })
+
+  test('should resolve exact tsconfig path aliases without tsconfigPaths plugin', async () => {
+    const cwd = await testFixture('worst-case-studio')
+    process.chdir(cwd)
+
+    // Remove the tsconfigPaths plugin from the CLI config
+    const cliConfigPath = join(cwd, 'sanity.cli.ts')
+    const cliContent = await readFile(cliConfigPath, 'utf8')
+    await writeFile(
+      cliConfigPath,
+      cliContent
+        .replace("import tsconfigPaths from 'vite-tsconfig-paths'\n", '')
+        .replace("plugins: [tsconfigPaths({root: '.'})],", ''),
+    )
+
+    // Add an exact (non-wildcard) path alias to tsconfig.json
+    const tsconfigPath = join(cwd, 'tsconfig.json')
+    const tsconfigContent = await readFile(tsconfigPath, 'utf8')
+    await writeFile(
+      tsconfigPath,
+      tsconfigContent.replace(
+        '"@/*": ["./src/*"]',
+        '"@/*": ["./src/*"],\n      "@defines": ["./src/defines.ts"]',
+      ),
+    )
+
+    // Use the exact alias in the config
+    const configPath = join(cwd, 'sanity.config.tsx')
+    const configContent = await readFile(configPath, 'utf8')
+    await writeFile(
+      configPath,
+      configContent.replace(
+        "const arbitraryImport = await import('@/defines')",
+        "const arbitraryImport = await import('@defines')",
+      ),
+    )
+
+    const {error, stderr} = await testCommand(ExtractSchemaCommand, [])
+
+    if (error) throw error
+    expect(stderr).toContain('Extracting schema')
+    expect(stderr).toContain('Extracted schema')
+    expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
+  })
 })
