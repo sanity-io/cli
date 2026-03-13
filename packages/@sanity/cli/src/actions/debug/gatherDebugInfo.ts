@@ -19,7 +19,7 @@ export async function gatherDebugInfo(options: DebugInfoOptions): Promise<DebugI
   const [auth, globalConfig, projectConfigResult, versions] = await Promise.all([
     gatherAuthInfo(includeSecrets),
     gatherGlobalConfig(),
-    cliConfig ? gatherProjectConfig(cliConfig) : Promise.resolve(),
+    cliConfig ? gatherProjectConfig(cliConfig) : undefined,
     gatherVersionsInfo(projectRoot),
   ])
 
@@ -52,18 +52,12 @@ function gatherGlobalConfig(): Record<string, unknown> {
   return getUserConfig().all
 }
 
-async function gatherProjectConfig(cliConfig: CliConfig): Promise<CliConfig | Error> {
-  try {
-    const config = cliConfig
-
-    if (!config.api?.projectId) {
-      return new Error('Missing required "api.projectId" key')
-    }
-
-    return config
-  } catch (error) {
-    return error instanceof Error ? error : new Error('Failed to load project config')
+function gatherProjectConfig(cliConfig: CliConfig): CliConfig | Error {
+  if (!cliConfig.api?.projectId) {
+    return new Error('Missing required "api.projectId" key')
   }
+
+  return cliConfig
 }
 
 async function gatherVersionsInfo(

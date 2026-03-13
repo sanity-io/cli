@@ -565,7 +565,6 @@ describe('#debug', () => {
       if (key === 'authToken') return 'mock-auth-token'
       return undefined
     })
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     // Mock the /me API endpoint (uses global API host since no project)
     mockApi({apiVersion: USERS_API_VERSION, uri: '/users/me'}).reply(200, {
@@ -595,7 +594,6 @@ describe('#debug', () => {
   test('works outside a project directory when not logged in', async () => {
     vi.mocked(getCliToken).mockResolvedValue(undefined)
     vi.mocked(getCliUserConfig).mockImplementation(async () => undefined)
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
     const {error, stdout} = await testCommand(Debug, [], {
       mocks: {
