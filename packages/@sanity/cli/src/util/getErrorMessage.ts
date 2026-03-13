@@ -1,6 +1,17 @@
 import {isHttpError} from '@sanity/client'
 
 /**
+ * Coerce an unknown thrown value into an Error instance.
+ *
+ * @param value - The thrown value
+ * @returns An Error instance (the original if already an Error, otherwise a new one)
+ * @internal
+ */
+export function toError(value: unknown): Error {
+  return value instanceof Error ? value : new Error(String(value))
+}
+
+/**
  * Get the error message from an error object
  *
  * @param err - The error object

@@ -120,6 +120,24 @@ const setupInitSuccessMocks = () => {
   })
 }
 
+/**
+ * Create an error object that passes the `isHttpError()` type guard.
+ */
+function createHttpError(statusCode: number, message: string): Error {
+  return Object.assign(new Error(message), {
+    response: {
+      body: {error: message, message, statusCode},
+      headers: {},
+      method: 'GET',
+      statusCode,
+      statusMessage: message,
+      url: '/users/me',
+    },
+    responseBody: {error: message, message, statusCode},
+    statusCode,
+  })
+}
+
 const defaultMocks = {
   projectRoot: {
     directory: '/test/work/dir',
@@ -173,7 +191,7 @@ describe('#init: authentication', () => {
   })
 
   test('throws error if user is authenticated with invalid token in unattended mode', async () => {
-    mockGetById.mockRejectedValueOnce(new Error('Invalid token'))
+    mockGetById.mockRejectedValueOnce(createHttpError(401, 'Unauthorized'))
 
     const {error} = await testCommand(InitCommand, ['--yes', '--dataset=test', '--project=test'], {
       mocks: {
@@ -188,7 +206,7 @@ describe('#init: authentication', () => {
   })
 
   test('calls login when token invalid and not in unattended mode', async () => {
-    mockGetById.mockRejectedValueOnce(new Error('Invalid token'))
+    mockGetById.mockRejectedValueOnce(createHttpError(401, 'Unauthorized'))
 
     setupInitSuccessMocks()
     const {error} = await testCommand(
@@ -217,7 +235,7 @@ describe('#init: authentication', () => {
   })
 
   test('throws error when login fails', async () => {
-    mockGetById.mockRejectedValueOnce(new Error('Invalid token'))
+    mockGetById.mockRejectedValueOnce(createHttpError(401, 'Unauthorized'))
     mockLogin.mockRejectedValueOnce(new Error('No authentication providers found'))
 
     const {error} = await testCommand(InitCommand, [], {

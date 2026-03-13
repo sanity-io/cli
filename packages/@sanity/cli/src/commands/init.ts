@@ -19,6 +19,7 @@ import {type Framework, frameworks} from '@vercel/frameworks'
 import {execa, type Options} from 'execa'
 import deburr from 'lodash-es/deburr.js'
 
+import {validateSession} from '../actions/auth/ensureAuthenticated.js'
 import {getProviderName} from '../actions/auth/getProviderName.js'
 import {login} from '../actions/auth/login/login.js'
 import {createDataset} from '../actions/dataset/create.js'
@@ -784,49 +785,40 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
   // @todo do we actually need to be authenticated for init? check flags and determine.
   private async ensureAuthenticated(): Promise<{user: SanityOrgUser}> {
-    let isAuthenticated = (await getCliToken()) !== undefined
-    debug(isAuthenticated ? 'User already has a token' : 'User has no token')
+    const user = await validateSession()
 
-    let user: SanityOrgUser | undefined
-    if (isAuthenticated) {
-      // It _appears_ we are authenticated, but the token might be invalid/expired,
-      // so we need to verify that we can actually make an authenticated request.
-      try {
-        user = await getCliUser()
-      } catch {
-        // assume that any error means that the token is invalid
-        isAuthenticated = false
-      }
-    }
-
-    if (isAuthenticated) {
+    if (user) {
       this._trace.log({alreadyLoggedIn: true, step: 'login'})
-    } else {
-      if (this.isUnattended()) {
-        this.error('Must be logged in to run this command in unattended mode, run `sanity login`', {
-          exit: 1,
-        })
-      }
-
-      this._trace.log({step: 'login'})
-
-      try {
-        await login({
-          output: this.output,
-          telemetry: this._trace.newContext('login'),
-        })
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        this.error(`Login failed: ${message}`, {exit: 1})
-      }
+      this.log(
+        `${logSymbols.success} You are logged in as ${user.email} using ${getProviderName(user.provider)}`,
+      )
+      return {user}
     }
 
-    user = await getCliUser()
+    if (this.isUnattended()) {
+      this.error('Must be logged in to run this command in unattended mode, run `sanity login`', {
+        exit: 1,
+      })
+    }
+
+    this._trace.log({step: 'login'})
+
+    try {
+      await login({
+        output: this.output,
+        telemetry: this._trace.newContext('login'),
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      this.error(`Login failed: ${message}`, {exit: 1})
+    }
+
+    const loggedInUser = await getCliUser()
 
     this.log(
-      `${logSymbols.success} You are logged in as ${user.email} using ${getProviderName(user.provider)}`,
+      `${logSymbols.success} You are logged in as ${loggedInUser.email} using ${getProviderName(loggedInUser.provider)}`,
     )
-    return {user}
+    return {user: loggedInUser}
   }
 
   private flagOrDefault(flag: keyof typeof this.flags, defaultValue: boolean): boolean {
