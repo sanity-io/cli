@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.2](https://github.com/sanity-io/cli/compare/cli-v6.1.1...cli-v6.1.2) (2026-03-13)
+
+
+### Bug Fixes
+
+* bump react+react-dom to latest on new installs ([#658](https://github.com/sanity-io/cli/issues/658)) ([87b733f](https://github.com/sanity-io/cli/commit/87b733ffb3922d4d492e569918b6087e302f39e9))
+* resolve react-dom/server and @sanity/ui from studio workDir ([#657](https://github.com/sanity-io/cli/issues/657)) ([ce07d42](https://github.com/sanity-io/cli/commit/ce07d42e67acd906a3b585c4a62c031ea6c53bee))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 1.1.1
+  * devDependencies
+    * @sanity/cli-test bumped to 0.2.3
+
 ## [6.1.1](https://github.com/sanity-io/cli/compare/cli-v6.1.0...cli-v6.1.1) (2026-03-13)
 
 
