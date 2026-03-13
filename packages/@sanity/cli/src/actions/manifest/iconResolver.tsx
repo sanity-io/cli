@@ -21,6 +21,7 @@ export const resolveIcon = async (props: SchemaIconProps): Promise<string | null
       props.workDir,
     )
     const stream = await renderToReadableStream(<SchemaIcon {...props} />)
+    await stream.allReady
 
     const reader = stream.getReader()
     const chunks: Uint8Array[] = []
