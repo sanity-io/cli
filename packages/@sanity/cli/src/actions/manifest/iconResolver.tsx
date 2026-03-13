@@ -1,17 +1,27 @@
+import {resolveLocalPackage} from '@sanity/cli-core'
 import DOMPurify from 'isomorphic-dompurify'
-import {renderToReadableStream} from 'react-dom/server'
 
 import {manifestDebug} from './debug.js'
 import {config} from './purifyConfig.js'
-import {SchemaIcon, type SchemaIconProps} from './SchemaIcon.js'
+import {resolveSchemaIcon, type SchemaIconProps} from './resolveSchemaIcon.js'
 
 /**
  * Resolves an icon to a sanitized HTML string.
  * Uses react-dom/server to capture styles during SSR.
+ *
+ * react-dom/server is resolved from the studio's working directory to ensure
+ * the same React instance is used by both the server renderer and the studio's
+ * components. Using the CLI's own react-dom/server would cause a dual-React
+ * instance problem where the dispatcher set by one instance is invisible to the other.
  */
 export const resolveIcon = async (props: SchemaIconProps): Promise<string | null> => {
   try {
-    const stream = await renderToReadableStream(<SchemaIcon {...props} />)
+    const [{renderToReadableStream}, element] = await Promise.all([
+      resolveLocalPackage<typeof import('react-dom/server')>('react-dom/server', props.workDir),
+      resolveSchemaIcon(props),
+    ])
+    const stream = await renderToReadableStream(element)
+    await stream.allReady
 
     const reader = stream.getReader()
     const chunks: Uint8Array[] = []
