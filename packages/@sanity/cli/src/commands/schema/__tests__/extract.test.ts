@@ -188,4 +188,36 @@ describe('#schema:extract', {timeout: 60 * 1000}, () => {
     expect(error?.message).toContain('--workspace')
     expect(error?.oclif?.exit).toBe(1)
   })
+
+  test('should extract schema for worst-case-studio fixture', async () => {
+    const cwd = await testFixture('worst-case-studio')
+    process.chdir(cwd)
+
+    const {error, stderr} = await testCommand(ExtractSchemaCommand, [])
+
+    if (error) throw error
+    expect(stderr).toContain('Extracting schema')
+    expect(stderr).toContain('Extracted schema')
+    expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
+  })
+
+  test('should extract schema for worst-case-studio without tsconfigPaths plugin', async () => {
+    const cwd = await testFixture('worst-case-studio')
+    process.chdir(cwd)
+
+    // Remove the tsconfigPaths plugin from the CLI config
+    const cliConfigPath = join(cwd, 'sanity.cli.ts')
+    const content = await readFile(cliConfigPath, 'utf8')
+    const modified = content
+      .replace("import tsconfigPaths from 'vite-tsconfig-paths'\n", '')
+      .replace("plugins: [tsconfigPaths({root: '.'})],", '')
+    await writeFile(cliConfigPath, modified)
+
+    const {error, stderr} = await testCommand(ExtractSchemaCommand, [])
+
+    if (error) throw error
+    expect(stderr).toContain('Extracting schema')
+    expect(stderr).toContain('Extracted schema')
+    expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
+  })
 })
