@@ -10,6 +10,17 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {MCP_API_VERSION} from '../../../services/mcp.js'
 import {ConfigureMcpCommand} from '../configure.js'
 
+const mockEnsureAuthenticated = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../actions/auth/ensureAuthenticated.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../../../actions/auth/ensureAuthenticated.js')>()
+  return {
+    ...actual,
+    ensureAuthenticated: mockEnsureAuthenticated,
+  }
+})
+
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
@@ -46,6 +57,12 @@ const mockExeca = vi.mocked(execa)
 
 describe('#mcp:configure', () => {
   beforeEach(async () => {
+    mockEnsureAuthenticated.mockResolvedValue({
+      email: 'test@example.com',
+      id: 'user-123',
+      name: 'Test User',
+      provider: 'github',
+    })
     mockExistsSync.mockReturnValue(false)
     mockReadFile.mockResolvedValue('{}') // Default: empty config file
     mockWriteFile.mockResolvedValue()
@@ -1036,6 +1053,29 @@ describe('#mcp:configure', () => {
 
     expect(mockWriteFile).toHaveBeenCalledTimes(2)
     expect(stdout).toContain('MCP configured for Cursor, VS Code')
+  })
+
+  test('suggests login when login fails', async () => {
+    const {LoginError} = await import('../../../errors/LoginError.js')
+    mockEnsureAuthenticated.mockRejectedValue(new LoginError('No authentication providers found'))
+
+    const {error} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('No authentication providers found')
+    expect(error?.message).toContain('Try running `sanity login`')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('shows raw error for network failures without suggesting login', async () => {
+    mockEnsureAuthenticated.mockRejectedValue(new Error('request timed out'))
+
+    const {error} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('request timed out')
+    expect(error?.message).not.toContain('sanity login')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('merges with existing config file', async () => {

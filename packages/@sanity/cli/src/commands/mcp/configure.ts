@@ -1,7 +1,12 @@
-import {SanityCommand} from '@sanity/cli-core'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
 
+import {ensureAuthenticated} from '../../actions/auth/ensureAuthenticated.js'
 import {setupMCP} from '../../actions/mcp/setupMCP.js'
+import {LoginError} from '../../errors/LoginError.js'
 import {MCPConfigureTrace} from '../../telemetry/mcp.telemetry.js'
+import {getErrorMessage, toError} from '../../util/getErrorMessage.js'
+
+const debug = subdebug('mcp:configure')
 
 export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpCommand> {
   static override description =
@@ -17,17 +22,39 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
   public async run(): Promise<void> {
     const trace = this.telemetry.trace(MCPConfigureTrace)
     trace.start()
-    const mcpResult = await setupMCP({explicit: true})
 
-    trace.log({
-      configuredEditors: mcpResult.configuredEditors,
-      detectedEditors: mcpResult.detectedEditors,
-    })
+    try {
+      await ensureAuthenticated({output: this.output, telemetry: this.telemetry})
+    } catch (error) {
+      debug('Authentication check failed: %O', error)
+      trace.error(toError(error))
 
-    if (mcpResult.error) {
-      trace.error(mcpResult.error)
-    } else {
-      trace.complete()
+      if (error instanceof LoginError) {
+        this.error(
+          `Failed to verify authentication credentials: ${error.message}. Try running \`sanity login\`.`,
+          {exit: 1},
+        )
+      }
+
+      this.error(`Failed to check authentication: ${getErrorMessage(error)}`, {exit: 1})
+    }
+
+    try {
+      const mcpResult = await setupMCP({explicit: true})
+
+      trace.log({
+        configuredEditors: mcpResult.configuredEditors,
+        detectedEditors: mcpResult.detectedEditors,
+      })
+
+      if (mcpResult.error) {
+        trace.error(mcpResult.error)
+      } else {
+        trace.complete()
+      }
+    } catch (error) {
+      trace.error(toError(error))
+      this.error(getErrorMessage(error), {exit: 1})
     }
   }
 }
