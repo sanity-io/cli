@@ -1,4 +1,4 @@
-import {browserStubs} from './stubs.js'
+import {getBrowserStubs} from './stubs.js'
 
 /**
  * Sets up browser globals (window, document, etc.) in the global scope.
@@ -18,12 +18,13 @@ export async function setupBrowserStubs(): Promise<() => void> {
   }
 
   // Inject browser stubs into global scope
+  const stubs = getBrowserStubs()
   const mockedGlobalThis: Record<string, unknown> = globalThis
   const stubbedKeys: string[] = []
 
-  for (const key in browserStubs) {
+  for (const key of Object.keys(stubs)) {
     if (!(key in mockedGlobalThis)) {
-      mockedGlobalThis[key] = browserStubs[key]
+      mockedGlobalThis[key] = stubs[key]
       stubbedKeys.push(key)
     }
   }

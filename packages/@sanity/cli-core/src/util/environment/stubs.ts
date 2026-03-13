@@ -95,7 +95,7 @@ if (dom.window.matchMedia === undefined) {
  * `HTMLElement`, `SVGElement` needed by libraries like styled-components).
  */
 function collectBrowserStubs(): Record<string, unknown> {
-  const stubs: Record<string, unknown> = {}
+  const stubs: Record<string, unknown> = Object.create(null)
   const nodeGlobals = new Set(Object.getOwnPropertyNames(globalThis))
 
   for (const key of Object.getOwnPropertyNames(dom.window)) {
@@ -114,4 +114,11 @@ function collectBrowserStubs(): Record<string, unknown> {
   return stubs
 }
 
-export const browserStubs: Record<string, unknown> = collectBrowserStubs()
+let browserStubs: Record<string, unknown> | undefined
+
+export function getBrowserStubs(): Record<string, unknown> {
+  if (!browserStubs) {
+    browserStubs = collectBrowserStubs()
+  }
+  return browserStubs
+}
