@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.2](https://github.com/sanity-io/cli/compare/cli-core-v1.1.1...cli-core-v1.1.2) (2026-03-13)
+
+
+### Bug Fixes
+
+* **cli-core:** defer JSDOM creation to first getBrowserStubs() call ([#676](https://github.com/sanity-io/cli/issues/676)) ([c059421](https://github.com/sanity-io/cli/commit/c0594214c53706b838ff7d6df91f3b37631d97a7))
+* schema extract causing Element is not defined error ([#672](https://github.com/sanity-io/cli/issues/672)) ([23a360e](https://github.com/sanity-io/cli/commit/23a360e0aef7c6edd581eb870e5927dbfe9ef336))
+* tsconfig paths not respected in the sanity config ([#669](https://github.com/sanity-io/cli/issues/669)) ([7ecf06b](https://github.com/sanity-io/cli/commit/7ecf06b61781f449081a618c70203d2223b6e47c))
+
 ## [1.1.1](https://github.com/sanity-io/cli/compare/cli-core-v1.1.0...cli-core-v1.1.1) (2026-03-13)
 
 
