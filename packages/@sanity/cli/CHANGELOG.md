@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.4](https://github.com/sanity-io/cli/compare/cli-v6.1.3...cli-v6.1.4) (2026-03-13)
+
+
+### Bug Fixes
+
+* **deps:** update oclif-tooling ([#651](https://github.com/sanity-io/cli/issues/651)) ([f807f1d](https://github.com/sanity-io/cli/commit/f807f1dc351e4657debf86c00c5537b014391feb))
+* tsconfig paths not respected in the sanity config ([#669](https://github.com/sanity-io/cli/issues/669)) ([7ecf06b](https://github.com/sanity-io/cli/commit/7ecf06b61781f449081a618c70203d2223b6e47c))
+* validate auth token before MCP token creation ([#667](https://github.com/sanity-io/cli/issues/667)) ([fd0d4e7](https://github.com/sanity-io/cli/commit/fd0d4e78616667120e6cd2ae498352f928c47c1d))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 1.1.2
+  * devDependencies
+    * @sanity/cli-test bumped to 0.2.4
+
 ## [6.1.3](https://github.com/sanity-io/cli/compare/cli-v6.1.2...cli-v6.1.3) (2026-03-13)
 
 
