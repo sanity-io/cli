@@ -607,7 +607,15 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         this.error('Authentication required to import dataset', {exit: 1})
       }
       await ImportDatasetCommand.run(
-        [template.datasetUrl, '--project', projectId, '--dataset', datasetName, '--token', token],
+        [
+          template.datasetUrl,
+          '--project-id',
+          projectId,
+          '--dataset',
+          datasetName,
+          '--token',
+          token,
+        ],
         {
           root: outputPath,
         },
