@@ -3,7 +3,7 @@ import {type Schema} from '@sanity/types'
 import {type Workspace} from 'sanity'
 
 import {type resolveIcon as resolveIconFn} from './iconResolver.js'
-import {type SchemaIconProps} from './SchemaIcon.js'
+import {type SchemaIconProps} from './resolveSchemaIcon.js'
 import {transformType} from './schemaTypeTransformer.js'
 import {type CreateWorkspaceManifest, type ManifestSchemaType, type ManifestTool} from './types.js'
 

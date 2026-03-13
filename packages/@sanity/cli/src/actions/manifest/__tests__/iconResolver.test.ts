@@ -1,3 +1,4 @@
+import {createElement} from 'react'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {resolveIcon} from '../iconResolver.js'
@@ -27,6 +28,35 @@ function createMockStream(html: string) {
   }
 }
 
+function MockThemeProvider({children}: {children: unknown}) {
+  return children
+}
+
+function setupMocks(mockRenderToReadableStream: ReturnType<typeof vi.fn>) {
+  const buildTheme = vi.fn().mockReturnValue({color: 'mock-theme'})
+  const createDefaultIcon = vi.fn().mockReturnValue(createElement('span', null, 'default'))
+
+  mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
+    switch (pkg) {
+      case '@sanity/ui': {
+        return {ThemeProvider: MockThemeProvider}
+      }
+      case '@sanity/ui/theme': {
+        return {buildTheme}
+      }
+      case 'react-dom/server': {
+        return {renderToReadableStream: mockRenderToReadableStream}
+      }
+      case 'sanity': {
+        return {createDefaultIcon}
+      }
+      default: {
+        throw new Error(`Unexpected package resolution: ${pkg}`)
+      }
+    }
+  })
+}
+
 describe('resolveIcon', () => {
   afterEach(() => {
     vi.clearAllMocks()
@@ -38,10 +68,7 @@ describe('resolveIcon', () => {
       .mockResolvedValue(
         createMockStream('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>'),
       )
-    mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
-      if (pkg === 'react-dom/server') return {renderToReadableStream: mockRenderToReadableStream}
-      throw new Error(`Unexpected package resolution: ${pkg}`)
-    })
+    setupMocks(mockRenderToReadableStream)
 
     await resolveIcon({title: 'Test', workDir: '/studio/project'})
 
@@ -54,10 +81,7 @@ describe('resolveIcon', () => {
       .mockResolvedValue(
         createMockStream('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>'),
       )
-    mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
-      if (pkg === 'react-dom/server') return {renderToReadableStream: mockRenderToReadableStream}
-      throw new Error(`Unexpected package resolution: ${pkg}`)
-    })
+    setupMocks(mockRenderToReadableStream)
 
     const result = await resolveIcon({title: 'Test', workDir: '/studio/project'})
 
@@ -69,12 +93,7 @@ describe('resolveIcon', () => {
   test('sanitizes the rendered HTML output', async () => {
     const maliciousHtml =
       '<svg xmlns="http://www.w3.org/2000/svg"><script>alert("xss")</script><path d="M0 0"/></svg>'
-    mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
-      if (pkg === 'react-dom/server') {
-        return {renderToReadableStream: vi.fn().mockResolvedValue(createMockStream(maliciousHtml))}
-      }
-      throw new Error(`Unexpected package resolution: ${pkg}`)
-    })
+    setupMocks(vi.fn().mockResolvedValue(createMockStream(maliciousHtml)))
 
     const result = await resolveIcon({title: 'Test', workDir: '/studio/project'})
 
@@ -93,12 +112,7 @@ describe('resolveIcon', () => {
   })
 
   test('returns null when rendering throws', async () => {
-    mockResolveLocalPackage.mockImplementation(async (pkg: string) => {
-      if (pkg === 'react-dom/server') {
-        return {renderToReadableStream: vi.fn().mockRejectedValue(new Error('Render error'))}
-      }
-      throw new Error(`Unexpected package resolution: ${pkg}`)
-    })
+    setupMocks(vi.fn().mockRejectedValue(new Error('Render error')))
 
     const result = await resolveIcon({title: 'Test', workDir: '/studio/project'})
 

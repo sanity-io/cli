@@ -3,7 +3,7 @@ import DOMPurify from 'isomorphic-dompurify'
 
 import {manifestDebug} from './debug.js'
 import {config} from './purifyConfig.js'
-import {SchemaIcon, type SchemaIconProps} from './SchemaIcon.js'
+import {resolveSchemaIcon, type SchemaIconProps} from './resolveSchemaIcon.js'
 
 /**
  * Resolves an icon to a sanitized HTML string.
@@ -16,11 +16,11 @@ import {SchemaIcon, type SchemaIconProps} from './SchemaIcon.js'
  */
 export const resolveIcon = async (props: SchemaIconProps): Promise<string | null> => {
   try {
-    const {renderToReadableStream} = await resolveLocalPackage<typeof import('react-dom/server')>(
-      'react-dom/server',
-      props.workDir,
-    )
-    const stream = await renderToReadableStream(<SchemaIcon {...props} />)
+    const [{renderToReadableStream}, element] = await Promise.all([
+      resolveLocalPackage<typeof import('react-dom/server')>('react-dom/server', props.workDir),
+      resolveSchemaIcon(props),
+    ])
+    const stream = await renderToReadableStream(element)
     await stream.allReady
 
     const reader = stream.getReader()
