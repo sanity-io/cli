@@ -54,7 +54,7 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
       }
     } catch (error) {
       trace.error(toError(error))
-      this.error(getErrorMessage(cause), {exit: 1})
+      this.error(getErrorMessage(error), {exit: 1})
     }
   }
 }
