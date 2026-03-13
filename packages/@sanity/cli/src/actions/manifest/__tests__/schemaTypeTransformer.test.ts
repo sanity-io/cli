@@ -129,13 +129,17 @@ describe('schemaTypeTransformer', () => {
           options: {
             // depth: 0=type, 1=options, 2=deep, 3=a, 4=b, 5=c, 6>5 → pruned
             deep: {a: {b: {c: {d: 'too deep'}}}},
+            kept: 'shallow', // survives pruning
           },
           type: 'document',
         },
       ])
 
       const doc = findType(types, 'testDoc')
-      // The deeply nested structure should be pruned to undefined because
+      // Shallow properties should survive pruning
+      expect(doc.options).toBeDefined()
+      expect(doc.options!.kept).toBe('shallow')
+      // The deeply nested structure should be pruned because
       // the innermost levels exceed MAX_CUSTOM_PROPERTY_DEPTH
       expect(doc.options?.deep).toBeUndefined()
     })
