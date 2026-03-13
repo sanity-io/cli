@@ -6,80 +6,87 @@ const html = `<!doctype html>
   <body></body>
 </html>`
 
-const dom = new JSDOM(html, {
-  pretendToBeVisual: true,
-  url: 'http://localhost:3333/',
-})
+/**
+ * Creates a JSDOM instance and applies polyfills for missing browser globals.
+ */
+function createBrowserDom(): JSDOM {
+  const dom = new JSDOM(html, {
+    pretendToBeVisual: true,
+    url: 'http://localhost:3333/',
+  })
 
-// Special handling of certain globals
-if (typeof dom.window.document.execCommand !== 'function') {
-  // Crashes ace editor without this :/
-  dom.window.document.execCommand = function execCommand(
-    // Provide the right arity for the function, even if unused
-    _commandName: string,
-    _showDefaultUI: boolean,
-    _valueArgument: unknown,
-  ) {
-    // Return false to indicate "unsupported"
-    return false
-  }
-}
-
-if (dom.window.requestIdleCallback === undefined) {
-  dom.window.requestIdleCallback = (cb: IdleRequestCallback) => setTimeout(cb, 10)
-}
-
-if (dom.window.cancelIdleCallback === undefined) {
-  dom.window.cancelIdleCallback = (id: number) => clearTimeout(id)
-}
-
-if (dom.window.ResizeObserver === undefined) {
-  dom.window.ResizeObserver = class ResizeObserver {
-    // eslint-disable-next-line @typescript-eslint/no-useless-constructor
-    constructor(_callback: unknown) {}
-    disconnect() {}
-    observe(_target: unknown, _options: unknown) {}
-    unobserve(_target: unknown) {}
-  }
-}
-
-if (dom.window.IntersectionObserver === undefined) {
-  dom.window.IntersectionObserver = class IntersectionObserver {
-    options: {root?: unknown; rootMargin?: string; threshold?: number}
-    constructor(
-      _callback: unknown,
-      options?: {root?: unknown; rootMargin?: string; threshold?: number},
+  // Special handling of certain globals
+  if (typeof dom.window.document.execCommand !== 'function') {
+    // Crashes ace editor without this :/
+    dom.window.document.execCommand = function execCommand(
+      // Provide the right arity for the function, even if unused
+      _commandName: string,
+      _showDefaultUI: boolean,
+      _valueArgument: unknown,
     ) {
-      this.options = options || {}
+      // Return false to indicate "unsupported"
+      return false
     }
-    get root() {
-      return this.options.root || null
-    }
-    get rootMargin() {
-      return this.options.rootMargin || ''
-    }
-    get thresholds() {
-      return Array.isArray(this.options.threshold)
-        ? this.options.threshold
-        : [this.options.threshold || 0]
-    }
-
-    disconnect() {}
-    observe(_el: unknown) {}
-    takeRecords() {
-      return []
-    }
-    unobserve(_el: unknown) {}
   }
-}
 
-if (dom.window.matchMedia === undefined) {
-  dom.window.matchMedia = (_qs: unknown) =>
-    ({
-      matches: false,
-      media: '',
-      onchange: null,
-    }) as MediaQueryList
+  if (dom.window.requestIdleCallback === undefined) {
+    dom.window.requestIdleCallback = (cb: IdleRequestCallback) => setTimeout(cb, 10)
+  }
+
+  if (dom.window.cancelIdleCallback === undefined) {
+    dom.window.cancelIdleCallback = (id: number) => clearTimeout(id)
+  }
+
+  if (dom.window.ResizeObserver === undefined) {
+    dom.window.ResizeObserver = class ResizeObserver {
+      // eslint-disable-next-line @typescript-eslint/no-useless-constructor
+      constructor(_callback: unknown) {}
+      disconnect() {}
+      observe(_target: unknown, _options: unknown) {}
+      unobserve(_target: unknown) {}
+    }
+  }
+
+  if (dom.window.IntersectionObserver === undefined) {
+    dom.window.IntersectionObserver = class IntersectionObserver {
+      options: {root?: unknown; rootMargin?: string; threshold?: number}
+      constructor(
+        _callback: unknown,
+        options?: {root?: unknown; rootMargin?: string; threshold?: number},
+      ) {
+        this.options = options || {}
+      }
+      get root() {
+        return this.options.root || null
+      }
+      get rootMargin() {
+        return this.options.rootMargin || ''
+      }
+      get thresholds() {
+        return Array.isArray(this.options.threshold)
+          ? this.options.threshold
+          : [this.options.threshold || 0]
+      }
+
+      disconnect() {}
+      observe(_el: unknown) {}
+      takeRecords() {
+        return []
+      }
+      unobserve(_el: unknown) {}
+    }
+  }
+
+  if (dom.window.matchMedia === undefined) {
+    dom.window.matchMedia = (_qs: unknown) =>
+      ({
+        matches: false,
+        media: '',
+        onchange: null,
+      }) as MediaQueryList
+  }
+
+  return dom
 }
 
 /**
@@ -95,6 +102,7 @@ if (dom.window.matchMedia === undefined) {
  * `HTMLElement`, `SVGElement` needed by libraries like styled-components).
  */
 function collectBrowserStubs(): Record<string, unknown> {
+  const dom = createBrowserDom()
   const stubs: Record<string, unknown> = Object.create(null)
   const nodeGlobals = new Set(Object.getOwnPropertyNames(globalThis))
 
