@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/sanity-io/cli/compare/cli-core-v1.1.0...cli-core-v1.1.1) (2026-03-13)
+
+
+### Bug Fixes
+
+* resolve react-dom/server and @sanity/ui from studio workDir ([#657](https://github.com/sanity-io/cli/issues/657)) ([ce07d42](https://github.com/sanity-io/cli/commit/ce07d42e67acd906a3b585c4a62c031ea6c53bee))
+
 ## [1.1.0](https://github.com/sanity-io/cli/compare/cli-core-v1.0.1...cli-core-v1.1.0) (2026-03-12)
 
 
