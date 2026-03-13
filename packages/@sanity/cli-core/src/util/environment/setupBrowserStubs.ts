@@ -1,4 +1,4 @@
-import * as stubs from './stubs.js'
+import {browserStubs} from './stubs.js'
 
 /**
  * Sets up browser globals (window, document, etc.) in the global scope.
@@ -6,6 +6,7 @@ import * as stubs from './stubs.js'
  * This is used by both mockBrowserEnvironment (for child processes) and
  * studioWorkerLoader (for worker threads) to provide a browser-like environment.
  *
+ * @param basePath - The root path of the Sanity Studio project
  * @returns A cleanup function that removes the injected globals
  * @internal
  */
@@ -18,13 +19,12 @@ export async function setupBrowserStubs(): Promise<() => void> {
   }
 
   // Inject browser stubs into global scope
-  const mockStubs = stubs as unknown as Record<string, unknown>
   const mockedGlobalThis: Record<string, unknown> = globalThis
   const stubbedKeys: string[] = []
 
-  for (const key in stubs) {
+  for (const key in browserStubs) {
     if (!(key in mockedGlobalThis)) {
-      mockedGlobalThis[key] = mockStubs[key]
+      mockedGlobalThis[key] = browserStubs[key]
       stubbedKeys.push(key)
     }
   }
