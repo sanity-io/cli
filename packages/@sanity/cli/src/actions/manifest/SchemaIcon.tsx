@@ -1,10 +1,6 @@
 import {resolveLocalPackage} from '@sanity/cli-core'
-import {ThemeProvider} from '@sanity/ui'
-import {buildTheme} from '@sanity/ui/theme'
 import {type ComponentType, isValidElement, type ReactNode} from 'react'
 import {isValidElementType} from 'react-is'
-
-const theme = buildTheme()
 
 interface SchemaIconProps {
   title: string
@@ -14,12 +10,22 @@ interface SchemaIconProps {
   subtitle?: string
 }
 
+/**
+ * All runtime dependencies that use React hooks (ThemeProvider, sanity components)
+ * must be resolved from the studio's working directory. This ensures they share
+ * the same React instance as the server renderer, avoiding dual-React dispatcher issues.
+ */
 const SchemaIcon = async ({
   icon,
   subtitle,
   title,
   workDir,
 }: SchemaIconProps): Promise<React.JSX.Element> => {
+  const [{ThemeProvider}, {buildTheme}] = await Promise.all([
+    resolveLocalPackage<typeof import('@sanity/ui')>('@sanity/ui', workDir),
+    resolveLocalPackage<typeof import('@sanity/ui/theme')>('@sanity/ui/theme', workDir),
+  ])
+  const theme = buildTheme()
   const normalizedIcon = await normalizeIcon(icon, title, subtitle, workDir)
 
   return <ThemeProvider theme={theme}>{normalizedIcon}</ThemeProvider>
