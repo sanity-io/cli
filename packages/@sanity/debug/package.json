@@ -1,0 +1,77 @@
+{
+  "name": "@sanity/debug",
+  "version": "1.0.0",
+  "description": "Debug logging utility for Sanity packages",
+  "keywords": [
+    "debug",
+    "logging",
+    "sanity"
+  ],
+  "homepage": "https://github.com/sanity-io/cli",
+  "bugs": "https://github.com/sanity-io/cli/issues",
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanity-io/cli.git",
+    "directory": "packages/@sanity/debug"
+  },
+  "files": [
+    "./dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "browser": {
+        "source": "./src/_exports/browser.ts",
+        "default": "./dist/_exports/browser.js"
+      },
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "prebuild": "pnpm run clean",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
+    "build:types": "pkg-utils build --emitDeclarationOnly",
+    "check:types": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "lint": "eslint .",
+    "publint": "publint",
+    "test": "vitest run",
+    "posttest": "pnpm run lint",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
+  },
+  "devDependencies": {
+    "@eslint/compat": "catalog:",
+    "@repo/package.config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:*",
+    "@sanity/pkg-utils": "catalog:",
+    "@swc/cli": "catalog:",
+    "@swc/core": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "publint": "catalog:",
+    "rimraf": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "browserslist": [
+    "node >=20.19",
+    "node >=22.12",
+    "baseline 2024"
+  ],
+  "engines": {
+    "node": ">=20.19.1 <22 || >=22.12"
+  }
+}

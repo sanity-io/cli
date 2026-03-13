@@ -26,6 +26,7 @@ export default defineConfig({
       include: [
         'packages/@sanity/cli/**/*.{ts,tsx}',
         'packages/@sanity/cli-core/**/*.{ts,tsx}',
+        'packages/@sanity/debug/**/*.{ts,tsx}',
         'packages/create-sanity/**/*.{ts,tsx}',
       ],
       provider: 'istanbul',
@@ -45,6 +46,11 @@ export default defineConfig({
         return false
       }
     },
-    projects: ['packages/@sanity/cli', 'packages/@sanity/cli-core', 'packages/create-sanity'],
+    projects: [
+      'packages/@sanity/cli',
+      'packages/@sanity/cli-core',
+      'packages/@sanity/debug',
+      'packages/create-sanity',
+    ],
   },
 })

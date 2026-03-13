@@ -71,6 +71,10 @@ const baseConfig = {
       entry: ['package.config.ts'],
       project,
     },
+    'packages/@sanity/debug': {
+      entry: ['package.config.ts'],
+      project,
+    },
     'packages/create-sanity': {
       ignoreDependencies: ['@sanity/cli'],
     },
