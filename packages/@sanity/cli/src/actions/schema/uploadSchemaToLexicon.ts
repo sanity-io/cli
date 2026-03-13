@@ -1,13 +1,14 @@
 import {styleText} from 'node:util'
 
 import {ux} from '@oclif/core/ux'
-import {getProjectCliClient, resolveLocalPackage, subdebug} from '@sanity/cli-core'
+import {doImport, getProjectCliClient, resolveLocalPackage, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {type StudioManifest, type Workspace} from 'sanity'
 
 import {SCHEMA_API_VERSION} from '../../services/schemas.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
-import {resolveIcon} from '../manifest/iconResolver.js'
+
+const iconResolverPath = new URL('../manifest/iconResolver.js', import.meta.url).href
 
 interface UploadSchemaToLexiconOptions {
   projectId: string
@@ -82,12 +83,15 @@ export async function uploadSchemaToLexicon(
       }
     }
 
+    // Lazy import to avoid pulling in @sanity/ui at module load time
+    const {resolveIcon} = await doImport(iconResolverPath)
+
     // Generate studio manifest using the shared utility
     const manifest = await generateStudioManifest({
       buildId: JSON.stringify(Date.now()),
       bundleVersion,
+      // @todo replace with import from @sanity/schema/_internal in future
       resolveIcon: async (workspace) =>
-        // @todo replace with import from @sanity/schema/_internal in future
         (await resolveIcon({
           icon: workspace.icon,
           subtitle: workspace.subtitle,
