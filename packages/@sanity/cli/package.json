@@ -70,7 +70,6 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
-    "@babel/traverse": "^7.29.0",
     "@oclif/core": "catalog:",
     "@oclif/plugin-help": "catalog:",
     "@oclif/plugin-not-found": "catalog:",
@@ -125,7 +124,6 @@
     "react-dom": "^19.2.4",
     "react-is": "^19.2.4",
     "read-package-up": "catalog:",
-    "recast": "^0.23.11",
     "rimraf": "catalog:",
     "rxjs": "catalog:",
     "semver": "^7.7.4",
@@ -150,7 +148,6 @@
     "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
-    "@types/babel__traverse": "^7.28.0",
     "@types/debug": "catalog:",
     "@types/gunzip-maybe": "^1.4.3",
     "@types/lodash-es": "catalog:",
