@@ -77,7 +77,9 @@ function getTsconfigPathAliases(studioRootPath: string): Record<string, string> 
       aliases[pattern] = resolvePath(base, target)
     }
   }
-  return aliases
+  // Sort by key length descending so more-specific aliases take precedence
+  // (e.g. "@lib" is matched before "@" when both exist)
+  return Object.fromEntries(Object.entries(aliases).toSorted(([a], [b]) => b.length - a.length))
 }
 
 /**
