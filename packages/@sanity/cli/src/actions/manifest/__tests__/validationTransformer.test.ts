@@ -302,7 +302,6 @@ describe('validationTransformer', () => {
     const result1 = transformValidation([], retainSerializableProps)
     expect('validation' in result1).toBe(false)
 
-    // @ts-expect-error — testing undefined input defensively
     const result2 = transformValidation(undefined, retainSerializableProps)
     expect('validation' in result2).toBe(false)
   })
