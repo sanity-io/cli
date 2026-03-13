@@ -106,16 +106,6 @@ describe('validationTransformer', () => {
     expect(flags).toContain('max')
   })
 
-  test('should serialize boolean validation: required', () => {
-    const result = transformValidation(
-      [createRule([{constraint: 'required', flag: 'presence'}])],
-      retainSerializableProps,
-    )
-
-    const flags = getFlags(result)
-    expect(flags).toContain('presence')
-  })
-
   test('should serialize date validation: required, min, max', () => {
     const result = transformValidation(
       [
@@ -139,16 +129,6 @@ describe('validationTransformer', () => {
       const maxRule = result.validation[0].rules.find((r) => r.flag === 'max')
       expect(maxRule!.constraint).toBe('2030-12-31')
     }
-  })
-
-  test('should serialize image/file validation: required', () => {
-    const result = transformValidation(
-      [createRule([{constraint: 'required', flag: 'presence'}])],
-      retainSerializableProps,
-    )
-
-    const flags = getFlags(result)
-    expect(flags).toContain('presence')
   })
 
   test('should serialize number validation: required, min, max, integer, positive, greaterThan, lessThan, precision', () => {
@@ -187,16 +167,6 @@ describe('validationTransformer', () => {
     expect(flags2).toContain('greaterThan')
     expect(flags2).toContain('lessThan')
     expect(flags2).toContain('precision')
-  })
-
-  test('should serialize reference validation: required', () => {
-    const result = transformValidation(
-      [createRule([{constraint: 'required', flag: 'presence'}])],
-      retainSerializableProps,
-    )
-
-    const flags = getFlags(result)
-    expect(flags).toContain('presence')
   })
 
   test('should serialize string validation: required, max, min, length, uppercase, email, regex', () => {
