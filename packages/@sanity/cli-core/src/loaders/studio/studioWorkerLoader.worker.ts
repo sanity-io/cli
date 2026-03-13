@@ -105,7 +105,12 @@ function isHttpsUrl(id: string): boolean {
   return id.startsWith('https://')
 }
 
-const tsconfigAliases = getTsconfigPathAliases(rootPath)
+let tsconfigAliases: Record<string, string> = {}
+try {
+  tsconfigAliases = getTsconfigPathAliases(rootPath)
+} catch (err) {
+  debug('Failed to read tsconfig paths: %o', err)
+}
 
 const defaultViteConfig: InlineConfig = {
   build: {target: 'node'},
