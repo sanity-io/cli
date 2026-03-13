@@ -1,2 +1,2 @@
 // Placeholder - will be implemented in subsequent tasks
-export {}
+export type {DebugEnv, DebugFunction, Formatter} from './types.js'
