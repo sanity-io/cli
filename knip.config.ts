@@ -64,6 +64,8 @@ const baseConfig = {
       ],
       // Claude, Codex, and OpenCode are not dependencies of the CLI, but they are used in MCP configuration
       ignoreBinaries: ['claude', 'codex', 'opencode'],
+      // @babel/parser is an undeclared dependency of recast, see https://github.com/sanity-io/cli/issues/650
+      ignoreDependencies: ['@babel/parser'],
       oclif: {
         config: ['oclif.config.js'],
       },

@@ -70,6 +70,7 @@
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
   "dependencies": {
+    "@babel/parser": "^7.29.0",
     "@babel/traverse": "^7.29.0",
     "@oclif/core": "catalog:",
     "@oclif/plugin-help": "catalog:",
