@@ -6,6 +6,9 @@ import {defineConfig, defineField, defineType} from 'sanity'
 import {media} from 'sanity-plugin-media'
 import {structureTool} from 'sanity/structure'
 
+// Side-effect import: references browser globals (Element, HTMLElement, Node) at
+// import time, simulating what styled-components does. Verifies our browser stubs work.
+import '@/browserGlobalsCheck'
 import DescriptionInput from '@/descriptionInput'
 import {schemaTypes} from '@/schemaTypes'
 
