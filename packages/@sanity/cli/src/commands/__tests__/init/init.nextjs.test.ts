@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   createOrAppendEnvVars: vi.fn(),
   execa: vi.fn(),
   existsSync: vi.fn(),
+  getSanityEnv: vi.fn(),
   input: vi.fn(),
   installNewPackages: vi.fn(),
   mkdir: vi.fn(),
@@ -128,6 +129,10 @@ vi.mock('../../../actions/init/env/createOrAppendEnvVars.js', () => ({
   createOrAppendEnvVars: mocks.createOrAppendEnvVars,
 }))
 
+vi.mock('../../../util/getSanityEnv.js', () => ({
+  getSanityEnv: mocks.getSanityEnv,
+}))
+
 const setupInitSuccessMocks = () => {
   mockApi({
     apiVersion: ORGANIZATIONS_API_VERSION,
@@ -153,6 +158,7 @@ const defaultMocks = {
 
 mocks.createOrAppendEnvVars.mockResolvedValue(undefined)
 mocks.execa.mockResolvedValue(undefined)
+mocks.getSanityEnv.mockReturnValue('production')
 
 describe('#init:nextjs-app-initialization', () => {
   afterEach(() => {
@@ -329,5 +335,65 @@ describe('#init:nextjs-app-initialization', () => {
     )
 
     expect(error?.oclif?.exit).toBe(0)
+  })
+
+  test('writes SANITY_INTERNAL_ENV to .env when in staging', async () => {
+    mocks.getSanityEnv.mockReturnValue('staging')
+
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: CORS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test/cors',
+    }).reply(200, [
+      {
+        allowCredentials: true,
+        createdAt: '2024-01-15T10:30:00.000Z',
+        deletedAt: null,
+        id: 1234,
+        origin: 'http://localhost:3000',
+        projectId: 'abc123xyz',
+        updatedAt: '2024-01-20T14:45:00.000Z',
+      },
+    ])
+
+    mockApi({
+      apiVersion: MCP_JOURNEY_API_VERSION,
+      method: 'get',
+      uri: '/journey/mcp/post-init-prompt',
+    }).reply(200, {})
+
+    const {error} = await testCommand(
+      InitCommand,
+      ['--yes', '--project=test', '--dataset=test', '--nextjs-add-config-files'],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
+
+    expect(error?.oclif?.exit).toBe(0)
+
+    // Called twice: once for project env vars (.env.local), once for staging env (.env)
+    expect(mocks.createOrAppendEnvVars).toHaveBeenCalledTimes(2)
+
+    // Staging env var written to .env (not .env.local)
+    expect(mocks.createOrAppendEnvVars).toHaveBeenCalledWith({
+      envVars: {INTERNAL_ENV: 'staging'},
+      filename: '.env',
+      framework: null,
+      log: false,
+      output: expect.any(Object),
+      outputPath: cwd,
+    })
   })
 })
