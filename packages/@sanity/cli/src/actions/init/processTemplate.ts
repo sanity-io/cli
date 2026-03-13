@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import _traverse from '@babel/traverse'
-import {parse, print} from 'recast'
-import * as parser from 'recast/parsers/typescript.js'
-
 interface TemplateOptions<T> {
   template: string
   variables: T
@@ -10,51 +5,44 @@ interface TemplateOptions<T> {
   includeBooleanTransform?: boolean
 }
 
-// @ts-expect-error - Babel's ESM exports require accessing .default
-const traverse = _traverse.default
-
+/**
+ * Process a template string by replacing placeholder variables with actual values.
+ *
+ * String variables use the format `'%variableName%'` (inside string literals).
+ * Boolean variables use the format `__BOOL__variableName__` (as bare identifiers).
+ */
 export function processTemplate<T extends object>(options: TemplateOptions<T>): string {
   const {includeBooleanTransform = false, template, variables} = options
-  const ast = parse(template.trimStart(), {parser})
 
-  traverse(ast, {
-    StringLiteral: {
-      enter({node}: {node: any}) {
-        const value = node.value
-        if (!value.startsWith('%') || !value.endsWith('%')) {
-          return
-        }
-        const variableName = value.slice(1, -1) as keyof T
-        if (!(variableName in variables)) {
-          throw new Error(`Template variable '${value}' not defined`)
-        }
-        const newValue = variables[variableName]
-        /*
-         * although there are valid non-strings in our config,
-         * they're not in StringLiteral nodes, so assume undefined
-         */
-        node.value = typeof newValue === 'string' ? newValue : ''
-      },
-    },
-    ...(includeBooleanTransform && {
-      Identifier: {
-        enter(path: any) {
-          if (!path.node.name.startsWith('__BOOL__')) {
-            return
-          }
-          const variableName = path.node.name.replace(/^__BOOL__(.+?)__$/, '$1') as keyof T
-          if (!(variableName in variables)) {
-            throw new Error(`Template variable '${variableName.toString()}' not defined`)
-          }
-          const value = variables[variableName]
-          if (typeof value !== 'boolean') {
-            throw new TypeError(`Expected boolean value for '${variableName.toString()}'`)
-          }
-          path.replaceWith({type: 'BooleanLiteral', value})
-        },
-      },
-    }),
-  })
+  // Replace string placeholders: '%variableName%' or "%variableName%"
+  let result = template
+    .trimStart()
+    .replaceAll(/(['"])%([\w]+)%\1/g, (_match, quote: string, variableName: string) => {
+      if (!(variableName in variables)) {
+        throw new Error(`Template variable '%${variableName}%' not defined`)
+      }
+      const newValue =
+        typeof variables[variableName as keyof T] === 'string'
+          ? variables[variableName as keyof T]
+          : ''
+      // Escape backslashes first, then the surrounding quote character
+      const escaped = (newValue as string).replaceAll('\\', '\\\\').replaceAll(quote, `\\${quote}`)
+      return `${quote}${escaped}${quote}`
+    })
 
-  return print(ast, {quote: 'single'}).code
+  // Replace boolean placeholders: __BOOL__variableName__
+  if (includeBooleanTransform) {
+    result = result.replaceAll(/__BOOL__(\w+)__/g, (_match, variableName: string) => {
+      if (!(variableName in variables)) {
+        throw new Error(`Template variable '${variableName}' not defined`)
+      }
+      const value = variables[variableName as keyof T]
+      if (typeof value !== 'boolean') {
+        throw new TypeError(`Expected boolean value for '${variableName}'`)
+      }
+      return String(value)
+    })
+  }
+
+  return result
 }
