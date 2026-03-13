@@ -178,11 +178,10 @@ describe('createDebug', () => {
   })
 
   test('coerces Error to stack trace', () => {
-    const logArgs: unknown[][] = []
+    const formatted: unknown[][] = []
     const env = createTestEnv({
-      formatArgs: vi.fn(),
-      log: (...args: unknown[]) => {
-        logArgs.push(args)
+      formatArgs(this: DebugFunction, args: unknown[]) {
+        formatted.push([...args])
       },
     })
     const {createDebug, enable} = createDebugFactory(env)
@@ -192,7 +191,9 @@ describe('createDebug', () => {
     const err = new Error('test error')
     debug(err)
 
-    expect(logArgs[0][0]).toContain('%O')
+    // Error should be coerced to its stack trace string, NOT treated as a non-string (%O)
+    expect(formatted[0][0]).not.toContain('%O')
+    expect(formatted[0][0]).toContain('test error')
   })
 
   test('non-string first arg gets %O prepended', () => {

@@ -113,7 +113,8 @@ export function selectColor(
   let hash = 0
   for (let i = 0; i < namespace.length; i++) {
     hash = (hash << 5) - hash + (namespace.codePointAt(i) ?? 0)
-    hash = Math.trunc(hash)
+    // eslint-disable-next-line unicorn/prefer-math-trunc -- DJB2 requires `|= 0` for 32-bit signed coercion, not Math.trunc
+    hash |= 0
   }
   return colors[Math.abs(hash) % colors.length]
 }

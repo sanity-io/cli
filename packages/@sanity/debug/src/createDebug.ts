@@ -1,3 +1,4 @@
+import {selectColor} from './colors.js'
 import {type DebugEnv, type DebugFunction, type Formatter} from './types.js'
 
 export interface DebugExports {
@@ -75,6 +76,10 @@ export function createDebugFactory(env: DebugEnv): DebugExports {
 
       const formatted = [...args]
 
+      if (formatted[0] instanceof Error) {
+        formatted[0] = formatted[0].stack || formatted[0].message
+      }
+
       if (typeof formatted[0] !== 'string') {
         formatted.unshift('%O')
       }
@@ -113,7 +118,7 @@ export function createDebugFactory(env: DebugEnv): DebugExports {
     const instance = debug as unknown as DebugFunction
     instance.namespace = namespace
     instance.useColors = env.useColors()
-    instance.color = env.colors()[Math.abs(hashNamespace(namespace)) % env.colors().length]
+    instance.color = selectColor(namespace, env.colors())
     instance.diff = 0
     instance.log = undefined
 
@@ -184,14 +189,4 @@ function matchesTemplate(search: string, template: string): boolean {
   }
 
   return templateIndex === template.length
-}
-
-/** DJB2 hash - same algorithm as original debug */
-function hashNamespace(namespace: string): number {
-  let hash = 0
-  for (let i = 0; i < namespace.length; i++) {
-    hash = (hash << 5) - hash + (namespace.codePointAt(i) ?? 0)
-    hash = Math.trunc(hash)
-  }
-  return hash
 }
