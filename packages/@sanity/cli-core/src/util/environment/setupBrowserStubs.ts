@@ -6,7 +6,6 @@ import {browserStubs} from './stubs.js'
  * This is used by both mockBrowserEnvironment (for child processes) and
  * studioWorkerLoader (for worker threads) to provide a browser-like environment.
  *
- * @param basePath - The root path of the Sanity Studio project
  * @returns A cleanup function that removes the injected globals
  * @internal
  */
@@ -36,13 +35,13 @@ export async function setupBrowserStubs(): Promise<() => void> {
 
   // Return cleanup function
   return () => {
-    for (const key of stubbedKeys) {
-      delete mockedGlobalThis[key]
-    }
-
-    // Remove marker
+    // Remove marker before deleting window
     if (globalThis.window) {
       delete (globalThis.window as unknown as Record<string, unknown>).__mockedBySanity
+    }
+
+    for (const key of stubbedKeys) {
+      delete mockedGlobalThis[key]
     }
   }
 }
