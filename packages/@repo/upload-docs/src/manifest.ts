@@ -93,8 +93,7 @@ function makeHeading(
 function getFlagValue(flag: {helpValue?: string | string[]; type: string}): string {
   if (flag.type === 'boolean') return ''
   if (flag.helpValue) {
-    const val = Array.isArray(flag.helpValue) ? flag.helpValue[0] : flag.helpValue
-    return `<${val}>`
+    return Array.isArray(flag.helpValue) ? flag.helpValue[0] : flag.helpValue
   }
   return '<value>'
 }
