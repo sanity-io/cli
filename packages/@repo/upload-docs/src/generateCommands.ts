@@ -20,8 +20,8 @@ const commandsMap = new Map<string, CommandInfo>()
  */
 export async function generateCommands(): Promise<CommandInfo[]> {
   const config = await Config.load({
-    // Path to the CLI root
     ignoreManifest: true,
+    // Path to the CLI root
     root: resolve(import.meta.dirname, '../../../@sanity/cli'),
   })
 

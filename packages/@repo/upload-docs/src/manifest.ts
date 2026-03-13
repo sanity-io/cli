@@ -1,3 +1,4 @@
+/* eslint-disable no-console -- CLI script that logs progress to stdout/stderr */
 /**
  * manifest.ts
  *
@@ -89,61 +90,141 @@ function makeHeading(
  * Build a help text string from a CommandInfo object.
  * Produces output in the same format as `sanity <command> --help`.
  */
-function buildHelpText(cmd: CommandInfo): string {
-  const lines: string[] = []
+function getFlagValue(flag: {helpValue?: string | string[]; type: string}): string {
+  if (flag.type === 'boolean') return ''
+  if (flag.helpValue) {
+    return Array.isArray(flag.helpValue) ? flag.helpValue[0] : flag.helpValue
+  }
+  return '<value>'
+}
 
-  // USAGE
-  const args = Object.values(cmd.args).filter((a) => !a.hidden)
-  const argsPart = args
+function formatUsageFlag(flag: {
+  char?: string
+  helpValue?: string | string[]
+  name: string
+  required?: boolean
+  type: string
+}): string {
+  if (flag.type === 'boolean') {
+    return `[--${flag.name}]`
+  }
+  const val = getFlagValue(flag)
+  if (flag.required) {
+    return flag.char ? `-${flag.char} ${val}` : `--${flag.name} ${val}`
+  }
+  return flag.char ? `[-${flag.char} ${val}]` : `[--${flag.name} ${val}]`
+}
+
+function formatFlagLabel(flag: {
+  char?: string
+  helpValue?: string | string[]
+  name: string
+  type: string
+}): string {
+  const charPart = flag.char ? `-${flag.char},` : '   '
+  const valuePart = flag.type === 'option' ? `=${getFlagValue(flag)}` : ''
+  return `  ${charPart} --${flag.name}${valuePart}`
+}
+
+function renderFlagGroup(
+  header: string,
+  flags: Array<{
+    char?: string
+    description?: string
+    helpValue?: string | string[]
+    name: string
+    type: string
+  }>,
+): string[] {
+  const lines: string[] = []
+  const labels = flags.map((f) => formatFlagLabel(f))
+  const maxWidth = Math.max(...labels.map((l) => l.length)) + 2
+
+  lines.push(header)
+  for (const [i, flag] of flags.entries()) {
+    const label = labels[i]
+    lines.push(flag.description ? `${label.padEnd(maxWidth)}${flag.description}` : label)
+  }
+  return lines
+}
+
+function sortFlags<T extends {char?: string; name: string}>(flags: T[]): T[] {
+  return flags.toSorted((a, b) => {
+    if (a.char && b.char) return a.char.localeCompare(b.char)
+    if (a.char && !b.char) return -1
+    if (!a.char && b.char) return 1
+    return a.name.localeCompare(b.name)
+  })
+}
+
+function buildHelpText(cmd: CommandInfo): string {
+  const sections: string[] = []
+
+  const visibleFlags = sortFlags(Object.values(cmd.flags).filter((f) => !f.hidden))
+  const visibleArgs = Object.values(cmd.args).filter((a) => !a.hidden)
+
+  // USAGE — with flag summary in brackets
+  const argsPart = visibleArgs
     .map((a) => (a.required ? a.name.toUpperCase() : `[${a.name.toUpperCase()}]`))
     .join(' ')
+  const flagSummary = visibleFlags.map((f) => formatUsageFlag(f)).join(' ')
+  const usageParts = [cmd.fullCommand, argsPart, flagSummary].filter(Boolean).join(' ')
+  sections.push(`USAGE\n  $ sanity ${usageParts}`)
 
-  lines.push('USAGE', `  $ sanity ${cmd.fullCommand}${argsPart ? ` ${argsPart}` : ''}`, '')
-
-  // ARGUMENTS
-  if (args.length > 0) {
-    lines.push('ARGUMENTS')
-    for (const arg of args) {
-      const label = arg.required ? arg.name.toUpperCase() : `[${arg.name.toUpperCase()}]`
-      lines.push(`  ${label.padEnd(22)}${arg.description ?? ''}`)
+  // ARGUMENTS — dynamic padding
+  if (visibleArgs.length > 0) {
+    const argLines: string[] = ['ARGUMENTS']
+    const argLabels = visibleArgs.map((a) =>
+      a.required ? a.name.toUpperCase() : `[${a.name.toUpperCase()}]`,
+    )
+    const maxArgWidth = Math.max(...argLabels.map((l) => l.length)) + 2
+    for (const [i, arg] of visibleArgs.entries()) {
+      const label = argLabels[i]
+      argLines.push(`  ${label.padEnd(maxArgWidth)}${arg.description ?? ''}`)
     }
-    lines.push('')
+    sections.push(argLines.join('\n'))
   }
 
-  // FLAGS
-  const flags = Object.values(cmd.flags).filter((f) => !f.hidden)
-  if (flags.length > 0) {
-    lines.push('FLAGS')
-    for (const flag of flags) {
-      const charPart = flag.char ? `-${flag.char},` : '   '
-      const valuePart = flag.type === 'option' ? `=<${flag.name.toUpperCase()}>` : ''
-      const flagStr = `  ${charPart} --${flag.name}${valuePart}`
-      lines.push(flag.description ? `${flagStr.padEnd(36)}${flag.description}` : flagStr)
+  // FLAGS — grouped by helpGroup
+  const mainFlags = visibleFlags.filter((f) => !f.helpGroup)
+  const groupedFlags = new Map<string, typeof visibleFlags>()
+  for (const flag of visibleFlags) {
+    if (flag.helpGroup) {
+      const group = groupedFlags.get(flag.helpGroup) ?? []
+      group.push(flag)
+      groupedFlags.set(flag.helpGroup, group)
     }
-    lines.push('')
+  }
+
+  if (mainFlags.length > 0) {
+    sections.push(renderFlagGroup('FLAGS', mainFlags).join('\n'))
+  }
+  for (const [groupName, flags] of groupedFlags) {
+    sections.push(renderFlagGroup(`${groupName} FLAGS`, flags).join('\n'))
   }
 
   // DESCRIPTION
   if (cmd.description) {
-    lines.push('DESCRIPTION', `  ${cmd.description.trim().replaceAll('\n', '\n  ')}`, '')
+    sections.push(`DESCRIPTION\n  ${cmd.description.trim().replaceAll('\n', '\n  ')}`)
   }
 
-  // EXAMPLES
+  // EXAMPLES — with $ prefix on command lines
   if (cmd.examples.length > 0) {
-    lines.push('EXAMPLES')
+    const exLines: string[] = ['EXAMPLES']
     for (const ex of cmd.examples) {
       if (typeof ex === 'string') {
-        lines.push(`    ${ex}`, '')
+        exLines.push(`    $ ${ex}`, '')
       } else {
         if (ex.description) {
-          lines.push(`  ${ex.description}`, '')
+          exLines.push(`  ${ex.description}`, '')
         }
-        lines.push(`    ${ex.command}`, '')
+        exLines.push(`    $ ${ex.command}`, '')
       }
     }
+    sections.push(exLines.join('\n').trimEnd())
   }
 
-  return lines.join('\n').trimEnd()
+  return sections.join('\n\n')
 }
 
 // ── Command Grouping ──────────────────────────────────────────────────
