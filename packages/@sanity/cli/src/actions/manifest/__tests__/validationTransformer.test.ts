@@ -1,7 +1,7 @@
 import {type SchemaValidationValue} from '@sanity/types'
 import {describe, expect, test} from 'vitest'
 
-import {type ManifestSerializable} from '../types.js'
+import {retainSerializableProps} from '../schemaTypeTransformer.js'
 import {transformValidation} from '../validationTransformer.js'
 
 // Simplified rule spec type for testing. The actual RuleSpec from \@sanity/types
@@ -27,31 +27,6 @@ function createRule(
     _rules: rules,
     _type: 'Rule',
   } as unknown as SchemaValidationValue
-}
-
-/**
- * Simple retainSerializableProps implementation for testing.
- * Mirrors the behavior of the one in schemaTypeTransformer.ts.
- */
-function retainSerializableProps(value: unknown, depth = 0): ManifestSerializable | undefined {
-  if (depth > 5) return undefined
-  if (value === null || value === undefined) return undefined
-  if (typeof value === 'string') return value === '' ? undefined : value
-  if (typeof value === 'number' || typeof value === 'boolean') return value
-  if (value instanceof RegExp) return value.toString()
-  if (Array.isArray(value)) {
-    const items = value
-      .map((item) => retainSerializableProps(item, depth + 1))
-      .filter((item): item is ManifestSerializable => item !== undefined)
-    return items.length > 0 ? items : undefined
-  }
-  if (typeof value === 'object') {
-    const entries = Object.entries(value)
-      .map(([key, val]) => [key, retainSerializableProps(val, depth + 1)])
-      .filter(([, val]) => val !== undefined)
-    return entries.length > 0 ? Object.fromEntries(entries) : undefined
-  }
-  return undefined
 }
 
 function getFlags(result: ReturnType<typeof transformValidation>): string[] {

@@ -3,23 +3,7 @@ import {createSchemaFromManifestTypes} from '@sanity/schema/_internal'
 import {type SchemaType} from '@sanity/types'
 import {describe, expect, test} from 'vitest'
 
-import {transformType} from '../schemaTypeTransformer.js'
-import {type ManifestSchemaType} from '../types.js'
-
-/**
- * Compiles a schema from user-defined types and extracts only the user-defined types
- * as ManifestSchemaType[], filtering out Sanity's built-in types.
- */
-function extractTypes(types: unknown[]): ManifestSchemaType[] {
-  const schema = Schema.compile({name: 'test', types})
-  const defaultTypeNames = new Set(
-    Schema.compile({name: 'default', types: []}).getTypeNames() as string[],
-  )
-  const context = {schema}
-  return (schema.getTypeNames() as string[])
-    .filter((name: string) => !defaultTypeNames.has(name))
-    .map((name: string) => transformType(schema.get(name), context))
-}
+import {extractTypes} from './testHelpers.js'
 
 /**
  * Recursively extracts a comparable structure from a SchemaType,
@@ -56,8 +40,8 @@ function typeForComparison(type: SchemaType, visited = new Set<string>()): Recor
 
   // Extract reference 'to' targets
   if ('to' in type && Array.isArray(type.to)) {
-    result.to = (type.to as Array<{name?: string; type?: string}>).map((target) => ({
-      type: target.type ?? target.name,
+    result.to = (type.to as Array<{name?: string; type?: SchemaType}>).map((target) => ({
+      type: target.type?.name ?? target.name,
     }))
   }
 
