@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.5](https://github.com/sanity-io/cli/compare/cli-v6.1.4...cli-v6.1.5) (2026-03-14)
+
+
+### Bug Fixes
+
+* allow running `sanity debug` outside of project context ([#678](https://github.com/sanity-io/cli/issues/678)) ([0110989](https://github.com/sanity-io/cli/commit/01109892fd3ff6de03a6a2778ad0aad613dbbdba))
+* **cli:** send extracted `ManifestSchemaType[]` to `/schemas` endpoint ([#680](https://github.com/sanity-io/cli/issues/680)) ([2afef5a](https://github.com/sanity-io/cli/commit/2afef5abda6f897a582c1b9ba224346acb42b2a9))
+
 ## [6.1.4](https://github.com/sanity-io/cli/compare/cli-v6.1.3...cli-v6.1.4) (2026-03-13)
 
 
