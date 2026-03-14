@@ -86,16 +86,16 @@ export class Debug extends SanityCommand<typeof Debug> {
       const globalCfg = omit(globalConfig, ['authType', 'authToken'])
       this.log(`  ${formatObject(globalCfg).replaceAll('\n', '\n  ')}\n`)
 
-      // Project configuration (projectDir/sanity.json)
-      if (projectRoot && projectConfig) {
+      // Project configuration (projectDir/sanity.cli.ts)
+      if (!projectRoot) {
+        this.log('No project found\n')
+      } else if (!projectConfig || projectConfig instanceof Error) {
+        this.log('No CLI configuration file found\n')
+      } else {
         const configLocation = ` (${styleText('yellow', path.relative(process.cwd(), projectRoot.path))})`
 
         this.log(`Project config${configLocation}:`)
-        if (projectConfig instanceof Error) {
-          this.log(`  ${styleText('red', projectConfig.message)}\n`)
-        } else {
-          this.log(`  ${formatObject(projectConfig).replaceAll('\n', '\n  ')}`)
-        }
+        this.log(`  ${formatObject(projectConfig).replaceAll('\n', '\n  ')}`)
       }
 
       // Print installed package versions

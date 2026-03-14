@@ -321,8 +321,8 @@ describe('#debug', () => {
     })
 
     expect(stdout).toContain('Global config')
-    expect(stdout).toContain('Project config')
-    expect(stdout).toContain('Missing required "api.projectId" key')
+    expect(stdout).toContain('No CLI configuration file found')
+    expect(stdout).not.toContain('Project config')
   })
 
   test('handles case when no versions are present', async () => {
@@ -585,6 +585,7 @@ describe('#debug', () => {
     expect(stdout).toContain("Email: 'test@example.com'")
     expect(stdout).toContain('Authentication:')
     expect(stdout).toContain('Global config')
+    expect(stdout).toContain('No project found')
     // Should NOT contain project-specific sections
     expect(stdout).not.toContain('Project:')
     expect(stdout).not.toContain('Project config')
@@ -606,6 +607,7 @@ describe('#debug', () => {
     expect(stdout).toContain('User:')
     expect(stdout).toContain('Not logged in')
     expect(stdout).toContain('Global config')
+    expect(stdout).toContain('No project found')
     expect(stdout).not.toContain('Authentication:')
     expect(stdout).not.toContain('Project:')
     expect(stdout).not.toContain('Package versions:')
