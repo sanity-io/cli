@@ -91,7 +91,11 @@ export class Debug extends SanityCommand<typeof Debug> {
         const configLocation = ` (${styleText('yellow', path.relative(process.cwd(), projectRoot.path))})`
 
         this.log(`Project config${configLocation}:`)
-        this.log(`  ${formatObject(projectConfig).replaceAll('\n', '\n  ')}`)
+        if (projectConfig instanceof Error) {
+          this.log(`  ${styleText('red', projectConfig.message)}\n`)
+        } else {
+          this.log(`  ${formatObject(projectConfig).replaceAll('\n', '\n  ')}`)
+        }
       }
 
       // Print installed package versions
