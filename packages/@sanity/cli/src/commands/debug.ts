@@ -89,13 +89,15 @@ export class Debug extends SanityCommand<typeof Debug> {
       // Project configuration (projectDir/sanity.cli.ts)
       if (!projectRoot) {
         this.log('No project found\n')
-      } else if (!projectConfig || projectConfig instanceof Error) {
-        this.log('No CLI configuration file found\n')
-      } else {
+      } else if (projectConfig instanceof Error) {
+        this.log(`CLI configuration error: ${styleText('red', projectConfig.message)}\n`)
+      } else if (projectConfig) {
         const configLocation = ` (${styleText('yellow', path.relative(process.cwd(), projectRoot.path))})`
 
         this.log(`Project config${configLocation}:`)
         this.log(`  ${formatObject(projectConfig).replaceAll('\n', '\n  ')}`)
+      } else {
+        this.log('No CLI configuration file found\n')
       }
 
       // Print installed package versions

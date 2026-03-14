@@ -290,8 +290,7 @@ describe('#debug', () => {
     expect(stdout).toContain("Roles: [ 'administrator' ]")
   })
 
-  test('handles case when no project config is present', async () => {
-    // Mock authentication
+  test('shows config error when project config exists but is invalid', async () => {
     vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
     vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
       if (key === 'authToken') return 'mock-auth-token'
@@ -299,29 +298,28 @@ describe('#debug', () => {
     })
     vi.mocked(findSanityModulesVersions).mockResolvedValue([])
 
-    // Mock the /me API endpoint to return user info
-    // Uses global API host since there's no projectId
+    // Mock the /me API endpoint (uses global API host since there's no projectId)
     mockApi({apiVersion: USERS_API_VERSION, uri: '/users/me'}).reply(200, {
       email: 'test@example.com',
       id: 'user123',
       name: 'Test User',
     })
 
-    // No project API mock needed since no valid projectId
-
-    const {stdout} = await testCommand(Debug, [], {
+    const {error, stdout} = await testCommand(Debug, [], {
       mocks: {
         ...defaultMocks,
         cliConfig: {
           api: {
-            // No projectId - this will cause project config to be invalid
+            // No projectId - config exists but is invalid
           },
         },
       },
     })
 
+    if (error) throw error
     expect(stdout).toContain('Global config')
-    expect(stdout).toContain('No CLI configuration file found')
+    expect(stdout).toContain('CLI configuration error:')
+    expect(stdout).toContain('Missing required "api.projectId" key')
     expect(stdout).not.toContain('Project config')
   })
 
