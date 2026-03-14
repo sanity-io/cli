@@ -36,6 +36,142 @@ describe('#schema:deploy', {timeout: 60 * 1000}, () => {
       if (error) throw error
     })
 
+    test('sends extracted ManifestSchemaType[] in the request body, not the runtime Schema object', async () => {
+      let capturedBody: Record<string, unknown> | undefined
+
+      mockApi({
+        apiVersion: SCHEMA_API_VERSION,
+        method: 'put',
+        uri: `/projects/${projectId}/datasets/test/schemas`,
+      }).reply(200, (_uri, body) => {
+        capturedBody = body as Record<string, unknown>
+        return {}
+      })
+
+      const {error} = await testCommand(DeploySchemaCommand, [])
+      if (error) throw error
+
+      // --- Envelope ---
+      expect(capturedBody).toBeDefined()
+      const schemas = capturedBody!.schemas as Record<string, unknown>[]
+      expect(schemas).toHaveLength(1)
+
+      const entry = schemas[0]
+      expect(entry.version).toBe('2025-05-01')
+      expect(entry.workspace).toHaveProperty('name', 'default')
+
+      // --- Schema must be ManifestSchemaType[], not a runtime Schema object ---
+      const schema = entry.schema as Record<string, unknown>[]
+      expect(Array.isArray(schema)).toBe(true)
+      expect(entry.schema).not.toHaveProperty('getTypeNames')
+      expect(entry.schema).not.toHaveProperty('get')
+      expect(entry.schema).not.toHaveProperty('_original')
+
+      // Every entry must have name + type as strings
+      for (const schemaType of schema) {
+        expect(typeof schemaType.name).toBe('string')
+        expect(typeof schemaType.type).toBe('string')
+      }
+
+      // All four fixture types present
+      const byName = Object.fromEntries(schema.map((t) => [t.name, t]))
+      expect(Object.keys(byName)).toEqual(
+        expect.arrayContaining(['post', 'author', 'category', 'blockContent']),
+      )
+
+      // --- post: verify different field types are extracted ---
+      const post = byName.post as Record<string, unknown>
+      expect(post.type).toBe('document')
+      const postFields = post.fields as Record<string, unknown>[]
+      const pf = Object.fromEntries(postFields.map((f) => [f.name, f]))
+
+      // string, slug, reference, image, array, datetime fields all present with correct types
+      expect(pf.title.type).toBe('string')
+      expect(pf.slug.type).toBe('slug')
+      expect(pf.author.type).toBe('reference')
+      expect(pf.mainImage.type).toBe('image')
+      expect(pf.categories.type).toBe('array')
+      expect(pf.publishedAt.type).toBe('datetime')
+      expect(pf.body.type).toBe('blockContent')
+
+      // slug options preserved
+      expect(pf.slug.options).toEqual(expect.objectContaining({source: 'title', maxLength: 96}))
+      // image hotspot option preserved
+      expect(pf.mainImage.options).toEqual(expect.objectContaining({hotspot: true}))
+      // reference `to` targets preserved
+      expect(pf.author.to).toEqual(
+        expect.arrayContaining([expect.objectContaining({type: 'author'})]),
+      )
+      // array `of` members with nested reference targets preserved
+      expect(pf.categories.of).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'reference',
+            to: expect.arrayContaining([expect.objectContaining({type: 'category'})]),
+          }),
+        ]),
+      )
+
+      // --- author: portable text field ---
+      const authorFields = (byName.author as Record<string, unknown>).fields as Record<
+        string,
+        unknown
+      >[]
+      const af = Object.fromEntries(authorFields.map((f) => [f.name, f]))
+      expect(af.bio.type).toBe('array')
+      const bioBlock = (af.bio.of as Record<string, unknown>[]).find((m) => m.type === 'block')
+      expect(bioBlock).toBeDefined()
+
+      // --- category: text field type ---
+      const catFields = (byName.category as Record<string, unknown>).fields as Record<
+        string,
+        unknown
+      >[]
+      const cf = Object.fromEntries(catFields.map((f) => [f.name, f]))
+      expect(cf.description.type).toBe('text')
+
+      // --- blockContent: array with block marks/styles/lists + image member ---
+      const bc = byName.blockContent as Record<string, unknown>
+      expect(bc.type).toBe('array')
+      const bcOf = bc.of as Record<string, unknown>[]
+      const bcBlock = bcOf.find((m) => m.type === 'block') as Record<string, unknown>
+      expect(bcBlock).toBeDefined()
+
+      // decorators
+      const marks = bcBlock.marks as Record<string, unknown>
+      expect(marks.decorators).toEqual(
+        expect.arrayContaining([
+          {title: 'Strong', value: 'strong'},
+          {title: 'Emphasis', value: 'em'},
+        ]),
+      )
+      // annotations with nested object fields
+      expect(marks.annotations).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: 'object',
+            name: 'link',
+            fields: expect.arrayContaining([expect.objectContaining({name: 'href', type: 'url'})]),
+          }),
+        ]),
+      )
+      // styles
+      expect(bcBlock.styles).toEqual(
+        expect.arrayContaining([
+          {title: 'Normal', value: 'normal'},
+          {title: 'H1', value: 'h1'},
+        ]),
+      )
+      // lists
+      expect(bcBlock.lists).toEqual(expect.arrayContaining([{title: 'Bullet', value: 'bullet'}]))
+      // image member with options
+      const bcImage = bcOf.find((m) => m.type === 'image')
+      expect(bcImage).toBeDefined()
+      expect((bcImage as Record<string, unknown>).options).toEqual(
+        expect.objectContaining({hotspot: true}),
+      )
+    })
+
     test('deploys with --verbose flag', async () => {
       mockApi({
         apiVersion: SCHEMA_API_VERSION,
