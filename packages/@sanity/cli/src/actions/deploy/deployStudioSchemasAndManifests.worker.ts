@@ -1,13 +1,10 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
 import {getStudioWorkspaces, subdebug} from '@sanity/cli-core'
-import {type Schema} from '@sanity/types'
 import {type StudioManifest, type Workspace} from 'sanity'
 
-import {
-  extractManifestSchemaTypes,
-  extractWorkspaceManifest,
-} from '../manifest/extractWorkspaceManifest.js'
+import {extractWorkspaceManifest} from '../manifest/extractWorkspaceManifest.js'
+import {type CreateWorkspaceManifest} from '../manifest/types.js'
 import {writeManifestFile} from '../manifest/writeManifestFile.js'
 import {
   updateWorkspacesSchemas,
@@ -36,9 +33,17 @@ async function main() {
       throw new Error('No workspaces found')
     }
 
-    // Extract manifest schemas while Schema objects are still live.
-    // The API expects ManifestSchemaType[], not the runtime Schema class instance.
-    const schemaInputs = await toWorkspaceSchemaInputs(workspaces, workDir)
+    // Extract manifest data (including ManifestSchemaType[]) once, while Schema objects are
+    // still live. Both writeWorkspaceToDist and updateWorkspacesSchemas consume the result.
+    const workspaceManifests = await extractWorkspaceManifest(workspaces, workDir)
+
+    const schemaInputs: WorkspaceSchemaInput[] = workspaceManifests.map((manifest) => ({
+      dataset: manifest.dataset,
+      manifestSchema: manifest.schema,
+      name: manifest.name,
+      projectId: manifest.projectId,
+      title: manifest.title,
+    }))
 
     debug('Handling deployment for %s', isExternal ? 'external' : 'internal')
 
@@ -60,6 +65,7 @@ async function main() {
         schemaInputs,
         verbose,
         workDir,
+        workspaceManifests,
         workspaces,
       })
     }
@@ -77,40 +83,6 @@ async function main() {
       validation,
     })
   }
-}
-
-async function toWorkspaceSchemaInputs(
-  workspaces: Workspace[],
-  workDir: string,
-): Promise<WorkspaceSchemaInput[]> {
-  return Promise.all(
-    workspaces.map(async (workspace) => ({
-      dataset: workspace.dataset,
-      manifestSchema: await extractManifestSchemaTypes(workspace.schema as Schema, workDir),
-      name: workspace.name,
-      projectId: workspace.projectId,
-      title: workspace.title,
-    })),
-  )
-}
-
-async function writeWorkspaceToDist({
-  outPath,
-  workDir,
-  workspaces,
-}: {
-  outPath: string
-  workDir: string
-  workspaces: Workspace[]
-}) {
-  // Get the create manifest workspace
-  const workspaceManifests = await extractWorkspaceManifest(workspaces, workDir)
-
-  await writeManifestFile({
-    outPath,
-    workDir,
-    workspaceManifests,
-  })
 }
 
 /**
@@ -161,6 +133,7 @@ async function handleInternalDeployment({
   schemaInputs,
   verbose,
   workDir,
+  workspaceManifests,
   workspaces,
 }: {
   outPath: string
@@ -168,6 +141,7 @@ async function handleInternalDeployment({
   schemaInputs: WorkspaceSchemaInput[]
   verbose: boolean
   workDir: string
+  workspaceManifests: CreateWorkspaceManifest[]
   workspaces: Workspace[]
 }): Promise<[StudioManifest | null]> {
   const [studioManifest] = await Promise.all([
@@ -177,7 +151,7 @@ async function handleInternalDeployment({
       workDir,
       workspaces,
     }),
-    writeWorkspaceToDist({outPath, workDir, workspaces}),
+    writeManifestFile({outPath, workDir, workspaceManifests}),
     // Updates the workspaces schemas to /schemas endpoint
     updateWorkspacesSchemas({
       verbose,
