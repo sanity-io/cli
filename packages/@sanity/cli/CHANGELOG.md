@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.7](https://github.com/sanity-io/cli/compare/cli-v6.1.6...cli-v6.1.7) (2026-03-16)
+
+
+### Bug Fixes
+
+* resolve vendor dependencies using node module resolution ([#691](https://github.com/sanity-io/cli/issues/691)) ([44b0e98](https://github.com/sanity-io/cli/commit/44b0e9866f2e742d91d95e42ed7ac93139b29d70))
+
 ## [6.1.6](https://github.com/sanity-io/cli/compare/cli-v6.1.5...cli-v6.1.6) (2026-03-16)
 
 
