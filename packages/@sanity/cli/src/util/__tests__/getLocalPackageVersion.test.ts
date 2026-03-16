@@ -5,7 +5,7 @@ import {type PackageJson} from '@sanity/cli-core'
 import {moduleResolve} from 'import-meta-resolve'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {getLocalPackageVersion} from '../getLocalPackageVersion.js'
+import {getLocalPackageDir, getLocalPackageVersion} from '../getLocalPackageVersion.js'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 
@@ -39,6 +39,7 @@ describe('getLocalPackageVersion', () => {
     const mockPackageUrl = pathToFileURL(
       resolve(mockWorkDir, 'node_modules', mockModuleId, 'package.json'),
     )
+    const expectedPackageDir = resolve(mockWorkDir, 'node_modules', mockModuleId)
     const mockVersion = '1.0.0'
 
     mockedModuleResolve.mockReturnValueOnce(mockPackageUrl)
@@ -53,7 +54,7 @@ describe('getLocalPackageVersion', () => {
       `${mockModuleId}/package.json`,
       pathToFileURL(resolve(mockWorkDir, 'noop.js')),
     )
-    expect(mockReadPackageJson).toHaveBeenCalledWith(mockPackageUrl)
+    expect(mockReadPackageJson).toHaveBeenCalledWith(join(expectedPackageDir, 'package.json'))
     expect(result).toBe(mockVersion)
   })
 
@@ -61,6 +62,7 @@ describe('getLocalPackageVersion', () => {
     const mockPackageUrl = pathToFileURL(
       resolve(mockWorkDir, 'node_modules', mockModuleId, 'package.json'),
     )
+    const expectedPackageDir = resolve(mockWorkDir, 'node_modules', mockModuleId)
 
     mockedModuleResolve.mockReturnValueOnce(mockPackageUrl)
     mockReadPackageJson.mockRejectedValueOnce(new Error('Failed to read package.json'))
@@ -68,16 +70,14 @@ describe('getLocalPackageVersion', () => {
     const result = await getLocalPackageVersion(mockModuleId, mockWorkDir)
 
     expect(mockedModuleResolve).toHaveBeenCalledOnce()
-    expect(mockReadPackageJson).toHaveBeenCalledWith(mockPackageUrl)
+    expect(mockReadPackageJson).toHaveBeenCalledWith(join(expectedPackageDir, 'package.json'))
     expect(result).toBeNull()
   })
 
   test('returns version via fallback when package has strict exports', async () => {
     const mainEntryPath = resolve(mockWorkDir, 'node_modules', mockModuleId, 'dist', 'index.js')
     const mainEntryUrl = pathToFileURL(mainEntryPath)
-    const expectedPackageJsonUrl = pathToFileURL(
-      join(resolve(mockWorkDir, 'node_modules', mockModuleId), 'package.json'),
-    )
+    const expectedPackageDir = resolve(mockWorkDir, 'node_modules', mockModuleId)
     const mockVersion = '2.0.0'
     const dirUrl = pathToFileURL(resolve(mockWorkDir, 'noop.js'))
 
@@ -97,7 +97,7 @@ describe('getLocalPackageVersion', () => {
     expect(mockedModuleResolve).toHaveBeenCalledTimes(2)
     expect(mockedModuleResolve).toHaveBeenNthCalledWith(1, `${mockModuleId}/package.json`, dirUrl)
     expect(mockedModuleResolve).toHaveBeenNthCalledWith(2, mockModuleId, dirUrl)
-    expect(mockReadPackageJson).toHaveBeenCalledWith(expectedPackageJsonUrl)
+    expect(mockReadPackageJson).toHaveBeenCalledWith(join(expectedPackageDir, 'package.json'))
     expect(result).toBe(mockVersion)
   })
 
@@ -171,5 +171,81 @@ describe('getLocalPackageVersion', () => {
     expect(mockedModuleResolve).toHaveBeenCalledOnce()
     expect(mockReadPackageJson).not.toHaveBeenCalled()
     expect(result).toBeNull()
+  })
+})
+
+describe('getLocalPackageDir', () => {
+  const mockWorkDir = '/mock/work/dir'
+  const mockModuleId = '@sanity/test'
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('returns package directory when package.json is resolved', () => {
+    const mockPackageUrl = pathToFileURL(
+      resolve(mockWorkDir, 'node_modules', mockModuleId, 'package.json'),
+    )
+
+    mockedModuleResolve.mockReturnValueOnce(mockPackageUrl)
+
+    const result = getLocalPackageDir(mockModuleId, mockWorkDir)
+
+    expect(result).toBe(resolve(mockWorkDir, 'node_modules', mockModuleId))
+    expect(mockedModuleResolve).toHaveBeenCalledWith(
+      `${mockModuleId}/package.json`,
+      pathToFileURL(resolve(mockWorkDir, 'noop.js')),
+    )
+  })
+
+  test('resolves hoisted packages in monorepo root node_modules', () => {
+    // Simulate a monorepo where react is hoisted to root
+    const monorepoRoot = '/project'
+    const workspaceDir = '/project/packages/frontend'
+    const hoistedPackageUrl = pathToFileURL(
+      resolve(monorepoRoot, 'node_modules', 'react', 'package.json'),
+    )
+
+    mockedModuleResolve.mockReturnValueOnce(hoistedPackageUrl)
+
+    const result = getLocalPackageDir('react', workspaceDir)
+
+    expect(result).toBe(resolve(monorepoRoot, 'node_modules', 'react'))
+  })
+
+  test('falls back to main entry point when package.json is not exported', () => {
+    const mainEntryPath = resolve(mockWorkDir, 'node_modules', mockModuleId, 'dist', 'index.js')
+    const mainEntryUrl = pathToFileURL(mainEntryPath)
+
+    mockedModuleResolve
+      .mockImplementationOnce(() => {
+        throw createNodeError('ERR_PACKAGE_PATH_NOT_EXPORTED', 'Package path not exported')
+      })
+      .mockReturnValueOnce(mainEntryUrl)
+
+    const result = getLocalPackageDir(mockModuleId, mockWorkDir)
+
+    expect(result).toBe(resolve(mockWorkDir, 'node_modules', mockModuleId))
+    expect(mockedModuleResolve).toHaveBeenCalledTimes(2)
+  })
+
+  test('throws when moduleResolve throws a non-fallback error', () => {
+    mockedModuleResolve.mockImplementationOnce(() => {
+      throw createNodeError('ERR_MODULE_NOT_FOUND', 'Module not found')
+    })
+
+    expect(() => getLocalPackageDir(mockModuleId, mockWorkDir)).toThrow('Module not found')
+  })
+
+  test('throws when both resolution strategies fail', () => {
+    mockedModuleResolve
+      .mockImplementationOnce(() => {
+        throw createNodeError('ERR_PACKAGE_PATH_NOT_EXPORTED', 'Package path not exported')
+      })
+      .mockImplementationOnce(() => {
+        throw createNodeError('ERR_MODULE_NOT_FOUND', 'Module not found')
+      })
+
+    expect(() => getLocalPackageDir(mockModuleId, mockWorkDir)).toThrow('Module not found')
   })
 })
