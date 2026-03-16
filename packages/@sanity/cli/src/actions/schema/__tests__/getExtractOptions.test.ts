@@ -1,6 +1,6 @@
 import {mkdtempSync, writeFileSync} from 'node:fs'
 import {tmpdir} from 'node:os'
-import {join} from 'node:path'
+import {join, resolve} from 'node:path'
 
 import {describe, expect, test} from 'vitest'
 
@@ -37,7 +37,7 @@ describe('getExtractOptions', () => {
       configPath: '/test/project/sanity.config.ts',
       enforceRequiredFields: true,
       format: 'groq-type-nodes',
-      outputPath: join('/test/project', 'custom-output', 'schema.json'),
+      outputPath: resolve(join('/test/project', 'custom-output', 'schema.json')),
       watchPatterns: ['pattern1/**/*.ts', 'pattern2/**/*.js'],
       workspace: 'production',
     })
@@ -65,7 +65,7 @@ describe('getExtractOptions', () => {
       configPath: '/test/project/sanity.config.ts',
       enforceRequiredFields: true,
       format: 'groq-type-nodes',
-      outputPath: join('/test/project', 'cli-config-output', 'schema.json'),
+      outputPath: resolve(join('/test/project', 'cli-config-output', 'schema.json')),
       watchPatterns: ['cli-pattern/**/*.ts'],
       workspace: 'staging',
     })
@@ -107,7 +107,7 @@ describe('getExtractOptions', () => {
       schemaExtraction: undefined,
     })
 
-    expect(result.outputPath).toEqual(join('/test/project', 'schema.json'))
+    expect(result.outputPath).toEqual(resolve(join('/test/project', 'schema.json')))
   })
 
   test('should treat path with .json extension in subdirectory as a file path', () => {
@@ -123,7 +123,7 @@ describe('getExtractOptions', () => {
       schemaExtraction: undefined,
     })
 
-    expect(result.outputPath).toEqual(join('/test/project', 'output', 'my-schema.json'))
+    expect(result.outputPath).toEqual(resolve(join('/test/project', 'output', 'my-schema.json')))
   })
 
   test('should treat path with non-.json extension as a file path', () => {
@@ -139,7 +139,7 @@ describe('getExtractOptions', () => {
       schemaExtraction: undefined,
     })
 
-    expect(result.outputPath).toEqual(join('/test/project', 'output', 'my-schema.yaml'))
+    expect(result.outputPath).toEqual(resolve(join('/test/project', 'output', 'my-schema.yaml')))
   })
 
   test('should respect .json file path when file exists on disk', () => {
@@ -183,7 +183,7 @@ describe('getExtractOptions', () => {
       configPath: '/test/project/sanity.config.ts',
       enforceRequiredFields: false,
       format: 'groq-type-nodes',
-      outputPath: join('/test/project', 'schema.json'),
+      outputPath: resolve(join('/test/project', 'schema.json')),
       watchPatterns: [],
       workspace: undefined,
     })
