@@ -80,7 +80,6 @@ describe('exec --with-user-token', {timeout: 15 * 1000}, () => {
     const {cleanup} = await setupTestAuth('test-fake-token-abc123')
 
     try {
-      vi.stubEnv('SANITY_CLI_CONFIG_PATH', TEST_CONFIG_PATH)
       const {error, stdout} = await testCommand(ExecCommand, [tokenScriptPath, '--with-user-token'])
 
       if (error) throw error
