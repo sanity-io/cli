@@ -87,7 +87,7 @@
     "@sanity/telemetry": "catalog:",
     "@sanity/template-validator": "^3.0.0",
     "@sanity/types": "catalog:",
-    "@sanity/ui": "^3.1.13",
+    "@sanity/ui": "^3.1.14",
     "@sanity/worker-channels": "^2.0.0",
     "@vercel/frameworks": "3.8.4",
     "@vitejs/plugin-react": "catalog:",
