@@ -40,6 +40,9 @@ vi.mock('node:child_process', async (importOriginal) => {
 async function setupTestAuth(token: string): Promise<{cleanup: () => Promise<void>}> {
   await mkdir(TEST_CONFIG_DIR, {recursive: true})
   vi.stubEnv('SANITY_CLI_CONFIG_PATH', TEST_CONFIG_PATH)
+  // Clear SANITY_AUTH_TOKEN so getCliToken() reads from the config file
+  // instead of picking up an env var (e.g. set in CI)
+  vi.stubEnv('SANITY_AUTH_TOKEN', '')
   await setCliUserConfig('authToken', token)
 
   return {cleanup: () => rm(TEST_CONFIG_DIR, {force: true, recursive: true})}
