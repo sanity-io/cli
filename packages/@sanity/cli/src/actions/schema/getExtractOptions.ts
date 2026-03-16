@@ -37,7 +37,7 @@ export function getExtractOptions({
       outputPath = resolved
     }
   } else {
-    outputPath = join(projectRoot.directory, 'schema.json')
+    outputPath = resolve(join(projectRoot.directory, 'schema.json'))
   }
 
   return {
