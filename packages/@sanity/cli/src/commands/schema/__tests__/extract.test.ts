@@ -105,7 +105,7 @@ describe('#schema:extract', {timeout: 60 * 1000}, () => {
     expect(existsSync(resolve(cwd, 'schema.json'))).toBe(true)
   })
 
-  test('should extract schema with path flag', async () => {
+  test('should extract schema with path flag (directory)', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
 
@@ -115,6 +115,18 @@ describe('#schema:extract', {timeout: 60 * 1000}, () => {
     expect(stderr).toContain('Extracting schema')
     expect(stderr).toContain('Extracted schema')
     expect(existsSync(resolve(cwd, 'custom-output', 'schema.json'))).toBe(true)
+  })
+
+  test('should extract schema with path flag (file path with .json extension)', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
+    const {error, stderr} = await testCommand(ExtractSchemaCommand, ['--path', './my-schema.json'])
+
+    if (error) throw error
+    expect(stderr).toContain('Extracting schema')
+    expect(stderr).toContain('Extracted schema')
+    expect(existsSync(resolve(cwd, 'my-schema.json'))).toBe(true)
   })
 
   test('throws an error if format flag is not groq-type-nodes', async () => {

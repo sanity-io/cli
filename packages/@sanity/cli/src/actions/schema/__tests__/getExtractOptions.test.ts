@@ -1,3 +1,5 @@
+import {mkdtempSync} from 'node:fs'
+import {tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
 
 import {describe, expect, test} from 'vitest'
@@ -67,6 +69,61 @@ describe('getExtractOptions', () => {
       watchPatterns: ['cli-pattern/**/*.ts'],
       workspace: 'staging',
     })
+  })
+
+  test('should append schema.json when path points to an existing directory', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'schema-test-'))
+    const projectRoot = {
+      directory: tempDir,
+      path: join(tempDir, 'sanity.config.ts'),
+      type: 'studio' as const,
+    }
+
+    const result = getExtractOptions({
+      flags: {
+        format: 'groq-type-nodes',
+        path: '.', // current dir - definitely exists
+        watch: false,
+        'watch-patterns': undefined,
+        workspace: undefined,
+      } as ExtractSchemaCommand['flags'],
+      projectRoot,
+      schemaExtraction: undefined,
+    })
+
+    expect(result.outputPath).toEqual(join(tempDir, 'schema.json'))
+  })
+
+  test('should treat path with .json extension as a file path', () => {
+    const result = getExtractOptions({
+      flags: {
+        format: 'groq-type-nodes',
+        path: './schema.json',
+        watch: false,
+        'watch-patterns': undefined,
+        workspace: undefined,
+      } as ExtractSchemaCommand['flags'],
+      projectRoot: mockProjectRoot,
+      schemaExtraction: undefined,
+    })
+
+    expect(result.outputPath).toEqual(resolve(join('/test/project', 'schema.json')))
+  })
+
+  test('should treat path with .json extension in subdirectory as a file path', () => {
+    const result = getExtractOptions({
+      flags: {
+        format: 'groq-type-nodes',
+        path: 'output/my-schema.json',
+        watch: false,
+        'watch-patterns': undefined,
+        workspace: undefined,
+      } as ExtractSchemaCommand['flags'],
+      projectRoot: mockProjectRoot,
+      schemaExtraction: undefined,
+    })
+
+    expect(result.outputPath).toEqual(resolve(join('/test/project', 'output', 'my-schema.json')))
   })
 
   test('should use default values when neither flags nor CLI config are provided', () => {
