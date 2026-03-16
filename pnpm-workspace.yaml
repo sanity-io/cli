@@ -15,10 +15,10 @@ catalog:
   publint: ^0.3.18
 
   # Sanity
-  sanity: ^5.15.0
-  '@sanity/vision': ^5.15.0
-  '@sanity/types': ^5.15.0
-  '@sanity/schema': ^5.15.0
+  sanity: ^5.16.0
+  '@sanity/vision': ^5.16.0
+  '@sanity/types': ^5.16.0
+  '@sanity/schema': ^5.16.0
   '@sanity/client': ^7.17.0
   '@sanity/codegen': ^6.0.1
   '@sanity/telemetry': ^0.8.1
@@ -58,7 +58,7 @@ catalog:
   '@swc/core': ^1.15.18
   '@swc/cli': ^0.8.0
   rimraf: ^6.0.1
-  '@sanity/pkg-utils': ^10.4.9
+  '@sanity/pkg-utils': ^10.4.10
 
   # Type Definitions
   '@types/node': ^20.19.37
