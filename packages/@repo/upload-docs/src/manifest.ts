@@ -13,6 +13,7 @@
 
 import {createClient, type SanityClient, type SanityDocument} from '@sanity/client'
 import {createPublishedId, createVersionId} from '@sanity/id-utils'
+import isEqual from 'lodash-es/isEqual.js'
 
 import {type CommandInfo, generateCommands} from './generateCommands.js'
 
@@ -345,6 +346,26 @@ function applyExistingKeys(
   })
 }
 
+// ── Comparison ────────────────────────────────────────────────────────
+
+/**
+ * Recursively strip `_key` fields from an object tree.
+ * Used to compare content blocks by semantic value only, ignoring the
+ * auto-generated `_key` identifiers that Sanity adds on write.
+ */
+function stripKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map((item) => stripKeys(item))
+  if (value !== null && typeof value === 'object') {
+    const result: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value)) {
+      if (k === '_key') continue
+      result[k] = stripKeys(v)
+    }
+    return result
+  }
+  return value
+}
+
 // ── Content Generation ────────────────────────────────────────────────
 
 /**
@@ -475,20 +496,12 @@ async function main() {
   const timestamp = new Date().toISOString().replaceAll(/[:.]/g, '-').slice(0, 19)
   const releaseId = `cli-reference-update-${timestamp}`
 
-  if (dryRun) {
-    console.log(`\n[DRY RUN] Release: ${releaseId}`)
-  } else {
-    console.log(`\nCreating release: ${releaseId}`)
-    await client.releases.create({
-      metadata: {releaseType: 'undecided', title: releaseId},
-      releaseId,
-    })
-    console.log('Release created.')
-  }
+  console.log(`\nRelease ID: ${releaseId}`)
 
   let updated = 0
   let created = 0
   let skipped = 0
+  let unchanged = 0
 
   const CLI_DOCS_QUERY = /* groq */ `*[_type == "article" && defined(automationId)]`
   const existingDocs = await client.fetch(CLI_DOCS_QUERY)
@@ -508,16 +521,24 @@ async function main() {
     const existingDoc = existingDocMap.get(`cli-${group.command}-reference`) as SanityDocument
 
     if (existingDoc) {
-      if (dryRun) {
-        console.log(`  UPDATE ${group.command} → ${existingDoc._id} (${newBlocks.length} blocks)`)
-      } else {
-        const existingContent = (existingDoc.content as Record<string, unknown>[]) || []
-        const headingKeyMap = buildHeadingKeyMap(existingContent)
-        const mergedContent = applyExistingKeys(
-          mergeContent(existingContent, newBlocks),
-          headingKeyMap,
-        )
+      const existingContent = (existingDoc.content as Record<string, unknown>[]) || []
+      const headingKeyMap = buildHeadingKeyMap(existingContent)
+      const mergedContent = applyExistingKeys(
+        mergeContent(existingContent, newBlocks),
+        headingKeyMap,
+      )
 
+      if (isEqual(stripKeys(mergedContent), stripKeys(existingContent))) {
+        console.log(`  UNCHANGED ${group.command} → ${existingDoc._id}`)
+        unchanged++
+        continue
+      }
+
+      if (dryRun) {
+        console.log(
+          `  UPDATE ${group.command} → ${existingDoc._id} (${mergedContent.length} blocks)`,
+        )
+      } else {
         const vId = createVersionId(releaseId, existingDoc._id)
         const {_createdAt, _rev, _updatedAt, ...docWithoutSystemFields} = existingDoc
         tx.create({...docWithoutSystemFields, _id: vId})
@@ -552,24 +573,38 @@ async function main() {
     }
   }
 
-  try {
-    console.log(`Committing transaction...`)
-    await tx.commit({autoGenerateArrayKeys: true})
-  } catch (error) {
-    console.error(`Error committing transaction: ${error}`)
-    process.exit(1)
+  const hasChanges = updated + created > 0
+
+  if (hasChanges && !dryRun) {
+    try {
+      console.log(`\nCreating release: ${releaseId}`)
+      await client.releases.create({
+        metadata: {releaseType: 'undecided', title: releaseId},
+        releaseId,
+      })
+      console.log('Release created.')
+
+      console.log('Committing transaction...')
+      await tx.commit({autoGenerateArrayKeys: true})
+    } catch (error) {
+      console.error(`Error committing transaction: ${error}`)
+      process.exit(1)
+    }
   }
 
-  console.log(`\n── Summary ──`)
-  console.log(`Release: ${releaseId}`)
-  console.log(`Updated: ${updated} existing documents`)
-  console.log(`Created: ${created} new documents`)
-  console.log(`Skipped: ${skipped}`)
-  console.log(`Total:   ${updated + created + skipped}`)
+  console.log('\n── Summary ──')
+  console.log(`Release:   ${releaseId}`)
+  console.log(`Updated:   ${updated} existing documents`)
+  console.log(`Created:   ${created} new documents`)
+  console.log(`Unchanged: ${unchanged} documents`)
+  console.log(`Skipped:   ${skipped}`)
+  console.log(`Total:     ${updated + created + unchanged + skipped}`)
   if (dryRun) {
-    console.log(`\n[DRY RUN] No changes were made to Sanity.`)
-  } else {
+    console.log('\n[DRY RUN] No changes were made to Sanity.')
+  } else if (hasChanges) {
     console.log(`\nAll changes are in release "${releaseId}". Review and publish in Sanity Studio.`)
+  } else {
+    console.log('\nNo changes detected. No release was created.')
   }
 }
 
