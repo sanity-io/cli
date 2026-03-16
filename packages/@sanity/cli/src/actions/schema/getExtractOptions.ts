@@ -31,11 +31,8 @@ export function getExtractOptions({
     const resolved = resolve(join(projectRoot.directory, pathFlag))
     const isExistingDirectory = existsSync(resolved) && statSync(resolved).isDirectory()
 
-    if (isExistingDirectory || !extname(resolved)) {
-      outputPath = join(resolved, 'schema.json')
-    } else {
-      outputPath = resolved
-    }
+    outputPath =
+      isExistingDirectory || !extname(resolved) ? join(resolved, 'schema.json') : resolved
   } else {
     outputPath = resolve(join(projectRoot.directory, 'schema.json'))
   }

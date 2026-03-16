@@ -1,9 +1,9 @@
-import path, {resolve} from 'node:path'
+import path from 'node:path'
 
 import semver from 'semver'
 import {build} from 'vite'
 
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
+import {getLocalPackageDir, getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 
 // Directory where vendor packages will be stored
@@ -152,6 +152,10 @@ export async function buildVendorDependencies({
 
     const subpaths = ranges[matchedRange]
 
+    // Resolve the actual package directory using Node module resolution,
+    // so that hoisted packages in monorepos/workspaces are found correctly
+    const packageDir = getLocalPackageDir(packageName, cwd)
+
     // Iterate over each subpath and its corresponding entry point
     for (const [subpath, relativeEntryPoint] of Object.entries(subpaths)) {
       const specifier = path.posix.join(packageName, subpath)
@@ -160,7 +164,7 @@ export async function buildVendorDependencies({
         path.relative(packageName, specifier) || 'index',
       )
 
-      entry[chunkName] = resolve(`node_modules/${packageName}/${relativeEntryPoint}`)
+      entry[chunkName] = path.join(packageDir, relativeEntryPoint)
       imports[specifier] = path.posix.join('/', basePath, VENDOR_DIR, `${chunkName}.mjs`)
     }
   }
