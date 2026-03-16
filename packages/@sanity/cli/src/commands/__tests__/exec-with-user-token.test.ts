@@ -86,7 +86,7 @@ describe('exec --with-user-token', {timeout: 15 * 1000}, () => {
 
       const data = JSON.parse(stdout.trim())
       expect(data.success).toBe(true)
-      expect(data.hasToken).toBe(true)
+      expect(data.token).toBe('test-fake-token-abc123')
     } finally {
       await cleanup()
     }
