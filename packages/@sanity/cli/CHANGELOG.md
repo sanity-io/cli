@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.6](https://github.com/sanity-io/cli/compare/cli-v6.1.5...cli-v6.1.6) (2026-03-16)
+
+
+### Bug Fixes
+
+* **deps:** update sanity-tooling ([#683](https://github.com/sanity-io/cli/issues/683)) ([aee2e6e](https://github.com/sanity-io/cli/commit/aee2e6e8395e0584b7233fe37b41dba954fff7e0))
+* getCliClient() token not passed through ([#688](https://github.com/sanity-io/cli/issues/688)) ([15c6b7d](https://github.com/sanity-io/cli/commit/15c6b7d3c40ac1f2975c1e09befd9a308612f012))
+* schema extract path always appends `schema.json` ([#686](https://github.com/sanity-io/cli/issues/686)) ([daa0013](https://github.com/sanity-io/cli/commit/daa0013cf6ff2836976be840b67d75036cfce9d6))
+
 ## [6.1.5](https://github.com/sanity-io/cli/compare/cli-v6.1.4...cli-v6.1.5) (2026-03-14)
 
 
