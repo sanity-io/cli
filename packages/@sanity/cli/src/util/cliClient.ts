@@ -29,7 +29,7 @@ export const getCliClient: CliClientGetter = (options: CliClientOptions = {}): S
     cwd = process.env.SANITY_BASE_PATH || process.cwd(),
     dataset,
     projectId,
-    token = getCliClient.__internal__getToken(),
+    token = getCliClient.__internal__getToken() ?? process.env.SANITY_AUTH_TOKEN,
     useCdn = false,
     ...restOfOptions
   } = options

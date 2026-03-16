@@ -1,6 +1,9 @@
 import {spawn} from 'node:child_process'
 import path from 'node:path'
 
+import {CLIError} from '@oclif/core/errors'
+import {getCliToken} from '@sanity/cli-core'
+
 interface ExecScriptOptions {
   extraArguments: string[]
   flags: {
@@ -19,7 +22,6 @@ export async function execScript(options: ExecScriptOptions): Promise<void> {
   const resolvedScriptPath = path.resolve(scriptPath)
 
   const browserEnvPath = new URL('registerBrowserEnv.worker.js', import.meta.url).href
-  const configClientPath = new URL('configClient.worker.js', import.meta.url).href
 
   // Use tsx loader for TypeScript support in the spawned child process
   // We need to resolve the tsx loader path from the CLI's node_modules since the child
@@ -30,17 +32,33 @@ export async function execScript(options: ExecScriptOptions): Promise<void> {
     throw new Error('@sanity/cli not able to resolve tsx loader')
   }
 
+  // When --with-user-token is specified, resolve the token in the parent process
+  // and pass it via environment variable. This avoids a module-instance mismatch where
+  // the worker's `getCliClient` import resolves to a different module than the script's
+  // `import {getCliClient} from 'sanity/cli'`, causing the __internal__getToken mutation
+  // to not propagate.
+  let tokenEnv: Record<string, string> = {}
+  if (withUserToken) {
+    const token = await getCliToken()
+    if (!token) {
+      throw new CLIError(
+        '--with-user-token specified, but no auth token could be found. Run `sanity login`',
+      )
+    }
+    tokenEnv = {SANITY_AUTH_TOKEN: token}
+  }
+
   const baseArgs = mockBrowserEnv
     ? ['--import', tsxLoaderPath, '--import', browserEnvPath]
     : ['--import', tsxLoaderPath]
-  const tokenArgs = withUserToken ? ['--import', configClientPath] : []
 
-  const nodeArgs = [...baseArgs, ...tokenArgs, resolvedScriptPath, ...extraArguments]
+  const nodeArgs = [...baseArgs, resolvedScriptPath, ...extraArguments]
 
   const proc = spawn(process.argv[0], nodeArgs, {
     env: {
       ...process.env,
       SANITY_BASE_PATH: workDir,
+      ...tokenEnv,
     },
     stdio: 'inherit',
   })
