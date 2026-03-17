@@ -624,7 +624,7 @@ importers:
         specifier: ^1.6.0
         version: 1.6.0
       tar:
-        specifier: ^7.5.9
+        specifier: ^7.5.11
         version: 7.5.11
       tar-fs:
         specifier: ^3.1.0
