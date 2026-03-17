@@ -19,8 +19,13 @@ vi.mock('read-package-up', () => ({
   readPackageUp: vi.fn(),
 }))
 
+vi.mock('@rolldown/plugin-babel', () => ({
+  default: vi.fn(() => ({name: 'babel-plugin'})),
+}))
+
 vi.mock('@vitejs/plugin-react', () => ({
-  default: vi.fn(() => ({name: 'react-plugin'})),
+  default: vi.fn(() => [{name: 'react-plugin'}]),
+  reactCompilerPreset: vi.fn(() => ({name: 'react-compiler-preset'})),
 }))
 
 vi.mock('vite', () => ({
@@ -249,7 +254,8 @@ describe('#getViteConfig', () => {
   })
 
   test('should handle react compiler configuration', async () => {
-    const {default: viteReact} = await import('@vitejs/plugin-react')
+    const {default: babel} = await import('@rolldown/plugin-babel')
+    const {reactCompilerPreset} = await import('@vitejs/plugin-react')
 
     const reactCompilerConfig = {
       sources: ['src/**/*.tsx'],
@@ -264,13 +270,12 @@ describe('#getViteConfig', () => {
 
     await getViteConfig(options)
 
-    expect(viteReact).toHaveBeenCalledWith({
-      babel: {
-        generatorOpts: {
-          compact: true,
-        },
-        plugins: [['babel-plugin-react-compiler', reactCompilerConfig]],
-      },
+    expect(reactCompilerPreset).toHaveBeenCalledWith({
+      compilationMode: undefined,
+      target: '18',
+    })
+    expect(babel).toHaveBeenCalledWith({
+      presets: [expect.objectContaining({name: 'react-compiler-preset'})],
     })
   })
 

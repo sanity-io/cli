@@ -74,6 +74,7 @@
     "@oclif/core": "catalog:",
     "@oclif/plugin-help": "catalog:",
     "@oclif/plugin-not-found": "catalog:",
+    "@rolldown/plugin-babel": "^0.2.1",
     "@sanity/cli-core": "workspace:*",
     "@sanity/client": "catalog:",
     "@sanity/codegen": "catalog:",
