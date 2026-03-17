@@ -35,7 +35,7 @@ catalog:
   nock: ^14.0.11
 
   # CLI Framework
-  '@oclif/core': ^4.8.4
+  '@oclif/core': ^4.9.0
   '@oclif/plugin-help': ^6.2.37
   '@oclif/plugin-not-found': ^3.2.74
 
