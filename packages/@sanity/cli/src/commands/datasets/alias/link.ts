@@ -62,6 +62,8 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
     }),
   }
 
+  static override hiddenAliases: string[] = ['dataset:alias:link']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(LinkAliasCommand)
     const {force} = flags

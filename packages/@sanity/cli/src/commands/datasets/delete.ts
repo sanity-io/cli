@@ -44,6 +44,8 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
     }),
   }
 
+  static override hiddenAliases: string[] = ['dataset:delete']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(DeleteDatasetCommand)
     const {force} = flags

@@ -145,6 +145,8 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
     }),
   }
 
+  static override hiddenAliases: string[] = ['dataset:import']
+
   private currentProgress?: ReturnType<typeof spinner>
   private currentStep?: string
   private spinInterval?: NodeJS.Timeout | null

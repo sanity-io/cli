@@ -27,6 +27,8 @@ export class ListDatasetCommand extends SanityCommand<typeof ListDatasetCommand>
     }),
   }
 
+  static override hiddenAliases: string[] = ['dataset:list']
+
   public async run(): Promise<void> {
     const projectId = await this.getProjectId({
       fallback: () =>

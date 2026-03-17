@@ -32,6 +32,8 @@ export class DatasetVisibilityGetCommand extends SanityCommand<typeof DatasetVis
     }),
   }
 
+  static override hiddenAliases: string[] = ['dataset:visibility:get']
+
   public async run(): Promise<void> {
     const {args} = await this.parse(DatasetVisibilityGetCommand)
     const {dataset} = args

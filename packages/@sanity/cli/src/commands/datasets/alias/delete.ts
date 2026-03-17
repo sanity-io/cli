@@ -46,6 +46,8 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
     }),
   }
 
+  static override hiddenAliases: string[] = ['dataset:alias:delete']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(DeleteAliasCommand)
     const {force} = flags

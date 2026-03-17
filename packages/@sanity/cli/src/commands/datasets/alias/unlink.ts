@@ -51,6 +51,8 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
     }),
   }
 
+  static override hiddenAliases: string[] = ['dataset:alias:unlink']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(UnlinkAliasCommand)
     const {force} = flags

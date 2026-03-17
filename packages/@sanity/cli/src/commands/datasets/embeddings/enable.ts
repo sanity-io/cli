@@ -57,6 +57,8 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
     }),
   }
 
+  static override hiddenAliases: string[] = ['dataset:embeddings:enable']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(DatasetEmbeddingsEnableCommand)
     let {dataset} = args

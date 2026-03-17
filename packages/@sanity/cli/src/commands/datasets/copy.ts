@@ -113,6 +113,8 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }),
   }
 
+  static override hiddenAliases: string[] = ['dataset:copy']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(CopyDatasetCommand)
 

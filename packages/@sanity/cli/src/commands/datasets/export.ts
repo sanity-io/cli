@@ -93,6 +93,8 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     }),
   }
 
+  static override hiddenAliases: string[] = ['dataset:export']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(DatasetExportCommand)
     const {destination: targetDestination, name: targetDataset} = args

@@ -58,6 +58,8 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     }),
   }
 
+  static override hiddenAliases: string[] = ['dataset:create']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(CreateDatasetCommand)
     const {visibility} = flags

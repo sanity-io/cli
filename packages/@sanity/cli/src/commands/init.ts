@@ -88,7 +88,7 @@ import {
   getPartialEnvWithNpmPath,
   type PackageManager,
 } from '../util/packageManager/packageManagerChoice.js'
-import {ImportDatasetCommand} from './dataset/import.js'
+import {ImportDatasetCommand} from './datasets/import.js'
 
 const debug = subdebug('init')
 

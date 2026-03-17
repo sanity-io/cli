@@ -57,6 +57,8 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
     }),
   }
 
+  static override hiddenAliases: string[] = ['dataset:alias:create']
+
   public async run(): Promise<void> {
     const {args} = await this.parse(CreateAliasCommand)
 
