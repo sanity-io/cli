@@ -89,7 +89,7 @@
     "@sanity/types": "catalog:",
     "@sanity/ui": "^3.1.14",
     "@sanity/worker-channels": "^2.0.0",
-    "@vercel/frameworks": "3.8.4",
+    "@vercel/frameworks": "3.21.1",
     "@vitejs/plugin-react": "catalog:",
     "chokidar": "^5.0.0",
     "console-table-printer": "^2.15.0",
