@@ -61,6 +61,8 @@ export class QueryDocumentCommand extends SanityCommand<typeof QueryDocumentComm
     }),
   }
 
+  static override hiddenAliases: string[] = ['document:query']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(QueryDocumentCommand)
     const {query} = args

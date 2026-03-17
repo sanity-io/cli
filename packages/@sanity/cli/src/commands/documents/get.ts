@@ -48,6 +48,8 @@ export class GetDocumentCommand extends SanityCommand<typeof GetDocumentCommand>
     }),
   }
 
+  static override hiddenAliases: string[] = ['document:get']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(GetDocumentCommand)
     const {documentId} = args

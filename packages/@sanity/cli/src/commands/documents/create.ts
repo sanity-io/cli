@@ -85,6 +85,8 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
     }),
   }
 
+  static override hiddenAliases: string[] = ['document:create']
+
   private client!: Awaited<ReturnType<typeof getProjectCliClient>>
 
   public async run(): Promise<void> {

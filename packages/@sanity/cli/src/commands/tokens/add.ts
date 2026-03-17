@@ -59,6 +59,8 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
     }),
   }
 
+  static override hiddenAliases: string[] = ['token:add']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(AddTokenCommand)
     const {label: givenLabel} = args

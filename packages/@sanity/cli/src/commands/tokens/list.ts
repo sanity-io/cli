@@ -37,6 +37,8 @@ export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
     }),
   }
 
+  static override hiddenAliases: string[] = ['token:list']
+
   public async run(): Promise<void> {
     const {flags} = await this.parse(TokensListCommand)
     const {json} = flags
