@@ -7,6 +7,21 @@ const html = `<!doctype html>
 </html>`
 
 /**
+ * Globals that MUST use JSDOM's version even though Node.js also provides them.
+ *
+ * JSDOM's DOM implementations (e.g. `addEventListener`) perform `instanceof` checks
+ * against its own classes. When user code creates an `AbortController` from Node's
+ * global, the resulting signal fails JSDOM's `instanceof AbortSignal` check:
+ *
+ *   "Failed to execute 'addEventListener' on 'EventTarget': parameter 3 dictionary
+ *    has member 'signal' that is not of type 'AbortSignal'."
+ *
+ * By forcing these globals to come from JSDOM, all code in the worker thread uses the
+ * same realm's classes, and the instanceof checks pass.
+ */
+export const FORCE_JSDOM_GLOBALS = new Set(['AbortController', 'AbortSignal'])
+
+/**
  * Creates a JSDOM instance and applies polyfills for missing browser globals.
  */
 function createBrowserDom(): JSDOM {
@@ -113,8 +128,9 @@ function collectBrowserStubs(): Record<string, unknown> {
     // Skip numeric indices (e.g. '0' for window[0])
     if (/^\d+$/.test(key)) continue
 
-    // Skip properties that Node.js already provides to avoid conflicts
-    if (nodeGlobals.has(key)) continue
+    // Skip properties that Node.js already provides to avoid conflicts,
+    // unless they must come from JSDOM to avoid cross-realm instanceof failures
+    if (nodeGlobals.has(key) && !FORCE_JSDOM_GLOBALS.has(key)) continue
 
     stubs[key] = (dom.window as Record<string, unknown>)[key]
   }

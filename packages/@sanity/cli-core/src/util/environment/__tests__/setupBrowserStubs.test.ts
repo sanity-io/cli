@@ -36,6 +36,43 @@ describe('setupBrowserStubs', () => {
     expect(globalThis.setTimeout).toBe(originalSetTimeout)
   })
 
+  test('overrides AbortController and AbortSignal with JSDOM versions', async () => {
+    const nodeAbortController = globalThis.AbortController
+    const nodeAbortSignal = globalThis.AbortSignal
+
+    cleanup = await setupBrowserStubs()
+
+    // AbortController/AbortSignal should be replaced by JSDOM's versions
+    expect(globalThis.AbortController).not.toBe(nodeAbortController)
+    expect(globalThis.AbortSignal).not.toBe(nodeAbortSignal)
+  })
+
+  test('cleanup restores original AbortController and AbortSignal', async () => {
+    const nodeAbortController = globalThis.AbortController
+    const nodeAbortSignal = globalThis.AbortSignal
+
+    const cleanupFn = await setupBrowserStubs()
+
+    expect(globalThis.AbortController).not.toBe(nodeAbortController)
+
+    cleanupFn()
+
+    expect(globalThis.AbortController).toBe(nodeAbortController)
+    expect(globalThis.AbortSignal).toBe(nodeAbortSignal)
+  })
+
+  test('JSDOM AbortSignal is accepted by JSDOM addEventListener', async () => {
+    cleanup = await setupBrowserStubs()
+
+    const controller = new AbortController()
+    const el = globalThis.document.createElement('div')
+
+    // This should not throw - both signal and addEventListener are from JSDOM
+    expect(() => {
+      el.addEventListener('click', () => {}, {signal: controller.signal})
+    }).not.toThrow()
+  })
+
   test('prevents double-mocking by returning noop on second call', async () => {
     cleanup = await setupBrowserStubs()
 
