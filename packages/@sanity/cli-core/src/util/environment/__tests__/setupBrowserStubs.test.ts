@@ -30,38 +30,17 @@ describe('setupBrowserStubs', () => {
 
   test('does not overwrite existing Node.js globals', async () => {
     const originalSetTimeout = globalThis.setTimeout
+    const originalAbortController = globalThis.AbortController
+    const originalAbortSignal = globalThis.AbortSignal
 
     cleanup = await setupBrowserStubs()
 
     expect(globalThis.setTimeout).toBe(originalSetTimeout)
+    expect(globalThis.AbortController).toBe(originalAbortController)
+    expect(globalThis.AbortSignal).toBe(originalAbortSignal)
   })
 
-  test('overrides AbortController and AbortSignal with JSDOM versions', async () => {
-    const nodeAbortController = globalThis.AbortController
-    const nodeAbortSignal = globalThis.AbortSignal
-
-    cleanup = await setupBrowserStubs()
-
-    // AbortController/AbortSignal should be replaced by JSDOM's versions
-    expect(globalThis.AbortController).not.toBe(nodeAbortController)
-    expect(globalThis.AbortSignal).not.toBe(nodeAbortSignal)
-  })
-
-  test('cleanup restores original AbortController and AbortSignal', async () => {
-    const nodeAbortController = globalThis.AbortController
-    const nodeAbortSignal = globalThis.AbortSignal
-
-    const cleanupFn = await setupBrowserStubs()
-
-    expect(globalThis.AbortController).not.toBe(nodeAbortController)
-
-    cleanupFn()
-
-    expect(globalThis.AbortController).toBe(nodeAbortController)
-    expect(globalThis.AbortSignal).toBe(nodeAbortSignal)
-  })
-
-  test('JSDOM AbortSignal is accepted by JSDOM addEventListener', async () => {
+  test('Node AbortSignal is accepted by JSDOM addEventListener', async () => {
     cleanup = await setupBrowserStubs()
 
     const controller = new AbortController()
@@ -71,6 +50,14 @@ describe('setupBrowserStubs', () => {
     expect(() => {
       el.addEventListener('click', () => {}, {signal: controller.signal})
     }).not.toThrow()
+  })
+
+  test('native fetch still accepts Node AbortSignal after setup', async () => {
+    cleanup = await setupBrowserStubs()
+
+    const response = await fetch('data:text/plain,ok', {signal: AbortSignal.timeout(1000)})
+
+    expect(await response.text()).toBe('ok')
   })
 
   test('prevents double-mocking by returning noop on second call', async () => {

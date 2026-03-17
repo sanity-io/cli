@@ -39,6 +39,8 @@ describe('getBrowserStubs()', () => {
     expect(getBrowserStubs()).not.toHaveProperty('Promise')
     expect(getBrowserStubs()).not.toHaveProperty('Map')
     expect(getBrowserStubs()).not.toHaveProperty('Set')
+    expect(getBrowserStubs()).not.toHaveProperty('AbortController')
+    expect(getBrowserStubs()).not.toHaveProperty('AbortSignal')
     expect(getBrowserStubs()).not.toHaveProperty('process')
     expect(getBrowserStubs()).not.toHaveProperty('Buffer')
   })

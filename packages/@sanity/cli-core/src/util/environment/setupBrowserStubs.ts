@@ -1,4 +1,4 @@
-import {FORCE_JSDOM_GLOBALS, getBrowserStubs} from './stubs.js'
+import {getBrowserStubs} from './stubs.js'
 
 /**
  * Sets up browser globals (window, document, etc.) in the global scope.
@@ -21,18 +21,9 @@ export async function setupBrowserStubs(): Promise<() => void> {
   const stubs = getBrowserStubs()
   const mockedGlobalThis: Record<string, unknown> = globalThis
   const stubbedKeys: string[] = []
-  const originalValues: Record<string, unknown> = {}
 
   for (const key of Object.keys(stubs)) {
-    if (key in mockedGlobalThis) {
-      // Force-override certain globals that must come from JSDOM (see FORCE_JSDOM_GLOBALS)
-      if (FORCE_JSDOM_GLOBALS.has(key)) {
-        originalValues[key] = mockedGlobalThis[key]
-        mockedGlobalThis[key] = stubs[key]
-        stubbedKeys.push(key)
-      }
-      continue
-    }
+    if (key in mockedGlobalThis) continue
     mockedGlobalThis[key] = stubs[key]
     stubbedKeys.push(key)
   }
@@ -50,11 +41,7 @@ export async function setupBrowserStubs(): Promise<() => void> {
     }
 
     for (const key of stubbedKeys) {
-      if (key in originalValues) {
-        mockedGlobalThis[key] = originalValues[key]
-      } else {
-        delete mockedGlobalThis[key]
-      }
+      delete mockedGlobalThis[key]
     }
   }
 }

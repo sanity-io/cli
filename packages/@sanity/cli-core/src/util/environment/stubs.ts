@@ -6,20 +6,69 @@ const html = `<!doctype html>
   <body></body>
 </html>`
 
+interface AbortSignalLike {
+  aborted: boolean
+  addEventListener(type: 'abort', listener: () => void, options?: {once?: boolean}): void
+  removeEventListener(type: 'abort', listener: () => void): void
+}
+
+type EventListenerOptionsWithSignal = AddEventListenerOptions & {signal?: unknown}
+
+function isAbortSignalLike(value: unknown): value is AbortSignalLike {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    'aborted' in value &&
+    typeof (value as AbortSignalLike).aborted === 'boolean' &&
+    'addEventListener' in value &&
+    typeof (value as AbortSignalLike).addEventListener === 'function' &&
+    'removeEventListener' in value &&
+    typeof (value as AbortSignalLike).removeEventListener === 'function'
+  )
+}
+
 /**
- * Globals that MUST use JSDOM's version even though Node.js also provides them.
+ * Make JSDOM's `addEventListener({signal})` accept native Node.js AbortSignals.
  *
- * JSDOM's DOM implementations (e.g. `addEventListener`) perform `instanceof` checks
- * against its own classes. When user code creates an `AbortController` from Node's
- * global, the resulting signal fails JSDOM's `instanceof AbortSignal` check:
- *
- *   "Failed to execute 'addEventListener' on 'EventTarget': parameter 3 dictionary
- *    has member 'signal' that is not of type 'AbortSignal'."
- *
- * By forcing these globals to come from JSDOM, all code in the worker thread uses the
- * same realm's classes, and the instanceof checks pass.
+ * JSDOM validates `signal` using its own realm's `AbortSignal` constructor, which rejects
+ * Node's native signal. Instead of replacing the global Abort APIs, intercept those calls
+ * and emulate the abortable-listener behavior for cross-realm signals.
  */
-export const FORCE_JSDOM_GLOBALS = new Set(['AbortController', 'AbortSignal'])
+function patchEventTargetSignalSupport(dom: JSDOM): void {
+  const eventTarget = dom.window.EventTarget
+  const addEventListener = eventTarget.prototype.addEventListener
+
+  eventTarget.prototype.addEventListener = function addEventListenerPatched(
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: AddEventListenerOptions | boolean,
+  ) {
+    if (typeof options === 'boolean' || !options?.signal) {
+      return addEventListener.call(this, type, listener, options)
+    }
+
+    const rawSignal = (options as EventListenerOptionsWithSignal).signal
+    const isJSDOMSignal = rawSignal instanceof (dom.window.AbortSignal as typeof AbortSignal)
+    if (!rawSignal || isJSDOMSignal || !isAbortSignalLike(rawSignal)) {
+      return addEventListener.call(this, type, listener, options)
+    }
+
+    const signal: AbortSignalLike = rawSignal
+    if (signal.aborted) {
+      return
+    }
+
+    const {signal: _signal, ...optionsWithoutSignal} = options as EventListenerOptionsWithSignal
+    addEventListener.call(this, type, listener, optionsWithoutSignal)
+
+    const removeOnAbort = () => {
+      this.removeEventListener(type, listener, options)
+      signal.removeEventListener('abort', removeOnAbort)
+    }
+
+    signal.addEventListener('abort', removeOnAbort, {once: true})
+  }
+}
 
 /**
  * Creates a JSDOM instance and applies polyfills for missing browser globals.
@@ -29,6 +78,8 @@ function createBrowserDom(): JSDOM {
     pretendToBeVisual: true,
     url: 'http://localhost:3333/',
   })
+
+  patchEventTargetSignalSupport(dom)
 
   // Special handling of certain globals
   if (typeof dom.window.document.execCommand !== 'function') {
@@ -128,9 +179,8 @@ function collectBrowserStubs(): Record<string, unknown> {
     // Skip numeric indices (e.g. '0' for window[0])
     if (/^\d+$/.test(key)) continue
 
-    // Skip properties that Node.js already provides to avoid conflicts,
-    // unless they must come from JSDOM to avoid cross-realm instanceof failures
-    if (nodeGlobals.has(key) && !FORCE_JSDOM_GLOBALS.has(key)) continue
+    // Skip properties that Node.js already provides to avoid conflicts
+    if (nodeGlobals.has(key)) continue
 
     stubs[key] = (dom.window as Record<string, unknown>)[key]
   }
