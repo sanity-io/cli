@@ -108,7 +108,7 @@
     "jsonc-parser": "^3.3.1",
     "lodash-es": "catalog:",
     "minimist": "^1.2.8",
-    "nanoid": "^5.1.5",
+    "nanoid": "^5.1.6",
     "node-html-parser": "^7.0.1",
     "oneline": "^2.0.0",
     "open": "^11.0.0",
