@@ -23,10 +23,9 @@ export async function setupBrowserStubs(): Promise<() => void> {
   const stubbedKeys: string[] = []
 
   for (const key of Object.keys(stubs)) {
-    if (!(key in mockedGlobalThis)) {
-      mockedGlobalThis[key] = stubs[key]
-      stubbedKeys.push(key)
-    }
+    if (key in mockedGlobalThis) continue
+    mockedGlobalThis[key] = stubs[key]
+    stubbedKeys.push(key)
   }
 
   // Add marker to window to detect double-mocking

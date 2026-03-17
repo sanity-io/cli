@@ -6,6 +6,69 @@ const html = `<!doctype html>
   <body></body>
 </html>`
 
+interface AbortSignalLike {
+  aborted: boolean
+  addEventListener(type: 'abort', listener: () => void, options?: {once?: boolean}): void
+  removeEventListener(type: 'abort', listener: () => void): void
+}
+
+type EventListenerOptionsWithSignal = AddEventListenerOptions & {signal?: unknown}
+
+function isAbortSignalLike(value: unknown): value is AbortSignalLike {
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    'aborted' in value &&
+    typeof (value as AbortSignalLike).aborted === 'boolean' &&
+    'addEventListener' in value &&
+    typeof (value as AbortSignalLike).addEventListener === 'function' &&
+    'removeEventListener' in value &&
+    typeof (value as AbortSignalLike).removeEventListener === 'function'
+  )
+}
+
+/**
+ * Make JSDOM's `addEventListener({signal})` accept native Node.js AbortSignals.
+ *
+ * JSDOM validates `signal` using its own realm's `AbortSignal` constructor, which rejects
+ * Node's native signal. Instead of replacing the global Abort APIs, intercept those calls
+ * and emulate the abortable-listener behavior for cross-realm signals.
+ */
+function patchEventTargetSignalSupport(dom: JSDOM): void {
+  const eventTarget = dom.window.EventTarget
+  const addEventListener = eventTarget.prototype.addEventListener
+
+  eventTarget.prototype.addEventListener = function addEventListenerPatched(
+    type: string,
+    listener: EventListenerOrEventListenerObject | null,
+    options?: AddEventListenerOptions | boolean,
+  ) {
+    if (typeof options === 'boolean' || !options?.signal) {
+      return addEventListener.call(this, type, listener, options)
+    }
+
+    const rawSignal = (options as EventListenerOptionsWithSignal).signal
+    const isJSDOMSignal = rawSignal instanceof (dom.window.AbortSignal as typeof AbortSignal)
+    if (!rawSignal || isJSDOMSignal || !isAbortSignalLike(rawSignal)) {
+      return addEventListener.call(this, type, listener, options)
+    }
+
+    const signal: AbortSignalLike = rawSignal
+    if (signal.aborted) {
+      return
+    }
+
+    const {signal: _signal, ...optionsWithoutSignal} = options as EventListenerOptionsWithSignal
+    addEventListener.call(this, type, listener, optionsWithoutSignal)
+
+    const removeOnAbort = () => {
+      this.removeEventListener(type, listener, options)
+    }
+
+    signal.addEventListener('abort', removeOnAbort, {once: true})
+  }
+}
+
 /**
  * Creates a JSDOM instance and applies polyfills for missing browser globals.
  */
@@ -14,6 +77,8 @@ function createBrowserDom(): JSDOM {
     pretendToBeVisual: true,
     url: 'http://localhost:3333/',
   })
+
+  patchEventTargetSignalSupport(dom)
 
   // Special handling of certain globals
   if (typeof dom.window.document.execCommand !== 'function') {
