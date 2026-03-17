@@ -48,6 +48,8 @@ export class SchemaValidate extends SanityCommand<typeof SchemaValidate> {
     }),
   }
 
+  static override hiddenAliases: string[] = ['schema:validate']
+
   public async run(): Promise<void> {
     const {flags} = await this.parse(SchemaValidate)
 

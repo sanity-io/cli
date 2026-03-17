@@ -27,6 +27,8 @@ export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
     }),
   }
 
+  static override hiddenAliases: string[] = ['hook:create']
+
   public async run() {
     const projectId = await this.getProjectId({
       fallback: () =>

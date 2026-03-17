@@ -95,7 +95,7 @@ describe('#schema:deploy', {timeout: 60 * 1000}, () => {
       expect(pf.body.type).toBe('blockContent')
 
       // slug options preserved
-      expect(pf.slug.options).toEqual(expect.objectContaining({source: 'title', maxLength: 96}))
+      expect(pf.slug.options).toEqual(expect.objectContaining({maxLength: 96, source: 'title'}))
       // image hotspot option preserved
       expect(pf.mainImage.options).toEqual(expect.objectContaining({hotspot: true}))
       // reference `to` targets preserved
@@ -106,8 +106,8 @@ describe('#schema:deploy', {timeout: 60 * 1000}, () => {
       expect(pf.categories.of).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            type: 'reference',
             to: expect.arrayContaining([expect.objectContaining({type: 'category'})]),
+            type: 'reference',
           }),
         ]),
       )
@@ -149,9 +149,9 @@ describe('#schema:deploy', {timeout: 60 * 1000}, () => {
       expect(marks.annotations).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            type: 'object',
-            name: 'link',
             fields: expect.arrayContaining([expect.objectContaining({name: 'href', type: 'url'})]),
+            name: 'link',
+            type: 'object',
           }),
         ]),
       )

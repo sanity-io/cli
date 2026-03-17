@@ -3,7 +3,7 @@ import {extname, join, resolve} from 'node:path'
 
 import {type CliConfig, ProjectRootResult} from '@sanity/cli-core'
 
-import {type ExtractSchemaCommand} from '../../commands/schema/extract.js'
+import {type ExtractSchemaCommand} from '../../commands/schemas/extract.js'
 
 export interface ExtractOptions {
   configPath: string

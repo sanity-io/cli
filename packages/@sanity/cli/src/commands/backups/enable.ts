@@ -42,6 +42,8 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
     }),
   }
 
+  static override hiddenAliases: string[] = ['backup:enable']
+
   public async run(): Promise<void> {
     const {args} = await this.parse(EnableBackupCommand)
     let {dataset} = args

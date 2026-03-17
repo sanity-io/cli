@@ -94,6 +94,8 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
     }),
   }
 
+  static override hiddenAliases: string[] = ['backup:download']
+
   public async run(): Promise<void> {
     const {args} = await this.parse(DownloadBackupCommand)
     let {dataset} = args

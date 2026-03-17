@@ -41,6 +41,8 @@ export class Delete extends SanityCommand<typeof Delete> {
     }),
   }
 
+  static override hiddenAliases: string[] = ['hook:delete']
+
   public async run(): Promise<void> {
     const {args} = await this.parse(Delete)
 

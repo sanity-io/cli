@@ -66,31 +66,31 @@ describe('commandNotFound topic aliases hook', () => {
     })
   })
 
-  describe('plural -> singular alias (directory not yet renamed)', () => {
-    test('rewrites "schemas deploy" to "schema deploy"', async () => {
+  describe('singular -> plural for other renamed topics', () => {
+    test('rewrites "schema deploy" to "schemas deploy"', async () => {
       const runCommand = vi.spyOn(config, 'runCommand').mockResolvedValue(undefined)
 
-      await hook.call(context, {argv: [], config, context, id: 'schemas:deploy'})
+      await hook.call(context, {argv: [], config, context, id: 'schema:deploy'})
 
-      expect(runCommand).toHaveBeenCalledWith('schema:deploy', [])
+      expect(runCommand).toHaveBeenCalledWith('schemas:deploy', [])
       runCommand.mockRestore()
     })
 
-    test('rewrites "hooks list" to "hook list"', async () => {
+    test('rewrites "hook list" to "hooks list"', async () => {
       const runCommand = vi.spyOn(config, 'runCommand').mockResolvedValue(undefined)
 
-      await hook.call(context, {argv: [], config, context, id: 'hooks:list'})
+      await hook.call(context, {argv: [], config, context, id: 'hook:list'})
 
-      expect(runCommand).toHaveBeenCalledWith('hook:list', [])
+      expect(runCommand).toHaveBeenCalledWith('hooks:list', [])
       runCommand.mockRestore()
     })
 
-    test('rewrites "backups list" to "backup list"', async () => {
+    test('rewrites "backup list" to "backups list"', async () => {
       const runCommand = vi.spyOn(config, 'runCommand').mockResolvedValue(undefined)
 
-      await hook.call(context, {argv: [], config, context, id: 'backups:list'})
+      await hook.call(context, {argv: [], config, context, id: 'backup:list'})
 
-      expect(runCommand).toHaveBeenCalledWith('backup:list', [])
+      expect(runCommand).toHaveBeenCalledWith('backups:list', [])
       runCommand.mockRestore()
     })
   })
@@ -105,12 +105,21 @@ describe('commandNotFound topic aliases hook', () => {
       runCommand.mockRestore()
     })
 
-    test('shows help for "schemas" (bare plural alias for singular dir)', async () => {
+    test('shows help for "schema" (bare singular topic)', async () => {
       const runCommand = vi.spyOn(config, 'runCommand').mockResolvedValue(undefined)
 
-      await hook.call(context, {argv: [], config, context, id: 'schemas'})
+      await hook.call(context, {argv: [], config, context, id: 'schema'})
 
-      expect(runCommand).toHaveBeenCalledWith('help', ['schema'])
+      expect(runCommand).toHaveBeenCalledWith('help', ['schemas'])
+      runCommand.mockRestore()
+    })
+
+    test('shows help for "hook" (bare singular topic)', async () => {
+      const runCommand = vi.spyOn(config, 'runCommand').mockResolvedValue(undefined)
+
+      await hook.call(context, {argv: [], config, context, id: 'hook'})
+
+      expect(runCommand).toHaveBeenCalledWith('help', ['hooks'])
       runCommand.mockRestore()
     })
   })

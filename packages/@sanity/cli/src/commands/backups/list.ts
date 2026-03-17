@@ -71,6 +71,8 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     }),
   }
 
+  static override hiddenAliases: string[] = ['backup:list']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(ListBackupCommand)
     let {dataset} = args

@@ -36,6 +36,8 @@ export class AttemptHookCommand extends SanityCommand<typeof AttemptHookCommand>
     }),
   }
 
+  static override hiddenAliases: string[] = ['hook:attempt']
+
   public async run() {
     const {args} = await this.parse(AttemptHookCommand)
     const {attemptId} = args

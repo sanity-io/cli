@@ -63,6 +63,8 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
     }),
   }
 
+  static override hiddenAliases: string[] = ['schema:deploy']
+
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeploySchemaCommand)
     const {tag, workspace} = flags

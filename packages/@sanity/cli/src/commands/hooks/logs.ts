@@ -53,6 +53,8 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     }),
   }
 
+  static override hiddenAliases: string[] = ['hook:logs']
+
   public async run() {
     const {args, flags} = await this.parse(LogsHookCommand)
 

@@ -27,6 +27,8 @@ export class List extends SanityCommand<typeof List> {
     }),
   }
 
+  static override hiddenAliases: string[] = ['hook:list']
+
   public async run() {
     // Ensure we have project context
     const projectId = await this.getProjectId({

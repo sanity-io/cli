@@ -54,6 +54,8 @@ export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaComman
     }),
   }
 
+  static override hiddenAliases: string[] = ['schema:delete']
+
   public async run(): Promise<void> {
     const {flags} = await this.parse(DeleteSchemaCommand)
     const {dataset} = flags

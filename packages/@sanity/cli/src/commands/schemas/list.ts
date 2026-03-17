@@ -58,6 +58,8 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
     }),
   }
 
+  static override hiddenAliases: string[] = ['schema:list']
+
   public async run(): Promise<void> {
     const {flags} = await this.parse(ListSchemaCommand)
 

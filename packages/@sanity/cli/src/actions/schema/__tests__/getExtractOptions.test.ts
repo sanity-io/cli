@@ -4,7 +4,7 @@ import {join, resolve} from 'node:path'
 
 import {describe, expect, test} from 'vitest'
 
-import {type ExtractSchemaCommand} from '../../../commands/schema/extract.js'
+import {type ExtractSchemaCommand} from '../../../commands/schemas/extract.js'
 import {getExtractOptions} from '../getExtractOptions.js'
 
 describe('getExtractOptions', () => {

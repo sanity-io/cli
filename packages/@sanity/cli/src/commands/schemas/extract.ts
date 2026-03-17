@@ -55,6 +55,8 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
     }),
   }
 
+  static override hiddenAliases: string[] = ['schema:extract']
+
   public async run(): Promise<{close?: () => Promise<void>} | void> {
     const {flags} = await this.parse(ExtractSchemaCommand)
     const projectRoot = await this.getProjectRoot()
