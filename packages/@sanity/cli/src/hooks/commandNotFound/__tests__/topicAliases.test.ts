@@ -124,6 +124,19 @@ describe('commandNotFound topic aliases hook', () => {
     })
   })
 
+  describe('plugin-provided topic aliases (blueprints, functions)', () => {
+    // These topics come from @sanity/runtime-cli plugin. The alias resolves via
+    // config.findTopic/findCommand since the plugin is loaded in the test config.
+    test('resolves "blueprint" to "blueprints" topic help', async () => {
+      const runCommand = vi.spyOn(config, 'runCommand').mockResolvedValue(undefined)
+
+      await hook.call(context, {argv: [], config, context, id: 'blueprint'})
+
+      expect(runCommand).toHaveBeenCalledWith('help', ['blueprints'])
+      runCommand.mockRestore()
+    })
+  })
+
   describe('unknown commands fall through to plugin-not-found', () => {
     test('falls through for completely unknown command', async () => {
       await hook.call(context, {argv: [], config, context, id: 'notarealcommand'})
