@@ -95,7 +95,7 @@
     "console-table-printer": "^2.15.0",
     "date-fns": "^4.1.0",
     "debug": "catalog:",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.3.1",
     "eventsource": "^4.1.0",
     "execa": "catalog:",
     "form-data": "^4.0.5",
