@@ -63,7 +63,6 @@ function patchEventTargetSignalSupport(dom: JSDOM): void {
 
     const removeOnAbort = () => {
       this.removeEventListener(type, listener, options)
-      signal.removeEventListener('abort', removeOnAbort)
     }
 
     signal.addEventListener('abort', removeOnAbort, {once: true})
