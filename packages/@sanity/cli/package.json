@@ -52,8 +52,9 @@
   },
   "scripts": {
     "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
-    "postbuild": "pnpm run manifest:generate",
+    "postbuild": "pnpm run manifest:generate && pnpm run check:topic-aliases",
     "build:types": "pkg-utils build --emitDeclarationOnly",
+    "check:topic-aliases": "node scripts/check-topic-aliases.ts",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
     "manifest:generate": "oclif manifest",

@@ -4,6 +4,7 @@ export default {
   dirname: 'sanity',
   helpClass: './dist/SanityHelp',
   hooks: {
+    command_not_found: ['./dist/hooks/commandNotFound/topicAliases.js'],
     init: ['./dist/hooks/init/checkForUpdates.js'],
     prerun: [
       './dist/hooks/prerun/injectEnvVariables.js',
@@ -11,12 +12,6 @@ export default {
       './dist/hooks/prerun/warnings.js',
     ],
   },
-  plugins: [
-    '@oclif/plugin-help',
-    '@oclif/plugin-not-found',
-    '@sanity/runtime-cli',
-    '@sanity/migrate',
-    '@sanity/codegen',
-  ],
+  plugins: ['@oclif/plugin-help', '@sanity/runtime-cli', '@sanity/migrate', '@sanity/codegen'],
   topicSeparator: ' ',
 }
