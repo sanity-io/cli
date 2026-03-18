@@ -55,10 +55,6 @@ vi.mock('../../util/packageManager/installationInfo/index.js', () => ({
   }),
 }))
 
-vi.mock('../../actions/debug/getGlobalConfigLocation.js', () => ({
-  getGlobalConfigLocation: vi.fn().mockReturnValue('~/.sanity/config'),
-}))
-
 const defaultProjectRoot = {
   directory: '/test/project',
   path: '/test/project/sanity.cli.ts',
@@ -285,48 +281,6 @@ describe('#debug', () => {
       expect(stdout).toContain('CLI:')
       expect(stdout).toContain('6.1.4')
       expect(stdout).toContain('globally (npm)')
-    })
-
-    test('shows global config', async () => {
-      vi.mocked(getCliToken).mockResolvedValue(undefined)
-      vi.mocked(getUserConfig).mockReturnValue({
-        all: {telemetryConsent: {status: 'granted'}},
-        get: vi.fn().mockReturnValue(undefined),
-        path: '~/.sanity/config',
-      } as never)
-      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
-
-      const {error, stdout} = await testCommand(Debug, [], {
-        mocks: {
-          ...defaultMocks,
-          token: undefined,
-        },
-      })
-
-      if (error) throw error
-      expect(stdout).toContain('Global config')
-      expect(stdout).toContain('telemetryConsent')
-    })
-
-    test('strips auth-related keys from global config display', async () => {
-      vi.mocked(getCliToken).mockResolvedValue(undefined)
-      vi.mocked(getUserConfig).mockReturnValue({
-        all: {authToken: 'secret-value', authType: 'normal', telemetryConsent: {status: 'granted'}},
-        get: vi.fn().mockReturnValue(undefined),
-        path: '~/.sanity/config',
-      } as never)
-      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
-
-      const {error, stdout} = await testCommand(Debug, [], {
-        mocks: {
-          ...defaultMocks,
-          token: undefined,
-        },
-      })
-
-      if (error) throw error
-      expect(stdout).toContain('telemetryConsent')
-      expect(stdout).not.toContain('secret-value')
     })
   })
 

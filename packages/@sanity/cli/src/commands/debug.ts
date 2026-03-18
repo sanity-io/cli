@@ -3,11 +3,9 @@ import {styleText} from 'node:util'
 import {Flags} from '@oclif/core'
 import {ProjectRootNotFoundError, SanityCommand} from '@sanity/cli-core'
 
-import {formatObject} from '../actions/debug/formatters.js'
 import {
   gatherAuthInfo,
   gatherCliInfo,
-  gatherGlobalConfig,
   gatherProjectInfo,
   gatherResolvedWorkspaces,
   gatherStudioWorkspaces,
@@ -120,11 +118,6 @@ export class Debug extends SanityCommand<typeof Debug> {
     } catch {
       this.log(`  ${styleText('red', 'Unable to determine CLI version')}`)
     }
-
-    const globalConfig = gatherGlobalConfig()
-    this.log('')
-    this.log(`  Global config (${styleText('yellow', globalConfig.location)}):`)
-    this.log(`    ${formatObject(globalConfig.config).replaceAll('\n', '\n    ')}`)
     this.log('')
   }
 

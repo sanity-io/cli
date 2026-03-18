@@ -12,11 +12,9 @@ import {getProjectById} from '../../services/projects.js'
 import {getCliUser, getProjectUser} from '../../services/user.js'
 import {getCliVersion} from '../../util/getCliVersion.js'
 import {detectCliInstallation} from '../../util/packageManager/installationInfo/index.js'
-import {getGlobalConfigLocation} from './getGlobalConfigLocation.js'
 import {
   type AuthInfo,
   type CliInfo,
-  type GlobalConfigInfo,
   type ProjectInfo,
   type ResolvedWorkspace,
   type StudioWorkspace,
@@ -65,17 +63,14 @@ export async function gatherCliInfo(): Promise<CliInfo> {
   switch (resolvedFrom) {
     case 'global': {
       installContext = packageManager ? `globally (${packageManager})` : 'globally'
-
       break
     }
     case 'local': {
       installContext = 'locally'
-
       break
     }
     case 'npx': {
       installContext = 'via npx'
-
       break
     }
     default: {
@@ -84,16 +79,6 @@ export async function gatherCliInfo(): Promise<CliInfo> {
   }
 
   return {installContext, version}
-}
-
-export function gatherGlobalConfig(): GlobalConfigInfo {
-  const location = getGlobalConfigLocation()
-  const userConfig = getUserConfig()
-  const allConfig = userConfig.all
-  // Remove auth-related keys from display
-  const {authToken: _authToken, authType: _authType, ...config} = allConfig
-
-  return {config, location}
 }
 
 export async function gatherProjectInfo(

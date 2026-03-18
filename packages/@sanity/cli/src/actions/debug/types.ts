@@ -16,11 +16,6 @@ export interface CliInfo {
   version: string
 }
 
-export interface GlobalConfigInfo {
-  config: Record<string, unknown>
-  location: string
-}
-
 export interface ProjectInfo {
   cliConfigPath: string | undefined
   rootPath: string
