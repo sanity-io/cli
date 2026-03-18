@@ -51,7 +51,7 @@
     "husky": "^9.1.7",
     "knip": "^5.85.0",
     "lint-staged": "^16.2.7",
-    "oxfmt": "^0.35.0",
+    "oxfmt": "catalog:",
     "rimraf": "catalog:",
     "turbo": "^2.8.11",
     "typescript": "catalog:",
