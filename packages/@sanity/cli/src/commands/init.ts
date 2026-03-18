@@ -173,6 +173,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       helpLabel: '    --[no-]git',
       helpValue: '<message>',
     }),
+    'import-dataset': Flags.boolean({
+      allowNo: true,
+      default: undefined,
+      description: 'Import template sample dataset',
+    }),
     mcp: Flags.boolean({
       allowNo: true,
       default: true,
@@ -534,10 +539,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     // If the template has a sample dataset, prompt the user whether or not we should import it
+    const importDatasetFlag = this.flags['import-dataset']
     const shouldImport =
-      !this.isUnattended() &&
       template?.datasetUrl &&
-      (await this.promptForDatasetImport(template.importPrompt))
+      (importDatasetFlag ??
+        (!this.isUnattended() && (await this.promptForDatasetImport(template.importPrompt))))
 
     this._trace.log({
       selectedOption: shouldImport ? 'yes' : 'no',
