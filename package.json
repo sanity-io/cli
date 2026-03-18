@@ -70,7 +70,15 @@
       "esbuild"
     ],
     "overrides": {
-      "@sanity/cli": "workspace:*"
+      "@sanity/cli": "workspace:*",
+      "@sanity/cli-core": "workspace:*"
+    },
+    "packageExtensions": {
+      "sanity": {
+        "dependencies": {
+          "@sanity/cli-core": "workspace:*"
+        }
+      }
     }
   }
 }
