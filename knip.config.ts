@@ -13,14 +13,10 @@ const baseConfig = {
   workspaces: {
     'fixtures/*': {
       entry: ['sanity.cli.ts', 'sanity.config.ts'],
-      // Binary is overridden by the CLI package
-      ignoreBinaries: ['sanity'],
       project: ['schemaTypes/**/*.{js,jsx,ts,tsx}'],
     },
     'fixtures/basic-app': {
       entry: ['sanity.cli.ts', './src/App.tsx'],
-      // Binary is overridden by the CLI package
-      ignoreBinaries: ['sanity'],
       project,
     },
     'fixtures/basic-functions': {
@@ -30,20 +26,14 @@ const baseConfig = {
     },
     'fixtures/prebuilt-app': {
       entry: ['sanity.cli.ts', 'src/App.tsx'],
-      // Binary is overridden by the CLI package
-      ignoreBinaries: ['sanity'],
       project,
     },
     'fixtures/prebuilt-studio': {
       entry: ['sanity.cli.ts', 'sanity.config.ts'],
-      // Binary is overridden by the CLI package
-      ignoreBinaries: ['sanity'],
       project: [],
     },
     'fixtures/worst-case-studio': {
       entry: ['sanity.cli.ts', 'sanity.config.tsx', 'src/defines.ts'],
-      // Binary is overridden by the CLI package
-      ignoreBinaries: ['sanity'],
       project,
     },
     'packages/@repo/coverage-delta': {
