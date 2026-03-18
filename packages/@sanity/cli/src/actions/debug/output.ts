@@ -18,7 +18,7 @@ export function formatKeyValue(
 
 function formatValue(value: unknown): string {
   if (Array.isArray(value)) {
-    return `[ ${value.map((v) => `'${v}'`).join(', ')} ]`
+    return `[ ${value.map((v) => JSON.stringify(v)).join(', ')} ]`
   }
   if (typeof value === 'string') {
     return value

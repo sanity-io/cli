@@ -31,6 +31,7 @@ const multiRawWorkspaceSchema = z.looseObject({
   basePath: z.string().optional(),
   name: z.string().optional(),
   plugins: z.array(z.unknown()).optional(),
+  schema: schemaSchema.optional(),
   title: z.string().optional(),
   unstable_sources: z.array(sourceSchema).optional(),
 })

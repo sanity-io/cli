@@ -12,7 +12,7 @@ import {
   gatherUserInfo,
 } from '../actions/debug/gatherDebugInfo.js'
 import {formatKeyValue, sectionHeader} from '../actions/debug/output.js'
-import {type StudioWorkspace} from '../actions/debug/types.js'
+import {type StudioWorkspace, type UserInfo} from '../actions/debug/types.js'
 
 interface ConfigLoadResult<T> {
   error?: Error
@@ -75,7 +75,8 @@ export class Debug extends SanityCommand<typeof Debug> {
     }
 
     // Section 1: User
-    await this.printUserSection(projectId)
+    const user = await this.printUserSection(projectId)
+    const userId = user instanceof Error || !user ? undefined : user.id
 
     // Section 2: Authentication (only when logged in)
     await this.printAuthSection(flags.secrets)
@@ -88,7 +89,7 @@ export class Debug extends SanityCommand<typeof Debug> {
 
     // Section 5: Studio (when studio config file exists)
     if (projectDirectory && project?.studioConfigPath && studioLoad) {
-      await this.printStudioSection(projectDirectory, studioLoad, flags.verbose)
+      await this.printStudioSection(projectDirectory, studioLoad, flags.verbose, projectId, userId)
     }
   }
 
@@ -172,6 +173,8 @@ export class Debug extends SanityCommand<typeof Debug> {
     projectDirectory: string,
     studioLoad: ConfigLoadResult<StudioWorkspace[]>,
     verbose: boolean,
+    projectId: string | undefined,
+    userId: string | undefined,
   ): Promise<void> {
     this.log(sectionHeader('Studio'))
 
@@ -197,11 +200,6 @@ export class Debug extends SanityCommand<typeof Debug> {
 
     // Full resolution: try to resolve plugins and get roles
     try {
-      const cliConfig = await this.getCliConfig()
-      const projectId = cliConfig?.api?.projectId
-      const user = await gatherUserInfo(projectId)
-      const userId = user instanceof Error ? undefined : user.id
-
       const resolved = await gatherResolvedWorkspaces(projectDirectory, userId)
 
       this.log('')
@@ -227,13 +225,13 @@ export class Debug extends SanityCommand<typeof Debug> {
     this.log('')
   }
 
-  private async printUserSection(projectId: string | undefined): Promise<void> {
+  private async printUserSection(projectId: string | undefined): Promise<Error | UserInfo> {
     this.log(`\n${sectionHeader('User')}`)
 
     const user = await gatherUserInfo(projectId)
     if (user instanceof Error) {
       this.log(`  ${user.message}\n`)
-      return
+      return user
     }
 
     const padTo = 8 // "Provider" is the longest key
@@ -242,6 +240,7 @@ export class Debug extends SanityCommand<typeof Debug> {
     this.log(formatKeyValue('ID', user.id, {padTo}))
     this.log(formatKeyValue('Provider', user.provider, {padTo}))
     this.log('')
+    return user
   }
 }
 
