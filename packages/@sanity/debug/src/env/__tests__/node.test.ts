@@ -1,3 +1,7 @@
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {type DebugEnv, type DebugFunction} from '../../types.js'
@@ -19,6 +23,7 @@ async function loadNodeEnv(envVars?: Record<string, string>): Promise<DebugEnv> 
 
 describe('node environment', () => {
   const originalEnv = {...process.env}
+  const filesToCleanup: string[] = []
 
   beforeEach(() => {
     // Clean up any DEBUG_* env vars before each test
@@ -43,6 +48,16 @@ describe('node environment', () => {
       }
     }
     vi.restoreAllMocks()
+
+    // Clean up temp files
+    for (const f of filesToCleanup) {
+      try {
+        fs.unlinkSync(f)
+      } catch {
+        // ignore
+      }
+    }
+    filesToCleanup.length = 0
   })
 
   describe('useColors()', () => {
@@ -326,6 +341,91 @@ describe('node environment', () => {
       const instance = {} as unknown as DebugFunction
       env.init?.(instance)
       expect(instance.inspectOpts?.depth).toBe(42)
+    })
+  })
+
+  describe('onDebug / DEBUG_LOG_FILE', () => {
+    test('onDebug is undefined when DEBUG_LOG_FILE is not set', async () => {
+      const env = await loadNodeEnv()
+      expect(env.onDebug).toBeUndefined()
+    })
+
+    test('onDebug is a function when DEBUG_LOG_FILE is set', async () => {
+      const tmpFile = path.join(os.tmpdir(), `debug-test-${Date.now()}.jsonl`)
+      filesToCleanup.push(tmpFile)
+
+      const env = await loadNodeEnv({DEBUG_LOG_FILE: tmpFile})
+      expect(typeof env.onDebug).toBe('function')
+    })
+
+    test('onDebug writes JSONL to the file', async () => {
+      const tmpFile = path.join(os.tmpdir(), `debug-test-${Date.now()}.jsonl`)
+      filesToCleanup.push(tmpFile)
+
+      const env = await loadNodeEnv({DEBUG_LOG_FILE: tmpFile})
+
+      env.onDebug!({
+        diff: 42,
+        msg: 'hello world',
+        ns: 'test:ns',
+        ts: '2026-01-01T00:00:00.000Z',
+      })
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      const content = fs.readFileSync(tmpFile, 'utf8').trim()
+      const parsed = JSON.parse(content)
+      expect(parsed.ts).toBe('2026-01-01T00:00:00.000Z')
+      expect(parsed.ns).toBe('test:ns')
+      expect(parsed.msg).toBe('hello world')
+      expect(parsed.diff).toBe(42)
+    })
+
+    test('onDebug appends multiple entries', async () => {
+      const tmpFile = path.join(os.tmpdir(), `debug-test-${Date.now()}.jsonl`)
+      filesToCleanup.push(tmpFile)
+
+      const env = await loadNodeEnv({DEBUG_LOG_FILE: tmpFile})
+
+      env.onDebug!({
+        diff: 0,
+        msg: 'first',
+        ns: 'test',
+        ts: '2026-01-01T00:00:00.000Z',
+      })
+      env.onDebug!({
+        diff: 10,
+        msg: 'second',
+        ns: 'test',
+        ts: '2026-01-01T00:00:00.010Z',
+      })
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      const lines = fs.readFileSync(tmpFile, 'utf8').trim().split('\n')
+      expect(lines).toHaveLength(2)
+      expect(JSON.parse(lines[0]).msg).toBe('first')
+      expect(JSON.parse(lines[1]).msg).toBe('second')
+    })
+
+    test('onDebug preserves property order: ts, ns, msg, diff', async () => {
+      const tmpFile = path.join(os.tmpdir(), `debug-test-${Date.now()}.jsonl`)
+      filesToCleanup.push(tmpFile)
+
+      const env = await loadNodeEnv({DEBUG_LOG_FILE: tmpFile})
+
+      env.onDebug!({
+        diff: 5,
+        msg: 'order test',
+        ns: 'test:order',
+        ts: '2026-01-01T00:00:00.000Z',
+      })
+
+      await new Promise((resolve) => setTimeout(resolve, 50))
+
+      const raw = fs.readFileSync(tmpFile, 'utf8').trim()
+      const keys = [...raw.matchAll(/"(\w+)":/g)].map((m) => m[1])
+      expect(keys).toEqual(['ts', 'ns', 'msg', 'diff'])
     })
   })
 })

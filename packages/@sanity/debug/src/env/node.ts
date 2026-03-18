@@ -1,9 +1,10 @@
+import {createWriteStream, type WriteStream} from 'node:fs'
 import tty from 'node:tty'
 import {formatWithOptions, inspect, type InspectOptions} from 'node:util'
 
 import {ANSI_COLORS_BASIC, ANSI_COLORS_EXTENDED} from '../colors.js'
 import {humanize} from '../humanize.js'
-import {type DebugEnv, type DebugFunction, type Formatter} from '../types.js'
+import {type DebugEntry, type DebugEnv, type DebugFunction, type Formatter} from '../types.js'
 
 /**
  * Parse DEBUG_* environment variables into inspect-compatible options.
@@ -136,6 +137,34 @@ function init(debug: DebugFunction): void {
   debug.inspectOpts = {...inspectOpts}
 }
 
+/**
+ * Create a JSONL file writer for structured debug output.
+ * Returns undefined if DEBUG_LOG_FILE is not set.
+ *
+ * The file stream is opened lazily on first write (append mode).
+ * Errors are swallowed - debug logging must never crash the app.
+ */
+function createFileWriter(): ((entry: DebugEntry) => void) | undefined {
+  const filePath = process.env.DEBUG_LOG_FILE
+  if (!filePath) return undefined
+
+  let stream: WriteStream | undefined
+
+  return (entry: DebugEntry) => {
+    if (!stream) {
+      stream = createWriteStream(filePath, {flags: 'a'})
+      stream.on('error', () => {
+        // Swallow errors - debug logging must never crash the app
+        stream = undefined
+      })
+    }
+
+    // Property order matters for JSONL: ts, ns, msg, diff
+    const line = JSON.stringify(entry, ['ts', 'ns', 'msg', 'diff'])
+    stream.write(`${line}\n`)
+  }
+}
+
 const formattersMap: Record<string, Formatter> = {
   /**
    * Single-line `inspect` (%o formatter).
@@ -164,6 +193,7 @@ export const nodeEnv: DebugEnv = {
   init,
   load,
   log,
+  onDebug: createFileWriter(),
   save,
   useColors,
 }
