@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/sanity-io/cli/compare/eslint-config-cli-v1.0.0...eslint-config-cli-v1.0.1) (2026-03-18)
+
+
+### Bug Fixes
+
+* **deps:** update eslint-tooling ([#699](https://github.com/sanity-io/cli/issues/699)) ([61662df](https://github.com/sanity-io/cli/commit/61662dfb4c72895d46eff637bdb9a7a1e1b25eeb))
+
 ## 1.0.0 (2026-03-10)
 
 
