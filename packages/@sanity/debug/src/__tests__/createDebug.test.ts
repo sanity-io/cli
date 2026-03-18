@@ -383,3 +383,133 @@ describe('wildcard matching edge cases', () => {
     expect(enabled('app:anything:here')).toBe(true)
   })
 })
+
+describe('onDebug callback', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+    vi.useRealTimers()
+  })
+
+  test('calls env.onDebug with structured entry when debug is called', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-01-15T12:00:00.000Z'))
+
+    const onDebug = vi.fn()
+    const env = createTestEnv({formatArgs: vi.fn(), onDebug})
+    const {createDebug, enable} = createDebugFactory(env)
+    enable('test')
+    const debug = createDebug('test')
+
+    debug('hello')
+
+    expect(onDebug).toHaveBeenCalledOnce()
+    const entry = onDebug.mock.calls[0][0]
+    expect(entry).toEqual({
+      diff: 0,
+      msg: 'hello',
+      ns: 'test',
+      ts: '2026-01-15T12:00:00.000Z',
+    })
+  })
+
+  test('onDebug msg includes custom formatter output', () => {
+    const onDebug = vi.fn()
+    const env = createTestEnv({
+      formatArgs: vi.fn(),
+      formatters: {
+        h(v: unknown) {
+          return `<${String(v)}>`
+        },
+      },
+      onDebug,
+    })
+    const {createDebug, enable} = createDebugFactory(env)
+    enable('test')
+    const debug = createDebug('test')
+
+    debug('value: %h', 'world')
+
+    expect(onDebug).toHaveBeenCalledOnce()
+    expect(onDebug.mock.calls[0][0].msg).toBe('value: <world>')
+  })
+
+  test('onDebug msg handles %% escapes', () => {
+    const onDebug = vi.fn()
+    const env = createTestEnv({formatArgs: vi.fn(), onDebug})
+    const {createDebug, enable} = createDebugFactory(env)
+    enable('test')
+    const debug = createDebug('test')
+
+    debug('100%% done')
+
+    expect(onDebug).toHaveBeenCalledOnce()
+    expect(onDebug.mock.calls[0][0].msg).toBe('100% done')
+  })
+
+  test('onDebug msg includes Error stack', () => {
+    const onDebug = vi.fn()
+    const env = createTestEnv({formatArgs: vi.fn(), onDebug})
+    const {createDebug, enable} = createDebugFactory(env)
+    enable('test')
+    const debug = createDebug('test')
+
+    const err = new Error('kaboom')
+    debug(err)
+
+    expect(onDebug).toHaveBeenCalledOnce()
+    expect(onDebug.mock.calls[0][0].msg).toContain('kaboom')
+  })
+
+  test('onDebug includes diff from previous call', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-01-15T12:00:00.000Z'))
+
+    const onDebug = vi.fn()
+    const env = createTestEnv({formatArgs: vi.fn(), onDebug})
+    const {createDebug, enable} = createDebugFactory(env)
+    enable('test')
+    const debug = createDebug('test')
+
+    debug('first')
+    expect(onDebug.mock.calls[0][0].diff).toBe(0)
+
+    vi.advanceTimersByTime(150)
+    debug('second')
+    expect(onDebug.mock.calls[1][0].diff).toBe(150)
+  })
+
+  test('onDebug is not called when instance is disabled', () => {
+    const onDebug = vi.fn()
+    const env = createTestEnv({formatArgs: vi.fn(), onDebug})
+    const {createDebug} = createDebugFactory(env)
+    const debug = createDebug('test')
+
+    debug('should not fire')
+
+    expect(onDebug).not.toHaveBeenCalled()
+  })
+
+  test('does not error when onDebug is undefined', () => {
+    const env = createTestEnv({formatArgs: vi.fn()})
+    const {createDebug, enable} = createDebugFactory(env)
+    enable('test')
+    const debug = createDebug('test')
+
+    debug('hello')
+
+    expect(env.log).toHaveBeenCalledOnce()
+  })
+
+  test('onDebug msg shows %O for non-string first arg', () => {
+    const onDebug = vi.fn()
+    const env = createTestEnv({formatArgs: vi.fn(), onDebug})
+    const {createDebug, enable} = createDebugFactory(env)
+    enable('test')
+    const debug = createDebug('test')
+
+    debug({key: 'value'})
+
+    expect(onDebug).toHaveBeenCalledOnce()
+    expect(onDebug.mock.calls[0][0].msg).toBe('%O')
+  })
+})

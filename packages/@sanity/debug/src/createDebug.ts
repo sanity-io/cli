@@ -103,6 +103,17 @@ export function createDebugFactory(env: DebugEnv): DebugExports {
         },
       )
 
+      // Call structured output callback (e.g. JSONL file writer)
+      // This happens after formatter interpolation but before env.formatArgs
+      // adds ANSI colors/prefixes, so msg is the clean interpolated string.
+
+      env.onDebug?.({
+        diff: ms,
+        msg: formatted[0] as string,
+        ns: namespace,
+        ts: new Date(curr).toISOString(),
+      })
+
       // Apply env-specific formatting (colors, prefixes)
       env.formatArgs.call(instance, formatted)
 
