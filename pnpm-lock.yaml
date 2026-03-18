@@ -87,6 +87,9 @@ catalogs:
     ora:
       specifier: ^9.0.0
       version: 9.3.0
+    oxfmt:
+      specifier: ^0.35.0
+      version: 0.35.0
     publint:
       specifier: ^0.3.18
       version: 0.3.18
@@ -163,7 +166,7 @@ importers:
         specifier: ^16.2.7
         version: 16.2.7
       oxfmt:
-        specifier: ^0.35.0
+        specifier: 'catalog:'
         version: 0.35.0
       rimraf:
         specifier: 'catalog:'
@@ -381,7 +384,7 @@ importers:
   packages/@repo/coverage-delta:
     dependencies:
       oxfmt:
-        specifier: ^0.35.0
+        specifier: 'catalog:'
         version: 0.35.0
     devDependencies:
       '@repo/tsconfig':
