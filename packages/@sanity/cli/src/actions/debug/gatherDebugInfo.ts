@@ -126,25 +126,7 @@ export async function gatherResolvedWorkspaces(
 ): Promise<ResolvedWorkspace[]> {
   const resolvedConfig = await getStudioConfig(projectDirectory, {resolvePlugins: true})
 
-  // Gather unique project IDs for role fetching
-  const projectIds = [...new Set(resolvedConfig.map((ws) => ws.projectId))]
-  const projectMap = new Map<string, string[]>()
-
-  await Promise.all(
-    projectIds.map(async (projectId) => {
-      try {
-        const project = await getProjectById(projectId)
-        if (project && userId) {
-          const member = (project.members || []).find((m) => m.id === userId)
-          // @ts-expect-error - Incorrect type definition in @sanity/client
-          const roles: string[] = member?.roles?.map((r) => r.name) ?? []
-          projectMap.set(projectId, roles)
-        }
-      } catch {
-        // Project not accessible, skip roles
-      }
-    }),
-  )
+  const projectMap = await fetchRolesByProject(resolvedConfig, userId)
 
   return resolvedConfig.map((ws) => ({
     name: ws.name,
@@ -163,4 +145,29 @@ async function findCliConfigFile(directory: string): Promise<string | undefined>
     }
   }
   return undefined
+}
+
+async function fetchRolesByProject(
+  workspaces: {projectId: string}[],
+  userId: string | undefined,
+): Promise<Map<string, string[]>> {
+  const projectMap = new Map<string, string[]>()
+  if (!userId) return projectMap
+
+  const projectIds = [...new Set(workspaces.map((ws) => ws.projectId))]
+  await Promise.all(
+    projectIds.map(async (projectId) => {
+      try {
+        const project = await getProjectById(projectId)
+        if (!project) return
+        const member = (project.members || []).find((m) => m.id === userId)
+        // @ts-expect-error - Incorrect type definition in @sanity/client
+        const roles: string[] = member?.roles?.map((r) => r.name) ?? []
+        projectMap.set(projectId, roles)
+      } catch {
+        // Project not accessible, skip roles
+      }
+    }),
+  )
+  return projectMap
 }
