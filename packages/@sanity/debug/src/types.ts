@@ -40,6 +40,18 @@ export interface DebugFunction {
 export type Formatter = (this: DebugFunction, value: unknown) => string
 
 /**
+ * Structured debug entry for file/socket output.
+ *
+ * @internal
+ */
+export interface DebugEntry {
+  diff: number
+  msg: string
+  ns: string
+  ts: string
+}
+
+/**
  * Environment-specific implementation provided to the factory.
  *
  * @internal
@@ -62,4 +74,6 @@ export interface DebugEnv {
 
   /** Per-instance initialization (e.g. inspectOpts in Node) */
   init?: (instance: DebugFunction) => void
+  /** Structured output callback (e.g. JSONL file writer) */
+  onDebug?: (entry: DebugEntry) => void
 }
