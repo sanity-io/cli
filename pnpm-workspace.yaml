@@ -38,8 +38,8 @@ catalog:
 
   # CLI Framework
   '@oclif/core': ^4.9.0
-  '@oclif/plugin-help': ^6.2.37
-  '@oclif/plugin-not-found': ^3.2.74
+  '@oclif/plugin-help': ^6.2.38
+  '@oclif/plugin-not-found': ^3.2.75
 
   # Utilities
   debug: ^4.4.3
