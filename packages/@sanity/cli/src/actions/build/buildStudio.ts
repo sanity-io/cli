@@ -48,7 +48,9 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     workDir,
   })
 
-  let autoUpdatesEnabled = shouldAutoUpdate({cliConfig, flags, output})
+  let autoUpdatesEnabled = options.calledFromDeploy
+    ? options.autoUpdatesEnabled
+    : shouldAutoUpdate({cliConfig, flags, output})
 
   let autoUpdatesImports = {}
 
