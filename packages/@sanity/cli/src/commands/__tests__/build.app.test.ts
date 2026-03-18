@@ -90,6 +90,27 @@ describe('#build app', {timeout: (platform() === 'win32' ? 120 : 60) * 1000}, ()
     expect(stdout).toContain('SANITY_APP_TEST_VAR')
   })
 
+  test('should not include non-prefixed env vars in build output', async () => {
+    const cwd = await testFixture('basic-app')
+    process.chdir(cwd)
+
+    vi.stubEnv('SANITY_APP_BUNDLE_VAR', 'app-value')
+    vi.stubEnv('NEXT_PUBLIC_LEAKED', 'next-value')
+    vi.stubEnv('VITE_LEAKED', 'vite-value')
+
+    const {error, stdout} = await testCommand(BuildCommand, ['--yes'], {
+      config: {root: cwd},
+    })
+
+    if (error) throw error
+
+    // Prefixed var should appear in the build output env var listing
+    expect(stdout).toContain('SANITY_APP_BUNDLE_VAR')
+    // Non-prefixed vars must NOT appear
+    expect(stdout).not.toContain('NEXT_PUBLIC_LEAKED')
+    expect(stdout).not.toContain('VITE_LEAKED')
+  })
+
   test('should error when @sanity/sdk-react is not installed', async () => {
     const cwd = await testFixture('basic-app', {
       tempDir: tmpdir(),

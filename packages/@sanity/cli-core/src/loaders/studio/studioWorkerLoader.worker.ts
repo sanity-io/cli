@@ -173,7 +173,10 @@ await server.pluginContainer.buildStart({})
 // Load environment variables from `.env` files in the same way as Vite does.
 // Note that Sanity also provides environment variables through `process.env.*` for compat reasons,
 // and so we need to do the same here.
-const env = loadEnv(server.config.mode, server.config.envDir, viteConfig.envPrefix ?? '')
+// Load ALL env vars from .env files (not just studio-prefixed ones) so non-Sanity-prefixed
+// vars (e.g. NEXT_PUBLIC_*, VITE_*) are available via process.env at runtime.
+// The ??= on the next line prevents overwriting existing process.env values.
+const env = loadEnv(server.config.mode, server.config.envDir, '')
 for (const key in env) {
   process.env[key] ??= env[key]
 }
