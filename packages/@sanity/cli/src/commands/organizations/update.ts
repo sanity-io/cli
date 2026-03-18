@@ -71,7 +71,7 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
     const spin = spinner('Updating organization').start()
     try {
       await updateOrganization(orgId, params)
-      spin.succeed('Organization updated')
+      spin.succeed()
       this.log('Organization updated')
     } catch (error) {
       spin.fail()
