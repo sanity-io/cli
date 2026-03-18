@@ -124,6 +124,9 @@ export async function gatherResolvedWorkspaces(
   projectDirectory: string,
   userId: string | undefined,
 ): Promise<ResolvedWorkspace[]> {
+  // resolvePlugins: true goes through getStudioWorkspaces() which calls resolveConfig()
+  // from the sanity package. resolveConfig() always returns an array of workspaces,
+  // so resolvedConfigSchema (z.array(...)) is guaranteed to match.
   const resolvedConfig = await getStudioConfig(projectDirectory, {resolvePlugins: true})
 
   const projectMap = await fetchRolesByProject(resolvedConfig, userId)

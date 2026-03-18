@@ -73,7 +73,7 @@ export class Debug extends SanityCommand<typeof Debug> {
 
     // Section 1: User
     const user = await this.printUserSection(projectId)
-    const userId = user instanceof Error || !user ? undefined : user.id
+    const userId = user instanceof Error ? undefined : user.id
 
     // Section 2: Authentication (only when logged in)
     await this.printAuthSection(flags.secrets)
