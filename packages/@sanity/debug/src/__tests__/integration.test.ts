@@ -1,3 +1,7 @@
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {createDebug, disable, enable, enabled, formatters} from '../index.js'
@@ -99,5 +103,74 @@ describe('integration: Node entry point', () => {
     enable('*,-secret:*')
     expect(enabled('app')).toBe(true)
     expect(enabled('secret:key')).toBe(false)
+  })
+})
+
+describe('integration: DEBUG_LOG_FILE', () => {
+  const originalDebugLogFile = process.env.DEBUG_LOG_FILE
+  const originalDebug = process.env.DEBUG
+  const filesToCleanup: string[] = []
+
+  afterEach(async () => {
+    if (originalDebugLogFile === undefined) {
+      delete process.env.DEBUG_LOG_FILE
+    } else {
+      process.env.DEBUG_LOG_FILE = originalDebugLogFile
+    }
+    if (originalDebug === undefined) {
+      delete process.env.DEBUG
+    } else {
+      process.env.DEBUG = originalDebug
+    }
+
+    for (const f of filesToCleanup) {
+      try {
+        fs.unlinkSync(f)
+      } catch {
+        // ignore
+      }
+    }
+    filesToCleanup.length = 0
+
+    vi.restoreAllMocks()
+    vi.resetModules()
+  })
+
+  test('debug calls write JSONL entries to the log file', async () => {
+    const tmpFile = path.join(os.tmpdir(), `debug-integration-${Date.now()}.log`)
+    filesToCleanup.push(tmpFile)
+
+    process.env.DEBUG = 'test:*'
+    process.env.DEBUG_LOG_FILE = tmpFile
+
+    vi.resetModules()
+    const {createDebugFactory} = await import('../createDebug.js')
+    const {nodeEnv} = await import('../env/node.js')
+    const {createDebug: createDebugFresh} = createDebugFactory(nodeEnv)
+
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+
+    const debug = createDebugFresh('test:integration')
+    debug('hello %s', 'world')
+    debug('count: %d', 42)
+
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    const content = fs.readFileSync(tmpFile, 'utf8')
+    const lines = content.trim().split('\n')
+    expect(lines).toHaveLength(2)
+
+    const entry1 = JSON.parse(lines[0])
+    expect(entry1.ns).toBe('test:integration')
+    expect(entry1.msg).toBe('hello %s')
+    expect(entry1.diff).toBe(0)
+    expect(entry1.ts).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+
+    const entry2 = JSON.parse(lines[1])
+    expect(entry2.ns).toBe('test:integration')
+    expect(entry2.msg).toBe('count: %d')
+    expect(entry2.diff).toBeGreaterThanOrEqual(0)
+
+    stderrSpy.mockRestore()
   })
 })
