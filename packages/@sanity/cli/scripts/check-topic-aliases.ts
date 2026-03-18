@@ -9,10 +9,7 @@
  * has actually been renamed to the canonical name.
  *
  * Run after building / generating the oclif manifest:
- *   node scripts/check-topic-aliases.ts
- *
- * NOTE: This file uses only erasable TypeScript syntax so it can run directly
- * on Node 24+ without any compilation or flags.
+ *   tsx scripts/check-topic-aliases.ts
  */
 
 /* eslint-disable no-console */

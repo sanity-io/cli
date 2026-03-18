@@ -79,7 +79,7 @@ export class ValidateDocumentsCommand extends SanityCommand<typeof ValidateDocum
     }),
   }
 
-  static hiddenAliases: string[] = ['document:validate']
+  static override hiddenAliases: string[] = ['document:validate']
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(ValidateDocumentsCommand)
