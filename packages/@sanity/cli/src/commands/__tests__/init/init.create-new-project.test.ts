@@ -215,7 +215,7 @@ describe('#init: create new project', () => {
     await testCommand(
       InitCommand,
       [
-        '--create-project=Test Project',
+        '--project-name=Test Project',
         '--dataset=production',
         '--output-path=./test-project',
         '--no-nextjs-add-config-files',
@@ -314,7 +314,7 @@ describe('#init: create new project', () => {
     await testCommand(
       InitCommand,
       [
-        '--create-project=Test Project',
+        '--project-name=Test Project',
         '--dataset=production',
         '--output-path=./test-project',
         '--no-nextjs-add-config-files',

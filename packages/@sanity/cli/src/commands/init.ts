@@ -116,7 +116,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> -y --create-project "Movies Unlimited" --dataset moviedb --visibility private --template moviedb --output-path /Users/espenh/movies-unlimited',
+        '<%= config.bin %> <%= command.id %> -y --project-name "Movies Unlimited" --dataset moviedb --visibility private --template moviedb --output-path /Users/espenh/movies-unlimited',
       description: 'Create a brand new project with name "Movies Unlimited"',
     },
   ] satisfies Array<Command.Example>
@@ -139,8 +139,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       helpValue: '<code>',
     }),
     'create-project': Flags.string({
+      deprecated: {message: 'Use --project-name instead'},
       description: 'Create a new project with the given name',
       helpValue: '<name>',
+      hidden: true,
     }),
     dataset: Flags.string({
       description: 'Dataset name for the studio',
@@ -232,8 +234,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     project: Flags.string({
       aliases: ['project-id'],
       description: 'Project ID to use for the studio',
-      exclusive: ['create-project'],
+      exclusive: ['create-project', 'project-name'],
       helpValue: '<id>',
+    }),
+    'project-name': Flags.string({
+      description: 'Create a new project with the given name',
+      exclusive: ['project', 'create-project'],
+      helpValue: '<name>',
     }),
     'project-plan': Flags.string({
       description: 'Optionally select a plan for a new project',
@@ -292,7 +299,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   public async run(): Promise<void> {
     const workDir = process.cwd()
 
-    const createProjectName = this.flags['create-project']
+    const createProjectName = this.flags['project-name'] ?? this.flags['create-project']
     // For backwards "compatibility" - we used to allow `sanity init plugin`,
     // and no longer do - but instead of printing an error about an unknown
     // _command_, we want to acknowledge that the user is trying to do something
@@ -731,16 +738,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     if (!this.flags.project && !createProjectName) {
       this.error(
-        '`--project <id>` or `--create-project <name>` must be specified in unattended mode',
+        '`--project <id>` or `--project-name <name>` must be specified in unattended mode',
         {exit: 1},
       )
     }
 
     if (createProjectName && !this.flags.organization) {
-      this.error(
-        '--create-project is not supported in unattended mode without an organization, please specify an organization with `--organization <id>`',
-        {exit: 1},
-      )
+      this.error('`--project-name` requires `--organization <id>` in unattended mode', {exit: 1})
     }
   }
 
@@ -753,7 +757,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     planId: string | undefined
     user: SanityOrgUser
   }) {
-    debug('--create-project specified, creating a new project')
+    debug('--project-name specified, creating a new project')
 
     let orgForCreateProjectFlag = this.flags.organization
 
