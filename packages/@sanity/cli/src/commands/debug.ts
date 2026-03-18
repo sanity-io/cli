@@ -14,10 +14,7 @@ import {
 import {formatKeyValue, sectionHeader} from '../actions/debug/output.js'
 import {type StudioWorkspace, type UserInfo} from '../actions/debug/types.js'
 
-interface ConfigLoadResult<T> {
-  error?: Error
-  value?: T
-}
+type ConfigLoadResult<T> = {error: Error; value?: never} | {error?: never; value: T}
 
 export class Debug extends SanityCommand<typeof Debug> {
   static override description = 'Provides diagnostic info for Sanity Studio troubleshooting'
@@ -187,8 +184,6 @@ export class Debug extends SanityCommand<typeof Debug> {
       }
       return
     }
-
-    if (!studioLoad.value) return
 
     this.log('  Workspaces:')
     for (const ws of studioLoad.value) {

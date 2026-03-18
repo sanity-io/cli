@@ -48,7 +48,7 @@ export async function gatherAuthInfo(includeSecrets: boolean): Promise<AuthInfo>
   const authType = config.get('authType')
 
   return {
-    authToken: includeSecrets && token ? token : '<redacted>',
+    authToken: token ? (includeSecrets ? token : '<redacted>') : undefined,
     hasToken,
     userType: typeof authType === 'string' ? authType : 'normal',
   }

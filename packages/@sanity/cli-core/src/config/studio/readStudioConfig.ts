@@ -15,18 +15,8 @@ const sourceSchema = z.looseObject({
   schema: z.looseObject({_original: schemaSchema}),
 })
 
-// Raw config schemas (resolvePlugins: false) - unstable_sources not yet populated
-const singleRawWorkspaceSchema = z.looseObject({
-  ...sourceSchema.shape,
-  basePath: z.string().optional(),
-  name: z.string().optional(),
-  plugins: z.array(z.unknown()).optional(),
-  schema: schemaSchema.optional(),
-  title: z.string().optional(),
-  unstable_sources: z.array(sourceSchema).optional(),
-})
-
-const multiRawWorkspaceSchema = z.looseObject({
+// Raw workspace schema (resolvePlugins: false) - unstable_sources not yet populated
+const rawWorkspaceSchema = z.looseObject({
   ...sourceSchema.shape,
   basePath: z.string().optional(),
   name: z.string().optional(),
@@ -46,7 +36,7 @@ const resolvedWorkspaceSchema = z.looseObject({
   unstable_sources: z.array(sourceSchema),
 })
 
-const rawConfigSchema = z.union([z.array(multiRawWorkspaceSchema), singleRawWorkspaceSchema])
+const rawConfigSchema = z.union([z.array(rawWorkspaceSchema), rawWorkspaceSchema])
 const resolvedConfigSchema = z.array(resolvedWorkspaceSchema)
 
 export type RawStudioConfig = z.infer<typeof rawConfigSchema>
@@ -108,8 +98,10 @@ export async function readStudioConfig(
  * those nested inside union errors. Note that `prettifyError` from Zod
  * only gives a high-level summary for union errors, so this function is
  * needed to get the full details of all validation issues in a readable format.
+ *
+ * @internal exported for testing only
  */
-function formatZodIssues(issues: z.core.$ZodIssue[], indent = 2): string {
+export function formatZodIssues(issues: z.core.$ZodIssue[], indent = 2): string {
   const lines: string[] = []
   const prefix = ' '.repeat(indent)
 

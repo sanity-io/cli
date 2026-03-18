@@ -6,7 +6,7 @@ export interface UserInfo {
 }
 
 export interface AuthInfo {
-  authToken: string
+  authToken: string | undefined
   hasToken: boolean
   userType: string
 }
