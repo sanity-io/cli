@@ -376,8 +376,44 @@ mockApi({uri: '/endpoint'}).reply(200, {...})
 - To run any command first you have to build the project using `pnpm build:cli`
 - For faster iteration, use `pnpm watch:cli` in one terminal and run commands in another
 - Run single command: `npx sanity <command>`
-- Enable debug logs: `DEBUG=sanity:* npx sanity <command>`
 - Most if not all commands need to be run within one of the fixture folders.
+
+## Debug logging with `DEBUG`
+
+The CLI uses `@sanity/debug` (a custom replacement for the `debug` npm module) for internal debug logging. All namespaces are prefixed with `sanity:`.
+
+Enable debug output to stderr:
+
+```sh
+# All CLI debug output
+DEBUG=sanity:* npx sanity <command>
+
+# Specific subsystem
+DEBUG=sanity:cli:build npx sanity build
+
+# Multiple patterns
+DEBUG=sanity:cli:auth,sanity:cli:login npx sanity login
+```
+
+## Capturing debug logs to a file (`DEBUG_LOG_FILE`)
+
+**ALWAYS use `DEBUG_LOG_FILE` when you need to inspect debug output. Never grep stderr or stdout directly.**
+
+Set `DEBUG_LOG_FILE` to write structured JSONL to a file alongside normal stderr output. Each line is one debug call:
+
+```json
+{"ts": "2026-03-18T12:00:00.123Z", "ns": "sanity:cli:build", "msg": "Building studio", "diff": 42}
+```
+
+```sh
+DEBUG=sanity:* DEBUG_LOG_FILE=/tmp/sanity-debug.log npx sanity <command>
+
+# Then inspect with jq
+cat /tmp/sanity-debug.log | jq .
+jq 'select(.ns == "sanity:cli:build")' /tmp/sanity-debug.log
+```
+
+JSONL is structured, unambiguous, and easy to filter. Grepping stderr is fragile - output contains ANSI color codes, multi-line messages can span multiple lines, and timing deltas change on every run.
 
 # Workflow
 
