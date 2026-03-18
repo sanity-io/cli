@@ -36,6 +36,11 @@ describe('organizations list', () => {
     expect(stdout).toContain('acme')
     expect(stdout).toContain('org-bbb')
     expect(stdout).toContain('Globex')
+    // The null slug should render as '-'
+    const lines = stdout.split('\n')
+    const globexLine = lines.find((l) => l.includes('Globex'))
+    expect(globexLine).toBeDefined()
+    expect(globexLine).toContain('-')
   })
 
   test('shows empty message when no organizations', async () => {

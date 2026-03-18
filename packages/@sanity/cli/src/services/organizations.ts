@@ -6,7 +6,7 @@ export const ORGANIZATIONS_API_VERSION = 'v2025-05-14'
 export interface ProjectOrganization {
   id: string
   name: string
-  slug: string
+  slug: string | null
 }
 
 export interface OrganizationCreateResponse {
