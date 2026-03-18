@@ -4,8 +4,11 @@
  * Replaces oclif plugin-not-found as a plugin, calling it as a fallback instead.
  * This avoids a race condition where both hooks run concurrently via Promise.all.
  *
+ * This hook only fires for names oclif doesn't recognize. Registered topics
+ * and commands (including hiddenAliases) are resolved by oclif before this runs.
+ *
  * Flow:
- * 1. Check if the command ID matches a known topic alias (in either direction)
+ * 1. Check if the unrecognized name is a known alias (eg "dataset" for "datasets")
  * 2. If yes: rewrite and run the resolved command (or show topic help for bare topics)
  * 3. If no: fall back to oclif plugin-not-found's "did you mean?" behavior
  */
@@ -17,12 +20,12 @@ import {topicAliases} from '../../topicAliases.js'
 
 const debug = subdebug('hooks:topicAliases')
 
-// Build bidirectional lookup: given a topic name, find what it maps to.
-// Aliases resolve to their canonical name, and canonical names resolve
-// to their first alias. This handles both directions:
-//   - "dataset" (alias) typed -> resolves to "datasets" (canonical/directory)
-//   - "schemas" (canonical) typed -> resolves to "schema" (alias/directory)
-// The hook then checks which resolved name actually has commands registered.
+// Build a lookup from alias names to candidate topics.
+// This hook only fires for names oclif doesn't recognize. Since canonical
+// topics (eg "datasets") are registered and resolved by oclif directly,
+// only aliases (eg "dataset") reach here. We still map both directions
+// so the hook is resilient to future renames or plugin-provided topics
+// where the canonical name may not be a registered topic.
 const topicMappings = new Map<string, string[]>()
 for (const [canonical, aliases] of Object.entries(topicAliases)) {
   // canonical -> all aliases
