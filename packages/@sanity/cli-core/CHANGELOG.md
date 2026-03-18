@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.1.3](https://github.com/sanity-io/cli/compare/cli-core-v1.1.2...cli-core-v1.1.3) (2026-03-18)
+
+
+### Bug Fixes
+
+* load all env vars for schema extract ([#725](https://github.com/sanity-io/cli/issues/725)) ([67ee0a5](https://github.com/sanity-io/cli/commit/67ee0a5d25a7f01f3aebf7039407e43485aa0297))
+* use JSDOM Abort* APIs when mocking browser environments ([#712](https://github.com/sanity-io/cli/issues/712)) ([22ae850](https://github.com/sanity-io/cli/commit/22ae8500912b35d974956887d4d5cdb89c1f1d84))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/eslint-config-cli bumped to 1.0.1
+
 ## [1.1.2](https://github.com/sanity-io/cli/compare/cli-core-v1.1.1...cli-core-v1.1.2) (2026-03-13)
 
 

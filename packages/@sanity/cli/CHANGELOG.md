@@ -3,6 +3,34 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.1.8](https://github.com/sanity-io/cli/compare/cli-v6.1.7...cli-v6.1.8) (2026-03-18)
+
+
+### Bug Fixes
+
+* **deps:** update dependency @vercel/frameworks to v3.21.1 ([#709](https://github.com/sanity-io/cli/issues/709)) ([17fce97](https://github.com/sanity-io/cli/commit/17fce975d8338cedbd8157ec16c91e5f2683332e))
+* **deps:** update dependency dotenv to ^17.3.1 ([#710](https://github.com/sanity-io/cli/issues/710)) ([a85db85](https://github.com/sanity-io/cli/commit/a85db857d30d03cf54b4952bb498cce2f5ff4b69))
+* **deps:** update dependency nanoid to ^5.1.6 ([#705](https://github.com/sanity-io/cli/issues/705)) ([1f7a96d](https://github.com/sanity-io/cli/commit/1f7a96d097327fc74b1087ea440ac4f5fb0c240e))
+* **deps:** update dependency tar to ^7.5.11 ([#706](https://github.com/sanity-io/cli/issues/706)) ([9b55d34](https://github.com/sanity-io/cli/commit/9b55d34f473658d38bf2c665172b9e3538fcb5da))
+* **deps:** update dependency tar-fs to ^3.1.2 ([#707](https://github.com/sanity-io/cli/issues/707)) ([14d1ce3](https://github.com/sanity-io/cli/commit/14d1ce348ec284dfdb3246528b34e1321bf08b48))
+* **deps:** update dependency tar-stream to ^3.1.8 ([#708](https://github.com/sanity-io/cli/issues/708)) ([6019bc4](https://github.com/sanity-io/cli/commit/6019bc41d8d94cefb0eaac6e93769d9d893a71d5))
+* **deps:** update oclif-tooling ([#720](https://github.com/sanity-io/cli/issues/720)) ([e63ad1a](https://github.com/sanity-io/cli/commit/e63ad1a99604d0c0e906e5bd32e1b39eb10b7c95))
+* **deps:** update sanity-tooling ([#716](https://github.com/sanity-io/cli/issues/716)) ([9c30109](https://github.com/sanity-io/cli/commit/9c30109edf13f8952754c6705b66bc149dfc65bf))
+* **deps:** update sanity-tooling ([#727](https://github.com/sanity-io/cli/issues/727)) ([f8797a4](https://github.com/sanity-io/cli/commit/f8797a4786a1794219fd313b7ab4d9c52c22d7b3))
+* load all env vars for schema extract ([#725](https://github.com/sanity-io/cli/issues/725)) ([67ee0a5](https://github.com/sanity-io/cli/commit/67ee0a5d25a7f01f3aebf7039407e43485aa0297))
+* prevent duplicate deprecation warnings during `sanity deploy` ([#726](https://github.com/sanity-io/cli/issues/726)) ([7f70ba3](https://github.com/sanity-io/cli/commit/7f70ba3ed4ed537fea5968e0c39a402f6aa8c6a4))
+* validate MCP tokens against Sanity API instead of MCP server ([#732](https://github.com/sanity-io/cli/issues/732)) ([5b573b8](https://github.com/sanity-io/cli/commit/5b573b885a194b8cee2682ee2a7782d217b164b2))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 1.1.3
+  * devDependencies
+    * @sanity/cli-test bumped to 0.2.5
+    * @sanity/eslint-config-cli bumped to 1.0.1
+
 ## [6.1.7](https://github.com/sanity-io/cli/compare/cli-v6.1.6...cli-v6.1.7) (2026-03-16)
 
 

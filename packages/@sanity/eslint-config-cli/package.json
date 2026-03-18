@@ -1,6 +1,6 @@
 {
   "name": "@sanity/eslint-config-cli",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Shared ESLint configuration for Sanity CLI packages",
   "keywords": [
     "cli",
