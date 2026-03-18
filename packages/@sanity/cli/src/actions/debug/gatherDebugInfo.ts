@@ -90,7 +90,7 @@ export async function gatherProjectInfo(
 
   const [cliConfigName, studioConfigFullPath] = await Promise.all([
     findCliConfigFile(projectDirectory),
-    tryFindStudioConfigPath(projectDirectory).catch(() => {}),
+    tryFindStudioConfigPath(projectDirectory),
   ])
 
   return {
