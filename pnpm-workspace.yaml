@@ -15,10 +15,10 @@ catalog:
   publint: ^0.3.18
 
   # Sanity
-  sanity: ^5.16.0
-  '@sanity/vision': ^5.16.0
-  '@sanity/types': ^5.16.0
-  '@sanity/schema': ^5.16.0
+  sanity: ^5.17.1
+  '@sanity/vision': ^5.17.1
+  '@sanity/types': ^5.17.1
+  '@sanity/schema': ^5.17.1
   '@sanity/client': ^7.17.0
   '@sanity/codegen': ^6.0.1
   '@sanity/telemetry': ^0.8.1
