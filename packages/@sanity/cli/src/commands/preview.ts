@@ -13,6 +13,8 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
     outputDir: Args.directory({description: 'Output directory'}),
   }
 
+  static override deprecateAliases = true
+
   static override description = 'Starts a server to preview a production build'
 
   static override examples = [
@@ -29,7 +31,6 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
       description: '[default: 3333] TCP port to start server on.',
     }),
   }
-
   static override hiddenAliases: string[] = ['start']
 
   public async run(): Promise<PreviewServer | void> {
