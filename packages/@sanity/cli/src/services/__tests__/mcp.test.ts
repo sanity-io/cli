@@ -2,40 +2,51 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 const mockRequest = vi.hoisted(() => vi.fn())
 
-vi.mock('@sanity/cli-core/request', () => ({
-  createRequester: vi.fn().mockReturnValue(mockRequest),
-}))
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...original,
+    getGlobalCliClient: vi.fn().mockResolvedValue({request: mockRequest}),
+  }
+})
 
-// Must import after mocking so the module picks up the mock
-const {MCP_SERVER_URL, validateMCPToken} = await import('../mcp.js')
+const {validateMCPToken} = await import('../mcp.js')
+
+/** Build an error object that satisfies `isHttpError()` from sanity client */
+function httpError(statusCode: number) {
+  const err = new Error(`HTTP ${statusCode}`)
+  Object.assign(err, {
+    response: {
+      body: {},
+      headers: {},
+      method: 'GET',
+      statusCode,
+      statusMessage: null,
+      url: 'https://api.sanity.io/v2025-12-09/users/me',
+    },
+    statusCode,
+  })
+  return err
+}
 
 describe('validateMCPToken', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  test('returns true when server responds with 406', async () => {
-    mockRequest.mockResolvedValue({statusCode: 406})
+  test('returns true when /users/me responds successfully', async () => {
+    mockRequest.mockResolvedValue({id: 'user-123', name: 'Test User'})
 
     const result = await validateMCPToken('valid-token')
 
     expect(result).toBe(true)
     expect(mockRequest).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: '{}',
-        headers: {
-          Authorization: 'Bearer valid-token',
-          'Content-Type': 'application/json',
-        },
-        method: 'POST',
-        timeout: 2500,
-        url: MCP_SERVER_URL,
-      }),
+      expect.objectContaining({timeout: 2500, uri: '/users/me'}),
     )
   })
 
   test('returns false when server responds with 401', async () => {
-    mockRequest.mockResolvedValue({statusCode: 401})
+    mockRequest.mockRejectedValue(httpError(401))
 
     const result = await validateMCPToken('expired-token')
 
@@ -43,48 +54,36 @@ describe('validateMCPToken', () => {
   })
 
   test('returns false when server responds with 403', async () => {
-    mockRequest.mockResolvedValue({statusCode: 403})
+    mockRequest.mockRejectedValue(httpError(403))
 
     const result = await validateMCPToken('forbidden-token')
 
     expect(result).toBe(false)
   })
 
-  test('returns true on 500 server error (assumes valid)', async () => {
-    mockRequest.mockResolvedValue({statusCode: 500})
+  test('propagates 500 server error (caller decides)', async () => {
+    mockRequest.mockRejectedValue(httpError(500))
 
-    const result = await validateMCPToken('some-token')
-
-    expect(result).toBe(true)
+    await expect(validateMCPToken('some-token')).rejects.toThrow('HTTP 500')
   })
 
-  test('returns true on 503 server error (assumes valid)', async () => {
-    mockRequest.mockResolvedValue({statusCode: 503})
-
-    const result = await validateMCPToken('some-token')
-
-    expect(result).toBe(true)
-  })
-
-  test('returns true on 200 response (unexpected but assumes valid)', async () => {
-    mockRequest.mockResolvedValue({statusCode: 200})
-
-    const result = await validateMCPToken('some-token')
-
-    expect(result).toBe(true)
-  })
-
-  test('propagates network errors from the requester', async () => {
+  test('propagates network errors', async () => {
     mockRequest.mockRejectedValue(new Error('ETIMEDOUT'))
 
     await expect(validateMCPToken('some-token')).rejects.toThrow('ETIMEDOUT')
   })
 
-  test('passes timeout of 2500ms in the request', async () => {
-    mockRequest.mockResolvedValue({statusCode: 406})
+  test('passes the token to getGlobalCliClient', async () => {
+    const {getGlobalCliClient} = await import('@sanity/cli-core')
+    mockRequest.mockResolvedValue({id: 'user-123'})
 
-    await validateMCPToken('any-token')
+    await validateMCPToken('my-special-token')
 
-    expect(mockRequest).toHaveBeenCalledWith(expect.objectContaining({timeout: 2500}))
+    expect(getGlobalCliClient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        requireUser: false,
+        token: 'my-special-token',
+      }),
+    )
   })
 })

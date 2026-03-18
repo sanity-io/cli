@@ -861,10 +861,11 @@ describe('#mcp:configure', () => {
       }),
     )
 
-    // Token validation succeeds against MCP server
-    nock('https://mcp.sanity.io')
-      .post('/')
-      .reply(406, {error: {code: -32_000, message: 'Not Acceptable'}})
+    // Token validation succeeds against Sanity API
+    mockApi({apiVersion: MCP_API_VERSION, method: 'get', uri: '/users/me'}).reply(200, {
+      id: 'user-123',
+      name: 'Test User',
+    })
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
@@ -892,8 +893,12 @@ describe('#mcp:configure', () => {
       }),
     )
 
-    // Token validation fails against MCP server
-    nock('https://mcp.sanity.io').post('/').reply(401, {error: 'invalid_token'})
+    // Token validation fails against Sanity API (dead token)
+    mockApi({apiVersion: MCP_API_VERSION, method: 'get', uri: '/users/me'}).reply(401, {
+      error: 'Unauthorized',
+      message: 'Invalid token',
+      statusCode: 401,
+    })
 
     mockCheckbox.mockResolvedValue(['Cursor'])
 
@@ -948,10 +953,11 @@ describe('#mcp:configure', () => {
       return '{}'
     })
 
-    // Token validation succeeds against MCP server
-    nock('https://mcp.sanity.io')
-      .post('/')
-      .reply(406, {error: {code: -32_000, message: 'Not Acceptable'}})
+    // Token validation succeeds against Sanity API
+    mockApi({apiVersion: MCP_API_VERSION, method: 'get', uri: '/users/me'}).reply(200, {
+      id: 'user-123',
+      name: 'Test User',
+    })
 
     // User selects only the unconfigured editor (Gemini CLI)
     mockCheckbox.mockResolvedValue(['Gemini CLI'])
