@@ -1337,10 +1337,11 @@ Provides diagnostic info for Sanity Studio troubleshooting
 
 ```
 USAGE
-  $ sanity debug [--secrets]
+  $ sanity debug [--secrets] [--verbose]
 
 FLAGS
   --secrets  Include API keys in output
+  --verbose  Show full error details including stack traces
 
 DESCRIPTION
   Provides diagnostic info for Sanity Studio troubleshooting
