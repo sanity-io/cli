@@ -464,7 +464,14 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     })
 
     // Set up MCP integration
-    const mcpResult = await setupMCP({skip: !this.flags.mcp})
+    const mcpMode = this.flags.mcp
+      ? this.resolveIsInteractive()
+        ? this.flags.yes
+          ? 'auto' // --yes from user terminal
+          : 'prompt' // CI / non-interactive
+        : 'skip' // --no-mcp
+      : 'skip' // interactive
+    const mcpResult = await setupMCP({mode: mcpMode})
 
     this._trace.log({
       configuredEditors: mcpResult.configuredEditors,
