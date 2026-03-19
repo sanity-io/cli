@@ -445,6 +445,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     }
     // Dynamic import to avoid pulling oclif command into the initAction bundle.
     // This will be replaced with `npx sanity dataset import` in Phase 3.
+    // eslint-disable-next-line no-restricted-syntax
     const {ImportDatasetCommand} = await import('../../commands/dataset/import.js')
     await ImportDatasetCommand.run(
       [template.datasetUrl, '--project-id', projectId, '--dataset', datasetName, '--token', token],
