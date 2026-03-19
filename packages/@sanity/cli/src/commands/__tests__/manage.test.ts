@@ -74,6 +74,7 @@ describe('#manage', () => {
           _original: {
             types: [],
           },
+          types: [],
         },
         title: 'test-title',
         unstable_sources: [],

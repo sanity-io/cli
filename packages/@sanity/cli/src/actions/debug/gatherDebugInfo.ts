@@ -1,138 +1,176 @@
-import {type CliConfig, getCliToken, getUserConfig, type ProjectRootResult} from '@sanity/cli-core'
+import {access} from 'node:fs/promises'
+import path from 'node:path'
+
+import {
+  getCliToken,
+  getStudioConfig,
+  getUserConfig,
+  tryFindStudioConfigPath,
+} from '@sanity/cli-core'
 
 import {getProjectById} from '../../services/projects.js'
 import {getCliUser, getProjectUser} from '../../services/user.js'
-import {findSanityModulesVersions} from '../versions/findSanityModulesVersions.js'
-import {type ModuleVersionResult} from '../versions/types.js'
+import {getCliVersion} from '../../util/getCliVersion.js'
+import {detectCliInstallation} from '../../util/packageManager/installationInfo/index.js'
 import {
   type AuthInfo,
-  type DebugInfo,
-  type DebugInfoOptions,
+  type CliInfo,
   type ProjectInfo,
+  type ResolvedWorkspace,
+  type StudioWorkspace,
   type UserInfo,
 } from './types.js'
 
-export async function gatherDebugInfo(options: DebugInfoOptions): Promise<DebugInfo> {
-  const {cliConfig, includeSecrets, projectRoot} = options
-
-  // Gather all info in parallel where possible
-  const [auth, globalConfig, projectConfigResult, versions] = await Promise.all([
-    gatherAuthInfo(includeSecrets),
-    gatherGlobalConfig(),
-    cliConfig ? gatherProjectConfig(cliConfig) : undefined,
-    gatherVersionsInfo(projectRoot),
-  ])
-
-  // Gather user and project info that depend on auth
-  const user = await gatherUserInfo(projectConfigResult, auth.hasToken)
-  const project = await gatherProjectInfo(projectConfigResult, auth.hasToken, user)
-
-  return {
-    auth,
-    globalConfig,
-    project,
-    projectConfig: projectConfigResult,
-    user,
-    versions,
-  }
-}
-
-async function gatherAuthInfo(includeSecrets: boolean): Promise<AuthInfo> {
+export async function gatherUserInfo(projectId: string | undefined): Promise<Error | UserInfo> {
   const token = await getCliToken()
-  const hasToken = Boolean(token)
-
-  return {
-    authToken: includeSecrets && token ? token : '<redacted>',
-    hasToken,
-    userType: 'normal',
-  }
-}
-
-function gatherGlobalConfig(): Record<string, unknown> {
-  return getUserConfig().all
-}
-
-function gatherProjectConfig(cliConfig: CliConfig): CliConfig | Error {
-  if (!cliConfig.api?.projectId) {
-    return new Error('Missing required "api.projectId" key')
-  }
-
-  return cliConfig
-}
-
-async function gatherVersionsInfo(
-  projectRoot: ProjectRootResult | undefined,
-): Promise<ModuleVersionResult[] | undefined> {
-  if (!projectRoot) {
-    return undefined
-  }
-
-  try {
-    return await findSanityModulesVersions({cwd: projectRoot.directory})
-  } catch {
-    return []
-  }
-}
-
-async function gatherUserInfo(
-  projectConfig: CliConfig | Error | undefined,
-  hasToken: boolean,
-): Promise<Error | UserInfo | null> {
-  if (!hasToken) {
+  if (!token) {
     return new Error('Not logged in')
   }
 
   try {
-    /**
-     * If the project config has a project ID, get the user for the project
-     * Otherwise, get the user for the global client
-     */
-    const userInfo =
-      !projectConfig || projectConfig instanceof Error || !projectConfig.api?.projectId
-        ? await getCliUser()
-        : await getProjectUser(projectConfig.api.projectId)
+    const userInfo = projectId ? await getProjectUser(projectId) : await getCliUser()
 
     return {
       email: userInfo.email,
       id: userInfo.id,
       name: userInfo.name,
+      provider: userInfo.provider,
     }
   } catch (error) {
     return error instanceof Error ? error : new Error('Failed to fetch user info')
   }
 }
 
-async function gatherProjectInfo(
-  projectConfig: CliConfig | Error | undefined,
-  hasToken: boolean,
-  user: Error | UserInfo | null,
-): Promise<Error | ProjectInfo | null> {
-  if (!hasToken || !projectConfig || projectConfig instanceof Error) {
-    return null
+export async function gatherAuthInfo(includeSecrets: boolean): Promise<AuthInfo> {
+  const token = await getCliToken()
+  const hasToken = Boolean(token)
+  const config = getUserConfig()
+  const authType = config.get('authType')
+
+  return {
+    authToken: token ? (includeSecrets ? token : '<redacted>') : undefined,
+    hasToken,
+    userType: typeof authType === 'string' ? authType : 'normal',
   }
+}
 
-  const projectId = projectConfig.api?.projectId
-  if (!projectId) {
-    return null
-  }
+export async function gatherCliInfo(): Promise<CliInfo> {
+  const [version, installation] = await Promise.all([getCliVersion(), detectCliInstallation()])
 
-  try {
-    const projectInfo = await getProjectById(projectId)
+  const {packageManager, resolvedFrom} = installation.currentExecution
 
-    if (!projectInfo) {
-      return new Error(`Project specified in configuration (${projectId}) does not exist in API`)
+  let installContext: string
+  switch (resolvedFrom) {
+    case 'global': {
+      installContext = packageManager ? `globally (${packageManager})` : 'globally'
+      break
     }
-
-    const userId = user instanceof Error || !user ? null : user.id
-    const member = (projectInfo.members || []).find((member) => member.id === userId)
-
-    return {
-      displayName: projectInfo.displayName,
-      id: projectId,
-      // @ts-expect-error - Incorrect type definition in @sanity/client
-      userRoles: member && member.roles ? member.roles.map((role) => role.name) : ['<none>'],
+    case 'local': {
+      installContext = 'locally'
+      break
     }
-  } catch (error) {
-    return error instanceof Error ? error : new Error('Failed to fetch project info')
+    case 'npx': {
+      installContext = 'via npx'
+      break
+    }
+    default: {
+      installContext = 'unknown'
+    }
   }
+
+  return {installContext, version}
+}
+
+export async function gatherProjectInfo(
+  projectDirectory: string | undefined,
+): Promise<ProjectInfo | undefined> {
+  if (!projectDirectory) {
+    return undefined
+  }
+
+  const [cliConfigName, studioConfigFullPath] = await Promise.all([
+    findCliConfigFile(projectDirectory),
+    tryFindStudioConfigPath(projectDirectory),
+  ])
+
+  return {
+    cliConfigPath: cliConfigName,
+    rootPath: projectDirectory,
+    studioConfigPath: studioConfigFullPath ? path.basename(studioConfigFullPath) : undefined,
+  }
+}
+
+export async function gatherStudioWorkspaces(projectDirectory: string): Promise<StudioWorkspace[]> {
+  const rawConfig = await getStudioConfig(projectDirectory, {resolvePlugins: false})
+
+  if (Array.isArray(rawConfig)) {
+    return rawConfig.map((ws) => ({
+      dataset: ws.dataset,
+      name: ws.name,
+      projectId: ws.projectId,
+    }))
+  }
+
+  return [
+    {
+      dataset: rawConfig.dataset,
+      name: rawConfig.name,
+      projectId: rawConfig.projectId,
+    },
+  ]
+}
+
+export async function gatherResolvedWorkspaces(
+  projectDirectory: string,
+  userId: string | undefined,
+): Promise<ResolvedWorkspace[]> {
+  // resolvePlugins: true goes through getStudioWorkspaces() which calls resolveConfig()
+  // from the sanity package. resolveConfig() always returns an array of workspaces,
+  // so resolvedConfigSchema (z.array(...)) is guaranteed to match.
+  const resolvedConfig = await getStudioConfig(projectDirectory, {resolvePlugins: true})
+
+  const projectMap = await fetchRolesByProject(resolvedConfig, userId)
+
+  return resolvedConfig.map((ws) => ({
+    name: ws.name,
+    roles: projectMap.get(ws.projectId) ?? [],
+    title: ws.title,
+  }))
+}
+
+async function findCliConfigFile(directory: string): Promise<string | undefined> {
+  for (const name of ['sanity.cli.ts', 'sanity.cli.js']) {
+    try {
+      await access(path.join(directory, name))
+      return name
+    } catch {
+      // File doesn't exist, try next
+    }
+  }
+  return undefined
+}
+
+async function fetchRolesByProject(
+  workspaces: {projectId: string}[],
+  userId: string | undefined,
+): Promise<Map<string, string[]>> {
+  const projectMap = new Map<string, string[]>()
+  if (!userId) return projectMap
+
+  const projectIds = [...new Set(workspaces.map((ws) => ws.projectId))]
+  await Promise.all(
+    projectIds.map(async (projectId) => {
+      try {
+        const project = await getProjectById(projectId)
+        if (!project) return
+        const member = (project.members || []).find((m) => m.id === userId)
+        // @ts-expect-error - Incorrect type definition in @sanity/client
+        const roles: string[] = member?.roles?.map((r) => r.name) ?? []
+        projectMap.set(projectId, roles)
+      } catch {
+        // Project not accessible, skip roles
+      }
+    }),
+  )
+  return projectMap
 }

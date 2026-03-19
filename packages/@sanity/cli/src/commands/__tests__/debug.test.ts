@@ -1,24 +1,58 @@
-import {getCliToken, getCliUserConfig, ProjectRootNotFoundError} from '@sanity/cli-core'
+import {
+  getCliToken,
+  getStudioConfig,
+  getUserConfig,
+  ProjectRootNotFoundError,
+  tryFindStudioConfigPath,
+} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {findSanityModulesVersions} from '../../actions/versions/findSanityModulesVersions.js'
 import {PROJECTS_API_VERSION} from '../../services/projects.js'
 import {USERS_API_VERSION} from '../../services/user.js'
 import {Debug} from '../debug.js'
+
+// Mock fs/promises for findCliConfigFile
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
+  return {
+    ...actual,
+    access: vi.fn().mockRejectedValue(new Error('ENOENT')),
+  }
+})
 
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
   return {
     ...actual,
     getCliToken: vi.fn(),
-    getCliUserConfig: vi.fn(),
+    getStudioConfig: vi.fn(),
+    getUserConfig: vi.fn().mockReturnValue({
+      all: {},
+      get: vi.fn().mockReturnValue(undefined),
+      path: '/home/user/.config/sanity/config',
+    }),
+    tryFindStudioConfigPath: vi.fn(),
   }
 })
 
-vi.mock('../../actions/versions/findSanityModulesVersions.js', () => ({
-  findSanityModulesVersions: vi.fn(),
+vi.mock('../../util/getCliVersion.js', () => ({
+  getCliVersion: vi.fn().mockResolvedValue('6.1.4'),
+}))
+
+vi.mock('../../util/packageManager/installationInfo/index.js', () => ({
+  detectCliInstallation: vi.fn().mockResolvedValue({
+    currentExecution: {
+      binaryPath: '/usr/local/bin/sanity',
+      packageManager: 'npm',
+      resolvedFrom: 'global',
+    },
+    globalInstallations: [],
+    issues: [],
+    packages: {},
+    workspace: {root: '/test/project', type: 'standalone'},
+  }),
 }))
 
 const defaultProjectRoot = {
@@ -47,611 +81,759 @@ afterEach(() => {
 })
 
 describe('#debug', () => {
-  test('shows debug information with authentication and config details', async () => {
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      if (key === 'telemetryConsent')
-        return {
-          updatedAt: 1_234_567_890,
-          value: {status: 'granted', type: 'explicit'},
+  describe('User section', () => {
+    test('shows user info when logged in with project context', async () => {
+      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        projectId: 'project123',
+        uri: '/users/me',
+      }).reply(200, {
+        email: 'test@example.com',
+        id: 'user123',
+        name: 'Test User',
+        provider: 'google',
+      })
+
+      const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
+
+      if (error) throw error
+      expect(stdout).toContain('User:')
+      expect(stdout).toContain('Test User')
+      expect(stdout).toContain('test@example.com')
+      expect(stdout).toContain('user123')
+      expect(stdout).toContain('google')
+    })
+
+    test('shows "Not logged in" when no token', async () => {
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          ...defaultMocks,
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('User:')
+      expect(stdout).toContain('Not logged in')
+    })
+
+    test('shows user info without project context (global client)', async () => {
+      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      // No project ID in config
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        uri: '/users/me',
+      }).reply(200, {
+        email: 'global@example.com',
+        id: 'globaluser',
+        name: 'Global User',
+        provider: 'sanity',
+      })
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          cliConfig: {api: {}},
+          projectRoot: defaultProjectRoot,
+          token: 'mock-auth-token',
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Global User')
+      expect(stdout).toContain('global@example.com')
+    })
+
+    test('handles user API error gracefully', async () => {
+      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        projectId: 'project123',
+        uri: '/users/me',
+      }).reply(500, {error: 'Internal server error'})
+
+      const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
+
+      if (error) throw error
+      expect(stdout).toContain('User:')
+      // Should show error message but not crash
+      expect(stdout).toMatch(/500|Internal server error|Failed to fetch user info/)
+    })
+  })
+
+  describe('Authentication section', () => {
+    test('shows redacted auth token by default', async () => {
+      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        projectId: 'project123',
+        uri: '/users/me',
+      }).reply(200, {
+        email: 'test@example.com',
+        id: 'user123',
+        name: 'Test User',
+        provider: 'google',
+      })
+
+      const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
+
+      if (error) throw error
+      expect(stdout).toContain('Authentication:')
+      expect(stdout).toContain('<redacted>')
+      expect(stdout).toContain('(run with --secrets to reveal token)')
+      expect(stdout).not.toContain('mock-auth-token')
+    })
+
+    test('shows actual auth token with --secrets flag', async () => {
+      vi.mocked(getCliToken).mockResolvedValue('secret-token-12345')
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        projectId: 'project123',
+        uri: '/users/me',
+      }).reply(200, {
+        email: 'test@example.com',
+        id: 'user123',
+        name: 'Test User',
+        provider: 'google',
+      })
+
+      const {error, stdout} = await testCommand(Debug, ['--secrets'], {
+        mocks: {
+          ...defaultMocks,
+          token: 'secret-token-12345',
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('secret-token-12345')
+      expect(stdout).not.toContain('<redacted>')
+      expect(stdout).not.toContain('(run with --secrets to reveal token)')
+    })
+
+    test('does not show authentication section when not logged in', async () => {
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          ...defaultMocks,
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).not.toContain('Authentication:')
+    })
+
+    test('shows user type from global config', async () => {
+      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
+      vi.mocked(getUserConfig).mockReturnValue({
+        all: {authType: 'enterprise'},
+        get: vi.fn().mockReturnValue('enterprise'),
+        path: '/home/user/.config/sanity/config',
+      } as never)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        projectId: 'project123',
+        uri: '/users/me',
+      }).reply(200, {
+        email: 'test@example.com',
+        id: 'user123',
+        name: 'Test User',
+        provider: 'google',
+      })
+
+      const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
+
+      if (error) throw error
+      expect(stdout).toContain('enterprise')
+    })
+  })
+
+  describe('CLI section', () => {
+    test('shows CLI version and install context', async () => {
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          ...defaultMocks,
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('CLI:')
+      expect(stdout).toContain('6.1.4')
+      expect(stdout).toContain('globally (npm)')
+    })
+  })
+
+  describe('Project section', () => {
+    test('shows "No project found" when outside project directory', async () => {
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          cliConfigError: new ProjectRootNotFoundError('No project root found'),
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Project:')
+      expect(stdout).toContain('No project found')
+    })
+
+    test('shows project root path and config file detection', async () => {
+      const {access: mockAccess} = await import('node:fs/promises')
+      vi.mocked(mockAccess).mockImplementation(async (filePath) => {
+        if (typeof filePath === 'string' && filePath.endsWith('sanity.cli.ts')) {
+          return undefined
         }
-      return undefined
+        throw new Error('ENOENT')
+      })
+
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue('/test/project/sanity.config.ts')
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          ...defaultMocks,
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Project:')
+      expect(stdout).toContain('/test/project')
+      expect(stdout).toContain('sanity.cli.ts')
+      expect(stdout).toContain('sanity.config.ts')
     })
 
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([
-      {
-        declared: '^3.0.0',
-        installed: '3.0.0',
-        isGlobal: false,
-        isPinned: false,
-        latest: '3.0.0',
-        name: 'sanity',
-        needsUpdate: false,
-      },
-      {
-        declared: '^3.0.0',
-        installed: '3.0.0',
-        isGlobal: false,
-        isPinned: false,
-        latest: '3.1.0',
-        name: '@sanity/cli',
-        needsUpdate: true,
-      },
-    ])
+    test('shows warning on CLI config line when config fails to load', async () => {
+      const {access: mockAccess} = await import('node:fs/promises')
+      vi.mocked(mockAccess).mockImplementation(async (filePath) => {
+        if (typeof filePath === 'string' && filePath.endsWith('sanity.cli.ts')) {
+          return undefined
+        }
+        throw new Error('ENOENT')
+      })
 
-    const {stdout} = await testCommand(Debug, [], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {
-          api: {
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          cliConfig: undefined,
+          cliConfigError: new Error('Invalid CLI config: Expected object, received undefined'),
+          projectRoot: defaultProjectRoot,
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Project:')
+      expect(stdout).toContain('sanity.cli.ts')
+      expect(stdout).toContain('has errors')
+    })
+
+    test('shows "not found" when config files are missing', async () => {
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          ...defaultMocks,
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Project:')
+      expect(stdout).toContain('not found')
+    })
+  })
+
+  describe('Studio section', () => {
+    test('shows studio workspaces when studio config exists', async () => {
+      const {access: mockAccess} = await import('node:fs/promises')
+      vi.mocked(mockAccess).mockRejectedValue(new Error('ENOENT'))
+
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue('/test/project/sanity.config.ts')
+      vi.mocked(getStudioConfig).mockResolvedValue({
+        basePath: '/',
+        dataset: 'production',
+        name: 'default',
+        plugins: [],
+        projectId: 'abc123',
+        schema: {types: []},
+        title: 'My Studio',
+        unstable_sources: [
+          {dataset: 'production', projectId: 'abc123', schema: {_original: {types: []}}},
+        ],
+      } as never)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          ...defaultMocks,
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Studio:')
+      expect(stdout).toContain('Workspaces:')
+      expect(stdout).toContain('default')
+      expect(stdout).toContain('abc123')
+      expect(stdout).toContain('production')
+    })
+
+    test('does not show studio section when no studio config exists', async () => {
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          ...defaultMocks,
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).not.toContain('Studio:')
+    })
+
+    test('does not show studio section when outside project directory', async () => {
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          cliConfigError: new ProjectRootNotFoundError('No project root found'),
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).not.toContain('Studio:')
+    })
+
+    test('shows multi-workspace studio config', async () => {
+      const {access: mockAccess} = await import('node:fs/promises')
+      vi.mocked(mockAccess).mockRejectedValue(new Error('ENOENT'))
+
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue('/test/project/sanity.config.ts')
+      vi.mocked(getStudioConfig).mockResolvedValue([
+        {
+          basePath: '/staging',
+          dataset: 'staging',
+          name: 'staging',
+          projectId: 'abc123',
+          title: 'Staging',
+          unstable_sources: [
+            {dataset: 'staging', projectId: 'abc123', schema: {_original: {types: []}}},
+          ],
+        },
+        {
+          basePath: '/production',
+          dataset: 'production',
+          name: 'production',
+          projectId: 'abc123',
+          title: 'Production',
+          unstable_sources: [
+            {dataset: 'production', projectId: 'abc123', schema: {_original: {types: []}}},
+          ],
+        },
+      ] as never)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          ...defaultMocks,
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Studio:')
+      expect(stdout).toContain('staging')
+      expect(stdout).toContain('production')
+    })
+
+    test('shows warning on studio config line and error in Studio section when config fails', async () => {
+      const {access: mockAccess} = await import('node:fs/promises')
+      vi.mocked(mockAccess).mockRejectedValue(new Error('ENOENT'))
+
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue('/test/project/sanity.config.ts')
+      vi.mocked(getStudioConfig).mockRejectedValue(new Error('Config parse error'))
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          ...defaultMocks,
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      // Project section shows warning on the studio config line
+      expect(stdout).toContain('sanity.config.ts')
+      expect(stdout).toContain('has errors')
+      // Studio section should appear with the error message
+      expect(stdout).toContain('Studio:')
+      expect(stdout).toContain('Config parse error')
+      // But no workspaces
+      expect(stdout).not.toContain('Workspaces:')
+    })
+
+    test('shows resolved configuration with roles when logged in', async () => {
+      const {access: mockAccess} = await import('node:fs/promises')
+      vi.mocked(mockAccess).mockRejectedValue(new Error('ENOENT'))
+
+      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue('/test/project/sanity.config.ts')
+
+      // First call: raw config (resolvePlugins: false)
+      // Second call: resolved config (resolvePlugins: true)
+      vi.mocked(getStudioConfig)
+        .mockResolvedValueOnce({
+          basePath: '/',
+          dataset: 'production',
+          name: 'default',
+          projectId: 'abc123',
+          title: 'My Studio',
+          unstable_sources: [
+            {dataset: 'production', projectId: 'abc123', schema: {_original: {types: []}}},
+          ],
+        } as never)
+        .mockResolvedValueOnce([
+          {
+            basePath: '/',
             dataset: 'production',
-            projectId: 'project123',
+            name: 'default',
+            projectId: 'abc123',
+            title: 'My Studio',
+            unstable_sources: [
+              {dataset: 'production', projectId: 'abc123', schema: {_original: {types: []}}},
+            ],
           },
-        },
-      },
-    })
+        ] as never)
 
-    expect(stdout).toContain('User:')
-    expect(stdout).toContain('Authentication:')
-    expect(stdout).toContain('<redacted>')
-    expect(stdout).toContain('Global config')
-    expect(stdout).toContain('Package versions:')
-    expect(stdout).toContain('sanity')
-    expect(stdout).toContain('3.0.0')
-    expect(stdout).toContain('(up to date)')
-    expect(stdout).toContain('(latest: 3.1.0)')
-  })
-
-  test('shows redacted auth token by default', async () => {
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    const {stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-    expect(stdout).toContain('<redacted>')
-    expect(stdout).toContain('(run with --secrets to reveal token)')
-    expect(stdout).not.toContain('mock-auth-token')
-  })
-
-  test('shows actual auth token with --secrets flag', async () => {
-    vi.mocked(getCliToken).mockResolvedValue('secret-token-12345')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'secret-token-12345'
-      return undefined
-    })
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    const {stdout} = await testCommand(Debug, ['--secrets'], {
-      mocks: {
-        ...defaultMocks,
-        token: 'secret-token-12345',
-      },
-    })
-
-    expect(stdout).toContain('secret-token-12345')
-    expect(stdout).not.toContain('<redacted>')
-    expect(stdout).not.toContain('(run with --secrets to reveal token)')
-  })
-
-  test('handles unauthenticated user', async () => {
-    vi.mocked(getCliToken).mockResolvedValue(undefined)
-    vi.mocked(getCliUserConfig).mockImplementation(async () => undefined)
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    const {stdout} = await testCommand(Debug, [], {
-      mocks: {
-        ...defaultMocks,
-        token: undefined,
-      },
-    })
-
-    expect(stdout).toContain('User:')
-    expect(stdout).toContain('Not logged in')
-  })
-
-  test('shows package versions with update information', async () => {
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([
-      {
-        declared: '^3.0.0',
-        installed: '3.0.0',
-        isGlobal: false,
-        isPinned: false,
-        latest: '3.0.0',
-        name: 'sanity',
-        needsUpdate: false,
-      },
-      {
-        declared: '^2.9.0',
-        installed: '2.9.0',
-        isGlobal: false,
-        isPinned: false,
-        latest: '3.1.0',
-        name: '@sanity/cli',
-        needsUpdate: true,
-      },
-      {
-        declared: '^3.0.0',
-        installed: undefined,
-        isGlobal: false,
-        isPinned: false,
-        latest: '3.0.0',
-        name: '@sanity/types',
-        needsUpdate: true,
-      },
-    ])
-
-    const {stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-    expect(stdout).toContain('Package versions:')
-    expect(stdout).toContain('sanity')
-    expect(stdout).toContain('3.0.0')
-    expect(stdout).toContain('(up to date)')
-    expect(stdout).toContain('(latest: 3.1.0)')
-    expect(stdout).toContain('<missing>')
-  })
-
-  test('handles errors gracefully', async () => {
-    vi.mocked(getCliToken).mockRejectedValue(new Error('Auth system unavailable'))
-
-    const {error} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-    expect(error?.message).toContain('Failed to gather debug information')
-    expect(error?.message).toContain('Auth system unavailable')
-  })
-
-  test('displays user information when user is present', async () => {
-    // Mock authentication
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    // Mock the /me API endpoint to return user info
-    mockApi({
-      apiVersion: USERS_API_VERSION,
-      projectId: 'project123',
-      uri: '/users/me',
-    }).reply(200, {
-      email: 'test@example.com',
-      id: 'user123',
-      name: 'Test User',
-    })
-
-    // Mock the project API endpoint to return no project (404)
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      projectId: 'project123',
-      uri: '/projects/project123',
-    }).reply(404)
-
-    const {stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-    expect(stdout).toContain('User:')
-    expect(stdout).toContain("Email: 'test@example.com'")
-    expect(stdout).toContain("ID: 'user123'")
-    expect(stdout).toContain("Name: 'Test User'")
-  })
-
-  test('displays project information when project is present', async () => {
-    // Mock authentication
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    // Mock the /me API endpoint to return user info
-    mockApi({
-      apiVersion: USERS_API_VERSION,
-      projectId: 'project123',
-      uri: '/users/me',
-    }).reply(200, {
-      email: 'test@example.com',
-      id: 'user123',
-      name: 'Test User',
-    })
-
-    // Mock the project API endpoint to return project info
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      projectId: 'project123',
-      uri: '/projects/project123',
-    }).reply(200, {
-      displayName: 'Test Project',
-      id: 'project123',
-      members: [
-        {
+      // Mock user API (called twice - once for user section, once for studio section)
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        projectId: 'project123',
+        uri: '/users/me',
+      })
+        .reply(200, {
+          email: 'test@example.com',
           id: 'user123',
-          roles: [{name: 'administrator'}],
-        },
-      ],
-      studioHost: 'test-project',
+          name: 'Test User',
+          provider: 'google',
+        })
+        .persist()
+
+      // Mock project API for role fetching
+      mockApi({
+        apiVersion: PROJECTS_API_VERSION,
+        projectId: 'abc123',
+        uri: '/projects/abc123',
+      }).reply(200, {
+        displayName: 'Test Project',
+        id: 'abc123',
+        members: [{id: 'user123', roles: [{name: 'administrator'}]}],
+      })
+
+      const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
+
+      if (error) throw error
+      expect(stdout).toContain('Resolved configuration:')
+      expect(stdout).toContain('default (My Studio)')
+      expect(stdout).toContain('administrator')
     })
 
-    const {stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
+    test('shows fallback message when full resolution fails', async () => {
+      const {access: mockAccess} = await import('node:fs/promises')
+      vi.mocked(mockAccess).mockRejectedValue(new Error('ENOENT'))
 
-    expect(stdout).toContain('Project:')
-    expect(stdout).toContain("Display name: 'Test Project'")
-    expect(stdout).toContain("ID: 'project123'")
-    expect(stdout).toContain("Roles: [ 'administrator' ]")
-  })
+      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue('/test/project/sanity.config.ts')
 
-  test('shows config error when project config exists but is invalid', async () => {
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
+      // First call: raw config succeeds
+      // Second call: resolved config fails
+      vi.mocked(getStudioConfig)
+        .mockResolvedValueOnce({
+          basePath: '/',
+          dataset: 'production',
+          name: 'default',
+          projectId: 'abc123',
+          title: 'My Studio',
+          unstable_sources: [
+            {dataset: 'production', projectId: 'abc123', schema: {_original: {types: []}}},
+          ],
+        } as never)
+        .mockRejectedValueOnce(new Error('Plugin resolution failed'))
 
-    // Mock the /me API endpoint (uses global API host since there's no projectId)
-    mockApi({apiVersion: USERS_API_VERSION, uri: '/users/me'}).reply(200, {
-      email: 'test@example.com',
-      id: 'user123',
-      name: 'Test User',
-    })
-
-    const {error, stdout} = await testCommand(Debug, [], {
-      mocks: {
-        ...defaultMocks,
-        cliConfig: {
-          api: {
-            // No projectId - config exists but is invalid
-          },
-        },
-      },
-    })
-
-    if (error) throw error
-    expect(stdout).toContain('Global config')
-    expect(stdout).toContain('CLI configuration error:')
-    expect(stdout).toContain('Missing required "api.projectId" key')
-    expect(stdout).not.toContain('Project config')
-  })
-
-  test('handles case when no versions are present', async () => {
-    // Mock authentication
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-    // Mock findSanityModulesVersions to return empty array (no versions)
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    // Mock the /me API endpoint to return user info
-    mockApi({
-      apiVersion: USERS_API_VERSION,
-      projectId: 'project123',
-      uri: '/users/me',
-    }).reply(200, {
-      email: 'test@example.com',
-      id: 'user123',
-      name: 'Test User',
-    })
-
-    // Mock the project API endpoint to return project info
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      projectId: 'project123',
-      uri: '/projects/project123',
-    }).reply(200, {
-      displayName: 'Test Project',
-      id: 'project123',
-      members: [
-        {
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        projectId: 'project123',
+        uri: '/users/me',
+      })
+        .reply(200, {
+          email: 'test@example.com',
           id: 'user123',
-          roles: [{name: 'administrator'}],
+          name: 'Test User',
+          provider: 'google',
+        })
+        .persist()
+
+      const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
+
+      if (error) throw error
+      expect(stdout).toContain('Workspaces:')
+      expect(stdout).toContain('unable to resolve full studio configuration')
+      expect(stdout).toContain('Plugin resolution failed')
+    })
+  })
+
+  describe('CLI install contexts', () => {
+    test('shows "locally" when installed locally', async () => {
+      const {detectCliInstallation} =
+        await import('../../util/packageManager/installationInfo/index.js')
+      vi.mocked(detectCliInstallation).mockResolvedValue({
+        currentExecution: {
+          binaryPath: '/test/project/node_modules/.bin/sanity',
+          packageManager: 'pnpm',
+          resolvedFrom: 'local',
         },
-      ],
-      studioHost: 'test-project',
+        globalInstallations: [],
+        issues: [],
+        packages: {},
+        workspace: {
+          bunfig: false,
+          hasMultipleLockfiles: false,
+          lockfile: null,
+          nearestPackageJson: null,
+          root: '/test/project',
+          type: 'standalone',
+          yarnBerry: false,
+        },
+      })
+
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {...defaultMocks, token: undefined},
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('locally')
     })
 
-    const {stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
+    test('shows "via npx" when running via npx', async () => {
+      const {detectCliInstallation} =
+        await import('../../util/packageManager/installationInfo/index.js')
+      vi.mocked(detectCliInstallation).mockResolvedValue({
+        currentExecution: {
+          binaryPath: '/tmp/_npx/sanity',
+          packageManager: 'npm',
+          resolvedFrom: 'npx',
+        },
+        globalInstallations: [],
+        issues: [],
+        packages: {},
+        workspace: {
+          bunfig: false,
+          hasMultipleLockfiles: false,
+          lockfile: null,
+          nearestPackageJson: null,
+          root: '/test/project',
+          type: 'standalone',
+          yarnBerry: false,
+        },
+      })
 
-    expect(stdout).toContain('Global config')
-    expect(stdout).toContain('Package versions:')
-    // Should show the heading but no packages since the array is empty
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {...defaultMocks, token: undefined},
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('via npx')
+    })
+
+    test('shows "unknown" when install context cannot be determined', async () => {
+      const {detectCliInstallation} =
+        await import('../../util/packageManager/installationInfo/index.js')
+      vi.mocked(detectCliInstallation).mockResolvedValue({
+        currentExecution: {
+          binaryPath: null,
+          packageManager: null,
+          resolvedFrom: 'unknown',
+        },
+        globalInstallations: [],
+        issues: [],
+        packages: {},
+        workspace: {
+          bunfig: false,
+          hasMultipleLockfiles: false,
+          lockfile: null,
+          nearestPackageJson: null,
+          root: '/test/project',
+          type: 'standalone',
+          yarnBerry: false,
+        },
+      })
+
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {...defaultMocks, token: undefined},
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('unknown')
+    })
+
+    test('shows "globally" without package manager when pm is null', async () => {
+      const {detectCliInstallation} =
+        await import('../../util/packageManager/installationInfo/index.js')
+      vi.mocked(detectCliInstallation).mockResolvedValue({
+        currentExecution: {
+          binaryPath: '/usr/local/bin/sanity',
+          packageManager: null,
+          resolvedFrom: 'global',
+        },
+        globalInstallations: [],
+        issues: [],
+        packages: {},
+        workspace: {
+          bunfig: false,
+          hasMultipleLockfiles: false,
+          lockfile: null,
+          nearestPackageJson: null,
+          root: '/test/project',
+          type: 'standalone',
+          yarnBerry: false,
+        },
+      })
+
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {...defaultMocks, token: undefined},
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('globally')
+      expect(stdout).not.toContain('globally (')
+    })
+
+    test('handles CLI version detection failure gracefully', async () => {
+      const {getCliVersion} = await import('../../util/getCliVersion.js')
+      vi.mocked(getCliVersion).mockRejectedValue(new Error('Cannot find package.json'))
+
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
+
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {...defaultMocks, token: undefined},
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('CLI:')
+      expect(stdout).toContain('Unable to determine CLI version')
+    })
   })
 
-  test('handles error case with unknown error type', async () => {
-    // Mock getCliToken to throw a non-Error object to trigger unknown error path
-    vi.mocked(getCliToken).mockRejectedValue('string error')
+  describe('full output integration', () => {
+    test('shows all sections when logged in with project context', async () => {
+      const {access: mockAccess} = await import('node:fs/promises')
+      vi.mocked(mockAccess).mockImplementation(async (filePath) => {
+        if (typeof filePath === 'string' && filePath.endsWith('sanity.cli.ts')) {
+          return undefined
+        }
+        throw new Error('ENOENT')
+      })
 
-    const {error} = await testCommand(Debug, [], {mocks: defaultMocks})
+      vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
+      vi.mocked(tryFindStudioConfigPath).mockResolvedValue('/test/project/sanity.config.ts')
+      vi.mocked(getStudioConfig)
+        .mockResolvedValueOnce({
+          basePath: '/',
+          dataset: 'production',
+          name: 'default',
+          projectId: 'abc123',
+          title: 'My Studio',
+          unstable_sources: [
+            {dataset: 'production', projectId: 'abc123', schema: {_original: {types: []}}},
+          ],
+        } as never)
+        .mockRejectedValueOnce(new Error('Not resolvable'))
 
-    expect(error).toBeTruthy()
-    expect(error?.message).toContain('Failed to gather debug information')
-    expect(error?.message).toContain('Unknown error')
-  })
-
-  test('handles global config error gracefully', async () => {
-    // Mock authentication
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    // Mock getCliUserConfig to throw an error
-    vi.mocked(getCliUserConfig).mockRejectedValue(new Error('Config access error'))
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    // Mock the /me API endpoint to return user info
-    mockApi({
-      apiVersion: USERS_API_VERSION,
-      projectId: 'project123',
-      uri: '/users/me',
-    }).reply(200, {
-      email: 'test@example.com',
-      id: 'user123',
-      name: 'Test User',
-    })
-
-    // Mock the project API endpoint to return project info
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      projectId: 'project123',
-      uri: '/projects/project123',
-    }).reply(200, {
-      displayName: 'Test Project',
-      id: 'project123',
-      members: [],
-      studioHost: 'test-project',
-    })
-
-    const {stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-    // Should continue to work despite global config error
-    expect(stdout).toContain('Global config')
-    expect(stdout).toContain('User:')
-    expect(stdout).toContain('Project:')
-  })
-
-  test('handles user API error and shows error message', async () => {
-    // Mock authentication
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    // Mock the /me API endpoint to return an error
-    mockApi({
-      apiVersion: USERS_API_VERSION,
-      projectId: 'project123',
-      uri: '/users/me',
-    }).reply(500, {
-      error: 'Internal server error',
-    })
-
-    const {stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-    expect(stdout).toContain('User:')
-    // Should show error message in red
-    expect(stdout).toMatch(
-      /Request failed with status code 500|Failed to fetch user info|Internal server error/,
-    )
-  })
-
-  test('handles project API error and continues gracefully', async () => {
-    // Mock authentication
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    // Mock the /me API endpoint to return user info
-    mockApi({
-      apiVersion: USERS_API_VERSION,
-      projectId: 'project123',
-      uri: '/users/me',
-    }).reply(200, {
-      email: 'test@example.com',
-      id: 'user123',
-      name: 'Test User',
-    })
-
-    // Mock the project API endpoint to return an error
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      projectId: 'project123',
-      uri: '/projects/project123',
-    }).reply(404, {
-      error: 'Project not found',
-    })
-
-    const {stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-    expect(stdout).toContain('User:')
-    expect(stdout).toContain("Email: 'test@example.com'")
-    // Should not contain Project section since it failed to load
-    expect(stdout).not.toContain('Project:')
-  })
-
-  test('handles project with null response and shows error', async () => {
-    // Mock authentication
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    // Mock the /me API endpoint to return user info
-    mockApi({
-      apiVersion: USERS_API_VERSION,
-      projectId: 'project123',
-      uri: '/users/me',
-    }).reply(200, {
-      email: 'test@example.com',
-      id: 'user123',
-      name: 'Test User',
-    })
-
-    // Mock the project API endpoint to return null
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      projectId: 'project123',
-      uri: '/projects/project123',
-    }).reply(200, () => {
-      return null
-    })
-
-    const {stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-    expect(stdout).toContain('User:')
-    expect(stdout).toContain("Email: 'test@example.com'")
-    // Project error is handled internally but not displayed to user
-    expect(stdout).not.toContain('Project:')
-  })
-
-  test('handles project with no members array gracefully', async () => {
-    // Mock authentication
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    // Mock the /me API endpoint to return user info
-    mockApi({
-      apiVersion: USERS_API_VERSION,
-      projectId: 'project123',
-      uri: '/users/me',
-    }).reply(200, {
-      email: 'test@example.com',
-      id: 'user123',
-      name: 'Test User',
-    })
-
-    // Mock the project API endpoint to return project with no members
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      projectId: 'project123',
-      uri: '/projects/project123',
-    }).reply(200, {
-      displayName: 'Test Project',
-      id: 'project123',
-      studioHost: 'test-project',
-      // No members array
-    })
-
-    const {stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
-
-    expect(stdout).toContain('Project:')
-    expect(stdout).toContain("Display name: 'Test Project'")
-    expect(stdout).toContain("Roles: [ '<none>' ]")
-  })
-
-  test('works outside a project directory (no project root)', async () => {
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-
-    // Mock the /me API endpoint (uses global API host since no project)
-    mockApi({apiVersion: USERS_API_VERSION, uri: '/users/me'}).reply(200, {
-      email: 'test@example.com',
-      id: 'user123',
-      name: 'Test User',
-    })
-
-    const {error, stdout} = await testCommand(Debug, [], {
-      mocks: {
-        cliConfigError: new ProjectRootNotFoundError('No project root found'),
-        token: 'mock-auth-token',
-      },
-    })
-
-    if (error) throw error
-    expect(stdout).toContain('User:')
-    expect(stdout).toContain("Email: 'test@example.com'")
-    expect(stdout).toContain('Authentication:')
-    expect(stdout).toContain('Global config')
-    expect(stdout).toContain('No project found')
-    // Should NOT contain project-specific sections
-    expect(stdout).not.toContain('Project:')
-    expect(stdout).not.toContain('Project config')
-    expect(stdout).not.toContain('Package versions:')
-  })
-
-  test('works outside a project directory when not logged in', async () => {
-    vi.mocked(getCliToken).mockResolvedValue(undefined)
-    vi.mocked(getCliUserConfig).mockImplementation(async () => undefined)
-
-    const {error, stdout} = await testCommand(Debug, [], {
-      mocks: {
-        cliConfigError: new ProjectRootNotFoundError('No project root found'),
-        token: undefined,
-      },
-    })
-
-    if (error) throw error
-    expect(stdout).toContain('User:')
-    expect(stdout).toContain('Not logged in')
-    expect(stdout).toContain('Global config')
-    expect(stdout).toContain('No project found')
-    expect(stdout).not.toContain('Authentication:')
-    expect(stdout).not.toContain('Project:')
-    expect(stdout).not.toContain('Package versions:')
-  })
-
-  test('handles project member with no roles gracefully', async () => {
-    // Mock authentication
-    vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
-    vi.mocked(getCliUserConfig).mockImplementation(async (key: string) => {
-      if (key === 'authToken') return 'mock-auth-token'
-      return undefined
-    })
-    vi.mocked(findSanityModulesVersions).mockResolvedValue([])
-
-    // Mock the /me API endpoint to return user info
-    mockApi({
-      apiVersion: USERS_API_VERSION,
-      projectId: 'project123',
-      uri: '/users/me',
-    }).reply(200, {
-      email: 'test@example.com',
-      id: 'user123',
-      name: 'Test User',
-    })
-
-    // Mock the project API endpoint to return project with member but no roles
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      projectId: 'project123',
-      uri: '/projects/project123',
-    }).reply(200, {
-      displayName: 'Test Project',
-      id: 'project123',
-      members: [
-        {
+      mockApi({
+        apiVersion: USERS_API_VERSION,
+        projectId: 'project123',
+        uri: '/users/me',
+      })
+        .reply(200, {
+          email: 'test@example.com',
           id: 'user123',
-          // No roles property
-        },
-      ],
-      studioHost: 'test-project',
+          name: 'Test User',
+          provider: 'google',
+        })
+        .persist()
+
+      const {error, stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
+
+      if (error) throw error
+      // All section headers present
+      expect(stdout).toContain('User:')
+      expect(stdout).toContain('Authentication:')
+      expect(stdout).toContain('CLI:')
+      expect(stdout).toContain('Project:')
+      expect(stdout).toContain('Studio:')
     })
 
-    const {stdout} = await testCommand(Debug, [], {mocks: defaultMocks})
+    test('shows minimal output when outside project and not logged in', async () => {
+      vi.mocked(getCliToken).mockResolvedValue(undefined)
 
-    expect(stdout).toContain('Project:')
-    expect(stdout).toContain("Display name: 'Test Project'")
-    expect(stdout).toContain("Roles: [ '<none>' ]")
+      const {error, stdout} = await testCommand(Debug, [], {
+        mocks: {
+          cliConfigError: new ProjectRootNotFoundError('No project root found'),
+          token: undefined,
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('User:')
+      expect(stdout).toContain('Not logged in')
+      expect(stdout).not.toContain('Authentication:')
+      expect(stdout).toContain('CLI:')
+      expect(stdout).toContain('Project:')
+      expect(stdout).toContain('No project found')
+      expect(stdout).not.toContain('Studio:')
+    })
   })
 })
