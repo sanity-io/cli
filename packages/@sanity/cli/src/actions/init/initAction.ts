@@ -16,7 +16,6 @@ import {type Framework, frameworks} from '@vercel/frameworks'
 import {execa, type Options} from 'execa'
 import deburr from 'lodash-es/deburr.js'
 
-import {ImportDatasetCommand} from '../../commands/dataset/import.js'
 import {
   promptForAppendEnv,
   promptForConfigFiles,
@@ -149,7 +148,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
 
   const detectedFramework = await detectFrameworkRecord({
     frameworkList: frameworks as readonly Framework[],
-    rootPath: process.cwd(),
+    rootPath: workDir,
   })
   const isNextJs = detectedFramework?.slug === 'nextjs'
 
@@ -444,6 +443,9 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     if (!token) {
       throw new InitError('Authentication required to import dataset', 1)
     }
+    // Dynamic import to avoid pulling oclif command into the initAction bundle.
+    // This will be replaced with `npx sanity dataset import` in Phase 3.
+    const {ImportDatasetCommand} = await import('../../commands/dataset/import.js')
     await ImportDatasetCommand.run(
       [template.datasetUrl, '--project-id', projectId, '--dataset', datasetName, '--token', token],
       {
@@ -467,7 +469,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   }
   const devCommand = devCommandMap[pkgManager]
 
-  const isCurrentDir = outputPath === process.cwd()
+  const isCurrentDir = outputPath === workDir
   const goToProjectDir = `\n(${styleText('cyan', `cd ${outputPath}`)} to navigate to your new project directory)`
 
   if (isAppTemplate) {
