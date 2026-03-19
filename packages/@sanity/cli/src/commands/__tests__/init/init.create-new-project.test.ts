@@ -10,10 +10,12 @@ import {CREATE_PROJECT_API_VERSION, PROJECTS_API_VERSION} from '../../../service
 import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
+  confirm: vi.fn(),
   datasetsCreate: vi.fn(),
   detectFrameworkRecord: vi.fn(),
   getOrganizationChoices: vi.fn(),
   getOrganizationsWithAttachGrantInfo: vi.fn(),
+  importDatasetRun: vi.fn(),
   input: vi.fn(),
   listDatasets: vi.fn(),
   select: vi.fn(),
@@ -29,6 +31,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
 
   return {
     ...actual,
+    confirm: mocks.confirm,
     input: mocks.input,
     select: mocks.select,
   }
@@ -43,6 +46,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 
   return {
     ...actual,
+    getCliToken: vi.fn().mockResolvedValue('test-token'),
     getGlobalCliClient: vi.fn().mockResolvedValue({
       projects: {
         list: vi.fn().mockResolvedValue([
@@ -114,6 +118,10 @@ vi.mock('../../../actions/init/checkNextJsReactCompatibility.js', () => ({
 
 vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
   bootstrapTemplate: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../dataset/import.js', () => ({
+  ImportDatasetCommand: {run: mocks.importDatasetRun},
 }))
 
 vi.mock('../../../actions/init/resolvePackageManager.js', () => ({
@@ -215,7 +223,7 @@ describe('#init: create new project', () => {
     await testCommand(
       InitCommand,
       [
-        '--create-project=Test Project',
+        '--project-name=Test Project',
         '--dataset=production',
         '--output-path=./test-project',
         '--no-nextjs-add-config-files',
@@ -314,7 +322,7 @@ describe('#init: create new project', () => {
     await testCommand(
       InitCommand,
       [
-        '--create-project=Test Project',
+        '--project-name=Test Project',
         '--dataset=production',
         '--output-path=./test-project',
         '--no-nextjs-add-config-files',
@@ -486,5 +494,103 @@ describe('#init: create new project', () => {
     expect(spinnerCalls).not.toContainEqual(
       expect.stringContaining('already configured for Sanity MCP'),
     )
+  })
+
+  test('--no-import-dataset skips dataset import for template with sample data', async () => {
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+
+    setupInitSuccessMocks()
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--project=project-123',
+        '--dataset=production',
+        '--output-path=./test-project',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=moviedb',
+        '--no-import-dataset',
+      ],
+      {mocks: {...defaultMocks, isInteractive: true}},
+    )
+
+    if (error) throw error
+    expect(mocks.confirm).not.toHaveBeenCalled()
+    expect(mocks.importDatasetRun).not.toHaveBeenCalled()
+  })
+
+  test('--import-dataset forces import in unattended mode', async () => {
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    mocks.importDatasetRun.mockResolvedValueOnce(undefined)
+
+    // Only mock endpoints actually hit in unattended mode with --project and --dataset
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/project-123',
+    }).reply(200, {id: 'project-123', metadata: {cliInitializedAt: ''}})
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--project=project-123',
+        '--dataset=production',
+        '--output-path=./test-project',
+        '--template=moviedb',
+        '--import-dataset',
+      ],
+      {mocks: defaultMocks},
+    )
+
+    if (error) throw error
+    expect(mocks.confirm).not.toHaveBeenCalled()
+    expect(mocks.importDatasetRun).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        'https://public.sanity.io/moviesdb-2018-03-06.tar.gz',
+        '--project-id',
+        'project-123',
+        '--dataset',
+        'production',
+        '--token',
+        'test-token',
+      ]),
+      expect.objectContaining({root: expect.any(String)}),
+    )
+  })
+
+  test('prompts for dataset import when flag is not set in interactive mode', async () => {
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    mocks.confirm.mockResolvedValueOnce(false)
+
+    setupInitSuccessMocks()
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--project=project-123',
+        '--dataset=production',
+        '--output-path=./test-project',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=moviedb',
+      ],
+      {mocks: {...defaultMocks, isInteractive: true}},
+    )
+
+    if (error) throw error
+    expect(mocks.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Add a sampling of sci-fi movies to your dataset on the hosted backend?',
+      }),
+    )
+    expect(mocks.importDatasetRun).not.toHaveBeenCalled()
   })
 })
