@@ -1,7 +1,7 @@
 import {type CLITelemetryStore, type Output} from '@sanity/cli-core'
 import {Framework} from '@vercel/frameworks'
 
-import {GenerateConfigOptions} from './createStudioConfig'
+import {type GenerateConfigOptions} from './createStudioConfig.js'
 
 export type VersionedFramework = Framework & {
   detectedVersion?: string

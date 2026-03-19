@@ -229,9 +229,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       })
     } catch (error) {
       if (error instanceof InitError) {
-        if (error.exitCode === 0) {
-          this.exit(0)
-        }
         this.error(error.message, {exit: error.exitCode})
       }
       throw error

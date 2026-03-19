@@ -1,5 +1,5 @@
 /**
- * Error thrown by initAction when the init flow should terminate.
+ * Error thrown by initAction when the init flow should terminate with an error.
  * The caller decides how to handle it - eg InitCommand (oclif) catches
  * and translates to oclif's error/exit semantics.
  */

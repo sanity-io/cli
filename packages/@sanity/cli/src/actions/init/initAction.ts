@@ -340,8 +340,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       outputPath,
     })
     await writeStagingEnvIfNeeded(output, outputPath)
-    // Early exit with code 0 - caller translates to this.exit(0)
-    throw new InitError('', 0)
+    return
   }
 
   // Prompt for template to use
@@ -666,7 +665,13 @@ async function ensureAuthenticated(
     throw new InitError(`Login failed: ${message}`, 1)
   }
 
-  const loggedInUser = await getCliUser()
+  let loggedInUser
+  try {
+    loggedInUser = await getCliUser()
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    throw new InitError(`Failed to retrieve user after login: ${message}`, 1)
+  }
 
   output.log(
     `${logSymbols.success} You are logged in as ${loggedInUser.email} using ${getProviderName(loggedInUser.provider)}`,
@@ -1304,8 +1309,6 @@ async function doInitNextJs({
   }
 
   await writeStagingEnvIfNeeded(output, workDir)
-  // Early exit with code 0 - caller translates to this.exit(0)
-  throw new InitError('', 0)
 }
 
 async function promptForDatasetImport(message?: string): Promise<boolean> {
