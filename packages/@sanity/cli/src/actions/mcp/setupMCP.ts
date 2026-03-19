@@ -1,5 +1,5 @@
 import {ux} from '@oclif/core'
-import {subdebug} from '@sanity/cli-core'
+import {isInteractive, subdebug} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
@@ -98,8 +98,12 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   // Non-actionable editors are already configured with valid credentials
   const alreadyConfiguredEditors = editors.filter((e) => !actionable.includes(e)).map((e) => e.name)
 
-  // 5. Prompt user (shows only actionable editors, annotates auth issues)
-  const selected = await promptForMCPSetup(actionable)
+  // 5. Select editors to configure — prompt interactively or auto-select all if non interactive
+  const selected = isInteractive({
+    skipCi: true,
+  })
+    ? await promptForMCPSetup(actionable)
+    : actionable
 
   if (!selected || selected.length === 0) {
     // User deselected all editors

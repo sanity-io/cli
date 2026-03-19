@@ -310,25 +310,8 @@ describe('#init: bootstrap-app-initialization', () => {
     expect(stdout).toContain('Learn more: https://mcp.sanity.io')
   })
 
-  test('initializes app in unattended mode', async () => {
-    // Mock to resolve correctly up to initializing nextjs app
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-    // Mocks to resolve app initialization
-    mockApi({
-      apiVersion: PROJECTS_API_VERSION,
-      method: 'get',
-      uri: '/projects/test',
-    }).reply(200, {
-      id: 'test',
-      metadata: {
-        cliInitializedAt: '',
-      },
-    })
+  test('initializes app-quickstart template non-interactively with --organization flag', async () => {
+    mocks.select.mockReset()
 
     mockApi({
       apiVersion: MCP_JOURNEY_API_VERSION,
@@ -340,10 +323,11 @@ describe('#init: bootstrap-app-initialization', () => {
       InitCommand,
       [
         '--yes',
+        '--template=app-quickstart',
+        '--organization=org-1',
         '--output-path=/test/output',
-        '--project=test',
-        '--dataset=test',
         '--package-manager=npm',
+        '--typescript',
       ],
       {
         mocks: {
@@ -352,20 +336,117 @@ describe('#init: bootstrap-app-initialization', () => {
       },
     )
 
-    expect(stdout).toContain('Success! Your Studio has been created')
-    expect(stdout).toContain(
-      `(cd ${convertToSystemPath('/test/output')} to navigate to your new project directory)`,
+    expect(mocks.bootstrapTemplate).toHaveBeenCalledWith({
+      autoUpdates: true,
+      bearerToken: undefined,
+      dataset: '',
+      organizationId: 'org-1',
+      output: expect.any(Object),
+      outputPath: convertToSystemPath('/test/output'),
+      overwriteFiles: undefined,
+      packageName: '',
+      projectId: '',
+      projectName: 'test-project',
+      remoteTemplateInfo: undefined,
+      templateName: 'app-quickstart',
+      useTypeScript: true,
+    })
+
+    // No prompts should have been called
+    expect(mocks.select).not.toHaveBeenCalled()
+
+    // App-specific success message
+    expect(stdout).toContain('Your custom app has been scaffolded')
+    expect(stdout).not.toContain('Your Studio has been created')
+  })
+
+  test('errors when app-quickstart template is used in unattended mode without --organization', async () => {
+    mocks.select.mockReset()
+
+    const {error} = await testCommand(
+      InitCommand,
+      ['--yes', '--template=app-quickstart', '--output-path=/test/output', '--package-manager=npm'],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
     )
-    expect(stdout).toContain('Get started by running npm run dev')
-    expect(stdout).toContain(
-      'To set up your project with the MCP server, restart Cursor and type "Get started with Sanity" in the chat.',
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain(
+      'The --organization flag is required for app templates in unattended mode',
     )
-    expect(stdout).toContain('Learn more: https://mcp.sanity.io')
-    expect(stdout).toContain(
-      'Have feedback? Tell us in the community: https://www.sanity.io/community/join',
+  })
+
+  test('initializes app-quickstart in CI mode (isInteractive: false) without --yes flag', async () => {
+    mocks.select.mockReset()
+
+    mockApi({
+      apiVersion: MCP_JOURNEY_API_VERSION,
+      method: 'get',
+      uri: '/journey/mcp/post-init-prompt',
+    }).reply(200, {})
+
+    const {stdout} = await testCommand(
+      InitCommand,
+      [
+        '--template=app-quickstart',
+        '--organization=org-1',
+        '--output-path=/test/output',
+        '--package-manager=npm',
+        '--typescript',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: false,
+        },
+      },
     )
-    expect(stdout).toContain('npx sanity docs browse')
-    expect(stdout).toContain('npx sanity manage')
-    expect(stdout).toContain('npx sanity help')
+
+    expect(mocks.bootstrapTemplate).toHaveBeenCalledWith({
+      autoUpdates: true,
+      bearerToken: undefined,
+      dataset: '',
+      organizationId: 'org-1',
+      output: expect.any(Object),
+      outputPath: convertToSystemPath('/test/output'),
+      overwriteFiles: undefined,
+      packageName: '',
+      projectId: '',
+      projectName: 'test-project',
+      remoteTemplateInfo: undefined,
+      templateName: 'app-quickstart',
+      useTypeScript: true,
+    })
+
+    // No prompts should have been called — CI detection makes init unattended
+    expect(mocks.select).not.toHaveBeenCalled()
+
+    expect(stdout).toContain('Your custom app has been scaffolded')
+    expect(stdout).not.toContain('Your Studio has been created')
+  })
+
+  test('errors in CI mode (isInteractive: false) without --organization for app template', async () => {
+    mocks.select.mockReset()
+
+    const {error} = await testCommand(
+      InitCommand,
+      ['--template=app-quickstart', '--output-path=/test/output', '--package-manager=npm'],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: false,
+        },
+      },
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain(
+      'The --organization flag is required for app templates in unattended mode',
+    )
   })
 })

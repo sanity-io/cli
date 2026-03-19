@@ -11,6 +11,7 @@ import {MCP_API_VERSION} from '../../../services/mcp.js'
 import {ConfigureMcpCommand} from '../configure.js'
 
 const mockEnsureAuthenticated = vi.hoisted(() => vi.fn())
+const mockIsInteractive = vi.hoisted(() => vi.fn().mockReturnValue(true))
 
 vi.mock('../../../actions/auth/ensureAuthenticated.js', async (importOriginal) => {
   const actual =
@@ -18,6 +19,14 @@ vi.mock('../../../actions/auth/ensureAuthenticated.js', async (importOriginal) =
   return {
     ...actual,
     ensureAuthenticated: mockEnsureAuthenticated,
+  }
+})
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    isInteractive: mockIsInteractive,
   }
 })
 
@@ -1124,5 +1133,39 @@ describe('#mcp:configure', () => {
       expect.stringContaining('Sanity'),
       'utf8',
     )
+  })
+
+  test('auto-selects all editors in non-interactive mode without prompting', async () => {
+    mockIsInteractive.mockReturnValue(false)
+
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes('.cursor')
+    })
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-ci', sid: 'session-ci'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-ci'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-ci'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    // Verify isInteractive was called with skipCi: true (MCP setup should work in CI if TTY present)
+    expect(mockIsInteractive).toHaveBeenCalledWith({skipCi: true})
+
+    expect(mockCheckbox).not.toHaveBeenCalled()
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
+      expect.stringContaining('test-token-ci'),
+      'utf8',
+    )
+    expect(stdout).toContain('MCP configured for Cursor')
   })
 })

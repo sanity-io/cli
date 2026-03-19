@@ -1,5 +1,5 @@
 import * as cliUX from '@sanity/cli-core/ux'
-import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -592,5 +592,49 @@ describe('#init: create new project', () => {
       }),
     )
     expect(mocks.importDatasetRun).not.toHaveBeenCalled()
+  })
+
+  test('initializes studio in unattended mode', async () => {
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {
+        cliInitializedAt: '',
+      },
+    })
+
+    const {stdout} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--output-path=/test/output',
+        '--project=test',
+        '--dataset=test',
+        '--package-manager=npm',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
+
+    expect(stdout).toContain('Success! Your Studio has been created')
+    expect(stdout).toContain(
+      `(cd ${convertToSystemPath('/test/output')} to navigate to your new project directory)`,
+    )
+    expect(stdout).toContain('Get started by running npm run dev')
+    expect(stdout).toContain('npx sanity docs browse')
+    expect(stdout).toContain('npx sanity manage')
+    expect(stdout).toContain('npx sanity help')
   })
 })
