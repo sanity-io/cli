@@ -85,6 +85,8 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
     }),
   }
 
+  static override hiddenAliases: string[] = ['project:create']
+
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(CreateProjectCommand)
     const {projectName} = args

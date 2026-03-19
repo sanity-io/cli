@@ -35,6 +35,8 @@ export class List extends SanityCommand<typeof List> {
     }),
   }
 
+  static override hiddenAliases: string[] = ['project:list']
+
   public async run() {
     const {order, sort} = this.flags
 

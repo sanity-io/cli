@@ -1,0 +1,97 @@
+import {Flags} from '@oclif/core'
+import {CLIError} from '@oclif/core/errors'
+import {SanityCommand, subdebug} from '@sanity/cli-core'
+
+import {deleteSchemaAction} from '../../actions/schema/deleteSchemaAction.js'
+import {parseIds} from '../../actions/schema/utils/schemaStoreValidation.js'
+import {promptForProject} from '../../prompts/promptForProject.js'
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+
+const deleteSchemaDebug = subdebug('schema:delete')
+
+export class DeleteSchemaCommand extends SanityCommand<typeof DeleteSchemaCommand> {
+  static override description = 'Delete schema documents by id'
+
+  static override examples = [
+    {
+      command: '<%= config.bin %> <%= command.id %> --ids sanity.workspace.schema.workspaceName',
+      description: 'Delete a single schema',
+    },
+    {
+      command:
+        '<%= config.bin %> <%= command.id %> --ids sanity.workspace.schema.workspaceName,prefix.sanity.workspace.schema.otherWorkspace',
+      description: 'Delete multiple schemas',
+    },
+  ]
+
+  static override flags = {
+    ...getProjectIdFlag({
+      description: 'Project ID to delete schema from',
+      semantics: 'override',
+    }),
+    ...getDatasetFlag({
+      description: 'Delete schemas from a specific dataset',
+      semantics: 'specify',
+    }),
+    'extract-manifest': Flags.boolean({
+      allowNo: true,
+      default: true,
+      description: 'Generate manifest file (disable with --no-extract-manifest)',
+      hidden: true,
+    }),
+    ids: Flags.string({
+      description: 'Comma-separated list of schema ids to delete',
+      required: true,
+    }),
+    'manifest-dir': Flags.directory({
+      default: './dist/static',
+      description: 'Directory containing manifest file',
+      hidden: true,
+    }),
+    verbose: Flags.boolean({
+      default: false,
+      description: 'Enable verbose logging',
+    }),
+  }
+
+  static override hiddenAliases: string[] = ['schema:delete']
+
+  public async run(): Promise<void> {
+    const {flags} = await this.parse(DeleteSchemaCommand)
+    const {dataset} = flags
+
+    deleteSchemaDebug('Running schema delete with flags: %O', flags)
+
+    const ids = parseIds(flags.ids)
+
+    try {
+      const workDir = await this.getProjectRoot()
+      const projectId = await this.getProjectId({
+        fallback: () =>
+          promptForProject({
+            requiredPermissions: [{grant: 'deployStudio', permission: 'sanity.project'}],
+          }),
+      })
+
+      await deleteSchemaAction({
+        configPath: workDir.path,
+        dataset,
+        ids,
+        output: this.output,
+        projectId,
+        verbose: flags['verbose'],
+        workDir: workDir.directory,
+      })
+    } catch (error) {
+      if (error instanceof CLIError) {
+        this.error(error.message, {exit: 1})
+      }
+
+      deleteSchemaDebug('Error deleting schemas', error)
+      this.error(
+        `Failed to delete schemas: ${error instanceof Error ? error.message : String(error)}`,
+        {exit: 1},
+      )
+    }
+  }
+}
