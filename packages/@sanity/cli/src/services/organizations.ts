@@ -19,7 +19,7 @@ export interface OrganizationCreateResponse {
   slug: string | null
 }
 
-export interface Organization extends ProjectOrganization {
+interface Organization extends ProjectOrganization {
   createdAt: string
   defaultRoleName: string | null
   updatedAt: string
@@ -31,7 +31,7 @@ export interface OrganizationUpdateParams {
   slug?: string
 }
 
-export interface OrganizationDeleteResponse {
+interface OrganizationDeleteResponse {
   deleted: boolean
 }
 
@@ -112,8 +112,8 @@ export async function getOrganization(organizationId: string): Promise<Organizat
   })
 
   return client.request<Organization>({
+    query: {includeFeatures: 'false', includeMembers: 'false'},
     uri: `/organizations/${organizationId}`,
-    query: {includeMembers: 'false', includeFeatures: 'false'},
   })
 }
 
