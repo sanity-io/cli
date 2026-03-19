@@ -79,7 +79,7 @@ const defaultOptions: InitOptions = {
   bare: false,
   datasetDefault: false,
   fromCreate: false,
-  mcp: false,
+  mcpMode: 'skip',
   unattended: false,
 }
 

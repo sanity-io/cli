@@ -17,9 +17,17 @@ function defaultFlags(
   } as Parameters<typeof flagsToInitOptions>[0]
 }
 
+/** Shorthand that fills in the trailing `args` and `mcpMode` parameters. */
+function toOptions(
+  flags: Parameters<typeof flagsToInitOptions>[0],
+  isUnattended: boolean,
+): ReturnType<typeof flagsToInitOptions> {
+  return flagsToInitOptions(flags, isUnattended, undefined, 'prompt')
+}
+
 describe('flagsToInitOptions', () => {
   test('maps kebab-case flags to camelCase options', () => {
-    const result = flagsToInitOptions(
+    const result = toOptions(
       defaultFlags({
         'auto-updates': false,
         dataset: 'staging',
@@ -48,7 +56,7 @@ describe('flagsToInitOptions', () => {
   })
 
   test('maps Next.js specific flags', () => {
-    const result = flagsToInitOptions(
+    const result = toOptions(
       defaultFlags({
         'nextjs-add-config-files': true,
         'nextjs-append-env': false,
@@ -63,39 +71,39 @@ describe('flagsToInitOptions', () => {
   })
 
   test('resolves --no-git to git: false', () => {
-    const result = flagsToInitOptions(defaultFlags({'no-git': true}), false)
+    const result = toOptions(defaultFlags({'no-git': true}), false)
 
     expect(result.git).toBe(false)
   })
 
   test('passes through git commit message when --no-git is not set', () => {
-    const result = flagsToInitOptions(defaultFlags({git: 'Initial commit from Sanity'}), false)
+    const result = toOptions(defaultFlags({git: 'Initial commit from Sanity'}), false)
 
     expect(result.git).toBe('Initial commit from Sanity')
   })
 
   test('leaves git as undefined when neither --git nor --no-git is provided', () => {
-    const result = flagsToInitOptions(defaultFlags(), false)
+    const result = toOptions(defaultFlags(), false)
 
     expect(result.git).toBeUndefined()
   })
 
   test('sets unattended from the isUnattended parameter', () => {
-    const attended = flagsToInitOptions(defaultFlags(), false)
+    const attended = toOptions(defaultFlags(), false)
     expect(attended.unattended).toBe(false)
 
-    const unattended = flagsToInitOptions(defaultFlags(), true)
+    const unattended = toOptions(defaultFlags(), true)
     expect(unattended.unattended).toBe(true)
   })
 
   test('aliases --create-project to projectName', () => {
-    const result = flagsToInitOptions(defaultFlags({'create-project': 'My Legacy Project'}), false)
+    const result = toOptions(defaultFlags({'create-project': 'My Legacy Project'}), false)
 
     expect(result.projectName).toBe('My Legacy Project')
   })
 
   test('prefers --project-name over --create-project', () => {
-    const result = flagsToInitOptions(
+    const result = toOptions(
       defaultFlags({
         'create-project': 'Legacy Name',
         'project-name': 'Preferred Name',
@@ -107,7 +115,7 @@ describe('flagsToInitOptions', () => {
   })
 
   test('returns undefined for optional fields when not provided', () => {
-    const result = flagsToInitOptions(defaultFlags(), false)
+    const result = toOptions(defaultFlags(), false)
 
     expect(result.coupon).toBeUndefined()
     expect(result.dataset).toBeUndefined()
@@ -125,5 +133,16 @@ describe('flagsToInitOptions', () => {
     expect(result.templateToken).toBeUndefined()
     expect(result.typescript).toBeUndefined()
     expect(result.visibility).toBeUndefined()
+  })
+
+  test('passes mcpMode through to options', () => {
+    const prompt = flagsToInitOptions(defaultFlags(), false, undefined, 'prompt')
+    expect(prompt.mcpMode).toBe('prompt')
+
+    const auto = flagsToInitOptions(defaultFlags(), false, undefined, 'auto')
+    expect(auto.mcpMode).toBe('auto')
+
+    const skip = flagsToInitOptions(defaultFlags(), false, undefined, 'skip')
+    expect(skip.mcpMode).toBe('skip')
   })
 })

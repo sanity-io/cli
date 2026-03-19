@@ -444,7 +444,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     // Dynamic import to keep initAction decoupled from oclif commands.
     // TODO: consider replacing with `npx sanity dataset import` to fully decouple.
     // eslint-disable-next-line no-restricted-syntax
-    const {ImportDatasetCommand} = await import('../../commands/dataset/import.js')
+    const {ImportDatasetCommand} = await import('../../commands/datasets/import.js')
     await ImportDatasetCommand.run(
       [template.datasetUrl, '--project-id', projectId, '--dataset', datasetName, '--token', token],
       {
