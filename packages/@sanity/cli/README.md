@@ -2363,10 +2363,10 @@ Initialize a new Sanity Studio, project and/or app
 ```
 USAGE
   $ sanity init [--json] [--auto-updates | --bare] [--coupon <code> | --project-plan <name>] [--dataset
-    <name> | --dataset-default] [--env <filename> | ] [--git <message> | ] [--mcp] [--nextjs-add-config-files]
-    [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>] [--output-path <path> | ] [--overwrite-files]
-    [--package-manager <manager> | ] [--project <id> | --create-project <name>] [--provider <provider>] [--template
-    <template> | ] [--typescript | ] [--visibility <mode>] [-y]
+    <name> | --dataset-default] [--env <filename> | ] [--git <message> | ] [--import-dataset] [--mcp]
+    [--nextjs-add-config-files] [--nextjs-append-env] [--nextjs-embed-studio] [--organization <id>] [--output-path
+    <path> | ] [--overwrite-files] [--package-manager <manager> | ] [--project <id> |  | --project-name <name>]
+    [--provider <provider>] [--template <template> | ] [--typescript | ] [--visibility <mode>] [-y]
 
 FLAGS
   -y, --yes                        Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
@@ -2374,17 +2374,18 @@ FLAGS
       --bare                       Skip the Studio initialization and only print the selected project ID and dataset
                                    name to stdout
       --coupon=<code>              Optionally select a coupon for a new project (cannot be used with --project-plan)
-      --create-project=<name>      Create a new project with the given name
       --dataset=<name>             Dataset name for the studio
       --dataset-default            Set up a project with a public dataset named "production"
       --env=<filename>             Write environment variables to file
       --[no-]git=<message>         Specify a commit message for initial commit, or disable git init
+      --[no-]import-dataset        Import template sample dataset
       --[no-]mcp                   Enable AI editor integration (MCP) setup
       --organization=<id>          Organization ID to use for the project
       --output-path=<path>         Path to write studio project to
       --[no-]overwrite-files       Overwrite existing files
       --package-manager=<manager>  Specify which package manager to use [allowed: npm, yarn, pnpm]
       --project=<id>               Project ID to use for the studio
+      --project-name=<name>        Create a new project with the given name
       --project-plan=<name>        Optionally select a plan for a new project
       --provider=<provider>        Login provider to use
       --template=<template>        Project template to use [default: "clean"]
@@ -2419,7 +2420,7 @@ EXAMPLES
 
   Create a brand new project with name "Movies Unlimited"
 
-    $ sanity init -y --create-project "Movies Unlimited" --dataset moviedb --visibility private --template moviedb \
+    $ sanity init -y --project-name "Movies Unlimited" --dataset moviedb --visibility private --template moviedb \
       --output-path /Users/espenh/movies-unlimited
 ```
 
