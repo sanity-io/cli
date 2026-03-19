@@ -1,4 +1,4 @@
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {ensureAuthenticated} from '../../actions/auth/ensureAuthenticated.js'
 import {setupMCP} from '../../actions/mcp/setupMCP.js'
@@ -40,7 +40,7 @@ export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpComman
     }
 
     try {
-      const mcpResult = await setupMCP({explicit: true})
+      const mcpResult = await setupMCP({explicit: true, mode: isInteractive() ? 'prompt' : 'auto'})
 
       trace.log({
         configuredEditors: mcpResult.configuredEditors,
