@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.0](https://github.com/sanity-io/cli/compare/cli-core-v1.1.3...cli-core-v1.2.0) (2026-03-19)
+
+
+### Features
+
+* **debug:** improve output format, allow running outside project ([#733](https://github.com/sanity-io/cli/issues/733)) ([f2f2e2f](https://github.com/sanity-io/cli/commit/f2f2e2f31c2bdebf3cb138074ed92b2c0979aa09))
+
+
+### Bug Fixes
+
+* **mcp:** use explicit mode for setupMCP during init ([#744](https://github.com/sanity-io/cli/issues/744)) ([e11f495](https://github.com/sanity-io/cli/commit/e11f49543cd5281434f0a0bff91d2badd3b32883))
+* support non-interactive mode for app templates and fix isInteractive CI detection ([#735](https://github.com/sanity-io/cli/issues/735)) ([ff9f15f](https://github.com/sanity-io/cli/commit/ff9f15f3f7a599b3bb06dbd25117e2d865623123))
+
 ## [1.1.3](https://github.com/sanity-io/cli/compare/cli-core-v1.1.2...cli-core-v1.1.3) (2026-03-18)
 
 
