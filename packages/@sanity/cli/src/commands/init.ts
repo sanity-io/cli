@@ -361,9 +361,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       )
     }
 
+    const isAppTemplate = this.flags.template ? determineAppTemplate(this.flags.template) : false // Default to false
+
     // Checks flags are present when in unattended mode
     if (this.isUnattended()) {
-      this.checkFlagsInUnattendedMode({createProjectName, isNextJs})
+      this.checkFlagsInUnattendedMode({createProjectName, isAppTemplate, isNextJs})
     }
 
     this._trace.start()
@@ -397,8 +399,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     // If the user isn't already autenticated, make it so
     const {user} = await this.ensureAuthenticated()
-
-    const isAppTemplate = this.flags.template ? determineAppTemplate(this.flags.template) : false // Default to false
     if (!isAppTemplate) {
       this.log(`${logSymbols.success} Fetching existing projects`)
       this.log('')
@@ -716,12 +716,33 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
   private checkFlagsInUnattendedMode({
     createProjectName,
+    isAppTemplate,
     isNextJs,
   }: {
     createProjectName: string | undefined
+    isAppTemplate: boolean
     isNextJs: boolean
   }) {
     debug('Unattended mode, validating required options')
+
+    // App templates only require --organization and --output-path
+    if (isAppTemplate) {
+      if (!this.flags['output-path']) {
+        this.error('`--output-path` must be specified in unattended mode', {
+          exit: 1,
+        })
+      }
+
+      if (!this.flags.organization) {
+        this.error(
+          'The --organization flag is required for app templates in unattended mode. ' +
+            'Use --organization <id> to specify which organization to use.',
+          {exit: 1},
+        )
+      }
+
+      return
+    }
 
     if (!this.flags['dataset']) {
       this.error(`\`--dataset\` must be specified in unattended mode`, {
@@ -1111,6 +1132,19 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     schemaUrl?: string
   }> {
     if (isAppTemplate) {
+      // If organization flag is provided, use it directly (skip prompt and API call)
+      if (this.flags.organization) {
+        return {
+          datasetName: '',
+          displayName: '',
+          isFirstProject: false,
+          organizationId: this.flags.organization,
+          projectId: '',
+        }
+      }
+
+      // Interactive mode: fetch orgs and prompt
+      // Note: unattended mode without --organization is rejected by checkFlagsInUnattendedMode
       const organizations = await listOrganizations({
         includeImplicitMemberships: 'true',
         includeMembers: 'true',
