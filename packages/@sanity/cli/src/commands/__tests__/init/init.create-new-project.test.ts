@@ -120,7 +120,7 @@ vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
   bootstrapTemplate: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../dataset/import.js', () => ({
+vi.mock('../../datasets/import.js', () => ({
   ImportDatasetCommand: {run: mocks.importDatasetRun},
 }))
 
