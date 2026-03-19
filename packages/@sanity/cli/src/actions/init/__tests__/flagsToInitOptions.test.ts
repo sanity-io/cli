@@ -1,0 +1,145 @@
+import {describe, expect, test} from 'vitest'
+
+import {flagsToInitOptions} from '../types.js'
+
+/** Returns a minimal set of flags with required boolean fields set to defaults. */
+function defaultFlags(
+  overrides: Record<string, unknown> = {},
+): Parameters<typeof flagsToInitOptions>[0] {
+  return {
+    'auto-updates': true,
+    bare: false,
+    'dataset-default': false,
+    'from-create': false,
+    mcp: true,
+    'no-git': false,
+    ...overrides,
+  } as Parameters<typeof flagsToInitOptions>[0]
+}
+
+describe('flagsToInitOptions', () => {
+  test('maps kebab-case flags to camelCase options', () => {
+    const result = flagsToInitOptions(
+      defaultFlags({
+        'auto-updates': false,
+        dataset: 'staging',
+        'dataset-default': true,
+        'output-path': '/tmp/myproject',
+        'package-manager': 'pnpm',
+        project: 'proj-123',
+        'project-plan': 'enterprise',
+        template: 'blog',
+        'template-token': 'ghp_abc',
+        visibility: 'private',
+      }),
+      false,
+    )
+
+    expect(result.autoUpdates).toBe(false)
+    expect(result.dataset).toBe('staging')
+    expect(result.datasetDefault).toBe(true)
+    expect(result.outputPath).toBe('/tmp/myproject')
+    expect(result.packageManager).toBe('pnpm')
+    expect(result.project).toBe('proj-123')
+    expect(result.projectPlan).toBe('enterprise')
+    expect(result.template).toBe('blog')
+    expect(result.templateToken).toBe('ghp_abc')
+    expect(result.visibility).toBe('private')
+  })
+
+  test('maps Next.js specific flags', () => {
+    const result = flagsToInitOptions(
+      defaultFlags({
+        'nextjs-add-config-files': true,
+        'nextjs-append-env': false,
+        'nextjs-embed-studio': true,
+      }),
+      false,
+    )
+
+    expect(result.nextjsAddConfigFiles).toBe(true)
+    expect(result.nextjsAppendEnv).toBe(false)
+    expect(result.nextjsEmbedStudio).toBe(true)
+  })
+
+  test('resolves --no-git to git: false', () => {
+    const result = flagsToInitOptions(defaultFlags({'no-git': true}), false)
+
+    expect(result.git).toBe(false)
+  })
+
+  test('passes through git commit message when --no-git is not set', () => {
+    const result = flagsToInitOptions(defaultFlags({git: 'Initial commit from Sanity'}), false)
+
+    expect(result.git).toBe('Initial commit from Sanity')
+  })
+
+  test('leaves git as undefined when neither --git nor --no-git is provided', () => {
+    const result = flagsToInitOptions(defaultFlags(), false)
+
+    expect(result.git).toBeUndefined()
+  })
+
+  test('sets unattended from the isUnattended parameter', () => {
+    const attended = flagsToInitOptions(defaultFlags(), false)
+    expect(attended.unattended).toBe(false)
+
+    const unattended = flagsToInitOptions(defaultFlags(), true)
+    expect(unattended.unattended).toBe(true)
+  })
+
+  test('sets interactive from the isInteractive parameter', () => {
+    const interactive = flagsToInitOptions(defaultFlags(), false, undefined, true)
+    expect(interactive.interactive).toBe(true)
+
+    const nonInteractive = flagsToInitOptions(defaultFlags(), false, undefined, false)
+    expect(nonInteractive.interactive).toBe(false)
+  })
+
+  test('defaults interactive to !isUnattended when isInteractive is not provided', () => {
+    const attended = flagsToInitOptions(defaultFlags(), false)
+    expect(attended.interactive).toBe(true)
+
+    const unattended = flagsToInitOptions(defaultFlags(), true)
+    expect(unattended.interactive).toBe(false)
+  })
+
+  test('aliases --create-project to projectName', () => {
+    const result = flagsToInitOptions(defaultFlags({'create-project': 'My Legacy Project'}), false)
+
+    expect(result.projectName).toBe('My Legacy Project')
+  })
+
+  test('prefers --project-name over --create-project', () => {
+    const result = flagsToInitOptions(
+      defaultFlags({
+        'create-project': 'Legacy Name',
+        'project-name': 'Preferred Name',
+      }),
+      false,
+    )
+
+    expect(result.projectName).toBe('Preferred Name')
+  })
+
+  test('returns undefined for optional fields when not provided', () => {
+    const result = flagsToInitOptions(defaultFlags(), false)
+
+    expect(result.coupon).toBeUndefined()
+    expect(result.dataset).toBeUndefined()
+    expect(result.env).toBeUndefined()
+    expect(result.importDataset).toBeUndefined()
+    expect(result.organization).toBeUndefined()
+    expect(result.outputPath).toBeUndefined()
+    expect(result.overwriteFiles).toBeUndefined()
+    expect(result.packageManager).toBeUndefined()
+    expect(result.project).toBeUndefined()
+    expect(result.projectName).toBeUndefined()
+    expect(result.projectPlan).toBeUndefined()
+    expect(result.provider).toBeUndefined()
+    expect(result.template).toBeUndefined()
+    expect(result.templateToken).toBeUndefined()
+    expect(result.typescript).toBeUndefined()
+    expect(result.visibility).toBeUndefined()
+  })
+})
