@@ -5,8 +5,8 @@
  * - Standalone create-sanity catches, logs, and calls process.exit()
  */
 export class InitError extends Error {
-  override name = 'InitError'
   exitCode: number
+  override name = 'InitError'
 
   constructor(message: string, exitCode = 1) {
     super(message)
