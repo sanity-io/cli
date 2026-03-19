@@ -1157,9 +1157,6 @@ describe('#mcp:configure', () => {
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    // Verify isInteractive was called with skipCi: true (MCP setup should work in CI if TTY present)
-    expect(mockIsInteractive).toHaveBeenCalledWith({skipCi: true})
-
     expect(mockCheckbox).not.toHaveBeenCalled()
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),

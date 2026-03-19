@@ -1,5 +1,5 @@
 import {ux} from '@oclif/core'
-import {isInteractive, subdebug} from '@sanity/cli-core'
+import {subdebug} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
@@ -22,9 +22,12 @@ interface MCPSetupOptions {
   explicit?: boolean
 
   /**
-   * If true, skip MCP configuration entirely (e.g. --no-mcp flag).
+   * Controls how MCP setup behaves:
+   * - 'prompt': Ask the user which editors to configure (default)
+   * - 'auto': Auto-configure all detected editors without prompting
+   * - 'skip': Skip MCP configuration entirely
    */
-  skip?: boolean
+  mode?: 'auto' | 'prompt' | 'skip'
 }
 
 interface MCPSetupResult {
@@ -42,11 +45,11 @@ interface MCPSetupResult {
  * Opt-out by default: runs automatically unless skip option is set
  */
 export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResult> {
-  const {explicit = false, skip = false} = options ?? {}
+  const {explicit = false, mode = 'prompt'} = options ?? {}
 
   // 1. Check for explicit opt-out
-  if (skip) {
-    ux.warn('Skipping MCP configuration due to --no-mcp flag')
+  if (mode === 'skip') {
+    mcpDebug('Skipping MCP configuration (mode: skip)')
     return {
       alreadyConfiguredEditors: [],
       configuredEditors: [],
@@ -98,12 +101,8 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   // Non-actionable editors are already configured with valid credentials
   const alreadyConfiguredEditors = editors.filter((e) => !actionable.includes(e)).map((e) => e.name)
 
-  // 5. Select editors to configure — prompt interactively or auto-select all if non interactive
-  const selected = isInteractive({
-    skipCi: true,
-  })
-    ? await promptForMCPSetup(actionable)
-    : actionable
+  // 5. Select editors to configure — prompt interactively or auto-select all
+  const selected = mode === 'auto' ? actionable : await promptForMCPSetup(actionable)
 
   if (!selected || selected.length === 0) {
     // User deselected all editors

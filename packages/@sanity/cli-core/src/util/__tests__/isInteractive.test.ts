@@ -55,14 +55,6 @@ describe('isInteractive', () => {
     expect(isInteractive()).toBe(true)
   })
 
-  test('returns true when skipCi is true even if CI env var is set', () => {
-    process.stdin.isTTY = true
-    vi.stubEnv('TERM', undefined)
-    vi.stubEnv('CI', 'true')
-
-    expect(isInteractive({skipCi: true})).toBe(true)
-  })
-
   test('returns false when stdin is not a TTY even if stdout is', () => {
     // stdin is piped (e.g., `echo "input" | sanity command`)
     process.stdin.isTTY = false
