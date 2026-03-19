@@ -1,8 +1,7 @@
 /**
  * Error thrown by initAction when the init flow should terminate.
- * Callers decide how to handle it:
- * - InitCommand (oclif) catches and calls this.error(msg, exit)
- * - Standalone create-sanity catches, logs, and calls process.exit()
+ * The caller decides how to handle it - eg InitCommand (oclif) catches
+ * and translates to oclif's error/exit semantics.
  */
 export class InitError extends Error {
   exitCode: number
