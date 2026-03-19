@@ -395,12 +395,18 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
     const envFilename = typeof this.flags.env === 'string' ? this.flags.env : envFilenameDefault
 
-    // If the user isn't already autenticated, make it so
+    // If the user isn't already authenticated, make it so
     const {user} = await this.ensureAuthenticated()
 
     const isAppTemplate = this.flags.template ? determineAppTemplate(this.flags.template) : false // Default to false
-    if (!isAppTemplate) {
-      this.log(`${logSymbols.success} Fetching existing projects`)
+    if (isAppTemplate) {
+      this.log(
+        `\n${logSymbols.info} App configuration is now located in your app's sanity.cli.ts|js file.`,
+      )
+      this.log(
+        `\n \n${logSymbols.info} ${styleText('bold', 'You can now select a project and dataset during initialization.')}`,
+      )
+      this.log(`${logSymbols.info} You can always change this or add more later.`)
       this.log('')
     }
 
@@ -445,9 +451,12 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       step: 'useDetectedFramework',
     })
 
-    const sluggedName = deburr(displayName.toLowerCase())
+    let sluggedName = deburr(displayName.toLowerCase())
       .replaceAll(/\s+/g, '-')
       .replaceAll(/[^a-z0-9-]/g, '')
+    if (isAppTemplate && sluggedName.length > 0) {
+      sluggedName += '-app'
+    }
 
     // add more frameworks to this as we add support for them
     // this is used to skip the getProjectInfo prompt
@@ -657,15 +666,15 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     if (isAppTemplate) {
       //output for custom apps here
       this.log(
-        `${logSymbols.success} ${styleText(['green', 'bold'], 'Success!')} Your custom app has been scaffolded.`,
+        `${logSymbols.success} ${styleText(['green', 'bold'], 'Success!')} Your SDK App has been scaffolded.`,
       )
       if (!isCurrentDir) this.log(goToProjectDir)
-      this.log(
-        `\n${styleText('bold', 'Next')}, configure the project(s) and dataset(s) your app should work with.`,
-      )
       this.log('\nGet started in `src/App.tsx`, or refer to our documentation for a walkthrough:')
       this.log(
         styleText(['blue', 'underline'], 'https://www.sanity.io/docs/app-sdk/sdk-configuration'),
+      )
+      this.log(
+        "\nIf you want to change or add to the projects or datasets your app works with, you can do so by editing your app's sanity.cli.ts|js file.",
       )
       if (mcpConfigured && mcpConfigured.length > 0) {
         const message = await this.getPostInitMCPPrompt(mcpConfigured)
@@ -944,6 +953,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   }): Promise<{
     displayName: string
     isFirstProject: boolean
+    organizationId?: string
     projectId: string
     userAction: 'create' | 'select'
   }> {
@@ -985,6 +995,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       return {
         displayName: project ? project.displayName : 'Unknown project',
         isFirstProject: false,
+        organizationId: project?.organizationId ?? organizationId ?? undefined,
         projectId,
         userAction: 'select',
       }
@@ -1068,6 +1079,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     return {
       displayName: projects.find((proj) => proj.id === selected)?.displayName || '',
       isFirstProject: isUsersFirstProject,
+      organizationId:
+        projects.find((proj) => proj.id === selected)?.organizationId ??
+        organizationId ??
+        undefined,
       projectId: selected,
       userAction: 'select',
     }
@@ -1111,27 +1126,40 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     schemaUrl?: string
   }> {
     if (isAppTemplate) {
-      const organizations = await listOrganizations({
-        includeImplicitMemberships: 'true',
-        includeMembers: 'true',
+      debug('Confirming user wants to select a project during app initialization')
+      const selectProjectForAppTemplate = await confirm({
+        default: true,
+        message: 'Do you want to select a default project for your app to initialize with?',
       })
 
-      const appOrganizationId = await this.promptUserForOrganization({
-        isAppTemplate: true,
-        organizations,
-        user,
-      })
+      if (!selectProjectForAppTemplate) {
+        debug('User does not want to select a project for app init, prompting for organization')
+        this.log('Please select an organization your app will be deployed to.')
 
-      return {
-        datasetName: '',
-        displayName: '',
-        isFirstProject: false,
-        organizationId: appOrganizationId,
-        projectId: '',
+        const organizations = await listOrganizations({
+          includeImplicitMemberships: 'true',
+          includeMembers: 'true',
+        })
+
+        const appOrganizationId = await this.promptUserForOrganization({
+          isAppTemplate: true,
+          organizations,
+          user,
+        })
+
+        return {
+          datasetName: '',
+          displayName: '',
+          isFirstProject: false,
+          organizationId: appOrganizationId,
+          projectId: '',
+        }
       }
     }
 
     debug('Prompting user to select or create a project')
+    this.log(`${logSymbols.success} Fetching existing projects`)
+    this.log('')
     const project = await this.getOrCreateProject({newProject, planId, user})
     debug(`Project with name ${project.displayName} selected`)
 
@@ -1155,6 +1183,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       datasetName: dataset.datasetName,
       displayName: project.displayName,
       isFirstProject: project.isFirstProject,
+      organizationId: project.organizationId,
       projectId: project.projectId,
     }
   }

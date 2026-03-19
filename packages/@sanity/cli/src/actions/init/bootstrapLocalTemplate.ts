@@ -98,7 +98,7 @@ export async function bootstrapLocalTemplate(
   let packageJsonName: string = packageName
 
   /**
-   * Currently app init doesn't ask for a name, so we use the last part of the path
+   * This will usually result in "$projectName-app" as the package name if a project is chosen.
    */
   if (isAppTemplate) {
     packageJsonName = deburr(path.basename(outputPath).toLowerCase())
@@ -126,8 +126,10 @@ export async function bootstrapLocalTemplate(
   // ...and a CLI config (`sanity.cli.[ts|js]`)
   const cliConfig = isAppTemplate
     ? createAppCliConfig({
+        dataset: variables.dataset,
         entry: template.entry!,
         organizationId: variables.organizationId,
+        projectId: variables.projectId,
       })
     : createCliConfig({
         autoUpdates: variables.autoUpdates,
