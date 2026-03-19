@@ -102,11 +102,9 @@ function flagOrDefault(flagValue: boolean | undefined, defaultValue: boolean): b
 // ---------------------------------------------------------------------------
 
 /**
- * Core init logic, intentionally free of oclif and `\@sanity/cli-core` command
- * abstractions. Takes plain options and a minimal context object so it can be
- * called from both the oclif `InitCommand` wrapper AND the standalone
- * `create-sanity` entry point (which bundles this function directly to avoid
- * installing the full CLI).
+ * Core init logic, free of oclif and `\@sanity/cli-core` command abstractions.
+ * Takes plain options and a minimal context object so the logic can be reused
+ * outside of oclif and is easier to test.
  */
 export async function initAction(options: InitOptions, context: InitContext): Promise<void> {
   const {output, workDir} = context
@@ -443,8 +441,8 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     if (!token) {
       throw new InitError('Authentication required to import dataset', 1)
     }
-    // Dynamic import to avoid pulling oclif command into the initAction bundle.
-    // This will be replaced with `npx sanity dataset import` in Phase 3.
+    // Dynamic import to keep initAction decoupled from oclif commands.
+    // TODO: consider replacing with `npx sanity dataset import` to fully decouple.
     // eslint-disable-next-line no-restricted-syntax
     const {ImportDatasetCommand} = await import('../../commands/dataset/import.js')
     await ImportDatasetCommand.run(
