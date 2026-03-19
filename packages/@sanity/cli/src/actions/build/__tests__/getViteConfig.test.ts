@@ -258,8 +258,7 @@ describe('#getViteConfig', () => {
     const {reactCompilerPreset} = await import('@vitejs/plugin-react')
 
     const reactCompilerConfig = {
-      sources: ['src/**/*.tsx'],
-      target: '18' as const,
+      target: '19' as const,
     }
 
     const options = {
@@ -272,7 +271,7 @@ describe('#getViteConfig', () => {
 
     expect(reactCompilerPreset).toHaveBeenCalledWith({
       compilationMode: undefined,
-      target: '18',
+      target: '19',
     })
     expect(babel).toHaveBeenCalledWith({
       presets: [expect.objectContaining({name: 'react-compiler-preset'})],
