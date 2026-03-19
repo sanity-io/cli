@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.2.0](https://github.com/sanity-io/cli/compare/cli-v6.1.8...cli-v6.2.0) (2026-03-19)
+
+
+### Features
+
+* **debug:** improve output format, allow running outside project ([#733](https://github.com/sanity-io/cli/issues/733)) ([f2f2e2f](https://github.com/sanity-io/cli/commit/f2f2e2f31c2bdebf3cb138074ed92b2c0979aa09))
+* **init:** improve flags for the init command ([#729](https://github.com/sanity-io/cli/issues/729)) ([171ad3f](https://github.com/sanity-io/cli/commit/171ad3fda4b448892f719adef840c55786fcf7ef))
+
+
+### Bug Fixes
+
+* align on plural topic names, provide aliases for singular ([#714](https://github.com/sanity-io/cli/issues/714)) ([32f0884](https://github.com/sanity-io/cli/commit/32f0884d4c60672e00fe83449e8bad7dda1dfc38))
+* deprecate `start` command (preview alias) ([#721](https://github.com/sanity-io/cli/issues/721)) ([cffaf22](https://github.com/sanity-io/cli/commit/cffaf221e366ddc985f7ee833fa6ff533d177a4e))
+* **mcp:** use explicit mode for setupMCP during init ([#744](https://github.com/sanity-io/cli/issues/744)) ([e11f495](https://github.com/sanity-io/cli/commit/e11f49543cd5281434f0a0bff91d2badd3b32883))
+* support non-interactive mode for app templates and fix isInteractive CI detection ([#735](https://github.com/sanity-io/cli/issues/735)) ([ff9f15f](https://github.com/sanity-io/cli/commit/ff9f15f3f7a599b3bb06dbd25117e2d865623123))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 1.2.0
+  * devDependencies
+    * @sanity/cli-test bumped to 0.2.6
+
 ## [6.1.8](https://github.com/sanity-io/cli/compare/cli-v6.1.7...cli-v6.1.8) (2026-03-18)
 
 
