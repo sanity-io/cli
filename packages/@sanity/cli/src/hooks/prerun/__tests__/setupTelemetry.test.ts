@@ -90,9 +90,10 @@ function setupUserConfigMock(
     mockConfig.set('telemetryDisclosed', Date.now())
   }
   mockGetUserConfig.mockReturnValue({
+    delete: vi.fn().mockImplementation((key) => mockConfig.delete(key)),
     get: vi.fn().mockImplementation((key) => mockConfig.get(key)),
     set: vi.fn().mockImplementation((key, value) => mockConfig.set(key, value)),
-  } as Partial<ReturnType<typeof getUserConfig>> as ReturnType<typeof getUserConfig>)
+  })
 }
 
 function setupProjectMocks(testDir: string) {
@@ -158,11 +159,12 @@ describe('setupTelemetry integration test', () => {
     telemetryPath = path
     await mkdir(telemetryPath, {recursive: true})
 
-    // Set up default getUserConfig mock to return mock get/set functions
+    // Set up default getUserConfig mock to return mock get/set/delete functions
     mockGetUserConfig.mockReturnValue({
+      delete: vi.fn(),
       get: mockGet,
       set: mockSet,
-    } as never)
+    })
 
     // Reset all mocks before each test
     mockGet.mockReset()

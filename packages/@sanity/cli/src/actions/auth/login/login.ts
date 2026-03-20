@@ -1,6 +1,7 @@
 import {
   type CLITelemetryStore,
   getCliToken,
+  getUserConfig,
   type Output,
   setCliUserConfig,
   subdebug,
@@ -92,10 +93,10 @@ export async function login(options: LoginOptions) {
   }
 
   // Store the token
-  await setCliUserConfig('authToken', authToken)
+  setCliUserConfig('authToken', authToken)
 
   // Clear cached telemetry consent
-  await setCliUserConfig('telemetryConsent', undefined)
+  getUserConfig().delete('telemetryConsent')
 
   // If we had a session previously, attempt to clear it
   if (hasExistingToken) {

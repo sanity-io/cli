@@ -18,7 +18,7 @@ import {
 } from './services/apiClient.js'
 import {type CLITelemetryStore} from './telemetry/types.js'
 import {type Output} from './types.js'
-import {getCliTelemetry, reportCliTraceError} from './util/getCliTelemetry.js'
+import {getCliTelemetry, reportCliTraceError} from './telemetry/getCliTelemetry.js'
 import {isInteractive} from './util/isInteractive.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<

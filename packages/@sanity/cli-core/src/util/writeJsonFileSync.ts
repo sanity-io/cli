@@ -1,20 +1,20 @@
-import {writeFile} from 'node:fs/promises'
+import {writeFileSync} from 'node:fs'
 
 /**
- * Serialize the given `data` as JSON and write it to the given path.
+ * Serialize the given `data` as JSON and write it synchronously to the given path.
  *
- * @param filePath - Path to JSON file to read
+ * @param filePath - Path to JSON file to write
  * @internal
  */
-export async function writeJsonFile(
+export function writeJsonFileSync(
   filePath: string,
   data: unknown,
   options: {pretty?: boolean} = {},
-): Promise<void> {
+): void {
   const {pretty = false} = options
   try {
     const stringified = pretty ? JSON.stringify(data, null, 2) : JSON.stringify(data)
-    await writeFile(filePath, stringified, 'utf8')
+    writeFileSync(filePath, stringified, 'utf8')
   } catch (err: unknown) {
     throw new Error(`Failed to write "${filePath}"`, {cause: err})
   }
