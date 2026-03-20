@@ -62,6 +62,8 @@ catalog:
   rimraf: ^6.0.1
   '@sanity/pkg-utils': ^10.4.11
   oxfmt: ^0.41.0
+  rolldown: ^1.0.0-rc.10
+  rollup-plugin-visualizer: ^7.0.1
 
   # Type Definitions
   '@types/node': ^20.19.37
@@ -79,6 +81,8 @@ minimumReleaseAgeExclude:
   - 'groq-js'
   - 'groq'
   - 'react-rx'
+  - '@rolldown/*'
+  - 'rolldown'
   - 'sanity'
   - 'use-effect-event'
   # Renovate security update: tar@7.5.11
