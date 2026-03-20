@@ -225,7 +225,7 @@ describe('cliUserConfig', () => {
       )
     })
 
-    test('delete is a no-op write when key does not exist', () => {
+    test('delete is a no-op when key does not exist', () => {
       vi.mocked(readJsonFileSync).mockReturnValueOnce({
         existing: 'value',
       })
@@ -233,11 +233,7 @@ describe('cliUserConfig', () => {
       const store = getUserConfig()
       store.delete('nonexistent')
 
-      expect(writeJsonFileSync).toHaveBeenCalledWith(
-        expect.any(String),
-        {existing: 'value'},
-        {pretty: true},
-      )
+      expect(writeJsonFileSync).not.toHaveBeenCalled()
     })
 
     test('each operation does a fresh read', () => {
