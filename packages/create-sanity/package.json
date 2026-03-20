@@ -27,17 +27,23 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "tsx build.ts",
+    "build": "rollup -c rollup.config.ts --configPlugin esbuild",
     "publint": "publint",
     "test": "vitest"
   },
-  "dependencies": {},
   "devDependencies": {
     "@oclif/core": "catalog:",
+    "@rollup/plugin-alias": "^6.0.0",
+    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
     "@sanity/cli": "workspace:*",
     "@sanity/cli-core": "workspace:*",
     "esbuild": "catalog:",
     "publint": "catalog:",
+    "rollup": "^4.59.0",
+    "rollup-plugin-esbuild": "^6.2.1",
+    "rollup-plugin-visualizer": "^7.0.1",
     "tsx": "catalog:",
     "vitest": "catalog:"
   },
