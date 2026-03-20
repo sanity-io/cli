@@ -1,17 +1,17 @@
-import {isInteractive} from '@sanity/cli-core'
+/* eslint-disable no-console */
 import {parse} from '@oclif/core/parser'
+import {isInteractive} from '@sanity/cli-core'
 
-import {initAction} from '../../@sanity/cli/src/actions/init/initAction.ts'
-import {InitError} from '../../@sanity/cli/src/actions/init/initError.ts'
-import {flagsToInitOptions} from '../../@sanity/cli/src/actions/init/types.ts'
-import {InitCommand} from '../../@sanity/cli/src/commands/init.ts'
-
+import {initAction} from '../../@sanity/cli/src/actions/init/initAction.js'
+import {InitError} from '../../@sanity/cli/src/actions/init/initError.js'
+import {flagsToInitOptions} from '../../@sanity/cli/src/actions/init/types.js'
+import {initArgs, initFlags} from '../../@sanity/cli/src/commands/init.js'
 import {createNoopTelemetryStore} from './noopTelemetry.js'
 
 try {
   const {args, flags} = await parse(process.argv.slice(2), {
-    args: InitCommand.args,
-    flags: InitCommand.flags,
+    args: initArgs,
+    flags: initFlags,
     strict: true,
   })
 
