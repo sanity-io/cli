@@ -1,4 +1,6 @@
-import {getGlobalCliClient, getUserConfig} from '@sanity/cli-core'
+import {createHash} from 'node:crypto'
+
+import {getCliToken, getGlobalCliClient, getUserConfig} from '@sanity/cli-core'
 import {type TelemetryEvent} from '@sanity/telemetry'
 
 import {telemetryDebug} from '../actions/telemetry/telemetryDebug.js'
@@ -68,6 +70,24 @@ export const TELEMETRY_CONSENT_CONFIG_KEY = 'telemetryConsent'
 const FIVE_MINUTES = 1000 * 60 * 5
 
 /**
+ * Get a token-scoped cache key for telemetry consent. This ensures that switching
+ * users (via login/logout) always results in a cache miss, preventing one user
+ * from inheriting another user's cached consent status.
+ *
+ * @param token - The current auth token, or undefined if not logged in
+ * @returns A cache key scoped to the token
+ * @internal
+ */
+export function getTelemetryConsentCacheKey(token: string | undefined): string {
+  if (!token) {
+    return TELEMETRY_CONSENT_CONFIG_KEY
+  }
+
+  const hash = createHash('sha256').update(token).digest('hex').slice(0, 12)
+  return `${TELEMETRY_CONSENT_CONFIG_KEY}:${hash}`
+}
+
+/**
  * Fetch the telemetry consent status for the current user
  * @returns The telemetry consent status
  *
@@ -76,11 +96,14 @@ const FIVE_MINUTES = 1000 * 60 * 5
 export async function fetchTelemetryConsent(): Promise<{
   status: ValidApiConsentStatus
 }> {
+  const token = await getCliToken()
+  const cacheKey = getTelemetryConsentCacheKey(token)
+
   const telemetryConsentConfig = createExpiringConfig<{
     status: ValidApiConsentStatus
   }>({
     fetchValue: () => getTelemetryConsent(),
-    key: TELEMETRY_CONSENT_CONFIG_KEY,
+    key: cacheKey,
     onCacheHit() {
       telemetryDebug('Retrieved telemetry consent status from cache')
     },
