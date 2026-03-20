@@ -1057,7 +1057,7 @@ async function getProjectDetails({
     datasetName: datasetResult.datasetName,
     selectedOption: datasetResult.userAction,
     step: 'createOrSelectDataset',
-    visibility: visibility as 'private' | 'public',
+    visibility,
   })
 
   return {
