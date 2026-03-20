@@ -33,7 +33,15 @@ export function setCliUserConfig(prop: 'authToken', value: string | undefined): 
 
   const configPath = getCliUserConfigPath()
   mkdirSync(dirname(configPath), {recursive: true})
-  writeJsonFileSync(configPath, {...config, [prop]: value}, {pretty: true})
+
+  // When value is undefined, explicitly delete the key rather than relying
+  // on JSON.stringify silently dropping undefined values.
+  if (value === undefined) {
+    const {[prop]: _, ...rest} = config
+    writeJsonFileSync(configPath, rest, {pretty: true})
+  } else {
+    writeJsonFileSync(configPath, {...config, [prop]: value}, {pretty: true})
+  }
 }
 
 /**
@@ -111,14 +119,15 @@ export function getUserConfig(): ConfigStore {
 }
 
 /**
- * Read the whole configuration from file system. If the file does not exist or could
- * not be loaded, an empty configuration object is returned.
+ * Read the whole configuration from file system. If the file does not exist,
+ * is corrupt, or otherwise unreadable, an empty object is returned. This is
+ * intentional: the config only holds recoverable data (auth tokens, telemetry
+ * consent) so silently resetting is preferable to blocking the user.
  *
  * @returns The whole CLI configuration.
  * @internal
  */
 function readConfig(): Record<string, unknown> {
-  const defaultConfig: Record<string, unknown> = {}
   try {
     const config = readJsonFileSync(getCliUserConfigPath())
     if (!config || typeof config !== 'object' || Array.isArray(config)) {
@@ -127,7 +136,7 @@ function readConfig(): Record<string, unknown> {
     return config
   } catch (err: unknown) {
     debug('Failed to read CLI config file: %s', err instanceof Error ? err.message : `${err}`)
-    return defaultConfig
+    return {}
   }
 }
 

@@ -116,6 +116,21 @@ describe('cliUserConfig', () => {
         expect.any(Object),
       )
     })
+
+    test('setting undefined explicitly removes the key', () => {
+      vi.mocked(readJsonFileSync).mockReturnValueOnce({
+        authToken: 'old-token',
+        someOtherKey: 'preserved',
+      })
+
+      setCliUserConfig('authToken', undefined)
+
+      expect(writeJsonFileSync).toHaveBeenCalledWith(
+        expect.any(String),
+        {someOtherKey: 'preserved'},
+        expect.any(Object),
+      )
+    })
   })
 
   describe('getUserConfig', () => {
