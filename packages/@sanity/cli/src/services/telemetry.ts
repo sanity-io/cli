@@ -76,7 +76,6 @@ const FIVE_MINUTES = 1000 * 60 * 5
  *
  * @param token - The current auth token, or undefined if not logged in
  * @returns A cache key scoped to the token
- * @internal
  */
 export function getTelemetryConsentCacheKey(token: string | undefined): string {
   if (!token) {
@@ -99,6 +98,10 @@ export async function fetchTelemetryConsent(): Promise<{
   const token = await getCliToken()
   const cacheKey = getTelemetryConsentCacheKey(token)
 
+  // NOTE: createExpiringConfig is instantiated on every call, so in-flight request
+  // deduplication (via currentFetch) does not work across concurrent calls to
+  // fetchTelemetryConsent(). Two concurrent callers will make two HTTP requests.
+  // Consider moving to module-level instance if this becomes a bottleneck.
   const telemetryConsentConfig = createExpiringConfig<{
     status: ValidApiConsentStatus
   }>({
