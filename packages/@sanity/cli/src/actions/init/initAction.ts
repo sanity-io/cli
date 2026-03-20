@@ -89,11 +89,11 @@ const debug = subdebug('init')
 // Helpers
 // ---------------------------------------------------------------------------
 
-function shouldPrompt(unattended: boolean, flagValue: unknown): boolean {
+export function shouldPrompt(unattended: boolean, flagValue: unknown): boolean {
   return !unattended && flagValue === undefined
 }
 
-function flagOrDefault(flagValue: boolean | undefined, defaultValue: boolean): boolean {
+export function flagOrDefault(flagValue: boolean | undefined, defaultValue: boolean): boolean {
   return typeof flagValue === 'boolean' ? flagValue : defaultValue
 }
 
@@ -944,7 +944,7 @@ async function getPlan(
   }
 }
 
-async function getPostInitMCPPrompt(editorsNames: EditorName[]): Promise<string> {
+export async function getPostInitMCPPrompt(editorsNames: EditorName[]): Promise<string> {
   return fetchPostInitPrompt(new Intl.ListFormat('en').format(editorsNames))
 }
 
@@ -1636,7 +1636,7 @@ async function writeSourceFiles({
  * `SANITY_INTERNAL_ENV` variable to a `.env` file in the output directory so that
  * the bootstrapped project continues to target the same environment.
  */
-async function writeStagingEnvIfNeeded(
+export async function writeStagingEnvIfNeeded(
   output: InitContext['output'],
   outputPath: string,
 ): Promise<void> {
