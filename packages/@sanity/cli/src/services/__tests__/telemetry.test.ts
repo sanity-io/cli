@@ -13,6 +13,7 @@ import {
 function createInMemoryConfigStore() {
   const store = new Map<string, unknown>()
   return {
+    clear: () => store.clear(),
     delete: (key: string) => store.delete(key),
     get: (key: string) => store.get(key),
     set: (key: string, value: unknown) => store.set(key, value),
@@ -57,14 +58,8 @@ describe('#getTelemetryConsentCacheKey', () => {
 
 describe('#fetchTelemetryConsent', () => {
   beforeEach(() => {
-    // Clear all keys that might have been set by previous tests
-    const userConfig = getUserConfig()
-    userConfig.delete(TELEMETRY_CONSENT_CONFIG_KEY)
-
-    // Also clear any token-scoped keys
+    getUserConfig().clear()
     mockGetCliToken.mockResolvedValue('test-token')
-    const scopedKey = getTelemetryConsentCacheKey('test-token')
-    userConfig.delete(scopedKey)
   })
 
   afterEach(() => {
