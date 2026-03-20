@@ -31,3 +31,35 @@ To run the CLI in development mode, you can run `pnpm run watch` in the `package
 This will watch for changes in the `src` folder and rebuild the CLI on every change running it from the `dist` folder.
 
 To test the specific commands you can navigate to `fixtures` and run `npx sanity <command>`. Since everything is watching for changes no need to rebuild when trying new commands.
+
+## Registry Commands (Experimental)
+
+The CLI includes an install-first registry workflow inspired by shadcn:
+
+- `sanity registry build [directory]`:
+  - Reads registry source config (`registry.source.ts` / `.mts` / `.js` / `.mjs` / `.json`)
+  - Infers files from conventions
+- `sanity registry add <source>`:
+  - Installs a registry into the current Studio
+  - Applies deterministic config/schema transforms
+
+### Registry authoring conventions
+
+Default source conventions are:
+
+- `src/schema-types` -> `{schemaDir}`
+- `src/components` -> `src/components` (or `components` when Studio has no `src` dir)
+- `src/files` -> project root (or `src/*` prefix stripped when Studio has no `src` dir)
+
+### Type-safe registry source config
+
+You can author registry configs in TypeScript:
+
+```ts
+import {defineRegistryConfig} from '@sanity/cli/registry'
+
+export default defineRegistryConfig({
+  name: 'my-registry',
+  version: '1.0.0',
+})
+```
