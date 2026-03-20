@@ -19,6 +19,6 @@ export async function getCliToken(): Promise<string | undefined> {
     return cachedToken
   }
 
-  cachedToken = await getCliUserConfig('authToken')
+  cachedToken = getCliUserConfig('authToken')
   return cachedToken
 }

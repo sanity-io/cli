@@ -21,7 +21,7 @@ export * from '../SanityCommand.js'
 export * from '../services/apiClient.js'
 export * from '../services/cliUserConfig.js'
 export * from '../services/getCliToken.js'
-export * from '../telemetry/getTelemetryBaseInfo.js'
+export {getTelemetryBaseInfo} from '../telemetry/getTelemetryBaseInfo.js'
 export {
   type CLITelemetryStore,
   type ConsentInformation,
@@ -35,10 +35,9 @@ export {
   CLI_TELEMETRY_SYMBOL,
   getCliTelemetry,
   setCliTelemetry,
-} from '../util/getCliTelemetry.js'
+} from '../telemetry/getCliTelemetry.js'
 export * from '../util/getSanityEnvVar.js'
 export * from '../util/getSanityUrl.js'
-export * from '../util/getUserConfig.js'
 export * from '../util/importModule.js'
 export * from '../util/isCi.js'
 export * from '../util/isInteractive.js'

@@ -1,7 +1,7 @@
 import {
   getCliToken,
-  getStudioConfig,
   getUserConfig,
+  getStudioConfig,
   ProjectRootNotFoundError,
   tryFindStudioConfigPath,
 } from '@sanity/cli-core'
@@ -29,9 +29,9 @@ vi.mock('@sanity/cli-core', async () => {
     getCliToken: vi.fn(),
     getStudioConfig: vi.fn(),
     getUserConfig: vi.fn().mockReturnValue({
-      all: {},
+      delete: vi.fn(),
       get: vi.fn().mockReturnValue(undefined),
-      path: '/home/user/.config/sanity/config',
+      set: vi.fn(),
     }),
     tryFindStudioConfigPath: vi.fn(),
   }
@@ -241,10 +241,10 @@ describe('#debug', () => {
     test('shows user type from global config', async () => {
       vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
       vi.mocked(getUserConfig).mockReturnValue({
-        all: {authType: 'enterprise'},
+        delete: vi.fn(),
         get: vi.fn().mockReturnValue('enterprise'),
-        path: '/home/user/.config/sanity/config',
-      } as never)
+        set: vi.fn(),
+      })
       vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
 
       mockApi({

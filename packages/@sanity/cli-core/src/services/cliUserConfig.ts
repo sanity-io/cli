@@ -1,34 +1,16 @@
-import {mkdir} from 'node:fs/promises'
+import {mkdirSync} from 'node:fs'
 import {homedir} from 'node:os'
 import {dirname, join as joinPath} from 'node:path'
 
 import {z} from 'zod'
 
 import {debug} from '../debug.js'
-import {readJsonFile} from '../util/readJsonFile.js'
-import {writeJsonFile} from '../util/writeJsonFile.js'
+import {readJsonFileSync} from '../util/readJsonFileSync.js'
+import {writeJsonFileSync} from '../util/writeJsonFileSync.js'
 
 const cliUserConfigSchema = {
   authToken: z.string().optional(),
-  telemetryConsent: z
-    .object({
-      updatedAt: z.number().optional(),
-      value: z
-        .object({
-          status: z.enum(['undetermined', 'unset', 'granted', 'denied']),
-          type: z.string(),
-        })
-        .passthrough(),
-    })
-    .optional(),
 }
-
-/**
- * The CLI user configuration schema.
- *
- * @internal
- */
-type CliUserConfig = z.infer<z.ZodObject<typeof cliUserConfigSchema>>
 
 /**
  * Set the config value for the given property.
@@ -38,19 +20,11 @@ type CliUserConfig = z.infer<z.ZodObject<typeof cliUserConfigSchema>>
  * @param value - The value to set
  * @internal
  */
-export async function setCliUserConfig<P extends keyof CliUserConfig>(
-  prop: P,
-  value: CliUserConfig[P],
-) {
-  const config = await readConfig()
-  const valueSchema = cliUserConfigSchema[prop]
-  if (!valueSchema) {
-    throw new Error(`No schema defined for config property "${prop}"`)
-  }
-
-  const {error, success} = valueSchema.safeParse(value)
-  if (!success) {
-    const message = error.issues
+export function setCliUserConfig(prop: 'authToken', value: string | undefined): void {
+  const config = readConfig()
+  const result = cliUserConfigSchema.authToken.safeParse(value)
+  if (!result.success) {
+    const message = result.error.issues
       .map(({message, path}) => `[${path.join('.')}] ${message}`)
       .join('\n')
 
@@ -58,8 +32,8 @@ export async function setCliUserConfig<P extends keyof CliUserConfig>(
   }
 
   const configPath = getCliUserConfigPath()
-  await mkdir(dirname(configPath), {recursive: true})
-  await writeJsonFile(configPath, {...config, [prop]: value}, {pretty: true})
+  mkdirSync(dirname(configPath), {recursive: true})
+  writeJsonFileSync(configPath, {...config, [prop]: value}, {pretty: true})
 }
 
 /**
@@ -69,22 +43,71 @@ export async function setCliUserConfig<P extends keyof CliUserConfig>(
  * @returns The value of the given property
  * @internal
  */
-export async function getCliUserConfig<P extends keyof CliUserConfig>(
-  prop: P,
-): Promise<CliUserConfig[P]> {
-  const config = await readConfig()
-  const valueSchema = cliUserConfigSchema[prop]
-  if (!valueSchema) {
-    throw new Error(`No schema defined for config property "${prop}"`)
-  }
-
-  const {success} = valueSchema.safeParse(config[prop])
-  if (!success) {
+export function getCliUserConfig(prop: 'authToken'): string | undefined {
+  const config = readConfig()
+  const result = cliUserConfigSchema.authToken.safeParse(config[prop])
+  if (!result.success) {
     debug('Ignoring invalid stored value for "%s", returning undefined', prop)
-    return undefined as CliUserConfig[P]
+    return undefined
   }
 
-  return config[prop]
+  return result.data
+}
+
+/**
+ * A raw key-value store for CLI user configuration.
+ * Unlike the typed `getCliUserConfig`/`setCliUserConfig`, this operates on
+ * arbitrary keys without schema validation.
+ *
+ * @public
+ */
+export interface ConfigStore {
+  /** Remove a key from the config file. */
+  delete: (key: string) => void
+  /** Read a value by key. Returns `undefined` if the key does not exist. */
+  get: (key: string) => unknown
+  /** Write a value by key, merging it into the existing config. */
+  set: (key: string, value: unknown) => void
+}
+
+/**
+ * Get a key-value store backed by the CLI user configuration file
+ * (`~/.config/sanity/config.json`).
+ *
+ * Each call to `get`, `set`, or `delete` performs a full synchronous
+ * read-modify-write cycle. This is intentional: sync I/O prevents
+ * intra-process race conditions that occurred with the previous async
+ * (configstore-backed) implementation.
+ *
+ * Note: there is no file-level locking, so concurrent writes from
+ * separate CLI processes could still conflict. In practice this is
+ * unlikely since CLI config writes are rare and user-initiated.
+ *
+ * @returns A {@link ConfigStore} for the CLI config file
+ * @public
+ */
+export function getUserConfig(): ConfigStore {
+  return {
+    get(key: string): unknown {
+      const config = readConfig()
+      return config[key]
+    },
+
+    set(key: string, value: unknown): void {
+      const config = readConfig()
+      const configPath = getCliUserConfigPath()
+      mkdirSync(dirname(configPath), {recursive: true})
+      writeJsonFileSync(configPath, {...config, [key]: value}, {pretty: true})
+    },
+
+    delete(key: string): void {
+      const config = readConfig()
+      const {[key]: _, ...rest} = config
+      const configPath = getCliUserConfigPath()
+      mkdirSync(dirname(configPath), {recursive: true})
+      writeJsonFileSync(configPath, rest, {pretty: true})
+    },
+  }
 }
 
 /**
@@ -94,10 +117,10 @@ export async function getCliUserConfig<P extends keyof CliUserConfig>(
  * @returns The whole CLI configuration.
  * @internal
  */
-async function readConfig(): Promise<CliUserConfig> {
-  const defaultConfig: CliUserConfig = {}
+function readConfig(): Record<string, unknown> {
+  const defaultConfig: Record<string, unknown> = {}
   try {
-    const config = await readJsonFile(getCliUserConfigPath())
+    const config = readJsonFileSync(getCliUserConfigPath())
     if (!config || typeof config !== 'object' || Array.isArray(config)) {
       throw new Error('Invalid config file - expected an object')
     }

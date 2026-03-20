@@ -11,6 +11,11 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   return {
     ...actual,
     getCliToken: vi.fn(),
+    getUserConfig: vi.fn().mockReturnValue({
+      delete: vi.fn(),
+      get: vi.fn(),
+      set: vi.fn(),
+    }),
     setCliUserConfig: vi.fn(),
     subdebug: vi.fn(() => vi.fn()),
   }

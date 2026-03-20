@@ -1,7 +1,7 @@
 import {ux} from '@oclif/core'
 import {noopLogger} from '@sanity/telemetry'
 
-import {type CLITelemetryStore} from '../telemetry/types.js'
+import {type CLITelemetryStore} from './types.js'
 
 /**
  * @public
