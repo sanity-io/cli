@@ -26,6 +26,7 @@ export default {
     media: {description: 'Manage media assets and aspect definitions'},
     openapi: {description: 'Manage OpenAPI specifications'},
     projects: {description: 'Manage Sanity projects'},
+    registry: {description: 'Install shared Studio registry configurations'},
     schemas: {description: 'Manage and validate schemas'},
     telemetry: {description: 'Manage telemetry consent'},
     tokens: {description: 'Manage API tokens for your project'},

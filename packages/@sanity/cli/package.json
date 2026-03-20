@@ -45,6 +45,10 @@
       "source": "./src/exports/_internal.ts",
       "default": "./dist/exports/_internal.js"
     },
+    "./registry": {
+      "source": "./src/exports/registry.ts",
+      "default": "./dist/exports/registry.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {
