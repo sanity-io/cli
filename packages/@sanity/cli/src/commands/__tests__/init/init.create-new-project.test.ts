@@ -13,9 +13,9 @@ const mocks = vi.hoisted(() => ({
   confirm: vi.fn(),
   datasetsCreate: vi.fn(),
   detectFrameworkRecord: vi.fn(),
+  execa: vi.fn(),
   getOrganizationChoices: vi.fn(),
   getOrganizationsWithAttachGrantInfo: vi.fn(),
-  importDatasetRun: vi.fn(),
   input: vi.fn(),
   listDatasets: vi.fn(),
   select: vi.fn(),
@@ -120,8 +120,8 @@ vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
   bootstrapTemplate: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../datasets/import.js', () => ({
-  ImportDatasetCommand: {run: mocks.importDatasetRun},
+vi.mock('execa', () => ({
+  execa: mocks.execa,
 }))
 
 vi.mock('../../../actions/init/resolvePackageManager.js', () => ({
@@ -520,12 +520,12 @@ describe('#init: create new project', () => {
 
     if (error) throw error
     expect(mocks.confirm).not.toHaveBeenCalled()
-    expect(mocks.importDatasetRun).not.toHaveBeenCalled()
+    expect(mocks.execa).not.toHaveBeenCalled()
   })
 
   test('--import-dataset forces import in unattended mode', async () => {
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
-    mocks.importDatasetRun.mockResolvedValueOnce(undefined)
+    mocks.execa.mockResolvedValueOnce(undefined)
 
     // Only mock endpoints actually hit in unattended mode with --project and --dataset
     mockApi({
@@ -549,8 +549,11 @@ describe('#init: create new project', () => {
 
     if (error) throw error
     expect(mocks.confirm).not.toHaveBeenCalled()
-    expect(mocks.importDatasetRun).toHaveBeenCalledWith(
+    expect(mocks.execa).toHaveBeenCalledWith(
+      expect.stringContaining('sanity'),
       expect.arrayContaining([
+        'dataset',
+        'import',
         'https://public.sanity.io/moviesdb-2018-03-06.tar.gz',
         '--project-id',
         'project-123',
@@ -559,7 +562,7 @@ describe('#init: create new project', () => {
         '--token',
         'test-token',
       ]),
-      expect.objectContaining({root: expect.any(String)}),
+      expect.objectContaining({cwd: expect.any(String), stdio: 'inherit'}),
     )
   })
 
@@ -591,7 +594,7 @@ describe('#init: create new project', () => {
         message: 'Add a sampling of sci-fi movies to your dataset on the hosted backend?',
       }),
     )
-    expect(mocks.importDatasetRun).not.toHaveBeenCalled()
+    expect(mocks.execa).not.toHaveBeenCalled()
   })
 
   test('initializes studio in unattended mode', async () => {
