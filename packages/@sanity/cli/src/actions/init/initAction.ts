@@ -1,12 +1,7 @@
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {
-  getCliToken,
-  type SanityOrgUser,
-  subdebug,
-  type TelemetryUserProperties,
-} from '@sanity/cli-core'
+import {type SanityOrgUser, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
 import {confirm, input, logSymbols, select, Separator, spinner} from '@sanity/cli-core/ux'
 import {type DatasetAclMode, isHttpError} from '@sanity/client'
 import {type TelemetryTrace} from '@sanity/telemetry'
@@ -14,7 +9,6 @@ import {type Framework, frameworks} from '@vercel/frameworks'
 import deburr from 'lodash-es/deburr.js'
 
 import {promptForConfigFiles} from '../../prompts/init/nextjs.js'
-import {promptForTypeScript} from '../../prompts/init/promptForTypescript.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {promptForDefaultConfig} from '../../prompts/promptForDefaultConfig.js'
 import {promptForOrganizationName} from '../../prompts/promptForOrganizationName.js'
@@ -27,14 +21,12 @@ import {
   type ProjectOrganization,
 } from '../../services/organizations.js'
 import {getPlanId, getPlanIdFromCoupon} from '../../services/plans.js'
-import {createProject, listProjects, updateProjectInitializedAt} from '../../services/projects.js'
+import {createProject, listProjects} from '../../services/projects.js'
 import {getCliUser} from '../../services/user.js'
 import {CLIInitStepCompleted, type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {detectFrameworkRecord} from '../../util/detectFramework.js'
 import {absolutify, validateEmptyPath} from '../../util/fsUtils.js'
 import {getProjectDefaults} from '../../util/getProjectDefaults.js'
-import {installDeclaredPackages} from '../../util/packageManager/installPackages.js'
-import {type PackageManager} from '../../util/packageManager/packageManagerChoice.js'
 import {validateSession} from '../auth/ensureAuthenticated.js'
 import {getProviderName} from '../auth/getProviderName.js'
 import {login} from '../auth/login/login.js'
@@ -45,23 +37,14 @@ import {getOrganizationChoices} from '../organizations/getOrganizationChoices.js
 import {getOrganizationsWithAttachGrantInfo} from '../organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../organizations/hasProjectAttachGrant.js'
 import {type OrganizationChoices} from '../organizations/types.js'
-import {bootstrapTemplate} from './bootstrapTemplate.js'
 import {checkNextJsReactCompatibility} from './checkNextJsReactCompatibility.js'
 import {determineAppTemplate} from './determineAppTemplate.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
-import {tryGitInit} from './git.js'
 import {InitError} from './initError.js'
-import {
-  flagOrDefault,
-  getPostInitMCPPrompt,
-  shouldPrompt,
-  writeStagingEnvIfNeeded,
-} from './initHelpers.js'
+import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
 import {initNextJs} from './initNextJs.js'
 import {initStudio} from './initStudio.js'
 import {checkIsRemoteTemplate, getGitHubRepoInfo, type RepoInfo} from './remoteTemplate.js'
-import {resolvePackageManager} from './resolvePackageManager.js'
-import templates from './templates/index.js'
 import {type InitContext, type InitOptions} from './types.js'
 
 const debug = subdebug('init')
