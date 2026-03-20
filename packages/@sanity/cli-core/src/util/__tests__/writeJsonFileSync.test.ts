@@ -11,16 +11,16 @@ describe('writeJsonFileSync', () => {
     vi.clearAllMocks()
   })
 
-  test('writes compact JSON by default', () => {
+  test('writes compact JSON with trailing newline by default', () => {
     writeJsonFileSync('/path/to/file.json', {key: 'value'})
-    expect(writeFileSync).toHaveBeenCalledWith('/path/to/file.json', '{"key":"value"}', 'utf8')
+    expect(writeFileSync).toHaveBeenCalledWith('/path/to/file.json', '{"key":"value"}\n', 'utf8')
   })
 
-  test('writes pretty JSON when option is set', () => {
+  test('writes pretty JSON with trailing newline when option is set', () => {
     writeJsonFileSync('/path/to/file.json', {key: 'value'}, {pretty: true})
     expect(writeFileSync).toHaveBeenCalledWith(
       '/path/to/file.json',
-      JSON.stringify({key: 'value'}, null, 2),
+      `${JSON.stringify({key: 'value'}, null, 2)}\n`,
       'utf8',
     )
   })
@@ -31,18 +31,12 @@ describe('writeJsonFileSync', () => {
       throw fsError
     })
 
-    expect(() => writeJsonFileSync('/readonly/file.json', {key: 'value'})).toThrow(
-      'Failed to write "/readonly/file.json"',
-    )
-
-    // Verify cause is preserved
-    vi.mocked(writeFileSync).mockImplementationOnce(() => {
-      throw fsError
-    })
     try {
       writeJsonFileSync('/readonly/file.json', {key: 'value'})
+      expect.fail('Expected writeJsonFileSync to throw')
     } catch (err) {
       expect(err).toBeInstanceOf(Error)
+      expect((err as Error).message).toBe('Failed to write "/readonly/file.json"')
       expect((err as Error).cause).toBe(fsError)
     }
   })

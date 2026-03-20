@@ -23,24 +23,12 @@ describe('readJsonFileSync', () => {
       throw fsError
     })
 
-    expect(() => readJsonFileSync('/missing/file.json')).toThrow(
-      'Failed to read "/missing/file.json"',
-    )
-
     try {
       readJsonFileSync('/missing/file.json')
-    } catch (err) {
-      // First call already threw, re-mock for second call
-    }
-
-    // Verify cause is preserved
-    vi.mocked(readFileSync).mockImplementationOnce(() => {
-      throw fsError
-    })
-    try {
-      readJsonFileSync('/missing/file.json')
+      expect.fail('Expected readJsonFileSync to throw')
     } catch (err) {
       expect(err).toBeInstanceOf(Error)
+      expect((err as Error).message).toBe('Failed to read "/missing/file.json"')
       expect((err as Error).cause).toBe(fsError)
     }
   })
@@ -48,16 +36,12 @@ describe('readJsonFileSync', () => {
   test('wraps JSON parse errors with descriptive message and cause', () => {
     vi.mocked(readFileSync).mockReturnValueOnce('not valid json{{{')
 
-    expect(() => readJsonFileSync('/path/to/corrupt.json')).toThrow(
-      'Failed to parse "/path/to/corrupt.json" as JSON',
-    )
-
-    // Verify cause is a SyntaxError from JSON.parse
-    vi.mocked(readFileSync).mockReturnValueOnce('not valid json{{{')
     try {
       readJsonFileSync('/path/to/corrupt.json')
+      expect.fail('Expected readJsonFileSync to throw')
     } catch (err) {
       expect(err).toBeInstanceOf(Error)
+      expect((err as Error).message).toBe('Failed to parse "/path/to/corrupt.json" as JSON')
       expect((err as Error).cause).toBeInstanceOf(SyntaxError)
     }
   })

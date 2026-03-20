@@ -110,6 +110,7 @@ export function getUserConfig(): ConfigStore {
 
     delete(key: string): void {
       const config = readConfig()
+      if (!(key in config)) return
       const {[key]: _, ...rest} = config
       const configPath = getCliUserConfigPath()
       mkdirSync(dirname(configPath), {recursive: true})

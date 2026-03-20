@@ -14,7 +14,7 @@ export function writeJsonFileSync(
   const {pretty = false} = options
   try {
     const stringified = pretty ? JSON.stringify(data, null, 2) : JSON.stringify(data)
-    writeFileSync(filePath, stringified, 'utf8')
+    writeFileSync(filePath, `${stringified}\n`, 'utf8')
   } catch (err: unknown) {
     throw new Error(`Failed to write "${filePath}"`, {cause: err})
   }
