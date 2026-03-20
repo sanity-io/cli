@@ -67,7 +67,6 @@ describe('#fetchTelemetryConsent', () => {
   })
 
   test('should return the telemetry consent status', async () => {
-    mockGetCliToken.mockResolvedValue('test-token')
     mockApi({
       apiVersion: TELEMETRY_API_VERSION,
       query: {tag: 'sanity.cli.telemetry-consent'},
@@ -79,7 +78,6 @@ describe('#fetchTelemetryConsent', () => {
   })
 
   test('should cache consent under a token-scoped key', async () => {
-    mockGetCliToken.mockResolvedValue('test-token')
     mockApi({
       apiVersion: TELEMETRY_API_VERSION,
       query: {tag: 'sanity.cli.telemetry-consent'},
