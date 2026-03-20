@@ -192,7 +192,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   const planId = await getPlan(options, output, trace)
 
   let envFilenameDefault = '.env'
-  if (detectedFramework && detectedFramework.slug === 'nextjs') {
+  if (isNextJs) {
     envFilenameDefault = '.env.local'
   }
   const envFilename = typeof options.env === 'string' ? options.env : envFilenameDefault
@@ -1234,7 +1234,8 @@ async function doInitNextJs({
         )
       } catch (error) {
         debug(`Error creating new CORS Origin ${nextjsLocalDevOrigin}: ${error}`)
-        throw new InitError(`Failed to add ${nextjsLocalDevOrigin} to CORS origins: ${error}`, 1)
+        const message = error instanceof Error ? error.message : String(error)
+        throw new InitError(`Failed to add ${nextjsLocalDevOrigin} to CORS origins: ${message}`, 1)
       }
     }
   }
