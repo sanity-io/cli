@@ -387,28 +387,21 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     debug('Failed to update cliInitializedAt metadata', err)
   }
 
-  try {
-    await bootstrapTemplate({
-      autoUpdates: options.autoUpdates,
-      bearerToken: options.templateToken,
-      dataset: datasetName,
-      organizationId,
-      output,
-      outputPath,
-      overwriteFiles: options.overwriteFiles,
-      packageName: sluggedName,
-      projectId,
-      projectName: displayName || defaults.projectName,
-      remoteTemplateInfo,
-      templateName,
-      useTypeScript,
-    })
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error
-    }
-    throw new Error(String(error))
-  }
+  await bootstrapTemplate({
+    autoUpdates: options.autoUpdates,
+    bearerToken: options.templateToken,
+    dataset: datasetName,
+    organizationId,
+    output,
+    outputPath,
+    overwriteFiles: options.overwriteFiles,
+    packageName: sluggedName,
+    projectId,
+    projectName: displayName || defaults.projectName,
+    remoteTemplateInfo,
+    templateName,
+    useTypeScript,
+  })
 
   const pkgManager = await resolvePackageManager({
     interactive: !options.unattended,
@@ -1293,8 +1286,12 @@ async function doInitNextJs({
       )
       break
     }
+    case 'bun': {
+      await execa('bun', ['add', 'next-sanity@11'], execOptions)
+      break
+    }
     default: {
-      // bun and manual - do nothing or handle differently
+      // manual - do nothing
       break
     }
   }
