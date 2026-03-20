@@ -40,6 +40,7 @@ import {type OrganizationChoices} from '../organizations/types.js'
 import {checkNextJsReactCompatibility} from './checkNextJsReactCompatibility.js'
 import {determineAppTemplate} from './determineAppTemplate.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
+import {initApp} from './initApp.js'
 import {InitError} from './initError.js'
 import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
 import {initNextJs} from './initNextJs.js'
@@ -299,23 +300,35 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   }
 
   // Studio/app template scaffolding
-  await initStudio({
-    datasetName,
-    defaults,
-    displayName,
-    isAppTemplate,
-    isFirstProject,
-    mcpConfigured,
-    options,
-    organizationId,
-    output,
-    outputPath,
-    projectId,
-    remoteTemplateInfo,
-    sluggedName,
-    trace,
-    workDir,
-  })
+  await (isAppTemplate
+    ? initApp({
+        defaults,
+        mcpConfigured,
+        options,
+        organizationId,
+        output,
+        outputPath,
+        remoteTemplateInfo,
+        sluggedName,
+        trace,
+        workDir,
+      })
+    : initStudio({
+        datasetName,
+        defaults,
+        displayName,
+        isFirstProject,
+        mcpConfigured,
+        options,
+        organizationId,
+        output,
+        outputPath,
+        projectId,
+        remoteTemplateInfo,
+        sluggedName,
+        trace,
+        workDir,
+      }))
 
   trace.complete()
 }
