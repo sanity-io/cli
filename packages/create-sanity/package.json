@@ -23,12 +23,11 @@
   },
   "bin": "./dist/index.js",
   "files": [
-    "dist/index.js"
+    "dist"
   ],
   "type": "module",
   "scripts": {
-    "build": "rolldown --config rolldown.config.ts",
-    "build:analyze": "rolldown --config rolldown.config.ts && open dist/stats.html",
+    "build": "tsx build.ts",
     "publint": "publint",
     "test": "vitest"
   },
@@ -37,9 +36,9 @@
     "@oclif/core": "catalog:",
     "@sanity/cli": "workspace:*",
     "@sanity/cli-core": "workspace:*",
+    "esbuild": "catalog:",
     "publint": "catalog:",
-    "rolldown": "catalog:",
-    "rollup-plugin-visualizer": "catalog:",
+    "tsx": "catalog:",
     "vitest": "catalog:"
   },
   "engines": {

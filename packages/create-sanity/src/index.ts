@@ -1,15 +1,14 @@
-#!/usr/bin/env node
 import {isInteractive} from '@sanity/cli-core'
 import {parse} from '@oclif/core/parser'
 
-import {initAction} from '@sanity/cli/actions/init/initAction'
-import {InitError} from '@sanity/cli/actions/init/initError'
-import {flagsToInitOptions} from '@sanity/cli/actions/init/types'
-import {InitCommand} from '@sanity/cli/commands/init'
+import {initAction} from '../../@sanity/cli/src/actions/init/initAction.ts'
+import {InitError} from '../../@sanity/cli/src/actions/init/initError.ts'
+import {flagsToInitOptions} from '../../@sanity/cli/src/actions/init/types.ts'
+import {InitCommand} from '../../@sanity/cli/src/commands/init.ts'
 
 import {createNoopTelemetryStore} from './noopTelemetry.js'
 
-async function main(): Promise<void> {
+try {
   const {args, flags} = await parse(process.argv.slice(2), {
     args: InitCommand.args,
     flags: InitCommand.flags,
@@ -40,9 +39,7 @@ async function main(): Promise<void> {
     telemetry: createNoopTelemetryStore(),
     workDir: process.cwd(),
   })
-}
-
-main().catch((error) => {
+} catch (error) {
   if (error instanceof InitError) {
     if (error.message) {
       console.error(error.message)
@@ -51,4 +48,4 @@ main().catch((error) => {
   }
   console.error(error)
   process.exit(1)
-})
+}
