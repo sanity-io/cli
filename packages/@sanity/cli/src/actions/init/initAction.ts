@@ -244,6 +244,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     output.log(
       `\nYou can find your project on Sanity Manage — https://www.sanity.io/manage/project/${projectId}\n`,
     )
+    trace.complete()
     return
   }
 
@@ -323,6 +324,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       trace,
       workDir,
     })
+    trace.complete()
     return
   }
 
@@ -340,6 +342,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
       outputPath,
     })
     await writeStagingEnvIfNeeded(output, outputPath)
+    trace.complete()
     return
   }
 
@@ -1496,9 +1499,10 @@ async function verifyCoupon(
 
     if (useDefaultPlan) {
       output.log('Using default plan.')
-    } else {
-      throw new InitError(`Coupon "${intendedCoupon}" does not exist`, 1)
+      return undefined
     }
+
+    throw new InitError(`Coupon "${intendedCoupon}" does not exist`, 1)
   }
 }
 
@@ -1536,9 +1540,10 @@ async function verifyPlan(
 
     if (useDefaultPlan) {
       output.log('Using default plan.')
-    } else {
-      throw new InitError(`Plan id "${intendedPlan}" does not exist`, 1)
+      return undefined
     }
+
+    throw new InitError(`Plan id "${intendedPlan}" does not exist`, 1)
   }
 }
 
