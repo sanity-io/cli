@@ -193,8 +193,9 @@ function retainCustomTypeProps(type: SchemaType): Record<string, SerializablePro
 
 /**
  * Retains serializable properties from an unknown value, recursively processing objects and arrays
+ * @internal Exported for testing purposes only
  */
-function retainSerializableProps(maybeSerializable: unknown, depth = 0): SerializableProp {
+export function retainSerializableProps(maybeSerializable: unknown, depth = 0): SerializableProp {
   if (depth > MAX_CUSTOM_PROPERTY_DEPTH) {
     return undefined
   }
