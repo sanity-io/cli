@@ -72,4 +72,20 @@ describe('getCliToken', () => {
     const token = await getCliToken()
     expect(token).toBe('trimmed-token')
   })
+
+  it('should re-read after clearCliTokenCache', async () => {
+    vi.mocked(getCliUserConfig).mockReturnValueOnce('first-token')
+    const module = await import('../../services/getCliToken')
+
+    const firstCall = await module.getCliToken()
+    expect(firstCall).toBe('first-token')
+
+    // Clear cache and set up a new return value
+    module.clearCliTokenCache()
+    vi.mocked(getCliUserConfig).mockReturnValueOnce('second-token')
+
+    const secondCall = await module.getCliToken()
+    expect(secondCall).toBe('second-token')
+    expect(getCliUserConfig).toHaveBeenCalledTimes(2)
+  })
 })

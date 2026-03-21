@@ -7,6 +7,7 @@ import {z} from 'zod'
 import {debug} from '../debug.js'
 import {readJsonFileSync} from '../util/readJsonFileSync.js'
 import {writeJsonFileSync} from '../util/writeJsonFileSync.js'
+import {clearCliTokenCache} from './getCliToken.js'
 
 const cliUserConfigSchema = {
   authToken: z.string().optional(),
@@ -42,6 +43,10 @@ export function setCliUserConfig(prop: 'authToken', value: string | undefined): 
   } else {
     writeJsonFileSync(configPath, {...config, [prop]: value}, {pretty: true})
   }
+
+  // Invalidate the in-process token cache so subsequent getCliToken() calls
+  // pick up the new value from disk.
+  clearCliTokenCache()
 }
 
 /**
@@ -112,9 +117,7 @@ export function getUserConfig(): ConfigStore {
       const config = readConfig()
       if (!(key in config)) return
       const {[key]: _, ...rest} = config
-      const configPath = getCliUserConfigPath()
-      mkdirSync(dirname(configPath), {recursive: true})
-      writeJsonFileSync(configPath, rest, {pretty: true})
+      writeJsonFileSync(getCliUserConfigPath(), rest, {pretty: true})
     },
   }
 }
