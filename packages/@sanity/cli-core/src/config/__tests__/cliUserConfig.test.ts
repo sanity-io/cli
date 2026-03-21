@@ -4,6 +4,7 @@ import {homedir} from 'node:os'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getCliUserConfig, getUserConfig, setCliUserConfig} from '../../services/cliUserConfig'
+import {clearCliTokenCache} from '../../services/getCliToken'
 import {readJsonFileSync} from '../../util/readJsonFileSync'
 import {writeJsonFileSync} from '../../util/writeJsonFileSync'
 
@@ -11,6 +12,7 @@ vi.mock('node:fs')
 vi.mock('node:os')
 vi.mock('../../util/readJsonFileSync')
 vi.mock('../../util/writeJsonFileSync')
+vi.mock('../../services/getCliToken')
 
 const mockHomedir = '/mock/home/dir'
 
@@ -131,6 +133,16 @@ describe('cliUserConfig', () => {
         expect.any(Object),
       )
     })
+
+    test('invalidates token cache after setting authToken', () => {
+      setCliUserConfig('authToken', 'new-token')
+      expect(clearCliTokenCache).toHaveBeenCalled()
+    })
+
+    test('invalidates token cache after clearing authToken', () => {
+      setCliUserConfig('authToken', undefined)
+      expect(clearCliTokenCache).toHaveBeenCalled()
+    })
   })
 
   describe('getUserConfig', () => {
@@ -217,7 +229,7 @@ describe('cliUserConfig', () => {
       const store = getUserConfig()
       store.delete('removeMe')
 
-      expect(mkdirSync).toHaveBeenCalledWith(expect.any(String), {recursive: true})
+      expect(mkdirSync).not.toHaveBeenCalled()
       expect(writeJsonFileSync).toHaveBeenCalledWith(
         expect.any(String),
         {keepMe: 'yes'},

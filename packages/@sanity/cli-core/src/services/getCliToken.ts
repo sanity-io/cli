@@ -22,3 +22,15 @@ export async function getCliToken(): Promise<string | undefined> {
   cachedToken = getCliUserConfig('authToken')
   return cachedToken
 }
+
+/**
+ * Clear the in-process token cache so the next `getCliToken()` call
+ * re-reads from disk or the environment.
+ *
+ * Called automatically by `setCliUserConfig('authToken', ...)`.
+ *
+ * @internal
+ */
+export function clearCliTokenCache(): void {
+  cachedToken = undefined
+}
