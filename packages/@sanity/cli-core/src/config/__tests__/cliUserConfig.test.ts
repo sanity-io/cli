@@ -3,8 +3,8 @@ import {homedir} from 'node:os'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {clearCliTokenCache} from '../../services/cliTokenCache'
 import {getCliUserConfig, getUserConfig, setCliUserConfig} from '../../services/cliUserConfig'
-import {clearCliTokenCache} from '../../services/getCliToken'
 import {readJsonFileSync} from '../../util/readJsonFileSync'
 import {writeJsonFileSync} from '../../util/writeJsonFileSync'
 
@@ -12,7 +12,7 @@ vi.mock('node:fs')
 vi.mock('node:os')
 vi.mock('../../util/readJsonFileSync')
 vi.mock('../../util/writeJsonFileSync')
-vi.mock('../../services/getCliToken')
+vi.mock('../../services/cliTokenCache')
 
 const mockHomedir = '/mock/home/dir'
 
