@@ -65,7 +65,7 @@ catalog:
 
   # Type Definitions
   '@types/node': ^20.19.37
-  '@types/debug': ^4.1.12
+  '@types/debug': ^4.1.13
   '@types/jsdom': ^28.0.1
 
 minimumReleaseAge: 4320
