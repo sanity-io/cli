@@ -7,7 +7,7 @@ import {z} from 'zod'
 import {debug} from '../debug.js'
 import {readJsonFileSync} from '../util/readJsonFileSync.js'
 import {writeJsonFileSync} from '../util/writeJsonFileSync.js'
-import {clearCliTokenCache} from './getCliToken.js'
+import {clearCliTokenCache} from './cliTokenCache.js'
 
 const cliUserConfigSchema = {
   authToken: z.string().optional(),
