@@ -12,11 +12,31 @@ import esbuildPlugin from 'rollup-plugin-esbuild'
 import {visualizer} from 'rollup-plugin-visualizer'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const cliCoreSrc = path.resolve(__dirname, '../@sanity/cli-core/src')
+const cliCoreDir = path.resolve(__dirname, '../@sanity/cli-core')
+
+// Build alias entries from @sanity/cli-core's package.json exports map.
+// Each export with a `source` field gets an alias pointing to the TS source
+// so Rollup can tree-shake the ESM barrel properly.
+const require = createRequire(import.meta.url)
+const cliCorePkg = require(path.join(cliCoreDir, 'package.json'))
+const cliCoreAliases = Object.entries(cliCorePkg.exports as Record<string, unknown>)
+  .filter((entry): entry is [string, {source: string}] => {
+    const [, value] = entry
+    return typeof value === 'object' && value !== null && 'source' in value
+  })
+  .map(([subpath, {source}]) => {
+    const specifier = subpath === '.' ? '@sanity/cli-core' : `@sanity/cli-core/${subpath.slice(2)}`
+    return {
+      // Use exact match for the bare specifier to avoid prefix-matching subpaths
+      find: subpath === '.' ? /^@sanity\/cli-core$/ : specifier,
+      replacement: path.resolve(cliCoreDir, source),
+    }
+  })
+  // Subpath aliases must come before the main barrel alias
+  .toReversed()
 
 // debug's index.js conditionally requires both browser.js and node.js at runtime.
 // The commonjs plugin bundles both. Alias to the node entry directly.
-const require = createRequire(import.meta.url)
 const debugNodeEntry = require.resolve('debug/src/node.js')
 
 export default defineConfig({
@@ -31,28 +51,13 @@ export default defineConfig({
     file: 'dist/index.js',
     format: 'esm',
     inlineDynamicImports: true,
+    sourcemap: true,
   },
   plugins: [
     alias({
       entries: [
-        // Resolve subpaths first (more specific matches before less specific)
-        {
-          find: '@sanity/cli-core/ux',
-          replacement: path.join(cliCoreSrc, '_exports/ux.ts'),
-        },
-        {
-          find: '@sanity/cli-core/package-manager',
-          replacement: path.join(cliCoreSrc, '_exports/package-manager.ts'),
-        },
-        {
-          find: '@sanity/cli-core/request',
-          replacement: path.join(cliCoreSrc, '_exports/request.ts'),
-        },
-        // Main barrel - use exact match to avoid catching subpath imports
-        {
-          find: /^@sanity\/cli-core$/,
-          replacement: path.join(cliCoreSrc, 'index.ts'),
-        },
+        // Resolve @sanity/cli-core imports to TS source for tree-shaking
+        ...cliCoreAliases,
         // debug's index.js bundles both browser and node via conditional require.
         // Alias to node entry directly since this is a Node CLI tool.
         {find: 'debug', replacement: debugNodeEntry},
