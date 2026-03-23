@@ -85,18 +85,25 @@ describe('#init: oclif command setup', () => {
   })
 
   test.each([
-    {flag: 'env', message: 'Env filename (`--env`) must start with `.env`', value: 'invalid.txt'},
     {
+      exit: 1,
+      flag: 'env',
+      message: 'Env filename (`--env`) must start with `.env`',
+      value: 'invalid.txt',
+    },
+    {
+      exit: 2,
       flag: 'visibility',
       message: 'Expected --visibility=opaque to be one of: public, private',
       value: 'opaque',
     },
     {
+      exit: 2,
       flag: 'package-manager',
       message: 'Expected --package-manager=pnm to be one of: npm, yarn, pnpm',
       value: 'pnm',
     },
-  ])('throws error when `$flag` value is invalid', async ({flag, message, value}) => {
+  ])('throws error when `$flag` value is invalid', async ({exit, flag, message, value}) => {
     const {error} = await testCommand(InitCommand, [`--${flag}=${value}`], {
       mocks: {
         isInteractive: true,
@@ -105,7 +112,7 @@ describe('#init: oclif command setup', () => {
     })
 
     expect(error?.message).toContain(message)
-    expect(error?.oclif?.exit).toBe(2)
+    expect(error?.oclif?.exit).toBe(exit)
   })
 
   test('throws error when type argument is passed', async () => {
