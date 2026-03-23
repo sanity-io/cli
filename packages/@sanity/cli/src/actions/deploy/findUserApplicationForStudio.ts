@@ -70,8 +70,9 @@ export async function findUserApplicationForStudio(options: FindUserApplicationF
       urlType === 'external'
         ? 'Use --url to specify the external studio URL'
         : 'Use --url to specify the studio hostname'
+    const count = userApplications.length > 1 ? 'Multiple studios' : 'A studio'
     output.error(
-      `Multiple studios found for this project. Cannot select in unattended mode. ${flagHint}.`,
+      `${count} found for this project. Cannot select in unattended mode. ${flagHint}.`,
       {exit: 1},
     )
     return null
