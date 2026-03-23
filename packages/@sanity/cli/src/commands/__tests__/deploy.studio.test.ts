@@ -1208,6 +1208,360 @@ describe('#deploy studio', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  describe('--url flag', () => {
+    test('should use --url flag as studio hostname', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'my-studio'
+      const studioAppId = 'studio-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'My Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(
+        201,
+        {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+        {location: `https://${studioHost}.sanity.studio`},
+      )
+
+      const {error, stdout} = await testCommand(DeployCommand, ['--url', studioHost], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+          },
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Success! Studio deployed')
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
+    test('should strip .sanity.studio suffix from --url flag', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'my-studio'
+      const studioAppId = 'studio-app-id'
+      const deploymentId = 'deployment-id'
+
+      // The stripped hostname should be used for lookup
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'My Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(
+        201,
+        {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+        {location: `https://${studioHost}.sanity.studio`},
+      )
+
+      const {error, stdout} = await testCommand(
+        DeployCommand,
+        ['--url', 'my-studio.sanity.studio'],
+        {
+          config: {root: cwd},
+          mocks: {
+            cliConfig: {
+              api: {projectId},
+            },
+          },
+        },
+      )
+
+      if (error) throw error
+      expect(stdout).toContain('Success! Studio deployed')
+    })
+
+    test('should strip .sanity.studio/ suffix with trailing slash from --url flag', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'my-studio'
+      const studioAppId = 'studio-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'My Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(
+        201,
+        {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+        {location: `https://${studioHost}.sanity.studio`},
+      )
+
+      const {error, stdout} = await testCommand(
+        DeployCommand,
+        ['--url', 'my-studio.sanity.studio/'],
+        {
+          config: {root: cwd},
+          mocks: {
+            cliConfig: {
+              api: {projectId},
+            },
+          },
+        },
+      )
+
+      if (error) throw error
+      expect(stdout).toContain('Success! Studio deployed')
+    })
+
+    test('should --url flag take precedence over studioHost config', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'url-studio'
+      const studioAppId = 'studio-app-id'
+      const deploymentId = 'deployment-id'
+
+      // The --url value should be used for lookup, not the studioHost config
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'URL Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(
+        201,
+        {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+        {location: `https://${studioHost}.sanity.studio`},
+      )
+
+      const {error, stdout} = await testCommand(DeployCommand, ['--url', studioHost], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+            studioHost: 'config-studio',
+          },
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Success! Studio deployed')
+    })
+  })
+
+  describe('unattended mode', () => {
+    test('should error when --yes used without --url and no studioHost (no studios)', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+
+      // No apps exist for this project
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications`,
+      })
+        .once()
+        .reply(200, [])
+
+      const {error} = await testCommand(DeployCommand, ['--yes'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+          },
+        },
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Cannot prompt for studio hostname in unattended mode')
+      expect(error?.message).toContain('Use --url to specify the studio hostname')
+    })
+
+    test('should error when --yes used with multiple studios and no appId', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+
+      // Return multiple internal apps
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications`,
+      })
+        .once()
+        .reply(200, [
+          {
+            appHost: 'studio-one',
+            createdAt: '2024-01-01T00:00:00Z',
+            id: 'app-1',
+            projectId,
+            title: 'Studio One',
+            type: 'studio',
+            updatedAt: '2024-01-01T00:00:00Z',
+            urlType: 'internal',
+          },
+          {
+            appHost: 'studio-two',
+            createdAt: '2024-01-01T00:00:00Z',
+            id: 'app-2',
+            projectId,
+            title: 'Studio Two',
+            type: 'studio',
+            updatedAt: '2024-01-01T00:00:00Z',
+            urlType: 'internal',
+          },
+        ])
+
+      const {error} = await testCommand(DeployCommand, ['--yes'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+          },
+        },
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Multiple studios found for this project')
+      expect(error?.message).toContain('Use --url to specify the studio hostname')
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
+    test('should succeed with --yes and --url when no studioHost configured', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const studioHost = 'my-studio'
+      const studioAppId = 'studio-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: studioHost,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: studioHost,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'My Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(
+        201,
+        {id: deploymentId, location: `https://${studioHost}.sanity.studio`},
+        {location: `https://${studioHost}.sanity.studio`},
+      )
+
+      const {error, stdout} = await testCommand(DeployCommand, ['--yes', '--url', studioHost], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+          },
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Success! Studio deployed')
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+  })
+
   describe('schema and manifest deployment', () => {
     test('should handle worker error with SchemaExtractionError', async () => {
       const cwd = await testFixture('basic-studio')

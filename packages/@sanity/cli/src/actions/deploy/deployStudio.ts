@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
+import {type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
@@ -21,6 +22,7 @@ import {deployDebug} from './deployDebug.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
 import {findUserApplicationForStudio} from './findUserApplicationForStudio.js'
 import {type DeployAppOptions} from './types.js'
+import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 export async function deployStudio(options: DeployAppOptions) {
   const {cliConfig, flags, output, projectRoot, sourceDir} = options
@@ -28,7 +30,6 @@ export async function deployStudio(options: DeployAppOptions) {
   const workDir = projectRoot.directory
   const configPath = projectRoot.path
 
-  const appHost = cliConfig.studioHost
   const appId = getAppId(cliConfig)
   const projectId = cliConfig.api?.projectId
   const installedSanityVersion = await getLocalPackageVersion('sanity', workDir)
@@ -36,6 +37,9 @@ export async function deployStudio(options: DeployAppOptions) {
 
   const isExternal = !!flags.external
   const urlType: 'external' | 'internal' = isExternal ? 'external' : 'internal'
+
+  // Resolve the app host from --url flag (takes precedence) or studioHost config
+  const appHost = resolveAppHost({flags, isExternal, output, studioHost: cliConfig.studioHost})
 
   if (!installedSanityVersion) {
     output.error(`Failed to find installed sanity version`, {exit: 1})
@@ -55,10 +59,22 @@ export async function deployStudio(options: DeployAppOptions) {
       appId,
       output,
       projectId,
+      unattended: !!flags.yes,
       urlType,
     })
 
     if (!userApplication) {
+      if (flags.yes) {
+        const flagHint = isExternal
+          ? 'Use --url to specify the external studio URL'
+          : 'Use --url to specify the studio hostname'
+        output.error(
+          `Cannot prompt for ${isExternal ? 'external studio URL' : 'studio hostname'} in unattended mode. ${flagHint}.`,
+          {exit: 1},
+        )
+        return
+      }
+
       if (isExternal) {
         output.log('Your project has not been registered with an external studio URL.')
         output.log('Please enter the full URL where your studio is hosted.')
@@ -180,4 +196,34 @@ export default defineCliConfig({
     deployDebug('Error deploying studio', error)
     output.error(`Error deploying studio: ${error}`, {exit: 1})
   }
+}
+
+function resolveAppHost({
+  flags,
+  isExternal,
+  output,
+  studioHost,
+}: {
+  flags: DeployAppOptions['flags']
+  isExternal: boolean
+  output: Output
+  studioHost: string | undefined
+}): string | undefined {
+  const url = flags.url
+  if (!url) {
+    return studioHost
+  }
+
+  if (isExternal) {
+    const normalized = normalizeUrl(url)
+    const validation = validateUrl(normalized)
+    if (validation !== true) {
+      output.error(validation, {exit: 1})
+      return undefined
+    }
+    return normalized
+  }
+
+  // For internal deploys, strip .sanity.studio suffix if present
+  return url.replace(/\.sanity\.studio\/?$/i, '')
 }

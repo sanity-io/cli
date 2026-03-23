@@ -20,11 +20,12 @@ interface FindUserApplicationForStudioOptions {
 
   appHost?: string
   appId?: string
+  unattended?: boolean
   urlType?: 'external' | 'internal'
 }
 
 export async function findUserApplicationForStudio(options: FindUserApplicationForStudioOptions) {
-  const {appHost, appId, output, projectId, urlType = 'internal'} = options
+  const {appHost, appId, output, projectId, unattended = false, urlType = 'internal'} = options
 
   const spin = spinner('Checking project info').start()
 
@@ -61,6 +62,19 @@ export async function findUserApplicationForStudio(options: FindUserApplicationF
   // If no applications are found, return null
   if (!userApplications?.length) {
     return null
+  }
+
+  // In unattended mode, we can't prompt the user to select a studio
+  if (unattended) {
+    const flagHint =
+      urlType === 'external'
+        ? 'Use --url to specify the external studio URL'
+        : 'Use --url to specify the studio hostname'
+    output.error(
+      `Multiple studios found for this project. Cannot select in unattended mode. ${flagHint}.`,
+      {exit: 1},
+    )
+    return
   }
 
   // If there are user applications, allow the user to select one of the existing host names,
