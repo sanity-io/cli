@@ -10,7 +10,6 @@ function defaultFlags(
     'auto-updates': true,
     bare: false,
     'dataset-default': false,
-    'from-create': false,
     mcp: true,
     'no-git': false,
     ...overrides,

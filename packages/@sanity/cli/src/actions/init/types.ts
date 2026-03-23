@@ -24,7 +24,6 @@ export interface InitOptions {
   autoUpdates: boolean
   bare: boolean
   datasetDefault: boolean
-  fromCreate: boolean
   /**
    * Controls how MCP setup behaves during init:
    * - 'prompt': Ask the user which editors to configure (default, interactive)
@@ -81,7 +80,6 @@ export interface InitCommandFlags {
   'auto-updates': boolean
   bare: boolean
   'dataset-default': boolean
-  'from-create': boolean
   mcp: boolean
   'no-git': boolean
   yes: boolean
@@ -157,7 +155,6 @@ export function flagsToInitOptions(
     dataset: flags.dataset,
     datasetDefault: flags['dataset-default'],
     env: flags.env,
-    fromCreate: flags['from-create'],
     git: flags['no-git'] ? false : flags.git,
     importDataset: flags['import-dataset'],
     mcpMode,
