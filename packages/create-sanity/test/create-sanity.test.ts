@@ -78,6 +78,25 @@ describe('create-sanity', () => {
       expect(result.stdout).not.toMatch(/sanity init/i)
     })
 
+    test('includes -- flag separator for npm in usage line', async () => {
+      const result = await runCreateSanity(['--help'], {
+        npm_config_user_agent: 'npm/10.2.0 node/v20.10.0 darwin arm64',
+      })
+
+      expect(result.code).toBe(0)
+      expect(result.stdout).toContain('npm create sanity@latest -- [options]')
+    })
+
+    test('does not include -- flag separator for pnpm', async () => {
+      const result = await runCreateSanity(['--help'], {
+        npm_config_user_agent: 'pnpm/10.7.1 npm/? node/v22.14.0 darwin arm64',
+      })
+
+      expect(result.code).toBe(0)
+      expect(result.stdout).toContain('pnpm create sanity@latest [options]')
+      expect(result.stdout).not.toContain('sanity@latest -- ')
+    })
+
     test('references `pnpm create sanity@latest` when pnpm is the package manager', async () => {
       const result = await runCreateSanity(['--help'], {
         npm_config_user_agent: 'pnpm/10.7.1 npm/? node/v22.14.0 darwin arm64',

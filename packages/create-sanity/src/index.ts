@@ -15,12 +15,14 @@ import {
 } from '../../@sanity/cli/src/actions/init/types.js'
 import {createNoopTelemetryStore} from './noopTelemetry.js'
 
-function getCreateCommand(): string {
+function getCreateCommand(options?: {withFlagSeparator?: boolean}): string {
   const pm = getRunningPackageManager() ?? 'npm'
-  if (pm === 'bun') return 'bun create sanity@latest'
-  if (pm === 'pnpm') return 'pnpm create sanity@latest'
-  if (pm === 'yarn') return 'yarn create sanity@latest'
-  return 'npm create sanity@latest'
+  // npm requires `--` to forward flags to the create script, other PMs don't
+  const sep = options?.withFlagSeparator && (pm === 'npm' || !pm) ? ' --' : ''
+  if (pm === 'bun') return `bun create sanity@latest${sep}`
+  if (pm === 'pnpm') return `pnpm create sanity@latest${sep}`
+  if (pm === 'yarn') return `yarn create sanity@latest${sep}`
+  return `npm create sanity@latest${sep}`
 }
 
 function buildParseArgsOptions() {
@@ -76,7 +78,7 @@ try {
   })
 
   if (values.help) {
-    const cmd = getCreateCommand()
+    const cmd = getCreateCommand({withFlagSeparator: true})
     console.log(`Usage: ${cmd} [options]`)
     console.log('')
     console.log('Initialize a new Sanity project')
@@ -102,7 +104,13 @@ try {
   }
 
   const isUnattended = Boolean(flags.yes) || !isInteractive()
-  const initOptions = flagsToInitOptions(flags as InitCommandFlags, isUnattended, args, mcpMode)
+  // parseArgs returns Record<string, unknown>; the shape is guaranteed by initFlagDefs
+  const initOptions = flagsToInitOptions(
+    flags as unknown as InitCommandFlags,
+    isUnattended,
+    args,
+    mcpMode,
+  )
 
   await initAction(initOptions, {
     output: {
