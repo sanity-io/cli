@@ -79,11 +79,6 @@ export const initFlagDefs = {
     helpValue: '<filename>',
     type: 'string',
   },
-  'from-create': {
-    description: 'Internal flag to indicate that the command is run from create-sanity',
-    hidden: true,
-    type: 'boolean',
-  },
   git: {
     default: undefined,
     description: 'Specify a commit message for initial commit, or disable git init',
