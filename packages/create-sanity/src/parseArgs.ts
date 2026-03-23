@@ -94,7 +94,7 @@ function normalizeFlags(
         console.error(
           `Invalid value "${value}" for --${name}. ` + `Allowed: ${def.options.join(', ')}`,
         )
-        process.exit(1)
+        process.exit(2)
       }
     }
   }
@@ -105,7 +105,7 @@ function normalizeFlags(
     for (const other of def.exclusive) {
       if (merged[other] !== undefined) {
         console.error(`--${name} cannot be used with --${other}`)
-        process.exit(1)
+        process.exit(2)
       }
     }
   }
