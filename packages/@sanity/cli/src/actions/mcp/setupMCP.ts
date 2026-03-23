@@ -1,5 +1,5 @@
 import {subdebug} from '@sanity/cli-core'
-import {logSymbols, warn} from '@sanity/cli-core/ux'
+import {logSymbols, stdout, warn} from '@sanity/cli-core/ux'
 
 import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
@@ -87,7 +87,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       .filter((e) => e.configured && e.authStatus === 'valid')
       .map((e) => e.name)
     if (explicit) {
-      console.log(`${logSymbols.success} All detected editors are already configured`)
+      stdout(`${logSymbols.success} All detected editors are already configured`)
     }
     return {
       alreadyConfiguredEditors,
@@ -105,7 +105,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
 
   if (!selected || selected.length === 0) {
     // User deselected all editors
-    console.log('MCP configuration skipped')
+    stdout('MCP configuration skipped')
     return {
       alreadyConfiguredEditors,
       configuredEditors: [],
@@ -164,7 +164,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     }
   }
 
-  console.log(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
+  stdout(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
 
   return {
     alreadyConfiguredEditors,
