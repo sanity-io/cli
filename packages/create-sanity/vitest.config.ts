@@ -6,7 +6,7 @@ export default defineConfig({
       exclude: ['**/dist/**', '**/test/**', '**/*.{test,spec}.{js,ts}'],
       provider: 'istanbul',
     },
-    disableConsoleIntercept: true, // helps oclif test helpers
+    disableConsoleIntercept: true, // tests spawn subprocesses that write to stdout/stderr
     environment: 'node',
     exclude: ['**/node_modules/**', '**/dist/**'],
     globals: false,

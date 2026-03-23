@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
@@ -108,6 +109,14 @@ export async function initStudio({
     // Spawn the project's own sanity binary for dataset import.
     // The full CLI is available as a project dependency after scaffoldAndInstall.
     const sanityBin = path.join(outputPath, 'node_modules', '.bin', 'sanity')
+    try {
+      await fs.access(sanityBin)
+    } catch {
+      throw new InitError(
+        `Could not find sanity binary at "${sanityBin}". ` +
+          'Dependencies may not have been installed correctly.',
+      )
+    }
     await execa(
       sanityBin,
       [
