@@ -225,5 +225,25 @@ function resolveAppHost({
   }
 
   // For internal deploys, strip protocol prefix and .sanity.studio suffix if present
-  return url.replace(/^https?:\/\//i, '').replace(/\.sanity\.studio\/?$/i, '')
+  const hostname = url.replace(/^https?:\/\//i, '').replace(/\.sanity\.studio\/?$/i, '')
+
+  // If the result still looks like a URL (contains dots), the user likely meant --external
+  if (hostname.includes('.')) {
+    output.error(
+      `"${hostname}" does not look like a sanity.studio hostname. Did you mean to use --external?`,
+      {exit: 1},
+    )
+    return undefined
+  }
+
+  // Validate hostname characters (alphanumeric and hyphens only)
+  if (!/^[a-z0-9][a-z0-9-]*$/i.test(hostname)) {
+    output.error(
+      `Invalid studio hostname "${hostname}". Hostnames can only contain letters, numbers, and hyphens.`,
+      {exit: 1},
+    )
+    return undefined
+  }
+
+  return hostname
 }

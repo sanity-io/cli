@@ -1481,6 +1481,50 @@ describe('#deploy studio', () => {
       if (error) throw error
       expect(stdout).toContain('Success! Studio deployed')
     })
+
+    test('should reject --url that looks like a non-sanity.studio URL', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+
+      const {error} = await testCommand(
+        DeployCommand,
+        ['--url', 'https://my-studio.other-domain.com'],
+        {
+          config: {root: cwd},
+          mocks: {
+            cliConfig: {
+              api: {projectId},
+            },
+          },
+        },
+      )
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('does not look like a sanity.studio hostname')
+      expect(error?.message).toContain('--external')
+    })
+
+    test('should reject --url with invalid hostname characters', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+
+      const {error} = await testCommand(DeployCommand, ['--url', 'my studio!'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+          },
+        },
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Invalid studio hostname')
+      expect(error?.message).toContain('letters, numbers, and hyphens')
+    })
   })
 
   describe('unattended mode', () => {
