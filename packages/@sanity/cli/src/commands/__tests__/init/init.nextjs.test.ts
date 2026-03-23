@@ -253,7 +253,7 @@ describe('#init:nextjs-app-initialization', () => {
       'Have feedback? Tell us in the community: https://www.sanity.io/community/join',
     )
 
-    expect(error?.oclif?.exit).toBe(0)
+    if (error) throw error
   })
 
   test('initializes nextjs app in unattended mode', async () => {
@@ -334,7 +334,7 @@ describe('#init:nextjs-app-initialization', () => {
       'Have feedback? Tell us in the community: https://www.sanity.io/community/join',
     )
 
-    expect(error?.oclif?.exit).toBe(0)
+    if (error) throw error
   })
 
   test('writes SANITY_INTERNAL_ENV to .env when in staging', async () => {
@@ -381,7 +381,7 @@ describe('#init:nextjs-app-initialization', () => {
       },
     )
 
-    expect(error?.oclif?.exit).toBe(0)
+    if (error) throw error
 
     // Called twice: once for project env vars (.env.local), once for staging env (.env)
     expect(mocks.createOrAppendEnvVars).toHaveBeenCalledTimes(2)
