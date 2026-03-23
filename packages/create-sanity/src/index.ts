@@ -62,7 +62,7 @@ try {
   ) {
     console.error(error.message)
     console.error(`Run "${getCreateCommand()} --help" for available options.`)
-    process.exit(1)
+    process.exit(2)
   }
 
   console.error(error)

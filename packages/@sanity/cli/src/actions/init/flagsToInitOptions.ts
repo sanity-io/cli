@@ -73,7 +73,7 @@ export function flagsToInitOptions(
   mcpMode: InitOptions['mcpMode'],
 ): InitOptions {
   if (flags.env && !flags.env.startsWith('.env')) {
-    throw new InitError('Env filename (`--env`) must start with `.env`')
+    throw new InitError('Env filename (`--env`) must start with `.env`', 3)
   }
 
   return {
