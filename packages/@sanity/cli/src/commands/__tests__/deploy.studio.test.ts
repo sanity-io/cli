@@ -1525,6 +1525,25 @@ describe('#deploy studio', () => {
       expect(error?.message).toContain('Invalid studio hostname')
       expect(error?.message).toContain('letters, numbers, and hyphens')
     })
+
+    test('should reject --url with trailing hyphen', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+
+      const {error} = await testCommand(DeployCommand, ['--url', 'my-studio-'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+          },
+        },
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Invalid studio hostname')
+    })
   })
 
   describe('unattended mode', () => {

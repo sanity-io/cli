@@ -237,7 +237,7 @@ function resolveAppHost({
   }
 
   // Validate hostname characters (alphanumeric and hyphens only)
-  if (!/^[a-z0-9][a-z0-9-]*$/i.test(hostname)) {
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i.test(hostname)) {
     output.error(
       `Invalid studio hostname "${hostname}". Hostnames can only contain letters, numbers, and hyphens.`,
       {exit: 1},
