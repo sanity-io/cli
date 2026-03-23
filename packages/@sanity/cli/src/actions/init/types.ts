@@ -77,13 +77,14 @@ export interface InitContext {
  * Shape of the parsed oclif flags from `InitCommand`.
  * Kept loose so we don't need to import oclif types at runtime.
  */
-interface InitCommandFlags {
+export interface InitCommandFlags {
   'auto-updates': boolean
   bare: boolean
   'dataset-default': boolean
   'from-create': boolean
   mcp: boolean
   'no-git': boolean
+  yes: boolean
 
   coupon?: string
   'create-project'?: string
@@ -112,7 +113,7 @@ interface InitCommandFlags {
 /**
  * Shape of the parsed oclif args from `InitCommand`.
  */
-interface InitCommandArgs {
+export interface InitCommandArgs {
   type?: string
 }
 

@@ -1,22 +1,44 @@
 /* eslint-disable no-console */
 import {parseArgs} from 'node:util'
 
+// eslint-disable-next-line import-x/no-extraneous-dependencies -- bundled, not a runtime dep
 import {isInteractive} from '@sanity/cli-core'
 
-import {initFlagDefs} from '../../@sanity/cli/src/actions/init/flags.js'
+import {type FlagDef, initFlagDefs} from '../../@sanity/cli/src/actions/init/flags.js'
 import {initAction} from '../../@sanity/cli/src/actions/init/initAction.js'
 import {InitError} from '../../@sanity/cli/src/actions/init/initError.js'
-import {flagsToInitOptions} from '../../@sanity/cli/src/actions/init/types.js'
+import {
+  flagsToInitOptions,
+  type InitCommandFlags,
+} from '../../@sanity/cli/src/actions/init/types.js'
 import {createNoopTelemetryStore} from './noopTelemetry.js'
+
+/**
+ * Detect which package manager invoked `create-sanity` from the user agent string
+ * that npm/yarn/pnpm set in the environment. Falls back to 'npm'.
+ */
+function detectPackageManager(): 'npm' | 'pnpm' | 'yarn' {
+  const ua = process.env.npm_config_user_agent || ''
+  if (ua.startsWith('pnpm/')) return 'pnpm'
+  if (ua.startsWith('yarn/')) return 'yarn'
+  return 'npm'
+}
+
+function getCreateCommand(): string {
+  const pm = detectPackageManager()
+  if (pm === 'pnpm') return 'pnpm create sanity@latest'
+  if (pm === 'yarn') return 'yarn create sanity@latest'
+  return 'npm create sanity@latest'
+}
 
 function buildParseArgsOptions() {
   const options: Record<
     string,
-    {type: 'boolean' | 'string'; default?: boolean | string; multiple?: boolean; short?: string}
+    {default?: boolean | string; multiple?: boolean; short?: string; type: 'boolean' | 'string'}
   > = {}
   const allowNoFlags = new Set<string>()
 
-  for (const [name, def] of Object.entries(initFlagDefs)) {
+  for (const [name, def] of Object.entries<FlagDef>(initFlagDefs)) {
     if (def.type !== 'boolean' && def.type !== 'string') {
       throw new Error(`Unknown flag type "${def.type}" for flag "${name}"`)
     }
@@ -32,9 +54,9 @@ function buildParseArgsOptions() {
   }
 
   // Built-in --help support
-  options.help = {type: 'boolean', short: 'h'}
+  options.help = {short: 'h', type: 'boolean'}
 
-  return {options, allowNoFlags}
+  return {allowNoFlags, options}
 }
 
 function mergeNegatedFlags(
@@ -53,21 +75,22 @@ function mergeNegatedFlags(
 }
 
 try {
-  const {options, allowNoFlags} = buildParseArgsOptions()
+  const {allowNoFlags, options} = buildParseArgsOptions()
   const {positionals, values} = parseArgs({
-    args: process.argv.slice(2),
     allowPositionals: true,
+    args: process.argv.slice(2),
     options,
     strict: true,
   })
 
   if (values.help) {
-    console.log('Usage: create-sanity [options]')
+    const cmd = getCreateCommand()
+    console.log(`Usage: ${cmd} [options]`)
     console.log('')
     console.log('Initialize a new Sanity project')
     console.log('')
     console.log('Options:')
-    for (const [name, def] of Object.entries(initFlagDefs)) {
+    for (const [name, def] of Object.entries<FlagDef>(initFlagDefs)) {
       if (def.hidden) continue
       const flag = def.short ? `-${def.short}, --${name}` : `    --${name}`
       const val = def.type === 'string' && def.helpValue ? ` ${def.helpValue}` : ''
@@ -88,7 +111,7 @@ try {
 
   const isUnattended = Boolean(flags.yes) || !isInteractive()
   const initOptions = flagsToInitOptions(
-    {...flags, 'from-create': true} as Parameters<typeof flagsToInitOptions>[0],
+    {...flags, 'from-create': true} as InitCommandFlags,
     isUnattended,
     args,
     mcpMode,
@@ -96,11 +119,14 @@ try {
 
   await initAction(initOptions, {
     output: {
-      log: console.log,
-      warn: console.warn,
-      error: (msg: string) => {
+      error: (msg: string): never => {
         console.error(msg)
         process.exit(1)
+      },
+      log: console.log,
+      warn: (msg: Error | string) => {
+        console.warn(msg instanceof Error ? msg.message : msg)
+        return msg
       },
     },
     telemetry: createNoopTelemetryStore(),
@@ -113,6 +139,18 @@ try {
     }
     process.exit(error.exitCode)
   }
+
+  // Clean message for unknown flags instead of a raw stack trace
+  if (
+    error instanceof TypeError &&
+    'code' in error &&
+    error.code === 'ERR_PARSE_ARGS_UNKNOWN_OPTION'
+  ) {
+    console.error(error.message)
+    console.error(`Run "${getCreateCommand()} --help" for available options.`)
+    process.exit(1)
+  }
+
   console.error(error)
   process.exit(1)
 }
