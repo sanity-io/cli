@@ -1,6 +1,5 @@
 import {type Command} from '@oclif/core'
 import {isInteractive, SanityCommand} from '@sanity/cli-core'
-import {CLIError} from '@sanity/cli-core/errors'
 
 import {initArgDefs, initFlagDefs} from '../actions/init/flags.js'
 import {
@@ -41,16 +40,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     },
   ] satisfies Array<Command.Example>
 
-  static override flags = toOclifFlags(initFlagDefs, {
-    env: {
-      parse: async (input: string) => {
-        if (!input.startsWith('.env')) {
-          throw new CLIError('Env filename (`--env`) must start with `.env`')
-        }
-        return input
-      },
-    },
-  })
+  // Env validation is handled in flagsToInitOptions (shared with create-sanity)
+  static override flags = toOclifFlags(initFlagDefs)
 
   public async run(): Promise<void> {
     // Compute MCP mode from flags and environment:

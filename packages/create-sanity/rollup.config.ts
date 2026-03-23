@@ -1,5 +1,5 @@
 /* eslint-disable import-x/no-extraneous-dependencies -- build tooling, not runtime */
-import {createRequire} from 'node:module'
+import {builtinModules, createRequire} from 'node:module'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 
@@ -40,7 +40,8 @@ const cliCoreAliases = Object.entries(cliCorePkg.exports as Record<string, unkno
 const debugNodeEntry = require.resolve('debug/src/node.js')
 
 export default defineConfig({
-  external: (id) => id.startsWith('node:'),
+  // Catch both `node:fs` and bare `fs` (CJS deps may use unprefixed builtins)
+  external: (id) => id.startsWith('node:') || builtinModules.includes(id),
   input: 'src/index.ts',
   onwarn(warning, warn) {
     if (warning.code === 'CIRCULAR_DEPENDENCY') return

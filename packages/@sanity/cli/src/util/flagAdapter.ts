@@ -15,14 +15,10 @@ type OclifChar = Parameters<typeof booleanFlag>[0] extends {char?: infer C} ? C 
 /**
  * Convert POJO flag definitions into oclif `FlagInput`.
  */
-export function toOclifFlags(
-  defs: Record<string, FlagDef>,
-  overrides?: Record<string, Record<string, unknown>>,
-): FlagInput {
+export function toOclifFlags(defs: Record<string, FlagDef>): FlagInput {
   const result: FlagInput = {}
 
   for (const [name, def] of Object.entries(defs)) {
-    const extra = overrides?.[name] ?? {}
     if (def.type === 'boolean') {
       result[name] = booleanFlag({
         ...(def.allowNo !== undefined && {allowNo: def.allowNo}),
@@ -34,7 +30,6 @@ export function toOclifFlags(
         ...(def.helpLabel !== undefined && {helpLabel: def.helpLabel}),
         ...(def.hidden !== undefined && {hidden: def.hidden}),
         ...(def.short !== undefined && {char: def.short as OclifChar}),
-        ...extra,
       })
     } else if (def.type === 'string') {
       result[name] = stringFlag({
@@ -51,7 +46,6 @@ export function toOclifFlags(
         ...(def.short !== undefined && {char: def.short as OclifChar}),
         // Disambiguate the oclif overload - we only support single-value string flags
         multiple: false,
-        ...extra,
       })
     } else {
       throw new Error(`Unknown flag type "${def.type}" for flag "${name}"`)
