@@ -29,7 +29,8 @@ export class CLIError extends Error {
     if (error instanceof Error && error.stack) {
       this.stack = error.stack
     }
-    if (options.exit !== undefined) this.oclif.exit = options.exit || undefined
+    if (options.exit !== undefined)
+      this.oclif.exit = options.exit === false ? undefined : options.exit
     this.code = options.code
     this.suggestions = options.suggestions
     this.ref = options.ref
