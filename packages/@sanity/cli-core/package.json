@@ -68,11 +68,13 @@
     "@sanity/client": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",
     "boxen": "^8.0.1",
+    "clean-stack": "^6.0.0",
     "configstore": "^7.0.0",
     "debug": "catalog:",
     "get-it": "^8.7.0",
     "get-tsconfig": "catalog:",
     "import-meta-resolve": "catalog:",
+    "indent-string": "^5.0.0",
     "jsdom": "catalog:",
     "json-lexer": "^1.2.0",
     "log-symbols": "^7.0.1",
@@ -82,6 +84,7 @@
     "tsx": "catalog:",
     "vite": "catalog:",
     "vite-node": "^5.3.0",
+    "wrap-ansi": "^10.0.0",
     "zod": "catalog:"
   },
   "devDependencies": {
