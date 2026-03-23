@@ -232,7 +232,7 @@ describe('#init: bootstrap-app-initialization', () => {
     )
 
     // Exits early without calling rest of templating code
-    expect(error?.oclif?.exit).toBe(0)
+    if (error) throw error
   })
 
   test('initializes app-quickstart template with app-specific output', async () => {
