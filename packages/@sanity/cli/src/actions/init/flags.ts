@@ -45,6 +45,7 @@ export const initFlagDefs = {
     type: 'boolean',
   },
   bare: {
+    default: false,
     description:
       'Skip the Studio initialization and only print the selected project ID and dataset name to stdout',
     type: 'boolean',
@@ -70,6 +71,7 @@ export const initFlagDefs = {
     type: 'string',
   },
   'dataset-default': {
+    default: false,
     description: 'Set up a project with a public dataset named "production"',
     type: 'boolean',
   },
@@ -125,6 +127,7 @@ export const initFlagDefs = {
   // `--git` and a `--no-git` flag in help breaks conventions, so we hide this one,
   // but use it to "combine" the two in the actual logic.
   'no-git': {
+    default: false,
     description: 'Disable git initialization',
     exclusive: ['git'],
     hidden: true,
