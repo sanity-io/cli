@@ -233,8 +233,6 @@ export const initFlagDefs = {
   },
 } satisfies Record<string, FlagDef>
 
-export type InitFlagName = keyof typeof initFlagDefs
-
 export const initArgDefs = {
   type: {
     hidden: true,
