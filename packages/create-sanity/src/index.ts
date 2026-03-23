@@ -102,12 +102,7 @@ try {
   }
 
   const isUnattended = Boolean(flags.yes) || !isInteractive()
-  const initOptions = flagsToInitOptions(
-    {...flags, 'from-create': true} as InitCommandFlags,
-    isUnattended,
-    args,
-    mcpMode,
-  )
+  const initOptions = flagsToInitOptions(flags as InitCommandFlags, isUnattended, args, mcpMode)
 
   await initAction(initOptions, {
     output: {
