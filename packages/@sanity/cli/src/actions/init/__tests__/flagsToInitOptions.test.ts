@@ -1,6 +1,6 @@
 import {describe, expect, test} from 'vitest'
 
-import {flagsToInitOptions} from '../types.js'
+import {flagsToInitOptions} from '../flagsToInitOptions.js'
 
 /** Returns a minimal set of flags with required boolean fields set to defaults. */
 function defaultFlags(
