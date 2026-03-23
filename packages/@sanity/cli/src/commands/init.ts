@@ -5,7 +5,11 @@ import {CLIError} from '@sanity/cli-core/ux'
 import {initArgDefs, initFlagDefs} from '../actions/init/flags.js'
 import {initAction} from '../actions/init/initAction.js'
 import {InitError} from '../actions/init/initError.js'
-import {flagsToInitOptions} from '../actions/init/types.js'
+import {
+  flagsToInitOptions,
+  type InitCommandArgs,
+  type InitCommandFlags,
+} from '../actions/init/types.js'
 import {toOclifArgs, toOclifFlags} from '../util/flagAdapter.js'
 
 export class InitCommand extends SanityCommand<typeof InitCommand> {
@@ -53,15 +57,20 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // - CI (no TTY) or --no-mcp: skip MCP entirely
     // - --yes (user terminal): auto-configure all detected editors
     // - Interactive: prompt user
+    // toOclifFlags returns FlagInput (untyped) so oclif can't infer the
+    // specific flag shape. The types are structurally guaranteed by initFlagDefs.
+    const flags = this.flags as unknown as InitCommandFlags
+    const args = this.args as unknown as InitCommandArgs
+
     let mcpMode: 'auto' | 'prompt' | 'skip' = 'prompt'
-    if (!this.flags.mcp || !isInteractive()) {
+    if (!flags.mcp || !isInteractive()) {
       mcpMode = 'skip'
-    } else if (this.flags.yes) {
+    } else if (flags.yes) {
       mcpMode = 'auto'
     }
 
     try {
-      await initAction(flagsToInitOptions(this.flags, this.isUnattended(), this.args, mcpMode), {
+      await initAction(flagsToInitOptions(flags, this.isUnattended(), args, mcpMode), {
         output: this.output,
         telemetry: this.telemetry,
         workDir: process.cwd(),
