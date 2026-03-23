@@ -74,7 +74,6 @@
     "get-it": "^8.7.0",
     "get-tsconfig": "catalog:",
     "import-meta-resolve": "catalog:",
-    "indent-string": "^5.0.0",
     "jsdom": "catalog:",
     "json-lexer": "^1.2.0",
     "log-symbols": "^7.0.1",
