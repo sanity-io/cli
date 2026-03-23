@@ -1,15 +1,15 @@
 import {type Command} from '@oclif/core'
 import {isInteractive, SanityCommand} from '@sanity/cli-core'
-import {CLIError} from '@sanity/cli-core/ux'
+import {CLIError} from '@sanity/cli-core/errors'
 
 import {initArgDefs, initFlagDefs} from '../actions/init/flags.js'
-import {initAction} from '../actions/init/initAction.js'
-import {InitError} from '../actions/init/initError.js'
 import {
   flagsToInitOptions,
   type InitCommandArgs,
   type InitCommandFlags,
 } from '../actions/init/flagsToInitOptions.js'
+import {initAction} from '../actions/init/initAction.js'
+import {InitError} from '../actions/init/initError.js'
 import {toOclifArgs, toOclifFlags} from '../util/flagAdapter.js'
 
 export class InitCommand extends SanityCommand<typeof InitCommand> {

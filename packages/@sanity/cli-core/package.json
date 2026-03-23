@@ -33,6 +33,10 @@
       "source": "./src/_exports/index.ts",
       "default": "./dist/_exports/index.js"
     },
+    "./errors": {
+      "source": "./src/_exports/errors.ts",
+      "default": "./dist/_exports/errors.js"
+    },
     "./ux": {
       "source": "./src/_exports/ux.ts",
       "default": "./dist/_exports/ux.js"

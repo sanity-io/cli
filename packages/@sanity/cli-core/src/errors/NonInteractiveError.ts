@@ -1,4 +1,4 @@
-import {CLIError} from '../ux/errors.js'
+import {CLIError} from './CLIError.js'
 
 /**
  * Error thrown when a prompt is attempted in a non-interactive environment
