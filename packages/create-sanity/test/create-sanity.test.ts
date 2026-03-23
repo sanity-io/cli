@@ -19,9 +19,18 @@ function runCreateSanity(
   args: string[] = [],
   env: Record<string, string> = {},
 ): Promise<RunResult> {
+  // On Windows, env vars are case-insensitive but process.env preserves the
+  // original casing. To reliably override a var, remove any existing key that
+  // matches case-insensitively before spreading our override.
+  const base = {...process.env}
+  for (const key of Object.keys(env)) {
+    const existing = Object.keys(base).find((k) => k.toLowerCase() === key.toLowerCase())
+    if (existing && existing !== key) delete base[existing]
+  }
+
   return new Promise((resolve) => {
     const proc = spawn('node', [createSanityScript, ...args], {
-      env: {...process.env, ...env},
+      env: {...base, ...env},
       stdio: 'pipe',
     })
 
