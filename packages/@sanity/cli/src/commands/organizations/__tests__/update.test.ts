@@ -21,17 +21,17 @@ vi.mock('@sanity/cli-core/ux', async () => {
     ...actual,
     spinner: vi
       .fn()
-      .mockReturnValue({fail: vi.fn(), succeed: vi.fn(), start: vi.fn().mockReturnThis()}),
+      .mockReturnValue({fail: vi.fn(), start: vi.fn().mockReturnThis(), succeed: vi.fn()}),
   }
 })
 
 const updatedOrg = {
+  createdAt: '2024-01-01T00:00:00Z',
+  defaultRoleName: null,
   id: 'org-aaa',
   name: 'New Name',
   slug: 'new-slug',
-  createdAt: '2024-01-01T00:00:00Z',
   updatedAt: '2026-03-18T00:00:00Z',
-  defaultRoleName: null,
 }
 
 describe('organizations update', () => {

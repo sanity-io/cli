@@ -30,16 +30,16 @@ vi.mock('@sanity/cli-core/ux', async () => {
 })
 
 const createdOrg = {
+  createdAt: '2026-01-01T00:00:00Z',
+  createdByUserId: 'user-123',
+  defaultRoleName: null,
+  features: [],
   id: 'org-new',
+  members: [],
   name: 'My Org',
   slug: null,
-  createdAt: '2026-01-01T00:00:00Z',
-  updatedAt: '2026-01-01T00:00:00Z',
-  defaultRoleName: null,
-  createdByUserId: 'user-123',
-  features: [],
-  members: [],
   telemetryConsentStatus: 'allowed',
+  updatedAt: '2026-01-01T00:00:00Z',
 }
 
 describe('organizations create', () => {

@@ -25,6 +25,7 @@ export default {
     mcp: {description: 'Configure Sanity MCP server for AI agents'},
     media: {description: 'Manage media assets and aspect definitions'},
     openapi: {description: 'Manage OpenAPI specifications'},
+    organizations: {description: 'Manage your organizations'},
     projects: {description: 'Manage Sanity projects'},
     schemas: {description: 'Manage and validate schemas'},
     skills: {description: 'Install Sanity agent skills for AI agents'},
