@@ -2,7 +2,6 @@
 import {styleText} from 'node:util'
 
 import cleanStack from 'clean-stack'
-import indentString from 'indent-string'
 import wrapAnsi from 'wrap-ansi'
 
 // ---------------------------------------------------------------------------
@@ -10,6 +9,12 @@ import wrapAnsi from 'wrap-ansi'
 // ---------------------------------------------------------------------------
 
 const settings: {debug?: boolean} = (globalThis as Record<string, unknown>).oclif ?? {}
+
+function indentString(str: string, count: number, options?: {indent?: string}): string {
+  const indent = options?.indent ?? ' '
+  if (count === 0) return str
+  return str.replace(/^(?!\s*$)/gm, indent.repeat(count))
+}
 
 function stderrWidth(): number {
   const env = Number.parseInt(process.env.OCLIF_COLUMNS!, 10)
@@ -41,9 +46,16 @@ export interface PrettyPrintableError {
 /**
  * A formatted CLI error that pretty-prints to stderr.
  *
- * The `oclif` property is shaped so oclif's error handler recognises it
- * when thrown inside an oclif command, preserving the correct exit code
- * and suppressing redundant stack traces.
+ * This is a lightweight reimplementation of `@oclif/core`'s `CLIError`.
+ * We can't import the original because `@oclif/core` is a CJS barrel that
+ * pulls in the entire oclif runtime (~10MB) when bundled - defeating
+ * tree-shaking in the standalone `create-sanity` bundle. By owning the
+ * error class here, code in `@sanity/cli-core` and the init action tree
+ * can throw formatted errors without depending on oclif at all.
+ *
+ * The `oclif` property is shaped so oclif's error handler still recognises
+ * these errors when thrown inside an oclif command, preserving the correct
+ * exit code and suppressing redundant stack traces.
  */
 export class CLIError extends Error {
   code?: string
