@@ -1,6 +1,5 @@
-import {ux} from '@oclif/core'
 import {subdebug} from '@sanity/cli-core'
-import {logSymbols} from '@sanity/cli-core/ux'
+import {logSymbols, warn} from '@sanity/cli-core/ux'
 
 import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
@@ -66,7 +65,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
 
   if (editors.length === 0) {
     if (explicit) {
-      ux.warn(NO_EDITORS_DETECTED_MESSAGE)
+      warn(NO_EDITORS_DETECTED_MESSAGE)
     }
     return {
       alreadyConfiguredEditors: [],
@@ -88,7 +87,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       .filter((e) => e.configured && e.authStatus === 'valid')
       .map((e) => e.name)
     if (explicit) {
-      ux.stdout(`${logSymbols.success} All detected editors are already configured`)
+      console.log(`${logSymbols.success} All detected editors are already configured`)
     }
     return {
       alreadyConfiguredEditors,
@@ -106,7 +105,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
 
   if (!selected || selected.length === 0) {
     // User deselected all editors
-    ux.stdout('MCP configuration skipped')
+    console.log('MCP configuration skipped')
     return {
       alreadyConfiguredEditors,
       configuredEditors: [],
@@ -132,8 +131,8 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
       mcpDebug('Error creating MCP token', error)
-      ux.warn(`Could not configure MCP: ${err.message}`)
-      ux.warn('You can set up MCP manually later using https://mcp.sanity.io')
+      warn(`Could not configure MCP: ${err.message}`)
+      warn('You can set up MCP manually later using https://mcp.sanity.io')
       return {
         alreadyConfiguredEditors,
         configuredEditors: [],
@@ -154,8 +153,8 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error))
     mcpDebug('Error writing MCP config', error)
-    ux.warn(`Could not configure MCP: ${err.message}`)
-    ux.warn('You can set up MCP manually later using https://mcp.sanity.io')
+    warn(`Could not configure MCP: ${err.message}`)
+    warn('You can set up MCP manually later using https://mcp.sanity.io')
     return {
       alreadyConfiguredEditors,
       configuredEditors,
@@ -165,7 +164,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     }
   }
 
-  ux.stdout(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
+  console.log(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
 
   return {
     alreadyConfiguredEditors,
