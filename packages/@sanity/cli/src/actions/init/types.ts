@@ -155,6 +155,8 @@ export function flagsToInitOptions(
     dataset: flags.dataset,
     datasetDefault: flags['dataset-default'],
     env: flags.env,
+    // --git is a string (commit message), --no-git is a separate boolean flag.
+    // --no-git wins over --git since they're mutually exclusive.
     git: flags['no-git'] ? false : flags.git,
     importDataset: flags['import-dataset'],
     mcpMode,
