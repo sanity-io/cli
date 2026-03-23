@@ -1,3 +1,4 @@
+/* eslint-disable import-x/no-extraneous-dependencies -- build tooling, not runtime */
 import {createRequire} from 'node:module'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
@@ -5,7 +6,7 @@ import {fileURLToPath} from 'node:url'
 import alias from '@rollup/plugin-alias'
 import commonjs from '@rollup/plugin-commonjs'
 import json from '@rollup/plugin-json'
-import nodeResolve from '@rollup/plugin-node-resolve'
+import {nodeResolve} from '@rollup/plugin-node-resolve'
 import {defineConfig} from 'rollup'
 import esbuildPlugin from 'rollup-plugin-esbuild'
 import {visualizer} from 'rollup-plugin-visualizer'
@@ -58,11 +59,11 @@ export default defineConfig({
       ],
     }),
     nodeResolve({
-      exportConditions: ['node', 'import', 'default'],
-      preferBuiltins: true,
       // Don't resolve the legacy "browser" field in package.json.
       // Without this, packages like `debug` resolve to their browser bundle.
       browser: false,
+      exportConditions: ['node', 'import', 'default'],
+      preferBuiltins: true,
     }),
     commonjs(),
     json(),
