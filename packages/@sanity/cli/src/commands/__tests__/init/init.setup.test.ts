@@ -86,7 +86,7 @@ describe('#init: oclif command setup', () => {
 
   test.each([
     {
-      exit: 1,
+      exit: 3,
       flag: 'env',
       message: 'Env filename (`--env`) must start with `.env`',
       value: 'invalid.txt',
