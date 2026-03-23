@@ -1,33 +1,17 @@
-import {existsSync} from 'node:fs'
-import {mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {
-  getCliToken,
-  type SanityOrgUser,
-  subdebug,
-  type TelemetryUserProperties,
-} from '@sanity/cli-core'
+import {type SanityOrgUser, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
 import {confirm, input, logSymbols, select, Separator, spinner} from '@sanity/cli-core/ux'
 import {type DatasetAclMode, isHttpError} from '@sanity/client'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
-import {execa, type Options} from 'execa'
 import deburr from 'lodash-es/deburr.js'
 
-import {
-  promptForAppendEnv,
-  promptForConfigFiles,
-  promptForEmbeddedStudio,
-  promptForNextTemplate,
-  promptForStudioPath,
-} from '../../prompts/init/nextjs.js'
-import {promptForTypeScript} from '../../prompts/init/promptForTypescript.js'
+import {promptForConfigFiles} from '../../prompts/init/nextjs.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {promptForDefaultConfig} from '../../prompts/promptForDefaultConfig.js'
 import {promptForOrganizationName} from '../../prompts/promptForOrganizationName.js'
-import {createCorsOrigin, listCorsOrigins} from '../../services/cors.js'
 import {createDataset as createDatasetService, listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
 import {
@@ -37,65 +21,34 @@ import {
   type ProjectOrganization,
 } from '../../services/organizations.js'
 import {getPlanId, getPlanIdFromCoupon} from '../../services/plans.js'
-import {createProject, listProjects, updateProjectInitializedAt} from '../../services/projects.js'
+import {createProject, listProjects} from '../../services/projects.js'
 import {getCliUser} from '../../services/user.js'
 import {CLIInitStepCompleted, type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {detectFrameworkRecord} from '../../util/detectFramework.js'
 import {absolutify, validateEmptyPath} from '../../util/fsUtils.js'
 import {getProjectDefaults} from '../../util/getProjectDefaults.js'
-import {getSanityEnv} from '../../util/getSanityEnv.js'
-import {getPeerDependencies} from '../../util/packageManager/getPeerDependencies.js'
-import {
-  installDeclaredPackages,
-  installNewPackages,
-} from '../../util/packageManager/installPackages.js'
-import {
-  getPartialEnvWithNpmPath,
-  type PackageManager,
-} from '../../util/packageManager/packageManagerChoice.js'
 import {validateSession} from '../auth/ensureAuthenticated.js'
 import {getProviderName} from '../auth/getProviderName.js'
 import {login} from '../auth/login/login.js'
 import {createDataset} from '../dataset/create.js'
-import {type EditorName} from '../mcp/editorConfigs.js'
 import {setupMCP} from '../mcp/setupMCP.js'
 import {findOrganizationByUserName} from '../organizations/findOrganizationByUserName.js'
 import {getOrganizationChoices} from '../organizations/getOrganizationChoices.js'
 import {getOrganizationsWithAttachGrantInfo} from '../organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../organizations/hasProjectAttachGrant.js'
 import {type OrganizationChoices} from '../organizations/types.js'
-import {bootstrapTemplate} from './bootstrapTemplate.js'
 import {checkNextJsReactCompatibility} from './checkNextJsReactCompatibility.js'
-import {countNestedFolders} from './countNestedFolders.js'
 import {determineAppTemplate} from './determineAppTemplate.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
-import {fetchPostInitPrompt} from './fetchPostInitPrompt.js'
-import {tryGitInit} from './git.js'
+import {initApp} from './initApp.js'
 import {InitError} from './initError.js'
+import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
+import {initNextJs} from './initNextJs.js'
+import {initStudio} from './initStudio.js'
 import {checkIsRemoteTemplate, getGitHubRepoInfo, type RepoInfo} from './remoteTemplate.js'
-import {resolvePackageManager} from './resolvePackageManager.js'
-import templates from './templates/index.js'
-import {
-  sanityCliTemplate,
-  sanityConfigTemplate,
-  sanityFolder,
-  sanityStudioTemplate,
-} from './templates/nextjs/index.js'
-import {type InitContext, type InitOptions, type VersionedFramework} from './types.js'
+import {type InitContext, type InitOptions} from './types.js'
 
 const debug = subdebug('init')
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function shouldPrompt(unattended: boolean, flagValue: unknown): boolean {
-  return !unattended && flagValue === undefined
-}
-
-function flagOrDefault(flagValue: boolean | undefined, defaultValue: boolean): boolean {
-  return typeof flagValue === 'boolean' ? flagValue : defaultValue
-}
 
 // ---------------------------------------------------------------------------
 // Main entry point
@@ -313,7 +266,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   }
 
   if (initNext) {
-    await doInitNextJs({
+    await initNextJs({
       datasetName,
       detectedFramework,
       envFilename,
@@ -346,182 +299,36 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     return
   }
 
-  // Prompt for template to use
-  const templateName = await promptForTemplate(options)
-  trace.log({
-    selectedOption: templateName,
-    step: 'selectProjectTemplate',
-  })
-  const template = templates[templateName]
-  if (!remoteTemplateInfo && !template) {
-    throw new InitError(`Template "${templateName}" not found`, 1)
-  }
-
-  let useTypeScript = options.typescript
-  if (!remoteTemplateInfo && template && template.typescriptOnly === true) {
-    useTypeScript = true
-  } else if (shouldPrompt(options.unattended, options.typescript)) {
-    useTypeScript = await promptForTypeScript()
-    trace.log({
-      selectedOption: useTypeScript ? 'yes' : 'no',
-      step: 'useTypeScript',
-    })
-  }
-
-  // If the template has a sample dataset, prompt the user whether or not we should import it
-  const importDatasetFlag = options.importDataset
-  const shouldImport =
-    template?.datasetUrl &&
-    (importDatasetFlag ??
-      (!options.unattended && (await promptForDatasetImport(template.importPrompt))))
-
-  trace.log({
-    selectedOption: shouldImport ? 'yes' : 'no',
-    step: 'importTemplateDataset',
-  })
-
-  try {
-    await updateProjectInitializedAt(projectId)
-  } catch (err) {
-    // Non-critical update
-    debug('Failed to update cliInitializedAt metadata', err)
-  }
-
-  await bootstrapTemplate({
-    autoUpdates: options.autoUpdates,
-    bearerToken: options.templateToken,
-    dataset: datasetName,
-    organizationId,
-    output,
-    outputPath,
-    overwriteFiles: options.overwriteFiles,
-    packageName: sluggedName,
-    projectId,
-    projectName: displayName || defaults.projectName,
-    remoteTemplateInfo,
-    templateName,
-    useTypeScript,
-  })
-
-  const pkgManager = await resolvePackageManager({
-    interactive: !options.unattended,
-    output,
-    packageManager: options.packageManager as PackageManager,
-    targetDir: outputPath,
-  })
-
-  trace.log({
-    selectedOption: pkgManager,
-    step: 'selectPackageManager',
-  })
-
-  // Now for the slow part... installing dependencies
-  await installDeclaredPackages(outputPath, pkgManager, {
-    output,
-    workDir,
-  })
-
-  const useGit = options.git === undefined || Boolean(options.git)
-  const commitMessage = options.git
-  await writeStagingEnvIfNeeded(output, outputPath)
-
-  // Try initializing a git repository
-  if (useGit) {
-    tryGitInit(outputPath, typeof commitMessage === 'string' ? commitMessage : undefined)
-  }
-
-  // Prompt for dataset import (if a dataset is defined)
-  if (shouldImport && template?.datasetUrl) {
-    const token = await getCliToken()
-    if (!token) {
-      throw new InitError('Authentication required to import dataset', 1)
-    }
-    // Dynamic import to keep initAction decoupled from oclif commands.
-    // TODO: consider replacing with `npx sanity dataset import` to fully decouple.
-    // eslint-disable-next-line no-restricted-syntax
-    const {ImportDatasetCommand} = await import('../../commands/datasets/import.js')
-    await ImportDatasetCommand.run(
-      [template.datasetUrl, '--project-id', projectId, '--dataset', datasetName, '--token', token],
-      {
-        root: outputPath,
-      },
-    )
-
-    output.log('')
-    output.log('If you want to delete the imported data, use')
-    output.log(`  ${styleText('cyan', `npx sanity dataset delete ${datasetName}`)}`)
-    output.log('and create a new clean dataset with')
-    output.log(`  ${styleText('cyan', `npx sanity dataset create <name>`)}\n`)
-  }
-
-  const devCommandMap: Record<PackageManager, string> = {
-    bun: 'bun dev',
-    manual: 'npm run dev',
-    npm: 'npm run dev',
-    pnpm: 'pnpm dev',
-    yarn: 'yarn dev',
-  }
-  const devCommand = devCommandMap[pkgManager]
-
-  const isCurrentDir = outputPath === workDir
-  const goToProjectDir = `\n(${styleText('cyan', `cd ${outputPath}`)} to navigate to your new project directory)`
-
-  if (isAppTemplate) {
-    //output for custom apps here
-    output.log(
-      `${logSymbols.success} ${styleText(['green', 'bold'], 'Success!')} Your custom app has been scaffolded.`,
-    )
-    if (!isCurrentDir) output.log(goToProjectDir)
-    output.log(
-      `\n${styleText('bold', 'Next')}, configure the project(s) and dataset(s) your app should work with.`,
-    )
-    output.log('\nGet started in `src/App.tsx`, or refer to our documentation for a walkthrough:')
-    output.log(
-      styleText(['blue', 'underline'], 'https://www.sanity.io/docs/app-sdk/sdk-configuration'),
-    )
-    if (mcpConfigured && mcpConfigured.length > 0) {
-      const message = await getPostInitMCPPrompt(mcpConfigured)
-      output.log(`\n${message}`)
-      output.log(`\nLearn more: ${styleText('cyan', 'https://mcp.sanity.io')}`)
-      output.log(
-        `\nHave feedback? Tell us in the community: ${styleText('cyan', 'https://www.sanity.io/community/join')}`,
-      )
-    }
-    output.log('\n')
-    output.log(`Other helpful commands:`)
-    output.log(`npx sanity docs browse     to open the documentation in a browser`)
-    output.log(`npx sanity dev             to start the development server for your app`)
-    output.log(`npx sanity deploy          to deploy your app`)
-  } else {
-    //output for Studios here
-    output.log(`\u2705 ${styleText(['green', 'bold'], 'Success!')} Your Studio has been created.`)
-    if (!isCurrentDir) output.log(goToProjectDir)
-    output.log(
-      `\nGet started by running ${styleText('cyan', devCommand)} to launch your Studio's development server`,
-    )
-    if (mcpConfigured && mcpConfigured.length > 0) {
-      const message = await getPostInitMCPPrompt(mcpConfigured)
-      output.log(`\n${message}`)
-      output.log(`\nLearn more: ${styleText('cyan', 'https://mcp.sanity.io')}`)
-      output.log(
-        `\nHave feedback? Tell us in the community: ${styleText('cyan', 'https://www.sanity.io/community/join')}`,
-      )
-    }
-    output.log('\n')
-    output.log(`Other helpful commands:`)
-    output.log(`npx sanity docs browse     to open the documentation in a browser`)
-    output.log(`npx sanity manage          to open the project settings in a browser`)
-    output.log(`npx sanity help            to explore the CLI manual`)
-  }
-
-  if (isFirstProject) {
-    trace.log({selectedOption: 'yes', step: 'sendCommunityInvite'})
-
-    const DISCORD_INVITE_LINK = 'https://www.sanity.io/community/join'
-
-    output.log(`\nJoin the Sanity community: ${styleText('cyan', DISCORD_INVITE_LINK)}`)
-    output.log('We look forward to seeing you there!\n')
-  }
+  // Studio/app template scaffolding
+  await (isAppTemplate
+    ? initApp({
+        defaults,
+        mcpConfigured,
+        options,
+        organizationId,
+        output,
+        outputPath,
+        remoteTemplateInfo,
+        sluggedName,
+        trace,
+        workDir,
+      })
+    : initStudio({
+        datasetName,
+        defaults,
+        displayName,
+        isFirstProject,
+        mcpConfigured,
+        options,
+        organizationId,
+        output,
+        outputPath,
+        projectId,
+        remoteTemplateInfo,
+        sluggedName,
+        trace,
+        workDir,
+      }))
 
   trace.complete()
 }
@@ -944,10 +751,6 @@ async function getPlan(
   }
 }
 
-async function getPostInitMCPPrompt(editorsNames: EditorName[]): Promise<string> {
-  return fetchPostInitPrompt(new Intl.ListFormat('en').format(editorsNames))
-}
-
 async function getProjectDetails({
   coupon,
   dataset,
@@ -1090,235 +893,6 @@ async function getProjectOutputPath({
   return absolutify(inputPath)
 }
 
-async function doInitNextJs({
-  datasetName,
-  detectedFramework,
-  envFilename,
-  mcpConfigured,
-  options,
-  output,
-  projectId,
-  trace,
-  workDir,
-}: {
-  datasetName: string
-  detectedFramework: VersionedFramework | null
-  envFilename: string
-  mcpConfigured: EditorName[]
-  options: InitOptions
-  output: InitContext['output']
-  projectId: string
-  trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  workDir: string
-}): Promise<void> {
-  let useTypeScript = flagOrDefault(options.typescript, true)
-  if (shouldPrompt(options.unattended, options.typescript)) {
-    useTypeScript = await promptForTypeScript()
-  }
-  trace.log({
-    selectedOption: useTypeScript ? 'yes' : 'no',
-    step: 'useTypeScript',
-  })
-
-  const fileExtension = useTypeScript ? 'ts' : 'js'
-  let embeddedStudio = flagOrDefault(options.nextjsEmbedStudio, true)
-  if (shouldPrompt(options.unattended, options.nextjsEmbedStudio)) {
-    embeddedStudio = await promptForEmbeddedStudio()
-  }
-  let hasSrcFolder = false
-
-  if (embeddedStudio) {
-    // find source path (app or src/app)
-    const appDir = 'app'
-    let srcPath = path.join(workDir, appDir)
-
-    if (!existsSync(srcPath)) {
-      srcPath = path.join(workDir, 'src', appDir)
-      hasSrcFolder = true
-      if (!existsSync(srcPath)) {
-        try {
-          await mkdir(srcPath, {recursive: true})
-        } catch {
-          debug('Error creating folder %s', srcPath)
-        }
-      }
-    }
-
-    const studioPath = options.unattended ? '/studio' : await promptForStudioPath()
-
-    const embeddedStudioRouteFilePath = path.join(
-      srcPath,
-      `${studioPath}/`,
-      `[[...tool]]/page.${fileExtension}x`,
-    )
-
-    // this selects the correct template string based on whether the user is using the app or pages directory and
-    // replaces the ":configPath:" placeholder in the template with the correct path to the sanity.config.ts file.
-    // we account for the user-defined embeddedStudioPath (default /studio) is accounted for by creating enough "../"
-    // relative paths to reach the root level of the project
-    await writeOrOverwrite(
-      embeddedStudioRouteFilePath,
-      sanityStudioTemplate.replace(
-        ':configPath:',
-        `${'../'.repeat(countNestedFolders(embeddedStudioRouteFilePath.slice(workDir.length)))}sanity.config`,
-      ),
-      workDir,
-      options,
-    )
-
-    const sanityConfigPath = path.join(workDir, `sanity.config.${fileExtension}`)
-    await writeOrOverwrite(
-      sanityConfigPath,
-      sanityConfigTemplate(hasSrcFolder)
-        .replace(':route:', embeddedStudioRouteFilePath.slice(workDir.length).replace('src/', ''))
-        .replace(':basePath:', studioPath),
-      workDir,
-      options,
-    )
-  }
-
-  const sanityCliPath = path.join(workDir, `sanity.cli.${fileExtension}`)
-  await writeOrOverwrite(sanityCliPath, sanityCliTemplate, workDir, options)
-
-  let templateToUse = options.template ?? 'clean'
-  if (shouldPrompt(options.unattended, options.template)) {
-    templateToUse = await promptForNextTemplate()
-  }
-
-  await writeSourceFiles({
-    fileExtension,
-    files: sanityFolder(useTypeScript, templateToUse as 'blog' | 'clean'),
-    folderPath: undefined,
-    options,
-    srcFolderPrefix: hasSrcFolder,
-    workDir,
-  })
-
-  let appendEnv = flagOrDefault(options.nextjsAppendEnv, true)
-  if (shouldPrompt(options.unattended, options.nextjsAppendEnv)) {
-    appendEnv = await promptForAppendEnv(envFilename)
-  }
-
-  if (appendEnv) {
-    await createOrAppendEnvVars({
-      envVars: {
-        DATASET: datasetName,
-        PROJECT_ID: projectId,
-      },
-      filename: envFilename,
-      framework: detectedFramework,
-      log: true,
-      output,
-      outputPath: workDir,
-    })
-  }
-
-  if (embeddedStudio) {
-    const nextjsLocalDevOrigin = 'http://localhost:3000'
-    const existingCorsOrigins = await listCorsOrigins(projectId)
-    const hasExistingCorsOrigin = existingCorsOrigins.some(
-      (item: {origin: string}) => item.origin === nextjsLocalDevOrigin,
-    )
-    if (!hasExistingCorsOrigin) {
-      try {
-        const createCorsRes = await createCorsOrigin({
-          allowCredentials: true,
-          origin: nextjsLocalDevOrigin,
-          projectId,
-        })
-
-        output.log(
-          createCorsRes.id
-            ? `Added ${nextjsLocalDevOrigin} to CORS origins`
-            : `Failed to add ${nextjsLocalDevOrigin} to CORS origins`,
-        )
-      } catch (error) {
-        debug(`Error creating new CORS Origin ${nextjsLocalDevOrigin}: ${error}`)
-        const message = error instanceof Error ? error.message : String(error)
-        throw new InitError(`Failed to add ${nextjsLocalDevOrigin} to CORS origins: ${message}`, 1)
-      }
-    }
-  }
-
-  const chosen = await resolvePackageManager({
-    interactive: !options.unattended,
-    output,
-    packageManager: options.packageManager as PackageManager,
-    targetDir: workDir,
-  })
-  trace.log({selectedOption: chosen, step: 'selectPackageManager'})
-  const packages = ['@sanity/vision@4', 'sanity@4', '@sanity/image-url@1', 'styled-components@6']
-  if (templateToUse === 'blog') {
-    packages.push('@sanity/icons')
-  }
-  await installNewPackages(
-    {
-      packageManager: chosen,
-      packages,
-    },
-    {
-      output,
-      workDir,
-    },
-  )
-
-  // will refactor this later
-  const execOptions: Options = {
-    cwd: workDir,
-    encoding: 'utf8',
-    env: getPartialEnvWithNpmPath(workDir),
-    stdio: 'inherit',
-  }
-
-  switch (chosen) {
-    case 'npm': {
-      await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@11'], execOptions)
-      break
-    }
-    case 'pnpm': {
-      await execa('pnpm', ['install', 'next-sanity@11'], execOptions)
-      break
-    }
-    case 'yarn': {
-      const peerDeps = await getPeerDependencies('next-sanity@11', workDir)
-      await installNewPackages(
-        {packageManager: 'yarn', packages: ['next-sanity@11', ...peerDeps]},
-        {output, workDir},
-      )
-      break
-    }
-    case 'bun': {
-      await execa('bun', ['add', 'next-sanity@11'], execOptions)
-      break
-    }
-    default: {
-      // manual - do nothing
-      break
-    }
-  }
-
-  output.log(
-    `\n${styleText('green', 'Success!')} Your Sanity configuration files has been added to this project`,
-  )
-  if (mcpConfigured && mcpConfigured.length > 0) {
-    const message = await getPostInitMCPPrompt(mcpConfigured)
-    output.log(`\n${message}`)
-    output.log(`\nLearn more: ${styleText('cyan', 'https://mcp.sanity.io')}`)
-    output.log(
-      `\nHave feedback? Tell us in the community: ${styleText('cyan', 'https://www.sanity.io/community/join')}`,
-    )
-  }
-
-  await writeStagingEnvIfNeeded(output, workDir)
-}
-
-async function promptForDatasetImport(message?: string): Promise<boolean> {
-  return confirm({
-    default: true,
-    message: message || 'This template includes a sample dataset, would you like to use it?',
-  })
-}
-
 async function promptForProjectCreation({
   coupon,
   isUsersFirstProject,
@@ -1363,37 +937,6 @@ async function promptForProjectCreation({
     ...newProjectResult,
     isFirstProject: isUsersFirstProject,
   }
-}
-
-async function promptForTemplate(options: InitOptions): Promise<string> {
-  const template = options.template
-
-  const defaultTemplate = options.unattended || template ? template || 'clean' : null
-  if (defaultTemplate) {
-    return defaultTemplate
-  }
-
-  return select({
-    choices: [
-      {
-        name: 'Clean project with no predefined schema types',
-        value: 'clean',
-      },
-      {
-        name: 'Blog (schema)',
-        value: 'blog',
-      },
-      {
-        name: 'E-commerce (Shopify)',
-        value: 'shopify',
-      },
-      {
-        name: 'Movie project (schema + sample data)',
-        value: 'moviedb',
-      },
-    ],
-    message: 'Select project template',
-  })
 }
 
 async function promptUserForNewOrganization(
@@ -1543,112 +1086,4 @@ async function verifyPlan(
 
     throw new InitError(`Plan id "${intendedPlan}" does not exist`, 1)
   }
-}
-
-async function writeOrOverwrite(
-  filePath: string,
-  content: string,
-  workDir: string,
-  options: InitOptions,
-): Promise<void> {
-  if (existsSync(filePath)) {
-    let overwrite = flagOrDefault(options.overwriteFiles, false)
-    if (shouldPrompt(options.unattended, options.overwriteFiles)) {
-      overwrite = await confirm({
-        default: false,
-        message: `File ${styleText(
-          'yellow',
-          filePath.replace(workDir, ''),
-        )} already exists. Do you want to overwrite it?`,
-      })
-    }
-
-    if (!overwrite) {
-      return
-    }
-  }
-
-  // make folder if not exists
-  const folderPath = path.dirname(filePath)
-
-  try {
-    await mkdir(folderPath, {recursive: true})
-  } catch {
-    debug('Error creating folder %s', folderPath)
-  }
-
-  await writeFile(filePath, content, {
-    encoding: 'utf8',
-  })
-}
-
-// write sanity folder files
-async function writeSourceFiles({
-  fileExtension,
-  files,
-  folderPath,
-  options,
-  srcFolderPrefix,
-  workDir,
-}: {
-  fileExtension: string
-  files: Record<string, Record<string, string> | string>
-  folderPath?: string
-  options: InitOptions
-  srcFolderPrefix?: boolean
-  workDir: string
-}): Promise<void> {
-  for (const [filePath, content] of Object.entries(files)) {
-    // check if file ends with full stop to indicate it's file and not directory (this only works with our template tree structure)
-    if (filePath.includes('.') && typeof content === 'string') {
-      await writeOrOverwrite(
-        path.join(
-          workDir,
-          srcFolderPrefix ? 'src' : '',
-          'sanity',
-          folderPath || '',
-          `${filePath}${fileExtension}`,
-        ),
-        content,
-        workDir,
-        options,
-      )
-    } else {
-      await mkdir(path.join(workDir, srcFolderPrefix ? 'src' : '', 'sanity', filePath), {
-        recursive: true,
-      })
-      if (typeof content === 'object') {
-        await writeSourceFiles({
-          fileExtension,
-          files: content,
-          folderPath: filePath,
-          options,
-          srcFolderPrefix,
-          workDir,
-        })
-      }
-    }
-  }
-}
-
-/**
- * When running in a non-production Sanity environment (e.g. staging), write the
- * `SANITY_INTERNAL_ENV` variable to a `.env` file in the output directory so that
- * the bootstrapped project continues to target the same environment.
- */
-async function writeStagingEnvIfNeeded(
-  output: InitContext['output'],
-  outputPath: string,
-): Promise<void> {
-  const sanityEnv = getSanityEnv()
-  if (sanityEnv === 'production') return
-
-  await createOrAppendEnvVars({
-    envVars: {INTERNAL_ENV: sanityEnv},
-    filename: '.env',
-    framework: null,
-    log: false,
-    output,
-    outputPath,
-  })
 }
