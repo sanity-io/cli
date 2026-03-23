@@ -12,7 +12,7 @@ import {InitError} from '../../@sanity/cli/src/actions/init/initError.js'
 import {
   flagsToInitOptions,
   type InitCommandFlags,
-} from '../../@sanity/cli/src/actions/init/types.js'
+} from '../../@sanity/cli/src/actions/init/flagsToInitOptions.js'
 import {createNoopTelemetryStore} from './noopTelemetry.js'
 
 function getCreateCommand(options?: {withFlagSeparator?: boolean}): string {
