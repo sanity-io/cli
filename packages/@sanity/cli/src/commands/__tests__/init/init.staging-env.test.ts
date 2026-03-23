@@ -192,7 +192,7 @@ describe('#init: staging env propagation', () => {
       },
     )
 
-    expect(error?.oclif?.exit).toBe(0)
+    if (error) throw error
 
     // Should be called twice: once for project env vars, once for staging env
     expect(mocks.createOrAppendEnvVars).toHaveBeenCalledTimes(2)

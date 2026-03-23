@@ -12,8 +12,8 @@ try {
   console.log(
     JSON.stringify({
       hasToken: typeof config.token === 'string' && config.token.length > 0,
-      token: config.token,
       success: true,
+      token: config.token,
     }),
   )
 } catch (error) {

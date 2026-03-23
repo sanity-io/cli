@@ -12,13 +12,14 @@ interface BootstrapTemplateOptions {
   organizationId: string | undefined
   output: Output
   outputPath: string
-  overwriteFiles: boolean
   packageName: string
   projectId: string
   projectName: string
   remoteTemplateInfo: RepoInfo | undefined
   templateName: string
-  useTypeScript: boolean
+
+  overwriteFiles?: boolean
+  useTypeScript?: boolean
 }
 
 export async function bootstrapTemplate({
@@ -61,7 +62,7 @@ export async function bootstrapTemplate({
     overwriteFiles,
     packageName,
     templateName,
-    useTypeScript,
+    useTypeScript: useTypeScript ?? false,
     variables: bootstrapVariables,
   })
 }
