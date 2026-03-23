@@ -1,4 +1,4 @@
-import {CLIError} from '@oclif/core/errors'
+import {CLIError} from '../ux/errors.js'
 
 /**
  * Error thrown when a prompt is attempted in a non-interactive environment

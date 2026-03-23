@@ -1,6 +1,5 @@
-import {CLIError} from '@oclif/core/errors'
-
 import {isRecord} from '../util/isRecord.js'
+import {CLIError} from '../ux/errors.js'
 
 /**
  * Error thrown when a project root directory cannot be found.
