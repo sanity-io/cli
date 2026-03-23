@@ -72,6 +72,10 @@ function normalizeFlags(
   // Resolve aliases to canonical names
   for (const [alias, canonical] of aliasMap) {
     if (merged[alias] !== undefined) {
+      if (merged[canonical] !== undefined) {
+        console.error(`--${alias} cannot be used with --${canonical}`)
+        process.exit(2)
+      }
       merged[canonical] = merged[alias]
       delete merged[alias]
     }
@@ -115,6 +119,10 @@ function normalizeFlags(
 
 function printHelp(): never {
   const cmd = getCreateCommand({withFlagSeparator: true})
+  const width = process.stdout.columns || 80
+  const labelWidth = 36
+  const descWidth = Math.max(width - labelWidth - 2, 20)
+
   console.log(`Usage: ${cmd} [options]`)
   console.log('')
   console.log('Initialize a new Sanity project')
@@ -122,10 +130,43 @@ function printHelp(): never {
   console.log('Options:')
   for (const [name, def] of Object.entries<FlagDef>(initFlagDefs)) {
     if (def.hidden) continue
-    const flag = def.short ? `-${def.short}, --${name}` : `    --${name}`
-    const val = def.type === 'string' && def.helpValue ? ` ${def.helpValue}` : ''
-    console.log(`  ${(flag + val).padEnd(36)} ${def.description || ''}`)
+
+    let label: string
+    if (def.helpLabel) {
+      label = def.helpLabel
+    } else {
+      const prefix = def.allowNo ? '--[no-]' : '--'
+      const flagName = def.short ? `-${def.short}, ${prefix}${name}` : `    ${prefix}${name}`
+      const val = def.type === 'string' && def.helpValue ? ` ${def.helpValue}` : ''
+      label = flagName + val
+    }
+
+    const desc = def.description || ''
+    const paddedLabel = `  ${label.padEnd(labelWidth)}`
+
+    if (desc.length <= descWidth) {
+      console.log(`${paddedLabel}${desc}`)
+    } else {
+      // Wrap long descriptions
+      const words = desc.split(' ')
+      let line = ''
+      let first = true
+      for (const word of words) {
+        if (line.length + word.length + 1 > descWidth && line) {
+          console.log(first ? `${paddedLabel}${line}` : `  ${''.padEnd(labelWidth)}${line}`)
+          line = word
+          first = false
+        } else {
+          line = line ? `${line} ${word}` : word
+        }
+      }
+      if (line) {
+        console.log(first ? `${paddedLabel}${line}` : `  ${''.padEnd(labelWidth)}${line}`)
+      }
+    }
   }
+  console.log('')
+  console.log(`  -h, --help${' '.padEnd(labelWidth - 12)}Show this help message`)
   process.exit(0)
 }
 
