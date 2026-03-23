@@ -64,17 +64,9 @@ export async function findUserApplicationForStudio(options: FindUserApplicationF
     return null
   }
 
-  // In unattended mode, we can't prompt the user to select a studio
+  // In unattended mode, we can't prompt the user to select a studio.
+  // Return null and let the caller handle the error messaging.
   if (unattended) {
-    const flagHint =
-      urlType === 'external'
-        ? 'Use --url to specify the external studio URL'
-        : 'Use --url to specify the studio hostname'
-    const count = userApplications.length > 1 ? 'Multiple studios' : 'A studio'
-    output.error(
-      `${count} found for this project. Cannot select in unattended mode. ${flagHint}.`,
-      {exit: 1},
-    )
     return null
   }
 

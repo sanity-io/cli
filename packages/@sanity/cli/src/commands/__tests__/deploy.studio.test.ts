@@ -1603,7 +1603,7 @@ describe('#deploy studio', () => {
       })
 
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Multiple studios found for this project')
+      expect(error?.message).toContain('Cannot prompt for studio hostname in unattended mode')
       expect(error?.message).toContain('Use --url to specify the studio hostname')
       expect(mockSelect).not.toHaveBeenCalled()
     })

@@ -769,7 +769,7 @@ describe('#deploy studio (external)', () => {
       })
 
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Multiple studios found for this project')
+      expect(error?.message).toContain('Cannot prompt for external studio URL in unattended mode')
       expect(error?.message).toContain('Use --url to specify the external studio URL')
       expect(mockSelect).not.toHaveBeenCalled()
     })
