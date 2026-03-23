@@ -19,31 +19,17 @@ const require = createRequire(import.meta.url)
 const debugNodeEntry = require.resolve('debug/src/node.js')
 
 export default defineConfig({
+  external: (id) => id.startsWith('node:'),
   input: 'src/index.ts',
-  treeshake: {
-    // The aliased @sanity/cli-core source has sideEffects: false in its package.json,
-    // but since we alias to raw source files, Rollup doesn't see the annotation.
-    // Mark the entire cli-core source tree as side-effect-free for proper tree-shaking.
-    moduleSideEffects: (id) => {
-      if (id.includes('/cli-core/src/')) return false
-      return true
-    },
+  onwarn(warning, warn) {
+    if (warning.code === 'CIRCULAR_DEPENDENCY') return
+    warn(warning)
   },
   output: {
     banner: '#!/usr/bin/env node',
     file: 'dist/index.js',
     format: 'esm',
     inlineDynamicImports: true,
-  },
-  external: (id) => {
-    // Node builtins
-    if (id.startsWith('node:')) return true
-    // @oclif/core's read-tsconfig.js dynamically requires typescript inside try-catch.
-    // It's never used at runtime in create-sanity (no TS config resolution needed).
-    // Mark as external so the ~10MB typescript compiler isn't bundled.
-    // At runtime, the require() gracefully fails in the catch block.
-    if (id === 'typescript' || id.endsWith('/node_modules/typescript')) return true
-    return false
   },
   plugins: [
     alias({
@@ -81,14 +67,13 @@ export default defineConfig({
     commonjs(),
     json(),
     esbuildPlugin({
-      target: 'node20',
       // Keep readable output so sourcemaps line up for source-map-explorer
       minify: false,
+      target: 'node20',
     }),
     // Shorten pnpm store paths in module IDs so the treemap is readable.
     // `.pnpm/pkg@1.0.0/node_modules/pkg/dist/foo.js` → `pkg/dist/foo.js`
     {
-      name: 'clean-module-ids',
       generateBundle(_options, bundle) {
         // The visualizer reads from the chunk's `modules` object keys
         for (const chunk of Object.values(bundle)) {
@@ -101,6 +86,7 @@ export default defineConfig({
           chunk.modules = cleaned
         }
       },
+      name: 'clean-module-ids',
     },
     visualizer({
       filename: 'dist/stats.html',
@@ -108,8 +94,13 @@ export default defineConfig({
       template: 'treemap',
     }),
   ],
-  onwarn(warning, warn) {
-    if (warning.code === 'CIRCULAR_DEPENDENCY') return
-    warn(warning)
+  treeshake: {
+    // The aliased @sanity/cli-core source has sideEffects: false in its package.json,
+    // but since we alias to raw source files, Rollup doesn't see the annotation.
+    // Mark the entire cli-core source tree as side-effect-free for proper tree-shaking.
+    moduleSideEffects: (id) => {
+      if (id.includes('/cli-core/src/')) return false
+      return true
+    },
   },
 })
