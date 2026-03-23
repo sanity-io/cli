@@ -1,99 +1,70 @@
 import {styleText} from 'node:util'
 
-import {getCliToken, type Output, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
+import {getCliToken, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 
-import {ImportDatasetCommand} from '../../commands/datasets/import.js'
 import {updateProjectInitializedAt} from '../../services/projects.js'
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {type PackageManager} from '../../util/packageManager/packageManagerChoice.js'
 import {type EditorName} from '../mcp/editorConfigs.js'
+import {InitError} from './initError.js'
 import {getPostInitMCPPrompt} from './initHelpers.js'
 import {type RepoInfo} from './remoteTemplate.js'
 import {scaffoldAndInstall, selectTemplate} from './scaffoldTemplate.js'
+import {type InitContext, type InitOptions} from './types.js'
 
-const debug = subdebug('init')
+const debug = subdebug('init:studio')
 
-async function promptForDatasetImport(message?: string): Promise<boolean> {
-  return confirm({
-    default: true,
-    message: message || 'This template includes a sample dataset, would you like to use it?',
-  })
-}
-
-export async function initStudio({
-  autoUpdates,
-  datasetName,
-  defaults,
-  displayName,
-  error,
-  git,
-  noGit,
-  importDataset,
-  isFirstProject,
-  mcpConfigured,
-  organizationId,
-  output,
-  outputPath,
-  overwriteFiles,
-  packageManager,
-  projectId,
-  remoteTemplateInfo,
-  sluggedName,
-  template,
-  templateToken,
-  trace,
-  typescript,
-  unattended,
-  workDir,
-}: {
-  autoUpdates: boolean
+interface InitStudioParams {
   datasetName: string
   defaults: {projectName: string}
   displayName: string
-  error: Output['error']
-  git?: boolean | string
-  noGit?: boolean
-  importDataset?: boolean
   isFirstProject: boolean
   mcpConfigured: EditorName[]
+  options: InitOptions
   organizationId: string | undefined
-  output: Output
+  output: InitContext['output']
   outputPath: string
-  overwriteFiles?: boolean
-  packageManager?: string
   projectId: string
   remoteTemplateInfo: RepoInfo | undefined
   sluggedName: string
-  template?: string
-  templateToken?: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  typescript?: boolean
-  unattended: boolean
   workDir: string
-}): Promise<void> {
-  const {
-    template: resolvedTemplate,
-    templateName,
-    useTypeScript,
-  } = await selectTemplate({
-    remoteTemplateInfo,
-    template,
-    trace,
-    typescript,
-    unattended,
-  })
+}
 
-  if (!remoteTemplateInfo && !resolvedTemplate) {
-    error(`Template "${templateName}" not found`, {exit: 1})
+export async function initStudio({
+  datasetName,
+  defaults,
+  displayName,
+  isFirstProject,
+  mcpConfigured,
+  options,
+  organizationId,
+  output,
+  outputPath,
+  projectId,
+  remoteTemplateInfo,
+  sluggedName,
+  trace,
+  workDir,
+}: InitStudioParams): Promise<void> {
+  // Prompt for template and TypeScript
+  const {template, templateName, useTypeScript} = await selectTemplate(
+    options,
+    remoteTemplateInfo,
+    trace,
+  )
+  if (!remoteTemplateInfo && !template) {
+    throw new InitError(`Template "${templateName}" not found`, 1)
   }
 
   // If the template has a sample dataset, prompt the user whether or not we should import it
+  const importDatasetFlag = options.importDataset
   const shouldImport =
-    resolvedTemplate?.datasetUrl &&
-    (importDataset ??
-      (!unattended && (await promptForDatasetImport(resolvedTemplate.importPrompt))))
+    template?.datasetUrl &&
+    (importDatasetFlag ??
+      (!options.unattended && (await promptForDatasetImport(template.importPrompt))))
 
   trace.log({
     selectedOption: shouldImport ? 'yes' : 'no',
@@ -107,46 +78,36 @@ export async function initStudio({
     debug('Failed to update cliInitializedAt metadata', err)
   }
 
+  // Bootstrap, install deps, git init
   const {pkgManager} = await scaffoldAndInstall({
-    autoUpdates,
     datasetName,
     defaults,
     displayName,
-    git,
-    noGit,
+    options,
     organizationId,
     output,
     outputPath,
-    overwriteFiles,
-    packageManager,
     projectId,
     remoteTemplateInfo,
     sluggedName,
     templateName,
-    templateToken,
     trace,
-    unattended,
     useTypeScript,
     workDir,
   })
 
   // Prompt for dataset import (if a dataset is defined)
-  if (shouldImport && resolvedTemplate?.datasetUrl) {
+  if (shouldImport && template?.datasetUrl) {
     const token = await getCliToken()
     if (!token) {
-      return error('Authentication required to import dataset', {exit: 1})
+      throw new InitError('Authentication required to import dataset', 1)
     }
+    // Dynamic import to keep initAction decoupled from oclif commands.
+    // TODO: consider replacing with `npx sanity dataset import` to fully decouple.
+    // eslint-disable-next-line no-restricted-syntax
+    const {ImportDatasetCommand} = await import('../../commands/datasets/import.js')
     await ImportDatasetCommand.run(
-      [
-        resolvedTemplate.datasetUrl,
-        '--project-id',
-        projectId,
-        '--dataset',
-        datasetName,
-        '--token',
-        token,
-        '--missing',
-      ],
+      [template.datasetUrl, '--project-id', projectId, '--dataset', datasetName, '--token', token],
       {
         root: outputPath,
       },
@@ -159,6 +120,7 @@ export async function initStudio({
     output.log(`  ${styleText('cyan', `npx sanity dataset create <name>`)}\n`)
   }
 
+  // Studio-specific success messages
   const devCommandMap: Record<PackageManager, string> = {
     bun: 'bun dev',
     manual: 'npm run dev',
@@ -168,10 +130,9 @@ export async function initStudio({
   }
   const devCommand = devCommandMap[pkgManager]
 
-  const isCurrentDir = outputPath === process.cwd()
+  const isCurrentDir = outputPath === workDir
   const goToProjectDir = `\n(${styleText('cyan', `cd ${outputPath}`)} to navigate to your new project directory)`
 
-  //output for Studios here
   output.log(`\u2705 ${styleText(['green', 'bold'], 'Success!')} Your Studio has been created.`)
   if (!isCurrentDir) output.log(goToProjectDir)
   output.log(
@@ -199,4 +160,15 @@ export async function initStudio({
     output.log(`\nJoin the Sanity community: ${styleText('cyan', DISCORD_INVITE_LINK)}`)
     output.log('We look forward to seeing you there!\n')
   }
+}
+
+// ---------------------------------------------------------------------------
+// Studio-specific prompt helpers
+// ---------------------------------------------------------------------------
+
+async function promptForDatasetImport(message?: string): Promise<boolean> {
+  return confirm({
+    default: true,
+    message: message || 'This template includes a sample dataset, would you like to use it?',
+  })
 }
