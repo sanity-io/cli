@@ -96,6 +96,15 @@ describe('create-sanity', () => {
       expect(result.stdout).toMatch(/yarn create sanity@latest/i)
     })
 
+    test('references `bun create sanity@latest` when bun is the package manager', async () => {
+      const result = await runCreateSanity(['--help'], {
+        npm_config_user_agent: 'bun/1.2.0',
+      })
+
+      expect(result.code).toBe(0)
+      expect(result.stdout).toMatch(/bun create sanity@latest/i)
+    })
+
     test('works with -h shorthand', async () => {
       const result = await runCreateSanity(['-h'])
 

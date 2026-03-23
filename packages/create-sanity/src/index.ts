@@ -3,6 +3,8 @@ import {parseArgs} from 'node:util'
 
 // eslint-disable-next-line import-x/no-extraneous-dependencies -- bundled, not a runtime dep
 import {isInteractive} from '@sanity/cli-core'
+// eslint-disable-next-line import-x/no-extraneous-dependencies -- bundled, not a runtime dep
+import {getRunningPackageManager} from '@sanity/cli-core/package-manager'
 
 import {type FlagDef, initFlagDefs} from '../../@sanity/cli/src/actions/init/flags.js'
 import {initAction} from '../../@sanity/cli/src/actions/init/initAction.js'
@@ -13,19 +15,9 @@ import {
 } from '../../@sanity/cli/src/actions/init/types.js'
 import {createNoopTelemetryStore} from './noopTelemetry.js'
 
-/**
- * Detect which package manager invoked `create-sanity` from the user agent string
- * that npm/yarn/pnpm set in the environment. Falls back to 'npm'.
- */
-function detectPackageManager(): 'npm' | 'pnpm' | 'yarn' {
-  const ua = process.env.npm_config_user_agent || ''
-  if (ua.startsWith('pnpm/')) return 'pnpm'
-  if (ua.startsWith('yarn/')) return 'yarn'
-  return 'npm'
-}
-
 function getCreateCommand(): string {
-  const pm = detectPackageManager()
+  const pm = getRunningPackageManager() ?? 'npm'
+  if (pm === 'bun') return 'bun create sanity@latest'
   if (pm === 'pnpm') return 'pnpm create sanity@latest'
   if (pm === 'yarn') return 'yarn create sanity@latest'
   return 'npm create sanity@latest'
