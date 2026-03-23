@@ -224,6 +224,6 @@ function resolveAppHost({
     return normalized
   }
 
-  // For internal deploys, strip .sanity.studio suffix if present
-  return url.replace(/\.sanity\.studio\/?$/i, '')
+  // For internal deploys, strip protocol prefix and .sanity.studio suffix if present
+  return url.replace(/^https?:\/\//i, '').replace(/\.sanity\.studio\/?$/i, '')
 }

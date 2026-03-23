@@ -74,7 +74,7 @@ export async function findUserApplicationForStudio(options: FindUserApplicationF
       `Multiple studios found for this project. Cannot select in unattended mode. ${flagHint}.`,
       {exit: 1},
     )
-    return
+    return null
   }
 
   // If there are user applications, allow the user to select one of the existing host names,
