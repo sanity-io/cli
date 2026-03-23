@@ -1,5 +1,3 @@
-import fs from 'node:fs/promises'
-import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {getCliToken, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
@@ -108,17 +106,9 @@ export async function initStudio({
 
     // Spawn the project's own sanity binary for dataset import.
     // The full CLI is available as a project dependency after scaffoldAndInstall.
-    const sanityBin = path.join(outputPath, 'node_modules', '.bin', 'sanity')
-    try {
-      await fs.access(sanityBin)
-    } catch {
-      throw new InitError(
-        `Could not find sanity binary at "${sanityBin}". ` +
-          'Dependencies may not have been installed correctly.',
-      )
-    }
+    // Using preferLocal lets execa resolve the binary cross-platform (.cmd on Windows).
     await execa(
-      sanityBin,
+      'sanity',
       [
         'dataset',
         'import',
@@ -132,6 +122,7 @@ export async function initStudio({
       ],
       {
         cwd: outputPath,
+        preferLocal: true,
         stdio: 'inherit',
       },
     )
