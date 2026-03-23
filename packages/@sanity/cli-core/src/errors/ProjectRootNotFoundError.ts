@@ -1,5 +1,5 @@
 import {isRecord} from '../util/isRecord.js'
-import {CLIError} from '../ux/errors.js'
+import {CLIError} from './CLIError.js'
 
 /**
  * Error thrown when a project root directory cannot be found.
