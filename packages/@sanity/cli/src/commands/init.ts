@@ -9,7 +9,7 @@ import {
   flagsToInitOptions,
   type InitCommandArgs,
   type InitCommandFlags,
-} from '../actions/init/types.js'
+} from '../actions/init/flagsToInitOptions.js'
 import {toOclifArgs, toOclifFlags} from '../util/flagAdapter.js'
 
 export class InitCommand extends SanityCommand<typeof InitCommand> {
