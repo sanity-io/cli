@@ -3,8 +3,9 @@ import {type KnipConfig} from 'knip'
 const project = ['src/**/*.{js,jsx,ts,tsx}', '!**/docs/**']
 
 const baseConfig = {
-  // For now only care about cli package
   ignore: [
+    'tmp/**',
+
     'packages/@sanity/cli-test/fixtures/**',
 
     // See `helpClass` in `oclif.config.js`
@@ -72,6 +73,8 @@ const baseConfig = {
       project,
     },
     'packages/create-sanity': {
+      // @sanity/cli is imported via relative source paths (../../@sanity/cli/src/...)
+      // for bundling, but the workspace link is still needed for resolution
       ignoreDependencies: ['@sanity/cli'],
     },
   },
