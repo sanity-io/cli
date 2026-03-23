@@ -30,6 +30,7 @@
   "type": "module",
   "scripts": {
     "build": "rollup -c rollup.config.ts --configPlugin esbuild",
+    "pretest": "pnpm build",
     "publint": "publint",
     "test": "vitest"
   },
