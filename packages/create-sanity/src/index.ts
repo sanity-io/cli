@@ -25,12 +25,18 @@ function getCreateCommand(options?: {withFlagSeparator?: boolean}): string {
   return `npm create sanity@latest${sep}`
 }
 
+type ParseArgsOption = {
+  default?: boolean | string
+  multiple?: boolean
+  short?: string
+  type: 'boolean' | 'string'
+}
+
 function buildParseArgsOptions() {
-  const options: Record<
-    string,
-    {default?: boolean | string; multiple?: boolean; short?: string; type: 'boolean' | 'string'}
-  > = {}
+  const options: Record<string, ParseArgsOption> = {}
   const allowNoFlags = new Set<string>()
+  // Maps alias name → canonical flag name (e.g. 'project-id' → 'project')
+  const aliasMap = new Map<string, string>()
 
   for (const [name, def] of Object.entries<FlagDef>(initFlagDefs)) {
     if (def.type !== 'boolean' && def.type !== 'string') {
@@ -45,19 +51,42 @@ function buildParseArgsOptions() {
       allowNoFlags.add(name)
       options[`no-${name}`] = {type: 'boolean'}
     }
+
+    // Register aliases as separate parseArgs options that map back to the canonical name
+    if (def.aliases) {
+      for (const alias of def.aliases) {
+        options[alias] = {type: def.type}
+        aliasMap.set(alias, name)
+      }
+    }
   }
 
   // Built-in --help support
   options.help = {short: 'h', type: 'boolean'}
 
-  return {allowNoFlags, options}
+  return {aliasMap, allowNoFlags, options}
 }
 
-function mergeNegatedFlags(
+/**
+ * Merge --no-<flag> companions back into the base flag, resolve aliases
+ * to canonical names, and validate option constraints.
+ */
+function normalizeFlags(
   values: Record<string, unknown>,
   allowNoFlags: Set<string>,
+  aliasMap: Map<string, string>,
 ): Record<string, unknown> {
   const merged = {...values}
+
+  // Resolve aliases to canonical names
+  for (const [alias, canonical] of aliasMap) {
+    if (merged[alias] !== undefined) {
+      merged[canonical] = merged[alias]
+      delete merged[alias]
+    }
+  }
+
+  // Merge --no-<flag> companions
   for (const name of allowNoFlags) {
     const noKey = `no-${name}`
     if (merged[noKey] === true) {
@@ -65,11 +94,36 @@ function mergeNegatedFlags(
     }
     delete merged[noKey]
   }
+
+  // Validate string flags with `options` constraints
+  for (const [name, def] of Object.entries<FlagDef>(initFlagDefs)) {
+    if (def.options && merged[name] !== undefined) {
+      const value = String(merged[name])
+      if (!def.options.includes(value)) {
+        console.error(
+          `Invalid value "${value}" for --${name}. ` + `Allowed: ${def.options.join(', ')}`,
+        )
+        process.exit(1)
+      }
+    }
+  }
+
+  // Validate exclusive constraints
+  for (const [name, def] of Object.entries<FlagDef>(initFlagDefs)) {
+    if (!def.exclusive || merged[name] === undefined) continue
+    for (const other of def.exclusive) {
+      if (merged[other] !== undefined) {
+        console.error(`--${name} cannot be used with --${other}`)
+        process.exit(1)
+      }
+    }
+  }
+
   return merged
 }
 
 try {
-  const {allowNoFlags, options} = buildParseArgsOptions()
+  const {aliasMap, allowNoFlags, options} = buildParseArgsOptions()
   const {positionals, values} = parseArgs({
     allowPositionals: true,
     args: process.argv.slice(2),
@@ -93,7 +147,7 @@ try {
     process.exit(0)
   }
 
-  const flags = mergeNegatedFlags(values, allowNoFlags) as Record<string, unknown>
+  const flags = normalizeFlags(values, allowNoFlags, aliasMap)
   const args = {type: positionals[0]}
 
   let mcpMode: 'auto' | 'prompt' | 'skip' = 'prompt'
