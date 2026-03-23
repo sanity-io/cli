@@ -1,6 +1,8 @@
+/* eslint-disable no-console -- this is the error output layer */
+import {styleText} from 'node:util'
+
 import cleanStack from 'clean-stack'
 import indentString from 'indent-string'
-import {styleText} from 'node:util'
 import wrapAnsi from 'wrap-ansi'
 
 // ---------------------------------------------------------------------------
@@ -44,13 +46,13 @@ export interface PrettyPrintableError {
  * and suppressing redundant stack traces.
  */
 export class CLIError extends Error {
-  oclif: {exit?: number} = {exit: 2}
   code?: string
-  suggestions?: string[]
+  oclif: {exit?: number} = {exit: 2}
   ref?: string
   skipOclifErrorHandling?: boolean
+  suggestions?: string[]
 
-  constructor(error: Error | string, options: {exit?: false | number} & PrettyPrintableError = {}) {
+  constructor(error: Error | string, options: PrettyPrintableError & {exit?: false | number} = {}) {
     super(error instanceof Error ? error.message : error)
     if (error instanceof Error && error.stack) {
       this.stack = error.stack
@@ -124,17 +126,17 @@ function prettyPrint(error: CLIError): string | undefined {
 /**
  * Print a formatted error to stderr without throwing, when `exit: false`.
  */
-export function error(input: Error | string, options: {exit: false} & PrettyPrintableError): void
+export function error(input: Error | string, options: PrettyPrintableError & {exit: false}): void
 /**
  * Throw a formatted {@link CLIError}.
  */
 export function error(
   input: Error | string,
-  options?: {exit?: number} & PrettyPrintableError,
+  options?: PrettyPrintableError & {exit?: number},
 ): never
 export function error(
   input: Error | string,
-  options: {exit?: false | number} & PrettyPrintableError = {},
+  options: PrettyPrintableError & {exit?: false | number} = {},
 ): void {
   const err = new CLIError(input, options)
 

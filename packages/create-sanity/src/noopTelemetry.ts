@@ -6,20 +6,20 @@ import {type CLITelemetryStore} from '@sanity/cli-core'
  */
 export function createNoopTelemetryStore(): CLITelemetryStore {
   const store: CLITelemetryStore = {
-    updateUserProperties() {},
     log() {},
     trace() {
       return {
-        start() {},
-        log() {},
+        await: <T>(promise: Promise<T>) => promise,
         complete() {},
         error() {},
+        log() {},
         newContext() {
           return store
         },
-        await: (promise) => promise,
+        start() {},
       }
     },
+    updateUserProperties() {},
   }
   return store
 }
