@@ -47,11 +47,18 @@ export default defineConfig({
     warn(warning)
   },
   output: {
-    banner: '#!/usr/bin/env node',
+    banner: '#!/usr/bin/env node\nprocess.setSourceMapsEnabled?.(true);',
     file: 'dist/index.js',
     format: 'esm',
     inlineDynamicImports: true,
     sourcemap: true,
+    // Clean up sourcemap paths for readability.
+    sourcemapPathTransform: (relPath) =>
+      relPath
+        // `.pnpm/pkg@1.0.0/node_modules/pkg/dist/foo.js` → `~/pkg/dist/foo.js`
+        .replace(/.*\.pnpm\/[^/]+\/node_modules\//, '~/')
+        // `../../@sanity/cli-core/src/foo.ts` → `~/@sanity/cli-core/src/foo.ts`
+        .replace(/^\.\.\/\.\.\//, '~/'),
   },
   plugins: [
     alias({
