@@ -139,6 +139,16 @@ describe('create-sanity', () => {
     })
   })
 
+  describe('flag aliases', () => {
+    test('--project-id is accepted as an alias for --project', async () => {
+      const result = await runCreateSanity(['--project-id', 'abc123', '--yes', '--bare'])
+
+      // Should get past flag parsing (will fail at auth, but that's fine)
+      expect(result.code).not.toBe(0)
+      expect(result.stderr).not.toMatch(/unknown option/i)
+    })
+  })
+
   describe('error handling', () => {
     test('invalid flag returns non-zero exit code with a clean message', async () => {
       const result = await runCreateSanity(['--invalid-flag-that-does-not-exist'])
@@ -148,6 +158,29 @@ describe('create-sanity', () => {
       expect(result.stderr).toContain('--help')
       // Should not contain a stack trace
       expect(result.stderr).not.toMatch(/^\s+at /m)
+    })
+
+    test('invalid --package-manager value is rejected', async () => {
+      const result = await runCreateSanity(['--package-manager', 'bun'])
+
+      expect(result.code).not.toBe(0)
+      expect(result.stderr).toContain('Invalid value "bun" for --package-manager')
+      expect(result.stderr).toContain('npm, yarn, pnpm')
+    })
+
+    test('invalid --visibility value is rejected', async () => {
+      const result = await runCreateSanity(['--visibility', 'secret'])
+
+      expect(result.code).not.toBe(0)
+      expect(result.stderr).toContain('Invalid value "secret" for --visibility')
+      expect(result.stderr).toContain('public, private')
+    })
+
+    test('exclusive flags cannot be used together', async () => {
+      const result = await runCreateSanity(['--template', 'clean', '--bare'])
+
+      expect(result.code).not.toBe(0)
+      expect(result.stderr).toContain('cannot be used with')
     })
   })
 })
