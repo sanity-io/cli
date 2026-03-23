@@ -23,7 +23,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
     confirm: mockConfirm,
     spinner: vi
       .fn()
-      .mockReturnValue({fail: vi.fn(), succeed: vi.fn(), start: vi.fn().mockReturnThis()}),
+      .mockReturnValue({fail: vi.fn(), start: vi.fn().mockReturnThis(), succeed: vi.fn()}),
   }
 })
 

@@ -1,8 +1,8 @@
 import {Args} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 
-import {hasStatusCode} from '../../util/apiError.js'
 import {getOrganization} from '../../services/organizations.js'
+import {hasStatusCode} from '../../util/apiError.js'
 
 const getOrgDebug = subdebug('organizations:get')
 

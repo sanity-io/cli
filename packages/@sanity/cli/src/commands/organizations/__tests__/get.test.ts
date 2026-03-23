@@ -16,12 +16,12 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 })
 
 const organization = {
+  createdAt: '2024-01-15T10:00:00Z',
+  defaultRoleName: 'viewer',
   id: 'org-aaa',
   name: 'Acme Corp',
   slug: 'acme',
-  createdAt: '2024-01-15T10:00:00Z',
   updatedAt: '2024-06-01T12:00:00Z',
-  defaultRoleName: 'viewer',
 }
 
 describe('organizations get', () => {
