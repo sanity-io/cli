@@ -2,6 +2,7 @@ import {type CLITelemetryStore, type Output} from '@sanity/cli-core'
 import {Framework} from '@vercel/frameworks'
 
 import {type GenerateConfigOptions} from './createStudioConfig.js'
+import {InitError} from './initError.js'
 
 export type VersionedFramework = Framework & {
   detectedVersion?: string
@@ -143,6 +144,10 @@ export function flagsToInitOptions(
   args: InitCommandArgs | undefined,
   mcpMode: InitOptions['mcpMode'],
 ): InitOptions {
+  if (flags.env && !flags.env.startsWith('.env')) {
+    throw new InitError('Env filename (`--env`) must start with `.env`')
+  }
+
   return {
     argType: args?.type,
     autoUpdates: flags['auto-updates'],
