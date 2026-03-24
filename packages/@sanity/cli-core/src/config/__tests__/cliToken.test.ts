@@ -1,7 +1,6 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {getCliUserConfig} from '../../services/cliUserConfig'
-import * as cliTokenModule from '../../services/getCliToken'
 
 vi.mock('../../services/cliUserConfig', () => ({
   getCliUserConfig: vi.fn(),
@@ -9,27 +8,14 @@ vi.mock('../../services/cliUserConfig', () => ({
 
 describe('getCliToken', () => {
   const originalEnv = process.env
-  let cachedToken: string | undefined
+  let getCliToken: () => Promise<string | undefined>
 
-  beforeEach(() => {
+  beforeEach(async () => {
     process.env = {...originalEnv}
     vi.clearAllMocks()
     vi.resetModules()
-    cachedToken = undefined
-    vi.spyOn(cliTokenModule, 'getCliToken').mockImplementation(async () => {
-      if (cachedToken !== undefined) {
-        return cachedToken
-      }
-
-      const token = process.env.SANITY_AUTH_TOKEN
-      if (token) {
-        cachedToken = token.trim()
-        return cachedToken
-      }
-
-      cachedToken = await getCliUserConfig('authToken')
-      return cachedToken
-    })
+    const module = await import('../../services/getCliToken.js')
+    getCliToken = module.getCliToken
   })
 
   afterEach(() => {
@@ -39,7 +25,7 @@ describe('getCliToken', () => {
 
   it('should return token from environment variable', async () => {
     process.env.SANITY_AUTH_TOKEN = 'test-token'
-    const token = await cliTokenModule.getCliToken()
+    const token = await getCliToken()
     expect(token).toBe('test-token')
     expect(getCliUserConfig).not.toHaveBeenCalled()
   })
@@ -48,7 +34,7 @@ describe('getCliToken', () => {
     delete process.env.SANITY_AUTH_TOKEN
     vi.mocked(getCliUserConfig).mockResolvedValueOnce('config-token')
 
-    const token = await cliTokenModule.getCliToken()
+    const token = await getCliToken()
     expect(token).toBe('config-token')
     expect(getCliUserConfig).toHaveBeenCalledWith('authToken')
   })
@@ -57,7 +43,7 @@ describe('getCliToken', () => {
     delete process.env.SANITY_AUTH_TOKEN
     vi.mocked(getCliUserConfig).mockResolvedValueOnce(undefined)
 
-    const token = await cliTokenModule.getCliToken()
+    const token = await getCliToken()
     expect(token).toBeUndefined()
     expect(getCliUserConfig).toHaveBeenCalledWith('authToken')
   })
@@ -65,9 +51,9 @@ describe('getCliToken', () => {
   it('should cache the token from environment variable', async () => {
     process.env.SANITY_AUTH_TOKEN = 'cached-env-token'
 
-    const firstCall = await cliTokenModule.getCliToken()
+    const firstCall = await getCliToken()
     process.env.SANITY_AUTH_TOKEN = 'new-token'
-    const secondCall = await cliTokenModule.getCliToken()
+    const secondCall = await getCliToken()
 
     expect(firstCall).toBe('cached-env-token')
     expect(secondCall).toBe('cached-env-token')
@@ -78,8 +64,8 @@ describe('getCliToken', () => {
     delete process.env.SANITY_AUTH_TOKEN
     vi.mocked(getCliUserConfig).mockResolvedValueOnce('cached-config-token')
 
-    const firstCall = await cliTokenModule.getCliToken()
-    const secondCall = await cliTokenModule.getCliToken()
+    const firstCall = await getCliToken()
+    const secondCall = await getCliToken()
 
     expect(firstCall).toBe('cached-config-token')
     expect(secondCall).toBe('cached-config-token')
