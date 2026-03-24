@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import path from 'node:path'
 
 import {startDevServer} from '../../server/devServer.js'
@@ -12,13 +13,18 @@ export async function startWorkbenchDevServer(
   const {cliConfig, flags, output, workDir} = options
 
   const config = getDevServerConfig({cliConfig, flags, output, workDir})
+  const workbenchWorkDir = path.join(workDir, 'workbench')
+
+  if (!fs.existsSync(workbenchWorkDir)) {
+    return {}
+  }
 
   try {
     output.log('Starting workbench dev server')
 
     const {close, server} = await startDevServer({
       ...config,
-      cwd: path.join(workDir, 'workbench'),
+      cwd: workbenchWorkDir,
     })
 
     output.log(`Workbench dev server started on port ${server.config.server.port}`)
