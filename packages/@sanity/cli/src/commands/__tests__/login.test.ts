@@ -14,6 +14,7 @@ const mockInput = vi.hoisted(() => vi.fn())
 const mockSelect = vi.hoisted(() => vi.fn())
 const mockedGetCliToken = vi.hoisted(() => vi.fn())
 const mockedSetCliUserConfig = vi.hoisted(() => vi.fn())
+const mockedIsInteractive = vi.hoisted(() => vi.fn().mockReturnValue(true))
 
 // Mock user interaction prompts
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -49,6 +50,7 @@ vi.mock('@sanity/cli-core', async () => {
       request: testClient.request,
       withConfig: vi.fn().mockReturnValue({request: testClient.request}),
     }),
+    isInteractive: mockedIsInteractive,
     setCliUserConfig: mockedSetCliUserConfig,
   }
 })
@@ -137,6 +139,7 @@ describe('#login', {timeout: 10_000}, () => {
 
       expect(error).toBeDefined()
       expect(error?.message).toContain('Cannot find login provider with name "invalid-provider"')
+      expect(error?.message).toContain('Available providers: google, github')
       expect(error?.oclif?.exit).toBe(1)
     })
 
@@ -855,6 +858,288 @@ describe('#login', {timeout: 10_000}, () => {
       expect(error).toBeUndefined()
       expect(stderr).toContain('Failed to invalidate previous session')
       expect(mockedSetCliUserConfig).toHaveBeenCalledWith('authToken', 'new-auth-token')
+    })
+  })
+
+  describe('Non-Interactive Mode', () => {
+    test('throws error listing providers when multiple OAuth providers in non-interactive mode', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+      mockedIsInteractive.mockReturnValue(false)
+
+      mockApi({
+        apiVersion: AUTH_API_VERSION,
+        method: 'get',
+        uri: '/auth/providers',
+      }).reply(200, {
+        providers: [
+          {name: 'google', title: 'Google', url: 'https://api.sanity.io/auth/google'},
+          {name: 'github', title: 'GitHub', url: 'https://api.sanity.io/auth/github'},
+        ],
+      })
+
+      const {error} = await testCommand(LoginCommand, [])
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Multiple login providers available: google, github')
+      expect(error?.message).toContain('`--provider <name>`')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('non-interactive error excludes synthetic sso from provider list', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+      mockedIsInteractive.mockReturnValue(false)
+
+      mockApi({
+        apiVersion: AUTH_API_VERSION,
+        method: 'get',
+        uri: '/auth/providers',
+      }).reply(200, {
+        providers: [
+          {name: 'google', title: 'Google', url: 'https://api.sanity.io/auth/google'},
+          {name: 'github', title: 'GitHub', url: 'https://api.sanity.io/auth/github'},
+        ],
+      })
+
+      const {error} = await testCommand(LoginCommand, ['--experimental'])
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('google, github')
+      expect(error?.message).not.toContain('sso')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('throws error listing SSO providers when multiple SSO providers in non-interactive mode', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+      mockedIsInteractive.mockReturnValue(false)
+
+      mockApi({
+        apiVersion: AUTH_API_VERSION,
+        method: 'get',
+        uri: '/auth/organizations/by-slug/my-org/providers',
+      }).reply(200, [
+        {
+          callbackUrl: 'https://api.sanity.io/auth/saml/callback',
+          disabled: false,
+          id: 'sso-1',
+          loginUrl: 'https://api.sanity.io/auth/saml/login/sso-1',
+          name: 'Okta SSO',
+          organizationId: 'org-123',
+          type: 'saml' as const,
+        },
+        {
+          callbackUrl: 'https://api.sanity.io/auth/saml/callback',
+          disabled: false,
+          id: 'sso-2',
+          loginUrl: 'https://api.sanity.io/auth/saml/login/sso-2',
+          name: 'Azure AD',
+          organizationId: 'org-123',
+          type: 'saml' as const,
+        },
+      ])
+
+      const {error} = await testCommand(LoginCommand, ['--sso', 'my-org'])
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Multiple SSO providers available')
+      expect(error?.message).toContain('Okta SSO')
+      expect(error?.message).toContain('Azure AD')
+      expect(error?.message).toContain('--sso-provider')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('succeeds non-interactively with a single OAuth provider', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+      mockedIsInteractive.mockReturnValue(false)
+      mockSingleProviderLogin()
+
+      const commandPromise = testCommand(LoginCommand, [])
+      await simulateOAuthCallback(4321, 'test-session-id')
+      const {error, stdout} = await commandPromise
+
+      if (error) throw error
+      expect(stdout).toContain('Login successful')
+    })
+  })
+
+  describe('--sso-provider Flag', () => {
+    test('selects correct SSO provider by name', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+
+      mockApi({
+        apiVersion: AUTH_API_VERSION,
+        method: 'get',
+        uri: '/auth/organizations/by-slug/my-org/providers',
+      }).reply(200, [
+        {
+          callbackUrl: 'https://api.sanity.io/auth/saml/callback',
+          disabled: false,
+          id: 'sso-1',
+          loginUrl: 'https://api.sanity.io/auth/saml/login/sso-1',
+          name: 'Okta SSO',
+          organizationId: 'org-123',
+          type: 'saml' as const,
+        },
+        {
+          callbackUrl: 'https://api.sanity.io/auth/saml/callback',
+          disabled: false,
+          id: 'sso-2',
+          loginUrl: 'https://api.sanity.io/auth/saml/login/sso-2',
+          name: 'Azure AD',
+          organizationId: 'org-123',
+          type: 'saml' as const,
+        },
+      ])
+
+      mockApi({
+        apiVersion: AUTH_API_VERSION,
+        method: 'get',
+        query: {sid: 'test-session-id'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
+
+      const commandPromise = testCommand(LoginCommand, [
+        '--sso',
+        'my-org',
+        '--sso-provider',
+        'Okta SSO',
+      ])
+      await simulateOAuthCallback(4321, 'test-session-id')
+      const {error, stdout} = await commandPromise
+
+      if (error) throw error
+      expect(stdout).toContain('Login successful')
+      expect(mockSelect).not.toHaveBeenCalled()
+      expect(mockedOpen).toHaveBeenCalledWith(expect.stringContaining('saml/login/sso-1'))
+    })
+
+    test('matches SSO provider by name case-insensitively', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+
+      mockApi({
+        apiVersion: AUTH_API_VERSION,
+        method: 'get',
+        uri: '/auth/organizations/by-slug/my-org/providers',
+      }).reply(200, [
+        {
+          callbackUrl: 'https://api.sanity.io/auth/saml/callback',
+          disabled: false,
+          id: 'sso-1',
+          loginUrl: 'https://api.sanity.io/auth/saml/login/sso-1',
+          name: 'Okta SSO',
+          organizationId: 'org-123',
+          type: 'saml' as const,
+        },
+        {
+          callbackUrl: 'https://api.sanity.io/auth/saml/callback',
+          disabled: false,
+          id: 'sso-2',
+          loginUrl: 'https://api.sanity.io/auth/saml/login/sso-2',
+          name: 'Azure AD',
+          organizationId: 'org-123',
+          type: 'saml' as const,
+        },
+      ])
+
+      mockApi({
+        apiVersion: AUTH_API_VERSION,
+        method: 'get',
+        query: {sid: 'test-session-id'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'Test Session', token: 'new-auth-token'})
+
+      const commandPromise = testCommand(LoginCommand, [
+        '--sso',
+        'my-org',
+        '--sso-provider',
+        'okta sso',
+      ])
+      await simulateOAuthCallback(4321, 'test-session-id')
+      const {error, stdout} = await commandPromise
+
+      if (error) throw error
+      expect(stdout).toContain('Login successful')
+      expect(mockedOpen).toHaveBeenCalledWith(expect.stringContaining('saml/login/sso-1'))
+    })
+
+    test('throws error listing available when SSO provider not found', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+
+      mockApi({
+        apiVersion: AUTH_API_VERSION,
+        method: 'get',
+        uri: '/auth/organizations/by-slug/my-org/providers',
+      }).reply(200, [
+        {
+          callbackUrl: 'https://api.sanity.io/auth/saml/callback',
+          disabled: false,
+          id: 'sso-1',
+          loginUrl: 'https://api.sanity.io/auth/saml/login/sso-1',
+          name: 'Okta SSO',
+          organizationId: 'org-123',
+          type: 'saml' as const,
+        },
+        {
+          callbackUrl: 'https://api.sanity.io/auth/saml/callback',
+          disabled: false,
+          id: 'sso-2',
+          loginUrl: 'https://api.sanity.io/auth/saml/login/sso-2',
+          name: 'Azure AD',
+          organizationId: 'org-123',
+          type: 'saml' as const,
+        },
+      ])
+
+      const {error} = await testCommand(LoginCommand, [
+        '--sso',
+        'my-org',
+        '--sso-provider',
+        'Nonexistent',
+      ])
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Cannot find SSO provider "Nonexistent"')
+      expect(error?.message).toContain('Okta SSO')
+      expect(error?.message).toContain('Azure AD')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('errors when --sso-provider is used without --sso', async () => {
+      const {error} = await testCommand(LoginCommand, ['--sso-provider', 'Okta SSO'])
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('--sso-provider')
+    })
+
+    test('errors for invalid --sso-provider even with single SSO provider', async () => {
+      mockedGetCliToken.mockResolvedValue('')
+
+      mockApi({
+        apiVersion: AUTH_API_VERSION,
+        method: 'get',
+        uri: '/auth/organizations/by-slug/my-org/providers',
+      }).reply(200, [
+        {
+          callbackUrl: 'https://api.sanity.io/auth/saml/callback',
+          disabled: false,
+          id: 'sso-1',
+          loginUrl: 'https://api.sanity.io/auth/saml/login/sso-1',
+          name: 'Okta SSO',
+          organizationId: 'org-123',
+          type: 'saml' as const,
+        },
+      ])
+
+      const {error} = await testCommand(LoginCommand, [
+        '--sso',
+        'my-org',
+        '--sso-provider',
+        'Wrong Name',
+      ])
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Cannot find SSO provider "Wrong Name"')
+      expect(error?.message).toContain('Okta SSO')
+      expect(error?.oclif?.exit).toBe(1)
     })
   })
 })
