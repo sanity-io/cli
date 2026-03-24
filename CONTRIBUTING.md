@@ -1,6 +1,6 @@
 # Contributing to Sanity CLI
 
-Welcome! This guide helps both human developers and AI agents contribute effectively to the Sanity CLI project.
+Welcome! This guide helps contributors work effectively on the Sanity CLI project.
 
 Before contributing, please read our [code of conduct](https://github.com/sanity-io/cli/blob/main/CODE_OF_CONDUCT.md).
 
@@ -15,95 +15,16 @@ For detailed setup, see [Development Workflow](#development-workflow).
 
 ---
 
-### Command Implementation Template
-
-```typescript
-import {SanityCommand} from '@sanity/cli-core'
-import {Args, Flags, type FlagInput} from '@oclif/core'
-
-export class FeatureCommand extends SanityCommand<typeof FeatureCommand> {
-  static override description = 'Brief description'
-
-  static override examples = ['<%= config.bin %> <%= command.id %> [args]']
-
-  static override args = {
-    argName: Args.string({
-      description: 'Argument description',
-      required: true,
-    }),
-  }
-
-  static override flags = {
-    flagName: Flags.string({
-      char: 'f',
-      description: 'Flag description',
-    }),
-  } satisfies FlagInput
-
-  public async run(): Promise<void> {
-    const {args, flags} = await this.parse(FeatureCommand)
-
-    // 1. Get config & validate
-    const cliConfig = await this.getCliConfig()
-
-    // 2. Get API client if needed
-    const client = await this.getProjectApiClient({
-      apiVersion: 'v2021-06-07',
-      projectId: cliConfig.api?.projectId,
-      requireUser: true,
-    })
-
-    // 3. Execute business logic (preferably in actions/)
-    // 4. Handle errors with debug + user-facing message
-  }
-}
-```
-
-### Test Implementation Template
-
-```typescript
-import {describe, test, expect, afterEach, vi} from 'vitest'
-import {testCommand} from '@sanity/cli-test'
-import {FeatureCommand} from '../feature.js'
-
-const mockGetCliConfig = vi.mocked(getCliConfig)
-const mockGetProjectClient = vi.mocked(getProjectClient)
-
-describe('feature command', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
-  test('success case', async () => {
-    mockGetCliConfig.mockResolvedValue({api: {projectId: 'test'}})
-    mockGetProjectClient.mockResolvedValue({
-      method: vi.fn().mockResolvedValue({data: 'result'}),
-    })
-
-    const {stdout, error} = await testCommand(FeatureCommand, ['arg'])
-
-    expect(error).toBeUndefined()
-    expect(stdout).toContain('expected output')
-  })
-
-  test('error case', async () => {
-    mockGetProjectClient.mockResolvedValue({
-      method: vi.fn().mockRejectedValue(new Error('API error')),
-    })
-
-    const {error} = await testCommand(FeatureCommand, ['arg'])
-
-    expect(error?.message).toContain('User-facing error')
-    expect(error?.oclif?.exit).toBe(1)
-  })
-})
-```
-
-</details>
-
----
-
 ## Project Architecture
+
+### Repository Structure
+
+- **`@sanity/cli`**: Main CLI package containing all commands
+- **`@sanity/cli-core`**: Base command class and shared utilities
+  - Contains `SanityCommand` that all commands extend
+  - Provides helper methods for API clients, logging, and error handling
+  - Can be extended by external CLI modules
+- **`@sanity/cli-test`**: Testing utilities for CLI commands
 
 ### Separation of Concerns
 
@@ -190,7 +111,7 @@ pnpm test --coverage # Coverage report
 
 ### Module System
 
-✅ **Always use ES Modules:**
+Always use ES Modules:
 
 ```typescript
 // Good
@@ -206,7 +127,7 @@ const x = require('./x') // No CommonJS
 
 ### TypeScript
 
-✅ **Strict typing:**
+Strict typing is required:
 
 ```typescript
 // Good
@@ -226,9 +147,9 @@ catch (error: any) { }
 **Rules:**
 
 - Never use `any` type
-- Use `unknown` in catch blocks and cast appropriately
+- Use `unknown` in catch blocks and narrow appropriately
 - Use `satisfies` for flag definitions
-- Enable all strict TypeScript flags
+- Always prefer async/await over promise chains
 
 ### Naming Conventions
 
@@ -239,18 +160,41 @@ catch (error: any) { }
 | Test file    | `feature.test.ts`      | `login.test.ts`      |
 | Service file | `feature.ts`           | `datasets.ts`        |
 
-### Async/Await
+### File Location Conventions
 
-Always prefer async/await over promise chains:
+- Command files: `src/commands/<topic>/<command-name>.ts`
+- Test files: `__tests__/` folder relative to the file being tested (e.g., `src/commands/__tests__/<command-name>.test.ts`)
+- Commands extend `SanityCommand` from `@sanity/cli-core`
+- When adding or migrating commands, check for existing utilities in `src/utils/` and `@sanity/cli-core`
 
-```typescript
-// Good
-const data = await fetchData()
-const result = await process(data)
+---
 
-// Avoid
-fetchData().then(data => process(data)).then(...)
-```
+## Exit Code Convention
+
+Commands use a small set of exit codes aligned with oclif defaults and Unix convention.
+
+- **0 - Success**: Command completed normally. Implicit when `run()` returns without throwing. Only use `this.exit(0)` when you need to short-circuit early on a successful path.
+- **1 - Runtime error**: Something went wrong during execution that is not the user's fault. API failures, network errors, missing project config, file system errors, unexpected state. Use `this.error(message, {exit: 1})`.
+- **2 - Usage error**: The user provided invalid input to the CLI itself. Bad arguments, unknown flags, invalid flag values, failing input validation. This is oclif's default for `this.error()` and all parse errors, so omitting the `exit` option also gives you 2. Use `this.error(message, {exit: 2})` or `this.error(message)`.
+- **3 - User abort**: The user declined a confirmation prompt or otherwise chose not to proceed. The command didn't fail, but it also didn't complete its intended action. Use `this.exit(exitCodes.USER_ABORT)`. Import `exitCodes` from `@sanity/cli-core`.
+- **130 - User abort (signal)**: The user cancelled via Ctrl+C or dismissed a prompt without answering. Handled automatically by `SanityCommand.catch()` - commands should not set this manually.
+
+### When to Use Which
+
+- User passed `--dataset` with a name that doesn't match the allowed pattern? **Exit 2** - they gave bad input.
+- The dataset name is valid but the API says it doesn't exist? **Exit 1** - runtime failure.
+- `this.error('No project ID found')` when `--project-id` was required but missing? **Exit 2** - usage error.
+- API returned 500 while creating a dataset? **Exit 1** - runtime failure.
+- User says "no" to "Deploy anyway despite version mismatch?" **Exit 3** - user chose not to proceed.
+- User hits Ctrl+C during a prompt? **Exit 130** - handled by base class, no action needed.
+
+### In Practice
+
+- For `this.error()`: pass `{exit: 1}` for runtime errors, `{exit: 2}` (or omit) for usage errors.
+- For user-declined prompts: `this.exit(exitCodes.USER_ABORT)` after logging a message like "Deploy cancelled."
+- For custom error classes extending `CLIError`: set `exit` in the constructor options.
+- For `this.exit()`: only use for early termination (exit 0 for success, exit 1 for programmatic failure like `doctor` checks failing).
+- Worker processes using `process.exit()` directly should follow the same convention.
 
 ---
 
@@ -280,8 +224,8 @@ describe('feature description', () => {
     // 2. Execute command
     const {stdout, stderr, error} = await testCommand(Command, ['args'])
 
-    // 3. Assert expectations
-    expect(error).toBeUndefined()
+    // 3. Assert - use throw for better stack traces on failure
+    if (error) throw error
     expect(stdout).toContain('expected')
   })
 
@@ -290,92 +234,55 @@ describe('feature description', () => {
 
     const {error} = await testCommand(Command, ['args'])
 
+    expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to')
     expect(error?.oclif?.exit).toBe(1)
   })
 })
 ```
 
-### Testing Patterns
+### Testing Rules
 
-✅ **Do:**
-
-- Use `testCommand()` helper for command execution
+- Use `testCommand()` helper from `@sanity/cli-test` for command execution
 - Use `vi.mocked()` for type-safe mocking
-- Mock `@sanity/cli-core` functions (getCliConfig, getProjectApiClient)
-- Use `mockApi` for HTTP mocking when testing full request/response cycle
-- Clear mocks in `afterEach()`
+- Use `vi.hoisted(() => vi.fn())` for client method mocks
+- Clear mocks in `afterEach()` with `vi.clearAllMocks()`
 - Test both success and error paths
+- In success tests, use `if (error) throw error` - NOT `expect(error).toBeUndefined()` (better stack traces on failure)
+- In error tests, assert `expect(error).toBeInstanceOf(Error)` along with exit code and message assertions
+- Never use `any` in mock types - use proper typing or `unknown`
+- Never leave mocks active between tests
 
-❌ **Don't:**
+### Mocking Strategy: What to Mock and When
 
-- Leave mocks active between tests
-- Use `any` in mock types
-- Skip error case testing
+Follow this hierarchy when writing tests (prefer higher levels):
 
-### Client Mocking Strategy
+#### 1. HTTP-Level Mocking (Preferred)
 
-When tests need to mock Sanity API client methods, use **module-level mocking** by mocking the client functions directly:
+**Pattern A: Pure HTTP Mocking (Simplest)**
+
+Mock HTTP endpoints directly:
 
 ```typescript
-import {testCommand} from '@sanity/cli-test'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {mockApi} from '@sanity/cli-test'
 
-// Create hoisted mocks for client methods
-const mockGetById = vi.hoisted(() => vi.fn())
+test('lists users successfully', async () => {
+  mockApi({
+    apiVersion: 'v2021-06-07',
+    uri: '/projects/my-project/users',
+    method: 'GET',
+  }).reply(200, [{id: 'user-1', email: 'test@example.com'}])
 
-// Mock @sanity/cli-core at module level
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue({
-      users: {
-        getById: mockGetById,
-      },
-    }),
-  }
-})
+  const {stdout, error} = await testCommand(UsersListCommand, ['--project', 'my-project'])
 
-describe('feature command', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
-  test('success case', async () => {
-    mockGetById.mockResolvedValue({
-      email: 'test@example.com',
-      id: 'user-123',
-      name: 'Test User',
-    })
-
-    const {stdout, error} = await testCommand(FeatureCommand, [])
-
-    expect(error).toBeUndefined()
-    expect(stdout).toContain('test@example.com')
-  })
-
-  test('error case', async () => {
-    mockGetById.mockRejectedValue(new Error('API error'))
-
-    const {error} = await testCommand(FeatureCommand, [])
-
-    expect(error?.message).toContain('Failed to fetch user')
-    expect(error?.oclif?.exit).toBe(1)
-  })
+  if (error) throw error
+  expect(stdout).toContain('test@example.com')
 })
 ```
 
-**Benefits:**
+**Pattern B: HTTP with Test Client**
 
-- Mock once, all services automatically use the mocked client
-- Less boilerplate than mocking individual service functions
-- More realistic: tests actual client method calls
-- For `client.request()` HTTP calls, use `createTestClient()` with `mockApi()` for HTTP-level testing
-
-### Mocking HTTP Requests with mockApi
-
-When tests need to mock `client.request()` for HTTP calls, use `createTestClient()` with `mockApi()` for HTTP-level testing:
+For commands that need both HTTP mocking and client methods:
 
 ```typescript
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
@@ -391,109 +298,9 @@ vi.mock('@sanity/cli-core', async () => {
   return {
     ...actual,
     getGlobalCliClient: vi.fn().mockResolvedValue({
-      request: testClient.request, // Use real test client request
+      request: testClient.request,
       users: {
-        getById: vi.fn().mockResolvedValue({
-          email: 'test@example.com',
-          id: 'user-123',
-          name: 'Test User',
-        }),
-      },
-    }),
-  }
-})
-
-describe('feature command', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-  })
-
-  test('creates project successfully', async () => {
-    // Mock the HTTP endpoint
-    mockApi({
-      apiVersion: 'v2021-06-07',
-      method: 'post',
-      uri: '/projects',
-    }).reply(200, {
-      displayName: 'Test Project',
-      projectId: 'project-123',
-    })
-
-    const {error, stdout} = await testCommand(CreateProjectCommand, ['Test Project'])
-
-    expect(error).toBeUndefined()
-    expect(stdout).toContain('project-123')
-  })
-
-  test('handles API errors', async () => {
-    mockApi({
-      apiVersion: 'v2021-06-07',
-      method: 'post',
-      uri: '/projects',
-    }).reply(400, {
-      error: 'Invalid project name',
-      statusCode: 400,
-    })
-
-    const {error} = await testCommand(CreateProjectCommand, [''])
-
-    expect(error?.message).toContain('Invalid project name')
-  })
-})
-```
-
-**Why use this pattern:**
-
-- Tests the actual HTTP layer including request formatting and response parsing
-- More realistic integration-style testing
-- Better debugging with actual request/response details
-- Consistent with other HTTP-level tests in the codebase
-
----
-
-### Testing Hierarchy: What to Mock and When
-
-Follow this hierarchy when writing tests (prefer higher levels):
-
-#### 1. HTTP-Level Mocking (Preferred)
-
-**Pattern A: Pure HTTP Mocking (Simplest)**
-Mock HTTP endpoints directly:
-
-```typescript
-import {mockApi} from '@sanity/cli-test'
-
-test('lists users successfully', async () => {
-  mockApi({
-    apiVersion: 'v2021-06-07',
-    uri: '/projects/my-project/users',
-    method: 'GET',
-  }).reply(200, [{id: 'user-1', email: 'test@example.com'}])
-
-  const {stdout} = await testCommand(UsersListCommand, ['--project', 'my-project'])
-  expect(stdout).toContain('test@example.com')
-})
-```
-
-**Pattern B: HTTP with Test Client**
-For commands that need both HTTP mocking and client methods:
-
-```typescript
-import {createTestClient, mockApi} from '@sanity/cli-test'
-
-vi.mock('@sanity/cli-core', async () => {
-  const actual = await vi.importActual('@sanity/cli-core')
-  const testClient = createTestClient({
-    apiVersion: 'v2021-06-07',
-    token: 'test-token',
-  })
-
-  return {
-    ...actual,
-    getGlobalCliClient: vi.fn().mockResolvedValue({
-      request: testClient.request, // Real HTTP request
-      users: {
-        getById: vi.fn().mockResolvedValue({...}), // Mocked convenience method
+        getById: vi.fn().mockResolvedValue({...}),
       },
     }),
   }
@@ -506,7 +313,9 @@ test('creates project', async () => {
     uri: '/projects',
   }).reply(200, {projectId: 'test-project'})
 
-  const {stdout} = await testCommand(CreateProjectCommand, ['Test Project'])
+  const {stdout, error} = await testCommand(CreateProjectCommand, ['Test Project'])
+
+  if (error) throw error
   expect(stdout).toContain('test-project')
 })
 ```
@@ -523,6 +332,9 @@ test('creates project', async () => {
 Mock API client methods directly:
 
 ```typescript
+import {testCommand} from '@sanity/cli-test'
+import {afterEach, describe, expect, test, vi} from 'vitest'
+
 const mockGetById = vi.hoisted(() => vi.fn())
 const mockListDatasets = vi.hoisted(() => vi.fn())
 
@@ -542,12 +354,28 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 })
 
 describe('my command', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
   test('fetches user and datasets', async () => {
     mockGetById.mockResolvedValue({id: 'user-123', email: 'test@example.com'})
     mockListDatasets.mockResolvedValue([{name: 'production'}])
 
-    const {stdout} = await testCommand(MyCommand, [])
+    const {stdout, error} = await testCommand(MyCommand, [])
+
+    if (error) throw error
     expect(stdout).toContain('test@example.com')
+  })
+
+  test('handles API error', async () => {
+    mockGetById.mockRejectedValue(new Error('API error'))
+
+    const {error} = await testCommand(MyCommand, [])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Failed to fetch user')
+    expect(error?.oclif?.exit).toBe(1)
   })
 })
 ```
@@ -585,26 +413,46 @@ test('deploy command calls build', async () => {
 - Action has side effects (file system operations, spawning processes)
 - Testing command orchestration without action implementation details
 
----
+#### Never Mock Service Files
+
+Do not mock service files directly. Mock the client or HTTP layer instead.
+
+```typescript
+// Wrong - don't mock service files
+vi.mock('../../services/users.js', () => ({
+  getUserById: vi.fn(),
+}))
+
+// Correct - mock the client that services use
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      users: {
+        getById: vi.fn().mockResolvedValue({id: 'user-123', email: 'test@example.com'}),
+      },
+    }),
+  }
+})
+```
+
+**Why:** Service mocks don't break when the service's internal client usage changes - meaning tests keep passing while production code is broken. Client-level mocks catch these breaking changes because they must match the actual client API.
 
 ### How to Choose Your Mocking Strategy
 
-Use this decision flowchart:
-
 1. **Does the command make HTTP requests that you need to test?**
-   - Yes → Use `mockApi()` (HTTP-level mocking)
-   - No → Continue to #2
+   - Yes -> Use `mockApi()` (HTTP-level mocking)
+   - No -> Continue to #2
 
 2. **Does the command call multiple client methods?**
-   - Yes → Use client-level mocking
-   - No → Continue to #3
+   - Yes -> Use client-level mocking
+   - No -> Continue to #3
 
 3. **Does the command call an action with complex logic?**
-   - Yes, and action is tested separately → Mock the action
-   - Yes, but action is NOT tested separately → Mock the client
-   - No → Mock the client
-
----
+   - Yes, and action is tested separately -> Mock the action
+   - Yes, but action is NOT tested separately -> Mock the client
+   - No -> Mock the client
 
 ### Refactoring Tests That Mock Services
 
@@ -617,14 +465,15 @@ If you encounter a test that mocks a service file:
 3. Update assertions to verify the same behavior
 4. Run tests to ensure they still pass
 
+---
+
 ## Command Implementation
 
 ### Basic Command Structure
 
 ```typescript
-import {SanityCommand} from '@sanity/cli-core'
+import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {Args, Flags, type FlagInput} from '@oclif/core'
-import {subdebug} from '@sanity/cli-core'
 
 const debug = subdebug('namespace:command')
 
@@ -661,7 +510,7 @@ export class MyCommand extends SanityCommand<typeof MyCommand> {
     }
 
     // 2. Get API client (if needed)
-    const client = await this.getProjectApiClient({
+    const client = await getProjectCliClient({
       apiVersion: 'v2021-06-07',
       projectId,
       requireUser: true,
@@ -768,6 +617,19 @@ datasets.forEach((d) => table.addRow(d))
 table.printTable()
 ```
 
+### Debug Logging
+
+```typescript
+import {subdebug} from '@sanity/cli-core'
+
+const debug = subdebug('feature:subfeature')
+
+debug('Operation started', {args, flags})
+debug('API response', response)
+```
+
+Enable with: `DEBUG=sanity:* npx sanity <command>`
+
 ---
 
 ## Service Layer
@@ -815,6 +677,7 @@ Commands should call services, not make API requests directly.
 - [ ] All tests pass: `pnpm test`
 - [ ] TypeScript compiles: `pnpm check:types`
 - [ ] Code is linted: `pnpm check:lint`
+- [ ] Dependencies checked: `pnpm check:deps`
 - [ ] Test coverage maintained or improved: `pnpm test --coverage`
 - [ ] Examples updated if needed
 - [ ] Documentation updated if needed
@@ -842,42 +705,6 @@ Commands should call services, not make API requests directly.
 4. **Documentation**:
    - Update command descriptions
    - Update examples
-
----
-
-## Common Patterns
-
-### Debug Logging
-
-```typescript
-import {subdebug} from '@sanity/cli-core'
-
-const debug = subdebug('feature:subfeature')
-
-debug('Operation started', {args, flags})
-debug('API response', response)
-```
-
-Enable with: `DEBUG=sanity:* npx sanity <command>`
-
-### Configuration Loading
-
-```typescript
-const cliConfig = await this.getCliConfig()
-const projectId = cliConfig.api?.projectId
-const dataset = cliConfig.api?.dataset || 'production'
-```
-
-### API Client
-
-```typescript
-const client = await this.getProjectApiClient({
-  apiVersion: 'v2021-06-07',
-  projectId,
-  dataset: flags.dataset,
-  requireUser: true, // Requires authentication
-})
-```
 
 ---
 
@@ -943,11 +770,10 @@ npx sanity dev
 ## Resources
 
 - [Project README](./README.md)
-- [CLAUDE.md](../../CLAUDE.md) - AI assistant instructions
 - [oclif Documentation](https://oclif.io/docs)
 - [Vitest Documentation](https://vitest.dev/)
 - [@inquirer/prompts](https://github.com/SBoudrias/Inquirer.js/tree/main/packages/prompts)
 
 ---
 
-Thank you for contributing to Sanity CLI! 🎉
+Thank you for contributing to Sanity CLI!
