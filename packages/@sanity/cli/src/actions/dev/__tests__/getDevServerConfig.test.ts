@@ -23,7 +23,6 @@ const FLAGS = {
   'auto-updates': false,
   host: 'localhost',
   json: false,
-  'load-in-dashboard': false,
   port: '3333',
 } as const
 
