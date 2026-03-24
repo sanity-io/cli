@@ -26,10 +26,6 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
       description: 'Delete alias named "conference" with confirmation prompt',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> ~conference',
-      description: 'Delete alias with explicit ~ prefix',
-    },
-    {
       command: '<%= config.bin %> <%= command.id %> conference --force',
       description: 'Delete alias named "conference" without confirmation prompt',
     },
