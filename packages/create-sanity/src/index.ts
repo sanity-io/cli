@@ -11,9 +11,19 @@ import {
 } from '../../@sanity/cli/src/actions/init/flagsToInitOptions.js'
 import {initAction} from '../../@sanity/cli/src/actions/init/initAction.js'
 import {InitError} from '../../@sanity/cli/src/actions/init/initError.js'
+import {setupStandaloneTelemetry} from '../../@sanity/cli/src/util/telemetry/setupStandaloneTelemetry.js'
 import {getCreateCommand} from './createCommand.js'
-import {createNoopTelemetryStore} from './noopTelemetry.js'
 import {FlagValidationError, parseInitArgs} from './parseArgs.js'
+import {version} from './version.js'
+
+const {
+  complete,
+  error: reportError,
+  telemetry,
+} = setupStandaloneTelemetry({
+  commandName: 'create-sanity',
+  version,
+})
 
 try {
   const {args, flags} = parseInitArgs(process.argv.slice(2))
@@ -37,11 +47,14 @@ try {
         return msg
       },
     },
-    telemetry: createNoopTelemetryStore(),
+    telemetry,
     workDir: process.cwd(),
   })
+
+  await complete()
 } catch (error) {
   if (error instanceof InitError) {
+    await reportError(error)
     if (error.message) {
       console.error(error.message)
     }
@@ -69,6 +82,9 @@ try {
     process.exit(2)
   }
 
+  if (error instanceof Error) {
+    await reportError(error)
+  }
   console.error(error)
   process.exit(1)
 }
