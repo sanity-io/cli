@@ -149,6 +149,7 @@ catch (error: any) { }
 - Never use `any` type
 - Use `unknown` in catch blocks and narrow appropriately
 - Use `satisfies` for flag definitions
+- Enable all strict TypeScript flags
 - Always prefer async/await over promise chains
 
 ### Naming Conventions
@@ -252,6 +253,7 @@ describe('feature description', () => {
 - In error tests, assert `expect(error).toBeInstanceOf(Error)` along with exit code and message assertions
 - Never use `any` in mock types - use proper typing or `unknown`
 - Never leave mocks active between tests
+- Never mock without verifying the mock was called - add assertions for mock calls
 
 ### Mocking Strategy: What to Mock and When
 
@@ -366,6 +368,8 @@ describe('my command', () => {
 
     if (error) throw error
     expect(stdout).toContain('test@example.com')
+    expect(mockGetById).toHaveBeenCalledWith('user-123')
+    expect(mockListDatasets).toHaveBeenCalled()
   })
 
   test('handles API error', async () => {
@@ -506,7 +510,7 @@ export class MyCommand extends SanityCommand<typeof MyCommand> {
     const cliConfig = await this.getCliConfig()
     const projectId = cliConfig.api?.projectId
     if (!projectId) {
-      this.error('Project ID not found', {exit: 1})
+      this.error('Project ID not found')
     }
 
     // 2. Get API client (if needed)
