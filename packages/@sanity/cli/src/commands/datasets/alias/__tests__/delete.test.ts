@@ -60,7 +60,9 @@ describe('#dataset:alias:delete', () => {
 
     mockInput.mockResolvedValueOnce('~test-alias')
 
-    const {stdout} = await testCommand(DeleteAliasCommand, [aliasInput], {mocks: defaultMocks})
+    const {stdout} = await testCommand(DeleteAliasCommand, [aliasInput], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Dataset alias deleted successfully')
     expect(mockInput).toHaveBeenCalledWith({
@@ -108,7 +110,9 @@ describe('#dataset:alias:delete', () => {
 
     mockInput.mockResolvedValueOnce('~test-alias')
 
-    const {stdout} = await testCommand(DeleteAliasCommand, ['test-alias'], {mocks: defaultMocks})
+    const {stdout} = await testCommand(DeleteAliasCommand, ['test-alias'], {
+      mocks: defaultMocks,
+    })
 
     expect(stdout).toContain('Dataset alias deleted successfully')
     expect(mockInput).toHaveBeenCalledWith({
@@ -118,6 +122,35 @@ describe('#dataset:alias:delete', () => {
     expect(mockInput.mock.calls[0][0].message).not.toContain('linked to')
   })
 
+  test('validate accepts correct alias name with and without ~ prefix', async () => {
+    mockApi({
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      projectId: testProjectId,
+      uri: '/aliases',
+    }).reply(200, [{datasetName: 'production', name: 'test-alias'}])
+
+    mockApi({
+      apiVersion: DATASET_ALIASES_API_VERSION,
+      method: 'delete',
+      projectId: testProjectId,
+      uri: '/aliases/test-alias',
+    }).reply(200, {deleted: true})
+
+    mockInput.mockResolvedValueOnce('test-alias')
+
+    await testCommand(DeleteAliasCommand, ['test-alias'], {
+      mocks: defaultMocks,
+    })
+
+    const {validate} = mockInput.mock.calls[0][0]
+    if (!validate) throw new Error('validate not provided to input()')
+
+    expect(validate('test-alias')).toBe(true)
+    expect(validate('~test-alias')).toBe(true)
+    expect(validate('wrong-name')).toContain('Incorrect dataset alias name')
+    expect(validate('  test-alias  ')).toBe(true)
+  })
+
   test('fails when alias does not exist', async () => {
     mockApi({
       apiVersion: DATASET_ALIASES_API_VERSION,
@@ -125,14 +158,18 @@ describe('#dataset:alias:delete', () => {
       uri: '/aliases',
     }).reply(200, [{datasetName: 'production', name: 'other-alias'}])
 
-    const {error} = await testCommand(DeleteAliasCommand, ['nonexistent'], {mocks: defaultMocks})
+    const {error} = await testCommand(DeleteAliasCommand, ['nonexistent'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Dataset alias "~nonexistent" does not exist')
     expect(error?.oclif?.exit).toBe(1)
   })
 
   test('fails with invalid alias name', async () => {
-    const {error} = await testCommand(DeleteAliasCommand, ['a'], {mocks: defaultMocks})
+    const {error} = await testCommand(DeleteAliasCommand, ['a'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Alias name must be at least two characters long')
     expect(error?.oclif?.exit).toBe(1)
@@ -166,7 +203,9 @@ describe('#dataset:alias:delete', () => {
 
     mockInput.mockResolvedValueOnce('~test-alias')
 
-    const {error} = await testCommand(DeleteAliasCommand, ['test-alias'], {mocks: defaultMocks})
+    const {error} = await testCommand(DeleteAliasCommand, ['test-alias'], {
+      mocks: defaultMocks,
+    })
 
     expect(error?.message).toContain('Dataset alias deletion failed: API Error: Network timeout')
     expect(error?.oclif?.exit).toBe(1)
