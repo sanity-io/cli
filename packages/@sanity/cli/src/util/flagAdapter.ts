@@ -21,6 +21,7 @@ export function toOclifFlags(defs: Record<string, FlagDef>): FlagInput {
   for (const [name, def] of Object.entries(defs)) {
     if (def.type === 'boolean') {
       result[name] = booleanFlag({
+        ...(def.aliases !== undefined && {aliases: def.aliases}),
         ...(def.allowNo !== undefined && {allowNo: def.allowNo}),
         ...(def.default !== undefined && {default: def.default as boolean}),
         ...(def.deprecated && {deprecated: def.deprecated}),
