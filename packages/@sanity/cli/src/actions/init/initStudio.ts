@@ -1,7 +1,7 @@
 import {styleText} from 'node:util'
 
 import {getCliToken, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
-import {confirm, warn} from '@sanity/cli-core/ux'
+import {confirm} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {execa} from 'execa'
 
@@ -136,7 +136,7 @@ export async function initStudio({
       output.log('and create a new clean dataset with')
       output.log(`  ${styleText('cyan', `npx sanity dataset create <name>`)}\n`)
     } catch {
-      warn(
+      output.warn(
         'Sample dataset import failed. Your studio will work fine without it.\n' +
           `You can import it later with: ${styleText('cyan', `npx sanity dataset import ${template.datasetUrl} ${datasetName}`)}`,
       )

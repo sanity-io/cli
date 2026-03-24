@@ -22,20 +22,48 @@ export function parseInitArgs(argv: string[]): {
   flags: Record<string, unknown>
 } {
   const {aliasMap, allowNoFlags, options} = buildParseArgsOptions()
-  const {positionals, values} = parseArgs({
+
+  // Parse leniently first so --help works even alongside unknown flags.
+  // With strict: true, parseArgs throws on unknown options before we can check
+  // for --help in the result.
+  const lenient = parseArgs({
+    allowPositionals: true,
+    args: argv,
+    options,
+    strict: false,
+  })
+  if (lenient.values.help) {
+    printHelp()
+  }
+
+  // Now parse strictly to validate all flags
+  const {positionals, tokens, values} = parseArgs({
     allowPositionals: true,
     args: argv,
     options,
     strict: true,
+    tokens: true,
   })
 
-  if (values.help) {
-    printHelp()
+  // Collect the set of flags explicitly provided on the command line.
+  // Flags that only have a value because of their `default` are excluded.
+  const explicitFlags = new Set<string>()
+  for (const token of tokens) {
+    if (token.kind === 'option') {
+      let name = token.name
+      // Resolve aliases to canonical names
+      name = aliasMap.get(name) ?? name
+      // Resolve --no-<flag> companions to their base flag
+      if (name.startsWith('no-') && allowNoFlags.has(name.slice(3))) {
+        name = name.slice(3)
+      }
+      explicitFlags.add(name)
+    }
   }
 
   return {
     args: {type: positionals[0]},
-    flags: normalizeFlags(values, allowNoFlags, aliasMap),
+    flags: normalizeFlags(values, allowNoFlags, aliasMap, explicitFlags),
   }
 }
 
@@ -82,19 +110,20 @@ function normalizeFlags(
   values: Record<string, unknown>,
   allowNoFlags: Set<string>,
   aliasMap: Map<string, string>,
+  explicitFlags: Set<string>,
 ): Record<string, unknown> {
   const merged = {...values}
 
   // Resolve aliases to canonical names
   for (const [alias, canonical] of aliasMap) {
-    if (merged[alias] !== undefined) {
-      if (merged[canonical] !== undefined) {
+    if (explicitFlags.has(alias)) {
+      if (explicitFlags.has(canonical)) {
         console.error(`--${alias} cannot be used with --${canonical}`)
         process.exit(2)
       }
       merged[canonical] = merged[alias]
-      delete merged[alias]
     }
+    delete merged[alias]
   }
 
   // Merge --no-<flag> companions
@@ -119,11 +148,12 @@ function normalizeFlags(
     }
   }
 
-  // Validate exclusive constraints
+  // Validate exclusive constraints — only check flags explicitly provided by the
+  // user. Flags present only because of their `default` value are not conflicts.
   for (const [name, def] of Object.entries<FlagDef>(initFlagDefs)) {
-    if (!def.exclusive || merged[name] === undefined) continue
+    if (!def.exclusive || !explicitFlags.has(name)) continue
     for (const other of def.exclusive) {
-      if (merged[other] !== undefined) {
+      if (explicitFlags.has(other)) {
         console.error(`--${name} cannot be used with --${other}`)
         process.exit(2)
       }
