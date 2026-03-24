@@ -67,15 +67,15 @@ vi.mock('../../detectRuntime.js', () => ({
   detectRuntime: mockDetectRuntime,
 }))
 
+async function importSetup() {
+  const mod = await import('../setupStandaloneTelemetry.js')
+  return mod.setupStandaloneTelemetry
+}
+
 describe('setupStandaloneTelemetry', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
-
-  async function importSetup() {
-    const mod = await import('../setupStandaloneTelemetry.js')
-    return mod.setupStandaloneTelemetry
-  }
 
   test('returns telemetry, complete, and error functions', async () => {
     const setupStandaloneTelemetry = await importSetup()
