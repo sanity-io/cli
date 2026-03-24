@@ -61,19 +61,33 @@ function narrowVisibility(value: string | undefined): InitOptions['visibility'] 
 /**
  * Converts kebab-case parsed flags into a framework-agnostic `InitOptions` object.
  *
+ * Computes derived state (`isUnattended`, `mcpMode`) from the flags and
+ * the caller's interactive-environment check so the logic lives in one place.
+ *
  * @param flags - Parsed flags (from oclif or parseArgs)
- * @param isUnattended - Whether the session is unattended (resolved from `--yes` + TTY check by the caller)
+ * @param interactive - Whether the session is running in an interactive terminal
  * @param args - Parsed positional arguments
- * @param mcpMode - MCP setup mode, computed by the command from flags and environment
  */
 export function flagsToInitOptions(
   flags: InitCommandFlags,
-  isUnattended: boolean,
+  interactive: boolean,
   args: InitCommandArgs | undefined,
-  mcpMode: InitOptions['mcpMode'],
 ): InitOptions {
   if (flags.env && !flags.env.startsWith('.env')) {
     throw new InitError('Env filename (`--env`) must start with `.env`', 3)
+  }
+
+  const isUnattended = flags.yes || !interactive
+
+  // MCP setup mode:
+  // - CI (no TTY) or --no-mcp: skip MCP entirely
+  // - --yes (user terminal): auto-configure all detected editors
+  // - Interactive: prompt user
+  let mcpMode: InitOptions['mcpMode'] = 'prompt'
+  if (!flags.mcp || !interactive) {
+    mcpMode = 'skip'
+  } else if (flags.yes) {
+    mcpMode = 'auto'
   }
 
   return {
