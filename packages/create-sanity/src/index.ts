@@ -9,8 +9,9 @@ import {
 } from '../../@sanity/cli/src/actions/init/flagsToInitOptions.js'
 import {initAction} from '../../@sanity/cli/src/actions/init/initAction.js'
 import {InitError} from '../../@sanity/cli/src/actions/init/initError.js'
+import {getCreateCommand} from './createCommand.js'
 import {createNoopTelemetryStore} from './noopTelemetry.js'
-import {getCreateCommand, parseInitArgs} from './parseArgs.js'
+import {parseInitArgs} from './parseArgs.js'
 
 try {
   const {args, flags} = parseInitArgs(process.argv.slice(2))

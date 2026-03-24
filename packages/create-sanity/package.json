@@ -47,7 +47,8 @@
     "rollup": "^4.59.0",
     "rollup-plugin-esbuild": "^6.2.1",
     "rollup-plugin-visualizer": "^7.0.1",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "wrap-ansi": "^10.0.0"
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
