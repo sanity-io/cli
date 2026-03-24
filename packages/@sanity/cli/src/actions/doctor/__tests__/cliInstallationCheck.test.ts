@@ -5,6 +5,12 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {cliInstallationCheck} from '../checks/cliInstallation.js'
 
+// Prevent real global CLI installations on the developer's machine from
+// leaking into tests and producing environment-dependent warnings
+vi.mock('../../../util/packageManager/installationInfo/detectGlobals.js', () => ({
+  detectGlobalInstallations: vi.fn().mockResolvedValue([]),
+}))
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const fixturesDir = path.join(
   __dirname,
