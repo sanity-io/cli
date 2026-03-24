@@ -135,6 +135,31 @@ describe('#assets:upload', () => {
     }
   })
 
+  test('uploads multiple files and prints all URLs', async () => {
+    mocks.readFile
+      .mockResolvedValueOnce(Buffer.from('fake-image-data'))
+      .mockResolvedValueOnce(Buffer.from('fake-pdf-data'))
+    mocks.upload
+      .mockResolvedValueOnce({
+        _id: 'image-abc123',
+        _type: 'sanity.imageAsset',
+        url: 'https://cdn.sanity.io/images/testproject/production/abc123.png',
+      })
+      .mockResolvedValueOnce({
+        _id: 'file-def456',
+        _type: 'sanity.fileAsset',
+        url: 'https://cdn.sanity.io/files/testproject/production/def456.pdf',
+      })
+
+    const {stdout} = await testCommand(AssetsUploadCommand, ['screenshot.png', 'report.pdf'], {
+      mocks: defaultMocks,
+    })
+
+    expect(stdout).toContain('https://cdn.sanity.io/images/testproject/production/abc123.png')
+    expect(stdout).toContain('https://cdn.sanity.io/files/testproject/production/def456.pdf')
+    expect(mocks.upload).toHaveBeenCalledTimes(2)
+  })
+
   test('errors when file cannot be read', async () => {
     mocks.readFile.mockRejectedValueOnce(
       Object.assign(new Error('ENOENT: no such file or directory'), {code: 'ENOENT'}),

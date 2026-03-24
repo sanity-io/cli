@@ -1,8 +1,9 @@
 import {readFile} from 'node:fs/promises'
 import {basename, extname} from 'node:path'
 
-import {Args, Flags} from '@oclif/core'
 import {getProjectCliClient, SanityCommand} from '@sanity/cli-core'
+
+import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
 
 const CONTENT_TYPES: Record<string, string> = {
   '.gif': 'image/gif',
@@ -19,12 +20,6 @@ const IMAGE_CONTENT_TYPES = new Set(
 )
 
 export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadCommand> {
-  static override args = {
-    file: Args.string({
-      description: 'File(s) to upload',
-    }),
-  }
-
   static override description = 'Upload files to Sanity CDN and print public URLs.'
 
   static override examples = [
@@ -39,14 +34,8 @@ export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadComman
   ]
 
   static override flags = {
-    dataset: Flags.string({
-      description: 'Dataset name (default: from sanity.config or "production")',
-      env: 'SANITY_DATASET',
-    }),
-    project: Flags.string({
-      description: 'Project ID (default: from sanity.config)',
-      env: 'SANITY_PROJECT_ID',
-    }),
+    ...getProjectIdFlag({env: 'SANITY_PROJECT_ID'}),
+    ...getDatasetFlag({env: 'SANITY_DATASET'}),
   }
 
   // Allow multiple positional args (file paths)
@@ -61,17 +50,23 @@ export class AssetsUploadCommand extends SanityCommand<typeof AssetsUploadComman
     }
 
     // Resolve config once — may fail if run outside a Sanity project directory
-    const cliConfig = await this.getCliConfig().catch(() => {})
+    const cliConfig = await this.getCliConfig().catch((err: unknown) => {
+      this.debug(
+        'getCliConfig failed (may be outside a Sanity project directory): %s',
+        err instanceof Error ? err.message : String(err),
+      )
+      return undefined
+    })
 
-    // Resolve project ID: --project flag > env > sanity.config.ts in cwd
+    // Resolve project ID: --project-id flag > env > sanity.config.ts in cwd
     // Note: we read from cliConfig directly instead of using this.getProjectId()
     // because getProjectId() calls getCliConfig() → findProjectRoot() which throws
-    // when run outside a Sanity project directory, even if --project is provided.
-    const projectId = flags.project || cliConfig?.api?.projectId
+    // when run outside a Sanity project directory, even if --project-id is provided.
+    const projectId = flags['project-id'] || cliConfig?.api?.projectId
     if (!projectId) {
       this.error(
         'No project ID found. Either run this from a Sanity project directory, ' +
-          'or pass --project <id>',
+          'or pass --project-id <id>',
         {exit: 1},
       )
     }
