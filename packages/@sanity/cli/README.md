@@ -88,9 +88,9 @@ Code for sanity cli
 - [`sanity media deploy-aspect [ASPECTNAME]`](#sanity-media-deploy-aspect-aspectname)
 - [`sanity media export [DESTINATION]`](#sanity-media-export-destination)
 - [`sanity media import SOURCE`](#sanity-media-import-source)
-- [`sanity migration create [TITLE]`](#sanity-migration-create-title)
-- [`sanity migration list`](#sanity-migration-list)
-- [`sanity migration run [ID]`](#sanity-migration-run-id)
+- [`sanity migrations create [TITLE]`](#sanity-migrations-create-title)
+- [`sanity migrations list`](#sanity-migrations-list)
+- [`sanity migrations run [ID]`](#sanity-migrations-run-id)
 - [`sanity openapi get SLUG`](#sanity-openapi-get-slug)
 - [`sanity openapi list`](#sanity-openapi-list)
 - [`sanity preview [OUTPUTDIR]`](#sanity-preview-outputdir)
@@ -307,7 +307,7 @@ EXAMPLES
   $ sanity blueprints add function --name my-function --fn-type document-create --fn-type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/blueprints/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/blueprints/add.ts)_
 
 ## `sanity blueprints config`
 
@@ -342,7 +342,7 @@ EXAMPLES
   $ sanity blueprints config --edit --project-id <projectId> --stack <name-or-id>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/blueprints/config.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/blueprints/config.ts)_
 
 ## `sanity blueprints deploy`
 
@@ -379,7 +379,7 @@ EXAMPLES
   $ sanity blueprints deploy --fn-installer npm
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/blueprints/deploy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/blueprints/deploy.ts)_
 
 ## `sanity blueprints destroy`
 
@@ -411,7 +411,7 @@ EXAMPLES
   $ sanity blueprints destroy --stack <name-or-id> --project-id <projectId> --force --no-wait
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/blueprints/destroy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/blueprints/destroy.ts)_
 
 ## `sanity blueprints doctor`
 
@@ -437,7 +437,7 @@ DESCRIPTION
   issues.
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/blueprints/doctor.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/blueprints/doctor.ts)_
 
 ## `sanity blueprints info`
 
@@ -467,7 +467,7 @@ EXAMPLES
   $ sanity blueprints info --stack <name-or-id>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/blueprints/info.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/blueprints/info.ts)_
 
 ## `sanity blueprints init [DIR]`
 
@@ -517,7 +517,7 @@ EXAMPLES
   $ sanity blueprints init --blueprint-type <json|js|ts> --stack-name <stackName>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/blueprints/init.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/blueprints/init.ts)_
 
 ## `sanity blueprints logs`
 
@@ -546,7 +546,7 @@ EXAMPLES
   $ sanity blueprints logs --watch
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/blueprints/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/blueprints/logs.ts)_
 
 ## `sanity blueprints plan`
 
@@ -572,7 +572,7 @@ EXAMPLES
   $ sanity blueprints plan
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/blueprints/plan.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/blueprints/plan.ts)_
 
 ## `sanity blueprints stacks`
 
@@ -601,7 +601,7 @@ EXAMPLES
   $ sanity blueprints stacks --organization-id <organizationId>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/blueprints/stacks.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/blueprints/stacks.ts)_
 
 ## `sanity build [OUTPUTDIR]`
 
@@ -1861,7 +1861,7 @@ EXAMPLES
   $ sanity functions add --name my-function --type document-create --type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/functions/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/functions/add.ts)_
 
 ## `sanity functions dev`
 
@@ -1895,7 +1895,7 @@ EXAMPLES
   $ sanity functions dev --timeout 60
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/functions/dev.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/functions/dev.ts)_
 
 ## `sanity functions env add NAME KEY VALUE`
 
@@ -1922,7 +1922,7 @@ EXAMPLES
   $ sanity functions env add MyFunction API_URL https://api.example.com/
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/functions/env/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/functions/env/add.ts)_
 
 ## `sanity functions env list NAME`
 
@@ -1946,7 +1946,7 @@ EXAMPLES
   $ sanity functions env list MyFunction
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/functions/env/list.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/functions/env/list.ts)_
 
 ## `sanity functions env remove NAME KEY`
 
@@ -1972,7 +1972,7 @@ EXAMPLES
   $ sanity functions env remove MyFunction API_URL
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/functions/env/remove.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/functions/env/remove.ts)_
 
 ## `sanity functions logs [NAME]`
 
@@ -2012,7 +2012,7 @@ EXAMPLES
   $ sanity functions logs <name> --delete
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/functions/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/functions/logs.ts)_
 
 ## `sanity functions test [NAME]`
 
@@ -2066,7 +2066,7 @@ EXAMPLES
   $ sanity functions test <name> --event update --data-before '{ "title": "before" }' --data-after '{ "title": "after" }'
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.5.1/src/commands/functions/test.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.6.1/src/commands/functions/test.ts)_
 
 ## `sanity graphql deploy`
 
@@ -2732,13 +2732,13 @@ EXAMPLES
 
 _See code: [src/commands/media/import.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/media/import.ts)_
 
-## `sanity migration create [TITLE]`
+## `sanity migrations create [TITLE]`
 
 Create a new migration within your project
 
 ```
 USAGE
-  $ sanity migration create [TITLE]
+  $ sanity migrations create [TITLE]
 
 ARGUMENTS
   [TITLE]  Title of migration
@@ -2749,22 +2749,22 @@ DESCRIPTION
 EXAMPLES
   Create a new migration, prompting for title and options
 
-    $ sanity migration create
+    $ sanity migrations create
 
   Create a new migration with the provided title, prompting for options
 
-    $ sanity migration create "Rename field from location to address"
+    $ sanity migrations create "Rename field from location to address"
 ```
 
-_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v6.0.0/src/commands/migration/create.ts)_
+_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v6.1.0/src/commands/migrations/create.ts)_
 
-## `sanity migration list`
+## `sanity migrations list`
 
 List available migrations
 
 ```
 USAGE
-  $ sanity migration list
+  $ sanity migrations list
 
 DESCRIPTION
   List available migrations
@@ -2772,18 +2772,18 @@ DESCRIPTION
 EXAMPLES
   List all available migrations in the project
 
-    $ sanity migration list
+    $ sanity migrations list
 ```
 
-_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v6.0.0/src/commands/migration/list.ts)_
+_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v6.1.0/src/commands/migrations/list.ts)_
 
-## `sanity migration run [ID]`
+## `sanity migrations run [ID]`
 
 Run a migration against a dataset
 
 ```
 USAGE
-  $ sanity migration run [ID] [--api-version <value>] [--concurrency <value>] [--confirm] [--dataset <value>]
+  $ sanity migrations run [ID] [--api-version <value>] [--concurrency <value>] [--confirm] [--dataset <value>]
     [--dry-run] [--from-export <value>] [--progress] [--project <value>]
 
 ARGUMENTS
@@ -2808,18 +2808,18 @@ DESCRIPTION
 EXAMPLES
   dry run the migration
 
-    $ sanity migration run <id>
+    $ sanity migrations run <id>
 
   execute the migration against a dataset
 
-    $ sanity migration run <id> --no-dry-run --project xyz --dataset staging
+    $ sanity migrations run <id> --no-dry-run --project xyz --dataset staging
 
   execute the migration using a dataset export as the source
 
-    $ sanity migration run <id> --from-export=production.tar.gz --no-dry-run --project xyz --dataset staging
+    $ sanity migrations run <id> --from-export=production.tar.gz --no-dry-run --project xyz --dataset staging
 ```
 
-_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v6.0.0/src/commands/migration/run.ts)_
+_See code: [@sanity/migrate](https://github.com/sanity-io/migrate/blob/v6.1.0/src/commands/migrations/run.ts)_
 
 ## `sanity openapi get SLUG`
 
