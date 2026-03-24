@@ -53,13 +53,13 @@ describe('organizations delete', () => {
     expect(stdout).toContain('Organization deleted')
   })
 
-  test('cancels when user declines confirmation', async () => {
+  test('cancels cleanly when user declines confirmation', async () => {
     mockConfirm.mockResolvedValue(false)
 
-    const {error} = await testCommand(DeleteOrganizationCommand, ['org-aaa'])
+    const {error, stdout} = await testCommand(DeleteOrganizationCommand, ['org-aaa'])
 
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('cancelled')
+    if (error) throw error
+    expect(stdout).toContain('Operation cancelled')
   })
 
   test('requires orgId argument', async () => {
@@ -77,6 +77,17 @@ describe('organizations delete', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to delete organization')
+  })
+
+  test('shows user-friendly error on 404', async () => {
+    mockConfirm.mockResolvedValue(true)
+    const apiError = Object.assign(new Error('Not found'), {statusCode: 404})
+    mockRequest.mockRejectedValue(apiError)
+
+    const {error} = await testCommand(DeleteOrganizationCommand, ['org-aaa'])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Organization "org-aaa" not found')
   })
 
   test('errors when --yes is used without orgId', async () => {

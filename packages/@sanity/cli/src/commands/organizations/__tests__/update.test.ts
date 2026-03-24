@@ -95,6 +95,23 @@ describe('organizations update', () => {
     expect(error).toBeInstanceOf(Error)
   })
 
+  test('validates name flag', async () => {
+    const {error} = await testCommand(UpdateOrganizationCommand, ['org-aaa', '--name', '   '])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Organization name cannot be empty')
+  })
+
+  test('shows user-friendly error on 404', async () => {
+    const apiError = Object.assign(new Error('Not found'), {statusCode: 404})
+    mockRequest.mockRejectedValue(apiError)
+
+    const {error} = await testCommand(UpdateOrganizationCommand, ['org-aaa', '--name', 'New Name'])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Organization "org-aaa" not found')
+  })
+
   test('surfaces API error (e.g. slug requires authSAML feature)', async () => {
     const apiError = Object.assign(new Error('Slug requires SAML'), {statusCode: 403})
     mockRequest.mockRejectedValue(apiError)
