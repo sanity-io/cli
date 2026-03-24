@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/sanity-io/cli/compare/cli-core-v1.2.0...cli-core-v1.2.1) (2026-03-24)
+
+
+### Bug Fixes
+
+* **telemetry:** scope consent cache by auth token ([#751](https://github.com/sanity-io/cli/issues/751)) ([86f3285](https://github.com/sanity-io/cli/commit/86f3285b6902fa61f15d85f340669d42efa7796f))
+
 ## [1.2.0](https://github.com/sanity-io/cli/compare/cli-core-v1.1.3...cli-core-v1.2.0) (2026-03-19)
 
 

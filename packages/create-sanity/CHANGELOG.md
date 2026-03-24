@@ -1,5 +1,14 @@
 # Changelog
 
+## [5.2.10](https://github.com/sanity-io/cli/compare/create-sanity-v5.2.9...create-sanity-v5.2.10) (2026-03-24)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli bumped to 6.2.1
+
 ## [5.2.9](https://github.com/sanity-io/cli/compare/create-sanity-v5.2.8...create-sanity-v5.2.9) (2026-03-19)
 
 
