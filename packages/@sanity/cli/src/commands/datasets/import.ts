@@ -71,18 +71,21 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
 
   static override examples = [
     {
-      command:
-        '<%= config.bin %> <%= command.id %> -d staging -t someSecretToken my-dataset.ndjson',
+      command: '<%= config.bin %> <%= command.id %> -d staging my-dataset.ndjson',
       description: 'Import "./my-dataset.ndjson" into dataset "staging"',
     },
     {
-      command: 'cat my-dataset.ndjson | <%= config.bin %> <%= command.id %> -d test -t someToken -',
+      command: 'cat my-dataset.ndjson | <%= config.bin %> <%= command.id %> -d test -',
       description: 'Import into dataset "test" from stdin',
     },
     {
-      command:
-        '<%= config.bin %> <%= command.id %> -p projectId -d staging -t someSecretToken my-dataset.ndjson',
+      command: '<%= config.bin %> <%= command.id %> -p projectId -d staging my-dataset.ndjson',
       description: 'Import with explicit project ID (overrides CLI configuration)',
+    },
+    {
+      command:
+        '<%= config.bin %> <%= command.id %> -d staging -t someSecretToken my-dataset.ndjson',
+      description: 'Import with an explicit token (e.g. for CI/CD)',
     },
   ]
 
@@ -197,11 +200,6 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       })
     }
 
-    const tokenString: string | undefined = token
-    if (!tokenString) {
-      this.error('Flag `--token` is required (or set SANITY_IMPORT_TOKEN)', {exit: 1})
-    }
-
     let operation: 'create' | 'createIfNotExists' | 'createOrReplace' = 'create'
     let releasesOperation: 'fail' | 'ignore' | 'replace' = 'fail'
 
@@ -214,7 +212,8 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       apiVersion: 'v2025-02-19',
       dataset,
       projectId,
-      token: tokenString,
+      requireUser: true,
+      ...(token ? {token} : {}),
     })
 
     try {
