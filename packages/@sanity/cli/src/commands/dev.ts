@@ -14,7 +14,6 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
   static override examples = [
     '<%= config.bin %> <%= command.id %> --host=0.0.0.0',
     '<%= config.bin %> <%= command.id %> --port=1942',
-    '<%= config.bin %> <%= command.id %> --load-in-dashboard',
   ]
 
   static override flags = {
@@ -24,10 +23,6 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
     }),
     host: Flags.string({
       description: '[default: localhost] The local network interface at which to listen.',
-    }),
-    'load-in-dashboard': Flags.boolean({
-      allowNo: true,
-      description: 'Load the app/studio in the Sanity dashboard.',
     }),
     port: Flags.string({
       description: '[default: 3333] TCP port to start server on.',
@@ -40,14 +35,6 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
     const workDir = (await this.getProjectRoot()).directory
     const cliConfig = await this.getCliConfig()
     const isApp = determineIsApp(cliConfig)
-
-    // load-in-dashboard is defaulted to true for apps.
-    if (isApp && flags['load-in-dashboard'] === undefined) {
-      flags['load-in-dashboard'] = true
-    } else if (flags['load-in-dashboard'] === undefined) {
-      // For non-apps, load-in-dashboard is defaulted to false.
-      flags['load-in-dashboard'] = false
-    }
 
     try {
       const result = await devAction({
