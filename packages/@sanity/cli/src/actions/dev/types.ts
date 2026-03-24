@@ -10,4 +10,6 @@ export interface DevActionOptions {
   isApp: boolean
   output: Output
   workDir: string
+
+  workbenchAvailable?: boolean
 }
