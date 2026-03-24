@@ -185,7 +185,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
 
   let importMap
 
-  if (autoUpdatesEnabled) {
+  if (autoUpdatesEnabled && !cliConfig.federation?.enabled) {
     importMap = {
       imports: {
         ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: false, outputDir})),
@@ -200,6 +200,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     const bundle = await buildStaticFiles({
       basePath,
       cwd: workDir,
+      federation: cliConfig.federation,
       importMap,
       minify: Boolean(flags.minify),
       outputDir,
