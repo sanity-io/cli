@@ -1,11 +1,34 @@
 import {Readable} from 'node:stream'
 
-import {getProjectCliClient, ProjectRootNotFoundError} from '@sanity/cli-core'
+import {getProjectCliClient, NonInteractiveError, ProjectRootNotFoundError} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {sanityImport} from '@sanity/import'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {NEW_DATASET_VALUE} from '../../../prompts/promptForDataset.js'
 import {ImportDatasetCommand} from '../import.js'
+
+const mockPromptForDataset = vi.hoisted(() => vi.fn())
+const mockPromptForDatasetName = vi.hoisted(() => vi.fn())
+const mockListDatasets = vi.hoisted(() => vi.fn())
+const mockCreateDataset = vi.hoisted(() => vi.fn())
+
+vi.mock('../../../prompts/promptForDataset.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../prompts/promptForDataset.js')>()
+  return {
+    ...actual,
+    promptForDataset: mockPromptForDataset,
+  }
+})
+
+vi.mock('../../../prompts/promptForDatasetName.js', () => ({
+  promptForDatasetName: mockPromptForDatasetName,
+}))
+
+vi.mock('../../../services/datasets.js', () => ({
+  createDataset: mockCreateDataset,
+  listDatasets: mockListDatasets,
+}))
 
 vi.mock('@sanity/import', () => ({
   sanityImport: vi.fn().mockResolvedValue({numDocs: 0, warnings: []}),
@@ -171,7 +194,10 @@ describe('#dataset:import', () => {
       expect(stderr).not.toContain('Positional dataset argument is deprecated')
     })
 
-    test('errors when no dataset is provided via flag or positional arg', async () => {
+    test('errors when no dataset is provided in non-interactive mode', async () => {
+      mockListDatasets.mockResolvedValueOnce([{name: 'production'}])
+      mockPromptForDataset.mockRejectedValueOnce(new NonInteractiveError('select'))
+
       const {error} = await testCommand(
         ImportDatasetCommand,
         ['test-source.ndjson', '--token', 'test-token'],
@@ -181,6 +207,66 @@ describe('#dataset:import', () => {
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Missing dataset')
       expect(error?.message).toContain('--dataset')
+      expect(error?.oclif?.exit).toBe(1)
+    })
+
+    test('prompts for dataset when none provided in interactive mode', async () => {
+      mockListDatasets.mockResolvedValueOnce([{name: 'production'}, {name: 'staging'}])
+      mockPromptForDataset.mockResolvedValueOnce('staging')
+      mockSanityImport.mockResolvedValueOnce({numDocs: 5, warnings: []})
+
+      const {error, stdout} = await testCommand(
+        ImportDatasetCommand,
+        ['test-source.ndjson', '--token', 'test-token'],
+        {mocks: defaultMocks},
+      )
+
+      if (error) throw error
+      expect(mockListDatasets).toHaveBeenCalledWith('test-project')
+      expect(mockPromptForDataset).toHaveBeenCalledWith({
+        allowCreation: true,
+        datasets: [{name: 'production'}, {name: 'staging'}],
+      })
+      expect(stdout).toContain('Done! Imported 5 documents to dataset "staging"')
+    })
+
+    test('creates new dataset when user selects create option in interactive mode', async () => {
+      mockListDatasets.mockResolvedValueOnce([{name: 'production'}])
+      mockPromptForDataset.mockResolvedValueOnce(NEW_DATASET_VALUE)
+      mockPromptForDatasetName.mockResolvedValueOnce('new-dataset')
+      mockCreateDataset.mockResolvedValueOnce({name: 'new-dataset'})
+      mockSanityImport.mockResolvedValueOnce({numDocs: 3, warnings: []})
+
+      const {error, stdout} = await testCommand(
+        ImportDatasetCommand,
+        ['test-source.ndjson', '--token', 'test-token'],
+        {mocks: defaultMocks},
+      )
+
+      if (error) throw error
+      expect(mockPromptForDatasetName).toHaveBeenCalled()
+      expect(mockCreateDataset).toHaveBeenCalledWith({
+        datasetName: 'new-dataset',
+        projectId: 'test-project',
+      })
+      expect(stdout).toContain('Done! Imported 3 documents to dataset "new-dataset"')
+    })
+
+    test('errors when dataset creation fails in interactive mode', async () => {
+      mockListDatasets.mockResolvedValueOnce([{name: 'production'}])
+      mockPromptForDataset.mockResolvedValueOnce(NEW_DATASET_VALUE)
+      mockPromptForDatasetName.mockResolvedValueOnce('bad-dataset')
+      mockCreateDataset.mockRejectedValueOnce(new Error('Dataset creation failed'))
+
+      const {error} = await testCommand(
+        ImportDatasetCommand,
+        ['test-source.ndjson', '--token', 'test-token'],
+        {mocks: defaultMocks},
+      )
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Failed to create dataset bad-dataset')
+      expect(error?.message).toContain('Dataset creation failed')
       expect(error?.oclif?.exit).toBe(1)
     })
   })
