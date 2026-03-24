@@ -55,7 +55,7 @@ describe('telemetryDisclosureStandalone', () => {
 
   test('does not show disclosure if already shown', async () => {
     mockIsCi.mockReturnValue(false)
-    mockGet.mockReturnValue(1234567890)
+    mockGet.mockReturnValue(1_234_567_890)
 
     const {telemetryDisclosureStandalone} = await import('../telemetryDisclosureStandalone.js')
 
@@ -69,14 +69,14 @@ describe('telemetryDisclosureStandalone', () => {
     mockIsCi.mockReturnValue(false)
     mockGet.mockReturnValue(undefined)
 
-    const dateSpy = vi.spyOn(Date, 'now').mockReturnValue(1700000000000)
+    const dateSpy = vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000)
 
     const {telemetryDisclosureStandalone} = await import('../telemetryDisclosureStandalone.js')
 
     telemetryDisclosureStandalone()
 
     expect(mockSet).toHaveBeenCalledOnce()
-    expect(mockSet).toHaveBeenCalledWith('telemetryDisclosed', 1700000000000)
+    expect(mockSet).toHaveBeenCalledWith('telemetryDisclosed', 1_700_000_000_000)
 
     dateSpy.mockRestore()
   })
