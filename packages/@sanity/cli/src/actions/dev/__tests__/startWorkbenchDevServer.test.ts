@@ -67,11 +67,43 @@ describe('startWorkbenchDevServer', () => {
     vi.unstubAllEnvs()
   })
 
+  describe('federation gate', () => {
+    test('skips workbench entirely when federation is not enabled', async () => {
+      const result = await startWorkbenchDevServer(createOptions())
+
+      expect(result.workbenchAvailable).toBe(false)
+      expect(result.close).toBeUndefined()
+      expect(mockResolveLocalPackage).not.toHaveBeenCalled()
+      expect(mockCreateServer).not.toHaveBeenCalled()
+    })
+
+    test('skips workbench when federation is explicitly disabled', async () => {
+      const result = await startWorkbenchDevServer(
+        createOptions({cliConfig: {federation: {enabled: false}}}),
+      )
+
+      expect(result.workbenchAvailable).toBe(false)
+      expect(result.close).toBeUndefined()
+      expect(mockResolveLocalPackage).not.toHaveBeenCalled()
+    })
+
+    test('returns httpHost and workbenchPort even when federation is disabled', async () => {
+      mockGetSharedServerConfig.mockReturnValue({httpHost: '0.0.0.0', httpPort: 4000})
+
+      const result = await startWorkbenchDevServer(createOptions())
+
+      expect(result.httpHost).toBe('0.0.0.0')
+      expect(result.workbenchPort).toBe(4000)
+    })
+  })
+
   describe('workbench availability check', () => {
     test('returns workbenchAvailable: false when sanity/workbench is not resolvable', async () => {
       mockResolveLocalPackage.mockRejectedValue(new Error('ERR_PACKAGE_PATH_NOT_EXPORTED'))
 
-      const result = await startWorkbenchDevServer(createOptions())
+      const result = await startWorkbenchDevServer(
+        createOptions({cliConfig: {federation: {enabled: true}}}),
+      )
 
       expect(result.workbenchAvailable).toBe(false)
       expect(result.close).toBeUndefined()
@@ -82,7 +114,9 @@ describe('startWorkbenchDevServer', () => {
       mockGetSharedServerConfig.mockReturnValue({httpHost: '0.0.0.0', httpPort: 4000})
       mockResolveLocalPackage.mockRejectedValue(new Error('ERR_PACKAGE_PATH_NOT_EXPORTED'))
 
-      const result = await startWorkbenchDevServer(createOptions())
+      const result = await startWorkbenchDevServer(
+        createOptions({cliConfig: {federation: {enabled: true}}}),
+      )
 
       expect(result.httpHost).toBe('0.0.0.0')
       expect(result.workbenchPort).toBe(4000)
@@ -90,11 +124,13 @@ describe('startWorkbenchDevServer', () => {
   })
 
   describe('successful startup', () => {
+    const federationConfig = {federation: {enabled: true}} as const
+
     test('returns workbenchAvailable: true and close when server starts', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
-      const result = await startWorkbenchDevServer(createOptions())
+      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
 
       if (!result.close) throw new Error('Expected close to be defined')
       expect(result.workbenchAvailable).toBe(true)
@@ -106,7 +142,7 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer(4000))
 
-      const result = await startWorkbenchDevServer(createOptions())
+      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
 
       expect(result.httpHost).toBe('0.0.0.0')
       expect(result.workbenchPort).toBe(4000)
@@ -125,14 +161,14 @@ describe('startWorkbenchDevServer', () => {
 
       const result = await startWorkbenchDevServer(createOptions())
 
-      expect(result.workbenchPort).toBe(3334)
+      expect(result.workbenchPort).toBe(3333)
     })
 
     test('passes workDir to writeWorkbenchRuntime', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
-      await startWorkbenchDevServer(createOptions())
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
 
       expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
         expect.objectContaining({cwd: '/tmp/sanity-project'}),
@@ -146,7 +182,9 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
-      await startWorkbenchDevServer(createOptions({cliConfig: {reactStrictMode: false}}))
+      await startWorkbenchDevServer(
+        createOptions({cliConfig: {federation: {enabled: true}, reactStrictMode: false}}),
+      )
 
       expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
         expect.objectContaining({reactStrictMode: true}),
@@ -158,7 +196,9 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
-      await startWorkbenchDevServer(createOptions({cliConfig: {reactStrictMode: true}}))
+      await startWorkbenchDevServer(
+        createOptions({cliConfig: {federation: {enabled: true}, reactStrictMode: true}}),
+      )
 
       expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
         expect.objectContaining({reactStrictMode: false}),
@@ -169,7 +209,9 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
-      await startWorkbenchDevServer(createOptions({cliConfig: {reactStrictMode: true}}))
+      await startWorkbenchDevServer(
+        createOptions({cliConfig: {federation: {enabled: true}, reactStrictMode: true}}),
+      )
 
       expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
         expect.objectContaining({reactStrictMode: true}),
@@ -178,6 +220,8 @@ describe('startWorkbenchDevServer', () => {
   })
 
   describe('server startup failure', () => {
+    const federationConfig = {federation: {enabled: true}} as const
+
     test('warns and returns without close when listen() throws', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
@@ -185,7 +229,9 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(mockServer)
       const output = createMockOutput()
 
-      const result = await startWorkbenchDevServer(createOptions({output}))
+      const result = await startWorkbenchDevServer(
+        createOptions({cliConfig: federationConfig, output}),
+      )
 
       expect(result.workbenchAvailable).toBe(false)
       expect(result.close).toBeUndefined()
@@ -198,7 +244,7 @@ describe('startWorkbenchDevServer', () => {
       mockServer.listen.mockRejectedValue(new Error('Port already in use'))
       mockCreateServer.mockResolvedValue(mockServer)
 
-      await startWorkbenchDevServer(createOptions())
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
 
       expect(mockServer.close).toHaveBeenCalled()
     })
