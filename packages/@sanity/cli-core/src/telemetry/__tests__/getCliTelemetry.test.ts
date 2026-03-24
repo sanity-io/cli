@@ -1,13 +1,13 @@
 import {noopLogger} from '@sanity/telemetry'
 import {afterEach, describe, expect, test} from 'vitest'
 
-import {type CLITelemetryStore} from '../types.js'
 import {
   clearCliTelemetry,
   CLI_TELEMETRY_SYMBOL,
   getCliTelemetry,
   setCliTelemetry,
 } from '../getCliTelemetry.js'
+import {type CLITelemetryStore} from '../types.js'
 
 describe('#getCliTelemetry', () => {
   afterEach(() => {

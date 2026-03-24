@@ -48,14 +48,14 @@ vi.mock('@sanity/cli-core', async () => {
   return {
     ...actual,
     getCliToken: mockedGetCliToken,
+    getGlobalCliClient: vi.fn().mockResolvedValue({
+      request: testClient.request,
+      withConfig: vi.fn().mockReturnValue({request: testClient.request}),
+    }),
     getUserConfig: vi.fn().mockReturnValue({
       delete: mockConfigStoreDelete,
       get: vi.fn(),
       set: vi.fn(),
-    }),
-    getGlobalCliClient: vi.fn().mockResolvedValue({
-      request: testClient.request,
-      withConfig: vi.fn().mockReturnValue({request: testClient.request}),
     }),
     isInteractive: mockedIsInteractive,
     setCliUserConfig: mockedSetCliUserConfig,

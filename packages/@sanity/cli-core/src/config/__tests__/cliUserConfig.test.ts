@@ -206,6 +206,18 @@ describe('cliUserConfig', () => {
       )
     })
 
+    test('set invalidates token cache when key is authToken', () => {
+      const store = getUserConfig()
+      store.set('authToken', 'new-token')
+      expect(clearCliTokenCache).toHaveBeenCalled()
+    })
+
+    test('set does not invalidate token cache for other keys', () => {
+      const store = getUserConfig()
+      store.set('telemetryConsent', 'granted')
+      expect(clearCliTokenCache).not.toHaveBeenCalled()
+    })
+
     test('set handles complex values', () => {
       vi.mocked(readJsonFileSync).mockReturnValueOnce({})
 
@@ -235,6 +247,20 @@ describe('cliUserConfig', () => {
         {keepMe: 'yes'},
         {pretty: true},
       )
+    })
+
+    test('delete invalidates token cache when key is authToken', () => {
+      vi.mocked(readJsonFileSync).mockReturnValueOnce({authToken: 'old-token'})
+      const store = getUserConfig()
+      store.delete('authToken')
+      expect(clearCliTokenCache).toHaveBeenCalled()
+    })
+
+    test('delete does not invalidate token cache for other keys', () => {
+      vi.mocked(readJsonFileSync).mockReturnValueOnce({telemetryConsent: 'granted'})
+      const store = getUserConfig()
+      store.delete('telemetryConsent')
+      expect(clearCliTokenCache).not.toHaveBeenCalled()
     })
 
     test('delete is a no-op when key does not exist', () => {

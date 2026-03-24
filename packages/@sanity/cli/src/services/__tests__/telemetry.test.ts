@@ -58,7 +58,7 @@ describe('#getTelemetryConsentCacheKey', () => {
 
 describe('#fetchTelemetryConsent', () => {
   beforeEach(() => {
-    getUserConfig().clear()
+    testConfigStore.clear()
     mockGetCliToken.mockResolvedValue('test-token')
   })
 

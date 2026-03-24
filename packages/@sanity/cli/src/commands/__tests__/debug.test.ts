@@ -1,7 +1,7 @@
 import {
   getCliToken,
-  getUserConfig,
   getStudioConfig,
+  getUserConfig,
   ProjectRootNotFoundError,
   tryFindStudioConfigPath,
 } from '@sanity/cli-core'
