@@ -2475,12 +2475,13 @@ Authenticates the CLI for access to Sanity projects
 
 ```
 USAGE
-  $ sanity login [--open] [--provider <providerId> | --sso <slug>]
+  $ sanity login [--open] [--provider <providerId> | --sso <slug>] [--sso-provider <name> ]
 
 FLAGS
   --[no-]open              Open a browser window to log in (`--no-open` only prints URL)
   --provider=<providerId>  Log in using the given provider
   --sso=<slug>             Log in using Single Sign-On, using the given organization slug
+  --sso-provider=<name>    Select a specific SSO provider by name (use with --sso)
 
 DESCRIPTION
   Authenticates the CLI for access to Sanity projects
@@ -2490,13 +2491,17 @@ EXAMPLES
 
     $ sanity login
 
+  Login with GitHub provider, but do not open a browser window automatically
+
+    $ sanity login --provider github --no-open
+
   Log in using Single Sign-On with the "my-organization" slug
 
     $ sanity login --sso my-organization
 
-  Login with GitHub provider, but do not open a browser window automatically
+  Log in using a specific SSO provider within an organization
 
-    $ sanity login --provider github --no-open
+    $ sanity login --sso my-organization --sso-provider "Okta SSO"
 ```
 
 _See code: [src/commands/login.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/login.ts)_
