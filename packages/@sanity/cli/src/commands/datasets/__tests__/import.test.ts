@@ -304,18 +304,6 @@ describe('#dataset:import', () => {
   })
 
   describe('error handling', () => {
-    test('errors when token is not provided', async () => {
-      const {error} = await testCommand(
-        ImportDatasetCommand,
-        ['test-source.ndjson', '--dataset', 'test-dataset'],
-        {mocks: defaultMocks},
-      )
-
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('--token')
-      expect(error?.oclif?.exit).toBe(1)
-    })
-
     test('handles import failure', async () => {
       mockSanityImport.mockRejectedValueOnce(new Error('Connection timeout'))
 
@@ -442,7 +430,7 @@ describe('#dataset:import', () => {
   })
 
   describe('client configuration', () => {
-    test('creates client with correct options', async () => {
+    test('creates client with correct options when --token is provided', async () => {
       mockSanityImport.mockResolvedValueOnce({numDocs: 0, warnings: []})
 
       const {error} = await testCommand(ImportDatasetCommand, BASE_FLAGS, {
@@ -454,7 +442,27 @@ describe('#dataset:import', () => {
         apiVersion: 'v2025-02-19',
         dataset: 'test-dataset',
         projectId: 'test-project',
+        requireUser: true,
         token: 'test-token',
+      })
+    })
+
+    test('uses stored CLI token when --token is not provided', async () => {
+      mockSanityImport.mockResolvedValueOnce({numDocs: 5, warnings: []})
+
+      const {error, stdout} = await testCommand(
+        ImportDatasetCommand,
+        ['test-source.ndjson', '--dataset', 'test-dataset'],
+        {mocks: defaultMocks},
+      )
+
+      if (error) throw error
+      expect(stdout).toContain('Done! Imported 5 documents')
+      expect(mockGetProjectCliClient).toHaveBeenCalledWith({
+        apiVersion: 'v2025-02-19',
+        dataset: 'test-dataset',
+        projectId: 'test-project',
+        requireUser: true,
       })
     })
   })
