@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, isInteractive, SanityCommand, subdebug} from '@sanity/cli-core'
+import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {createRequester} from '@sanity/cli-core/request'
 import {spinner} from '@sanity/cli-core/ux'
 import {sanityImport} from '@sanity/import'
@@ -200,7 +200,7 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
 
     let dataset = datasetFlag ?? targetDatasetArg
     if (!dataset) {
-      if (!isInteractive()) {
+      if (this.isUnattended()) {
         this.error(
           'Missing dataset. Use the --dataset flag to specify a dataset: --dataset <name>',
           {exit: 1},

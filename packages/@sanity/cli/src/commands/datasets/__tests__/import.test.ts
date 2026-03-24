@@ -209,105 +209,63 @@ describe('#dataset:import', () => {
     })
 
     test('prompts for dataset when none provided in interactive mode', async () => {
-      const originalIsTTY = process.stdin.isTTY
-      const originalCI = process.env.CI
-      process.stdin.isTTY = true
-      delete process.env.CI
+      mockListDatasets.mockResolvedValueOnce([{name: 'production'}, {name: 'staging'}])
+      mockPromptForDataset.mockResolvedValueOnce('staging')
+      mockSanityImport.mockResolvedValueOnce({numDocs: 5, warnings: []})
 
-      try {
-        mockListDatasets.mockResolvedValueOnce([{name: 'production'}, {name: 'staging'}])
-        mockPromptForDataset.mockResolvedValueOnce('staging')
-        mockSanityImport.mockResolvedValueOnce({numDocs: 5, warnings: []})
+      const {error, stdout} = await testCommand(
+        ImportDatasetCommand,
+        ['test-source.ndjson', '--token', 'test-token'],
+        {mocks: {...defaultMocks, isInteractive: true}},
+      )
 
-        const {error, stdout} = await testCommand(
-          ImportDatasetCommand,
-          ['test-source.ndjson', '--token', 'test-token'],
-          {mocks: defaultMocks},
-        )
-
-        if (error) throw error
-        expect(mockListDatasets).toHaveBeenCalledWith('test-project')
-        expect(mockPromptForDataset).toHaveBeenCalledWith({
-          allowCreation: true,
-          datasets: [{name: 'production'}, {name: 'staging'}],
-        })
-        expect(stdout).toContain('Done! Imported 5 documents to dataset "staging"')
-      } finally {
-        process.stdin.isTTY = originalIsTTY
-        if (originalCI === undefined) {
-          delete process.env.CI
-        } else {
-          process.env.CI = originalCI
-        }
-      }
+      if (error) throw error
+      expect(mockListDatasets).toHaveBeenCalledWith('test-project')
+      expect(mockPromptForDataset).toHaveBeenCalledWith({
+        allowCreation: true,
+        datasets: [{name: 'production'}, {name: 'staging'}],
+      })
+      expect(stdout).toContain('Done! Imported 5 documents to dataset "staging"')
     })
 
     test('creates new dataset when user selects create option in interactive mode', async () => {
-      const originalIsTTY = process.stdin.isTTY
-      const originalCI = process.env.CI
-      process.stdin.isTTY = true
-      delete process.env.CI
+      mockListDatasets.mockResolvedValueOnce([{name: 'production'}])
+      mockPromptForDataset.mockResolvedValueOnce(NEW_DATASET_VALUE)
+      mockPromptForDatasetName.mockResolvedValueOnce('new-dataset')
+      mockCreateDataset.mockResolvedValueOnce({name: 'new-dataset'})
+      mockSanityImport.mockResolvedValueOnce({numDocs: 3, warnings: []})
 
-      try {
-        mockListDatasets.mockResolvedValueOnce([{name: 'production'}])
-        mockPromptForDataset.mockResolvedValueOnce(NEW_DATASET_VALUE)
-        mockPromptForDatasetName.mockResolvedValueOnce('new-dataset')
-        mockCreateDataset.mockResolvedValueOnce({name: 'new-dataset'})
-        mockSanityImport.mockResolvedValueOnce({numDocs: 3, warnings: []})
+      const {error, stdout} = await testCommand(
+        ImportDatasetCommand,
+        ['test-source.ndjson', '--token', 'test-token'],
+        {mocks: {...defaultMocks, isInteractive: true}},
+      )
 
-        const {error, stdout} = await testCommand(
-          ImportDatasetCommand,
-          ['test-source.ndjson', '--token', 'test-token'],
-          {mocks: defaultMocks},
-        )
-
-        if (error) throw error
-        expect(mockPromptForDatasetName).toHaveBeenCalled()
-        expect(mockCreateDataset).toHaveBeenCalledWith({
-          datasetName: 'new-dataset',
-          projectId: 'test-project',
-        })
-        expect(stdout).toContain('Done! Imported 3 documents to dataset "new-dataset"')
-      } finally {
-        process.stdin.isTTY = originalIsTTY
-        if (originalCI === undefined) {
-          delete process.env.CI
-        } else {
-          process.env.CI = originalCI
-        }
-      }
+      if (error) throw error
+      expect(mockPromptForDatasetName).toHaveBeenCalled()
+      expect(mockCreateDataset).toHaveBeenCalledWith({
+        datasetName: 'new-dataset',
+        projectId: 'test-project',
+      })
+      expect(stdout).toContain('Done! Imported 3 documents to dataset "new-dataset"')
     })
 
     test('errors when dataset creation fails in interactive mode', async () => {
-      const originalIsTTY = process.stdin.isTTY
-      const originalCI = process.env.CI
-      process.stdin.isTTY = true
-      delete process.env.CI
+      mockListDatasets.mockResolvedValueOnce([{name: 'production'}])
+      mockPromptForDataset.mockResolvedValueOnce(NEW_DATASET_VALUE)
+      mockPromptForDatasetName.mockResolvedValueOnce('bad-dataset')
+      mockCreateDataset.mockRejectedValueOnce(new Error('Dataset creation failed'))
 
-      try {
-        mockListDatasets.mockResolvedValueOnce([{name: 'production'}])
-        mockPromptForDataset.mockResolvedValueOnce(NEW_DATASET_VALUE)
-        mockPromptForDatasetName.mockResolvedValueOnce('bad-dataset')
-        mockCreateDataset.mockRejectedValueOnce(new Error('Dataset creation failed'))
+      const {error} = await testCommand(
+        ImportDatasetCommand,
+        ['test-source.ndjson', '--token', 'test-token'],
+        {mocks: {...defaultMocks, isInteractive: true}},
+      )
 
-        const {error} = await testCommand(
-          ImportDatasetCommand,
-          ['test-source.ndjson', '--token', 'test-token'],
-          {mocks: defaultMocks},
-        )
-
-        expect(error).toBeInstanceOf(Error)
-        expect(error?.message).toContain('Failed to create dataset bad-dataset')
-        expect(error?.message).toContain('Dataset creation failed')
-        expect(error?.oclif?.exit).toBe(1)
-      } finally {
-        process.stdin.isTTY = originalIsTTY
-        if (originalCI === undefined) {
-          delete process.env.CI
-        } else {
-          process.env.CI = originalCI
-        }
-      }
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Failed to create dataset bad-dataset')
+      expect(error?.message).toContain('Dataset creation failed')
+      expect(error?.oclif?.exit).toBe(1)
     })
   })
 
