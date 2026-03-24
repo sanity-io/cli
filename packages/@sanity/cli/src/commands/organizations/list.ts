@@ -30,7 +30,8 @@ export class ListOrganizationsCommand extends SanityCommand<typeof ListOrganizat
       organizations = await listOrganizations()
     } catch (error) {
       listOrgsDebug('Error listing organizations', error)
-      this.error('Failed to list organizations', {exit: 1})
+      const message = error instanceof Error ? error.message : String(error)
+      this.error(`Failed to list organizations: ${message}`, {exit: 1})
     }
 
     if (organizations.length === 0) {

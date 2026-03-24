@@ -82,6 +82,21 @@ describe('organizations create', () => {
     expect(stdout).toContain('org-new')
   })
 
+  test('errors when --name is empty', async () => {
+    const {error} = await testCommand(CreateOrganizationCommand, ['--name', ''])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Organization name cannot be empty')
+  })
+
+  test('errors when --name exceeds 100 characters', async () => {
+    const longName = 'a'.repeat(101)
+    const {error} = await testCommand(CreateOrganizationCommand, ['--name', longName])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Organization name cannot be longer than 100 characters')
+  })
+
   test('errors when API call fails', async () => {
     mockRequest.mockRejectedValue(new Error('Server error'))
 

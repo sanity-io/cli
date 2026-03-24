@@ -48,12 +48,19 @@ export class CreateOrganizationCommand extends SanityCommand<typeof CreateOrgani
   public async run(): Promise<void> {
     const {'default-role': defaultRole, name: nameFlag} = this.flags
 
-    const name =
-      nameFlag ||
-      (await input({
+    let name: string
+    if (nameFlag === undefined) {
+      name = await input({
         message: 'Organization name:',
         validate: validateOrganizationName,
-      }))
+      })
+    } else {
+      const validation = validateOrganizationName(nameFlag)
+      if (validation !== true) {
+        this.error(validation, {exit: 1})
+      }
+      name = nameFlag
+    }
 
     const spin = spinner('Creating organization').start()
     try {

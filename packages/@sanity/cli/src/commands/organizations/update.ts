@@ -3,7 +3,9 @@ import {type FlagInput} from '@oclif/core/interfaces'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
+import {validateOrganizationName} from '../../actions/organizations/validateOrganizationName.js'
 import {type OrganizationUpdateParams, updateOrganization} from '../../services/organizations.js'
+import {hasStatusCode} from '../../util/apiError.js'
 
 const updateOrgDebug = subdebug('organizations:update')
 
@@ -60,9 +62,15 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
     const {'default-role': defaultRole, name, slug} = this.flags
 
     const params: OrganizationUpdateParams = {}
-    if (name) params.name = name
-    if (slug) params.slug = slug
-    if (defaultRole) params.defaultRoleName = defaultRole
+    if (name !== undefined) {
+      const validation = validateOrganizationName(name)
+      if (validation !== true) {
+        this.error(validation, {exit: 1})
+      }
+      params.name = name
+    }
+    if (slug !== undefined) params.slug = slug
+    if (defaultRole !== undefined) params.defaultRoleName = defaultRole
 
     if (Object.keys(params).length === 0) {
       this.error('Provide at least one flag to update: --name, --slug, --default-role', {exit: 1})
@@ -76,6 +84,9 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
     } catch (error) {
       spin.fail()
       updateOrgDebug('Error updating organization', error)
+      if (hasStatusCode(error) && error.statusCode === 404) {
+        this.error(`Organization "${orgId}" not found`, {exit: 1})
+      }
       const message = error instanceof Error ? error.message : String(error)
       this.error(`Failed to update organization: ${message}`, {exit: 1})
     }

@@ -4,6 +4,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 
 import {deleteOrganization} from '../../services/organizations.js'
+import {hasStatusCode} from '../../util/apiError.js'
 
 const deleteOrgDebug = subdebug('organizations:delete')
 
@@ -55,7 +56,8 @@ export class DeleteOrganizationCommand extends SanityCommand<typeof DeleteOrgani
       })
 
       if (!confirmed) {
-        this.error('Operation cancelled', {exit: 1})
+        this.log('Operation cancelled')
+        return
       }
     }
 
@@ -67,6 +69,9 @@ export class DeleteOrganizationCommand extends SanityCommand<typeof DeleteOrgani
     } catch (error) {
       spin.fail()
       deleteOrgDebug('Error deleting organization', error)
+      if (hasStatusCode(error) && error.statusCode === 404) {
+        this.error(`Organization "${orgId}" not found`, {exit: 1})
+      }
       const message = error instanceof Error ? error.message : String(error)
       this.error(`Failed to delete organization: ${message}`, {exit: 1})
     }
