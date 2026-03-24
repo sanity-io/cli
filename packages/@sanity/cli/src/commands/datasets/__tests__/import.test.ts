@@ -1,6 +1,6 @@
 import {Readable} from 'node:stream'
 
-import {getProjectCliClient, NonInteractiveError, ProjectRootNotFoundError} from '@sanity/cli-core'
+import {getProjectCliClient, ProjectRootNotFoundError} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {sanityImport} from '@sanity/import'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -195,9 +195,6 @@ describe('#dataset:import', () => {
     })
 
     test('errors when no dataset is provided in non-interactive mode', async () => {
-      mockListDatasets.mockResolvedValueOnce([{name: 'production'}])
-      mockPromptForDataset.mockRejectedValueOnce(new NonInteractiveError('select'))
-
       const {error} = await testCommand(
         ImportDatasetCommand,
         ['test-source.ndjson', '--token', 'test-token'],
@@ -208,66 +205,109 @@ describe('#dataset:import', () => {
       expect(error?.message).toContain('Missing dataset')
       expect(error?.message).toContain('--dataset')
       expect(error?.oclif?.exit).toBe(1)
+      expect(mockListDatasets).not.toHaveBeenCalled()
     })
 
     test('prompts for dataset when none provided in interactive mode', async () => {
-      mockListDatasets.mockResolvedValueOnce([{name: 'production'}, {name: 'staging'}])
-      mockPromptForDataset.mockResolvedValueOnce('staging')
-      mockSanityImport.mockResolvedValueOnce({numDocs: 5, warnings: []})
+      const originalIsTTY = process.stdin.isTTY
+      const originalCI = process.env.CI
+      process.stdin.isTTY = true
+      delete process.env.CI
 
-      const {error, stdout} = await testCommand(
-        ImportDatasetCommand,
-        ['test-source.ndjson', '--token', 'test-token'],
-        {mocks: defaultMocks},
-      )
+      try {
+        mockListDatasets.mockResolvedValueOnce([{name: 'production'}, {name: 'staging'}])
+        mockPromptForDataset.mockResolvedValueOnce('staging')
+        mockSanityImport.mockResolvedValueOnce({numDocs: 5, warnings: []})
 
-      if (error) throw error
-      expect(mockListDatasets).toHaveBeenCalledWith('test-project')
-      expect(mockPromptForDataset).toHaveBeenCalledWith({
-        allowCreation: true,
-        datasets: [{name: 'production'}, {name: 'staging'}],
-      })
-      expect(stdout).toContain('Done! Imported 5 documents to dataset "staging"')
+        const {error, stdout} = await testCommand(
+          ImportDatasetCommand,
+          ['test-source.ndjson', '--token', 'test-token'],
+          {mocks: defaultMocks},
+        )
+
+        if (error) throw error
+        expect(mockListDatasets).toHaveBeenCalledWith('test-project')
+        expect(mockPromptForDataset).toHaveBeenCalledWith({
+          allowCreation: true,
+          datasets: [{name: 'production'}, {name: 'staging'}],
+        })
+        expect(stdout).toContain('Done! Imported 5 documents to dataset "staging"')
+      } finally {
+        process.stdin.isTTY = originalIsTTY
+        if (originalCI === undefined) {
+          delete process.env.CI
+        } else {
+          process.env.CI = originalCI
+        }
+      }
     })
 
     test('creates new dataset when user selects create option in interactive mode', async () => {
-      mockListDatasets.mockResolvedValueOnce([{name: 'production'}])
-      mockPromptForDataset.mockResolvedValueOnce(NEW_DATASET_VALUE)
-      mockPromptForDatasetName.mockResolvedValueOnce('new-dataset')
-      mockCreateDataset.mockResolvedValueOnce({name: 'new-dataset'})
-      mockSanityImport.mockResolvedValueOnce({numDocs: 3, warnings: []})
+      const originalIsTTY = process.stdin.isTTY
+      const originalCI = process.env.CI
+      process.stdin.isTTY = true
+      delete process.env.CI
 
-      const {error, stdout} = await testCommand(
-        ImportDatasetCommand,
-        ['test-source.ndjson', '--token', 'test-token'],
-        {mocks: defaultMocks},
-      )
+      try {
+        mockListDatasets.mockResolvedValueOnce([{name: 'production'}])
+        mockPromptForDataset.mockResolvedValueOnce(NEW_DATASET_VALUE)
+        mockPromptForDatasetName.mockResolvedValueOnce('new-dataset')
+        mockCreateDataset.mockResolvedValueOnce({name: 'new-dataset'})
+        mockSanityImport.mockResolvedValueOnce({numDocs: 3, warnings: []})
 
-      if (error) throw error
-      expect(mockPromptForDatasetName).toHaveBeenCalled()
-      expect(mockCreateDataset).toHaveBeenCalledWith({
-        datasetName: 'new-dataset',
-        projectId: 'test-project',
-      })
-      expect(stdout).toContain('Done! Imported 3 documents to dataset "new-dataset"')
+        const {error, stdout} = await testCommand(
+          ImportDatasetCommand,
+          ['test-source.ndjson', '--token', 'test-token'],
+          {mocks: defaultMocks},
+        )
+
+        if (error) throw error
+        expect(mockPromptForDatasetName).toHaveBeenCalled()
+        expect(mockCreateDataset).toHaveBeenCalledWith({
+          datasetName: 'new-dataset',
+          projectId: 'test-project',
+        })
+        expect(stdout).toContain('Done! Imported 3 documents to dataset "new-dataset"')
+      } finally {
+        process.stdin.isTTY = originalIsTTY
+        if (originalCI === undefined) {
+          delete process.env.CI
+        } else {
+          process.env.CI = originalCI
+        }
+      }
     })
 
     test('errors when dataset creation fails in interactive mode', async () => {
-      mockListDatasets.mockResolvedValueOnce([{name: 'production'}])
-      mockPromptForDataset.mockResolvedValueOnce(NEW_DATASET_VALUE)
-      mockPromptForDatasetName.mockResolvedValueOnce('bad-dataset')
-      mockCreateDataset.mockRejectedValueOnce(new Error('Dataset creation failed'))
+      const originalIsTTY = process.stdin.isTTY
+      const originalCI = process.env.CI
+      process.stdin.isTTY = true
+      delete process.env.CI
 
-      const {error} = await testCommand(
-        ImportDatasetCommand,
-        ['test-source.ndjson', '--token', 'test-token'],
-        {mocks: defaultMocks},
-      )
+      try {
+        mockListDatasets.mockResolvedValueOnce([{name: 'production'}])
+        mockPromptForDataset.mockResolvedValueOnce(NEW_DATASET_VALUE)
+        mockPromptForDatasetName.mockResolvedValueOnce('bad-dataset')
+        mockCreateDataset.mockRejectedValueOnce(new Error('Dataset creation failed'))
 
-      expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('Failed to create dataset bad-dataset')
-      expect(error?.message).toContain('Dataset creation failed')
-      expect(error?.oclif?.exit).toBe(1)
+        const {error} = await testCommand(
+          ImportDatasetCommand,
+          ['test-source.ndjson', '--token', 'test-token'],
+          {mocks: defaultMocks},
+        )
+
+        expect(error).toBeInstanceOf(Error)
+        expect(error?.message).toContain('Failed to create dataset bad-dataset')
+        expect(error?.message).toContain('Dataset creation failed')
+        expect(error?.oclif?.exit).toBe(1)
+      } finally {
+        process.stdin.isTTY = originalIsTTY
+        if (originalCI === undefined) {
+          delete process.env.CI
+        } else {
+          process.env.CI = originalCI
+        }
+      }
     })
   })
 
