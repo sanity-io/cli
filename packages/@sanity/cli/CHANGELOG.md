@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.2.1](https://github.com/sanity-io/cli/compare/cli-v6.2.0...cli-v6.2.1) (2026-03-24)
+
+
+### Bug Fixes
+
+* bump preferred-pm to v5 to resolve js-yaml prototype pollution ([#756](https://github.com/sanity-io/cli/issues/756)) ([34577da](https://github.com/sanity-io/cli/commit/34577da2b6d07747e07360a32556a261e32b7adb))
+* **deps:** update oclif-tooling ([#764](https://github.com/sanity-io/cli/issues/764)) ([e81b18f](https://github.com/sanity-io/cli/commit/e81b18f6d96dce7799c0115d7979168364e3223c))
+* **deps:** update sanity dependencies ([#758](https://github.com/sanity-io/cli/issues/758)) ([e093ac3](https://github.com/sanity-io/cli/commit/e093ac301d2dc9dbecc4fbb6c13eda293799186f))
+* **import:** use stored CLI token instead of requiring --token flag ([#775](https://github.com/sanity-io/cli/issues/775)) ([353bea8](https://github.com/sanity-io/cli/commit/353bea88bd72b774837094098370136c1a7a9777))
+* **telemetry:** scope consent cache by auth token ([#751](https://github.com/sanity-io/cli/issues/751)) ([86f3285](https://github.com/sanity-io/cli/commit/86f3285b6902fa61f15d85f340669d42efa7796f))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 1.2.1
+  * devDependencies
+    * @sanity/cli-test bumped to 0.2.7
+
 ## [6.2.0](https://github.com/sanity-io/cli/compare/cli-v6.1.8...cli-v6.2.0) (2026-03-19)
 
 

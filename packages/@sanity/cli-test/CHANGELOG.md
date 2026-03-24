@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.7](https://github.com/sanity-io/cli/compare/cli-test-v0.2.6...cli-test-v0.2.7) (2026-03-24)
+
+
+### Bug Fixes
+
+* **deps:** update sanity dependencies ([#758](https://github.com/sanity-io/cli/issues/758)) ([e093ac3](https://github.com/sanity-io/cli/commit/e093ac301d2dc9dbecc4fbb6c13eda293799186f))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 1.2.1
+  * peerDependencies
+    * @sanity/cli-core bumped to 1.2.1
+
 ## [0.2.6](https://github.com/sanity-io/cli/compare/cli-test-v0.2.5...cli-test-v0.2.6) (2026-03-19)
 
 
