@@ -13,14 +13,15 @@ import {flushTelemetryFiles} from './flushTelemetryFiles.js'
 const DEFAULT_FLUSH_TIMEOUT_MS = 3000
 
 interface SetupStandaloneTelemetryOptions {
-  /** CLI arguments (without flags), used for trace data */
-  args?: string[]
   /** The command name being executed, e.g. "init" */
   commandName: string
-  /** Timeout in ms for the inline telemetry flush. Defaults to 3000. */
-  flushTimeoutMs?: number
   /** CLI version string */
   version: string
+
+  /** CLI arguments (without flags), used for trace data */
+  args?: string[]
+  /** Timeout in ms for the inline telemetry flush. Defaults to 3000. */
+  flushTimeoutMs?: number
 }
 
 interface StandaloneTelemetryResult {
