@@ -160,5 +160,20 @@ function normalizeFlags(
     }
   }
 
+  // Warn about deprecated flags that were explicitly provided
+  for (const [name, def] of Object.entries<FlagDef>(initFlagDefs)) {
+    if (!def.deprecated || !explicitFlags.has(name)) continue
+    const dep = def.deprecated
+    const parts = [`Warning: --${name} is deprecated`]
+    if (typeof dep === 'object' && dep.version) {
+      parts.push(` as of v${dep.version}`)
+    }
+    parts.push('.')
+    if (typeof dep === 'object' && dep.message) {
+      parts.push(` ${dep.message}.`)
+    }
+    console.warn(parts.join(''))
+  }
+
   return merged
 }

@@ -18,20 +18,11 @@ import {parseInitArgs} from './parseArgs.js'
 try {
   const {args, flags} = parseInitArgs(process.argv.slice(2))
 
-  let mcpMode: 'auto' | 'prompt' | 'skip' = 'prompt'
-  if (!flags.mcp || !isInteractive()) {
-    mcpMode = 'skip'
-  } else if (flags.yes) {
-    mcpMode = 'auto'
-  }
-
-  const isUnattended = Boolean(flags.yes) || !isInteractive()
   // parseArgs returns Record<string, unknown>; the shape is guaranteed by initFlagDefs
   const initOptions = flagsToInitOptions(
     flags as unknown as InitCommandFlags,
-    isUnattended,
+    isInteractive(),
     args,
-    mcpMode,
   )
 
   await initAction(initOptions, {

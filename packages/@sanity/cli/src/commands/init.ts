@@ -1,5 +1,5 @@
 import {type Command} from '@oclif/core'
-import {isInteractive, SanityCommand} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 
 import {initArgDefs, initFlagDefs} from '../actions/init/flags.js'
 import {
@@ -44,24 +44,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   static override flags = toOclifFlags(initFlagDefs)
 
   public async run(): Promise<void> {
-    // Compute MCP mode from flags and environment:
-    // - CI (no TTY) or --no-mcp: skip MCP entirely
-    // - --yes (user terminal): auto-configure all detected editors
-    // - Interactive: prompt user
     // toOclifFlags returns FlagInput (untyped) so oclif can't infer the
     // specific flag shape. The types are structurally guaranteed by initFlagDefs.
     const flags = this.flags as unknown as InitCommandFlags
     const args = this.args as unknown as InitCommandArgs
 
-    let mcpMode: 'auto' | 'prompt' | 'skip' = 'prompt'
-    if (!flags.mcp || !isInteractive()) {
-      mcpMode = 'skip'
-    } else if (flags.yes) {
-      mcpMode = 'auto'
-    }
-
     try {
-      await initAction(flagsToInitOptions(flags, this.isUnattended(), args, mcpMode), {
+      await initAction(flagsToInitOptions(flags, this.resolveIsInteractive(), args), {
         output: this.output,
         telemetry: this.telemetry,
         workDir: process.cwd(),
