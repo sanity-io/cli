@@ -44,10 +44,6 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
       command: '<%= config.bin %> <%= command.id %> conference conf-2025',
       description: 'Create alias "conference" linked to "conf-2025" dataset',
     },
-    {
-      command: '<%= config.bin %> <%= command.id %> ~conference conf-2025',
-      description: 'Create alias with explicit ~ prefix',
-    },
   ]
 
   static override flags = {
