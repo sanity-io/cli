@@ -5,28 +5,15 @@ import wrapAnsi from 'wrap-ansi'
 import {type FlagDef, initFlagDefs} from '../../@sanity/cli/src/actions/init/flags.js'
 import {getCreateCommand} from './createCommand.js'
 
-// ---------------------------------------------------------------------------
-// Terminal width detection (matches oclif's src/screen.ts)
-// ---------------------------------------------------------------------------
-
-function getTerminalWidth(): number {
-  // OCLIF_COLUMNS overrides everything
-  const env = Number.parseInt(process.env.OCLIF_COLUMNS!, 10)
-  if (env) return env
-
-  // Non-TTY (piped, redirected, CI) defaults to 80
-  if (!process.stdout.isTTY) return 80
-
-  const w = (process.stdout as {getWindowSize?: () => number[]}).getWindowSize?.()[0] ?? 80
-  if (w < 1) return 80
-  if (w < 40) return 40
-  return w
-}
-
-// ---------------------------------------------------------------------------
-// Help output (aligned with oclif's help formatter)
-// ---------------------------------------------------------------------------
-
+/**
+ * Print help message and exit
+ *
+ * This is a custom implementation to avoid pulling in oclif as a dependency,
+ * but it follows the same formatting principles to ensure a consistent experience
+ * across Sanity CLIs.
+ *
+ * @internal
+ */
 export function printHelp(): never {
   const cmd = getCreateCommand({withFlagSeparator: true})
   const maxWidth = getTerminalWidth()
@@ -111,4 +98,24 @@ export function printHelp(): never {
   }
 
   process.exit(0)
+}
+
+/**
+ * Detect terminal width using the same algorithm as oclif's help formatter
+ *
+ * @returns The width of the terminal in characters, with a sensible default if it cannot be determined
+ * @internal
+ */
+function getTerminalWidth(): number {
+  // OCLIF_COLUMNS overrides everything
+  const env = Number.parseInt(process.env.OCLIF_COLUMNS!, 10)
+  if (env) return env
+
+  // Non-TTY (piped, redirected, CI) defaults to 80
+  if (!process.stdout.isTTY) return 80
+
+  const w = (process.stdout as {getWindowSize?: () => number[]}).getWindowSize?.()[0] ?? 80
+  if (w < 1) return 80
+  if (w < 40) return 40
+  return w
 }

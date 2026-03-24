@@ -11,6 +11,34 @@ type ParseArgsOption = {
   type: 'boolean' | 'string'
 }
 
+/**
+ * Parse process.argv using node:util parseArgs with the init flag definitions.
+ * Handles --help, aliases, --no-* negation, option validation, and exclusive constraints.
+ *
+ * @internal
+ */
+export function parseInitArgs(argv: string[]): {
+  args: {type?: string}
+  flags: Record<string, unknown>
+} {
+  const {aliasMap, allowNoFlags, options} = buildParseArgsOptions()
+  const {positionals, values} = parseArgs({
+    allowPositionals: true,
+    args: argv,
+    options,
+    strict: true,
+  })
+
+  if (values.help) {
+    printHelp()
+  }
+
+  return {
+    args: {type: positionals[0]},
+    flags: normalizeFlags(values, allowNoFlags, aliasMap),
+  }
+}
+
 function buildParseArgsOptions() {
   const options: Record<string, ParseArgsOption> = {}
   const allowNoFlags = new Set<string>()
@@ -103,30 +131,4 @@ function normalizeFlags(
   }
 
   return merged
-}
-
-/**
- * Parse process.argv using node:util parseArgs with the init flag definitions.
- * Handles --help, aliases, --no-* negation, option validation, and exclusive constraints.
- */
-export function parseInitArgs(argv: string[]): {
-  args: {type?: string}
-  flags: Record<string, unknown>
-} {
-  const {aliasMap, allowNoFlags, options} = buildParseArgsOptions()
-  const {positionals, values} = parseArgs({
-    allowPositionals: true,
-    args: argv,
-    options,
-    strict: true,
-  })
-
-  if (values.help) {
-    printHelp()
-  }
-
-  return {
-    args: {type: positionals[0]},
-    flags: normalizeFlags(values, allowNoFlags, aliasMap),
-  }
 }
