@@ -23,6 +23,7 @@ export const topicAliases: Record<string, string[]> = {
   documents: ['document'],
   functions: ['function'],
   hooks: ['hook'],
+  organizations: ['organization'],
   projects: ['project'],
   schemas: ['schema'],
   tokens: ['token'],
