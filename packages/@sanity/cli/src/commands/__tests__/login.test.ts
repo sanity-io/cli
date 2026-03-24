@@ -1108,6 +1108,7 @@ describe('#login', {timeout: 10_000}, () => {
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('--sso-provider')
+      expect(error?.oclif?.exit).toBe(1)
     })
 
     test('errors for invalid --sso-provider even with single SSO provider', async () => {

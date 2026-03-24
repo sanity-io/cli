@@ -23,12 +23,14 @@ export async function getSSOProvider(
     const providers = await getSSOProviders(orgSlug)
 
     const enabledProviders = providers.filter((candidate) => !candidate.disabled)
-    if (enabledProviders.length === 0) {
-      return undefined
-    }
 
     // If a specific SSO provider was requested, resolve it by name
     if (specifiedSSOProvider) {
+      if (enabledProviders.length === 0) {
+        throw new Error(
+          `Cannot find SSO provider "${specifiedSSOProvider}". No SSO providers are enabled for this organization.`,
+        )
+      }
       const match = enabledProviders.find(
         (p) => p.name.toLowerCase() === specifiedSSOProvider.toLowerCase(),
       )
@@ -42,6 +44,10 @@ export async function getSSOProvider(
         `Cannot find SSO provider "${specifiedSSOProvider}". ` +
           `Available SSO providers: ${available}`,
       )
+    }
+
+    if (enabledProviders.length === 0) {
+      return undefined
     }
 
     // Auto-select when only one enabled provider exists
