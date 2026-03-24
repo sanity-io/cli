@@ -1,21 +1,15 @@
-import {styleText} from 'node:util'
+import {type ViteDevServer} from 'vite'
 
 import {startDevServer} from '../../server/devServer.js'
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
 import {devDebug} from './devDebug.js'
-import {getDashboardAppURL} from './getDashboardAppUrl.js'
 import {getDevServerConfig} from './getDevServerConfig.js'
 import {type DevActionOptions} from './types.js'
 
 export async function startAppDevServer(
   options: DevActionOptions,
-): Promise<{close?: () => Promise<void>}> {
-  const {cliConfig, flags, output, workDir} = options
-
-  if (!flags['load-in-dashboard']) {
-    output.warn(`Apps cannot run without the Sanity dashboard`)
-    output.warn(`Starting dev server with the --load-in-dashboard flag set to true`)
-  }
+): Promise<{close?: () => Promise<void>; server?: ViteDevServer}> {
+  const {cliConfig, flags, output, workbenchAvailable, workDir} = options
 
   let organizationId: string | undefined
   if (cliConfig && 'app' in cliConfig && cliConfig.app?.organizationId) {
@@ -38,18 +32,12 @@ export async function startAppDevServer(
     const {close, server} = await startDevServer({...config, appTitle, isApp: true})
 
     const {port} = server.config.server
-    const httpHost = config.httpHost || 'localhost'
 
-    const dashboardAppUrl = await getDashboardAppURL({
-      httpHost,
-      httpPort: port,
-      organizationId,
-    })
-    output.log(`Dev server started on port ${port}`)
-    output.log(`View your app in the Sanity dashboard here:`)
-    output.log(styleText(['blue', 'underline'], dashboardAppUrl))
+    if (!workbenchAvailable) {
+      output.log(`App dev server started on port ${port}`)
+    }
 
-    return {close}
+    return {close, server}
   } catch (err) {
     devDebug('Error starting app dev server', err)
     throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
