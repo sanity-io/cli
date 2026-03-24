@@ -25,12 +25,16 @@
   ],
   "type": "module",
   "sideEffects": false,
-  "main": "./dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/_exports/index.js",
+  "types": "dist/_exports/index.d.ts",
   "exports": {
     ".": {
-      "source": "./src/index.ts",
-      "default": "./dist/index.js"
+      "source": "./src/_exports/index.ts",
+      "default": "./dist/_exports/index.js"
+    },
+    "./errors": {
+      "source": "./src/_exports/errors.ts",
+      "default": "./dist/_exports/errors.js"
     },
     "./ux": {
       "source": "./src/_exports/ux.ts",
@@ -68,6 +72,7 @@
     "@sanity/client": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",
     "boxen": "^8.0.1",
+    "clean-stack": "^6.0.0",
     "configstore": "^7.0.0",
     "debug": "catalog:",
     "get-it": "^8.7.0",
@@ -82,6 +87,7 @@
     "tsx": "catalog:",
     "vite": "catalog:",
     "vite-node": "^5.3.0",
+    "wrap-ansi": "^10.0.0",
     "zod": "catalog:"
   },
   "devDependencies": {
