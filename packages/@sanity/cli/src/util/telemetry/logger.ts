@@ -1,4 +1,5 @@
 import {
+  type DeferredEvent,
   type DefinedTelemetryLog,
   type DefinedTelemetryTrace,
   type TelemetryEvent,
@@ -82,8 +83,22 @@ export function createLogger<UserProperties>(
     emit(userPropsEvent)
   }
 
+  const resume = (events: DeferredEvent[]) => {
+    for (const event of events) {
+      emit({
+        createdAt: event.createdAt,
+        data: event.data ?? null,
+        name: event.event.name,
+        sessionId,
+        type: 'log',
+        version: event.event.version,
+      })
+    }
+  }
+
   return {
     log,
+    resume,
     trace,
     updateUserProperties,
   }

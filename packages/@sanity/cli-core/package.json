@@ -103,7 +103,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@sanity/telemetry": ">=0.8.1 <0.9.0"
+    "@sanity/telemetry": ">=0.9.0 <0.10.0"
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
