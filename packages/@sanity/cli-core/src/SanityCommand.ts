@@ -10,6 +10,7 @@ import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoo
 import {subdebug} from './debug.js'
 import {NonInteractiveError} from './errors/NonInteractiveError.js'
 import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
+import {exitCodes} from './exitCodes.js'
 import {
   getGlobalCliClient,
   getProjectCliClient,
@@ -85,9 +86,8 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
     // ExitPromptError is thrown by `@inquirer/prompts` when the user cancels a prompt
     // The `message === 'SIGINT'` check matches oclif's own convention (see handle.js in @oclif/core)
     if (err.name === 'ExitPromptError' || err.message === 'SIGINT') {
-      // 130 is the standard exit code for script termination by Ctrl+C
       this.logToStderr(styleText('yellow', '\u{203A}') + ' Aborted by user')
-      return this.exit(130)
+      return this.exit(exitCodes.SIGINT)
     }
 
     // In other cases, we _do_ want to report the error

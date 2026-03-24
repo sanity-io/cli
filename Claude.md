@@ -35,6 +35,33 @@ All these commands are run from the root of the repo.
 - pnpm build:cli - builds the project
 - pnpm watch:cli - builds the project in watch mode (rebuilds on changes)
 
+# Exit Code Convention
+
+Commands use a small set of exit codes. These align with oclif defaults and Unix convention.
+
+- **0 - Success**: Command completed normally. This is implicit when `run()` returns without throwing. Only use `this.exit(0)` when you need to short-circuit early on a successful path.
+- **1 - Runtime error**: Something went wrong during execution that is not the user's fault. API failures, network errors, missing project config, file system errors, unexpected state. Use `this.error(message, {exit: 1})`.
+- **2 - Usage error**: The user provided invalid input to the CLI itself. Bad arguments, unknown flags, invalid flag values, failing input validation. This is oclif's default for `this.error()` and all parse errors, so omitting the `exit` option also gives you 2. Use `this.error(message, {exit: 2})` or `this.error(message)`.
+- **3 - User abort**: The user declined a confirmation prompt or otherwise chose not to proceed. The command didn't fail, but it also didn't complete its intended action. Use `this.exit(exitCodes.USER_ABORT)`. Import `exitCodes` from `@sanity/cli-core`.
+- **130 - User abort (signal)**: The user cancelled via Ctrl+C or dismissed a prompt without answering. Handled automatically by `SanityCommand.catch()` - commands should not set this manually.
+
+## When to use which
+
+- User passed `--dataset` with a name that doesn't match the allowed pattern? **Exit 2** - they gave bad input.
+- The dataset name is valid but the API says it doesn't exist? **Exit 1** - runtime failure.
+- `this.error('No project ID found')` when `--project-id` was required but missing? **Exit 2** - usage error.
+- API returned 500 while creating a dataset? **Exit 1** - runtime failure.
+- User says "no" to "Deploy anyway despite version mismatch?" **Exit 3** - user chose not to proceed. The command ran correctly, but the action was not performed.
+- User hits Ctrl+C during a prompt? **Exit 130** - handled by base class, no action needed.
+
+## In practice
+
+- For `this.error()`: pass `{exit: 1}` for runtime errors, `{exit: 2}` (or omit) for usage errors.
+- For user-declined prompts: `this.exit(exitCodes.USER_ABORT)` after logging a message like "Deploy cancelled."
+- For custom error classes extending `CLIError`: set `exit` in the constructor options.
+- For `this.exit()`: only use for early termination (exit 0 for success, exit 1 for programmatic failure like `doctor` checks failing).
+- Worker processes using `process.exit()` directly should follow the same convention.
+
 # Code style
 
 - Use ES modules (import/export) syntax instead of CommonJS (require)
