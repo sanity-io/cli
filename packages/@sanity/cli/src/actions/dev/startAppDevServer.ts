@@ -9,7 +9,7 @@ import {type DevActionOptions} from './types.js'
 
 export async function startAppDevServer(
   options: DevActionOptions,
-): Promise<{close?: () => Promise<void>}> {
+): Promise<{close?: () => Promise<void>; port?: number}> {
   const {cliConfig, flags, output, workDir} = options
 
   if (!flags['load-in-dashboard']) {
@@ -44,11 +44,11 @@ export async function startAppDevServer(
       httpPort: port,
       organizationId,
     })
-    output.log(`Dev server started on port ${port}`)
+    output.log(`App dev server started on port ${port}`)
     output.log(`View your app in the Sanity dashboard here:`)
     output.log(styleText(['blue', 'underline'], dashboardAppUrl))
 
-    return {close}
+    return {close, port}
   } catch (err) {
     devDebug('Error starting app dev server', err)
     throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)

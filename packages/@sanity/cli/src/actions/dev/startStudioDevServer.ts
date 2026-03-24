@@ -22,7 +22,7 @@ import {type DevActionOptions} from './types.js'
 
 export async function startStudioDevServer(
   options: DevActionOptions,
-): Promise<{close?: () => Promise<void>}> {
+): Promise<{close?: () => Promise<void>; port?: number}> {
   const {cliConfig, flags, output, workDir} = options
   const projectId = cliConfig?.api?.projectId
   let organizationId: string | undefined
@@ -130,7 +130,7 @@ export async function startStudioDevServer(
     if (loadInDashboard) {
       spin.succeed()
 
-      output.log(`Dev server started on port ${port}`)
+      output.log(`Studio dev server started on port ${port}`)
       output.log(`View your studio in the Sanity dashboard here:`)
       output.log(
         styleText(
@@ -158,7 +158,7 @@ export async function startStudioDevServer(
       )
     }
 
-    return {close}
+    return {close, port}
   } catch (err) {
     devDebug('Error starting studio dev server', err)
     throw gracefulServerDeath('dev', config.httpHost, config.httpPort, err)
