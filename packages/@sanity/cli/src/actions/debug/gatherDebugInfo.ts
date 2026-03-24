@@ -3,8 +3,8 @@ import path from 'node:path'
 
 import {
   getCliToken,
-  getUserConfig,
   getStudioConfig,
+  getUserConfig,
   tryFindStudioConfigPath,
 } from '@sanity/cli-core'
 

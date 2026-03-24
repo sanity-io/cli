@@ -23,7 +23,7 @@ const cliUserConfigSchema = {
  */
 export function setCliUserConfig(prop: 'authToken', value: string | undefined): void {
   const config = readConfig()
-  const result = cliUserConfigSchema.authToken.safeParse(value)
+  const result = cliUserConfigSchema[prop].safeParse(value)
   if (!result.success) {
     const message = result.error.issues
       .map(({message, path}) => `[${path.join('.')}] ${message}`)
@@ -58,7 +58,7 @@ export function setCliUserConfig(prop: 'authToken', value: string | undefined): 
  */
 export function getCliUserConfig(prop: 'authToken'): string | undefined {
   const config = readConfig()
-  const result = cliUserConfigSchema.authToken.safeParse(config[prop])
+  const result = cliUserConfigSchema[prop].safeParse(config[prop])
   if (!result.success) {
     debug('Ignoring invalid stored value for "%s", returning undefined', prop)
     return undefined
@@ -111,13 +111,16 @@ export function getUserConfig(): ConfigStore {
       const configPath = getCliUserConfigPath()
       mkdirSync(dirname(configPath), {recursive: true})
       writeJsonFileSync(configPath, {...config, [key]: value}, {pretty: true})
+      if (key === 'authToken') clearCliTokenCache()
     },
 
+    // No mkdirSync needed: if readConfig() succeeded the directory already exists.
     delete(key: string): void {
       const config = readConfig()
       if (!(key in config)) return
       const {[key]: _, ...rest} = config
       writeJsonFileSync(getCliUserConfigPath(), rest, {pretty: true})
+      if (key === 'authToken') clearCliTokenCache()
     },
   }
 }
