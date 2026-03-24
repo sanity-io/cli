@@ -2,6 +2,8 @@
 
 // eslint-disable-next-line import-x/no-extraneous-dependencies -- bundled, not a runtime dep
 import {isInteractive} from '@sanity/cli-core'
+// eslint-disable-next-line import-x/no-extraneous-dependencies -- bundled, not a runtime dep
+import {CLIError} from '@sanity/cli-core/errors'
 
 import {
   flagsToInitOptions,
@@ -53,6 +55,11 @@ try {
       console.error(error.message)
     }
     process.exit(error.exitCode)
+  }
+
+  if (error instanceof CLIError) {
+    console.error(error.message)
+    process.exit(error.oclif.exit ?? 2)
   }
 
   // Clean message for unknown flags instead of a raw stack trace

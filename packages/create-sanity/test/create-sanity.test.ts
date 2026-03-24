@@ -75,8 +75,8 @@ describe('create-sanity', () => {
       const result = await runCreateSanity(['--help'])
 
       expect(result.code).toBe(0)
-      expect(result.stdout).not.toContain('--from-create')
-      expect(result.stdout).not.toContain('--quickstart')
+      expect(result.stdout).not.toContain('--reconfigure')
+      expect(result.stdout).not.toContain('--template-token')
     })
 
     test('references `npm create sanity@latest` by default', async () => {
@@ -146,6 +146,14 @@ describe('create-sanity', () => {
       expect(result.code).toBe(0)
       expect(result.stdout).toMatch(/usage/i)
     })
+
+    test('--help takes precedence over unknown flags', async () => {
+      const result = await runCreateSanity(['--help', '--unknown-flag-that-does-not-exist'])
+
+      expect(result.code).toBe(0)
+      expect(result.stdout).toMatch(/usage/i)
+      expect(result.stderr).not.toMatch(/unknown option/i)
+    })
   })
 
   describe('flag aliases', () => {
@@ -190,6 +198,46 @@ describe('create-sanity', () => {
 
       expect(result.code).not.toBe(0)
       expect(result.stderr).toContain('cannot be used with')
+    })
+
+    test('--coupon and --project-plan cannot be used together', async () => {
+      const result = await runCreateSanity(['--coupon', 'abc', '--project-plan', 'enterprise'])
+
+      expect(result.code).not.toBe(0)
+      expect(result.stderr).toContain('cannot be used with')
+    })
+  })
+
+  describe('flags with defaults do not trigger false exclusive conflicts', () => {
+    test('--bare does not conflict with auto-updates default', async () => {
+      const result = await runCreateSanity(['--bare', '--yes'])
+
+      // Will fail later (auth), but must not fail at flag parsing
+      expect(result.stderr).not.toContain('cannot be used with')
+    })
+
+    test('--template does not conflict with bare default', async () => {
+      const result = await runCreateSanity(['--template', 'clean', '--yes'])
+
+      expect(result.stderr).not.toContain('cannot be used with')
+    })
+
+    test('--dataset does not conflict with dataset-default default', async () => {
+      const result = await runCreateSanity(['--dataset', 'production', '--yes'])
+
+      expect(result.stderr).not.toContain('cannot be used with')
+    })
+
+    test('--git does not conflict with no-git default', async () => {
+      const result = await runCreateSanity(['--git', 'initial commit', '--yes'])
+
+      expect(result.stderr).not.toContain('cannot be used with')
+    })
+
+    test('--env does not conflict with bare default', async () => {
+      const result = await runCreateSanity(['--env', '.env.local', '--yes'])
+
+      expect(result.stderr).not.toContain('cannot be used with')
     })
   })
 })
