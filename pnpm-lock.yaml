@@ -1030,6 +1030,9 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.1.2(@types/node@25.0.10)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@7.3.2(@types/node@25.0.10)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+      wrap-ansi:
+        specifier: ^10.0.0
+        version: 10.0.0
 
 packages:
 
