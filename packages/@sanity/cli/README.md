@@ -1237,15 +1237,19 @@ DESCRIPTION
 EXAMPLES
   Import "./my-dataset.ndjson" into dataset "staging"
 
-    $ sanity datasets import -d staging -t someSecretToken my-dataset.ndjson
+    $ sanity datasets import -d staging my-dataset.ndjson
 
   Import into dataset "test" from stdin
 
-    cat my-dataset.ndjson | sanity datasets import -d test -t someToken -
+    cat my-dataset.ndjson | sanity datasets import -d test -
 
   Import with explicit project ID (overrides CLI configuration)
 
-    $ sanity datasets import -p projectId -d staging -t someSecretToken my-dataset.ndjson
+    $ sanity datasets import -p projectId -d staging my-dataset.ndjson
+
+  Import with an explicit token (e.g. for CI/CD)
+
+    $ sanity datasets import -d staging -t someSecretToken my-dataset.ndjson
 ```
 
 _See code: [src/commands/datasets/import.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/import.ts)_
@@ -2205,7 +2209,7 @@ DESCRIPTION
   Display help for sanity.
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/6.2.38/src/commands/help.ts)_
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/6.2.39/src/commands/help.ts)_
 
 ## `sanity hooks attempt ATTEMPTID`
 
