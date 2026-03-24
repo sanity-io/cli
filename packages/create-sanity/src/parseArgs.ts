@@ -1,26 +1,14 @@
 /* eslint-disable no-console */
 import {parseArgs} from 'node:util'
 
-// eslint-disable-next-line import-x/no-extraneous-dependencies -- bundled, not a runtime dep
-import {getRunningPackageManager} from '@sanity/cli-core/package-manager'
-
 import {type FlagDef, initFlagDefs} from '../../@sanity/cli/src/actions/init/flags.js'
+import {printHelp} from './help.js'
 
 type ParseArgsOption = {
   default?: boolean | string
   multiple?: boolean
   short?: string
   type: 'boolean' | 'string'
-}
-
-export function getCreateCommand(options?: {withFlagSeparator?: boolean}): string {
-  const pm = getRunningPackageManager() ?? 'npm'
-  // npm requires `--` to forward flags to the create script, other PMs don't
-  const sep = options?.withFlagSeparator && (pm === 'npm' || !pm) ? ' --' : ''
-  if (pm === 'bun') return `bun create sanity@latest${sep}`
-  if (pm === 'pnpm') return `pnpm create sanity@latest${sep}`
-  if (pm === 'yarn') return `yarn create sanity@latest${sep}`
-  return `npm create sanity@latest${sep}`
 }
 
 function buildParseArgsOptions() {
@@ -115,59 +103,6 @@ function normalizeFlags(
   }
 
   return merged
-}
-
-function printHelp(): never {
-  const cmd = getCreateCommand({withFlagSeparator: true})
-  const width = process.stdout.columns || 80
-  const labelWidth = 36
-  const descWidth = Math.max(width - labelWidth - 2, 20)
-
-  console.log(`Usage: ${cmd} [options]`)
-  console.log('')
-  console.log('Initialize a new Sanity project')
-  console.log('')
-  console.log('Options:')
-  for (const [name, def] of Object.entries<FlagDef>(initFlagDefs)) {
-    if (def.hidden) continue
-
-    let label: string
-    if (def.helpLabel) {
-      label = def.helpLabel
-    } else {
-      const prefix = def.allowNo ? '--[no-]' : '--'
-      const flagName = def.short ? `-${def.short}, ${prefix}${name}` : `    ${prefix}${name}`
-      const val = def.type === 'string' && def.helpValue ? ` ${def.helpValue}` : ''
-      label = flagName + val
-    }
-
-    const desc = def.description || ''
-    const paddedLabel = `  ${label.padEnd(labelWidth)}`
-
-    if (desc.length <= descWidth) {
-      console.log(`${paddedLabel}${desc}`)
-    } else {
-      // Wrap long descriptions
-      const words = desc.split(' ')
-      let line = ''
-      let first = true
-      for (const word of words) {
-        if (line.length + word.length + 1 > descWidth && line) {
-          console.log(first ? `${paddedLabel}${line}` : `  ${''.padEnd(labelWidth)}${line}`)
-          line = word
-          first = false
-        } else {
-          line = line ? `${line} ${word}` : word
-        }
-      }
-      if (line) {
-        console.log(first ? `${paddedLabel}${line}` : `  ${''.padEnd(labelWidth)}${line}`)
-      }
-    }
-  }
-  console.log('')
-  console.log(`  -h, --help${' '.padEnd(labelWidth - 12)}Show this help message`)
-  process.exit(0)
 }
 
 /**
