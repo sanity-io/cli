@@ -58,7 +58,7 @@
     "vitest": "catalog:"
   },
   "resolutions": {
-    "@sanity/client": "^7.17.0"
+    "@sanity/client": "^7.20.0"
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"

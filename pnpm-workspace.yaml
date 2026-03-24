@@ -21,7 +21,7 @@ catalog:
   '@sanity/vision': ^5.17.1
   '@sanity/types': ^5.17.1
   '@sanity/schema': ^5.17.1
-  '@sanity/client': ^7.17.0
+  '@sanity/client': ^7.20.0
   '@sanity/codegen': ^6.0.1
   '@sanity/telemetry': ^0.8.1
 
