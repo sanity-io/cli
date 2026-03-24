@@ -25,6 +25,7 @@ interface LoginOptions {
   open?: boolean
   provider?: string
   sso?: string
+  ssoProvider?: string
 }
 
 /**
@@ -49,6 +50,7 @@ export async function login(options: LoginOptions) {
     experimental: options.experimental,
     orgSlug: options.sso,
     specifiedProvider: options.provider,
+    ssoProvider: options.ssoProvider,
   })
 
   trace.log({provider: provider?.name, step: 'selectProvider'})
