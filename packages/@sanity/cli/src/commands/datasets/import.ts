@@ -2,14 +2,19 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
-import {getProjectCliClient, SanityCommand} from '@sanity/cli-core'
+import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {createRequester} from '@sanity/cli-core/request'
 import {spinner} from '@sanity/cli-core/ux'
 import {sanityImport} from '@sanity/import'
 import prettyMs from 'pretty-ms'
 
+import {NEW_DATASET_VALUE, promptForDataset} from '../../prompts/promptForDataset.js'
+import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
+import {createDataset, listDatasets} from '../../services/datasets.js'
 import {getDatasetFlag, getProjectIdFlag} from '../../util/sharedFlags.js'
+
+const importDebug = subdebug('dataset:import')
 
 interface ProgressEvent {
   step: string
@@ -193,11 +198,30 @@ export class ImportDatasetCommand extends SanityCommand<typeof ImportDatasetComm
       )
     }
 
-    const dataset = datasetFlag ?? targetDatasetArg
+    let dataset = datasetFlag ?? targetDatasetArg
     if (!dataset) {
-      this.error('Missing dataset. Use the --dataset flag to specify a dataset: --dataset <name>', {
-        exit: 1,
-      })
+      if (this.isUnattended()) {
+        this.error(
+          'Missing dataset. Use the --dataset flag to specify a dataset: --dataset <name>',
+          {exit: 1},
+        )
+      }
+
+      const datasets = await listDatasets(projectId)
+      dataset = await promptForDataset({allowCreation: true, datasets})
+
+      if (dataset === NEW_DATASET_VALUE) {
+        const newDatasetName = await promptForDatasetName()
+
+        try {
+          await createDataset({datasetName: newDatasetName, projectId})
+          dataset = newDatasetName
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          importDebug(`Failed to create dataset ${newDatasetName}: ${message}`, error)
+          this.error(`Failed to create dataset ${newDatasetName}: ${message}`, {exit: 1})
+        }
+      }
     }
 
     let operation: 'create' | 'createIfNotExists' | 'createOrReplace' = 'create'
