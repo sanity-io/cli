@@ -140,7 +140,7 @@ EXAMPLES
     $ sanity backups disable production
 ```
 
-_See code: [src/commands/backups/disable.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/backups/disable.ts)_
+_See code: [src/commands/backups/disable.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/backups/disable.ts)_
 
 ## `sanity backups download [DATASET]`
 
@@ -184,7 +184,7 @@ EXAMPLES
     $ sanity backups download production --backup-id 2024-01-01-backup-3 --out /path/to/file --overwrite
 ```
 
-_See code: [src/commands/backups/download.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/backups/download.ts)_
+_See code: [src/commands/backups/download.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/backups/download.ts)_
 
 ## `sanity backups enable [DATASET]`
 
@@ -213,7 +213,7 @@ EXAMPLES
     $ sanity backups enable production
 ```
 
-_See code: [src/commands/backups/enable.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/backups/enable.ts)_
+_See code: [src/commands/backups/enable.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/backups/enable.ts)_
 
 ## `sanity backups list [DATASET]`
 
@@ -255,7 +255,7 @@ EXAMPLES
     $ sanity backups list production --after 2024-01-31 --limit 10
 ```
 
-_See code: [src/commands/backups/list.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/backups/list.ts)_
+_See code: [src/commands/backups/list.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/backups/list.ts)_
 
 ## `sanity blueprints add TYPE`
 
@@ -630,7 +630,7 @@ EXAMPLES
   $ sanity build --no-minify --source-maps
 ```
 
-_See code: [src/commands/build.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/build.ts)_
+_See code: [src/commands/build.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/build.ts)_
 
 ## `sanity codemod [CODEMODNAME]`
 
@@ -661,7 +661,7 @@ EXAMPLES
     $ sanity codemod reactIconsV3 --dry
 ```
 
-_See code: [src/commands/codemod.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/codemod.ts)_
+_See code: [src/commands/codemod.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/codemod.ts)_
 
 ## `sanity cors add ORIGIN`
 
@@ -701,7 +701,7 @@ EXAMPLES
     $ sanity cors add https://myapp.com --project-id abc123
 ```
 
-_See code: [src/commands/cors/add.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/cors/add.ts)_
+_See code: [src/commands/cors/add.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/cors/add.ts)_
 
 ## `sanity cors delete [ORIGIN]`
 
@@ -734,7 +734,7 @@ EXAMPLES
     $ sanity cors delete --project-id abc123
 ```
 
-_See code: [src/commands/cors/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/cors/delete.ts)_
+_See code: [src/commands/cors/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/cors/delete.ts)_
 
 ## `sanity cors list`
 
@@ -760,7 +760,7 @@ EXAMPLES
     $ sanity cors list --project-id abc123
 ```
 
-_See code: [src/commands/cors/list.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/cors/list.ts)_
+_See code: [src/commands/cors/list.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/cors/list.ts)_
 
 ## `sanity datasets alias create [ALIASNAME] [TARGETDATASET]`
 
@@ -802,7 +802,7 @@ EXAMPLES
     $ sanity datasets alias create ~conference conf-2025
 ```
 
-_See code: [src/commands/datasets/alias/create.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/alias/create.ts)_
+_See code: [src/commands/datasets/alias/create.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/alias/create.ts)_
 
 ## `sanity datasets alias delete ALIASNAME`
 
@@ -838,7 +838,7 @@ EXAMPLES
     $ sanity datasets alias delete conference --force
 ```
 
-_See code: [src/commands/datasets/alias/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/alias/delete.ts)_
+_See code: [src/commands/datasets/alias/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/alias/delete.ts)_
 
 ## `sanity datasets alias link [ALIASNAME] [TARGETDATASET]`
 
@@ -883,7 +883,7 @@ EXAMPLES
     $ sanity datasets alias link conference conf-2025 --force
 ```
 
-_See code: [src/commands/datasets/alias/link.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/alias/link.ts)_
+_See code: [src/commands/datasets/alias/link.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/alias/link.ts)_
 
 ## `sanity datasets alias unlink [ALIASNAME]`
 
@@ -923,7 +923,7 @@ EXAMPLES
     $ sanity datasets alias unlink conference --force
 ```
 
-_See code: [src/commands/datasets/alias/unlink.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/alias/unlink.ts)_
+_See code: [src/commands/datasets/alias/unlink.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/alias/unlink.ts)_
 
 ## `sanity datasets copy [SOURCE] [TARGET]`
 
@@ -987,7 +987,7 @@ EXAMPLES
     $ sanity datasets copy --list --offset 2 --limit 10
 ```
 
-_See code: [src/commands/datasets/copy.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/copy.ts)_
+_See code: [src/commands/datasets/copy.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/copy.ts)_
 
 ## `sanity datasets create [NAME]`
 
@@ -1027,7 +1027,7 @@ EXAMPLES
     $ sanity datasets create my-dataset --visibility private
 ```
 
-_See code: [src/commands/datasets/create.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/create.ts)_
+_See code: [src/commands/datasets/create.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/create.ts)_
 
 ## `sanity datasets delete DATASETNAME`
 
@@ -1059,7 +1059,7 @@ EXAMPLES
     $ sanity datasets delete my-dataset --force
 ```
 
-_See code: [src/commands/datasets/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/delete.ts)_
+_See code: [src/commands/datasets/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/delete.ts)_
 
 ## `sanity datasets embeddings disable [DATASET]`
 
@@ -1084,7 +1084,7 @@ EXAMPLES
     $ sanity datasets embeddings disable production
 ```
 
-_See code: [src/commands/datasets/embeddings/disable.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/embeddings/disable.ts)_
+_See code: [src/commands/datasets/embeddings/disable.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/embeddings/disable.ts)_
 
 ## `sanity datasets embeddings enable [DATASET]`
 
@@ -1121,7 +1121,7 @@ EXAMPLES
     $ sanity datasets embeddings enable production --wait
 ```
 
-_See code: [src/commands/datasets/embeddings/enable.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/embeddings/enable.ts)_
+_See code: [src/commands/datasets/embeddings/enable.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/embeddings/enable.ts)_
 
 ## `sanity datasets embeddings status [DATASET]`
 
@@ -1146,7 +1146,7 @@ EXAMPLES
     $ sanity datasets embeddings status production
 ```
 
-_See code: [src/commands/datasets/embeddings/status.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/embeddings/status.ts)_
+_See code: [src/commands/datasets/embeddings/status.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/embeddings/status.ts)_
 
 ## `sanity datasets export [NAME] [DESTINATION]`
 
@@ -1199,7 +1199,7 @@ EXAMPLES
     $ sanity datasets export staging staging.tar.gz --types products,shops
 ```
 
-_See code: [src/commands/datasets/export.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/export.ts)_
+_See code: [src/commands/datasets/export.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/export.ts)_
 
 ## `sanity datasets import SOURCE [TARGETDATASET]`
 
@@ -1252,7 +1252,7 @@ EXAMPLES
     $ sanity datasets import -d staging -t someSecretToken my-dataset.ndjson
 ```
 
-_See code: [src/commands/datasets/import.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/import.ts)_
+_See code: [src/commands/datasets/import.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/import.ts)_
 
 ## `sanity datasets list`
 
@@ -1278,7 +1278,7 @@ EXAMPLES
     $ sanity datasets list --project-id abc123
 ```
 
-_See code: [src/commands/datasets/list.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/list.ts)_
+_See code: [src/commands/datasets/list.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/list.ts)_
 
 ## `sanity datasets visibility get DATASET`
 
@@ -1303,7 +1303,7 @@ EXAMPLES
     $ sanity datasets visibility get my-dataset
 ```
 
-_See code: [src/commands/datasets/visibility/get.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/visibility/get.ts)_
+_See code: [src/commands/datasets/visibility/get.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/visibility/get.ts)_
 
 ## `sanity datasets visibility set DATASET MODE`
 
@@ -1333,7 +1333,7 @@ EXAMPLES
     $ sanity datasets visibility set my-dataset public
 ```
 
-_See code: [src/commands/datasets/visibility/set.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/datasets/visibility/set.ts)_
+_See code: [src/commands/datasets/visibility/set.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/datasets/visibility/set.ts)_
 
 ## `sanity debug`
 
@@ -1356,7 +1356,7 @@ EXAMPLES
   $ sanity debug --secrets
 ```
 
-_See code: [src/commands/debug.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/debug.ts)_
+_See code: [src/commands/debug.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/debug.ts)_
 
 ## `sanity deploy [SOURCEDIR]`
 
@@ -1401,7 +1401,7 @@ EXAMPLES
     $ sanity deploy --external
 ```
 
-_See code: [src/commands/deploy.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/deploy.ts)_
+_See code: [src/commands/deploy.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/deploy.ts)_
 
 ## `sanity dev`
 
@@ -1428,7 +1428,7 @@ EXAMPLES
   $ sanity dev --load-in-dashboard
 ```
 
-_See code: [src/commands/dev.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/dev.ts)_
+_See code: [src/commands/dev.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/dev.ts)_
 
 ## `sanity docs browse`
 
@@ -1442,7 +1442,7 @@ DESCRIPTION
   Open Sanity docs in a web browser
 ```
 
-_See code: [src/commands/docs/browse.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/docs/browse.ts)_
+_See code: [src/commands/docs/browse.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/docs/browse.ts)_
 
 ## `sanity docs read PATH`
 
@@ -1479,7 +1479,7 @@ EXAMPLES
     $ sanity docs read https://www.sanity.io/docs/studio/installation -w
 ```
 
-_See code: [src/commands/docs/read.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/docs/read.ts)_
+_See code: [src/commands/docs/read.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/docs/read.ts)_
 
 ## `sanity docs search QUERY`
 
@@ -1512,7 +1512,7 @@ EXAMPLES
     $ sanity docs search "deployment" --limit=5
 ```
 
-_See code: [src/commands/docs/search.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/docs/search.ts)_
+_See code: [src/commands/docs/search.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/docs/search.ts)_
 
 ## `sanity doctor [CHECKS]`
 
@@ -1543,7 +1543,7 @@ EXAMPLES
     $ sanity doctor cli
 ```
 
-_See code: [src/commands/doctor.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/doctor.ts)_
+_See code: [src/commands/doctor.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/doctor.ts)_
 
 ## `sanity documents create [FILE]`
 
@@ -1594,7 +1594,7 @@ EXAMPLES
     $ sanity documents create myDocument.json --project-id abc123
 ```
 
-_See code: [src/commands/documents/create.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/documents/create.ts)_
+_See code: [src/commands/documents/create.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/documents/create.ts)_
 
 ## `sanity documents delete ID [IDS]`
 
@@ -1637,7 +1637,7 @@ EXAMPLES
     $ sanity documents delete myDocId --project-id abc123
 ```
 
-_See code: [src/commands/documents/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/documents/delete.ts)_
+_See code: [src/commands/documents/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/documents/delete.ts)_
 
 ## `sanity documents get DOCUMENTID`
 
@@ -1678,7 +1678,7 @@ EXAMPLES
     $ sanity documents get myDocId --project-id abc123
 ```
 
-_See code: [src/commands/documents/get.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/documents/get.ts)_
+_See code: [src/commands/documents/get.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/documents/get.ts)_
 
 ## `sanity documents query QUERY`
 
@@ -1721,7 +1721,7 @@ EXAMPLES
     $ sanity documents query '*[_type == "post"]' --project-id abc123 --dataset production
 ```
 
-_See code: [src/commands/documents/query.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/documents/query.ts)_
+_See code: [src/commands/documents/query.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/documents/query.ts)_
 
 ## `sanity documents validate`
 
@@ -1775,7 +1775,7 @@ EXAMPLES
     $ sanity documents validate --project-id abc123 --dataset production
 ```
 
-_See code: [src/commands/documents/validate.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/documents/validate.ts)_
+_See code: [src/commands/documents/validate.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/documents/validate.ts)_
 
 ## `sanity exec SCRIPT`
 
@@ -1816,7 +1816,7 @@ EXAMPLES
     $ sanity exec --mock-browser-env myscript.js -- --dry-run positional-argument
 ```
 
-_See code: [src/commands/exec.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/exec.ts)_
+_See code: [src/commands/exec.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/exec.ts)_
 
 ## `sanity functions add`
 
@@ -2115,7 +2115,7 @@ EXAMPLES
     $ sanity graphql deploy --playground
 ```
 
-_See code: [src/commands/graphql/deploy.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/graphql/deploy.ts)_
+_See code: [src/commands/graphql/deploy.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/graphql/deploy.ts)_
 
 ## `sanity graphql list`
 
@@ -2141,7 +2141,7 @@ EXAMPLES
     $ sanity graphql list --project-id abc123
 ```
 
-_See code: [src/commands/graphql/list.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/graphql/list.ts)_
+_See code: [src/commands/graphql/list.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/graphql/list.ts)_
 
 ## `sanity graphql undeploy`
 
@@ -2189,7 +2189,7 @@ EXAMPLES
     $ sanity graphql undeploy --project-id abc123 --dataset production
 ```
 
-_See code: [src/commands/graphql/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/graphql/undeploy.ts)_
+_See code: [src/commands/graphql/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/graphql/undeploy.ts)_
 
 ## `sanity help [COMMAND]`
 
@@ -2238,7 +2238,7 @@ EXAMPLES
     $ sanity hooks attempt abc123 --project-id projectId
 ```
 
-_See code: [src/commands/hooks/attempt.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/hooks/attempt.ts)_
+_See code: [src/commands/hooks/attempt.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/hooks/attempt.ts)_
 
 ## `sanity hooks create`
 
@@ -2264,7 +2264,7 @@ EXAMPLES
     $ sanity hooks create --project-id abc123
 ```
 
-_See code: [src/commands/hooks/create.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/hooks/create.ts)_
+_See code: [src/commands/hooks/create.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/hooks/create.ts)_
 
 ## `sanity hooks delete [NAME]`
 
@@ -2297,7 +2297,7 @@ EXAMPLES
     $ sanity hooks delete --project-id abc123
 ```
 
-_See code: [src/commands/hooks/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/hooks/delete.ts)_
+_See code: [src/commands/hooks/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/hooks/delete.ts)_
 
 ## `sanity hooks list`
 
@@ -2323,7 +2323,7 @@ EXAMPLES
     $ sanity hooks list --project-id abc123
 ```
 
-_See code: [src/commands/hooks/list.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/hooks/list.ts)_
+_See code: [src/commands/hooks/list.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/hooks/list.ts)_
 
 ## `sanity hooks logs [NAME]`
 
@@ -2359,7 +2359,7 @@ EXAMPLES
     $ sanity hooks logs --project-id abc123
 ```
 
-_See code: [src/commands/hooks/logs.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/hooks/logs.ts)_
+_See code: [src/commands/hooks/logs.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/hooks/logs.ts)_
 
 ## `sanity init`
 
@@ -2429,7 +2429,7 @@ EXAMPLES
       --output-path /Users/espenh/movies-unlimited
 ```
 
-_See code: [src/commands/init.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/init.ts)_
+_See code: [src/commands/init.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/init.ts)_
 
 ## `sanity install [PACKAGES]`
 
@@ -2453,7 +2453,7 @@ EXAMPLES
   $ sanity install some-package another-package
 ```
 
-_See code: [src/commands/install.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/install.ts)_
+_See code: [src/commands/install.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/install.ts)_
 
 ## `sanity learn`
 
@@ -2467,7 +2467,7 @@ DESCRIPTION
   Opens Sanity Learn in your web browser
 ```
 
-_See code: [src/commands/learn.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/learn.ts)_
+_See code: [src/commands/learn.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/learn.ts)_
 
 ## `sanity login`
 
@@ -2499,7 +2499,7 @@ EXAMPLES
     $ sanity login --provider github --no-open
 ```
 
-_See code: [src/commands/login.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/login.ts)_
+_See code: [src/commands/login.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/login.ts)_
 
 ## `sanity logout`
 
@@ -2513,7 +2513,7 @@ DESCRIPTION
   Logs out the CLI from the current user session
 ```
 
-_See code: [src/commands/logout.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/logout.ts)_
+_See code: [src/commands/logout.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/logout.ts)_
 
 ## `sanity manage`
 
@@ -2527,7 +2527,7 @@ DESCRIPTION
   Opens project management interface in your web browser
 ```
 
-_See code: [src/commands/manage.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/manage.ts)_
+_See code: [src/commands/manage.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/manage.ts)_
 
 ## `sanity manifest extract`
 
@@ -2555,7 +2555,7 @@ EXAMPLES
     $ sanity manifest extract --path /public/static
 ```
 
-_See code: [src/commands/manifest/extract.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/manifest/extract.ts)_
+_See code: [src/commands/manifest/extract.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/manifest/extract.ts)_
 
 ## `sanity mcp configure`
 
@@ -2574,7 +2574,7 @@ EXAMPLES
     $ sanity mcp configure
 ```
 
-_See code: [src/commands/mcp/configure.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/mcp/configure.ts)_
+_See code: [src/commands/mcp/configure.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/mcp/configure.ts)_
 
 ## `sanity media create-aspect`
 
@@ -2593,7 +2593,7 @@ EXAMPLES
     $ sanity media create-aspect
 ```
 
-_See code: [src/commands/media/create-aspect.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/media/create-aspect.ts)_
+_See code: [src/commands/media/create-aspect.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/media/create-aspect.ts)_
 
 ## `sanity media delete-aspect ASPECTNAME`
 
@@ -2622,7 +2622,7 @@ EXAMPLES
     $ sanity media delete-aspect someAspect
 ```
 
-_See code: [src/commands/media/delete-aspect.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/media/delete-aspect.ts)_
+_See code: [src/commands/media/delete-aspect.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/media/delete-aspect.ts)_
 
 ## `sanity media deploy-aspect [ASPECTNAME]`
 
@@ -2655,7 +2655,7 @@ EXAMPLES
     $ sanity media deploy-aspect --all
 ```
 
-_See code: [src/commands/media/deploy-aspect.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/media/deploy-aspect.ts)_
+_See code: [src/commands/media/deploy-aspect.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/media/deploy-aspect.ts)_
 
 ## `sanity media export [DESTINATION]`
 
@@ -2696,7 +2696,7 @@ EXAMPLES
     $ sanity media export --media-library-id my-library-id
 ```
 
-_See code: [src/commands/media/export.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/media/export.ts)_
+_See code: [src/commands/media/export.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/media/export.ts)_
 
 ## `sanity media import SOURCE`
 
@@ -2734,7 +2734,7 @@ EXAMPLES
     $ sanity media import products --replace-aspects
 ```
 
-_See code: [src/commands/media/import.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/media/import.ts)_
+_See code: [src/commands/media/import.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/media/import.ts)_
 
 ## `sanity migrations create [TITLE]`
 
@@ -2862,7 +2862,7 @@ EXAMPLES
     $ sanity openapi get query > query-api.yaml
 ```
 
-_See code: [src/commands/openapi/get.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/openapi/get.ts)_
+_See code: [src/commands/openapi/get.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/openapi/get.ts)_
 
 ## `sanity openapi list`
 
@@ -2893,7 +2893,7 @@ EXAMPLES
     $ sanity openapi list --web
 ```
 
-_See code: [src/commands/openapi/list.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/openapi/list.ts)_
+_See code: [src/commands/openapi/list.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/openapi/list.ts)_
 
 ## `sanity preview [OUTPUTDIR]`
 
@@ -2921,7 +2921,7 @@ EXAMPLES
   $ sanity preview some/build-output-dir
 ```
 
-_See code: [src/commands/preview.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/preview.ts)_
+_See code: [src/commands/preview.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/preview.ts)_
 
 ## `sanity projects create [PROJECTNAME]`
 
@@ -2969,7 +2969,7 @@ EXAMPLES
     $ sanity projects create "CI Project" --yes --json
 ```
 
-_See code: [src/commands/projects/create.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/projects/create.ts)_
+_See code: [src/commands/projects/create.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/projects/create.ts)_
 
 ## `sanity projects list`
 
@@ -2998,7 +2998,7 @@ EXAMPLES
     $ sanity projects list --sort=members --order=asc
 ```
 
-_See code: [src/commands/projects/list.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/projects/list.ts)_
+_See code: [src/commands/projects/list.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/projects/list.ts)_
 
 ## `sanity schemas delete`
 
@@ -3030,7 +3030,7 @@ EXAMPLES
       sanity.workspace.schema.workspaceName,prefix.sanity.workspace.schema.otherWorkspace
 ```
 
-_See code: [src/commands/schemas/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/schemas/delete.ts)_
+_See code: [src/commands/schemas/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/schemas/delete.ts)_
 
 ## `sanity schemas deploy`
 
@@ -3066,7 +3066,7 @@ EXAMPLES
     $ sanity schemas deploy --workspace default
 ```
 
-_See code: [src/commands/schemas/deploy.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/schemas/deploy.ts)_
+_See code: [src/commands/schemas/deploy.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/schemas/deploy.ts)_
 
 ## `sanity schemas extract`
 
@@ -3105,7 +3105,7 @@ EXAMPLES
     $ sanity schemas extract --watch --watch-patterns "lib/**/*.ts"
 ```
 
-_See code: [src/commands/schemas/extract.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/schemas/extract.ts)_
+_See code: [src/commands/schemas/extract.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/schemas/extract.ts)_
 
 ## `sanity schemas list`
 
@@ -3145,7 +3145,7 @@ EXAMPLES
     $ sanity schemas list --json --id _.schemas.workspaceName
 ```
 
-_See code: [src/commands/schemas/list.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/schemas/list.ts)_
+_See code: [src/commands/schemas/list.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/schemas/list.ts)_
 
 ## `sanity schemas validate`
 
@@ -3188,7 +3188,7 @@ EXAMPLES
     $ sanity schemas validate --debug-metafile-path metafile.json
 ```
 
-_See code: [src/commands/schemas/validate.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/schemas/validate.ts)_
+_See code: [src/commands/schemas/validate.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/schemas/validate.ts)_
 
 ## `sanity telemetry disable`
 
@@ -3207,7 +3207,7 @@ EXAMPLES
     $ sanity telemetry telemetry disable
 ```
 
-_See code: [src/commands/telemetry/disable.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/telemetry/disable.ts)_
+_See code: [src/commands/telemetry/disable.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/telemetry/disable.ts)_
 
 ## `sanity telemetry enable`
 
@@ -3226,7 +3226,7 @@ EXAMPLES
     $ sanity telemetry telemetry enable
 ```
 
-_See code: [src/commands/telemetry/enable.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/telemetry/enable.ts)_
+_See code: [src/commands/telemetry/enable.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/telemetry/enable.ts)_
 
 ## `sanity telemetry status`
 
@@ -3245,7 +3245,7 @@ EXAMPLES
     $ sanity telemetry telemetry status
 ```
 
-_See code: [src/commands/telemetry/status.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/telemetry/status.ts)_
+_See code: [src/commands/telemetry/status.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/telemetry/status.ts)_
 
 ## `sanity tokens add [LABEL]`
 
@@ -3291,7 +3291,7 @@ EXAMPLES
     $ sanity tokens add "My Token" --project-id abc123 --role=editor
 ```
 
-_See code: [src/commands/tokens/add.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/tokens/add.ts)_
+_See code: [src/commands/tokens/add.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/tokens/add.ts)_
 
 ## `sanity tokens delete [TOKENID]`
 
@@ -3331,7 +3331,7 @@ EXAMPLES
     $ sanity tokens delete --project-id abc123
 ```
 
-_See code: [src/commands/tokens/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/tokens/delete.ts)_
+_See code: [src/commands/tokens/delete.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/tokens/delete.ts)_
 
 ## `sanity tokens list`
 
@@ -3364,7 +3364,7 @@ EXAMPLES
     $ sanity tokens list --project-id abc123
 ```
 
-_See code: [src/commands/tokens/list.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/tokens/list.ts)_
+_See code: [src/commands/tokens/list.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/tokens/list.ts)_
 
 ## `sanity typegen generate`
 
@@ -3427,7 +3427,7 @@ DESCRIPTION
   Removes the deployed Sanity Studio/App from Sanity hosting
 ```
 
-_See code: [src/commands/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/undeploy.ts)_
+_See code: [src/commands/undeploy.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/undeploy.ts)_
 
 ## `sanity users invite [EMAIL]`
 
@@ -3467,7 +3467,7 @@ EXAMPLES
     $ sanity users invite pippi@sanity.io --project-id abc123
 ```
 
-_See code: [src/commands/users/invite.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/users/invite.ts)_
+_See code: [src/commands/users/invite.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/users/invite.ts)_
 
 ## `sanity users list`
 
@@ -3509,7 +3509,7 @@ EXAMPLES
     $ sanity users list --project-id abc123
 ```
 
-_See code: [src/commands/users/list.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/users/list.ts)_
+_See code: [src/commands/users/list.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/users/list.ts)_
 
 ## `sanity versions`
 
@@ -3526,6 +3526,6 @@ EXAMPLES
   $ sanity versions
 ```
 
-_See code: [src/commands/versions.ts](https://github.com/sanity-io/cli/blob/v6.2.0/src/commands/versions.ts)_
+_See code: [src/commands/versions.ts](https://github.com/sanity-io/cli/blob/v6.2.1/src/commands/versions.ts)_
 
 <!-- commandsstop -->
