@@ -1,6 +1,16 @@
 import {Command, Help, Interfaces} from '@oclif/core'
 import {getBinCommand, getRunningPackageManager} from '@sanity/cli-core/package-manager'
 
+import {topicAliases} from './topicAliases.js'
+
+// Reverse map: alias name → canonical topic name
+const aliasToCanonical = new Map<string, string>()
+for (const [canonical, aliases] of Object.entries(topicAliases)) {
+  for (const alias of aliases) {
+    aliasToCanonical.set(alias, canonical)
+  }
+}
+
 // Running `oclif readme`, we don't want to apply the `prefixBinName` transformation,
 // as it will include whatever pm was used to spawn the script in the generated readme.
 // argv will contain something like [nodeBinPath, oclifBinPath, 'readme', …] so check
@@ -38,6 +48,10 @@ export default class SanityHelp extends Help {
 
   protected formatTopic(topic: Interfaces.Topic): string {
     return prefixBinName(super.formatTopic(topic))
+  }
+
+  async showHelp(argv: string[]): Promise<void> {
+    return super.showHelp(resolveTopicAliasInArgv(argv))
   }
 }
 
@@ -84,4 +98,32 @@ function guessCreateCommand() {
 function needsFlagSeparator() {
   const pm = getRunningPackageManager()
   return pm === 'npm' || !pm
+}
+
+/**
+ * Replace the first positional argument in argv with the canonical topic name
+ * if it is a known topic alias. This ensures that `sanity dataset --help`
+ * resolves to the same help output as `sanity datasets --help`.
+ *
+ * Without this, `--help` bypasses the command_not_found hook (which normally
+ * handles alias resolution) and the help system fails to find the topic.
+ *
+ * @internal
+ */
+export function resolveTopicAliasInArgv(argv: string[]): string[] {
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i]
+    if (arg === '--') break
+    if (arg.startsWith('-')) continue
+
+    // First positional argument is the topic/command name
+    const canonical = aliasToCanonical.get(arg)
+    if (canonical) {
+      const resolved = [...argv]
+      resolved[i] = canonical
+      return resolved
+    }
+    break
+  }
+  return argv
 }
