@@ -87,6 +87,76 @@ Commands use a small set of exit codes. These align with oclif defaults and Unix
 - Commands should extend `SanityCommand` from `@sanity/cli-core`
 - Use `subdebug('namespace:command')` for debug logging
 
+# Testing
+
+Uses vitest. Suite is very large and slow. Minimize full runs.
+
+**Never pipe test output.** The following are all forbidden:
+
+```bash
+pnpm test 2>&1 | tail -3      # discards failures
+pnpm test 2>&1 | grep FAIL    # runs full suite just to filter
+pnpm test 2>&1 | head -20     # discards the information you need
+```
+
+Always read results from the JSON file instead (see "Reading test results" below).
+
+## Running tests
+
+First, compute the output path (derived from cwd, matches `vitest.config.ts`):
+
+```bash
+TEST_RESULTS="/tmp/test-results-$(echo -n "$(pwd)" | sha1sum | cut -c1-8).json"
+```
+
+Then run one of:
+
+```bash
+# Only tests affected by uncommitted changes (preferred starting point)
+pnpm test --changed --bail=1
+
+# Scoped to package
+pnpm test --filter=@sanity/cli --bail=1
+
+# Single file (when debugging a specific failure)
+pnpm test packages/@sanity/cli/src/hooks/commandNotFound/__tests__/topicAliases.test.ts
+
+# Full suite (avoid — only for final validation before committing)
+pnpm test --bail=3
+```
+
+## Reading test results
+
+After ANY test run, read from `$TEST_RESULTS` — never re-run or grep stdout:
+
+```bash
+# Get all failures with error messages (truncated)
+jq '[.testResults[] | select(.status == "failed") | {
+  file: (.name | split("/") | .[-3:] | join("/")),
+  failures: [.assertionResults[] | select(.status == "failed") | {
+    test: (.ancestorTitles + [.title] | join(" > ")),
+    error: (.failureMessages[0] // "" | .[0:500])
+  }]
+}]' "$TEST_RESULTS"
+
+# Just the failed file paths (for re-running)
+jq -r '.testResults[] | select(.status == "failed") | .name' "$TEST_RESULTS"
+
+# Summary counts
+jq '{total: .numTotalTests, passed: .numPassedTests, failed: .numFailedTests, files_failed: .numFailedTestSuites}' "$TEST_RESULTS"
+```
+
+## Workflow for fixing test failures
+
+1. Compute `TEST_RESULTS` path (see above)
+2. Run `--changed` or scoped with `--bail=1`
+3. Read `$TEST_RESULTS` for failure details — do not grep stdout
+4. Read the failing test file and relevant source to understand the failure
+5. Fix the code
+6. Re-run ONLY the previously-failing files
+7. Once those pass, run the full affected package: `pnpm test --filter=<pkg>`
+8. Full suite only as final validation before committing
+
 # Testing Patterns
 
 ## Client Mocking Strategy
@@ -137,7 +207,7 @@ describe('my command', () => {
 
     const {stdout, error} = await testCommand(MyCommand, [])
 
-    expect(error).toBeUndefined()
+    if (error) throw error
     expect(stdout).toContain('test@example.com')
   })
 })
