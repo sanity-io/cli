@@ -61,26 +61,41 @@ const mockedCanLaunchBrowser = vi.mocked(canLaunchBrowser)
 /**
  * Simulates OAuth provider redirecting back to local callback server.
  * Makes actual HTTP request to the running local server in test.
+ * Retries on connection refused since the server may not be listening yet.
  */
 async function simulateOAuthCallback(
   port: number,
   sessionId: string,
-  delay = 100,
+  {delay = 100, retries = 10} = {},
 ): Promise<number> {
   await new Promise((resolve) => setTimeout(resolve, delay))
 
-  const url = `http://localhost:${port}/callback?url=${encodeURIComponent(
+  const url = `http://127.0.0.1:${port}/callback?url=${encodeURIComponent(
     `https://api.sanity.io/auth/fetch?sid=${sessionId}`,
   )}`
 
-  return new Promise((resolve, reject) => {
-    http
-      .get(url, (res) => {
-        res.resume() // Consume response
-        resolve(res.statusCode || 0)
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await new Promise<number>((resolve, reject) => {
+        http
+          .get(url, (res) => {
+            res.resume() // Consume response
+            resolve(res.statusCode || 0)
+          })
+          .on('error', reject)
       })
-      .on('error', reject)
-  })
+    } catch (err: unknown) {
+      const isConnectionRefused =
+        err instanceof Error && 'code' in err && err.code === 'ECONNREFUSED'
+      if (!isConnectionRefused || attempt === retries) {
+        throw err
+      }
+      // Server not ready yet, wait and retry
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+  }
+
+  throw new Error('Failed to connect to auth callback server')
 }
 
 /**

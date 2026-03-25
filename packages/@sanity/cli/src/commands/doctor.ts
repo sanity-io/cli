@@ -29,13 +29,11 @@ const MESSAGE_SYMBOLS: Record<MessageType, string> = {
 }
 
 export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
-  // strict=false allows variadic args — validation is handled by getChecks().
-  // options is omitted here because oclif's help formatter uses it for display,
-  // but actual validation is done explicitly in getChecks() for clear error messages.
   static override args = {
     checks: Args.string({
-      description: `Checks to enable (defaults to all). Valid: ${KNOWN_CHECKS.join(', ')}`,
+      description: 'Checks to enable (defaults to all)',
       multiple: true,
+      options: [...KNOWN_CHECKS],
       required: false,
     }),
   }
@@ -59,18 +57,9 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
     }),
   }
 
-  // Needed for variable argument count
-  static override strict = false
-
   public async run(): Promise<void> {
-    const {argv, flags} = await this.parse(DoctorCommand)
-
-    let checks: Array<DoctorCheck>
-    try {
-      checks = getChecks(argv)
-    } catch (err) {
-      this.error(err instanceof Error ? err.message : String(err), {exit: 2})
-    }
+    const {args, flags} = await this.parse(DoctorCommand)
+    const checks = getChecks(args.checks)
     const cwd = process.cwd()
 
     if (!flags.json) {
@@ -148,24 +137,14 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
   }
 }
 
-function getChecks(argv: unknown[]): Array<DoctorCheck> {
-  // strict=false means oclif does NOT validate Args.string({ options }) — we must
-  // validate explicitly. Filter to string args that aren't flags.
-  const stringArgs = argv.filter(
-    (item): item is string => typeof item === 'string' && !item.startsWith('-'),
-  )
+function isDoctorCheckName(name: string): name is DoctorCheckName {
+  return (KNOWN_CHECKS as readonly string[]).includes(name)
+}
 
-  const unknownChecks = stringArgs.filter(
-    (item) => !(KNOWN_CHECKS as readonly string[]).includes(item),
-  )
-  if (unknownChecks.length > 0) {
-    throw new Error(
-      `Unknown check${unknownChecks.length === 1 ? '' : 's'}: ${unknownChecks.join(', ')}. Valid checks: ${KNOWN_CHECKS.join(', ')}`,
-    )
+function getChecks(checkNames: string[] | undefined): Array<DoctorCheck> {
+  if (!checkNames || checkNames.length === 0) {
+    return Object.values(doctorChecks)
   }
 
-  const checkNames = stringArgs as DoctorCheckName[]
-  return checkNames.length > 0
-    ? checkNames.map((check) => doctorChecks[check])
-    : Object.values(doctorChecks)
+  return checkNames.filter((name) => isDoctorCheckName(name)).map((check) => doctorChecks[check])
 }
