@@ -5,6 +5,7 @@ import blog from './blog.js'
 import clean from './clean.js'
 import getStartedTemplate from './getStarted.js'
 import moviedb from './moviedb.js'
+import pageBuilder from './pageBuilder.js'
 import quickstart from './quickstart.js'
 import shopify from './shopify.js'
 import shopifyOnline from './shopifyOnline.js'
@@ -16,6 +17,7 @@ const templates: Record<string, ProjectTemplate | undefined> = {
   clean,
   'get-started': getStartedTemplate,
   moviedb,
+  'page-builder': pageBuilder,
   quickstart, // empty project that dynamically imports its own schema
   shopify,
   'shopify-online-storefront': shopifyOnline,

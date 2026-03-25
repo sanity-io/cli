@@ -1493,25 +1493,34 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       return defaultTemplate
     }
 
+    const choices = [
+      {
+        name: 'Clean project with no predefined schema types',
+        value: 'clean',
+      },
+      {
+        name: 'Blog (schema)',
+        value: 'blog',
+      },
+      {
+        name: 'E-commerce (Shopify)',
+        value: 'shopify',
+      },
+      {
+        name: 'Movie project (schema + sample data)',
+        value: 'moviedb',
+      },
+    ]
+
+    if (getSanityEnv() !== 'production') {
+      choices.push({
+        name: 'Page Builder (presets)',
+        value: 'page-builder',
+      })
+    }
+
     return select({
-      choices: [
-        {
-          name: 'Clean project with no predefined schema types',
-          value: 'clean',
-        },
-        {
-          name: 'Blog (schema)',
-          value: 'blog',
-        },
-        {
-          name: 'E-commerce (Shopify)',
-          value: 'shopify',
-        },
-        {
-          name: 'Movie project (schema + sample data)',
-          value: 'moviedb',
-        },
-      ],
+      choices,
       message: 'Select project template',
     })
   }

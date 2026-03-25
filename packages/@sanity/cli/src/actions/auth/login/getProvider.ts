@@ -57,7 +57,7 @@ export async function getProvider({
       if (!provider) {
         throw new Error(
           `Cannot find login provider with name "${specifiedProvider}". ` +
-            (realProviderNames.length
+            (realProviderNames.length > 0
               ? `Available providers: ${realProviderNames.join(', ')}`
               : 'No providers are available'),
         )
