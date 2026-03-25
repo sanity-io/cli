@@ -34,6 +34,8 @@ vi.mock('../../util/canLaunchBrowser.js', () => ({
   canLaunchBrowser: vi.fn().mockReturnValue(true),
 }))
 
+const mockConfigStoreDelete = vi.hoisted(() => vi.fn())
+
 // Mock CLI core functions with real test client for HTTP
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual('@sanity/cli-core')
@@ -49,6 +51,11 @@ vi.mock('@sanity/cli-core', async () => {
     getGlobalCliClient: vi.fn().mockResolvedValue({
       request: testClient.request,
       withConfig: vi.fn().mockReturnValue({request: testClient.request}),
+    }),
+    getUserConfig: vi.fn().mockReturnValue({
+      delete: mockConfigStoreDelete,
+      get: vi.fn(),
+      set: vi.fn(),
     }),
     isInteractive: mockedIsInteractive,
     setCliUserConfig: mockedSetCliUserConfig,
@@ -194,10 +201,10 @@ describe('#login', {timeout: 10_000}, () => {
       // Browser opened with provider URL
       expect(mockedOpen).toHaveBeenCalledWith(expect.stringContaining('auth/google'))
 
-      // Token stored, telemetry cleared, correct order
-      expect(mockedSetCliUserConfig).toHaveBeenCalledTimes(2)
+      // Token stored, telemetry cleared via config store
+      expect(mockedSetCliUserConfig).toHaveBeenCalledTimes(1)
       expect(mockedSetCliUserConfig.mock.calls[0]).toEqual(['authToken', 'new-auth-token'])
-      expect(mockedSetCliUserConfig.mock.calls[1]).toEqual(['telemetryConsent', undefined])
+      expect(mockConfigStoreDelete).toHaveBeenCalledWith('telemetryConsent')
     })
 
     test('prompts user to select from multiple providers', async () => {

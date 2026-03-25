@@ -90,7 +90,7 @@ export const setupTelemetry: Hook.Prerun = async function ({config}) {
         SANITY_TELEMETRY_PROJECT_ID: cliConfig?.api?.projectId || '',
       },
       // If debug is enabled, spawn the worker with stdio inherit to see the output
-      stdio: debug.enabled ? 'inherit' : 'ignore',
+      stdio: debug.enabled || telemetryDebug.enabled ? 'inherit' : 'ignore',
     }).unref()
   })
 }

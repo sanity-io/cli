@@ -9,7 +9,7 @@ import {
   TELEMETRY_CONSENT_CONFIG_KEY,
 } from '../telemetry.js'
 
-/** In-memory config store compatible with the ConfigStoreApi interface used by createExpiringConfig */
+/** In-memory config store compatible with the ConfigStore interface used by createExpiringConfig */
 function createInMemoryConfigStore() {
   const store = new Map<string, unknown>()
   return {
@@ -58,7 +58,7 @@ describe('#getTelemetryConsentCacheKey', () => {
 
 describe('#fetchTelemetryConsent', () => {
   beforeEach(() => {
-    getUserConfig().clear()
+    testConfigStore.clear()
     mockGetCliToken.mockResolvedValue('test-token')
   })
 
