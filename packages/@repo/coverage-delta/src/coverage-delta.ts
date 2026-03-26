@@ -117,11 +117,11 @@ function postComment(body: string): void {
     // No existing comment — create a new one
     const create = spawnSync('gh', ['pr', 'comment', prNumber, '--body-file', tmpFile], {
       encoding: 'utf8',
-      stdio: 'inherit',
     })
     if (create.status !== 0) {
+      const createStderr = (create.stderr ?? '').trim()
       throw new Error(
-        `Failed to post coverage comment: gh exited with status ${create.status ?? 'unknown'}`,
+        `Failed to post coverage comment: ${createStderr || `gh exited with status ${create.status}`}`,
       )
     }
   } finally {
