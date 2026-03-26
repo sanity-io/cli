@@ -168,7 +168,6 @@
     "nock": "catalog:",
     "oclif": "^4.22.93",
     "publint": "catalog:",
-    "rimraf": "catalog:",
     "sanity": "catalog:",
     "typescript": "catalog:",
     "vite-tsconfig-paths": "^6.1.1",

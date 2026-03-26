@@ -49,7 +49,7 @@
     "@vitest/coverage-istanbul": "catalog:",
     "eslint": "catalog:",
     "husky": "^9.1.7",
-    "knip": "^5.86.0",
+    "knip": "^6.0.2",
     "lint-staged": "^16.4.0",
     "oxfmt": "catalog:",
     "rimraf": "catalog:",
