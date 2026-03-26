@@ -1,4 +1,4 @@
-import {studioWorkerTask} from '@sanity/cli-core'
+import {exitCodes, studioWorkerTask} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock from 'nock'
@@ -459,7 +459,9 @@ describe('#deploy studio (external)', () => {
       },
     })
 
+    expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('URL must use http or https protocol')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
   })
 
   describe('--url flag', () => {
@@ -639,6 +641,7 @@ describe('#deploy studio (external)', () => {
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('URL must use http or https protocol')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
     test('should normalize --url with trailing slash for external deploy', async () => {
@@ -721,6 +724,7 @@ describe('#deploy studio (external)', () => {
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Cannot prompt for external studio URL in unattended mode')
       expect(error?.message).toContain('Use --url to specify the external studio URL')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
     test('should error when --external --yes with multiple studios and no appId', async () => {
@@ -771,6 +775,7 @@ describe('#deploy studio (external)', () => {
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Cannot prompt for external studio URL in unattended mode')
       expect(error?.message).toContain('Use --url to specify the external studio URL')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(mockSelect).not.toHaveBeenCalled()
     })
   })

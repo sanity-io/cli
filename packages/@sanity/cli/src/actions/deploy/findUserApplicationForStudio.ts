@@ -2,7 +2,7 @@
  * Helper functions to find a user application for a Sanity studio.
  */
 
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {select, Separator, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 
 import {
@@ -143,7 +143,7 @@ async function findUserApplication(
       const validation = validateUrl(resolvedHost)
       if (validation !== true) {
         spin.fail()
-        output.error(validation, {exit: 1})
+        output.error(validation, {exit: exitCodes.USAGE_ERROR})
         return null
       }
     }

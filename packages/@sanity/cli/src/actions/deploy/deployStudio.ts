@@ -3,7 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
@@ -70,7 +70,7 @@ export async function deployStudio(options: DeployAppOptions) {
           : 'Use --url to specify the studio hostname'
         output.error(
           `Cannot prompt for ${isExternal ? 'external studio URL' : 'studio hostname'} in unattended mode. ${flagHint}.`,
-          {exit: 1},
+          {exit: exitCodes.USAGE_ERROR},
         )
         return
       }
@@ -186,9 +186,9 @@ export default defineCliConfig({
       output.log(`\n${example}`)
     }
   } catch (error) {
-    // if the error is a CLIError, we can just output the message and exit
+    // if the error is a CLIError, we can just output the message and preserve its exit code
     if (error instanceof CLIError) {
-      output.error(error.message, {exit: 1})
+      output.error(error.message, {exit: error.oclif?.exit ?? exitCodes.RUNTIME_ERROR})
       return
     }
 
@@ -218,7 +218,7 @@ function resolveAppHost({
     const normalized = normalizeUrl(url)
     const validation = validateUrl(normalized)
     if (validation !== true) {
-      output.error(validation, {exit: 1})
+      output.error(validation, {exit: exitCodes.USAGE_ERROR})
       return undefined
     }
     return normalized
@@ -231,7 +231,7 @@ function resolveAppHost({
   if (hostname.includes('.')) {
     output.error(
       `"${hostname}" does not look like a sanity.studio hostname. Did you mean to use --external?`,
-      {exit: 1},
+      {exit: exitCodes.USAGE_ERROR},
     )
     return undefined
   }
@@ -240,7 +240,7 @@ function resolveAppHost({
   if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i.test(hostname)) {
     output.error(
       `Invalid studio hostname "${hostname}". Hostnames can only contain letters, numbers, and hyphens.`,
-      {exit: 1},
+      {exit: exitCodes.USAGE_ERROR},
     )
     return undefined
   }

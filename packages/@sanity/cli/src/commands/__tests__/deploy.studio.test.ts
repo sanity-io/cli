@@ -1,4 +1,4 @@
-import {getCliTelemetry, studioWorkerTask} from '@sanity/cli-core'
+import {exitCodes, getCliTelemetry, studioWorkerTask} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock from 'nock'
@@ -1504,6 +1504,7 @@ describe('#deploy studio', () => {
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('does not look like a sanity.studio hostname')
       expect(error?.message).toContain('--external')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
     test('should reject --url with invalid hostname characters', async () => {
@@ -1524,6 +1525,7 @@ describe('#deploy studio', () => {
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Invalid studio hostname')
       expect(error?.message).toContain('letters, numbers, and hyphens')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
     test('should reject --url with trailing hyphen', async () => {
@@ -1543,6 +1545,7 @@ describe('#deploy studio', () => {
 
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Invalid studio hostname')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
   })
 
@@ -1574,6 +1577,7 @@ describe('#deploy studio', () => {
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Cannot prompt for studio hostname in unattended mode')
       expect(error?.message).toContain('Use --url to specify the studio hostname')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
     })
 
     test('should error when --yes used with multiple studios and no appId', async () => {
@@ -1624,6 +1628,7 @@ describe('#deploy studio', () => {
       expect(error).toBeInstanceOf(Error)
       expect(error?.message).toContain('Cannot prompt for studio hostname in unattended mode')
       expect(error?.message).toContain('Use --url to specify the studio hostname')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
       expect(mockSelect).not.toHaveBeenCalled()
     })
 
