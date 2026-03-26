@@ -37,7 +37,7 @@ catalog:
   nock: ^14.0.11
 
   # CLI Framework
-  '@oclif/core': ^4.10.2
+  '@oclif/core': https://pkg.pr.new/binoy14/core/@oclif/core@1471bcc
   '@oclif/plugin-help': ^6.2.39
   '@oclif/plugin-not-found': ^3.2.76
 
