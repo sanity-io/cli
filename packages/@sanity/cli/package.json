@@ -86,7 +86,7 @@
     "@sanity/runtime-cli": "^14.7.1",
     "@sanity/schema": "catalog:",
     "@sanity/telemetry": "catalog:",
-    "@sanity/template-validator": "https://pkg.pr.new/sanity-io/template-validator/@sanity/template-validator@14eca040d985cb8900ed0d2b1803292c0b36d412",
+    "@sanity/template-validator": "https://pkg.pr.new/sanity-io/template-validator/@sanity/template-validator@6f13a744aa5bae6761035c0b1255bf3d5889e46c",
     "@sanity/types": "catalog:",
     "@sanity/ui": "^3.1.14",
     "@sanity/worker-channels": "^2.0.0",
