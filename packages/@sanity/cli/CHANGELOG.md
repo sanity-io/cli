@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.2.2](https://github.com/sanity-io/cli/compare/cli-v6.2.1...cli-v6.2.2) (2026-03-27)
+
+
+### Bug Fixes
+
+* **dataset:alias:** passing apiName over displayName to input validation ([#773](https://github.com/sanity-io/cli/issues/773)) ([747be46](https://github.com/sanity-io/cli/commit/747be4683e854f170dba858704d929927ee47c68))
+* **deps:** update @sanity/telemetry to v0.9.0 ([#777](https://github.com/sanity-io/cli/issues/777)) ([fc44e3e](https://github.com/sanity-io/cli/commit/fc44e3e9fe6b6a750daa576b30e979c83622cdab))
+* **deps:** update oclif-tooling ([#821](https://github.com/sanity-io/cli/issues/821)) ([3ee5f3f](https://github.com/sanity-io/cli/commit/3ee5f3ff05bb63278da638c0aa3f9218e7df0131))
+* **deps:** update sanity-tooling ([#766](https://github.com/sanity-io/cli/issues/766)) ([f337c42](https://github.com/sanity-io/cli/commit/f337c420b9d32877ed22c39eef8ba5d2940a7310))
+* **deps:** update sanity-tooling ([#787](https://github.com/sanity-io/cli/issues/787)) ([d553fb0](https://github.com/sanity-io/cli/commit/d553fb0c63b6e279be226342e9d6478b269a4a17))
+* **help:** resolve singular topic aliases with --help flag ([#792](https://github.com/sanity-io/cli/issues/792)) ([2ee676f](https://github.com/sanity-io/cli/commit/2ee676f3a1a1dc215887f09f8cb4c1ed5d47a5a1))
+* **import:** prompt for dataset when not provided ([#783](https://github.com/sanity-io/cli/issues/783)) ([ceac4b7](https://github.com/sanity-io/cli/commit/ceac4b7c267428aa4a9e6298db06031df1bcf5bd))
+* **init:** update outdated dependency versions for Next.js projects ([#817](https://github.com/sanity-io/cli/issues/817)) ([890fcf1](https://github.com/sanity-io/cli/commit/890fcf1a9ff5221d13c0c6ee5531ea1da67539d9))
+* **login:** non-interactive login shows actionable error ([#767](https://github.com/sanity-io/cli/issues/767)) ([aa8b7c2](https://github.com/sanity-io/cli/commit/aa8b7c2ce3efe8576e3a270690581a08600da5f3))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 1.2.2
+  * devDependencies
+    * @sanity/cli-test bumped to 0.2.8
+
 ## [6.2.1](https://github.com/sanity-io/cli/compare/cli-v6.2.0...cli-v6.2.1) (2026-03-24)
 
 
