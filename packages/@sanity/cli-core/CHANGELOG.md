@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.2](https://github.com/sanity-io/cli/compare/cli-core-v1.2.1...cli-core-v1.2.2) (2026-03-27)
+
+
+### Bug Fixes
+
+* **deps:** update @sanity/telemetry to v0.9.0 ([#777](https://github.com/sanity-io/cli/issues/777)) ([fc44e3e](https://github.com/sanity-io/cli/commit/fc44e3e9fe6b6a750daa576b30e979c83622cdab))
+
+
+### Documentation
+
+* define exit code convention and add exitCodes constant ([#784](https://github.com/sanity-io/cli/issues/784)) ([133be82](https://github.com/sanity-io/cli/commit/133be82f2a246f5cc1573c8e2733d50a2b2ea746))
+
 ## [1.2.1](https://github.com/sanity-io/cli/compare/cli-core-v1.2.0...cli-core-v1.2.1) (2026-03-24)
 
 
