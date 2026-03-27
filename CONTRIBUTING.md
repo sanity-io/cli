@@ -778,34 +778,30 @@ npx sanity dev
 
 This project uses [Changesets](https://github.com/changesets/changesets) for version management and publishing.
 
-### Automatic Changesets (Conventional Commits)
+### Automatic Changesets
 
-For **bot PRs** (Renovate, Dependabot), changesets are **automatically generated** from conventional commit messages — no manual steps needed. The `changesets-from-conventional-commits` workflow parses commit messages and creates the appropriate changeset files:
+Changesets are **automatically generated** — you never need to run `pnpm changeset` manually.
 
-- `feat:` → minor bump
-- `fix:` → patch bump
-- `feat!:` or `BREAKING CHANGE:` → major bump
+**For human PRs**, the `generate-changeset` workflow:
 
-This also works for any PR that follows [Conventional Commits](https://www.conventionalcommits.org/) format.
+1. Reads the **Notes for release** section from your PR description (the template pre-fills this)
+2. Derives the bump type from your PR title (`feat:` → minor, `fix:` → patch, `feat!:` → major)
+3. Detects affected packages from changed files
+4. Commits a changeset file to your PR branch
+
+If you leave the Notes for release section empty, the PR title is used as the changelog entry. Write `N/A` to explicitly skip the changeset (e.g., `N/A: Internal only`).
+
+**For bot PRs** (Renovate, Dependabot), the `changesets-from-conventional-commits` workflow generates changesets from commit messages automatically.
 
 ### Manual Changesets
 
-For human-authored PRs, you can either:
-
-1. **Rely on conventional commits** — if your PR commit messages follow the conventional format, changesets will be auto-generated
-2. **Manually add a changeset** for more control over the changelog entry:
+In rare cases where you need full control (e.g., targeting specific packages), you can still run:
 
 ```bash
 pnpm changeset
 ```
 
-This will prompt you to:
-
-1. **Select packages** that are affected by your change
-2. **Choose a bump type** (patch, minor, or major)
-3. **Write a summary** of the change (this becomes the changelog entry)
-
-A markdown file will be created in the `.changeset/` directory. Commit this file with your PR.
+This creates a changeset file in `.changeset/`. If you do this, write `N/A` in the PR Notes for release section to prevent the auto-generated changeset from duplicating it.
 
 ### When a Changeset is Needed
 
