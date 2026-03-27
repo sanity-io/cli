@@ -20,6 +20,7 @@ export interface DevServerOptions {
   staticPath: string
 
   entry?: string
+  federation?: CliConfig['federation']
   httpHost?: string
   isApp?: boolean
   projectName?: string
@@ -40,6 +41,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     basePath,
     cwd,
     entry,
+    federation,
     httpHost,
     httpPort,
     isApp,
@@ -66,6 +68,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   let viteConfig: InlineConfig = await getViteConfig({
     basePath,
     cwd,
+    federation,
     isApp,
     mode: 'development',
     reactCompiler,
