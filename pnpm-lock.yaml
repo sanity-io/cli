@@ -70,8 +70,8 @@ catalogs:
       specifier: ^9.6.0
       version: 9.6.1
     get-tsconfig:
-      specifier: ^4.13.6
-      version: 4.13.6
+      specifier: ^4.13.7
+      version: 4.13.7
     import-meta-resolve:
       specifier: ^4.2.0
       version: 4.2.0
@@ -777,7 +777,7 @@ importers:
         version: 8.7.0(debug@4.4.3)
       get-tsconfig:
         specifier: 'catalog:'
-        version: 4.13.6
+        version: 4.13.7
       import-meta-resolve:
         specifier: 'catalog:'
         version: 4.2.0
@@ -6380,6 +6380,9 @@ packages:
 
   get-tsconfig@4.13.6:
     resolution: {integrity: sha512-shZT/QMiSHc/YBLxxOkMtgSid5HFoauqCE3/exfsEcwg1WkeqjG+V40yBbBrsD+jW2HDXcs28xOfcbm2jI8Ddw==}
+
+  get-tsconfig@4.13.7:
+    resolution: {integrity: sha512-7tN6rFgBlMgpBML5j8typ92BKFi2sFQvIdpAqLA2beia5avZDrMs0FLZiM5etShWq5irVyGcGMEA1jcDaK7A/Q==}
 
   git-hooks-list@3.2.0:
     resolution: {integrity: sha512-ZHG9a1gEhUMX1TvGrLdyWb9kDopCBbTnI8z4JgRMYxsijWipgjSEYoPWqBuIB0DnRnvqlQSEeVmzpeuPm7NdFQ==}
@@ -15756,6 +15759,10 @@ snapshots:
       is-stream: 4.0.1
 
   get-tsconfig@4.13.6:
+    dependencies:
+      resolve-pkg-maps: 1.0.0
+
+  get-tsconfig@4.13.7:
     dependencies:
       resolve-pkg-maps: 1.0.0
 
