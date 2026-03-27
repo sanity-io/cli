@@ -5,7 +5,7 @@ import {
   ProjectRootNotFoundError,
   tryFindStudioConfigPath,
 } from '@sanity/cli-core'
-import {mockApi, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -321,7 +321,7 @@ describe('#debug', () => {
 
       if (error) throw error
       expect(stdout).toContain('Project:')
-      expect(stdout).toContain('/test/project')
+      expect(stdout).toContain(convertToSystemPath('/test/project'))
       expect(stdout).toContain('sanity.cli.ts')
       expect(stdout).toContain('sanity.config.ts')
     })

@@ -1,4 +1,4 @@
-import {testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {
@@ -45,14 +45,17 @@ describe('#install', () => {
       const {error} = await testCommand(Install, [], {mocks: defaultMocks})
 
       if (error) throw error
-      expect(mockGetPackageManagerChoice).toHaveBeenCalledWith('/test/project', {
-        interactive: true,
-      })
+      expect(mockGetPackageManagerChoice).toHaveBeenCalledWith(
+        convertToSystemPath('/test/project'),
+        {
+          interactive: true,
+        },
+      )
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
-        '/test/project',
+        convertToSystemPath('/test/project'),
         'npm',
         expect.objectContaining({
-          workDir: '/test/project',
+          workDir: convertToSystemPath('/test/project'),
         }),
       )
       expect(mockInstallNewPackages).not.toHaveBeenCalled()
@@ -69,10 +72,10 @@ describe('#install', () => {
 
       if (error) throw error
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
-        '/test/project',
+        convertToSystemPath('/test/project'),
         'yarn',
         expect.objectContaining({
-          workDir: '/test/project',
+          workDir: convertToSystemPath('/test/project'),
         }),
       )
     })
@@ -88,10 +91,10 @@ describe('#install', () => {
 
       if (error) throw error
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
-        '/test/project',
+        convertToSystemPath('/test/project'),
         'pnpm',
         expect.objectContaining({
-          workDir: '/test/project',
+          workDir: convertToSystemPath('/test/project'),
         }),
       )
     })
@@ -107,10 +110,10 @@ describe('#install', () => {
 
       if (error) throw error
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
-        '/test/project',
+        convertToSystemPath('/test/project'),
         'bun',
         expect.objectContaining({
-          workDir: '/test/project',
+          workDir: convertToSystemPath('/test/project'),
         }),
       )
     })
@@ -126,10 +129,10 @@ describe('#install', () => {
 
       if (error) throw error
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
-        '/test/project',
+        convertToSystemPath('/test/project'),
         'manual',
         expect.objectContaining({
-          workDir: '/test/project',
+          workDir: convertToSystemPath('/test/project'),
         }),
       )
     })
@@ -152,7 +155,7 @@ describe('#install', () => {
           packages: ['@sanity/vision'],
         },
         expect.objectContaining({
-          workDir: '/test/project',
+          workDir: convertToSystemPath('/test/project'),
         }),
       )
       expect(mockInstallDeclaredPackages).not.toHaveBeenCalled()
@@ -176,7 +179,7 @@ describe('#install', () => {
           packages: ['@sanity/vision', 'react-icons', 'lodash'],
         },
         expect.objectContaining({
-          workDir: '/test/project',
+          workDir: convertToSystemPath('/test/project'),
         }),
       )
       expect(mockInstallDeclaredPackages).not.toHaveBeenCalled()
@@ -198,7 +201,7 @@ describe('#install', () => {
           packages: ['some-package'],
         },
         expect.objectContaining({
-          workDir: '/test/project',
+          workDir: convertToSystemPath('/test/project'),
         }),
       )
     })
@@ -255,14 +258,17 @@ describe('#install', () => {
 
       await testCommand(Install, [], {mocks: defaultMocks})
 
-      expect(mockGetPackageManagerChoice).toHaveBeenCalledWith('/test/project', {
-        interactive: true,
-      })
+      expect(mockGetPackageManagerChoice).toHaveBeenCalledWith(
+        convertToSystemPath('/test/project'),
+        {
+          interactive: true,
+        },
+      )
       expect(mockInstallDeclaredPackages).toHaveBeenCalledWith(
-        '/test/project',
+        convertToSystemPath('/test/project'),
         'npm',
         expect.objectContaining({
-          workDir: '/test/project',
+          workDir: convertToSystemPath('/test/project'),
         }),
       )
     })
@@ -287,7 +293,7 @@ describe('#install', () => {
             log: expect.any(Function),
             warn: expect.any(Function),
           }),
-          workDir: '/test/project',
+          workDir: convertToSystemPath('/test/project'),
         }),
       )
     })

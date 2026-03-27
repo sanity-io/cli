@@ -107,7 +107,7 @@ async function findUserApplication(
   const {appHost, appId, output, projectId, urlType} = options
   let {spin} = options
 
-  let userApplication: UserApplication | null = null
+  let userApplication: UserApplication | null
 
   // If the config has an appId, check for apps with that ID
   if (appId) {

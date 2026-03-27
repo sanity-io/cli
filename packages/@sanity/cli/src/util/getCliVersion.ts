@@ -22,7 +22,9 @@ export async function getCliVersion(): Promise<string> {
   try {
     pkg = await readPackageJson(path.join(cliPath, 'package.json'))
   } catch (err) {
-    throw new Error(`Unable to read @sanity/cli/package.json: ${(err as Error).message}`)
+    throw new Error(`Unable to read @sanity/cli/package.json: ${(err as Error).message}`, {
+      cause: err,
+    })
   }
 
   return pkg.version

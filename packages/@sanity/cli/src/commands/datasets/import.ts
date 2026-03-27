@@ -47,7 +47,7 @@ async function getUriStream(uri: string): Promise<NodeJS.ReadableStream> {
     const response = (await request({stream: true, url: uri})) as {body: NodeJS.ReadableStream}
     return response.body
   } catch (err) {
-    throw new Error(`Error fetching source:\n${(err as Error).message}`)
+    throw new Error(`Error fetching source:\n${(err as Error).message}`, {cause: err})
   }
 }
 

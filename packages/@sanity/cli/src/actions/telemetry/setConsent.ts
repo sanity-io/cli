@@ -113,7 +113,7 @@ export async function setConsent({status}: SetConsentOptions): Promise<SetConsen
       const message = err.response?.body?.message
         ? `${errorMessage}: ${err.response.body.message}`
         : errorMessage
-      throw new Error(message)
+      throw new Error(message, {cause: err})
     }
 
     if (isHttpError(err)) {
@@ -125,6 +125,6 @@ export async function setConsent({status}: SetConsentOptions): Promise<SetConsen
     }
 
     // For non-HTTP errors, wrap in a new error
-    throw new Error(errorMessage)
+    throw new Error(errorMessage, {cause: err})
   }
 }

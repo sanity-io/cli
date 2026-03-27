@@ -86,7 +86,9 @@ export async function readStudioConfig(
       : rawConfigSchema.parse(result)
   } catch (err) {
     if (err instanceof z.ZodError) {
-      throw new Error(`Invalid studio config at ${configPath}:\n${formatZodIssues(err.issues)}`)
+      throw new Error(`Invalid studio config at ${configPath}:\n${formatZodIssues(err.issues)}`, {
+        cause: err,
+      })
     }
 
     throw err
