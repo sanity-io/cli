@@ -19,6 +19,7 @@ export interface DevServerOptions {
 
   staticPath: string
 
+  appTitle?: string
   entry?: string
   httpHost?: string
   isApp?: boolean
@@ -37,6 +38,7 @@ interface DevServer {
 
 export async function startDevServer(options: DevServerOptions): Promise<DevServer> {
   const {
+    appTitle,
     basePath,
     cwd,
     entry,
@@ -52,6 +54,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
 
   debug('Writing Sanity runtime files')
   const watcher = await writeSanityRuntime({
+    appTitle,
     basePath,
     cwd,
     entry,
