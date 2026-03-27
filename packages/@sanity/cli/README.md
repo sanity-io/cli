@@ -2193,7 +2193,7 @@ DESCRIPTION
   Display help for sanity.
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/6.2.39/src/commands/help.ts)_
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/6.2.40/src/commands/help.ts)_
 
 ## `sanity hooks attempt ATTEMPTID`
 
