@@ -37,6 +37,7 @@
     "pretest": "pnpm run build:cli",
     "test": "vitest run",
     "pretest:watch": "pnpm run build:cli",
+    "test:e2e": "pnpm build:cli && vitest run --config e2e/vitest.config.ts",
     "test:watch": "vitest",
     "watch:cli": "turbo run watch --filter=@sanity/cli --filter=@sanity/cli*"
   },
@@ -63,11 +64,15 @@
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
   },
+  "volta": {
+    "node": "25.8.2"
+  },
   "packageManager": "pnpm@10.30.3",
   "pnpm": {
     "onlyBuiltDependencies": [
       "@swc/core",
-      "esbuild"
+      "esbuild",
+      "node-pty"
     ],
     "overrides": {
       "@sanity/cli": "workspace:*"

@@ -9,6 +9,7 @@ packages:
   - 'packages/create-sanity'
   - 'fixtures/*'
   - 'tmp/*'
+  - 'e2e'
 
 catalog:
   # Linting

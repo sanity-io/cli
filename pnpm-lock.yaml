@@ -181,6 +181,12 @@ importers:
         specifier: 'catalog:'
         version: 4.1.0(@types/node@25.0.10)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@7.3.1(@types/node@25.0.10)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))
 
+  e2e:
+    dependencies:
+      node-pty:
+        specifier: 1.2.0-beta.12
+        version: 1.2.0-beta.12
+
   fixtures/basic-app:
     dependencies:
       '@sanity/sdk':
@@ -7224,8 +7230,14 @@ packages:
     resolution: {integrity: sha512-u5xUnYE+UOOBA6SpELJheMCtj2Laqx15Vl70QxKo43Wz/6nMHXS7PrEioXLjXAwhmawdEMNImwKCcPhBJWbKVw==}
     engines: {node: '>=18.20.0 <20 || >=20.12.1'}
 
+  node-addon-api@7.1.1:
+    resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
+
   node-html-parser@7.0.2:
     resolution: {integrity: sha512-DxodLVh7a6JMkYzWyc8nBX9MaF4M0lLFYkJHlWOiu7+9/I6mwNK9u5TbAMC7qfqDJEPX9OIoWA2A9t4C2l1mUQ==}
+
+  node-pty@1.2.0-beta.12:
+    resolution: {integrity: sha512-uExTCG/4VmSJa4+TjxFwPXv8BfacmfFEBL6JpxCMDghcwqzvD0yTcGmZ1fKOK6HY33tp0CelLblqTECJizc+Yw==}
 
   node-releases@2.0.27:
     resolution: {integrity: sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA==}
@@ -16462,10 +16474,16 @@ snapshots:
       json-stringify-safe: 5.0.1
       propagate: 2.0.1
 
+  node-addon-api@7.1.1: {}
+
   node-html-parser@7.0.2:
     dependencies:
       css-select: 5.2.2
       he: 1.2.0
+
+  node-pty@1.2.0-beta.12:
+    dependencies:
+      node-addon-api: 7.1.1
 
   node-releases@2.0.27: {}
 
