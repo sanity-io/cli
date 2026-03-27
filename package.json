@@ -21,6 +21,7 @@
   "scripts": {
     "build": "turbo run build build:types",
     "build:cli": "turbo run build build:types --filter=./packages/**",
+    "changeset": "changeset",
     "check": "npm run check:format && npm run check:lint && npm run check:types && npm run check:deps",
     "check:deps": "knip",
     "check:format": "oxfmt --check",
@@ -34,13 +35,18 @@
     "format": "oxfmt",
     "prepare": "husky",
     "publint": "turbo run publint",
+    "publish-packages": "changeset publish",
+    "release": "pnpm build:cli && pnpm publish-packages",
     "pretest": "pnpm run build:cli",
     "test": "vitest run",
     "pretest:watch": "pnpm run build:cli",
     "test:watch": "vitest",
+    "version-packages": "changeset version",
     "watch:cli": "turbo run watch --filter=@sanity/cli --filter=@sanity/cli*"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.30.0",
     "@commitlint/cli": "^20.4.2",
     "@commitlint/config-conventional": "^20.4.2",
     "@commitlint/types": "^20.4.0",
