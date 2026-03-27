@@ -8,6 +8,8 @@ import {format} from 'oxfmt'
 
 import {buildMarkdown, computeDeltas, parseCoverageSummary} from './lib.ts'
 
+const COMMENT_ID = '<!-- coverage-delta-comment -->'
+
 await main()
 
 async function main(): Promise<void> {
@@ -53,10 +55,28 @@ function getChangedFiles(): string[] {
   return (result.stdout ?? '').trim().split('\n').filter(Boolean)
 }
 
-function isNoExistingCommentError(stderr: string): boolean {
-  // gh cli reports this when --edit-last finds no comment from the current user
-  const normalized = stderr.toLowerCase()
-  return normalized.includes('no comments') || normalized.includes('no comment found')
+function findExistingCommentId(prNumber: string): string | null {
+  const repo = process.env.GITHUB_REPOSITORY
+  if (!repo) return null
+
+  const jqFilter = '[.[] | select(.body | contains($id))][0].id'
+  const result = spawnSync(
+    'gh',
+    [
+      'api',
+      `repos/${repo}/issues/${prNumber}/comments`,
+      '--jq',
+      jqFilter,
+      '--arg',
+      'id',
+      COMMENT_ID,
+    ],
+    {encoding: 'utf8'},
+  )
+  if (result.status !== 0) return null
+
+  const id = (result.stdout ?? '').trim()
+  return id && id !== 'null' ? id : null
 }
 
 function postComment(body: string): void {
@@ -65,35 +85,43 @@ function postComment(body: string): void {
     throw new Error('PR_NUMBER environment variable is required to post comments')
   }
 
+  const bodyWithId = `${COMMENT_ID}\n${body}`
   const tmpFile = join(tmpdir(), `coverage-delta-${Date.now()}.md`)
-  writeFileSync(tmpFile, body)
+  writeFileSync(tmpFile, bodyWithId)
   try {
-    // Try to edit existing coverage comment, fall back to creating new one
-    const edit = spawnSync(
-      'gh',
-      ['pr', 'comment', prNumber, '--edit-last', '--body-file', tmpFile],
-      {
-        encoding: 'utf8',
-      },
-    )
+    const existingId = findExistingCommentId(prNumber)
 
-    if (edit.status === 0) return
-
-    const editStderr = (edit.stderr ?? '').trim()
-    if (!isNoExistingCommentError(editStderr)) {
-      throw new Error(
-        `Failed to edit coverage comment: ${editStderr || `gh exited with status ${edit.status}`}`,
+    if (existingId) {
+      const repo = process.env.GITHUB_REPOSITORY
+      const edit = spawnSync(
+        'gh',
+        [
+          'api',
+          '--method',
+          'PATCH',
+          `repos/${repo}/issues/comments/${existingId}`,
+          '-F',
+          `body=@${tmpFile}`,
+        ],
+        {encoding: 'utf8'},
       )
+      if (edit.status !== 0) {
+        const editStderr = (edit.stderr ?? '').trim()
+        throw new Error(
+          `Failed to edit coverage comment: ${editStderr || `gh exited with status ${edit.status}`}`,
+        )
+      }
+      return
     }
 
     // No existing comment — create a new one
     const create = spawnSync('gh', ['pr', 'comment', prNumber, '--body-file', tmpFile], {
       encoding: 'utf8',
-      stdio: 'inherit',
     })
     if (create.status !== 0) {
+      const createStderr = (create.stderr ?? '').trim()
       throw new Error(
-        `Failed to post coverage comment: gh exited with status ${create.status ?? 'unknown'}`,
+        `Failed to post coverage comment: ${createStderr || `gh exited with status ${create.status}`}`,
       )
     }
   } finally {
