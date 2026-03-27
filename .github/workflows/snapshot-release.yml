@@ -1,0 +1,140 @@
+name: Snapshot Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'npm dist-tag for the snapshot release'
+        required: false
+        default: 'snapshot'
+        type: string
+      forceBump:
+        description: 'Force a version bump for all packages'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write # for pushing version commits and creating GH releases when forceBump is used
+  id-token: write # OIDC for npm provenance
+
+jobs:
+  snapshot:
+    name: Snapshot Release
+    runs-on: ubuntu-latest
+
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
+    steps:
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.ECOSPARK_APP_ID }}
+          private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ steps.generate_token.outputs.token }}
+          persist-credentials: false
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          node-version: 20
+
+      - name: Configure npm registry
+        run: echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' > .npmrc
+
+      - name: Generate changeset for all packages
+        if: ${{ inputs.forceBump != 'false' }}
+        run: |
+          PACKAGES=$(pnpm ls -r --json --depth -1 | jq -r '.[] | select(.private != true) | .name')
+          {
+            echo '---'
+            for pkg in $PACKAGES; do
+              echo "'${pkg}': ${{ inputs.forceBump }}"
+            done
+            echo '---'
+            echo ''
+            echo 'Force snapshot release'
+          } > .changeset/force-snapshot.md
+
+      - name: Create snapshot versions
+        if: ${{ inputs.forceBump == 'false' }}
+        run: pnpm changeset version --snapshot
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+      - name: Create release versions
+        if: ${{ inputs.forceBump != 'false' }}
+        run: pnpm changeset version
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+      - name: Commit and push version changes
+        if: ${{ inputs.forceBump != 'false' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+          git add -A
+          git commit -m "chore: version packages"
+          git push origin HEAD:${{ github.ref_name }}
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+      - name: Build packages
+        run: pnpm run build:cli
+
+      - name: Publish snapshot packages
+        if: ${{ inputs.forceBump == 'false' }}
+        run: pnpm changeset publish --tag "$DIST_TAG" 2>&1 | tee publish-output.txt
+        env:
+          DIST_TAG: ${{ inputs.tag }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+
+      - name: Publish release packages
+        if: ${{ inputs.forceBump != 'false' }}
+        run: pnpm changeset publish 2>&1 | tee publish-output.txt
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+
+      - name: Push tags and create GitHub releases
+        if: ${{ inputs.forceBump != 'false' }}
+        run: |
+          git push origin --tags
+          for tag in $(git tag --points-at HEAD); do
+            gh release create "$tag" --generate-notes
+          done
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+
+      - name: Summary
+        run: |
+          echo "## Snapshot Release" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**dist-tag:** \`${{ inputs.tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**branch:** \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Published packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep 'New tag:' publish-output.txt >> $GITHUB_STEP_SUMMARY || echo "No packages published" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
