@@ -4,8 +4,10 @@ import {
   type CliConfig,
   findProjectRoot,
   getCliTelemetry,
+  readPackageJson,
   type UserViteConfig,
 } from '@sanity/cli-core'
+import {federation as viteFederation} from '@sanity/federation/vite'
 import viteReact from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
@@ -24,7 +26,7 @@ import {
 } from './getStudioEnvironmentVariables.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
 
-interface ViteOptions {
+interface ViteOptions extends Pick<CliConfig, 'federation' | 'schemaExtraction' | 'typegen'> {
   /**
    * Root path of the studio/sanity app
    */
@@ -57,10 +59,6 @@ interface ViteOptions {
    */
   outputDir?: string
   /**
-   * Schema extraction configuration
-   */
-  schemaExtraction?: CliConfig['schemaExtraction']
-  /**
    * HTTP development server configuration
    */
   server?: {host?: string; port?: number}
@@ -68,10 +66,6 @@ interface ViteOptions {
    * Whether or not to enable source maps
    */
   sourceMap?: boolean
-  /**
-   * Typegen configuration
-   */
-  typegen?: CliConfig['typegen']
 }
 
 /**
@@ -83,6 +77,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const {
     basePath: rawBasePath = '/',
     cwd,
+    federation,
     importMap,
     isApp,
     minify,
@@ -177,6 +172,15 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
             sanityTypegenPlugin({
               config: typegen,
               telemetryLogger: getCliTelemetry(),
+              workDir: cwd,
+            }),
+          ]
+        : []),
+      ...(federation?.enabled
+        ? [
+            viteFederation({
+              isApp,
+              pkgJson: await readPackageJson(path.join(cwd, 'package.json')),
               workDir: cwd,
             }),
           ]

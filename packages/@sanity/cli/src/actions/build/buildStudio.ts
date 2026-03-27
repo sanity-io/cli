@@ -200,6 +200,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     const bundle = await buildStaticFiles({
       basePath,
       cwd: workDir,
+      federation: cliConfig.federation,
       importMap,
       minify: Boolean(flags.minify),
       outputDir,

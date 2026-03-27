@@ -34,6 +34,12 @@ export const cliConfigSchema = z.object({
     })
     .optional(),
 
+  federation: z
+    .object({
+      enabled: z.boolean(),
+    })
+    .optional(),
+
   graphql: z
     .array(
       z.object({

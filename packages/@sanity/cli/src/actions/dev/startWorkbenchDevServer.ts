@@ -29,6 +29,10 @@ export async function startWorkbenchDevServer(
     workDir,
   })
 
+  if (!cliConfig?.federation?.enabled) {
+    return {httpHost, workbenchAvailable: false, workbenchPort}
+  }
+
   const reactStrictMode = process.env.SANITY_STUDIO_REACT_STRICT_MODE
     ? process.env.SANITY_STUDIO_REACT_STRICT_MODE === 'true'
     : Boolean(cliConfig?.reactStrictMode)

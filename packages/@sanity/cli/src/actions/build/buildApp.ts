@@ -162,6 +162,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       basePath,
       cwd: workDir,
       entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
+      federation: cliConfig.federation,
       importMap,
       isApp: true,
       minify: Boolean(flags.minify),
