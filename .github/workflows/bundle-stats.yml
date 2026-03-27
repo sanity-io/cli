@@ -29,7 +29,8 @@ jobs:
 
       - uses: rexxars/bundle-stats@a624b79af4fc63fb2687bd173b58226927b32567 # v1.11.0
         with:
-          packages: packages/@sanity/cli, packages/@sanity/cli-core
+          packages: packages/@sanity/cli, packages/@sanity/cli-core, packages/create-sanity
           build-command: pnpm build:cli
           only: '.'
           compare-npm: latest
+          allow-bin-child-process: true
