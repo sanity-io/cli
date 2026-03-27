@@ -57,6 +57,7 @@ export function resolveLocalPackagePath(packageName: string, workDir: string): U
   } catch (error) {
     throw new Error(
       `Failed to resolve package "${packageName}" from "${workDir}": ${error instanceof Error ? error.message : String(error)}`,
+      {cause: error},
     )
   }
 }
@@ -90,6 +91,7 @@ export async function resolveLocalPackageFrom<T = unknown>(
   } catch (error) {
     throw new Error(
       `Failed to resolve package "${packageName}" from "${parentUrl.href}": ${error instanceof Error ? error.message : String(error)}`,
+      {cause: error},
     )
   }
 }

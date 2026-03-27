@@ -514,10 +514,10 @@ describe('#deploy studio', () => {
       const promise = (async () => {
         if (validate) {
           // First attempt with a name that will be taken (triggers 409)
-          let result = await validate('taken-name')
+          const result = await validate('taken-name')
           if (result !== true) {
             // Name was taken, try again with a valid name (triggers 200)
-            result = await validate('valid-name')
+            await validate('valid-name')
           }
         }
         return 'valid-name'
@@ -609,10 +609,10 @@ describe('#deploy studio', () => {
       const promise = (async () => {
         if (validate) {
           // First attempt with a name that will be taken (triggers 409)
-          let result = await validate('taken-name')
+          const result = await validate('taken-name')
           if (result !== true) {
             // Name was taken, try again with a valid name (triggers 200)
-            result = await validate('valid-name')
+            await validate('valid-name')
           }
         }
         return 'valid-name'
