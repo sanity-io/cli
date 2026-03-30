@@ -27,6 +27,7 @@
     "./bin",
     "./codemods",
     "./dist",
+    "!./dist/**/__tests__",
     "./oclif.config.js",
     "./oclif.manifest.json",
     "./static",
@@ -51,7 +52,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts' --ignore '**/__tests__/**'",
     "postbuild": "pnpm run manifest:generate && pnpm run check:topic-aliases",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:topic-aliases": "tsx scripts/check-topic-aliases.ts",
