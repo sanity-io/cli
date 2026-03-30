@@ -44,8 +44,7 @@
         "eslint-config-*",
         "typescript-eslint",
         "@typescript-eslint/*",
-        "eslint-*",
-        "@stylistic/eslint-plugin"
+        "eslint-*"
       ],
       "group": {"semanticCommitType": "fix"},
       "semanticCommitType": "fix"

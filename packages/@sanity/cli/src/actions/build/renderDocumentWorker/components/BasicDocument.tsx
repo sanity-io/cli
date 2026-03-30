@@ -14,11 +14,12 @@ import {NoJavascript} from './NoJavascript.js'
  */
 interface BasicDocumentProps {
   entryPath: string
-  title?: string
 
   // Currently unused, but kept for potential future use
   basePath?: string
+
   css?: string[]
+  title?: string
 }
 
 const EMPTY_ARRAY: never[] = []
