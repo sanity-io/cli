@@ -78,26 +78,7 @@ export default defineConfig(
       'unused-imports': unusedImports,
     },
     rules: {
-      '@stylistic/comma-dangle': ['error', 'always-multiline'],
-      '@stylistic/indent': [
-        'error',
-        2,
-        {
-          MemberExpression: 0,
-          SwitchCase: 0,
-        },
-      ],
-      '@stylistic/no-multi-spaces': 0,
-      '@stylistic/quotes': [
-        'error',
-        'single',
-        {
-          avoidEscape: true,
-        },
-      ],
-      '@stylistic/semi': 0,
       '@typescript-eslint/no-dupe-class-members': 'error',
-      '@typescript-eslint/no-redeclare': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -106,10 +87,6 @@ export default defineConfig(
         },
       ],
       '@typescript-eslint/no-useless-constructor': 'error',
-      '@typescript-eslint/no-var-requires': 'off',
-      'capitalized-comments': 0,
-      curly: 0,
-      'default-case': 0,
       'import-x/consistent-type-specifier-style': ['error', 'prefer-inline'],
       'import-x/default': 'off',
       'import-x/first': 'error',
@@ -146,18 +123,6 @@ export default defineConfig(
       ],
       'import-x/no-self-import': 'error',
       'import-x/no-unresolved': 'error',
-      'import-x/order': 'off',
-      'jsdoc/require-jsdoc': 'off',
-      'jsdoc/require-param': 'off',
-      'jsdoc/require-param-type': 'off',
-      'jsdoc/require-returns': 'off',
-      'jsdoc/require-returns-type': 'off',
-      'jsdoc/tag-lines': 'off',
-      'logical-assignment-operators': 'off',
-      'mocha/no-async-describe': 'off',
-      'mocha/no-identical-title': 'off',
-      'mocha/no-mocha-arrows': 'off',
-      'mocha/no-setup-in-describe': 'off',
       'n/hashbang': 0,
       'n/no-missing-import': 'off',
       'n/no-process-exit': 'off',
@@ -205,7 +170,6 @@ export default defineConfig(
       ],
       'no-unused-expressions': 'off',
       'no-unused-vars': 'off',
-      'no-useless-constructor': 'off',
       'perfectionist/sort-classes': [
         'error',
         {

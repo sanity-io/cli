@@ -1,4 +1,3 @@
-/* eslint-disable no-console -- CLI script that logs progress to stdout/stderr */
 /**
  * manifest.ts
  *
