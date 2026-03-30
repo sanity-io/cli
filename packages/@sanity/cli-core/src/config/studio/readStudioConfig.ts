@@ -1,11 +1,11 @@
 import {dirname} from 'node:path'
 
-import {z} from 'zod'
+import {z} from 'zod/mini'
 
 import {studioWorkerTask} from '../../loaders/studio/studioWorkerTask.js'
 
 const schemaSchema = z.looseObject({
-  name: z.string().optional(),
+  name: z.optional(z.string()),
   types: z.array(z.looseObject({})),
 })
 
@@ -18,12 +18,12 @@ const sourceSchema = z.looseObject({
 // Raw workspace schema (resolvePlugins: false) - unstable_sources not yet populated
 const rawWorkspaceSchema = z.looseObject({
   ...sourceSchema.shape,
-  basePath: z.string().optional(),
-  name: z.string().optional(),
-  plugins: z.array(z.unknown()).optional(),
-  schema: schemaSchema.optional(),
-  title: z.string().optional(),
-  unstable_sources: z.array(sourceSchema).optional(),
+  basePath: z.optional(z.string()),
+  name: z.optional(z.string()),
+  plugins: z.optional(z.array(z.unknown())),
+  schema: z.optional(schemaSchema),
+  title: z.optional(z.string()),
+  unstable_sources: z.optional(z.array(sourceSchema)),
 })
 
 // Resolved config schema (resolvePlugins: true) - all fields required
@@ -31,7 +31,7 @@ const resolvedWorkspaceSchema = z.looseObject({
   ...sourceSchema.shape,
   basePath: z.string(),
   name: z.string(),
-  plugins: z.array(z.unknown()).optional(),
+  plugins: z.optional(z.array(z.unknown())),
   title: z.string(),
   unstable_sources: z.array(sourceSchema),
 })
@@ -85,10 +85,13 @@ export async function readStudioConfig(
       ? resolvedConfigSchema.parse(result)
       : rawConfigSchema.parse(result)
   } catch (err) {
-    if (err instanceof z.ZodError) {
-      throw new Error(`Invalid studio config at ${configPath}:\n${formatZodIssues(err.issues)}`, {
-        cause: err,
-      })
+    if (err instanceof z.core.$ZodError) {
+      throw new TypeError(
+        `Invalid studio config at ${configPath}:\n${formatZodIssues(err.issues)}`,
+        {
+          cause: err,
+        },
+      )
     }
 
     throw err

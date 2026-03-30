@@ -1,6 +1,6 @@
 import {readFile} from 'node:fs/promises'
 
-import {z} from 'zod'
+import {z} from 'zod/mini'
 
 /**
  * Comprehensive package.json schema including all common properties.
@@ -15,29 +15,29 @@ const packageJsonSchema = z.looseObject({
   version: z.string(),
 
   // Dependencies (optional)
-  dependencies: z.record(z.string(), z.string()).optional(),
-  devDependencies: z.record(z.string(), z.string()).optional(),
-  peerDependencies: z.record(z.string(), z.string()).optional(),
+  dependencies: z.optional(z.record(z.string(), z.string())),
+  devDependencies: z.optional(z.record(z.string(), z.string())),
+  peerDependencies: z.optional(z.record(z.string(), z.string())),
 
   // Module structure (optional)
-  exports: z.record(z.string(), z.any()).optional(),
-  main: z.string().optional(),
-  types: z.string().optional(),
+  exports: z.optional(z.record(z.string(), z.any())),
+  main: z.optional(z.string()),
+  types: z.optional(z.string()),
 
   // Metadata (optional)
-  author: z.string().optional(),
-  description: z.string().optional(),
-  engines: z.record(z.string(), z.string()).optional(),
-  license: z.string().optional(),
-  private: z.boolean().optional(),
-  repository: z
-    .object({
+  author: z.optional(z.string()),
+  description: z.optional(z.string()),
+  engines: z.optional(z.record(z.string(), z.string())),
+  license: z.optional(z.string()),
+  private: z.optional(z.boolean()),
+  repository: z.optional(
+    z.object({
       type: z.string(),
       url: z.string(),
-    })
-    .optional(),
-  scripts: z.record(z.string(), z.string()).optional(),
-  type: z.enum(['module', 'commonjs']).optional(),
+    }),
+  ),
+  scripts: z.optional(z.record(z.string(), z.string())),
+  type: z.optional(z.enum(['module', 'commonjs'])),
 })
 
 /**

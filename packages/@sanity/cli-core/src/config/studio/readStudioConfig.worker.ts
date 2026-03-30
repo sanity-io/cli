@@ -1,6 +1,6 @@
 import {isMainThread, parentPort, workerData} from 'node:worker_threads'
 
-import {z} from 'zod'
+import {z} from 'zod/mini'
 
 import {subdebug} from '../../debug.js'
 import {doImport} from '../../util/doImport.js'
