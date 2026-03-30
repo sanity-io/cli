@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/sanity-io/cli/compare/eslint-config-cli-v1.0.1...eslint-config-cli-v1.1.0) (2026-03-30)
+
+
+### Features
+
+* upgrade eslint to v10 with dual v9/v10 support ([#823](https://github.com/sanity-io/cli/issues/823)) ([f3c9d9d](https://github.com/sanity-io/cli/commit/f3c9d9da4816f6300f8bb5d1fda6a00a2c58b95d))
+
 ## [1.0.1](https://github.com/sanity-io/cli/compare/eslint-config-cli-v1.0.0...eslint-config-cli-v1.0.1) (2026-03-18)
 
 
