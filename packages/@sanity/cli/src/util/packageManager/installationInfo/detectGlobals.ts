@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import {execa} from 'execa'
+import spawn from 'nano-spawn'
 import which from 'which'
 
 import {type GlobalInstallation, type LockfileType, type SanityPackage} from './types.js'
@@ -86,8 +86,7 @@ async function findActiveBinaryPath(): Promise<string | null> {
 
 async function queryNpmGlobals(): Promise<NpmGlobalsResult> {
   try {
-    const result = await execa('npm', ['list', '-g', '--depth=0', '--json'], {
-      reject: false,
+    const result = await spawn('npm', ['list', '-g', '--depth=0', '--json'], {
       timeout: 10_000,
     })
 
@@ -131,18 +130,18 @@ interface PnpmGlobalsResult {
 async function queryPnpmGlobals(): Promise<PnpmGlobalsResult> {
   try {
     // Query pnpm global bin dir and global packages in parallel
-    const [binResult, listResult] = await Promise.all([
-      execa('pnpm', ['bin', '-g'], {reject: false, timeout: 10_000}),
-      execa('pnpm', ['list', '-g', '--depth=0', '--json'], {reject: false, timeout: 10_000}),
+    const [binResult, listResult] = await Promise.allSettled([
+      spawn('pnpm', ['bin', '-g'], {timeout: 10_000}),
+      spawn('pnpm', ['list', '-g', '--depth=0', '--json'], {timeout: 10_000}),
     ])
 
-    const binDir = binResult.stdout?.trim() || null
+    const binDir = binResult.status === 'fulfilled' ? binResult.value.stdout?.trim() || null : null
 
-    if (!listResult.stdout) {
+    if (listResult.status === 'rejected' || !listResult.value.stdout) {
       return {binDir, globals: []}
     }
 
-    const output = tryParseJson<PnpmListProject[]>(listResult.stdout)
+    const output = tryParseJson<PnpmListProject[]>(listResult.value.stdout)
     if (!output) {
       return {binDir, globals: []}
     }
@@ -180,8 +179,7 @@ async function queryYarnGlobals(): Promise<GlobalInstallation[]> {
   // A version check (via getYarnMajorVersion) could skip the call entirely,
   // but since it already degrades gracefully the cost is just a failed exec.
   try {
-    const result = await execa('yarn', ['global', 'list', '--json'], {
-      reject: false,
+    const result = await spawn('yarn', ['global', 'list', '--json'], {
       timeout: 10_000,
     })
 

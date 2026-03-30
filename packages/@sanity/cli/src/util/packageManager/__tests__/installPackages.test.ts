@@ -1,14 +1,14 @@
 import {type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {execa, type Result} from 'execa'
+import spawn from 'nano-spawn'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {installDeclaredPackages, installNewPackages} from '../installPackages.js'
 import {getPartialEnvWithNpmPath} from '../packageManagerChoice.js'
 
 // Mock external dependencies
-vi.mock('execa', () => ({
-  execa: vi.fn(),
+vi.mock('nano-spawn', () => ({
+  default: vi.fn(),
 }))
 
 vi.mock('../packageManagerChoice.js', () => ({
@@ -27,7 +27,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
   }
 })
 
-const mockExeca = vi.mocked(execa)
+const mockSpawn = vi.mocked(spawn)
 const mockSpinner = vi.mocked(spinner)
 const mockGetPartialEnvWithNpmPath = vi.mocked(getPartialEnvWithNpmPath)
 
@@ -54,18 +54,12 @@ describe('installDeclaredPackages', () => {
   const context = {output: mockOutput, workDir}
 
   test('installs with npm successfully', async () => {
-    const mockResult: Partial<Result> = {
-      exitCode: 0,
-      failed: false,
-      stdout: 'Installation successful',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    mockSpawn.mockResolvedValueOnce({stdout: 'Installation successful'} as never)
 
     await installDeclaredPackages(workDir, 'npm', context)
 
-    expect(execa).toHaveBeenCalledWith('npm', ['install'], {
+    expect(spawn).toHaveBeenCalledWith('npm', ['install'], {
       cwd: workDir,
-      encoding: 'utf8',
       env: {PATH: '/mock/path'},
       stdio: 'pipe',
     })
@@ -75,18 +69,12 @@ describe('installDeclaredPackages', () => {
   })
 
   test('installs with yarn successfully', async () => {
-    const mockResult: Partial<Result> = {
-      exitCode: 0,
-      failed: false,
-      stdout: 'Installation successful',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    mockSpawn.mockResolvedValueOnce({stdout: 'Installation successful'} as never)
 
     await installDeclaredPackages(workDir, 'yarn', context)
 
-    expect(execa).toHaveBeenCalledWith('yarn', ['install'], {
+    expect(spawn).toHaveBeenCalledWith('yarn', ['install'], {
       cwd: workDir,
-      encoding: 'utf8',
       env: {PATH: '/mock/path'},
       stdio: 'pipe',
     })
@@ -94,18 +82,12 @@ describe('installDeclaredPackages', () => {
   })
 
   test('installs with pnpm successfully', async () => {
-    const mockResult: Partial<Result> = {
-      exitCode: 0,
-      failed: false,
-      stdout: 'Installation successful',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    mockSpawn.mockResolvedValueOnce({stdout: 'Installation successful'} as never)
 
     await installDeclaredPackages(workDir, 'pnpm', context)
 
-    expect(execa).toHaveBeenCalledWith('pnpm', ['install'], {
+    expect(spawn).toHaveBeenCalledWith('pnpm', ['install'], {
       cwd: workDir,
-      encoding: 'utf8',
       env: {PATH: '/mock/path'},
       stdio: 'pipe',
     })
@@ -113,18 +95,12 @@ describe('installDeclaredPackages', () => {
   })
 
   test('installs with bun successfully', async () => {
-    const mockResult: Partial<Result> = {
-      exitCode: 0,
-      failed: false,
-      stdout: 'Installation successful',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    mockSpawn.mockResolvedValueOnce({stdout: 'Installation successful'} as never)
 
     await installDeclaredPackages(workDir, 'bun', context)
 
-    expect(execa).toHaveBeenCalledWith('bun', ['install'], {
+    expect(spawn).toHaveBeenCalledWith('bun', ['install'], {
       cwd: workDir,
-      encoding: 'utf8',
       env: {PATH: '/mock/path'},
       stdio: 'pipe',
     })
@@ -134,19 +110,19 @@ describe('installDeclaredPackages', () => {
   test('handles manual package manager', async () => {
     await installDeclaredPackages(workDir, 'manual', context)
 
-    expect(execa).not.toHaveBeenCalled()
+    expect(spawn).not.toHaveBeenCalled()
     expect(mockOutput.log).toHaveBeenCalledWith(
       "Manual installation selected — run 'npm install' or equivalent",
     )
   })
 
   test('handles installation failure with exit code', async () => {
-    const mockResult: Partial<Result> = {
+    const error = Object.assign(new Error('Command failed'), {
       exitCode: 1,
-      failed: true,
+      stderr: '',
       stdout: 'Error: Package not found',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    })
+    mockSpawn.mockRejectedValueOnce(error)
 
     await expect(installDeclaredPackages(workDir, 'npm', context))
 
@@ -156,12 +132,12 @@ describe('installDeclaredPackages', () => {
   })
 
   test('handles installation failure with failed flag', async () => {
-    const mockResult: Partial<Result> = {
-      exitCode: 0,
-      failed: true,
+    const error = Object.assign(new Error('Command failed'), {
+      exitCode: 1,
+      stderr: '',
       stdout: 'Command failed',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    })
+    mockSpawn.mockRejectedValueOnce(error)
 
     await expect(installDeclaredPackages(workDir, 'npm', context))
 
@@ -177,18 +153,12 @@ describe('installNewPackages', () => {
 
   test('installs single package with npm successfully', async () => {
     const options = {packageManager: 'npm' as const, packages: ['@sanity/vision']}
-    const mockResult: Partial<Result> = {
-      exitCode: 0,
-      failed: false,
-      stdout: 'Installation successful',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    mockSpawn.mockResolvedValueOnce({stdout: 'Installation successful'} as never)
 
     await installNewPackages(options, context)
 
-    expect(execa).toHaveBeenCalledWith('npm', ['install', '--save', '@sanity/vision'], {
+    expect(spawn).toHaveBeenCalledWith('npm', ['install', '--save', '@sanity/vision'], {
       cwd: workDir,
-      encoding: 'utf8',
       env: {PATH: '/mock/path'},
       stdio: 'pipe',
     })
@@ -201,18 +171,12 @@ describe('installNewPackages', () => {
       packageManager: 'yarn' as const,
       packages: ['@sanity/vision', 'react-icons'],
     }
-    const mockResult: Partial<Result> = {
-      exitCode: 0,
-      failed: false,
-      stdout: 'Installation successful',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    mockSpawn.mockResolvedValueOnce({stdout: 'Installation successful'} as never)
 
     await installNewPackages(options, context)
 
-    expect(execa).toHaveBeenCalledWith('yarn', ['add', '@sanity/vision', 'react-icons'], {
+    expect(spawn).toHaveBeenCalledWith('yarn', ['add', '@sanity/vision', 'react-icons'], {
       cwd: workDir,
-      encoding: 'utf8',
       env: {PATH: '/mock/path'},
       stdio: 'pipe',
     })
@@ -221,18 +185,12 @@ describe('installNewPackages', () => {
 
   test('installs packages with pnpm successfully', async () => {
     const options = {packageManager: 'pnpm' as const, packages: ['lodash']}
-    const mockResult: Partial<Result> = {
-      exitCode: 0,
-      failed: false,
-      stdout: 'Installation successful',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    mockSpawn.mockResolvedValueOnce({stdout: 'Installation successful'} as never)
 
     await installNewPackages(options, context)
 
-    expect(execa).toHaveBeenCalledWith('pnpm', ['add', '--save-prod', 'lodash'], {
+    expect(spawn).toHaveBeenCalledWith('pnpm', ['add', '--save-prod', 'lodash'], {
       cwd: workDir,
-      encoding: 'utf8',
       env: {PATH: '/mock/path'},
       stdio: 'pipe',
     })
@@ -241,18 +199,12 @@ describe('installNewPackages', () => {
 
   test('installs packages with bun successfully', async () => {
     const options = {packageManager: 'bun' as const, packages: ['express']}
-    const mockResult: Partial<Result> = {
-      exitCode: 0,
-      failed: false,
-      stdout: 'Installation successful',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    mockSpawn.mockResolvedValueOnce({stdout: 'Installation successful'} as never)
 
     await installNewPackages(options, context)
 
-    expect(execa).toHaveBeenCalledWith('bun', ['add', 'express'], {
+    expect(spawn).toHaveBeenCalledWith('bun', ['add', 'express'], {
       cwd: workDir,
-      encoding: 'utf8',
       env: {PATH: '/mock/path'},
       stdio: 'pipe',
     })
@@ -264,7 +216,7 @@ describe('installNewPackages', () => {
 
     await installNewPackages(options, context)
 
-    expect(execa).not.toHaveBeenCalled()
+    expect(spawn).not.toHaveBeenCalled()
     expect(mockOutput.log).toHaveBeenCalledWith(
       "Manual installation selected - run 'npm install --save some-package' or equivalent",
     )
@@ -272,12 +224,12 @@ describe('installNewPackages', () => {
 
   test('handles installation failure with error output', async () => {
     const options = {packageManager: 'npm' as const, packages: ['nonexistent-package']}
-    const mockResult: Partial<Result> = {
+    const error = Object.assign(new Error('Command failed'), {
       exitCode: 1,
-      failed: true,
+      stderr: '',
       stdout: 'Error: Package not found',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    })
+    mockSpawn.mockRejectedValueOnce(error)
 
     await expect(installNewPackages(options, context))
 
@@ -288,12 +240,12 @@ describe('installNewPackages', () => {
 
   test('handles installation failure with failed flag', async () => {
     const options = {packageManager: 'pnpm' as const, packages: ['failing-package']}
-    const mockResult: Partial<Result> = {
-      exitCode: 0,
-      failed: true,
+    const error = Object.assign(new Error('Command failed'), {
+      exitCode: 1,
+      stderr: '',
       stdout: 'Command execution failed',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    })
+    mockSpawn.mockRejectedValueOnce(error)
 
     await expect(installNewPackages(options, context))
 
@@ -304,18 +256,12 @@ describe('installNewPackages', () => {
 
   test('handles empty packages array', async () => {
     const options = {packageManager: 'npm' as const, packages: []}
-    const mockResult: Partial<Result> = {
-      exitCode: 0,
-      failed: false,
-      stdout: 'Nothing to install',
-    }
-    mockExeca.mockResolvedValueOnce(mockResult as Result)
+    mockSpawn.mockResolvedValueOnce({stdout: 'Nothing to install'} as never)
 
     await installNewPackages(options, context)
 
-    expect(execa).toHaveBeenCalledWith('npm', ['install', '--save'], {
+    expect(spawn).toHaveBeenCalledWith('npm', ['install', '--save'], {
       cwd: workDir,
-      encoding: 'utf8',
       env: {PATH: '/mock/path'},
       stdio: 'pipe',
     })
@@ -327,22 +273,20 @@ describe('error handling edge cases', () => {
   const workDir = '/test/project'
   const context = {output: mockOutput, workDir}
 
-  test('handles undefined result in installDeclaredPackages', async () => {
-    mockExeca.mockResolvedValueOnce(undefined as unknown as Result)
+  test('handles successful resolve in installDeclaredPackages', async () => {
+    mockSpawn.mockResolvedValueOnce({stdout: ''} as never)
 
     await installDeclaredPackages(workDir, 'npm', context)
 
-    // Should not throw if result is undefined and no error conditions
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
   })
 
-  test('handles undefined result in installNewPackages', async () => {
+  test('handles successful resolve in installNewPackages', async () => {
     const options = {packageManager: 'npm' as const, packages: ['test']}
-    mockExeca.mockResolvedValueOnce(undefined as unknown as Result)
+    mockSpawn.mockResolvedValueOnce({stdout: ''} as never)
 
     await installNewPackages(options, context)
 
-    // Should not throw if result is undefined and no error conditions
     expect(mockSpinnerInstance.succeed).toHaveBeenCalled()
   })
 })

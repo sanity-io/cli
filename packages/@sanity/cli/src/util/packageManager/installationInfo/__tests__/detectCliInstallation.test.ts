@@ -8,10 +8,10 @@ import {detectCliInstallation} from '../index.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const fixturesDir = path.join(__dirname, '__fixtures__')
 
-// Mock execa for global detection
-const mockExeca = vi.hoisted(() => vi.fn())
-vi.mock('execa', () => ({
-  execa: mockExeca,
+// Mock nano-spawn for global detection
+const mockSpawn = vi.hoisted(() => vi.fn())
+vi.mock('nano-spawn', () => ({
+  default: mockSpawn,
 }))
 
 // Mock which
@@ -28,7 +28,7 @@ describe('detectCliInstallation', () => {
   test('detects standalone npm project', async () => {
     // No globals
     mockWhich.mockRejectedValue(new Error('not found'))
-    mockExeca.mockRejectedValue(new Error('not found'))
+    mockSpawn.mockRejectedValue(new Error('not found'))
 
     const cwd = path.join(fixturesDir, 'standalone-npm')
     const result = await detectCliInstallation({cwd})
@@ -42,7 +42,7 @@ describe('detectCliInstallation', () => {
 
   test('detects pnpm workspace with catalog resolution', async () => {
     mockWhich.mockRejectedValue(new Error('not found'))
-    mockExeca.mockRejectedValue(new Error('not found'))
+    mockSpawn.mockRejectedValue(new Error('not found'))
 
     const workspaceRoot = path.join(fixturesDir, 'pnpm-workspace-with-catalog')
     const cwd = path.join(workspaceRoot, 'packages', 'studio')
@@ -57,7 +57,7 @@ describe('detectCliInstallation', () => {
 
   test('detects npm workspaces', async () => {
     mockWhich.mockRejectedValue(new Error('not found'))
-    mockExeca.mockRejectedValue(new Error('not found'))
+    mockSpawn.mockRejectedValue(new Error('not found'))
 
     const workspaceRoot = path.join(fixturesDir, 'npm-workspaces')
     const cwd = path.join(workspaceRoot, 'packages', 'studio')
@@ -69,7 +69,7 @@ describe('detectCliInstallation', () => {
 
   test('detects npm overrides', async () => {
     mockWhich.mockRejectedValue(new Error('not found'))
-    mockExeca.mockRejectedValue(new Error('not found'))
+    mockSpawn.mockRejectedValue(new Error('not found'))
 
     const cwd = path.join(fixturesDir, 'with-npm-overrides')
     const result = await detectCliInstallation({cwd})
@@ -81,7 +81,7 @@ describe('detectCliInstallation', () => {
 
   test('detects yarn resolutions', async () => {
     mockWhich.mockRejectedValue(new Error('not found'))
-    mockExeca.mockRejectedValue(new Error('not found'))
+    mockSpawn.mockRejectedValue(new Error('not found'))
 
     const cwd = path.join(fixturesDir, 'with-yarn-resolutions')
     const result = await detectCliInstallation({cwd})
@@ -92,7 +92,7 @@ describe('detectCliInstallation', () => {
 
   test('detects multiple lockfiles issue', async () => {
     mockWhich.mockRejectedValue(new Error('not found'))
-    mockExeca.mockRejectedValue(new Error('not found'))
+    mockSpawn.mockRejectedValue(new Error('not found'))
 
     const cwd = path.join(fixturesDir, 'multiple-lockfiles')
     const result = await detectCliInstallation({cwd})
@@ -103,7 +103,7 @@ describe('detectCliInstallation', () => {
 
   test('detects global installation', async () => {
     mockWhich.mockResolvedValue('/usr/local/bin/sanity')
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
         return Promise.resolve({
           stdout: JSON.stringify({

@@ -6,8 +6,8 @@ import path from 'node:path'
 import {getProjectCliClient, ProjectRootNotFoundError} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {watch as chokidarWatch} from 'chokidar'
-import {execa, execaSync} from 'execa'
 import json5 from 'json5'
+import spawn from 'nano-spawn'
 import {afterEach, describe, expect, type Mock, test, vi} from 'vitest'
 
 import {CreateDocumentCommand} from '../create.js'
@@ -17,7 +17,9 @@ vi.mock('node:os')
 vi.mock('chokidar', () => ({
   watch: vi.fn(),
 }))
-vi.mock('execa')
+vi.mock('nano-spawn', () => ({
+  default: vi.fn(),
+}))
 vi.mock('json5')
 
 vi.mock('node:crypto', async () => {
@@ -37,8 +39,7 @@ vi.mock('@sanity/cli-core', async () => {
 const mockFs = vi.mocked(fs)
 const mockOs = vi.mocked(os)
 const mockChokidarWatch = vi.mocked(chokidarWatch)
-const mockExeca = vi.mocked(execa)
-const mockExecaSync = vi.mocked(execaSync)
+const mockSpawn = vi.mocked(spawn)
 const mockJson5 = vi.mocked(json5)
 const mockRandomUUID = vi.mocked(randomUUID)
 const mockGetProjectCliClient = vi.mocked(getProjectCliClient)
@@ -110,7 +111,7 @@ const defaultMocks = {
 // Helper functions
 const setupEditorMocks = () => {
   setupFsMocks({fs: mockFs, os: mockOs})
-  mockExecaSync.mockReturnValue(undefined as never)
+  mockSpawn.mockResolvedValue(undefined as never)
 }
 
 const setupWatchMocks = () => {
@@ -249,7 +250,7 @@ describe('#documents:create', () => {
         mode: 0o700,
         recursive: true,
       })
-      expect(mockExecaSync).toHaveBeenCalled()
+      expect(mockSpawn).toHaveBeenCalled()
     }),
   )
 
@@ -844,7 +845,7 @@ describe('#documents:create', () => {
         mockJson5.stringify.mockReturnValue(
           JSON.stringify({_id: 'test-doc', _type: 'specify-me'}, null, 2),
         )
-        mockExeca.mockResolvedValue({} as never)
+        mockSpawn.mockResolvedValue({} as never)
 
         const {stdout} = await testCommand(CreateDocumentCommand, ['--watch'], {
           mocks: {
@@ -856,7 +857,7 @@ describe('#documents:create', () => {
         expect(stdout).toContain('Will write documents on each save.')
         expect(stdout).toContain('Press Ctrl + C to cancel watch mode.')
         expect(mockWatcher.on).toHaveBeenCalledWith('change', expect.any(Function))
-        expect(mockExeca).toHaveBeenCalledWith('vim', expect.any(Array), {stdio: 'inherit'})
+        expect(mockSpawn).toHaveBeenCalledWith('vim', expect.any(Array), {stdio: 'inherit'})
         expect(mockChokidarWatch).toHaveBeenCalledWith(expect.stringContaining('.json'))
       }),
     )
@@ -903,11 +904,11 @@ describe('#documents:create', () => {
 
         // Trigger the change handler during execa (while still inside stdout capture)
         // The watcher is set up before execa is called, so changeHandler will be defined
-        mockExeca.mockImplementation((async () => {
+        mockSpawn.mockImplementation((async () => {
           expect(changeHandler!).toBeDefined()
           await changeHandler!()
           return {}
-        }) as unknown as typeof execa)
+        }) as unknown as typeof spawn)
 
         const {stdout} = await testCommand(CreateDocumentCommand, ['--watch'], {
           mocks: {
