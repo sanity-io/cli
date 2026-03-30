@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip, type Gzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {type StudioManifest} from 'sanity'
 import {pack} from 'tar-fs'
@@ -21,6 +22,7 @@ import {deployDebug} from './deployDebug.js'
 import {deployStudioSchemasAndManifests} from './deployStudioSchemasAndManifests.js'
 import {findUserApplicationForStudio} from './findUserApplicationForStudio.js'
 import {type DeployAppOptions} from './types.js'
+import {normalizeUrl, validateUrl} from './urlUtils.js'
 
 export async function deployStudio(options: DeployAppOptions) {
   const {cliConfig, flags, output, projectRoot, sourceDir} = options
@@ -28,7 +30,6 @@ export async function deployStudio(options: DeployAppOptions) {
   const workDir = projectRoot.directory
   const configPath = projectRoot.path
 
-  const appHost = cliConfig.studioHost
   const appId = getAppId(cliConfig)
   const projectId = cliConfig.api?.projectId
   const installedSanityVersion = await getLocalPackageVersion('sanity', workDir)
@@ -36,6 +37,9 @@ export async function deployStudio(options: DeployAppOptions) {
 
   const isExternal = !!flags.external
   const urlType: 'external' | 'internal' = isExternal ? 'external' : 'internal'
+
+  // Resolve the app host from --url flag (takes precedence) or studioHost config
+  const appHost = resolveAppHost({flags, isExternal, output, studioHost: cliConfig.studioHost})
 
   if (!installedSanityVersion) {
     output.error(`Failed to find installed sanity version`, {exit: 1})
@@ -55,10 +59,22 @@ export async function deployStudio(options: DeployAppOptions) {
       appId,
       output,
       projectId,
+      unattended: !!flags.yes,
       urlType,
     })
 
     if (!userApplication) {
+      if (flags.yes) {
+        const flagHint = isExternal
+          ? 'Use --url to specify the external studio URL'
+          : 'Use --url to specify the studio hostname'
+        output.error(
+          `Cannot prompt for ${isExternal ? 'external studio URL' : 'studio hostname'} in unattended mode. ${flagHint}.`,
+          {exit: exitCodes.USAGE_ERROR},
+        )
+        return
+      }
+
       if (isExternal) {
         output.log('Your project has not been registered with an external studio URL.')
         output.log('Please enter the full URL where your studio is hosted.')
@@ -170,9 +186,9 @@ export default defineCliConfig({
       output.log(`\n${example}`)
     }
   } catch (error) {
-    // if the error is a CLIError, we can just output the message and exit
+    // if the error is a CLIError, we can just output the message and preserve its exit code
     if (error instanceof CLIError) {
-      output.error(error.message, {exit: 1})
+      output.error(error.message, {exit: error.oclif?.exit ?? exitCodes.RUNTIME_ERROR})
       return
     }
 
@@ -180,4 +196,54 @@ export default defineCliConfig({
     deployDebug('Error deploying studio', error)
     output.error(`Error deploying studio: ${error}`, {exit: 1})
   }
+}
+
+function resolveAppHost({
+  flags,
+  isExternal,
+  output,
+  studioHost,
+}: {
+  flags: DeployAppOptions['flags']
+  isExternal: boolean
+  output: Output
+  studioHost: string | undefined
+}): string | undefined {
+  const url = flags.url
+  if (!url) {
+    return studioHost
+  }
+
+  if (isExternal) {
+    const normalized = normalizeUrl(url)
+    const validation = validateUrl(normalized)
+    if (validation !== true) {
+      output.error(validation, {exit: exitCodes.USAGE_ERROR})
+      return undefined
+    }
+    return normalized
+  }
+
+  // For internal deploys, strip protocol prefix and .sanity.studio suffix if present
+  const hostname = url.replace(/^https?:\/\//i, '').replace(/\.sanity\.studio\/?$/i, '')
+
+  // If the result still looks like a URL (contains dots), the user likely meant --external
+  if (hostname.includes('.')) {
+    output.error(
+      `"${hostname}" does not look like a sanity.studio hostname. Did you mean to use --external?`,
+      {exit: exitCodes.USAGE_ERROR},
+    )
+    return undefined
+  }
+
+  // Validate hostname characters (alphanumeric and hyphens only)
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/i.test(hostname)) {
+    output.error(
+      `Invalid studio hostname "${hostname}". Hostnames can only contain letters, numbers, and hyphens.`,
+      {exit: exitCodes.USAGE_ERROR},
+    )
+    return undefined
+  }
+
+  return hostname
 }
