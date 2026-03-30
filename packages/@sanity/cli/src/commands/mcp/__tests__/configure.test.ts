@@ -3,7 +3,7 @@ import fs from 'node:fs/promises'
 
 import {checkbox} from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
-import {execa} from 'execa'
+import spawn from 'nano-spawn'
 import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -54,15 +54,15 @@ vi.mock('node:fs/promises', async (importOriginal) => {
   }
 })
 
-vi.mock('execa', () => ({
-  execa: vi.fn(),
+vi.mock('nano-spawn', () => ({
+  default: vi.fn(),
 }))
 
 const mockCheckbox = vi.mocked(checkbox)
 const mockExistsSync = vi.mocked(existsSync)
 const mockReadFile = vi.mocked(fs.readFile)
 const mockWriteFile = vi.mocked(fs.writeFile)
-const mockExeca = vi.mocked(execa)
+const mockSpawn = vi.mocked(spawn)
 
 describe('#mcp:configure', () => {
   beforeEach(async () => {
@@ -75,7 +75,7 @@ describe('#mcp:configure', () => {
     mockExistsSync.mockReturnValue(false)
     mockReadFile.mockResolvedValue('{}') // Default: empty config file
     mockWriteFile.mockResolvedValue()
-    mockExeca.mockRejectedValue(new Error('Not installed'))
+    mockSpawn.mockRejectedValue(new Error('Not installed'))
     createTestToken('test-token')
   })
 
@@ -89,7 +89,7 @@ describe('#mcp:configure', () => {
   test('shows warning when no editors are detected', async () => {
     // No editors detected (all checks fail)
     mockExistsSync.mockReturnValue(false)
-    mockExeca.mockRejectedValue(new Error('Not installed'))
+    mockSpawn.mockRejectedValue(new Error('Not installed'))
 
     const {error, stderr} = await testCommand(ConfigureMcpCommand, [])
 
@@ -250,7 +250,7 @@ describe('#mcp:configure', () => {
   )
 
   test('detects Claude Code via CLI and configures it', async () => {
-    mockExeca.mockResolvedValue({
+    mockSpawn.mockResolvedValue({
       command: 'claude --version',
       exitCode: 0,
       failed: false,
@@ -278,7 +278,7 @@ describe('#mcp:configure', () => {
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    expect(mockExeca).toHaveBeenCalledWith('claude', ['--version'], {
+    expect(mockSpawn).toHaveBeenCalledWith('claude', ['--version'], {
       stdio: 'pipe',
       timeout: 5000,
     })
@@ -439,7 +439,7 @@ describe('#mcp:configure', () => {
         value: 'darwin',
       })
 
-      mockExeca.mockResolvedValue({
+      mockSpawn.mockResolvedValue({
         command: 'opencode --version',
         exitCode: 0,
         failed: false,
@@ -467,7 +467,7 @@ describe('#mcp:configure', () => {
 
       const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-      expect(mockExeca).toHaveBeenCalledWith('opencode', ['--version'], {
+      expect(mockSpawn).toHaveBeenCalledWith('opencode', ['--version'], {
         stdio: 'pipe',
         timeout: 5000,
       })
@@ -498,7 +498,7 @@ describe('#mcp:configure', () => {
   )
 
   test('detects Codex CLI via CLI and configures TOML with headers', async () => {
-    mockExeca.mockImplementation((async (command: string | URL) => {
+    mockSpawn.mockImplementation((async (command: string | URL) => {
       if (command === 'codex') {
         return {
           command: 'codex --version',
@@ -532,7 +532,7 @@ describe('#mcp:configure', () => {
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    expect(mockExeca).toHaveBeenCalledWith('codex', ['--version'], {
+    expect(mockSpawn).toHaveBeenCalledWith('codex', ['--version'], {
       stdio: 'pipe',
       timeout: 5000,
     })
@@ -566,7 +566,7 @@ describe('#mcp:configure', () => {
     const originalCodexHome = process.env.CODEX_HOME
     process.env.CODEX_HOME = '/tmp/custom-codex-home'
     try {
-      mockExeca.mockImplementation((async (command: string | URL) => {
+      mockSpawn.mockImplementation((async (command: string | URL) => {
         if (command === 'codex') {
           return {
             command: 'codex --version',
@@ -611,7 +611,7 @@ describe('#mcp:configure', () => {
   })
 
   test('skips Codex CLI when existing TOML config is unparseable', async () => {
-    mockExeca.mockImplementation((async (command: string | URL) => {
+    mockSpawn.mockImplementation((async (command: string | URL) => {
       if (command === 'codex') {
         return {
           command: 'codex --version',

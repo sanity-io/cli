@@ -1,4 +1,4 @@
-import {execa} from 'execa'
+import spawn from 'nano-spawn'
 
 import {getPartialEnvWithNpmPath} from './packageManagerChoice.js'
 
@@ -12,9 +12,8 @@ import {getPartialEnvWithNpmPath} from './packageManagerChoice.js'
 export async function getPeerDependencies(packageName: string, cwd: string): Promise<string[]> {
   let stdout: string
   try {
-    const result = await execa('npm', ['view', packageName, 'peerDependencies', '--json'], {
+    const result = await spawn('npm', ['view', packageName, 'peerDependencies', '--json'], {
       cwd,
-      encoding: 'utf8',
       env: getPartialEnvWithNpmPath(cwd),
     })
     stdout = result.stdout
