@@ -6,4 +6,5 @@ export interface DocumentProps {
 
   css?: string[]
   entryPath?: string
+  title?: string
 }

@@ -14,6 +14,7 @@ import {NoJavascript} from './NoJavascript.js'
  */
 interface BasicDocumentProps {
   entryPath: string
+  title?: string
 
   // Currently unused, but kept for potential future use
   basePath?: string
@@ -27,7 +28,7 @@ const EMPTY_ARRAY: never[] = []
  * @internal
  */
 export function BasicDocument(props: BasicDocumentProps): JSX.Element {
-  const {css = EMPTY_ARRAY, entryPath} = props
+  const {css = EMPTY_ARRAY, entryPath, title} = props
 
   return (
     <html lang="en">
@@ -38,7 +39,7 @@ export function BasicDocument(props: BasicDocumentProps): JSX.Element {
         <meta content="same-origin" name="referrer" />
 
         <Favicons />
-        <title>Sanity CORE App</title>
+        <title>{title || 'Sanity App'}</title>
         <GlobalErrorHandler />
 
         {css.map((href) => (
