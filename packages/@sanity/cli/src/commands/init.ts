@@ -1395,7 +1395,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     switch (chosen) {
       case 'npm': {
-        await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@12'], execOptions)
+        await execa('npm', ['install', 'next-sanity@12'], execOptions)
         break
       }
       case 'pnpm': {
