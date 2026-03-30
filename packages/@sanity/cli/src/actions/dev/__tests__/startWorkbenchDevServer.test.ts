@@ -26,10 +26,11 @@ function createMockOutput(): Output {
   } as unknown as Output
 }
 
-function createMockServer() {
+function createMockServer(port = 3333) {
   return {
     close: vi.fn().mockResolvedValue(undefined),
-    config: {server: {port: 3333}},
+    config: {server: {port}},
+    httpServer: {address: vi.fn().mockReturnValue({address: '127.0.0.1', family: 'IPv4', port})},
     listen: vi.fn().mockResolvedValue(undefined),
   }
 }
@@ -104,12 +105,28 @@ describe('startWorkbenchDevServer', () => {
     test('returns httpHost and workbenchPort from getSharedServerConfig', async () => {
       mockGetSharedServerConfig.mockReturnValue({httpHost: '0.0.0.0', httpPort: 4000})
       mockModuleResolve.mockReturnValue(new URL('file:///tmp/node_modules/sanity/workbench.js'))
-      mockCreateServer.mockResolvedValue(createMockServer())
+      mockCreateServer.mockResolvedValue(createMockServer(4000))
 
       const result = await startWorkbenchDevServer(createOptions())
 
       expect(result.httpHost).toBe('0.0.0.0')
       expect(result.workbenchPort).toBe(4000)
+    })
+
+    test('returns actual port when Vite picks an alternative port', async () => {
+      mockModuleResolve.mockReturnValue(new URL('file:///tmp/node_modules/sanity/workbench.js'))
+      // Simulate Vite finding port 3333 occupied and binding to 3334 instead
+      const mockServer = createMockServer(3334)
+      mockServer.httpServer.address.mockReturnValue({
+        address: '127.0.0.1',
+        family: 'IPv4',
+        port: 3334,
+      })
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      const result = await startWorkbenchDevServer(createOptions())
+
+      expect(result.workbenchPort).toBe(3334)
     })
 
     test('passes workDir to writeWorkbenchRuntime', async () => {

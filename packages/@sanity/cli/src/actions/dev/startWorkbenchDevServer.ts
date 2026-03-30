@@ -55,7 +55,7 @@ export async function startWorkbenchDevServer(
     plugins: [viteReact()],
     resolve: {dedupe: ['react', 'react-dom']},
     root,
-    server: {host: httpHost, port: workbenchPort, strictPort: true},
+    server: {host: httpHost, port: workbenchPort, strictPort: false},
   }
 
   devDebug('Creating workbench vite server')
@@ -70,10 +70,14 @@ export async function startWorkbenchDevServer(
     return {httpHost, workbenchAvailable: false, workbenchPort}
   }
 
+  // Vite may have picked a different port if the desired one was occupied
+  const addr = server.httpServer?.address()
+  const actualPort = typeof addr === 'object' && addr ? addr.port : workbenchPort
+
   return {
     close: () => server.close(),
     httpHost,
     workbenchAvailable,
-    workbenchPort,
+    workbenchPort: actualPort,
   }
 }
