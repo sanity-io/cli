@@ -1,7 +1,6 @@
 import {execFileSync, execSync, type ExecSyncOptions} from 'node:child_process'
+import {rmSync} from 'node:fs'
 import path from 'node:path'
-
-import {rimrafSync} from 'rimraf'
 
 const defaultCommitMessage = 'feat: bootstrap sanity studio'
 
@@ -29,7 +28,7 @@ export function tryGitInit(rootDir: string, commitMessage?: string): boolean {
   } catch {
     if (didInit) {
       try {
-        rimrafSync(path.join(rootDir, '.git'))
+        rmSync(path.join(rootDir, '.git'), {force: true, recursive: true})
       } catch {
         // intentional noop
       }
