@@ -21,7 +21,8 @@
     "directory": "packages/@sanity/cli-core"
   },
   "files": [
-    "./dist"
+    "./dist",
+    "!./dist/**/__tests__"
   ],
   "type": "module",
   "sideEffects": false,
@@ -50,7 +51,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts' --ignore '**/__tests__/**'",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
