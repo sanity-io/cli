@@ -1349,7 +1349,7 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 ```
 USAGE
   $ sanity deploy [SOURCEDIR] [--auto-updates] [--external | --source-maps | --minify | --build]
-    [--schema-required] [--verbose] [-y]
+    [--schema-required] [--url <value>] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
@@ -1362,6 +1362,8 @@ FLAGS
       --[no-]minify        Skip minifying built JavaScript (speeds up build, increases size of bundle)
       --schema-required    Fail-fast deployment if schema store fails
       --source-maps        Enable source maps for built bundles (increases size of bundle)
+      --url=<value>        Studio URL for deployment. For external studios, the full URL. For hosted studios, the
+                           hostname (e.g. "my-studio" or "my-studio.sanity.studio")
       --verbose            Enable verbose logging
 
 DESCRIPTION
