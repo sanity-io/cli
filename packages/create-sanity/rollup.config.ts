@@ -39,6 +39,12 @@ const cliCoreAliases = Object.entries(cliCorePkg.exports as Record<string, unkno
 // The commonjs plugin bundles both. Alias to the node entry directly.
 const debugNodeEntry = require.resolve('debug/src/node.js')
 
+// rxjs ships ESM under dist/esm but its exports map gates that behind the
+// non-standard `es2015` condition — the `node` condition wins and resolves to
+// CJS (`dist/cjs/`). Alias rxjs to its ESM source so Rollup can tree-shake it.
+const rxjsDir = path.dirname(require.resolve('rxjs/package.json'))
+const rxjsEsmDir = path.join(rxjsDir, 'dist', 'esm')
+
 export default defineConfig({
   // Catch both `node:fs` and bare `fs` (CJS deps may use unprefixed builtins)
   external: (id) => id.startsWith('node:') || builtinModules.includes(id),
@@ -69,6 +75,11 @@ export default defineConfig({
         // debug's index.js bundles both browser and node via conditional require.
         // Alias to node entry directly since this is a Node CLI tool.
         {find: 'debug', replacement: debugNodeEntry},
+        // Alias rxjs to its ESM build so Rollup can tree-shake it properly.
+        // Without this, the `node` export condition resolves to CJS.
+        {find: /^rxjs$/, replacement: path.join(rxjsEsmDir, 'index.js')},
+        {find: /^rxjs\/operators$/, replacement: path.join(rxjsEsmDir, 'operators', 'index.js')},
+        {find: /^rxjs\/internal\/(.*)/, replacement: path.join(rxjsEsmDir, 'internal', '$1')},
       ],
     }),
     nodeResolve({
