@@ -32,6 +32,7 @@ async function readIconFromPath(workDir: string, iconPath: string): Promise<stri
     const message = err instanceof Error ? err.message : String(err)
     throw new Error(
       `Could not read icon file at "${iconPath}" (resolved: ${resolvedPath}): ${message}`,
+      {cause: err},
     )
   }
 

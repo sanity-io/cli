@@ -1,5 +1,5 @@
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
-import {mockApi, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
@@ -186,7 +186,7 @@ describe('graphql undeploy', () => {
     const {stdout} = await testCommand(Undeploy, ['--api', 'ios'], {mocks: defaultMocks})
 
     expect(stdout).toBe('GraphQL API deleted\n')
-    expect(mockGetGraphQLAPIs).toHaveBeenCalledWith('/test/path')
+    expect(mockGetGraphQLAPIs).toHaveBeenCalledWith(convertToSystemPath('/test/path'))
   })
 
   test('throws error when --api flag references non-existent API', async () => {

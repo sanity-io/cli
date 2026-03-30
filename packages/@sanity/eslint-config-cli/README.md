@@ -2,6 +2,11 @@
 
 Shared ESLint configuration for Sanity CLI packages.
 
+## Requirements
+
+- **ESLint** `^9.0.0` or `^10.0.0`
+- **Node.js** `^18.18.0` (ESLint 9) or `^20.19.0 || ^22.13.0 || >=24` (ESLint 10)
+
 ## Installation
 
 ```bash

@@ -124,7 +124,7 @@ async function getRemoteResolvedVersion(
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
-    throw new Error(`Failed to fetch remote version for ${url}: ${message}`)
+    throw new Error(`Failed to fetch remote version for ${url}: ${message}`, {cause: err})
   }
 
   // 302 is expected, but lets also handle 2xx

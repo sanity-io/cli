@@ -590,7 +590,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       if (error instanceof Error) {
         throw error
       }
-      throw new Error(String(error))
+      throw new Error(String(error), {cause: error})
     }
 
     const pkgManager = await resolvePackageManager({

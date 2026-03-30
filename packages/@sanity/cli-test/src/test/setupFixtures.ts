@@ -151,6 +151,7 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
         console.error(execError.stderr || execError.stdout || execError.message)
         throw new Error(
           `Error installing dependencies in ${toPath}: ${execError.stderr || execError.stdout || execError.message}`,
+          {cause: error},
         )
       }
     }
