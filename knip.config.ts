@@ -4,8 +4,6 @@ const project = ['src/**/*.{js,jsx,ts,tsx}', '!**/docs/**']
 
 const baseConfig = {
   ignore: [
-    'tmp/**',
-
     'packages/@sanity/cli-test/fixtures/**',
 
     // See `helpClass` in `oclif.config.js`
