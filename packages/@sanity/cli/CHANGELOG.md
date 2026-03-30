@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [6.3.0](https://github.com/sanity-io/cli/compare/cli-v6.2.1...cli-v6.3.0) (2026-03-30)
+
+
+### Features
+
+* **cli:** use app.title from config in SDK app HTML title ([#799](https://github.com/sanity-io/cli/issues/799)) ([cea0395](https://github.com/sanity-io/cli/commit/cea0395fa8f2e4b7f1cc13ac1fd4532d99b2af08))
+* **deploy:** add --url flag and unattended mode support ([#760](https://github.com/sanity-io/cli/issues/760)) ([c440211](https://github.com/sanity-io/cli/commit/c44021166d75cdb7bb00d75ffc04165870e5ece3))
+* upgrade eslint to v10 with dual v9/v10 support ([#823](https://github.com/sanity-io/cli/issues/823)) ([f3c9d9d](https://github.com/sanity-io/cli/commit/f3c9d9da4816f6300f8bb5d1fda6a00a2c58b95d))
+
+
+### Bug Fixes
+
+* **dataset:alias:** passing apiName over displayName to input validation ([#773](https://github.com/sanity-io/cli/issues/773)) ([747be46](https://github.com/sanity-io/cli/commit/747be4683e854f170dba858704d929927ee47c68))
+* **deps:** update @sanity/telemetry to v0.9.0 ([#777](https://github.com/sanity-io/cli/issues/777)) ([fc44e3e](https://github.com/sanity-io/cli/commit/fc44e3e9fe6b6a750daa576b30e979c83622cdab))
+* **deps:** update dependency @sanity/runtime-cli to ^14.7.2 ([#843](https://github.com/sanity-io/cli/issues/843)) ([e902217](https://github.com/sanity-io/cli/commit/e90221714d907b935d9334886bad25aa22612498))
+* **deps:** update oclif-tooling ([#821](https://github.com/sanity-io/cli/issues/821)) ([3ee5f3f](https://github.com/sanity-io/cli/commit/3ee5f3ff05bb63278da638c0aa3f9218e7df0131))
+* **deps:** update sanity-tooling ([#766](https://github.com/sanity-io/cli/issues/766)) ([f337c42](https://github.com/sanity-io/cli/commit/f337c420b9d32877ed22c39eef8ba5d2940a7310))
+* **deps:** update sanity-tooling ([#787](https://github.com/sanity-io/cli/issues/787)) ([d553fb0](https://github.com/sanity-io/cli/commit/d553fb0c63b6e279be226342e9d6478b269a4a17))
+* exclude test fixtures from npm published packages ([#834](https://github.com/sanity-io/cli/issues/834)) ([699f3f1](https://github.com/sanity-io/cli/commit/699f3f1506ca4491b06a96946bdd047e9eac64a7))
+* **help:** resolve singular topic aliases with --help flag ([#792](https://github.com/sanity-io/cli/issues/792)) ([2ee676f](https://github.com/sanity-io/cli/commit/2ee676f3a1a1dc215887f09f8cb4c1ed5d47a5a1))
+* **import:** prompt for dataset when not provided ([#783](https://github.com/sanity-io/cli/issues/783)) ([ceac4b7](https://github.com/sanity-io/cli/commit/ceac4b7c267428aa4a9e6298db06031df1bcf5bd))
+* **init:** update outdated dependency versions for Next.js projects ([#817](https://github.com/sanity-io/cli/issues/817)) ([890fcf1](https://github.com/sanity-io/cli/commit/890fcf1a9ff5221d13c0c6ee5531ea1da67539d9))
+* **login:** non-interactive login shows actionable error ([#767](https://github.com/sanity-io/cli/issues/767)) ([aa8b7c2](https://github.com/sanity-io/cli/commit/aa8b7c2ce3efe8576e3a270690581a08600da5f3))
+* remove `--legacy-peer-deps` from npm install during init ([#833](https://github.com/sanity-io/cli/issues/833)) ([c9fcab5](https://github.com/sanity-io/cli/commit/c9fcab5f7665f90865773f673475e70f0d3ea959))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @sanity/cli-core bumped to 1.3.0
+  * devDependencies
+    * @sanity/cli-test bumped to 0.3.0
+    * @sanity/eslint-config-cli bumped to 1.1.0
+
 ## [6.2.1](https://github.com/sanity-io/cli/compare/cli-v6.2.0...cli-v6.2.1) (2026-03-24)
 
 

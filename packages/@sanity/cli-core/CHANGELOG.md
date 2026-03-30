@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.3.0](https://github.com/sanity-io/cli/compare/cli-core-v1.2.1...cli-core-v1.3.0) (2026-03-30)
+
+
+### Features
+
+* upgrade eslint to v10 with dual v9/v10 support ([#823](https://github.com/sanity-io/cli/issues/823)) ([f3c9d9d](https://github.com/sanity-io/cli/commit/f3c9d9da4816f6300f8bb5d1fda6a00a2c58b95d))
+
+
+### Bug Fixes
+
+* **deps:** update @sanity/telemetry to v0.9.0 ([#777](https://github.com/sanity-io/cli/issues/777)) ([fc44e3e](https://github.com/sanity-io/cli/commit/fc44e3e9fe6b6a750daa576b30e979c83622cdab))
+* exclude test fixtures from npm published packages ([#834](https://github.com/sanity-io/cli/issues/834)) ([699f3f1](https://github.com/sanity-io/cli/commit/699f3f1506ca4491b06a96946bdd047e9eac64a7))
+
+
+### Documentation
+
+* define exit code convention and add exitCodes constant ([#784](https://github.com/sanity-io/cli/issues/784)) ([133be82](https://github.com/sanity-io/cli/commit/133be82f2a246f5cc1573c8e2733d50a2b2ea746))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/eslint-config-cli bumped to 1.1.0
+
 ## [1.2.1](https://github.com/sanity-io/cli/compare/cli-core-v1.2.0...cli-core-v1.2.1) (2026-03-24)
 
 
