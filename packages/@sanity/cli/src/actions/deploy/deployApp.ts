@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
+import {exitCodes} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
@@ -33,11 +34,14 @@ export async function deployApp(options: DeployAppOptions) {
 
   const organizationId = cliConfig.app?.organizationId
   const appId = getAppId(cliConfig)
+  const appTitle = flags['app-title']
   const isAutoUpdating = shouldAutoUpdate({cliConfig, flags, output})
   const installedSdkVersion = await getLocalPackageVersion('@sanity/sdk-react', workDir)
 
   if (!installedSdkVersion) {
-    output.error(`Failed to find installed @sanity/sdk-react version`, {exit: 1})
+    output.error(`Failed to find installed @sanity/sdk-react version`, {
+      exit: 1,
+    })
     return
   }
 
@@ -47,25 +51,52 @@ export async function deployApp(options: DeployAppOptions) {
   }
 
   if (flags.external) {
-    output.error('Deploying an app to an external host is not supported.', {exit: 1})
+    output.error('Deploying an app to an external host is not supported.', {
+      exit: 1,
+    })
+  }
+
+  // Warn if --app-title is passed but will be ignored because appId is already configured
+  if (appId && appTitle) {
+    output.warn(
+      '--app-title is ignored because an existing application ID is configured in your sanity.cli file',
+    )
+  }
+
+  // Fail fast in unattended mode if no appId and no --app-title
+  if (!appId && flags.yes && !appTitle) {
+    output.error(
+      'Cannot prompt for application title in unattended mode. Use --app-title to specify the application title.',
+      {exit: exitCodes.USAGE_ERROR},
+    )
+    return
   }
 
   let spin = spinner('Verifying local content...')
 
   try {
-    let userApplication = await findUserApplicationForApp({
-      cliConfig,
-      organizationId,
-      output,
-    })
+    let userApplication
 
-    deployDebug(`User application found`, userApplication)
-
-    if (!userApplication) {
-      deployDebug(`No user application found. Creating a new one`)
-
-      userApplication = await createUserApplicationForApp(organizationId)
+    if (!appId && appTitle) {
+      // --app-title provided and no existing appId: go straight to create
+      deployDebug(`Creating new user application with title from --app-title flag`)
+      userApplication = await createUserApplicationForApp(organizationId, appTitle)
       deployDebug(`User application created`, userApplication)
+    } else {
+      // Normal flow: find existing app by appId or prompt to select/create
+      userApplication = await findUserApplicationForApp({
+        cliConfig,
+        organizationId,
+        output,
+      })
+
+      deployDebug(`User application found`, userApplication)
+
+      if (!userApplication) {
+        deployDebug(`No user application found. Creating a new one`)
+        userApplication = await createUserApplicationForApp(organizationId)
+        deployDebug(`User application created`, userApplication)
+      }
     }
 
     // Always build the project, unless --no-build is passed

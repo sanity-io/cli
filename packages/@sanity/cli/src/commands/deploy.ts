@@ -37,9 +37,20 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       command: '<%= config.bin %> <%= command.id %> --external',
       description: 'Register an externally hosted studio (studioHost contains full URL)',
     },
+    {
+      command: '<%= config.bin %> <%= command.id %> --url my-studio --yes',
+      description: 'Deploy a studio in unattended mode using a specific hostname',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> --app-title "My App" --yes',
+      description: 'Deploy a new application to Sanity hosting in unattended mode',
+    },
   ]
 
   static override flags = {
+    'app-title': Flags.string({
+      description: 'Title for a new application deployment, skipping the interactive title prompt',
+    }),
     'auto-updates': Flags.boolean({
       allowNo: true,
       deprecated: true,
@@ -71,7 +82,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     }),
     url: Flags.string({
       description:
-        'Studio URL for deployment. For external studios, the full URL. For hosted studios, the hostname (e.g. "my-studio" or "my-studio.sanity.studio")',
+        'Hostname or URL for studio deployment. For hosted studios, provide the subdomain (e.g. "my-studio" or "my-studio.sanity.studio"). For externally hosted studios, provide the full URL (requires --external). Required when using --yes (unattended mode).',
     }),
     verbose: Flags.boolean({
       default: false,

@@ -1,3 +1,4 @@
+import {exitCodes} from '@sanity/cli-core'
 import {confirm, input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock from 'nock'
@@ -395,6 +396,60 @@ describe('#deploy app', () => {
       message: 'Enter a title for your application:',
       validate: expect.any(Function),
     })
+  })
+
+  test('should create new app using --app-title without prompting in interactive mode', async () => {
+    const cwd = await testFixture('basic-app')
+    process.cwd = () => cwd
+
+    const newAppId = 'new-app-id'
+    const deploymentId = 'deployment-id'
+
+    // No GET mock — --app-title skips lookup entirely
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {
+        appType: 'coreApp',
+        organizationId,
+      },
+      uri: `/user-applications`,
+    }).reply(200, {
+      appHost: 'generated-host',
+      createdAt: '2024-01-01T00:00:00Z',
+      id: newAppId,
+      organizationId,
+      projectId: null,
+      title: 'My App',
+      type: 'coreApp',
+      updatedAt: '2024-01-01T00:00:00Z',
+      urlType: 'internal',
+    })
+
+    mockApi({
+      apiVersion: USER_APPLICATIONS_API_VERSION,
+      method: 'post',
+      query: {
+        appType: 'coreApp',
+      },
+      uri: `/user-applications/${newAppId}/deployments`,
+    }).reply(201, {id: deploymentId}, {location: 'https://generated-host.sanity.app/'})
+
+    const {error, stdout} = await testCommand(DeployCommand, ['--app-title', 'My App'], {
+      config: {root: cwd},
+      mocks: {
+        cliConfig: {
+          app: {
+            organizationId,
+          },
+        },
+      },
+    })
+
+    if (error) throw error
+    expect(mockInput).not.toHaveBeenCalled()
+    expect(stdout).toContain('Success! Application deployed')
+    expect(stdout).toContain(`appId: '${newAppId}'`)
   })
 
   test('should skip build when --no-build flag is used', async () => {
@@ -969,6 +1024,135 @@ describe('#deploy app', () => {
       `Add the deployment.appId to your sanity.cli.js or sanity.cli.ts file:`,
     )
     expect(stdout).toContain(`deployment: {\n  appId: '${newAppId}',`)
+  })
+
+  describe('unattended mode (--yes)', () => {
+    test('should create new app with --app-title without prompting', async () => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+
+      const newAppId = 'new-app-id'
+      const deploymentId = 'deployment-id'
+
+      // No GET mock — --app-title skips lookup entirely
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'coreApp',
+          organizationId,
+        },
+        uri: `/user-applications`,
+      }).reply(200, {
+        appHost: 'generated-host',
+        createdAt: '2024-01-01T00:00:00Z',
+        id: newAppId,
+        organizationId,
+        projectId: null,
+        title: 'My New App',
+        type: 'coreApp',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'coreApp',
+        },
+        uri: `/user-applications/${newAppId}/deployments`,
+      }).reply(201, {id: deploymentId}, {location: 'https://generated-host.sanity.app/'})
+
+      const {error, stdout} = await testCommand(
+        DeployCommand,
+        ['--yes', '--app-title', 'My New App'],
+        {
+          config: {root: cwd},
+          mocks: {
+            cliConfig: {
+              app: {
+                organizationId,
+              },
+            },
+          },
+        },
+      )
+
+      if (error) throw error
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockSelect).not.toHaveBeenCalled()
+      expect(stdout).toContain('Success! Application deployed')
+      expect(stdout).toContain(`appId: '${newAppId}'`)
+    })
+
+    test('should warn when --app-title is passed but appId is already configured', async () => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appType: 'coreApp',
+        },
+        uri: `/user-applications/${appId}`,
+      }).reply(200, {
+        appHost: 'existing-host',
+        createdAt: '2024-01-01T00:00:00Z',
+        id: appId,
+        organizationId,
+        projectId: null,
+        title: 'Existing App',
+        type: 'coreApp',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'internal',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {
+          appType: 'coreApp',
+        },
+        uri: `/user-applications/${appId}/deployments`,
+      }).reply(201, {id: 'deployment-id'}, {location: 'https://existing-host.sanity.app/'})
+
+      const {error, stderr} = await testCommand(
+        DeployCommand,
+        ['--yes', '--app-title', 'My New App'],
+        {
+          config: {root: cwd},
+          mocks: defaultMocks,
+        },
+      )
+
+      if (error) throw error
+      expect(stderr).toContain('--app-title is ignored because an existing application ID is')
+      expect(stderr).toContain('configured in your sanity.cli file')
+    })
+
+    test('should error when --yes is used without --app-title and no appId is configured', async () => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+
+      // No API mocks — should fail fast before any API calls
+      const {error} = await testCommand(DeployCommand, ['--yes'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            app: {
+              organizationId,
+            },
+          },
+        },
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain(
+        'Cannot prompt for application title in unattended mode. Use --app-title to specify the application title.',
+      )
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    })
   })
 
   test('should throw an error if organizationId is not set', async () => {

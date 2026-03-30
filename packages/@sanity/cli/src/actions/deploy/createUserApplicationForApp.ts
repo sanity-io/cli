@@ -7,16 +7,19 @@ import {deployDebug} from './deployDebug.js'
 
 export async function createUserApplicationForApp(
   organizationId?: string,
+  appTitle?: string,
 ): Promise<UserApplication> {
   if (!organizationId) {
     throw new Error(NO_ORGANIZATION_ID)
   }
 
-  // First get the title from the user
-  const title = await input({
-    message: 'Enter a title for your application:',
-    validate: (input: string) => input.length > 0 || 'Title is required',
-  })
+  // Use provided title or prompt the user for one
+  const title =
+    appTitle ??
+    (await input({
+      message: 'Enter a title for your application:',
+      validate: (value: string) => value.length > 0 || 'Title is required',
+    }))
 
   return tryCreateApp(title, organizationId)
 }
