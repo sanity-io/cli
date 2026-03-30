@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: 24
 
-      - uses: rexxars/bundle-stats@93b53fe1623d3a1769a81aaa8f95c77ede02d703 # v1.9.6
+      - uses: rexxars/bundle-stats@a624b79af4fc63fb2687bd173b58226927b32567 # v1.11.0
         with:
           packages: packages/@sanity/cli, packages/@sanity/cli-core
           build-command: pnpm build:cli
