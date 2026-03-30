@@ -8,6 +8,7 @@ interface DocumentProps {
 
   css?: string[]
   entryPath?: string
+  title?: string
 }
 
 interface RenderDocumentOptions {

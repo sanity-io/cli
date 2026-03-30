@@ -167,7 +167,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
         timeTaken = formatDistance(parseISO(updatedAt), parseISO(createdAt))
       }
 
-      let color: '' | 'green' | 'red' | 'yellow' = ''
+      let color: '' | 'green' | 'red' | 'yellow'
       switch (state) {
         case 'completed': {
           color = 'green'

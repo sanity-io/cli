@@ -5,7 +5,7 @@ import {
   ProjectRootNotFoundError,
   tryFindStudioConfigPath,
 } from '@sanity/cli-core'
-import {mockApi, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -29,9 +29,9 @@ vi.mock('@sanity/cli-core', async () => {
     getCliToken: vi.fn(),
     getStudioConfig: vi.fn(),
     getUserConfig: vi.fn().mockReturnValue({
-      all: {},
+      delete: vi.fn(),
       get: vi.fn().mockReturnValue(undefined),
-      path: '/home/user/.config/sanity/config',
+      set: vi.fn(),
     }),
     tryFindStudioConfigPath: vi.fn(),
   }
@@ -241,10 +241,10 @@ describe('#debug', () => {
     test('shows user type from global config', async () => {
       vi.mocked(getCliToken).mockResolvedValue('mock-auth-token')
       vi.mocked(getUserConfig).mockReturnValue({
-        all: {authType: 'enterprise'},
+        delete: vi.fn(),
         get: vi.fn().mockReturnValue('enterprise'),
-        path: '/home/user/.config/sanity/config',
-      } as never)
+        set: vi.fn(),
+      })
       vi.mocked(tryFindStudioConfigPath).mockResolvedValue(undefined)
 
       mockApi({
@@ -321,7 +321,7 @@ describe('#debug', () => {
 
       if (error) throw error
       expect(stdout).toContain('Project:')
-      expect(stdout).toContain('/test/project')
+      expect(stdout).toContain(convertToSystemPath('/test/project'))
       expect(stdout).toContain('sanity.cli.ts')
       expect(stdout).toContain('sanity.config.ts')
     })

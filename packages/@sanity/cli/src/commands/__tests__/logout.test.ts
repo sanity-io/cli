@@ -6,11 +6,16 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {AUTH_API_VERSION} from '../../services/auth.js'
 import {LogoutCommand} from '../logout.js'
 
+const mockConfigStoreDelete = vi.hoisted(() => vi.fn())
+
 vi.mock('@sanity/cli-core', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core')>('@sanity/cli-core')
   return {
     ...actual,
     getCliToken: vi.fn(),
+    getUserConfig: vi.fn().mockReturnValue({
+      delete: mockConfigStoreDelete,
+    }),
     setCliUserConfig: vi.fn(),
   }
 })
@@ -39,7 +44,7 @@ describe('#logout', () => {
 
     expect(stdout).toContain('Logged out successfully')
     expect(mockedSetConfig).toHaveBeenCalledWith('authToken', undefined)
-    expect(mockedSetConfig).toHaveBeenCalledWith('telemetryConsent', undefined)
+    expect(mockConfigStoreDelete).toHaveBeenCalledWith('telemetryConsent')
   })
 
   test('logs out successfully when session is expired (401)', async () => {
@@ -58,7 +63,7 @@ describe('#logout', () => {
 
     expect(stdout).toContain('Logged out successfully')
     expect(mockedSetConfig).toHaveBeenCalledWith('authToken', undefined)
-    expect(mockedSetConfig).toHaveBeenCalledWith('telemetryConsent', undefined)
+    expect(mockConfigStoreDelete).toHaveBeenCalledWith('telemetryConsent')
   })
 
   test('shows an error if no token exists', async () => {
@@ -68,6 +73,7 @@ describe('#logout', () => {
 
     expect(stdout).toContain('No login credentials found')
     expect(mockedSetConfig).not.toHaveBeenCalled()
+    expect(mockConfigStoreDelete).not.toHaveBeenCalled()
   })
 
   test('throws error on API failure (non-401)', async () => {
@@ -84,5 +90,6 @@ describe('#logout', () => {
     expect(error).toBeDefined()
     expect(error?.message).toContain('Failed to logout')
     expect(mockedSetConfig).not.toHaveBeenCalled()
+    expect(mockConfigStoreDelete).not.toHaveBeenCalled()
   })
 })

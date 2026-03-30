@@ -39,7 +39,7 @@ export async function findProjectRoot(cwd: string): Promise<ProjectRootResult> {
       throw err
     }
     const message = err instanceof Error ? err.message : `${err}`
-    throw new Error(`Error occurred trying to resolve project root:\n${message}`)
+    throw new Error(`Error occurred trying to resolve project root:\n${message}`, {cause: err})
   }
 }
 

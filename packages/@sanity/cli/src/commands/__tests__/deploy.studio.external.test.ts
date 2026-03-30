@@ -1,4 +1,4 @@
-import {studioWorkerTask} from '@sanity/cli-core'
+import {exitCodes, studioWorkerTask} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
 import nock from 'nock'
@@ -459,7 +459,325 @@ describe('#deploy studio (external)', () => {
       },
     })
 
+    expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('URL must use http or https protocol')
+    expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+  })
+
+  describe('--url flag', () => {
+    test('should use --url flag as external studio URL', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const externalUrl = 'https://studio.example.com'
+      const studioAppId = 'external-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: externalUrl,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: externalUrl,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'External Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'external',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(201, {id: deploymentId, location: externalUrl}, {location: externalUrl})
+
+      const {error, stdout} = await testCommand(
+        DeployCommand,
+        ['--external', '--url', externalUrl],
+        {
+          config: {root: cwd},
+          mocks: {
+            cliConfig: {
+              api: {projectId},
+            },
+          },
+        },
+      )
+
+      if (error) throw error
+      expect(stdout).toContain('Success! Studio registered')
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
+    test('should use --url flag with --yes for unattended external deploy', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const externalUrl = 'https://studio.example.com'
+      const studioAppId = 'external-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: externalUrl,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: externalUrl,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'External Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'external',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(201, {id: deploymentId, location: externalUrl}, {location: externalUrl})
+
+      const {error, stdout} = await testCommand(
+        DeployCommand,
+        ['--external', '--yes', '--url', externalUrl],
+        {
+          config: {root: cwd},
+          mocks: {
+            cliConfig: {
+              api: {projectId},
+            },
+          },
+        },
+      )
+
+      if (error) throw error
+      expect(stdout).toContain('Success! Studio registered')
+      expect(mockInput).not.toHaveBeenCalled()
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
+
+    test('should --url flag take precedence over studioHost config', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const flagUrl = 'https://new-studio.example.com'
+      const studioAppId = 'external-app-id'
+      const deploymentId = 'deployment-id'
+
+      // The --url value should be used for lookup, not the studioHost config
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: flagUrl,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: flagUrl,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'External Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'external',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(201, {id: deploymentId, location: flagUrl}, {location: flagUrl})
+
+      const {error, stdout} = await testCommand(DeployCommand, ['--external', '--url', flagUrl], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+            studioHost: 'https://old-studio.example.com',
+          },
+        },
+      })
+
+      if (error) throw error
+      expect(stdout).toContain('Success! Studio registered')
+    })
+
+    test('should reject invalid --url for external deploy', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+
+      const {error} = await testCommand(
+        DeployCommand,
+        ['--external', '--url', 'ftp://invalid.com'],
+        {
+          config: {root: cwd},
+          mocks: {
+            cliConfig: {
+              api: {projectId},
+            },
+          },
+        },
+      )
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('URL must use http or https protocol')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    })
+
+    test('should normalize --url with trailing slash for external deploy', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+      const normalizedUrl = 'https://studio.example.com'
+      const studioAppId = 'external-app-id'
+      const deploymentId = 'deployment-id'
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {
+          appHost: normalizedUrl,
+          appType: 'studio',
+        },
+        uri: `/projects/${projectId}/user-applications`,
+      }).reply(200, {
+        appHost: normalizedUrl,
+        createdAt: '2024-01-01T00:00:00Z',
+        id: studioAppId,
+        projectId,
+        title: 'External Studio',
+        type: 'studio',
+        updatedAt: '2024-01-01T00:00:00Z',
+        urlType: 'external',
+      })
+
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        method: 'post',
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications/${studioAppId}/deployments`,
+      }).reply(201, {id: deploymentId, location: normalizedUrl}, {location: normalizedUrl})
+
+      const {error, stdout} = await testCommand(
+        DeployCommand,
+        ['--external', '--url', 'https://studio.example.com/'],
+        {
+          config: {root: cwd},
+          mocks: {
+            cliConfig: {
+              api: {projectId},
+            },
+          },
+        },
+      )
+
+      if (error) throw error
+      expect(stdout).toContain('Success! Studio registered')
+    })
+  })
+
+  describe('unattended mode', () => {
+    test('should error when --external --yes used without --url and no studioHost', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+
+      // No apps exist for this project
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications`,
+      })
+        .once()
+        .reply(200, [])
+
+      const {error} = await testCommand(DeployCommand, ['--external', '--yes'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+          },
+        },
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Cannot prompt for external studio URL in unattended mode')
+      expect(error?.message).toContain('Use --url to specify the external studio URL')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+    })
+
+    test('should error when --external --yes with multiple studios and no appId', async () => {
+      const cwd = await testFixture('basic-studio')
+      process.cwd = () => cwd
+
+      const projectId = 'test-project-id'
+
+      // Return multiple external apps
+      mockApi({
+        apiVersion: USER_APPLICATIONS_API_VERSION,
+        query: {appType: 'studio'},
+        uri: `/projects/${projectId}/user-applications`,
+      })
+        .once()
+        .reply(200, [
+          {
+            appHost: 'https://studio-one.example.com',
+            createdAt: '2024-01-01T00:00:00Z',
+            id: 'app-1',
+            projectId,
+            title: 'Studio One',
+            type: 'studio',
+            updatedAt: '2024-01-01T00:00:00Z',
+            urlType: 'external',
+          },
+          {
+            appHost: 'https://studio-two.example.com',
+            createdAt: '2024-01-01T00:00:00Z',
+            id: 'app-2',
+            projectId,
+            title: 'Studio Two',
+            type: 'studio',
+            updatedAt: '2024-01-01T00:00:00Z',
+            urlType: 'external',
+          },
+        ])
+
+      const {error} = await testCommand(DeployCommand, ['--external', '--yes'], {
+        config: {root: cwd},
+        mocks: {
+          cliConfig: {
+            api: {projectId},
+          },
+        },
+      })
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('Cannot prompt for external studio URL in unattended mode')
+      expect(error?.message).toContain('Use --url to specify the external studio URL')
+      expect(error?.oclif?.exit).toBe(exitCodes.USAGE_ERROR)
+      expect(mockSelect).not.toHaveBeenCalled()
+    })
   })
 
   describe('schema and manifest deployment', () => {

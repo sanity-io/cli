@@ -1,4 +1,10 @@
+import {createHash} from 'node:crypto'
+
 import {defineConfig} from 'vitest/config'
+
+const IS_AGENT = Boolean(process.env.CLAUDECODE || process.env.CODEX_CI)
+const cwdHash = createHash('sha1').update(process.cwd()).digest('hex').slice(0, 8)
+const OUTPUT_FILE = IS_AGENT ? {json: `/tmp/test-results-${cwdHash}.json`} : undefined
 
 export default defineConfig({
   // This is needed to avoid listening to changes in the tmp directory
@@ -45,6 +51,8 @@ export default defineConfig({
         return false
       }
     },
+    outputFile: OUTPUT_FILE,
     projects: ['packages/@sanity/cli', 'packages/@sanity/cli-core', 'packages/create-sanity'],
+    reporters: ['default', ...(IS_AGENT ? ['json'] : [])],
   },
 })

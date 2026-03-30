@@ -84,7 +84,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Mark SDK issues as done
-        uses: sanity-labs/mark-issues-done-action@main
+        uses: sanity-labs/mark-issues-done-action@88e6a3e6bc5a9c86d45873c4dba3302a4cafcb65 # main
         with:
           linear_api_key: ${{secrets.LINEAR_API_KEY}}
           repository_name: ${{github.event.repository.name}}

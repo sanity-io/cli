@@ -69,6 +69,10 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       default: false,
       description: 'Enable source maps for built bundles (increases size of bundle)',
     }),
+    url: Flags.string({
+      description:
+        'Studio URL for deployment. For external studios, the full URL. For hosted studios, the hostname (e.g. "my-studio" or "my-studio.sanity.studio")',
+    }),
     verbose: Flags.boolean({
       default: false,
       description: 'Enable verbose logging',

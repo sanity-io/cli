@@ -70,13 +70,15 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
       const existingAlias = aliases.find((alias) => alias.name === apiName)
 
       if (!existingAlias) {
-        this.error(`Dataset alias "${displayName}" does not exist`, {exit: 1})
+        this.error(`Dataset alias "${displayName}" does not exist`, {
+          exit: 1,
+        })
       }
 
       if (force) {
         this.warn(`'--force' used: skipping confirmation, deleting alias "${displayName}"`)
       } else {
-        await this.confirmDeletion(displayName, existingAlias.datasetName)
+        await this.confirmDeletion(apiName, existingAlias.datasetName)
       }
 
       await removeAlias(projectId, apiName)

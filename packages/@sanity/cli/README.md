@@ -307,7 +307,7 @@ EXAMPLES
   $ sanity blueprints add function --name my-function --fn-type document-create --fn-type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/blueprints/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/blueprints/add.ts)_
 
 ## `sanity blueprints config`
 
@@ -342,7 +342,7 @@ EXAMPLES
   $ sanity blueprints config --edit --project-id <projectId> --stack <name-or-id>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/blueprints/config.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/blueprints/config.ts)_
 
 ## `sanity blueprints deploy`
 
@@ -379,7 +379,7 @@ EXAMPLES
   $ sanity blueprints deploy --fn-installer npm
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/blueprints/deploy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/blueprints/deploy.ts)_
 
 ## `sanity blueprints destroy`
 
@@ -411,7 +411,7 @@ EXAMPLES
   $ sanity blueprints destroy --stack <name-or-id> --project-id <projectId> --force --no-wait
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/blueprints/destroy.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/blueprints/destroy.ts)_
 
 ## `sanity blueprints doctor`
 
@@ -437,7 +437,7 @@ DESCRIPTION
   issues.
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/blueprints/doctor.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/blueprints/doctor.ts)_
 
 ## `sanity blueprints info`
 
@@ -467,7 +467,7 @@ EXAMPLES
   $ sanity blueprints info --stack <name-or-id>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/blueprints/info.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/blueprints/info.ts)_
 
 ## `sanity blueprints init [DIR]`
 
@@ -517,7 +517,7 @@ EXAMPLES
   $ sanity blueprints init --blueprint-type <json|js|ts> --stack-name <stackName>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/blueprints/init.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/blueprints/init.ts)_
 
 ## `sanity blueprints logs`
 
@@ -546,7 +546,7 @@ EXAMPLES
   $ sanity blueprints logs --watch
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/blueprints/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/blueprints/logs.ts)_
 
 ## `sanity blueprints plan`
 
@@ -572,7 +572,7 @@ EXAMPLES
   $ sanity blueprints plan
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/blueprints/plan.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/blueprints/plan.ts)_
 
 ## `sanity blueprints stacks`
 
@@ -601,7 +601,7 @@ EXAMPLES
   $ sanity blueprints stacks --organization-id <organizationId>
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/blueprints/stacks.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/blueprints/stacks.ts)_
 
 ## `sanity build [OUTPUTDIR]`
 
@@ -1349,7 +1349,7 @@ Builds and deploys Sanity Studio or application to Sanity hosting
 ```
 USAGE
   $ sanity deploy [SOURCEDIR] [--auto-updates] [--external | --source-maps | --minify | --build]
-    [--schema-required] [--verbose] [-y]
+    [--schema-required] [--url <value>] [--verbose] [-y]
 
 ARGUMENTS
   [SOURCEDIR]  Source directory
@@ -1362,6 +1362,8 @@ FLAGS
       --[no-]minify        Skip minifying built JavaScript (speeds up build, increases size of bundle)
       --schema-required    Fail-fast deployment if schema store fails
       --source-maps        Enable source maps for built bundles (increases size of bundle)
+      --url=<value>        Studio URL for deployment. For external studios, the full URL. For hosted studios, the
+                           hostname (e.g. "my-studio" or "my-studio.sanity.studio")
       --verbose            Enable verbose logging
 
 DESCRIPTION
@@ -1849,7 +1851,7 @@ EXAMPLES
   $ sanity functions add --name my-function --type document-create --type document-update --lang js
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/functions/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/functions/add.ts)_
 
 ## `sanity functions dev`
 
@@ -1883,7 +1885,7 @@ EXAMPLES
   $ sanity functions dev --timeout 60
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/functions/dev.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/functions/dev.ts)_
 
 ## `sanity functions env add NAME KEY VALUE`
 
@@ -1910,7 +1912,7 @@ EXAMPLES
   $ sanity functions env add MyFunction API_URL https://api.example.com/
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/functions/env/add.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/functions/env/add.ts)_
 
 ## `sanity functions env list NAME`
 
@@ -1934,7 +1936,7 @@ EXAMPLES
   $ sanity functions env list MyFunction
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/functions/env/list.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/functions/env/list.ts)_
 
 ## `sanity functions env remove NAME KEY`
 
@@ -1960,7 +1962,7 @@ EXAMPLES
   $ sanity functions env remove MyFunction API_URL
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/functions/env/remove.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/functions/env/remove.ts)_
 
 ## `sanity functions logs [NAME]`
 
@@ -2000,7 +2002,7 @@ EXAMPLES
   $ sanity functions logs <name> --delete
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/functions/logs.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/functions/logs.ts)_
 
 ## `sanity functions test [NAME]`
 
@@ -2054,7 +2056,7 @@ EXAMPLES
   $ sanity functions test <name> --event update --data-before '{ "title": "before" }' --data-after '{ "title": "after" }'
 ```
 
-_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.0/src/commands/functions/test.ts)_
+_See code: [@sanity/runtime-cli](https://github.com/sanity-io/runtime-cli/blob/v14.7.2/src/commands/functions/test.ts)_
 
 ## `sanity graphql deploy`
 
@@ -2193,7 +2195,7 @@ DESCRIPTION
   Display help for sanity.
 ```
 
-_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/6.2.39/src/commands/help.ts)_
+_See code: [@oclif/plugin-help](https://github.com/oclif/plugin-help/blob/6.2.40/src/commands/help.ts)_
 
 ## `sanity hooks attempt ATTEMPTID`
 

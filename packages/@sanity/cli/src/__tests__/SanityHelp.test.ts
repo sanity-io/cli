@@ -1,6 +1,10 @@
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {prefixBinName, replaceInitWithCreateCommand} from '../SanityHelp.js'
+import {
+  prefixBinName,
+  replaceInitWithCreateCommand,
+  resolveTopicAliasInArgv,
+} from '../SanityHelp.js'
 
 describe('prefixBinName', () => {
   afterEach(() => {
@@ -284,5 +288,53 @@ describe('replaceInitWithCreateCommand + prefixBinName interaction', () => {
 
     // With unknown PM, getBinCommand returns "sanity" so prefixBinName is a no-op
     expect(result).toBe(afterCreate)
+  })
+})
+
+describe('resolveTopicAliasInArgv', () => {
+  test('resolves singular topic alias to canonical plural form', () => {
+    expect(resolveTopicAliasInArgv(['dataset', '--help'])).toEqual(['datasets', '--help'])
+  })
+
+  test('resolves other singular aliases', () => {
+    expect(resolveTopicAliasInArgv(['document', '--help'])).toEqual(['documents', '--help'])
+    expect(resolveTopicAliasInArgv(['user', '--help'])).toEqual(['users', '--help'])
+    expect(resolveTopicAliasInArgv(['token', '--help'])).toEqual(['tokens', '--help'])
+    expect(resolveTopicAliasInArgv(['project', '--help'])).toEqual(['projects', '--help'])
+    expect(resolveTopicAliasInArgv(['hook', '--help'])).toEqual(['hooks', '--help'])
+    expect(resolveTopicAliasInArgv(['backup', '--help'])).toEqual(['backups', '--help'])
+    expect(resolveTopicAliasInArgv(['schema', '--help'])).toEqual(['schemas', '--help'])
+  })
+
+  test('does not modify argv for canonical topic names', () => {
+    expect(resolveTopicAliasInArgv(['datasets', '--help'])).toEqual(['datasets', '--help'])
+  })
+
+  test('does not modify argv for unknown topics', () => {
+    expect(resolveTopicAliasInArgv(['unknown', '--help'])).toEqual(['unknown', '--help'])
+  })
+
+  test('resolves alias with subcommand in argv', () => {
+    expect(resolveTopicAliasInArgv(['dataset', 'list', '--help'])).toEqual([
+      'datasets',
+      'list',
+      '--help',
+    ])
+  })
+
+  test('returns original argv when no positional argument found', () => {
+    expect(resolveTopicAliasInArgv(['--help'])).toEqual(['--help'])
+  })
+
+  test('returns original argv for empty input', () => {
+    expect(resolveTopicAliasInArgv([])).toEqual([])
+  })
+
+  test('stops processing at -- separator', () => {
+    expect(resolveTopicAliasInArgv(['--', 'dataset', '--help'])).toEqual([
+      '--',
+      'dataset',
+      '--help',
+    ])
   })
 })

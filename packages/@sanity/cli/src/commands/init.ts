@@ -590,7 +590,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       if (error instanceof Error) {
         throw error
       }
-      throw new Error(String(error))
+      throw new Error(String(error), {cause: error})
     }
 
     const pkgManager = await resolvePackageManager({
@@ -1370,7 +1370,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       targetDir: workDir,
     })
     this._trace.log({selectedOption: chosen, step: 'selectPackageManager'})
-    const packages = ['@sanity/vision@4', 'sanity@4', '@sanity/image-url@1', 'styled-components@6']
+    const packages = ['@sanity/vision@5', 'sanity@5', '@sanity/image-url@2', 'styled-components@6']
     if (templateToUse === 'blog') {
       packages.push('@sanity/icons')
     }
@@ -1395,17 +1395,17 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     switch (chosen) {
       case 'npm': {
-        await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@11'], execOptions)
+        await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@12'], execOptions)
         break
       }
       case 'pnpm': {
-        await execa('pnpm', ['install', 'next-sanity@11'], execOptions)
+        await execa('pnpm', ['install', 'next-sanity@12'], execOptions)
         break
       }
       case 'yarn': {
-        const peerDeps = await getPeerDependencies('next-sanity@11', workDir)
+        const peerDeps = await getPeerDependencies('next-sanity@12', workDir)
         await installNewPackages(
-          {packageManager: 'yarn', packages: ['next-sanity@11', ...peerDeps]},
+          {packageManager: 'yarn', packages: ['next-sanity@12', ...peerDeps]},
           {output: this.output, workDir},
         )
         break

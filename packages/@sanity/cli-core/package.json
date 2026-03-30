@@ -21,16 +21,17 @@
     "directory": "packages/@sanity/cli-core"
   },
   "files": [
-    "./dist"
+    "./dist",
+    "!./dist/**/__tests__"
   ],
   "type": "module",
   "sideEffects": false,
-  "main": "./dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/_exports/index.js",
+  "types": "dist/_exports/index.d.ts",
   "exports": {
     ".": {
-      "source": "./src/index.ts",
-      "default": "./dist/index.js"
+      "source": "./src/_exports/index.ts",
+      "default": "./dist/_exports/index.js"
     },
     "./ux": {
       "source": "./src/_exports/ux.ts",
@@ -50,7 +51,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts'",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts' --ignore '**/__tests__/**'",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
@@ -68,7 +69,6 @@
     "@sanity/client": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",
     "boxen": "^8.0.1",
-    "configstore": "^7.0.0",
     "debug": "catalog:",
     "get-it": "^8.7.0",
     "get-tsconfig": "catalog:",

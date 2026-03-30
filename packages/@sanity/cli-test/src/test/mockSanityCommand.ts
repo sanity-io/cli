@@ -66,14 +66,13 @@ export function mockSanityCommand<T extends typeof SanityCommand<typeof Command>
   }
 
   // Auto-convert paths in projectRoot to platform-appropriate format
-  let projectRoot = options.projectRoot
-  if (projectRoot) {
-    projectRoot = {
-      ...projectRoot,
-      directory: convertToSystemPath(projectRoot.directory),
-      path: convertToSystemPath(projectRoot.path),
-    }
-  }
+  const projectRoot = options.projectRoot
+    ? {
+        ...options.projectRoot,
+        directory: convertToSystemPath(options.projectRoot.directory),
+        path: convertToSystemPath(options.projectRoot.path),
+      }
+    : undefined
 
   // Create a subclass that overrides methods when mocks are provided
   // Note: we use @ts-expect-error because TypeScript can't properly infer
@@ -98,8 +97,8 @@ export function mockSanityCommand<T extends typeof SanityCommand<typeof Command>
       ) {
         return Promise.reject(options.cliConfigError)
       }
-      if (options.projectRoot) {
-        return Promise.resolve(options.projectRoot)
+      if (projectRoot) {
+        return Promise.resolve(projectRoot)
       }
       return super.getProjectRoot()
     }

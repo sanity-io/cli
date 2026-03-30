@@ -32,11 +32,11 @@ describe('getPeerDependencies', () => {
       }),
     } as unknown as Result)
 
-    const result = await getPeerDependencies('next-sanity@11', cwd)
+    const result = await getPeerDependencies('next-sanity@12', cwd)
 
     expect(mockExeca).toHaveBeenCalledWith(
       'npm',
-      ['view', 'next-sanity@11', 'peerDependencies', '--json'],
+      ['view', 'next-sanity@12', 'peerDependencies', '--json'],
       {cwd, encoding: 'utf8', env: {PATH: '/mock/path'}},
     )
     expect(result).toEqual(['next@^15.0.0', 'react@^19.0.0', 'react-dom@^19.0.0'])

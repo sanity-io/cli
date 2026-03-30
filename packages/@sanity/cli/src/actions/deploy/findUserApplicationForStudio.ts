@@ -2,7 +2,7 @@
  * Helper functions to find a user application for a Sanity studio.
  */
 
-import {type Output} from '@sanity/cli-core'
+import {exitCodes, type Output} from '@sanity/cli-core'
 import {select, Separator, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 
 import {
@@ -20,11 +20,12 @@ interface FindUserApplicationForStudioOptions {
 
   appHost?: string
   appId?: string
+  unattended?: boolean
   urlType?: 'external' | 'internal'
 }
 
 export async function findUserApplicationForStudio(options: FindUserApplicationForStudioOptions) {
-  const {appHost, appId, output, projectId, urlType = 'internal'} = options
+  const {appHost, appId, output, projectId, unattended = false, urlType = 'internal'} = options
 
   const spin = spinner('Checking project info').start()
 
@@ -60,6 +61,12 @@ export async function findUserApplicationForStudio(options: FindUserApplicationF
 
   // If no applications are found, return null
   if (!userApplications?.length) {
+    return null
+  }
+
+  // In unattended mode, we can't prompt the user to select a studio.
+  // Return null and let the caller handle the error messaging.
+  if (unattended) {
     return null
   }
 
@@ -107,7 +114,7 @@ async function findUserApplication(
   const {appHost, appId, output, projectId, urlType} = options
   let {spin} = options
 
-  let userApplication: UserApplication | null = null
+  let userApplication: UserApplication | null
 
   // If the config has an appId, check for apps with that ID
   if (appId) {
@@ -136,7 +143,7 @@ async function findUserApplication(
       const validation = validateUrl(resolvedHost)
       if (validation !== true) {
         spin.fail()
-        output.error(validation, {exit: 1})
+        output.error(validation, {exit: exitCodes.USAGE_ERROR})
         return null
       }
     }
