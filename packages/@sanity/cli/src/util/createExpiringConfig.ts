@@ -1,12 +1,4 @@
-/**
- * Minimal interface for a config store that supports get/set/delete operations.
- * Compatible with the `configstore` package.
- */
-interface ConfigStoreApi {
-  delete: (key: string) => void
-  get: (key: string) => unknown
-  set: (key: string, value: unknown) => void
-}
+import {type ConfigStore} from '@sanity/cli-core'
 
 interface ExpiringConfigValue {
   updatedAt: number
@@ -19,7 +11,7 @@ interface ExpiringConfigOptions<Type> {
   /** Config key */
   key: string
   /** Config store */
-  store: ConfigStoreApi
+  store: ConfigStore
   /** TTL (milliseconds) */
   ttl: number
 

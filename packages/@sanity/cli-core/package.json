@@ -68,7 +68,6 @@
     "@sanity/client": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",
     "boxen": "^8.0.1",
-    "configstore": "^7.0.0",
     "debug": "catalog:",
     "get-it": "^8.7.0",
     "get-tsconfig": "catalog:",
