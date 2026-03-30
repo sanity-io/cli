@@ -484,7 +484,7 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0(@oclif/core@4.10.2)(@sanity/cli-core@packages+@sanity+cli-core)(@types/react@19.2.14)(xstate@5.28.0)
       '@sanity/runtime-cli':
-        specifier: ^14.7.1
+        specifier: ^14.7.2
         version: 14.7.2(@types/node@20.19.37)(debug@4.4.3)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.3)
       '@sanity/schema':
         specifier: 'catalog:'
