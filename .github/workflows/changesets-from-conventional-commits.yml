@@ -26,7 +26,7 @@ jobs:
           private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
 
       - name: Generate changeset from conventional commits
-        uses: mscharley/dependency-changesets-action@e704c89dbc4e284d055aa520308291690f645a4f # v1.2.2
+        uses: mscharley/dependency-changesets-action@f96232368519695969bea8a8cfff7cca32b1e56a # v1.2.4
         with:
           token: ${{ steps.generate_token.outputs.token }}
           use-conventional-commits: true
