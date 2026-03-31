@@ -6,10 +6,8 @@ import {join, resolve} from 'node:path'
 // --- Env vars ---
 const {GH_TOKEN, GITHUB_REPOSITORY, PR_BODY = '', PR_NUMBER, PR_REPO, PR_TITLE} = process.env
 
-if (!GH_TOKEN || !PR_NUMBER || !PR_TITLE || !PR_REPO || !GITHUB_REPOSITORY) {
-  throw new Error(
-    'Missing required env vars: GH_TOKEN, PR_NUMBER, PR_TITLE, PR_REPO, GITHUB_REPOSITORY',
-  )
+if (!GH_TOKEN || !PR_NUMBER || !PR_TITLE || !PR_REPO) {
+  throw new Error('Missing required env vars: GH_TOKEN, PR_NUMBER, PR_TITLE, PR_REPO')
 }
 
 const CHANGESET_FILE = `.changeset/pr-${PR_NUMBER}.md`
@@ -96,9 +94,11 @@ function getWorkspacePackages() {
   const parentDirs = ['packages']
 
   // Auto-discover scoped package dirs
-  for (const entry of readdirSync('packages', {withFileTypes: true})) {
-    if (entry.isDirectory() && entry.name.startsWith('@')) {
-      parentDirs.push(`packages/${entry.name}`)
+  if (existsSync('packages')) {
+    for (const entry of readdirSync('packages', {withFileTypes: true})) {
+      if (entry.isDirectory() && entry.name.startsWith('@')) {
+        parentDirs.push(`packages/${entry.name}`)
+      }
     }
   }
 

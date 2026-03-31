@@ -49,5 +49,4 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
         run: node .github/scripts/generate-changeset.mjs
