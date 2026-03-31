@@ -463,7 +463,7 @@ importers:
         specifier: 'catalog:'
         version: 3.2.77(@types/node@20.19.37)
       '@sanity/cli-core':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../cli-core
       '@sanity/client':
         specifier: ^7.20.0
