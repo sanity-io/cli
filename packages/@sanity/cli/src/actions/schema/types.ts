@@ -1,11 +1,11 @@
 import {type SchemaValidationProblemGroup} from '@sanity/types'
-import {z} from 'zod'
+import {z} from 'zod/mini'
 
 export const extractSchemaWorkerData = z.object({
   configPath: z.string(),
   enforceRequiredFields: z.boolean(),
   workDir: z.string(),
-  workspaceName: z.string().optional(),
+  workspaceName: z.optional(z.string()),
 })
 
 export type ExtractSchemaWorkerData = z.infer<typeof extractSchemaWorkerData>
@@ -44,7 +44,7 @@ export interface ExtractSchemaWorkerError {
 
 export const uniqWorkspaceWorkerDataSchema = z.object({
   configPath: z.string(),
-  dataset: z.string().optional(),
+  dataset: z.optional(z.string()),
 })
 
 export type UniqWorkspaceWorkerData = z.infer<typeof uniqWorkspaceWorkerDataSchema>

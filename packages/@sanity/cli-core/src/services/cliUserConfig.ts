@@ -2,7 +2,7 @@ import {mkdirSync} from 'node:fs'
 import {homedir} from 'node:os'
 import {dirname, join as joinPath} from 'node:path'
 
-import {z} from 'zod'
+import {z} from 'zod/mini'
 
 import {debug} from '../debug.js'
 import {readJsonFileSync} from '../util/readJsonFileSync.js'
@@ -10,7 +10,7 @@ import {writeJsonFileSync} from '../util/writeJsonFileSync.js'
 import {clearCliTokenCache} from './cliTokenCache.js'
 
 const cliUserConfigSchema = {
-  authToken: z.string().optional(),
+  authToken: z.optional(z.string()),
 }
 
 /**

@@ -148,6 +148,10 @@ export default defineConfig(
               name: 'chalk',
             },
             {
+              message: "Import from 'zod/mini' instead for smaller bundle size.",
+              name: 'zod',
+            },
+            {
               message:
                 "Import from subpath instead to avoid barrel import. Example: `import {fn} from 'date-fns/fn'`.",
               name: 'date-fns',
