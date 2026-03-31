@@ -81,9 +81,3 @@ minimumReleaseAgeExclude:
   - 'react-rx'
   - 'sanity'
   - 'use-effect-event'
-  # Renovate security update: tar@7.5.11
-  - tar@7.5.11
-  # Renovate security update: smol-toml@1.6.1
-  - smol-toml@1.6.1
-  # Renovate security update: picomatch@4.0.4
-  - picomatch@4.0.4
