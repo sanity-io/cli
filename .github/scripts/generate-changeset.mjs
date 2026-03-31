@@ -20,14 +20,18 @@ function run(cmd) {
   return execSync(cmd, {encoding: 'utf8'}).trim()
 }
 
-function configureGit() {
+let gitConfigured = false
+function ensureGitConfigured() {
+  if (gitConfigured) return
   run('git config user.name "ecospark[bot]"')
   run('git config user.email "ecospark[bot]@users.noreply.github.com"')
   run(`git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${PR_REPO}.git"`)
+  gitConfigured = true
 }
 
 function removeChangeset() {
   if (existsSync(CHANGESET_FILE)) {
+    ensureGitConfigured()
     run(`git rm "${CHANGESET_FILE}"`)
     run(`git commit -m "chore: remove auto-generated changeset for PR #${PR_NUMBER}"`)
     run('git push --force-with-lease')
@@ -91,9 +95,12 @@ function getWorkspacePackages() {
   const pkgMap = new Map()
   const parentDirs = ['packages']
 
-  // Also check scoped package dirs
-  if (existsSync('packages/@sanity')) parentDirs.push('packages/@sanity')
-  if (existsSync('packages/@repo')) parentDirs.push('packages/@repo')
+  // Auto-discover scoped package dirs
+  for (const entry of readdirSync('packages', {withFileTypes: true})) {
+    if (entry.isDirectory() && entry.name.startsWith('@')) {
+      parentDirs.push(`packages/${entry.name}`)
+    }
+  }
 
   for (const parent of parentDirs) {
     const parentPath = resolve(parent)
@@ -101,7 +108,6 @@ function getWorkspacePackages() {
 
     for (const entry of readdirSync(parentPath, {withFileTypes: true})) {
       if (!entry.isDirectory()) continue
-      // Skip scoped dirs in top-level packages/ (handled separately)
       if (parent === 'packages' && entry.name.startsWith('@')) continue
 
       const pkgJsonPath = join(parentPath, entry.name, 'package.json')
@@ -119,8 +125,6 @@ function getWorkspacePackages() {
 }
 
 // --- Main ---
-
-configureGit()
 
 // 1. Parse conventional commit
 const parsed = parseConventionalCommit(PR_TITLE)
@@ -179,6 +183,7 @@ console.log('Generated changeset:')
 console.log(changesetContent)
 
 // 6. Commit and push
+ensureGitConfigured()
 run(`git add "${CHANGESET_FILE}"`)
 
 try {
