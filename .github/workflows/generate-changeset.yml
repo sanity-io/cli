@@ -37,6 +37,11 @@ jobs:
           fetch-depth: 2
           persist-credentials: false
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
       - name: Generate or remove changeset
         env:
           GH_TOKEN: ${{ steps.generate_token.outputs.token }}
@@ -44,134 +49,5 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-        run: |
-          set -euo pipefail
-
-          CHANGESET_FILE=".changeset/pr-${PR_NUMBER}.md"
-
-          # Configure git for pushing (persist-credentials is off)
-          git config user.name "ecospark[bot]"
-          git config user.email "ecospark[bot]@users.noreply.github.com"
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${PR_REPO}.git"
-
-          remove_changeset() {
-            if [ -f "$CHANGESET_FILE" ]; then
-              git rm "$CHANGESET_FILE"
-              git commit -m "chore: remove auto-generated changeset for PR #${PR_NUMBER}"
-              git push --force-with-lease
-            fi
-          }
-
-          # --- Parse conventional commit type from PR title ---
-          if [[ "$PR_TITLE" =~ ^([a-z]+)(\(.+\))?(!)?\:\ .+ ]]; then
-            TYPE="${BASH_REMATCH[1]}"
-            BREAKING="${BASH_REMATCH[3]}"
-          else
-            echo "::warning::PR title does not match conventional commit format"
-            remove_changeset
-            exit 0
-          fi
-
-          # --- Determine bump type ---
-          BUMP=""
-          case "$TYPE" in
-            feat)  BUMP="minor" ;;
-            fix|perf|revert)  BUMP="patch" ;;
-            *)  BUMP="" ;;
-          esac
-
-          # Breaking change overrides to major
-          if [ "$BREAKING" = "!" ]; then
-            BUMP="major"
-          elif [ -n "$PR_BODY" ] && echo "$PR_BODY" | grep -qE '^BREAKING CHANGE:'; then
-            BUMP="major"
-          fi
-
-          # Non-bump type — clean up and exit
-          if [ -z "$BUMP" ]; then
-            echo "PR type '${TYPE}' does not require a changeset"
-            remove_changeset
-            exit 0
-          fi
-
-          # --- Parse release notes from PR body ---
-          RELEASE_NOTES=""
-          if [ -n "$PR_BODY" ]; then
-            RELEASE_NOTES=$(echo "$PR_BODY" | \
-              sed -n '/^### Notes for release/,/^### /{/^### /!p}' | \
-              sed '/^<!--/,/-->$/d' | \
-              sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | \
-              sed '/^$/d')
-          fi
-
-          # Explicit opt-out (N/A, N/A: reason, N/A – reason)
-          if echo "$RELEASE_NOTES" | grep -qiE '^N/A'; then
-            echo "Release notes set to N/A"
-            remove_changeset
-            exit 0
-          fi
-
-          # Fall back to PR title (strip type prefix)
-          if [ -z "$RELEASE_NOTES" ]; then
-            RELEASE_NOTES=$(echo "$PR_TITLE" | sed 's/^[a-z]*\(([^)]*)\)\?!\?:[[:space:]]*//')
-          fi
-
-          # --- Detect affected packages from changed files ---
-          CHANGED_FILES=$(gh api \
-            "repos/${{ github.repository }}/pulls/${PR_NUMBER}/files" \
-            --paginate \
-            --jq '.[].filename')
-
-          # Build package map dynamically from workspace
-          declare -A PKG_MAP
-          for pkg_json in packages/*/package.json packages/@*/*/package.json; do
-            [ -f "$pkg_json" ] || continue
-            pkg_private=$(jq -r '.private // false' "$pkg_json")
-            [ "$pkg_private" = "true" ] && continue
-            pkg_name=$(jq -r '.name' "$pkg_json")
-            pkg_dir=$(dirname "$pkg_json")/
-            PKG_MAP["$pkg_dir"]="$pkg_name"
-          done
-
-          # Match changed files to packages
-          declare -A AFFECTED
-          while IFS= read -r file; do
-            [ -z "$file" ] && continue
-            for prefix in "${!PKG_MAP[@]}"; do
-              if [[ "$file" == ${prefix}* ]]; then
-                AFFECTED["${PKG_MAP[$prefix]}"]=1
-              fi
-            done
-          done <<< "$CHANGED_FILES"
-
-          # No packages affected — skip
-          if [ ${#AFFECTED[@]} -eq 0 ]; then
-            echo "No public packages affected by changed files"
-            remove_changeset
-            exit 0
-          fi
-
-          # --- Generate changeset file ---
-          {
-            echo "---"
-            for pkg in "${!AFFECTED[@]}"; do
-              echo "'${pkg}': ${BUMP}"
-            done
-            echo "---"
-            echo ""
-            echo "${RELEASE_NOTES}"
-          } > "$CHANGESET_FILE"
-
-          echo "Generated changeset:"
-          cat "$CHANGESET_FILE"
-
-          # --- Commit and push ---
-          git add "$CHANGESET_FILE"
-
-          if git diff --cached --quiet; then
-            echo "No changes to changeset file"
-            exit 0
-          fi
-
-          git commit -m "chore: update auto-generated changeset for PR #${PR_NUMBER}"
-          git push --force-with-lease
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node .github/scripts/generate-changeset.mjs
