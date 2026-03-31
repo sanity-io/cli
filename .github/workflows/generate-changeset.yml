@@ -28,6 +28,13 @@ jobs:
           app-id: ${{ secrets.ECOSPARK_APP_ID }}
           private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
 
+      - name: Checkout base branch scripts
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          sparse-checkout: .github/scripts
+          path: base-scripts
+
       - name: Checkout PR branch
         uses: actions/checkout@v6
         with:
@@ -49,4 +56,4 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
           PR_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-        run: node .github/scripts/generate-changeset.mjs
+        run: node base-scripts/.github/scripts/generate-changeset.mjs

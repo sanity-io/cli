@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import {execSync} from 'node:child_process'
+import {execSync, spawnSync} from 'node:child_process'
 import {existsSync, readdirSync, readFileSync, writeFileSync} from 'node:fs'
 import {join, resolve} from 'node:path'
 
@@ -186,12 +186,10 @@ console.log(changesetContent)
 ensureGitConfigured()
 run(`git add "${CHANGESET_FILE}"`)
 
-try {
-  run('git diff --cached --quiet')
+const {status} = spawnSync('git', ['diff', '--cached', '--quiet'], {stdio: 'ignore'})
+if (status === 0) {
   console.log('No changes to changeset file')
   process.exit(0)
-} catch {
-  // diff --cached --quiet exits non-zero when there ARE changes — this is the happy path
 }
 
 run(`git commit -m "chore: update auto-generated changeset for PR #${PR_NUMBER}"`)
