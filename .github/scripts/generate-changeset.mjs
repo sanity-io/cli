@@ -1,45 +1,48 @@
 /* eslint-disable no-console */
-import {execSync, spawnSync} from 'node:child_process'
+import {execFileSync, spawnSync} from 'node:child_process'
 import {existsSync, readdirSync, readFileSync, writeFileSync} from 'node:fs'
 import {join, resolve} from 'node:path'
 
 // --- Env vars ---
 const {GH_TOKEN, GITHUB_REPOSITORY, PR_BODY = '', PR_NUMBER, PR_REPO, PR_TITLE} = process.env
 
-if (!GH_TOKEN || !PR_NUMBER || !PR_TITLE || !PR_REPO) {
-  throw new Error('Missing required env vars: GH_TOKEN, PR_NUMBER, PR_TITLE, PR_REPO')
+if (!GH_TOKEN || !GITHUB_REPOSITORY || !PR_NUMBER || !PR_TITLE || !PR_REPO) {
+  throw new Error(
+    'Missing required env vars: GH_TOKEN, GITHUB_REPOSITORY, PR_NUMBER, PR_TITLE, PR_REPO',
+  )
 }
 
 const CHANGESET_FILE = `.changeset/pr-${PR_NUMBER}.md`
 
 // --- Helpers ---
 
-function run(cmd) {
-  return execSync(cmd, {encoding: 'utf8'}).trim()
+// Use execFileSync to avoid shell interpretation of arguments
+function git(...args) {
+  return execFileSync('git', args, {encoding: 'utf8'}).trim()
 }
 
 let gitConfigured = false
 function ensureGitConfigured() {
   if (gitConfigured) return
-  run('git config user.name "ecospark[bot]"')
-  run('git config user.email "ecospark[bot]@users.noreply.github.com"')
-  run(`git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${PR_REPO}.git"`)
+  git('config', 'user.name', 'ecospark[bot]')
+  git('config', 'user.email', 'ecospark[bot]@users.noreply.github.com')
+  git('remote', 'set-url', 'origin', `https://x-access-token:${GH_TOKEN}@github.com/${PR_REPO}.git`)
   gitConfigured = true
 }
 
 function removeChangeset() {
   if (existsSync(CHANGESET_FILE)) {
     ensureGitConfigured()
-    run(`git rm "${CHANGESET_FILE}"`)
-    run(`git commit -m "chore: remove auto-generated changeset for PR #${PR_NUMBER}"`)
-    run('git push --force-with-lease')
+    git('rm', CHANGESET_FILE)
+    git('commit', '-m', `chore: remove auto-generated changeset for PR #${PR_NUMBER}`)
+    git('push', '--force-with-lease')
   }
 }
 
 function parseConventionalCommit(title) {
   const match = title.match(/^([a-z]+)(\((.+)\))?(!)?:\s.+/)
   if (!match) return null
-  return {breaking: match[4] === '!', scope: match[3], type: match[1]}
+  return {breaking: match[4] === '!', type: match[1]}
 }
 
 function parseReleaseNotes(body) {
@@ -184,7 +187,7 @@ console.log(changesetContent)
 
 // 6. Commit and push
 ensureGitConfigured()
-run(`git add "${CHANGESET_FILE}"`)
+git('add', CHANGESET_FILE)
 
 const {status} = spawnSync('git', ['diff', '--cached', '--quiet'], {stdio: 'ignore'})
 if (status === 0) {
@@ -192,5 +195,5 @@ if (status === 0) {
   process.exit(0)
 }
 
-run(`git commit -m "chore: update auto-generated changeset for PR #${PR_NUMBER}"`)
-run('git push --force-with-lease')
+git('commit', '-m', `chore: update auto-generated changeset for PR #${PR_NUMBER}`)
+git('push', '--force-with-lease')
