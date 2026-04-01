@@ -59,18 +59,10 @@ function findExistingCommentId(prNumber: string): string | null {
   const repo = process.env.GITHUB_REPOSITORY
   if (!repo) return null
 
-  const jqFilter = '[.[] | select(.body | contains($id))][0].id'
+  const jqFilter = `[.[] | select(.body | contains("${COMMENT_ID}"))][0].id`
   const result = spawnSync(
     'gh',
-    [
-      'api',
-      `repos/${repo}/issues/${prNumber}/comments`,
-      '--jq',
-      jqFilter,
-      '--arg',
-      'id',
-      COMMENT_ID,
-    ],
+    ['api', `repos/${repo}/issues/${prNumber}/comments`, '--jq', jqFilter],
     {encoding: 'utf8'},
   )
   if (result.status !== 0) return null
