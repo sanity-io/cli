@@ -71,7 +71,7 @@ const baseConfig = {
     'packages/create-sanity': {
       // @sanity/cli is imported via relative source paths (../../@sanity/cli/src/...)
       // for bundling, but the workspace link is still needed for resolution
-      ignoreDependencies: ['@sanity/cli'],
+      ignoreDependencies: ['@sanity/cli', 'rxjs'],
     },
   },
 } satisfies KnipConfig
