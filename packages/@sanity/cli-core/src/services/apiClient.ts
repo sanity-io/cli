@@ -1,4 +1,5 @@
-import {ux} from '@oclif/core'
+import {styleText} from 'node:util'
+
 import {
   type ClientConfig,
   type ClientError,
@@ -168,7 +169,7 @@ function authErrors() {
 
       const statusCode = isHttpError(err) && err.response.body.statusCode
       if (statusCode === 401) {
-        err.message = `${err.message}. You may need to login again with ${ux.colorize('cyan', 'sanity login')}.\nFor more information, see ${generateHelpUrl('cli-errors')}.`
+        err.message = `${err.message}. You may need to login again with ${styleText('cyan', 'sanity login')}.\nFor more information, see ${generateHelpUrl('cli-errors')}.`
       }
 
       return err
