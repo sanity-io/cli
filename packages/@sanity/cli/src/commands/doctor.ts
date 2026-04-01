@@ -137,14 +137,13 @@ export class DoctorCommand extends SanityCommand<typeof DoctorCommand> {
   }
 }
 
-function isDoctorCheckName(name: string): name is DoctorCheckName {
-  return (KNOWN_CHECKS as readonly string[]).includes(name)
-}
-
 function getChecks(checkNames: string[] | undefined): Array<DoctorCheck> {
   if (!checkNames || checkNames.length === 0) {
     return Object.values(doctorChecks)
   }
 
-  return checkNames.filter((name) => isDoctorCheckName(name)).map((check) => doctorChecks[check])
+  // oclif validates args against `options: [...KNOWN_CHECKS]` before run(),
+  // so all names are guaranteed valid DoctorCheckName values.
+  // See: https://github.com/oclif/core/issues/1234 (options don't narrow types)
+  return (checkNames as DoctorCheckName[]).map((check) => doctorChecks[check])
 }
