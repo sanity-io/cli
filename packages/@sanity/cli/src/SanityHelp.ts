@@ -1,5 +1,5 @@
 import {Command, Help, Interfaces} from '@oclif/core'
-import {getBinCommand} from '@sanity/cli-core/package-manager'
+import {getBinCommand, getRunningPackageManager} from '@sanity/cli-core/package-manager'
 
 import {topicAliases} from './topicAliases.js'
 
