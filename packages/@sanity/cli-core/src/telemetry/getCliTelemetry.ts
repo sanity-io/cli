@@ -1,6 +1,6 @@
-import {ux} from '@oclif/core'
 import {noopLogger} from '@sanity/telemetry'
 
+import {warn} from '../ux/errors.js'
 import {type CLITelemetryStore} from './types.js'
 
 /**
@@ -33,7 +33,7 @@ export function getCliTelemetry(): CLITelemetryStore {
   const state = getState()
   // This should never happen, but if it does, we return a noop logger to avoid errors.
   if (!state) {
-    ux.warn('CLI telemetry not initialized, returning noop logger')
+    warn('CLI telemetry not initialized, returning noop logger')
     return noopLogger
   }
 

@@ -1,3 +1,9 @@
+import {deprecate} from 'node:util'
+
+import {NonInteractiveError as _NonInteractiveError} from '../errors/NonInteractiveError.js'
+import {NotFoundError as _NotFoundError} from '../errors/NotFoundError.js'
+import {ProjectRootNotFoundError as _ProjectRootNotFoundError} from '../errors/ProjectRootNotFoundError.js'
+
 export * from '../config/cli/getCliConfig.js'
 export * from '../config/cli/getCliConfigSync.js'
 export {type CliConfig} from '../config/cli/types/cliConfig.js'
@@ -11,9 +17,6 @@ export * from '../config/util/findConfigsPaths.js'
 export * from '../config/util/findStudioConfigPath.js'
 export {type ProjectRootResult} from '../config/util/recursivelyResolveProjectRoot.js'
 export * from '../debug.js'
-export * from '../errors/NonInteractiveError.js'
-export * from '../errors/NotFoundError.js'
-export * from '../errors/ProjectRootNotFoundError.js'
 export * from '../exitCodes.js'
 export * from '../loaders/studio/studioWorkerTask.js'
 export * from '../loaders/tsx/tsxWorkerTask.js'
@@ -49,3 +52,16 @@ export * from '../util/resolveLocalPackage.js'
 export * from '../util/safeStructuredClone.js'
 export * from '../ux/colorizeJson.js'
 export * from '../ux/timer.js'
+
+export const NonInteractiveError = deprecate(
+  _NonInteractiveError,
+  'Import `NonInteractiveError` from `@sanity/cli-core/errors`',
+)
+export const NotFoundError = deprecate(
+  _NotFoundError,
+  'Import `NotFoundError` from `@sanity/cli-core/errors`',
+)
+export const ProjectRootNotFoundError = deprecate(
+  _ProjectRootNotFoundError,
+  'Import `ProjectRootNotFoundError` from `@sanity/cli-core/errors`',
+)
