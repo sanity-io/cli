@@ -463,9 +463,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       workDir,
     })
 
-    // Set up MCP integration
+    // Set up MCP integration (skip in non-production environments)
     let mcpMode: 'auto' | 'prompt' | 'skip' = 'prompt'
-    if (!this.flags.mcp || !this.resolveIsInteractive()) {
+    if (!this.flags.mcp || !this.resolveIsInteractive() || getSanityEnv() !== 'production') {
       mcpMode = 'skip'
     } else if (this.flags.yes) {
       mcpMode = 'auto'

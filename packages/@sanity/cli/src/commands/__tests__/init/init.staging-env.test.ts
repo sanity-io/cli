@@ -2,6 +2,7 @@ import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sani
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {setupMCP} from '../../../actions/mcp/setupMCP.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {MCP_JOURNEY_API_VERSION} from '../../../services/mcp.js'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
@@ -285,5 +286,31 @@ describe('#init: staging env propagation', () => {
 
     // Should not be called at all - no --env flag and production env
     expect(mocks.createOrAppendEnvVars).not.toHaveBeenCalled()
+  })
+
+  test('skips MCP setup when in staging environment', async () => {
+    mocks.getSanityEnv.mockReturnValue('staging')
+    setupInitSuccessMocks()
+
+    mocks.select.mockResolvedValueOnce('blog') // template
+
+    await testCommand(
+      InitCommand,
+      [
+        '--output-path=/test/output',
+        '--project=test',
+        '--dataset=test',
+        '--package-manager=npm',
+        '--typescript',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+
+    expect(setupMCP).toHaveBeenCalledWith({mode: 'skip'})
   })
 })
