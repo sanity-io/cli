@@ -190,9 +190,9 @@ ensureGitConfigured()
 git('add', CHANGESET_FILE)
 
 const {status} = spawnSync('git', ['diff', '--cached', '--quiet'], {stdio: 'ignore'})
-if (status === 0) {
+if (status !== 1) {
   console.log('No changes to changeset file')
-  process.exit(0)
+  process.exit(status ?? 1)
 }
 
 git('commit', '-m', `chore: update auto-generated changeset for PR #${PR_NUMBER}`)
