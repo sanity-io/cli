@@ -1,7 +1,7 @@
 import {noopLogger} from '@sanity/telemetry'
 
-import {type CLITelemetryStore} from './types.js'
 import {warn} from '../ux/errors.js'
+import {type CLITelemetryStore} from './types.js'
 
 /**
  * @public

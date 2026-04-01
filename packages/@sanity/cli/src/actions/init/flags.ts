@@ -36,6 +36,9 @@ export interface ArgDef {
   hidden?: boolean
 }
 
+/** Shared description used by both oclif's `InitCommand` and `create-sanity` help. */
+export const INIT_DESCRIPTION = 'Initialize a new Sanity project'
+
 export const initFlagDefs = {
   'auto-updates': {
     allowNo: true,
