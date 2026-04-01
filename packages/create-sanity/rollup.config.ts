@@ -51,6 +51,8 @@ export default defineConfig({
   input: 'src/index.ts',
   onwarn(warning, warn) {
     if (warning.code === 'CIRCULAR_DEPENDENCY') return
+    // @iarna/toml uses eval("require('util').inspect") — third-party, harmless for Node CLI
+    if (warning.code === 'EVAL' && warning.id?.includes('@iarna/toml')) return
     warn(warning)
   },
   output: {

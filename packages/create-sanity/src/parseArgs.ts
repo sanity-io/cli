@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import {parseArgs} from 'node:util'
 
 import {type FlagDef, initFlagDefs} from '../../@sanity/cli/src/actions/init/flags.js'
@@ -9,6 +8,15 @@ type ParseArgsOption = {
   multiple?: boolean
   short?: string
   type: 'boolean' | 'string'
+}
+
+/**
+ * Thrown when flag validation fails (alias conflicts, invalid option values,
+ * exclusive constraint violations). Caught in the top-level entry point
+ * (`index.ts`) and translated to `console.error` + `process.exit(2)`.
+ */
+export class FlagValidationError extends Error {
+  override name = 'FlagValidationError'
 }
 
 /**
@@ -118,8 +126,7 @@ function normalizeFlags(
   for (const [alias, canonical] of aliasMap) {
     if (explicitFlags.has(alias)) {
       if (explicitFlags.has(canonical)) {
-        console.error(`--${alias} cannot be used with --${canonical}`)
-        process.exit(2)
+        throw new FlagValidationError(`--${alias} cannot be used with --${canonical}`)
       }
       merged[canonical] = merged[alias]
     }
@@ -140,10 +147,9 @@ function normalizeFlags(
     if (def.options && merged[name] !== undefined) {
       const value = String(merged[name])
       if (!def.options.includes(value)) {
-        console.error(
-          `Invalid value "${value}" for --${name}. ` + `Allowed: ${def.options.join(', ')}`,
+        throw new FlagValidationError(
+          `Invalid value "${value}" for --${name}. Allowed: ${def.options.join(', ')}`,
         )
-        process.exit(2)
       }
     }
   }
@@ -154,8 +160,7 @@ function normalizeFlags(
     if (!def.exclusive || !explicitFlags.has(name)) continue
     for (const other of def.exclusive) {
       if (explicitFlags.has(other)) {
-        console.error(`--${name} cannot be used with --${other}`)
-        process.exit(2)
+        throw new FlagValidationError(`--${name} cannot be used with --${other}`)
       }
     }
   }
@@ -172,6 +177,7 @@ function normalizeFlags(
     if (typeof dep === 'object' && dep.message) {
       parts.push(` ${dep.message}.`)
     }
+    // eslint-disable-next-line no-console -- CLI output for deprecated flag warnings
     console.warn(parts.join(''))
   }
 

@@ -2,7 +2,11 @@
 // eslint-disable-next-line import-x/no-extraneous-dependencies -- bundled, not a runtime dep
 import wrapAnsi from 'wrap-ansi'
 
-import {type FlagDef, initFlagDefs} from '../../@sanity/cli/src/actions/init/flags.js'
+import {
+  type FlagDef,
+  INIT_DESCRIPTION,
+  initFlagDefs,
+} from '../../@sanity/cli/src/actions/init/flags.js'
 import {getCreateCommand} from './createCommand.js'
 
 /**
@@ -62,7 +66,7 @@ export function printHelp(): never {
   console.log('')
 
   // Description
-  console.log(wrapAnsi('Initialize a new Sanity project', maxWidth - indent, {hard: true}))
+  console.log(wrapAnsi(INIT_DESCRIPTION, maxWidth - indent, {hard: true}))
   console.log('')
 
   // Flags

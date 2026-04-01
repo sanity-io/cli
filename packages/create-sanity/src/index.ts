@@ -13,7 +13,7 @@ import {initAction} from '../../@sanity/cli/src/actions/init/initAction.js'
 import {InitError} from '../../@sanity/cli/src/actions/init/initError.js'
 import {getCreateCommand} from './createCommand.js'
 import {createNoopTelemetryStore} from './noopTelemetry.js'
-import {parseInitArgs} from './parseArgs.js'
+import {FlagValidationError, parseInitArgs} from './parseArgs.js'
 
 try {
   const {args, flags} = parseInitArgs(process.argv.slice(2))
@@ -32,7 +32,7 @@ try {
         process.exit(1)
       },
       log: console.log,
-      warn: (msg: Error | string) => {
+      warn: (msg: Error | string): Error | string => {
         console.warn(msg instanceof Error ? msg.message : msg)
         return msg
       },
@@ -51,6 +51,11 @@ try {
   if (error instanceof CLIError) {
     console.error(error.message)
     process.exit(error.oclif.exit ?? 2)
+  }
+
+  if (error instanceof FlagValidationError) {
+    console.error(error.message)
+    process.exit(2)
   }
 
   // Clean message for unknown flags instead of a raw stack trace
