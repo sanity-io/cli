@@ -102,6 +102,7 @@
     "execa": "catalog:",
     "form-data": "^4.0.5",
     "get-latest-version": "^6.0.1",
+    "groq-js": "catalog:",
     "gunzip-maybe": "^1.4.2",
     "import-meta-resolve": "catalog:",
     "is-installed-globally": "^1.0.0",
