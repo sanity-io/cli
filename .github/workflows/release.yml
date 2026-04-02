@@ -10,6 +10,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  actions: write # for gh workflow run in post-release
   contents: write # for version bump commits and tags
   pull-requests: write # for creating Version Packages PR
   id-token: write # to enable use of OIDC for npm provenance
@@ -20,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       published: ${{ steps.changesets.outputs.published }}
+      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
 
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -104,3 +106,16 @@ jobs:
           repository_name: ${{ github.event.repository.name }}
           initial_state_id: 'c56956cd-c281-4ca5-889f-6189ce231a6d'
           done_state_id: '5a35b7bf-6d37-4cc2-854a-2f18d160e2e5'
+
+      - name: Trigger post-release E2E tests
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISHED_PACKAGES: ${{ needs.release.outputs.publishedPackages }}
+        run: |
+          CLI_VERSION=$(echo "$PUBLISHED_PACKAGES" | jq -r '.[] | select(.name == "@sanity/cli") | .version')
+          if [ -n "$CLI_VERSION" ]; then
+            echo "Triggering E2E tests for @sanity/cli@$CLI_VERSION"
+            gh workflow run e2e.yml -f cli_version="$CLI_VERSION"
+          else
+            echo "No @sanity/cli in published packages, skipping E2E"
+          fi

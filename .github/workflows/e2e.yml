@@ -5,6 +5,16 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      cli_version:
+        description: 'npm version/tag to test (e.g., latest, 3.82.0)'
+        required: true
+        default: 'latest'
+      cli_package:
+        description: 'Package to install — must provide the "sanity" binary (e.g., @sanity/cli, sanity)'
+        required: false
+        default: '@sanity/cli'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,7 +27,7 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      should_run: ${{ github.event_name == 'push' || steps.filter.outputs.cli == 'true' }}
+      should_run: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || steps.filter.outputs.cli == 'true' }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
@@ -55,8 +65,18 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Build CLI
+      - name: Build CLI (pack mode)
+        if: ${{ !inputs.cli_version }}
         run: pnpm build:cli
+
+      - name: Install CLI from npm (registry mode)
+        if: ${{ inputs.cli_version }}
+        run: |
+          INSTALL_DIR=$(mktemp -d)
+          PACKAGE="${{ inputs.cli_package || '@sanity/cli' }}"
+          npm install --prefix "$INSTALL_DIR" "${PACKAGE}@${{ inputs.cli_version }}"
+          echo "E2E_BINARY_PATH=$INSTALL_DIR/node_modules/.bin/sanity" >> $GITHUB_ENV
+          "$INSTALL_DIR/node_modules/.bin/sanity" --version
 
       - name: Run E2E tests
         env:
@@ -64,6 +84,30 @@ jobs:
           SANITY_E2E_PROJECT_ID: ${{ secrets.SANITY_E2E_PROJECT_ID }}
           SANITY_E2E_DATASET: ${{ secrets.SANITY_E2E_DATASET }}
         run: pnpm --filter @sanity/cli-e2e test
+
+  notify-failure:
+    if: ${{ failure() && inputs.cli_version }}
+    needs: [e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack on failure
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        with:
+          webhook: ${{ secrets.SLACK_E2E_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "Post-release E2E failed for ${{ inputs.cli_package || '@sanity/cli' }}@${{ inputs.cli_version }}",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":red_circle: *Post-release E2E failed*\n*Package:* `${{ inputs.cli_package || '@sanity/cli' }}@${{ inputs.cli_version }}`\n*Run:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View logs>"
+                  }
+                }
+              ]
+            }
 
   e2e-status:
     if: always()
