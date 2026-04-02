@@ -70,6 +70,7 @@ export async function findUserApplicationForApp(
 
     // If no applications are found, return null
     if (!userApplications?.length) {
+      spin.info('No application ID configured')
       return null
     }
 
