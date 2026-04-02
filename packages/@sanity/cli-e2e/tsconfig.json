@@ -5,7 +5,8 @@
     "rootDir": ".",
     "paths": {
       "@sanity/cli-test": ["./node_modules/@sanity/cli-test/src/index.ts"],
-      "@sanity/cli-test/vitest": ["./node_modules/@sanity/cli-test/src/vitest.ts"]
+      "@sanity/cli-test/vitest": ["./node_modules/@sanity/cli-test/src/vitest.ts"],
+      "@sanity/cli-core": ["./node_modules/@sanity/cli-core/src/_exports/index.ts"]
     }
   }
 }
