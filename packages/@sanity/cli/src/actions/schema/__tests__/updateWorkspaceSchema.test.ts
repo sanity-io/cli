@@ -1,7 +1,6 @@
-import {type Workspace} from 'sanity'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {updateWorkspacesSchemas} from '../updateWorkspaceSchema.js'
+import {updateWorkspacesSchemas, type WorkspaceSchemaInput} from '../updateWorkspaceSchema.js'
 
 const mockRequest = vi.fn()
 
@@ -15,15 +14,18 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-function createWorkspace(overrides: Record<string, unknown> = {}) {
+function createWorkspace(overrides: Partial<WorkspaceSchemaInput> = {}): WorkspaceSchemaInput {
   return {
     dataset: 'production',
+    manifestSchema: [
+      {name: 'post', type: 'document'},
+      {name: 'author', type: 'document'},
+    ],
     name: 'default',
     projectId: 'proj-123',
-    schema: {_original: {types: []}},
     title: 'Test Workspace',
     ...overrides,
-  } as unknown as Workspace
+  }
 }
 
 afterEach(() => {
@@ -81,6 +83,34 @@ describe('updateWorkspacesSchemas', () => {
         body: expect.objectContaining({
           schemas: expect.arrayContaining([expect.objectContaining({tag: 'mytag'})]),
         }),
+      }),
+    )
+  })
+
+  test('sends ManifestSchemaType[] in the schema field', async () => {
+    mockRequest.mockResolvedValue({ok: true})
+
+    const manifestSchema = [
+      {name: 'post', title: 'Post', type: 'document'},
+      {name: 'author', title: 'Author', type: 'document'},
+    ]
+
+    await updateWorkspacesSchemas({
+      verbose: false,
+      workspaces: [createWorkspace({manifestSchema})],
+    })
+
+    expect(mockRequest).toHaveBeenCalledWith(
+      expect.objectContaining({
+        body: {
+          schemas: [
+            expect.objectContaining({
+              schema: manifestSchema,
+              version: '2025-05-01',
+              workspace: {name: 'default', title: 'Test Workspace'},
+            }),
+          ],
+        },
       }),
     )
   })

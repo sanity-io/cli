@@ -1,8 +1,10 @@
+import {mkdtempSync, writeFileSync} from 'node:fs'
+import {tmpdir} from 'node:os'
 import {join, resolve} from 'node:path'
 
 import {describe, expect, test} from 'vitest'
 
-import {type ExtractSchemaCommand} from '../../../commands/schema/extract.js'
+import {type ExtractSchemaCommand} from '../../../commands/schemas/extract.js'
 import {getExtractOptions} from '../getExtractOptions.js'
 
 describe('getExtractOptions', () => {
@@ -69,6 +71,101 @@ describe('getExtractOptions', () => {
     })
   })
 
+  test('should append schema.json when path points to an existing directory', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'schema-test-'))
+    const projectRoot = {
+      directory: tempDir,
+      path: join(tempDir, 'sanity.config.ts'),
+      type: 'studio' as const,
+    }
+
+    const result = getExtractOptions({
+      flags: {
+        format: 'groq-type-nodes',
+        path: '.', // current dir - definitely exists
+        watch: false,
+        'watch-patterns': undefined,
+        workspace: undefined,
+      } as ExtractSchemaCommand['flags'],
+      projectRoot,
+      schemaExtraction: undefined,
+    })
+
+    expect(result.outputPath).toEqual(join(tempDir, 'schema.json'))
+  })
+
+  test('should treat path with .json extension as a file path', () => {
+    const result = getExtractOptions({
+      flags: {
+        format: 'groq-type-nodes',
+        path: './schema.json',
+        watch: false,
+        'watch-patterns': undefined,
+        workspace: undefined,
+      } as ExtractSchemaCommand['flags'],
+      projectRoot: mockProjectRoot,
+      schemaExtraction: undefined,
+    })
+
+    expect(result.outputPath).toEqual(resolve(join('/test/project', 'schema.json')))
+  })
+
+  test('should treat path with .json extension in subdirectory as a file path', () => {
+    const result = getExtractOptions({
+      flags: {
+        format: 'groq-type-nodes',
+        path: 'output/my-schema.json',
+        watch: false,
+        'watch-patterns': undefined,
+        workspace: undefined,
+      } as ExtractSchemaCommand['flags'],
+      projectRoot: mockProjectRoot,
+      schemaExtraction: undefined,
+    })
+
+    expect(result.outputPath).toEqual(resolve(join('/test/project', 'output', 'my-schema.json')))
+  })
+
+  test('should treat path with non-.json extension as a file path', () => {
+    const result = getExtractOptions({
+      flags: {
+        format: 'groq-type-nodes',
+        path: 'output/my-schema.yaml',
+        watch: false,
+        'watch-patterns': undefined,
+        workspace: undefined,
+      } as ExtractSchemaCommand['flags'],
+      projectRoot: mockProjectRoot,
+      schemaExtraction: undefined,
+    })
+
+    expect(result.outputPath).toEqual(resolve(join('/test/project', 'output', 'my-schema.yaml')))
+  })
+
+  test('should respect .json file path when file exists on disk', () => {
+    const tempDir = mkdtempSync(join(tmpdir(), 'schema-test-'))
+    writeFileSync(join(tempDir, 'schema.json'), '{}')
+    const projectRoot = {
+      directory: tempDir,
+      path: join(tempDir, 'sanity.config.ts'),
+      type: 'studio' as const,
+    }
+
+    const result = getExtractOptions({
+      flags: {
+        format: 'groq-type-nodes',
+        path: 'schema.json',
+        watch: false,
+        'watch-patterns': undefined,
+        workspace: undefined,
+      } as ExtractSchemaCommand['flags'],
+      projectRoot,
+      schemaExtraction: undefined,
+    })
+
+    expect(result.outputPath).toEqual(join(tempDir, 'schema.json'))
+  })
+
   test('should use default values when neither flags nor CLI config are provided', () => {
     const result = getExtractOptions({
       flags: {
@@ -86,7 +183,7 @@ describe('getExtractOptions', () => {
       configPath: '/test/project/sanity.config.ts',
       enforceRequiredFields: false,
       format: 'groq-type-nodes',
-      outputPath: join('/test/project', 'schema.json'),
+      outputPath: resolve(join('/test/project', 'schema.json')),
       watchPatterns: [],
       workspace: undefined,
     })

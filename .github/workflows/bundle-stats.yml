@@ -1,0 +1,35 @@
+name: Bundle Stats
+
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  bundle-stats:
+    continue-on-error: true
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          node-version: 24
+
+      - uses: rexxars/bundle-stats@1bc291f60df8eafeb2793bc5592a1c7b812d5684 # v1.11.2
+        with:
+          packages: packages/@sanity/cli, packages/@sanity/cli-core, packages/create-sanity
+          build-command: pnpm build:cli
+          only: '.'
+          ignore: 'bin/**'

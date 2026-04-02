@@ -19,8 +19,8 @@ import {type TelemetryEvent, type TelemetryLogEvent} from '@sanity/telemetry'
 import nock from 'nock'
 import {glob} from 'tinyglobby'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
+import {getCommandAndConfig} from '../../../../test/helpers/getCommandAndConfig.js'
 import {createTelemetryStore} from '../../../util/telemetry/createTelemetryStore.js'
 import {flushTelemetryFiles} from '../../../util/telemetry/flushTelemetryFiles.js'
 import {readNDJSON} from '../../../util/telemetry/readNDJSON.js'
@@ -90,9 +90,10 @@ function setupUserConfigMock(
     mockConfig.set('telemetryDisclosed', Date.now())
   }
   mockGetUserConfig.mockReturnValue({
+    delete: vi.fn().mockImplementation((key) => mockConfig.delete(key)),
     get: vi.fn().mockImplementation((key) => mockConfig.get(key)),
     set: vi.fn().mockImplementation((key, value) => mockConfig.set(key, value)),
-  } as Partial<ReturnType<typeof getUserConfig>> as ReturnType<typeof getUserConfig>)
+  })
 }
 
 function setupProjectMocks(testDir: string) {
@@ -158,11 +159,12 @@ describe('setupTelemetry integration test', () => {
     telemetryPath = path
     await mkdir(telemetryPath, {recursive: true})
 
-    // Set up default getUserConfig mock to return mock get/set functions
+    // Set up default getUserConfig mock to return mock get/set/delete functions
     mockGetUserConfig.mockReturnValue({
+      delete: vi.fn(),
       get: mockGet,
       set: mockSet,
-    } as never)
+    })
 
     // Reset all mocks before each test
     mockGet.mockReset()
@@ -356,14 +358,14 @@ describe('setupTelemetry integration test', () => {
 
   test('ensures globalThis.cliTelemetry is set', async () => {
     const global = globalThis as typeof globalThis & {
-      [CLI_TELEMETRY_SYMBOL]?: unknown
+      [CLI_TELEMETRY_SYMBOL]?: {logger: unknown; reportTraceError?: unknown}
     }
     expect(global[CLI_TELEMETRY_SYMBOL]).toBeUndefined()
 
     await testHook<'prerun'>(setupTelemetry, {config})
 
     expect(global[CLI_TELEMETRY_SYMBOL]).toBeDefined()
-    expect(getCliTelemetry()).toEqual(global[CLI_TELEMETRY_SYMBOL])
+    expect(getCliTelemetry()).toEqual(global[CLI_TELEMETRY_SYMBOL]?.logger)
   })
 
   test('should initialize telemetry when project root is not found', async () => {

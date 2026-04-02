@@ -19,6 +19,7 @@ import {type Framework, frameworks} from '@vercel/frameworks'
 import {execa, type Options} from 'execa'
 import deburr from 'lodash-es/deburr.js'
 
+import {validateSession} from '../actions/auth/ensureAuthenticated.js'
 import {getProviderName} from '../actions/auth/getProviderName.js'
 import {login} from '../actions/auth/login/login.js'
 import {createDataset} from '../actions/dataset/create.js'
@@ -43,7 +44,7 @@ import {
   sanityStudioTemplate,
 } from '../actions/init/templates/nextjs/index.js'
 import {type VersionedFramework} from '../actions/init/types.js'
-import {EditorName} from '../actions/mcp/editorConfigs.js'
+import {type EditorName} from '../actions/mcp/editorConfigs.js'
 import {setupMCP} from '../actions/mcp/setupMCP.js'
 import {findOrganizationByUserName} from '../actions/organizations/findOrganizationByUserName.js'
 import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
@@ -77,6 +78,7 @@ import {CLIInitStepCompleted, type InitStepResult} from '../telemetry/init.telem
 import {detectFrameworkRecord} from '../util/detectFramework.js'
 import {absolutify, validateEmptyPath} from '../util/fsUtils.js'
 import {getProjectDefaults} from '../util/getProjectDefaults.js'
+import {getSanityEnv} from '../util/getSanityEnv.js'
 import {getPeerDependencies} from '../util/packageManager/getPeerDependencies.js'
 import {
   installDeclaredPackages,
@@ -86,7 +88,7 @@ import {
   getPartialEnvWithNpmPath,
   type PackageManager,
 } from '../util/packageManager/packageManagerChoice.js'
-import {ImportDatasetCommand} from './dataset/import.js'
+import {ImportDatasetCommand} from './datasets/import.js'
 
 const debug = subdebug('init')
 
@@ -114,7 +116,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     },
     {
       command:
-        '<%= config.bin %> <%= command.id %> -y --create-project "Movies Unlimited" --dataset moviedb --visibility private --template moviedb --output-path /Users/espenh/movies-unlimited',
+        '<%= config.bin %> <%= command.id %> -y --project-name "Movies Unlimited" --dataset moviedb --visibility private --template moviedb --output-path /Users/espenh/movies-unlimited',
       description: 'Create a brand new project with name "Movies Unlimited"',
     },
   ] satisfies Array<Command.Example>
@@ -137,8 +139,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       helpValue: '<code>',
     }),
     'create-project': Flags.string({
+      deprecated: {message: 'Use --project-name instead'},
       description: 'Create a new project with the given name',
       helpValue: '<name>',
+      hidden: true,
     }),
     dataset: Flags.string({
       description: 'Dataset name for the studio',
@@ -170,6 +174,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       // oclif doesn't indent correctly with custom help labels, thus leading space :/
       helpLabel: '    --[no-]git',
       helpValue: '<message>',
+    }),
+    'import-dataset': Flags.boolean({
+      allowNo: true,
+      default: undefined,
+      description: 'Import template sample dataset',
     }),
     mcp: Flags.boolean({
       allowNo: true,
@@ -225,8 +234,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     project: Flags.string({
       aliases: ['project-id'],
       description: 'Project ID to use for the studio',
-      exclusive: ['create-project'],
+      exclusive: ['create-project', 'project-name'],
       helpValue: '<id>',
+    }),
+    'project-name': Flags.string({
+      description: 'Create a new project with the given name',
+      exclusive: ['project', 'create-project'],
+      helpValue: '<name>',
     }),
     'project-plan': Flags.string({
       description: 'Optionally select a plan for a new project',
@@ -243,7 +257,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       hidden: true,
     }),
     reconfigure: Flags.boolean({
-      deprecated: {message: 'This flag is no longer supported', version: '3.0.0'},
+      deprecated: {
+        message: 'This flag is no longer supported',
+        version: '3.0.0',
+      },
       description: 'Reconfigure an existing project',
       hidden: true,
     }),
@@ -282,7 +299,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   public async run(): Promise<void> {
     const workDir = process.cwd()
 
-    const createProjectName = this.flags['create-project']
+    const createProjectName = this.flags['project-name'] ?? this.flags['create-project']
     // For backwards "compatibility" - we used to allow `sanity init plugin`,
     // and no longer do - but instead of printing an error about an unknown
     // _command_, we want to acknowledge that the user is trying to do something
@@ -344,9 +361,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       )
     }
 
+    const isAppTemplate = this.flags.template ? determineAppTemplate(this.flags.template) : false // Default to false
+
     // Checks flags are present when in unattended mode
     if (this.isUnattended()) {
-      this.checkFlagsInUnattendedMode({createProjectName, isNextJs})
+      this.checkFlagsInUnattendedMode({createProjectName, isAppTemplate, isNextJs})
     }
 
     this._trace.start()
@@ -380,8 +399,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     // If the user isn't already autenticated, make it so
     const {user} = await this.ensureAuthenticated()
-
-    const isAppTemplate = this.flags.template ? determineAppTemplate(this.flags.template) : false // Default to false
     if (!isAppTemplate) {
       this.log(`${logSymbols.success} Fetching existing projects`)
       this.log('')
@@ -389,7 +406,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     let newProject: string | undefined
     if (createProjectName) {
-      newProject = await this.createProjectFromName({createProjectName, planId, user})
+      newProject = await this.createProjectFromName({
+        createProjectName,
+        planId,
+        user,
+      })
     }
 
     const {datasetName, displayName, isFirstProject, organizationId, projectId} =
@@ -442,8 +463,14 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       workDir,
     })
 
-    // Set up MCP integration
-    const mcpResult = await setupMCP(this.flags.mcp)
+    // Set up MCP integration (skip in non-production environments)
+    let mcpMode: 'auto' | 'prompt' | 'skip' = 'prompt'
+    if (!this.flags.mcp || !this.resolveIsInteractive() || getSanityEnv() !== 'production') {
+      mcpMode = 'skip'
+    } else if (this.flags.yes) {
+      mcpMode = 'auto'
+    }
+    const mcpResult = await setupMCP({mode: mcpMode})
 
     this._trace.log({
       configuredEditors: mcpResult.configuredEditors,
@@ -455,6 +482,16 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       this._trace.error(mcpResult.error)
     }
     const mcpConfigured = mcpResult.configuredEditors
+
+    // Show checkmark for editors that were already configured
+    const {alreadyConfiguredEditors} = mcpResult
+    if (alreadyConfiguredEditors.length > 0) {
+      const label =
+        alreadyConfiguredEditors.length === 1
+          ? `${alreadyConfiguredEditors[0]} already configured for Sanity MCP`
+          : `${alreadyConfiguredEditors.length} editors already configured for Sanity MCP`
+      spinner(label).start().succeed()
+    }
 
     if (isNextJs) {
       await checkNextJsReactCompatibility({
@@ -488,12 +525,16 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         output: this.output,
         outputPath,
       })
+      await this.writeStagingEnvIfNeeded(outputPath)
       this.exit(0)
     }
 
     // Prompt for template to use
     const templateName = await this.promptForTemplate()
-    this._trace.log({selectedOption: templateName, step: 'selectProjectTemplate'})
+    this._trace.log({
+      selectedOption: templateName,
+      step: 'selectProjectTemplate',
+    })
     const template = templates[templateName]
     if (!remoteTemplateInfo && !template) {
       this.error(`Template "${templateName}" not found`, {exit: 1})
@@ -504,16 +545,23 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       useTypeScript = true
     } else if (this.promptForUndefinedFlag(this.flags.typescript)) {
       useTypeScript = await promptForTypeScript()
-      this._trace.log({selectedOption: useTypeScript ? 'yes' : 'no', step: 'useTypeScript'})
+      this._trace.log({
+        selectedOption: useTypeScript ? 'yes' : 'no',
+        step: 'useTypeScript',
+      })
     }
 
     // If the template has a sample dataset, prompt the user whether or not we should import it
+    const importDatasetFlag = this.flags['import-dataset']
     const shouldImport =
-      !this.isUnattended() &&
       template?.datasetUrl &&
-      (await this.promptForDatasetImport(template.importPrompt))
+      (importDatasetFlag ??
+        (!this.isUnattended() && (await this.promptForDatasetImport(template.importPrompt))))
 
-    this._trace.log({selectedOption: shouldImport ? 'yes' : 'no', step: 'importTemplateDataset'})
+    this._trace.log({
+      selectedOption: shouldImport ? 'yes' : 'no',
+      step: 'importTemplateDataset',
+    })
 
     try {
       await updateProjectInitializedAt(projectId)
@@ -542,7 +590,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       if (error instanceof Error) {
         throw error
       }
-      throw new Error(String(error))
+      throw new Error(String(error), {cause: error})
     }
 
     const pkgManager = await resolvePackageManager({
@@ -552,13 +600,21 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       targetDir: outputPath,
     })
 
-    this._trace.log({selectedOption: pkgManager, step: 'selectPackageManager'})
+    this._trace.log({
+      selectedOption: pkgManager,
+      step: 'selectPackageManager',
+    })
 
     // Now for the slow part... installing dependencies
-    await installDeclaredPackages(outputPath, pkgManager, {output: this.output, workDir})
+    await installDeclaredPackages(outputPath, pkgManager, {
+      output: this.output,
+      workDir,
+    })
 
     const useGit = this.flags.git === undefined || Boolean(this.flags.git)
     const commitMessage = this.flags.git
+    await this.writeStagingEnvIfNeeded(outputPath)
+
     // Try initializing a git repository
     if (useGit) {
       tryGitInit(outputPath, typeof commitMessage === 'string' ? commitMessage : undefined)
@@ -571,7 +627,15 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         this.error('Authentication required to import dataset', {exit: 1})
       }
       await ImportDatasetCommand.run(
-        [template.datasetUrl, '--project', projectId, '--dataset', datasetName, '--token', token],
+        [
+          template.datasetUrl,
+          '--project-id',
+          projectId,
+          '--dataset',
+          datasetName,
+          '--token',
+          token,
+        ],
         {
           root: outputPath,
         },
@@ -658,34 +722,56 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
   private checkFlagsInUnattendedMode({
     createProjectName,
+    isAppTemplate,
     isNextJs,
   }: {
     createProjectName: string | undefined
+    isAppTemplate: boolean
     isNextJs: boolean
   }) {
     debug('Unattended mode, validating required options')
 
+    // App templates only require --organization and --output-path
+    if (isAppTemplate) {
+      if (!this.flags['output-path']) {
+        this.error('`--output-path` must be specified in unattended mode', {
+          exit: 1,
+        })
+      }
+
+      if (!this.flags.organization) {
+        this.error(
+          'The --organization flag is required for app templates in unattended mode. ' +
+            'Use --organization <id> to specify which organization to use.',
+          {exit: 1},
+        )
+      }
+
+      return
+    }
+
     if (!this.flags['dataset']) {
-      this.error(`\`--dataset\` must be specified in unattended mode`, {exit: 1})
+      this.error(`\`--dataset\` must be specified in unattended mode`, {
+        exit: 1,
+      })
     }
 
     // output-path is required in unattended mode when not using nextjs
     if (!isNextJs && !this.flags['output-path']) {
-      this.error(`\`--output-path\` must be specified in unattended mode`, {exit: 1})
+      this.error(`\`--output-path\` must be specified in unattended mode`, {
+        exit: 1,
+      })
     }
 
     if (!this.flags.project && !createProjectName) {
       this.error(
-        '`--project <id>` or `--create-project <name>` must be specified in unattended mode',
+        '`--project <id>` or `--project-name <name>` must be specified in unattended mode',
         {exit: 1},
       )
     }
 
     if (createProjectName && !this.flags.organization) {
-      this.error(
-        '--create-project is not supported in unattended mode without an organization, please specify an organization with `--organization <id>`',
-        {exit: 1},
-      )
+      this.error('`--project-name` requires `--organization <id>` in unattended mode', {exit: 1})
     }
   }
 
@@ -698,14 +784,17 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     planId: string | undefined
     user: SanityOrgUser
   }) {
-    debug('--create-project specified, creating a new project')
+    debug('--project-name specified, creating a new project')
 
     let orgForCreateProjectFlag = this.flags.organization
 
     if (!orgForCreateProjectFlag) {
       debug('no organization specified, selecting one')
       const organizations = await listOrganizations()
-      orgForCreateProjectFlag = await this.promptUserForOrganization({organizations, user})
+      orgForCreateProjectFlag = await this.promptUserForOrganization({
+        organizations,
+        user,
+      })
     }
 
     debug('creating a new project')
@@ -733,46 +822,40 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
   // @todo do we actually need to be authenticated for init? check flags and determine.
   private async ensureAuthenticated(): Promise<{user: SanityOrgUser}> {
-    let isAuthenticated = (await getCliToken()) !== undefined
-    debug(isAuthenticated ? 'User already has a token' : 'User has no token')
+    const user = await validateSession()
 
-    let user: SanityOrgUser | undefined
-    if (isAuthenticated) {
-      // It _appears_ we are authenticated, but the token might be invalid/expired,
-      // so we need to verify that we can actually make an authenticated request.
-      try {
-        user = await getCliUser()
-      } catch {
-        // assume that any error means that the token is invalid
-        isAuthenticated = false
-      }
-    }
-
-    if (isAuthenticated) {
+    if (user) {
       this._trace.log({alreadyLoggedIn: true, step: 'login'})
-    } else {
-      if (this.isUnattended()) {
-        this.error('Must be logged in to run this command in unattended mode, run `sanity login`', {
-          exit: 1,
-        })
-      }
-
-      this._trace.log({step: 'login'})
-
-      try {
-        await login({output: this.output, telemetry: this._trace.newContext('login')})
-      } catch (error) {
-        const message = error instanceof Error ? error.message : String(error)
-        this.error(`Login failed: ${message}`, {exit: 1})
-      }
+      this.log(
+        `${logSymbols.success} You are logged in as ${user.email} using ${getProviderName(user.provider)}`,
+      )
+      return {user}
     }
 
-    user = await getCliUser()
+    if (this.isUnattended()) {
+      this.error('Must be logged in to run this command in unattended mode, run `sanity login`', {
+        exit: 1,
+      })
+    }
+
+    this._trace.log({step: 'login'})
+
+    try {
+      await login({
+        output: this.output,
+        telemetry: this._trace.newContext('login'),
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      this.error(`Login failed: ${message}`, {exit: 1})
+    }
+
+    const loggedInUser = await getCliUser()
 
     this.log(
-      `${logSymbols.success} You are logged in as ${user.email} using ${getProviderName(user.provider)}`,
+      `${logSymbols.success} You are logged in as ${loggedInUser.email} using ${getProviderName(loggedInUser.provider)}`,
     )
-    return {user}
+    return {user: loggedInUser}
   }
 
   private flagOrDefault(flag: keyof typeof this.flags, defaultValue: boolean): boolean {
@@ -783,7 +866,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     displayName: string
     projectId: string
     showDefaultConfigPrompt: boolean
-  }): Promise<{datasetName: string; userAction: 'create' | 'none' | 'select'}> {
+  }): Promise<{
+    datasetName: string
+    userAction: 'create' | 'none' | 'select'
+  }> {
     const visibility = this.flags.visibility
     const dataset = this.flags.dataset
     let defaultConfig = this.flags['dataset-default']
@@ -815,13 +901,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       return {datasetName: dataset, userAction: 'none'}
     }
 
-    const datasetInfo =
-      'Your content will be stored in a dataset that can be public or private, depending on\nwhether you want to query your content with or without authentication.\nThe default dataset configuration has a public dataset named "production".'
-
     if (datasets.length === 0) {
       debug('No datasets found for project, prompting for name')
       if (opts.showDefaultConfigPrompt) {
-        this.log(datasetInfo)
         defaultConfig = await promptForDefaultConfig()
       }
       const name = defaultConfig
@@ -852,7 +934,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       const existingDatasetNames = datasets.map((ds) => ds.name)
       debug('User wants to create a new dataset, prompting for name')
       if (opts.showDefaultConfigPrompt && !existingDatasetNames.includes('production')) {
-        this.log(datasetInfo)
         defaultConfig = await promptForDefaultConfig()
       }
 
@@ -911,7 +992,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
           userAction: 'select',
         }
       }
-      this.error(`Failed to communicate with the Sanity API:\n${err.message}`, {exit: 1})
+      this.error(`Failed to communicate with the Sanity API:\n${err.message}`, {
+        exit: 1,
+      })
     }
 
     if (projects.length === 0 && this.isUnattended()) {
@@ -1055,6 +1138,19 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     schemaUrl?: string
   }> {
     if (isAppTemplate) {
+      // If organization flag is provided, use it directly (skip prompt and API call)
+      if (this.flags.organization) {
+        return {
+          datasetName: '',
+          displayName: '',
+          isFirstProject: false,
+          organizationId: this.flags.organization,
+          projectId: '',
+        }
+      }
+
+      // Interactive mode: fetch orgs and prompt
+      // Note: unattended mode without --organization is rejected by checkFlagsInUnattendedMode
       const organizations = await listOrganizations({
         includeImplicitMemberships: 'true',
         includeMembers: 'true',
@@ -1146,7 +1242,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     if (this.promptForUndefinedFlag(this.flags.typescript)) {
       useTypeScript = await promptForTypeScript()
     }
-    this._trace.log({selectedOption: useTypeScript ? 'yes' : 'no', step: 'useTypeScript'})
+    this._trace.log({
+      selectedOption: useTypeScript ? 'yes' : 'no',
+      step: 'useTypeScript',
+    })
 
     const fileExtension = useTypeScript ? 'ts' : 'js'
     let embeddedStudio = this.flagOrDefault('nextjs-embed-studio', true)
@@ -1271,7 +1370,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       targetDir: workDir,
     })
     this._trace.log({selectedOption: chosen, step: 'selectPackageManager'})
-    const packages = ['@sanity/vision@4', 'sanity@4', '@sanity/image-url@1', 'styled-components@6']
+    const packages = ['@sanity/vision@5', 'sanity@5', '@sanity/image-url@2', 'styled-components@6']
     if (templateToUse === 'blog') {
       packages.push('@sanity/icons')
     }
@@ -1296,17 +1395,17 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     switch (chosen) {
       case 'npm': {
-        await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@11'], execOptions)
+        await execa('npm', ['install', 'next-sanity@12'], execOptions)
         break
       }
       case 'pnpm': {
-        await execa('pnpm', ['install', 'next-sanity@11'], execOptions)
+        await execa('pnpm', ['install', 'next-sanity@12'], execOptions)
         break
       }
       case 'yarn': {
-        const peerDeps = await getPeerDependencies('next-sanity@11', workDir)
+        const peerDeps = await getPeerDependencies('next-sanity@12', workDir)
         await installNewPackages(
-          {packageManager: 'yarn', packages: ['next-sanity@11', ...peerDeps]},
+          {packageManager: 'yarn', packages: ['next-sanity@12', ...peerDeps]},
           {output: this.output, workDir},
         )
         break
@@ -1329,6 +1428,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       )
     }
 
+    await this.writeStagingEnvIfNeeded(workDir)
     this.exit(0)
   }
 
@@ -1632,5 +1732,24 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         }
       }
     }
+  }
+
+  /**
+   * When running in a non-production Sanity environment (e.g. staging), write the
+   * `SANITY_INTERNAL_ENV` variable to a `.env` file in the output directory so that
+   * the bootstrapped project continues to target the same environment.
+   */
+  private async writeStagingEnvIfNeeded(outputPath: string) {
+    const sanityEnv = getSanityEnv()
+    if (sanityEnv === 'production') return
+
+    await createOrAppendEnvVars({
+      envVars: {INTERNAL_ENV: sanityEnv},
+      filename: '.env',
+      framework: null,
+      log: false,
+      output: this.output,
+      outputPath,
+    })
   }
 }

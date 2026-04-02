@@ -6,6 +6,13 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {DoctorCommand} from '../doctor.js'
 
+// Prevent real subprocess spawning (npm/pnpm/yarn global queries have 10s timeouts each)
+const mockExeca = vi.hoisted(() => vi.fn())
+vi.mock('execa', () => ({execa: mockExeca}))
+
+const mockWhich = vi.hoisted(() => vi.fn())
+vi.mock('which', () => ({default: mockWhich}))
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const fixturesDir = path.join(
   __dirname,
@@ -23,6 +30,9 @@ describe('doctor command', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // Default: no global package manager installations found
+    mockWhich.mockRejectedValue(new Error('not found'))
+    mockExeca.mockRejectedValue(new Error('not found'))
   })
 
   afterEach(() => {

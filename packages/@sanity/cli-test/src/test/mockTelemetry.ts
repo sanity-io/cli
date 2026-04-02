@@ -30,7 +30,7 @@ export const mockTelemetry = (options: MockTelemetryOptions = {}): CLITelemetryS
   // We are not using the export from @sanity/cli-core because
   // This can be used where `@sanity/cli-core` is mocked and vitest will run into issues.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ;(globalThis as any)[Symbol.for('sanity.cli.telemetry')] = telemetry
+  ;(globalThis as any)[Symbol.for('sanity.cli.telemetry')] = {logger: telemetry}
 
   return telemetry
 }

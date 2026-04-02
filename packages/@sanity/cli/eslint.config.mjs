@@ -46,7 +46,8 @@ export default [
   {
     files: ['test/__fixtures__/**/*.ts'],
     rules: {
-      'import/no-unresolved': 'off',
+      'import-x/no-extraneous-dependencies': 'off',
+      'import-x/no-unresolved': 'off',
     },
   },
 ]

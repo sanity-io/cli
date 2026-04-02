@@ -136,6 +136,13 @@ describe('#getViteConfig', () => {
       'process.env.STUDIO_VAR': '"studio-value"',
     })
 
+    // Non-Sanity vars must NOT appear in define
+    expect(config.define).not.toHaveProperty('process.env.PATH')
+    expect(config.define).not.toHaveProperty('process.env.HOME')
+    expect(config.define).not.toHaveProperty('process.env.NEXT_PUBLIC_API_URL')
+    expect(config.define).not.toHaveProperty('process.env.VITE_CUSTOM_VAR')
+    expect(config.define).not.toHaveProperty('process.env.APP_VAR')
+
     expect(config.plugins).toHaveLength(4)
     expect(config.resolve?.dedupe).toEqual(['react', 'react-dom', 'sanity', 'styled-components'])
   })
@@ -154,6 +161,13 @@ describe('#getViteConfig', () => {
     expect(config.define).toMatchObject({
       'process.env.APP_VAR': '"app-value"',
     })
+
+    // Non-app vars must NOT appear in define
+    expect(config.define).not.toHaveProperty('process.env.STUDIO_VAR')
+    expect(config.define).not.toHaveProperty('process.env.PATH')
+    expect(config.define).not.toHaveProperty('process.env.HOME')
+    expect(config.define).not.toHaveProperty('process.env.NEXT_PUBLIC_API_URL')
+    expect(config.define).not.toHaveProperty('process.env.VITE_CUSTOM_VAR')
   })
 
   test('should create production config with minification', async () => {

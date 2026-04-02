@@ -1,6 +1,6 @@
 import {type SanityDocumentLike} from '@sanity/types'
-import {type MediaLibraryConfig, type Workspace} from 'sanity'
-import {z} from 'zod'
+import {type MediaLibraryConfig} from 'sanity'
+import {z} from 'zod/mini'
 
 export const SANITY_WORKSPACE_SCHEMA_ID_PREFIX = '_.schemas'
 export const SANITY_WORKSPACE_SCHEMA_TYPE = 'system.schema'
@@ -130,9 +130,9 @@ export interface StoredWorkspaceSchema extends SanityDocumentLike {
   _type: typeof SANITY_WORKSPACE_SCHEMA_TYPE
   /**
    * The API expects JSON coming in, but will store a string to save on attribute paths.
-   * Consumers must use JSON.parse on the value, put we deploy to the API using ManifestSchemaType[]
+   * Consumers must use JSON.parse on the value, but we deploy to the API using ManifestSchemaType[]
    */
-  schema: string | Workspace['schema']
+  schema: ManifestSchemaType[] | string
   /* api-like version string: date at which the format had a meaningful change */
   version: typeof CURRENT_WORKSPACE_SCHEMA_VERSION | undefined
   workspace: {

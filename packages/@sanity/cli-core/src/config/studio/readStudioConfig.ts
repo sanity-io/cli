@@ -1,43 +1,43 @@
 import {dirname} from 'node:path'
 
-import {z} from 'zod'
+import {z} from 'zod/mini'
 
 import {studioWorkerTask} from '../../loaders/studio/studioWorkerTask.js'
 
-const schemaSchema = z.object({
-  name: z.string().optional(),
-  types: z.array(z.object({}).passthrough()),
+const schemaSchema = z.looseObject({
+  name: z.optional(z.string()),
+  types: z.array(z.looseObject({})),
 })
 
-const sourceSchema = z.object({
+const sourceSchema = z.looseObject({
   dataset: z.string(),
   projectId: z.string(),
-  schema: z.object({_original: schemaSchema}),
+  schema: z.looseObject({_original: schemaSchema}),
 })
 
-const singleStudioWorkspaceSchema = z
-  .object({
-    ...sourceSchema.shape,
-    basePath: z.string().optional(),
-    name: z.string().optional(),
-    plugins: z.array(z.unknown()).optional(),
-    schema: schemaSchema.optional(),
-    title: z.string().optional(),
-    unstable_sources: z.array(sourceSchema),
-  })
-  .passthrough()
+// Raw workspace schema (resolvePlugins: false) - unstable_sources not yet populated
+const rawWorkspaceSchema = z.looseObject({
+  ...sourceSchema.shape,
+  basePath: z.optional(z.string()),
+  name: z.optional(z.string()),
+  plugins: z.optional(z.array(z.unknown())),
+  schema: z.optional(schemaSchema),
+  title: z.optional(z.string()),
+  unstable_sources: z.optional(z.array(sourceSchema)),
+})
 
-const studioWorkspaceSchema = z.object({
+// Resolved config schema (resolvePlugins: true) - all fields required
+const resolvedWorkspaceSchema = z.looseObject({
   ...sourceSchema.shape,
   basePath: z.string(),
   name: z.string(),
-  plugins: z.array(z.unknown()).optional(),
+  plugins: z.optional(z.array(z.unknown())),
   title: z.string(),
   unstable_sources: z.array(sourceSchema),
 })
 
-const rawConfigSchema = z.union([z.array(studioWorkspaceSchema), singleStudioWorkspaceSchema])
-const resolvedConfigSchema = z.array(studioWorkspaceSchema)
+const rawConfigSchema = z.union([z.array(rawWorkspaceSchema), rawWorkspaceSchema])
+const resolvedConfigSchema = z.array(resolvedWorkspaceSchema)
 
 export type RawStudioConfig = z.infer<typeof rawConfigSchema>
 export type ResolvedStudioConfig = z.infer<typeof resolvedConfigSchema>
@@ -80,5 +80,46 @@ export async function readStudioConfig(
     workerData: {configPath, resolvePlugins: options.resolvePlugins},
   })
 
-  return options.resolvePlugins ? resolvedConfigSchema.parse(result) : rawConfigSchema.parse(result)
+  try {
+    return options.resolvePlugins
+      ? resolvedConfigSchema.parse(result)
+      : rawConfigSchema.parse(result)
+  } catch (err) {
+    if (err instanceof z.core.$ZodError) {
+      throw new TypeError(
+        `Invalid studio config at ${configPath}:\n${formatZodIssues(err.issues)}`,
+        {
+          cause: err,
+        },
+      )
+    }
+
+    throw err
+  }
+}
+
+/**
+ * Recursively extracts leaf-level messages from Zod issues, including
+ * those nested inside union errors. Note that `prettifyError` from Zod
+ * only gives a high-level summary for union errors, so this function is
+ * needed to get the full details of all validation issues in a readable format.
+ *
+ * @internal exported for testing only
+ */
+export function formatZodIssues(issues: z.core.$ZodIssue[], indent = 2): string {
+  const lines: string[] = []
+  const prefix = ' '.repeat(indent)
+
+  for (const issue of issues) {
+    if (issue.code === 'invalid_union' && 'errors' in issue && Array.isArray(issue.errors)) {
+      for (const [i, unionIssues] of issue.errors.entries()) {
+        lines.push(`${prefix}Union option ${i + 1}:`, formatZodIssues(unionIssues, indent + 2))
+      }
+    } else {
+      const path = issue.path.length > 0 ? ` at "${issue.path.join('.')}"` : ''
+      lines.push(`${prefix}- ${issue.message}${path}`)
+    }
+  }
+
+  return lines.join('\n')
 }

@@ -50,6 +50,8 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
     }),
   }
 
+  static override hiddenAliases: string[] = ['token:delete']
+
   private projectId!: string
 
   public async run(): Promise<void> {

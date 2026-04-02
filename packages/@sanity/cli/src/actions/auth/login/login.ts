@@ -1,6 +1,7 @@
 import {
   type CLITelemetryStore,
   getCliToken,
+  getUserConfig,
   type Output,
   setCliUserConfig,
   subdebug,
@@ -25,6 +26,7 @@ interface LoginOptions {
   open?: boolean
   provider?: string
   sso?: string
+  ssoProvider?: string
 }
 
 /**
@@ -49,6 +51,7 @@ export async function login(options: LoginOptions) {
     experimental: options.experimental,
     orgSlug: options.sso,
     specifiedProvider: options.provider,
+    ssoProvider: options.ssoProvider,
   })
 
   trace.log({provider: provider?.name, step: 'selectProvider'})
@@ -90,10 +93,10 @@ export async function login(options: LoginOptions) {
   }
 
   // Store the token
-  await setCliUserConfig('authToken', authToken)
+  setCliUserConfig('authToken', authToken)
 
   // Clear cached telemetry consent
-  await setCliUserConfig('telemetryConsent', undefined)
+  getUserConfig().delete('telemetryConsent')
 
   // If we had a session previously, attempt to clear it
   if (hasExistingToken) {

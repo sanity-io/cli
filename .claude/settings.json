@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(jq -r '.tool_input.file_path' < /dev/stdin) && case \"$file\" in *.js|*.ts|*.mjs|*.cjs|*.jsx|*.tsx) pnpm exec eslint --rule '{\"unused-imports/no-unused-imports\": \"off\"}' \"$file\" || true; pnpm exec oxfmt --write \"$file\" 2>/dev/null || true;; *.md|*.json|*.yaml|*.yml) pnpm exec oxfmt --write \"$file\" 2>/dev/null || true;; esac"
+          }
+        ]
+      }
+    ]
+  }
+}

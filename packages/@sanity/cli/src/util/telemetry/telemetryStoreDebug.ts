@@ -1,7 +1,7 @@
-import {subdebug} from '@sanity/cli-core'
+import {telemetryDebug} from '../../actions/telemetry/telemetryDebug.js'
 
 /**
  * Debug logger for telemetry store operations
  * @internal
  */
-export const telemetryStoreDebug = subdebug('telemetry:telemetryStore')
+export const telemetryStoreDebug = telemetryDebug.extend('telemetryStore')

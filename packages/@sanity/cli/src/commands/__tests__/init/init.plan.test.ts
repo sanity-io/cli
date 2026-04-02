@@ -77,7 +77,7 @@ vi.mock('../../../util/getProjectDefaults.js', () => ({
   getProjectDefaults: vi.fn().mockResolvedValue({
     author: undefined,
     description: '',
-    gitRemote: '',
+    gitRemote: undefined,
     license: 'UNLICENSED',
     projectName: 'test-project',
   }),
@@ -85,6 +85,7 @@ vi.mock('../../../util/getProjectDefaults.js', () => ({
 
 vi.mock('../../../actions/mcp/setupMCP.js', () => ({
   setupMCP: vi.fn().mockResolvedValue({
+    alreadyConfiguredEditors: [],
     configuredEditors: [],
     detectedEditors: [],
     error: undefined,

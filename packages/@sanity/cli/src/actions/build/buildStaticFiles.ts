@@ -26,6 +26,7 @@ interface StaticBuildOptions {
   cwd: string
   outputDir: string
 
+  appTitle?: string
   entry?: string
   importMap?: {imports?: Record<string, string>}
   isApp?: boolean
@@ -46,6 +47,7 @@ export async function buildStaticFiles(
   options: StaticBuildOptions,
 ): Promise<{chunks: ChunkStats[]}> {
   const {
+    appTitle,
     basePath,
     cwd,
     entry,
@@ -61,6 +63,7 @@ export async function buildStaticFiles(
 
   buildDebug('Writing Sanity runtime files')
   await writeSanityRuntime({
+    appTitle,
     basePath,
     cwd,
     entry,

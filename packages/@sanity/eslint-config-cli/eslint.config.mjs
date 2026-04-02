@@ -1,7 +1,7 @@
 import eslint from '@eslint/js'
 import prettier from 'eslint-config-prettier'
 import {createTypeScriptImportResolver} from 'eslint-import-resolver-typescript'
-import importPlugin from 'eslint-plugin-import'
+import {importX} from 'eslint-plugin-import-x'
 import nodePlugin from 'eslint-plugin-n'
 import {configs as perfectionistConfigs} from 'eslint-plugin-perfectionist'
 import tsdoc from 'eslint-plugin-tsdoc'
@@ -15,8 +15,8 @@ export default defineConfig(
   configs.recommended,
   nodePlugin.configs['flat/recommended'],
   unicorn.configs['recommended'],
-  importPlugin.flatConfigs.recommended,
-  importPlugin.flatConfigs.typescript,
+  importX.flatConfigs.recommended,
+  importX.flatConfigs.typescript,
   perfectionistConfigs['recommended-natural'],
   {
     rules: {
@@ -78,26 +78,7 @@ export default defineConfig(
       'unused-imports': unusedImports,
     },
     rules: {
-      '@stylistic/comma-dangle': ['error', 'always-multiline'],
-      '@stylistic/indent': [
-        'error',
-        2,
-        {
-          MemberExpression: 0,
-          SwitchCase: 0,
-        },
-      ],
-      '@stylistic/no-multi-spaces': 0,
-      '@stylistic/quotes': [
-        'error',
-        'single',
-        {
-          avoidEscape: true,
-        },
-      ],
-      '@stylistic/semi': 0,
       '@typescript-eslint/no-dupe-class-members': 'error',
-      '@typescript-eslint/no-redeclare': 'off',
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
@@ -106,21 +87,19 @@ export default defineConfig(
         },
       ],
       '@typescript-eslint/no-useless-constructor': 'error',
-      '@typescript-eslint/no-var-requires': 'off',
-      'capitalized-comments': 0,
-      curly: 0,
-      'default-case': 0,
-      'import/consistent-type-specifier-style': ['error', 'prefer-inline'],
-      'import/first': 'error',
-      'import/newline-after-import': 'error',
-      'import/no-cycle': 'error',
-      'import/no-duplicates': [
+      'import-x/consistent-type-specifier-style': ['error', 'prefer-inline'],
+      'import-x/default': 'off',
+      'import-x/first': 'error',
+      'import-x/namespace': 'off',
+      'import-x/newline-after-import': 'error',
+      'import-x/no-cycle': 'error',
+      'import-x/no-duplicates': [
         'error',
         {
           'prefer-inline': true,
         },
       ],
-      'import/no-extraneous-dependencies': [
+      'import-x/no-extraneous-dependencies': [
         'error',
         {
           devDependencies: [
@@ -142,20 +121,8 @@ export default defineConfig(
           optionalDependencies: false,
         },
       ],
-      'import/no-self-import': 'error',
-      'import/no-unresolved': 'error',
-      'import/order': 'off',
-      'jsdoc/require-jsdoc': 'off',
-      'jsdoc/require-param': 'off',
-      'jsdoc/require-param-type': 'off',
-      'jsdoc/require-returns': 'off',
-      'jsdoc/require-returns-type': 'off',
-      'jsdoc/tag-lines': 'off',
-      'logical-assignment-operators': 'off',
-      'mocha/no-async-describe': 'off',
-      'mocha/no-identical-title': 'off',
-      'mocha/no-mocha-arrows': 'off',
-      'mocha/no-setup-in-describe': 'off',
+      'import-x/no-self-import': 'error',
+      'import-x/no-unresolved': 'error',
       'n/hashbang': 0,
       'n/no-missing-import': 'off',
       'n/no-process-exit': 'off',
@@ -181,6 +148,10 @@ export default defineConfig(
               name: 'chalk',
             },
             {
+              message: "Import from 'zod/mini' instead for smaller bundle size.",
+              name: 'zod',
+            },
+            {
               message:
                 "Import from subpath instead to avoid barrel import. Example: `import {fn} from 'date-fns/fn'`.",
               name: 'date-fns',
@@ -203,7 +174,6 @@ export default defineConfig(
       ],
       'no-unused-expressions': 'off',
       'no-unused-vars': 'off',
-      'no-useless-constructor': 'off',
       'perfectionist/sort-classes': [
         'error',
         {
@@ -278,23 +248,7 @@ export default defineConfig(
       ],
     },
     settings: {
-      'import/parsers': {
-        '@typescript-eslint/parser': ['.ts', '.tsx'],
-      },
-      'import/resolver': {
-        typescript: {
-          alwaysTryTypes: true,
-        },
-      },
-      'import/resolver-next': [
-        createTypeScriptImportResolver({
-          alwaysTryTypes: true,
-          extensions: ['.js', '.jsx', '.ts', '.tsx', '.mjs', '.mts'],
-
-          // use an array of glob patterns
-          project: ['packages/*/tsconfig.json', 'fixtures/*/tsconfig.json'],
-        }),
-      ],
+      'import-x/resolver-next': [createTypeScriptImportResolver()],
     },
   },
   {

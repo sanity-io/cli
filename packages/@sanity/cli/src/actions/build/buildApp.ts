@@ -159,6 +159,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     timer.start('bundleStudio')
 
     const bundle = await buildStaticFiles({
+      appTitle: cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined,
       basePath,
       cwd: workDir,
       entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,

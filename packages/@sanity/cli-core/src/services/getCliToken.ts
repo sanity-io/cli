@@ -1,6 +1,8 @@
+import {getCachedToken, setCachedToken} from './cliTokenCache.js'
 import {getCliUserConfig} from './cliUserConfig.js'
 
-let cachedToken: string | undefined
+// Re-export so existing consumers don't break
+export {clearCliTokenCache} from './cliTokenCache.js'
 
 /**
  * Get the CLI authentication token from the environment or the config file
@@ -9,16 +11,19 @@ let cachedToken: string | undefined
  * @internal
  */
 export async function getCliToken(): Promise<string | undefined> {
-  if (cachedToken !== undefined) {
-    return cachedToken
+  const cached = getCachedToken()
+  if (cached !== undefined) {
+    return cached
   }
 
   const token = process.env.SANITY_AUTH_TOKEN
   if (token) {
-    cachedToken = token.trim()
-    return cachedToken
+    const trimmed = token.trim()
+    setCachedToken(trimmed)
+    return trimmed
   }
 
-  cachedToken = await getCliUserConfig('authToken')
-  return cachedToken
+  const configToken = getCliUserConfig('authToken')
+  setCachedToken(configToken)
+  return configToken
 }

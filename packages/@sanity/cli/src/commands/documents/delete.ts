@@ -49,6 +49,8 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
     ...getDatasetFlag({description: 'Dataset to delete from', semantics: 'override'}),
   }
 
+  static override hiddenAliases: string[] = ['document:delete']
+
   // Disable strict mode to allow for more flexible input
   // This is needed for supporting multiple document IDs
   static override strict = false

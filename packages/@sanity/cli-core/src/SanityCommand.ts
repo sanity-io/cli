@@ -1,4 +1,7 @@
+import {styleText} from 'node:util'
+
 import {Command, Interfaces} from '@oclif/core'
+import {type CommandError} from '@oclif/core/interfaces'
 
 import {getCliConfig} from './config/cli/getCliConfig.js'
 import {type CliConfig} from './config/cli/types/cliConfig.js'
@@ -7,15 +10,16 @@ import {type ProjectRootResult} from './config/util/recursivelyResolveProjectRoo
 import {subdebug} from './debug.js'
 import {NonInteractiveError} from './errors/NonInteractiveError.js'
 import {ProjectRootNotFoundError} from './errors/ProjectRootNotFoundError.js'
+import {exitCodes} from './exitCodes.js'
 import {
   getGlobalCliClient,
   getProjectCliClient,
   type GlobalCliClientOptions,
   type ProjectCliClientOptions,
 } from './services/apiClient.js'
+import {getCliTelemetry, reportCliTraceError} from './telemetry/getCliTelemetry.js'
 import {type CLITelemetryStore} from './telemetry/types.js'
 import {type Output} from './types.js'
-import {getCliTelemetry} from './util/getCliTelemetry.js'
 import {isInteractive} from './util/isInteractive.js'
 
 type Flags<T extends typeof Command> = Interfaces.InferredFlags<
@@ -72,6 +76,24 @@ export abstract class SanityCommand<T extends typeof Command> extends Command {
    * @returns The telemetry store.
    */
   protected telemetry!: CLITelemetryStore
+
+  /**
+   * Report real command errors to the CLI command trace.
+   * User aborts (SIGINT, ExitPromptError) are not reported — the trace is left
+   * incomplete, which accurately represents that the command was interrupted.
+   */
+  protected override async catch(err: CommandError): Promise<void> {
+    // ExitPromptError is thrown by `@inquirer/prompts` when the user cancels a prompt
+    // The `message === 'SIGINT'` check matches oclif's own convention (see handle.js in @oclif/core)
+    if (err.name === 'ExitPromptError' || err.message === 'SIGINT') {
+      this.logToStderr(styleText('yellow', '\u{203A}') + ' Aborted by user')
+      return this.exit(exitCodes.SIGINT)
+    }
+
+    // In other cases, we _do_ want to report the error
+    reportCliTraceError(err)
+    return super.catch(err)
+  }
 
   /**
    * Get the CLI config.

@@ -3,8 +3,7 @@ import path from 'node:path'
 import {isInteractive} from '@sanity/cli-core'
 import {getRunningPackageManager} from '@sanity/cli-core/package-manager'
 import {select} from '@sanity/cli-core/ux'
-// eslint-disable-next-line unicorn/no-named-default
-import {default as preferredPM} from 'preferred-pm'
+import {preferredPM} from 'preferred-pm'
 import which from 'which'
 
 export type PackageManager = 'bun' | 'manual' | 'npm' | 'pnpm' | 'yarn'

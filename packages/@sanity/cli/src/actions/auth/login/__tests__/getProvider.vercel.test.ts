@@ -46,6 +46,7 @@ describe('#getProvider vercel provider', () => {
       experimental: false,
       orgSlug: 'acme',
       specifiedProvider: 'vercel',
+      ssoProvider: undefined,
     })
 
     expect(provider).toMatchObject({

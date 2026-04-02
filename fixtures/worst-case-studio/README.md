@@ -19,3 +19,4 @@ A collection of things we'd rather not have you do, but that we technically spea
 - Environment variables from `.env`
 - Environment variables from `process.env` and `import.meta.env`
 - Vite config from `sanity.cli.ts`, with global defines
+- Modules that reference browser DOM globals (`Element`, `HTMLElement`, `Node`) at import time

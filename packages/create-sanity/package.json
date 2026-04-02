@@ -1,6 +1,6 @@
 {
   "name": "create-sanity",
-  "version": "5.2.2",
+  "version": "5.2.12",
   "description": "Initialize a new Sanity project",
   "keywords": [
     "cms",
@@ -31,7 +31,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@sanity/cli": "^5.14.1",
+    "@sanity/cli": "workspace:*",
     "import-meta-resolve": "catalog:"
   },
   "devDependencies": {
@@ -39,6 +39,6 @@
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.1 <22 || >=22.12"
   }
 }

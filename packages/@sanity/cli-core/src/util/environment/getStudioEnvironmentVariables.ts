@@ -38,6 +38,7 @@ export async function getStudioEnvironmentVariables(
     const message = err instanceof Error ? err.message : String(err)
     throw new Error(
       `Failed to import getStudioEnvironmentVariables from sanity/cli module: ${message}`,
+      {cause: err},
     )
   }
 }

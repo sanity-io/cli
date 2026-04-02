@@ -1,4 +1,4 @@
-import {subdebug} from '@sanity/cli-core'
+import {isInteractive, subdebug} from '@sanity/cli-core'
 import {input, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 
 import {promptForProviders} from '../../../prompts/promptForProviders.js'
@@ -19,10 +19,12 @@ export async function getProvider({
   experimental,
   orgSlug,
   specifiedProvider,
+  ssoProvider,
 }: {
   experimental: boolean | undefined
   orgSlug: string | undefined
   specifiedProvider: string | undefined
+  ssoProvider: string | undefined
 }): Promise<LoginProvider | undefined> {
   if (specifiedProvider === 'vercel') {
     return {
@@ -36,7 +38,7 @@ export async function getProvider({
 
   try {
     if (orgSlug) {
-      return getSSOProvider(orgSlug)
+      return getSSOProvider(orgSlug, ssoProvider)
     }
 
     spin = spinner('Fetching providers...').start()
@@ -47,16 +49,31 @@ export async function getProvider({
     }
     spin.stop()
 
+    // Real providers excludes the synthetic SSO entry used by --experimental
+    const realProviderNames = providers.filter((p) => p.name !== 'sso').map((p) => p.name)
+
     if (specifiedProvider) {
       const provider = providers.find((prov) => prov.name === specifiedProvider)
       if (!provider) {
-        throw new Error(`Cannot find login provider with name "${specifiedProvider}"`)
+        throw new Error(
+          `Cannot find login provider with name "${specifiedProvider}". ` +
+            (realProviderNames.length > 0
+              ? `Available providers: ${realProviderNames.join(', ')}`
+              : 'No providers are available'),
+        )
       }
       return provider
     }
 
     if (providers.length === 0) {
       return undefined
+    }
+
+    if (!isInteractive() && realProviderNames.length > 1) {
+      throw new Error(
+        `Multiple login providers available: ${realProviderNames.join(', ')}. ` +
+          'Use `--provider <name>` to select one in unattended mode.',
+      )
     }
 
     const provider = await promptForProviders(providers)

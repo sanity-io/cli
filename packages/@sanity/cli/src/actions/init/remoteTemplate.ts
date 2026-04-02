@@ -269,6 +269,7 @@ export async function applyEnvVariables(
     debug(`Error setting environment variables: ${err}`)
     throw new Error(
       'Failed to set environment variables. This could be due to file permissions or the .env file format. See https://www.sanity.io/docs/environment-variables for details on environment variable setup.',
+      {cause: err},
     )
   }
 }

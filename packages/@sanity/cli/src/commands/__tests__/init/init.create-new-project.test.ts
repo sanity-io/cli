@@ -1,18 +1,21 @@
 import * as cliUX from '@sanity/cli-core/ux'
-import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
+import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
 import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {setupMCP} from '../../../actions/mcp/setupMCP.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {CREATE_PROJECT_API_VERSION, PROJECTS_API_VERSION} from '../../../services/projects.js'
 import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
+  confirm: vi.fn(),
   datasetsCreate: vi.fn(),
   detectFrameworkRecord: vi.fn(),
   getOrganizationChoices: vi.fn(),
   getOrganizationsWithAttachGrantInfo: vi.fn(),
+  importDatasetRun: vi.fn(),
   input: vi.fn(),
   listDatasets: vi.fn(),
   select: vi.fn(),
@@ -28,6 +31,7 @@ vi.mock('@sanity/cli-core/ux', async () => {
 
   return {
     ...actual,
+    confirm: mocks.confirm,
     input: mocks.input,
     select: mocks.select,
   }
@@ -42,6 +46,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 
   return {
     ...actual,
+    getCliToken: vi.fn().mockResolvedValue('test-token'),
     getGlobalCliClient: vi.fn().mockResolvedValue({
       projects: {
         list: vi.fn().mockResolvedValue([
@@ -91,7 +96,7 @@ vi.mock('../../../util/getProjectDefaults.js', () => ({
   getProjectDefaults: vi.fn().mockResolvedValue({
     author: undefined,
     description: '',
-    gitRemote: '',
+    gitRemote: undefined,
     license: 'UNLICENSED',
     projectName: 'test-project',
   }),
@@ -99,6 +104,7 @@ vi.mock('../../../util/getProjectDefaults.js', () => ({
 
 vi.mock('../../../actions/mcp/setupMCP.js', () => ({
   setupMCP: vi.fn().mockResolvedValue({
+    alreadyConfiguredEditors: [],
     configuredEditors: [],
     detectedEditors: [],
     error: undefined,
@@ -112,6 +118,10 @@ vi.mock('../../../actions/init/checkNextJsReactCompatibility.js', () => ({
 
 vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
   bootstrapTemplate: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../datasets/import.js', () => ({
+  ImportDatasetCommand: {run: mocks.importDatasetRun},
 }))
 
 vi.mock('../../../actions/init/resolvePackageManager.js', () => ({
@@ -213,7 +223,7 @@ describe('#init: create new project', () => {
     await testCommand(
       InitCommand,
       [
-        '--create-project=Test Project',
+        '--project-name=Test Project',
         '--dataset=production',
         '--output-path=./test-project',
         '--no-nextjs-add-config-files',
@@ -312,7 +322,7 @@ describe('#init: create new project', () => {
     await testCommand(
       InitCommand,
       [
-        '--create-project=Test Project',
+        '--project-name=Test Project',
         '--dataset=production',
         '--output-path=./test-project',
         '--no-nextjs-add-config-files',
@@ -334,5 +344,297 @@ describe('#init: create new project', () => {
 
     expect(spinnerSpy).toHaveBeenCalledWith('Creating organization')
     expect(spinnerSpy).toHaveBeenCalledWith('Creating dataset')
+  })
+
+  test('shows spinner for single already-configured MCP editor', async () => {
+    vi.mocked(setupMCP).mockResolvedValueOnce({
+      alreadyConfiguredEditors: ['VS Code'],
+      configuredEditors: [],
+      detectedEditors: ['VS Code'],
+      skipped: true,
+    })
+
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    mocks.listDatasets.mockResolvedValue([{aclMode: 'public', name: 'production'}])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/project-123',
+    }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
+
+    mocks.select.mockResolvedValueOnce('project-123')
+    mocks.select.mockResolvedValueOnce('production')
+
+    const spinnerSpy = vi.spyOn(cliUX, 'spinner')
+
+    await testCommand(
+      InitCommand,
+      [
+        '--output-path=./test-project',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
+      {mocks: {...defaultMocks, isInteractive: true}},
+    )
+
+    expect(spinnerSpy).toHaveBeenCalledWith('VS Code already configured for Sanity MCP')
+  })
+
+  test('shows spinner with count for multiple already-configured MCP editors', async () => {
+    vi.mocked(setupMCP).mockResolvedValueOnce({
+      alreadyConfiguredEditors: ['VS Code', 'Cursor'],
+      configuredEditors: [],
+      detectedEditors: ['VS Code', 'Cursor'],
+      skipped: true,
+    })
+
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    mocks.listDatasets.mockResolvedValue([{aclMode: 'public', name: 'production'}])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/project-123',
+    }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
+
+    mocks.select.mockResolvedValueOnce('project-123')
+    mocks.select.mockResolvedValueOnce('production')
+
+    const spinnerSpy = vi.spyOn(cliUX, 'spinner')
+
+    await testCommand(
+      InitCommand,
+      [
+        '--output-path=./test-project',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
+      {mocks: {...defaultMocks, isInteractive: true}},
+    )
+
+    expect(spinnerSpy).toHaveBeenCalledWith('2 editors already configured for Sanity MCP')
+  })
+
+  test('does not show already-configured spinner when no editors are pre-configured', async () => {
+    // Default mock already has alreadyConfiguredEditors: []
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    mocks.listDatasets.mockResolvedValue([{aclMode: 'public', name: 'production'}])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/project-123',
+    }).reply(200, {id: 'test', metadata: {cliInitializedAt: ''}})
+
+    mocks.select.mockResolvedValueOnce('project-123')
+    mocks.select.mockResolvedValueOnce('production')
+
+    const spinnerSpy = vi.spyOn(cliUX, 'spinner')
+
+    await testCommand(
+      InitCommand,
+      [
+        '--output-path=./test-project',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=clean',
+      ],
+      {mocks: {...defaultMocks, isInteractive: true}},
+    )
+
+    const spinnerCalls = spinnerSpy.mock.calls.map((c) => c[0])
+    expect(spinnerCalls).not.toContainEqual(
+      expect.stringContaining('already configured for Sanity MCP'),
+    )
+  })
+
+  test('--no-import-dataset skips dataset import for template with sample data', async () => {
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+
+    setupInitSuccessMocks()
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--project=project-123',
+        '--dataset=production',
+        '--output-path=./test-project',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=moviedb',
+        '--no-import-dataset',
+      ],
+      {mocks: {...defaultMocks, isInteractive: true}},
+    )
+
+    if (error) throw error
+    expect(mocks.confirm).not.toHaveBeenCalled()
+    expect(mocks.importDatasetRun).not.toHaveBeenCalled()
+  })
+
+  test('--import-dataset forces import in unattended mode', async () => {
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    mocks.importDatasetRun.mockResolvedValueOnce(undefined)
+
+    // Only mock endpoints actually hit in unattended mode with --project and --dataset
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/project-123',
+    }).reply(200, {id: 'project-123', metadata: {cliInitializedAt: ''}})
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--project=project-123',
+        '--dataset=production',
+        '--output-path=./test-project',
+        '--template=moviedb',
+        '--import-dataset',
+      ],
+      {mocks: defaultMocks},
+    )
+
+    if (error) throw error
+    expect(mocks.confirm).not.toHaveBeenCalled()
+    expect(mocks.importDatasetRun).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        'https://public.sanity.io/moviesdb-2018-03-06.tar.gz',
+        '--project-id',
+        'project-123',
+        '--dataset',
+        'production',
+        '--token',
+        'test-token',
+      ]),
+      expect.objectContaining({root: expect.any(String)}),
+    )
+  })
+
+  test('prompts for dataset import when flag is not set in interactive mode', async () => {
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+    mocks.confirm.mockResolvedValueOnce(false)
+
+    setupInitSuccessMocks()
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--project=project-123',
+        '--dataset=production',
+        '--output-path=./test-project',
+        '--no-nextjs-add-config-files',
+        '--no-nextjs-append-env',
+        '--no-nextjs-embed-studio',
+        '--no-typescript',
+        '--no-overwrite-files',
+        '--template=moviedb',
+      ],
+      {mocks: {...defaultMocks, isInteractive: true}},
+    )
+
+    if (error) throw error
+    expect(mocks.confirm).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Add a sampling of sci-fi movies to your dataset on the hosted backend?',
+      }),
+    )
+    expect(mocks.importDatasetRun).not.toHaveBeenCalled()
+  })
+
+  test('initializes studio in unattended mode', async () => {
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {
+        cliInitializedAt: '',
+      },
+    })
+
+    const {stdout} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--output-path=/test/output',
+        '--project=test',
+        '--dataset=test',
+        '--package-manager=npm',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
+
+    expect(stdout).toContain('Success! Your Studio has been created')
+    expect(stdout).toContain(
+      `(cd ${convertToSystemPath('/test/output')} to navigate to your new project directory)`,
+    )
+    expect(stdout).toContain('Get started by running npm run dev')
+    expect(stdout).toContain('npx sanity docs browse')
+    expect(stdout).toContain('npx sanity manage')
+    expect(stdout).toContain('npx sanity help')
   })
 })

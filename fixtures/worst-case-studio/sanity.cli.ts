@@ -1,7 +1,7 @@
 import {defineCliConfig} from 'sanity/cli'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
-// eslint-disable-next-line import/no-unresolved
+// eslint-disable-next-line import-x/no-unresolved
 import {defines} from '@/defines'
 
 export default defineCliConfig({

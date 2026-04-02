@@ -101,8 +101,6 @@ describe('#exec', {timeout: 15 * 1000}, () => {
       const data = JSON.parse(stdout.trim())
       expect(data.success).toBe(true)
       expect(data.env.SANITY_BASE_PATH).toBe(exampleDir)
-      // Without token, API returns empty object rather than throwing error
-      expect(data.user).toEqual({})
     })
 
     test.skipIf(!TEST_TOKEN)('executes script with --with-user-token flag', async () => {

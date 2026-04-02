@@ -34,7 +34,8 @@ export async function startAppDevServer(
   try {
     output.log('Starting dev server')
 
-    const {close, server} = await startDevServer({...config, isApp: true, output})
+    const appTitle = cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined
+    const {close, server} = await startDevServer({...config, appTitle, isApp: true, output})
 
     const {port} = server.config.server
     const httpHost = config.httpHost || 'localhost'

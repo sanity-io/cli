@@ -53,6 +53,8 @@ export class UsersInviteCommand extends SanityCommand<typeof UsersInviteCommand>
     }),
   }
 
+  static override hiddenAliases: string[] = ['user:invite']
+
   public async run(): Promise<void> {
     const {email: selectedEmail} = this.args
     const {role: selectedRole} = this.flags

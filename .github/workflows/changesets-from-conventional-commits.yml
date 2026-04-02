@@ -1,0 +1,33 @@
+---
+name: Add changeset from conventional commits
+on:
+  pull_request_target:
+    types: [opened, synchronize]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+permissions:
+  contents: write # for pushing changeset files to PR branch
+  pull-requests: write
+
+jobs:
+  changeset:
+    runs-on: ubuntu-latest
+    # Only run for PRs from bots (renovate, dependabot) or when commits follow conventional format
+    if: >-
+      github.event.pull_request.user.login == 'renovate[bot]' ||
+      github.event.pull_request.user.login == 'dependabot[bot]'
+    steps:
+      - name: Generate GitHub App Token
+        id: generate_token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ secrets.ECOSPARK_APP_ID }}
+          private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
+
+      - name: Generate changeset from conventional commits
+        uses: mscharley/dependency-changesets-action@f96232368519695969bea8a8cfff7cca32b1e56a # v1.2.4
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          use-conventional-commits: true
+          sign-commits: true

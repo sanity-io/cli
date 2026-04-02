@@ -3,12 +3,29 @@ import {styleText} from 'node:util'
 import {ux} from '@oclif/core/ux'
 import {spinner} from '@sanity/cli-core/ux'
 import partition from 'lodash-es/partition.js'
-import {type Workspace} from 'sanity'
 
 import {updateSchemas} from '../../services/schemas.js'
-import {CURRENT_WORKSPACE_SCHEMA_VERSION, type StoredWorkspaceSchema} from '../manifest/types.js'
+import {
+  CURRENT_WORKSPACE_SCHEMA_VERSION,
+  type ManifestSchemaType,
+  type StoredWorkspaceSchema,
+} from '../manifest/types.js'
 import {SCHEMA_PERMISSION_HELP_TEXT} from './utils/schemaStoreValidation.js'
 import {getWorkspaceSchemaId} from './utils/workspaceSchemaId.js'
+
+/**
+ * Workspace metadata + pre-extracted manifest schema for deployment.
+ * The schema must already be in ManifestSchemaType[] format (extracted from
+ * the live Schema object before any structured clone boundary).
+ */
+export interface WorkspaceSchemaInput {
+  dataset: string
+  manifestSchema: ManifestSchemaType[]
+  name: string
+  projectId: string
+
+  title?: string
+}
 
 /**
  * Updates the schemas for a list of workspaces.
@@ -16,7 +33,7 @@ import {getWorkspaceSchemaId} from './utils/workspaceSchemaId.js'
 export async function updateWorkspacesSchemas(args: {
   tag?: string
   verbose: boolean
-  workspaces: Workspace[]
+  workspaces: WorkspaceSchemaInput[]
 }) {
   const {tag, verbose, workspaces} = args
 
@@ -48,10 +65,14 @@ export async function updateWorkspacesSchemas(args: {
 /**
  * Updates a workspace schema in the dataset.
  */
-async function updateWorkspaceSchema(args: {tag?: string; verbose: boolean; workspace: Workspace}) {
+async function updateWorkspaceSchema(args: {
+  tag?: string
+  verbose: boolean
+  workspace: WorkspaceSchemaInput
+}) {
   const {tag, verbose, workspace} = args
 
-  const {dataset, projectId} = workspace
+  const {dataset, manifestSchema, projectId} = workspace
 
   const {idWarning, safeBaseId: id} = getWorkspaceSchemaId({
     tag,
@@ -64,7 +85,7 @@ async function updateWorkspaceSchema(args: {tag?: string; verbose: boolean; work
     await updateSchemas<Omit<StoredWorkspaceSchema, '_id' | '_type'>[]>(dataset, projectId, [
       {
         // the API will stringify the schema – we send as JSON
-        schema: workspace.schema,
+        schema: manifestSchema,
         tag,
         version: CURRENT_WORKSPACE_SCHEMA_VERSION,
         workspace: {

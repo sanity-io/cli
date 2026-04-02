@@ -1,5 +1,115 @@
 # Changelog
 
+## [0.3.0](https://github.com/sanity-io/cli/compare/cli-test-v0.2.7...cli-test-v0.3.0) (2026-03-30)
+
+
+### Features
+
+* upgrade eslint to v10 with dual v9/v10 support ([#823](https://github.com/sanity-io/cli/issues/823)) ([f3c9d9d](https://github.com/sanity-io/cli/commit/f3c9d9da4816f6300f8bb5d1fda6a00a2c58b95d))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 1.3.0
+    * @sanity/eslint-config-cli bumped to 1.1.0
+  * peerDependencies
+    * @sanity/cli-core bumped to 1.3.0
+
+## [0.2.7](https://github.com/sanity-io/cli/compare/cli-test-v0.2.6...cli-test-v0.2.7) (2026-03-24)
+
+
+### Bug Fixes
+
+* **deps:** update sanity dependencies ([#758](https://github.com/sanity-io/cli/issues/758)) ([e093ac3](https://github.com/sanity-io/cli/commit/e093ac301d2dc9dbecc4fbb6c13eda293799186f))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 1.2.1
+  * peerDependencies
+    * @sanity/cli-core bumped to 1.2.1
+
+## [0.2.6](https://github.com/sanity-io/cli/compare/cli-test-v0.2.5...cli-test-v0.2.6) (2026-03-19)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 1.2.0
+  * peerDependencies
+    * @sanity/cli-core bumped to 1.2.0
+
+## [0.2.5](https://github.com/sanity-io/cli/compare/cli-test-v0.2.4...cli-test-v0.2.5) (2026-03-18)
+
+
+### Bug Fixes
+
+* **deps:** update dependency esbuild to ^0.27.4 ([#704](https://github.com/sanity-io/cli/issues/704)) ([3da6e47](https://github.com/sanity-io/cli/commit/3da6e47a29de7fc4392b8bcfea8c4601f32cf543))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 1.1.3
+    * @sanity/eslint-config-cli bumped to 1.0.1
+  * peerDependencies
+    * @sanity/cli-core bumped to 1.1.3
+
+## [0.2.4](https://github.com/sanity-io/cli/compare/cli-test-v0.2.3...cli-test-v0.2.4) (2026-03-13)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 1.1.2
+  * peerDependencies
+    * @sanity/cli-core bumped to 1.1.2
+
+## [0.2.3](https://github.com/sanity-io/cli/compare/cli-test-v0.2.2...cli-test-v0.2.3) (2026-03-13)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 1.1.1
+  * peerDependencies
+    * @sanity/cli-core bumped to 1.1.1
+
+## [0.2.2](https://github.com/sanity-io/cli/compare/cli-test-v0.2.1...cli-test-v0.2.2) (2026-03-12)
+
+
+### Bug Fixes
+
+* don't treat user aborts as telemetry errors ([#624](https://github.com/sanity-io/cli/issues/624)) ([6cc7682](https://github.com/sanity-io/cli/commit/6cc7682030a7dea9dfb9a80aa691a2cfb52444b9))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 1.1.0
+  * peerDependencies
+    * @sanity/cli-core bumped to 1.1.0
+
+## [0.2.1](https://github.com/sanity-io/cli/compare/cli-test-v0.2.0...cli-test-v0.2.1) (2026-03-11)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/cli-core bumped to 1.0.1
+  * peerDependencies
+    * @sanity/cli-core bumped to 1.0.1
+
 ## [0.2.0](https://github.com/sanity-io/cli/compare/cli-test-v0.1.0...cli-test-v0.2.0) (2026-03-10)
 
 

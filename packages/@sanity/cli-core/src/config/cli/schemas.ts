@@ -1,5 +1,5 @@
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
-import {z} from 'zod'
+import {z} from 'zod/mini'
 
 import {type CliConfig, type TypeGenConfig} from './types/cliConfig'
 import {type UserViteConfig} from './types/userViteConfig'
@@ -8,21 +8,21 @@ import {type UserViteConfig} from './types/userViteConfig'
  * @public
  */
 export const cliConfigSchema = z.object({
-  api: z
-    .object({
-      dataset: z.string().optional(),
-      projectId: z.string().optional(),
-    })
-    .optional(),
+  api: z.optional(
+    z.object({
+      dataset: z.optional(z.string()),
+      projectId: z.optional(z.string()),
+    }),
+  ),
 
-  app: z
-    .object({
-      entry: z.string().optional(),
-      icon: z.string().optional(),
-      id: z.string().optional(),
-      organizationId: z.string().optional(),
-      resources: z
-        .record(
+  app: z.optional(
+    z.object({
+      entry: z.optional(z.string()),
+      icon: z.optional(z.string()),
+      id: z.optional(z.string()),
+      organizationId: z.optional(z.string()),
+      resources: z.optional(
+        z.record(
           z.string(),
           z.union([
             z.object({
@@ -36,72 +36,72 @@ export const cliConfigSchema = z.object({
               canvasId: z.string(),
             }),
           ]),
-        )
-        .optional(),
-      title: z.string().optional(),
-    })
-    .optional(),
+        ),
+      ),
+      title: z.optional(z.string()),
+    }),
+  ),
 
-  autoUpdates: z.boolean().optional(),
+  autoUpdates: z.optional(z.boolean()),
 
-  deployment: z
-    .object({
-      appId: z.string().optional(),
-      autoUpdates: z.boolean().optional(),
-    })
-    .optional(),
+  deployment: z.optional(
+    z.object({
+      appId: z.optional(z.string()),
+      autoUpdates: z.optional(z.boolean()),
+    }),
+  ),
 
-  graphql: z
-    .array(
+  graphql: z.optional(
+    z.array(
       z.object({
-        filterSuffix: z.string().optional(),
-        generation: z.enum(['gen1', 'gen2', 'gen3']).optional(),
-        id: z.string().optional(),
-        nonNullDocumentFields: z.boolean().optional(),
-        playground: z.boolean().optional(),
-        source: z.string().optional(),
-        tag: z.string().optional(),
-        workspace: z.string().optional(),
+        filterSuffix: z.optional(z.string()),
+        generation: z.optional(z.enum(['gen1', 'gen2', 'gen3'])),
+        id: z.optional(z.string()),
+        nonNullDocumentFields: z.optional(z.boolean()),
+        playground: z.optional(z.boolean()),
+        source: z.optional(z.string()),
+        tag: z.optional(z.string()),
+        workspace: z.optional(z.string()),
       }),
-    )
-    .optional(),
+    ),
+  ),
 
-  mediaLibrary: z
-    .object({
-      aspectsPath: z.string().optional(),
-    })
-    .optional(),
+  mediaLibrary: z.optional(
+    z.object({
+      aspectsPath: z.optional(z.string()),
+    }),
+  ),
 
-  project: z
-    .object({
-      basePath: z.string().optional(),
-    })
-    .optional(),
+  project: z.optional(
+    z.object({
+      basePath: z.optional(z.string()),
+    }),
+  ),
 
-  reactCompiler: z.custom<ReactCompilerConfig>().optional(),
+  reactCompiler: z.optional(z.custom<ReactCompilerConfig>()),
 
-  reactStrictMode: z.boolean().optional(),
+  reactStrictMode: z.optional(z.boolean()),
 
-  schemaExtraction: z
-    .object({
-      enabled: z.boolean().optional(),
-      enforceRequiredFields: z.boolean().optional(),
-      path: z.string().optional(),
-      watchPatterns: z.array(z.string()).optional(),
-      workspace: z.string().optional(),
-    })
-    .optional(),
+  schemaExtraction: z.optional(
+    z.object({
+      enabled: z.optional(z.boolean()),
+      enforceRequiredFields: z.optional(z.boolean()),
+      path: z.optional(z.string()),
+      watchPatterns: z.optional(z.array(z.string())),
+      workspace: z.optional(z.string()),
+    }),
+  ),
 
-  server: z
-    .object({
-      hostname: z.string().optional(),
-      port: z.number().optional(),
-    })
-    .optional(),
+  server: z.optional(
+    z.object({
+      hostname: z.optional(z.string()),
+      port: z.optional(z.number()),
+    }),
+  ),
 
-  studioHost: z.string().optional(),
+  studioHost: z.optional(z.string()),
 
-  vite: z.custom<UserViteConfig>().optional(),
+  vite: z.optional(z.custom<UserViteConfig>()),
 
-  typegen: z.custom<Partial<TypeGenConfig> & {enabled?: boolean}>().optional(),
-}) satisfies z.ZodType<CliConfig>
+  typegen: z.optional(z.custom<Partial<TypeGenConfig> & {enabled?: boolean}>()),
+}) satisfies z.core.$ZodType<CliConfig>

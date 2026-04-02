@@ -9,16 +9,23 @@ vi.mock('@sanity/client')
 
 describe('getCliClient', () => {
   const mockClient = {withConfig: vi.fn()} as unknown as SanityClient
-  let originalProcessEnv: NodeJS.ProcessEnv
+  const originalAuthToken = process.env.SANITY_AUTH_TOKEN
 
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(createClient).mockReturnValue(mockClient)
-    originalProcessEnv = process.env
+    // Ensure SANITY_AUTH_TOKEN doesn't leak into tests that expect no token
+    delete process.env.SANITY_AUTH_TOKEN
   })
 
   afterEach(() => {
-    process.env = originalProcessEnv
+    // Restore original SANITY_AUTH_TOKEN value (may have been set in CI)
+    if (originalAuthToken === undefined) {
+      delete process.env.SANITY_AUTH_TOKEN
+    } else {
+      process.env.SANITY_AUTH_TOKEN = originalAuthToken
+    }
+    vi.unstubAllEnvs()
   })
 
   test('should throw error if not called from node.js', () => {
@@ -85,7 +92,7 @@ describe('getCliClient', () => {
   test('should use SANITY_BASE_PATH env var as cwd if set', async () => {
     const {findProjectRootSync, getCliConfigSync} = await import('@sanity/cli-core')
 
-    process.env.SANITY_BASE_PATH = '/custom/path'
+    vi.stubEnv('SANITY_BASE_PATH', '/custom/path')
 
     const mockProjectRoot = {
       directory: '/custom/path',
@@ -231,6 +238,48 @@ describe('getCliClient', () => {
       dataset: 'test-dataset',
       projectId: 'test-project',
       token: 'explicit-token',
+      useCdn: false,
+    })
+
+    // Reset
+    getCliClient.__internal__getToken = () => undefined
+  })
+
+  test('should use SANITY_AUTH_TOKEN env var as fallback', () => {
+    vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
+
+    const options = {
+      dataset: 'test-dataset',
+      projectId: 'test-project',
+    }
+
+    getCliClient(options)
+
+    expect(createClient).toHaveBeenCalledWith({
+      apiVersion: '2022-06-06',
+      dataset: 'test-dataset',
+      projectId: 'test-project',
+      token: 'env-token',
+      useCdn: false,
+    })
+  })
+
+  test('should prioritize __internal__getToken over SANITY_AUTH_TOKEN env var', () => {
+    vi.stubEnv('SANITY_AUTH_TOKEN', 'env-token')
+    getCliClient.__internal__getToken = () => 'internal-token'
+
+    const options = {
+      dataset: 'test-dataset',
+      projectId: 'test-project',
+    }
+
+    getCliClient(options)
+
+    expect(createClient).toHaveBeenCalledWith({
+      apiVersion: '2022-06-06',
+      dataset: 'test-dataset',
+      projectId: 'test-project',
+      token: 'internal-token',
       useCdn: false,
     })
 

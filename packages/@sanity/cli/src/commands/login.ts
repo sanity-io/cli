@@ -12,12 +12,17 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
       description: 'Log in using default settings',
     },
     {
+      command: '<%= config.bin %> <%= command.id %> --provider github --no-open',
+      description: 'Login with GitHub provider, but do not open a browser window automatically',
+    },
+    {
       command: '<%= config.bin %> <%= command.id %> --sso my-organization',
       description: 'Log in using Single Sign-On with the "my-organization" slug',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --provider github --no-open',
-      description: 'Login with GitHub provider, but do not open a browser window automatically',
+      command:
+        '<%= config.bin %> <%= command.id %> --sso my-organization --sso-provider "Okta SSO"',
+      description: 'Log in using a specific SSO provider within an organization',
     },
   ]
   static override flags = {
@@ -40,13 +45,23 @@ export class LoginCommand extends SanityCommand<typeof LoginCommand> {
       exclusive: ['provider'],
       helpValue: '<slug>',
     }),
+    'sso-provider': Flags.string({
+      dependsOn: ['sso'],
+      description: 'Select a specific SSO provider by name (use with --sso)',
+      helpValue: '<name>',
+    }),
   } satisfies FlagInput
 
   public async run(): Promise<void> {
     const {flags} = await this.parse(LoginCommand)
 
     try {
-      await login({...flags, output: this.output, telemetry: this.telemetry})
+      await login({
+        ...flags,
+        output: this.output,
+        ssoProvider: flags['sso-provider'],
+        telemetry: this.telemetry,
+      })
       this.log('Login successful')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)

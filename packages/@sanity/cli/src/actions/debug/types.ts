@@ -1,36 +1,35 @@
-import {type CliConfig, type ProjectRootResult} from '@sanity/cli-core'
-
-import {type ModuleVersionResult} from '../versions/types.js'
-
-export interface DebugInfoOptions {
-  cliConfig: CliConfig
-  includeSecrets: boolean
-  projectRoot: ProjectRootResult
-}
-
 export interface UserInfo {
   email: string
   id: string
   name: string
-}
-
-export interface ProjectInfo {
-  displayName: string
-  id: string
-  userRoles: string[]
+  provider: string
 }
 
 export interface AuthInfo {
-  authToken: string
+  authToken: string | undefined
   hasToken: boolean
   userType: string
 }
 
-export interface DebugInfo {
-  auth: AuthInfo
-  globalConfig: Record<string, unknown>
-  project: Error | ProjectInfo | null
-  projectConfig: CliConfig | Error
-  user: Error | UserInfo | null
-  versions: ModuleVersionResult[]
+export interface CliInfo {
+  installContext: string
+  version: string
+}
+
+export interface ProjectInfo {
+  cliConfigPath: string | undefined
+  rootPath: string
+  studioConfigPath: string | undefined
+}
+
+export interface StudioWorkspace {
+  dataset: string
+  name: string | undefined
+  projectId: string
+}
+
+export interface ResolvedWorkspace {
+  name: string
+  roles: string[]
+  title: string
 }

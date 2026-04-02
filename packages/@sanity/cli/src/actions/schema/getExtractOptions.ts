@@ -1,8 +1,9 @@
-import {join, resolve} from 'node:path'
+import {existsSync, statSync} from 'node:fs'
+import {extname, join, resolve} from 'node:path'
 
 import {type CliConfig, ProjectRootResult} from '@sanity/cli-core'
 
-import {type ExtractSchemaCommand} from '../../commands/schema/extract.js'
+import {type ExtractSchemaCommand} from '../../commands/schemas/extract.js'
 
 export interface ExtractOptions {
   configPath: string
@@ -25,10 +26,16 @@ export function getExtractOptions({
   schemaExtraction,
 }: GetExtractionOptions): ExtractOptions {
   const pathFlag = flags.path ?? schemaExtraction?.path
-  const outputDir = pathFlag
-    ? resolve(join(projectRoot.directory, pathFlag))
-    : projectRoot.directory
-  const outputPath = join(outputDir, 'schema.json')
+  let outputPath: string
+  if (pathFlag) {
+    const resolved = resolve(join(projectRoot.directory, pathFlag))
+    const isExistingDirectory = existsSync(resolved) && statSync(resolved).isDirectory()
+
+    outputPath =
+      isExistingDirectory || !extname(resolved) ? join(resolved, 'schema.json') : resolved
+  } else {
+    outputPath = resolve(join(projectRoot.directory, 'schema.json'))
+  }
 
   return {
     configPath: projectRoot.path,

@@ -5,45 +5,31 @@ const project = ['src/**/*.{js,jsx,ts,tsx}', '!**/docs/**']
 const baseConfig = {
   // For now only care about cli package
   ignore: [
-    'packages/@sanity/cli-test/fixtures/**',
-
     // See `helpClass` in `oclif.config.js`
     'packages/@sanity/cli/src/SanityHelp.ts',
   ],
   workspaces: {
     'fixtures/*': {
-      entry: ['sanity.cli.ts', 'sanity.config.ts'],
-      // Binary is overridden by the CLI package
-      ignoreBinaries: ['sanity'],
       project: ['schemaTypes/**/*.{js,jsx,ts,tsx}'],
     },
     'fixtures/basic-app': {
-      entry: ['sanity.cli.ts', './src/App.tsx'],
-      // Binary is overridden by the CLI package
-      ignoreBinaries: ['sanity'],
+      entry: ['./src/App.tsx'],
       project,
     },
     'fixtures/basic-functions': {
-      entry: ['sanity.blueprint.ts', 'functions/**/*.{js,jsx,ts,tsx}'],
+      entry: ['functions/**/*.{js,jsx,ts,tsx}'],
       // Used for CLI
       ignoreDependencies: ['sanity'],
     },
     'fixtures/prebuilt-app': {
-      entry: ['sanity.cli.ts', 'src/App.tsx'],
-      // Binary is overridden by the CLI package
-      ignoreBinaries: ['sanity'],
+      entry: ['src/App.tsx'],
       project,
     },
     'fixtures/prebuilt-studio': {
-      entry: ['sanity.cli.ts', 'sanity.config.ts'],
-      // Binary is overridden by the CLI package
-      ignoreBinaries: ['sanity'],
       project: [],
     },
     'fixtures/worst-case-studio': {
-      entry: ['sanity.cli.ts', 'sanity.config.tsx', 'src/defines.ts'],
-      // Binary is overridden by the CLI package
-      ignoreBinaries: ['sanity'],
+      entry: ['src/defines.ts'],
       project,
     },
     'packages/@repo/coverage-delta': {

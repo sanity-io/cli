@@ -1,7 +1,7 @@
 import {testHook} from '@sanity/cli-test'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
-import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
+import {getCommandAndConfig} from '../../../../test/helpers/getCommandAndConfig.js'
 import {warnings} from '../warnings.js'
 
 const {config} = await getCommandAndConfig('help')

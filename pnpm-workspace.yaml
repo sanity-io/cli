@@ -1,3 +1,5 @@
+linkWorkspacePackages: true
+
 packages:
   - 'packages/@repo/*'
   - 'packages/@sanity/cli'
@@ -10,40 +12,40 @@ packages:
 
 catalog:
   # Linting
-  eslint: ^9.39.4
+  eslint: ^10.1.0
   '@eslint/compat': ^2.0.3
   publint: ^0.3.18
 
   # Sanity
-  sanity: ^5.14.1
-  '@sanity/vision': ^5.14.1
-  '@sanity/types': ^5.14.1
-  '@sanity/schema': ^5.14.1
-  '@sanity/client': ^7.17.0
-  '@sanity/codegen': ^6.0.0
-  '@sanity/telemetry': ^0.8.1
+  sanity: ^5.18.0
+  '@sanity/vision': ^5.18.0
+  '@sanity/types': ^5.18.0
+  '@sanity/schema': ^5.18.0
+  '@sanity/client': ^7.20.0
+  '@sanity/codegen': ^6.0.2
+  '@sanity/telemetry': ^0.9.0
 
   # Build & Development Tools
   typescript: ^5.9.3
   vite: ^7.3.1
   tsx: ^4.21.0
-  '@vitejs/plugin-react': ^5.1.4
+  '@vitejs/plugin-react': ^5.2.0
 
   # Testing
-  vitest: ^4.0.18
-  '@vitest/coverage-istanbul': ^4.0.18
+  vitest: ^4.1.2
+  '@vitest/coverage-istanbul': ^4.1.2
   nock: ^14.0.11
 
   # CLI Framework
-  '@oclif/core': ^4.8.3
-  '@oclif/plugin-help': ^6.2.37
-  '@oclif/plugin-not-found': ^3.2.74
+  '@oclif/core': ^4.10.3
+  '@oclif/plugin-help': ^6.2.41
+  '@oclif/plugin-not-found': ^3.2.78
 
   # Utilities
   debug: ^4.4.3
-  jsdom: ^28.1.0
+  jsdom: ^29.0.1
   zod: ^4.3.6
-  'get-tsconfig': ^4.13.6
+  'get-tsconfig': ^4.13.7
   'import-meta-resolve': ^4.2.0
   execa: ^9.6.0
   read-package-up: ^12.0.0
@@ -52,31 +54,29 @@ catalog:
   tinyglobby: ^0.2.15
   lodash-es: ^4.17.23
   '@types/lodash-es': ^4.17.12
-  yaml: ^2.8.2
+  yaml: ^2.8.3
 
   # Build Tools
-  '@swc/core': ^1.15.18
+  '@swc/core': ^1.15.21
   '@swc/cli': ^0.8.0
   rimraf: ^6.0.1
-  '@sanity/pkg-utils': ^10.4.8
+  '@sanity/pkg-utils': ^10.4.13
+  oxfmt: ^0.43.0
 
   # Type Definitions
   '@types/node': ^20.19.37
-  '@types/debug': ^4.1.12
-  '@types/jsdom': ^28.0.0
+  '@types/debug': ^4.1.13
+  '@types/jsdom': ^28.0.1
 
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@portabletext/*'
   - '@sanity/*'
   - '@types/*'
-  - 'data-uri-to-buffer@7.0.0'
-  - 'get-latest-version@6.0.1'
-  - 'get-uri@7.0.0'
   - 'groq-js'
   - 'groq'
   - 'react-rx'
   - 'sanity'
   - 'use-effect-event'
-  # Renovate security update: tar@7.5.11
-  - tar@7.5.11
+  - 'oxfmt'
+  - '@oxfmt/*'

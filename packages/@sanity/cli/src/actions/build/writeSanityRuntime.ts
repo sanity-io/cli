@@ -23,6 +23,7 @@ interface RuntimeOptions {
   reactStrictMode: boolean
   watch: boolean
 
+  appTitle?: string
   basePath?: string
   entry?: string
   isApp?: boolean
@@ -38,7 +39,7 @@ interface RuntimeOptions {
  * @internal
  */
 export async function writeSanityRuntime(options: RuntimeOptions): Promise<FSWatcher | undefined> {
-  const {basePath, cwd, entry, isApp, output, reactStrictMode, watch} = options
+  const {appTitle, basePath, cwd, entry, isApp, output, reactStrictMode, watch} = options
   const runtimeDir = path.join(cwd, '.sanity', 'runtime')
 
   buildDebug('Making runtime directory')
@@ -53,6 +54,7 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<FSWat
           props: {
             basePath: basePath || '/',
             entryPath: `/${toForwardSlashes(path.relative(cwd, path.join(runtimeDir, 'app.js')))}`,
+            title: appTitle,
           },
           studioRootPath: cwd,
         }),

@@ -1,4 +1,4 @@
-import * as stubs from './stubs.js'
+import {getBrowserStubs} from './stubs.js'
 
 /**
  * Sets up browser globals (window, document, etc.) in the global scope.
@@ -18,15 +18,14 @@ export async function setupBrowserStubs(): Promise<() => void> {
   }
 
   // Inject browser stubs into global scope
-  const mockStubs = stubs as unknown as Record<string, unknown>
+  const stubs = getBrowserStubs()
   const mockedGlobalThis: Record<string, unknown> = globalThis
   const stubbedKeys: string[] = []
 
-  for (const key in stubs) {
-    if (!(key in mockedGlobalThis)) {
-      mockedGlobalThis[key] = mockStubs[key]
-      stubbedKeys.push(key)
-    }
+  for (const key of Object.keys(stubs)) {
+    if (key in mockedGlobalThis) continue
+    mockedGlobalThis[key] = stubs[key]
+    stubbedKeys.push(key)
   }
 
   // Add marker to window to detect double-mocking
@@ -36,13 +35,13 @@ export async function setupBrowserStubs(): Promise<() => void> {
 
   // Return cleanup function
   return () => {
-    for (const key of stubbedKeys) {
-      delete mockedGlobalThis[key]
-    }
-
-    // Remove marker
+    // Remove marker before deleting window
     if (globalThis.window) {
       delete (globalThis.window as unknown as Record<string, unknown>).__mockedBySanity
+    }
+
+    for (const key of stubbedKeys) {
+      delete mockedGlobalThis[key]
     }
   }
 }

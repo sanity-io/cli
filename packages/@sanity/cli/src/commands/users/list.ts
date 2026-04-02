@@ -62,6 +62,8 @@ export class List extends SanityCommand<typeof List> {
     }),
   }
 
+  static override hiddenAliases: string[] = ['user:list']
+
   public async run(): Promise<void> {
     const {invitations, order, robots, sort} = this.flags
 

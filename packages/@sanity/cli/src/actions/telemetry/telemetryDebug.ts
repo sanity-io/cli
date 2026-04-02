@@ -1,3 +1,3 @@
-import {subdebug} from '@sanity/cli-core'
+import debugIt from 'debug'
 
-export const telemetryDebug = subdebug('telemetry')
+export const telemetryDebug = debugIt('telemetry:sanity:cli')

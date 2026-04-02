@@ -1,19 +1,27 @@
-import {resolveLocalPackage} from '@sanity/cli-core'
+import {doImport, resolveLocalPackage} from '@sanity/cli-core'
 import {type Schema} from '@sanity/types'
 import {type Workspace} from 'sanity'
 
-import {resolveIcon} from './iconResolver.js'
-import {type SchemaIconProps} from './SchemaIcon.js'
+import {type resolveIcon as resolveIconFn} from './iconResolver.js'
+import {type SchemaIconProps} from './resolveSchemaIcon.js'
 import {transformType} from './schemaTypeTransformer.js'
 import {type CreateWorkspaceManifest, type ManifestSchemaType, type ManifestTool} from './types.js'
+
+const iconResolverPath = new URL('iconResolver.js', import.meta.url).href
+
+async function lazyResolveIcon(): Promise<typeof resolveIconFn> {
+  const mod = await doImport(iconResolverPath)
+  return mod.resolveIcon
+}
 
 /**
  * Extracts manifest data from an array of workspaces
  */
-export function extractWorkspaceManifest(
+export async function extractWorkspaceManifest(
   workspaces: Workspace[],
   workDir: string,
 ): Promise<CreateWorkspaceManifest[]> {
+  const resolveIcon = await lazyResolveIcon()
   return Promise.all(
     workspaces.map(async (workspace) => {
       const [icon, serializedSchema, serializedTools] = await Promise.all([
@@ -24,7 +32,7 @@ export function extractWorkspaceManifest(
           workDir,
         }),
         extractManifestSchemaTypes(workspace.schema as Schema, workDir),
-        extractManifestTools(workspace.tools, workDir),
+        extractManifestTools(workspace.tools, workDir, resolveIcon),
       ])
 
       return {
@@ -73,8 +81,9 @@ export async function extractManifestSchemaTypes(
 const extractManifestTools = async (
   tools: Workspace['tools'],
   workDir: string,
-): Promise<ManifestTool[]> =>
-  Promise.all(
+  resolveIcon: typeof resolveIconFn,
+): Promise<ManifestTool[]> => {
+  return Promise.all(
     tools.map(async (tool) => {
       const {
         __internalApplicationType: type,
@@ -94,3 +103,4 @@ const extractManifestTools = async (
       } satisfies ManifestTool
     }),
   )
+}

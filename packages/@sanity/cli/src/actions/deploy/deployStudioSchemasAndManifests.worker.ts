@@ -4,8 +4,12 @@ import {getStudioWorkspaces, subdebug} from '@sanity/cli-core'
 import {type StudioManifest, type Workspace} from 'sanity'
 
 import {extractWorkspaceManifest} from '../manifest/extractWorkspaceManifest.js'
+import {type CreateWorkspaceManifest} from '../manifest/types.js'
 import {writeManifestFile} from '../manifest/writeManifestFile.js'
-import {updateWorkspacesSchemas} from '../schema/updateWorkspaceSchema.js'
+import {
+  updateWorkspacesSchemas,
+  type WorkspaceSchemaInput,
+} from '../schema/updateWorkspaceSchema.js'
 import {uploadSchemaToLexicon} from '../schema/uploadSchemaToLexicon.js'
 import {extractValidationFromSchemaError} from '../schema/utils/extractValidationFromSchemaError.js'
 import {deployStudioSchemasAndManifestsWorkerData} from './types.js'
@@ -29,6 +33,18 @@ async function main() {
       throw new Error('No workspaces found')
     }
 
+    // Extract manifest data (including ManifestSchemaType[]) once, while Schema objects are
+    // still live. Both writeWorkspaceToDist and updateWorkspacesSchemas consume the result.
+    const workspaceManifests = await extractWorkspaceManifest(workspaces, workDir)
+
+    const schemaInputs: WorkspaceSchemaInput[] = workspaceManifests.map((manifest) => ({
+      dataset: manifest.dataset,
+      manifestSchema: manifest.schema,
+      name: manifest.name,
+      projectId: manifest.projectId,
+      title: manifest.title,
+    }))
+
     debug('Handling deployment for %s', isExternal ? 'external' : 'internal')
 
     let studioManifest: StudioManifest | null = null
@@ -36,6 +52,7 @@ async function main() {
     if (isExternal) {
       ;[studioManifest] = await handleExternalDeployment({
         projectId,
+        schemaInputs,
         schemaRequired,
         verbose,
         workDir,
@@ -45,8 +62,10 @@ async function main() {
       ;[studioManifest] = await handleInternalDeployment({
         outPath,
         projectId,
+        schemaInputs,
         verbose,
         workDir,
+        workspaceManifests,
         workspaces,
       })
     }
@@ -66,25 +85,6 @@ async function main() {
   }
 }
 
-async function writeWorkspaceToDist({
-  outPath,
-  workDir,
-  workspaces,
-}: {
-  outPath: string
-  workDir: string
-  workspaces: Workspace[]
-}) {
-  // Get the create manifest workspace
-  const workspaceManifests = await extractWorkspaceManifest(workspaces, workDir)
-
-  await writeManifestFile({
-    outPath,
-    workDir,
-    workspaceManifests,
-  })
-}
-
 /**
  * External deployments:
  * 1. Update the workspace schemas to the /schemas endpoint IF --schema-required is passed
@@ -92,12 +92,14 @@ async function writeWorkspaceToDist({
  */
 async function handleExternalDeployment({
   projectId,
+  schemaInputs,
   schemaRequired,
   verbose,
   workDir,
   workspaces,
 }: {
   projectId: string
+  schemaInputs: WorkspaceSchemaInput[]
   schemaRequired: boolean
   verbose: boolean
   workDir: string
@@ -110,7 +112,7 @@ async function handleExternalDeployment({
       workDir,
       workspaces,
     }),
-    schemaRequired ? updateWorkspacesSchemas({verbose, workspaces}) : undefined,
+    schemaRequired ? updateWorkspacesSchemas({verbose, workspaces: schemaInputs}) : undefined,
   ])
 
   return [studioManifest]
@@ -128,14 +130,18 @@ async function handleExternalDeployment({
 async function handleInternalDeployment({
   outPath,
   projectId,
+  schemaInputs,
   verbose,
   workDir,
+  workspaceManifests,
   workspaces,
 }: {
   outPath: string
   projectId: string
+  schemaInputs: WorkspaceSchemaInput[]
   verbose: boolean
   workDir: string
+  workspaceManifests: CreateWorkspaceManifest[]
   workspaces: Workspace[]
 }): Promise<[StudioManifest | null]> {
   const [studioManifest] = await Promise.all([
@@ -145,11 +151,11 @@ async function handleInternalDeployment({
       workDir,
       workspaces,
     }),
-    writeWorkspaceToDist({outPath, workDir, workspaces}),
+    writeManifestFile({outPath, workDir, workspaceManifests}),
     // Updates the workspaces schemas to /schemas endpoint
     updateWorkspacesSchemas({
       verbose,
-      workspaces,
+      workspaces: schemaInputs,
     }),
   ])
 

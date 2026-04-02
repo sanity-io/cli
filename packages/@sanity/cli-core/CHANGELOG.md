@@ -1,5 +1,101 @@
 # Changelog
 
+## [1.3.0](https://github.com/sanity-io/cli/compare/cli-core-v1.2.1...cli-core-v1.3.0) (2026-03-30)
+
+
+### Features
+
+* upgrade eslint to v10 with dual v9/v10 support ([#823](https://github.com/sanity-io/cli/issues/823)) ([f3c9d9d](https://github.com/sanity-io/cli/commit/f3c9d9da4816f6300f8bb5d1fda6a00a2c58b95d))
+
+
+### Bug Fixes
+
+* **deps:** update @sanity/telemetry to v0.9.0 ([#777](https://github.com/sanity-io/cli/issues/777)) ([fc44e3e](https://github.com/sanity-io/cli/commit/fc44e3e9fe6b6a750daa576b30e979c83622cdab))
+* exclude test fixtures from npm published packages ([#834](https://github.com/sanity-io/cli/issues/834)) ([699f3f1](https://github.com/sanity-io/cli/commit/699f3f1506ca4491b06a96946bdd047e9eac64a7))
+
+
+### Documentation
+
+* define exit code convention and add exitCodes constant ([#784](https://github.com/sanity-io/cli/issues/784)) ([133be82](https://github.com/sanity-io/cli/commit/133be82f2a246f5cc1573c8e2733d50a2b2ea746))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/eslint-config-cli bumped to 1.1.0
+
+## [1.2.1](https://github.com/sanity-io/cli/compare/cli-core-v1.2.0...cli-core-v1.2.1) (2026-03-24)
+
+
+### Bug Fixes
+
+* **telemetry:** scope consent cache by auth token ([#751](https://github.com/sanity-io/cli/issues/751)) ([86f3285](https://github.com/sanity-io/cli/commit/86f3285b6902fa61f15d85f340669d42efa7796f))
+
+## [1.2.0](https://github.com/sanity-io/cli/compare/cli-core-v1.1.3...cli-core-v1.2.0) (2026-03-19)
+
+
+### Features
+
+* **debug:** improve output format, allow running outside project ([#733](https://github.com/sanity-io/cli/issues/733)) ([f2f2e2f](https://github.com/sanity-io/cli/commit/f2f2e2f31c2bdebf3cb138074ed92b2c0979aa09))
+
+
+### Bug Fixes
+
+* **mcp:** use explicit mode for setupMCP during init ([#744](https://github.com/sanity-io/cli/issues/744)) ([e11f495](https://github.com/sanity-io/cli/commit/e11f49543cd5281434f0a0bff91d2badd3b32883))
+* support non-interactive mode for app templates and fix isInteractive CI detection ([#735](https://github.com/sanity-io/cli/issues/735)) ([ff9f15f](https://github.com/sanity-io/cli/commit/ff9f15f3f7a599b3bb06dbd25117e2d865623123))
+
+## [1.1.3](https://github.com/sanity-io/cli/compare/cli-core-v1.1.2...cli-core-v1.1.3) (2026-03-18)
+
+
+### Bug Fixes
+
+* load all env vars for schema extract ([#725](https://github.com/sanity-io/cli/issues/725)) ([67ee0a5](https://github.com/sanity-io/cli/commit/67ee0a5d25a7f01f3aebf7039407e43485aa0297))
+* use JSDOM Abort* APIs when mocking browser environments ([#712](https://github.com/sanity-io/cli/issues/712)) ([22ae850](https://github.com/sanity-io/cli/commit/22ae8500912b35d974956887d4d5cdb89c1f1d84))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * devDependencies
+    * @sanity/eslint-config-cli bumped to 1.0.1
+
+## [1.1.2](https://github.com/sanity-io/cli/compare/cli-core-v1.1.1...cli-core-v1.1.2) (2026-03-13)
+
+
+### Bug Fixes
+
+* **cli-core:** defer JSDOM creation to first getBrowserStubs() call ([#676](https://github.com/sanity-io/cli/issues/676)) ([c059421](https://github.com/sanity-io/cli/commit/c0594214c53706b838ff7d6df91f3b37631d97a7))
+* schema extract causing Element is not defined error ([#672](https://github.com/sanity-io/cli/issues/672)) ([23a360e](https://github.com/sanity-io/cli/commit/23a360e0aef7c6edd581eb870e5927dbfe9ef336))
+* tsconfig paths not respected in the sanity config ([#669](https://github.com/sanity-io/cli/issues/669)) ([7ecf06b](https://github.com/sanity-io/cli/commit/7ecf06b61781f449081a618c70203d2223b6e47c))
+
+## [1.1.1](https://github.com/sanity-io/cli/compare/cli-core-v1.1.0...cli-core-v1.1.1) (2026-03-13)
+
+
+### Bug Fixes
+
+* resolve react-dom/server and @sanity/ui from studio workDir ([#657](https://github.com/sanity-io/cli/issues/657)) ([ce07d42](https://github.com/sanity-io/cli/commit/ce07d42e67acd906a3b585c4a62c031ea6c53bee))
+
+## [1.1.0](https://github.com/sanity-io/cli/compare/cli-core-v1.0.1...cli-core-v1.1.0) (2026-03-12)
+
+
+### Features
+
+* **mcp:** improve mcp setup process ([#630](https://github.com/sanity-io/cli/issues/630)) ([27d8ba8](https://github.com/sanity-io/cli/commit/27d8ba86a8f506c8a56773fb65438ef6d33aae38))
+
+
+### Bug Fixes
+
+* don't treat user aborts as telemetry errors ([#624](https://github.com/sanity-io/cli/issues/624)) ([6cc7682](https://github.com/sanity-io/cli/commit/6cc7682030a7dea9dfb9a80aa691a2cfb52444b9))
+* mock getUserConfig in telemetry test and update debug namespace ([#631](https://github.com/sanity-io/cli/issues/631)) ([2f03a4c](https://github.com/sanity-io/cli/commit/2f03a4c797d8f4110b03a1d19f9ad18a63a2bcd5))
+
+## [1.0.1](https://github.com/sanity-io/cli/compare/cli-core-v1.0.0...cli-core-v1.0.1) (2026-03-11)
+
+
+### Bug Fixes
+
+* inline typegen types to avoid circular deps ([#608](https://github.com/sanity-io/cli/issues/608)) ([f7e0020](https://github.com/sanity-io/cli/commit/f7e00209421cda3281daa9c8c3f842310b935eca))
+
 ## [1.0.0](https://github.com/sanity-io/cli/compare/cli-core-v0.1.0...cli-core-v1.0.0) (2026-03-10)
 
 

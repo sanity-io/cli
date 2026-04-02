@@ -12,6 +12,7 @@
 
 import {createClient, type SanityClient, type SanityDocument} from '@sanity/client'
 import {createPublishedId, createVersionId} from '@sanity/id-utils'
+import isEqual from 'lodash-es/isEqual.js'
 
 import {type CommandInfo, generateCommands} from './generateCommands.js'
 
@@ -89,61 +90,141 @@ function makeHeading(
  * Build a help text string from a CommandInfo object.
  * Produces output in the same format as `sanity <command> --help`.
  */
-function buildHelpText(cmd: CommandInfo): string {
-  const lines: string[] = []
+function getFlagValue(flag: {helpValue?: string | string[]; type: string}): string {
+  if (flag.type === 'boolean') return ''
+  if (flag.helpValue) {
+    return Array.isArray(flag.helpValue) ? flag.helpValue[0] : flag.helpValue
+  }
+  return '<value>'
+}
 
-  // USAGE
-  const args = Object.values(cmd.args).filter((a) => !a.hidden)
-  const argsPart = args
+function formatUsageFlag(flag: {
+  char?: string
+  helpValue?: string | string[]
+  name: string
+  required?: boolean
+  type: string
+}): string {
+  if (flag.type === 'boolean') {
+    return `[--${flag.name}]`
+  }
+  const val = getFlagValue(flag)
+  if (flag.required) {
+    return flag.char ? `-${flag.char} ${val}` : `--${flag.name} ${val}`
+  }
+  return flag.char ? `[-${flag.char} ${val}]` : `[--${flag.name} ${val}]`
+}
+
+function formatFlagLabel(flag: {
+  char?: string
+  helpValue?: string | string[]
+  name: string
+  type: string
+}): string {
+  const charPart = flag.char ? `-${flag.char},` : '   '
+  const valuePart = flag.type === 'option' ? `=${getFlagValue(flag)}` : ''
+  return `  ${charPart} --${flag.name}${valuePart}`
+}
+
+function renderFlagGroup(
+  header: string,
+  flags: Array<{
+    char?: string
+    description?: string
+    helpValue?: string | string[]
+    name: string
+    type: string
+  }>,
+): string[] {
+  const lines: string[] = []
+  const labels = flags.map((f) => formatFlagLabel(f))
+  const maxWidth = Math.max(...labels.map((l) => l.length)) + 2
+
+  lines.push(header)
+  for (const [i, flag] of flags.entries()) {
+    const label = labels[i]
+    lines.push(flag.description ? `${label.padEnd(maxWidth)}${flag.description}` : label)
+  }
+  return lines
+}
+
+function sortFlags<T extends {char?: string; name: string}>(flags: T[]): T[] {
+  return flags.toSorted((a, b) => {
+    if (a.char && b.char) return a.char.localeCompare(b.char)
+    if (a.char && !b.char) return -1
+    if (!a.char && b.char) return 1
+    return a.name.localeCompare(b.name)
+  })
+}
+
+function buildHelpText(cmd: CommandInfo): string {
+  const sections: string[] = []
+
+  const visibleFlags = sortFlags(Object.values(cmd.flags).filter((f) => !f.hidden))
+  const visibleArgs = Object.values(cmd.args).filter((a) => !a.hidden)
+
+  // USAGE — with flag summary in brackets
+  const argsPart = visibleArgs
     .map((a) => (a.required ? a.name.toUpperCase() : `[${a.name.toUpperCase()}]`))
     .join(' ')
+  const flagSummary = visibleFlags.map((f) => formatUsageFlag(f)).join(' ')
+  const usageParts = [cmd.fullCommand, argsPart, flagSummary].filter(Boolean).join(' ')
+  sections.push(`USAGE\n  $ sanity ${usageParts}`)
 
-  lines.push('USAGE', `  $ sanity ${cmd.fullCommand}${argsPart ? ` ${argsPart}` : ''}`, '')
-
-  // ARGUMENTS
-  if (args.length > 0) {
-    lines.push('ARGUMENTS')
-    for (const arg of args) {
-      const label = arg.required ? arg.name.toUpperCase() : `[${arg.name.toUpperCase()}]`
-      lines.push(`  ${label.padEnd(22)}${arg.description ?? ''}`)
+  // ARGUMENTS — dynamic padding
+  if (visibleArgs.length > 0) {
+    const argLines: string[] = ['ARGUMENTS']
+    const argLabels = visibleArgs.map((a) =>
+      a.required ? a.name.toUpperCase() : `[${a.name.toUpperCase()}]`,
+    )
+    const maxArgWidth = Math.max(...argLabels.map((l) => l.length)) + 2
+    for (const [i, arg] of visibleArgs.entries()) {
+      const label = argLabels[i]
+      argLines.push(`  ${label.padEnd(maxArgWidth)}${arg.description ?? ''}`)
     }
-    lines.push('')
+    sections.push(argLines.join('\n'))
   }
 
-  // FLAGS
-  const flags = Object.values(cmd.flags).filter((f) => !f.hidden)
-  if (flags.length > 0) {
-    lines.push('FLAGS')
-    for (const flag of flags) {
-      const charPart = flag.char ? `-${flag.char},` : '   '
-      const valuePart = flag.type === 'option' ? `=<${flag.name.toUpperCase()}>` : ''
-      const flagStr = `  ${charPart} --${flag.name}${valuePart}`
-      lines.push(flag.description ? `${flagStr.padEnd(36)}${flag.description}` : flagStr)
+  // FLAGS — grouped by helpGroup
+  const mainFlags = visibleFlags.filter((f) => !f.helpGroup)
+  const groupedFlags = new Map<string, typeof visibleFlags>()
+  for (const flag of visibleFlags) {
+    if (flag.helpGroup) {
+      const group = groupedFlags.get(flag.helpGroup) ?? []
+      group.push(flag)
+      groupedFlags.set(flag.helpGroup, group)
     }
-    lines.push('')
+  }
+
+  if (mainFlags.length > 0) {
+    sections.push(renderFlagGroup('FLAGS', mainFlags).join('\n'))
+  }
+  for (const [groupName, flags] of groupedFlags) {
+    sections.push(renderFlagGroup(`${groupName} FLAGS`, flags).join('\n'))
   }
 
   // DESCRIPTION
   if (cmd.description) {
-    lines.push('DESCRIPTION', `  ${cmd.description.trim().replaceAll('\n', '\n  ')}`, '')
+    sections.push(`DESCRIPTION\n  ${cmd.description.trim().replaceAll('\n', '\n  ')}`)
   }
 
-  // EXAMPLES
+  // EXAMPLES — with $ prefix on command lines
   if (cmd.examples.length > 0) {
-    lines.push('EXAMPLES')
+    const exLines: string[] = ['EXAMPLES']
     for (const ex of cmd.examples) {
       if (typeof ex === 'string') {
-        lines.push(`    ${ex}`, '')
+        exLines.push(`    $ ${ex}`, '')
       } else {
         if (ex.description) {
-          lines.push(`  ${ex.description}`, '')
+          exLines.push(`  ${ex.description}`, '')
         }
-        lines.push(`    ${ex.command}`, '')
+        exLines.push(`    $ ${ex.command}`, '')
       }
     }
+    sections.push(exLines.join('\n').trimEnd())
   }
 
-  return lines.join('\n').trimEnd()
+  return sections.join('\n\n')
 }
 
 // ── Command Grouping ──────────────────────────────────────────────────
@@ -262,6 +343,26 @@ function applyExistingKeys(
     }
     return block
   })
+}
+
+// ── Comparison ────────────────────────────────────────────────────────
+
+/**
+ * Recursively strip `_key` fields from an object tree.
+ * Used to compare content blocks by semantic value only, ignoring the
+ * auto-generated `_key` identifiers that Sanity adds on write.
+ */
+function stripKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map((item) => stripKeys(item))
+  if (value !== null && typeof value === 'object') {
+    const result: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value)) {
+      if (k === '_key') continue
+      result[k] = stripKeys(v)
+    }
+    return result
+  }
+  return value
 }
 
 // ── Content Generation ────────────────────────────────────────────────
@@ -394,20 +495,12 @@ async function main() {
   const timestamp = new Date().toISOString().replaceAll(/[:.]/g, '-').slice(0, 19)
   const releaseId = `cli-reference-update-${timestamp}`
 
-  if (dryRun) {
-    console.log(`\n[DRY RUN] Release: ${releaseId}`)
-  } else {
-    console.log(`\nCreating release: ${releaseId}`)
-    await client.releases.create({
-      metadata: {releaseType: 'undecided', title: releaseId},
-      releaseId,
-    })
-    console.log('Release created.')
-  }
+  console.log(`\nRelease ID: ${releaseId}`)
 
   let updated = 0
   let created = 0
   let skipped = 0
+  let unchanged = 0
 
   const CLI_DOCS_QUERY = /* groq */ `*[_type == "article" && defined(automationId)]`
   const existingDocs = await client.fetch(CLI_DOCS_QUERY)
@@ -427,18 +520,26 @@ async function main() {
     const existingDoc = existingDocMap.get(`cli-${group.command}-reference`) as SanityDocument
 
     if (existingDoc) {
-      if (dryRun) {
-        console.log(`  UPDATE ${group.command} → ${existingDoc._id} (${newBlocks.length} blocks)`)
-      } else {
-        const existingContent = (existingDoc.content as Record<string, unknown>[]) || []
-        const headingKeyMap = buildHeadingKeyMap(existingContent)
-        const mergedContent = applyExistingKeys(
-          mergeContent(existingContent, newBlocks),
-          headingKeyMap,
-        )
+      const existingContent = (existingDoc.content as Record<string, unknown>[]) || []
+      const headingKeyMap = buildHeadingKeyMap(existingContent)
+      const mergedContent = applyExistingKeys(
+        mergeContent(existingContent, newBlocks),
+        headingKeyMap,
+      )
 
+      if (isEqual(stripKeys(mergedContent), stripKeys(existingContent))) {
+        console.log(`  UNCHANGED ${group.command} → ${existingDoc._id}`)
+        unchanged++
+        continue
+      }
+
+      if (dryRun) {
+        console.log(
+          `  UPDATE ${group.command} → ${existingDoc._id} (${mergedContent.length} blocks)`,
+        )
+      } else {
         const vId = createVersionId(releaseId, existingDoc._id)
-        const {_createdAt, _updatedAt, _rev, ...docWithoutSystemFields} = existingDoc
+        const {_createdAt, _rev, _updatedAt, ...docWithoutSystemFields} = existingDoc
         tx.create({...docWithoutSystemFields, _id: vId})
         tx.patch(vId, {
           set: {
@@ -471,24 +572,38 @@ async function main() {
     }
   }
 
-  try {
-    console.log(`Committing transaction...`)
-    await tx.commit({autoGenerateArrayKeys: true})
-  } catch (error) {
-    console.error(`Error committing transaction: ${error}`)
-    process.exit(1)
+  const hasChanges = updated + created > 0
+
+  if (hasChanges && !dryRun) {
+    try {
+      console.log(`\nCreating release: ${releaseId}`)
+      await client.releases.create({
+        metadata: {releaseType: 'undecided', title: releaseId},
+        releaseId,
+      })
+      console.log('Release created.')
+
+      console.log('Committing transaction...')
+      await tx.commit({autoGenerateArrayKeys: true})
+    } catch (error) {
+      console.error(`Error committing transaction: ${error}`)
+      process.exit(1)
+    }
   }
 
-  console.log(`\n── Summary ──`)
-  console.log(`Release: ${releaseId}`)
-  console.log(`Updated: ${updated} existing documents`)
-  console.log(`Created: ${created} new documents`)
-  console.log(`Skipped: ${skipped}`)
-  console.log(`Total:   ${updated + created + skipped}`)
+  console.log('\n── Summary ──')
+  console.log(`Release:   ${releaseId}`)
+  console.log(`Updated:   ${updated} existing documents`)
+  console.log(`Created:   ${created} new documents`)
+  console.log(`Unchanged: ${unchanged} documents`)
+  console.log(`Skipped:   ${skipped}`)
+  console.log(`Total:     ${updated + created + unchanged + skipped}`)
   if (dryRun) {
-    console.log(`\n[DRY RUN] No changes were made to Sanity.`)
-  } else {
+    console.log('\n[DRY RUN] No changes were made to Sanity.')
+  } else if (hasChanges) {
     console.log(`\nAll changes are in release "${releaseId}". Review and publish in Sanity Studio.`)
+  } else {
+    console.log('\nNo changes detected. No release was created.')
   }
 }
 

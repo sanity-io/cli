@@ -10,6 +10,26 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {MCP_API_VERSION} from '../../../services/mcp.js'
 import {ConfigureMcpCommand} from '../configure.js'
 
+const mockEnsureAuthenticated = vi.hoisted(() => vi.fn())
+const mockIsInteractive = vi.hoisted(() => vi.fn().mockReturnValue(true))
+
+vi.mock('../../../actions/auth/ensureAuthenticated.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../../../actions/auth/ensureAuthenticated.js')>()
+  return {
+    ...actual,
+    ensureAuthenticated: mockEnsureAuthenticated,
+  }
+})
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    isInteractive: mockIsInteractive,
+  }
+})
+
 vi.mock('@sanity/cli-core/ux', async () => {
   const actual = await vi.importActual<typeof import('@sanity/cli-core/ux')>('@sanity/cli-core/ux')
   return {
@@ -46,6 +66,12 @@ const mockExeca = vi.mocked(execa)
 
 describe('#mcp:configure', () => {
   beforeEach(async () => {
+    mockEnsureAuthenticated.mockResolvedValue({
+      email: 'test@example.com',
+      id: 'user-123',
+      name: 'Test User',
+      provider: 'github',
+    })
     mockExistsSync.mockReturnValue(false)
     mockReadFile.mockResolvedValue('{}') // Default: empty config file
     mockWriteFile.mockResolvedValue()
@@ -825,7 +851,7 @@ describe('#mcp:configure', () => {
     })
   })
 
-  test('shows already installed status for configured editors', async () => {
+  test('skips prompt when all configured editors have valid auth', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       return String(path).includes('.cursor')
     })
@@ -844,8 +870,48 @@ describe('#mcp:configure', () => {
       }),
     )
 
+    // Token validation succeeds against Sanity API
+    mockApi({apiVersion: MCP_API_VERSION, method: 'get', uri: '/users/me'}).reply(200, {
+      id: 'user-123',
+      name: 'Test User',
+    })
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    // Should NOT prompt the user — everything is already configured
+    expect(mockCheckbox).not.toHaveBeenCalled()
+    expect(stdout).toContain('All detected editors are already configured')
+  })
+
+  test('shows auth expired annotation when configured token is invalid', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes('.cursor')
+    })
+
+    mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        mcpServers: {
+          Sanity: {
+            headers: {
+              Authorization: 'Bearer expired-token',
+            },
+            type: 'http',
+            url: 'https://mcp.sanity.io',
+          },
+        },
+      }),
+    )
+
+    // Token validation fails against Sanity API (dead token)
+    mockApi({apiVersion: MCP_API_VERSION, method: 'get', uri: '/users/me'}).reply(401, {
+      error: 'Unauthorized',
+      message: 'Invalid token',
+      statusCode: 401,
+    })
+
     mockCheckbox.mockResolvedValue(['Cursor'])
 
+    // New token creation
     mockApi({
       apiVersion: MCP_API_VERSION,
       method: 'post',
@@ -864,13 +930,59 @@ describe('#mcp:configure', () => {
     expect(mockCheckbox).toHaveBeenCalledWith({
       choices: [
         {
-          checked: false, // Not pre-selected since already configured
-          name: 'Cursor (already installed)',
+          checked: true,
+          name: 'Cursor (auth expired)',
           value: 'Cursor',
         },
       ],
       message: 'Configure Sanity MCP server?',
     })
+  })
+
+  test('reuses valid token from another editor instead of creating new one', async () => {
+    // Detect both Cursor (configured with valid token) and Gemini (unconfigured)
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      const p = String(path)
+      return p.includes('.cursor') || p.includes('.gemini')
+    })
+
+    // Cursor has existing config with valid token, Gemini has empty config
+    mockReadFile.mockImplementation(async (filePath: unknown) => {
+      if (String(filePath).includes('.cursor')) {
+        return JSON.stringify({
+          mcpServers: {
+            Sanity: {
+              headers: {Authorization: 'Bearer valid-reusable-token'},
+              type: 'http',
+              url: 'https://mcp.sanity.io',
+            },
+          },
+        })
+      }
+      return '{}'
+    })
+
+    // Token validation succeeds against Sanity API
+    mockApi({apiVersion: MCP_API_VERSION, method: 'get', uri: '/users/me'}).reply(200, {
+      id: 'user-123',
+      name: 'Test User',
+    })
+
+    // User selects only the unconfigured editor (Gemini CLI)
+    mockCheckbox.mockResolvedValue(['Gemini CLI'])
+
+    // NO /auth/session/create or /auth/fetch mocks — token should be reused
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    // Should write config with the reused token
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.gemini/settings.json')),
+      expect.stringContaining('valid-reusable-token'),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for Gemini CLI')
   })
 
   test('exits gracefully when user deselects all editors', async () => {
@@ -958,6 +1070,29 @@ describe('#mcp:configure', () => {
     expect(stdout).toContain('MCP configured for Cursor, VS Code')
   })
 
+  test('suggests login when login fails', async () => {
+    const {LoginError} = await import('../../../errors/LoginError.js')
+    mockEnsureAuthenticated.mockRejectedValue(new LoginError('No authentication providers found'))
+
+    const {error} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('No authentication providers found')
+    expect(error?.message).toContain('Try running `sanity login`')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('shows raw error for network failures without suggesting login', async () => {
+    mockEnsureAuthenticated.mockRejectedValue(new Error('request timed out'))
+
+    const {error} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('request timed out')
+    expect(error?.message).not.toContain('sanity login')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
   test('merges with existing config file', async () => {
     mockExistsSync.mockReturnValue(true)
 
@@ -998,5 +1133,36 @@ describe('#mcp:configure', () => {
       expect.stringContaining('Sanity'),
       'utf8',
     )
+  })
+
+  test('auto-selects all editors in non-interactive mode without prompting', async () => {
+    mockIsInteractive.mockReturnValue(false)
+
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes('.cursor')
+    })
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-ci', sid: 'session-ci'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-ci'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-ci'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).not.toHaveBeenCalled()
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
+      expect.stringContaining('test-token-ci'),
+      'utf8',
+    )
+    expect(stdout).toContain('MCP configured for Cursor')
   })
 })

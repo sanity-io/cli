@@ -65,6 +65,8 @@ describe('#init: oclif command setup', () => {
     {flag1: 'template=test', flag2: 'bare'},
     {flag1: 'typescript', flag2: 'bare'},
     {flag1: 'project=test', flag2: 'create-project=test'},
+    {flag1: 'project=test', flag2: 'project-name=test'},
+    {flag1: 'project-name=test', flag2: 'create-project=test'},
   ])('throws error when `$flag1` and `$flag2` flags are both passed', async ({flag1, flag2}) => {
     const {error} = await testCommand(InitCommand, [`--${flag1}`, `--${flag2}`], {
       mocks: {
@@ -203,7 +205,7 @@ describe('#init: oclif command setup', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('throws error when in unattended mode and `project` and `create-project` not set', async () => {
+  test('throws error when in unattended mode and `project` and `project-name` not set', async () => {
     mocks.detectFrameworkRecord.mockResolvedValueOnce({
       name: 'Next.js',
       slug: 'nextjs',
@@ -214,7 +216,7 @@ describe('#init: oclif command setup', () => {
       [
         '--yes',
         '--dataset=production',
-        // Deliberately omitting --project and --create-project
+        // Deliberately omitting --project and --project-name
       ],
       {
         mocks: {
@@ -224,12 +226,12 @@ describe('#init: oclif command setup', () => {
     )
 
     expect(error?.message).toContain(
-      '`--project <id>` or `--create-project <name>` must be specified in unattended mode',
+      '`--project <id>` or `--project-name <name>` must be specified in unattended mode',
     )
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('throws error when in unattended mode and `create-project` not set with `organization`', async () => {
+  test('throws error when in unattended mode and `project-name` set without `organization`', async () => {
     mocks.detectFrameworkRecord.mockResolvedValueOnce({
       name: 'Next.js',
       slug: 'nextjs',
@@ -237,7 +239,7 @@ describe('#init: oclif command setup', () => {
 
     const {error} = await testCommand(
       InitCommand,
-      ['--yes', '--dataset=production', '--create-project=test'],
+      ['--yes', '--dataset=production', '--project-name=test'],
       {
         mocks: {
           ...defaultMocks,
@@ -246,7 +248,7 @@ describe('#init: oclif command setup', () => {
     )
 
     expect(error?.message).toContain(
-      '--create-project is not supported in unattended mode without an organization, please specify an organization with `--organization <id>`',
+      '`--project-name` requires `--organization <id>` in unattended mode',
     )
     expect(error?.oclif?.exit).toBe(1)
   })

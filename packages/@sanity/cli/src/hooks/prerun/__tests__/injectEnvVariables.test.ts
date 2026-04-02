@@ -3,8 +3,8 @@ import {join} from 'node:path'
 
 import {testFixture, testHook} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
-import {getCommandAndConfig} from '~test/helpers/getCommandAndConfig.js'
 
+import {getCommandAndConfig} from '../../../../test/helpers/getCommandAndConfig.js'
 import {injectEnvVariables} from '../injectEnvVariables.js'
 
 // Finds the command to test, first loads the config and then finds the command
@@ -72,6 +72,22 @@ describe('#injectEnvVariables', () => {
     })
 
     expect(stderr).toContain('Running in production environment')
+  })
+
+  test('should inject SANITY_INTERNAL_ENV from .env', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
+    await writeFile(join(cwd, '.env'), 'SANITY_INTERNAL_ENV=staging')
+
+    const {Command, config} = await getCommandAndConfig('learn')
+
+    await testHook<'prerun'>(injectEnvVariables, {
+      Command,
+      config,
+    })
+
+    expect(process.env.SANITY_INTERNAL_ENV).toBe('staging')
   })
 
   test('should not error when no project root is found', async () => {

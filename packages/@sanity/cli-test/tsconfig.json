@@ -4,7 +4,7 @@
   "compilerOptions": {
     "rootDir": ".",
     "paths": {
-      "@sanity/cli-core": ["./node_modules/@sanity/cli-core/src/index.ts"]
+      "@sanity/cli-core": ["./node_modules/@sanity/cli-core/src/_exports/index.ts"]
     }
   }
 }

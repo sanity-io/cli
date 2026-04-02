@@ -28,5 +28,8 @@
 # Dotenv and similar local-only files
 *.local
 
+# Schema extraction output
+schema.json
+
 # Override root .gitignore to track .env in this fixture
 !.env
