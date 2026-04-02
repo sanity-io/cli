@@ -47,20 +47,21 @@ describe('organizations create', () => {
     vi.clearAllMocks()
   })
 
-  test('creates organization with name arg', async () => {
+  test('creates organization with --name flag', async () => {
     mockRequest.mockResolvedValue(createdOrg)
 
-    const {error, stdout} = await testCommand(CreateOrganizationCommand, ['My Org'])
+    const {error, stdout} = await testCommand(CreateOrganizationCommand, ['--name', 'My Org'])
 
     if (error) throw error
     expect(stdout).toContain('org-new')
     expect(stdout).toContain('My Org')
   })
 
-  test('creates organization with name arg and --default-role flag', async () => {
+  test('creates organization with --name flag and --default-role flag', async () => {
     mockRequest.mockResolvedValue({...createdOrg, defaultRoleName: 'viewer'})
 
     const {error, stdout} = await testCommand(CreateOrganizationCommand, [
+      '--name',
       'My Org',
       '--default-role',
       'viewer',
@@ -86,17 +87,17 @@ describe('organizations create', () => {
     expect(stdout).toContain('org-new')
   })
 
-  test('errors when name arg is empty', async () => {
-    const {error} = await testCommand(CreateOrganizationCommand, [''])
+  test('errors when --name flag is empty', async () => {
+    const {error} = await testCommand(CreateOrganizationCommand, ['--name', ''])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Organization name cannot be empty')
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('errors when name arg exceeds 100 characters', async () => {
+  test('errors when --name flag exceeds 100 characters', async () => {
     const longName = 'a'.repeat(101)
-    const {error} = await testCommand(CreateOrganizationCommand, [longName])
+    const {error} = await testCommand(CreateOrganizationCommand, ['--name', longName])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Organization name cannot be longer than 100 characters')
@@ -106,7 +107,7 @@ describe('organizations create', () => {
   test('errors when API call fails', async () => {
     mockRequest.mockRejectedValue(new Error('Server error'))
 
-    const {error} = await testCommand(CreateOrganizationCommand, ['My Org'])
+    const {error} = await testCommand(CreateOrganizationCommand, ['--name', 'My Org'])
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to create organization')

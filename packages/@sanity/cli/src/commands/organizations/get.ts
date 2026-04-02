@@ -3,6 +3,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {getOrganization} from '../../services/organizations.js'
 import {hasStatusCode} from '../../util/apiError.js'
+import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {organizationAliases} from '../../util/organizationAliases.js'
 
 const getOrgDebug = subdebug('organizations:get')
@@ -37,8 +38,7 @@ export class GetOrganizationCommand extends SanityCommand<typeof GetOrganization
       if (hasStatusCode(error) && error.statusCode === 404) {
         this.error(`Organization "${organizationId}" not found`, {exit: 1})
       }
-      const message = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to get organization: ${message}`, {exit: 1})
+      this.error(`Failed to get organization: ${getErrorMessage(error)}`, {exit: 1})
     }
 
     this.log(`ID:           ${org.id}`)
