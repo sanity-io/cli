@@ -1,8 +1,8 @@
 export const sdkAppDependencies = {
   dependencies: {
-    // change these to 'latest' as in studioDependencies.ts once SDK v3 is released
-    '@sanity/sdk': '^2',
-    '@sanity/sdk-react': '^2',
+    // TODO: change these to 'latest' once SDK v3 is published
+    '@sanity/sdk': '^3.0.0-rc.0',
+    '@sanity/sdk-react': '^3.0.0-rc.0',
     react: '^19.2.4',
     'react-dom': '^19.2.4',
   },

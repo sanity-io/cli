@@ -48,6 +48,18 @@ const baseConfig = {
         'src/**/*.worker.ts',
         'package.config.ts',
       ],
+      ignore: [
+        // Ignore exports until init work is done
+        'src/actions/init/remoteTemplate.ts',
+        'src/actions/init/determineAppTemplate.ts',
+        'src/actions/auth/login.ts',
+        'src/services/organizations.ts',
+        'src/services/projects.ts',
+        // Ignore test fixtures
+        'src/**/__tests__/__fixtures__/**',
+        'src/prompts/init/index.ts',
+        'src/prompts/init/promptForTypescript.ts',
+      ],
       // Claude, Codex, and OpenCode are not dependencies of the CLI, but they are used in MCP configuration
       ignoreBinaries: ['claude', 'codex', 'opencode'],
       oclif: {

@@ -12,8 +12,8 @@
     "preview": "sanity preview"
   },
   "dependencies": {
-    "@sanity/sdk": "^2.6.0",
-    "@sanity/sdk-react": "^2.6.0",
+    "@sanity/sdk": "^3.0.0-rc.0",
+    "@sanity/sdk-react": "^3.0.0-rc.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "sanity": "catalog:"
