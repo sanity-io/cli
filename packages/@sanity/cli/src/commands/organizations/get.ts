@@ -3,12 +3,13 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 
 import {getOrganization} from '../../services/organizations.js'
 import {hasStatusCode} from '../../util/apiError.js'
+import {organizationAliases} from '../../util/organizationAliases.js'
 
 const getOrgDebug = subdebug('organizations:get')
 
 export class GetOrganizationCommand extends SanityCommand<typeof GetOrganizationCommand> {
   static override args = {
-    orgId: Args.string({
+    organizationId: Args.string({
       description: 'Organization ID',
       required: true,
     }),
@@ -23,24 +24,18 @@ export class GetOrganizationCommand extends SanityCommand<typeof GetOrganization
     },
   ]
 
-  static override hiddenAliases = [
-    'organization:get',
-    'organisations:get',
-    'organisation:get',
-    'org:get',
-    'orgs:get',
-  ]
+  static override hiddenAliases = organizationAliases('get')
 
   public async run(): Promise<void> {
-    const {orgId} = this.args
+    const {organizationId} = this.args
 
     let org
     try {
-      org = await getOrganization(orgId)
+      org = await getOrganization(organizationId)
     } catch (error) {
       getOrgDebug('Error getting organization', error)
       if (hasStatusCode(error) && error.statusCode === 404) {
-        this.error(`Organization "${orgId}" not found`, {exit: 1})
+        this.error(`Organization "${organizationId}" not found`, {exit: 1})
       }
       const message = error instanceof Error ? error.message : String(error)
       this.error(`Failed to get organization: ${message}`, {exit: 1})

@@ -41,7 +41,7 @@ describe('organizations get', () => {
     expect(stdout).toContain('viewer')
   })
 
-  test('requires orgId argument', async () => {
+  test('requires organizationId argument', async () => {
     const {error} = await testCommand(GetOrganizationCommand, [])
 
     expect(error).toBeInstanceOf(Error)
@@ -55,6 +55,7 @@ describe('organizations get', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('org-missing')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('errors on generic API failure', async () => {
@@ -64,5 +65,6 @@ describe('organizations get', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to get organization')
+    expect(error?.oclif?.exit).toBe(1)
   })
 })
