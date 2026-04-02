@@ -1,8 +1,5 @@
-import path from 'node:path'
-import {pathToFileURL} from 'node:url'
-
+import {resolveLocalPackage} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
-import {moduleResolve} from 'import-meta-resolve'
 import {createServer, type InlineConfig} from 'vite'
 
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
@@ -35,7 +32,7 @@ export async function startWorkbenchDevServer(
 
   let workbenchAvailable = false
   try {
-    moduleResolve('sanity/workbench', pathToFileURL(path.join(workDir, 'package.json')))
+    await resolveLocalPackage('@sanity/workbench', workDir)
     workbenchAvailable = true
   } catch {
     // sanity/workbench not available in this version — skip workbench server

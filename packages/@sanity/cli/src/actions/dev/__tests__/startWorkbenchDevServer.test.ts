@@ -3,12 +3,15 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {startWorkbenchDevServer} from '../startWorkbenchDevServer.js'
 
-const mockModuleResolve = vi.hoisted(() => vi.fn())
+const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 const mockCreateServer = vi.hoisted(() => vi.fn())
 const mockGetSharedServerConfig = vi.hoisted(() => vi.fn())
 const mockWriteWorkbenchRuntime = vi.hoisted(() => vi.fn())
 
-vi.mock('import-meta-resolve', () => ({moduleResolve: mockModuleResolve}))
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {...actual, resolveLocalPackage: mockResolveLocalPackage}
+})
 vi.mock('vite', () => ({createServer: mockCreateServer}))
 vi.mock('@vitejs/plugin-react', () => ({default: vi.fn(() => [])}))
 vi.mock('../../../util/getSharedServerConfig.js', () => ({
@@ -66,9 +69,7 @@ describe('startWorkbenchDevServer', () => {
 
   describe('workbench availability check', () => {
     test('returns workbenchAvailable: false when sanity/workbench is not resolvable', async () => {
-      mockModuleResolve.mockImplementation(() => {
-        throw new Error('ERR_PACKAGE_PATH_NOT_EXPORTED')
-      })
+      mockResolveLocalPackage.mockRejectedValue(new Error('ERR_PACKAGE_PATH_NOT_EXPORTED'))
 
       const result = await startWorkbenchDevServer(createOptions())
 
@@ -79,9 +80,7 @@ describe('startWorkbenchDevServer', () => {
 
     test('returns httpHost and workbenchPort even when workbench is unavailable', async () => {
       mockGetSharedServerConfig.mockReturnValue({httpHost: '0.0.0.0', httpPort: 4000})
-      mockModuleResolve.mockImplementation(() => {
-        throw new Error('ERR_PACKAGE_PATH_NOT_EXPORTED')
-      })
+      mockResolveLocalPackage.mockRejectedValue(new Error('ERR_PACKAGE_PATH_NOT_EXPORTED'))
 
       const result = await startWorkbenchDevServer(createOptions())
 
@@ -92,7 +91,7 @@ describe('startWorkbenchDevServer', () => {
 
   describe('successful startup', () => {
     test('returns workbenchAvailable: true and close when server starts', async () => {
-      mockModuleResolve.mockReturnValue(new URL('file:///tmp/node_modules/sanity/workbench.js'))
+      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
       const result = await startWorkbenchDevServer(createOptions())
@@ -104,7 +103,7 @@ describe('startWorkbenchDevServer', () => {
 
     test('returns httpHost and workbenchPort from getSharedServerConfig', async () => {
       mockGetSharedServerConfig.mockReturnValue({httpHost: '0.0.0.0', httpPort: 4000})
-      mockModuleResolve.mockReturnValue(new URL('file:///tmp/node_modules/sanity/workbench.js'))
+      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer(4000))
 
       const result = await startWorkbenchDevServer(createOptions())
@@ -114,7 +113,7 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('returns actual port when Vite picks an alternative port', async () => {
-      mockModuleResolve.mockReturnValue(new URL('file:///tmp/node_modules/sanity/workbench.js'))
+      mockResolveLocalPackage.mockResolvedValue({})
       // Simulate Vite finding port 3333 occupied and binding to 3334 instead
       const mockServer = createMockServer(3334)
       mockServer.httpServer.address.mockReturnValue({
@@ -130,7 +129,7 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('passes workDir to writeWorkbenchRuntime', async () => {
-      mockModuleResolve.mockReturnValue(new URL('file:///tmp/node_modules/sanity/workbench.js'))
+      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(createOptions())
@@ -144,7 +143,7 @@ describe('startWorkbenchDevServer', () => {
   describe('reactStrictMode', () => {
     test('uses SANITY_STUDIO_REACT_STRICT_MODE=true env var over cliConfig', async () => {
       vi.stubEnv('SANITY_STUDIO_REACT_STRICT_MODE', 'true')
-      mockModuleResolve.mockReturnValue(new URL('file:///tmp/node_modules/sanity/workbench.js'))
+      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(createOptions({cliConfig: {reactStrictMode: false}}))
@@ -156,7 +155,7 @@ describe('startWorkbenchDevServer', () => {
 
     test('uses SANITY_STUDIO_REACT_STRICT_MODE=false env var over cliConfig', async () => {
       vi.stubEnv('SANITY_STUDIO_REACT_STRICT_MODE', 'false')
-      mockModuleResolve.mockReturnValue(new URL('file:///tmp/node_modules/sanity/workbench.js'))
+      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(createOptions({cliConfig: {reactStrictMode: true}}))
@@ -167,7 +166,7 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('falls back to cliConfig.reactStrictMode when env var is not set', async () => {
-      mockModuleResolve.mockReturnValue(new URL('file:///tmp/node_modules/sanity/workbench.js'))
+      mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(createOptions({cliConfig: {reactStrictMode: true}}))
@@ -180,7 +179,7 @@ describe('startWorkbenchDevServer', () => {
 
   describe('server startup failure', () => {
     test('warns and returns without close when listen() throws', async () => {
-      mockModuleResolve.mockReturnValue(new URL('file:///tmp/node_modules/sanity/workbench.js'))
+      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockServer.listen.mockRejectedValue(new Error('Port already in use'))
       mockCreateServer.mockResolvedValue(mockServer)
@@ -194,7 +193,7 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('closes the server before returning when listen() throws', async () => {
-      mockModuleResolve.mockReturnValue(new URL('file:///tmp/node_modules/sanity/workbench.js'))
+      mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockServer.listen.mockRejectedValue(new Error('Port already in use'))
       mockCreateServer.mockResolvedValue(mockServer)
