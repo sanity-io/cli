@@ -115,6 +115,12 @@ describe('organizations delete', () => {
 
     const {error} = await testCommand(DeleteOrganizationCommand, ['org-aaa'])
 
+    expect(mockInput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('Type the name of the organization'),
+        validate: expect.any(Function),
+      }),
+    )
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Organization "org-aaa" not found')
     expect(error?.oclif?.exit).toBe(1)
@@ -128,6 +134,12 @@ describe('organizations delete', () => {
 
     const {error} = await testCommand(DeleteOrganizationCommand, ['org-aaa'])
 
+    expect(mockInput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('Type the name of the organization'),
+        validate: expect.any(Function),
+      }),
+    )
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to delete organization')
     expect(error?.oclif?.exit).toBe(1)

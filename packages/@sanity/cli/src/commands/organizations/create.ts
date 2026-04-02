@@ -1,9 +1,10 @@
 import {Args, Flags} from '@oclif/core'
 import {type FlagInput} from '@oclif/core/interfaces'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
-import {input, spinner} from '@sanity/cli-core/ux'
+import {spinner} from '@sanity/cli-core/ux'
 
 import {validateOrganizationName} from '../../actions/organizations/validateOrganizationName.js'
+import {promptForOrganizationName} from '../../prompts/promptForOrganizationName.js'
 import {createOrganization} from '../../services/organizations.js'
 import {organizationAliases} from '../../util/organizationAliases.js'
 
@@ -49,10 +50,7 @@ export class CreateOrganizationCommand extends SanityCommand<typeof CreateOrgani
 
     let name: string
     if (organizationName === undefined) {
-      name = await input({
-        message: 'Organization name:',
-        validate: validateOrganizationName,
-      })
+      name = await promptForOrganizationName()
     } else {
       const validation = validateOrganizationName(organizationName)
       if (validation !== true) {
