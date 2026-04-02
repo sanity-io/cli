@@ -29,7 +29,12 @@ import {countNestedFolders} from '../actions/init/countNestedFolders.js'
 import {determineAppTemplate} from '../actions/init/determineAppTemplate.js'
 import {createOrAppendEnvVars} from '../actions/init/env/createOrAppendEnvVars.js'
 import {fetchPostInitPrompt} from '../actions/init/fetchPostInitPrompt.js'
+import {getPostInitMessageDisplay} from '../actions/init/getPostInitMessageDisplay.js'
 import {tryGitInit} from '../actions/init/git.js'
+import {
+  readTemplateManifest,
+  removeTemplateManifestFromOutput,
+} from '../actions/init/readTemplateManifest.js'
 import {
   checkIsRemoteTemplate,
   getGitHubRepoInfo,
@@ -715,6 +720,22 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
       this.log(`\nJoin the Sanity community: ${styleText('cyan', DISCORD_INVITE_LINK)}`)
       this.log('We look forward to seeing you there!\n')
+    }
+
+    const templateManifest = await readTemplateManifest(outputPath)
+    const postInitLines = getPostInitMessageDisplay(templateManifest?.postInitMessage)
+
+    if (postInitLines) {
+      this.log('')
+      this.log(styleText('dim', 'Message from the template author:'))
+      for (const line of postInitLines) {
+        this.log('')
+        this.log(line)
+      }
+    }
+
+    if (templateManifest) {
+      await removeTemplateManifestFromOutput(outputPath)
     }
 
     this._trace.complete()
