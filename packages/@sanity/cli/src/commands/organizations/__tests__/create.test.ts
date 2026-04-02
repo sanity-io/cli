@@ -77,7 +77,12 @@ describe('organizations create', () => {
     const {error, stdout} = await testCommand(CreateOrganizationCommand, [])
 
     if (error) throw error
-    expect(mockInput).toHaveBeenCalled()
+    expect(mockInput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Organization name:',
+        validate: expect.any(Function),
+      }),
+    )
     expect(stdout).toContain('org-new')
   })
 
