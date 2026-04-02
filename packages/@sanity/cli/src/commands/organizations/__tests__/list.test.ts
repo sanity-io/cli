@@ -59,5 +59,6 @@ describe('organizations list', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to list organizations')
+    expect(error?.oclif?.exit).toBe(1)
   })
 })

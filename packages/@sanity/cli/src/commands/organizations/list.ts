@@ -1,8 +1,8 @@
-import {styleText} from 'node:util'
-
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {Table} from 'console-table-printer'
 
 import {listOrganizations} from '../../services/organizations.js'
+import {organizationAliases} from '../../util/organizationAliases.js'
 
 const listOrgsDebug = subdebug('organizations:list')
 
@@ -16,13 +16,7 @@ export class ListOrganizationsCommand extends SanityCommand<typeof ListOrganizat
     },
   ]
 
-  static override hiddenAliases = [
-    'organization:list',
-    'organisations:list',
-    'organisation:list',
-    'org:list',
-    'orgs:list',
-  ]
+  static override hiddenAliases = organizationAliases('list')
 
   public async run(): Promise<void> {
     let organizations
@@ -39,14 +33,18 @@ export class ListOrganizationsCommand extends SanityCommand<typeof ListOrganizat
       return
     }
 
-    const headers = ['ID', 'Name', 'Slug']
-    const rows = organizations.map(({id, name, slug}) => [id, name, slug ?? '-'])
+    const table = new Table({
+      columns: [
+        {alignment: 'left', name: 'id', title: 'ID'},
+        {alignment: 'left', name: 'name', title: 'Name'},
+        {alignment: 'left', name: 'slug', title: 'Slug'},
+      ],
+    })
 
-    const widths = headers.map((h, i) => Math.max(h.length, ...rows.map((r) => r[i].length)))
+    for (const {id, name, slug} of organizations) {
+      table.addRow({id, name, slug: slug ?? '-'})
+    }
 
-    const fmt = (row: string[]) => row.map((col, i) => col.padEnd(widths[i])).join('   ')
-
-    this.log(styleText('cyan', fmt(headers)))
-    for (const row of rows) this.log(fmt(row))
+    table.printTable()
   }
 }

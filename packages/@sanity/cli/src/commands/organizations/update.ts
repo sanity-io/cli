@@ -4,14 +4,18 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {validateOrganizationName} from '../../actions/organizations/validateOrganizationName.js'
+import {validateOrganizationSlug} from '../../actions/organizations/validateOrganizationSlug.js'
 import {type OrganizationUpdateParams, updateOrganization} from '../../services/organizations.js'
 import {hasStatusCode} from '../../util/apiError.js'
+import {organizationAliases} from '../../util/organizationAliases.js'
 
 const updateOrgDebug = subdebug('organizations:update')
 
+const UPDATE_FLAGS = ['name', 'slug', 'default-role'] as const
+
 export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrganizationCommand> {
   static override args = {
-    orgId: Args.string({
+    organizationId: Args.string({
       description: 'Organization ID',
       required: true,
     }),
@@ -36,29 +40,26 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
 
   static override flags = {
     'default-role': Flags.string({
+      atLeastOne: [...UPDATE_FLAGS],
       description: 'New default role for new members',
       required: false,
     }),
     name: Flags.string({
+      atLeastOne: [...UPDATE_FLAGS],
       description: 'New organization name',
       required: false,
     }),
     slug: Flags.string({
+      atLeastOne: [...UPDATE_FLAGS],
       description: 'New URL slug (requires authSAML feature on the organization)',
       required: false,
     }),
   } satisfies FlagInput
 
-  static override hiddenAliases = [
-    'organization:update',
-    'organisations:update',
-    'organisation:update',
-    'org:update',
-    'orgs:update',
-  ]
+  static override hiddenAliases = organizationAliases('update')
 
   public async run(): Promise<void> {
-    const {orgId} = this.args
+    const {organizationId} = this.args
     const {'default-role': defaultRole, name, slug} = this.flags
 
     const params: OrganizationUpdateParams = {}
@@ -69,23 +70,25 @@ export class UpdateOrganizationCommand extends SanityCommand<typeof UpdateOrgani
       }
       params.name = name
     }
-    if (slug !== undefined) params.slug = slug
-    if (defaultRole !== undefined) params.defaultRoleName = defaultRole
-
-    if (Object.keys(params).length === 0) {
-      this.error('Provide at least one flag to update: --name, --slug, --default-role', {exit: 1})
+    if (slug !== undefined) {
+      const slugValidation = validateOrganizationSlug(slug)
+      if (slugValidation !== true) {
+        this.error(slugValidation, {exit: 1})
+      }
+      params.slug = slug
     }
+    if (defaultRole !== undefined) params.defaultRoleName = defaultRole
 
     const spin = spinner('Updating organization').start()
     try {
-      await updateOrganization(orgId, params)
+      await updateOrganization(organizationId, params)
       spin.succeed()
       this.log('Organization updated')
     } catch (error) {
       spin.fail()
       updateOrgDebug('Error updating organization', error)
       if (hasStatusCode(error) && error.statusCode === 404) {
-        this.error(`Organization "${orgId}" not found`, {exit: 1})
+        this.error(`Organization "${organizationId}" not found`, {exit: 1})
       }
       const message = error instanceof Error ? error.message : String(error)
       this.error(`Failed to update organization: ${message}`, {exit: 1})

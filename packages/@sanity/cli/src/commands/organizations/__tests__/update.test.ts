@@ -86,10 +86,11 @@ describe('organizations update', () => {
     const {error} = await testCommand(UpdateOrganizationCommand, ['org-aaa'])
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('at least one')
+    expect(error?.message).toContain('At least one of the following must be provided')
+    expect(error?.oclif?.exit).toBe(2)
   })
 
-  test('requires orgId argument', async () => {
+  test('requires organizationId argument', async () => {
     const {error} = await testCommand(UpdateOrganizationCommand, ['--name', 'Foo'])
 
     expect(error).toBeInstanceOf(Error)
@@ -100,6 +101,7 @@ describe('organizations update', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Organization name cannot be empty')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('shows user-friendly error on 404', async () => {
@@ -110,6 +112,19 @@ describe('organizations update', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Organization "org-aaa" not found')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('validates slug flag', async () => {
+    const {error} = await testCommand(UpdateOrganizationCommand, [
+      'org-aaa',
+      '--slug',
+      'Invalid Slug!',
+    ])
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('must be lowercase')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('surfaces API error (e.g. slug requires authSAML feature)', async () => {
@@ -120,5 +135,6 @@ describe('organizations update', () => {
 
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Failed to update organization')
+    expect(error?.oclif?.exit).toBe(1)
   })
 })
