@@ -3,6 +3,7 @@ import {spinner} from '@sanity/cli-core/ux'
 import {type DatasetAclMode, DatasetResponse} from '@sanity/client'
 
 import {createDataset as createDatasetService} from '../../services/datasets.js'
+import {validateProjection} from '../../util/validateProjection.js'
 import {determineDatasetAclMode} from './determineDatasetAclMode.js'
 
 const debug = subdebug('dataset:create')
@@ -94,6 +95,10 @@ export async function createDataset(options: CreateDatasetOptions): Promise<Data
     output,
     visibility,
   })
+
+  if (embeddingsProjection) {
+    validateProjection(embeddingsProjection)
+  }
 
   try {
     const spin = spinner('Creating dataset').start()
