@@ -1,6 +1,6 @@
 import {type Output} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
-import {execa, type Options} from 'execa'
+import spawn, {type Options, type SubprocessError} from 'nano-spawn'
 
 import {getPartialEnvWithNpmPath, type PackageManager} from './packageManagerChoice.js'
 
@@ -43,14 +43,13 @@ async function executePackageManagerCommand(
 ): Promise<void> {
   const progress = spinner(`Running ${packageManager} ${args.join(' ')}\n`).start()
 
-  const result = await execa(packageManager, args, execOptions)
-
-  if (result?.exitCode || result?.failed) {
-    progress.fail()
-    output.log(String(result.stdout))
-    output.error(errorMessage, {exit: 1})
-  } else {
+  try {
+    await spawn(packageManager, args, execOptions)
     progress.succeed()
+  } catch (error) {
+    progress.fail()
+    output.log((error as SubprocessError).stdout)
+    output.error(errorMessage, {exit: 1})
   }
 }
 
@@ -62,7 +61,6 @@ export async function installDeclaredPackages(
   const {output} = context
   const execOptions: Options = {
     cwd,
-    encoding: 'utf8',
     env: getPartialEnvWithNpmPath(cwd),
     stdio: 'pipe',
   }
@@ -90,7 +88,6 @@ export async function installNewPackages(
   const {output, workDir} = context
   const execOptions: Options = {
     cwd: workDir,
-    encoding: 'utf8',
     env: getPartialEnvWithNpmPath(workDir),
     stdio: 'pipe',
   }

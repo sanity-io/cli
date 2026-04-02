@@ -2,7 +2,7 @@ import {existsSync} from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-import {execa} from 'execa'
+import spawn from 'nano-spawn'
 
 import {MCP_SERVER_URL} from '../../services/mcp.js'
 
@@ -28,7 +28,7 @@ const homeDir = os.homedir()
 
 async function detectClaudeCode(): Promise<string | null> {
   try {
-    await execa('claude', ['--version'], {stdio: 'pipe', timeout: 5000})
+    await spawn('claude', ['--version'], {stdio: 'pipe', timeout: 5000})
     return path.join(homeDir, '.claude.json')
   } catch {
     return null
@@ -37,7 +37,7 @@ async function detectClaudeCode(): Promise<string | null> {
 
 async function detectCodexCli(): Promise<string | null> {
   try {
-    await execa('codex', ['--version'], {stdio: 'pipe', timeout: 5000})
+    await spawn('codex', ['--version'], {stdio: 'pipe', timeout: 5000})
     const codexHome = process.env.CODEX_HOME || path.join(homeDir, '.codex')
     return path.join(codexHome, 'config.toml')
   } catch {
@@ -65,7 +65,7 @@ async function detectGitHubCopilotCli(): Promise<string | null> {
 
 async function detectOpenCode(): Promise<string | null> {
   try {
-    await execa('opencode', ['--version'], {stdio: 'pipe', timeout: 5000})
+    await spawn('opencode', ['--version'], {stdio: 'pipe', timeout: 5000})
     return path.join(homeDir, '.config/opencode/opencode.json')
   } catch {
     return null

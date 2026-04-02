@@ -7,8 +7,8 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {DoctorCommand} from '../doctor.js'
 
 // Prevent real subprocess spawning (npm/pnpm/yarn global queries have 10s timeouts each)
-const mockExeca = vi.hoisted(() => vi.fn())
-vi.mock('execa', () => ({execa: mockExeca}))
+const mockSpawn = vi.hoisted(() => vi.fn())
+vi.mock('nano-spawn', () => ({default: mockSpawn}))
 
 const mockWhich = vi.hoisted(() => vi.fn())
 vi.mock('which', () => ({default: mockWhich}))
@@ -32,7 +32,7 @@ describe('doctor command', () => {
     vi.clearAllMocks()
     // Default: no global package manager installations found
     mockWhich.mockRejectedValue(new Error('not found'))
-    mockExeca.mockRejectedValue(new Error('not found'))
+    mockSpawn.mockRejectedValue(new Error('not found'))
   })
 
   afterEach(() => {

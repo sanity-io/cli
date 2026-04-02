@@ -7,10 +7,10 @@ import {Args, Flags} from '@oclif/core'
 import {getProjectCliClient, SanityCommand, subdebug} from '@sanity/cli-core'
 import {type MultipleMutationResult, type Mutation} from '@sanity/client'
 import {watch as chokidarWatch} from 'chokidar'
-import {execa, execaSync} from 'execa'
 import json5 from 'json5'
 import isEqual from 'lodash-es/isEqual.js'
 import isPlainObject from 'lodash-es/isPlainObject.js'
+import spawn from 'nano-spawn'
 
 import {DOCUMENTS_API_VERSION} from '../../actions/documents/constants.js'
 import {getEditor, registerUnlinkOnSigInt} from '../../actions/documents/editor.js'
@@ -191,10 +191,10 @@ export class CreateDocumentCommand extends SanityCommand<typeof CreateDocumentCo
             isProcessing = false
           }
         })
-        execa(editor.bin, [...editor.args, tmpFile], {stdio: 'inherit'})
+        spawn(editor.bin, [...editor.args, tmpFile], {stdio: 'inherit'})
       } else {
         // While in normal mode, we just want to wait for the editor to close and run the thing once
-        execaSync(editor.bin, [...editor.args, tmpFile], {stdio: 'inherit'})
+        await spawn(editor.bin, [...editor.args, tmpFile], {stdio: 'inherit'})
         await readAndPerformCreatesFromFile(tmpFile, defaultValue)
         await fs.unlink(tmpFile).catch(() => {})
       }
