@@ -14,6 +14,7 @@
     "@eslint/compat": "catalog:",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli": "workspace:*",
+    "@sanity/cli-core": "workspace:*",
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:*",
     "@types/node": "catalog:",

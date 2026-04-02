@@ -881,6 +881,9 @@ importers:
       '@sanity/cli':
         specifier: workspace:*
         version: link:../cli
+      '@sanity/cli-core':
+        specifier: workspace:*
+        version: link:../cli-core
       '@sanity/cli-test':
         specifier: workspace:*
         version: link:../cli-test
