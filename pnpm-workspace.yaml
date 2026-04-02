@@ -4,6 +4,7 @@ packages:
   - 'packages/@repo/*'
   - 'packages/@sanity/cli'
   - 'packages/@sanity/cli-core'
+  - 'packages/@sanity/cli-e2e'
   - 'packages/@sanity/cli-test'
   - 'packages/@sanity/eslint-config-cli'
   - 'packages/create-sanity'
@@ -35,6 +36,7 @@ catalog:
   vitest: ^4.1.2
   '@vitest/coverage-istanbul': ^4.1.2
   nock: ^14.0.11
+  cli-testing-library: ^3.0.1
 
   # CLI Framework
   '@oclif/core': ^4.10.3
