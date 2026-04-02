@@ -1,14 +1,16 @@
 import {execSync} from 'node:child_process'
 import {existsSync} from 'node:fs'
+import {createRequire} from 'node:module'
 import {dirname, join} from 'node:path'
-import {fileURLToPath} from 'node:url'
+
+const require = createRequire(import.meta.url)
 
 /**
  * Runs `pnpm pack` on `@sanity/cli` and returns the absolute path to the tarball.
  */
 export function packCli(): string {
-  const cliPkgJsonUrl = import.meta.resolve('@sanity/cli/package.json')
-  const cliDir = dirname(fileURLToPath(cliPkgJsonUrl))
+  const cliPkgJsonPath = require.resolve('@sanity/cli/package.json')
+  const cliDir = dirname(cliPkgJsonPath)
 
   const tarballName = execSync('pnpm pack --pack-destination /tmp', {
     cwd: cliDir,
@@ -24,7 +26,7 @@ export function packCli(): string {
     throw new Error(`No .tgz filename found in pnpm pack output:\n${tarballName}`)
   }
 
-  return join('/tmp', tgzLine)
+  return tgzLine
 }
 
 /**

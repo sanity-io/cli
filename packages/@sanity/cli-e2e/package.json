@@ -18,6 +18,7 @@
     "@sanity/eslint-config-cli": "workspace:*",
     "@types/node": "catalog:",
     "cli-testing-library": "catalog:",
+    "dotenv": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

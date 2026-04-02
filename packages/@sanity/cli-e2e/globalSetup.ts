@@ -2,11 +2,16 @@ import {mkdtempSync, rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
+import {config as loadDotenv} from 'dotenv'
+
 import {installFromTarball, packCli} from './helpers/packCli.js'
 
 let cleanupDir: string | undefined
 
 export async function setup(): Promise<void> {
+  // Load .env file into process.env so tests can read SANITY_E2E_* vars.
+  // Existing env vars take precedence (CI sets them directly).
+  loadDotenv({quiet: true})
   // If E2E_BINARY_PATH is already set (e.g., npm registry mode from CI),
   // skip pack and use the provided binary.
   if (process.env.E2E_BINARY_PATH) {

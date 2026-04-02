@@ -3,7 +3,9 @@ import {render, type RenderResult} from 'cli-testing-library'
 import {readEnv} from './readEnv.js'
 import {resolveBinaryPath} from './resolveBinaryPath.js'
 
-export const E2E_PROJECT_ID: string = readEnv('SANITY_E2E_PROJECT_ID')
+export function getE2EProjectId(): string {
+  return readEnv('SANITY_E2E_PROJECT_ID')
+}
 
 interface RunCliBaseOptions {
   args?: string[]
@@ -42,6 +44,8 @@ export async function runCli(
         NODE_ENV: 'production',
         NODE_NO_WARNINGS: '1',
         SANITY_AUTH_TOKEN: readEnv('SANITY_E2E_TOKEN'),
+        // Prevent the CLI from reading the user's local auth config
+        SANITY_CLI_CONFIG_PATH: '/tmp/nonexistent/config.json',
         ...env,
       },
     },

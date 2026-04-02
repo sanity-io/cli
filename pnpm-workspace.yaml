@@ -37,6 +37,7 @@ catalog:
   '@vitest/coverage-istanbul': ^4.1.2
   nock: ^14.0.11
   cli-testing-library: ^3.0.1
+  dotenv: ^17.3.1
 
   # CLI Framework
   '@oclif/core': ^4.10.3
@@ -80,5 +81,6 @@ minimumReleaseAgeExclude:
   - 'react-rx'
   - 'sanity'
   - 'use-effect-event'
+  - 'dotenv'
   - 'oxfmt'
   - '@oxfmt/*'

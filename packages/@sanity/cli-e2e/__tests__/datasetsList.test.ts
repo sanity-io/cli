@@ -1,7 +1,7 @@
 import {testFixture} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
 
-import {E2E_PROJECT_ID, runCli} from '../helpers/runCli.js'
+import {getE2EProjectId, runCli} from '../helpers/runCli.js'
 
 describe('sanity datasets list', () => {
   test('without project context exits with project-not-found error', async () => {
@@ -29,7 +29,7 @@ describe('sanity datasets list', () => {
 
   test('with --project-id flag but no auth exits with login error', async () => {
     const {exitCode, stderr} = await runCli({
-      args: ['datasets', 'list', '--project-id', E2E_PROJECT_ID],
+      args: ['datasets', 'list', '--project-id', getE2EProjectId()],
       env: {SANITY_AUTH_TOKEN: ''},
     })
 
@@ -51,7 +51,7 @@ describe('sanity datasets list', () => {
 
     test('lists datasets with --project-id flag', async () => {
       const {error, stdout} = await runCli({
-        args: ['datasets', 'list', '--project-id', E2E_PROJECT_ID],
+        args: ['datasets', 'list', '--project-id', getE2EProjectId()],
       })
 
       if (error) throw error

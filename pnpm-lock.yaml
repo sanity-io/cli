@@ -66,6 +66,9 @@ catalogs:
     debug:
       specifier: ^4.4.3
       version: 4.4.3
+    dotenv:
+      specifier: ^17.3.1
+      version: 17.3.1
     eslint:
       specifier: ^10.1.0
       version: 10.1.0
@@ -890,6 +893,9 @@ importers:
       cli-testing-library:
         specifier: 'catalog:'
         version: 3.0.1(vitest@4.1.2(@types/node@20.19.37)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@7.3.1(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
+      dotenv:
+        specifier: 'catalog:'
+        version: 17.3.1
       eslint:
         specifier: 'catalog:'
         version: 10.1.0(jiti@2.6.1)
