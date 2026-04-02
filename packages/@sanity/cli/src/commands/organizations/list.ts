@@ -2,6 +2,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {Table} from 'console-table-printer'
 
 import {listOrganizations} from '../../services/organizations.js'
+import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {organizationAliases} from '../../util/organizationAliases.js'
 
 const listOrgsDebug = subdebug('organizations:list')
@@ -24,8 +25,7 @@ export class ListOrganizationsCommand extends SanityCommand<typeof ListOrganizat
       organizations = await listOrganizations()
     } catch (error) {
       listOrgsDebug('Error listing organizations', error)
-      const message = error instanceof Error ? error.message : String(error)
-      this.error(`Failed to list organizations: ${message}`, {exit: 1})
+      this.error(`Failed to list organizations: ${getErrorMessage(error)}`, {exit: 1})
     }
 
     if (organizations.length === 0) {
