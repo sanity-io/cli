@@ -1,24 +1,13 @@
 import {execFileSync} from 'node:child_process'
-import {createRequire} from 'node:module'
 
 import {describe, expect, test} from 'vitest'
 
 import {getAvailablePackageManagers} from '../helpers/packageManagers.js'
 
-const require = createRequire(import.meta.url)
-
-function getVersion(): string | undefined {
-  if (process.env.E2E_PACKAGE_VERSION) return process.env.E2E_PACKAGE_VERSION
-
-  try {
-    const pkg = require('create-sanity/package.json')
-    return pkg.version
-  } catch {
-    return undefined
-  }
-}
-
-const version = getVersion()
+// Only run against a known-published version (set by post-release CI).
+// The local workspace version may not exist on npm, and package managers
+// fetch from the registry, so falling back to it would cause false failures.
+const version = process.env.E2E_PACKAGE_VERSION
 
 describe.skipIf(!version)('create-sanity via package managers', () => {
   const managers = getAvailablePackageManagers()

@@ -1,6 +1,6 @@
 import {execSync} from 'node:child_process'
 
-export interface PackageManager {
+interface PackageManager {
   /** Returns the full command + args to run `create sanity@<version>` with extra args. */
   createCommand: (version: string, args: string[]) => string[]
   name: string
