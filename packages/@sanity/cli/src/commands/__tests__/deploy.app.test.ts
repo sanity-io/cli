@@ -374,7 +374,7 @@ describe('#deploy app', () => {
       uri: `/user-applications/${newAppId}/deployments`,
     }).reply(201, {id: deploymentId}, {location: 'https://generated-host.sanity.app/'})
 
-    const {error, stdout} = await testCommand(DeployCommand, [], {
+    const {error, stderr, stdout} = await testCommand(DeployCommand, [], {
       config: {root: cwd},
       mocks: {
         cliConfig: {
@@ -395,6 +395,10 @@ describe('#deploy app', () => {
       message: 'Enter a title for your application:',
       validate: expect.any(Function),
     })
+
+    // Verify the spinner is stopped before returning - a running spinner
+    // blocks the subsequent input() prompt, causing the CLI to hang
+    expect(stderr).toContain('No application ID configured')
   })
 
   test('should skip build when --no-build flag is used', async () => {
