@@ -12,7 +12,7 @@ on:
         required: true
         default: 'latest'
       cli_package:
-        description: 'Package to install (e.g., @sanity/cli, sanity)'
+        description: 'Package to install — must provide the "sanity" binary (e.g., @sanity/cli, sanity)'
         required: false
         default: '@sanity/cli'
 
@@ -85,8 +85,12 @@ jobs:
           SANITY_E2E_DATASET: ${{ secrets.SANITY_E2E_DATASET }}
         run: pnpm --filter @sanity/cli-e2e test
 
+  notify-failure:
+    if: ${{ failure() && inputs.cli_version }}
+    needs: [e2e]
+    runs-on: ubuntu-latest
+    steps:
       - name: Notify Slack on failure
-        if: ${{ failure() && inputs.cli_version }}
         uses: slackapi/slack-github-action@v2.1.0
         with:
           webhook: ${{ secrets.SLACK_E2E_WEBHOOK_URL }}
@@ -99,7 +103,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":red_circle: *Post-release E2E failed*\n*Package:* `${{ inputs.cli_package || '@sanity/cli' }}@${{ inputs.cli_version }}`\n*Node:* ${{ matrix.node-version }}\n*Run:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View logs>"
+                    "text": ":red_circle: *Post-release E2E failed*\n*Package:* `${{ inputs.cli_package || '@sanity/cli' }}@${{ inputs.cli_version }}`\n*Run:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View logs>"
                   }
                 }
               ]
