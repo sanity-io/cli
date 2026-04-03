@@ -406,7 +406,7 @@ describe('#mcp:configure', () => {
     try {
       mockExistsSync.mockImplementation((path: PathLike) => {
         const normalized = String(path).replaceAll('\\', '/')
-        return normalized.includes('/tmp/custom-cline-home/data/settings')
+        return normalized.endsWith('/tmp/custom-cline-home')
       })
 
       mockCheckbox.mockResolvedValue(['Cline CLI'])
@@ -968,6 +968,74 @@ describe('#mcp:configure', () => {
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('.mcporter/mcporter.jsonc')),
       expect.stringContaining('test-token-mcporter'),
+      'utf8',
+    )
+    expect(stdout).toContain('MCP configured for MCPorter')
+  })
+
+  test('detects MCPorter with existing json config and configures it', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      if (normalized.endsWith('/.mcporter')) return true
+      if (normalized.endsWith('/.mcporter/mcporter.json')) return true
+      if (normalized.endsWith('/.mcporter/mcporter.jsonc')) return false
+      return false
+    })
+
+    mockCheckbox.mockResolvedValue(['MCPorter'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-mcporter-json', sid: 'session-mcporter-json'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-mcporter-json'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-mcporter-json'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.mcporter/mcporter.json')),
+      expect.stringContaining('test-token-mcporter-json'),
+      'utf8',
+    )
+    expect(stdout).toContain('MCP configured for MCPorter')
+  })
+
+  test('detects MCPorter and defaults to json path on fresh install', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      if (normalized.endsWith('/.mcporter')) return true
+      if (normalized.endsWith('/.mcporter/mcporter.json')) return false
+      if (normalized.endsWith('/.mcporter/mcporter.jsonc')) return false
+      return false
+    })
+
+    mockCheckbox.mockResolvedValue(['MCPorter'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-mcporter-fallback', sid: 'session-mcporter-fallback'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-mcporter-fallback'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-mcporter-fallback'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.mcporter/mcporter.json')),
+      expect.stringContaining('test-token-mcporter-fallback'),
       'utf8',
     )
     expect(stdout).toContain('MCP configured for MCPorter')

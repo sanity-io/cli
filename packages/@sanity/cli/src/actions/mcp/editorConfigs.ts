@@ -75,8 +75,8 @@ async function detectCline(): Promise<string | null> {
 
 async function detectClineCli(): Promise<string | null> {
   const clineHome = process.env.CLINE_DIR || path.join(homeDir, '.cline')
-  const clineConfigDir = path.join(clineHome, 'data/settings')
-  return existsSync(clineConfigDir) ? path.join(clineConfigDir, 'cline_mcp_settings.json') : null
+  if (!existsSync(clineHome)) return null
+  return path.join(clineHome, 'data/settings/cline_mcp_settings.json')
 }
 
 async function detectCodexCli(): Promise<string | null> {
