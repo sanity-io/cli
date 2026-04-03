@@ -68,9 +68,6 @@ catalog:
   '@types/debug': ^4.1.13
   '@types/jsdom': ^28.0.1
 
-overrides:
-  lodash-es: '4.18.1'
-
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   - '@portabletext/*'
