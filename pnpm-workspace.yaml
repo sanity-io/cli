@@ -80,3 +80,5 @@ minimumReleaseAgeExclude:
   - 'use-effect-event'
   - 'oxfmt'
   - '@oxfmt/*'
+  # Renovate security update: lodash-es@4.18.1
+  - lodash-es@4.18.1
