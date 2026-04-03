@@ -402,7 +402,7 @@ describe('#mcp:configure', () => {
   test('detects Cline CLI using CLINE_DIR and configures it', async () => {
     const originalClineDir = process.env.CLINE_DIR
     process.env.CLINE_DIR =
-      process.platform === 'win32' ? String.raw`\tmp\custom-cline-home` : '/tmp/custom-cline-home'
+      process.platform === 'win32' ? String.raw`C:\tmp\custom-cline-home` : '/tmp/custom-cline-home'
     try {
       mockExistsSync.mockImplementation((path: PathLike) => {
         const normalized = String(path).replaceAll('\\', '/')
