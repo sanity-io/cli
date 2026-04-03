@@ -10,12 +10,9 @@ const deleteDocumentDebug = subdebug('documents:delete')
 export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCommand> {
   static override args = {
     id: Args.string({
-      description: 'Document ID to delete',
+      description: 'Document ID(s) to delete',
+      multiple: true,
       required: true,
-    }),
-    ids: Args.string({
-      description: 'Additional document IDs to delete',
-      required: false,
     }),
   }
 
@@ -51,21 +48,10 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
 
   static override hiddenAliases: string[] = ['document:delete']
 
-  // Disable strict mode to allow for more flexible input
-  // This is needed for supporting multiple document IDs
-  static override strict = false
-
   public async run(): Promise<void> {
-    const {args, argv, flags} = await this.parse(DeleteDocumentCommand)
-    const {id} = args
+    const {args, flags} = await this.parse(DeleteDocumentCommand)
+    const ids = args.id
     const {dataset} = flags
-
-    // Collect all document IDs from args and argv
-    const ids = [id, ...argv.slice(1)].filter(Boolean) as string[]
-
-    if (ids.length === 0) {
-      this.error('Document ID must be specified', {exit: 1})
-    }
 
     // Get project configuration (may not exist when running outside a project directory)
     const cliConfig = await this.tryGetCliConfig()
