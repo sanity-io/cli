@@ -54,10 +54,14 @@ describe('readToken', () => {
 
   test('all editors with headers-based auth extract tokens consistently', () => {
     const headersEditors = [
+      'Antigravity',
       'Claude Code',
+      'Cline',
+      'Cline CLI',
       'Cursor',
       'Gemini CLI',
       'GitHub Copilot CLI',
+      'MCPorter',
       'OpenCode',
       'VS Code',
       'VS Code Insiders',
