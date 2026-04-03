@@ -19,6 +19,7 @@
     "@sanity/eslint-config-cli": "workspace:*",
     "@types/node": "catalog:",
     "cli-testing-library": "catalog:",
+    "create-sanity": "workspace:*",
     "dotenv": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",

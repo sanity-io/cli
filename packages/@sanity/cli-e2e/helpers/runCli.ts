@@ -9,6 +9,8 @@ export function getE2EProjectId(): string {
 
 interface RunCliBaseOptions {
   args?: string[]
+  /** Override the binary path. Defaults to E2E_BINARY_PATH (the packed `\@sanity/cli`). */
+  binaryPath?: string
   cwd?: string
   env?: Record<string, string>
 }
@@ -32,10 +34,10 @@ export async function runCli(
 export async function runCli(
   options: RunCliBaseOptions & {interactive?: boolean} = {},
 ): Promise<NonInteractiveResult | RenderResult> {
-  const {args = [], cwd, env = {}, interactive = false} = options
-  const binaryPath = resolveBinaryPath()
+  const {args = [], binaryPath, cwd, env = {}, interactive = false} = options
+  const resolvedBinaryPath = binaryPath ?? resolveBinaryPath()
 
-  const instance = await render('node', [binaryPath, ...args], {
+  const instance = await render('node', [resolvedBinaryPath, ...args], {
     cwd,
     spawnOpts: {
       env: {
