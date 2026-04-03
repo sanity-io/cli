@@ -350,6 +350,43 @@ describe('#dataset:create', () => {
     expect(stdout).toContain('Dataset created successfully')
   })
 
+  test('errors with invalid embeddings projection syntax', async () => {
+    mockListDatasets.mockResolvedValue([])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      projectId: testProjectId,
+      uri: '/features',
+    }).reply(200, [])
+
+    const {error} = await testCommand(
+      CreateDatasetCommand,
+      ['my-dataset', '--embeddings', '--embeddings-projection', '{ title body }'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeInstanceOf(Error)
+  })
+
+  test('errors with non-projection embeddings expression', async () => {
+    mockListDatasets.mockResolvedValue([])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      projectId: testProjectId,
+      uri: '/features',
+    }).reply(200, [])
+
+    const {error} = await testCommand(
+      CreateDatasetCommand,
+      ['my-dataset', '--embeddings', '--embeddings-projection', '*[_type == "post"]'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Expected a GROQ projection')
+  })
+
   test('errors when no project ID is found', async () => {
     const {error} = await testCommand(CreateDatasetCommand, ['my-dataset'], {
       mocks: {

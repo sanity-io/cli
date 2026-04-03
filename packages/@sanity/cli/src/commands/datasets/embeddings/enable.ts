@@ -8,6 +8,7 @@ import {resolveDataset} from '../../../actions/dataset/resolveDataset.js'
 import {promptForProject} from '../../../prompts/promptForProject.js'
 import {getEmbeddingsSettings, setEmbeddingsSettings} from '../../../services/embeddings.js'
 import {getProjectIdFlag} from '../../../util/sharedFlags.js'
+import {validateProjection} from '../../../util/validateProjection.js'
 
 const debug = subdebug('dataset:embeddings:enable')
 
@@ -80,6 +81,15 @@ export class DatasetEmbeddingsEnableCommand extends SanityCommand<
       const message = error instanceof Error ? error.message : String(error)
       debug(`Failed to resolve dataset: ${message}`, error)
       this.error(message, {exit: 1})
+    }
+
+    if (projection) {
+      try {
+        validateProjection(projection)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        this.error(`Invalid projection: ${message}`, {exit: 1})
+      }
     }
 
     try {
