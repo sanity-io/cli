@@ -18,6 +18,7 @@
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:*",
     "@types/node": "catalog:",
+    "create-sanity": "workspace:*",
     "dotenv": "catalog:",
     "eslint": "catalog:",
     "node-pty": "catalog:",

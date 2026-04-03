@@ -902,6 +902,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.39
+      create-sanity:
+        specifier: workspace:*
+        version: link:../../create-sanity
       dotenv:
         specifier: 'catalog:'
         version: 17.3.1
