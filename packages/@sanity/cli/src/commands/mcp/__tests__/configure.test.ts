@@ -383,7 +383,9 @@ describe('#mcp:configure', () => {
 
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(
-        convertToSystemPath('Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json'),
+        convertToSystemPath(
+          'Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json',
+        ),
       ),
       expect.stringContaining('test-token-cline'),
       'utf8',
@@ -419,7 +421,9 @@ describe('#mcp:configure', () => {
       const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
       expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.stringMatching(/\/tmp\/custom-cline-home\/data\/settings\/cline_mcp_settings\.json$/),
+        expect.stringMatching(
+          /\/tmp\/custom-cline-home\/data\/settings\/cline_mcp_settings\.json$/,
+        ),
         expect.stringContaining('test-token-cline-cli'),
         'utf8',
       )
@@ -432,7 +436,8 @@ describe('#mcp:configure', () => {
 
   test('detects Gemini CLI and configures it', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('.gemini')
+      const normalized = String(path).replaceAll('\\', '/')
+      return normalized.endsWith('/.gemini')
     })
 
     mockCheckbox.mockResolvedValue(['Gemini CLI'])
@@ -930,7 +935,10 @@ describe('#mcp:configure', () => {
   test('detects MCPorter with existing jsonc config and configures it', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       const normalized = String(path).replaceAll('\\', '/')
-      return normalized.includes('/.mcporter') || normalized.endsWith('/.mcporter/mcporter.jsonc')
+      if (normalized.endsWith('/.mcporter')) return true
+      if (normalized.endsWith('/.mcporter/mcporter.json')) return false
+      if (normalized.endsWith('/.mcporter/mcporter.jsonc')) return true
+      return false
     })
 
     mockCheckbox.mockResolvedValue(['MCPorter'])
@@ -1100,8 +1108,8 @@ describe('#mcp:configure', () => {
   test('reuses valid token from another editor instead of creating new one', async () => {
     // Detect both Cursor (configured with valid token) and Gemini (unconfigured)
     mockExistsSync.mockImplementation((path: PathLike) => {
-      const p = String(path)
-      return p.includes('.cursor') || p.includes('.gemini')
+      const normalized = String(path).replaceAll('\\', '/')
+      return normalized.includes('/.cursor') || normalized.endsWith('/.gemini')
     })
 
     // Cursor has existing config with valid token, Gemini has empty config

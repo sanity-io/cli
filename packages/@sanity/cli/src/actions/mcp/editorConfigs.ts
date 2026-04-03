@@ -40,23 +40,29 @@ async function detectAntigravity(): Promise<string | null> {
   return existsSync(antigravityDir) ? path.join(antigravityDir, 'mcp_config.json') : null
 }
 
-function getVSCodeUserDir(variant: 'stable' | 'insiders' = 'stable'): string | null {
+function getVSCodeUserDir(variant: 'insiders' | 'stable' = 'stable'): string | null {
   switch (process.platform) {
-    case 'darwin':
+    case 'darwin': {
       return path.join(
         homeDir,
         variant === 'insiders'
           ? 'Library/Application Support/Code - Insiders/User'
           : 'Library/Application Support/Code/User',
       )
-    case 'win32':
+    }
+    case 'win32': {
       if (!process.env.APPDATA) return null
       return path.join(
         process.env.APPDATA,
         variant === 'insiders' ? 'Code - Insiders/User' : 'Code/User',
       )
-    default:
-      return path.join(homeDir, variant === 'insiders' ? '.config/Code - Insiders/User' : '.config/Code/User')
+    }
+    default: {
+      return path.join(
+        homeDir,
+        variant === 'insiders' ? '.config/Code - Insiders/User' : '.config/Code/User',
+      )
+    }
   }
 }
 
