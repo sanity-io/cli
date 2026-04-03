@@ -69,6 +69,8 @@ const baseConfig = {
     },
     'packages/@sanity/cli-e2e': {
       entry: [],
+      // @sanity/cli and create-sanity are resolved dynamically via require.resolve() in packCli.ts
+      ignoreDependencies: ['@sanity/cli', 'create-sanity'],
       project: ['helpers/**/*.{js,ts}', '__tests__/**/*.{js,ts}'],
     },
     'packages/@sanity/cli-test': {
