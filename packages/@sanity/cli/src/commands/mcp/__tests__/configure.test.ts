@@ -202,6 +202,8 @@ describe('#mcp:configure', () => {
       Object.defineProperty(process, 'platform', {
         value: 'win32',
       })
+      const originalAppData = process.env.APPDATA
+      process.env.APPDATA = String.raw`C:\Users\test\AppData\Roaming`
 
       mockExistsSync.mockImplementation((path: PathLike) => {
         return String(path).includes(String.raw`AppData\Roaming\Code\User`)
@@ -225,13 +227,13 @@ describe('#mcp:configure', () => {
       const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
       expect(mockCheckbox).toHaveBeenCalledWith({
-        choices: [
+        choices: expect.arrayContaining([
           {
             checked: true,
             name: 'VS Code',
             value: 'VS Code',
           },
-        ],
+        ]),
         message: 'Configure Sanity MCP server?',
       })
 
@@ -246,6 +248,7 @@ describe('#mcp:configure', () => {
       Object.defineProperty(process, 'platform', {
         value: originalPlatform,
       })
+      process.env.APPDATA = originalAppData
     },
   )
 
@@ -305,7 +308,8 @@ describe('#mcp:configure', () => {
 
   test('detects Antigravity and configures it', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('.gemini/antigravity')
+      const normalized = String(path).replaceAll('\\', '/')
+      return normalized.endsWith('/.gemini/antigravity')
     })
 
     mockCheckbox.mockResolvedValue(['Antigravity'])
@@ -350,7 +354,8 @@ describe('#mcp:configure', () => {
 
   test('detects Cline extension and configures it', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('globalStorage/saoudrizwan.claude-dev/settings')
+      const normalized = String(path).replaceAll('\\', '/')
+      return normalized.endsWith('/Code/User/globalStorage/saoudrizwan.claude-dev/settings')
     })
 
     mockCheckbox.mockResolvedValue(['Cline'])
@@ -396,7 +401,8 @@ describe('#mcp:configure', () => {
 
   test('detects Cline CLI using CLINE_DIR and configures it', async () => {
     const originalClineDir = process.env.CLINE_DIR
-    process.env.CLINE_DIR = '/tmp/custom-cline-home'
+    process.env.CLINE_DIR =
+      process.platform === 'win32' ? String.raw`\tmp\custom-cline-home` : '/tmp/custom-cline-home'
     try {
       mockExistsSync.mockImplementation((path: PathLike) => {
         const normalized = String(path).replaceAll('\\', '/')
@@ -420,10 +426,11 @@ describe('#mcp:configure', () => {
 
       const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
+      const expectedPath = convertToSystemPath(
+        '/tmp/custom-cline-home/data/settings/cline_mcp_settings.json',
+      )
       expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.stringMatching(
-          /\/tmp\/custom-cline-home\/data\/settings\/cline_mcp_settings\.json$/,
-        ),
+        expectedPath,
         expect.stringContaining('test-token-cline-cli'),
         'utf8',
       )
@@ -437,7 +444,7 @@ describe('#mcp:configure', () => {
   test('detects Gemini CLI and configures it', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       const normalized = String(path).replaceAll('\\', '/')
-      return normalized.endsWith('/.gemini')
+      return normalized.endsWith('/.gemini/settings.json')
     })
 
     mockCheckbox.mockResolvedValue(['Gemini CLI'])
@@ -1109,7 +1116,7 @@ describe('#mcp:configure', () => {
     // Detect both Cursor (configured with valid token) and Gemini (unconfigured)
     mockExistsSync.mockImplementation((path: PathLike) => {
       const normalized = String(path).replaceAll('\\', '/')
-      return normalized.includes('/.cursor') || normalized.endsWith('/.gemini')
+      return normalized.includes('/.cursor') || normalized.endsWith('/.gemini/settings.json')
     })
 
     // Cursor has existing config with valid token, Gemini has empty config

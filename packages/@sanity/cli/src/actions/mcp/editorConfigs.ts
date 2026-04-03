@@ -95,8 +95,10 @@ async function detectCursor(): Promise<string | null> {
 }
 
 async function detectGeminiCli(): Promise<string | null> {
-  const geminiDir = path.join(homeDir, '.gemini')
-  return existsSync(geminiDir) ? path.join(geminiDir, 'settings.json') : null
+  // Antigravity stores its config under ~/.gemini/antigravity, so checking
+  // only the parent ~/.gemini directory causes false Gemini CLI detection.
+  const settingsPath = path.join(homeDir, '.gemini/settings.json')
+  return existsSync(settingsPath) ? settingsPath : null
 }
 
 async function detectGitHubCopilotCli(): Promise<string | null> {
@@ -222,10 +224,6 @@ function buildGitHubCopilotCliServerConfig(token: string): Record<string, unknow
   }
 }
 
-function buildMCPorterServerConfig(token: string): Record<string, unknown> {
-  return defaultHttpConfig(token)
-}
-
 function buildOpenCodeServerConfig(token: string): Record<string, unknown> {
   return {
     headers: {Authorization: `Bearer ${token}`},
@@ -312,7 +310,7 @@ export const EDITOR_CONFIGS = {
     readToken: readTokenFromHeaders,
   },
   MCPorter: {
-    buildServerConfig: buildMCPorterServerConfig,
+    buildServerConfig: defaultHttpConfig,
     configKey: 'mcpServers',
     detect: detectMCPorter,
     format: 'jsonc',
