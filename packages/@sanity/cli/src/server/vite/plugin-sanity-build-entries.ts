@@ -1,6 +1,7 @@
 import {type ChunkMetadata, type Plugin} from 'vite'
 
 import {decorateIndexWithBridgeScript} from '../../actions/build/decorateIndexWithBridgeScript.js'
+import {decorateIndexWithStagingScript} from '../../actions/build/decorateIndexWithStagingScript.js'
 import {renderDocument} from '../../actions/build/renderDocument.js'
 
 interface ViteOutputBundle {
@@ -84,17 +85,19 @@ export function sanityBuildEntries(options: {
 
       this.emitFile({
         fileName: 'index.html',
-        source: decorateIndexWithBridgeScript(
-          await renderDocument({
-            importMap,
-            isApp,
-            props: {
-              basePath,
-              css,
-              entryPath,
-            },
-            studioRootPath: cwd,
-          }),
+        source: decorateIndexWithStagingScript(
+          decorateIndexWithBridgeScript(
+            await renderDocument({
+              importMap,
+              isApp,
+              props: {
+                basePath,
+                css,
+                entryPath,
+              },
+              studioRootPath: cwd,
+            }),
+          ),
         ),
         type: 'asset',
       })
