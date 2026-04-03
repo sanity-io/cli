@@ -6,10 +6,10 @@ import {setup as setupFixtures, teardown as teardownFixtures} from '@sanity/cli-
 import {config as loadDotenv} from 'dotenv'
 import {type TestProject} from 'vitest/node'
 
-import {installFromTarball, packCli} from './helpers/packCli.js'
+import {findBinaryPath, installFromTarball, packCli, packPackage} from './helpers/packCli.js'
 
 let cleanupDir: string | undefined
-let tarballPath: string | undefined
+let tarballPaths: string[] = []
 
 export async function setup(project: TestProject): Promise<void> {
   // Load .env file into process.env so tests can read SANITY_E2E_* vars.
@@ -19,19 +19,31 @@ export async function setup(project: TestProject): Promise<void> {
   // skip pack and use the provided binary.
   if (process.env.E2E_BINARY_PATH) {
     console.log(`Using pre-set E2E_BINARY_PATH: ${process.env.E2E_BINARY_PATH}`)
+    if (process.env.E2E_CREATE_SANITY_BINARY_PATH) {
+      console.log(
+        `Using pre-set E2E_CREATE_SANITY_BINARY_PATH: ${process.env.E2E_CREATE_SANITY_BINARY_PATH}`,
+      )
+    }
   } else {
     console.log('Packing @sanity/cli...')
-    const tarball = packCli()
-    tarballPath = tarball
+    const cliTarball = packCli()
+
+    console.log('Packing create-sanity...')
+    const createSanityTarball = packPackage('create-sanity')
+    tarballPaths = [cliTarball, createSanityTarball]
 
     const tmpDir = mkdtempSync(join(tmpdir(), 'cli-e2e-'))
     cleanupDir = tmpDir
 
-    console.log(`Installing tarball into ${tmpDir}...`)
-    const binaryPath = installFromTarball(tarball, tmpDir)
+    console.log(`Installing tarballs into ${tmpDir}...`)
+    const binaryPath = installFromTarball([cliTarball, createSanityTarball], tmpDir, 'sanity')
 
     process.env.E2E_BINARY_PATH = binaryPath
     console.log(`E2E_BINARY_PATH set to ${binaryPath}`)
+
+    const createSanityBinaryPath = findBinaryPath(tmpDir, 'create-sanity')
+    process.env.E2E_CREATE_SANITY_BINARY_PATH = createSanityBinaryPath
+    console.log(`E2E_CREATE_SANITY_BINARY_PATH set to ${createSanityBinaryPath}`)
   }
 
   await setupFixtures(project, {ignoreWorkspace: true})
@@ -40,8 +52,8 @@ export async function setup(project: TestProject): Promise<void> {
 export async function teardown(): Promise<void> {
   await teardownFixtures()
 
-  if (tarballPath) {
-    rmSync(tarballPath, {force: true})
+  for (const tarball of tarballPaths) {
+    rmSync(tarball, {force: true})
   }
   if (cleanupDir) {
     rmSync(cleanupDir, {force: true, recursive: true})
