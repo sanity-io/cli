@@ -35,6 +35,50 @@ async function detectClaudeCode(): Promise<string | null> {
   }
 }
 
+async function detectAntigravity(): Promise<string | null> {
+  const antigravityDir = path.join(homeDir, '.gemini/antigravity')
+  return existsSync(antigravityDir) ? path.join(antigravityDir, 'mcp_config.json') : null
+}
+
+function getVSCodeUserDir(variant: 'insiders' | 'stable' = 'stable'): string | null {
+  switch (process.platform) {
+    case 'darwin': {
+      return path.join(
+        homeDir,
+        variant === 'insiders'
+          ? 'Library/Application Support/Code - Insiders/User'
+          : 'Library/Application Support/Code/User',
+      )
+    }
+    case 'win32': {
+      if (!process.env.APPDATA) return null
+      return path.join(
+        process.env.APPDATA,
+        variant === 'insiders' ? 'Code - Insiders/User' : 'Code/User',
+      )
+    }
+    default: {
+      return path.join(
+        homeDir,
+        variant === 'insiders' ? '.config/Code - Insiders/User' : '.config/Code/User',
+      )
+    }
+  }
+}
+
+async function detectCline(): Promise<string | null> {
+  const vscodeUserDir = getVSCodeUserDir()
+  if (!vscodeUserDir) return null
+  const clineConfigDir = path.join(vscodeUserDir, 'globalStorage/saoudrizwan.claude-dev/settings')
+  return existsSync(clineConfigDir) ? path.join(clineConfigDir, 'cline_mcp_settings.json') : null
+}
+
+async function detectClineCli(): Promise<string | null> {
+  const clineHome = process.env.CLINE_DIR || path.join(homeDir, '.cline')
+  if (!existsSync(clineHome)) return null
+  return path.join(clineHome, 'data/settings/cline_mcp_settings.json')
+}
+
 async function detectCodexCli(): Promise<string | null> {
   try {
     await execa('codex', ['--version'], {stdio: 'pipe', timeout: 5000})
@@ -51,8 +95,10 @@ async function detectCursor(): Promise<string | null> {
 }
 
 async function detectGeminiCli(): Promise<string | null> {
-  const geminiDir = path.join(homeDir, '.gemini')
-  return existsSync(geminiDir) ? path.join(geminiDir, 'settings.json') : null
+  // Antigravity stores its config under ~/.gemini/antigravity, so checking
+  // only the parent ~/.gemini directory causes false Gemini CLI detection.
+  const settingsPath = path.join(homeDir, '.gemini/settings.json')
+  return existsSync(settingsPath) ? settingsPath : null
 }
 
 async function detectGitHubCopilotCli(): Promise<string | null> {
@@ -73,42 +119,12 @@ async function detectOpenCode(): Promise<string | null> {
 }
 
 async function detectVSCode(): Promise<string | null> {
-  let configDir: string | null = null
-  switch (process.platform) {
-    case 'darwin': {
-      configDir = path.join(homeDir, 'Library/Application Support/Code/User')
-      break
-    }
-    case 'win32': {
-      if (process.env.APPDATA) {
-        configDir = path.join(process.env.APPDATA, 'Code/User')
-      }
-      break
-    }
-    default: {
-      configDir = path.join(homeDir, '.config/Code/User')
-    }
-  }
+  const configDir = getVSCodeUserDir()
   return configDir && existsSync(configDir) ? path.join(configDir, 'mcp.json') : null
 }
 
 async function detectVSCodeInsiders(): Promise<string | null> {
-  let configDir: string | null = null
-  switch (process.platform) {
-    case 'darwin': {
-      configDir = path.join(homeDir, 'Library/Application Support/Code - Insiders/User')
-      break
-    }
-    case 'win32': {
-      if (process.env.APPDATA) {
-        configDir = path.join(process.env.APPDATA, 'Code - Insiders/User')
-      }
-      break
-    }
-    default: {
-      configDir = path.join(homeDir, '.config/Code - Insiders/User')
-    }
-  }
+  const configDir = getVSCodeUserDir('insiders')
   return configDir && existsSync(configDir) ? path.join(configDir, 'mcp.json') : null
 }
 
@@ -126,6 +142,17 @@ async function detectZed(): Promise<string | null> {
     }
   }
   return configDir && existsSync(configDir) ? path.join(configDir, 'settings.json') : null
+}
+
+async function detectMCPorter(): Promise<string | null> {
+  const mcporterDir = path.join(homeDir, '.mcporter')
+  if (!existsSync(mcporterDir)) return null
+
+  const jsonPath = path.join(mcporterDir, 'mcporter.json')
+  const jsoncPath = path.join(mcporterDir, 'mcporter.jsonc')
+  if (existsSync(jsonPath)) return jsonPath
+  if (existsSync(jsoncPath)) return jsoncPath
+  return jsonPath
 }
 
 // -- Read token helpers --
@@ -154,6 +181,22 @@ function readTokenFromHttpHeaders(serverConfig: Record<string, unknown>): string
 
 function buildClaudeCodeServerConfig(token: string): Record<string, unknown> {
   return defaultHttpConfig(token)
+}
+
+function buildAntigravityServerConfig(token: string): Record<string, unknown> {
+  return {
+    headers: {Authorization: `Bearer ${token}`},
+    serverUrl: MCP_SERVER_URL,
+  }
+}
+
+function buildClineServerConfig(token: string): Record<string, unknown> {
+  return {
+    disabled: false,
+    headers: {Authorization: `Bearer ${token}`},
+    type: 'streamableHttp',
+    url: MCP_SERVER_URL,
+  }
 }
 
 function buildCodexCliServerConfig(token: string): Record<string, unknown> {
@@ -210,10 +253,31 @@ function buildZedServerConfig(token: string): Record<string, unknown> {
  * To add a new editor: add an entry here - EditorName type is derived automatically.
  */
 export const EDITOR_CONFIGS = {
+  Antigravity: {
+    buildServerConfig: buildAntigravityServerConfig,
+    configKey: 'mcpServers',
+    detect: detectAntigravity,
+    format: 'jsonc',
+    readToken: readTokenFromHeaders,
+  },
   'Claude Code': {
     buildServerConfig: buildClaudeCodeServerConfig,
     configKey: 'mcpServers',
     detect: detectClaudeCode,
+    format: 'jsonc',
+    readToken: readTokenFromHeaders,
+  },
+  Cline: {
+    buildServerConfig: buildClineServerConfig,
+    configKey: 'mcpServers',
+    detect: detectCline,
+    format: 'jsonc',
+    readToken: readTokenFromHeaders,
+  },
+  'Cline CLI': {
+    buildServerConfig: buildClineServerConfig,
+    configKey: 'mcpServers',
+    detect: detectClineCli,
     format: 'jsonc',
     readToken: readTokenFromHeaders,
   },
@@ -242,6 +306,13 @@ export const EDITOR_CONFIGS = {
     buildServerConfig: buildGitHubCopilotCliServerConfig,
     configKey: 'mcpServers',
     detect: detectGitHubCopilotCli,
+    format: 'jsonc',
+    readToken: readTokenFromHeaders,
+  },
+  MCPorter: {
+    buildServerConfig: defaultHttpConfig,
+    configKey: 'mcpServers',
+    detect: detectMCPorter,
     format: 'jsonc',
     readToken: readTokenFromHeaders,
   },

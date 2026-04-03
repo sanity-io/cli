@@ -202,6 +202,8 @@ describe('#mcp:configure', () => {
       Object.defineProperty(process, 'platform', {
         value: 'win32',
       })
+      const originalAppData = process.env.APPDATA
+      process.env.APPDATA = String.raw`C:\Users\test\AppData\Roaming`
 
       mockExistsSync.mockImplementation((path: PathLike) => {
         return String(path).includes(String.raw`AppData\Roaming\Code\User`)
@@ -225,13 +227,13 @@ describe('#mcp:configure', () => {
       const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
       expect(mockCheckbox).toHaveBeenCalledWith({
-        choices: [
+        choices: expect.arrayContaining([
           {
             checked: true,
             name: 'VS Code',
             value: 'VS Code',
           },
-        ],
+        ]),
         message: 'Configure Sanity MCP server?',
       })
 
@@ -246,6 +248,7 @@ describe('#mcp:configure', () => {
       Object.defineProperty(process, 'platform', {
         value: originalPlatform,
       })
+      process.env.APPDATA = originalAppData
     },
   )
 
@@ -303,9 +306,145 @@ describe('#mcp:configure', () => {
     expect(stdout).toContain('MCP configured for Claude Code')
   })
 
+  test('detects Antigravity and configures it', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      return normalized.endsWith('/.gemini/antigravity')
+    })
+
+    mockCheckbox.mockResolvedValue(['Antigravity'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-antigravity', sid: 'session-antigravity'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-antigravity'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-antigravity'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).toHaveBeenCalledWith({
+      choices: [
+        {
+          checked: true,
+          name: 'Antigravity',
+          value: 'Antigravity',
+        },
+      ],
+      message: 'Configure Sanity MCP server?',
+    })
+
+    const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
+    expect(writtenContent).toContain('test-token-antigravity')
+    expect(writtenContent).toContain('serverUrl')
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.gemini/antigravity/mcp_config.json')),
+      expect.any(String),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for Antigravity')
+  })
+
+  test('detects Cline extension and configures it', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      return normalized.endsWith('/Code/User/globalStorage/saoudrizwan.claude-dev/settings')
+    })
+
+    mockCheckbox.mockResolvedValue(['Cline'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-cline', sid: 'session-cline'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-cline'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-cline'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).toHaveBeenCalledWith({
+      choices: [
+        {
+          checked: true,
+          name: 'Cline',
+          value: 'Cline',
+        },
+      ],
+      message: 'Configure Sanity MCP server?',
+    })
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(
+        convertToSystemPath(
+          'Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json',
+        ),
+      ),
+      expect.stringContaining('test-token-cline'),
+      'utf8',
+    )
+
+    expect(stdout).toContain('MCP configured for Cline')
+  })
+
+  test('detects Cline CLI using CLINE_DIR and configures it', async () => {
+    const originalClineDir = process.env.CLINE_DIR
+    process.env.CLINE_DIR =
+      process.platform === 'win32' ? String.raw`C:\tmp\custom-cline-home` : '/tmp/custom-cline-home'
+    try {
+      mockExistsSync.mockImplementation((path: PathLike) => {
+        const normalized = String(path).replaceAll('\\', '/')
+        return normalized.endsWith('/tmp/custom-cline-home')
+      })
+
+      mockCheckbox.mockResolvedValue(['Cline CLI'])
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'post',
+        uri: '/auth/session/create',
+      }).reply(200, {id: 'session-cline-cli', sid: 'session-cline-cli'})
+
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'get',
+        query: {sid: 'session-cline-cli'},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'MCP Token', token: 'test-token-cline-cli'})
+
+      const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+      const expectedPath = convertToSystemPath(
+        '/tmp/custom-cline-home/data/settings/cline_mcp_settings.json',
+      )
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expectedPath,
+        expect.stringContaining('test-token-cline-cli'),
+        'utf8',
+      )
+
+      expect(stdout).toContain('MCP configured for Cline CLI')
+    } finally {
+      process.env.CLINE_DIR = originalClineDir
+    }
+  })
+
   test('detects Gemini CLI and configures it', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('.gemini')
+      const normalized = String(path).replaceAll('\\', '/')
+      return normalized.endsWith('/.gemini/settings.json')
     })
 
     mockCheckbox.mockResolvedValue(['Gemini CLI'])
@@ -800,6 +939,108 @@ describe('#mcp:configure', () => {
     })
   })
 
+  test('detects MCPorter with existing jsonc config and configures it', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      if (normalized.endsWith('/.mcporter')) return true
+      if (normalized.endsWith('/.mcporter/mcporter.json')) return false
+      if (normalized.endsWith('/.mcporter/mcporter.jsonc')) return true
+      return false
+    })
+
+    mockCheckbox.mockResolvedValue(['MCPorter'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-mcporter', sid: 'session-mcporter'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-mcporter'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-mcporter'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.mcporter/mcporter.jsonc')),
+      expect.stringContaining('test-token-mcporter'),
+      'utf8',
+    )
+    expect(stdout).toContain('MCP configured for MCPorter')
+  })
+
+  test('detects MCPorter with existing json config and configures it', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      if (normalized.endsWith('/.mcporter')) return true
+      if (normalized.endsWith('/.mcporter/mcporter.json')) return true
+      if (normalized.endsWith('/.mcporter/mcporter.jsonc')) return false
+      return false
+    })
+
+    mockCheckbox.mockResolvedValue(['MCPorter'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-mcporter-json', sid: 'session-mcporter-json'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-mcporter-json'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-mcporter-json'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.mcporter/mcporter.json')),
+      expect.stringContaining('test-token-mcporter-json'),
+      'utf8',
+    )
+    expect(stdout).toContain('MCP configured for MCPorter')
+  })
+
+  test('detects MCPorter and defaults to json path on fresh install', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      const normalized = String(path).replaceAll('\\', '/')
+      if (normalized.endsWith('/.mcporter')) return true
+      if (normalized.endsWith('/.mcporter/mcporter.json')) return false
+      if (normalized.endsWith('/.mcporter/mcporter.jsonc')) return false
+      return false
+    })
+
+    mockCheckbox.mockResolvedValue(['MCPorter'])
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-mcporter-fallback', sid: 'session-mcporter-fallback'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-mcporter-fallback'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-mcporter-fallback'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('.mcporter/mcporter.json')),
+      expect.stringContaining('test-token-mcporter-fallback'),
+      'utf8',
+    )
+    expect(stdout).toContain('MCP configured for MCPorter')
+  })
+
   test.runIf(process.platform === 'win32')('detects Zed on Windows and configures it', async () => {
     const originalPlatform = process.platform
     Object.defineProperty(process, 'platform', {
@@ -942,8 +1183,8 @@ describe('#mcp:configure', () => {
   test('reuses valid token from another editor instead of creating new one', async () => {
     // Detect both Cursor (configured with valid token) and Gemini (unconfigured)
     mockExistsSync.mockImplementation((path: PathLike) => {
-      const p = String(path)
-      return p.includes('.cursor') || p.includes('.gemini')
+      const normalized = String(path).replaceAll('\\', '/')
+      return normalized.includes('/.cursor') || normalized.endsWith('/.gemini/settings.json')
     })
 
     // Cursor has existing config with valid token, Gemini has empty config
