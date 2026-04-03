@@ -1,10 +1,10 @@
-import {mkdtempSync, rmSync} from 'node:fs'
+import {existsSync, mkdtempSync, rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
 import {config as loadDotenv} from 'dotenv'
 
-import {installFromTarball, packCli} from './helpers/packCli.js'
+import {installFromTarball, packCli, packPackage} from './helpers/packCli.js'
 
 let cleanupDir: string | undefined
 
@@ -16,20 +16,37 @@ export async function setup(): Promise<void> {
   // skip pack and use the provided binary.
   if (process.env.E2E_BINARY_PATH) {
     console.log(`Using pre-set E2E_BINARY_PATH: ${process.env.E2E_BINARY_PATH}`)
+    if (process.env.E2E_CREATE_SANITY_BINARY_PATH) {
+      console.log(
+        `Using pre-set E2E_CREATE_SANITY_BINARY_PATH: ${process.env.E2E_CREATE_SANITY_BINARY_PATH}`,
+      )
+    }
     return
   }
 
   console.log('Packing @sanity/cli...')
-  const tarball = packCli()
+  const cliTarball = packCli()
+
+  console.log('Packing create-sanity...')
+  const createSanityTarball = packPackage('create-sanity')
 
   const tmpDir = mkdtempSync(join(tmpdir(), 'cli-e2e-'))
   cleanupDir = tmpDir
 
-  console.log(`Installing tarball into ${tmpDir}...`)
-  const binaryPath = installFromTarball(tarball, tmpDir)
+  console.log(`Installing tarballs into ${tmpDir}...`)
+  const binaryPath = installFromTarball([cliTarball, createSanityTarball], tmpDir, 'sanity')
 
   process.env.E2E_BINARY_PATH = binaryPath
   console.log(`E2E_BINARY_PATH set to ${binaryPath}`)
+
+  const createSanityBinaryPath = join(tmpDir, 'node_modules', '.bin', 'create-sanity')
+  if (!existsSync(createSanityBinaryPath)) {
+    throw new Error(
+      `create-sanity binary not found at ${createSanityBinaryPath} after installing tarball`,
+    )
+  }
+  process.env.E2E_CREATE_SANITY_BINARY_PATH = createSanityBinaryPath
+  console.log(`E2E_CREATE_SANITY_BINARY_PATH set to ${createSanityBinaryPath}`)
 }
 
 export async function teardown(): Promise<void> {
