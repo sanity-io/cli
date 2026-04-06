@@ -176,8 +176,7 @@ export const { sanityFetch, SanityLive } = defineLive({
 });
 `
 
-const imageTS = `import createImageUrlBuilder from '@sanity/image-url'
-import type { SanityImageSource } from "@sanity/image-url";
+const imageTS = `import { createImageUrlBuilder, type SanityImageSource } from '@sanity/image-url'
 
 import { dataset, projectId } from '../env'
 
