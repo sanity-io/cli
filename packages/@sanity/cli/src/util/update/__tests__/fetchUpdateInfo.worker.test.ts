@@ -40,7 +40,7 @@ describe('runFetchWorker', () => {
     vi.clearAllMocks()
   })
 
-  test('fetches latest version and writes to cache', async () => {
+  test('fetches latest version and caches it', async () => {
     const target: UpdateTarget = {installedVersion: '3.60.0', packageName: 'sanity'}
     mockResolveUpdateTarget.mockResolvedValue(target)
     mockGetLatestVersion.mockResolvedValue('3.61.0')
@@ -58,14 +58,10 @@ describe('runFetchWorker', () => {
     expect(cacheKey).toBe('latestVersion:sanity')
     expect(cacheValue.updatedAt).toBeGreaterThanOrEqual(before)
     expect(cacheValue.updatedAt).toBeLessThanOrEqual(after)
-    expect(JSON.parse(cacheValue.value)).toEqual({
-      installedVersion: '3.60.0',
-      latestVersion: '3.61.0',
-      packageName: 'sanity',
-    })
+    expect(cacheValue.value).toBe('3.61.0')
   })
 
-  test('uses @sanity/cli when sanity is not a local dependency', async () => {
+  test('uses @sanity/cli cache key when sanity is not a local dependency', async () => {
     const target: UpdateTarget = {installedVersion: '6.3.1', packageName: '@sanity/cli'}
     mockResolveUpdateTarget.mockResolvedValue(target)
     mockGetLatestVersion.mockResolvedValue('6.4.0')
@@ -77,11 +73,7 @@ describe('runFetchWorker', () => {
 
     const [cacheKey, cacheValue] = mockConfigStore.set.mock.calls[0]
     expect(cacheKey).toBe('latestVersion:@sanity/cli')
-    expect(JSON.parse(cacheValue.value)).toEqual({
-      installedVersion: '6.3.1',
-      latestVersion: '6.4.0',
-      packageName: '@sanity/cli',
-    })
+    expect(cacheValue.value).toBe('6.4.0')
   })
 
   test('does not write to cache if fetch fails', async () => {

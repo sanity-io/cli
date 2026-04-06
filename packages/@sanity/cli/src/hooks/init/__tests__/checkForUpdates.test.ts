@@ -3,13 +3,13 @@ import {testFixture, testHook} from '@sanity/cli-test'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getCommandAndConfig} from '../../../../test/helpers/getCommandAndConfig.js'
-import {type SanityPackage} from '../../../util/packageManager/installationInfo/types.js'
 import {checkForUpdates} from '../checkForUpdates.js'
 
 const mockDebug = vi.hoisted(() => Object.assign(vi.fn(), {enabled: false}))
 const mockSpawn = vi.hoisted(() => vi.fn())
 const mockIsInstalledGlobally = vi.hoisted(() => ({default: false}))
 const mockIsInstalledUsingYarn = vi.hoisted(() => vi.fn())
+const mockResolveUpdateTarget = vi.hoisted(() => vi.fn())
 
 const mockConfigStore = vi.hoisted(() => {
   const store = new Map<string, unknown>()
@@ -44,29 +44,25 @@ vi.mock('../../../util/update/isInstalledUsingYarn.js', () => ({
   isInstalledUsingYarn: mockIsInstalledUsingYarn,
 }))
 
+vi.mock('../../../util/update/resolveUpdateTarget.js', () => ({
+  resolveUpdateTarget: mockResolveUpdateTarget,
+}))
+
 const mockIsCi = vi.mocked(isCi)
 const originalIsTTY = process.stdout.isTTY
 const originalArgv1 = process.argv[1]
 
-function setCachedUpdateInfo(options: {
-  installedVersion: string
+function setCachedLatestVersion(options: {
   key?: string
   latestVersion: string
-  packageName: SanityPackage
   updatedAt?: number
 }): void {
-  const {
-    installedVersion,
-    key = 'latestVersion:sanity',
-    latestVersion,
-    packageName,
-    updatedAt = Date.now(),
-  } = options
+  const {key = 'latestVersion:sanity', latestVersion, updatedAt = Date.now()} = options
 
   const userConfig = getUserConfig()
   userConfig.set(key, {
     updatedAt,
-    value: JSON.stringify({installedVersion, latestVersion, packageName}),
+    value: latestVersion,
   })
 }
 
@@ -78,6 +74,7 @@ describe('#checkForUpdates', () => {
     mockIsInstalledGlobally.default = false
     mockIsInstalledUsingYarn.mockReturnValue(false)
     mockSpawn.mockReturnValue({unref: vi.fn()})
+    mockResolveUpdateTarget.mockResolvedValue({installedVersion: '3.60.0', packageName: 'sanity'})
     process.stdout.isTTY = true
     process.argv[1] = originalArgv1
 
@@ -102,6 +99,7 @@ describe('#checkForUpdates', () => {
       'Running on CI, or explicitly disabled, skipping update check',
     )
     expect(mockSpawn).not.toHaveBeenCalled()
+    expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
   })
 
   test('returns early if NO_UPDATE_NOTIFIER env variable is present', async () => {
@@ -116,6 +114,7 @@ describe('#checkForUpdates', () => {
       'Running on CI, or explicitly disabled, skipping update check',
     )
     expect(mockSpawn).not.toHaveBeenCalled()
+    expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
   })
 
   test('returns early if not TTY', async () => {
@@ -127,6 +126,7 @@ describe('#checkForUpdates', () => {
     })
 
     expect(mockSpawn).not.toHaveBeenCalled()
+    expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
   })
 
   test('returns early if running from temporary npx cache', async () => {
@@ -141,6 +141,7 @@ describe('#checkForUpdates', () => {
       'Running from temporary npx download, skipping update check',
     )
     expect(mockSpawn).not.toHaveBeenCalled()
+    expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
   })
 
   test('does NOT skip npx when resolving to local install', async () => {
@@ -151,10 +152,11 @@ describe('#checkForUpdates', () => {
       config,
     })
 
-    // Should not have been skipped - either spawns worker or reads cache
+    // Should not have been skipped - resolveUpdateTarget should be called
     expect(mockDebug).not.toHaveBeenCalledWith(
       'Running from temporary npx download, skipping update check',
     )
+    expect(mockResolveUpdateTarget).toHaveBeenCalled()
   })
 
   test('spawns worker when no cached version exists', async () => {
@@ -164,6 +166,7 @@ describe('#checkForUpdates', () => {
       config,
     })
 
+    expect(mockResolveUpdateTarget).toHaveBeenCalledWith(process.cwd(), config.version)
     expect(mockDebug).toHaveBeenCalledWith('No cached update info, spawning worker to fetch')
     expect(mockSpawn).toHaveBeenCalledWith(
       process.execPath,
@@ -183,10 +186,8 @@ describe('#checkForUpdates', () => {
     const {config} = await getCommandAndConfig('help')
 
     // Set cache to 13 hours ago (beyond the 12-hour TTL)
-    setCachedUpdateInfo({
-      installedVersion: config.version,
+    setCachedLatestVersion({
       latestVersion: '999.0.0',
-      packageName: 'sanity',
       updatedAt: Date.now() - 13 * 60 * 60 * 1000,
     })
 
@@ -204,10 +205,8 @@ describe('#checkForUpdates', () => {
 
     const {config} = await getCommandAndConfig('help')
 
-    setCachedUpdateInfo({
-      installedVersion: config.version,
+    setCachedLatestVersion({
       latestVersion: '999.0.0',
-      packageName: 'sanity',
     })
 
     const {stderr} = await testHook<'init'>(checkForUpdates, {
@@ -224,10 +223,13 @@ describe('#checkForUpdates', () => {
   test('does not show notification when versions match', async () => {
     const {config} = await getCommandAndConfig('help')
 
-    setCachedUpdateInfo({
-      installedVersion: config.version,
-      latestVersion: config.version,
+    mockResolveUpdateTarget.mockResolvedValue({
+      installedVersion: '3.60.0',
       packageName: 'sanity',
+    })
+
+    setCachedLatestVersion({
+      latestVersion: '3.60.0',
     })
 
     const {stderr} = await testHook<'init'>(checkForUpdates, {
@@ -239,16 +241,61 @@ describe('#checkForUpdates', () => {
     expect(mockSpawn).not.toHaveBeenCalled()
   })
 
+  test('reads correct cache key based on resolved package', async () => {
+    const {config} = await getCommandAndConfig('help')
+
+    mockResolveUpdateTarget.mockResolvedValue({
+      installedVersion: '6.3.0',
+      packageName: '@sanity/cli',
+    })
+
+    setCachedLatestVersion({
+      key: 'latestVersion:@sanity/cli',
+      latestVersion: '6.4.0',
+    })
+
+    const {stderr} = await testHook<'init'>(checkForUpdates, {
+      config,
+    })
+
+    expect(mockDebug).toHaveBeenCalledWith('Update is available (%s)', '6.4.0')
+    expect(stderr).toContain('Update available')
+    expect(stderr).toContain('6.4.0')
+    expect(mockSpawn).not.toHaveBeenCalled()
+  })
+
+  test('ignores cache for other package when project uses different package', async () => {
+    const {config} = await getCommandAndConfig('help')
+
+    // Project uses @sanity/cli
+    mockResolveUpdateTarget.mockResolvedValue({
+      installedVersion: '6.3.0',
+      packageName: '@sanity/cli',
+    })
+
+    // But cache only has entry for sanity (from another project)
+    setCachedLatestVersion({
+      key: 'latestVersion:sanity',
+      latestVersion: '999.0.0',
+    })
+
+    await testHook<'init'>(checkForUpdates, {
+      config,
+    })
+
+    // Should NOT show notification - the sanity cache is irrelevant to this project
+    expect(mockDebug).toHaveBeenCalledWith('No cached update info, spawning worker to fetch')
+    expect(mockSpawn).toHaveBeenCalled()
+  })
+
   test('shows yarn global add command when globally installed via yarn', async () => {
     mockIsInstalledGlobally.default = true
     mockIsInstalledUsingYarn.mockReturnValue(true)
 
     const {config} = await getCommandAndConfig('help')
 
-    setCachedUpdateInfo({
-      installedVersion: config.version,
+    setCachedLatestVersion({
       latestVersion: '999.0.0',
-      packageName: 'sanity',
     })
 
     const {stderr} = await testHook<'init'>(checkForUpdates, {

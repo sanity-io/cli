@@ -13,8 +13,8 @@ const FETCH_TIMEOUT = 15_000
  * Designed to run in a detached child process so it never blocks the main CLI.
  */
 export async function runFetchWorker(cwd: string, cliVersion: string): Promise<void> {
-  const {installedVersion, packageName} = await resolveUpdateTarget(cwd, cliVersion)
-  debug('Worker: update target is %s@%s', packageName, installedVersion)
+  const {packageName} = await resolveUpdateTarget(cwd, cliVersion)
+  debug('Worker: fetching latest version of %s', packageName)
 
   const latestVersion = await promiseRaceWithTimeout(getLatestVersion(packageName), FETCH_TIMEOUT)
 
@@ -30,7 +30,7 @@ export async function runFetchWorker(cwd: string, cliVersion: string): Promise<v
 
   store.set(cacheKey, {
     updatedAt: Date.now(),
-    value: JSON.stringify({installedVersion, latestVersion, packageName}),
+    value: latestVersion,
   })
 
   debug('Worker: cached result to %s', cacheKey)

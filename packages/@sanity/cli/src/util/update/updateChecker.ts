@@ -4,23 +4,18 @@ import {fileURLToPath} from 'node:url'
 import {getUserConfig, isCi, subdebug} from '@sanity/cli-core'
 import {gt as semverGt} from 'semver'
 
-import {type SanityPackage} from '../packageManager/installationInfo/types.js'
+import {resolveUpdateTarget} from './resolveUpdateTarget.js'
 import {showUpdateNotification} from './showNotificationUpdate.js'
 
 const debug = subdebug('updateChecker')
 
 const TWELVE_HOURS = 12 * 60 * 60 * 1000
 
-interface CachedUpdateInfo {
-  installedVersion: string
-  latestVersion: string
-  packageName: SanityPackage
-}
-
 /**
  * Check for CLI updates and notify the user if a new version is available.
  *
- * The main process only reads from the config cache - it never makes network requests.
+ * The main process resolves the local update target (which package and installed version),
+ * then reads the latest version from the config cache. It never makes network requests.
  * If the cache is empty or expired, a detached worker process is spawned to fetch the
  * latest version from npm and write it to the cache. The notification is shown on the
  * next CLI invocation when the cached result is available instantly.
@@ -50,26 +45,29 @@ export async function updateChecker(config: {
     return
   }
 
-  const store = getUserConfig()
+  // Resolve which package to check and what's installed locally.
+  // This walks up from cwd reading package.json files - fast, no network.
+  const {installedVersion, packageName} = await resolveUpdateTarget(process.cwd(), config.version)
+  debug('Update target: %s@%s', packageName, installedVersion)
 
-  // Try reading cached update info
-  const cached = readCachedUpdateInfo(store)
+  const store = getUserConfig()
+  const cacheKey = `latestVersion:${packageName}`
+  const cached = readCachedLatestVersion(store, cacheKey)
 
   if (cached) {
-    const {expired, info} = cached
+    const {expired, latestVersion} = cached
 
     if (!expired) {
-      // Cache is fresh - check if there's an update to show
       debug(
         'Cache hit for %s: installed=%s, latest=%s',
-        info.packageName,
-        info.installedVersion,
-        info.latestVersion,
+        packageName,
+        installedVersion,
+        latestVersion,
       )
 
-      if (semverGt(info.latestVersion, info.installedVersion)) {
-        debug('Update is available (%s)', info.latestVersion)
-        await showUpdateNotification(info.installedVersion, info.latestVersion, info.packageName)
+      if (semverGt(latestVersion, installedVersion)) {
+        debug('Update is available (%s)', latestVersion)
+        await showUpdateNotification(installedVersion, latestVersion, packageName)
       } else {
         debug('No update found')
       }
@@ -87,55 +85,29 @@ export async function updateChecker(config: {
 }
 
 /**
- * Read and validate cached update info from the config store.
- * Returns the parsed info and whether it's expired, or null if no valid cache exists.
+ * Read and validate the cached latest version for a specific package.
+ * The cache only stores the latest npm version (globally valid) - the installed
+ * version is always resolved locally to avoid cross-project confusion.
  */
-function readCachedUpdateInfo(
+function readCachedLatestVersion(
   store: ReturnType<typeof getUserConfig>,
-): {expired: boolean; info: CachedUpdateInfo} | null {
-  // Check both possible cache keys
-  for (const key of ['latestVersion:sanity', 'latestVersion:@sanity/cli']) {
-    const stored: unknown = store.get(key)
+  cacheKey: string,
+): {expired: boolean; latestVersion: string} | null {
+  const stored: unknown = store.get(cacheKey)
 
-    if (
-      !stored ||
-      typeof stored !== 'object' ||
-      !('updatedAt' in stored) ||
-      typeof stored.updatedAt !== 'number' ||
-      !('value' in stored) ||
-      typeof stored.value !== 'string'
-    ) {
-      continue
-    }
-
-    try {
-      const parsed: unknown = JSON.parse(stored.value)
-
-      if (!isCachedUpdateInfo(parsed)) {
-        continue
-      }
-
-      const expired = Date.now() - stored.updatedAt > TWELVE_HOURS
-      return {expired, info: parsed}
-    } catch {
-      continue
-    }
+  if (
+    !stored ||
+    typeof stored !== 'object' ||
+    !('updatedAt' in stored) ||
+    typeof stored.updatedAt !== 'number' ||
+    !('value' in stored) ||
+    typeof stored.value !== 'string'
+  ) {
+    return null
   }
 
-  return null
-}
-
-function isCachedUpdateInfo(value: unknown): value is CachedUpdateInfo {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'packageName' in value &&
-    typeof value.packageName === 'string' &&
-    'installedVersion' in value &&
-    typeof value.installedVersion === 'string' &&
-    'latestVersion' in value &&
-    typeof value.latestVersion === 'string'
-  )
+  const expired = Date.now() - stored.updatedAt > TWELVE_HOURS
+  return {expired, latestVersion: stored.value}
 }
 
 /**
