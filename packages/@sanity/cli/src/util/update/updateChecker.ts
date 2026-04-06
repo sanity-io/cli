@@ -2,7 +2,7 @@ import {spawn} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 
 import {getUserConfig, isCi, subdebug} from '@sanity/cli-core'
-import semver from 'semver'
+import {gt as semverGt} from 'semver'
 
 import {type SanityPackage} from '../packageManager/installationInfo/types.js'
 import {showUpdateNotification} from './showNotificationUpdate.js'
@@ -67,7 +67,7 @@ export async function updateChecker(config: {
         info.latestVersion,
       )
 
-      if (semver.gt(info.latestVersion, info.installedVersion)) {
+      if (semverGt(info.latestVersion, info.installedVersion)) {
         debug('Update is available (%s)', info.latestVersion)
         await showUpdateNotification(info.installedVersion, info.latestVersion, info.packageName)
       } else {
