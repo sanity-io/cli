@@ -1,5 +1,4 @@
 import {Args, Flags} from '@oclif/core'
-import {CLIError} from '@oclif/core/errors'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import {DatasetResponse} from '@sanity/client'
@@ -16,6 +15,7 @@ import {getProjectFeatures} from '../../services/getProjectFeatures.js'
 import {OrganizationCreateResponse, ProjectOrganization} from '../../services/organizations.js'
 import {createProject, CreateProjectResult} from '../../services/projects.js'
 import {getCliUser} from '../../services/user.js'
+import {getDatasetFlag} from '../../util/sharedFlags.js'
 
 const debug = subdebug('projects:create')
 
@@ -54,18 +54,13 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
   ]
 
   static override flags = {
-    dataset: Flags.string({
-      description: 'Create a dataset. Prompts for visibility unless specified or --yes used',
-      parse: async (input) => {
-        const datasetNameError = validateDatasetName(input)
-        if (datasetNameError) {
-          throw new CLIError(datasetNameError, {exit: 1})
-        }
-
-        return input
-      },
+    ...getDatasetFlag({
+      description:
+        'Create a dataset with this name. Prompts for visibility unless also specified or --yes used',
+      semantics: 'specify',
     }),
     'dataset-visibility': Flags.string({
+      dependsOn: ['dataset'],
       description: 'Dataset visibility: public or private',
       options: ['private', 'public'],
     }),
@@ -93,9 +88,23 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
     const {dataset, 'dataset-visibility': datasetVisibility, organization, yes} = flags
     const user = await getCliUser()
 
+    if (yes && !projectName) {
+      this.error(
+        'A project name is required when using --yes.\n' +
+          'Provide it as an argument: sanity projects create "My Project" --yes',
+        {exit: 1},
+      )
+    }
+
+    if (dataset) {
+      const datasetNameError = validateDatasetName(dataset)
+      if (datasetNameError) {
+        this.error(datasetNameError, {exit: 1})
+      }
+    }
+
     const finalProjectName =
-      projectName ||
-      (yes || this.isUnattended() ? 'My Sanity Project' : await promptForProjectName())
+      projectName || (this.isUnattended() ? 'My Sanity Project' : await promptForProjectName())
 
     debug('Creating project with options: %O', {
       dataset,
@@ -137,20 +146,20 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       this.error(`Failed to create project: ${error}`, {exit: 1})
     }
 
-    const newDataset = await this.handleDatasetCreation(
+    const {dataset: newDataset, datasetError} = await this.handleDatasetCreation(
       newProject.projectId,
       dataset,
       datasetVisibility,
     )
 
-    this.printProjectCreationSuccess(chosenOrganization, newProject, newDataset)
+    this.printProjectCreationSuccess(chosenOrganization, newProject, newDataset, datasetError)
   }
 
   private async handleDatasetCreation(
     projectId: string,
     datasetFromFlag?: string,
     datasetVisibility?: string,
-  ): Promise<DatasetResponse | undefined> {
+  ): Promise<{dataset: DatasetResponse | undefined; datasetError?: string}> {
     try {
       let datasetName: string | undefined = datasetFromFlag
       const existingDatasets = await listDatasets(projectId)
@@ -175,31 +184,46 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       // Create dataset if we have a name
       if (datasetName) {
         const projectFeatures = await getProjectFeatures(projectId)
-        return await createDataset({
+        // Suppress action-level logging in JSON mode so stdout stays valid JSON
+        const actionOutput = this.flags.json ? {...this.output, log: () => {}} : this.output
+        const dataset = await createDataset({
           datasetName,
           isUnattended: this.isUnattended(),
-          output: this.output,
+          output: actionOutput,
           projectFeatures,
           projectId,
           visibility: datasetVisibility,
         })
+        return {dataset}
       }
 
-      return
+      return {dataset: undefined}
     } catch (error) {
       debug(`Error creating dataset: ${error}`)
       this.warn(`Project created but dataset creation failed: ${error}`)
-      return
+      return {dataset: undefined, datasetError: String(error)}
     }
   }
 
-  private async printProjectCreationSuccess(
+  private printProjectCreationSuccess(
     organization: OrganizationCreateResponse | ProjectOrganization | undefined,
     project: CreateProjectResult,
     dataset: DatasetResponse | undefined,
+    datasetError?: string,
   ) {
     if (this.flags.json) {
-      this.log(JSON.stringify(project, null, 2))
+      const output: Record<string, unknown> = {
+        dataset: dataset ? {aclMode: dataset.aclMode, datasetName: dataset.datasetName} : null,
+        displayName: project.displayName,
+        manageUrl: getManageUrl(project.projectId),
+        organizationId: organization?.id ?? null,
+        organizationName: organization?.name ?? 'Personal',
+        projectId: project.projectId,
+      }
+      if (datasetError) {
+        output.warnings = [`Dataset creation failed: ${datasetError}`]
+      }
+      this.log(JSON.stringify(output, null, 2))
       return
     }
 

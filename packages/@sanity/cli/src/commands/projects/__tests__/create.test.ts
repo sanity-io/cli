@@ -83,9 +83,13 @@ describe('#projects:create', () => {
   })
 
   test('throws error if provided invalid dataset flag', async () => {
-    const {error} = await testCommand(CreateProjectCommand, ['--dataset=~~invalid-name'])
+    const {error} = await testCommand(CreateProjectCommand, ['--dataset=~~invalid-name'], {
+      mocks: defaultMocks,
+    })
 
+    expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Dataset name must start with a letter or a number')
+    expect(error?.oclif?.exit).toBe(1)
   })
 
   test('errors when retrieving organization fails', async () => {
@@ -291,7 +295,13 @@ describe('#projects:create', () => {
 
     const {error, stdout} = await testCommand(
       CreateProjectCommand,
-      ['--yes', '--dataset=staging', '--dataset-visibility=private', '--organization=org-1'],
+      [
+        'My Sanity Project',
+        '--yes',
+        '--dataset=staging',
+        '--dataset-visibility=private',
+        '--organization=org-1',
+      ],
       {
         mocks: defaultMocks,
       },
@@ -322,7 +332,7 @@ describe('#projects:create', () => {
 
     const {error, stdout} = await testCommand(
       CreateProjectCommand,
-      ['--yes', '--organization=org-1'],
+      ['My Sanity Project', '--yes', '--organization=org-1'],
       {
         mocks: defaultMocks,
       },
@@ -474,7 +484,7 @@ describe('#projects:create', () => {
     expect(stderr).toContain('Project created but dataset creation failed')
   })
 
-  test('creates project with JSON output', async () => {
+  test('creates project with JSON output including org, dataset, and manage URL', async () => {
     mockApi({
       apiVersion: ORGANIZATIONS_API_VERSION,
       method: 'get',
@@ -502,9 +512,114 @@ describe('#projects:create', () => {
     if (error) throw error
     const json = JSON.parse(stdout)
     expect(json).toEqual({
+      dataset: null,
       displayName: 'My Project',
+      manageUrl: 'https://www.sanity.io/manage/project/proj-123',
+      organizationId: 'org-1',
+      organizationName: 'Org 1',
       projectId: 'proj-123',
     })
+  })
+
+  test('includes warnings in JSON output when dataset creation fails', async () => {
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: CREATE_PROJECT_API_VERSION,
+      method: 'post',
+      uri: '/projects',
+    }).reply(201, {
+      displayName: 'My Project',
+      id: 'proj-123',
+      projectId: 'proj-123',
+    })
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, [])
+
+    mockCreateDataset.mockRejectedValueOnce(new Error('Failed to create Dataset'))
+
+    const {error, stdout} = await testCommand(
+      CreateProjectCommand,
+      ['My Project', '--dataset=production', '--organization=org-1', '--json'],
+      {
+        mocks: defaultMocks,
+      },
+    )
+
+    if (error) throw error
+    const json = JSON.parse(stdout)
+    expect(json.dataset).toBeNull()
+    expect(json.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining('Dataset creation failed')]),
+    )
+  })
+
+  test('includes dataset info in JSON output when dataset is created', async () => {
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: CREATE_PROJECT_API_VERSION,
+      method: 'post',
+      uri: '/projects',
+    }).reply(201, {
+      displayName: 'My Project',
+      id: 'proj-123',
+      projectId: 'proj-123',
+    })
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, [])
+
+    mockCreateDataset.mockResolvedValueOnce({aclMode: 'public', datasetName: 'production'})
+
+    const {error, stdout} = await testCommand(
+      CreateProjectCommand,
+      ['My Project', '--dataset=production', '--organization=org-1', '--json'],
+      {
+        mocks: defaultMocks,
+      },
+    )
+
+    if (error) throw error
+    const json = JSON.parse(stdout)
+    expect(json.dataset).toEqual({aclMode: 'public', datasetName: 'production'})
+    expect(json.warnings).toBeUndefined()
+  })
+
+  test('errors when --yes is used without a project name', async () => {
+    const {error} = await testCommand(CreateProjectCommand, ['--yes'], {
+      mocks: defaultMocks,
+    })
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('A project name is required when using --yes')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('errors when --dataset-visibility is used without --dataset', async () => {
+    const {error} = await testCommand(
+      CreateProjectCommand,
+      ['My Project', '--dataset-visibility=public'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('dataset-visibility')
   })
 
   test('prompts for project name when not provided', async () => {

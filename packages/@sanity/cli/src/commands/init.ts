@@ -46,11 +46,8 @@ import {
 import {type VersionedFramework} from '../actions/init/types.js'
 import {type EditorName} from '../actions/mcp/editorConfigs.js'
 import {setupMCP} from '../actions/mcp/setupMCP.js'
-import {findOrganizationByUserName} from '../actions/organizations/findOrganizationByUserName.js'
-import {getOrganizationChoices} from '../actions/organizations/getOrganizationChoices.js'
-import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
+import {getOrganization} from '../actions/organizations/getOrganization.js'
 import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'
-import {type OrganizationChoices} from '../actions/organizations/types.js'
 import {
   promptForAppendEnv,
   promptForConfigFiles,
@@ -61,16 +58,10 @@ import {
 import {promptForTypeScript} from '../prompts/init/promptForTypescript.js'
 import {promptForDatasetName} from '../prompts/promptForDatasetName.js'
 import {promptForDefaultConfig} from '../prompts/promptForDefaultConfig.js'
-import {promptForOrganizationName} from '../prompts/promptForOrganizationName.js'
 import {createCorsOrigin, listCorsOrigins} from '../services/cors.js'
 import {createDataset as createDatasetService, listDatasets} from '../services/datasets.js'
 import {getProjectFeatures} from '../services/getProjectFeatures.js'
-import {
-  createOrganization,
-  listOrganizations,
-  type OrganizationCreateResponse,
-  type ProjectOrganization,
-} from '../services/organizations.js'
+import {listOrganizations, type ProjectOrganization} from '../services/organizations.js'
 import {getPlanId, getPlanIdFromCoupon} from '../services/plans.js'
 import {createProject, listProjects, updateProjectInitializedAt} from '../services/projects.js'
 import {getCliUser} from '../services/user.js'
@@ -786,11 +777,13 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
     if (!orgForCreateProjectFlag) {
       debug('no organization specified, selecting one')
-      const organizations = await listOrganizations()
-      orgForCreateProjectFlag = await this.promptUserForOrganization({
-        organizations,
+      const org = await getOrganization({
+        isUnattended: this.isUnattended(),
+        output: this.output,
+        requestedId: undefined,
         user,
       })
+      orgForCreateProjectFlag = org?.id
     }
 
     debug('creating a new project')
@@ -1065,7 +1058,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       const newProject = await this.promptForProjectCreation({
         isUsersFirstProject,
         organizationId,
-        organizations,
         planId,
         user,
       })
@@ -1095,7 +1087,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       const newProject = await this.promptForProjectCreation({
         isUsersFirstProject,
         organizationId,
-        organizations,
         planId,
         user,
       })
@@ -1167,16 +1158,15 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
       // Interactive mode: fetch orgs and prompt
       // Note: unattended mode without --organization is rejected by checkFlagsInUnattendedMode
-      const organizations = await listOrganizations({
-        includeImplicitMemberships: 'true',
-        includeMembers: 'true',
-      })
-
-      const appOrganizationId = await this.promptUserForOrganization({
-        isAppTemplate: true,
-        organizations,
+      const appOrg = await getOrganization({
+        isUnattended: this.isUnattended(),
+        listOrganizationsQuery: {includeImplicitMemberships: 'true', includeMembers: 'true'},
+        output: this.output,
+        requestedId: undefined,
+        skipAttachCheck: true,
         user,
       })
+      const appOrganizationId = appOrg?.id
 
       return {
         datasetName: '',
@@ -1458,13 +1448,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   private async promptForProjectCreation({
     isUsersFirstProject,
     organizationId,
-    organizations,
     planId,
     user,
   }: {
     isUsersFirstProject: boolean
     organizationId: string | undefined
-    organizations: ProjectOrganization[]
     planId: string | undefined
     user: SanityOrgUser
   }) {
@@ -1485,7 +1473,15 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     })
 
     const organization =
-      organizationId || (await this.promptUserForOrganization({organizations, user}))
+      organizationId ||
+      (
+        await getOrganization({
+          isUnattended: this.isUnattended(),
+          output: this.output,
+          requestedId: undefined,
+          user,
+        })
+      )?.id
 
     const newProject = await createProject({
       displayName: projectName,
@@ -1534,72 +1530,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
 
   private promptForUndefinedFlag(flag: unknown) {
     return !this.isUnattended() && flag === undefined
-  }
-
-  private async promptUserForNewOrganization(
-    user: SanityOrgUser,
-  ): Promise<OrganizationCreateResponse> {
-    const name = await promptForOrganizationName(user)
-
-    const spin = spinner('Creating organization').start()
-    const organization = await createOrganization(name)
-    spin.succeed()
-
-    return organization
-  }
-
-  private async promptUserForOrganization({
-    isAppTemplate = false,
-    organizations,
-    user,
-  }: {
-    isAppTemplate?: boolean
-    organizations: ProjectOrganization[]
-    user: SanityOrgUser
-  }) {
-    // If the user has no organizations, prompt them to create one with the same name as
-    // their user, but allow them to customize it if they want
-    if (organizations.length === 0) {
-      const newOrganization = await this.promptUserForNewOrganization(user)
-      return newOrganization.id
-    }
-
-    let organizationChoices: OrganizationChoices
-    let defaultOrganizationId: string | undefined
-
-    if (isAppTemplate) {
-      // For app templates, all organizations are valid — no attach grant check needed
-      organizationChoices = getOrganizationChoices(organizations)
-      defaultOrganizationId =
-        organizations.length === 1
-          ? organizations[0].id
-          : findOrganizationByUserName(organizations, user)
-    } else {
-      // For studio projects, check which organizations the user can attach projects to
-      debug(`User has ${organizations.length} organization(s), checking attach access`)
-      const withGrantInfo = await getOrganizationsWithAttachGrantInfo(organizations)
-      const withAttach = withGrantInfo.filter(({hasAttachGrant}) => hasAttachGrant)
-
-      debug('User has attach access to %d organizations.', withAttach.length)
-      organizationChoices = getOrganizationChoices(withGrantInfo)
-      defaultOrganizationId =
-        withAttach.length === 1
-          ? withAttach[0].organization.id
-          : findOrganizationByUserName(organizations, user)
-    }
-
-    const chosenOrg = await select({
-      choices: organizationChoices,
-      default: defaultOrganizationId || undefined,
-      message: 'Select organization:',
-    })
-
-    if (chosenOrg === '-new-') {
-      const newOrganization = await this.promptUserForNewOrganization(user)
-      return newOrganization.id
-    }
-
-    return chosenOrg || undefined
   }
 
   private async verifyCoupon(intendedCoupon: string): Promise<string | undefined> {
