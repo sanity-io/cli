@@ -52,7 +52,7 @@ catalog:
   ora: ^9.0.0
   rxjs: ^7.8.2
   tinyglobby: ^0.2.15
-  lodash-es: ^4.17.23
+  lodash-es: ^4.18.1
   '@types/lodash-es': ^4.17.12
   yaml: ^2.8.3
 
@@ -75,6 +75,7 @@ minimumReleaseAgeExclude:
   - '@types/*'
   - 'groq-js'
   - 'groq'
+  - 'lodash-es'
   - 'react-rx'
   - 'sanity'
   - 'use-effect-event'
