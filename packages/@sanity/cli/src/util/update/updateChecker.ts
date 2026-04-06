@@ -72,6 +72,6 @@ export async function updateChecker(config: {
   debug('Update is available (%s)', latestVersion)
 
   if (showNotificationUpdate) {
-    await showUpdateNotification(config.version, latestVersion)
+    await showUpdateNotification(config.version, latestVersion, 'sanity')
   }
 }
