@@ -48,6 +48,12 @@ export async function runCli(
   }
 
   if (interactive) {
+    // Remove CI from env so that isInteractive() returns true for PTY-based interactive tests.
+    // GitHub Actions sets CI=true, which causes the CLI to throw NonInteractiveError
+    // instead of showing prompts. The key must be deleted (not set to '') because
+    // isInteractive() checks 'CI' in process.env (key presence, not value).
+    delete sharedEnv.CI
+
     return spawnPty({
       args: [resolvedBinaryPath, ...args],
       command: 'node',

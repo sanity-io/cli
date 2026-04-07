@@ -1,4 +1,6 @@
-import {resolve} from 'node:path'
+import {mkdir, mkdtemp, rm} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {join, resolve} from 'node:path'
 
 // Capture the initial working directory before any tests change it
 const INITIAL_CWD = process.cwd()
@@ -30,6 +32,29 @@ export function getFixturesPath(): string {
  */
 export function getTempPath(customTempDir?: string): string {
   return customTempDir || resolve(INITIAL_CWD, 'tmp')
+}
+
+/**
+ * Creates a unique temporary directory for test output.
+ * Uses {@link getTempPath} as the base, creating it if needed.
+ *
+ * @param options - Configuration options: `prefix` (default: 'cli-e2e-') and
+ *   `useSystemTmp` (default: false) which uses the OS temp directory instead of
+ *   cwd/tmp to avoid monorepo workspace detection by package managers and git.
+ * @returns The path and a cleanup function
+ * @public
+ */
+export async function createTmpDir(
+  options: {prefix?: string; useSystemTmp?: boolean} = {},
+): Promise<{cleanup: () => Promise<void>; path: string}> {
+  const {prefix = 'cli-e2e-', useSystemTmp = false} = options
+  const basePath = useSystemTmp ? join(tmpdir(), 'sanity-cli-e2e') : getTempPath()
+  await mkdir(basePath, {recursive: true})
+  const path = await mkdtemp(join(basePath, prefix))
+  return {
+    cleanup: () => rm(path, {force: true, recursive: true}),
+    path,
+  }
 }
 
 /**
