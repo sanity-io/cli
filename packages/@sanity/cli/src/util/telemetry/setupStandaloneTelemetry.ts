@@ -77,19 +77,22 @@ export function setupStandaloneTelemetry(
   const cliCommandTrace = telemetry.trace(CliCommandTelemetry, traceOptions)
   cliCommandTrace.start()
 
-  setCliTelemetry(cliCommandTrace.newContext(commandName), {
+  const commandContext = cliCommandTrace.newContext(commandName)
+
+  setCliTelemetry(commandContext, {
     reportTraceError: (err) => cliCommandTrace.error(err),
   })
 
   const flush = async (): Promise<void> => {
     telemetryDebug('Starting inline flush (timeout: %dms)', flushTimeoutMs)
     try {
+      let timeoutHandle: ReturnType<typeof setTimeout>
       await Promise.race([
         flushTelemetryFiles({resolveConsent, sendEvents}),
-        new Promise<void>((_resolve, reject) =>
-          setTimeout(() => reject(new Error('flush timeout')), flushTimeoutMs),
-        ),
-      ])
+        new Promise<void>((_resolve, reject) => {
+          timeoutHandle = setTimeout(() => reject(new Error('flush timeout')), flushTimeoutMs)
+        }),
+      ]).finally(() => clearTimeout(timeoutHandle))
       telemetryDebug('Flush completed within timeout')
     } catch {
       telemetryDebug('Flush timed out or failed; files preserved for next CLI flush')
@@ -105,6 +108,6 @@ export function setupStandaloneTelemetry(
       cliCommandTrace.error(err)
       await flush()
     },
-    telemetry: cliCommandTrace.newContext(commandName),
+    telemetry: commandContext,
   }
 }
