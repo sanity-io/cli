@@ -94,5 +94,11 @@ export class UserAttributeDefinitionsListCommand extends SanityCommand<
     }
 
     table.printTable()
+
+    if (result.hasMore) {
+      this.log(
+        '\nNote: Results are truncated. Use --json and the API directly with a cursor to fetch more.',
+      )
+    }
   }
 }

@@ -5,15 +5,11 @@ import {Table} from 'console-table-printer'
 import {type UserAttribute} from '../../../actions/userAttributes/types.js'
 import {promptForOrganization} from '../../../prompts/promptForOrganization.js'
 import {getMyAttributes, getUserAttributes} from '../../../services/userAttributes.js'
+import {formatAttributeValue} from '../../../util/formatAttributeValue.js'
 import {getErrorMessage} from '../../../util/getErrorMessage.js'
 import {getOrgIdFlag} from '../../../util/sharedFlags.js'
 
 const debug = subdebug('users:attributes:list')
-
-function formatValue(value: unknown): string {
-  if (Array.isArray(value)) return JSON.stringify(value)
-  return String(value)
-}
 
 export class UserAttributesListCommand extends SanityCommand<typeof UserAttributesListCommand> {
   static override description = 'List attributes for a user within an organization'
@@ -100,7 +96,7 @@ export class UserAttributesListCommand extends SanityCommand<typeof UserAttribut
     for (const attr of attributes as UserAttribute[]) {
       table.addRow({
         activeSource: attr.activeSource,
-        activeValue: formatValue(attr.activeValue),
+        activeValue: formatAttributeValue(attr.activeValue),
         key: attr.key,
         type: attr.type,
       })

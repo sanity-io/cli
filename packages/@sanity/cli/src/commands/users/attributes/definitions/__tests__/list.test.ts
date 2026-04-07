@@ -126,6 +126,21 @@ describe('#users:attributes:definitions:list', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('shows truncation notice when hasMore is true', async () => {
+    mockApi({
+      apiVersion: USER_ATTRIBUTES_API_VERSION,
+      uri: `/organizations/${testOrgId}/attribute-definitions`,
+    }).reply(200, {...mockResponse, hasMore: true})
+
+    const {stdout} = await testCommand(
+      UserAttributeDefinitionsListCommand,
+      ['--org-id', testOrgId],
+      {mocks: defaultMocks},
+    )
+
+    expect(stdout).toContain('Results are truncated')
+  })
+
   test('handles network error gracefully', async () => {
     const {error} = await testCommand(
       UserAttributeDefinitionsListCommand,

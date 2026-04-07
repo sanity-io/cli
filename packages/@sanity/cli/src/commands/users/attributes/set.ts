@@ -5,15 +5,11 @@ import {Table} from 'console-table-printer'
 import {type SetAttributeInput, type UserAttribute} from '../../../actions/userAttributes/types.js'
 import {promptForOrganization} from '../../../prompts/promptForOrganization.js'
 import {updateUserAttributes} from '../../../services/userAttributes.js'
+import {formatAttributeValue} from '../../../util/formatAttributeValue.js'
 import {getErrorMessage} from '../../../util/getErrorMessage.js'
 import {getOrgIdFlag} from '../../../util/sharedFlags.js'
 
 const debug = subdebug('users:attributes:set')
-
-function formatValue(value: unknown): string {
-  if (Array.isArray(value)) return JSON.stringify(value)
-  return String(value)
-}
 
 export class UserAttributesSetCommand extends SanityCommand<typeof UserAttributesSetCommand> {
   static override description = 'Set attribute values for a user within an organization'
@@ -81,19 +77,21 @@ export class UserAttributesSetCommand extends SanityCommand<typeof UserAttribute
       }
     }
 
-    let attributes: SetAttributeInput[]
+    let parsed: unknown
     try {
-      const parsed = JSON.parse(attributesJson)
-      if (!Array.isArray(parsed)) {
-        this.error('--attributes must be a JSON array', {exit: 1})
-      }
-      attributes = parsed as SetAttributeInput[]
+      parsed = JSON.parse(attributesJson)
     } catch (err) {
       if (err instanceof SyntaxError) {
         this.error(`--attributes is not valid JSON: ${err.message}`, {exit: 1})
       }
       throw err
     }
+
+    if (!Array.isArray(parsed)) {
+      this.error('--attributes must be a JSON array', {exit: 1})
+    }
+
+    const attributes = parsed as SetAttributeInput[]
 
     let result: Awaited<ReturnType<typeof updateUserAttributes>>
     try {
@@ -126,7 +124,7 @@ export class UserAttributesSetCommand extends SanityCommand<typeof UserAttribute
     for (const attr of result.attributes as UserAttribute[]) {
       table.addRow({
         activeSource: attr.activeSource,
-        activeValue: formatValue(attr.activeValue),
+        activeValue: formatAttributeValue(attr.activeValue),
         key: attr.key,
         type: attr.type,
       })
