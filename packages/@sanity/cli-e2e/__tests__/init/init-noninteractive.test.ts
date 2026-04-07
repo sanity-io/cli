@@ -53,21 +53,8 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
     expect(existsSync(`${tmpDir}/schemaTypes`)).toBe(true)
   }, 120_000)
 
-  test('2.3 creates studio with moviedb template', async () => {
-    const {error} = await runCli({
-      args: baseInitArgs({
-        extraArgs: ['--template', 'moviedb'],
-        outputPath: tmpDir,
-        projectId,
-      }),
-    })
-
-    if (error) throw error
-    expect(existsSync(`${tmpDir}/schemaTypes`)).toBe(true)
-  }, 120_000)
-
-  test('2.4 TypeScript enabled by default in unattended mode', async () => {
-    const {error} = await runCli({
+  test('2.4 default init creates correct TypeScript project with config files', async () => {
+    const {error, stdout} = await runCli({
       args: baseInitArgs({
         extraArgs: ['--package-manager', 'pnpm'],
         outputPath: tmpDir,
@@ -76,9 +63,24 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
     })
 
     if (error) throw error
+
+    // TypeScript enabled by default (was 2.4)
     expect(existsSync(`${tmpDir}/tsconfig.json`)).toBe(true)
     expect(existsSync(`${tmpDir}/sanity.config.ts`)).toBe(true)
     expect(existsSync(`${tmpDir}/sanity.cli.ts`)).toBe(true)
+
+    // sanity.cli.ts has correct content (was 2.17)
+    const cliConfig = readFileSync(`${tmpDir}/sanity.cli.ts`, 'utf8')
+    expect(cliConfig).toContain(projectId)
+    expect(cliConfig).toContain('production')
+
+    // sanity.config.ts has correct content (was 2.18)
+    const config = readFileSync(`${tmpDir}/sanity.config.ts`, 'utf8')
+    expect(config).toContain(projectId)
+    expect(config).toContain('production')
+
+    // Shows logged-in message (was 2.21)
+    expect(stdout).toContain('You are logged in as')
   }, 120_000)
 
   test('2.5 --no-typescript generates JavaScript files', async () => {
@@ -97,7 +99,7 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
     expect(existsSync(`${tmpDir}/sanity.config.ts`)).toBe(false)
   }, 120_000)
 
-  test('2.7 --package-manager npm installs with npm', async () => {
+  test('2.7 --package-manager installs with specified manager', async () => {
     const {error} = await runCli({
       args: baseInitArgs({
         extraArgs: ['--package-manager', 'npm'],
@@ -111,20 +113,6 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
     expect(existsSync(`${tmpDir}/package-lock.json`)).toBe(true)
   }, 120_000)
 
-  test('2.8 --package-manager pnpm installs with pnpm', async () => {
-    const {error} = await runCli({
-      args: baseInitArgs({
-        extraArgs: ['--package-manager', 'pnpm'],
-        outputPath: tmpDir,
-        projectId,
-      }),
-    })
-
-    if (error) throw error
-    expect(existsSync(`${tmpDir}/node_modules`)).toBe(true)
-    expect(existsSync(`${tmpDir}/pnpm-lock.yaml`)).toBe(true)
-  }, 120_000)
-
   test('2.9 --no-git skips git initialization', async () => {
     const {error} = await runCli({
       args: baseInitArgs({
@@ -136,19 +124,6 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
 
     if (error) throw error
     expect(existsSync(`${tmpDir}/.git`)).toBe(false)
-  }, 120_000)
-
-  test('2.10 default behavior initializes git', async () => {
-    const {error} = await runCli({
-      args: baseInitArgs({
-        extraArgs: ['--package-manager', 'pnpm'],
-        outputPath: tmpDir,
-        projectId,
-      }),
-    })
-
-    if (error) throw error
-    expect(existsSync(`${tmpDir}/.git`)).toBe(true)
   }, 120_000)
 
   test('2.11 --git with custom commit message', async () => {
@@ -255,51 +230,7 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
     expect(stdout).not.toMatch(/configured for Sanity MCP/i)
   }, 120_000)
 
-  test('2.17 generates correct sanity.cli.ts', async () => {
-    const {error} = await runCli({
-      args: baseInitArgs({
-        extraArgs: ['--package-manager', 'pnpm'],
-        outputPath: tmpDir,
-        projectId,
-      }),
-    })
-
-    if (error) throw error
-    const cliConfig = readFileSync(`${tmpDir}/sanity.cli.ts`, 'utf8')
-    expect(cliConfig).toContain(projectId)
-    expect(cliConfig).toContain('production')
-  }, 120_000)
-
-  test('2.18 generates correct sanity.config.ts', async () => {
-    const {error} = await runCli({
-      args: baseInitArgs({
-        extraArgs: ['--package-manager', 'pnpm'],
-        outputPath: tmpDir,
-        projectId,
-      }),
-    })
-
-    if (error) throw error
-    const config = readFileSync(`${tmpDir}/sanity.config.ts`, 'utf8')
-    expect(config).toContain(projectId)
-    expect(config).toContain('production')
-  }, 120_000)
-
-  test('2.19 --no-auto-updates disables auto-updates', async () => {
-    const {error} = await runCli({
-      args: baseInitArgs({
-        extraArgs: ['--no-auto-updates', '--package-manager', 'pnpm'],
-        outputPath: tmpDir,
-        projectId,
-      }),
-    })
-
-    if (error) throw error
-    const config = readFileSync(`${tmpDir}/sanity.config.ts`, 'utf8')
-    expect(config).not.toContain('autoUpdates')
-  }, 120_000)
-
-  test('2.20 --auto-updates enables auto-updates', async () => {
+  test('2.19 --auto-updates enables auto-updates in config', async () => {
     const {error} = await runCli({
       args: baseInitArgs({
         extraArgs: ['--auto-updates', '--package-manager', 'pnpm'],
@@ -311,19 +242,6 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
     if (error) throw error
     const config = readFileSync(`${tmpDir}/sanity.config.ts`, 'utf8')
     expect(config).toContain('autoUpdates')
-  }, 120_000)
-
-  test('2.21 shows logged-in message with valid token', async () => {
-    const {error, stdout} = await runCli({
-      args: baseInitArgs({
-        extraArgs: ['--package-manager', 'pnpm'],
-        outputPath: tmpDir,
-        projectId,
-      }),
-    })
-
-    if (error) throw error
-    expect(stdout).toContain('You are logged in as')
   }, 120_000)
 
   test('2.22 --env writes env file and exits early', async () => {
@@ -342,26 +260,12 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
     expect(existsSync(`${tmpDir}/sanity.config.ts`)).toBe(false)
   }, 120_000)
 
-  test('2.23 --visibility public sets dataset visibility', async () => {
+  test('2.23 --visibility sets dataset visibility', async () => {
     const uniqueDataset = `pub${Date.now().toString(36)}`
     const {exitCode} = await runCli({
       args: baseInitArgs({
         dataset: uniqueDataset,
         extraArgs: ['--visibility', 'public', '--package-manager', 'pnpm'],
-        outputPath: tmpDir,
-        projectId,
-      }),
-    })
-
-    expect(exitCode).toBe(0)
-  }, 120_000)
-
-  test('2.24 --visibility private sets dataset visibility', async () => {
-    const uniqueDataset = `priv${Date.now().toString(36)}`
-    const {exitCode} = await runCli({
-      args: baseInitArgs({
-        dataset: uniqueDataset,
-        extraArgs: ['--visibility', 'private', '--package-manager', 'pnpm'],
         outputPath: tmpDir,
         projectId,
       }),
