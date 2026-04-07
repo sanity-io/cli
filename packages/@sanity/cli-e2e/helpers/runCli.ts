@@ -34,6 +34,10 @@ export async function runCli(
 
   const sharedEnv: Record<string, string> = {
     ...(process.env as Record<string, string>),
+    // Remove CI so that isInteractive() returns true for PTY-based interactive tests.
+    // GitHub Actions sets CI=true, which causes the CLI to throw NonInteractiveError
+    // instead of showing prompts.
+    ...(interactive ? {CI: ''} : {}),
     NO_UPDATE_NOTIFIER: '1',
     NODE_ENV: 'production',
     NODE_NO_WARNINGS: '1',
