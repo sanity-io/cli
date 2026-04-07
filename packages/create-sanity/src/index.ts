@@ -16,17 +16,43 @@ import {getCreateCommand} from './createCommand.js'
 import {FlagValidationError, parseInitArgs} from './parseArgs.js'
 import {version} from './version.js'
 
+// Parse args first — FlagValidationError and unknown flag TypeError are user-input
+// errors that don't need telemetry. --help also exits here, mirroring oclif where
+// --help is handled before the prerun hook (telemetry setup) fires.
+let parsedArgs!: ReturnType<typeof parseInitArgs>
+try {
+  parsedArgs = parseInitArgs(process.argv.slice(2))
+} catch (error) {
+  if (error instanceof FlagValidationError) {
+    console.error(error.message)
+    process.exit(2)
+  }
+
+  if (
+    error instanceof TypeError &&
+    'code' in error &&
+    error.code === 'ERR_PARSE_ARGS_UNKNOWN_OPTION'
+  ) {
+    console.error(error.message)
+    console.error(`Run "${getCreateCommand()} --help" for available options.`)
+    process.exit(2)
+  }
+
+  throw error
+}
+
 const {
   complete,
   error: reportError,
   telemetry,
 } = setupStandaloneTelemetry({
+  args: parsedArgs.args.type ? [parsedArgs.args.type] : [],
   commandName: 'create-sanity',
   version,
 })
 
 try {
-  const {args, flags} = parseInitArgs(process.argv.slice(2))
+  const {args, flags} = parsedArgs
 
   // parseArgs returns Record<string, unknown>; the shape is guaranteed by initFlagDefs
   const initOptions = flagsToInitOptions(
@@ -38,7 +64,9 @@ try {
   await initAction(initOptions, {
     output: {
       error: (msg: Error | string): never => {
-        console.error(msg instanceof Error ? msg.message : msg)
+        const err = msg instanceof Error ? msg : new Error(msg)
+        console.error(err.message)
+        void reportError(err)
         process.exit(1)
       },
       log: console.log,
@@ -62,24 +90,9 @@ try {
   }
 
   if (error instanceof CLIError) {
+    await reportError(error)
     console.error(error.message)
     process.exit(error.oclif.exit ?? 2)
-  }
-
-  if (error instanceof FlagValidationError) {
-    console.error(error.message)
-    process.exit(2)
-  }
-
-  // Clean message for unknown flags instead of a raw stack trace
-  if (
-    error instanceof TypeError &&
-    'code' in error &&
-    error.code === 'ERR_PARSE_ARGS_UNKNOWN_OPTION'
-  ) {
-    console.error(error.message)
-    console.error(`Run "${getCreateCommand()} --help" for available options.`)
-    process.exit(2)
   }
 
   if (error instanceof Error) {
