@@ -766,6 +766,9 @@ importers:
       '@sanity/client':
         specifier: ^7.20.0
         version: 7.20.0(debug@4.4.3)
+      '@sanity/telemetry':
+        specifier: 'catalog:'
+        version: 0.9.0(react@19.2.4)
       babel-plugin-react-compiler:
         specifier: ^1.0.0
         version: 1.0.0
@@ -830,9 +833,6 @@ importers:
       '@sanity/pkg-utils':
         specifier: 'catalog:'
         version: 10.4.13(@types/babel__core@7.20.5)(@types/node@20.19.37)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(debug@4.4.3)(oxc-resolver@11.19.1)(typescript@5.9.3)
-      '@sanity/telemetry':
-        specifier: 'catalog:'
-        version: 0.9.0(react@19.2.4)
       '@swc/cli':
         specifier: 'catalog:'
         version: 0.8.0(@swc/core@1.15.21)(chokidar@5.0.0)

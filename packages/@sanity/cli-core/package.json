@@ -67,6 +67,7 @@
     "@oclif/core": "catalog:",
     "@rexxars/jiti": "^2.6.2",
     "@sanity/client": "catalog:",
+    "@sanity/telemetry": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",
     "boxen": "^8.0.1",
     "debug": "catalog:",
@@ -90,7 +91,6 @@
     "@repo/tsconfig": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
-    "@sanity/telemetry": "catalog:",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/debug": "catalog:",
@@ -101,9 +101,6 @@
     "sanity": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
-  },
-  "peerDependencies": {
-    "@sanity/telemetry": ">=0.9.0 <0.10.0"
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
