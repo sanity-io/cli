@@ -39,8 +39,9 @@ catalog:
   vitest: ^4.1.2
   '@vitest/coverage-istanbul': ^4.1.2
   nock: ^14.0.12
-  cli-testing-library: ^3.0.1
+  node-pty: ^1.0.0
   dotenv: ^17.3.1
+  strip-ansi: ^7.1.0
 
   # CLI Framework
   '@oclif/core': ^4.10.3

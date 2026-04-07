@@ -77,7 +77,8 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "@swc/core",
-      "esbuild"
+      "esbuild",
+      "node-pty"
     ],
     "overrides": {
       "@sanity/cli": "workspace:*"
