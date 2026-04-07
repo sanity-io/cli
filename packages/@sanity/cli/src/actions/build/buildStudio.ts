@@ -19,7 +19,7 @@ import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {checkRequiredDependencies} from './checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from './checkStudioDependencyVersions.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
+import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getStudioEnvVars} from './getStudioEnvVars.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {shouldAutoUpdate} from './shouldAutoUpdate.js'
@@ -53,6 +53,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     : shouldAutoUpdate({cliConfig, flags, output})
 
   let autoUpdatesImports = {}
+  let autoUpdatesCssUrls: string[] = []
 
   if (autoUpdatesEnabled) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
@@ -74,10 +75,12 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     }
 
     const sanityDependencies = [
-      {name: 'sanity', version: cleanSanityVersion},
-      {name: '@sanity/vision', version: cleanSanityVersion},
+      {name: 'sanity', version: cleanSanityVersion, cssFile: 'index.css'},
+      {name: '@sanity/vision', version: cleanSanityVersion, cssFile: 'index.css'},
     ]
     autoUpdatesImports = getAutoUpdatesImportMap(sanityDependencies, {appId})
+
+    autoUpdatesCssUrls = getAutoUpdatesCssUrls(sanityDependencies, {appId})
 
     // Check the versions
     const {mismatched, unresolvedPrerelease} = await compareDependencyVersions(
@@ -89,6 +92,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     if (unresolvedPrerelease.length > 0) {
       await handlePrereleaseVersions({output, unattendedMode, unresolvedPrerelease})
       autoUpdatesImports = {}
+      autoUpdatesCssUrls = []
       autoUpdatesEnabled = false
     }
 
@@ -198,6 +202,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     timer.start('bundleStudio')
 
     const bundle = await buildStaticFiles({
+      autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
       basePath,
       cwd: workDir,
       importMap,

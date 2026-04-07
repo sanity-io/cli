@@ -38,6 +38,11 @@ interface ViteOptions {
   reactCompiler: ReactCompilerConfig | undefined
 
   /**
+   * CSS URLs for auto-updated packages (loaded via module server)
+   */
+  autoUpdatesCssUrls?: string[]
+
+  /**
    * Base path (eg under where to serve the app - `/studio` or similar)
    * Will be normalized to ensure it starts and ends with a `/`
    */
@@ -81,6 +86,7 @@ interface ViteOptions {
  */
 export async function getViteConfig(options: ViteOptions): Promise<InlineConfig> {
   const {
+    autoUpdatesCssUrls,
     basePath: rawBasePath = '/',
     cwd,
     importMap,
@@ -156,7 +162,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       ),
       sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
       sanityRuntimeRewritePlugin(),
-      sanityBuildEntries({basePath, cwd, importMap, isApp}),
+      sanityBuildEntries({autoUpdatesCssUrls, basePath, cwd, importMap, isApp}),
       // Add schema extraction when enabled
       ...(schemaExtraction?.enabled
         ? [
