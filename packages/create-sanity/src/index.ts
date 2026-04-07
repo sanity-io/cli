@@ -84,7 +84,9 @@ try {
 
   if (error instanceof Error) {
     await reportError(error)
+    console.error(error.message)
+  } else {
+    console.error(error)
   }
-  console.error(error)
   process.exit(1)
 }

@@ -263,4 +263,19 @@ describe('setupStandaloneTelemetry', () => {
 
     await expect(complete()).resolves.toBeUndefined()
   })
+
+  test('clears the timeout timer when flush completes before timeout', async () => {
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
+    const setupStandaloneTelemetry = await importSetup()
+
+    const {complete} = setupStandaloneTelemetry({
+      commandName: 'init',
+      version: '1.0.0',
+    })
+
+    await complete()
+
+    expect(clearTimeoutSpy).toHaveBeenCalled()
+    clearTimeoutSpy.mockRestore()
+  })
 })
