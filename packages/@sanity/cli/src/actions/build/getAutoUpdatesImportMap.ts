@@ -73,3 +73,21 @@ function rewriteScopedPackage(pkgName: string) {
   const [scope, ...pkg] = pkgName.split('/')
   return `${scope}__${pkg.join('')}`
 }
+
+type PackageWithCss = Package & {cssFile?: string}
+
+/**
+ * Generate CDN CSS URLs for auto-updated packages.
+ * Uses the same URL pattern as JS module URLs so the module server
+ * resolves CSS and JS to the same version.
+ *
+ * @internal
+ */
+export function getAutoUpdatesCssUrls<const Pkg extends PackageWithCss>(
+  packages: Pkg[],
+  options: {appId?: string; baseUrl?: string; timestamp?: number} = {},
+): string[] {
+  return packages
+    .filter((pkg): pkg is Pkg & {cssFile: string} => Boolean(pkg.cssFile))
+    .map((pkg) => `${getModuleUrl(pkg, options)}/${pkg.cssFile}`)
+}
