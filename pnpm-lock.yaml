@@ -731,8 +731,8 @@ importers:
         specifier: 'catalog:'
         version: 14.0.11
       oclif:
-        specifier: ^4.22.96
-        version: 4.22.96(@types/node@20.19.37)
+        specifier: ^4.23.0
+        version: 4.23.0(@types/node@20.19.37)
       publint:
         specifier: 'catalog:'
         version: 0.3.18
@@ -7219,6 +7219,9 @@ packages:
   lodash@4.17.23:
     resolution: {integrity: sha512-LgVTMpQtIopCi79SJeDiP0TfWi5CNEc/L/aRdTh3yIvmZXTnheWpKjSZhnvMl8iXbC1tFg9gdHHDMLoV7CnG+w==}
 
+  lodash@4.18.1:
+    resolution: {integrity: sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==}
+
   log-symbols@7.0.1:
     resolution: {integrity: sha512-ja1E3yCr9i/0hmBVaM0bfwDjnGy8I/s6PP4DFp+yP+a+mrHO4Rm7DtmnqROTUkHIkqffC84YY7AeqX6oFk0WFg==}
     engines: {node: '>=18'}
@@ -7542,8 +7545,8 @@ packages:
   obug@2.1.1:
     resolution: {integrity: sha512-uTqF9MuPraAQ+IsnPf366RG4cP9RtUi7MLO1N3KEc+wb0a6yKpeL0lmk2IB1jY5KHPAlTc6T/JRdC/YqxHNwkQ==}
 
-  oclif@4.22.96:
-    resolution: {integrity: sha512-aWM9cMb7Q3KW09qi5Mkw0Hq9sIM7DjVlyMAUl8Q2FP3+e5afBlUU9vmL3EJazVPhqcbg5u18E3z+6kCMk72KYw==}
+  oclif@4.23.0:
+    resolution: {integrity: sha512-0Rz8YsJx6NQORMgyDeDr6i0OlJa6h4oLXBht9iRZhn/YI/by/ONKgcJIPXyTgeLK21JmhbFqJn6Y1AME0EH1Dw==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -12069,7 +12072,7 @@ snapshots:
       ansis: 3.17.0
       debug: 4.4.3(supports-color@8.1.1)
       http-call: 5.3.0
-      lodash: 4.17.23
+      lodash: 4.18.1
       registry-auth-token: 5.1.1
     transitivePeerDependencies:
       - supports-color
@@ -16715,6 +16718,8 @@ snapshots:
 
   lodash@4.17.23: {}
 
+  lodash@4.18.1: {}
+
   log-symbols@7.0.1:
     dependencies:
       is-unicode-supported: 2.1.0
@@ -16995,7 +17000,7 @@ snapshots:
 
   obug@2.1.1: {}
 
-  oclif@4.22.96(@types/node@20.19.37):
+  oclif@4.23.0(@types/node@20.19.37):
     dependencies:
       '@aws-sdk/client-cloudfront': 3.1009.0
       '@aws-sdk/client-s3': 3.1014.0
@@ -17015,7 +17020,7 @@ snapshots:
       fs-extra: 8.1.0
       github-slugger: 2.0.0
       got: 13.0.0
-      lodash: 4.17.23
+      lodash: 4.18.1
       normalize-package-data: 6.0.2
       semver: 7.7.4
       sort-package-json: 2.15.1

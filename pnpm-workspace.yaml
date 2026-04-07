@@ -81,3 +81,5 @@ minimumReleaseAgeExclude:
   - 'use-effect-event'
   - 'oxfmt'
   - '@oxfmt/*'
+  # Bump for oclif with `--no-source-links` support, can remove after ~Apr 11th
+  - 'oclif@4.23.0'
