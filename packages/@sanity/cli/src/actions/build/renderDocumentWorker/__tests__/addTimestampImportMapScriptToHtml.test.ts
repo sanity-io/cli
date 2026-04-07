@@ -64,4 +64,28 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     expect(result).toContain('importmap')
     expect(result).toContain('__imports')
   })
+
+  test('runtime script includes CSS link tag creation when css array is present', () => {
+    const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
+    const cssUrls = ['https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890/index.css']
+
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, cssUrls)
+
+    // The runtime script should handle CSS
+    expect(result).toContain('css.forEach')
+    expect(result).toContain("link.rel = 'stylesheet'")
+    expect(result).toContain('replaceTimestamp')
+  })
+
+  test('runtime script uses shared replaceTimestamp for both JS and CSS', () => {
+    const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
+
+    // The replaceTimestamp function should be defined once and used for both
+    expect(result).toContain('function replaceTimestamp')
+    // Used for import map entries
+    expect(result).toContain('[specifier, replaceTimestamp(path)]')
+    // Used for CSS URLs
+    expect(result).toContain('replaceTimestamp(cssUrl)')
+  })
 })
