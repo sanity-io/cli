@@ -1,0 +1,67 @@
+import {describe, expect, test} from 'vitest'
+
+import {addTimestampedImportMapScriptToHtml} from '../addTimestampImportMapScriptToHtml'
+
+const baseHtml = '<html><head></head><body></body></html>'
+
+describe('addTimestampedImportMapScriptToHtml', () => {
+  test('returns html unchanged when no importMap is provided', () => {
+    const result = addTimestampedImportMapScriptToHtml(baseHtml)
+    expect(result).toBe(baseHtml)
+  })
+
+  test('injects import map JSON into the head', () => {
+    const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
+
+    expect(result).toContain('id="__imports"')
+    expect(result).toContain('"sanity"')
+    expect(result).toContain('sanity-cdn.com')
+  })
+
+  test('includes css array in __imports JSON when autoUpdatesCssUrls provided', () => {
+    const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
+    const cssUrls = [
+      'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890/index.css',
+      'https://sanity-cdn.com/v1/modules/@sanity__vision/default/%5E3.2.0/t1234567890/index.css',
+    ]
+
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, cssUrls)
+
+    // Parse the __imports JSON from the output
+    const match = result.match(/id="__imports">([^<]+)</)
+    expect(match).toBeTruthy()
+
+    const importsData = JSON.parse(match![1])
+    expect(importsData.css).toEqual(cssUrls)
+    expect(importsData.imports).toEqual(importMap.imports)
+  })
+
+  test('does not include css key when autoUpdatesCssUrls is empty', () => {
+    const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
+
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, [])
+
+    const match = result.match(/id="__imports">([^<]+)</)
+    const importsData = JSON.parse(match![1])
+    expect(importsData.css).toBeUndefined()
+  })
+
+  test('does not include css key when autoUpdatesCssUrls is undefined', () => {
+    const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
+
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, undefined)
+
+    const match = result.match(/id="__imports">([^<]+)</)
+    const importsData = JSON.parse(match![1])
+    expect(importsData.css).toBeUndefined()
+  })
+
+  test('injects the timestamped import map injector script', () => {
+    const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
+
+    expect(result).toContain('importmap')
+    expect(result).toContain('__imports')
+  })
+})

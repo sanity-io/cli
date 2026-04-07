@@ -17,7 +17,7 @@ import {buildStaticFiles} from './buildStaticFiles.js'
 import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {determineBasePath} from './determineBasePath.js'
 import {getAppEnvVars} from './getAppEnvVars.js'
-import {getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
+import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'
 
@@ -46,6 +46,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
   }
 
   let autoUpdatesImports = {}
+  let autoUpdatesCssUrls: string[] = []
 
   if (autoUpdatesEnabled) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
@@ -61,9 +62,10 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     const autoUpdatedPackages = [
       {name: '@sanity/sdk', version: cleanSDKVersion},
       {name: '@sanity/sdk-react', version: cleanSDKVersion},
-      ...(cleanSanityVersion ? [{name: 'sanity' as const, version: cleanSanityVersion}] : []),
+      ...(cleanSanityVersion ? [{name: 'sanity' as const, version: cleanSanityVersion, cssFile: 'index.css'}] : []),
     ]
     autoUpdatesImports = getAutoUpdatesImportMap(autoUpdatedPackages, {appId})
+    autoUpdatesCssUrls = getAutoUpdatesCssUrls(autoUpdatedPackages, {appId})
 
     output.log(`${logSymbols.info} Building with auto-updates enabled`)
 
@@ -84,6 +86,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     if (unresolvedPrerelease.length > 0) {
       await handlePrereleaseVersions({output, unattendedMode, unresolvedPrerelease})
       autoUpdatesImports = {}
+      autoUpdatesCssUrls = []
       autoUpdatesEnabled = false
     }
 
@@ -160,6 +163,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
 
     const bundle = await buildStaticFiles({
       appTitle: cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined,
+      autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
       basePath,
       cwd: workDir,
       entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,

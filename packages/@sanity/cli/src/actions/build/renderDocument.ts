@@ -14,6 +14,7 @@ interface DocumentProps {
 interface RenderDocumentOptions {
   studioRootPath: string
 
+  autoUpdatesCssUrls?: string[]
   importMap?: {
     imports?: Record<string, string>
   }
