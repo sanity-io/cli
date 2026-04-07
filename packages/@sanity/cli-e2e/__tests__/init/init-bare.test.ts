@@ -22,7 +22,7 @@ describe.skipIf(!hasToken)('sanity init --bare', () => {
     await cleanup()
   })
 
-  test('3.1 outputs project ID and dataset', async () => {
+  test('3.1 outputs project ID, dataset, and manage URL', async () => {
     const {error, exitCode, stdout} = await runCli({
       args: [
         'init',
@@ -43,24 +43,6 @@ describe.skipIf(!hasToken)('sanity init --bare', () => {
     expect(stdout).toContain(projectId)
     expect(stdout).toContain('Dataset:')
     expect(stdout).toContain('production')
-  })
-
-  test('3.2 outputs manage URL', async () => {
-    const {error, stdout} = await runCli({
-      args: [
-        'init',
-        '-y',
-        '--bare',
-        '--project',
-        projectId,
-        '--dataset',
-        'production',
-        '--output-path',
-        tmpDir,
-      ],
-    })
-
-    if (error) throw error
     expect(stdout).toContain(`sanity.io/manage/project/${projectId}`)
   })
 
