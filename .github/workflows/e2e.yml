@@ -1,0 +1,83 @@
+name: E2E Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      should_run: ${{ github.event_name == 'push' || steps.filter.outputs.cli == 'true' }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@fbd0ab8f3e69293af611ebaee6363fc25e6d187d # v4
+        id: filter
+        with:
+          filters: |
+            cli:
+              - 'packages/@sanity/cli/**'
+              - 'packages/@sanity/cli-core/**'
+              - 'packages/@sanity/cli-e2e/**'
+              - 'packages/@sanity/cli-test/**'
+              - 'packages/create-sanity/**'
+              - 'fixtures/**'
+              - 'pnpm-lock.yaml'
+
+  e2e:
+    needs: changes
+    if: needs.changes.outputs.should_run == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [20, 22, 24]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Build CLI
+        run: pnpm build:cli
+
+      - name: Run E2E tests
+        env:
+          SANITY_E2E_TOKEN: ${{ secrets.SANITY_E2E_TOKEN }}
+          SANITY_E2E_PROJECT_ID: ${{ secrets.SANITY_E2E_PROJECT_ID }}
+          SANITY_E2E_DATASET: ${{ secrets.SANITY_E2E_DATASET }}
+        run: pnpm --filter @sanity/cli-e2e test
+
+  e2e-status:
+    if: always()
+    needs: [changes, e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check status
+        run: |
+          # Fail if any needed job failed or was cancelled
+          results=("${{ needs.changes.result }}" "${{ needs.e2e.result }}")
+          for result in "${results[@]}"; do
+            if [ "$result" == "failure" ] || [ "$result" == "cancelled" ]; then
+              echo "Job failed or was cancelled: $result"
+              exit 1
+            fi
+          done
+          echo "All jobs passed or were skipped"

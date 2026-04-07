@@ -261,10 +261,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       const existingConfig = await readFile(configPath, 'utf8')
 
       // Add projectId to the config
-      const modifiedConfig = existingConfig.replace(
-        /projectId: '.*',/,
-        `projectId: '${projectId}',`,
-      )
+      const modifiedConfig = existingConfig.replace(/projectId:.*,/, `projectId: '${projectId}',`)
 
       await writeFile(configPath, modifiedConfig)
 
@@ -299,7 +296,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       // Modify config to remove projectId
       const configPath = join(cwd, 'sanity.cli.ts')
       const existingConfig = await readFile(configPath, 'utf8')
-      const modifiedConfig = existingConfig.replace(/projectId: '[^']*',/, '')
+      const modifiedConfig = existingConfig.replace(/projectId:.*,/, '')
       await writeFile(configPath, modifiedConfig)
 
       const {error} = await testCommand(DevCommand, ['--load-in-dashboard', '--port', '5343'], {
@@ -319,10 +316,7 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       const projectId = 'test-project'
       const configPath = join(cwd, 'sanity.cli.ts')
       const existingConfig = await readFile(configPath, 'utf8')
-      const modifiedConfig = existingConfig.replace(
-        /projectId: '.*',/,
-        `projectId: '${projectId}',`,
-      )
+      const modifiedConfig = existingConfig.replace(/projectId:.*,/, `projectId: '${projectId}',`)
       await writeFile(configPath, modifiedConfig)
 
       mockGetProjectCliClient.mockResolvedValue({
