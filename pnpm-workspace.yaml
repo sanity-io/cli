@@ -57,8 +57,8 @@ catalog:
   yaml: ^2.8.3
 
   # Build Tools
-  '@swc/core': ^1.15.21
-  '@swc/cli': ^0.8.0
+  '@swc/core': ^1.15.24
+  '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
   '@sanity/pkg-utils': ^10.4.13
   oxfmt: ^0.43.0
