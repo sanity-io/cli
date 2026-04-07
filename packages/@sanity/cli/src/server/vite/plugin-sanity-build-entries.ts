@@ -28,10 +28,11 @@ const entryChunkId = '.sanity/runtime/app.js'
 export function sanityBuildEntries(options: {
   basePath: string
   cwd: string
+  autoUpdatesCssUrls?: string[]
   importMap?: {imports?: Record<string, string>}
   isApp?: boolean
 }): Plugin {
-  const {basePath, cwd, importMap, isApp} = options
+  const {autoUpdatesCssUrls, basePath, cwd, importMap, isApp} = options
 
   return {
     apply: 'build',
@@ -88,6 +89,7 @@ export function sanityBuildEntries(options: {
         source: decorateIndexWithStagingScript(
           decorateIndexWithBridgeScript(
             await renderDocument({
+              autoUpdatesCssUrls,
               importMap,
               isApp,
               props: {

@@ -43,6 +43,7 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
 export function addTimestampedImportMapScriptToHtml(
   html: string,
   importMap?: {imports?: Record<string, string>},
+  autoUpdatesCssUrls?: string[],
 ): string {
   if (!importMap) return html
 
@@ -62,9 +63,14 @@ export function addTimestampedImportMapScriptToHtml(
     headEl = root.querySelector('head')!
   }
 
+  const importsData =
+    autoUpdatesCssUrls && autoUpdatesCssUrls.length > 0
+      ? {...importMap, css: autoUpdatesCssUrls}
+      : importMap
+
   headEl.insertAdjacentHTML(
     'beforeend',
-    `<script type="application/json" id="__imports">${JSON.stringify(importMap)}</script>`,
+    `<script type="application/json" id="__imports">${JSON.stringify(importsData)}</script>`,
   )
   headEl.insertAdjacentHTML('beforeend', TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT)
   return root.outerHTML
