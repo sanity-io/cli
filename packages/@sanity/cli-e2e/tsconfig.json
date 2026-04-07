@@ -1,6 +1,6 @@
 {
   "extends": "@repo/tsconfig/base.json",
-  "include": ["./helpers", "./__tests__", "./setup.ts", "./globalSetup.ts"],
+  "include": ["./helpers", "./__tests__", "./globalSetup.ts"],
   "compilerOptions": {
     "rootDir": ".",
     "paths": {

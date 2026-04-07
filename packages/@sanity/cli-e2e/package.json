@@ -18,9 +18,10 @@
     "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:*",
     "@types/node": "catalog:",
-    "cli-testing-library": "catalog:",
     "dotenv": "catalog:",
     "eslint": "catalog:",
+    "node-pty": "catalog:",
+    "strip-ansi": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
