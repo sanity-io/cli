@@ -60,9 +60,15 @@ catalogs:
     '@vitest/coverage-istanbul':
       specifier: ^4.1.2
       version: 4.1.2
+    cli-testing-library:
+      specifier: ^3.0.1
+      version: 3.0.1
     debug:
       specifier: ^4.4.3
       version: 4.4.3
+    dotenv:
+      specifier: ^17.3.1
+      version: 17.3.1
     eslint:
       specifier: ^10.1.0
       version: 10.1.0
@@ -888,6 +894,45 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.1.2(@types/node@20.19.39)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+
+  packages/@sanity/cli-e2e:
+    devDependencies:
+      '@eslint/compat':
+        specifier: 'catalog:'
+        version: 2.0.3(eslint@10.1.0(jiti@2.6.1))
+      '@repo/tsconfig':
+        specifier: workspace:*
+        version: link:../../@repo/tsconfig
+      '@sanity/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@sanity/cli-core':
+        specifier: workspace:*
+        version: link:../cli-core
+      '@sanity/cli-test':
+        specifier: workspace:*
+        version: link:../cli-test
+      '@sanity/eslint-config-cli':
+        specifier: workspace:*
+        version: link:../eslint-config-cli
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.37
+      cli-testing-library:
+        specifier: 'catalog:'
+        version: 3.0.1(vitest@4.1.2(@types/node@20.19.37)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@7.3.1(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)))
+      dotenv:
+        specifier: 'catalog:'
+        version: 17.3.1
+      eslint:
+        specifier: 'catalog:'
+        version: 10.1.0(jiti@2.6.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.2(@types/node@20.19.37)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@7.3.1(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
 
   packages/@sanity/cli-test:
     dependencies:
@@ -5783,6 +5828,21 @@ packages:
     resolution: {integrity: sha512-bXfOC4QcT1tKXGorxL3wbJm6XJPDqEnij2gQ2m7ESQuE+/z9YFIWnl/5RpTiKWbMq3EVKR4fRLJGn6DVfu0mpw==}
     engines: {node: '>=18.20'}
 
+  cli-testing-library@3.0.1:
+    resolution: {integrity: sha512-fkQ8D2hQS53RP3s0yuCMHmTfPUMEqtVtJG0rs13MNE2khnkSaY8MsNxN7rSJZAzOOVsSg2I2F2XjEITJwf5dFg==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@jest/expect': ^29.0.0
+      '@jest/globals': ^29.0.0
+      vitest: ^3.0.0
+    peerDependenciesMeta:
+      '@jest/expect':
+        optional: true
+      '@jest/globals':
+        optional: true
+      vitest:
+        optional: true
+
   cli-truncate@5.1.1:
     resolution: {integrity: sha512-SroPvNHxUnk+vIW/dOSfNqdy1sPEFkrTk6TUtqLCnBlo3N7TNYYkzzN7uSD6+jVjrdO4+p8nH7JzH6cIvUem6A==}
     engines: {node: '>=20'}
@@ -8352,6 +8412,10 @@ packages:
     resolution: {integrity: sha512-9u/XQ1pvrQtYyMpZe7DXKv2p5CNvyVwzUB6uhLAnQwHMSgKMBR62lc7AHljaeteeHXn11XTAaLLUVZYVZyuRBQ==}
     engines: {node: '>= 20.19.0'}
 
+  redent@4.0.0:
+    resolution: {integrity: sha512-tYkDkVVtYkSVhuQ4zBgfvciymHaeuel+zFKXShfDnFP5SyVEP7qo70Rf1jTOTCx3vGNAbnEi/xFkcfQVMIBWag==}
+    engines: {node: '>=12'}
+
   redeyed@2.1.1:
     resolution: {integrity: sha512-FNpGGo1DycYAdnrKFxCMmKYgo/mILAqtRYbkdQD8Ep/Hk2PQ5+aEAEx+IU713RTDmuBaH0c8P5ZozurNu5ObRQ==}
 
@@ -8988,6 +9052,10 @@ packages:
   tr46@6.0.0:
     resolution: {integrity: sha512-bLVMLPtstlZ4iMQHpFHTR7GAGj2jxi8Dg0s2h2MafAE4uSWF98FC/3MomU51iQAMf8/qDUbKWf5GxuvvVcXEhw==}
     engines: {node: '>=20'}
+
+  tree-kill@1.2.2:
+    resolution: {integrity: sha512-L0Orpi8qGpRG//Nd+H90vFB+3iHnue1zSSGmNOOCh1GLJ7rUKVwV2HvijphGQS2UmhUZewS9VgvxYIdgr+fG1A==}
+    hasBin: true
 
   treeify@1.1.0:
     resolution: {integrity: sha512-1m4RA7xVAJrSGrrXGs0L3YTwyvBs2S8PbRHaLZAkFw7JR8oIFwYtysxlBZhYIa7xSyiYJKZ3iGrrk55cGA3i9A==}
@@ -15395,6 +15463,19 @@ snapshots:
 
   cli-spinners@3.4.0: {}
 
+  cli-testing-library@3.0.1(vitest@4.1.2(@types/node@20.19.37)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@7.3.1(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))):
+    dependencies:
+      '@babel/code-frame': 7.29.0
+      '@babel/runtime': 7.28.6
+      picocolors: 1.1.1
+      redent: 4.0.0
+      slice-ansi: 7.1.2
+      strip-ansi: 7.1.2
+      strip-final-newline: 4.0.0
+      tree-kill: 1.2.2
+    optionalDependencies:
+      vitest: 4.1.2(@types/node@20.19.37)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@7.3.1(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+
   cli-truncate@5.1.1:
     dependencies:
       slice-ansi: 7.1.2
@@ -18083,6 +18164,11 @@ snapshots:
 
   readdirp@5.0.0: {}
 
+  redent@4.0.0:
+    dependencies:
+      indent-string: 5.0.0
+      strip-indent: 4.1.1
+
   redeyed@2.1.1:
     dependencies:
       esprima: 4.0.1
@@ -18895,6 +18981,8 @@ snapshots:
   tr46@6.0.0:
     dependencies:
       punycode: 2.3.1
+
+  tree-kill@1.2.2: {}
 
   treeify@1.1.0: {}
 
