@@ -86,7 +86,7 @@ export function setupStandaloneTelemetry(
   const flush = async (): Promise<void> => {
     telemetryDebug('Starting inline flush (timeout: %dms)', flushTimeoutMs)
     try {
-      let timeoutHandle: ReturnType<typeof setTimeout>
+      let timeoutHandle: ReturnType<typeof setTimeout> | undefined
       await Promise.race([
         flushTelemetryFiles({resolveConsent, sendEvents}),
         new Promise<void>((_resolve, reject) => {
