@@ -2,7 +2,6 @@ import {Flags} from '@oclif/core'
 import {NonInteractiveError, SanityCommand, subdebug} from '@sanity/cli-core'
 import {Table} from 'console-table-printer'
 
-import {type UserAttribute} from '../../../actions/userAttributes/types.js'
 import {promptForOrganization} from '../../../prompts/promptForOrganization.js'
 import {getMyAttributes, getUserAttributes} from '../../../services/userAttributes.js'
 import {formatAttributeValue} from '../../../util/formatAttributeValue.js'
@@ -93,7 +92,7 @@ export class UserAttributesListCommand extends SanityCommand<typeof UserAttribut
       ],
     })
 
-    for (const attr of attributes as UserAttribute[]) {
+    for (const attr of attributes) {
       table.addRow({
         activeSource: attr.activeSource,
         activeValue: formatAttributeValue(attr.activeValue),

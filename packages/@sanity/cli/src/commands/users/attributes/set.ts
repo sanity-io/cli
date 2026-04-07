@@ -2,7 +2,7 @@ import {Flags} from '@oclif/core'
 import {NonInteractiveError, SanityCommand, subdebug} from '@sanity/cli-core'
 import {Table} from 'console-table-printer'
 
-import {type SetAttributeInput, type UserAttribute} from '../../../actions/userAttributes/types.js'
+import {type SetAttributeInput} from '../../../actions/userAttributes/types.js'
 import {promptForOrganization} from '../../../prompts/promptForOrganization.js'
 import {updateUserAttributes} from '../../../services/userAttributes.js'
 import {formatAttributeValue} from '../../../util/formatAttributeValue.js'
@@ -91,6 +91,12 @@ export class UserAttributesSetCommand extends SanityCommand<typeof UserAttribute
       this.error('--attributes must be a JSON array', {exit: 1})
     }
 
+    for (const item of parsed) {
+      if (typeof item !== 'object' || item === null || !('key' in item) || !('value' in item)) {
+        this.error('Each item in --attributes must have "key" and "value" fields', {exit: 1})
+      }
+    }
+
     const attributes = parsed as SetAttributeInput[]
 
     let result: Awaited<ReturnType<typeof updateUserAttributes>>
@@ -121,7 +127,7 @@ export class UserAttributesSetCommand extends SanityCommand<typeof UserAttribute
       ],
     })
 
-    for (const attr of result.attributes as UserAttribute[]) {
+    for (const attr of result.attributes) {
       table.addRow({
         activeSource: attr.activeSource,
         activeValue: formatAttributeValue(attr.activeValue),

@@ -118,6 +118,30 @@ describe('#users:attributes:set', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('errors when an attribute item is missing the key field', async () => {
+    const {error} = await testCommand(
+      UserAttributesSetCommand,
+      ['--org-id', testOrgId, '--user-id', testUserId, '--attributes', '[{"value":"UK"}]'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('"key" and "value"')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('errors when an attribute item is missing the value field', async () => {
+    const {error} = await testCommand(
+      UserAttributesSetCommand,
+      ['--org-id', testOrgId, '--user-id', testUserId, '--attributes', '[{"key":"location"}]'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('"key" and "value"')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
   test('handles API error gracefully', async () => {
     mockApi({
       apiVersion: USER_ATTRIBUTES_API_VERSION,
