@@ -46,7 +46,14 @@ export async function renderDocumentWorker(
     return
   }
 
-  const html = await getDocumentHtml(parent, studioRootPath, props, importMap, isApp, autoUpdatesCssUrls)
+  const html = await getDocumentHtml(
+    parent,
+    studioRootPath,
+    props,
+    importMap,
+    isApp,
+    autoUpdatesCssUrls,
+  )
 
   parent.postMessage({
     html,

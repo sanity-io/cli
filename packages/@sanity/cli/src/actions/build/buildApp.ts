@@ -62,7 +62,9 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     const autoUpdatedPackages = [
       {name: '@sanity/sdk', version: cleanSDKVersion},
       {name: '@sanity/sdk-react', version: cleanSDKVersion},
-      ...(cleanSanityVersion ? [{name: 'sanity' as const, version: cleanSanityVersion, cssFile: 'index.css'}] : []),
+      ...(cleanSanityVersion
+        ? [{cssFile: 'index.css', name: 'sanity' as const, version: cleanSanityVersion}]
+        : []),
     ]
     autoUpdatesImports = getAutoUpdatesImportMap(autoUpdatedPackages, {appId})
     autoUpdatesCssUrls = getAutoUpdatesCssUrls(autoUpdatedPackages, {appId})
