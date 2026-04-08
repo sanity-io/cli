@@ -21,48 +21,22 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     expect(result).toContain('sanity-cdn.com')
   })
 
-  test('includes css array in __imports JSON when autoUpdatesCssUrls provided', () => {
+  test('does not include css array in __imports JSON', () => {
     const importMap = {
       imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
     }
     const cssUrls = [
       'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890/index.css',
-      'https://sanity-cdn.com/v1/modules/@sanity__vision/default/%5E3.2.0/t1234567890/index.css',
     ]
 
     const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, cssUrls)
 
-    // Parse the __imports JSON from the output
+    // __imports JSON should only contain imports, not css
     const match = result.match(/id="__imports">([^<]+)</)
     expect(match).toBeTruthy()
-
     const importsData = JSON.parse(match![1])
-    expect(importsData.css).toEqual(cssUrls)
+    expect(importsData.css).toBeUndefined()
     expect(importsData.imports).toEqual(importMap.imports)
-  })
-
-  test('does not include css key when autoUpdatesCssUrls is empty', () => {
-    const importMap = {
-      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
-    }
-
-    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, [])
-
-    const match = result.match(/id="__imports">([^<]+)</)
-    const importsData = JSON.parse(match![1])
-    expect(importsData.css).toBeUndefined()
-  })
-
-  test('does not include css key when autoUpdatesCssUrls is undefined', () => {
-    const importMap = {
-      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
-    }
-
-    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, undefined)
-
-    const match = result.match(/id="__imports">([^<]+)</)
-    const importsData = JSON.parse(match![1])
-    expect(importsData.css).toBeUndefined()
   })
 
   test('injects the timestamped import map injector script', () => {
@@ -87,12 +61,18 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, cssUrls)
 
     // Static <link> tags should be in the HTML with data-auto-update-css attribute
-    expect(result).toContain('<link rel="stylesheet" href="https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890/index.css" data-auto-update-css>')
-    expect(result).toContain('<link rel="stylesheet" href="https://sanity-cdn.com/v1/modules/@sanity__vision/default/%5E3.2.0/t1234567890/index.css" data-auto-update-css>')
+    expect(result).toContain(
+      '<link rel="stylesheet" href="https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890/index.css" data-auto-update-css>',
+    )
+    expect(result).toContain(
+      '<link rel="stylesheet" href="https://sanity-cdn.com/v1/modules/@sanity__vision/default/%5E3.2.0/t1234567890/index.css" data-auto-update-css>',
+    )
   })
 
   test('does not add static <link> tags when no CSS URLs provided', () => {
-    const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
+    const importMap = {
+      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
+    }
 
     const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
 
@@ -100,7 +80,9 @@ describe('addTimestampedImportMapScriptToHtml', () => {
   })
 
   test('runtime script updates existing CSS link tags instead of creating new ones', () => {
-    const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
+    const importMap = {
+      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
+    }
     const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
 
     // Should query for existing links and update href
@@ -137,19 +119,13 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     expect(result).toContain('Failed to parse __imports JSON')
   })
 
-  test('runtime script does not leak css array into import map', () => {
+  test('static CSS link tags appear before the runtime script', () => {
     const importMap = {
       imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
     }
-    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
-
-    // The script should remove css from the import map data
-    expect(result).toContain('delete importMapData.css')
-  })
-
-  test('static CSS link tags appear before the runtime script', () => {
-    const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
-    const cssUrls = ['https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890/index.css']
+    const cssUrls = [
+      'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890/index.css',
+    ]
 
     const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, cssUrls)
 

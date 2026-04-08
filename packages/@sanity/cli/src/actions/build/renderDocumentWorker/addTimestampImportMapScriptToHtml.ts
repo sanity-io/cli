@@ -22,7 +22,6 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
     importsData = {};
   }
   var imports = importsData.imports || {};
-  var css = importsData.css || [];
   var newTimestamp = \`/t\${Math.floor(Date.now() / 1000)}\`;
 
   function replaceTimestamp(urlStr) {
@@ -41,7 +40,6 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   const importMapEl = document.createElement('script');
   importMapEl.type = 'importmap';
   const importMapData = Object.assign({}, importsData);
-  delete importMapData.css;
   importMapData.imports = Object.fromEntries(
     Object.entries(imports).map(([specifier, path]) => [specifier, replaceTimestamp(path)])
   );
@@ -80,14 +78,9 @@ export function addTimestampedImportMapScriptToHtml(
     headEl = root.querySelector('head')!
   }
 
-  const importsData =
-    autoUpdatesCssUrls && autoUpdatesCssUrls.length > 0
-      ? {...importMap, css: autoUpdatesCssUrls}
-      : importMap
-
   headEl.insertAdjacentHTML(
     'beforeend',
-    `<script type="application/json" id="__imports">${JSON.stringify(importsData)}</script>`,
+    `<script type="application/json" id="__imports">${JSON.stringify(importMap)}</script>`,
   )
 
   // Add static <link> tags for CDN CSS — browser starts fetching immediately.
