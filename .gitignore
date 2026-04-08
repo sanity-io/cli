@@ -52,7 +52,9 @@ coverage/
 .claude/*
 !.claude/settings.json
 !.claude/commands/
-.agents/
+!.claude/skills/
+.agents/*
+!.agents/skills/
 skills-lock.json
 .worktrees/
 /docs/plans
