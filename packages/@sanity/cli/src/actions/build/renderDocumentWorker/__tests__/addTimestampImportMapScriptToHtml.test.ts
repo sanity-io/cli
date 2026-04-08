@@ -65,11 +65,17 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     expect(result).toContain('__imports')
   })
 
-  test('runtime script includes CSS link tag creation when css array is present', () => {
+  test('runtime script includes CSS link tag creation and CSS URLs are stored in JSON', () => {
     const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
     const cssUrls = ['https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890/index.css']
 
     const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, cssUrls)
+
+    // Verify CSS URLs are actually stored in the __imports JSON
+    const match = result.match(/id="__imports">([^<]+)</)
+    expect(match).toBeTruthy()
+    const importsData = JSON.parse(match![1])
+    expect(importsData.css).toEqual(cssUrls)
 
     // The runtime script should handle CSS
     expect(result).toContain('css.forEach')
@@ -87,5 +93,24 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     expect(result).toContain('[specifier, replaceTimestamp(path)]')
     // Used for CSS URLs
     expect(result).toContain('replaceTimestamp(cssUrl)')
+  })
+
+  test('runtime script has error handling for JSON.parse', () => {
+    const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
+
+    // Should have try-catch around JSON.parse
+    expect(result).toContain('try')
+    expect(result).toContain('JSON.parse')
+    expect(result).toContain('console.warn')
+    expect(result).toContain('Failed to parse __imports JSON')
+  })
+
+  test('runtime script does not leak css array into import map', () => {
+    const importMap = {imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'}}
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
+
+    // The script should remove css from the import map data
+    expect(result).toContain('delete importMapData.css')
   })
 })

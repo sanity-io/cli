@@ -10,6 +10,7 @@ import {StudioBuildTrace} from '../../telemetry/build.telemetry.js'
 import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
+import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
@@ -74,9 +75,16 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       warnAboutMissingAppId({appType: 'studio', output, projectId})
     }
 
+    const installedVisionVersion = await getLocalPackageVersion('@sanity/vision', workDir)
+    const cleanVisionVersion = installedVisionVersion
+      ? semver.parse(installedVisionVersion)?.version
+      : undefined
+
     const sanityDependencies = [
       {name: 'sanity', version: cleanSanityVersion, cssFile: 'index.css'},
-      {name: '@sanity/vision', version: cleanSanityVersion, cssFile: 'index.css'},
+      ...(cleanVisionVersion
+        ? [{name: '@sanity/vision' as const, version: cleanVisionVersion, cssFile: 'index.css'}]
+        : [{name: '@sanity/vision' as const, version: cleanSanityVersion}]),
     ]
     autoUpdatesImports = getAutoUpdatesImportMap(sanityDependencies, {appId})
 
