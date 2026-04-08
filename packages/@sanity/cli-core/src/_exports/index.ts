@@ -25,7 +25,6 @@ export {
   clearCliTelemetry,
   CLI_TELEMETRY_SYMBOL,
   getCliTelemetry,
-  noopLogger,
   setCliTelemetry,
 } from '../telemetry/getCliTelemetry.js'
 export {getTelemetryBaseInfo} from '../telemetry/getTelemetryBaseInfo.js'

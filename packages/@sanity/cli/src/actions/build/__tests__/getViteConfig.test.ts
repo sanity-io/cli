@@ -1,6 +1,5 @@
 import {join} from 'node:path'
 
-import {noopLogger} from '@sanity/cli-core'
 import {convertToSystemPath} from '@sanity/cli-test'
 import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
@@ -13,6 +12,8 @@ import {
 
 const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
 const mockTypegenPlugin = vi.hoisted(() => vi.fn())
+const mockGetCliTelemetry = vi.hoisted(() => vi.fn())
+const mockTelemetryLogger = vi.hoisted(() => ({}))
 
 // Mock all external dependencies
 vi.mock('read-package-up', () => ({
@@ -77,6 +78,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   return {
     ...actual,
     findProjectRoot: vi.fn().mockResolvedValue({path: '/mock/config/path'}),
+    getCliTelemetry: mockGetCliTelemetry.mockReturnValue(mockTelemetryLogger),
   }
 })
 
@@ -376,7 +378,7 @@ describe('#getViteConfig', () => {
       configPath: '/mock/config/path',
       enforceRequiredFields: true,
       outputPath: 'custom-schema.json',
-      telemetryLogger: noopLogger,
+      telemetryLogger: mockTelemetryLogger,
       workDir: mockTestCwd,
       workspaceName: 'production',
     })
@@ -428,7 +430,7 @@ describe('#getViteConfig', () => {
         generates: 'sanity.types.ts',
         schema: 'custom-schema.json',
       },
-      telemetryLogger: noopLogger,
+      telemetryLogger: mockTelemetryLogger,
       workDir: mockTestCwd,
     })
     expect(typegenPlugin).toBeDefined()
