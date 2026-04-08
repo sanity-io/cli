@@ -1,7 +1,7 @@
 import {join} from 'node:path'
 
+import {noopLogger} from '@sanity/cli-core'
 import {convertToSystemPath} from '@sanity/cli-test'
-import {noopLogger} from '@sanity/telemetry'
 import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 

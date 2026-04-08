@@ -1,10 +1,10 @@
-import {noopLogger} from '@sanity/telemetry'
 import {afterEach, describe, expect, test} from 'vitest'
 
 import {
   clearCliTelemetry,
   CLI_TELEMETRY_SYMBOL,
   getCliTelemetry,
+  noopLogger,
   setCliTelemetry,
 } from '../getCliTelemetry.js'
 import {type CLITelemetryStore} from '../types.js'
