@@ -55,7 +55,6 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         node-version: [20, 22, 24]
-        shard: [1, 2, 3]
       fail-fast: false
 
     steps:
@@ -84,7 +83,7 @@ jobs:
           SANITY_E2E_TOKEN: ${{ secrets.SANITY_E2E_TOKEN }}
           SANITY_E2E_PROJECT_ID: ${{ secrets.SANITY_E2E_PROJECT_ID }}
           SANITY_E2E_DATASET: ${{ secrets.SANITY_E2E_DATASET }}
-        run: pnpm --filter @sanity/cli-e2e test -- --shard=${{ matrix.shard }}/3
+        run: pnpm --filter @sanity/cli-e2e test
 
   notify-failure:
     if: ${{ failure() && inputs.cli_version }}

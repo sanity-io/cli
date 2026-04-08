@@ -152,7 +152,11 @@ describe.skipIf(!hasToken)('sanity init - Next.js integration', () => {
       await session.waitForText(/add configuration files|Would you like to add/i)
       session.sendKey('Enter')
 
-      await session.waitForText(/embed.*studio|studio.*route/i)
+      // TypeScript prompt comes before embedded studio prompt
+      await session.waitForText(/TypeScript/i)
+      session.sendKey('Enter')
+
+      await session.waitForText(/embed.*studio|Would you like an embedded/i)
       session.sendKey('Enter')
 
       await session.waitForText(/route.*studio|What route/i)
@@ -174,7 +178,11 @@ describe.skipIf(!hasToken)('sanity init - Next.js integration', () => {
       await session.waitForText(/add configuration files|Would you like to add/i)
       session.sendKey('Enter')
 
-      await session.waitForText(/embed.*studio|studio.*route/i)
+      // TypeScript prompt comes before embedded studio prompt
+      await session.waitForText(/TypeScript/i)
+      session.sendKey('Enter')
+
+      await session.waitForText(/embed.*studio|Would you like an embedded/i)
       session.sendKey('Enter')
 
       await session.waitForText(/route.*studio|What route/i)
