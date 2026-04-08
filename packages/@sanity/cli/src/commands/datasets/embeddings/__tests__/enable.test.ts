@@ -148,6 +148,53 @@ describe('#dataset:embeddings:enable', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('should reject invalid projection syntax', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}])
+
+    const {error} = await testCommand(
+      DatasetEmbeddingsEnableCommand,
+      ['production', '--projection', '{ title body }'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Invalid projection')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('should reject non-projection expression', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}])
+
+    const {error} = await testCommand(
+      DatasetEmbeddingsEnableCommand,
+      ['production', '--projection', '*[_type == "post"]'],
+      {mocks: defaultMocks},
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Invalid projection')
+    expect(error?.message).toContain('Expected a GROQ projection')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('should accept complex valid projection', async () => {
+    mockListDatasets.mockResolvedValue([{name: 'production'}])
+    mockEditEmbeddingsSettings.mockResolvedValue(undefined)
+
+    const projection = '{ "fullName": firstName + " " + lastName, body }'
+    const {stdout} = await testCommand(
+      DatasetEmbeddingsEnableCommand,
+      ['production', '--projection', projection],
+      {mocks: defaultMocks},
+    )
+
+    expect(mockEditEmbeddingsSettings).toHaveBeenCalledWith('production', {
+      enabled: true,
+      projection,
+    })
+    expect(stdout).toContain(`Projection: ${projection}`)
+  })
+
   test('should error when specified dataset does not exist', async () => {
     mockListDatasets.mockResolvedValue([{name: 'production'}, {name: 'staging'}])
 

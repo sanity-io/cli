@@ -16,6 +16,9 @@ catalog:
   '@eslint/compat': ^2.0.3
   publint: ^0.3.18
 
+  # GROQ
+  groq-js: ^1.29.0
+
   # Sanity
   sanity: ^5.18.0
   '@sanity/vision': ^5.18.0
