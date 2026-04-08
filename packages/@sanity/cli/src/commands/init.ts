@@ -1287,7 +1287,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         embeddedStudioRouteFilePath,
         sanityStudioTemplate.replace(
           ':configPath:',
-          `${'../'.repeat(countNestedFolders(embeddedStudioRouteFilePath.slice(workDir.length)))}sanity.config`,
+          `${'../'.repeat(countNestedFolders(path.dirname(embeddedStudioRouteFilePath.slice(workDir.length))))}sanity.config`,
         ),
         workDir,
       )
