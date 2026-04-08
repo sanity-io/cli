@@ -129,6 +129,18 @@ function getWorkspacePackages() {
 
 // --- Main ---
 
+// 0. Skip if any changeset already exists (manually or auto-generated)
+const changesetDir = resolve('.changeset')
+if (existsSync(changesetDir)) {
+  const existingChangesets = readdirSync(changesetDir).filter(
+    (f) => f.endsWith('.md') && f !== 'README.md',
+  )
+  if (existingChangesets.length > 0) {
+    console.log(`Skipping: found existing changeset(s): ${existingChangesets.join(', ')}`)
+    process.exit(0)
+  }
+}
+
 // 1. Parse conventional commit
 const parsed = parseConventionalCommit(PR_TITLE)
 if (!parsed) {
