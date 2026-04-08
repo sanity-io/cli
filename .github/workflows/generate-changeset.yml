@@ -43,6 +43,7 @@ jobs:
           token: ${{ steps.generate_token.outputs.token }}
           fetch-depth: 2
           persist-credentials: false
+          clean: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
