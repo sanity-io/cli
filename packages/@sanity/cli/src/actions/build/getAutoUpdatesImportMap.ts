@@ -88,6 +88,6 @@ export function getAutoUpdatesCssUrls<const Pkg extends PackageWithCss>(
   options: {appId?: string; baseUrl?: string; timestamp?: number} = {},
 ): string[] {
   return packages
-    .filter((pkg): pkg is Pkg & {cssFile: string} => Boolean(pkg.cssFile))
+    .filter((pkg) => Boolean(pkg.cssFile))
     .map((pkg) => `${getModuleUrl(pkg, options)}/${pkg.cssFile}`)
 }
