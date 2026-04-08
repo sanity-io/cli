@@ -3,7 +3,7 @@ import {rm} from 'node:fs/promises'
 import {join} from 'node:path'
 
 import {testFixture} from '@sanity/cli-test'
-import {beforeEach, describe, expect, test} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 
 import {getE2EProjectId, runCli} from '../../helpers/runCli.js'
 import {optionalEnv} from './helpers.js'
@@ -17,6 +17,10 @@ describe.skipIf(!hasToken)('sanity init - Next.js integration', () => {
   beforeEach(async () => {
     nextjsDir = await testFixture('nextjs-app')
     await rm(join(nextjsDir, 'node_modules'), {force: true, recursive: true})
+  })
+
+  afterEach(async () => {
+    if (nextjsDir) await rm(nextjsDir, {force: true, recursive: true})
   })
 
   describe('framework detection (interactive)', () => {
@@ -85,7 +89,8 @@ describe.skipIf(!hasToken)('sanity init - Next.js integration', () => {
       // sanity.cli.ts generated with correct content (was 5.8)
       expect(existsSync(`${nextjsDir}/sanity.cli.ts`)).toBe(true)
       const cliConfig = readFileSync(`${nextjsDir}/sanity.cli.ts`, 'utf8')
-      expect(cliConfig).toContain(projectId)
+      // Next.js CLI config uses env vars instead of hardcoded values
+      expect(cliConfig).toContain('NEXT_PUBLIC_SANITY_PROJECT_ID')
     }, 120_000)
 
     test('5.5 --nextjs-embed-studio creates route file', async () => {

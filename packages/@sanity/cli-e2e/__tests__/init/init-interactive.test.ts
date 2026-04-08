@@ -489,7 +489,7 @@ describe('sanity init - interactive', () => {
           interactive: true,
         })
 
-        const exitCode = await session.waitForExit(120_000)
+        const exitCode = await session.waitForExit(90_000)
         expect(exitCode).toBe(0)
 
         expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)

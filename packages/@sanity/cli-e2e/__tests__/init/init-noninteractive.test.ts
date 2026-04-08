@@ -25,7 +25,7 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
   test('2.1 creates studio with clean template', async () => {
     const {error} = await runCli({
       args: baseInitArgs({
-        extraArgs: ['--template', 'clean'],
+        extraArgs: ['--template', 'clean', '--typescript', '--package-manager', 'pnpm'],
         outputPath: tmpDir,
         projectId,
       }),
@@ -56,7 +56,7 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
   test('2.4 default init creates correct TypeScript project with config files', async () => {
     const {error, stdout} = await runCli({
       args: baseInitArgs({
-        extraArgs: ['--package-manager', 'pnpm'],
+        extraArgs: ['--typescript', '--package-manager', 'pnpm'],
         outputPath: tmpDir,
         projectId,
       }),
@@ -129,10 +129,16 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
   test('2.11 --git with custom commit message', async () => {
     const {error} = await runCli({
       args: baseInitArgs({
-        extraArgs: ['--git', 'initial commit', '--package-manager', 'pnpm'],
+        extraArgs: ['--git', 'initial commit', '--typescript', '--package-manager', 'pnpm'],
         outputPath: tmpDir,
         projectId,
       }),
+      env: {
+        GIT_AUTHOR_EMAIL: 'test@example.com',
+        GIT_AUTHOR_NAME: 'E2E Test',
+        GIT_COMMITTER_EMAIL: 'test@example.com',
+        GIT_COMMITTER_NAME: 'E2E Test',
+      },
     })
 
     if (error) throw error
@@ -141,17 +147,11 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
 
   test('2.12 --dataset-default creates production dataset', async () => {
     const {error} = await runCli({
-      args: [
-        'init',
-        '-y',
-        '--project',
+      args: baseInitArgs({
+        extraArgs: ['--typescript', '--package-manager', 'pnpm'],
+        outputPath: tmpDir,
         projectId,
-        '--dataset-default',
-        '--output-path',
-        tmpDir,
-        '--package-manager',
-        'pnpm',
-      ],
+      }),
     })
 
     if (error) throw error
@@ -163,7 +163,7 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
     const {error} = await runCli({
       args: baseInitArgs({
         dataset: 'staging',
-        extraArgs: ['--package-manager', 'pnpm'],
+        extraArgs: ['--typescript', '--package-manager', 'pnpm'],
         outputPath: tmpDir,
         projectId,
       }),
@@ -176,34 +176,34 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
     expect(cliConfig).toContain('staging')
   }, 120_000)
 
-  test('2.14 creates new project with --project-name', async () => {
-    const orgId = optionalEnv('SANITY_E2E_ORGANIZATION_ID')
-    if (!orgId) {
-      console.log('Skipping: SANITY_E2E_ORGANIZATION_ID not set')
-      return
-    }
+  test.skipIf(!optionalEnv('SANITY_E2E_ORGANIZATION_ID'))(
+    '2.14 creates new project with --project-name',
+    async () => {
+      const orgId = optionalEnv('SANITY_E2E_ORGANIZATION_ID')!
+      const randomSuffix = Math.random().toString(36).slice(2, 8)
+      const {error, stdout} = await runCli({
+        args: [
+          'init',
+          '-y',
+          '--project-name',
+          `E2E Test ${randomSuffix}`,
+          '--organization',
+          orgId,
+          '--dataset',
+          'production',
+          '--output-path',
+          tmpDir,
+          '--typescript',
+          '--package-manager',
+          'pnpm',
+        ],
+      })
 
-    const randomSuffix = Math.random().toString(36).slice(2, 8)
-    const {error, stdout} = await runCli({
-      args: [
-        'init',
-        '-y',
-        '--project-name',
-        `E2E Test ${randomSuffix}`,
-        '--organization',
-        orgId,
-        '--dataset',
-        'production',
-        '--output-path',
-        tmpDir,
-        '--package-manager',
-        'pnpm',
-      ],
-    })
-
-    if (error) throw error
-    expect(stdout).toMatch(/[a-z0-9]{8}/)
-  }, 120_000)
+      if (error) throw error
+      expect(stdout).toMatch(/[a-z0-9]{8}/)
+    },
+    120_000,
+  )
 
   test('2.15 --coupon with invalid coupon falls back to default', async () => {
     const {exitCode} = await runCli({
@@ -233,15 +233,15 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
   test('2.19 --auto-updates enables auto-updates in config', async () => {
     const {error} = await runCli({
       args: baseInitArgs({
-        extraArgs: ['--auto-updates', '--package-manager', 'pnpm'],
+        extraArgs: ['--auto-updates', '--typescript', '--package-manager', 'pnpm'],
         outputPath: tmpDir,
         projectId,
       }),
     })
 
     if (error) throw error
-    const config = readFileSync(`${tmpDir}/sanity.config.ts`, 'utf8')
-    expect(config).toContain('autoUpdates')
+    const cliConfig = readFileSync(`${tmpDir}/sanity.cli.ts`, 'utf8')
+    expect(cliConfig).toContain('autoUpdates')
   }, 120_000)
 
   test('2.22 --env writes env file and exits early', async () => {
@@ -277,7 +277,14 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
   test('2.25 --import-dataset with moviedb template imports sample data', async () => {
     const {exitCode, stdout} = await runCli({
       args: baseInitArgs({
-        extraArgs: ['--template', 'moviedb', '--import-dataset'],
+        extraArgs: [
+          '--template',
+          'moviedb',
+          '--import-dataset',
+          '--typescript',
+          '--package-manager',
+          'pnpm',
+        ],
         outputPath: tmpDir,
         projectId,
       }),
