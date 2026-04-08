@@ -100,8 +100,8 @@ describe('getAutoUpdatesCssUrls() without app id', () => {
   test('generates CSS URLs for packages with cssFile', () => {
     const cssUrls = getAutoUpdatesCssUrls(
       [
-        {name: 'sanity', version: '3.2.0', cssFile: 'index.css'},
-        {name: '@sanity/vision', version: '3.2.0', cssFile: 'index.css'},
+        {cssFile: 'index.css', name: 'sanity', version: '3.2.0'},
+        {cssFile: 'index.css', name: '@sanity/vision', version: '3.2.0'},
       ],
       {baseUrl: 'https://sanity-cdn.com', timestamp: 1_755_770_630},
     )
@@ -114,7 +114,7 @@ describe('getAutoUpdatesCssUrls() without app id', () => {
   test('skips packages without cssFile', () => {
     const cssUrls = getAutoUpdatesCssUrls(
       [
-        {name: 'sanity', version: '3.2.0', cssFile: 'index.css'},
+        {cssFile: 'index.css', name: 'sanity', version: '3.2.0'},
         {name: '@sanity/vision', version: '3.2.0'},
       ],
       {baseUrl: 'https://sanity-cdn.com', timestamp: 1_755_770_630},
@@ -140,8 +140,8 @@ describe('getAutoUpdatesCssUrls() with app id', () => {
   test('generates CSS URLs using by-app URL pattern', () => {
     const cssUrls = getAutoUpdatesCssUrls(
       [
-        {name: 'sanity', version: '3.2.0', cssFile: 'index.css'},
-        {name: '@sanity/vision', version: '3.2.0', cssFile: 'index.css'},
+        {cssFile: 'index.css', name: 'sanity', version: '3.2.0'},
+        {cssFile: 'index.css', name: '@sanity/vision', version: '3.2.0'},
       ],
       {appId: 'foo321bar123', baseUrl: 'https://sanity-cdn.com', timestamp: 1_755_770_630},
     )
