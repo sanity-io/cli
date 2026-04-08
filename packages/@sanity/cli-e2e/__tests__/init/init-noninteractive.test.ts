@@ -275,7 +275,7 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
   }, 120_000)
 
   test('2.25 --import-dataset with moviedb template imports sample data', async () => {
-    const {exitCode, stdout} = await runCli({
+    const {error, exitCode, stdout} = await runCli({
       args: baseInitArgs({
         extraArgs: [
           '--template',
@@ -290,6 +290,7 @@ describe.skipIf(!hasToken)('sanity init --yes (non-interactive)', () => {
       }),
     })
 
+    if (error) throw error
     expect(exitCode).toBe(0)
     expect(stdout).toMatch(/import/i)
   }, 120_000)

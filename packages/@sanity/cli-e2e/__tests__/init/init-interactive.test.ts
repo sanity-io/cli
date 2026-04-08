@@ -120,7 +120,9 @@ describe('sanity init - interactive', () => {
         interactive: true,
       })
 
-      await session.waitForText(/Select dataset|dataset/i)
+      await session.waitForText(/Select dataset/i)
+      // "Create new dataset" is selected by default; navigate down to "production"
+      session.sendKey('ArrowDown')
       session.sendKey('Enter')
 
       await session.waitForText(/output path|template/i)
@@ -134,11 +136,11 @@ describe('sanity init - interactive', () => {
         interactive: true,
       })
 
-      await session.waitForText(/Select dataset|dataset/i)
-      session.sendKey('ArrowUp')
+      await session.waitForText(/Select dataset/i)
+      // "Create new dataset" is the default first item; press Enter to select it
       session.sendKey('Enter')
 
-      await session.waitForText(/name.*dataset|dataset.*name/i)
+      await session.waitForText(/Dataset name/i)
 
       session.kill()
     }, 60_000)
@@ -236,6 +238,9 @@ describe('sanity init - interactive', () => {
             tmp.path,
             '--template',
             'moviedb',
+            '--no-mcp',
+            '--package-manager',
+            'pnpm',
           ],
           interactive: true,
         })
@@ -243,10 +248,10 @@ describe('sanity init - interactive', () => {
         await session.waitForText(/TypeScript/i)
         session.sendKey('Enter')
 
-        await session.waitForText(/sample dataset|import/i)
+        await session.waitForText(/sampling.*movies|dataset on the hosted backend/i)
         session.write('y\n')
 
-        await session.waitForText(/import/i)
+        await session.waitForText(/import/i, {timeout: 90_000})
 
         session.kill()
       } finally {
@@ -268,6 +273,9 @@ describe('sanity init - interactive', () => {
             tmp.path,
             '--template',
             'moviedb',
+            '--no-mcp',
+            '--package-manager',
+            'pnpm',
           ],
           interactive: true,
         })
@@ -275,10 +283,10 @@ describe('sanity init - interactive', () => {
         await session.waitForText(/TypeScript/i)
         session.sendKey('Enter')
 
-        await session.waitForText(/sample dataset|import/i)
+        await session.waitForText(/sampling.*movies|dataset on the hosted backend/i)
         session.write('n\n')
 
-        await session.waitForText(/package manager|Success/i)
+        await session.waitForText(/installing|Success/i, {timeout: 90_000})
 
         session.kill()
       } finally {
