@@ -28,13 +28,6 @@ jobs:
           app-id: ${{ secrets.ECOSPARK_APP_ID }}
           private-key: ${{ secrets.ECOSPARK_APP_PRIVATE_KEY }}
 
-      - name: Checkout base branch scripts
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ github.event.pull_request.base.ref }}
-          sparse-checkout: .github/scripts
-          path: base-scripts
-
       - name: Checkout PR branch
         uses: actions/checkout@v6
         with:
@@ -43,7 +36,13 @@ jobs:
           token: ${{ steps.generate_token.outputs.token }}
           fetch-depth: 2
           persist-credentials: false
-          clean: false
+
+      - name: Checkout base branch scripts
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          sparse-checkout: .github/scripts
+          path: base-scripts
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
