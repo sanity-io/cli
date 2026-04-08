@@ -13,16 +13,11 @@ import {parse as parseHtml} from 'node-html-parser'
  */
 const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   // auto-generated script to add import map with timestamp
-  var importsData;
-  try {
-    var importsJson = document.getElementById('__imports')?.textContent;
-    importsData = importsJson ? JSON.parse(importsJson) : {};
-  } catch (e) {
-    console.warn('Failed to parse __imports JSON:', e);
-    importsData = {};
-  }
-  var imports = importsData.imports || {};
-  var newTimestamp = \`/t\${Math.floor(Date.now() / 1000)}\`;
+  const importsJson = document.getElementById('__imports')?.textContent;
+  const { imports = {}, ...rest } = importsJson ? JSON.parse(importsJson) : {};
+  const importMapEl = document.createElement('script');
+  importMapEl.type = 'importmap';
+  const newTimestamp = \`/t\${Math.floor(Date.now() / 1000)}\`;
 
   function replaceTimestamp(urlStr) {
     try {
@@ -36,14 +31,12 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
     }
   }
 
-  // Create import map with updated timestamps
-  const importMapEl = document.createElement('script');
-  importMapEl.type = 'importmap';
-  const importMapData = Object.assign({}, importsData);
-  importMapData.imports = Object.fromEntries(
-    Object.entries(imports).map(([specifier, path]) => [specifier, replaceTimestamp(path)])
-  );
-  importMapEl.textContent = JSON.stringify(importMapData);
+  importMapEl.textContent = JSON.stringify({
+    imports: Object.fromEntries(
+      Object.entries(imports).map(([specifier, path]) => [specifier, replaceTimestamp(path)])
+    ),
+    ...rest,
+  });
   document.head.appendChild(importMapEl);
 
   // Update existing CDN CSS <link> tags with fresh timestamps
