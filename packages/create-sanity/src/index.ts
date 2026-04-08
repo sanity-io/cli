@@ -79,7 +79,6 @@ try {
   await complete()
 } catch (error) {
   if (error instanceof InitError) {
-    console.log('Reporting error')
     await reportError(error)
     if (error.message) {
       console.error(error.message)
