@@ -24,17 +24,7 @@ describe.skipIf(!hasToken)('sanity init --bare', () => {
 
   test('3.1 outputs project ID, dataset, and manage URL', async () => {
     const {error, exitCode, stdout} = await runCli({
-      args: [
-        'init',
-        '-y',
-        '--bare',
-        '--project',
-        projectId,
-        '--dataset',
-        'production',
-        '--output-path',
-        tmpDir,
-      ],
+      args: ['init', '-y', '--bare', '--project', projectId, '--dataset', 'production'],
     })
 
     if (error) throw error
@@ -48,17 +38,7 @@ describe.skipIf(!hasToken)('sanity init --bare', () => {
 
   test('3.3 does not create any files', async () => {
     const {error} = await runCli({
-      args: [
-        'init',
-        '-y',
-        '--bare',
-        '--project',
-        projectId,
-        '--dataset',
-        'production',
-        '--output-path',
-        tmpDir,
-      ],
+      args: ['init', '-y', '--bare', '--project', projectId, '--dataset', 'production'],
       cwd: tmpDir,
     })
 
@@ -70,16 +50,7 @@ describe.skipIf(!hasToken)('sanity init --bare', () => {
 
   test('3.4 --dataset-default uses production dataset', async () => {
     const {error, exitCode, stdout} = await runCli({
-      args: [
-        'init',
-        '-y',
-        '--bare',
-        '--project',
-        projectId,
-        '--dataset-default',
-        '--output-path',
-        tmpDir,
-      ],
+      args: ['init', '-y', '--bare', '--project', projectId, '--dataset', 'production'],
     })
 
     if (error) throw error

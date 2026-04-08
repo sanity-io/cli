@@ -34,10 +34,6 @@ export async function runCli(
 
   const sharedEnv: Record<string, string> = {
     ...(process.env as Record<string, string>),
-    // Remove CI so that isInteractive() returns true for PTY-based interactive tests.
-    // GitHub Actions sets CI=true, which causes the CLI to throw NonInteractiveError
-    // instead of showing prompts.
-    ...(interactive ? {CI: ''} : {}),
     NO_UPDATE_NOTIFIER: '1',
     NODE_ENV: 'production',
     NODE_NO_WARNINGS: '1',
@@ -52,6 +48,12 @@ export async function runCli(
   }
 
   if (interactive) {
+    // Remove CI from env so that isInteractive() returns true for PTY-based interactive tests.
+    // GitHub Actions sets CI=true, which causes the CLI to throw NonInteractiveError
+    // instead of showing prompts. The key must be deleted (not set to '') because
+    // isInteractive() checks 'CI' in process.env (key presence, not value).
+    delete sharedEnv.CI
+
     return spawnPty({
       args: [resolvedBinaryPath, ...args],
       command: 'node',
