@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   input: vi.fn(),
   listDatasets: vi.fn(),
   select: vi.fn(),
+  tryGitInit: vi.fn(),
   usersGetById: vi.fn(),
 }))
 
@@ -122,6 +123,10 @@ vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
 
 vi.mock('../../datasets/import.js', () => ({
   ImportDatasetCommand: {run: mocks.importDatasetRun},
+}))
+
+vi.mock('../../../actions/init/git.js', () => ({
+  tryGitInit: mocks.tryGitInit,
 }))
 
 vi.mock('../../../actions/init/resolvePackageManager.js', () => ({
@@ -558,6 +563,7 @@ describe('#init: create new project', () => {
         'production',
         '--token',
         'test-token',
+        '--missing',
       ]),
       expect.objectContaining({root: expect.any(String)}),
     )
@@ -636,5 +642,82 @@ describe('#init: create new project', () => {
     expect(stdout).toContain('npx sanity docs browse')
     expect(stdout).toContain('npx sanity manage')
     expect(stdout).toContain('npx sanity help')
+  })
+
+  test('--no-git skips git initialization', async () => {
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {
+        cliInitializedAt: '',
+      },
+    })
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--output-path=/test/output',
+        '--project=test',
+        '--dataset=test',
+        '--package-manager=npm',
+        '--no-git',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
+
+    if (error) throw error
+    expect(mocks.tryGitInit).not.toHaveBeenCalled()
+  })
+
+  test('initializes git by default when --no-git is not passed', async () => {
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      method: 'get',
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
+
+    mockApi({
+      apiVersion: PROJECTS_API_VERSION,
+      method: 'get',
+      uri: '/projects/test',
+    }).reply(200, {
+      id: 'test',
+      metadata: {
+        cliInitializedAt: '',
+      },
+    })
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--output-path=/test/output',
+        '--project=test',
+        '--dataset=test',
+        '--package-manager=npm',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
+
+    if (error) throw error
+    expect(mocks.tryGitInit).toHaveBeenCalled()
   })
 })
