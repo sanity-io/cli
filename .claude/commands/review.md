@@ -30,7 +30,7 @@ Verify the PR includes an appropriate changeset (`.changeset/*.md` file, excludi
 - If the PR is docs-only, CI config, tests-only, or refactoring with no public API/behavior change, a changeset is **not needed**. Flag if one is unnecessarily included.
 - If a changeset is present, review it:
   - The bump type (major/minor/patch) should match the scope of the change
-  - The summary should be one concise sentence describing the user-facing change — no implementation details, no PR numbers, no verbose explanations
+  - The summary should follow Sanity product copy conventions (use the `product-copy` skill for guidance): one concise sentence describing the user-facing change for a developer audience. No marketing voice, no "successfully", no exclamation marks, no implementation details, no PR numbers.
   - Flag if the summary is too long, too vague, or describes internals rather than the effect
 
 Keep the entire review short and concise. Be direct and actionable.
