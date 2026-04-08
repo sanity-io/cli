@@ -21,35 +21,11 @@ describe('cliConfigSchema', () => {
     })
   })
 
-  test('accepts media library app resources', () => {
-    const result = cliConfigSchema.parse({
-      app: {
-        resources: {
-          media: {
-            mediaLibraryId: 'library-123',
-          },
-        },
-      },
-    })
-
-    expect(result.app?.resources?.media).toEqual({
-      mediaLibraryId: 'library-123',
-    })
-  })
-
-  test('accepts canvas app resources', () => {
-    const result = cliConfigSchema.parse({
-      app: {
-        resources: {
-          canvas: {
-            canvasId: 'canvas-123',
-          },
-        },
-      },
-    })
-
-    expect(result.app?.resources?.canvas).toEqual({
-      canvasId: 'canvas-123',
-    })
+  test('rejects unknown resource shapes', () => {
+    expect(() =>
+      cliConfigSchema.parse({
+        app: {resources: {bad: {}}},
+      }),
+    ).toThrow()
   })
 })

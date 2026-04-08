@@ -1,4 +1,4 @@
-import {describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 const mockProcessTemplate = vi.hoisted(() => vi.fn().mockReturnValue('// generated config'))
 
@@ -9,14 +9,18 @@ vi.mock('../processTemplate.js', () => ({
 const {createAppCliConfig} = await import('../createAppCliConfig.js')
 
 describe('createAppCliConfig', () => {
-  test('allows empty project and dataset values to flow through the template processor', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('uses template without resources when projectId and dataset are missing', () => {
     createAppCliConfig({
       entry: './src/App.tsx',
       organizationId: 'org-123',
     })
 
     expect(mockProcessTemplate).toHaveBeenCalledWith({
-      template: expect.any(String),
+      template: expect.not.stringContaining('resources'),
       variables: {
         entry: './src/App.tsx',
         organizationId: 'org-123',
@@ -24,7 +28,24 @@ describe('createAppCliConfig', () => {
     })
   })
 
-  test('passes default app resources to the template processor', () => {
+  test('uses template without resources when only projectId is provided', () => {
+    createAppCliConfig({
+      entry: './src/App.tsx',
+      organizationId: 'org-123',
+      projectId: 'project-123',
+    })
+
+    expect(mockProcessTemplate).toHaveBeenCalledWith({
+      template: expect.not.stringContaining('resources'),
+      variables: {
+        entry: './src/App.tsx',
+        organizationId: 'org-123',
+        projectId: 'project-123',
+      },
+    })
+  })
+
+  test('uses template with resources when both projectId and dataset are provided', () => {
     const result = createAppCliConfig({
       dataset: 'production',
       entry: './src/App.tsx',
@@ -34,7 +55,7 @@ describe('createAppCliConfig', () => {
 
     expect(result).toBe('// generated config')
     expect(mockProcessTemplate).toHaveBeenCalledWith({
-      template: expect.stringContaining(`resources: {`),
+      template: expect.stringContaining('resources'),
       variables: {
         dataset: 'production',
         entry: './src/App.tsx',

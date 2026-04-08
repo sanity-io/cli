@@ -1,9 +1,7 @@
 export * from '../config/cli/getCliConfig.js'
 export * from '../config/cli/getCliConfigSync.js'
 export {
-  type AppCanvasResource,
   type AppDatasetResource,
-  type AppMediaLibraryResource,
   type AppResource,
   type CliConfig,
 } from '../config/cli/types/cliConfig.js'
