@@ -48,12 +48,9 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   importMapEl.textContent = JSON.stringify(importMapData);
   document.head.appendChild(importMapEl);
 
-  // Create <link> tags for CDN CSS with updated timestamps
-  css.forEach(function(cssUrl) {
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = replaceTimestamp(cssUrl);
-    document.head.appendChild(link);
+  // Update existing CDN CSS <link> tags with fresh timestamps
+  document.querySelectorAll('link[data-auto-update-css]').forEach(function(link) {
+    link.href = replaceTimestamp(link.href);
   });
 </script>`
 
@@ -92,6 +89,18 @@ export function addTimestampedImportMapScriptToHtml(
     'beforeend',
     `<script type="application/json" id="__imports">${JSON.stringify(importsData)}</script>`,
   )
+
+  // Add static <link> tags for CDN CSS — browser starts fetching immediately.
+  // The runtime script will replace the build-time timestamp with a fresh one.
+  if (autoUpdatesCssUrls && autoUpdatesCssUrls.length > 0) {
+    for (const cssUrl of autoUpdatesCssUrls) {
+      headEl.insertAdjacentHTML(
+        'beforeend',
+        `<link rel="stylesheet" href="${cssUrl}" data-auto-update-css>`,
+      )
+    }
+  }
+
   headEl.insertAdjacentHTML('beforeend', TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT)
   return root.outerHTML
 }

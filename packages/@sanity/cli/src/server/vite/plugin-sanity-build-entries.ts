@@ -26,9 +26,9 @@ interface ViteRenderedChunk {
 const entryChunkId = '.sanity/runtime/app.js'
 
 export function sanityBuildEntries(options: {
+  autoUpdatesCssUrls?: string[]
   basePath: string
   cwd: string
-  autoUpdatesCssUrls?: string[]
   importMap?: {imports?: Record<string, string>}
   isApp?: boolean
 }): Plugin {
