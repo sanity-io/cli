@@ -51,5 +51,6 @@ coverage/
 # Claude
 .claude/*
 !.claude/settings.json
+!.claude/commands/
 .worktrees/
 /docs/plans
