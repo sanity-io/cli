@@ -64,10 +64,7 @@ try {
   await initAction(initOptions, {
     output: {
       error: (msg: Error | string): never => {
-        const err = msg instanceof Error ? msg : new Error(msg)
-        console.error(err.message)
-        void reportError(err)
-        process.exit(1)
+        throw new InitError(msg instanceof Error ? msg.message : msg, 1)
       },
       log: console.log,
       warn: (msg: Error | string): Error | string => {
@@ -82,6 +79,7 @@ try {
   await complete()
 } catch (error) {
   if (error instanceof InitError) {
+    console.log('Reporting error')
     await reportError(error)
     if (error.message) {
       console.error(error.message)
