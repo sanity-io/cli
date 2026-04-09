@@ -35,7 +35,7 @@ export async function startWorkbenchDevServer(
     await resolveLocalPackage('@sanity/workbench', workDir)
     workbenchAvailable = true
   } catch {
-    // sanity/workbench not available in this version — skip workbench server
+    // @sanity/workbench not available in this version — skip workbench server
   }
 
   if (!workbenchAvailable) {
@@ -43,7 +43,11 @@ export async function startWorkbenchDevServer(
   }
 
   devDebug('Writing workbench runtime files')
-  const root = await writeWorkbenchRuntime({cwd: workDir, reactStrictMode})
+  const root = await writeWorkbenchRuntime({
+    cwd: workDir,
+    organizationId: cliConfig?.app?.organizationId,
+    reactStrictMode,
+  })
 
   const viteConfig: InlineConfig = {
     configFile: false,

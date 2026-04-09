@@ -10,7 +10,7 @@ import {renderWorkbench} from "sanity/workbench"
 
 renderWorkbench(
   document.getElementById("workbench"),
-  undefined,
+  {organizationId: %SANITY_WORKBENCH_ORGANIZATION_ID%},
   {reactStrictMode: %SANITY_WORKBENCH_REACT_STRICT_MODE%}
 )
 `
@@ -40,15 +40,18 @@ const indexHtml = `\
  */
 export async function writeWorkbenchRuntime(options: {
   cwd: string
+  organizationId?: string
   reactStrictMode: boolean
 }): Promise<string> {
-  const {cwd, reactStrictMode} = options
+  const {cwd, organizationId, reactStrictMode} = options
   const workbenchDir = path.join(cwd, '.sanity', 'workbench')
 
-  const workbenchJs = workbenchJsTemplate.replace(
-    /%SANITY_WORKBENCH_REACT_STRICT_MODE%/,
-    JSON.stringify(reactStrictMode),
-  )
+  const workbenchJs = workbenchJsTemplate
+    .replace(
+      /%SANITY_WORKBENCH_ORGANIZATION_ID%/,
+      organizationId === undefined ? 'undefined' : JSON.stringify(organizationId),
+    )
+    .replace(/%SANITY_WORKBENCH_REACT_STRICT_MODE%/, JSON.stringify(reactStrictMode))
 
   devDebug('Making workbench runtime directory')
   await fs.mkdir(workbenchDir, {recursive: true})
