@@ -86,3 +86,5 @@ minimumReleaseAgeExclude:
   - '@oxfmt/*'
   # Bump for oclif with `--no-source-links` support, can remove after ~Apr 11th
   - 'oclif@4.23.0'
+  # Renovate security update: vite@7.3.2
+  - vite@7.3.2
