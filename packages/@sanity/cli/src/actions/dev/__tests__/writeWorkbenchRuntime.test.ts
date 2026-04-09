@@ -90,6 +90,28 @@ describe('writeWorkbenchRuntime', () => {
       )
       expect(content).toContain('document.getElementById("workbench")')
     })
+
+    test('passes organizationId: undefined when not provided', async () => {
+      await writeWorkbenchRuntime({cwd: tmpDir, reactStrictMode: false})
+
+      const content = await fs.readFile(
+        join(tmpDir, '.sanity', 'workbench', 'workbench.js'),
+        'utf8',
+      )
+      expect(content).toContain('{organizationId: undefined}')
+      expect(content).not.toContain('%SANITY_WORKBENCH_ORGANIZATION_ID%')
+    })
+
+    test('passes organizationId as string when provided', async () => {
+      await writeWorkbenchRuntime({cwd: tmpDir, organizationId: 'org-123', reactStrictMode: false})
+
+      const content = await fs.readFile(
+        join(tmpDir, '.sanity', 'workbench', 'workbench.js'),
+        'utf8',
+      )
+      expect(content).toContain('{organizationId: "org-123"}')
+      expect(content).not.toContain('%SANITY_WORKBENCH_ORGANIZATION_ID%')
+    })
   })
 
   describe('index.html', () => {
