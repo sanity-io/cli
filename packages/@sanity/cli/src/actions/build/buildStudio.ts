@@ -274,7 +274,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
 
   let importMap
 
-  if (autoUpdatesEnabled) {
+  if (autoUpdatesEnabled && !cliConfig.federation?.enabled) {
     importMap = {
       imports: {
         ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: false, outputDir})),
@@ -290,6 +290,7 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
       autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
       basePath,
       cwd: workDir,
+      federation: cliConfig.federation,
       importMap,
       minify,
       outputDir,

@@ -5,12 +5,20 @@ import {
   type CliConfig,
   findProjectRoot,
   getCliTelemetry,
+  readPackageJson,
   type UserViteConfig,
 } from '@sanity/cli-core'
+import {federation as viteFederation} from '@sanity/federation/vite'
 import viteReact from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
-import {type ConfigEnv, type InlineConfig, mergeConfig, type Rollup} from 'vite'
+import {
+  type ConfigEnv,
+  type InlineConfig,
+  mergeConfig,
+  type PluginOption,
+  type Rollup,
+} from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanityBuildEntries} from '../../server/vite/plugin-sanity-build-entries.js'
@@ -25,7 +33,7 @@ import {
 } from './getEnvironmentVariables.js'
 import {normalizeBasePath} from './normalizeBasePath.js'
 
-interface ViteOptions {
+interface ViteOptions extends Pick<CliConfig, 'federation' | 'schemaExtraction' | 'typegen'> {
   /**
    * Root path of the studio/sanity app
    */
@@ -63,10 +71,6 @@ interface ViteOptions {
    */
   outputDir?: string
   /**
-   * Schema extraction configuration
-   */
-  schemaExtraction?: CliConfig['schemaExtraction']
-  /**
    * HTTP development server configuration
    */
   server?: {host?: string; port?: number}
@@ -74,10 +78,6 @@ interface ViteOptions {
    * Whether or not to enable source maps
    */
   sourceMap?: boolean
-  /**
-   * Typegen configuration
-   */
-  typegen?: CliConfig['typegen']
 }
 
 /**
@@ -90,6 +90,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     autoUpdatesCssUrls,
     basePath: rawBasePath = '/',
     cwd,
+    federation,
     importMap,
     isApp,
     minify,
@@ -114,6 +115,41 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const envVars = isApp
     ? getAppEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'})
     : getStudioEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'})
+
+  const sharedPlugins: PluginOption = [
+    viteReact(
+      reactCompiler
+        ? {
+            babel: {
+              generatorOpts: {compact: true},
+              plugins: [['babel-plugin-react-compiler', reactCompiler]],
+            },
+          }
+        : {},
+    ),
+    ...(schemaExtraction?.enabled
+      ? [
+          sanitySchemaExtractionPlugin({
+            additionalPatterns: schemaExtraction.watchPatterns,
+            configPath,
+            enforceRequiredFields: schemaExtraction.enforceRequiredFields,
+            outputPath: schemaExtraction.path,
+            telemetryLogger: getCliTelemetry(),
+            workDir: cwd,
+            workspaceName: schemaExtraction.workspace,
+          }),
+        ]
+      : []),
+    ...(typegen?.enabled
+      ? [
+          sanityTypegenPlugin({
+            config: typegen,
+            telemetryLogger: getCliTelemetry(),
+            workDir: cwd,
+          }),
+        ]
+      : []),
+  ]
 
   const viteConfig: InlineConfig = {
     base: basePath,
@@ -146,43 +182,27 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     logLevel: mode === 'production' ? 'silent' : 'info',
     mode,
     plugins: [
-      viteReact(
-        reactCompiler
-          ? {
-              babel: {
-                generatorOpts: {compact: true},
-                plugins: [['babel-plugin-react-compiler', reactCompiler]],
-              },
-            }
-          : {},
-      ),
-      sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
-      sanityRuntimeRewritePlugin(),
-      sanityBuildEntries({autoUpdatesCssUrls, basePath, cwd, importMap, isApp}),
-      // Add schema extraction when enabled
-      ...(schemaExtraction?.enabled
+      // Federation builds only need the federation plugin — skip client-specific
+      // plugins (react, favicons, runtime rewrite, build entries, schema, typegen)
+      ...(federation?.enabled
         ? [
-            sanitySchemaExtractionPlugin({
-              additionalPatterns: schemaExtraction.watchPatterns,
-              configPath,
-              enforceRequiredFields: schemaExtraction.enforceRequiredFields,
-              outputPath: schemaExtraction.path,
-              telemetryLogger: getCliTelemetry(),
-              workDir: cwd,
-              workspaceName: schemaExtraction.workspace,
-            }),
-          ]
-        : []),
-      // Add typegen when enabled
-      ...(typegen?.enabled
-        ? [
-            sanityTypegenPlugin({
-              config: typegen,
-              telemetryLogger: getCliTelemetry(),
+            ...sharedPlugins,
+            viteFederation({
+              isApp,
+              pkgJson: await readPackageJson(path.join(cwd, 'package.json')),
               workDir: cwd,
             }),
           ]
-        : []),
+        : [
+            ...sharedPlugins,
+            sanityFaviconsPlugin({
+              customFaviconsPath,
+              defaultFaviconsPath,
+              staticUrlPath: staticPath,
+            }),
+            sanityRuntimeRewritePlugin(),
+            sanityBuildEntries({autoUpdatesCssUrls, basePath, cwd, importMap, isApp}),
+          ]),
     ],
     resolve: {
       dedupe: ['react', 'react-dom', 'sanity', 'styled-components'],
@@ -208,14 +228,14 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     },
   }
 
-  if (mode === 'production') {
+  // Federation builds don't produce a client bundle — the federation
+  // plugin configures its own environment and build entry point.
+  if (mode === 'production' && !federation?.enabled) {
     viteConfig.build = {
       ...viteConfig.build,
-
       assetsDir: 'static',
       emptyOutDir: false, // Rely on CLI to do this
       minify: minify ? 'esbuild' : false,
-
       rollupOptions: {
         external: createExternalFromImportMap(importMap),
         input: {
