@@ -503,6 +503,44 @@ describe('#getViteConfig', () => {
     expect(federationPlugin).toBeUndefined()
   })
 
+  test('should pass reactRefreshHost to viteReact when provided', async () => {
+    const viteReactMock = (await import('@vitejs/plugin-react')).default as unknown as ReturnType<
+      typeof vi.fn
+    >
+
+    const options = {
+      cwd: mockTestCwd,
+      federation: {enabled: true},
+      mode: 'development' as const,
+      reactCompiler: undefined,
+      reactRefreshHost: 'http://localhost:3333',
+    }
+
+    await getViteConfig(options)
+
+    expect(viteReactMock).toHaveBeenCalledWith(
+      expect.objectContaining({reactRefreshHost: 'http://localhost:3333'}),
+    )
+  })
+
+  test('should not pass reactRefreshHost to viteReact when not provided', async () => {
+    const viteReactMock = (await import('@vitejs/plugin-react')).default as unknown as ReturnType<
+      typeof vi.fn
+    >
+
+    const options = {
+      cwd: mockTestCwd,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    await getViteConfig(options)
+
+    expect(viteReactMock).toHaveBeenCalledWith(
+      expect.not.objectContaining({reactRefreshHost: expect.anything()}),
+    )
+  })
+
   test('should not include federation plugin when federation is undefined', async () => {
     const options = {
       cwd: mockTestCwd,
