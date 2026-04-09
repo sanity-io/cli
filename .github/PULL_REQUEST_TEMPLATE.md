@@ -20,22 +20,3 @@ Did you add sufficient testing for this change?
 If not, please explain how you tested this change and why it was not
 possible/practical for writing an automated test
 -->
-
-### Notes for release
-
-<!--
-A changeset is auto-generated from this section. Leave empty to use the PR title, or start with "N/A" to skip. For example, "N/A: Internal only"
-If you ran `pnpm changeset` manually, write "N/A" here to avoid duplicates.
-
-Engineers do not need to worry about the final copy,
-but they must provide the docs team with enough context on:
-
-* What changed
-* How does one use it (code snippets, etc)
-* Are there limitations we should be aware of
-* [internal] Does this affect the docs team? If so, please ask a member of that team for a review
-
-If this PR is a partial implementation of a feature and is not enabled by default or if
-this PR does not contain changes that needs mention in the release notes (tooling chores etc),
-please call this out explicitly by writing "N/A – Part of feature X" in this section.
--->

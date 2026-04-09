@@ -13,6 +13,7 @@ if (!GH_TOKEN || !GITHUB_REPOSITORY || !PR_NUMBER || !PR_TITLE || !PR_REPO) {
 }
 
 const CHANGESET_FILE = `.changeset/pr-${PR_NUMBER}.md`
+const AUTO_GENERATED_MARKER = '<!-- auto-generated -->'
 
 // --- Helpers ---
 
@@ -43,23 +44,6 @@ function parseConventionalCommit(title) {
   const match = title.match(/^([a-z]+)(\((.+)\))?(!)?:\s.+/)
   if (!match) return null
   return {breaking: match[4] === '!', type: match[1]}
-}
-
-function parseReleaseNotes(body) {
-  const lines = body.split('\n')
-  const startIdx = lines.findIndex((l) => l.startsWith('### Notes for release'))
-  if (startIdx === -1) return ''
-
-  const collected = []
-  for (let i = startIdx + 1; i < lines.length; i++) {
-    if (lines[i].startsWith('### ')) break
-    collected.push(lines[i])
-  }
-
-  return collected
-    .join('\n')
-    .replaceAll(/<!--[\s\S]*?-->/g, '')
-    .trim()
 }
 
 function determineBump(type, breaking, body) {
@@ -129,15 +113,24 @@ function getWorkspacePackages() {
 
 // --- Main ---
 
-// 0. Skip if any changeset already exists (manually or auto-generated)
-const changesetDir = resolve('.changeset')
-if (existsSync(changesetDir)) {
-  const existingChangesets = readdirSync(changesetDir).filter(
-    (f) => f.endsWith('.md') && f !== 'README.md',
-  )
-  if (existingChangesets.length > 0) {
-    console.log(`Skipping: found existing changeset(s): ${existingChangesets.join(', ')}`)
+// 0. Check for existing changesets using marker-based logic
+if (existsSync(CHANGESET_FILE)) {
+  const content = readFileSync(CHANGESET_FILE, 'utf8')
+  if (!content.startsWith(AUTO_GENERATED_MARKER)) {
+    console.log('Skipping: changeset was manually edited (marker removed)')
     process.exit(0)
+  }
+  // Marker present — bot still owns the file, will overwrite below
+} else {
+  const changesetDir = resolve('.changeset')
+  if (existsSync(changesetDir)) {
+    const otherChangesets = readdirSync(changesetDir).filter(
+      (f) => f.endsWith('.md') && f !== 'README.md',
+    )
+    if (otherChangesets.length > 0) {
+      console.log(`Skipping: found manual changeset(s): ${otherChangesets.join(', ')}`)
+      process.exit(0)
+    }
   }
 }
 
@@ -157,18 +150,8 @@ if (!bump) {
   process.exit(0)
 }
 
-// 3. Extract release notes
-let releaseNotes = parseReleaseNotes(PR_BODY)
-
-if (/^N\/A/i.test(releaseNotes)) {
-  console.log('Release notes set to N/A')
-  removeChangeset()
-  process.exit(0)
-}
-
-if (!releaseNotes) {
-  releaseNotes = PR_TITLE.replace(/^[a-z]+(\([^)]*\))?!?:\s*/, '')
-}
+// 3. Derive release notes from PR title
+const releaseNotes = PR_TITLE.replace(/^[a-z]+(\([^)]*\))?!?:\s*/, '')
 
 // 4. Detect affected packages
 const changedFiles = await getChangedFiles()
@@ -191,7 +174,7 @@ if (affected.size === 0) {
 
 // 5. Write changeset
 const frontmatter = [...affected].map((pkg) => `'${pkg}': ${bump}`).join('\n')
-const changesetContent = `---\n${frontmatter}\n---\n\n${releaseNotes}\n`
+const changesetContent = `${AUTO_GENERATED_MARKER}\n---\n${frontmatter}\n---\n\n${releaseNotes}\n`
 
 writeFileSync(CHANGESET_FILE, changesetContent)
 console.log('Generated changeset:')
