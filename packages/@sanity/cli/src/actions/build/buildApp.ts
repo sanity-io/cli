@@ -33,6 +33,7 @@ interface InternalBuildOptions {
   calledFromDeploy: boolean | undefined
   determineBasePath: () => string
   entry: string | undefined
+  federation: CliConfig['federation']
   minify: boolean
   outDir: string | undefined
   output: Output
@@ -60,6 +61,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     calledFromDeploy: options.calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
     entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
+    federation: cliConfig.federation,
     minify: flags.minify,
     outDir,
     output,
@@ -202,7 +204,7 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
 
   let importMap: {imports?: Record<string, string>} | undefined
 
-  if (autoUpdatesEnabled) {
+  if (autoUpdatesEnabled && !options.federation?.enabled) {
     importMap = {
       imports: {
         ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: true, outputDir})),
@@ -220,6 +222,7 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
       basePath,
       cwd: workDir,
       entry: options.entry,
+      federation: options.federation,
       importMap,
       isApp: true,
       minify: options.minify,

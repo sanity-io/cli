@@ -24,9 +24,18 @@ export async function devAction(options: DevActionOptions): Promise<{close?: () 
     workbenchAvailable,
   }
 
-  const {close: closeAppDevServer, server} = options.isApp
-    ? await startAppDevServer(appOptions)
-    : await startStudioDevServer(appOptions)
+  let closeAppDevServer: (() => Promise<void>) | undefined
+  let server
+  try {
+    const result = options.isApp
+      ? await startAppDevServer(appOptions)
+      : await startStudioDevServer(appOptions)
+    closeAppDevServer = result.close
+    server = result.server
+  } catch (err) {
+    await closeWorkbenchServer?.()
+    throw err
+  }
 
   // server is undefined only when startAppDevServer exits early (e.g. missing orgId);
   // in that case the process is already exiting so no workbench needed.

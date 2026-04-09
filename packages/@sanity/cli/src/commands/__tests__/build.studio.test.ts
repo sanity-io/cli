@@ -79,6 +79,44 @@ describe('#build studio', {timeout: (platform() === 'win32' ? 120 : 60) * 1000},
     const files = await readdir(outputFolder)
     expect(files).toContain('index.html')
     expect(files).toContain('static')
+
+    // Federation artifacts should NOT be present when federation is not enabled
+    expect(files).not.toContain('federation')
+    expect(files).not.toContain('mf-manifest.json')
+  })
+
+  test('should build the "federated-studio" with only federation artifacts', async () => {
+    const cwd = await testFixture('federated-studio')
+    process.chdir(cwd)
+
+    const {error, stderr} = await testCommand(BuildCommand, ['--yes'], {
+      config: {root: cwd},
+    })
+
+    // 1. Build succeeds
+    if (error) throw error
+    expect(stderr).toContain('✔ Build Sanity Studio')
+
+    const distFiles = await readdir(join(cwd, 'dist'))
+
+    // 2. No client artifacts
+    expect(distFiles).not.toContain('index.html')
+    expect(distFiles).not.toContain('static')
+    expect(distFiles).not.toContain('vendor')
+
+    // 3. Stable remote entry (unhashed)
+    expect(distFiles).toContain('remote-entry.js')
+
+    // 4. Federation manifest (valid JSON)
+    expect(distFiles).toContain('mf-manifest.json')
+    const manifest = JSON.parse(await readFile(join(cwd, 'dist', 'mf-manifest.json'), 'utf8'))
+    expect(manifest).toHaveProperty('id')
+    expect(manifest).toHaveProperty('name')
+
+    // 5. Hashed federation chunks
+    expect(distFiles).toContain('assets')
+    const assetFiles = await readdir(join(cwd, 'dist', 'assets'))
+    expect(assetFiles.some((f) => /^remote-entry-.+\.js$/.test(f))).toBe(true)
   })
 
   test("should build the 'worst-case-studio' example", async () => {
