@@ -10,7 +10,10 @@ const mockWriteWorkbenchRuntime = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {...actual, resolveLocalPackage: mockResolveLocalPackage}
+  return {
+    ...actual,
+    resolveLocalPackage: mockResolveLocalPackage,
+  }
 })
 vi.mock('vite', () => ({createServer: mockCreateServer}))
 vi.mock('@vitejs/plugin-react', () => ({default: vi.fn(() => [])}))
@@ -68,8 +71,8 @@ describe('startWorkbenchDevServer', () => {
   })
 
   describe('workbench availability check', () => {
-    test('returns workbenchAvailable: false when sanity/workbench is not resolvable', async () => {
-      mockResolveLocalPackage.mockRejectedValue(new Error('ERR_PACKAGE_PATH_NOT_EXPORTED'))
+    test('returns workbenchAvailable: false when @sanity/workbench is not resolvable', async () => {
+      mockResolveLocalPackage.mockRejectedValue(new Error('Cannot find package'))
 
       const result = await startWorkbenchDevServer(createOptions())
 
@@ -80,7 +83,7 @@ describe('startWorkbenchDevServer', () => {
 
     test('returns httpHost and workbenchPort even when workbench is unavailable', async () => {
       mockGetSharedServerConfig.mockReturnValue({httpHost: '0.0.0.0', httpPort: 4000})
-      mockResolveLocalPackage.mockRejectedValue(new Error('ERR_PACKAGE_PATH_NOT_EXPORTED'))
+      mockResolveLocalPackage.mockRejectedValue(new Error('Cannot find package'))
 
       const result = await startWorkbenchDevServer(createOptions())
 
@@ -136,6 +139,28 @@ describe('startWorkbenchDevServer', () => {
 
       expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
         expect.objectContaining({cwd: '/tmp/sanity-project'}),
+      )
+    })
+
+    test('passes organizationId from cliConfig.app.organizationId', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createOptions({cliConfig: {app: {organizationId: 'org-123'}}}))
+
+      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
+        expect.objectContaining({organizationId: 'org-123'}),
+      )
+    })
+
+    test('passes organizationId: undefined when not set in cliConfig', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createOptions())
+
+      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
+        expect.objectContaining({organizationId: undefined}),
       )
     })
   })
