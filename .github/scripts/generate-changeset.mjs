@@ -24,8 +24,8 @@ function git(...args) {
 let gitConfigured = false
 function ensureGitConfigured() {
   if (gitConfigured) return
-  git('config', 'user.name', 'ecospark[bot]')
-  git('config', 'user.email', 'ecospark[bot]@users.noreply.github.com')
+  git('config', 'user.name', 'squiggler-app[bot]')
+  git('config', 'user.email', '265501495+squiggler-app[bot]@users.noreply.github.com')
   git('remote', 'set-url', 'origin', `https://x-access-token:${GH_TOKEN}@github.com/${PR_REPO}.git`)
   gitConfigured = true
 }
