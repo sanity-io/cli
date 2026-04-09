@@ -71,7 +71,14 @@ export async function startWorkbenchDevServer(
     plugins: [viteReact()],
     resolve: {dedupe: ['react', 'react-dom']},
     root,
-    server: {host: httpHost, port: workbenchPort, strictPort: false},
+    server: {
+      host: httpHost,
+      port: workbenchPort,
+      strictPort: false,
+      warmup: {
+        clientFiles: ['./workbench.js'],
+      },
+    },
   }
 
   devDebug('Creating workbench vite server')
