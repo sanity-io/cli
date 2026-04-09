@@ -2,11 +2,7 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {
-  AppBuildTrace,
-  buildDebug,
-  resolveVendorBuildConfig,
-} from '@sanity/cli-build/_internal/build'
+import {AppBuildTrace, buildDebug, buildVendorDependencies} from '@sanity/cli-build/_internal/build'
 import {
   type CliConfig,
   getCliTelemetry,
@@ -37,6 +33,7 @@ interface InternalBuildOptions {
   calledFromDeploy: boolean | undefined
   determineBasePath: () => string
   entry: string | undefined
+  federation: CliConfig['federation']
   minify: boolean
   outDir: string | undefined
   output: Output
@@ -64,6 +61,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     calledFromDeploy: options.calledFromDeploy,
     determineBasePath: () => determineBasePath(cliConfig, 'app', output),
     entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
+    federation: cliConfig.federation,
     minify: flags.minify,
     outDir,
     output,
@@ -204,12 +202,14 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
   const trace = getCliTelemetry().trace(AppBuildTrace)
   trace.start()
 
-  let autoUpdates
-  if (autoUpdatesEnabled) {
-    autoUpdates = {
-      cssUrls: autoUpdatesCssUrls,
-      imports: autoUpdatesImports,
-      vendor: await resolveVendorBuildConfig({cwd: workDir, isApp: true}),
+  let importMap: {imports?: Record<string, string>} | undefined
+
+  if (autoUpdatesEnabled && !options.federation?.enabled) {
+    importMap = {
+      imports: {
+        ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: true, outputDir})),
+        ...autoUpdatesImports,
+      },
     }
   }
 
@@ -218,10 +218,12 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
 
     const bundle = await buildStaticFiles({
       appTitle: options.appTitle,
-      autoUpdates,
+      autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
       basePath,
       cwd: workDir,
       entry: options.entry,
+      federation: options.federation,
+      importMap,
       isApp: true,
       minify: options.minify,
       outputDir,
