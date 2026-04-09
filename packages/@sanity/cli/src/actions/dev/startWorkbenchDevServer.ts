@@ -26,6 +26,10 @@ export async function startWorkbenchDevServer(
     workDir,
   })
 
+  if (!cliConfig?.federation?.enabled) {
+    return {httpHost, workbenchAvailable: false, workbenchPort}
+  }
+
   const reactStrictMode = process.env.SANITY_STUDIO_REACT_STRICT_MODE
     ? process.env.SANITY_STUDIO_REACT_STRICT_MODE === 'true'
     : Boolean(cliConfig?.reactStrictMode)
@@ -49,8 +53,19 @@ export async function startWorkbenchDevServer(
     reactStrictMode,
   })
 
+  let remoteUrl: string | undefined = undefined
+
+  try {
+    remoteUrl = URL.parse(process.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL || '')?.toString()
+  } catch {
+    // Ignore parsing errors, the variable might not be set or might be an invalid URL, in which case we just won't use it
+  }
+
   const viteConfig: InlineConfig = {
     configFile: false,
+    define: {
+      'import.meta.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL': JSON.stringify(remoteUrl),
+    },
     logLevel: 'warn',
     mode: 'development',
     plugins: [viteReact()],
