@@ -29,6 +29,7 @@ export interface DevServerOptions {
 
   appTitle?: string
   entry?: string
+  federation?: CliConfig['federation']
   httpHost?: string
   isApp?: boolean
   projectName?: string
@@ -50,6 +51,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     basePath,
     cwd,
     entry,
+    federation,
     httpHost,
     httpPort,
     isApp,
@@ -95,6 +97,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     ],
     basePath,
     cwd,
+    federation,
     getEnvironmentVariables,
     isApp,
     mode: 'development',
