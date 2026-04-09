@@ -1,0 +1,24 @@
+{
+  "name": "federated-studio",
+  "version": "1.0.0",
+  "private": true,
+  "keywords": [
+    "sanity"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "sanity dev",
+    "build:fixture": "sanity build"
+  },
+  "dependencies": {
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "sanity": "catalog:",
+    "styled-components": "^6.3.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.9",
+    "typescript": "^5.9.3"
+  }
+}
