@@ -1,6 +1,7 @@
 import path from 'node:path'
 
 import {
+  type AppResource,
   type CliConfig,
   findProjectRoot,
   getCliTelemetry,
@@ -14,6 +15,7 @@ import {type ConfigEnv, type InlineConfig, mergeConfig, type Rollup} from 'vite'
 
 import {sanityBuildEntries} from '../../server/vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from '../../server/vite/plugin-sanity-favicons.js'
+import {sanityResources} from '../../server/vite/plugin-sanity-resources.js'
 import {sanityRuntimeRewritePlugin} from '../../server/vite/plugin-sanity-runtime-rewrite.js'
 import {sanitySchemaExtractionPlugin} from '../../server/vite/plugin-schema-extraction.js'
 import {sanityTypegenPlugin} from '../../server/vite/plugin-typegen.js'
@@ -56,6 +58,12 @@ interface ViteOptions {
    * Output directory (eg where to place the built files, if any)
    */
   outputDir?: string
+
+  /**
+   * Named resources to expose via `virtual:sanity/resources`.
+   * When provided, also writes `.sanity/resources.d.ts` to narrow `ResourceName`.
+   */
+  resources?: Record<string, AppResource>
   /**
    * Schema extraction configuration
    */
@@ -89,6 +97,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     mode,
     outputDir,
     reactCompiler,
+    resources,
     schemaExtraction,
     server,
     // default to `true` when `mode=development`
@@ -157,6 +166,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
       sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
       sanityRuntimeRewritePlugin(),
       sanityBuildEntries({basePath, cwd, importMap, isApp}),
+      ...(isApp ? [sanityResources(resources)] : []),
       // Add schema extraction when enabled
       ...(schemaExtraction?.enabled
         ? [

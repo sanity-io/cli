@@ -169,6 +169,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       outputDir,
       reactCompiler:
         cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
+      resources: cliConfig && 'app' in cliConfig ? cliConfig.app?.resources : undefined,
       sourceMap: Boolean(flags['source-maps']),
       vite: cliConfig && 'vite' in cliConfig ? cliConfig.vite : undefined,
     })
