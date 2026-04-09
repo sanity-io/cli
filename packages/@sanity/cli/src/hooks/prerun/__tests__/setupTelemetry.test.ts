@@ -303,7 +303,6 @@ describe('setupTelemetry integration test', () => {
     setupBasicMocks(testDir)
     setupUserConfigMock({telemetryDisclosed: true})
     setupProjectMocks(testDir)
-    setupSpawnMock()
 
     mockApi({
       apiVersion: TELEMETRY_API_VERSION,
