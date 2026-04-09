@@ -13,6 +13,8 @@ import {
 } from '../getViteConfig.js'
 
 const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
+const mockFederationPlugin = vi.hoisted(() => vi.fn())
+const mockTypegenPlugin = vi.hoisted(() => vi.fn())
 
 // Mock all external dependencies
 vi.mock('@sanity/cli-build/_internal', () => ({
@@ -60,6 +62,18 @@ vi.mock('../vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
+vi.mock('@sanity/federation/vite', () => ({
+  federation: mockFederationPlugin.mockReturnValue({
+    name: 'sanity/federation',
+  }),
+}))
+
+vi.mock('../../../server/vite/plugin-typegen.js', () => ({
+  sanityTypegenPlugin: mockTypegenPlugin.mockReturnValue({
+    name: 'sanity/typegen',
+  }),
+}))
+
 vi.mock('../../schema/vite/plugin-schema-extraction.js', () => ({
   sanitySchemaExtractionPlugin: mockExtractSchemaPlugin.mockReturnValue({
     name: 'sanity/schema-extraction',
@@ -71,6 +85,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   return {
     ...actual,
     findProjectRoot: vi.fn().mockResolvedValue({path: '/mock/config/path'}),
+    readPackageJson: vi.fn().mockResolvedValue({name: 'sanity'}),
   }
 })
 
@@ -399,6 +414,84 @@ describe('#getViteConfig', () => {
     )
 
     expect(typegenPlugin).toBeDefined()
+  })
+
+  test('should not include typegen plugin when disabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+      typegen: {
+        enabled: false,
+        generates: 'sanity.types.ts',
+      },
+    }
+
+    const config = await getViteConfig(options)
+
+    const typegenPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/typegen',
+    )
+
+    expect(mockTypegenPlugin).not.toHaveBeenCalled()
+    expect(typegenPlugin).toBeUndefined()
+  })
+
+  test('should include federation plugin when enabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      federation: {enabled: true},
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    const federationPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/federation',
+    )
+
+    expect(mockFederationPlugin).toHaveBeenCalledWith({
+      isApp: undefined,
+      pkgJson: {name: 'sanity'},
+      workDir: mockTestCwd,
+    })
+    expect(federationPlugin).toBeDefined()
+  })
+
+  test('should not include federation plugin when disabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      federation: {enabled: false},
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    const federationPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/federation',
+    )
+
+    expect(mockFederationPlugin).not.toHaveBeenCalled()
+    expect(federationPlugin).toBeUndefined()
+  })
+
+  test('should not include federation plugin when federation is undefined', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    const federationPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/federation',
+    )
+
+    expect(mockFederationPlugin).not.toHaveBeenCalled()
+    expect(federationPlugin).toBeUndefined()
   })
 })
 
