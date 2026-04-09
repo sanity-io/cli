@@ -2,4 +2,4 @@
 '@sanity/cli': patch
 ---
 
-Added buffer for telemetry events captured before consent was done resolving
+Fixed telemetry events being silently dropped before consent resolves
