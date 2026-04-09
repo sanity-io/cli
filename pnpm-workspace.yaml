@@ -67,7 +67,7 @@ catalog:
   oxfmt: ^0.43.0
 
   # Type Definitions
-  '@types/node': ^20.19.37
+  '@types/node': ^20.19.39
   '@types/debug': ^4.1.13
   '@types/jsdom': ^28.0.1
 
