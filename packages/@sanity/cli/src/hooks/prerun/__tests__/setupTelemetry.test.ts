@@ -3,7 +3,6 @@ import {mkdir} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
-import {type Config} from '@oclif/core'
 import {
   clearCliTelemetry,
   CLI_TELEMETRY_SYMBOL,
@@ -14,14 +13,14 @@ import {
   isCi,
   normalizePath,
 } from '@sanity/cli-core'
-import {createTestToken, testHook} from '@sanity/cli-test'
-import {type TelemetryEvent, type TelemetryLogEvent} from '@sanity/telemetry'
+import {createTestToken, mockApi, testHook} from '@sanity/cli-test'
+import {type TelemetryEvent} from '@sanity/telemetry'
 import nock from 'nock'
 import {glob} from 'tinyglobby'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getCommandAndConfig} from '../../../../test/helpers/getCommandAndConfig.js'
-import {createTelemetryStore} from '../../../util/telemetry/createTelemetryStore.js'
+import {TELEMETRY_API_VERSION} from '../../../services/telemetry.js'
 import {flushTelemetryFiles} from '../../../util/telemetry/flushTelemetryFiles.js'
 import {readNDJSON} from '../../../util/telemetry/readNDJSON.js'
 import {setupTelemetry} from '../setupTelemetry.js'
@@ -132,23 +131,6 @@ function captureProcessExit() {
 }
 
 describe('setupTelemetry integration test', () => {
-  /*
-   * NOTE: This test currently has a limitation where the setupTelemetry hook
-   * itself is not creating telemetry files, likely due to async initialization
-   * timing issues in the test environment. However, it successfully tests:
-   *
-   * 1. The telemetry store creation and file I/O functionality
-   * 2. The process exit handler registration
-   * 3. The worker spawning mechanism
-   * 4. The flush and cleanup operations
-   *
-   * The test creates a direct telemetry store instance to verify the core
-   * functionality works correctly in isolation.
-   *
-   * TODO: Fix async initialization so setupTelemetry itself writes telemetry
-   * files, then update the lifecycle test to verify end-to-end without a
-   * separately created store.
-   */
   let testDir: string
   let telemetryPath: string
 
@@ -247,80 +229,44 @@ describe('setupTelemetry integration test', () => {
   })
 
   test('should handle complete telemetry lifecycle from initialization to flush', async () => {
-    // Setup mocks specific to this test
     setupBasicMocks(testDir)
     setupUserConfigMock({telemetryDisclosed: true})
     setupProjectMocks(testDir)
     setupSpawnMock()
     const getProcessExitHandler = captureProcessExit()
 
-    // Set up process.argv for parseArguments
+    mockApi({
+      apiVersion: TELEMETRY_API_VERSION,
+      query: {tag: 'sanity.cli.telemetry-consent'},
+      uri: '/intake/telemetry-status',
+    }).reply(200, {status: 'granted'})
+
     const originalArgv = process.argv
     process.argv = ['node', 'sanity', 'deploy']
 
     try {
-      // Create a mock config for the hook
-      const mockConfig = {
-        version: '1.0.0',
-      } as Config
+      await testHook<'prerun'>(setupTelemetry, {config})
 
-      // Execute setupTelemetry hook directly with proper context
-      await setupTelemetry.call(
-        {} as never,
-        {config: mockConfig} as unknown as Parameters<typeof setupTelemetry>[0],
-      )
-
-      // Wait for telemetry store initialization to complete
+      // Wait for consent to resolve and buffered events to flush
       await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_OPERATIONS))
 
-      // Test telemetry store functionality directly since setupTelemetry
-      // has async initialization timing issues in test environment
-      const testStore = createTelemetryStore('test-direct', {
-        resolveConsent: async () => ({status: 'granted'}),
-      })
-
-      // Wait for store initialization
-      await new Promise((resolve) => setTimeout(resolve, 200))
-
-      // Log a test event to verify file creation and I/O
-      const testEvent = {
-        name: 'test-log-event',
-        schema: {},
-        type: 'log' as const,
-        version: 1,
-      }
-      testStore.log(testEvent, {test: true})
-
-      // Wait for file write operations
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
-      // Verify telemetry file was created
       const telemetryFiles = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
       expect(telemetryFiles).toHaveLength(1)
+      expect(telemetryFiles[0]).toMatch(/telemetry-[a-f0-9]+-\w+-[\w-]+\.ndjson$/)
 
-      const telemetryFile = telemetryFiles[0]
-      expect(telemetryFile).toMatch(/telemetry-[a-f0-9]+-\w+-[a-zA-Z0-9-]+\.ndjson$/)
+      const events = await readNDJSON<TelemetryEvent>(telemetryFiles[0])
 
-      // Read and verify telemetry events
-      const events = await readNDJSON<TelemetryEvent>(telemetryFile)
-
-      expect(events.length).toBeGreaterThanOrEqual(1)
-
-      // Verify that telemetry events are being created and written to files
-      // This tests the core telemetry store functionality
-      const logEvent = events.find((event) => event.type === 'log')
-      expect(logEvent).toBeDefined()
-      expect((logEvent as TelemetryLogEvent).name).toBe('test-log-event')
+      // Early events buffered during async init should now be present
+      expect(events.find((e) => e.type === 'userProperties')).toBeDefined()
+      expect(events.find((e) => e.type === 'trace.start')).toBeDefined()
 
       // Simulate process exit with status 0
       const capturedProcessExit = getProcessExitHandler()
       expect(capturedProcessExit).toBeDefined()
       capturedProcessExit?.(0)
 
-      // Wait for exit handler to complete
       await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_OPERATIONS))
 
-      // Verify spawn was called for worker
       expect(mockSpawn).toHaveBeenCalledWith(
         process.execPath,
         [expect.stringMatching(/flushTelemetry\.worker\.js$/)],
@@ -332,10 +278,9 @@ describe('setupTelemetry integration test', () => {
         }),
       )
 
-      // Simulate flush operation (instead of using worker)
       const sentEvents: TelemetryEvent[] = []
-      const mockSendEvents = vi.fn().mockImplementation((events: TelemetryEvent[]) => {
-        sentEvents.push(...events)
+      const mockSendEvents = vi.fn().mockImplementation((evts: TelemetryEvent[]) => {
+        sentEvents.push(...evts)
         return Promise.resolve()
       })
 
@@ -344,13 +289,43 @@ describe('setupTelemetry integration test', () => {
         sendEvents: mockSendEvents,
       })
 
-      // Verify events were sent and files cleaned up
       expect(mockSendEvents).toHaveBeenCalledTimes(1)
       expect(sentEvents.length).toBeGreaterThanOrEqual(1)
 
-      // Verify files were deleted after successful flush
       const remainingFiles = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
       expect(remainingFiles).toHaveLength(0)
+    } finally {
+      process.argv = originalArgv
+    }
+  })
+
+  test('should discard buffered events and write no files when consent resolution fails', async () => {
+    setupBasicMocks(testDir)
+    setupUserConfigMock({telemetryDisclosed: true})
+    setupProjectMocks(testDir)
+    setupSpawnMock()
+
+    mockApi({
+      apiVersion: TELEMETRY_API_VERSION,
+      query: {tag: 'sanity.cli.telemetry-consent'},
+      uri: '/intake/telemetry-status',
+    }).reply(500, {error: 'Internal Server Error'})
+
+    const originalArgv = process.argv
+    process.argv = ['node', 'sanity', 'deploy']
+
+    try {
+      await testHook<'prerun'>(setupTelemetry, {config})
+
+      // Wait for consent to fail and buffer to be discarded
+      await new Promise((resolve) => setTimeout(resolve, WAIT_FOR_OPERATIONS))
+
+      // Consent was undetermined — buffer discarded, no files written
+      const telemetryFiles = await glob(normalizePath(join(telemetryPath, 'telemetry-*.ndjson')))
+      expect(telemetryFiles).toHaveLength(0)
+
+      // Telemetry infrastructure is still set up
+      expect(getCliTelemetry()).toBeDefined()
     } finally {
       process.argv = originalArgv
     }
