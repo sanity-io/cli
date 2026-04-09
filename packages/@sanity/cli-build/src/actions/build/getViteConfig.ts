@@ -5,8 +5,10 @@ import {
   type CliConfig,
   findProjectRoot,
   getCliTelemetry,
+  readPackageJson,
   type UserViteConfig,
 } from '@sanity/cli-core'
+import {federation as viteFederation} from '@sanity/federation/vite'
 import viteReact, {reactCompilerPreset} from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
@@ -16,6 +18,7 @@ import {
   type InlineConfig,
   mergeConfig,
   type Plugin,
+  type PluginOption,
   type Rolldown,
 } from 'vite'
 
@@ -28,11 +31,16 @@ import {sanityFaviconsPlugin} from './vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from './vite/plugin-sanity-runtime-rewrite.js'
 import {getDefaultFaviconsPath} from './writeFavicons.js'
 
-interface ViteOptions {
+interface ViteOptions extends Pick<CliConfig, 'federation' | 'schemaExtraction'> {
   /**
    * Root path of the studio/sanity app
    */
   cwd: string
+
+  entries: {
+    relativeConfigLocation: string | null
+    relativeEntry: string
+  }
 
   /**
    * Returns the environment variables to be injected into the config.
@@ -76,10 +84,6 @@ interface ViteOptions {
    */
   outputDir?: string
   /**
-   * Schema extraction configuration
-   */
-  schemaExtraction?: CliConfig['schemaExtraction']
-  /**
    * HTTP development server configuration
    */
   server?: {host?: string; port?: number}
@@ -100,6 +104,8 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     autoUpdatesCssUrls,
     basePath: rawBasePath = '/',
     cwd,
+    entries,
+    federation,
     importMap,
     isApp,
     minify,
@@ -121,6 +127,24 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const staticPath = `${basePath}static`
 
   const envVars = options.getEnvironmentVariables()
+
+  const sharedPlugins: PluginOption = [
+    ...viteReact(),
+    ...(reactCompiler ? [babel({presets: [reactCompilerPreset(reactCompiler)]})] : []),
+    ...(schemaExtraction?.enabled
+      ? [
+          sanitySchemaExtractionPlugin({
+            additionalPatterns: schemaExtraction.watchPatterns,
+            configPath,
+            enforceRequiredFields: schemaExtraction.enforceRequiredFields,
+            outputPath: schemaExtraction.path,
+            telemetryLogger: getCliTelemetry(),
+            workDir: cwd,
+            workspaceName: schemaExtraction.workspace,
+          }),
+        ]
+      : []),
+  ]
 
   const viteConfig: InlineConfig = {
     base: basePath,
@@ -153,26 +177,37 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     logLevel: mode === 'production' ? 'silent' : 'info',
     mode,
     plugins: [
-      ...viteReact(),
-      ...(reactCompiler ? [babel({presets: [reactCompilerPreset(reactCompiler)]})] : []),
-      sanityFaviconsPlugin({customFaviconsPath, defaultFaviconsPath, staticUrlPath: staticPath}),
-      sanityRuntimeRewritePlugin(),
-      sanityBuildEntries({autoUpdatesCssUrls, basePath, cwd, importMap, isApp}),
-      // Add schema extraction when enabled
-      ...(schemaExtraction?.enabled
+      // Federation builds only need the federation plugin — skip client-specific
+      // plugins (react, favicons, runtime rewrite, build entries, schema)
+      ...(federation?.enabled
         ? [
-            sanitySchemaExtractionPlugin({
-              additionalPatterns: schemaExtraction.watchPatterns,
-              configPath,
-              enforceRequiredFields: schemaExtraction.enforceRequiredFields,
-              outputPath: schemaExtraction.path,
-              telemetryLogger: getCliTelemetry(),
+            ...sharedPlugins,
+            viteFederation({
+              ...(isApp
+                ? {
+                    appEntry: entries.relativeEntry,
+                    isApp: true as const,
+                  }
+                : {
+                    isApp: false as const,
+                    // TODO: fix this non-null assertion
+                    studioConfigPath: entries.relativeConfigLocation!,
+                  }),
+              pkgJson: await readPackageJson(path.join(cwd, 'package.json')),
               workDir: cwd,
-              workspaceName: schemaExtraction.workspace,
             }),
           ]
-        : []),
-      ...(additionalPlugins || []),
+        : [
+            ...sharedPlugins,
+            sanityFaviconsPlugin({
+              customFaviconsPath,
+              defaultFaviconsPath,
+              staticUrlPath: staticPath,
+            }),
+            sanityRuntimeRewritePlugin(),
+            sanityBuildEntries({autoUpdatesCssUrls, basePath, cwd, importMap, isApp}),
+            ...(additionalPlugins || []),
+          ]),
     ],
     resolve: {
       dedupe: ['react', 'react-dom', 'sanity', 'styled-components'],
@@ -200,7 +235,9 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     },
   }
 
-  if (mode === 'production') {
+  // Federation builds don't produce a client bundle — the federation
+  // plugin configures its own environment and build entry point.
+  if (mode === 'production' && !federation?.enabled) {
     // For auto-updating studios the import map externalizes react/react-dom/etc.
     // Hand those externals to `esmExternalRequirePlugin` rather than
     // `rolldownOptions.external`, so any bundled CommonJS `require()` of an external
