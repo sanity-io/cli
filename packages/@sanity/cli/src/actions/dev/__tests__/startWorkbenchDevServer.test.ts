@@ -203,6 +203,21 @@ describe('startWorkbenchDevServer', () => {
         expect.objectContaining({organizationId: undefined}),
       )
     })
+
+    test('configures warmup for the workbench entry file', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      expect(mockCreateServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          server: expect.objectContaining({
+            warmup: {clientFiles: ['./workbench.js']},
+          }),
+        }),
+      )
+    })
   })
 
   describe('reactStrictMode', () => {
