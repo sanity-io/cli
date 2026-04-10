@@ -8,7 +8,7 @@ import {copyDir} from '../../util/copyDir.js'
 import {buildDebug} from './buildDebug.js'
 import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig.js'
 import {writeFavicons} from './writeFavicons.js'
-import {writeSanityRuntime} from './writeSanityRuntime.js'
+import {resolveEntries, writeSanityRuntime} from './writeSanityRuntime.js'
 
 export interface ChunkModule {
   name: string
@@ -67,10 +67,14 @@ export async function buildStaticFiles(
    * runtime generation, static file copies, and favicons.
    */
   if (federation?.enabled) {
+    buildDebug('Resolving entries for federation build')
+    const entries = await resolveEntries({cwd, entry, isApp})
+
     buildDebug('Resolving vite config (federation)')
     const viteConfig = await getViteConfig({
       basePath,
       cwd,
+      entries,
       federation,
       isApp,
       minify,
@@ -89,7 +93,7 @@ export async function buildStaticFiles(
   }
 
   buildDebug('Writing Sanity runtime files')
-  await writeSanityRuntime({
+  const {entries} = await writeSanityRuntime({
     appTitle,
     basePath,
     cwd,
@@ -103,6 +107,7 @@ export async function buildStaticFiles(
   let viteConfig = await getViteConfig({
     basePath,
     cwd,
+    entries,
     federation,
     importMap,
     isApp,
