@@ -2410,14 +2410,14 @@ EXAMPLES
 
 ## `sanity mcp configure`
 
-Configure Sanity MCP server for AI editors (Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code)
+Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, MCPorter, OpenCode, VS Code, VS Code Insiders, Zed)
 
 ```
 USAGE
   $ sanity mcp configure
 
 DESCRIPTION
-  Configure Sanity MCP server for AI editors (Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code)
+  Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, MCPorter, OpenCode, VS Code, VS Code Insiders, Zed)
 
 EXAMPLES
   Configure Sanity MCP server for detected AI editors

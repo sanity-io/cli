@@ -10,7 +10,7 @@ const debug = subdebug('mcp:configure')
 
 export class ConfigureMcpCommand extends SanityCommand<typeof ConfigureMcpCommand> {
   static override description =
-    'Configure Sanity MCP server for AI editors (Claude Code, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, VS Code)'
+    'Configure Sanity MCP server for AI editors (Antigravity, Claude Code, Cline, Cline CLI, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, MCPorter, OpenCode, VS Code, VS Code Insiders, Zed)'
 
   static override examples = [
     {
