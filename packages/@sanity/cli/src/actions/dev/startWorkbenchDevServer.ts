@@ -35,11 +35,18 @@ export async function startWorkbenchDevServer(
     : Boolean(cliConfig?.reactStrictMode)
 
   let workbenchAvailable = false
+
+  /**
+   * Check whether the `sanity` package has the `workbench` export available. If not,
+   * it means an incompatible version of `sanity` is installed and workbench will not
+   * be able to start, because the runtime requires the `renderWorkbench` function from
+   * that export.
+   */
   try {
-    await resolveLocalPackage('@sanity/workbench', workDir)
+    await resolveLocalPackage('sanity/workbench', workDir)
     workbenchAvailable = true
   } catch {
-    // @sanity/workbench not available in this version — skip workbench server
+    // sanity/workbench not available in this version — skip workbench server
   }
 
   if (!workbenchAvailable) {
