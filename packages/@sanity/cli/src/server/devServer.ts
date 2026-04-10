@@ -1,4 +1,4 @@
-import {CliConfig, type UserViteConfig} from '@sanity/cli-core'
+import {type AppResource, CliConfig, type UserViteConfig} from '@sanity/cli-core'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {type FSWatcher} from 'chokidar'
 import {createServer, type InlineConfig, type ViteDevServer} from 'vite'
@@ -24,6 +24,7 @@ export interface DevServerOptions {
   httpHost?: string
   isApp?: boolean
   projectName?: string
+  resources?: Record<string, AppResource>
   schemaExtraction?: CliConfig['schemaExtraction']
   typegen?: CliConfig['typegen']
   vite?: UserViteConfig
@@ -47,6 +48,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     isApp,
     reactCompiler,
     reactStrictMode,
+    resources,
     schemaExtraction,
     typegen,
     vite: extendViteConfig,
@@ -72,6 +74,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     isApp,
     mode: 'development',
     reactCompiler,
+    resources,
     schemaExtraction,
     server: {host: httpHost, port: httpPort},
     typegen,

@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import {type UserViteConfig} from '@sanity/cli-core'
+import {type AppResource, type UserViteConfig} from '@sanity/cli-core'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import {build} from 'vite'
 
@@ -33,6 +33,7 @@ interface StaticBuildOptions {
   minify?: boolean
   profile?: boolean
   reactCompiler?: ReactCompilerConfig
+  resources?: Record<string, AppResource>
   sourceMap?: boolean
   vite?: UserViteConfig
 }
@@ -55,6 +56,7 @@ export async function buildStaticFiles(
     minify = true,
     outputDir,
     reactCompiler,
+    resources,
     sourceMap = false,
     vite: extendViteConfig,
   } = options
@@ -81,6 +83,7 @@ export async function buildStaticFiles(
     mode,
     outputDir,
     reactCompiler,
+    resources,
     sourceMap,
   })
 
