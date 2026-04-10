@@ -29,7 +29,12 @@ export async function startAppDevServer(
     output.log('Starting dev server')
 
     const appTitle = cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined
-    const {close, server} = await startDevServer({...config, appTitle, isApp: true})
+    const {close, server} = await startDevServer({
+      ...config,
+      appTitle,
+      isApp: true,
+      reactRefreshHost: options.reactRefreshHost,
+    })
 
     const {port} = server.config.server
 
