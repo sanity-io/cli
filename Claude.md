@@ -17,6 +17,7 @@ All commands are run from the root of the repo.
 
 - Be sure to typecheck, lint, build, depcheck and run tests when you are done.
 - Testing coverage should be maximized. Prefer running tests with coverage and the goal is to achieve maximum testing coverage for any new code added.
+- When creating pull requests, always follow the template in `.github/PULL_REQUEST_TEMPLATE.md`. Do not use your own format.
 
 # Testing Rules
 
