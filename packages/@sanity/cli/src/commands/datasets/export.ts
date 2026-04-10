@@ -32,7 +32,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
   }
 
   static override description =
-    'Export a dataset to a local gzipped tarball. Assets returning 401, 403, or 404 are silently excluded.'
+    'Export a dataset to a local gzipped tarball. Assets returning 401, 403, or 404 are excluded from the export.'
 
   static override examples = [
     {

@@ -59,7 +59,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     minify: Flags.boolean({
       allowNo: true,
       default: true,
-      description: 'Minify built JavaScript',
+      description: 'Minify built JavaScript (use --no-minify to skip for faster builds)',
     }),
     'schema-required': Flags.boolean({
       default: false,
