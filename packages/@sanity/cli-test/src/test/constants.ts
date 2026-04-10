@@ -17,6 +17,7 @@ export const DEFAULT_FIXTURES: Record<FixtureName, FixtureOptions> = {
   'basic-studio': {},
   'graphql-studio': {},
   'multi-workspace-studio': {},
+  'nextjs-app': {},
   'prebuilt-app': {includeDist: true},
   'prebuilt-studio': {includeDist: true},
   'worst-case-studio': {},
@@ -32,6 +33,7 @@ export type FixtureName =
   | 'basic-studio'
   | 'graphql-studio'
   | 'multi-workspace-studio'
+  | 'nextjs-app'
   | 'prebuilt-app'
   | 'prebuilt-studio'
   | 'worst-case-studio'
