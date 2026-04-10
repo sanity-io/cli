@@ -21,6 +21,10 @@ const baseConfig = {
       // Used for CLI
       ignoreDependencies: ['sanity'],
     },
+    'fixtures/nextjs-app': {
+      entry: ['app/**/*.{js,jsx,ts,tsx}'],
+      project: ['app/**/*.{js,jsx,ts,tsx}'],
+    },
     'fixtures/prebuilt-app': {
       entry: ['src/App.tsx'],
       project,
