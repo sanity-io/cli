@@ -503,8 +503,8 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0
       '@sanity/federation':
-        specifier: 0.1.0-alpha.3
-        version: 0.1.0-alpha.3(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        specifier: 0.1.0-alpha.4
+        version: 0.1.0-alpha.4(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       '@sanity/generate-help-url':
         specifier: ^4.0.0
         version: 4.0.0
@@ -4048,8 +4048,8 @@ packages:
     engines: {node: '>=20.19 <22 || >=22.12'}
     hasBin: true
 
-  '@sanity/federation@0.1.0-alpha.3':
-    resolution: {integrity: sha512-2uW8ce435L89+ScNC5eWYF5uwsmn7kO6N4l9WIogMqeHT0H1Jm0CZbtSw41UtKwiQbU26TlV8j9YCctrqkVK8g==}
+  '@sanity/federation@0.1.0-alpha.4':
+    resolution: {integrity: sha512-H6wc4yCQEJHvhZq11n/36rQTEki6+gZfKGgcMU+GPW583lZx78m2zVaDcaQB9BslKOgeUO/bkg0RZh+oDFbTVw==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     peerDependencies:
       vite: ^7.0.0 || ^8.0.0
@@ -13137,7 +13137,7 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@sanity/federation@0.1.0-alpha.3(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))':
+  '@sanity/federation@0.1.0-alpha.4(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))':
     dependencies:
       '@module-federation/runtime': 2.3.1
       '@module-federation/vite': 1.14.0(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
