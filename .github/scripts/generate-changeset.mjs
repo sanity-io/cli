@@ -114,6 +114,10 @@ function getWorkspacePackages() {
 // --- Main ---
 
 // 0. Check for existing changesets using marker-based logic
+// Only consider changesets that are part of this PR's changed files,
+// not pre-existing ones inherited from the base branch.
+const prChangedFiles = await getChangedFiles()
+
 if (existsSync(CHANGESET_FILE)) {
   const content = readFileSync(CHANGESET_FILE, 'utf8')
   if (!content.startsWith(AUTO_GENERATED_MARKER)) {
@@ -122,15 +126,17 @@ if (existsSync(CHANGESET_FILE)) {
   }
   // Marker present — bot still owns the file, will overwrite below
 } else {
-  const changesetDir = resolve('.changeset')
-  if (existsSync(changesetDir)) {
-    const otherChangesets = readdirSync(changesetDir).filter(
-      (f) => f.endsWith('.md') && f !== 'README.md',
-    )
-    if (otherChangesets.length > 0) {
-      console.log(`Skipping: found manual changeset(s): ${otherChangesets.join(', ')}`)
-      process.exit(0)
-    }
+  const manualChangesets = prChangedFiles.filter(
+    (f) =>
+      f.startsWith('.changeset/') &&
+      f.endsWith('.md') &&
+      f !== '.changeset/README.md' &&
+      f !== CHANGESET_FILE,
+  )
+  if (manualChangesets.length > 0) {
+    const names = manualChangesets.map((f) => f.replace('.changeset/', ''))
+    console.log(`Skipping: found manual changeset(s) in PR: ${names.join(', ')}`)
+    process.exit(0)
   }
 }
 
@@ -154,11 +160,10 @@ if (!bump) {
 const releaseNotes = PR_TITLE.replace(/^[a-z]+(\([^)]*\))?!?:\s*/, '')
 
 // 4. Detect affected packages
-const changedFiles = await getChangedFiles()
 const pkgMap = getWorkspacePackages()
 const affected = new Set()
 
-for (const file of changedFiles) {
+for (const file of prChangedFiles) {
   for (const [prefix, name] of pkgMap) {
     if (file.startsWith(prefix)) {
       affected.add(name)
