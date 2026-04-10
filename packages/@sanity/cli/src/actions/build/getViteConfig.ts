@@ -59,6 +59,12 @@ interface ViteOptions extends Pick<CliConfig, 'federation' | 'schemaExtraction' 
    */
   outputDir?: string
   /**
+   * URL of the workbench dev server for react-refresh in federated builds.
+   * Passed as `reactRefreshHost` to `@vitejs/plugin-react` so the refresh
+   * preamble connects to the host application's HMR server.
+   */
+  reactRefreshHost?: string
+  /**
    * HTTP development server configuration
    */
   server?: {host?: string; port?: number}
@@ -84,6 +90,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     mode,
     outputDir,
     reactCompiler,
+    reactRefreshHost,
     schemaExtraction,
     server,
     // default to `true` when `mode=development`
@@ -109,16 +116,17 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     : getStudioEnvironmentVariables({jsonEncode: true, prefix: 'process.env.'})
 
   const sharedPlugins: PluginOption = [
-    viteReact(
-      reactCompiler
+    viteReact({
+      ...(reactCompiler
         ? {
             babel: {
               generatorOpts: {compact: true},
               plugins: [['babel-plugin-react-compiler', reactCompiler]],
             },
           }
-        : {},
-    ),
+        : {}),
+      ...(reactRefreshHost ? {reactRefreshHost} : {}),
+    }),
     ...(schemaExtraction?.enabled
       ? [
           sanitySchemaExtractionPlugin({
