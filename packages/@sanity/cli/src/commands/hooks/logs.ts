@@ -30,7 +30,7 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: 'Show log entries for the project webhooks',
+      description: 'Show log entries for project webhooks',
     },
     {
       command: '<%= config.bin %> <%= command.id %> [NAME]',
@@ -38,7 +38,7 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     },
     {
       command: '<%= config.bin %> <%= command.id %> --project-id abc123',
-      description: 'Show webhook logs for a specific project',
+      description: 'Show log entries for a specific project',
     },
   ]
 
