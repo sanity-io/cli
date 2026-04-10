@@ -47,22 +47,17 @@ export async function getUserApplication({
   let query: Record<string, string | string[]> | undefined
   let uri: string
 
-  // set the uri
+  // set the uri and query
   if (isSdkApp) {
-    uri = appId ? `/user-applications/${appId}` : '/user-applications'
-  } else {
-    uri = appId
-      ? `/projects/${projectId}/user-applications/${appId}`
-      : `/projects/${projectId}/user-applications`
-  }
-
-  // set the query
-  if (isSdkApp) {
+    uri = `/user-applications/${appId}`
     query = {appType: 'coreApp'}
-  } else if (!appId) {
-    // In practice, this function isn't called if we don't have at least one of appHost or appId,
-    // so the default case won't be called. But leaving this ternary in for now (from old CLI code) just in case.
-    query = appHost ? {appHost, appType: 'studio'} : {default: 'true'}
+  } else if (appId) {
+    uri = `/projects/${projectId}/user-applications/${appId}`
+  } else if (appHost) {
+    uri = `/projects/${projectId}/user-applications`
+    query = {appHost, appType: 'studio'}
+  } else {
+    uri = `/projects/${projectId}/user-applications`
   }
 
   const client = await getGlobalCliClient({
@@ -152,7 +147,7 @@ export async function getUserApplications(
         appType: 'studio'
         projectId?: string
       },
-): Promise<UserApplication[] | null> {
+): Promise<UserApplication[]> {
   const {appType} = options
   const client = await getGlobalCliClient({
     apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -169,21 +164,10 @@ export async function getUserApplications(
 
   const {organizationId} = options as {appType: 'coreApp'; organizationId?: string}
 
-  try {
-    return await client.request({
-      query: {appType: 'coreApp', organizationId: organizationId!},
-      uri: `/user-applications`,
-    })
-  } catch (error) {
-    // User doesn't have permission to view applications for the org,
-    // or the organization ID doesn’t exist
-    if (error?.statusCode === 403) {
-      throw error
-    }
-
-    debug('Error finding user applications', error)
-    return null
-  }
+  return await client.request({
+    query: {appType: 'coreApp', organizationId: organizationId!},
+    uri: `/user-applications`,
+  })
 }
 
 export async function createUserApplication(options: {
