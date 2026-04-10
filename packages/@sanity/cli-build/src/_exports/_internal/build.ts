@@ -17,6 +17,6 @@ export {
   type VendorBuildConfig,
 } from '../../actions/build/resolveVendorBuildConfig.js'
 export {writeFavicons} from '../../actions/build/writeFavicons.js'
-export {writeSanityRuntime} from '../../actions/build/writeSanityRuntime.js'
+export {resolveEntries, writeSanityRuntime} from '../../actions/build/writeSanityRuntime.js'
 export {AppBuildTrace, StudioBuildTrace} from '../../telemetry/build.telemetry.js'
 export {copyDir} from '../../util/copyDir.js'
