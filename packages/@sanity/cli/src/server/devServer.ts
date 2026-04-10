@@ -26,6 +26,7 @@ export interface DevServerOptions {
   httpHost?: string
   isApp?: boolean
   projectName?: string
+  reactRefreshHost?: string
   schemaExtraction?: CliConfig['schemaExtraction']
   typegen?: CliConfig['typegen']
   vite?: UserViteConfig
@@ -49,6 +50,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     httpPort,
     isApp,
     reactCompiler,
+    reactRefreshHost,
     reactStrictMode,
     schemaExtraction,
     typegen,
@@ -88,6 +90,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     isApp,
     mode: 'development',
     reactCompiler,
+    reactRefreshHost,
     schemaExtraction,
     server: {host: httpHost, port: httpPort},
   })
