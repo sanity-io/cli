@@ -65,7 +65,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   } = options
 
   debug('Writing Sanity runtime files')
-  const watcher = await writeSanityRuntime({
+  const {entries, watcher} = await writeSanityRuntime({
     appTitle,
     basePath,
     cwd,
@@ -99,6 +99,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     ],
     basePath,
     cwd,
+    entries,
     federation,
     getEnvironmentVariables,
     isApp,

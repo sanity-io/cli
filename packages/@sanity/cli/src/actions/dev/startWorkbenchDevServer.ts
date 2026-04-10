@@ -27,6 +27,7 @@ export async function startWorkbenchDevServer(
   })
 
   if (!cliConfig?.federation?.enabled) {
+    devDebug('Federation not enabled, skipping workbench dev server')
     return {httpHost, workbenchAvailable: false, workbenchPort}
   }
 
@@ -47,6 +48,7 @@ export async function startWorkbenchDevServer(
     workbenchAvailable = true
   } catch {
     // sanity/workbench not available in this version — skip workbench server
+    devDebug('Workbench not available, skipping workbench dev server')
   }
 
   if (!workbenchAvailable) {
