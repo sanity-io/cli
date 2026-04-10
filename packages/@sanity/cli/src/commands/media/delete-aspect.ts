@@ -19,7 +19,7 @@ export class MediaDeleteAspectCommand extends SanityCommand<typeof MediaDeleteAs
     }),
   }
 
-  static override description = 'Undeploy an aspect'
+  static override description = 'Delete an aspect definition'
 
   static override examples = [
     {

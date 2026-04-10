@@ -17,7 +17,7 @@ import {type StudioWorkspace, type UserInfo} from '../actions/debug/types.js'
 type ConfigLoadResult<T> = {error: Error; value?: never} | {error?: never; value: T}
 
 export class Debug extends SanityCommand<typeof Debug> {
-  static override description = 'Provides diagnostic info for Sanity Studio troubleshooting'
+  static override description = 'Print diagnostic info for troubleshooting'
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',

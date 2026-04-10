@@ -39,11 +39,11 @@ export class ExecCommand extends SanityCommand<typeof ExecCommand> {
   static override flags = {
     'mock-browser-env': Flags.boolean({
       default: false,
-      description: 'Mocks a browser-like environment using jsdom',
+      description: 'Mock a browser environment with jsdom',
     }),
     'with-user-token': Flags.boolean({
       default: false,
-      description: 'Prime access token from CLI config into getCliClient()',
+      description: 'Include your auth token in getCliClient()',
     }),
   }
 

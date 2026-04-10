@@ -32,7 +32,7 @@ export class ListBackupCommand extends SanityCommand<typeof ListBackupCommand> {
     }),
   }
 
-  static override description = 'List available backups for a dataset.'
+  static override description = 'List available backups for a dataset'
 
   static override examples = [
     {

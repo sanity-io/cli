@@ -12,7 +12,7 @@ const sortFields = ['id', 'members', 'name', 'url', 'created']
 const projectsDebug = subdebug('projects')
 
 export class List extends SanityCommand<typeof List> {
-  static override description = 'Lists projects connected to your user'
+  static override description = 'List your projects'
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
@@ -20,17 +20,19 @@ export class List extends SanityCommand<typeof List> {
     },
     {
       command: '<%= config.bin %> <%= command.id %> --sort=members --order=asc',
-      description: 'List all users of the project, but exclude pending invitations and robots',
+      description: 'List projects sorted by member count, ascending',
     },
   ]
 
   static override flags = {
     order: Flags.string({
       default: 'desc',
+      description: 'Sort direction',
       options: ['asc', 'desc'],
     }),
     sort: Flags.string({
       default: 'created',
+      description: 'Sort field',
       options: sortFields,
     }),
   }

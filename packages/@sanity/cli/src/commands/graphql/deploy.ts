@@ -68,7 +68,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
 
   static override flags = {
     api: Flags.string({
-      description: 'Only deploy API with this ID. Can be specified multiple times.',
+      description: 'Only deploy API with this ID (can be specified multiple times)',
       multiple: true,
     }),
     ...getDatasetFlag({description: 'Deploy API for the given dataset', semantics: 'specify'}),
@@ -94,8 +94,7 @@ export class GraphQLDeployCommand extends SanityCommand<typeof GraphQLDeployComm
       description: 'Deploy API(s) to given tag (defaults to "default")',
     }),
     'with-union-cache': Flags.boolean({
-      description:
-        'Enable union cache that optimizes schema generation for schemas with many self referencing types',
+      description: 'Cache union types (faster for schemas with many self-references)',
     }),
   }
 

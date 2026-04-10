@@ -22,7 +22,7 @@ export class Add extends SanityCommand<typeof Add> {
     }),
   }
 
-  static override description = 'Allow a new origin to use your project API through CORS'
+  static override description = 'Add a CORS origin to the project'
 
   static override examples = [
     {

@@ -17,7 +17,7 @@ export class AddTokenCommand extends SanityCommand<typeof AddTokenCommand> {
     }),
   }
 
-  static override description = 'Create a new API token for this project'
+  static override description = 'Create a new API token for the project'
 
   static override examples = [
     {

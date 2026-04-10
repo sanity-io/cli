@@ -37,8 +37,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     }),
   }
 
-  static override description =
-    'Manages dataset copying, including starting a new copy job, listing copy jobs and following the progress of a running copy job'
+  static override description = 'Copy a dataset or manage copy jobs'
 
   static override examples = [
     {

@@ -3,7 +3,7 @@ import {type FlagInput} from '@oclif/core/interfaces'
 import open from 'open'
 
 export class DocsBrowseCommand extends Command {
-  static override description = 'Open Sanity docs in a web browser'
+  static override description = 'Open Sanity docs in your browser'
   static override flags = {} satisfies FlagInput
 
   public async run(): Promise<void> {

@@ -7,11 +7,11 @@ import {getProjectIdFlag} from '../../util/sharedFlags.js'
 const listCorsDebug = subdebug('cors:list')
 
 export class List extends SanityCommand<typeof List> {
-  static override description = 'List all origins allowed to access the API for this project'
+  static override description = 'List CORS origins for the project'
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: 'List CORS origins for the current project',
+      description: 'List CORS origins for the project',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --project-id abc123',

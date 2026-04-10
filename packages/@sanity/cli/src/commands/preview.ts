@@ -15,7 +15,7 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
 
   static override deprecateAliases = true
 
-  static override description = 'Starts a server to preview a production build'
+  static override description = 'Start a local server to preview a production build'
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> --host=0.0.0.0',
@@ -25,10 +25,10 @@ export class PreviewCommand extends SanityCommand<typeof PreviewCommand> {
 
   static override flags = {
     host: Flags.string({
-      description: '[default: localhost] The local network interface at which to listen.',
+      description: 'Local network interface to listen on (default: localhost)',
     }),
     port: Flags.string({
-      description: '[default: 3333] TCP port to start server on.',
+      description: 'TCP port to start server on (default: 3333)',
     }),
   }
   static override hiddenAliases: string[] = ['start']

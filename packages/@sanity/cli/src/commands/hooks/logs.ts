@@ -20,25 +20,25 @@ const logsHookDebug = subdebug('hook:logs')
 export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
   static override args = {
     name: Args.string({
-      description: 'Name of the hook to show logs for',
+      description: 'Name of the webhook to show logs for',
       required: false,
     }),
   }
 
-  static override description = 'List latest log entries for a given hook'
+  static override description = 'Show log entries for a webhook'
 
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: 'List latest log entries for a given hook',
+      description: 'Show log entries for the project webhooks',
     },
     {
       command: '<%= config.bin %> <%= command.id %> [NAME]',
-      description: 'List latest log entries for a specific hook by name',
+      description: 'Show log entries for a specific webhook by name',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --project-id abc123',
-      description: 'List hook logs for a specific project',
+      description: 'Show webhook logs for a specific project',
     },
   ]
 

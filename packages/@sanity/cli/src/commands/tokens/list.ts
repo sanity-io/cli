@@ -11,11 +11,11 @@ import {getProjectIdFlag} from '../../util/sharedFlags.js'
 const listTokenDebug = subdebug('tokens:list')
 
 export class TokensListCommand extends SanityCommand<typeof TokensListCommand> {
-  static override description = 'List API tokens for the current project'
+  static override description = 'List API tokens for the project'
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: 'List tokens for the current project',
+      description: 'List tokens for the project',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --json',
