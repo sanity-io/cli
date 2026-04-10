@@ -32,6 +32,11 @@ interface ViteOptions extends Pick<CliConfig, 'federation' | 'schemaExtraction' 
    */
   cwd: string
 
+  entries: {
+    relativeConfigLocation: string | null
+    relativeEntry: string
+  }
+
   /**
    * Mode to run vite in - eg development or production
    */
@@ -83,6 +88,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
   const {
     basePath: rawBasePath = '/',
     cwd,
+    entries,
     federation,
     importMap,
     isApp,
@@ -188,7 +194,16 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
         ? [
             ...sharedPlugins,
             viteFederation({
-              isApp,
+              ...(isApp
+                ? {
+                    appEntry: entries.relativeEntry,
+                    isApp: true as const,
+                  }
+                : {
+                    isApp: false as const,
+                    // TODO: fix this non-null assertion
+                    studioConfigPath: entries.relativeConfigLocation!,
+                  }),
               pkgJson: await readPackageJson(path.join(cwd, 'package.json')),
               workDir: cwd,
             }),
