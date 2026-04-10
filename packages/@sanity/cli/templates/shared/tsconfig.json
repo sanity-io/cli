@@ -12,6 +12,6 @@
     "jsx": "preserve",
     "incremental": true
   },
-  "include": ["**/*.ts", "**/*.tsx"],
+  "include": ["**/*.ts", "**/*.tsx", ".sanity/*.ts"],
   "exclude": ["node_modules"]
 }
