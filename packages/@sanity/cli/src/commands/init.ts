@@ -750,12 +750,6 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       return
     }
 
-    if (!this.flags['dataset']) {
-      this.error(`\`--dataset\` must be specified in unattended mode`, {
-        exit: 1,
-      })
-    }
-
     // output-path is required in unattended mode when not using nextjs
     if (!isNextJs && !this.flags['output-path']) {
       this.error(`\`--output-path\` must be specified in unattended mode`, {
@@ -899,6 +893,25 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       }
 
       return {datasetName: dataset, userAction: 'none'}
+    }
+
+    // In unattended mode without --dataset, default to "production" with public visibility
+    // (same behavior as --dataset-default)
+    if (this.isUnattended()) {
+      debug('Unattended mode without --dataset, defaulting to "production" dataset')
+      const datasetName = 'production'
+      const existing = datasets.find((ds) => ds.name === datasetName)
+      if (!existing) {
+        await createDataset({
+          datasetName,
+          forcePublic: !visibility,
+          output: this.output,
+          projectFeatures,
+          projectId: opts.projectId,
+          visibility,
+        })
+      }
+      return {datasetName, userAction: existing ? 'none' : 'create'}
     }
 
     if (datasets.length === 0) {
