@@ -1,6 +1,6 @@
 import {ux} from '@oclif/core'
-import {noopLogger} from '@sanity/telemetry'
 
+import {noopLogger} from './noopTelemetry.js'
 import {type CLITelemetryStore} from './types.js'
 
 /**

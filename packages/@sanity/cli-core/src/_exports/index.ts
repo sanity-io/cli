@@ -28,6 +28,7 @@ export {
   setCliTelemetry,
 } from '../telemetry/getCliTelemetry.js'
 export {getTelemetryBaseInfo} from '../telemetry/getTelemetryBaseInfo.js'
+export {noopLogger} from '../telemetry/noopTelemetry.js'
 export {
   type CLITelemetryStore,
   type ConsentInformation,

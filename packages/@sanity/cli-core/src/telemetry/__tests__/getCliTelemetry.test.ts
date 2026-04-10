@@ -1,4 +1,3 @@
-import {noopLogger} from '@sanity/telemetry'
 import {afterEach, describe, expect, test} from 'vitest'
 
 import {
@@ -7,6 +6,7 @@ import {
   getCliTelemetry,
   setCliTelemetry,
 } from '../getCliTelemetry.js'
+import {noopLogger} from '../noopTelemetry.js'
 import {type CLITelemetryStore} from '../types.js'
 
 describe('#getCliTelemetry', () => {
