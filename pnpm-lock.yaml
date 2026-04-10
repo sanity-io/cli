@@ -522,8 +522,8 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0
       '@sanity/federation':
-        specifier: 0.1.0-alpha.2
-        version: 0.1.0-alpha.2(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        specifier: 0.1.0-alpha.3
+        version: 0.1.0-alpha.3(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       '@sanity/generate-help-url':
         specifier: ^4.0.0
         version: 4.0.0
@@ -3014,34 +3014,17 @@ packages:
       vue-tsc:
         optional: true
 
-  '@module-federation/error-codes@2.3.0':
-    resolution: {integrity: sha512-O8jXi0Wv/dFc7BkJkFC0SlW8dT0OjOWvBHakVaOAKVlAKNuQBXfZzLe48bIYAvMhPe0lFppyWoN/SyuIfVBvkg==}
-
   '@module-federation/error-codes@2.3.1':
     resolution: {integrity: sha512-s3IjT2OYrSBNNmxdTmmrWBpsFfeNszdL6BSqjXLHb1CgXWUYLNXpb05IopnzMhRLcur6MTGuKR0ZSjJbmvQBbg==}
 
   '@module-federation/managers@2.3.1':
     resolution: {integrity: sha512-kK/4FkoaIxbJbN+R6+cq+igv095hPox8oheZOKkrYA9P6Xv5FiHza+gHlCntiWTMrU8bzqJHH4VYm6gq1RB+dQ==}
 
-  '@module-federation/runtime-core@2.3.0':
-    resolution: {integrity: sha512-OvBNIAGM7Xj0dUOBG5jx7zuZaRLDHb5Wcb7pstwqJo5WYqj7gzA9X+QmI+jsQ9jY74Nlfx9vrvW6LlHukIRH/A==}
-
   '@module-federation/runtime-core@2.3.1':
     resolution: {integrity: sha512-E0WgaCn32AWzD0n6SCH7VQ+kxk46XyX432PQWARgyQzCX/wyLkaT+We3A18RVNUevRT85YHLrrVIhMKJJVHgjA==}
 
-  '@module-federation/runtime@2.3.0':
-    resolution: {integrity: sha512-9vv0Ah8Tg3E5mBlj29n1boN0bPKbqhw7QBWZCDm2Mou0uXb8x/ycgFR1EPq937LCScBUl0LiFp53KSjeyT75aQ==}
-
   '@module-federation/runtime@2.3.1':
     resolution: {integrity: sha512-NiKelHKzOf1Vz8oqcxC/XRUAW224O6lKj9xD0cfp5Bp343iu6s58RlLvX1ypF+UpCl3jA4JM8npGax/3jjyifw==}
-
-  '@module-federation/sdk@2.3.0':
-    resolution: {integrity: sha512-xj90q4eILkFA1J30wVQYEIWAEh39tfLbCIw1dz3QXUL2TtD/h19H1rZlRkrtAyUxV6xKjp17EMkyGSHzstf1OA==}
-    peerDependencies:
-      node-fetch: ^3.3.2
-    peerDependenciesMeta:
-      node-fetch:
-        optional: true
 
   '@module-federation/sdk@2.3.1':
     resolution: {integrity: sha512-lgWxFZyLRKDXWRGlV6ROjFJ6MRaJTxs0bBnS6hS9ONfr/0TkeW4JzDbsfzrB8g4p6IgSKB+wQ9XfibJCGBI5OQ==}
@@ -4292,8 +4275,8 @@ packages:
     engines: {node: '>=20.19 <22 || >=22.12'}
     hasBin: true
 
-  '@sanity/federation@0.1.0-alpha.2':
-    resolution: {integrity: sha512-m1DwW7oJD0/ZNWJzEki9O/SYLywOB3MDYEtYNCH8JAVUZl15yW3Qh9LIe5vhdoTFeWi103NTECNoeLbmWWyzQQ==}
+  '@sanity/federation@0.1.0-alpha.3':
+    resolution: {integrity: sha512-2uW8ce435L89+ScNC5eWYF5uwsmn7kO6N4l9WIogMqeHT0H1Jm0CZbtSw41UtKwiQbU26TlV8j9YCctrqkVK8g==}
     engines: {node: '>=20.19.1 <22 || >=22.12'}
     peerDependencies:
       vite: ^7.0.0 || ^8.0.0
@@ -12439,8 +12422,6 @@ snapshots:
       - node-fetch
       - utf-8-validate
 
-  '@module-federation/error-codes@2.3.0': {}
-
   '@module-federation/error-codes@2.3.1': {}
 
   '@module-federation/managers@2.3.1':
@@ -12451,25 +12432,10 @@ snapshots:
     transitivePeerDependencies:
       - node-fetch
 
-  '@module-federation/runtime-core@2.3.0':
-    dependencies:
-      '@module-federation/error-codes': 2.3.0
-      '@module-federation/sdk': 2.3.0
-    transitivePeerDependencies:
-      - node-fetch
-
   '@module-federation/runtime-core@2.3.1':
     dependencies:
       '@module-federation/error-codes': 2.3.1
       '@module-federation/sdk': 2.3.1
-    transitivePeerDependencies:
-      - node-fetch
-
-  '@module-federation/runtime@2.3.0':
-    dependencies:
-      '@module-federation/error-codes': 2.3.0
-      '@module-federation/runtime-core': 2.3.0
-      '@module-federation/sdk': 2.3.0
     transitivePeerDependencies:
       - node-fetch
 
@@ -12480,8 +12446,6 @@ snapshots:
       '@module-federation/sdk': 2.3.1
     transitivePeerDependencies:
       - node-fetch
-
-  '@module-federation/sdk@2.3.0': {}
 
   '@module-federation/sdk@2.3.1': {}
 
@@ -13572,9 +13536,9 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@sanity/federation@0.1.0-alpha.2(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))':
+  '@sanity/federation@0.1.0-alpha.3(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))':
     dependencies:
-      '@module-federation/runtime': 2.3.0
+      '@module-federation/runtime': 2.3.1
       '@module-federation/vite': 1.14.0(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vite: 7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)
     transitivePeerDependencies:
