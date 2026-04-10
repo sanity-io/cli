@@ -18,9 +18,18 @@ export async function devAction(options: DevActionOptions): Promise<{close?: () 
   // Start app/studio dev server: use workbenchPort + 1 if workbench feature is
   // available (reserves the configured port for it), otherwise use the original port
   const desiredAppPort = closeWorkbenchServer === undefined ? workbenchPort : workbenchPort + 1
+
+  // When the workbench is running, point the remote's react-refresh preamble at
+  // the workbench dev server so HMR updates flow through the host.
+  const reactRefreshHost =
+    closeWorkbenchServer === undefined
+      ? undefined
+      : `http://${httpHost || 'localhost'}:${workbenchPort}`
+
   const appOptions: DevActionOptions = {
     ...options,
     flags: {...options.flags, port: String(desiredAppPort)},
+    reactRefreshHost,
     workbenchAvailable,
   }
 
