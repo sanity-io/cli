@@ -1,8 +1,7 @@
 import {existsSync} from 'node:fs'
-import {createRequire} from 'node:module'
 import {join} from 'node:path'
 
-import {register} from 'tsx/esm/api'
+import {createJiti} from '@rexxars/jiti'
 
 import {NotFoundError} from '../../errors/NotFoundError.js'
 import {tryGetDefaultExport} from '../../util/tryGetDefaultExport.js'
@@ -12,7 +11,7 @@ import {type CliConfig} from './types/cliConfig.js'
 /**
  * Get the CLI config for a project synchronously, given the root path.
  *
- * This loads the CLI config in the main thread using tsx/register for TypeScript support.
+ * This loads the CLI config in the main thread using jiti for TypeScript support.
  * Note: This is a synchronous operation and does not use worker threads like the async version.
  *
  * @param rootPath - Root path for the project, eg where `sanity.cli.(ts|js)` is located.
@@ -33,19 +32,9 @@ export function getCliConfigSync(rootPath: string): CliConfig {
 
   const configPath = configPaths[0]
 
-  // Register tsx for TypeScript support
-  const unregister = register()
-
-  let cliConfig: CliConfig | undefined
-  try {
-    // Use createRequire for synchronous loading in ESM contexts
-    // This works when tsx loader is active
-    const require = createRequire(import.meta.url)
-    const loaded = require(configPath)
-    cliConfig = tryGetDefaultExport(loaded) as CliConfig | undefined
-  } finally {
-    unregister()
-  }
+  const jiti = createJiti(import.meta.url, {tsconfigPaths: true})
+  const loaded = jiti(configPath)
+  const cliConfig = tryGetDefaultExport(loaded) as CliConfig | undefined
 
   const {data, error, success} = cliConfigSchema.safeParse(cliConfig)
   if (!success) {
