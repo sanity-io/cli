@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {getCliToken, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
+import {execa} from 'execa'
 
 import {updateProjectInitializedAt} from '../../services/projects.js'
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
@@ -102,22 +103,44 @@ export async function initStudio({
     if (!token) {
       throw new InitError('Authentication required to import dataset', 1)
     }
-    // Dynamic import to keep initAction decoupled from oclif commands.
-    // TODO: consider replacing with `npx sanity dataset import` to fully decouple.
-    // eslint-disable-next-line no-restricted-syntax
-    const {ImportDatasetCommand} = await import('../../commands/datasets/import.js')
-    await ImportDatasetCommand.run(
-      [template.datasetUrl, '--project-id', projectId, '--dataset', datasetName, '--token', token],
-      {
-        root: outputPath,
-      },
-    )
 
-    output.log('')
-    output.log('If you want to delete the imported data, use')
-    output.log(`  ${styleText('cyan', `npx sanity dataset delete ${datasetName}`)}`)
-    output.log('and create a new clean dataset with')
-    output.log(`  ${styleText('cyan', `npx sanity dataset create <name>`)}\n`)
+    // Spawn the project's own sanity binary for dataset import.
+    // The full CLI is available as a project dependency after scaffoldAndInstall.
+    // Using preferLocal lets execa resolve the binary cross-platform (.cmd on Windows).
+    // stdio: 'inherit' means the child process prints its own output/errors directly,
+    // so on failure we only need a short summary - not the full ExecaError dump.
+    try {
+      await execa(
+        'sanity',
+        [
+          'dataset',
+          'import',
+          template.datasetUrl,
+          '--project-id',
+          projectId,
+          '--dataset',
+          datasetName,
+          '--token',
+          token,
+        ],
+        {
+          cwd: outputPath,
+          preferLocal: true,
+          stdio: 'inherit',
+        },
+      )
+
+      output.log('')
+      output.log('If you want to delete the imported data, use')
+      output.log(`  ${styleText('cyan', `npx sanity dataset delete ${datasetName}`)}`)
+      output.log('and create a new clean dataset with')
+      output.log(`  ${styleText('cyan', `npx sanity dataset create <name>`)}\n`)
+    } catch {
+      output.warn(
+        'Sample dataset import failed. Your studio will work fine without it.\n' +
+          `You can import it later with: ${styleText('cyan', `npx sanity dataset import ${template.datasetUrl} ${datasetName}`)}`,
+      )
+    }
   }
 
   // Studio-specific success messages
