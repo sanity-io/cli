@@ -4,9 +4,9 @@ import {
   clearCliTelemetry,
   CLI_TELEMETRY_SYMBOL,
   getCliTelemetry,
-  noopLogger,
   setCliTelemetry,
 } from '../getCliTelemetry.js'
+import {noopLogger} from '../noopTelemetry.js'
 import {type CLITelemetryStore} from '../types.js'
 
 describe('#getCliTelemetry', () => {
