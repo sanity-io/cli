@@ -48,7 +48,8 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     build: Flags.boolean({
       allowNo: true,
       default: true,
-      description: 'Skip build, deploy existing `dist/` output',
+      description:
+        'Build the studio before deploying (use --no-build to deploy existing `dist/` output)',
     }),
     external: Flags.boolean({
       default: false,

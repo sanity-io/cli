@@ -31,7 +31,8 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     }),
   }
 
-  static override description = 'Export a dataset to a local file'
+  static override description =
+    'Export a dataset to a local file. Assets returning 401, 403, or 404 are silently excluded.'
 
   static override examples = [
     {
