@@ -25,7 +25,7 @@ export class LogsHookCommand extends SanityCommand<typeof LogsHookCommand> {
     }),
   }
 
-  static override description = 'Show log entries for a webhook'
+  static override description = 'Show log entries for project webhooks'
 
   static override examples = [
     {
