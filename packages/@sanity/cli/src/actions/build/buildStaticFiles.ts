@@ -6,6 +6,7 @@ import {
   extendViteConfigWithUserConfig,
   finalizeViteConfig,
   getViteConfig,
+  resolveEntries,
   writeFavicons,
   writeSanityRuntime,
 } from '@sanity/cli-build/_internal/build'
@@ -78,10 +79,14 @@ export async function buildStaticFiles(
    * runtime generation, static file copies, and favicons.
    */
   if (federation?.enabled) {
+    buildDebug('Resolving entries for federation build')
+    const entries = await resolveEntries({cwd, entry, isApp})
+
     buildDebug('Resolving vite config (federation)')
     const viteConfig = await getViteConfig({
       basePath,
       cwd,
+      entries,
       federation,
       isApp,
       minify,
@@ -100,7 +105,7 @@ export async function buildStaticFiles(
   }
 
   buildDebug('Writing Sanity runtime files')
-  await writeSanityRuntime({
+  const {entries} = await writeSanityRuntime({
     appTitle,
     basePath,
     cwd,
@@ -121,6 +126,7 @@ export async function buildStaticFiles(
     autoUpdatesCssUrls,
     basePath,
     cwd,
+    entries,
     federation,
     getEnvironmentVariables,
     importMap,
