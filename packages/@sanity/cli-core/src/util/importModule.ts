@@ -22,7 +22,6 @@ const debug = subdebug('importModule')
 
 /**
  * Imports a module using jiti and returns its exports.
- * This is a thin wrapper around tsx to allow swapping out the underlying implementation in the future if needed.
  *
  * @param filePath - Path to the module to import.
  * @param options - Options for the importModule function.

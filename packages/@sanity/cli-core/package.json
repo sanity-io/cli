@@ -65,7 +65,7 @@
   "dependencies": {
     "@inquirer/prompts": "^8.3.0",
     "@oclif/core": "catalog:",
-    "@rexxars/jiti": "^2.6.2",
+    "@rexxars/jiti": "catalog:",
     "@sanity/client": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",
     "boxen": "^8.0.1",
@@ -79,7 +79,6 @@
     "ora": "catalog:",
     "read-package-up": "catalog:",
     "rxjs": "catalog:",
-    "tsx": "catalog:",
     "vite": "catalog:",
     "vite-node": "^5.3.0",
     "zod": "catalog:"
