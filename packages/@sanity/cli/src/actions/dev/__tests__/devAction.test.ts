@@ -108,6 +108,38 @@ describe('devAction', () => {
     expect(mockStartStudioDevServer).not.toHaveBeenCalled()
   })
 
+  test('passes reactRefreshHost pointing to workbench when workbench is running', async () => {
+    mockStartWorkbenchDevServer.mockResolvedValue({
+      close: vi.fn().mockResolvedValue(undefined),
+      httpHost: 'localhost',
+      workbenchAvailable: true,
+      workbenchPort: 3333,
+    })
+    mockStartStudioDevServer.mockResolvedValue({
+      close: vi.fn().mockResolvedValue(undefined),
+      server: {config: {server: {port: 3334}}},
+    })
+
+    await devAction(createOptions())
+
+    expect(mockStartStudioDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({reactRefreshHost: 'http://localhost:3333'}),
+    )
+  })
+
+  test('does not pass reactRefreshHost when workbench is not running', async () => {
+    mockStartStudioDevServer.mockResolvedValue({
+      close: vi.fn().mockResolvedValue(undefined),
+      server: {config: {server: {port: 3333}}},
+    })
+
+    await devAction(createOptions())
+
+    expect(mockStartStudioDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({reactRefreshHost: undefined}),
+    )
+  })
+
   test('cleans up workbench and re-throws when app/studio startup fails', async () => {
     const mockWorkbenchClose = vi.fn().mockResolvedValue(undefined)
     mockStartWorkbenchDevServer.mockResolvedValue({
