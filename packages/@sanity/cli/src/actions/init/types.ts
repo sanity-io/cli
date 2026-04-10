@@ -1,4 +1,5 @@
 import {Framework} from '@vercel/frameworks'
+import {z} from 'zod'
 
 import {GenerateConfigOptions} from './createStudioConfig'
 
@@ -17,3 +18,9 @@ export interface ProjectTemplate {
   type?: 'commonjs' | 'module'
   typescriptOnly?: boolean
 }
+
+export const templateManifestSchema = z.object({
+  postInitMessage: z.union([z.string().max(2000), z.array(z.string().max(500)).max(50)]).optional(),
+})
+
+export type TemplateManifest = z.infer<typeof templateManifestSchema>
