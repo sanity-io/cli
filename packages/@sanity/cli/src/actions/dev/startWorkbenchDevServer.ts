@@ -2,17 +2,24 @@ import {resolveLocalPackage} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig} from 'vite'
 
+import {
+  acquireWorkbenchLock,
+  findLiveWorkbench,
+  registerDevServer,
+  watchRegistry,
+} from '../../util/devServerRegistry.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {devDebug} from './devDebug.js'
 import {type DevActionOptions} from './types.js'
 import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 
+const noop = async () => {}
+
 interface WorkbenchDevServerResult {
+  close: () => Promise<void>
   httpHost: string | undefined
   workbenchAvailable: boolean
   workbenchPort: number
-
-  close?: () => Promise<void>
 }
 
 export async function startWorkbenchDevServer(
@@ -28,7 +35,7 @@ export async function startWorkbenchDevServer(
 
   if (!cliConfig?.federation?.enabled) {
     devDebug('Federation not enabled, skipping workbench dev server')
-    return {httpHost, workbenchAvailable: false, workbenchPort}
+    return {close: noop, httpHost, workbenchAvailable: false, workbenchPort}
   }
 
   const reactStrictMode = process.env.SANITY_STUDIO_REACT_STRICT_MODE
@@ -52,7 +59,26 @@ export async function startWorkbenchDevServer(
   }
 
   if (!workbenchAvailable) {
-    return {httpHost, workbenchAvailable, workbenchPort}
+    return {close: noop, httpHost, workbenchAvailable, workbenchPort}
+  }
+
+  // Acquire an exclusive lock — only one workbench per machine.
+  // Uses O_EXCL which is atomic at the OS level, preventing races when
+  // multiple `sanity dev` processes start simultaneously (e.g. via turbo).
+  const releaseWorkbenchLock = acquireWorkbenchLock()
+  if (!releaseWorkbenchLock) {
+    const existingWorkbench = findLiveWorkbench()
+    devDebug(
+      'Workbench already running at pid %d on port %d, skipping',
+      existingWorkbench?.pid,
+      existingWorkbench?.port,
+    )
+    return {
+      close: noop,
+      httpHost: existingWorkbench?.host ?? httpHost,
+      workbenchAvailable: true,
+      workbenchPort: existingWorkbench?.port ?? workbenchPort,
+    }
   }
 
   devDebug('Writing workbench runtime files')
@@ -96,18 +122,38 @@ export async function startWorkbenchDevServer(
     await server.listen()
   } catch (err) {
     await server.close()
+    releaseWorkbenchLock()
     output.warn(
       `Workbench dev server failed to start: ${err instanceof Error ? err.message : String(err)}`,
     )
-    return {httpHost, workbenchAvailable: false, workbenchPort}
+    return {close: noop, httpHost, workbenchAvailable: false, workbenchPort}
   }
 
   // Vite may have picked a different port if the desired one was occupied
   const addr = server.httpServer?.address()
   const actualPort = typeof addr === 'object' && addr ? addr.port : workbenchPort
 
+  // Register this workbench in the dev server registry
+  const cleanupManifest = registerDevServer({
+    host: httpHost || 'localhost',
+    port: actualPort,
+    type: 'workbench',
+    workDir,
+  })
+
+  // Watch the registry and broadcast non-workbench servers to connected clients
+  const registryWatcher = watchRegistry((servers) => {
+    const remotes = servers.filter((s) => s.type !== 'workbench')
+    server.hot.send('sanity:workbench:local-applications', {servers: remotes})
+  })
+
   return {
-    close: () => server.close(),
+    close: async () => {
+      registryWatcher.close()
+      cleanupManifest()
+      releaseWorkbenchLock()
+      await server.close()
+    },
     httpHost,
     workbenchAvailable,
     workbenchPort: actualPort,

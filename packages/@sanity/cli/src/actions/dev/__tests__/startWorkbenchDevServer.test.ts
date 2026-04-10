@@ -7,6 +7,10 @@ const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 const mockCreateServer = vi.hoisted(() => vi.fn())
 const mockGetSharedServerConfig = vi.hoisted(() => vi.fn())
 const mockWriteWorkbenchRuntime = vi.hoisted(() => vi.fn())
+const mockAcquireWorkbenchLock = vi.hoisted(() => vi.fn())
+const mockFindLiveWorkbench = vi.hoisted(() => vi.fn())
+const mockRegisterDevServer = vi.hoisted(() => vi.fn())
+const mockWatchRegistry = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -23,6 +27,12 @@ vi.mock('../../../util/getSharedServerConfig.js', () => ({
 vi.mock('../writeWorkbenchRuntime.js', () => ({
   writeWorkbenchRuntime: mockWriteWorkbenchRuntime,
 }))
+vi.mock('../../../util/devServerRegistry.js', () => ({
+  acquireWorkbenchLock: mockAcquireWorkbenchLock,
+  findLiveWorkbench: mockFindLiveWorkbench,
+  registerDevServer: mockRegisterDevServer,
+  watchRegistry: mockWatchRegistry,
+}))
 
 function createMockOutput(): Output {
   return {
@@ -36,6 +46,7 @@ function createMockServer(port = 3333) {
   return {
     close: vi.fn().mockResolvedValue(undefined),
     config: {server: {port}},
+    hot: {send: vi.fn()},
     httpServer: {address: vi.fn().mockReturnValue({address: '127.0.0.1', family: 'IPv4', port})},
     listen: vi.fn().mockResolvedValue(undefined),
   }
@@ -63,6 +74,10 @@ describe('startWorkbenchDevServer', () => {
   beforeEach(() => {
     mockGetSharedServerConfig.mockReturnValue({httpHost: 'localhost', httpPort: 3333})
     mockWriteWorkbenchRuntime.mockResolvedValue('/tmp/sanity-project/.sanity/workbench')
+    mockAcquireWorkbenchLock.mockReturnValue(vi.fn())
+    mockFindLiveWorkbench.mockReturnValue(undefined)
+    mockRegisterDevServer.mockReturnValue(vi.fn())
+    mockWatchRegistry.mockReturnValue({close: vi.fn()})
   })
 
   afterEach(() => {
@@ -75,7 +90,7 @@ describe('startWorkbenchDevServer', () => {
       const result = await startWorkbenchDevServer(createOptions())
 
       expect(result.workbenchAvailable).toBe(false)
-      expect(result.close).toBeUndefined()
+      expect(result.close).toBeTypeOf('function')
       expect(mockResolveLocalPackage).not.toHaveBeenCalled()
       expect(mockCreateServer).not.toHaveBeenCalled()
     })
@@ -86,7 +101,7 @@ describe('startWorkbenchDevServer', () => {
       )
 
       expect(result.workbenchAvailable).toBe(false)
-      expect(result.close).toBeUndefined()
+      expect(result.close).toBeTypeOf('function')
       expect(mockResolveLocalPackage).not.toHaveBeenCalled()
     })
 
@@ -109,7 +124,7 @@ describe('startWorkbenchDevServer', () => {
       )
 
       expect(result.workbenchAvailable).toBe(false)
-      expect(result.close).toBeUndefined()
+      expect(result.close).toBeTypeOf('function')
       expect(mockCreateServer).not.toHaveBeenCalled()
     })
 
@@ -278,7 +293,7 @@ describe('startWorkbenchDevServer', () => {
       )
 
       expect(result.workbenchAvailable).toBe(false)
-      expect(result.close).toBeUndefined()
+      expect(result.close).toBeTypeOf('function')
       expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('Port already in use'))
     })
 
@@ -291,6 +306,127 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
 
       expect(mockServer.close).toHaveBeenCalled()
+    })
+  })
+
+  describe('singleton detection', () => {
+    const federationConfig = {federation: {enabled: true}} as const
+
+    test('skips starting server when lock is held by another process', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockAcquireWorkbenchLock.mockReturnValue(undefined)
+      mockFindLiveWorkbench.mockReturnValue({
+        host: '0.0.0.0',
+        pid: 12_345,
+        port: 4000,
+        startedAt: new Date().toISOString(),
+        type: 'workbench',
+        workDir: '/tmp/other-project',
+      })
+
+      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      expect(result.workbenchAvailable).toBe(true)
+      expect(result.workbenchPort).toBe(4000)
+      expect(result.httpHost).toBe('0.0.0.0')
+      expect(result.close).toBeTypeOf('function')
+      expect(mockCreateServer).not.toHaveBeenCalled()
+    })
+
+    test('falls back to configured host/port when lock is held but no workbench manifest found', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockAcquireWorkbenchLock.mockReturnValue(undefined)
+      mockFindLiveWorkbench.mockReturnValue(undefined)
+
+      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      expect(result.workbenchAvailable).toBe(true)
+      expect(result.workbenchPort).toBe(3333)
+      expect(result.httpHost).toBe('localhost')
+      expect(mockCreateServer).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('registry integration', () => {
+    const federationConfig = {federation: {enabled: true}} as const
+
+    test('registers workbench in registry after successful startup', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          host: 'localhost',
+          port: 3333,
+          type: 'workbench',
+        }),
+      )
+    })
+
+    test('starts watching registry after successful startup', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      expect(mockWatchRegistry).toHaveBeenCalledWith(expect.any(Function))
+    })
+
+    test('watcher callback broadcasts non-workbench servers via server.hot.send', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      // Get the callback passed to watchRegistry and invoke it
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      const fakeServers = [
+        {pid: 1, port: 3333, type: 'workbench'},
+        {pid: 2, port: 3334, type: 'studio'},
+        {pid: 3, port: 3335, type: 'app'},
+      ]
+      watchCallback(fakeServers)
+
+      expect(mockServer.hot.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        servers: [
+          {pid: 2, port: 3334, type: 'studio'},
+          {pid: 3, port: 3335, type: 'app'},
+        ],
+      })
+    })
+
+    test('close stops watcher, cleans up manifest, and releases lock', async () => {
+      const mockCleanup = vi.fn()
+      const mockWatcherClose = vi.fn()
+      const mockReleaseLock = vi.fn()
+      mockAcquireWorkbenchLock.mockReturnValue(mockReleaseLock)
+      mockRegisterDevServer.mockReturnValue(mockCleanup)
+      mockWatchRegistry.mockReturnValue({close: mockWatcherClose})
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      if (!result.close) throw new Error('Expected close to be defined')
+      await result.close()
+
+      expect(mockWatcherClose).toHaveBeenCalled()
+      expect(mockCleanup).toHaveBeenCalled()
+      expect(mockReleaseLock).toHaveBeenCalled()
+    })
+
+    test('does not register when server startup fails', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockServer.listen.mockRejectedValue(new Error('Port already in use'))
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      expect(mockRegisterDevServer).not.toHaveBeenCalled()
     })
   })
 })
