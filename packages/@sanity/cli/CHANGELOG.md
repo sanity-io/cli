@@ -1,5 +1,16 @@
 # Change Log
 
+## 6.3.2
+
+### Patch Changes
+
+- [#898](https://github.com/sanity-io/cli/pull/898) [`e4f2dd4`](https://github.com/sanity-io/cli/commit/e4f2dd4f30eb2a2714beafff5cd805025abc4146) Thanks [@binoy14](https://github.com/binoy14)! - Fixed init command to strip filename before counting nested folders when generating the relative import path for the embedded studio route file.
+
+- [#902](https://github.com/sanity-io/cli/pull/902) [`5b86d79`](https://github.com/sanity-io/cli/commit/5b86d7983642faa8d03425880c20641453d052eb) Thanks [@mttdnt](https://github.com/mttdnt)! - remove @sanity/telemetry as a peer dependency
+
+- Updated dependencies [[`5b86d79`](https://github.com/sanity-io/cli/commit/5b86d7983642faa8d03425880c20641453d052eb)]:
+  - @sanity/cli-core@1.3.1
+
 ## 6.3.1
 
 ### Patch Changes
