@@ -63,6 +63,9 @@ catalogs:
     debug:
       specifier: ^4.4.3
       version: 4.4.3
+    dotenv:
+      specifier: ^17.3.1
+      version: 17.3.1
     eslint:
       specifier: ^10.1.0
       version: 10.1.0
@@ -87,6 +90,9 @@ catalogs:
     nock:
       specifier: ^14.0.12
       version: 14.0.12
+    node-pty:
+      specifier: ^1.0.0
+      version: 1.1.0
     ora:
       specifier: ^9.0.0
       version: 9.3.0
@@ -108,6 +114,9 @@ catalogs:
     sanity:
       specifier: ^5.18.0
       version: 5.18.0
+    strip-ansi:
+      specifier: ^7.1.0
+      version: 7.1.2
     tinyglobby:
       specifier: ^0.2.15
       version: 0.2.15
@@ -882,6 +891,48 @@ importers:
       sanity:
         specifier: 'catalog:'
         version: 5.18.0(@emotion/is-prop-valid@1.4.0)(@oclif/core@4.10.3)(@sanity/cli-core@packages+@sanity+cli-core)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.2(@types/node@20.19.39)(jsdom@29.0.1(@noble/hashes@2.0.1))(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+
+  packages/@sanity/cli-e2e:
+    devDependencies:
+      '@eslint/compat':
+        specifier: 'catalog:'
+        version: 2.0.3(eslint@10.1.0(jiti@2.6.1))
+      '@repo/tsconfig':
+        specifier: workspace:*
+        version: link:../../@repo/tsconfig
+      '@sanity/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@sanity/cli-core':
+        specifier: workspace:*
+        version: link:../cli-core
+      '@sanity/cli-test':
+        specifier: workspace:*
+        version: link:../cli-test
+      '@sanity/eslint-config-cli':
+        specifier: workspace:*
+        version: link:../eslint-config-cli
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.39
+      dotenv:
+        specifier: 'catalog:'
+        version: 17.3.1
+      eslint:
+        specifier: 'catalog:'
+        version: 10.1.0(jiti@2.6.1)
+      node-pty:
+        specifier: 'catalog:'
+        version: 1.1.0
+      strip-ansi:
+        specifier: 'catalog:'
+        version: 7.1.2
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -7740,6 +7791,9 @@ packages:
     resolution: {integrity: sha512-kZM3bHV0KzhHH6E2eRszHyML/w87AUzLBwupNTHohtYWP9fZYgUPmCbSKq6ITfEEmHqN4/p0MscvUipT4P5Qsg==}
     engines: {node: '>=18.20.0 <20 || >=20.12.1'}
 
+  node-addon-api@7.1.1:
+    resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
+
   node-fetch@2.7.0:
     resolution: {integrity: sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==}
     engines: {node: 4.x || >=6.0.0}
@@ -7751,6 +7805,9 @@ packages:
 
   node-html-parser@7.0.2:
     resolution: {integrity: sha512-DxodLVh7a6JMkYzWyc8nBX9MaF4M0lLFYkJHlWOiu7+9/I6mwNK9u5TbAMC7qfqDJEPX9OIoWA2A9t4C2l1mUQ==}
+
+  node-pty@1.1.0:
+    resolution: {integrity: sha512-20JqtutY6JPXTUnL0ij1uad7Qe1baT46lyolh2sSENDd4sTzKZ4nmAFkeAARDKwmlLjPx6XKRlwRUxwjOy+lUg==}
 
   node-releases@2.0.27:
     resolution: {integrity: sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA==}
@@ -17382,6 +17439,8 @@ snapshots:
       json-stringify-safe: 5.0.1
       propagate: 2.0.1
 
+  node-addon-api@7.1.1: {}
+
   node-fetch@2.7.0:
     dependencies:
       whatwg-url: 5.0.0
@@ -17390,6 +17449,10 @@ snapshots:
     dependencies:
       css-select: 5.2.2
       he: 1.2.0
+
+  node-pty@1.1.0:
+    dependencies:
+      node-addon-api: 7.1.1
 
   node-releases@2.0.27: {}
 

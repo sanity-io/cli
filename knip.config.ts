@@ -67,6 +67,10 @@ const baseConfig = {
       ],
       project,
     },
+    'packages/@sanity/cli-e2e': {
+      entry: [],
+      project: ['helpers/**/*.{js,ts}', '__tests__/**/*.{js,ts}'],
+    },
     'packages/@sanity/cli-test': {
       entry: ['package.config.ts'],
       project,

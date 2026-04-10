@@ -1,0 +1,31 @@
+{
+  "name": "@sanity/cli-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "description": "End-to-end tests for the Sanity CLI",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "lint": "eslint .",
+    "check:types": "tsc --noEmit",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@eslint/compat": "catalog:",
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/cli": "workspace:*",
+    "@sanity/cli-core": "workspace:*",
+    "@sanity/cli-test": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:*",
+    "@types/node": "catalog:",
+    "dotenv": "catalog:",
+    "eslint": "catalog:",
+    "node-pty": "catalog:",
+    "strip-ansi": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=20.19.1 <22 || >=22.12"
+  }
+}

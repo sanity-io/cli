@@ -4,6 +4,7 @@ packages:
   - 'packages/@repo/*'
   - 'packages/@sanity/cli'
   - 'packages/@sanity/cli-core'
+  - 'packages/@sanity/cli-e2e'
   - 'packages/@sanity/cli-test'
   - 'packages/@sanity/eslint-config-cli'
   - 'packages/create-sanity'
@@ -38,6 +39,9 @@ catalog:
   vitest: ^4.1.2
   '@vitest/coverage-istanbul': ^4.1.2
   nock: ^14.0.12
+  node-pty: ^1.0.0
+  dotenv: ^17.3.1
+  strip-ansi: ^7.1.0
 
   # CLI Framework
   '@oclif/core': ^4.10.3
@@ -82,6 +86,7 @@ minimumReleaseAgeExclude:
   - 'react-rx'
   - 'sanity'
   - 'use-effect-event'
+  - 'dotenv'
   - 'oxfmt'
   - '@oxfmt/*'
   # Bump for oclif with `--no-source-links` support, can remove after ~Apr 11th
