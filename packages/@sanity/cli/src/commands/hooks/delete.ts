@@ -12,25 +12,25 @@ const deleteHookDebug = subdebug('hook:delete')
 export class Delete extends SanityCommand<typeof Delete> {
   static override args = {
     name: Args.string({
-      description: 'Name of hook to delete (will prompt if not provided)',
+      description: 'Name of webhook to delete (will prompt if not provided)',
       required: false,
     }),
   }
 
-  static override description = 'Delete a hook within your project'
+  static override description = 'Delete a webhook from the project'
 
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: 'Interactively select and delete a hook',
+      description: 'Interactively select and delete a webhook',
     },
     {
       command: '<%= config.bin %> <%= command.id %> my-hook',
-      description: 'Delete a specific hook by name',
+      description: 'Delete a specific webhook by name',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --project-id abc123',
-      description: 'Delete a hook from a specific project',
+      description: 'Delete a webhook from a specific project',
     },
   ]
 

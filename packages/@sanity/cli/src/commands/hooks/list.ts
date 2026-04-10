@@ -8,15 +8,15 @@ import {getProjectIdFlag} from '../../util/sharedFlags.js'
 const listHookDebug = subdebug('hook:list')
 
 export class List extends SanityCommand<typeof List> {
-  static override description = 'List hooks for a given project'
+  static override description = 'List webhooks for the project'
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: 'List hooks for a given project',
+      description: 'List webhooks for the project',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --project-id abc123',
-      description: 'List hooks for a specific project',
+      description: 'List webhooks for a specific project',
     },
   ]
 

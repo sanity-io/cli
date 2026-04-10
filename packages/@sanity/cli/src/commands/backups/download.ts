@@ -50,7 +50,7 @@ export class DownloadBackupCommand extends SanityCommand<typeof DownloadBackupCo
     }),
   }
 
-  static override description = 'Download a dataset backup to a local file.'
+  static override description = 'Download a dataset backup to a local file'
 
   static override examples = [
     {

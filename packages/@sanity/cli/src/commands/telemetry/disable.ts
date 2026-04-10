@@ -6,12 +6,12 @@ import {setConsent} from '../../actions/telemetry/setConsent.js'
 import {telemetryLearnMoreMessage} from '../../actions/telemetry/telemetryLearnMoreMessage.js'
 
 export class Disable extends SanityCommand<typeof Disable> {
-  static override description = 'Disable telemetry for your logged in user'
+  static override description = 'Disable telemetry for your account'
 
   static override examples: Array<Command.Example> = [
     {
       command: '<%= config.bin %> telemetry <%= command.id %>',
-      description: 'Disable telemetry for your logged in user',
+      description: 'Disable telemetry for your account',
     },
   ]
 

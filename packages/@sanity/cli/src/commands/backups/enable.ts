@@ -22,7 +22,7 @@ export class EnableBackupCommand extends SanityCommand<typeof EnableBackupComman
     }),
   }
 
-  static override description = 'Enable backup for a dataset.'
+  static override description = 'Enable backup for a dataset'
 
   static override examples = [
     {

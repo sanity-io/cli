@@ -8,7 +8,7 @@ import {getDisplayName, getFormatters} from '../actions/versions/getFormatters.j
 import {versionsDebug} from '../actions/versions/versionsDebug.js'
 
 export class Versions extends SanityCommand<typeof Versions> {
-  static override description = 'Shows installed versions of Sanity Studio and components'
+  static override description = 'Show installed package versions'
   static override examples = ['<%= config.bin %> <%= command.id %>']
 
   public async run(): Promise<void> {

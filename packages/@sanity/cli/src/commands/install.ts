@@ -16,7 +16,7 @@ export class Install extends SanityCommand<typeof Install> {
     }),
   }
 
-  static override description = 'Installs dependencies for Sanity Studio project'
+  static override description = 'Install dependencies for the Sanity Studio project'
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',

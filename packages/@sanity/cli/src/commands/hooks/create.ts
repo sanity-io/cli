@@ -8,11 +8,11 @@ import {getProjectIdFlag} from '../../util/sharedFlags.js'
 const createHookDebug = subdebug('hook:create')
 
 export class CreateHookCommand extends SanityCommand<typeof CreateHookCommand> {
-  static override description = 'Create a new webhook for the current project'
+  static override description = 'Create a new webhook for the project'
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: 'Create a new webhook for the current project',
+      description: 'Create a new webhook for the project',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --project-id abc123',

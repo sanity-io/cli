@@ -20,7 +20,7 @@ export class DeleteDatasetCommand extends SanityCommand<typeof DeleteDatasetComm
     }),
   }
 
-  static override description = 'Delete a dataset within your project'
+  static override description = 'Delete a dataset from the project'
 
   static override examples = [
     {

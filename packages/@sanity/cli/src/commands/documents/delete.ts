@@ -19,7 +19,7 @@ export class DeleteDocumentCommand extends SanityCommand<typeof DeleteDocumentCo
     }),
   }
 
-  static override description = 'Delete one or more documents from the projects configured dataset'
+  static override description = "Delete one or more documents from the project's configured dataset"
 
   static override examples = [
     {

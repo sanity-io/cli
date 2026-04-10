@@ -32,7 +32,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
   }
 
   static override description =
-    'Export dataset to local filesystem as a gzipped tarball. Assets failing with HTTP status codes 401, 403 and 404 upon download are ignored and excluded from export.'
+    'Export a dataset to a local gzipped tarball. Assets returning 401, 403, or 404 are excluded from the export.'
 
   static override examples = [
     {
@@ -65,7 +65,7 @@ export class DatasetExportCommand extends SanityCommand<typeof DatasetExportComm
     mode: Flags.string({
       default: 'stream',
       description:
-        'Mode to export documents with `cursor` might be more performant for larger datasets, but might not be as accurate if the dataset is being modified during export',
+        "Export mode ('cursor' is faster for large datasets but may miss concurrent changes)",
       options: ['stream', 'cursor'],
     }),
     'no-assets': Flags.boolean({

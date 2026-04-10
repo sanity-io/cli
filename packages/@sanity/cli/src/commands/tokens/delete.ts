@@ -17,7 +17,7 @@ export class DeleteTokensCommand extends SanityCommand<typeof DeleteTokensComman
     }),
   }
 
-  static override description = 'Delete an API token from this project'
+  static override description = 'Delete an API token from the project'
 
   static override examples = [
     {

@@ -7,12 +7,12 @@ import {getProjectIdFlag} from '../../util/sharedFlags.js'
 const listDatasetDebug = subdebug('dataset:list')
 
 export class ListDatasetCommand extends SanityCommand<typeof ListDatasetCommand> {
-  static override description = 'List datasets of your project'
+  static override description = 'List datasets for the project'
 
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: 'List datasets of your project',
+      description: 'List datasets for the project',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --project-id abc123',

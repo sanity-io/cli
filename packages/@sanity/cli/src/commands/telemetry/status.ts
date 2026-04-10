@@ -7,12 +7,12 @@ import {getStatusMessage} from '../../actions/telemetry/getStatusMessage.js'
 import {resolveConsent} from '../../actions/telemetry/resolveConsent.js'
 
 export class Status extends SanityCommand<typeof Status> {
-  static override description = 'Check telemetry consent status for your logged in user'
+  static override description = 'Check telemetry status for your account'
 
   static override examples: Array<Command.Example> = [
     {
       command: '<%= config.bin %> telemetry <%= command.id %>',
-      description: 'Check telemetry consent status for your logged in user',
+      description: 'Check telemetry status for your account',
     },
   ]
 

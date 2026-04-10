@@ -26,7 +26,7 @@ export class LinkAliasCommand extends SanityCommand<typeof LinkAliasCommand> {
     }),
   }
 
-  static override description = 'Link a dataset alias to a dataset within your project'
+  static override description = 'Link a dataset alias to a dataset in the project'
 
   static override examples = [
     {

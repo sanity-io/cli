@@ -21,7 +21,7 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     }),
   }
 
-  static override description = 'Create a new dataset within your project'
+  static override description = 'Create a new dataset for the project'
 
   static override examples = [
     {

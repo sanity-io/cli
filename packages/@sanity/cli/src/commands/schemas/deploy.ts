@@ -13,10 +13,9 @@ import {parseTag} from '../../actions/schema/utils/schemaStoreValidation.js'
 const description = `
 Deploy schema documents into workspace datasets.
 
-**Note**: This command is experimental and subject to change.
+Note: This command is experimental and subject to change.
 
-This operation (re-)generates a manifest file describing the sanity config workspace by default.
-To re-use an existing manifest file, use --no-extract-manifest.
+Re-generates a manifest file by default. To re-use an existing manifest, use --no-extract-manifest.
 `.trim()
 
 export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaCommand> {
@@ -37,7 +36,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
     'extract-manifest': Flags.boolean({
       allowNo: true,
       default: true,
-      description: 'Disables manifest generation - the command will fail if no manifest exists',
+      description: 'Re-generate manifest before deploying (use --no-extract-manifest to skip)',
     }),
     'manifest-dir': Flags.directory({
       default: './dist/static',

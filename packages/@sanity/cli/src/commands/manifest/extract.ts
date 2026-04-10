@@ -7,9 +7,9 @@ import {formatSchemaValidation} from '../../actions/schema/formatSchemaValidatio
 import {SchemaExtractionError} from '../../actions/schema/utils/SchemaExtractionError.js'
 
 const description = `
-Extracts the studio configuration as one or more JSON manifest files.
+Extract studio configuration as JSON manifest files.
 
-**Note**: This command is experimental and subject to change. It is currently intended for use with Create only.
+Note: This command is experimental and subject to change. It is currently intended for use with Create only.
 `.trim()
 
 export class ExtractManifestCommand extends SanityCommand<typeof ExtractManifestCommand> {

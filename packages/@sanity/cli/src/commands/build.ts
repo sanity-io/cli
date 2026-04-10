@@ -12,7 +12,7 @@ export class BuildCommand extends SanityCommand<typeof BuildCommand> {
     outputDir: Args.directory({description: 'Output directory'}),
   }
 
-  static override description = 'Builds the Sanity Studio configuration into a static bundle'
+  static override description = 'Build Sanity Studio into a static bundle'
 
   static override examples = [
     '<%= config.bin %> <%= command.id %>',

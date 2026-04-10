@@ -24,8 +24,7 @@ export class MediaExportCommand extends SanityCommand<typeof MediaExportCommand>
     }),
   }
 
-  static override description =
-    'Export an archive of all file and image assets including their aspect data from the target media library. Video assets are excluded from the export.'
+  static override description = 'Export file and image assets from a media library (excludes video)'
 
   static override examples = [
     {

@@ -13,11 +13,11 @@ import {getProjectIdFlag} from '../../util/sharedFlags.js'
 const listGraphQLDebug = subdebug('graphql:list')
 
 export class List extends SanityCommand<typeof List> {
-  static override description = 'List all GraphQL endpoints deployed for this project'
+  static override description = 'List deployed GraphQL endpoints for the project'
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: 'List GraphQL endpoints for the current project',
+      description: 'List GraphQL endpoints for the project',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --project-id abc123',

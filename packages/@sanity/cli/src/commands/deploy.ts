@@ -49,7 +49,7 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
       allowNo: true,
       default: true,
       description:
-        "Don't build the studio prior to deploy, instead deploying the version currently in `dist/`",
+        'Build the studio before deploying (use --no-build to deploy existing `dist/` output)',
     }),
     external: Flags.boolean({
       default: false,
@@ -59,11 +59,11 @@ export class DeployCommand extends SanityCommand<typeof DeployCommand> {
     minify: Flags.boolean({
       allowNo: true,
       default: true,
-      description: 'Skip minifying built JavaScript (speeds up build, increases size of bundle)',
+      description: 'Minify built JavaScript (use --no-minify to skip for faster builds)',
     }),
     'schema-required': Flags.boolean({
       default: false,
-      description: 'Fail-fast deployment if schema store fails',
+      description: 'Fail if schema deployment fails',
     }),
     'source-maps': Flags.boolean({
       default: false,

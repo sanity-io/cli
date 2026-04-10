@@ -25,7 +25,7 @@ export class CreateAliasCommand extends SanityCommand<typeof CreateAliasCommand>
     }),
   }
 
-  static override description = 'Create a dataset alias within your project'
+  static override description = 'Create a dataset alias for the project'
 
   static override examples = [
     {
