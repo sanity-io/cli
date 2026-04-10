@@ -18,23 +18,31 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   const importMapEl = document.createElement('script');
   importMapEl.type = 'importmap';
   const newTimestamp = \`/t\${Math.floor(Date.now() / 1000)}\`;
+
+  function replaceTimestamp(urlStr) {
+    try {
+      const url = new URL(urlStr);
+      if (/^sanity-cdn\\.[a-zA-Z]+$/.test(url.hostname)) {
+        url.pathname = url.pathname.replace(/\\/t\\d+/, newTimestamp);
+      }
+      return url.toString();
+    } catch {
+      return urlStr;
+    }
+  }
+
   importMapEl.textContent = JSON.stringify({
     imports: Object.fromEntries(
-      Object.entries(imports).map(([specifier, path]) => {
-        try {
-          const url = new URL(path);
-          if (/^sanity-cdn\\.[a-zA-Z]+$/.test(url.hostname)) {
-            url.pathname = url.pathname.replace(/\\/t\\d+/, newTimestamp);
-          }
-          return [specifier, url.toString()];
-        } catch {
-          return [specifier, path];
-        }
-      })
+      Object.entries(imports).map(([specifier, path]) => [specifier, replaceTimestamp(path)])
     ),
     ...rest,
   });
   document.head.appendChild(importMapEl);
+
+  // Update existing CDN CSS <link> tags with fresh timestamps
+  document.querySelectorAll('link[data-auto-update-css]').forEach(function(link) {
+    link.href = replaceTimestamp(link.href);
+  });
 </script>`
 
 /**
@@ -43,6 +51,7 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
 export function addTimestampedImportMapScriptToHtml(
   html: string,
   importMap?: {imports?: Record<string, string>},
+  autoUpdatesCssUrls?: string[],
 ): string {
   if (!importMap) return html
 
@@ -66,6 +75,18 @@ export function addTimestampedImportMapScriptToHtml(
     'beforeend',
     `<script type="application/json" id="__imports">${JSON.stringify(importMap)}</script>`,
   )
+
+  // Add static <link> tags for CDN CSS — browser starts fetching immediately.
+  // The runtime script will replace the build-time timestamp with a fresh one.
+  if (autoUpdatesCssUrls && autoUpdatesCssUrls.length > 0) {
+    for (const cssUrl of autoUpdatesCssUrls) {
+      headEl.insertAdjacentHTML(
+        'beforeend',
+        `<link rel="stylesheet" href="${cssUrl}" data-auto-update-css>`,
+      )
+    }
+  }
+
   headEl.insertAdjacentHTML('beforeend', TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT)
   return root.outerHTML
 }
