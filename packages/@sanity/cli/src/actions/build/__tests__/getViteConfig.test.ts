@@ -12,6 +12,7 @@ import {
 } from '../getViteConfig.js'
 
 const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
+const mockFederationPlugin = vi.hoisted(() => vi.fn())
 const mockTypegenPlugin = vi.hoisted(() => vi.fn())
 
 // Mock all external dependencies
@@ -60,6 +61,12 @@ vi.mock('../../../server/vite/plugin-sanity-runtime-rewrite.js', () => ({
   sanityRuntimeRewritePlugin: vi.fn(() => ({name: 'sanity-runtime-rewrite'})),
 }))
 
+vi.mock('@sanity/federation/vite', () => ({
+  federation: mockFederationPlugin.mockReturnValue({
+    name: 'sanity/federation',
+  }),
+}))
+
 vi.mock('../../../server/vite/plugin-schema-extraction.js', () => ({
   sanitySchemaExtractionPlugin: mockExtractSchemaPlugin.mockReturnValue({
     name: 'sanity/schema-extraction',
@@ -77,12 +84,17 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   return {
     ...actual,
     findProjectRoot: vi.fn().mockResolvedValue({path: '/mock/config/path'}),
+    readPackageJson: vi.fn().mockResolvedValue({name: 'sanity'}),
   }
 })
 
 const mockTestCwd = convertToSystemPath('/test/cwd')
 const mockSanityPath = convertToSystemPath('/mock/path/to/sanity')
 const mockCustomOutput = convertToSystemPath('/custom/output')
+const mockEntries = {
+  relativeConfigLocation: '../../sanity.config.ts',
+  relativeEntry: '../../src/App',
+}
 
 describe('#getViteConfig', () => {
   beforeEach(async () => {
@@ -103,6 +115,7 @@ describe('#getViteConfig', () => {
   test('should create basic vite config with default options', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -150,6 +163,7 @@ describe('#getViteConfig', () => {
   test('should create vite config for app mode', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       isApp: true,
       mode: 'development' as const,
       reactCompiler: undefined,
@@ -173,6 +187,7 @@ describe('#getViteConfig', () => {
   test('should create production config with minification', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       minify: true,
       mode: 'production' as const,
       outputDir: mockCustomOutput,
@@ -203,6 +218,7 @@ describe('#getViteConfig', () => {
   test('should create production config without minification', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       minify: false,
       mode: 'production' as const,
       reactCompiler: undefined,
@@ -219,6 +235,7 @@ describe('#getViteConfig', () => {
     const options = {
       basePath: 'custom/path',
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -231,6 +248,7 @@ describe('#getViteConfig', () => {
   test('should handle custom server options', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'development' as const,
       reactCompiler: undefined,
       server: {
@@ -258,6 +276,7 @@ describe('#getViteConfig', () => {
 
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'development' as const,
       reactCompiler: reactCompilerConfig,
     }
@@ -279,6 +298,7 @@ describe('#getViteConfig', () => {
 
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -298,6 +318,7 @@ describe('#getViteConfig', () => {
 
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       importMap,
       mode: 'production' as const,
       reactCompiler: undefined,
@@ -323,6 +344,7 @@ describe('#getViteConfig', () => {
 
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -338,6 +360,7 @@ describe('#getViteConfig', () => {
     const options = {
       basePath: '/studio',
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'development' as const,
       reactCompiler: undefined,
     }
@@ -354,6 +377,7 @@ describe('#getViteConfig', () => {
   test('should include schema extraction plugin when enabled', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'development' as const,
       reactCompiler: undefined,
       schemaExtraction: {
@@ -386,6 +410,7 @@ describe('#getViteConfig', () => {
   test('should not include schema extraction plugin when disabled', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'development' as const,
       reactCompiler: undefined,
       schemaExtraction: {
@@ -407,6 +432,7 @@ describe('#getViteConfig', () => {
   test('should include typegen plugin when enabled', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'development' as const,
       reactCompiler: undefined,
       typegen: {
@@ -437,6 +463,7 @@ describe('#getViteConfig', () => {
   test('should not include typegen plugin when disabled', async () => {
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'development' as const,
       reactCompiler: undefined,
       typegen: {
@@ -453,6 +480,107 @@ describe('#getViteConfig', () => {
 
     expect(mockTypegenPlugin).not.toHaveBeenCalled()
     expect(typegenPlugin).toBeUndefined()
+  })
+
+  test('should include federation plugin when enabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: '../../src/App'},
+      federation: {enabled: true},
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    const federationPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/federation',
+    )
+
+    expect(mockFederationPlugin).toHaveBeenCalledWith({
+      isApp: false,
+      pkgJson: {name: 'sanity'},
+      studioConfigPath: '../../sanity.config.ts',
+      workDir: mockTestCwd,
+    })
+    expect(federationPlugin).toBeDefined()
+  })
+
+  test('should not include federation plugin when disabled', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      federation: {enabled: false},
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    const federationPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/federation',
+    )
+
+    expect(mockFederationPlugin).not.toHaveBeenCalled()
+    expect(federationPlugin).toBeUndefined()
+  })
+
+  test('should pass reactRefreshHost to viteReact when provided', async () => {
+    const viteReactMock = (await import('@vitejs/plugin-react')).default as unknown as ReturnType<
+      typeof vi.fn
+    >
+
+    const options = {
+      cwd: mockTestCwd,
+      entries: {relativeConfigLocation: '../../sanity.config.ts', relativeEntry: '../../src/App'},
+      federation: {enabled: true},
+      mode: 'development' as const,
+      reactCompiler: undefined,
+      reactRefreshHost: 'http://localhost:3333',
+    }
+
+    await getViteConfig(options)
+
+    expect(viteReactMock).toHaveBeenCalledWith(
+      expect.objectContaining({reactRefreshHost: 'http://localhost:3333'}),
+    )
+  })
+
+  test('should not pass reactRefreshHost to viteReact when not provided', async () => {
+    const viteReactMock = (await import('@vitejs/plugin-react')).default as unknown as ReturnType<
+      typeof vi.fn
+    >
+
+    const options = {
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    await getViteConfig(options)
+
+    expect(viteReactMock).toHaveBeenCalledWith(
+      expect.not.objectContaining({reactRefreshHost: expect.anything()}),
+    )
+  })
+
+  test('should not include federation plugin when federation is undefined', async () => {
+    const options = {
+      cwd: mockTestCwd,
+      entries: mockEntries,
+      mode: 'development' as const,
+      reactCompiler: undefined,
+    }
+
+    const config = await getViteConfig(options)
+
+    const federationPlugin = config.plugins?.find(
+      (p) => p && typeof p === 'object' && 'name' in p && p.name === 'sanity/federation',
+    )
+
+    expect(mockFederationPlugin).not.toHaveBeenCalled()
+    expect(federationPlugin).toBeUndefined()
   })
 })
 
@@ -624,6 +752,7 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
     // which includes the onwarn callback
     const options = {
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'production' as const,
       reactCompiler: undefined,
     }
@@ -653,6 +782,7 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
 
     const config = await getViteConfig({
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'production' as const,
       reactCompiler: undefined,
     })
@@ -675,6 +805,7 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
 
     const config = await getViteConfig({
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'production' as const,
       reactCompiler: undefined,
     })
@@ -696,6 +827,7 @@ describe('#onRollupWarn and #suppressUnusedImport helper functions', () => {
 
     const config = await getViteConfig({
       cwd: mockTestCwd,
+      entries: mockEntries,
       mode: 'production' as const,
       reactCompiler: undefined,
     })
