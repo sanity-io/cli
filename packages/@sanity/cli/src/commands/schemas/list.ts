@@ -6,12 +6,11 @@ import {schemasListDebug} from '../../actions/schema/utils/debug.js'
 import {parseWorkspaceSchemaId} from '../../actions/schema/utils/schemaStoreValidation.js'
 
 const description = `
-Lists all schemas in the current dataset.
+List all schemas in the current dataset.
 
-**Note**: This command is experimental and subject to change.
+Note: This command is experimental and subject to change.
 
-This operation (re-)generates a manifest file describing the sanity config workspace by default.
-To re-use an existing manifest file, use --no-extract-manifest.
+Regenerates a manifest file by default. To reuse an existing manifest, use --no-extract-manifest.
 `.trim()
 
 export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
@@ -40,7 +39,7 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
     'extract-manifest': Flags.boolean({
       allowNo: true,
       default: true,
-      description: 'Disables manifest generation - the command will fail if no manifest exists',
+      description: 'Regenerate manifest before listing (use --no-extract-manifest to skip)',
       hidden: true,
     }),
     id: Flags.string({

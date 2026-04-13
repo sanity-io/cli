@@ -16,7 +16,7 @@ function dimText(value: string, isDim: boolean): string {
 }
 
 export class List extends SanityCommand<typeof List> {
-  static override description = 'List all users of the project'
+  static override description = 'List project members'
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',

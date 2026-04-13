@@ -8,8 +8,7 @@ import {devDebug} from '../actions/dev/devDebug.js'
 import {determineIsApp} from '../util/determineIsApp.js'
 
 export class DevCommand extends SanityCommand<typeof DevCommand> {
-  static override description =
-    'Starts a local development server for Sanity Studio with live reloading'
+  static override description = 'Start a local development server with live reloading'
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> --host=0.0.0.0',
@@ -20,17 +19,17 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
   static override flags = {
     'auto-updates': Flags.boolean({
       allowNo: true,
-      description: 'Automatically update Sanity Studio dependencies.',
+      description: 'Automatically update Sanity Studio dependencies',
     }),
     host: Flags.string({
-      description: '[default: localhost] The local network interface at which to listen.',
+      description: 'Local network interface to listen on (default: localhost)',
     }),
     'load-in-dashboard': Flags.boolean({
       allowNo: true,
-      description: 'Load the app/studio in the Sanity dashboard.',
+      description: 'Load the app/studio in the Sanity dashboard',
     }),
     port: Flags.string({
-      description: '[default: 3333] TCP port to start server on.',
+      description: 'TCP port to start server on (default: 3333)',
     }),
   }
 

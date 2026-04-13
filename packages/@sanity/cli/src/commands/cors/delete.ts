@@ -16,7 +16,7 @@ export class Delete extends SanityCommand<typeof Delete> {
     }),
   }
 
-  static override description = 'Delete an existing CORS origin from your project'
+  static override description = 'Delete a CORS origin from the project'
 
   static override examples = [
     {

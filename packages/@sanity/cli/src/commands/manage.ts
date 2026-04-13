@@ -5,7 +5,7 @@ import open from 'open'
 import {getManageUrl} from '../actions/projects/getManageUrl.js'
 
 export class ManageCommand extends SanityCommand<typeof ManageCommand> {
-  static override description = 'Opens project management interface in your web browser'
+  static override description = 'Open project settings in your browser'
   static override flags = {} satisfies FlagInput
 
   public async run(): Promise<void> {

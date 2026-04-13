@@ -3,7 +3,7 @@ import {type FlagInput} from '@oclif/core/interfaces'
 import open from 'open'
 
 export class LearnCommand extends Command {
-  static override description = 'Opens Sanity Learn in your web browser'
+  static override description = 'Open Sanity Learn in your browser'
   static override flags = {} satisfies FlagInput
 
   public async run(): Promise<void> {

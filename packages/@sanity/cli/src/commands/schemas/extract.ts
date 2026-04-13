@@ -6,9 +6,9 @@ import {getExtractOptions} from '../../actions/schema/getExtractOptions.js'
 import {watchExtractSchema} from '../../actions/schema/watchExtractSchema.js'
 
 const description = `
-Extracts a JSON representation of a Sanity schema within a Studio context.
+Extract a JSON representation of a Sanity schema within a Studio context.
 
-**Note**: This command is experimental and subject to change.
+Note: This command is experimental and subject to change.
 `.trim()
 
 export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaCommand> {
@@ -35,7 +35,7 @@ export class ExtractSchemaCommand extends SanityCommand<typeof ExtractSchemaComm
     }),
     format: Flags.string({
       default: 'groq-type-nodes',
-      description: 'Format the schema as GROQ type nodes. Only available format at the moment.',
+      description: 'Output format (currently only groq-type-nodes)',
       helpValue: '<format>',
     }),
     path: Flags.string({

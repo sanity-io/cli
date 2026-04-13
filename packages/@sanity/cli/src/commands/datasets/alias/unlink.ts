@@ -19,7 +19,7 @@ export class UnlinkAliasCommand extends SanityCommand<typeof UnlinkAliasCommand>
     }),
   }
 
-  static override description = 'Unlink a dataset alias from its dataset within your project'
+  static override description = 'Unlink a dataset alias from its dataset in the project'
 
   static override examples = [
     {

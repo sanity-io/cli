@@ -4,7 +4,7 @@ import {isHttpError} from '@sanity/client'
 import {logout} from '../services/auth.js'
 
 export class LogoutCommand extends SanityCommand<typeof LogoutCommand> {
-  static override description = 'Logs out the CLI from the current user session'
+  static override description = 'Log out of the current session'
 
   public async run(): Promise<void> {
     await this.parse(LogoutCommand)

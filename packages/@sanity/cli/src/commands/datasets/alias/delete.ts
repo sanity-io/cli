@@ -18,7 +18,7 @@ export class DeleteAliasCommand extends SanityCommand<typeof DeleteAliasCommand>
     }),
   }
 
-  static override description = 'Delete a dataset alias within your project'
+  static override description = 'Delete a dataset alias from the project'
 
   static override examples = [
     {

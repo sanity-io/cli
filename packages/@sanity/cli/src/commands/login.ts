@@ -5,7 +5,7 @@ import {SanityCommand} from '@sanity/cli-core'
 import {login} from '../actions/auth/login/login.js'
 
 export class LoginCommand extends SanityCommand<typeof LoginCommand> {
-  static override description = 'Authenticates the CLI for access to Sanity projects'
+  static override description = 'Log in to your Sanity account'
   static override examples: Array<Command.Example> = [
     {
       command: '<%= config.bin %> <%= command.id %>',
