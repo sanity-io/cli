@@ -139,7 +139,7 @@ describe('#getViteConfig', () => {
       server: {
         host: undefined,
         port: 3333,
-        strictPort: true,
+        strictPort: false,
       },
     })
 
@@ -286,7 +286,7 @@ describe('#getViteConfig', () => {
     expect(config.server).toMatchObject({
       host: '0.0.0.0',
       port: 8080,
-      strictPort: true,
+      strictPort: false,
     })
   })
 
