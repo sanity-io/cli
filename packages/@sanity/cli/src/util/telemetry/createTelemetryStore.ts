@@ -59,6 +59,8 @@ export function createTelemetryStore(
 
   let cachedConsent: ConsentInformation | null = null
   let filePath: string | null = null
+  let initComplete = false
+  const eventBuffer: TelemetryEvent[] = []
 
   const initializeConsent = async () => {
     if (cachedConsent) return
@@ -87,41 +89,45 @@ export function createTelemetryStore(
     }
   }
 
-  const emit = (event: TelemetryEvent) => {
-    if (!cachedConsent || cachedConsent.status !== 'granted') {
-      if (cachedConsent) {
-        telemetryStoreDebug(
-          'Cached consent not granted (%s), skipping event: %s',
-          cachedConsent.status,
-          event.type,
-        )
-      } else {
-        telemetryStoreDebug('Consent not resolved, skipping event: %s', event.type)
-      }
-      return
-    }
-
+  const writeEvent = (event: TelemetryEvent) => {
     if (!filePath) {
-      telemetryStoreDebug('File path not initialized, skipping event: %s', event.type)
+      telemetryStoreDebug('No file path, skipping event: %s', event.type)
       return
     }
 
     telemetryStoreDebug('Emitting event: %s', event.type)
 
     try {
-      const eventLine = JSON.stringify(event) + '\n'
-
       // We use synchronous file writes to ensure telemetry events are captured even when
       // the process exits abruptly (process.exit, uncaught exceptions, SIGTERM, etc.).
       // The performance impact is probably negligible and is worth the trade-off
       // for 100% reliability. Async writes would be lost when the event loop
       // shuts down during process exit.
-      appendFileSync(filePath, eventLine, 'utf8')
+      appendFileSync(filePath, JSON.stringify(event) + '\n', 'utf8')
       telemetryStoreDebug('Successfully wrote event to file: %s', filePath)
     } catch (error) {
       telemetryStoreDebug('Failed to write telemetry event: %o', error)
       // Silent failure - don't break CLI functionality
     }
+  }
+
+  const emit = (event: TelemetryEvent) => {
+    if (!initComplete) {
+      telemetryStoreDebug('Init pending, buffering event: %s', event.type)
+      eventBuffer.push(event)
+      return
+    }
+
+    if (!cachedConsent || cachedConsent.status !== 'granted') {
+      telemetryStoreDebug(
+        'Consent not granted (%s), skipping event: %s',
+        cachedConsent?.status ?? 'unresolved',
+        event.type,
+      )
+      return
+    }
+
+    writeEvent(event)
   }
 
   const logger = createLogger<TelemetryUserProperties>(sessionId, emit)
@@ -134,6 +140,22 @@ export function createTelemetryStore(
         telemetryStoreDebug('Error initializing %s: %o', type, result.reason)
       }
     }
+
+    initComplete = true
+
+    if (cachedConsent?.status === 'granted' && filePath) {
+      telemetryStoreDebug('Flushing %d buffered event(s)', eventBuffer.length)
+      for (const event of eventBuffer) {
+        writeEvent(event)
+      }
+    } else {
+      telemetryStoreDebug(
+        'Discarding %d buffered event(s), consent: %s',
+        eventBuffer.length,
+        cachedConsent?.status ?? 'unresolved',
+      )
+    }
+    eventBuffer.length = 0
   })
 
   return logger
