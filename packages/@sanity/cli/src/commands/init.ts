@@ -611,7 +611,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       workDir,
     })
 
-    const useGit = this.flags.git === undefined || Boolean(this.flags.git)
+    const useGit =
+      !this.flags['no-git'] && (this.flags.git === undefined || Boolean(this.flags.git))
     const commitMessage = this.flags.git
     await this.writeStagingEnvIfNeeded(outputPath)
 
@@ -635,6 +636,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
           datasetName,
           '--token',
           token,
+          '--missing',
         ],
         {
           root: outputPath,
@@ -756,8 +758,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       })
     }
 
-    // output-path is required in unattended mode when not using nextjs
-    if (!isNextJs && !this.flags['output-path']) {
+    // output-path is required in unattended mode when not using nextjs or bare
+    if (!isNextJs && !this.flags.bare && !this.flags['output-path']) {
       this.error(`\`--output-path\` must be specified in unattended mode`, {
         exit: 1,
       })

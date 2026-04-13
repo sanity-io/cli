@@ -205,6 +205,25 @@ describe('#init: oclif command setup', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
+  test('does not require `output-path` in unattended mode when `bare` is used', async () => {
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+
+    const {error} = await testCommand(
+      InitCommand,
+      ['--yes', '--bare', '--dataset=production', '--project=test-project'],
+      {
+        mocks: {
+          ...defaultMocks,
+        },
+      },
+    )
+
+    // Should NOT throw output-path error — bare mode doesn't need it
+    expect(error?.message ?? '').not.toContain(
+      '`--output-path` must be specified in unattended mode',
+    )
+  })
+
   test('throws error when in unattended mode and `project` and `project-name` not set', async () => {
     mocks.detectFrameworkRecord.mockResolvedValueOnce({
       name: 'Next.js',
