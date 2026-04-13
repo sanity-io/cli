@@ -1,18 +1,27 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import {DatasetResponse} from '@sanity/client'
 
 import {createDataset} from '../../actions/dataset/create.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
-import {getOrganization} from '../../actions/organizations/getOrganization.js'
+import {getOrganizationsWithAttachGrantInfo} from '../../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
+import {resolveOrganizationById} from '../../actions/organizations/resolveOrganizationById.js'
 import {getManageUrl} from '../../actions/projects/getManageUrl.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {promptForDefaultConfig} from '../../prompts/promptForDefaultConfig.js'
+import {
+  promptForNewOrganization,
+  promptForOrganization,
+} from '../../prompts/promptForOrganization.js'
 import {promptForProjectName} from '../../prompts/promptForProjectName.js'
 import {listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
-import {OrganizationCreateResponse, ProjectOrganization} from '../../services/organizations.js'
+import {
+  listOrganizations,
+  OrganizationCreateResponse,
+  ProjectOrganization,
+} from '../../services/organizations.js'
 import {createProject, CreateProjectResult} from '../../services/projects.js'
 import {getCliUser} from '../../services/user.js'
 import {getDatasetFlag} from '../../util/sharedFlags.js'
@@ -116,12 +125,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
 
     let chosenOrganization: OrganizationCreateResponse | ProjectOrganization | undefined
     try {
-      chosenOrganization = await getOrganization({
-        isUnattended: this.isUnattended(),
-        output: this.output,
-        requestedId: organization,
-        user,
-      })
+      chosenOrganization = await this.resolveOrganization(organization, user)
     } catch (error) {
       const errorText = organization
         ? `Failed to retrieve organization ${organization}`
@@ -165,7 +169,6 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
       const existingDatasets = await listDatasets(projectId)
       const existingDatasetNames = existingDatasets.map((ds) => ds.name)
 
-      // Prompt for dataset in interactive mode if not provided
       if (!datasetName && !this.isUnattended()) {
         const wantsDataset = await confirm({
           default: true,
@@ -181,10 +184,8 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
         }
       }
 
-      // Create dataset if we have a name
       if (datasetName) {
         const projectFeatures = await getProjectFeatures(projectId)
-        // Suppress action-level logging in JSON mode so stdout stays valid JSON
         const actionOutput = this.flags.json ? {...this.output, log: () => {}} : this.output
         const dataset = await createDataset({
           datasetName,
@@ -238,5 +239,38 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
 
     this.log(``)
     this.log(`Manage your project: ${getManageUrl(project.projectId)}`)
+  }
+
+  private async resolveOrganization(
+    requestedId: string | undefined,
+    user: SanityOrgUser,
+  ): Promise<OrganizationCreateResponse | ProjectOrganization | undefined> {
+    const spin = spinner('Loading organizations').start()
+    let organizations
+    try {
+      organizations = await listOrganizations()
+      spin.succeed()
+    } catch (error) {
+      spin.fail()
+      throw error
+    }
+
+    if (requestedId) {
+      return resolveOrganizationById(organizations, requestedId)
+    }
+
+    if (organizations.length === 0) {
+      this.output.log('You need to create an organization to create projects.')
+      return promptForNewOrganization(user)
+    }
+
+    const withGrantInfo = await getOrganizationsWithAttachGrantInfo(organizations)
+
+    if (this.isUnattended()) {
+      const withAttach = withGrantInfo.filter(({hasAttachGrant}) => hasAttachGrant)
+      return withAttach.length > 0 ? withAttach[0].organization : undefined
+    }
+
+    return promptForOrganization({organizations: withGrantInfo, user})
   }
 }

@@ -5,7 +5,6 @@ import {promptForOrganizationName} from '../../prompts/promptForOrganizationName
 import {
   createOrganization,
   listOrganizations,
-  type OrganizationRequestQuery,
   type ProjectOrganization,
 } from '../../services/organizations.js'
 import {findOrganizationByUserName} from './findOrganizationByUserName.js'
@@ -19,17 +18,6 @@ interface GetOrganizationOptions {
   output: Output
   requestedId: string | undefined
   user: SanityOrgUser
-
-  /**
-   * Extra query params forwarded to the list-organizations API call.
-   * Use when callers need `includeImplicitMemberships` or `includeMembers`.
-   */
-  listOrganizationsQuery?: OrganizationRequestQuery
-  /**
-   * When true, skips the attach-grant check and shows all organizations.
-   * Used for app templates, which don't require project attachment permissions.
-   */
-  skipAttachCheck?: boolean
 }
 
 const promptAndCreateNewOrganization = async (user: SanityOrgUser) => {
@@ -42,17 +30,15 @@ const promptAndCreateNewOrganization = async (user: SanityOrgUser) => {
 
 export async function getOrganization({
   isUnattended,
-  listOrganizationsQuery,
   output,
   requestedId,
-  skipAttachCheck = false,
   user,
 }: GetOrganizationOptions) {
   // Get available organizations
   const spin = spinner('Loading organizations').start()
   let organizations: ProjectOrganization[]
   try {
-    organizations = await listOrganizations(listOrganizationsQuery)
+    organizations = await listOrganizations()
     spin.succeed()
   } catch (error) {
     spin.fail()
@@ -75,39 +61,29 @@ export async function getOrganization({
     return promptAndCreateNewOrganization(user)
   }
 
-  // In unattended mode use defaults without prompting
+  // If the user has organizations, let them choose from them, but also allow them to
+  // create a new one in case they do not have access to any of them, or they want to
+  // create a personal/other organization.
+  debug(`User has ${organizations.length} organization(s), checking attach access`)
+  const withGrantInfo = await getOrganizationsWithAttachGrantInfo(organizations)
+  const withAttach = withGrantInfo.filter(({hasAttachGrant}) => hasAttachGrant)
+
+  debug('User has attach access to %d organizations.', withAttach.length)
+  const organizationChoices = getOrganizationChoices(withGrantInfo)
+
+  // In unattended mode  use defaults without prompting
   if (isUnattended) {
-    if (skipAttachCheck) {
-      return organizations[0]
-    }
-    const withGrantInfo = await getOrganizationsWithAttachGrantInfo(organizations)
-    const withAttach = withGrantInfo.filter(({hasAttachGrant}) => hasAttachGrant)
+    // Use the first organization with attach permissions
     return withAttach.length > 0 ? withAttach[0].organization : undefined
   }
 
-  // Interactive mode: build choices and prompt
-  let organizationChoices
-  let defaultOrganizationId: string | undefined
-
-  if (skipAttachCheck) {
-    // App templates: all organizations are valid — no attach grant check needed
-    organizationChoices = getOrganizationChoices(organizations)
-    defaultOrganizationId =
-      organizations.length === 1
-        ? organizations[0].id
-        : findOrganizationByUserName(organizations, user)
-  } else {
-    // Studio projects: only show organizations the user can attach projects to
-    debug(`User has ${organizations.length} organization(s), checking attach access`)
-    const withGrantInfo = await getOrganizationsWithAttachGrantInfo(organizations)
-    const withAttach = withGrantInfo.filter(({hasAttachGrant}) => hasAttachGrant)
-    debug('User has attach access to %d organizations.', withAttach.length)
-    organizationChoices = getOrganizationChoices(withGrantInfo)
-    defaultOrganizationId =
-      withAttach.length === 1
-        ? withAttach[0].organization.id
-        : findOrganizationByUserName(organizations, user)
-  }
+  // If the user only has a single organization (and they have attach access to it),
+  // we'll default to that one. Otherwise, we'll default to the organization with the
+  // same name as the user if it exists.
+  const defaultOrganizationId =
+    withAttach.length === 1
+      ? withAttach[0].organization.id
+      : findOrganizationByUserName(organizations, user)
 
   const chosenOrg = await select({
     choices: organizationChoices,
