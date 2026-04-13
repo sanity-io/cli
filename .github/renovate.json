@@ -2,7 +2,10 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["local>sanity-io/renovate-config"],
   "ignorePresets": ["github>sanity-io/renovate-config:group-non-major"],
-  "gitIgnoredAuthors": ["ecospark[bot]@users.noreply.github.com"],
+  "gitIgnoredAuthors": [
+    "265501495+squiggler-app[bot]@users.noreply.github.com",
+    "squiggler-app[bot]@users.noreply.github.com"
+  ],
   "schedule": ["before 5am"],
   "prConcurrentLimit": 3,
   "automerge": true,
