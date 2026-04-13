@@ -72,7 +72,7 @@
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@sanity/cli-core": "workspace:*",
-    "@sanity/client": "^7.20.0",
+    "@sanity/client": "^7.21.0",
     "@sanity/eslint-config-cli": "workspace:*",
     "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
