@@ -907,6 +907,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         await createDataset({
           datasetName,
           forcePublic: !visibility,
+          isUnattended: true,
           output: this.output,
           projectFeatures,
           projectId: opts.projectId,
