@@ -64,7 +64,7 @@ catalog:
   '@swc/cli': ^0.8.1
   rimraf: ^6.0.1
   '@sanity/pkg-utils': ^10.4.14
-  oxfmt: ^0.43.0
+  oxfmt: ^0.45.0
 
   # Type Definitions
   '@types/node': ^20.19.39
