@@ -218,7 +218,7 @@ describe('devAction', () => {
         }),
       )
 
-      expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'app'}))
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'coreApp'}))
     })
 
     test('does not register when federation is disabled', async () => {
@@ -244,6 +244,23 @@ describe('devAction', () => {
 
       await result.close()
       expect(mockCleanup).toHaveBeenCalled()
+    })
+
+    test('close removes signal handlers to prevent listener leaks', async () => {
+      const offSpy = vi.spyOn(process, 'off')
+      mockRegisterDevServer.mockReturnValue(vi.fn())
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+
+      const result = await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
+      await result.close()
+
+      expect(offSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function))
+      expect(offSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function))
+
+      offSpy.mockRestore()
     })
   })
 })

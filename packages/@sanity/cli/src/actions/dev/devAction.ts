@@ -57,21 +57,26 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
 
   // Register the studio/app dev server in the registry (federated projects only)
   let cleanupManifest: () => void = syncNoop
+  let onSignal: (() => void) | undefined
   if (options.cliConfig?.federation?.enabled) {
     const addr = server.httpServer?.address()
     const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
     cleanupManifest = registerDevServer({
       host: httpHost || 'localhost',
       port: appPort,
-      type: options.isApp ? 'app' : 'studio',
+      type: options.isApp ? 'coreApp' : 'studio',
       workDir: options.workDir,
     })
 
-    // Ensure manifest is cleaned up on abrupt shutdown
-    const onSignal = () => {
+    // Ensure manifest and workbench lock are cleaned up on abrupt shutdown.
+    // closeWorkbenchServer() starts with synchronous calls (watcher.close,
+    // lock.release) that complete before the process exits; the trailing
+    // async server.close() is best-effort.
+    onSignal = () => {
       cleanupManifest()
-      process.off('SIGINT', onSignal)
-      process.off('SIGTERM', onSignal)
+      closeWorkbenchServer()
+      process.off('SIGINT', onSignal!)
+      process.off('SIGTERM', onSignal!)
     }
     process.on('SIGINT', onSignal)
     process.on('SIGTERM', onSignal)
@@ -88,6 +93,11 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
 
   return {
     close: async () => {
+      // Remove signal handlers to prevent double-cleanup and listener leaks
+      if (onSignal) {
+        process.off('SIGINT', onSignal)
+        process.off('SIGTERM', onSignal)
+      }
       cleanupManifest()
       // Run both closes independently — a failing workbench close must not prevent
       // the primary server from shutting down

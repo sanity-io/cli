@@ -7,30 +7,39 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {
   acquireWorkbenchLock,
   type DevServerManifest,
+  getRegisteredServers,
   readWorkbenchLock,
   registerDevServer,
   watchRegistry,
 } from '../devServerRegistry.js'
 
-// Mock homedir to use a temp directory per test
-let testRegistryDir: string
+const mockExecSync = vi.hoisted(() => vi.fn())
 
-vi.mock('node:os', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:os')>()
+vi.mock('node:child_process', () => ({
+  execSync: mockExecSync,
+}))
+
+// Mock getSanityConfigDir to use a temp directory per test
+let testDataDir: string
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
-    homedir: () => testRegistryDir,
+    getSanityDataDir: () => testDataDir,
   }
 })
 
 /** Derives the registry path the same way the module does internally. */
 function registryDir() {
-  return join(testRegistryDir, '.sanity', 'dev-servers')
+  return join(testDataDir, 'dev-servers')
 }
 
 beforeEach(() => {
-  testRegistryDir = join(tmpdir(), `sanity-registry-test-${process.pid}-${Date.now()}`)
-  mkdirSync(testRegistryDir, {recursive: true})
+  testDataDir = join(tmpdir(), `sanity-registry-test-${process.pid}-${Date.now()}`)
+  mkdirSync(testDataDir, {recursive: true})
+  // By default, return a start time matching "now" so our own PID passes isOurProcess
+  mockExecSync.mockReturnValue(new Date().toString())
 })
 
 afterEach(() => {
@@ -57,6 +66,7 @@ describe('registerDevServer', () => {
     expect(manifest.host).toBe('localhost')
     expect(manifest.workDir).toBe('/tmp/project')
     expect(manifest.startedAt).toBeDefined()
+    expect(manifest.version).toBe(1)
 
     cleanup()
     expect(existsSync(filePath)).toBe(false)
@@ -103,7 +113,7 @@ describe('acquireWorkbenchLock', () => {
     second!.release()
   })
 
-  test('stores host and port in the lock file', () => {
+  test('stores host, port, startedAt and version in the lock file', () => {
     const lock = acquireWorkbenchLock({host: '0.0.0.0', port: 4000})
 
     const lockPath = join(registryDir(), 'workbench.lock')
@@ -111,6 +121,8 @@ describe('acquireWorkbenchLock', () => {
     expect(data.host).toBe('0.0.0.0')
     expect(data.port).toBe(4000)
     expect(data.pid).toBe(process.pid)
+    expect(data.startedAt).toBeDefined()
+    expect(data.version).toBe(1)
 
     lock!.release()
   })
@@ -132,13 +144,32 @@ describe('acquireWorkbenchLock', () => {
 
     writeFileSync(
       join(dir, 'workbench.lock'),
-      JSON.stringify({host: 'localhost', pid: 99_999_999, port: 3333}),
+      JSON.stringify({
+        host: 'localhost',
+        pid: 99_999_999,
+        port: 3333,
+        startedAt: new Date().toISOString(),
+        version: 1,
+      }),
       {flag: 'wx'},
     )
 
     const lock = acquireWorkbenchLock({host: 'localhost', port: 3333})
     expect(lock).toBeDefined()
     lock!.release()
+  })
+
+  test('returns undefined after exhausting retries', () => {
+    const dir = registryDir()
+    mkdirSync(dir, {recursive: true})
+
+    // Write a lock that will fail schema validation (missing required fields),
+    // causing readWorkbenchLock to return undefined without pruning the file.
+    // With retries=0, the function should not recurse.
+    writeFileSync(join(dir, 'workbench.lock'), JSON.stringify({host: 'localhost', pid: 1, port: 1}))
+
+    const lock = acquireWorkbenchLock({host: 'localhost', port: 3333}, 0)
+    expect(lock).toBeUndefined()
   })
 })
 
@@ -164,7 +195,112 @@ describe('readWorkbenchLock', () => {
     mkdirSync(dir, {recursive: true})
 
     const lockPath = join(dir, 'workbench.lock')
-    writeFileSync(lockPath, JSON.stringify({host: 'localhost', pid: 99_999_999, port: 3333}))
+    writeFileSync(
+      lockPath,
+      JSON.stringify({
+        host: 'localhost',
+        pid: 99_999_999,
+        port: 3333,
+        startedAt: new Date().toISOString(),
+        version: 1,
+      }),
+    )
+
+    expect(readWorkbenchLock()).toBeUndefined()
+    expect(existsSync(lockPath)).toBe(false)
+  })
+})
+
+describe('PID-reuse detection', () => {
+  test('prunes manifest when PID is alive but start time does not match', () => {
+    const dir = registryDir()
+    mkdirSync(dir, {recursive: true})
+
+    // Write a manifest for the current PID but with a startedAt far in the past
+    const staleManifest: DevServerManifest = {
+      host: 'localhost',
+      pid: process.pid,
+      port: 9999,
+      startedAt: new Date('2020-01-01T00:00:00Z').toISOString(),
+      type: 'studio',
+      version: 1,
+      workDir: '/tmp/stale-project',
+    }
+    writeFileSync(join(dir, `${process.pid}.json`), JSON.stringify(staleManifest))
+
+    // Mock ps to return a different (current) start time
+    mockExecSync.mockReturnValue(new Date().toString())
+
+    const servers = getRegisteredServers()
+    expect(servers).toHaveLength(0)
+    expect(existsSync(join(dir, `${process.pid}.json`))).toBe(false)
+  })
+
+  test('keeps manifest when PID is alive and start time matches', () => {
+    const now = new Date()
+    const dir = registryDir()
+    mkdirSync(dir, {recursive: true})
+
+    const manifest: DevServerManifest = {
+      host: 'localhost',
+      pid: process.pid,
+      port: 9999,
+      startedAt: now.toISOString(),
+      type: 'studio',
+      version: 1,
+      workDir: '/tmp/valid-project',
+    }
+    writeFileSync(join(dir, `${process.pid}.json`), JSON.stringify(manifest))
+
+    // Mock ps to return matching start time
+    mockExecSync.mockReturnValue(now.toString())
+
+    const servers = getRegisteredServers()
+    expect(servers).toHaveLength(1)
+    expect(servers[0].port).toBe(9999)
+  })
+
+  test('falls back to alive-check when start time cannot be retrieved', () => {
+    const dir = registryDir()
+    mkdirSync(dir, {recursive: true})
+
+    const manifest: DevServerManifest = {
+      host: 'localhost',
+      pid: process.pid,
+      port: 9999,
+      startedAt: new Date().toISOString(),
+      type: 'studio',
+      version: 1,
+      workDir: '/tmp/fallback-project',
+    }
+    writeFileSync(join(dir, `${process.pid}.json`), JSON.stringify(manifest))
+
+    // ps fails — should fall back to isProcessAlive (which will be true for our PID)
+    mockExecSync.mockImplementation(() => {
+      throw new Error('ps not available')
+    })
+
+    const servers = getRegisteredServers()
+    expect(servers).toHaveLength(1)
+  })
+
+  test('prunes workbench lock when PID is reused', () => {
+    const dir = registryDir()
+    mkdirSync(dir, {recursive: true})
+
+    const lockPath = join(dir, 'workbench.lock')
+    writeFileSync(
+      lockPath,
+      JSON.stringify({
+        host: 'localhost',
+        pid: process.pid,
+        port: 4000,
+        startedAt: new Date('2020-01-01T00:00:00Z').toISOString(),
+        version: 1,
+      }),
+    )
+
+    mockExecSync.mockReturnValue(new Date().toString())
 
     expect(readWorkbenchLock()).toBeUndefined()
     expect(existsSync(lockPath)).toBe(false)
@@ -183,6 +319,7 @@ describe('watchRegistry', () => {
       port: 5555,
       startedAt: new Date().toISOString(),
       type: 'studio',
+      version: 1,
       workDir: '/tmp/watch-test',
     }
     writeFileSync(join(dir, `${process.pid}.json`), JSON.stringify(manifest))
@@ -210,6 +347,7 @@ describe('watchRegistry', () => {
         port: 6666,
         startedAt: new Date().toISOString(),
         type: 'studio',
+        version: 1,
         workDir: '/tmp/closed',
       }),
     )

@@ -1,3 +1,4 @@
+import {execSync} from 'node:child_process'
 import {
   existsSync,
   mkdirSync,
@@ -7,22 +8,27 @@ import {
   watch,
   writeFileSync,
 } from 'node:fs'
-import {homedir} from 'node:os'
 import {join} from 'node:path'
 
+import {getSanityDataDir} from '@sanity/cli-core'
 import {z} from 'zod/mini'
 
 import {devDebug} from './devDebug.js'
+
+/** Bump when the manifest/lock shape changes in a breaking way. */
+const REGISTRY_VERSION = 1
 
 const workbenchLockSchema = z.object({
   host: z.string(),
   pid: z.number(),
   port: z.number(),
+  startedAt: z.string(),
+  version: z.literal(REGISTRY_VERSION),
 })
 
 const devServerManifestSchema = z.extend(workbenchLockSchema, {
   startedAt: z.string(),
-  type: z.enum(['app', 'studio']),
+  type: z.enum(['coreApp', 'studio']),
   workDir: z.string(),
 })
 /**
@@ -36,11 +42,10 @@ export type DevServerManifest = z.infer<typeof devServerManifestSchema>
 
 /**
  * Returns the path to the dev server registry directory.
- * Respects `SANITY_INTERNAL_ENV=staging` to isolate staging instances.
+ * Uses the shared Sanity config directory to stay consistent with other CLI paths.
  */
 function getRegistryDir(): string {
-  const suffix = process.env.SANITY_INTERNAL_ENV === 'staging' ? '-staging' : ''
-  return join(homedir(), `.sanity${suffix}`, 'dev-servers')
+  return join(getSanityDataDir(), 'dev-servers')
 }
 
 /**
@@ -60,13 +65,56 @@ function isProcessAlive(pid: number): boolean {
   }
 }
 
+/** Tolerance in ms when comparing stored vs OS-reported process start times. */
+const START_TIME_TOLERANCE_MS = 2000
+
+/**
+ * Retrieve the OS-reported start time for a process.
+ * Uses `ps -o lstart=` which works on both macOS and Linux.
+ * Returns `undefined` if the process doesn't exist or the command fails.
+ */
+function getProcessStartTime(pid: number): Date | undefined {
+  try {
+    const output = execSync(`ps -o lstart= -p ${pid}`, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      timeout: 1000,
+    }).trim()
+    if (!output) return undefined
+    const date = new Date(output)
+    return Number.isNaN(date.getTime()) ? undefined : date
+  } catch {
+    return undefined
+  }
+}
+
+/**
+ * Check whether a process is alive **and** is the same process that wrote
+ * the manifest/lock (not a PID that was reused by the OS after a crash).
+ *
+ * Compares the stored `startedAt` timestamp against the OS-reported process
+ * start time. Falls back to a plain alive-check when the start time cannot
+ * be retrieved (unsupported platform, permissions, etc.).
+ */
+function isOurProcess(pid: number, startedAt: string): boolean {
+  if (!isProcessAlive(pid)) return false
+
+  const osStart = getProcessStartTime(pid)
+  if (!osStart) return true // can't verify — assume alive is good enough
+
+  const storedStart = new Date(startedAt)
+  if (Number.isNaN(storedStart.getTime())) return true // bad stored value — fall back
+
+  return Math.abs(osStart.getTime() - storedStart.getTime()) <= START_TIME_TOLERANCE_MS
+}
+
 /**
  * Write a manifest file for the current process and return a cleanup function
  * that removes it. Uses synchronous I/O so the file exists before any signal
  * handler could fire.
  */
 export function registerDevServer(
-  manifest: Omit<DevServerManifest, 'pid' | 'startedAt'>,
+  manifest: Omit<DevServerManifest, 'pid' | 'startedAt' | 'version'>,
 ): () => void {
   const registryDir = getRegistryDir()
   mkdirSync(registryDir, {recursive: true})
@@ -75,6 +123,7 @@ export function registerDevServer(
     ...manifest,
     pid: process.pid,
     startedAt: new Date().toISOString(),
+    version: REGISTRY_VERSION,
   }
 
   const filePath = join(registryDir, `${process.pid}.json`)
@@ -115,7 +164,7 @@ export function getRegisteredServers(): DevServerManifest[] {
     const {data, success} = devServerManifestSchema.safeParse(raw)
     if (!success) continue
 
-    if (isProcessAlive(data.pid)) {
+    if (isOurProcess(data.pid, data.startedAt)) {
       servers.push(data)
     } else {
       // Prune stale manifest
@@ -148,7 +197,7 @@ export function readWorkbenchLock(): z.infer<typeof workbenchLockSchema> | undef
 
   devDebug('Read workbench lock: %o', data)
 
-  if (success && isProcessAlive(data.pid)) {
+  if (success && isOurProcess(data.pid, data.startedAt)) {
     devDebug('Workbench process is alive at pid %d on port %d', data.pid, data.port)
     return data
   }
@@ -183,15 +232,22 @@ interface WorkbenchLock {
  * @returns A {@link WorkbenchLock} if acquired, or `undefined` if another
  *          live process already holds it.
  */
-export function acquireWorkbenchLock(info: {
-  host: string
-  port: number
-}): WorkbenchLock | undefined {
+export function acquireWorkbenchLock(
+  info: {host: string; port: number},
+  retries = 1,
+): WorkbenchLock | undefined {
   const registryDir = getRegistryDir()
   mkdirSync(registryDir, {recursive: true})
 
   const lockPath = join(registryDir, 'workbench.lock')
-  const lockData = {host: info.host, pid: process.pid, port: info.port}
+  const startedAt = new Date().toISOString()
+  const lockData = {
+    host: info.host,
+    pid: process.pid,
+    port: info.port,
+    startedAt,
+    version: REGISTRY_VERSION,
+  }
 
   devDebug('Acquiring workbench lock at %s', lockPath)
 
@@ -221,8 +277,9 @@ export function acquireWorkbenchLock(info: {
     const existing = readWorkbenchLock()
     if (existing) return undefined
 
-    // Stale lock was pruned by readWorkbenchLock — retry
-    return acquireWorkbenchLock(info)
+    // Stale lock was pruned by readWorkbenchLock — retry (with guard against infinite recursion)
+    if (retries <= 0) return undefined
+    return acquireWorkbenchLock(info, retries - 1)
   }
 }
 

@@ -46,9 +46,9 @@ function createMockServer(port = 3333) {
   return {
     close: vi.fn().mockResolvedValue(undefined),
     config: {server: {port}},
-    hot: {on: vi.fn(), send: vi.fn()},
     httpServer: {address: vi.fn().mockReturnValue({address: '127.0.0.1', family: 'IPv4', port})},
     listen: vi.fn().mockResolvedValue(undefined),
+    ws: {on: vi.fn(), send: vi.fn()},
   }
 }
 
@@ -177,9 +177,11 @@ describe('startWorkbenchDevServer', () => {
       })
       mockCreateServer.mockResolvedValue(mockServer)
 
-      const result = await startWorkbenchDevServer(createOptions())
+      const result = await startWorkbenchDevServer(
+        createOptions({cliConfig: {federation: {enabled: true}}}),
+      )
 
-      expect(result.workbenchPort).toBe(3333)
+      expect(result.workbenchPort).toBe(3334)
     })
 
     test('passes workDir to writeWorkbenchRuntime', async () => {
@@ -376,7 +378,7 @@ describe('startWorkbenchDevServer', () => {
         {host: 'localhost', pid: 3, port: 3335, type: 'app'},
       ])
 
-      expect(mockServer.hot.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
         applications: [
           {host: 'localhost', port: 3334, type: 'studio'},
           {host: 'localhost', port: 3335, type: 'app'},
@@ -395,7 +397,7 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
 
       // Find the handler registered for the request event
-      const onCall = mockServer.hot.on.mock.calls.find(
+      const onCall = mockServer.ws.on.mock.calls.find(
         (args: unknown[]) => args[0] === 'sanity:workbench:get-local-applications',
       )
       expect(onCall).toBeDefined()
