@@ -115,7 +115,7 @@ Code for sanity cli
 
 ## `sanity backups disable [DATASET]`
 
-Disable backup for a dataset.
+Disable backup for a dataset
 
 ```
 USAGE
@@ -128,7 +128,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to disable backups for (overrides CLI configuration)
 
 DESCRIPTION
-  Disable backup for a dataset.
+  Disable backup for a dataset
 
 EXAMPLES
   Interactively disable backup for a dataset
@@ -142,7 +142,7 @@ EXAMPLES
 
 ## `sanity backups download [DATASET]`
 
-Download a dataset backup to a local file.
+Download a dataset backup to a local file
 
 ```
 USAGE
@@ -162,7 +162,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to download backup from (overrides CLI configuration)
 
 DESCRIPTION
-  Download a dataset backup to a local file.
+  Download a dataset backup to a local file
 
 EXAMPLES
   Interactively download a backup
@@ -184,7 +184,7 @@ EXAMPLES
 
 ## `sanity backups enable [DATASET]`
 
-Enable backup for a dataset.
+Enable backup for a dataset
 
 ```
 USAGE
@@ -197,7 +197,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to enable backups for (overrides CLI configuration)
 
 DESCRIPTION
-  Enable backup for a dataset.
+  Enable backup for a dataset
 
 EXAMPLES
   Interactively enable backup for a dataset
@@ -211,7 +211,7 @@ EXAMPLES
 
 ## `sanity backups list [DATASET]`
 
-List available backups for a dataset.
+List available backups for a dataset
 
 ```
 USAGE
@@ -229,7 +229,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list backups for (overrides CLI configuration)
 
 DESCRIPTION
-  List available backups for a dataset.
+  List available backups for a dataset
 
 EXAMPLES
   List backups for a dataset interactively
@@ -577,7 +577,7 @@ EXAMPLES
 
 ## `sanity build [OUTPUTDIR]`
 
-Builds the Sanity Studio configuration into a static bundle
+Build Sanity Studio into a static bundle
 
 ```
 USAGE
@@ -594,7 +594,7 @@ FLAGS
       --stats              Show stats about the built bundles
 
 DESCRIPTION
-  Builds the Sanity Studio configuration into a static bundle
+  Build Sanity Studio into a static bundle
 
 EXAMPLES
   $ sanity build
@@ -633,7 +633,7 @@ EXAMPLES
 
 ## `sanity cors add ORIGIN`
 
-Allow a new origin to use your project API through CORS
+Add a CORS origin to the project
 
 ```
 USAGE
@@ -649,7 +649,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to add CORS origin to (overrides CLI configuration)
 
 DESCRIPTION
-  Allow a new origin to use your project API through CORS
+  Add a CORS origin to the project
 
 EXAMPLES
   Interactively add a CORS origin
@@ -671,7 +671,7 @@ EXAMPLES
 
 ## `sanity cors delete [ORIGIN]`
 
-Delete an existing CORS origin from your project
+Delete a CORS origin from the project
 
 ```
 USAGE
@@ -684,7 +684,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete CORS origin from (overrides CLI configuration)
 
 DESCRIPTION
-  Delete an existing CORS origin from your project
+  Delete a CORS origin from the project
 
 EXAMPLES
   Interactively select and delete a CORS origin
@@ -702,7 +702,7 @@ EXAMPLES
 
 ## `sanity cors list`
 
-List all origins allowed to access the API for this project
+List CORS origins for the project
 
 ```
 USAGE
@@ -712,10 +712,10 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list CORS origins for (overrides CLI configuration)
 
 DESCRIPTION
-  List all origins allowed to access the API for this project
+  List CORS origins for the project
 
 EXAMPLES
-  List CORS origins for the current project
+  List CORS origins for the project
 
     $ sanity cors list
 
@@ -726,7 +726,7 @@ EXAMPLES
 
 ## `sanity datasets alias create [ALIASNAME] [TARGETDATASET]`
 
-Create a dataset alias within your project
+Create a dataset alias for the project
 
 ```
 USAGE
@@ -740,7 +740,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to create dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
-  Create a dataset alias within your project
+  Create a dataset alias for the project
 
 EXAMPLES
   Create alias in a specific project
@@ -762,7 +762,7 @@ EXAMPLES
 
 ## `sanity datasets alias delete ALIASNAME`
 
-Delete a dataset alias within your project
+Delete a dataset alias from the project
 
 ```
 USAGE
@@ -778,7 +778,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete dataset alias from (overrides CLI configuration)
 
 DESCRIPTION
-  Delete a dataset alias within your project
+  Delete a dataset alias from the project
 
 EXAMPLES
   Delete alias named "conference" with confirmation prompt
@@ -792,7 +792,7 @@ EXAMPLES
 
 ## `sanity datasets alias link [ALIASNAME] [TARGETDATASET]`
 
-Link a dataset alias to a dataset within your project
+Link a dataset alias to a dataset in the project
 
 ```
 USAGE
@@ -809,7 +809,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to link dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
-  Link a dataset alias to a dataset within your project
+  Link a dataset alias to a dataset in the project
 
 EXAMPLES
   Link an alias with interactive prompts
@@ -831,7 +831,7 @@ EXAMPLES
 
 ## `sanity datasets alias unlink [ALIASNAME]`
 
-Unlink a dataset alias from its dataset within your project
+Unlink a dataset alias from its dataset in the project
 
 ```
 USAGE
@@ -847,7 +847,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to unlink dataset alias in (overrides CLI configuration)
 
 DESCRIPTION
-  Unlink a dataset alias from its dataset within your project
+  Unlink a dataset alias from its dataset in the project
 
 EXAMPLES
   Unlink an alias with interactive selection
@@ -865,7 +865,7 @@ EXAMPLES
 
 ## `sanity datasets copy [SOURCE] [TARGET]`
 
-Manages dataset copying, including starting a new copy job, listing copy jobs and following the progress of a running copy job
+Copy a dataset or manage copy jobs
 
 ```
 USAGE
@@ -888,8 +888,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to copy dataset in (overrides CLI configuration)
 
 DESCRIPTION
-  Manages dataset copying, including starting a new copy job, listing copy jobs and following the progress of a running
-  copy job
+  Copy a dataset or manage copy jobs
 
 EXAMPLES
   Interactively copy a dataset
@@ -927,7 +926,7 @@ EXAMPLES
 
 ## `sanity datasets create [NAME]`
 
-Create a new dataset within your project
+Create a new dataset for the project
 
 ```
 USAGE
@@ -947,7 +946,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to create dataset in (overrides CLI configuration)
 
 DESCRIPTION
-  Create a new dataset within your project
+  Create a new dataset for the project
 
 EXAMPLES
   Interactively create a dataset
@@ -965,7 +964,7 @@ EXAMPLES
 
 ## `sanity datasets delete DATASETNAME`
 
-Delete a dataset within your project
+Delete a dataset from the project
 
 ```
 USAGE
@@ -981,7 +980,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete dataset from (overrides CLI configuration)
 
 DESCRIPTION
-  Delete a dataset within your project
+  Delete a dataset from the project
 
 EXAMPLES
   Delete a specific dataset
@@ -1076,7 +1075,7 @@ EXAMPLES
 
 ## `sanity datasets export [NAME] [DESTINATION]`
 
-Export dataset to local filesystem as a gzipped tarball. Assets failing with HTTP status codes 401, 403 and 404 upon download are ignored and excluded from export.
+Export a dataset to a local gzipped tarball. Assets returning 401, 403, or 404 are excluded from the export.
 
 ```
 USAGE
@@ -1089,9 +1088,8 @@ ARGUMENTS
 
 FLAGS
   --asset-concurrency=<value>  [default: 8] Concurrent number of asset downloads
-  --mode=<option>              [default: stream] Mode to export documents with `cursor` might be more performant for
-                               larger datasets, but might not be as accurate if the dataset is being modified during
-                               export
+  --mode=<option>              [default: stream] Export mode ('cursor' is faster for large datasets but may miss
+                               concurrent changes)
                                <options: stream|cursor>
   --no-assets                  Export only non-asset documents and remove references to image assets
   --no-compress                Skips compressing tarball entries (still generates a gzip file)
@@ -1104,8 +1102,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to export dataset from (overrides CLI configuration)
 
 DESCRIPTION
-  Export dataset to local filesystem as a gzipped tarball. Assets failing with HTTP status codes 401, 403 and 404 upon
-  download are ignored and excluded from export.
+  Export a dataset to a local gzipped tarball. Assets returning 401, 403, or 404 are excluded from the export.
 
 EXAMPLES
   Export dataset "moviedb" to localPath.tar.gz
@@ -1178,7 +1175,7 @@ EXAMPLES
 
 ## `sanity datasets list`
 
-List datasets of your project
+List datasets for the project
 
 ```
 USAGE
@@ -1188,10 +1185,10 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list datasets for (overrides CLI configuration)
 
 DESCRIPTION
-  List datasets of your project
+  List datasets for the project
 
 EXAMPLES
-  List datasets of your project
+  List datasets for the project
 
     $ sanity datasets list
 
@@ -1253,7 +1250,7 @@ EXAMPLES
 
 ## `sanity debug`
 
-Provides diagnostic info for Sanity Studio troubleshooting
+Print diagnostic info for troubleshooting
 
 ```
 USAGE
@@ -1264,7 +1261,7 @@ FLAGS
   --verbose  Show full error details including stack traces
 
 DESCRIPTION
-  Provides diagnostic info for Sanity Studio troubleshooting
+  Print diagnostic info for troubleshooting
 
 EXAMPLES
   $ sanity debug
@@ -1287,10 +1284,10 @@ ARGUMENTS
 FLAGS
   -y, --yes                Unattended mode, answers "yes" to any "yes/no" prompt and otherwise uses defaults
       --[no-]auto-updates  Automatically update the studio to the latest version
-      --[no-]build         Don't build the studio prior to deploy, instead deploying the version currently in `dist/`
+      --[no-]build         Build the studio before deploying (use --no-build to deploy existing `dist/` output)
       --external           Register an externally hosted studio
-      --[no-]minify        Skip minifying built JavaScript (speeds up build, increases size of bundle)
-      --schema-required    Fail-fast deployment if schema store fails
+      --[no-]minify        Minify built JavaScript (use --no-minify to skip for faster builds)
+      --schema-required    Fail if schema deployment fails
       --source-maps        Enable source maps for built bundles (increases size of bundle)
       --url=<value>        Studio URL for deployment. For external studios, the full URL. For hosted studios, the
                            hostname (e.g. "my-studio" or "my-studio.sanity.studio")
@@ -1319,20 +1316,20 @@ EXAMPLES
 
 ## `sanity dev`
 
-Starts a local development server for Sanity Studio with live reloading
+Start a local development server with live reloading
 
 ```
 USAGE
   $ sanity dev [--auto-updates] [--host <value>] [--load-in-dashboard] [--port <value>]
 
 FLAGS
-  --[no-]auto-updates       Automatically update Sanity Studio dependencies.
-  --host=<value>            [default: localhost] The local network interface at which to listen.
-  --[no-]load-in-dashboard  Load the app/studio in the Sanity dashboard.
-  --port=<value>            [default: 3333] TCP port to start server on.
+  --[no-]auto-updates       Automatically update Sanity Studio dependencies
+  --host=<value>            Local network interface to listen on (default: localhost)
+  --[no-]load-in-dashboard  Load the app/studio in the Sanity dashboard
+  --port=<value>            TCP port to start server on (default: 3333)
 
 DESCRIPTION
-  Starts a local development server for Sanity Studio with live reloading
+  Start a local development server with live reloading
 
 EXAMPLES
   $ sanity dev --host=0.0.0.0
@@ -1344,14 +1341,14 @@ EXAMPLES
 
 ## `sanity docs browse`
 
-Open Sanity docs in a web browser
+Open Sanity docs in your browser
 
 ```
 USAGE
   $ sanity docs browse
 
 DESCRIPTION
-  Open Sanity docs in a web browser
+  Open Sanity docs in your browser
 ```
 
 ## `sanity docs read PATH`
@@ -1500,7 +1497,7 @@ EXAMPLES
 
 ## `sanity documents delete ID [IDS]`
 
-Delete one or more documents from the projects configured dataset
+Delete one or more documents from the project's configured dataset
 
 ```
 USAGE
@@ -1515,7 +1512,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete from (overrides CLI configuration)
 
 DESCRIPTION
-  Delete one or more documents from the projects configured dataset
+  Delete one or more documents from the project's configured dataset
 
 EXAMPLES
   Delete the document with the ID "myDocId"
@@ -1683,8 +1680,8 @@ ARGUMENTS
   SCRIPT...  Path to the script to execute
 
 FLAGS
-  --mock-browser-env  Mocks a browser-like environment using jsdom
-  --with-user-token   Prime access token from CLI config into getCliClient()
+  --mock-browser-env  Mock a browser environment with jsdom
+  --with-user-token   Include your auth token in getCliClient()
 
 DESCRIPTION
   Executes a script within the Sanity Studio context
@@ -1961,7 +1958,7 @@ USAGE
 
 FLAGS
   -d, --dataset=<name>            Deploy API for the given dataset
-      --api=<value>...            Only deploy API with this ID. Can be specified multiple times.
+      --api=<value>...            Only deploy API with this ID (can be specified multiple times)
       --dry-run                   Validate defined GraphQL APIs, check for breaking changes, skip deploy
       --force                     Deploy API without confirming breaking changes
       --generation=<option>       API generation to deploy (defaults to "gen3")
@@ -1969,8 +1966,7 @@ FLAGS
       --non-null-document-fields  Use non-null document fields (_id, _type etc)
       --[no-]playground           Enable GraphQL playground for easier debugging
       --tag=<value>               Deploy API(s) to given tag (defaults to "default")
-      --with-union-cache          Enable union cache that optimizes schema generation for schemas with many self
-                                  referencing types
+      --with-union-cache          Cache union types (faster for schemas with many self-references)
 
 DESCRIPTION
   Deploy a GraphQL API from the current Sanity schema
@@ -1995,7 +1991,7 @@ EXAMPLES
 
 ## `sanity graphql list`
 
-List all GraphQL endpoints deployed for this project
+List deployed GraphQL endpoints for the project
 
 ```
 USAGE
@@ -2005,10 +2001,10 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list GraphQL endpoints for (overrides CLI configuration)
 
 DESCRIPTION
-  List all GraphQL endpoints deployed for this project
+  List deployed GraphQL endpoints for the project
 
 EXAMPLES
-  List GraphQL endpoints for the current project
+  List GraphQL endpoints for the project
 
     $ sanity graphql list
 
@@ -2110,7 +2106,7 @@ EXAMPLES
 
 ## `sanity hooks create`
 
-Create a new webhook for the current project
+Create a new webhook for the project
 
 ```
 USAGE
@@ -2120,10 +2116,10 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to create webhook for (overrides CLI configuration)
 
 DESCRIPTION
-  Create a new webhook for the current project
+  Create a new webhook for the project
 
 EXAMPLES
-  Create a new webhook for the current project
+  Create a new webhook for the project
 
     $ sanity hooks create
 
@@ -2134,38 +2130,38 @@ EXAMPLES
 
 ## `sanity hooks delete [NAME]`
 
-Delete a hook within your project
+Delete a webhook from the project
 
 ```
 USAGE
   $ sanity hooks delete [NAME] [-p <id>]
 
 ARGUMENTS
-  [NAME]  Name of hook to delete (will prompt if not provided)
+  [NAME]  Name of webhook to delete (will prompt if not provided)
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete webhook from (overrides CLI configuration)
 
 DESCRIPTION
-  Delete a hook within your project
+  Delete a webhook from the project
 
 EXAMPLES
-  Interactively select and delete a hook
+  Interactively select and delete a webhook
 
     $ sanity hooks delete
 
-  Delete a specific hook by name
+  Delete a specific webhook by name
 
     $ sanity hooks delete my-hook
 
-  Delete a hook from a specific project
+  Delete a webhook from a specific project
 
     $ sanity hooks delete --project-id abc123
 ```
 
 ## `sanity hooks list`
 
-List hooks for a given project
+List webhooks for the project
 
 ```
 USAGE
@@ -2175,28 +2171,28 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list webhooks for (overrides CLI configuration)
 
 DESCRIPTION
-  List hooks for a given project
+  List webhooks for the project
 
 EXAMPLES
-  List hooks for a given project
+  List webhooks for the project
 
     $ sanity hooks list
 
-  List hooks for a specific project
+  List webhooks for a specific project
 
     $ sanity hooks list --project-id abc123
 ```
 
 ## `sanity hooks logs [NAME]`
 
-List latest log entries for a given hook
+Show log entries for project webhooks
 
 ```
 USAGE
   $ sanity hooks logs [NAME] [-p <id>] [--detailed]
 
 ARGUMENTS
-  [NAME]  Name of the hook to show logs for
+  [NAME]  Name of the webhook to show logs for
 
 FLAGS
   --detailed  Include detailed payload and attempts
@@ -2205,18 +2201,18 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to view webhook logs for (overrides CLI configuration)
 
 DESCRIPTION
-  List latest log entries for a given hook
+  Show log entries for project webhooks
 
 EXAMPLES
-  List latest log entries for a given hook
+  Show log entries for project webhooks
 
     $ sanity hooks logs
 
-  List latest log entries for a specific hook by name
+  Show log entries for a specific webhook by name
 
     $ sanity hooks logs [NAME]
 
-  List hook logs for a specific project
+  Show log entries for a specific project
 
     $ sanity hooks logs --project-id abc123
 ```
@@ -2291,7 +2287,7 @@ EXAMPLES
 
 ## `sanity install [PACKAGES]`
 
-Installs dependencies for Sanity Studio project
+Install dependencies for the Sanity Studio project
 
 ```
 USAGE
@@ -2301,7 +2297,7 @@ ARGUMENTS
   [PACKAGES...]  Packages to install
 
 DESCRIPTION
-  Installs dependencies for Sanity Studio project
+  Install dependencies for the Sanity Studio project
 
 EXAMPLES
   $ sanity install
@@ -2313,19 +2309,19 @@ EXAMPLES
 
 ## `sanity learn`
 
-Opens Sanity Learn in your web browser
+Open Sanity Learn in your browser
 
 ```
 USAGE
   $ sanity learn
 
 DESCRIPTION
-  Opens Sanity Learn in your web browser
+  Open Sanity Learn in your browser
 ```
 
 ## `sanity login`
 
-Authenticates the CLI for access to Sanity projects
+Log in to your Sanity account
 
 ```
 USAGE
@@ -2338,7 +2334,7 @@ FLAGS
   --sso-provider=<name>    Select a specific SSO provider by name (use with --sso)
 
 DESCRIPTION
-  Authenticates the CLI for access to Sanity projects
+  Log in to your Sanity account
 
 EXAMPLES
   Log in using default settings
@@ -2360,31 +2356,31 @@ EXAMPLES
 
 ## `sanity logout`
 
-Logs out the CLI from the current user session
+Log out of the current session
 
 ```
 USAGE
   $ sanity logout
 
 DESCRIPTION
-  Logs out the CLI from the current user session
+  Log out of the current session
 ```
 
 ## `sanity manage`
 
-Opens project management interface in your web browser
+Open project settings in your browser
 
 ```
 USAGE
   $ sanity manage
 
 DESCRIPTION
-  Opens project management interface in your web browser
+  Open project settings in your browser
 ```
 
 ## `sanity manifest extract`
 
-Extracts the studio configuration as one or more JSON manifest files.
+Extract studio configuration as JSON manifest files.
 
 ```
 USAGE
@@ -2394,9 +2390,9 @@ FLAGS
   --path=<value>  [default: dist/static] Optional path to specify destination directory of the manifest files
 
 DESCRIPTION
-  Extracts the studio configuration as one or more JSON manifest files.
+  Extract studio configuration as JSON manifest files.
 
-  **Note**: This command is experimental and subject to change. It is currently intended for use with Create only.
+  Note: This command is experimental and subject to change. It is currently intended for use with Create only.
 
 EXAMPLES
   Extracts manifests
@@ -2444,7 +2440,7 @@ EXAMPLES
 
 ## `sanity media delete-aspect ASPECTNAME`
 
-Undeploy an aspect
+Delete an aspect definition
 
 ```
 USAGE
@@ -2461,7 +2457,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete media aspect from (overrides CLI configuration)
 
 DESCRIPTION
-  Undeploy an aspect
+  Delete an aspect definition
 
 EXAMPLES
   Delete the aspect named "someAspect"
@@ -2502,7 +2498,7 @@ EXAMPLES
 
 ## `sanity media export [DESTINATION]`
 
-Export an archive of all file and image assets including their aspect data from the target media library. Video assets are excluded from the export.
+Export file and image assets from a media library (excludes video)
 
 ```
 USAGE
@@ -2522,8 +2518,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to export media from (overrides CLI configuration)
 
 DESCRIPTION
-  Export an archive of all file and image assets including their aspect data from the target media library. Video assets
-  are excluded from the export.
+  Export file and image assets from a media library (excludes video)
 
 EXAMPLES
   Export media library interactively
@@ -2726,7 +2721,7 @@ EXAMPLES
 
 ## `sanity preview [OUTPUTDIR]`
 
-Starts a server to preview a production build
+Start a local server to preview a production build
 
 ```
 USAGE
@@ -2736,11 +2731,11 @@ ARGUMENTS
   [OUTPUTDIR]  Output directory
 
 FLAGS
-  --host=<value>  [default: localhost] The local network interface at which to listen.
-  --port=<value>  [default: 3333] TCP port to start server on.
+  --host=<value>  Local network interface to listen on (default: localhost)
+  --port=<value>  TCP port to start server on (default: 3333)
 
 DESCRIPTION
-  Starts a server to preview a production build
+  Start a local server to preview a production build
 
 EXAMPLES
   $ sanity preview --host=0.0.0.0
@@ -2798,27 +2793,27 @@ EXAMPLES
 
 ## `sanity projects list`
 
-Lists projects connected to your user
+List your projects
 
 ```
 USAGE
   $ sanity projects list [--order asc|desc] [--sort id|members|name|url|created]
 
 FLAGS
-  --order=<option>  [default: desc]
+  --order=<option>  [default: desc] Sort direction
                     <options: asc|desc>
-  --sort=<option>   [default: created]
+  --sort=<option>   [default: created] Sort field
                     <options: id|members|name|url|created>
 
 DESCRIPTION
-  Lists projects connected to your user
+  List your projects
 
 EXAMPLES
   List projects
 
     $ sanity projects list
 
-  List all users of the project, but exclude pending invitations and robots
+  List projects sorted by member count, ascending
 
     $ sanity projects list --sort=members --order=asc
 ```
@@ -2863,7 +2858,7 @@ USAGE
     <name>]
 
 FLAGS
-  --[no-]extract-manifest     Disables manifest generation - the command will fail if no manifest exists
+  --[no-]extract-manifest     Regenerate manifest before deploying (use --no-extract-manifest to skip)
   --manifest-dir=<directory>  [default: ./dist/static] Directory containing manifest file
   --tag=<tag>                 Add a tag suffix to the schema id
   --verbose                   Print detailed information during deployment
@@ -2872,10 +2867,9 @@ FLAGS
 DESCRIPTION
   Deploy schema documents into workspace datasets.
 
-  **Note**: This command is experimental and subject to change.
+  Note: This command is experimental and subject to change.
 
-  This operation (re-)generates a manifest file describing the sanity config workspace by default.
-  To re-use an existing manifest file, use --no-extract-manifest.
+  Regenerates a manifest file by default. To re-use an existing manifest, use --no-extract-manifest.
 
 EXAMPLES
   Deploy all workspace schemas
@@ -2889,7 +2883,7 @@ EXAMPLES
 
 ## `sanity schemas extract`
 
-Extracts a JSON representation of a Sanity schema within a Studio context.
+Extract a JSON representation of a Sanity schema within a Studio context.
 
 ```
 USAGE
@@ -2898,17 +2892,16 @@ USAGE
 
 FLAGS
   --enforce-required-fields   Makes the schema generated treat fields marked as required as non-optional
-  --format=<format>           [default: groq-type-nodes] Format the schema as GROQ type nodes. Only available format at
-                              the moment.
+  --format=<format>           [default: groq-type-nodes] Output format (currently only groq-type-nodes)
   --path=<value>              Optional path to specify destination of the schema file
   --watch                     Enable watch mode to re-extract schema on file changes
   --watch-patterns=<glob>...  Additional glob pattern(s) to watch (can be specified multiple times)
   --workspace=<name>          The name of the workspace to generate a schema for
 
 DESCRIPTION
-  Extracts a JSON representation of a Sanity schema within a Studio context.
+  Extract a JSON representation of a Sanity schema within a Studio context.
 
-  **Note**: This command is experimental and subject to change.
+  Note: This command is experimental and subject to change.
 
 EXAMPLES
   Extracts schema types in a Sanity project with more than one workspace
@@ -2926,7 +2919,7 @@ EXAMPLES
 
 ## `sanity schemas list`
 
-Lists all schemas in the current dataset.
+List all schemas in the current dataset.
 
 ```
 USAGE
@@ -2937,12 +2930,11 @@ FLAGS
   --json            Get schema as json
 
 DESCRIPTION
-  Lists all schemas in the current dataset.
+  List all schemas in the current dataset.
 
-  **Note**: This command is experimental and subject to change.
+  Note: This command is experimental and subject to change.
 
-  This operation (re-)generates a manifest file describing the sanity config workspace by default.
-  To re-use an existing manifest file, use --no-extract-manifest.
+  Regenerates a manifest file by default. To reuse an existing manifest, use --no-extract-manifest.
 
 EXAMPLES
   List all schemas found in any workspace dataset in a table
@@ -3005,58 +2997,58 @@ EXAMPLES
 
 ## `sanity telemetry disable`
 
-Disable telemetry for your logged in user
+Disable telemetry for your account
 
 ```
 USAGE
   $ sanity telemetry disable
 
 DESCRIPTION
-  Disable telemetry for your logged in user
+  Disable telemetry for your account
 
 EXAMPLES
-  Disable telemetry for your logged in user
+  Disable telemetry for your account
 
     $ sanity telemetry telemetry disable
 ```
 
 ## `sanity telemetry enable`
 
-Enable telemetry for your logged in user
+Enable telemetry for your account
 
 ```
 USAGE
   $ sanity telemetry enable
 
 DESCRIPTION
-  Enable telemetry for your logged in user
+  Enable telemetry for your account
 
 EXAMPLES
-  Enable telemetry for your logged in user
+  Enable telemetry for your account
 
     $ sanity telemetry telemetry enable
 ```
 
 ## `sanity telemetry status`
 
-Check telemetry consent status for your logged in user
+Check telemetry status for your account
 
 ```
 USAGE
   $ sanity telemetry status
 
 DESCRIPTION
-  Check telemetry consent status for your logged in user
+  Check telemetry status for your account
 
 EXAMPLES
-  Check telemetry consent status for your logged in user
+  Check telemetry status for your account
 
     $ sanity telemetry telemetry status
 ```
 
 ## `sanity tokens add [LABEL]`
 
-Create a new API token for this project
+Create a new API token for the project
 
 ```
 USAGE
@@ -3074,7 +3066,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to add token to (overrides CLI configuration)
 
 DESCRIPTION
-  Create a new API token for this project
+  Create a new API token for the project
 
 EXAMPLES
   Create a token with a label
@@ -3100,7 +3092,7 @@ EXAMPLES
 
 ## `sanity tokens delete [TOKENID]`
 
-Delete an API token from this project
+Delete an API token from the project
 
 ```
 USAGE
@@ -3116,7 +3108,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to delete token from (overrides CLI configuration)
 
 DESCRIPTION
-  Delete an API token from this project
+  Delete an API token from the project
 
 EXAMPLES
   Interactively select and delete a token
@@ -3138,7 +3130,7 @@ EXAMPLES
 
 ## `sanity tokens list`
 
-List API tokens for the current project
+List API tokens for the project
 
 ```
 USAGE
@@ -3151,10 +3143,10 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list tokens for (overrides CLI configuration)
 
 DESCRIPTION
-  List API tokens for the current project
+  List API tokens for the project
 
 EXAMPLES
-  List tokens for the current project
+  List tokens for the project
 
     $ sanity tokens list
 
@@ -3266,7 +3258,7 @@ EXAMPLES
 
 ## `sanity users list`
 
-List all users of the project
+List project members
 
 ```
 USAGE
@@ -3284,7 +3276,7 @@ OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to list users for (overrides CLI configuration)
 
 DESCRIPTION
-  List all users of the project
+  List project members
 
 EXAMPLES
   List all users of the project
@@ -3306,14 +3298,14 @@ EXAMPLES
 
 ## `sanity versions`
 
-Shows installed versions of Sanity Studio and components
+Show installed package versions
 
 ```
 USAGE
   $ sanity versions
 
 DESCRIPTION
-  Shows installed versions of Sanity Studio and components
+  Show installed package versions
 
 EXAMPLES
   $ sanity versions
