@@ -16,10 +16,7 @@ jobs:
   generate-changeset:
     name: Generate changeset
     runs-on: ubuntu-latest
-    if: >-
-      github.event.pull_request.user.login != 'renovate[bot]' &&
-      github.event.pull_request.user.login != 'dependabot[bot]' &&
-      github.event.pull_request.user.login != 'ecospark[bot]'
+    if: github.event.pull_request.user.login != 'squiggler-app[bot]'
     steps:
       - name: Generate GitHub App Token
         id: generate_token
