@@ -10,7 +10,7 @@ List all schemas in the current dataset.
 
 Note: This command is experimental and subject to change.
 
-Re-generates a manifest file by default. To re-use an existing manifest, use --no-extract-manifest.
+Regenerates a manifest file by default. To reuse an existing manifest, use --no-extract-manifest.
 `.trim()
 
 export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
@@ -39,7 +39,7 @@ export class ListSchemaCommand extends SanityCommand<typeof ListSchemaCommand> {
     'extract-manifest': Flags.boolean({
       allowNo: true,
       default: true,
-      description: 'Re-generate manifest before listing (use --no-extract-manifest to skip)',
+      description: 'Regenerate manifest before listing (use --no-extract-manifest to skip)',
       hidden: true,
     }),
     id: Flags.string({

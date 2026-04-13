@@ -15,7 +15,7 @@ Deploy schema documents into workspace datasets.
 
 Note: This command is experimental and subject to change.
 
-Re-generates a manifest file by default. To re-use an existing manifest, use --no-extract-manifest.
+Regenerates a manifest file by default. To re-use an existing manifest, use --no-extract-manifest.
 `.trim()
 
 export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaCommand> {
@@ -36,7 +36,7 @@ export class DeploySchemaCommand extends SanityCommand<typeof DeploySchemaComman
     'extract-manifest': Flags.boolean({
       allowNo: true,
       default: true,
-      description: 'Re-generate manifest before deploying (use --no-extract-manifest to skip)',
+      description: 'Regenerate manifest before deploying (use --no-extract-manifest to skip)',
     }),
     'manifest-dir': Flags.directory({
       default: './dist/static',
