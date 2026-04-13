@@ -18,6 +18,7 @@
     "**/tsconfig.json",
     "**/__snapshots__/**",
     ".claude",
+    ".changeset",
     "**/dist/**",
     "**/lib/**"
   ]
