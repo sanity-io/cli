@@ -1,12 +1,17 @@
 name: Snapshot Release
 
 on:
+  push:
+    branches:
+      # Note: this needs to be removed before the feature branch gets merged to main
+      - feat/workbench
   workflow_dispatch:
     inputs:
       tag:
         description: 'npm dist-tag for the snapshot release'
         required: false
-        default: 'snapshot'
+        # TODO: revert to "snapshot" before the feature branch gets merged to main
+        default: 'workbench'
         type: string
       forceBump:
         description: 'Force a version bump for all packages'
