@@ -149,7 +149,10 @@ describe('#checkForUpdates', () => {
     )
   })
 
-  test('spawns worker when cache has expired', async () => {
+  test('shows notification and spawns worker when cache has expired', async () => {
+    const cwd = await testFixture('basic-studio')
+    process.chdir(cwd)
+
     const {config} = await getCommandAndConfig('help')
 
     // Set cache to 13 hours ago (beyond the 12-hour TTL)
@@ -158,10 +161,13 @@ describe('#checkForUpdates', () => {
       updatedAt: Date.now() - 13 * 60 * 60 * 1000,
     })
 
-    await testHook<'init'>(checkForUpdates, {
+    const {stderr} = await testHook<'init'>(checkForUpdates, {
       config,
     })
 
+    expect(mockDebug).toHaveBeenCalledWith('Update is available (%s)', '999.0.0')
+    expect(stderr).toContain('Update available')
+    expect(stderr).toContain('999.0.0')
     expect(mockDebug).toHaveBeenCalledWith('Cache expired, spawning worker to refresh')
     expect(mockSpawn).toHaveBeenCalled()
   })

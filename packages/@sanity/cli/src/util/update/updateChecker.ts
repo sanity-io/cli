@@ -45,31 +45,29 @@ export async function updateChecker(config: {version: string}): Promise<void> {
   if (cached) {
     const {expired, latestVersion} = cached
 
-    if (!expired) {
-      debug(
-        'Cache hit for %s: installed=%s, latest=%s',
-        packageName,
-        installedVersion,
-        latestVersion,
-      )
+    debug(
+      'Cache %s for %s: installed=%s, latest=%s',
+      expired ? 'expired' : 'hit',
+      packageName,
+      installedVersion,
+      latestVersion,
+    )
 
-      if (semverGt(latestVersion, installedVersion)) {
-        debug('Update is available (%s)', latestVersion)
-        await showUpdateNotification(installedVersion, latestVersion, packageName)
-      } else {
-        debug('No update found')
-      }
-
-      return
+    if (semverGt(latestVersion, installedVersion)) {
+      debug('Update is available (%s)', latestVersion)
+      await showUpdateNotification(installedVersion, latestVersion, packageName)
+    } else {
+      debug('No update found')
     }
 
-    debug('Cache expired, spawning worker to refresh')
+    if (expired) {
+      debug('Cache expired, spawning worker to refresh')
+      spawnFetchWorker(config.version)
+    }
   } else {
     debug('No cached update info, spawning worker to fetch')
+    spawnFetchWorker(config.version)
   }
-
-  // Cache is empty or expired - spawn worker to fetch in background
-  spawnFetchWorker(config.version)
 }
 
 /**
