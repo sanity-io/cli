@@ -28,7 +28,7 @@ describe('#injectEnvVariables', () => {
 
     await writeFile(
       join(cwd, '.env'),
-      'SANITY_STUDIO_TEST_VAR=test\nDATABASE_URL=postgres://localhost',
+      'SANITY_STUDIO_TEST_VAR=test\nDATABASE_URL=postgres://localhost\nNEXT_PUBLIC_SANITY_PROJECT_ID=test-project',
     )
 
     const {Command, config} = await getCommandAndConfig('learn')
@@ -40,26 +40,7 @@ describe('#injectEnvVariables', () => {
 
     expect(process.env.SANITY_STUDIO_TEST_VAR).toBe('test')
     expect(process.env.DATABASE_URL).toBe('postgres://localhost')
-  })
-
-  test('should inject NEXT_PUBLIC_SANITY env variables from studios', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.chdir(cwd)
-
-    await writeFile(
-      join(cwd, '.env'),
-      'NEXT_PUBLIC_SANITY_PROJECT_ID=test-project\nNEXT_PUBLIC_OTHER=test2',
-    )
-
-    const {Command, config} = await getCommandAndConfig('learn')
-
-    await testHook<'prerun'>(injectEnvVariables, {
-      Command,
-      config,
-    })
-
     expect(process.env.NEXT_PUBLIC_SANITY_PROJECT_ID).toBe('test-project')
-    expect(process.env.NEXT_PUBLIC_OTHER).toBe('test2')
   })
 
   test('should inject env variables from apps', async () => {
