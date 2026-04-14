@@ -9,6 +9,7 @@ const mockDebug = vi.hoisted(() => vi.fn())
 const mockGetLatestVersion = vi.hoisted(() => vi.fn())
 const mockIsInstalledGlobally = vi.hoisted(() => ({default: false}))
 const mockIsInstalledUsingYarn = vi.hoisted(() => vi.fn())
+const mockResolveUpdateTarget = vi.hoisted(() => vi.fn())
 
 const mockConfigStore = vi.hoisted(() => {
   const store = new Map<string, unknown>()
@@ -39,6 +40,10 @@ vi.mock('../../../util/update/isInstalledUsingYarn.js', () => ({
   isInstalledUsingYarn: mockIsInstalledUsingYarn,
 }))
 
+vi.mock('../../../util/update/resolveUpdateTarget.js', () => ({
+  resolveUpdateTarget: mockResolveUpdateTarget,
+}))
+
 const mockIsCi = vi.mocked(isCi)
 const originalIsTTY = process.stdout.isTTY
 
@@ -49,6 +54,7 @@ describe('#checkForUpdates', () => {
     mockIsCi.mockReturnValue(false)
     mockIsInstalledGlobally.default = false
     mockIsInstalledUsingYarn.mockReturnValue(false)
+    mockResolveUpdateTarget.mockResolvedValue({installedVersion: '3.60.0', packageName: 'sanity'})
     process.stdout.isTTY = true
 
     mockConfigStore.clear()
@@ -71,6 +77,7 @@ describe('#checkForUpdates', () => {
       'Running on CI, or explicitly disabled, skipping update check',
     )
     expect(mockGetLatestVersion).not.toHaveBeenCalled()
+    expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
   })
 
   test('returns early if NO_UPDATE_NOTIFIER env variable is present', async () => {
@@ -85,6 +92,7 @@ describe('#checkForUpdates', () => {
       'Running on CI, or explicitly disabled, skipping update check',
     )
     expect(mockGetLatestVersion).not.toHaveBeenCalled()
+    expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
   })
 
   test('returns early if not TTY', async () => {
@@ -96,6 +104,7 @@ describe('#checkForUpdates', () => {
     })
 
     expect(mockGetLatestVersion).not.toHaveBeenCalled()
+    expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
   })
 
   test('skips latest update check if checked within last 12 hours', async () => {
@@ -104,7 +113,7 @@ describe('#checkForUpdates', () => {
     const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
     const userConfig = getUserConfig()
-    userConfig.set('cliLatestRemoteVersion', {
+    userConfig.set('latestVersion:sanity', {
       updatedAt: recentTimestamp,
       value: '1.0.0',
     })
@@ -128,12 +137,12 @@ describe('#checkForUpdates', () => {
       config,
     })
 
-    expect(mockDebug).toHaveBeenCalledWith('Checking for latest remote version')
-    expect(mockGetLatestVersion).toHaveBeenCalledWith('@sanity/cli')
+    expect(mockDebug).toHaveBeenCalledWith('Checking for latest remote version of %s', 'sanity')
+    expect(mockGetLatestVersion).toHaveBeenCalledWith('sanity')
     expect(mockDebug).toHaveBeenCalledWith('Latest remote version is %s', '1.1.0')
 
     const userConfig = getUserConfig()
-    const cachedVersion = userConfig.get('cliLatestRemoteVersion')
+    const cachedVersion = userConfig.get('latestVersion:sanity')
     expect(cachedVersion).toMatchObject({
       updatedAt: expect.any(Number),
       value: '1.1.0',
@@ -151,14 +160,14 @@ describe('#checkForUpdates', () => {
       config,
     })
 
-    expect(mockDebug).toHaveBeenCalledWith('Checking for latest remote version')
+    expect(mockDebug).toHaveBeenCalledWith('Checking for latest remote version of %s', 'sanity')
     expect(mockGetLatestVersion).toHaveBeenCalled()
     expect(mockDebug).toHaveBeenCalledWith(
       expect.stringContaining('Max time 300 reached waiting for latest version info'),
     )
 
     const userConfig = getUserConfig()
-    const cachedVersion = userConfig.get('cliLatestRemoteVersion')
+    const cachedVersion = userConfig.get('latestVersion:sanity')
     expect(cachedVersion).toBeUndefined()
   })
 
@@ -172,14 +181,14 @@ describe('#checkForUpdates', () => {
       config,
     })
 
-    expect(mockDebug).toHaveBeenCalledWith('Checking for latest remote version')
+    expect(mockDebug).toHaveBeenCalledWith('Checking for latest remote version of %s', 'sanity')
     expect(mockGetLatestVersion).toHaveBeenCalled()
     expect(mockDebug).toHaveBeenCalledWith(
-      expect.stringContaining('Failed to fetch latest version of @sanity/cli from npm:'),
+      expect.stringContaining('Failed to fetch latest version of sanity from npm:'),
     )
 
     const userConfig = getUserConfig()
-    const cachedVersion = userConfig.get('cliLatestRemoteVersion')
+    const cachedVersion = userConfig.get('latestVersion:sanity')
     expect(cachedVersion).toBeUndefined()
   })
 
@@ -202,7 +211,7 @@ describe('#checkForUpdates', () => {
     const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
     const userConfig = getUserConfig()
-    userConfig.set('cliLatestRemoteVersion', {
+    userConfig.set('latestVersion:sanity', {
       updatedAt: recentTimestamp,
       value: '1.0.0', // older than current
     })
@@ -220,9 +229,9 @@ describe('#checkForUpdates', () => {
     const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
     const userConfig = getUserConfig()
-    userConfig.set('cliLatestRemoteVersion', {
+    userConfig.set('latestVersion:sanity', {
       updatedAt: recentTimestamp,
-      value: config.version, // same as current
+      value: '3.60.0', // same as installedVersion from mock
     })
 
     await testHook<'init'>(checkForUpdates, {
@@ -257,7 +266,7 @@ describe('#checkForUpdates', () => {
     const recentTimestamp = now - 1000 * 60 * 60 * 6 // 6 hours ago
 
     const userConfig = getUserConfig()
-    userConfig.set('cliLatestRemoteVersion', {
+    userConfig.set('latestVersion:sanity', {
       updatedAt: recentTimestamp,
       value: '999.0.0', // newer than current
     })
@@ -290,5 +299,56 @@ describe('#checkForUpdates', () => {
     expect(stderr).toContain('Update available')
     expect(stderr).toContain('999.0.0')
     expect(stderr).toContain('yarn global add sanity')
+  })
+
+  test('uses @sanity/cli package when sanity is not a project dependency', async () => {
+    mockResolveUpdateTarget.mockResolvedValue({
+      installedVersion: '6.3.1',
+      packageName: '@sanity/cli',
+    })
+
+    const {config} = await getCommandAndConfig('help')
+    mockGetLatestVersion.mockResolvedValueOnce('6.4.0')
+
+    const {stderr} = await testHook<'init'>(checkForUpdates, {
+      config,
+    })
+
+    expect(mockGetLatestVersion).toHaveBeenCalledWith('@sanity/cli')
+    expect(mockDebug).toHaveBeenCalledWith('Update is available (%s)', '6.4.0')
+    expect(stderr).toContain('Update available')
+    expect(stderr).toContain('6.4.0')
+
+    const userConfig = getUserConfig()
+    const cachedVersion = userConfig.get('latestVersion:@sanity/cli')
+    expect(cachedVersion).toMatchObject({
+      updatedAt: expect.any(Number),
+      value: '6.4.0',
+    })
+  })
+
+  test('uses correct cache key per resolved package', async () => {
+    mockResolveUpdateTarget.mockResolvedValue({
+      installedVersion: '6.3.0',
+      packageName: '@sanity/cli',
+    })
+
+    const {config} = await getCommandAndConfig('help')
+
+    // Cache has entry for sanity (from another project) but not @sanity/cli
+    const userConfig = getUserConfig()
+    userConfig.set('latestVersion:sanity', {
+      updatedAt: Date.now(),
+      value: '999.0.0',
+    })
+
+    mockGetLatestVersion.mockResolvedValueOnce('6.4.0')
+
+    await testHook<'init'>(checkForUpdates, {
+      config,
+    })
+
+    // Should fetch @sanity/cli, not read the sanity cache
+    expect(mockGetLatestVersion).toHaveBeenCalledWith('@sanity/cli')
   })
 })
