@@ -257,7 +257,7 @@ describe('#checkForUpdates', () => {
     expect(mockDebug).toHaveBeenCalledWith('Update is available (%s)', '999.0.0')
     expect(stderr).toContain('Update available')
     expect(stderr).toContain('999.0.0')
-    expect(stderr).toContain('pnpm')
+    expect(stderr).toContain('pnpm update sanity')
   })
 
   test('does not show notification when cache is hit', async () => {
