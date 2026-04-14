@@ -17,11 +17,7 @@ const CHECK_TIMEOUT = 300
  *
  * @param config - The CLI config containing version and name
  */
-export async function updateChecker(config: {
-  name: string
-  root: string
-  version: string
-}): Promise<void> {
+export async function updateChecker(config: {version: string}): Promise<void> {
   debug(`Installed CLI version is ${config.version}`)
   // Skip in CI or if disabled
   if (isCi() || process.env.NO_UPDATE_NOTIFIER) {
