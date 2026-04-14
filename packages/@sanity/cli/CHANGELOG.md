@@ -1,5 +1,24 @@
 # Change Log
 
+## 6.3.2
+
+### Patch Changes
+
+- [#898](https://github.com/sanity-io/cli/pull/898) [`e4f2dd4`](https://github.com/sanity-io/cli/commit/e4f2dd4f30eb2a2714beafff5cd805025abc4146) Thanks [@binoy14](https://github.com/binoy14)! - Fixed init command to strip filename before counting nested folders when generating the relative import path for the embedded studio route file.
+
+- [#923](https://github.com/sanity-io/cli/pull/923) [`6b1dfb4`](https://github.com/sanity-io/cli/commit/6b1dfb4d6c748ad2eeff088dbae879e1a0b0db2d) Thanks [@binoy14](https://github.com/binoy14)! - Default to the "production" dataset in unattended mode
+
+- [#915](https://github.com/sanity-io/cli/pull/915) [`6b48e93`](https://github.com/sanity-io/cli/commit/6b48e93e249e85b117f1113d110aa3544264fb7a) Thanks [@mttdnt](https://github.com/mttdnt)! - Fixed telemetry events being silently dropped before consent resolves
+
+- [#902](https://github.com/sanity-io/cli/pull/902) [`5b86d79`](https://github.com/sanity-io/cli/commit/5b86d7983642faa8d03425880c20641453d052eb) Thanks [@mttdnt](https://github.com/mttdnt)! - remove @sanity/telemetry as a peer dependency
+
+- [#903](https://github.com/sanity-io/cli/pull/903) [`ed09f43`](https://github.com/sanity-io/cli/commit/ed09f43cfa107c903c1693bf98a741d991ced61a) Thanks [@binoy14](https://github.com/binoy14)! - Fixed init command unattended mode: respect `--no-git` flag to skip git initialization, pass `--missing` to dataset import to avoid errors when dataset already exists, and allow `--bare` mode without requiring `--output-path`.
+
+- [#933](https://github.com/sanity-io/cli/pull/933) [`b181807`](https://github.com/sanity-io/cli/commit/b181807b18a202cd07bbf0a808fb3ce32b0a2d0b) Thanks [@renovate](https://github.com/apps/renovate)! - update sanity-tooling
+
+- Updated dependencies [[`5b86d79`](https://github.com/sanity-io/cli/commit/5b86d7983642faa8d03425880c20641453d052eb)]:
+  - @sanity/cli-core@1.3.1
+
 ## 6.3.1
 
 ### Patch Changes

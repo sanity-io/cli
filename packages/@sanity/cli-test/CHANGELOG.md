@@ -1,437 +1,397 @@
 # Changelog
 
-## [0.3.0](https://github.com/sanity-io/cli/compare/cli-test-v0.2.7...cli-test-v0.3.0) (2026-03-30)
+## 0.3.1
 
+### Patch Changes
+
+- [#933](https://github.com/sanity-io/cli/pull/933) [`b181807`](https://github.com/sanity-io/cli/commit/b181807b18a202cd07bbf0a808fb3ce32b0a2d0b) Thanks [@renovate](https://github.com/apps/renovate)! - update sanity-tooling
+
+- Updated dependencies [[`5b86d79`](https://github.com/sanity-io/cli/commit/5b86d7983642faa8d03425880c20641453d052eb)]:
+  - @sanity/cli-core@1.3.1
+
+## [0.3.0](https://github.com/sanity-io/cli/compare/cli-test-v0.2.7...cli-test-v0.3.0) (2026-03-30)
 
 ### Features
 
-* upgrade eslint to v10 with dual v9/v10 support ([#823](https://github.com/sanity-io/cli/issues/823)) ([f3c9d9d](https://github.com/sanity-io/cli/commit/f3c9d9da4816f6300f8bb5d1fda6a00a2c58b95d))
-
+- upgrade eslint to v10 with dual v9/v10 support ([#823](https://github.com/sanity-io/cli/issues/823)) ([f3c9d9d](https://github.com/sanity-io/cli/commit/f3c9d9da4816f6300f8bb5d1fda6a00a2c58b95d))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 1.3.0
-    * @sanity/eslint-config-cli bumped to 1.1.0
-  * peerDependencies
-    * @sanity/cli-core bumped to 1.3.0
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 1.3.0
+    - @sanity/eslint-config-cli bumped to 1.1.0
+  - peerDependencies
+    - @sanity/cli-core bumped to 1.3.0
 
 ## [0.2.7](https://github.com/sanity-io/cli/compare/cli-test-v0.2.6...cli-test-v0.2.7) (2026-03-24)
 
-
 ### Bug Fixes
 
-* **deps:** update sanity dependencies ([#758](https://github.com/sanity-io/cli/issues/758)) ([e093ac3](https://github.com/sanity-io/cli/commit/e093ac301d2dc9dbecc4fbb6c13eda293799186f))
-
+- **deps:** update sanity dependencies ([#758](https://github.com/sanity-io/cli/issues/758)) ([e093ac3](https://github.com/sanity-io/cli/commit/e093ac301d2dc9dbecc4fbb6c13eda293799186f))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 1.2.1
-  * peerDependencies
-    * @sanity/cli-core bumped to 1.2.1
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 1.2.1
+  - peerDependencies
+    - @sanity/cli-core bumped to 1.2.1
 
 ## [0.2.6](https://github.com/sanity-io/cli/compare/cli-test-v0.2.5...cli-test-v0.2.6) (2026-03-19)
 
-
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 1.2.0
-  * peerDependencies
-    * @sanity/cli-core bumped to 1.2.0
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 1.2.0
+  - peerDependencies
+    - @sanity/cli-core bumped to 1.2.0
 
 ## [0.2.5](https://github.com/sanity-io/cli/compare/cli-test-v0.2.4...cli-test-v0.2.5) (2026-03-18)
 
-
 ### Bug Fixes
 
-* **deps:** update dependency esbuild to ^0.27.4 ([#704](https://github.com/sanity-io/cli/issues/704)) ([3da6e47](https://github.com/sanity-io/cli/commit/3da6e47a29de7fc4392b8bcfea8c4601f32cf543))
-
+- **deps:** update dependency esbuild to ^0.27.4 ([#704](https://github.com/sanity-io/cli/issues/704)) ([3da6e47](https://github.com/sanity-io/cli/commit/3da6e47a29de7fc4392b8bcfea8c4601f32cf543))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 1.1.3
-    * @sanity/eslint-config-cli bumped to 1.0.1
-  * peerDependencies
-    * @sanity/cli-core bumped to 1.1.3
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 1.1.3
+    - @sanity/eslint-config-cli bumped to 1.0.1
+  - peerDependencies
+    - @sanity/cli-core bumped to 1.1.3
 
 ## [0.2.4](https://github.com/sanity-io/cli/compare/cli-test-v0.2.3...cli-test-v0.2.4) (2026-03-13)
 
-
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 1.1.2
-  * peerDependencies
-    * @sanity/cli-core bumped to 1.1.2
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 1.1.2
+  - peerDependencies
+    - @sanity/cli-core bumped to 1.1.2
 
 ## [0.2.3](https://github.com/sanity-io/cli/compare/cli-test-v0.2.2...cli-test-v0.2.3) (2026-03-13)
 
-
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 1.1.1
-  * peerDependencies
-    * @sanity/cli-core bumped to 1.1.1
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 1.1.1
+  - peerDependencies
+    - @sanity/cli-core bumped to 1.1.1
 
 ## [0.2.2](https://github.com/sanity-io/cli/compare/cli-test-v0.2.1...cli-test-v0.2.2) (2026-03-12)
 
-
 ### Bug Fixes
 
-* don't treat user aborts as telemetry errors ([#624](https://github.com/sanity-io/cli/issues/624)) ([6cc7682](https://github.com/sanity-io/cli/commit/6cc7682030a7dea9dfb9a80aa691a2cfb52444b9))
-
+- don't treat user aborts as telemetry errors ([#624](https://github.com/sanity-io/cli/issues/624)) ([6cc7682](https://github.com/sanity-io/cli/commit/6cc7682030a7dea9dfb9a80aa691a2cfb52444b9))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 1.1.0
-  * peerDependencies
-    * @sanity/cli-core bumped to 1.1.0
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 1.1.0
+  - peerDependencies
+    - @sanity/cli-core bumped to 1.1.0
 
 ## [0.2.1](https://github.com/sanity-io/cli/compare/cli-test-v0.2.0...cli-test-v0.2.1) (2026-03-11)
 
-
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 1.0.1
-  * peerDependencies
-    * @sanity/cli-core bumped to 1.0.1
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 1.0.1
+  - peerDependencies
+    - @sanity/cli-core bumped to 1.0.1
 
 ## [0.2.0](https://github.com/sanity-io/cli/compare/cli-test-v0.1.0...cli-test-v0.2.0) (2026-03-10)
 
-
 ### Features
 
-* add `--project-id` flag + prompts for dataset commands ([#500](https://github.com/sanity-io/cli/issues/500)) ([b264fa2](https://github.com/sanity-io/cli/commit/b264fa2b6996cbd195620ee730fd9bc6e6f12288))
-* add a eslint-config-cli package ([#226](https://github.com/sanity-io/cli/issues/226)) ([2980003](https://github.com/sanity-io/cli/commit/2980003fc8d1b3935f436f7e29c00207e65db6fc))
-* add cli-test package for test helpers ([#62](https://github.com/sanity-io/cli/issues/62)) ([e84a0bf](https://github.com/sanity-io/cli/commit/e84a0bfcf14fbcc2e5f7b3f97911e421b82bcf05))
-* **alias:** add dataset alias commands ([#131](https://github.com/sanity-io/cli/issues/131)) ([d5b4a6e](https://github.com/sanity-io/cli/commit/d5b4a6e8eaa12f345e66db8d21375a47931b46cd))
-* allow making telemetry calls from CLI ([#346](https://github.com/sanity-io/cli/issues/346)) ([41ef21e](https://github.com/sanity-io/cli/commit/41ef21eb1c3d6c1854b91bb0c953aa8596e39566))
-* **documents:** add documents get command ([#84](https://github.com/sanity-io/cli/issues/84)) ([aeea660](https://github.com/sanity-io/cli/commit/aeea66066d688a5929f2f042e1e3977ec748224c))
-* inject env variables before the commands are run ([#297](https://github.com/sanity-io/cli/issues/297)) ([eb01a5f](https://github.com/sanity-io/cli/commit/eb01a5f74c19824425cf83e0e95e6e5bc0857736))
-* make telemetry calls in commands ([#347](https://github.com/sanity-io/cli/issues/347)) ([6e22909](https://github.com/sanity-io/cli/commit/6e229091b41e581bf3ebe4be3540dca5a5b5c9c8))
-* **telemetry:** shows a disclosure in all CLI commands ([#69](https://github.com/sanity-io/cli/issues/69)) ([406024a](https://github.com/sanity-io/cli/commit/406024a2e55cd6ef59432bde22df5f6bd6de04cb))
-
+- add `--project-id` flag + prompts for dataset commands ([#500](https://github.com/sanity-io/cli/issues/500)) ([b264fa2](https://github.com/sanity-io/cli/commit/b264fa2b6996cbd195620ee730fd9bc6e6f12288))
+- add a eslint-config-cli package ([#226](https://github.com/sanity-io/cli/issues/226)) ([2980003](https://github.com/sanity-io/cli/commit/2980003fc8d1b3935f436f7e29c00207e65db6fc))
+- add cli-test package for test helpers ([#62](https://github.com/sanity-io/cli/issues/62)) ([e84a0bf](https://github.com/sanity-io/cli/commit/e84a0bfcf14fbcc2e5f7b3f97911e421b82bcf05))
+- **alias:** add dataset alias commands ([#131](https://github.com/sanity-io/cli/issues/131)) ([d5b4a6e](https://github.com/sanity-io/cli/commit/d5b4a6e8eaa12f345e66db8d21375a47931b46cd))
+- allow making telemetry calls from CLI ([#346](https://github.com/sanity-io/cli/issues/346)) ([41ef21e](https://github.com/sanity-io/cli/commit/41ef21eb1c3d6c1854b91bb0c953aa8596e39566))
+- **documents:** add documents get command ([#84](https://github.com/sanity-io/cli/issues/84)) ([aeea660](https://github.com/sanity-io/cli/commit/aeea66066d688a5929f2f042e1e3977ec748224c))
+- inject env variables before the commands are run ([#297](https://github.com/sanity-io/cli/issues/297)) ([eb01a5f](https://github.com/sanity-io/cli/commit/eb01a5f74c19824425cf83e0e95e6e5bc0857736))
+- make telemetry calls in commands ([#347](https://github.com/sanity-io/cli/issues/347)) ([6e22909](https://github.com/sanity-io/cli/commit/6e229091b41e581bf3ebe4be3540dca5a5b5c9c8))
+- **telemetry:** shows a disclosure in all CLI commands ([#69](https://github.com/sanity-io/cli/issues/69)) ([406024a](https://github.com/sanity-io/cli/commit/406024a2e55cd6ef59432bde22df5f6bd6de04cb))
 
 ### Bug Fixes
 
-* add no-console lint rule ([7823696](https://github.com/sanity-io/cli/commit/78236965ebdd784d01384b96b23bc590eeaaa325))
-* allow commands to run outside project context with --project-id/--dataset flags ([#558](https://github.com/sanity-io/cli/issues/558)) ([b3281c0](https://github.com/sanity-io/cli/commit/b3281c07a52493e280f53e56d6b7d1fabc11460a))
-* **build:** fixes issue with app build not failing for missing deps ([#409](https://github.com/sanity-io/cli/issues/409)) ([7a266fd](https://github.com/sanity-io/cli/commit/7a266fdf9fd6ad0acafcbd6770354a838b3d655e))
-* **cli:** align minimum node version in package with runtime check ([#30](https://github.com/sanity-io/cli/issues/30)) ([e64d763](https://github.com/sanity-io/cli/commit/e64d763c73d95b8c2e6d7bef11494b8db06a1322))
-* **deps:** update dependency @sanity/client to ^7.14.1 ([#327](https://github.com/sanity-io/cli/issues/327)) ([1bbb9bb](https://github.com/sanity-io/cli/commit/1bbb9bb1c464e9a36aef216e2c669afc972cbdeb))
-* **deps:** update dependency @sanity/client to ^7.17.0 ([#580](https://github.com/sanity-io/cli/issues/580)) ([a1247aa](https://github.com/sanity-io/cli/commit/a1247aa490327bbe1c0db1a7313fe5fe2c00ba56))
-* **deps:** update dependency ansis to v4 ([#270](https://github.com/sanity-io/cli/issues/270)) ([4a79f5b](https://github.com/sanity-io/cli/commit/4a79f5b2ea31b90efe99cd06f898a42755f97777))
-* **deps:** update dependency esbuild to ^0.27.3 ([#528](https://github.com/sanity-io/cli/issues/528)) ([d6ef3bf](https://github.com/sanity-io/cli/commit/d6ef3bf526cf78c9fef035323491c83d3c1968d0))
-* **deps:** update oclif-tooling ([#116](https://github.com/sanity-io/cli/issues/116)) ([26a92ee](https://github.com/sanity-io/cli/commit/26a92eeeccbf6b92ab91fa08fedd09f2823cd8a3))
-* **deps:** update oclif-tooling ([#210](https://github.com/sanity-io/cli/issues/210)) ([66f8c47](https://github.com/sanity-io/cli/commit/66f8c47c6abac9aefbdd5d41ef0253d1ccf413b9))
-* **deps:** update sanity-tooling ([#292](https://github.com/sanity-io/cli/issues/292)) ([dfacca8](https://github.com/sanity-io/cli/commit/dfacca832f94a94b00e898b315e3fef567c90026))
-* **deps:** update sanity-tooling ([#311](https://github.com/sanity-io/cli/issues/311)) ([51476f4](https://github.com/sanity-io/cli/commit/51476f4f47a004b7dc5b2ce0f9cf3e2be1a13b40))
-* **deps:** update sanity-tooling ([#424](https://github.com/sanity-io/cli/issues/424)) ([ca6c758](https://github.com/sanity-io/cli/commit/ca6c75817f4ec011dc38edc09b4fbff050d6e087))
-* **deps:** update sanity-tooling ([#461](https://github.com/sanity-io/cli/issues/461)) ([3f92213](https://github.com/sanity-io/cli/commit/3f922132472231209f13d64faf1450499a74e77a))
-* issue where CLI would error if root not found ([#535](https://github.com/sanity-io/cli/issues/535)) ([a0d9cb1](https://github.com/sanity-io/cli/commit/a0d9cb1aa545e03518b0b75f7e313044a4223762))
-* **test:** fixes peer dependency range for vitest ([#414](https://github.com/sanity-io/cli/issues/414)) ([9ec2562](https://github.com/sanity-io/cli/commit/9ec2562794a7bd60324ea4b91dfb41df4da0e943))
-
+- add no-console lint rule ([7823696](https://github.com/sanity-io/cli/commit/78236965ebdd784d01384b96b23bc590eeaaa325))
+- allow commands to run outside project context with --project-id/--dataset flags ([#558](https://github.com/sanity-io/cli/issues/558)) ([b3281c0](https://github.com/sanity-io/cli/commit/b3281c07a52493e280f53e56d6b7d1fabc11460a))
+- **build:** fixes issue with app build not failing for missing deps ([#409](https://github.com/sanity-io/cli/issues/409)) ([7a266fd](https://github.com/sanity-io/cli/commit/7a266fdf9fd6ad0acafcbd6770354a838b3d655e))
+- **cli:** align minimum node version in package with runtime check ([#30](https://github.com/sanity-io/cli/issues/30)) ([e64d763](https://github.com/sanity-io/cli/commit/e64d763c73d95b8c2e6d7bef11494b8db06a1322))
+- **deps:** update dependency @sanity/client to ^7.14.1 ([#327](https://github.com/sanity-io/cli/issues/327)) ([1bbb9bb](https://github.com/sanity-io/cli/commit/1bbb9bb1c464e9a36aef216e2c669afc972cbdeb))
+- **deps:** update dependency @sanity/client to ^7.17.0 ([#580](https://github.com/sanity-io/cli/issues/580)) ([a1247aa](https://github.com/sanity-io/cli/commit/a1247aa490327bbe1c0db1a7313fe5fe2c00ba56))
+- **deps:** update dependency ansis to v4 ([#270](https://github.com/sanity-io/cli/issues/270)) ([4a79f5b](https://github.com/sanity-io/cli/commit/4a79f5b2ea31b90efe99cd06f898a42755f97777))
+- **deps:** update dependency esbuild to ^0.27.3 ([#528](https://github.com/sanity-io/cli/issues/528)) ([d6ef3bf](https://github.com/sanity-io/cli/commit/d6ef3bf526cf78c9fef035323491c83d3c1968d0))
+- **deps:** update oclif-tooling ([#116](https://github.com/sanity-io/cli/issues/116)) ([26a92ee](https://github.com/sanity-io/cli/commit/26a92eeeccbf6b92ab91fa08fedd09f2823cd8a3))
+- **deps:** update oclif-tooling ([#210](https://github.com/sanity-io/cli/issues/210)) ([66f8c47](https://github.com/sanity-io/cli/commit/66f8c47c6abac9aefbdd5d41ef0253d1ccf413b9))
+- **deps:** update sanity-tooling ([#292](https://github.com/sanity-io/cli/issues/292)) ([dfacca8](https://github.com/sanity-io/cli/commit/dfacca832f94a94b00e898b315e3fef567c90026))
+- **deps:** update sanity-tooling ([#311](https://github.com/sanity-io/cli/issues/311)) ([51476f4](https://github.com/sanity-io/cli/commit/51476f4f47a004b7dc5b2ce0f9cf3e2be1a13b40))
+- **deps:** update sanity-tooling ([#424](https://github.com/sanity-io/cli/issues/424)) ([ca6c758](https://github.com/sanity-io/cli/commit/ca6c75817f4ec011dc38edc09b4fbff050d6e087))
+- **deps:** update sanity-tooling ([#461](https://github.com/sanity-io/cli/issues/461)) ([3f92213](https://github.com/sanity-io/cli/commit/3f922132472231209f13d64faf1450499a74e77a))
+- issue where CLI would error if root not found ([#535](https://github.com/sanity-io/cli/issues/535)) ([a0d9cb1](https://github.com/sanity-io/cli/commit/a0d9cb1aa545e03518b0b75f7e313044a4223762))
+- **test:** fixes peer dependency range for vitest ([#414](https://github.com/sanity-io/cli/issues/414)) ([9ec2562](https://github.com/sanity-io/cli/commit/9ec2562794a7bd60324ea4b91dfb41df4da0e943))
 
 ### Performance Improvements
 
-* speed up graphql commands ([#502](https://github.com/sanity-io/cli/issues/502)) ([a52d59b](https://github.com/sanity-io/cli/commit/a52d59bbd8a1d621f942d1285eb593669de29326))
-
+- speed up graphql commands ([#502](https://github.com/sanity-io/cli/issues/502)) ([a52d59b](https://github.com/sanity-io/cli/commit/a52d59bbd8a1d621f942d1285eb593669de29326))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 1.0.0
-    * @sanity/eslint-config-cli bumped to 1.0.0
-  * peerDependencies
-    * @sanity/cli-core bumped to 1.0.0
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 1.0.0
+    - @sanity/eslint-config-cli bumped to 1.0.0
+  - peerDependencies
+    - @sanity/cli-core bumped to 1.0.0
 
 ## [0.1.0-alpha.17](https://github.com/sanity-io/cli/compare/cli-test-v0.1.0-alpha.16...cli-test-v0.1.0-alpha.17) (2026-03-03)
 
-
 ### Bug Fixes
 
-* issue where CLI would error if root not found ([#535](https://github.com/sanity-io/cli/issues/535)) ([a0d9cb1](https://github.com/sanity-io/cli/commit/a0d9cb1aa545e03518b0b75f7e313044a4223762))
-
+- issue where CLI would error if root not found ([#535](https://github.com/sanity-io/cli/issues/535)) ([a0d9cb1](https://github.com/sanity-io/cli/commit/a0d9cb1aa545e03518b0b75f7e313044a4223762))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.19
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.19
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.19
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.19
 
 ## [0.1.0-alpha.16](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.16...cli-test-v0.1.0-alpha.16) (2026-03-03)
 
-
 ### Features
 
-* add `--project-id` flag + prompts for dataset commands ([#500](https://github.com/sanity-io/cli/issues/500)) ([b264fa2](https://github.com/sanity-io/cli/commit/b264fa2b6996cbd195620ee730fd9bc6e6f12288))
-
+- add `--project-id` flag + prompts for dataset commands ([#500](https://github.com/sanity-io/cli/issues/500)) ([b264fa2](https://github.com/sanity-io/cli/commit/b264fa2b6996cbd195620ee730fd9bc6e6f12288))
 
 ### Bug Fixes
 
-* **deps:** update dependency esbuild to ^0.27.3 ([#528](https://github.com/sanity-io/cli/issues/528)) ([d6ef3bf](https://github.com/sanity-io/cli/commit/d6ef3bf526cf78c9fef035323491c83d3c1968d0))
-
+- **deps:** update dependency esbuild to ^0.27.3 ([#528](https://github.com/sanity-io/cli/issues/528)) ([d6ef3bf](https://github.com/sanity-io/cli/commit/d6ef3bf526cf78c9fef035323491c83d3c1968d0))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.18
-    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.4
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.18
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.18
+    - @sanity/eslint-config-cli bumped to 0.0.0-alpha.4
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.18
 
 ## [0.0.2-alpha.16](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.15...cli-test-v0.0.2-alpha.16) (2026-03-02)
 
-
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.17
-    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.3
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.17
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.17
+    - @sanity/eslint-config-cli bumped to 0.0.0-alpha.3
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.17
 
 ## [0.0.2-alpha.15](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.14...cli-test-v0.0.2-alpha.15) (2026-02-24)
 
-
 ### Bug Fixes
 
-* **deps:** update sanity-tooling ([#461](https://github.com/sanity-io/cli/issues/461)) ([3f92213](https://github.com/sanity-io/cli/commit/3f922132472231209f13d64faf1450499a74e77a))
-
+- **deps:** update sanity-tooling ([#461](https://github.com/sanity-io/cli/issues/461)) ([3f92213](https://github.com/sanity-io/cli/commit/3f922132472231209f13d64faf1450499a74e77a))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.16
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.16
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.16
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.16
 
 ## [0.0.2-alpha.14](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.13...cli-test-v0.0.2-alpha.14) (2026-02-23)
 
-
 ### Bug Fixes
 
-* **deps:** update sanity-tooling ([#424](https://github.com/sanity-io/cli/issues/424)) ([ca6c758](https://github.com/sanity-io/cli/commit/ca6c75817f4ec011dc38edc09b4fbff050d6e087))
-
+- **deps:** update sanity-tooling ([#424](https://github.com/sanity-io/cli/issues/424)) ([ca6c758](https://github.com/sanity-io/cli/commit/ca6c75817f4ec011dc38edc09b4fbff050d6e087))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.15
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.15
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.15
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.15
 
 ## [0.0.2-alpha.13](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.12...cli-test-v0.0.2-alpha.13) (2026-02-19)
 
-
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.14
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.14
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.14
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.14
 
 ## [0.0.2-alpha.12](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.11...cli-test-v0.0.2-alpha.12) (2026-02-18)
 
-
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.13
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.13
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.13
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.13
 
 ## [0.0.2-alpha.11](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.10...cli-test-v0.0.2-alpha.11) (2026-02-13)
 
-
 ### Bug Fixes
 
-* **build:** fixes issue with app build not failing for missing deps ([#409](https://github.com/sanity-io/cli/issues/409)) ([7a266fd](https://github.com/sanity-io/cli/commit/7a266fdf9fd6ad0acafcbd6770354a838b3d655e))
-* **test:** fixes peer dependency range for vitest ([#414](https://github.com/sanity-io/cli/issues/414)) ([9ec2562](https://github.com/sanity-io/cli/commit/9ec2562794a7bd60324ea4b91dfb41df4da0e943))
-
+- **build:** fixes issue with app build not failing for missing deps ([#409](https://github.com/sanity-io/cli/issues/409)) ([7a266fd](https://github.com/sanity-io/cli/commit/7a266fdf9fd6ad0acafcbd6770354a838b3d655e))
+- **test:** fixes peer dependency range for vitest ([#414](https://github.com/sanity-io/cli/issues/414)) ([9ec2562](https://github.com/sanity-io/cli/commit/9ec2562794a7bd60324ea4b91dfb41df4da0e943))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.12
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.12
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.12
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.12
 
 ## [0.0.2-alpha.10](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.9...cli-test-v0.0.2-alpha.10) (2026-02-05)
 
-
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.11
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.11
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.11
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.11
 
 ## [0.0.2-alpha.9](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.8...cli-test-v0.0.2-alpha.9) (2026-02-05)
 
-
 ### Bug Fixes
 
-* add no-console lint rule ([7823696](https://github.com/sanity-io/cli/commit/78236965ebdd784d01384b96b23bc590eeaaa325))
-
+- add no-console lint rule ([7823696](https://github.com/sanity-io/cli/commit/78236965ebdd784d01384b96b23bc590eeaaa325))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.10
-    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.2
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.10
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.10
+    - @sanity/eslint-config-cli bumped to 0.0.0-alpha.2
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.10
 
 ## [0.0.2-alpha.8](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.7...cli-test-v0.0.2-alpha.8) (2026-02-05)
 
-
 ### Features
 
-* allow making telemetry calls from CLI ([#346](https://github.com/sanity-io/cli/issues/346)) ([41ef21e](https://github.com/sanity-io/cli/commit/41ef21eb1c3d6c1854b91bb0c953aa8596e39566))
-* inject env variables before the commands are run ([#297](https://github.com/sanity-io/cli/issues/297)) ([eb01a5f](https://github.com/sanity-io/cli/commit/eb01a5f74c19824425cf83e0e95e6e5bc0857736))
-* make telemetry calls in commands ([#347](https://github.com/sanity-io/cli/issues/347)) ([6e22909](https://github.com/sanity-io/cli/commit/6e229091b41e581bf3ebe4be3540dca5a5b5c9c8))
-
+- allow making telemetry calls from CLI ([#346](https://github.com/sanity-io/cli/issues/346)) ([41ef21e](https://github.com/sanity-io/cli/commit/41ef21eb1c3d6c1854b91bb0c953aa8596e39566))
+- inject env variables before the commands are run ([#297](https://github.com/sanity-io/cli/issues/297)) ([eb01a5f](https://github.com/sanity-io/cli/commit/eb01a5f74c19824425cf83e0e95e6e5bc0857736))
+- make telemetry calls in commands ([#347](https://github.com/sanity-io/cli/issues/347)) ([6e22909](https://github.com/sanity-io/cli/commit/6e229091b41e581bf3ebe4be3540dca5a5b5c9c8))
 
 ### Bug Fixes
 
-* **deps:** update dependency @sanity/client to ^7.14.1 ([#327](https://github.com/sanity-io/cli/issues/327)) ([1bbb9bb](https://github.com/sanity-io/cli/commit/1bbb9bb1c464e9a36aef216e2c669afc972cbdeb))
-
+- **deps:** update dependency @sanity/client to ^7.14.1 ([#327](https://github.com/sanity-io/cli/issues/327)) ([1bbb9bb](https://github.com/sanity-io/cli/commit/1bbb9bb1c464e9a36aef216e2c669afc972cbdeb))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.9
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.9
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.9
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.9
 
 ## [0.0.2-alpha.7](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.6...cli-test-v0.0.2-alpha.7) (2026-01-23)
 
-
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.8
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.8
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.8
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.8
 
 ## [0.0.2-alpha.6](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.5...cli-test-v0.0.2-alpha.6) (2026-01-20)
 
-
 ### Bug Fixes
 
-* **deps:** update sanity-tooling ([#292](https://github.com/sanity-io/cli/issues/292)) ([dfacca8](https://github.com/sanity-io/cli/commit/dfacca832f94a94b00e898b315e3fef567c90026))
-* **deps:** update sanity-tooling ([#311](https://github.com/sanity-io/cli/issues/311)) ([51476f4](https://github.com/sanity-io/cli/commit/51476f4f47a004b7dc5b2ce0f9cf3e2be1a13b40))
-
+- **deps:** update sanity-tooling ([#292](https://github.com/sanity-io/cli/issues/292)) ([dfacca8](https://github.com/sanity-io/cli/commit/dfacca832f94a94b00e898b315e3fef567c90026))
+- **deps:** update sanity-tooling ([#311](https://github.com/sanity-io/cli/issues/311)) ([51476f4](https://github.com/sanity-io/cli/commit/51476f4f47a004b7dc5b2ce0f9cf3e2be1a13b40))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.7
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.7
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.7
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.7
 
 ## [0.0.2-alpha.5](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.4...cli-test-v0.0.2-alpha.5) (2026-01-16)
 
-
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.6
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.6
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.6
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.6
 
 ## [0.0.2-alpha.4](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.3...cli-test-v0.0.2-alpha.4) (2026-01-09)
 
-
 ### Bug Fixes
 
-* **deps:** update dependency ansis to v4 ([#270](https://github.com/sanity-io/cli/issues/270)) ([4a79f5b](https://github.com/sanity-io/cli/commit/4a79f5b2ea31b90efe99cd06f898a42755f97777))
-
+- **deps:** update dependency ansis to v4 ([#270](https://github.com/sanity-io/cli/issues/270)) ([4a79f5b](https://github.com/sanity-io/cli/commit/4a79f5b2ea31b90efe99cd06f898a42755f97777))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.5
-  * peerDependencies
-    * @sanity/cli-core bumped to 0.1.0-alpha.5
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.5
+  - peerDependencies
+    - @sanity/cli-core bumped to 0.1.0-alpha.5
 
 ## [0.0.2-alpha.3](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.2...cli-test-v0.0.2-alpha.3) (2025-12-30)
 
-
 ### Features
 
-* add a eslint-config-cli package ([#226](https://github.com/sanity-io/cli/issues/226)) ([2980003](https://github.com/sanity-io/cli/commit/2980003fc8d1b3935f436f7e29c00207e65db6fc))
-
+- add a eslint-config-cli package ([#226](https://github.com/sanity-io/cli/issues/226)) ([2980003](https://github.com/sanity-io/cli/commit/2980003fc8d1b3935f436f7e29c00207e65db6fc))
 
 ### Dependencies
 
-* The following workspace dependencies were updated
-  * devDependencies
-    * @sanity/eslint-config-cli bumped to 0.0.0-alpha.1
+- The following workspace dependencies were updated
+  - devDependencies
+    - @sanity/eslint-config-cli bumped to 0.0.0-alpha.1
 
 ## [0.0.2-alpha.2](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.1...cli-test-v0.0.2-alpha.2) (2025-12-19)
 
-
 ### Bug Fixes
 
-* **deps:** update oclif-tooling ([#210](https://github.com/sanity-io/cli/issues/210)) ([66f8c47](https://github.com/sanity-io/cli/commit/66f8c47c6abac9aefbdd5d41ef0253d1ccf413b9))
+- **deps:** update oclif-tooling ([#210](https://github.com/sanity-io/cli/issues/210)) ([66f8c47](https://github.com/sanity-io/cli/commit/66f8c47c6abac9aefbdd5d41ef0253d1ccf413b9))
 
 ## [0.0.2-alpha.1](https://github.com/sanity-io/cli/compare/cli-test-v0.0.2-alpha.0...cli-test-v0.0.2-alpha.1) (2025-12-17)
 
-
 ### Features
 
-* **alias:** add dataset alias commands ([#131](https://github.com/sanity-io/cli/issues/131)) ([d5b4a6e](https://github.com/sanity-io/cli/commit/d5b4a6e8eaa12f345e66db8d21375a47931b46cd))
+- **alias:** add dataset alias commands ([#131](https://github.com/sanity-io/cli/issues/131)) ([d5b4a6e](https://github.com/sanity-io/cli/commit/d5b4a6e8eaa12f345e66db8d21375a47931b46cd))
 
 ## [0.0.2-alpha.0](https://github.com/sanity-io/cli/compare/cli-test-v0.0.1-alpha.0...cli-test-v0.0.2-alpha.0) (2025-09-11)
 
-
 ### Bug Fixes
 
-* **deps:** update oclif-tooling ([#116](https://github.com/sanity-io/cli/issues/116)) ([26a92ee](https://github.com/sanity-io/cli/commit/26a92eeeccbf6b92ab91fa08fedd09f2823cd8a3))
+- **deps:** update oclif-tooling ([#116](https://github.com/sanity-io/cli/issues/116)) ([26a92ee](https://github.com/sanity-io/cli/commit/26a92eeeccbf6b92ab91fa08fedd09f2823cd8a3))
 
 ## [0.0.1-alpha.0](https://github.com/sanity-io/cli/compare/cli-test-v0.0.0-alpha.0...cli-test-v0.0.1-alpha.0) (2025-09-11)
 
-
 ### Features
 
-* add cli-test package for test helpers ([#62](https://github.com/sanity-io/cli/issues/62)) ([e84a0bf](https://github.com/sanity-io/cli/commit/e84a0bfcf14fbcc2e5f7b3f97911e421b82bcf05))
-* **documents:** add documents get command ([#84](https://github.com/sanity-io/cli/issues/84)) ([aeea660](https://github.com/sanity-io/cli/commit/aeea66066d688a5929f2f042e1e3977ec748224c))
-* **telemetry:** shows a disclosure in all CLI commands ([#69](https://github.com/sanity-io/cli/issues/69)) ([406024a](https://github.com/sanity-io/cli/commit/406024a2e55cd6ef59432bde22df5f6bd6de04cb))
-
+- add cli-test package for test helpers ([#62](https://github.com/sanity-io/cli/issues/62)) ([e84a0bf](https://github.com/sanity-io/cli/commit/e84a0bfcf14fbcc2e5f7b3f97911e421b82bcf05))
+- **documents:** add documents get command ([#84](https://github.com/sanity-io/cli/issues/84)) ([aeea660](https://github.com/sanity-io/cli/commit/aeea66066d688a5929f2f042e1e3977ec748224c))
+- **telemetry:** shows a disclosure in all CLI commands ([#69](https://github.com/sanity-io/cli/issues/69)) ([406024a](https://github.com/sanity-io/cli/commit/406024a2e55cd6ef59432bde22df5f6bd6de04cb))
 
 ### Bug Fixes
 
-* **cli:** align minimum node version in package with runtime check ([#30](https://github.com/sanity-io/cli/issues/30)) ([e64d763](https://github.com/sanity-io/cli/commit/e64d763c73d95b8c2e6d7bef11494b8db06a1322))
+- **cli:** align minimum node version in package with runtime check ([#30](https://github.com/sanity-io/cli/issues/30)) ([e64d763](https://github.com/sanity-io/cli/commit/e64d763c73d95b8c2e6d7bef11494b8db06a1322))
