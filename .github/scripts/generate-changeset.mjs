@@ -35,7 +35,7 @@ function removeChangeset() {
   if (existsSync(CHANGESET_FILE)) {
     ensureGitConfigured()
     git('rm', CHANGESET_FILE)
-    git('commit', '-m', `chore: remove auto-generated changeset for PR #${PR_NUMBER}`)
+    git('commit', '-m', `chore: remove auto-generated changeset for PR #${PR_NUMBER} [skip ci]`)
     git('push', '--force-with-lease')
   }
 }
@@ -195,5 +195,5 @@ if (status !== 1) {
   process.exit(status ?? 1)
 }
 
-git('commit', '-m', `chore: update auto-generated changeset for PR #${PR_NUMBER}`)
+git('commit', '-m', `chore: update auto-generated changeset for PR #${PR_NUMBER} [skip ci]`)
 git('push', '--force-with-lease')
