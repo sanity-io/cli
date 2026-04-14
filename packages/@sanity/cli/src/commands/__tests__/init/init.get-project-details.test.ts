@@ -549,6 +549,172 @@ describe('#init: get project details', () => {
     if (error) throw error
   })
 
+  test('defaults to "production" dataset in unattended mode when no dataset flag is provided', async () => {
+    mocks.listProjects.mockResolvedValueOnce([
+      {
+        createdAt: '2024-01-01T00:00:00Z',
+        displayName: 'Test Project',
+        id: 'test-project-123',
+      },
+    ])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [])
+
+    mocks.listDatasets.mockResolvedValueOnce([])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, [])
+
+    mocks.createDataset.mockResolvedValueOnce(undefined)
+
+    setupInitSuccessMocks('test-project-123')
+
+    const {error, stdout} = await testCommand(
+      InitCommand,
+      ['--yes', '--project=test-project-123', '--output-path=/tmp/test'],
+      {
+        mocks: {...defaultMocks},
+      },
+    )
+
+    if (error) throw error
+
+    expect(mocks.createDataset).toHaveBeenCalledWith(
+      'production',
+      expect.objectContaining({aclMode: 'public'}),
+    )
+    expect(stdout).toContain('Dataset created successfully')
+  })
+
+  test('respects --visibility=private flag in unattended mode when project supports private datasets', async () => {
+    mocks.listProjects.mockResolvedValueOnce([
+      {
+        createdAt: '2024-01-01T00:00:00Z',
+        displayName: 'Test Project',
+        id: 'test-project-123',
+      },
+    ])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [])
+
+    mocks.listDatasets.mockResolvedValueOnce([])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    mocks.createDataset.mockResolvedValueOnce(undefined)
+
+    setupInitSuccessMocks('test-project-123')
+
+    const {error, stdout} = await testCommand(
+      InitCommand,
+      ['--yes', '--project=test-project-123', '--output-path=/tmp/test', '--visibility=private'],
+      {
+        mocks: {...defaultMocks},
+      },
+    )
+
+    if (error) throw error
+
+    expect(mocks.createDataset).toHaveBeenCalledWith(
+      'production',
+      expect.objectContaining({aclMode: 'private'}),
+    )
+    expect(stdout).toContain('Dataset created successfully')
+  })
+
+  test('falls back to public dataset in unattended mode when --visibility=private but project lacks privateDataset feature', async () => {
+    mocks.listProjects.mockResolvedValueOnce([
+      {
+        createdAt: '2024-01-01T00:00:00Z',
+        displayName: 'Test Project',
+        id: 'test-project-123',
+      },
+    ])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [])
+
+    mocks.listDatasets.mockResolvedValueOnce([])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, [])
+
+    mocks.createDataset.mockResolvedValueOnce(undefined)
+
+    setupInitSuccessMocks('test-project-123')
+
+    const {error, stderr} = await testCommand(
+      InitCommand,
+      ['--yes', '--project=test-project-123', '--output-path=/tmp/test', '--visibility=private'],
+      {
+        mocks: {...defaultMocks},
+      },
+    )
+
+    if (error) throw error
+
+    expect(mocks.createDataset).toHaveBeenCalledWith(
+      'production',
+      expect.objectContaining({aclMode: 'public'}),
+    )
+    expect(stderr).toContain('Warning: Private datasets are not available for this project.')
+  })
+
+  test('uses existing "production" dataset in unattended mode without creating a new one', async () => {
+    mocks.listProjects.mockResolvedValueOnce([
+      {
+        createdAt: '2024-01-01T00:00:00Z',
+        displayName: 'Test Project',
+        id: 'test-project-123',
+      },
+    ])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [])
+
+    mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'public', name: 'production'}])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, [])
+
+    setupInitSuccessMocks('test-project-123')
+
+    const {error} = await testCommand(
+      InitCommand,
+      ['--yes', '--project=test-project-123', '--output-path=/tmp/test'],
+      {
+        mocks: {...defaultMocks},
+      },
+    )
+
+    if (error) throw error
+
+    expect(mocks.createDataset).not.toHaveBeenCalled()
+  })
+
   test('throws warn if visibility flag is provided but not available as a project feature', async () => {
     mocks.listProjects.mockResolvedValueOnce([
       {

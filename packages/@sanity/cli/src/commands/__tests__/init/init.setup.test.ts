@@ -175,30 +175,30 @@ describe('#init: oclif command setup', () => {
     expect(error?.oclif?.exit).toBe(1)
   })
 
-  test('throws error when in unattended mode and `dataset` is not set', async () => {
-    const {error} = await testCommand(InitCommand, ['--yes'], {
+  test('does not require --dataset in unattended mode', async () => {
+    // Mock no framework or a non-Next.js framework
+    mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
+
+    // Use --bare to bypass the --output-path requirement, omit --dataset
+    const {error} = await testCommand(InitCommand, ['--yes', '--bare', '--project=test-project'], {
       mocks: {
         ...defaultMocks,
       },
     })
 
-    expect(error?.message).toContain('`--dataset` must be specified in unattended mode')
-    expect(error?.oclif?.exit).toBe(1)
+    // Should not throw a --dataset validation error
+    expect(error?.message ?? '').not.toContain('--dataset')
   })
 
   test('throws error when `output-path` is not used in unattended mode with non-nextjs project', async () => {
     // Mock no framework or a non-Next.js framework
     mocks.detectFrameworkRecord.mockResolvedValueOnce(null)
 
-    const {error} = await testCommand(
-      InitCommand,
-      ['--yes', '--dataset=production', '--project=test-project'],
-      {
-        mocks: {
-          ...defaultMocks,
-        },
+    const {error} = await testCommand(InitCommand, ['--yes', '--project=test-project'], {
+      mocks: {
+        ...defaultMocks,
       },
-    )
+    })
 
     // Should throw output-path error for non-Next.js projects
     expect(error?.message).toContain('`--output-path` must be specified in unattended mode')
