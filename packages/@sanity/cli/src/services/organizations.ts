@@ -32,7 +32,7 @@ interface OrganizationGrantsResponse {
   [key: string]: OrganizationGrant[]
 }
 
-export type OrganizationRequestQuery = RawRequestOptions['query']
+type OrganizationRequestQuery = RawRequestOptions['query']
 
 /**
  * List all organizations the user has access to
