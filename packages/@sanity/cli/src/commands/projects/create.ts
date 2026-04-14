@@ -249,14 +249,15 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
     let organizations
     try {
       organizations = await listOrganizations()
+      if (requestedId) {
+        const org = resolveOrganizationById(organizations, requestedId)
+        spin.succeed()
+        return org
+      }
       spin.succeed()
     } catch (error) {
       spin.fail()
       throw error
-    }
-
-    if (requestedId) {
-      return resolveOrganizationById(organizations, requestedId)
     }
 
     if (organizations.length === 0) {
