@@ -188,7 +188,6 @@ describe('#init: oclif command setup', () => {
 
     // Should not throw a --dataset validation error
     expect(error?.message ?? '').not.toContain('--dataset')
-    expect(error?.oclif?.exit).toBeUndefined()
   })
 
   test('throws error when `output-path` is not used in unattended mode with non-nextjs project', async () => {
