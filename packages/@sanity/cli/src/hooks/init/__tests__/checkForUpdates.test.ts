@@ -50,6 +50,7 @@ vi.mock('../../../util/update/resolveUpdateTarget.js', () => ({
 
 const mockIsCi = vi.mocked(isCi)
 const originalIsTTY = process.stdout.isTTY
+const originalArgv1 = process.argv[1]
 
 function setCachedLatestVersion(options: {
   key?: string
@@ -75,6 +76,7 @@ describe('#checkForUpdates', () => {
     mockSpawn.mockReturnValue({unref: vi.fn()})
     mockResolveUpdateTarget.mockResolvedValue({installedVersion: '3.60.0', packageName: 'sanity'})
     process.stdout.isTTY = true
+    process.argv[1] = originalArgv1
 
     mockConfigStore.clear()
   })
@@ -82,6 +84,7 @@ describe('#checkForUpdates', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     process.stdout.isTTY = originalIsTTY
+    process.argv[1] = originalArgv1
   })
 
   test('returns early if running on CI', async () => {
@@ -124,6 +127,36 @@ describe('#checkForUpdates', () => {
 
     expect(mockSpawn).not.toHaveBeenCalled()
     expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
+  })
+
+  test('returns early if running from temporary npx cache', async () => {
+    const {config} = await getCommandAndConfig('help')
+    process.argv[1] = '/home/user/.npm/_npx/abc123/node_modules/.bin/sanity'
+
+    await testHook<'init'>(checkForUpdates, {
+      config,
+    })
+
+    expect(mockDebug).toHaveBeenCalledWith(
+      'Running from temporary npx download, skipping update check',
+    )
+    expect(mockSpawn).not.toHaveBeenCalled()
+    expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
+  })
+
+  test('does NOT skip npx when resolving to local install', async () => {
+    const {config} = await getCommandAndConfig('help')
+    process.argv[1] = '/home/user/project/node_modules/.bin/sanity'
+
+    await testHook<'init'>(checkForUpdates, {
+      config,
+    })
+
+    // Should not have been skipped - resolveUpdateTarget should be called
+    expect(mockDebug).not.toHaveBeenCalledWith(
+      'Running from temporary npx download, skipping update check',
+    )
+    expect(mockResolveUpdateTarget).toHaveBeenCalled()
   })
 
   test('spawns worker when no cached version exists', async () => {

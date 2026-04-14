@@ -33,6 +33,14 @@ export async function updateChecker(config: {version: string}): Promise<void> {
     return
   }
 
+  // Skip for temporary npx downloads (npx @sanity/cli when not locally installed).
+  // This does NOT skip `npx sanity` resolving to a local install (path is in node_modules/.bin/).
+  const binaryPath = process.argv[1] ?? ''
+  if (binaryPath.includes('/_npx/') || binaryPath.includes('\\_npx\\')) {
+    debug('Running from temporary npx download, skipping update check')
+    return
+  }
+
   // Resolve which package to check and what's installed locally.
   // This walks up from cwd reading package.json files - fast, no network.
   const {installedVersion, packageName} = await resolveUpdateTarget(process.cwd(), config.version)
