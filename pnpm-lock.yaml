@@ -263,7 +263,7 @@ importers:
         version: 19.2.4(react@19.2.4)
       sanity:
         specifier: 'catalog:'
-        version: 5.18.0(@emotion/is-prop-valid@1.4.0)(@oclif/core@4.10.3)(@sanity/cli-core@packages+@sanity+cli-core)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)
+        version: 5.20.0(@emotion/is-prop-valid@1.4.0)(@oclif/core@4.10.5)(@sanity/cli-core@packages+@sanity+cli-core)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(styled-components@6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(typescript@5.9.3)
       styled-components:
         specifier: ^6.3.8
         version: 6.3.8(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -523,7 +523,7 @@ importers:
         version: 6.1.0
       '@sanity/federation':
         specifier: 0.1.0-alpha.4
-        version: 0.1.0-alpha.4(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+        version: 0.1.0-alpha.4(debug@4.4.3)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       '@sanity/generate-help-url':
         specifier: ^4.0.0
         version: 4.0.0
@@ -12646,12 +12646,12 @@ snapshots:
       fs-extra: 9.1.0
       resolve: 1.22.8
 
-  '@module-federation/vite@1.14.0(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))':
+  '@module-federation/vite@1.14.0(debug@4.4.3)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))':
     dependencies:
       '@module-federation/dts-plugin': 2.3.1(debug@4.4.3)(typescript@5.9.3)
       '@module-federation/runtime': 2.3.1
       '@module-federation/sdk': 2.3.1
-      '@rollup/pluginutils': 5.3.0(rollup@4.59.1)
+      '@rollup/pluginutils': 5.3.0(rollup@4.60.1)
       defu: 6.1.4
       es-module-lexer: 2.0.0
       estree-walker: 3.0.3
@@ -13801,10 +13801,10 @@ snapshots:
       - react-native-b4a
       - supports-color
 
-  '@sanity/federation@0.1.0-alpha.4(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))':
+  '@sanity/federation@0.1.0-alpha.4(debug@4.4.3)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))':
     dependencies:
       '@module-federation/runtime': 2.3.1
-      '@module-federation/vite': 1.14.0(debug@4.4.3)(rollup@4.59.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
+      '@module-federation/vite': 1.14.0(debug@4.4.3)(rollup@4.60.1)(typescript@5.9.3)(vite@7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3))
       vite: 7.3.2(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.3)
     transitivePeerDependencies:
       - bufferutil

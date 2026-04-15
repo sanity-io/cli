@@ -23,10 +23,6 @@ export class DevCommand extends SanityCommand<typeof DevCommand> {
     host: Flags.string({
       description: 'Local network interface to listen on (default: localhost)',
     }),
-    'load-in-dashboard': Flags.boolean({
-      allowNo: true,
-      description: 'Load the app/studio in the Sanity dashboard',
-    }),
     port: Flags.string({
       description: 'TCP port to start server on (default: 3333)',
     }),
