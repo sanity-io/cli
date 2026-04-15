@@ -1,11 +1,15 @@
 import {styleText} from 'node:util'
 
+import {registerDevServer} from './devServerRegistry.js'
 import {startAppDevServer} from './startAppDevServer.js'
 import {startStudioDevServer} from './startStudioDevServer.js'
 import {startWorkbenchDevServer} from './startWorkbenchDevServer.js'
 import {type DevActionOptions} from './types.js'
 
-export async function devAction(options: DevActionOptions): Promise<{close?: () => Promise<void>}> {
+const noop = async () => {}
+const syncNoop = () => {}
+
+export async function devAction(options: DevActionOptions): Promise<{close: () => Promise<void>}> {
   const {output} = options
 
   const {
@@ -17,14 +21,13 @@ export async function devAction(options: DevActionOptions): Promise<{close?: () 
 
   // Start app/studio dev server: use workbenchPort + 1 if workbench feature is
   // available (reserves the configured port for it), otherwise use the original port
-  const desiredAppPort = closeWorkbenchServer === undefined ? workbenchPort : workbenchPort + 1
+  const desiredAppPort = workbenchAvailable ? workbenchPort + 1 : workbenchPort
 
   // When the workbench is running, point the remote's react-refresh preamble at
   // the workbench dev server so HMR updates flow through the host.
-  const reactRefreshHost =
-    closeWorkbenchServer === undefined
-      ? undefined
-      : `http://${httpHost || 'localhost'}:${workbenchPort}`
+  const reactRefreshHost = workbenchAvailable
+    ? `http://${httpHost || 'localhost'}:${workbenchPort}`
+    : undefined
 
   const appOptions: DevActionOptions = {
     ...options,
@@ -33,31 +36,55 @@ export async function devAction(options: DevActionOptions): Promise<{close?: () 
     workbenchAvailable,
   }
 
-  let closeAppDevServer: (() => Promise<void>) | undefined
+  let closeAppDevServer: () => Promise<void> = noop
   let server
   try {
     const result = options.isApp
       ? await startAppDevServer(appOptions)
       : await startStudioDevServer(appOptions)
-    closeAppDevServer = result.close
+    closeAppDevServer = result.close ?? noop
     server = result.server
   } catch (err) {
-    await closeWorkbenchServer?.()
+    await closeWorkbenchServer()
     throw err
   }
 
   // server is undefined only when startAppDevServer exits early (e.g. missing orgId);
   // in that case the process is already exiting so no workbench needed.
   if (!server) {
-    return {
-      close: async () => {
-        await closeWorkbenchServer?.()
-      },
-    }
+    return {close: closeWorkbenchServer}
   }
 
-  if (closeWorkbenchServer !== undefined) {
-    const appPort = server.config.server.port
+  // Register the studio/app dev server in the registry (federated projects only)
+  let cleanupManifest: () => void = syncNoop
+  let onSignal: (() => void) | undefined
+  if (options.cliConfig?.federation?.enabled) {
+    const addr = server.httpServer?.address()
+    const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
+    cleanupManifest = registerDevServer({
+      host: httpHost || 'localhost',
+      port: appPort,
+      type: options.isApp ? 'coreApp' : 'studio',
+      workDir: options.workDir,
+    })
+
+    // Ensure manifest and workbench lock are cleaned up on abrupt shutdown.
+    // closeWorkbenchServer() starts with synchronous calls (watcher.close,
+    // lock.release) that complete before the process exits; the trailing
+    // async server.close() is best-effort.
+    onSignal = () => {
+      cleanupManifest()
+      closeWorkbenchServer()
+      process.off('SIGINT', onSignal!)
+      process.off('SIGTERM', onSignal!)
+    }
+    process.on('SIGINT', onSignal)
+    process.on('SIGTERM', onSignal)
+  }
+
+  if (workbenchAvailable) {
+    const addr = server.httpServer?.address()
+    const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
     const workbenchUrl = `http://${httpHost || 'localhost'}:${workbenchPort}`
     output.log(
       `Workbench dev server started at ${styleText(['blue', 'underline'], workbenchUrl)} (app on port ${appPort})`,
@@ -66,9 +93,15 @@ export async function devAction(options: DevActionOptions): Promise<{close?: () 
 
   return {
     close: async () => {
+      // Remove signal handlers to prevent double-cleanup and listener leaks
+      if (onSignal) {
+        process.off('SIGINT', onSignal)
+        process.off('SIGTERM', onSignal)
+      }
+      cleanupManifest()
       // Run both closes independently — a failing workbench close must not prevent
       // the primary server from shutting down
-      await Promise.allSettled([closeWorkbenchServer?.(), closeAppDevServer?.()])
+      await Promise.allSettled([closeWorkbenchServer(), closeAppDevServer()])
     },
   }
 }
