@@ -29,17 +29,20 @@ interface PackageJson {
 
 /**
  * Finds where a package is declared in the workspace, walking up from startDir.
- * Resolves catalog: protocol if used.
+ * Resolves catalog: protocol if used (requires workspaceInfo).
+ *
+ * When workspaceInfo is omitted, walks to the filesystem root instead of stopping
+ * at the workspace root, and returns the raw declared range without catalog resolution.
  */
 export async function findPackageDeclaration(
   packageName: SanityPackage,
   startDir: string,
-  workspaceInfo: WorkspaceInfo,
+  workspaceInfo?: WorkspaceInfo,
 ): Promise<PackageDeclaration | null> {
   let currentDir = path.resolve(startDir)
   const fsRoot = path.parse(currentDir).root
 
-  // Walk up until we pass the workspace root
+  // Walk up until we pass the workspace root (or filesystem root if no workspace info)
   while (currentDir !== fsRoot) {
     const packageJsonPath = path.join(currentDir, 'package.json')
     const packageJson = await readJsonFile<PackageJson>(packageJsonPath)
@@ -54,11 +57,9 @@ export async function findPackageDeclaration(
         const deps = packageJson[depType]
         if (deps && packageName in deps) {
           const declaredVersionRange = deps[packageName]
-          const versionRange = await resolveVersionRange(
-            declaredVersionRange,
-            packageName,
-            workspaceInfo,
-          )
+          const versionRange = workspaceInfo
+            ? await resolveVersionRange(declaredVersionRange, packageName, workspaceInfo)
+            : declaredVersionRange
 
           return {
             declaredVersionRange,
@@ -70,8 +71,8 @@ export async function findPackageDeclaration(
       }
     }
 
-    // Stop at workspace root
-    if (currentDir === workspaceInfo.root) {
+    // Stop at workspace root if provided, otherwise continue to filesystem root
+    if (workspaceInfo && currentDir === workspaceInfo.root) {
       break
     }
 
@@ -131,11 +132,14 @@ export async function findPackageOverride(
  * Also extracts \@sanity/cli dependency range from sanity package if applicable.
  *
  * Handles both hoisted (npm/yarn) and nested (pnpm) node_modules structures.
+ *
+ * When workspaceRoot is omitted, walks to the filesystem root instead of stopping
+ * at the workspace root.
  */
 export async function findInstalledPackage(
   packageName: SanityPackage,
   startDir: string,
-  workspaceRoot: string,
+  workspaceRoot?: string,
 ): Promise<InstalledPackage | null> {
   let currentDir = path.resolve(startDir)
   const fsRoot = path.parse(currentDir).root
@@ -162,8 +166,8 @@ export async function findInstalledPackage(
       }
     }
 
-    // Stop at workspace root
-    if (currentDir === workspaceRoot) {
+    // Stop at workspace root if provided, otherwise continue to filesystem root
+    if (workspaceRoot && currentDir === workspaceRoot) {
       break
     }
 
