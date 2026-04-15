@@ -1,6 +1,6 @@
 import {type Output} from '@sanity/cli-core'
 import {getYarnMajorVersion} from '@sanity/cli-core/package-manager'
-import {execa, type Options, type Result} from 'execa'
+import spawn, {type Options} from 'nano-spawn'
 
 import {getPartialEnvWithNpmPath, type PackageManager} from './packageManagerChoice.js'
 
@@ -23,17 +23,15 @@ export async function upgradePackages(
   const {output, workDir} = context
   const execOptions: Options = {
     cwd: workDir,
-    encoding: 'utf8',
     env: getPartialEnvWithNpmPath(workDir),
     stdio: 'inherit',
   }
   const upgradePackageArgs = packages.map((pkg) => pkg.join('@'))
-  let result: Result | undefined
   switch (packageManager) {
     case 'bun': {
       const bunArgs = ['update', ...upgradePackageArgs]
       output.log(`Running 'bun ${bunArgs.join(' ')}'`)
-      result = await execa('bun', bunArgs, execOptions)
+      await spawn('bun', bunArgs, execOptions)
 
       break
     }
@@ -47,14 +45,14 @@ export async function upgradePackages(
     case 'npm': {
       const npmArgs = ['install', '--legacy-peer-deps', ...upgradePackageArgs]
       output.log(`Running 'npm ${npmArgs.join(' ')}'`)
-      result = await execa('npm', npmArgs, execOptions)
+      await spawn('npm', npmArgs, execOptions)
 
       break
     }
     case 'pnpm': {
       const pnpmArgs = ['upgrade', ...upgradePackageArgs]
       output.log(`Running 'pnpm ${pnpmArgs.join(' ')}'`)
-      result = await execa('pnpm', pnpmArgs, execOptions)
+      await spawn('pnpm', pnpmArgs, execOptions)
 
       break
     }
@@ -63,14 +61,10 @@ export async function upgradePackages(
       const upgradeCmd = yarnMajor !== undefined && yarnMajor >= 2 ? 'up' : 'upgrade'
       const yarnArgs = [upgradeCmd, ...upgradePackageArgs]
       output.log(`Running 'yarn ${yarnArgs.join(' ')}'`)
-      result = await execa('yarn', yarnArgs, execOptions)
+      await spawn('yarn', yarnArgs, execOptions)
 
       break
     }
     // No default
-  }
-
-  if (result?.exitCode || result?.failed) {
-    throw new Error('Package upgrade failed')
   }
 }

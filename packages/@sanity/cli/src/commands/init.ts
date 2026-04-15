@@ -16,8 +16,8 @@ import {confirm, input, logSymbols, select, Separator, spinner} from '@sanity/cl
 import {type DatasetAclMode, isHttpError} from '@sanity/client'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
-import {execa, type Options} from 'execa'
 import deburr from 'lodash-es/deburr.js'
+import spawn, {type Options} from 'nano-spawn'
 
 import {validateSession} from '../actions/auth/ensureAuthenticated.js'
 import {getProviderName} from '../actions/auth/getProviderName.js'
@@ -1404,18 +1404,17 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     // will refactor this later
     const execOptions: Options = {
       cwd: workDir,
-      encoding: 'utf8',
       env: getPartialEnvWithNpmPath(workDir),
       stdio: 'inherit',
     }
 
     switch (chosen) {
       case 'npm': {
-        await execa('npm', ['install', 'next-sanity@12'], execOptions)
+        await spawn('npm', ['install', 'next-sanity@12'], execOptions)
         break
       }
       case 'pnpm': {
-        await execa('pnpm', ['install', 'next-sanity@12'], execOptions)
+        await spawn('pnpm', ['install', 'next-sanity@12'], execOptions)
         break
       }
       case 'yarn': {

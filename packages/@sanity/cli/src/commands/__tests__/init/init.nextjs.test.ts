@@ -18,7 +18,6 @@ const mocks = vi.hoisted(() => ({
   checkNextJsReactCompatibility: vi.fn(),
   confirm: vi.fn(),
   createOrAppendEnvVars: vi.fn(),
-  execa: vi.fn(),
   existsSync: vi.fn(),
   getSanityEnv: vi.fn(),
   input: vi.fn(),
@@ -26,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   mkdir: vi.fn(),
   select: vi.fn(),
   setupMCP: vi.fn(),
+  spawn: vi.fn(),
   writeFile: vi.fn(),
 }))
 
@@ -76,8 +76,8 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-vi.mock('execa', () => ({
-  execa: mocks.execa,
+vi.mock('nano-spawn', () => ({
+  default: mocks.spawn,
 }))
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -157,7 +157,7 @@ const defaultMocks = {
 }
 
 mocks.createOrAppendEnvVars.mockResolvedValue(undefined)
-mocks.execa.mockResolvedValue(undefined)
+mocks.spawn.mockResolvedValue(undefined)
 mocks.getSanityEnv.mockReturnValue('production')
 
 describe('#init:nextjs-app-initialization', () => {

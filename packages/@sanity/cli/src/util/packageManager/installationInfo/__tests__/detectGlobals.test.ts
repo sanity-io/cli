@@ -2,10 +2,10 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {detectGlobalInstallations} from '../detectGlobals.js'
 
-// Mock execa
-const mockExeca = vi.hoisted(() => vi.fn())
-vi.mock('execa', () => ({
-  execa: mockExeca,
+// Mock nano-spawn
+const mockSpawn = vi.hoisted(() => vi.fn())
+vi.mock('nano-spawn', () => ({
+  default: mockSpawn,
 }))
 
 // Mock which
@@ -23,7 +23,7 @@ describe('detectGlobalInstallations', () => {
     mockWhich.mockResolvedValue('/usr/local/bin/sanity')
 
     // Mock npm list -g
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
         return Promise.resolve({
           stdout: JSON.stringify({
@@ -55,7 +55,7 @@ describe('detectGlobalInstallations', () => {
   test('detects multiple global installations from different package managers', async () => {
     mockWhich.mockResolvedValue('/usr/local/bin/sanity')
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
         return Promise.resolve({
           stdout: JSON.stringify({
@@ -104,7 +104,7 @@ describe('detectGlobalInstallations', () => {
     // As of Bun 1.2, `bun pm ls -g --json` is not implemented.
     // queryBunGlobals short-circuits to [] to avoid a wasted subprocess call.
     mockWhich.mockResolvedValue('/home/user/.bun/bin/sanity')
-    mockExeca.mockRejectedValue(new Error('Command not found'))
+    mockSpawn.mockRejectedValue(new Error('Command not found'))
 
     const result = await detectGlobalInstallations()
 
@@ -114,7 +114,7 @@ describe('detectGlobalInstallations', () => {
 
   test('returns empty array when no global installations found', async () => {
     mockWhich.mockRejectedValue(new Error('not found'))
-    mockExeca.mockRejectedValue(new Error('Command failed'))
+    mockSpawn.mockRejectedValue(new Error('Command failed'))
 
     const result = await detectGlobalInstallations()
 
@@ -125,7 +125,7 @@ describe('detectGlobalInstallations', () => {
     mockWhich.mockRejectedValue(new Error('not found'))
 
     // Only npm available, others fail
-    mockExeca.mockImplementation((cmd: string) => {
+    mockSpawn.mockImplementation((cmd: string) => {
       if (cmd === 'npm') {
         return Promise.resolve({
           stdout: JSON.stringify({dependencies: {}}),
@@ -142,7 +142,7 @@ describe('detectGlobalInstallations', () => {
   test('marks the installation matching which as active', async () => {
     mockWhich.mockResolvedValue('/usr/local/bin/sanity')
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
         return Promise.resolve({
           stdout: JSON.stringify({
@@ -189,7 +189,7 @@ describe('detectGlobalInstallations', () => {
   test('marks @sanity/cli as active when it is the only global from the active pm', async () => {
     mockWhich.mockResolvedValue('/usr/local/bin/sanity')
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
         return Promise.resolve({
           stdout: JSON.stringify({
@@ -217,7 +217,7 @@ describe('detectGlobalInstallations', () => {
   test('handles npm output with warning prefix before JSON', async () => {
     mockWhich.mockResolvedValue('/usr/local/bin/sanity')
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
         // npm sometimes prints warnings before JSON
         return Promise.resolve({
@@ -248,7 +248,7 @@ describe('detectGlobalInstallations', () => {
     // nvm: binary at <prefix>/bin, lib at <prefix>/lib
     mockWhich.mockResolvedValue('/home/user/.nvm/versions/node/v20.11.0/bin/sanity')
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
         return Promise.resolve({
           stdout: JSON.stringify({
@@ -276,7 +276,7 @@ describe('detectGlobalInstallations', () => {
   test('marks npm as active for homebrew binary path', async () => {
     mockWhich.mockResolvedValue('/opt/homebrew/bin/sanity')
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
         return Promise.resolve({
           stdout: JSON.stringify({
@@ -304,7 +304,7 @@ describe('detectGlobalInstallations', () => {
     // Volta shim at ~/.volta/bin — not in npm's bin dir
     mockWhich.mockResolvedValue('/home/user/.volta/bin/sanity')
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
         return Promise.resolve({
           stdout: JSON.stringify({
@@ -334,7 +334,7 @@ describe('detectGlobalInstallations', () => {
     // and incorrectly mark npm globals as active.
     mockWhich.mockResolvedValue('/some/unknown/path/sanity')
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'npm' && args.includes('list')) {
         return Promise.resolve({
           stdout: JSON.stringify({
@@ -362,7 +362,7 @@ describe('detectGlobalInstallations', () => {
     // Generic path but only pnpm globals — should not assume npm
     mockWhich.mockResolvedValue('/some/unknown/path/sanity')
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'pnpm' && args.includes('bin')) {
         return Promise.resolve({
           stdout: '/home/user/.local/share/pnpm',
@@ -399,7 +399,7 @@ describe('detectGlobalInstallations', () => {
       // Windows pnpm installs to AppData\Local\pnpm\sanity.CMD
       mockWhich.mockResolvedValue('C:\\Users\\user\\AppData\\Local\\pnpm\\sanity.CMD')
 
-      mockExeca.mockImplementation((cmd: string, args: string[]) => {
+      mockSpawn.mockImplementation((cmd: string, args: string[]) => {
         if (cmd === 'pnpm' && args.includes('bin')) {
           return Promise.resolve({
             stdout: 'C:\\Users\\user\\AppData\\Local\\pnpm',
@@ -435,7 +435,7 @@ describe('detectGlobalInstallations', () => {
     // Custom PNPM_HOME at /opt/pnpm — no standard path patterns like /.pnpm/
     mockWhich.mockResolvedValue('/opt/pnpm/bin/sanity')
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'pnpm' && args.includes('bin')) {
         return Promise.resolve({
           stdout: '/opt/pnpm/bin',
@@ -469,7 +469,7 @@ describe('detectGlobalInstallations', () => {
   test('detects yarn classic global installation', async () => {
     mockWhich.mockResolvedValue('/usr/local/bin/sanity')
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'yarn' && args.includes('global')) {
         // Yarn classic NDJSON: one JSON object per line
         const lines = [
@@ -497,7 +497,7 @@ describe('detectGlobalInstallations', () => {
   test('ignores yarn NDJSON lines without matching packages', async () => {
     mockWhich.mockRejectedValue(new Error('not found'))
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'yarn' && args.includes('global')) {
         const lines = [
           JSON.stringify({data: '"typescript@5.4.0" has binaries:\n  - tsc', type: 'info'}),
@@ -516,7 +516,7 @@ describe('detectGlobalInstallations', () => {
   test('handles malformed yarn NDJSON lines gracefully', async () => {
     mockWhich.mockRejectedValue(new Error('not found'))
 
-    mockExeca.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
       if (cmd === 'yarn' && args.includes('global')) {
         const lines = [
           'not valid json',
