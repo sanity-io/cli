@@ -49,7 +49,7 @@ vi.mock('../../actions/dev/startWorkbenchDevServer.js', () => ({
       workDir: options.workDir,
     })
 
-    return {httpHost, workbenchAvailable: false, workbenchPort: httpPort}
+    return {close: async () => {}, httpHost, workbenchAvailable: false, workbenchPort: httpPort}
   }),
 }))
 
