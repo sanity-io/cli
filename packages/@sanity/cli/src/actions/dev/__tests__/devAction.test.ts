@@ -6,6 +6,7 @@ import {devAction} from '../devAction.js'
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartAppDevServer = vi.hoisted(() => vi.fn())
 const mockStartStudioDevServer = vi.hoisted(() => vi.fn())
+const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
@@ -15,6 +16,9 @@ vi.mock('../startAppDevServer.js', () => ({
 }))
 vi.mock('../startStudioDevServer.js', () => ({
   startStudioDevServer: mockStartStudioDevServer,
+}))
+vi.mock('../devServerRegistry.js', () => ({
+  registerDevServer: mockRegisterDevServer,
 }))
 
 function createMockOutput(): Output {
@@ -47,11 +51,12 @@ describe('devAction', () => {
   beforeEach(() => {
     // Default: no workbench (federation disabled)
     mockStartWorkbenchDevServer.mockResolvedValue({
-      close: undefined,
+      close: vi.fn().mockResolvedValue(undefined),
       httpHost: 'localhost',
       workbenchAvailable: false,
       workbenchPort: 3333,
     })
+    mockRegisterDevServer.mockReturnValue(vi.fn())
   })
 
   afterEach(() => {
@@ -173,8 +178,89 @@ describe('devAction', () => {
 
     const result = await devAction(createOptions())
 
-    await expect(result.close?.()).resolves.toBeUndefined()
+    await expect(result.close()).resolves.toBeUndefined()
     expect(mockWorkbenchClose).toHaveBeenCalled()
     expect(mockAppClose).toHaveBeenCalled()
+  })
+
+  describe('registry integration', () => {
+    test('registers studio in registry when federation is enabled', async () => {
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+
+      await devAction(
+        createOptions({
+          cliConfig: {federation: {enabled: true}},
+        }),
+      )
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          host: 'localhost',
+          port: 3334,
+          type: 'studio',
+        }),
+      )
+    })
+
+    test('registers app type when isApp is true', async () => {
+      mockStartAppDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+
+      await devAction(
+        createOptions({
+          cliConfig: {federation: {enabled: true}},
+          isApp: true,
+        }),
+      )
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'coreApp'}))
+    })
+
+    test('does not register when federation is disabled', async () => {
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3333}}},
+      })
+
+      await devAction(createOptions())
+
+      expect(mockRegisterDevServer).not.toHaveBeenCalled()
+    })
+
+    test('calls manifest cleanup on close', async () => {
+      const mockCleanup = vi.fn()
+      mockRegisterDevServer.mockReturnValue(mockCleanup)
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+
+      const result = await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
+
+      await result.close()
+      expect(mockCleanup).toHaveBeenCalled()
+    })
+
+    test('close removes signal handlers to prevent listener leaks', async () => {
+      const offSpy = vi.spyOn(process, 'off')
+      mockRegisterDevServer.mockReturnValue(vi.fn())
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+
+      const result = await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
+      await result.close()
+
+      expect(offSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function))
+      expect(offSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function))
+
+      offSpy.mockRestore()
+    })
   })
 })
