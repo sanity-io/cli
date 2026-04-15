@@ -26,8 +26,10 @@ describe('#injectEnvVariables', () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
 
-    // Create a .env file with a SANITY_TEST_VAR variable
-    await writeFile(join(cwd, '.env'), 'SANITY_STUDIO_TEST_VAR=test\nNOT_SANITY_VAR=test2')
+    await writeFile(
+      join(cwd, '.env'),
+      'SANITY_STUDIO_TEST_VAR=test\nDATABASE_URL=postgres://localhost\nNEXT_PUBLIC_SANITY_PROJECT_ID=test-project',
+    )
 
     const {Command, config} = await getCommandAndConfig('learn')
 
@@ -37,15 +39,15 @@ describe('#injectEnvVariables', () => {
     })
 
     expect(process.env.SANITY_STUDIO_TEST_VAR).toBe('test')
-    expect(process.env.NOT_SANITY_VAR).not.toBe('test2')
+    expect(process.env.DATABASE_URL).toBe('postgres://localhost')
+    expect(process.env.NEXT_PUBLIC_SANITY_PROJECT_ID).toBe('test-project')
   })
 
   test('should inject env variables from apps', async () => {
     const cwd = await testFixture('basic-app')
     process.chdir(cwd)
 
-    // Create a .env file with a SANITY_TEST_VAR variable
-    await writeFile(join(cwd, '.env'), 'SANITY_APP_TEST_VAR=test\nNOT_SANITY_VAR=test2')
+    await writeFile(join(cwd, '.env'), 'SANITY_APP_TEST_VAR=test\nMY_CUSTOM_VAR=test2')
 
     const {Command, config} = await getCommandAndConfig('learn')
 
@@ -55,7 +57,7 @@ describe('#injectEnvVariables', () => {
     })
 
     expect(process.env.SANITY_APP_TEST_VAR).toBe('test')
-    expect(process.env.NOT_SANITY_VAR).not.toBe('test2')
+    expect(process.env.MY_CUSTOM_VAR).toBe('test2')
   })
 
   test('should warn when running in production environment', async () => {
