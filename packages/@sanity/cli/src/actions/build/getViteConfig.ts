@@ -12,7 +12,7 @@ import viteReact from '@vitejs/plugin-react'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
 import debug from 'debug'
 import {readPackageUp} from 'read-package-up'
-import {type ConfigEnv, type InlineConfig, mergeConfig, PluginOption, type Rollup} from 'vite'
+import {type ConfigEnv, type InlineConfig, mergeConfig, type PluginOption, type Rollup} from 'vite'
 
 import {sanityBuildEntries} from '../../server/vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from '../../server/vite/plugin-sanity-favicons.js'
