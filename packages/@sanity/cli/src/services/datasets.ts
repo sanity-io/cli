@@ -82,6 +82,7 @@ export async function createDataset({
 
 interface CopyDatasetOptions {
   projectId: string
+  skipContentReleases?: boolean
   skipHistory: boolean
   sourceDataset: string
   targetDataset: string
@@ -93,6 +94,7 @@ interface CopyDatasetResponse {
 
 export async function copyDataset({
   projectId,
+  skipContentReleases,
   skipHistory,
   sourceDataset,
   targetDataset,
@@ -100,6 +102,7 @@ export async function copyDataset({
   const client = await getDatasetClient(projectId)
   return client.request<CopyDatasetResponse>({
     body: {
+      skipContentReleases,
       skipHistory,
       targetDataset,
     },

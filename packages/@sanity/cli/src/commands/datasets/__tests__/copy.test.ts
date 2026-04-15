@@ -420,6 +420,30 @@ describe('#dataset:copy', () => {
       })
     })
 
+    test('copies dataset with skip-content-releases flag', async () => {
+      mockListDatasets.mockResolvedValue([
+        createMockDataset('production'),
+        createMockDataset('staging'),
+      ])
+      mockApi({
+        apiVersion: DATASET_API_VERSION,
+        body: {skipContentReleases: true, skipHistory: false, targetDataset: 'backup'},
+        method: 'put',
+        projectId: testProjectId,
+        uri: `/datasets/production/copy`,
+      }).reply(200, {jobId: 'job-no-releases'})
+      mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
+
+      const {stdout} = await testCommand(
+        CopyDatasetCommand,
+        ['production', 'backup', '--skip-content-releases'],
+        {mocks: defaultMocks},
+      )
+
+      expect(stdout).toContain('Job job-no-releases started')
+      expect(stdout).toContain('Job job-no-releases completed')
+    })
+
     test('copies dataset with detach flag (does not wait for completion)', async () => {
       mockListDatasets.mockResolvedValue([
         createMockDataset('production'),
