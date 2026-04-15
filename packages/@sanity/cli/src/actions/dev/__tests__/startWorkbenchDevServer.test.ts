@@ -7,6 +7,10 @@ const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 const mockCreateServer = vi.hoisted(() => vi.fn())
 const mockGetSharedServerConfig = vi.hoisted(() => vi.fn())
 const mockWriteWorkbenchRuntime = vi.hoisted(() => vi.fn())
+const mockAcquireWorkbenchLock = vi.hoisted(() => vi.fn())
+const mockGetRegisteredServers = vi.hoisted(() => vi.fn())
+const mockReadWorkbenchLock = vi.hoisted(() => vi.fn())
+const mockWatchRegistry = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -23,6 +27,12 @@ vi.mock('../../../util/getSharedServerConfig.js', () => ({
 vi.mock('../writeWorkbenchRuntime.js', () => ({
   writeWorkbenchRuntime: mockWriteWorkbenchRuntime,
 }))
+vi.mock('../devServerRegistry.js', () => ({
+  acquireWorkbenchLock: mockAcquireWorkbenchLock,
+  getRegisteredServers: mockGetRegisteredServers,
+  readWorkbenchLock: mockReadWorkbenchLock,
+  watchRegistry: mockWatchRegistry,
+}))
 
 function createMockOutput(): Output {
   return {
@@ -38,6 +48,7 @@ function createMockServer(port = 3333) {
     config: {server: {port}},
     httpServer: {address: vi.fn().mockReturnValue({address: '127.0.0.1', family: 'IPv4', port})},
     listen: vi.fn().mockResolvedValue(undefined),
+    ws: {on: vi.fn(), send: vi.fn()},
   }
 }
 
@@ -63,6 +74,10 @@ describe('startWorkbenchDevServer', () => {
   beforeEach(() => {
     mockGetSharedServerConfig.mockReturnValue({httpHost: 'localhost', httpPort: 3333})
     mockWriteWorkbenchRuntime.mockResolvedValue('/tmp/sanity-project/.sanity/workbench')
+    mockAcquireWorkbenchLock.mockReturnValue({release: vi.fn(), updatePort: vi.fn()})
+    mockGetRegisteredServers.mockReturnValue([])
+    mockReadWorkbenchLock.mockReturnValue(undefined)
+    mockWatchRegistry.mockReturnValue({close: vi.fn()})
   })
 
   afterEach(() => {
@@ -75,7 +90,7 @@ describe('startWorkbenchDevServer', () => {
       const result = await startWorkbenchDevServer(createOptions())
 
       expect(result.workbenchAvailable).toBe(false)
-      expect(result.close).toBeUndefined()
+      expect(result.close).toBeTypeOf('function')
       expect(mockResolveLocalPackage).not.toHaveBeenCalled()
       expect(mockCreateServer).not.toHaveBeenCalled()
     })
@@ -86,7 +101,7 @@ describe('startWorkbenchDevServer', () => {
       )
 
       expect(result.workbenchAvailable).toBe(false)
-      expect(result.close).toBeUndefined()
+      expect(result.close).toBeTypeOf('function')
       expect(mockResolveLocalPackage).not.toHaveBeenCalled()
     })
 
@@ -109,7 +124,7 @@ describe('startWorkbenchDevServer', () => {
       )
 
       expect(result.workbenchAvailable).toBe(false)
-      expect(result.close).toBeUndefined()
+      expect(result.close).toBeTypeOf('function')
       expect(mockCreateServer).not.toHaveBeenCalled()
     })
 
@@ -162,9 +177,11 @@ describe('startWorkbenchDevServer', () => {
       })
       mockCreateServer.mockResolvedValue(mockServer)
 
-      const result = await startWorkbenchDevServer(createOptions())
+      const result = await startWorkbenchDevServer(
+        createOptions({cliConfig: {federation: {enabled: true}}}),
+      )
 
-      expect(result.workbenchPort).toBe(3333)
+      expect(result.workbenchPort).toBe(3334)
     })
 
     test('passes workDir to writeWorkbenchRuntime', async () => {
@@ -278,7 +295,7 @@ describe('startWorkbenchDevServer', () => {
       )
 
       expect(result.workbenchAvailable).toBe(false)
-      expect(result.close).toBeUndefined()
+      expect(result.close).toBeTypeOf('function')
       expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('Port already in use'))
     })
 
@@ -291,6 +308,135 @@ describe('startWorkbenchDevServer', () => {
       await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
 
       expect(mockServer.close).toHaveBeenCalled()
+    })
+  })
+
+  describe('singleton detection', () => {
+    const federationConfig = {federation: {enabled: true}} as const
+
+    test('skips starting server when lock is held by another process', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockAcquireWorkbenchLock.mockReturnValue(undefined)
+      mockReadWorkbenchLock.mockReturnValue({host: '0.0.0.0', pid: 12_345, port: 4000})
+
+      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      expect(result.workbenchAvailable).toBe(true)
+      expect(result.workbenchPort).toBe(4000)
+      expect(result.httpHost).toBe('0.0.0.0')
+      expect(result.close).toBeTypeOf('function')
+      expect(mockCreateServer).not.toHaveBeenCalled()
+    })
+
+    test('falls back to configured host/port when lock is held but lock file unreadable', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockAcquireWorkbenchLock.mockReturnValue(undefined)
+      mockReadWorkbenchLock.mockReturnValue(undefined)
+
+      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      expect(result.workbenchAvailable).toBe(true)
+      expect(result.workbenchPort).toBe(3333)
+      expect(result.httpHost).toBe('localhost')
+      expect(mockCreateServer).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('registry integration', () => {
+    const federationConfig = {federation: {enabled: true}} as const
+
+    test('updates lock with actual port after successful startup', async () => {
+      const mockUpdatePort = vi.fn()
+      mockAcquireWorkbenchLock.mockReturnValue({release: vi.fn(), updatePort: mockUpdatePort})
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer(3334))
+
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      expect(mockUpdatePort).toHaveBeenCalledWith(3334)
+    })
+
+    test('starts watching registry after successful startup', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      expect(mockWatchRegistry).toHaveBeenCalledWith(expect.any(Function))
+    })
+
+    test('watcher callback broadcasts applications via server.hot.send', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([
+        {host: 'localhost', pid: 2, port: 3334, type: 'studio'},
+        {host: 'localhost', pid: 3, port: 3335, type: 'app'},
+      ])
+
+      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        applications: [
+          {host: 'localhost', port: 3334, type: 'studio'},
+          {host: 'localhost', port: 3335, type: 'app'},
+        ],
+      })
+    })
+
+    test('responds to client request with current applications', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+      mockGetRegisteredServers.mockReturnValue([
+        {host: 'localhost', pid: 2, port: 3334, type: 'studio'},
+      ])
+
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      // Find the handler registered for the request event
+      const onCall = mockServer.ws.on.mock.calls.find(
+        (args: unknown[]) => args[0] === 'sanity:workbench:get-local-applications',
+      )
+      expect(onCall).toBeDefined()
+
+      const mockClient = {send: vi.fn()}
+      const handler = onCall![1] as (data: unknown, client: typeof mockClient) => void
+      handler(undefined, mockClient)
+
+      expect(mockClient.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        applications: [{host: 'localhost', port: 3334, type: 'studio'}],
+      })
+    })
+
+    test('close stops watcher and releases lock', async () => {
+      const mockReleaseLock = vi.fn()
+      const mockWatcherClose = vi.fn()
+      mockAcquireWorkbenchLock.mockReturnValue({release: mockReleaseLock, updatePort: vi.fn()})
+      mockWatchRegistry.mockReturnValue({close: mockWatcherClose})
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      await result.close()
+
+      expect(mockWatcherClose).toHaveBeenCalled()
+      expect(mockReleaseLock).toHaveBeenCalled()
+    })
+
+    test('releases lock when server startup fails', async () => {
+      const mockReleaseLock = vi.fn()
+      mockAcquireWorkbenchLock.mockReturnValue({release: mockReleaseLock, updatePort: vi.fn()})
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockServer.listen.mockRejectedValue(new Error('Port already in use'))
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      expect(mockReleaseLock).toHaveBeenCalled()
     })
   })
 })

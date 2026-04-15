@@ -1,10 +1,10 @@
 import {mkdirSync} from 'node:fs'
-import {homedir} from 'node:os'
 import {dirname, join as joinPath} from 'node:path'
 
 import {z} from 'zod/mini'
 
 import {debug} from '../debug.js'
+import {getSanityConfigDir} from '../util/getSanityConfigDir.js'
 import {readJsonFileSync} from '../util/readJsonFileSync.js'
 import {writeJsonFileSync} from '../util/writeJsonFileSync.js'
 import {clearCliTokenCache} from './cliTokenCache.js'
@@ -156,10 +156,5 @@ function readConfig(): Record<string, unknown> {
  * @internal
  */
 function getCliUserConfigPath() {
-  const sanityEnvSuffix = process.env.SANITY_INTERNAL_ENV === 'staging' ? '-staging' : ''
-  const cliConfigPath =
-    process.env.SANITY_CLI_CONFIG_PATH ||
-    joinPath(homedir(), '.config', `sanity${sanityEnvSuffix}`, 'config.json')
-
-  return cliConfigPath
+  return process.env.SANITY_CLI_CONFIG_PATH || joinPath(getSanityConfigDir(), 'config.json')
 }
