@@ -427,7 +427,6 @@ describe('#dataset:copy', () => {
       ])
       mockApi({
         apiVersion: DATASET_API_VERSION,
-        body: {skipContentReleases: true, skipHistory: false, targetDataset: 'backup'},
         method: 'put',
         projectId: testProjectId,
         uri: `/datasets/production/copy`,
