@@ -54,16 +54,13 @@ export async function extractSchema(options: ExtractSchemaActionOptions): Promis
         : 'Failed to extract schema',
     )
 
-    // Display validation errors if available
+    // Display validation errors if available and exit
     if (err instanceof SchemaExtractionError && err.validation && err.validation.length > 0) {
       output.log('')
       output.log(formatSchemaValidation(err.validation))
+      exit(1)
     }
 
-    if (err instanceof Error) {
-      output.error(err.message, {exit: 1})
-    }
-
-    exit(1)
+    output.error(err instanceof Error ? err.message : 'Failed to extract schema', {exit: 1})
   }
 }
