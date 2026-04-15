@@ -2,4 +2,4 @@
 '@sanity/cli-core': minor
 ---
 
-feat: add federation to cli config
+Add federation to CLI config
