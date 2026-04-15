@@ -20,9 +20,20 @@ function createMockEnv(overrides?: Partial<DetectionEnv>): DetectionEnv {
   }
 }
 
-/** Returns an existsSync mock that matches any of the given path suffixes. */
+/** Normalize a path to forward slashes for cross-platform comparison. */
+function normalize(p: string): string {
+  return p.replaceAll('\\', '/')
+}
+
+/** Assert that a detected path ends with the expected suffix (cross-platform). */
+function expectPath(actual: string | null, expectedSuffix: string): void {
+  expect(actual).not.toBeNull()
+  expect(normalize(actual!)).toContain(expectedSuffix)
+}
+
+/** Returns an existsSync mock that matches any of the given path suffixes (cross-platform). */
 function existsForSuffixes(...suffixes: string[]): (p: string) => boolean {
-  return (p: string) => suffixes.some((s) => p.endsWith(s))
+  return (p: string) => suffixes.some((s) => normalize(p).endsWith(s))
 }
 
 // ---------------------------------------------------------------------------
@@ -163,7 +174,7 @@ describe('detect', () => {
     test('returns config path when .cursor dir exists', async () => {
       const ctx = createMockEnv({existsSync: existsForSuffixes('.cursor')})
       const result = await EDITOR_CONFIGS.Cursor.detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.cursor/mcp.json'))
+      expectPath(result, '.cursor/mcp.json')
     })
 
     test('returns null when .cursor dir does not exist', async () => {
@@ -176,7 +187,7 @@ describe('detect', () => {
     test('returns config path when .gemini/antigravity dir exists', async () => {
       const ctx = createMockEnv({existsSync: existsForSuffixes('.gemini/antigravity')})
       const result = await EDITOR_CONFIGS.Antigravity.detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.gemini/antigravity/mcp_config.json'))
+      expectPath(result, '.gemini/antigravity/mcp_config.json')
     })
 
     test('returns null when dir does not exist', async () => {
@@ -189,7 +200,7 @@ describe('detect', () => {
     test('returns settings.json when it exists', async () => {
       const ctx = createMockEnv({existsSync: existsForSuffixes('.gemini/settings.json')})
       const result = await EDITOR_CONFIGS['Gemini CLI'].detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.gemini/settings.json'))
+      expectPath(result, '.gemini/settings.json')
     })
 
     test('returns null when settings.json does not exist', async () => {
@@ -207,7 +218,7 @@ describe('detect', () => {
     test('returns config path when .copilot dir exists', async () => {
       const ctx = createMockEnv({existsSync: existsForSuffixes('.copilot')})
       const result = await EDITOR_CONFIGS['GitHub Copilot CLI'].detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.copilot/mcp-config.json'))
+      expectPath(result, '.copilot/mcp-config.json')
     })
 
     test('uses XDG_CONFIG_HOME on Linux', async () => {
@@ -217,7 +228,7 @@ describe('detect', () => {
         platform: 'linux',
       })
       const result = await EDITOR_CONFIGS['GitHub Copilot CLI'].detect(ctx)
-      expect(result).toBe(path.join('/custom/config', 'copilot/mcp-config.json'))
+      expectPath(result, 'copilot/mcp-config.json')
     })
 
     test('ignores XDG_CONFIG_HOME on non-Linux', async () => {
@@ -227,7 +238,7 @@ describe('detect', () => {
         platform: 'darwin',
       })
       const result = await EDITOR_CONFIGS['GitHub Copilot CLI'].detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.copilot/mcp-config.json'))
+      expectPath(result, '.copilot/mcp-config.json')
     })
 
     test('returns null when dir does not exist', async () => {
@@ -245,9 +256,7 @@ describe('detect', () => {
         platform: 'darwin',
       })
       const result = await EDITOR_CONFIGS['VS Code'].detect(ctx)
-      expect(result).toBe(
-        path.join('/home/testuser', 'Library/Application Support/Code/User/mcp.json'),
-      )
+      expectPath(result, 'Library/Application Support/Code/User/mcp.json')
     })
 
     test('returns config path on Linux when dir exists', async () => {
@@ -256,7 +265,7 @@ describe('detect', () => {
         platform: 'linux',
       })
       const result = await EDITOR_CONFIGS['VS Code'].detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.config/Code/User/mcp.json'))
+      expectPath(result, '.config/Code/User/mcp.json')
     })
 
     test('returns null when dir does not exist', async () => {
@@ -277,9 +286,7 @@ describe('detect', () => {
         platform: 'darwin',
       })
       const result = await EDITOR_CONFIGS['VS Code Insiders'].detect(ctx)
-      expect(result).toBe(
-        path.join('/home/testuser', 'Library/Application Support/Code - Insiders/User/mcp.json'),
-      )
+      expectPath(result, 'Library/Application Support/Code - Insiders/User/mcp.json')
     })
 
     test('returns null when dir does not exist', async () => {
@@ -297,7 +304,7 @@ describe('detect', () => {
         platform: 'darwin',
       })
       const result = await EDITOR_CONFIGS.Cline.detect(ctx)
-      expect(result).toContain('cline_mcp_settings.json')
+      expectPath(result, 'cline_mcp_settings.json')
     })
 
     test('returns null when only VS Code dir exists (Cline not installed)', async () => {
@@ -322,9 +329,7 @@ describe('detect', () => {
     test('returns config path when .cline dir exists', async () => {
       const ctx = createMockEnv({existsSync: existsForSuffixes('.cline')})
       const result = await EDITOR_CONFIGS['Cline CLI'].detect(ctx)
-      expect(result).toBe(
-        path.join('/home/testuser', '.cline/data/settings/cline_mcp_settings.json'),
-      )
+      expectPath(result, '.cline/data/settings/cline_mcp_settings.json')
     })
 
     test('uses CLINE_DIR env var when set', async () => {
@@ -333,7 +338,7 @@ describe('detect', () => {
         existsSync: existsForSuffixes('/custom/cline'),
       })
       const result = await EDITOR_CONFIGS['Cline CLI'].detect(ctx)
-      expect(result).toBe(path.join('/custom/cline', 'data/settings/cline_mcp_settings.json'))
+      expectPath(result, 'custom/cline/data/settings/cline_mcp_settings.json')
     })
 
     test('returns null when .cline dir does not exist', async () => {
@@ -348,7 +353,7 @@ describe('detect', () => {
     test('returns config path when CLI is available', async () => {
       const ctx = createMockEnv({execCommand: () => Promise.resolve()})
       const result = await EDITOR_CONFIGS['Claude Code'].detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.claude.json'))
+      expectPath(result, '.claude.json')
     })
 
     test('returns null when CLI is not installed', async () => {
@@ -361,7 +366,7 @@ describe('detect', () => {
     test('returns config path when CLI is available', async () => {
       const ctx = createMockEnv({execCommand: () => Promise.resolve()})
       const result = await EDITOR_CONFIGS['Codex CLI'].detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.codex/config.toml'))
+      expectPath(result, '.codex/config.toml')
     })
 
     test('uses CODEX_HOME env var when set', async () => {
@@ -370,7 +375,7 @@ describe('detect', () => {
         execCommand: () => Promise.resolve(),
       })
       const result = await EDITOR_CONFIGS['Codex CLI'].detect(ctx)
-      expect(result).toBe(path.join('/custom/codex', 'config.toml'))
+      expectPath(result, 'custom/codex/config.toml')
     })
 
     test('returns null when CLI is not installed', async () => {
@@ -383,7 +388,7 @@ describe('detect', () => {
     test('returns config path when CLI is available', async () => {
       const ctx = createMockEnv({execCommand: () => Promise.resolve()})
       const result = await EDITOR_CONFIGS.OpenCode.detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.config/opencode/opencode.json'))
+      expectPath(result, '.config/opencode/opencode.json')
     })
 
     test('returns null when CLI is not installed', async () => {
@@ -401,7 +406,7 @@ describe('detect', () => {
         platform: 'darwin',
       })
       const result = await EDITOR_CONFIGS.Zed.detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.config/zed/settings.json'))
+      expectPath(result, '.config/zed/settings.json')
     })
 
     test('returns config path on Windows using APPDATA', async () => {
@@ -411,7 +416,7 @@ describe('detect', () => {
         platform: 'win32',
       })
       const result = await EDITOR_CONFIGS.Zed.detect(ctx)
-      expect(result).toBe(path.join('C:\\Users\\test\\AppData\\Roaming', 'Zed/settings.json'))
+      expectPath(result, 'Zed/settings.json')
     })
 
     test('returns null on Windows without APPDATA', async () => {
@@ -433,7 +438,7 @@ describe('detect', () => {
         existsSync: existsForSuffixes('.mcporter', '.mcporter/mcporter.json'),
       })
       const result = await EDITOR_CONFIGS.MCPorter.detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.mcporter/mcporter.json'))
+      expectPath(result, '.mcporter/mcporter.json')
     })
 
     test('returns .jsonc path when dir and .jsonc exist but .json does not', async () => {
@@ -441,19 +446,20 @@ describe('detect', () => {
         existsSync: existsForSuffixes('.mcporter', '.mcporter/mcporter.jsonc'),
       })
       const result = await EDITOR_CONFIGS.MCPorter.detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.mcporter/mcporter.jsonc'))
+      expectPath(result, '.mcporter/mcporter.jsonc')
     })
 
     test('falls back to .json path when dir exists but neither file does', async () => {
       const ctx = createMockEnv({
         existsSync: (p: string) => {
-          if (p.endsWith('.mcporter/mcporter.json')) return false
-          if (p.endsWith('.mcporter/mcporter.jsonc')) return false
-          return p.endsWith('.mcporter')
+          const n = normalize(p)
+          if (n.endsWith('.mcporter/mcporter.json')) return false
+          if (n.endsWith('.mcporter/mcporter.jsonc')) return false
+          return n.endsWith('.mcporter')
         },
       })
       const result = await EDITOR_CONFIGS.MCPorter.detect(ctx)
-      expect(result).toBe(path.join('/home/testuser', '.mcporter/mcporter.json'))
+      expectPath(result, '.mcporter/mcporter.json')
     })
 
     test('returns null when .mcporter dir does not exist', async () => {

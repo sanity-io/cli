@@ -326,9 +326,14 @@ const editorTestCases: EditorTestCase[] = [
   {
     detect: {
       cliCommands: ['codex'],
-      env: {CODEX_HOME: '/tmp/custom-codex-home'},
+      env: {
+        CODEX_HOME:
+          process.platform === 'win32'
+            ? String.raw`C:\tmp\custom-codex-home`
+            : '/tmp/custom-codex-home',
+      },
     },
-    expectedConfigPath: '/tmp/custom-codex-home/config.toml',
+    expectedConfigPath: convertToSystemPath('/tmp/custom-codex-home/config.toml'),
     name: 'Codex CLI',
   },
   {
