@@ -12,14 +12,14 @@
     "start": "sanity start"
   },
   "dependencies": {
-    "@sanity/sdk": "^2.6.0",
-    "@sanity/sdk-react": "^2.6.0",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
+    "@sanity/sdk": "^2.8.0",
+    "@sanity/sdk-react": "^2.8.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "sanity": "catalog:"
   },
   "devDependencies": {
-    "@types/react": "^19.2.9",
+    "@types/react": "^19.2.14",
     "typescript": "^5.9.3"
   }
 }
