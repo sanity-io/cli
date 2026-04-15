@@ -132,11 +132,16 @@ describe('#mcp:configure', () => {
       message: 'Configure Sanity MCP server?',
     })
 
+    // Cursor uses OAuth, so the config should NOT contain the token
+    const [, writtenContent] = mockWriteFile.mock.lastCall ?? []
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
-      expect.stringContaining('test-token-123'),
+      expect.any(String),
       'utf8',
     )
+    expect(writtenContent).toContain('https://mcp.sanity.io')
+    expect(writtenContent).not.toContain('test-token-123')
+    expect(writtenContent).not.toContain('Authorization')
 
     expect(stdout).toContain('MCP configured for Cursor')
   })
@@ -1158,11 +1163,16 @@ describe('#mcp:configure', () => {
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
     expect(mockCheckbox).not.toHaveBeenCalled()
+    // Cursor uses OAuth, so the config should NOT contain the token
+    const [, writtenContent] = mockWriteFile.mock.lastCall ?? []
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
-      expect.stringContaining('test-token-ci'),
+      expect.any(String),
       'utf8',
     )
+    expect(writtenContent).toContain('https://mcp.sanity.io')
+    expect(writtenContent).not.toContain('test-token-ci')
+    expect(writtenContent).not.toContain('Authorization')
     expect(stdout).toContain('MCP configured for Cursor')
   })
 })
