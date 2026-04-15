@@ -5,7 +5,12 @@ import {subdebug} from '@sanity/cli-core'
 import {type ParseError, parse as parseJsonc} from 'jsonc-parser'
 import {parse as parseToml} from 'smol-toml'
 
-import {EDITOR_CONFIGS, type EditorName} from './editorConfigs.js'
+import {
+  createDetectionEnv,
+  type DetectionEnv,
+  EDITOR_CONFIGS,
+  type EditorName,
+} from './editorConfigs.js'
 import {type Editor} from './types.js'
 
 const debug = subdebug('mcp:detectAvailableEditors')
@@ -90,15 +95,20 @@ async function checkEditorConfig(name: EditorName, configPath: string): Promise<
 /**
  * Detect which editors are installed and have parseable configs.
  * Editors with unparseable configs are skipped to avoid data loss.
+ *
+ * Accepts an optional `DetectionEnv` for testability. When omitted,
+ * uses the real process/OS environment.
  */
-export async function detectAvailableEditors(): Promise<Editor[]> {
+export async function detectAvailableEditors(env?: DetectionEnv): Promise<Editor[]> {
+  const ctx = env ?? createDetectionEnv()
+
   // Detect all editors in parallel to avoid stacking timeouts —
   // CLI-based editors (Claude Code, Codex CLI, OpenCode) each have a
   // 5s execa timeout, so sequential detection can add ~15s on machines
   // where none are installed.
   const results = await Promise.all(
     Object.entries(EDITOR_CONFIGS).map(async ([name, config]) => {
-      const configPath = await config.detect()
+      const configPath = await config.detect(ctx)
       if (!configPath) return null
       return checkEditorConfig(name as EditorName, configPath)
     }),
