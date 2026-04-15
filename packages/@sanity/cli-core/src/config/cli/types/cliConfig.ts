@@ -11,19 +11,13 @@ export interface TypeGenConfig {
 }
 
 /**
- * A named project/dataset resource that the app will access.
+ * A named project/dataset resource that SDK apps will access.
  * @beta
  */
-export interface AppDatasetResource {
+export type AppResource = {
   dataset: string
   projectId: string
 }
-
-/**
- * A named app resource that the app will access.
- * @beta
- */
-export type AppResource = AppDatasetResource
 
 /**
  * @public
