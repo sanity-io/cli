@@ -12,7 +12,6 @@ const mockConfigStore = vi.hoisted(() => ({
 vi.mock('@sanity/cli-core', async () => ({
   ...(await vi.importActual('@sanity/cli-core')),
   getUserConfig: vi.fn(() => mockConfigStore),
-  subdebug: vi.fn(() => vi.fn()),
 }))
 
 vi.mock('get-latest-version', () => ({
@@ -27,13 +26,9 @@ vi.mock('../../promiseRaceWithTimeout.js', () => ({
   promiseRaceWithTimeout: mockPromiseRaceWithTimeout,
 }))
 
-// Import from the non-worker module (fetchUpdateInfo.ts) rather than the worker bundle.
-// Worker files (*.worker.ts) are bundled by esbuild with internal deps inlined,
-// which prevents vi.mock() from intercepting them. The core logic lives in
-// fetchUpdateInfo.ts so we can mock its dependencies normally.
-const {runFetchWorker} = await import('../fetchUpdateInfo.js')
+const {fetchUpdateInfo} = await import('../fetchUpdateInfo.js')
 
-describe('runFetchWorker', () => {
+describe('fetchUpdateInfo', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
@@ -45,7 +40,7 @@ describe('runFetchWorker', () => {
     mockPromiseRaceWithTimeout.mockResolvedValue('3.61.0')
 
     const before = Date.now()
-    await runFetchWorker('/fake/project', '6.3.1')
+    await fetchUpdateInfo('/fake/project', '6.3.1')
     const after = Date.now()
 
     expect(mockResolveUpdateTarget).toHaveBeenCalledWith('/fake/project', '6.3.1')
@@ -65,7 +60,7 @@ describe('runFetchWorker', () => {
     mockGetLatestVersion.mockResolvedValue('6.4.0')
     mockPromiseRaceWithTimeout.mockResolvedValue('6.4.0')
 
-    await runFetchWorker('/fake/project', '6.3.1')
+    await fetchUpdateInfo('/fake/project', '6.3.1')
 
     expect(mockConfigStore.set).toHaveBeenCalledOnce()
 
@@ -79,7 +74,7 @@ describe('runFetchWorker', () => {
     mockResolveUpdateTarget.mockResolvedValue(target)
     mockPromiseRaceWithTimeout.mockRejectedValue(new Error('Network error'))
 
-    const error = await runFetchWorker('/fake/project', '6.3.1').catch((err: unknown) => err)
+    const error = await fetchUpdateInfo('/fake/project', '6.3.1').catch((err: unknown) => err)
 
     expect(error).toBeInstanceOf(Error)
     expect(mockConfigStore.set).not.toHaveBeenCalled()
@@ -90,7 +85,7 @@ describe('runFetchWorker', () => {
     mockResolveUpdateTarget.mockResolvedValue(target)
     mockPromiseRaceWithTimeout.mockResolvedValue(null)
 
-    await runFetchWorker('/fake/project', '6.3.1')
+    await fetchUpdateInfo('/fake/project', '6.3.1')
 
     expect(mockPromiseRaceWithTimeout).toHaveBeenCalledOnce()
     expect(mockConfigStore.set).not.toHaveBeenCalled()

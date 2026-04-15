@@ -12,7 +12,7 @@ const FETCH_TIMEOUT = 15_000
  * Fetch the latest version of the update target package and write it to the config cache.
  * Designed to run in a detached child process so it never blocks the main CLI.
  */
-export async function runFetchWorker(cwd: string, cliVersion: string): Promise<void> {
+export async function fetchUpdateInfo(cwd: string, cliVersion: string): Promise<void> {
   const {packageName} = await resolveUpdateTarget(cwd, cliVersion)
   debug('Worker: fetching latest version of %s', packageName)
 
