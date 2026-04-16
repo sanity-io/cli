@@ -139,6 +139,42 @@ describe('#dev', {timeout: (platform() === 'win32' ? 60 : 30) * 1000}, () => {
       }
     })
 
+    test('should write .sanity/resources.ts with resources from sanity.cli.ts', async () => {
+      const cwd = await testFixture('basic-app')
+      process.cwd = () => cwd
+
+      await writeFile(
+        join(cwd, 'sanity.cli.ts'),
+        `import {defineCliConfig} from 'sanity/cli'\n` +
+          `export default defineCliConfig({\n` +
+          `  app: {\n` +
+          `    entry: './src/App.tsx',\n` +
+          `    organizationId: 'org-id',\n` +
+          `    resources: {\n` +
+          `      default: {projectId: 'test-project', dataset: 'test-dataset'},\n` +
+          `    },\n` +
+          `  },\n` +
+          `  deployment: {appId: 'app-id', autoUpdates: true},\n` +
+          `})\n`,
+      )
+
+      const {error, result} = await testCommand(DevCommand, ['--port', '5390'], {
+        config: {root: cwd},
+        mocks: {isInteractive: true},
+      })
+
+      if (error) throw error
+
+      const resourcesTs = await readFile(join(cwd, '.sanity', 'resources.ts'), 'utf8')
+      expect(resourcesTs).toContain(
+        '"default": {projectId: "test-project", dataset: "test-dataset"}',
+      )
+      expect(resourcesTs).toContain('RegisteredResources')
+      expect(resourcesTs).toContain('satisfies Record<string, DocumentResource>')
+
+      await tryCloseServer(result)
+    })
+
     test('should error when organizationId is missing from config', async () => {
       const cwd = await testFixture('basic-app')
       process.cwd = () => cwd

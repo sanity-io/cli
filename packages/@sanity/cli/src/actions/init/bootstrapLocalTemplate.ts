@@ -8,6 +8,7 @@ import deburr from 'lodash-es/deburr.js'
 
 import {copy} from '../../util/copy.js'
 import {resolveLatestVersions} from '../../util/resolveLatestVersions.js'
+import {generateResourcesTs} from '../build/writeSanityRuntime.js'
 import {createAppCliConfig} from './createAppCliConfig.js'
 import {createCliConfig} from './createCliConfig.js'
 import {createPackageManifest} from './createPackageManifest.js'
@@ -139,10 +140,21 @@ export async function bootstrapLocalTemplate(
 
   // Write non-template files to disc
   const codeExt = useTypeScript ? 'ts' : 'js'
+
+  const resources =
+    variables.projectId && variables.dataset
+      ? {default: {dataset: variables.dataset, projectId: variables.projectId}}
+      : undefined
+
+  // create dir for generated resources.ts file for app templates
+  if (isAppTemplate) {
+    await fs.mkdir(path.join(outputPath, '.sanity'), {recursive: true})
+  }
+
   await Promise.all(
     [
       isAppTemplate
-        ? Promise.resolve(null)
+        ? writeFileIfNotExists('.sanity/resources.ts', generateResourcesTs(resources))
         : writeFileIfNotExists(`sanity.config.${codeExt}`, studioConfig),
       writeFileIfNotExists(`sanity.cli.${codeExt}`, cliConfig),
       writeFileIfNotExists('package.json', packageManifest),
