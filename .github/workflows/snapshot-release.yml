@@ -65,7 +65,7 @@ jobs:
         run: echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' > .npmrc
 
       - name: Generate changeset for all packages
-        if: ${{ inputs.forceBump != 'false' }}
+        if: ${{ inputs.forceBump != '' && inputs.forceBump != 'false' }}
         run: |
           PACKAGES=$(pnpm ls -r --json --depth -1 | jq -r '.[] | select(.private != true) | .name')
           {
@@ -79,19 +79,19 @@ jobs:
           } > .changeset/force-snapshot.md
 
       - name: Create snapshot versions
-        if: ${{ inputs.forceBump == 'false' }}
+        if: ${{ inputs.forceBump == '' || inputs.forceBump == 'false' }}
         run: pnpm changeset version --snapshot
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
 
       - name: Create release versions
-        if: ${{ inputs.forceBump != 'false' }}
+        if: ${{ inputs.forceBump != '' && inputs.forceBump != 'false' }}
         run: pnpm changeset version
         env:
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
 
       - name: Commit and push version changes
-        if: ${{ inputs.forceBump != 'false' }}
+        if: ${{ inputs.forceBump != '' && inputs.forceBump != 'false' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -106,7 +106,7 @@ jobs:
         run: pnpm run build:cli
 
       - name: Publish snapshot packages
-        if: ${{ inputs.forceBump == 'false' }}
+        if: ${{ inputs.forceBump == '' || inputs.forceBump == 'false' }}
         run: pnpm changeset publish --tag "$DIST_TAG" 2>&1 | tee publish-output.txt
         env:
           DIST_TAG: ${{ inputs.tag }}
@@ -114,14 +114,14 @@ jobs:
           NPM_CONFIG_PROVENANCE: true
 
       - name: Publish release packages
-        if: ${{ inputs.forceBump != 'false' }}
+        if: ${{ inputs.forceBump != '' && inputs.forceBump != 'false' }}
         run: pnpm changeset publish 2>&1 | tee publish-output.txt
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
 
       - name: Push tags and create GitHub releases
-        if: ${{ inputs.forceBump != 'false' }}
+        if: ${{ inputs.forceBump != '' && inputs.forceBump != 'false' }}
         run: |
           git push origin --tags
           for tag in $(git tag --points-at HEAD); do
