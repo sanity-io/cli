@@ -107,6 +107,7 @@ export async function startWorkbenchDevServer(
     cacheDir: 'node_modules/.sanity/vite',
     configFile: false,
     define: {
+      __SANITY_STAGING__: process.env.SANITY_INTERNAL_ENV === 'staging',
       'import.meta.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL': JSON.stringify(remoteUrl),
     },
     logLevel: 'warn',
