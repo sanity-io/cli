@@ -3,7 +3,7 @@ import {SanityCommand, type SanityOrgUser, subdebug} from '@sanity/cli-core'
 import {confirm, spinner} from '@sanity/cli-core/ux'
 import {DatasetResponse} from '@sanity/client'
 
-import {createDataset} from '../../actions/dataset/create.js'
+import {determineDatasetAclMode} from '../../actions/dataset/determineDatasetAclMode.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {getOrganizationsWithAttachGrantInfo} from '../../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
 import {resolveOrganizationById} from '../../actions/organizations/resolveOrganizationById.js'
@@ -15,7 +15,7 @@ import {
   promptForOrganization,
 } from '../../prompts/promptForOrganization.js'
 import {promptForProjectName} from '../../prompts/promptForProjectName.js'
-import {listDatasets} from '../../services/datasets.js'
+import {createDataset as createDatasetService, listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
 import {
   listOrganizations,
@@ -166,6 +166,7 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
   ): Promise<{dataset: DatasetResponse | undefined; datasetError?: string}> {
     try {
       let datasetName: string | undefined = datasetFromFlag
+      let forcePublic = false
       const existingDatasets = await listDatasets(projectId)
       const existingDatasetNames = existingDatasets.map((ds) => ds.name)
 
@@ -178,23 +179,38 @@ export class CreateProjectCommand extends SanityCommand<typeof CreateProjectComm
         if (wantsDataset) {
           const defaultConfig = await promptForDefaultConfig()
 
-          datasetName = defaultConfig
-            ? 'production'
-            : await promptForDatasetName({}, existingDatasetNames)
+          if (defaultConfig) {
+            datasetName = 'production'
+            forcePublic = true
+          } else {
+            datasetName = await promptForDatasetName({}, existingDatasetNames)
+          }
         }
       }
 
       if (datasetName) {
         const projectFeatures = await getProjectFeatures(projectId)
-        const actionOutput = this.flags.json ? {...this.output, log: () => {}} : this.output
-        const dataset = await createDataset({
-          datasetName,
+        const canCreatePrivate = projectFeatures.includes('privateDataset') && !forcePublic
+
+        const aclMode = await determineDatasetAclMode({
+          canCreatePrivate,
           isUnattended: this.isUnattended(),
-          output: actionOutput,
-          projectFeatures,
-          projectId,
+          output: this.output,
           visibility: datasetVisibility,
         })
+
+        const spin = spinner('Creating dataset').start()
+        const dataset = await createDatasetService({
+          aclMode,
+          datasetName,
+          projectId,
+        })
+        spin.succeed()
+
+        if (!this.flags.json) {
+          this.log('Dataset created successfully')
+        }
+
         return {dataset}
       }
 
