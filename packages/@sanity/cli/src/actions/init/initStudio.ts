@@ -107,7 +107,16 @@ export async function initStudio({
     // eslint-disable-next-line no-restricted-syntax
     const {ImportDatasetCommand} = await import('../../commands/datasets/import.js')
     await ImportDatasetCommand.run(
-      [template.datasetUrl, '--project-id', projectId, '--dataset', datasetName, '--token', token],
+      [
+        template.datasetUrl,
+        '--project-id',
+        projectId,
+        '--dataset',
+        datasetName,
+        '--token',
+        token,
+        '--missing',
+      ],
       {
         root: outputPath,
       },

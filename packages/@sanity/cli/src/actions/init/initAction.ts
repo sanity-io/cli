@@ -360,12 +360,8 @@ function checkFlagsInUnattendedMode(
     return
   }
 
-  if (!options.dataset) {
-    throw new InitError('`--dataset` must be specified in unattended mode', 1)
-  }
-
-  // output-path is required in unattended mode when not using nextjs
-  if (!isNextJs && !options.outputPath) {
+  // output-path is required in unattended mode when not using nextjs or bare
+  if (!isNextJs && !options.bare && !options.outputPath) {
     throw new InitError('`--output-path` must be specified in unattended mode', 1)
   }
 
@@ -523,6 +519,26 @@ async function getOrCreateDataset(opts: {
     }
 
     return {datasetName: dataset, userAction: 'none'}
+  }
+
+  // In unattended mode without --dataset, default to "production" with public visibility
+  // (same behavior as --dataset-default)
+  if (opts.unattended) {
+    debug('Unattended mode without --dataset, defaulting to "production" dataset')
+    const datasetName = 'production'
+    const existing = datasets.find((ds) => ds.name === datasetName)
+    if (!existing) {
+      await createDataset({
+        datasetName,
+        forcePublic: visibility === undefined,
+        isUnattended: true,
+        output: opts.output,
+        projectFeatures,
+        projectId: opts.projectId,
+        visibility,
+      })
+    }
+    return {datasetName, userAction: existing ? 'none' : 'create'}
   }
 
   if (datasets.length === 0) {
