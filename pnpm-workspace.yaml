@@ -35,8 +35,8 @@ catalog:
   '@vitejs/plugin-react': ^5.2.0
 
   # Testing
-  vitest: ^4.1.2
-  '@vitest/coverage-istanbul': ^4.1.2
+  vitest: ^4.1.4
+  '@vitest/coverage-istanbul': ^4.1.4
   nock: ^14.0.12
 
   # CLI Framework
