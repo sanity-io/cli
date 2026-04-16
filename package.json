@@ -26,7 +26,7 @@
     "check:deps": "knip",
     "check:format": "oxfmt --check",
     "check:lint": "turbo run lint -- --fix",
-    "check:types": "turbo run check:types --filter=@sanity/cli --filter=@sanity/cli-core",
+    "check:types": "turbo run check:types --filter=@sanity/cli --filter=@sanity/cli-core --filter=@sanity/cli-e2e",
     "clean": "rimraf packages/@sanity/*/lib packages/*/lib packages/@sanity/*/dist packages/*/dist",
     "clean:deps": "rimraf packages/*/node_modules fixtures/*/node_modules node_modules",
     "depcheck": "knip",
@@ -41,6 +41,8 @@
     "release": "pnpm build:cli && pnpm publish-packages",
     "pretest": "pnpm run build:cli",
     "test": "vitest run",
+    "pretest:e2e": "pnpm run build:cli",
+    "test:e2e": "pnpm --filter @sanity/cli-e2e test",
     "pretest:watch": "pnpm run build:cli",
     "test:watch": "vitest",
     "version-packages": "changeset version",
@@ -75,7 +77,8 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "@swc/core",
-      "esbuild"
+      "esbuild",
+      "node-pty"
     ],
     "overrides": {
       "@sanity/cli": "workspace:*"
