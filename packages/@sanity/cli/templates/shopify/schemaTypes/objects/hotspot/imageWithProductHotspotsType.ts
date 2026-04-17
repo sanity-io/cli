@@ -38,7 +38,7 @@ export const imageWithProductHotspotsType = defineField({
       return {
         media: image,
         subtitle:
-          showHotspots && hotspots.length > 0
+          showHotspots && hotspots && hotspots.length > 0
             ? `${pluralize('hotspot', hotspots.length, true)}`
             : undefined,
         title: fileName,
