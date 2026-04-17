@@ -119,10 +119,17 @@ export function registerDevServer(
   const registryDir = getRegistryDir()
   mkdirSync(registryDir, {recursive: true})
 
+  // Use the OS-reported process start time (falling back to now) so that
+  // `isOurProcess` can verify the manifest against the same reference on
+  // re-read. Using `new Date()` would record the manifest-write time, which
+  // drifts from the OS-reported process start by however long it took the
+  // process to reach this point — frequently exceeding START_TIME_TOLERANCE_MS
+  // and causing the manifest to be pruned as "stale" immediately after it's
+  // written.
   const fullManifest: DevServerManifest = {
     ...manifest,
     pid: process.pid,
-    startedAt: new Date().toISOString(),
+    startedAt: (getProcessStartTime(process.pid) ?? new Date()).toISOString(),
     version: REGISTRY_VERSION,
   }
 
@@ -240,7 +247,9 @@ export function acquireWorkbenchLock(
   mkdirSync(registryDir, {recursive: true})
 
   const lockPath = join(registryDir, 'workbench.lock')
-  const startedAt = new Date().toISOString()
+  // Use OS-reported process start time for consistent comparison in
+  // `isOurProcess`. See the identical note in `registerDevServer`.
+  const startedAt = (getProcessStartTime(process.pid) ?? new Date()).toISOString()
   const lockData = {
     host: info.host,
     pid: process.pid,
