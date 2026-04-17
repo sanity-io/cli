@@ -78,8 +78,21 @@ export function promisifyWorker<T = unknown>(
     })
 
     function cleanup() {
-      setImmediate(() => worker.terminate())
+      // Unref first so the parent process can exit immediately without
+      // waiting for the worker thread to finish shutting down.
+      worker.unref()
       worker.removeAllListeners()
+
+      // Schedule a deferred terminate() as a safety net to force-kill
+      // workers that don't exit on their own (e.g. native addons holding
+      // handles). The timer is unref'd so it won't keep the process alive
+      // — it only fires if the process is still running for other reasons.
+      //
+      // We avoid calling terminate() synchronously because it creates an
+      // internal ref'd MessagePort that would keep the parent process alive
+      // if the worker is slow to respond (e.g. Rolldown in Vite 8).
+      const terminateTimer = setTimeout(() => void worker.terminate(), 5000)
+      terminateTimer.unref()
     }
   })
 }

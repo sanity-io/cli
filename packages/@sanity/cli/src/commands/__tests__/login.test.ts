@@ -80,14 +80,33 @@ async function simulateOAuthCallback(
     `https://api.sanity.io/auth/fetch?sid=${sessionId}`,
   )}`
 
-  return new Promise((resolve, reject) => {
-    http
-      .get(url, (res) => {
-        res.resume() // Consume response
-        resolve(res.statusCode || 0)
+  return httpGetWithRetry(url)
+}
+
+/**
+ * Makes an HTTP GET request with retry on ECONNREFUSED.
+ * Handles server startup timing on Windows CI where the server may not be ready immediately.
+ */
+async function httpGetWithRetry(url: string): Promise<number> {
+  const maxRetries = 10
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await new Promise<number>((resolve, reject) => {
+        http
+          .get(url, (res) => {
+            res.resume()
+            resolve(res.statusCode || 0)
+          })
+          .on('error', reject)
       })
-      .on('error', reject)
-  })
+    } catch (err: unknown) {
+      const isConnRefused = err instanceof Error && 'code' in err && err.code === 'ECONNREFUSED'
+      if (!isConnRefused || attempt === maxRetries) throw err
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+  }
+
+  throw new Error('Failed to connect')
 }
 
 /**
@@ -693,18 +712,8 @@ describe('#login', {timeout: 10_000}, () => {
 
       const commandPromise = testCommand(LoginCommand, [])
 
-      // Wait for server to start
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
       // Missing url parameter
-      const missingUrlStatus = await new Promise<number>((resolve, reject) => {
-        http
-          .get('http://localhost:4321/callback', (res) => {
-            res.resume()
-            resolve(res.statusCode || 0)
-          })
-          .on('error', reject)
-      })
+      const missingUrlStatus = await httpGetWithRetry('http://localhost:4321/callback')
 
       // Should get 303 redirect to error page
       expect(missingUrlStatus).toBe(303)
@@ -728,21 +737,10 @@ describe('#login', {timeout: 10_000}, () => {
 
       const commandPromise = testCommand(LoginCommand, [])
 
-      // Wait for server to start
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
       // URL present but no sid parameter
-      const missingSidStatus = await new Promise<number>((resolve, reject) => {
-        const url = `http://localhost:4321/callback?url=${encodeURIComponent(
-          'https://api.sanity.io/auth/fetch',
-        )}`
-        http
-          .get(url, (res) => {
-            res.resume()
-            resolve(res.statusCode || 0)
-          })
-          .on('error', reject)
-      })
+      const missingSidStatus = await httpGetWithRetry(
+        `http://localhost:4321/callback?url=${encodeURIComponent('https://api.sanity.io/auth/fetch')}`,
+      )
 
       expect(missingSidStatus).toBe(303)
 
@@ -785,18 +783,8 @@ describe('#login', {timeout: 10_000}, () => {
 
       const commandPromise = testCommand(LoginCommand, [])
 
-      // Wait for server to start
-      await new Promise((resolve) => setTimeout(resolve, 100))
-
       // Make request to non-callback endpoint
-      const statusCode = await new Promise<number>((resolve, reject) => {
-        http
-          .get('http://localhost:4321/other', (res) => {
-            res.resume()
-            resolve(res.statusCode || 0)
-          })
-          .on('error', reject)
-      })
+      const statusCode = await httpGetWithRetry('http://localhost:4321/other')
 
       expect(statusCode).toBe(404)
 

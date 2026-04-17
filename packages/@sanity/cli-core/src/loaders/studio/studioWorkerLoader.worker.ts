@@ -221,4 +221,10 @@ const runner = new ViteNodeRunner({
 // point why this is, so we should investigate whether it's necessary or not.
 await runner.executeId('/@vite/env')
 
-await runner.executeId(workerScriptPath)
+try {
+  await runner.executeId(workerScriptPath)
+} finally {
+  // Close the Vite server to release handles. Especially important with Vite 8+
+  // where Rolldown's native bindings can keep the worker thread's event loop alive.
+  await server.close()
+}
