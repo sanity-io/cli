@@ -2,4 +2,4 @@
 '@sanity/cli': patch
 ---
 
-Skip update check for throwaway package runner downloads (npx, pnpm dlx, yarn dlx, bunx)
+Show a runner-specific update command in the update notification when the CLI is invoked via npx, pnpm dlx, yarn dlx, or bunx
