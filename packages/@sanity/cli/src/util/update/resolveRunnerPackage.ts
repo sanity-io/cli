@@ -1,0 +1,34 @@
+import {realpathSync} from 'node:fs'
+import {readFile} from 'node:fs/promises'
+import {dirname, resolve} from 'node:path'
+
+import {type SanityPackage} from '../packageManager/installationInfo/types.js'
+
+const KNOWN_PACKAGES = new Set<SanityPackage>(['@sanity/cli', 'sanity'])
+
+export async function resolveRunnerPackage(
+  binaryPath: string = process.argv[1] ?? '',
+): Promise<SanityPackage> {
+  try {
+    let dir = dirname(realpathSync(binaryPath))
+    while (dir !== resolve(dir, '..')) {
+      try {
+        const pkg = JSON.parse(await readFile(resolve(dir, 'package.json'), 'utf8'))
+        if (typeof pkg.name === 'string' && isKnownSanityPackage(pkg.name)) {
+          return pkg.name
+        }
+      } catch {
+        // keep walking
+      }
+      dir = dirname(dir)
+    }
+  } catch {
+    // fall through
+  }
+
+  return '@sanity/cli'
+}
+
+function isKnownSanityPackage(name: string): name is SanityPackage {
+  return KNOWN_PACKAGES.has(name as SanityPackage)
+}

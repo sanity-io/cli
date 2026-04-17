@@ -4,6 +4,8 @@ import {fileURLToPath} from 'node:url'
 import {getUserConfig, isCi, subdebug} from '@sanity/cli-core'
 import {gt as semverGt} from 'semver'
 
+import {detectTemporaryPackageRunner} from './isTemporaryPackageRunner.js'
+import {resolveRunnerPackage} from './resolveRunnerPackage.js'
 import {resolveUpdateTarget} from './resolveUpdateTarget.js'
 import {showUpdateNotification} from './showNotificationUpdate.js'
 
@@ -33,10 +35,11 @@ export async function updateChecker(config: {version: string}): Promise<void> {
     return
   }
 
-  // Resolve which package to check and what's installed locally.
-  // This walks up from cwd reading package.json files - fast, no network.
-  const {installedVersion, packageName} = await resolveUpdateTarget(process.cwd(), config.version)
-  debug('Update target: %s@%s', packageName, installedVersion)
+  const runner = detectTemporaryPackageRunner()
+  const {installedVersion, packageName} = runner
+    ? {installedVersion: config.version, packageName: await resolveRunnerPackage()}
+    : await resolveUpdateTarget(process.cwd(), config.version)
+  debug('Update target: %s@%s%s', packageName, installedVersion, runner ? ` via ${runner}` : '')
 
   const store = getUserConfig()
   const cacheKey = `latestVersion:${packageName}`
@@ -55,7 +58,7 @@ export async function updateChecker(config: {version: string}): Promise<void> {
 
     if (semverGt(latestVersion, installedVersion)) {
       debug('Update is available (%s)', latestVersion)
-      await showUpdateNotification(installedVersion, latestVersion, packageName)
+      await showUpdateNotification(installedVersion, latestVersion, packageName, runner)
     } else {
       debug('No update found')
     }

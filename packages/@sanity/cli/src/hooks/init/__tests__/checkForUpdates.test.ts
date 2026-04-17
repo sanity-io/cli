@@ -10,6 +10,7 @@ const mockSpawn = vi.hoisted(() => vi.fn())
 const mockIsInstalledGlobally = vi.hoisted(() => ({default: false}))
 const mockIsInstalledUsingYarn = vi.hoisted(() => vi.fn())
 const mockResolveUpdateTarget = vi.hoisted(() => vi.fn())
+const mockResolveRunnerPackage = vi.hoisted(() => vi.fn())
 
 const mockConfigStore = vi.hoisted(() => {
   const store = new Map<string, unknown>()
@@ -48,8 +49,13 @@ vi.mock('../../../util/update/resolveUpdateTarget.js', () => ({
   resolveUpdateTarget: mockResolveUpdateTarget,
 }))
 
+vi.mock('../../../util/update/resolveRunnerPackage.js', () => ({
+  resolveRunnerPackage: mockResolveRunnerPackage,
+}))
+
 const mockIsCi = vi.mocked(isCi)
 const originalIsTTY = process.stdout.isTTY
+const originalArgv1 = process.argv[1]
 
 function setCachedLatestVersion(options: {
   key?: string
@@ -74,7 +80,9 @@ describe('#checkForUpdates', () => {
     mockIsInstalledUsingYarn.mockReturnValue(false)
     mockSpawn.mockReturnValue({unref: vi.fn()})
     mockResolveUpdateTarget.mockResolvedValue({installedVersion: '3.60.0', packageName: 'sanity'})
+    mockResolveRunnerPackage.mockResolvedValue('@sanity/cli')
     process.stdout.isTTY = true
+    process.argv[1] = originalArgv1
 
     mockConfigStore.clear()
   })
@@ -82,6 +90,7 @@ describe('#checkForUpdates', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     process.stdout.isTTY = originalIsTTY
+    process.argv[1] = originalArgv1
   })
 
   test('returns early if running on CI', async () => {
@@ -124,6 +133,54 @@ describe('#checkForUpdates', () => {
 
     expect(mockSpawn).not.toHaveBeenCalled()
     expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
+  })
+
+  test.each([
+    ['npx', '/home/user/.npm/_npx/abc/node_modules/.bin/sanity', 'npx --yes @sanity/cli@latest'],
+    [
+      'pnpm dlx',
+      '/home/user/.cache/pnpm/dlx/abc/node_modules/.bin/sanity',
+      'pnpm dlx @sanity/cli@latest',
+    ],
+    [
+      'yarn dlx',
+      '/tmp/xfs-abc/dlx-123/node_modules/.bin/sanity',
+      'yarn dlx -p @sanity/cli@latest sanity',
+    ],
+    ['bunx', '/tmp/bunx-1000-sanity@latest/node_modules/.bin/sanity', 'bunx @sanity/cli@latest'],
+  ])(
+    'shows runner-specific refresh hint when running from %s with an outdated cache',
+    async (_runner, argv1, expectedCommand) => {
+      const {config} = await getCommandAndConfig('help')
+      process.argv[1] = argv1
+
+      // Cache is keyed by @sanity/cli when running under a runner — cwd-based
+      // resolution is bypassed.
+      setCachedLatestVersion({
+        key: 'latestVersion:@sanity/cli',
+        latestVersion: '999.0.0',
+      })
+
+      const {stderr} = await testHook<'init'>(checkForUpdates, {
+        config,
+      })
+
+      expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
+      expect(stderr).toContain('Update available')
+      expect(stderr).toContain('999.0.0')
+      expect(stderr).toContain(expectedCommand)
+    },
+  )
+
+  test('uses cwd-based resolution when not running from a temporary runner', async () => {
+    const {config} = await getCommandAndConfig('help')
+    process.argv[1] = '/home/user/project/node_modules/.bin/sanity'
+
+    await testHook<'init'>(checkForUpdates, {
+      config,
+    })
+
+    expect(mockResolveUpdateTarget).toHaveBeenCalled()
   })
 
   test('spawns worker when no cached version exists', async () => {
