@@ -250,7 +250,7 @@ describe('#init: bootstrap-app-initialization', () => {
     // select is called once for organization selection (template comes from --template flag)
     // then once for the app project setup prompt (skip = no project/dataset configured)
     mocks.select.mockResolvedValueOnce('org-1') // organization
-    mocks.select.mockResolvedValueOnce('skip') // promptForAppProjectSetup
+    mocks.select.mockResolvedValueOnce('__skip__') // promptForAppProjectSetup
 
     mockApi({
       apiVersion: MCP_JOURNEY_API_VERSION,
