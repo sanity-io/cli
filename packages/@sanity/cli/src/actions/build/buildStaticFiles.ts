@@ -27,6 +27,7 @@ interface StaticBuildOptions {
   outputDir: string
 
   appTitle?: string
+  autoUpdatesCssUrls?: string[]
   entry?: string
   importMap?: {imports?: Record<string, string>}
   isApp?: boolean
@@ -47,6 +48,7 @@ export async function buildStaticFiles(
 ): Promise<{chunks: ChunkStats[]}> {
   const {
     appTitle,
+    autoUpdatesCssUrls,
     basePath,
     cwd,
     entry,
@@ -73,6 +75,7 @@ export async function buildStaticFiles(
   buildDebug('Resolving vite config')
   const mode = 'production'
   let viteConfig = await getViteConfig({
+    autoUpdatesCssUrls,
     basePath,
     cwd,
     importMap,

@@ -42,6 +42,7 @@ export async function getDocumentHtml(
   props?: DocumentProps,
   importMap?: {imports?: Record<string, string>},
   isApp?: boolean,
+  autoUpdatesCssUrls?: string[],
 ): Promise<string> {
   const Document = await getDocumentComponent(parent, studioRootPath, isApp)
 
@@ -65,6 +66,7 @@ export async function getDocumentHtml(
   const result = addTimestampedImportMapScriptToHtml(
     renderToStaticMarkup(<Document {...defaultProps} {...props} css={css} />),
     importMap,
+    autoUpdatesCssUrls,
   )
 
   return `<!DOCTYPE html>${result}`

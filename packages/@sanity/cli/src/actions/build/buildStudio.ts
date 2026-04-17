@@ -9,6 +9,7 @@ import semver from 'semver'
 import {StudioBuildTrace} from '../../telemetry/build.telemetry.js'
 import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
+import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
@@ -19,7 +20,7 @@ import {buildVendorDependencies} from './buildVendorDependencies.js'
 import {checkRequiredDependencies} from './checkRequiredDependencies.js'
 import {checkStudioDependencyVersions} from './checkStudioDependencyVersions.js'
 import {determineBasePath} from './determineBasePath.js'
-import {getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
+import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesImportMap.js'
 import {getStudioEnvVars} from './getStudioEnvVars.js'
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {shouldAutoUpdate} from './shouldAutoUpdate.js'
@@ -53,6 +54,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     : shouldAutoUpdate({cliConfig, flags, output})
 
   let autoUpdatesImports = {}
+  let autoUpdatesCssUrls: string[] = []
 
   if (autoUpdatesEnabled) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
@@ -73,11 +75,20 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       warnAboutMissingAppId({appType: 'studio', output, projectId})
     }
 
+    const installedVisionVersion = await getLocalPackageVersion('@sanity/vision', workDir)
+    const cleanVisionVersion = installedVisionVersion
+      ? semver.parse(installedVisionVersion)?.version
+      : undefined
+
     const sanityDependencies = [
-      {name: 'sanity', version: cleanSanityVersion},
-      {name: '@sanity/vision', version: cleanSanityVersion},
+      {cssFile: 'index.css', name: 'sanity', version: cleanSanityVersion},
+      ...(cleanVisionVersion
+        ? [{cssFile: 'index.css', name: '@sanity/vision' as const, version: cleanVisionVersion}]
+        : [{name: '@sanity/vision' as const, version: cleanSanityVersion}]),
     ]
     autoUpdatesImports = getAutoUpdatesImportMap(sanityDependencies, {appId})
+
+    autoUpdatesCssUrls = getAutoUpdatesCssUrls(sanityDependencies, {appId})
 
     // Check the versions
     const {mismatched, unresolvedPrerelease} = await compareDependencyVersions(
@@ -89,6 +100,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     if (unresolvedPrerelease.length > 0) {
       await handlePrereleaseVersions({output, unattendedMode, unresolvedPrerelease})
       autoUpdatesImports = {}
+      autoUpdatesCssUrls = []
       autoUpdatesEnabled = false
     }
 
@@ -198,6 +210,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     timer.start('bundleStudio')
 
     const bundle = await buildStaticFiles({
+      autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
       basePath,
       cwd: workDir,
       importMap,
