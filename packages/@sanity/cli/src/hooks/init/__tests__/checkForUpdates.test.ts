@@ -131,7 +131,7 @@ describe('#checkForUpdates', () => {
 
   test.each([
     ['npx', '/home/user/.npm/_npx/abc123/node_modules/.bin/sanity'],
-    ['pnpm dlx', '/home/user/.local/share/pnpm/dlx-abc123/node_modules/.bin/sanity'],
+    ['pnpm dlx', '/home/user/.cache/pnpm/dlx/abc123/node_modules/.bin/sanity'],
     ['yarn dlx', '/tmp/xfs-abc123/dlx-12345/node_modules/.bin/sanity'],
     ['bunx', '/tmp/bunx-1000-sanity@latest/node_modules/.bin/sanity'],
   ])('returns early if running from %s temporary cache', async (_runner, argv1) => {

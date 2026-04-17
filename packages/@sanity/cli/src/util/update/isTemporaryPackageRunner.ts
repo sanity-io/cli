@@ -15,6 +15,13 @@ export function isTemporaryPackageRunner(binaryPath: string = process.argv[1] ??
   const normalized = binaryPath.replaceAll('\\', '/')
 
   return (
-    normalized.includes('/_npx/') || normalized.includes('/dlx-') || normalized.includes('/bunx-')
+    // npm: `~/.npm/_npx/<hash>/...`
+    normalized.includes('/_npx/') ||
+    // pnpm: `~/Library/Caches/pnpm/dlx/<hash>/...` (or `~/.cache/pnpm/dlx/<hash>/...`)
+    normalized.includes('/pnpm/dlx/') ||
+    // yarn berry: `$TMPDIR/xfs-<hash>/dlx-<pid>/...`
+    normalized.includes('/dlx-') ||
+    // bun: `$TMPDIR/bunx-<uid>-<pkg>/...`
+    normalized.includes('/bunx-')
   )
 }

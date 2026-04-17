@@ -9,9 +9,17 @@ describe('isTemporaryPackageRunner', () => {
     )
   })
 
-  test('returns true for pnpm dlx paths', () => {
+  test('returns true for pnpm dlx paths (linux cache layout)', () => {
     expect(
-      isTemporaryPackageRunner('/home/user/.local/share/pnpm/dlx-abc123/node_modules/.bin/sanity'),
+      isTemporaryPackageRunner('/home/user/.cache/pnpm/dlx/abc123/node_modules/.bin/sanity'),
+    ).toBe(true)
+  })
+
+  test('returns true for pnpm dlx paths (macOS cache layout)', () => {
+    expect(
+      isTemporaryPackageRunner(
+        '/Users/me/Library/Caches/pnpm/dlx/102cf35740a0642619d8b0b51b83c812f10a8ac02cfe2b4e9d4807dc772486bd/node_modules/.bin/sanity',
+      ),
     ).toBe(true)
   })
 
