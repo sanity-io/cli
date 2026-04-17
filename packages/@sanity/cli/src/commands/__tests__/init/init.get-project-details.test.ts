@@ -150,7 +150,10 @@ describe('#init: get project details', () => {
       },
     ])
 
-    mocks.select.mockResolvedValueOnce('org-123')
+    mocks.listProjects.mockResolvedValueOnce([])
+
+    mocks.select.mockResolvedValueOnce('org-123') // organization
+    mocks.select.mockResolvedValueOnce('skip') // promptForAppProjectSetup — skip project config
 
     const {error} = await testCommand(
       InitCommand,
@@ -967,5 +970,217 @@ describe('#init: get project details', () => {
     expect(stdout).toContain('Below are your project details')
     expect(stdout).toContain('Project ID: test-project-123')
     expect(stdout).toContain('Dataset: staging')
+  })
+})
+
+describe('#init: promptForAppProjectSetup', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+    const pending = nock.pendingMocks()
+    nock.cleanAll()
+    expect(pending, 'pending mocks').toEqual([])
+  })
+
+  test('skip path: returns empty projectId/datasetName and does not fetch datasets or create anything', async () => {
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      query: {includeImplicitMemberships: 'true', includeMembers: 'true'},
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-123', name: 'Test Organization', slug: 'test-organization'}])
+
+    mocks.listProjects.mockResolvedValueOnce([])
+
+    mocks.select.mockResolvedValueOnce('org-123') // organization
+    mocks.select.mockResolvedValueOnce('skip') // promptForAppProjectSetup — skip
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--template=app-quickstart',
+        '--output-path=./test-project',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+
+    if (error) throw error
+
+    // listProjects is called to populate the choice list, but no dataset or create APIs are invoked
+    expect(mocks.listDatasets).not.toHaveBeenCalled()
+    expect(mocks.createProject).not.toHaveBeenCalled()
+    expect(mocks.createDataset).not.toHaveBeenCalled()
+  })
+
+  test('existing path: picks existing project from inline list and its dataset, returns populated values', async () => {
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      query: {includeImplicitMemberships: 'true', includeMembers: 'true'},
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-123', name: 'Test Organization', slug: 'test-organization'}])
+
+    mocks.listProjects.mockResolvedValueOnce([
+      {createdAt: '2024-01-01T00:00:00Z', displayName: 'Existing Project', id: 'existing-pid'},
+    ])
+
+    mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'public', name: 'production'}])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    mocks.select.mockResolvedValueOnce('org-123') // organization
+    mocks.select.mockResolvedValueOnce('existing-pid') // inline project choice
+    mocks.select.mockResolvedValueOnce('production') // dataset choice
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--template=app-quickstart',
+        '--output-path=./test-project',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+
+    if (error) throw error
+
+    expect(mocks.listProjects).toHaveBeenCalled()
+    expect(mocks.listDatasets).toHaveBeenCalled()
+    expect(mocks.createProject).not.toHaveBeenCalled()
+  })
+
+  test('create path: picks "Create new project" then enters a name and dataset', async () => {
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      query: {includeImplicitMemberships: 'true', includeMembers: 'true'},
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-123', name: 'Test Organization', slug: 'test-organization'}])
+
+    // POST /projects to create the new project
+    mockApi({
+      apiVersion: CREATE_PROJECT_API_VERSION,
+      method: 'post',
+      uri: '/projects',
+    }).reply(200, {displayName: 'New App Project', projectId: 'new-app-pid'})
+
+    mocks.listProjects.mockResolvedValueOnce([]) // no existing projects
+
+    mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'public', name: 'production'}])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    mocks.select.mockResolvedValueOnce('org-123') // organization
+    mocks.select.mockResolvedValueOnce('new') // promptForAppProjectSetup — create new
+    mocks.select.mockResolvedValueOnce('production') // dataset choice
+    mocks.input.mockResolvedValueOnce('New App Project') // project name
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--template=app-quickstart',
+        '--output-path=./test-project',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+
+    if (error) throw error
+
+    expect(mocks.listProjects).toHaveBeenCalled()
+    expect(mocks.input).toHaveBeenCalledWith(expect.objectContaining({message: 'Project name:'}))
+    expect(mocks.listDatasets).toHaveBeenCalled()
+  })
+
+  test('unattended with --project-name: creates project then returns populated values without interactive prompts', async () => {
+    // createProjectFromName uses organization flag directly — no listOrganizations needed
+    // POST /projects to create the named project
+    mockApi({
+      apiVersion: CREATE_PROJECT_API_VERSION,
+      method: 'post',
+      uri: '/projects',
+    }).reply(200, {displayName: 'My App Project', projectId: 'new-app-pid-456'})
+
+    // promptForAppProjectSetup (unattended + newProject set) → getOrCreateProject
+    mocks.listProjects.mockResolvedValueOnce([
+      {createdAt: '2024-01-01T00:00:00Z', displayName: 'My App Project', id: 'new-app-pid-456'},
+    ])
+
+    // getOrCreateProject calls listOrganizations (no params) in parallel with listProjects
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-123', name: 'Test Organization', slug: 'test-organization'}])
+
+    // getOrCreateDataset (unattended + dataset flag provided → no API needed for dataset)
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--template=app-quickstart',
+        '--organization=org-123',
+        '--project-name=My App Project',
+        '--dataset=production',
+        '--output-path=/tmp/test-app',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {...defaultMocks},
+      },
+    )
+
+    if (error) throw error
+
+    // No interactive prompts — all driven by flags
+    expect(mocks.select).not.toHaveBeenCalled()
+    expect(mocks.listProjects).toHaveBeenCalled()
+  })
+
+  test('unattended without --project: returns empty strings without any project/dataset API calls', async () => {
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--template=app-quickstart',
+        '--organization=org-123',
+        '--output-path=/tmp/test-app',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {...defaultMocks},
+      },
+    )
+
+    if (error) throw error
+
+    expect(mocks.select).not.toHaveBeenCalled()
+    expect(mocks.listProjects).not.toHaveBeenCalled()
+    expect(mocks.listDatasets).not.toHaveBeenCalled()
   })
 })
