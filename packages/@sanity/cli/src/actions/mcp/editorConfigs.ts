@@ -16,11 +16,22 @@ interface EditorConfig {
   readToken: (serverConfig: Record<string, unknown>) => string | undefined
 }
 
-const defaultHttpConfig = (token: string) => ({
-  headers: {Authorization: `Bearer ${token}`},
-  type: 'http',
-  url: MCP_SERVER_URL,
-})
+/**
+ * The Sanity MCP server uses OAuth by default
+ * If a token is provided, the server will not use OAuth instead tool calls will use the API token
+ */
+const defaultHttpConfig = (token?: string) => {
+  const defaultConfig: Record<string, unknown> = {
+    type: 'http',
+    url: MCP_SERVER_URL,
+  }
+
+  if (token) {
+    defaultConfig.headers = {Authorization: `Bearer ${token}`}
+  }
+
+  return defaultConfig
+}
 
 const homeDir = os.homedir()
 
@@ -164,8 +175,9 @@ function buildCodexCliServerConfig(token: string): Record<string, unknown> {
   }
 }
 
-function buildCursorServerConfig(token: string): Record<string, unknown> {
-  return defaultHttpConfig(token)
+function buildCursorServerConfig(_token: string): Record<string, unknown> {
+  // Use OAuth for Cursor instead of setting the Authorization token
+  return defaultHttpConfig()
 }
 
 function buildGeminiCliServerConfig(token: string): Record<string, unknown> {
