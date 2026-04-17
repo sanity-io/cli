@@ -265,20 +265,20 @@ importers:
   fixtures/federated-studio:
     dependencies:
       react:
-        specifier: ^19.2.3
+        specifier: ^19.2.5
         version: 19.2.5
       react-dom:
-        specifier: ^19.2.3
+        specifier: ^19.2.5
         version: 19.2.5(react@19.2.5)
       sanity:
         specifier: 'catalog:'
         version: 5.20.0(@emotion/is-prop-valid@1.4.0)(@oclif/core@4.10.5)(@sanity/cli-core@packages+@sanity+cli-core)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(immer@11.1.4)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(styled-components@6.4.0(css-to-react-native@3.2.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(typescript@5.9.3)
       styled-components:
-        specifier: ^6.3.8
+        specifier: ^6.4.0
         version: 6.4.0(css-to-react-native@3.2.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
     devDependencies:
       '@types/react':
-        specifier: ^19.2.9
+        specifier: ^19.2.14
         version: 19.2.14
       typescript:
         specifier: ^5.9.3
