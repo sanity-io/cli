@@ -970,10 +970,17 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     if (isAppTemplate) {
       let organizationId: string | undefined = this.flags.organization
       if (!organizationId) {
-        const organizations = await listOrganizations({
-          includeImplicitMemberships: 'true',
-          includeMembers: 'true',
-        })
+        let organizations: ProjectOrganization[]
+        try {
+          organizations = await listOrganizations({
+            includeImplicitMemberships: 'true',
+            includeMembers: 'true',
+          })
+        } catch (err) {
+          this.error(`Failed to communicate with the Sanity API:\n${err.message}`, {
+            exit: 1,
+          })
+        }
         organizationId = await this.promptUserForOrganization({
           isAppTemplate: true,
           organizations,
@@ -1113,12 +1120,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         ? await this.promptForProjectCreation({
             isUsersFirstProject: projects.length === 0,
             organizationId,
-            organizations: organizationId
-              ? []
-              : await listOrganizations({
-                  includeImplicitMemberships: 'true',
-                  includeMembers: 'true',
-                }),
+            organizations: [],
             planId,
             user,
           })
