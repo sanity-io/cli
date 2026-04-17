@@ -1,13 +1,15 @@
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {spinner} from '@sanity/cli-core/ux'
 
-import {createDataset} from '../../actions/dataset/create.js'
+import {determineDatasetAclMode} from '../../actions/dataset/determineDatasetAclMode.js'
 import {validateDatasetName} from '../../actions/dataset/validateDatasetName.js'
 import {promptForDatasetName} from '../../prompts/promptForDatasetName.js'
 import {promptForProject} from '../../prompts/promptForProject.js'
-import {listDatasets} from '../../services/datasets.js'
+import {createDataset, listDatasets} from '../../services/datasets.js'
 import {getProjectFeatures} from '../../services/getProjectFeatures.js'
 import {getProjectIdFlag} from '../../util/sharedFlags.js'
+import {validateProjection} from '../../util/validateProjection.js'
 
 const createDatasetDebug = subdebug('dataset:create')
 
@@ -109,16 +111,31 @@ export class CreateDatasetCommand extends SanityCommand<typeof CreateDatasetComm
     const canCreatePrivate = projectFeatures.includes('privateDataset')
     createDatasetDebug('%s create private datasets', canCreatePrivate ? 'Can' : 'Cannot')
 
+    const aclMode = await determineDatasetAclMode({
+      canCreatePrivate,
+      isUnattended: this.isUnattended(),
+      output: this.output,
+      visibility,
+    })
+
     try {
+      if (flags['embeddings-projection']) {
+        validateProjection(flags['embeddings-projection'])
+      }
+
+      const embeddings = flags.embeddings
+        ? {enabled: true, projection: flags['embeddings-projection']}
+        : undefined
+
+      const spin = spinner('Creating dataset').start()
       await createDataset({
+        aclMode,
         datasetName,
-        embeddings: flags.embeddings,
-        embeddingsProjection: flags['embeddings-projection'],
-        output: this.output,
-        projectFeatures,
+        embeddings,
         projectId,
-        visibility,
       })
+      spin.succeed()
+      this.log('Dataset created successfully')
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       this.error(`Failed to create dataset: ${message}`, {exit: 1})
