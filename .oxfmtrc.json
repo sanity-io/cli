@@ -19,6 +19,7 @@
     "**/__snapshots__/**",
     ".claude",
     ".changeset",
+    ".github",
     "**/dist/**",
     "**/lib/**"
   ]
