@@ -153,7 +153,7 @@ describe('#init: get project details', () => {
     mocks.listProjects.mockResolvedValueOnce([])
 
     mocks.select.mockResolvedValueOnce('org-123') // organization
-    mocks.select.mockResolvedValueOnce('skip') // promptForAppProjectSetup — skip project config
+    mocks.select.mockResolvedValueOnce('__skip__') // promptForAppProjectSetup — skip project config
 
     const {error} = await testCommand(
       InitCommand,
@@ -991,7 +991,7 @@ describe('#init: promptForAppProjectSetup', () => {
     mocks.listProjects.mockResolvedValueOnce([])
 
     mocks.select.mockResolvedValueOnce('org-123') // organization
-    mocks.select.mockResolvedValueOnce('skip') // promptForAppProjectSetup — skip
+    mocks.select.mockResolvedValueOnce('__skip__') // promptForAppProjectSetup — skip
 
     const {error} = await testCommand(
       InitCommand,
@@ -1088,7 +1088,7 @@ describe('#init: promptForAppProjectSetup', () => {
     }).reply(200, ['privateDataset'])
 
     mocks.select.mockResolvedValueOnce('org-123') // organization
-    mocks.select.mockResolvedValueOnce('new') // promptForAppProjectSetup — create new
+    mocks.select.mockResolvedValueOnce('__new__') // promptForAppProjectSetup — create new
     mocks.select.mockResolvedValueOnce('production') // dataset choice
     mocks.input.mockResolvedValueOnce('New App Project') // project name
 

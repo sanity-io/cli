@@ -1086,27 +1086,30 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       value: project.id,
     }))
 
+    const SKIP_PROJECT = '__skip__'
+    const NEW_PROJECT = '__new__'
+
     const selected = await select({
       choices: [
-        {name: "Skip — I'll configure later", value: 'skip'},
-        {name: 'Create new project', value: 'new'},
+        {name: "Skip — I'll configure later", value: SKIP_PROJECT},
+        {name: 'Create new project', value: NEW_PROJECT},
         ...(projectChoices.length > 0 ? [new Separator(), ...projectChoices] : []),
       ],
       message: 'Configure a project for this app?',
     })
 
-    if (selected === 'skip') {
+    if (selected === SKIP_PROJECT) {
       this._trace.log({selectedOption: 'skip', step: 'configureAppProject'})
       return {datasetName: '', displayName: '', projectId: ''}
     }
 
     this._trace.log({
-      selectedOption: selected === 'new' ? 'create' : 'existing',
+      selectedOption: selected === NEW_PROJECT ? 'create' : 'existing',
       step: 'configureAppProject',
     })
 
     const project =
-      selected === 'new'
+      selected === NEW_PROJECT
         ? await this.promptForProjectCreation({
             isUsersFirstProject: projects.length === 0,
             organizationId,
