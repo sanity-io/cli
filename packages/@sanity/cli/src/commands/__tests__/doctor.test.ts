@@ -102,7 +102,7 @@ describe('doctor command', () => {
     const {error} = await testCommand(DoctorCommand, ['nonexistent'])
 
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Unknown check: nonexistent')
+    expect(error?.message).toContain('Expected nonexistent to be one of')
     expect(error?.oclif?.exit).toBe(2)
   })
 
