@@ -21,9 +21,11 @@ export interface DevServerOptions {
 
   appTitle?: string
   entry?: string
+  federation?: CliConfig['federation']
   httpHost?: string
   isApp?: boolean
   projectName?: string
+  reactRefreshHost?: string
   schemaExtraction?: CliConfig['schemaExtraction']
   typegen?: CliConfig['typegen']
   vite?: UserViteConfig
@@ -42,10 +44,12 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
     basePath,
     cwd,
     entry,
+    federation,
     httpHost,
     httpPort,
     isApp,
     reactCompiler,
+    reactRefreshHost,
     reactStrictMode,
     schemaExtraction,
     typegen,
@@ -53,7 +57,7 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   } = options
 
   debug('Writing Sanity runtime files')
-  const watcher = await writeSanityRuntime({
+  const {entries, watcher} = await writeSanityRuntime({
     appTitle,
     basePath,
     cwd,
@@ -69,9 +73,12 @@ export async function startDevServer(options: DevServerOptions): Promise<DevServ
   let viteConfig: InlineConfig = await getViteConfig({
     basePath,
     cwd,
+    entries,
+    federation,
     isApp,
     mode: 'development',
     reactCompiler,
+    reactRefreshHost,
     schemaExtraction,
     server: {host: httpHost, port: httpPort},
     typegen,

@@ -80,6 +80,7 @@
     "@sanity/codegen": "catalog:",
     "@sanity/descriptors": "^1.3.0",
     "@sanity/export": "^6.1.0",
+    "@sanity/federation": "0.1.0-alpha.4",
     "@sanity/generate-help-url": "^4.0.0",
     "@sanity/id-utils": "^1.0.0",
     "@sanity/import": "^6.0.1",

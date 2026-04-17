@@ -1,14 +1,14 @@
 import path from 'node:path'
 
-import {type UserViteConfig} from '@sanity/cli-core'
+import {type CliConfig, type UserViteConfig} from '@sanity/cli-core'
 import {type PluginOptions as ReactCompilerConfig} from 'babel-plugin-react-compiler'
-import {build} from 'vite'
+import {build, createBuilder} from 'vite'
 
 import {copyDir} from '../../util/copyDir.js'
 import {buildDebug} from './buildDebug.js'
 import {extendViteConfigWithUserConfig, finalizeViteConfig, getViteConfig} from './getViteConfig.js'
 import {writeFavicons} from './writeFavicons.js'
-import {writeSanityRuntime} from './writeSanityRuntime.js'
+import {resolveEntries, writeSanityRuntime} from './writeSanityRuntime.js'
 
 export interface ChunkModule {
   name: string
@@ -21,7 +21,7 @@ export interface ChunkStats {
   name: string
 }
 
-interface StaticBuildOptions {
+interface StaticBuildOptions extends Pick<CliConfig, 'federation'> {
   basePath: string
   cwd: string
   outputDir: string
@@ -50,6 +50,7 @@ export async function buildStaticFiles(
     basePath,
     cwd,
     entry,
+    federation,
     importMap,
     isApp,
     minify = true,
@@ -59,8 +60,40 @@ export async function buildStaticFiles(
     vite: extendViteConfig,
   } = options
 
+  const mode = 'production'
+
+  /* Federation builds only produce the federation environment
+   * (remote-entry, mf-manifest) — skip client-specific steps like
+   * runtime generation, static file copies, and favicons.
+   */
+  if (federation?.enabled) {
+    buildDebug('Resolving entries for federation build')
+    const entries = await resolveEntries({cwd, entry, isApp})
+
+    buildDebug('Resolving vite config (federation)')
+    const viteConfig = await getViteConfig({
+      basePath,
+      cwd,
+      entries,
+      federation,
+      isApp,
+      minify,
+      mode,
+      outputDir,
+      reactCompiler,
+      sourceMap,
+    })
+
+    buildDebug('Bundling federation environment')
+    const builder = await createBuilder(viteConfig)
+    await builder.buildApp()
+    buildDebug('Bundling complete')
+    // TODO: add stats here
+    return {chunks: []}
+  }
+
   buildDebug('Writing Sanity runtime files')
-  await writeSanityRuntime({
+  const {entries} = await writeSanityRuntime({
     appTitle,
     basePath,
     cwd,
@@ -71,10 +104,11 @@ export async function buildStaticFiles(
   })
 
   buildDebug('Resolving vite config')
-  const mode = 'production'
   let viteConfig = await getViteConfig({
     basePath,
     cwd,
+    entries,
+    federation,
     importMap,
     isApp,
     minify,
