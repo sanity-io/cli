@@ -307,6 +307,109 @@ describe('PID-reuse detection', () => {
   })
 })
 
+describe('startedAt uses OS-reported process start time', () => {
+  // Regression: previously `registerDevServer` / `acquireWorkbenchLock` stored
+  // `new Date().toISOString()` at call time, but `isOurProcess` compares that
+  // value against `ps -o lstart=` with a 2s tolerance. In real `sanity dev`
+  // runs, registration happens several seconds after process start (after the
+  // workbench + app Vite servers boot), so the drift exceeded the tolerance
+  // and manifests were pruned as "stale" the moment the watcher re-read them.
+
+  test('registerDevServer stores the OS-reported start time, not the call time', () => {
+    const osStart = new Date('2026-04-17T11:38:10.000Z')
+    mockExecSync.mockReturnValue(osStart.toString())
+
+    const cleanup = registerDevServer({
+      host: 'localhost',
+      port: 3334,
+      type: 'studio',
+      workDir: '/tmp/project',
+    })
+
+    const manifest = JSON.parse(readFileSync(join(registryDir(), `${process.pid}.json`), 'utf8'))
+    // `new Date(osStart.toString())` loses sub-second precision the same way
+    // `getProcessStartTime` does, so this is an exact match.
+    expect(manifest.startedAt).toBe(new Date(osStart.toString()).toISOString())
+
+    cleanup()
+  })
+
+  test('manifest written several seconds after OS process start survives pruning', () => {
+    // Simulate reality: the process started 5s ago, registerDevServer is only
+    // called now (after the CLI booted its Vite servers). Before the fix, the
+    // manifest's startedAt would be "now" and mismatch the ps-reported time
+    // by 5s — well past the 2s tolerance — so getRegisteredServers would
+    // immediately prune it.
+    const osStart = new Date(Date.now() - 5000)
+    mockExecSync.mockReturnValue(osStart.toString())
+
+    const cleanup = registerDevServer({
+      host: 'localhost',
+      port: 3334,
+      type: 'studio',
+      workDir: '/tmp/project',
+    })
+
+    const servers = getRegisteredServers()
+    expect(servers).toHaveLength(1)
+    expect(servers[0].port).toBe(3334)
+    expect(existsSync(join(registryDir(), `${process.pid}.json`))).toBe(true)
+
+    cleanup()
+  })
+
+  test('acquireWorkbenchLock stores the OS-reported start time, not the call time', () => {
+    const osStart = new Date('2026-04-17T11:38:10.000Z')
+    mockExecSync.mockReturnValue(osStart.toString())
+
+    const lock = acquireWorkbenchLock({host: 'localhost', port: 3333})
+    expect(lock).toBeDefined()
+
+    const data = JSON.parse(readFileSync(join(registryDir(), 'workbench.lock'), 'utf8'))
+    expect(data.startedAt).toBe(new Date(osStart.toString()).toISOString())
+
+    lock!.release()
+  })
+
+  test('lock written several seconds after OS process start survives readWorkbenchLock', () => {
+    const osStart = new Date(Date.now() - 5000)
+    mockExecSync.mockReturnValue(osStart.toString())
+
+    const lock = acquireWorkbenchLock({host: 'localhost', port: 3333})
+    expect(lock).toBeDefined()
+
+    // readWorkbenchLock re-runs isOurProcess — with the fix, the stored
+    // startedAt matches the ps-reported time, so the lock is considered live.
+    const read = readWorkbenchLock()
+    expect(read).toBeDefined()
+    expect(read!.port).toBe(3333)
+
+    lock!.release()
+  })
+
+  test('falls back to new Date() when ps is unavailable', () => {
+    mockExecSync.mockImplementation(() => {
+      throw new Error('ps not available')
+    })
+
+    const before = Date.now()
+    const cleanup = registerDevServer({
+      host: 'localhost',
+      port: 3334,
+      type: 'studio',
+      workDir: '/tmp/project',
+    })
+    const after = Date.now()
+
+    const manifest = JSON.parse(readFileSync(join(registryDir(), `${process.pid}.json`), 'utf8'))
+    const storedMs = new Date(manifest.startedAt).getTime()
+    expect(storedMs).toBeGreaterThanOrEqual(before)
+    expect(storedMs).toBeLessThanOrEqual(after)
+
+    cleanup()
+  })
+})
+
 describe('watchRegistry', () => {
   test('invokes callback when a manifest file is added', async () => {
     const callback = vi.fn()
