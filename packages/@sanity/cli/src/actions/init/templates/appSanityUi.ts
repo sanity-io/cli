@@ -7,6 +7,7 @@ const appSanityUiTemplate: ProjectTemplate = {
   },
   entry: './src/App.tsx',
   type: 'module',
+  typescriptOnly: true,
 }
 
 export default appSanityUiTemplate
