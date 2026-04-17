@@ -1,6 +1,5 @@
-<!-- auto-generated -->
 ---
-'@sanity/cli': patch
+"@sanity/cli": patch
 ---
 
 externalize sanity and @sanity/workbench
