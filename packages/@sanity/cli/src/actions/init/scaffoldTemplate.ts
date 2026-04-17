@@ -8,11 +8,15 @@ import {installDeclaredPackages} from '../../util/packageManager/installPackages
 import {type PackageManager} from '../../util/packageManager/packageManagerChoice.js'
 import {bootstrapTemplate} from './bootstrapTemplate.js'
 import {tryGitInit} from './git.js'
-import {writeStagingEnvIfNeeded} from './initHelpers.js'
+import {shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
 import {type RepoInfo} from './remoteTemplate.js'
 import {resolvePackageManager} from './resolvePackageManager.js'
 import templates from './templates/index.js'
-import {type ProjectTemplate} from './types.js'
+import {type InitOptions, type ProjectTemplate} from './types.js'
+
+// ---------------------------------------------------------------------------
+// Template selection
+// ---------------------------------------------------------------------------
 
 interface SelectedTemplate {
   template: ProjectTemplate | undefined
@@ -20,11 +24,141 @@ interface SelectedTemplate {
   useTypeScript: boolean | undefined
 }
 
-async function promptForTemplate(params: {
-  template?: string
-  unattended: boolean
-}): Promise<string> {
-  const defaultTemplate = params.unattended || params.template ? params.template || 'clean' : null
+/**
+ * Prompts for (or resolves from flags) which template and TypeScript setting
+ * to use. Shared by both the app and studio init flows.
+ */
+export async function selectTemplate(
+  options: InitOptions,
+  remoteTemplateInfo: RepoInfo | undefined,
+  trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>,
+): Promise<SelectedTemplate> {
+  const templateName = await promptForTemplate(options)
+  trace.log({
+    selectedOption: templateName,
+    step: 'selectProjectTemplate',
+  })
+  const template = templates[templateName]
+
+  let useTypeScript = options.typescript
+  if (!remoteTemplateInfo && template && template.typescriptOnly === true) {
+    useTypeScript = true
+  } else if (shouldPrompt(options.unattended, options.typescript)) {
+    useTypeScript = await promptForTypeScript()
+    trace.log({
+      selectedOption: useTypeScript ? 'yes' : 'no',
+      step: 'useTypeScript',
+    })
+  }
+
+  return {template, templateName, useTypeScript}
+}
+
+// ---------------------------------------------------------------------------
+// Scaffolding pipeline
+// ---------------------------------------------------------------------------
+
+interface ScaffoldOptions {
+  // Studio-specific (empty string for apps)
+  datasetName: string
+  defaults: {projectName: string}
+  displayName: string
+  options: InitOptions
+  organizationId: string | undefined
+  output: Output
+  outputPath: string
+  projectId: string
+  remoteTemplateInfo: RepoInfo | undefined
+  sluggedName: string
+
+  // From template selection
+  templateName: string
+  trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
+
+  useTypeScript: boolean | undefined
+  workDir: string
+}
+
+interface ScaffoldResult {
+  pkgManager: PackageManager
+}
+
+/**
+ * Runs the shared scaffolding pipeline: bootstrap the template, install
+ * dependencies, write staging env if needed, and optionally git-init.
+ *
+ * Used by both `initApp` and `initStudio`.
+ */
+export async function scaffoldAndInstall({
+  datasetName,
+  defaults,
+  displayName,
+  options,
+  organizationId,
+  output,
+  outputPath,
+  projectId,
+  remoteTemplateInfo,
+  sluggedName,
+  templateName,
+  trace,
+  useTypeScript,
+  workDir,
+}: ScaffoldOptions): Promise<ScaffoldResult> {
+  await bootstrapTemplate({
+    autoUpdates: options.autoUpdates,
+    bearerToken: options.templateToken,
+    dataset: datasetName,
+    organizationId,
+    output,
+    outputPath,
+    overwriteFiles: options.overwriteFiles,
+    packageName: sluggedName,
+    projectId,
+    projectName: displayName || defaults.projectName,
+    remoteTemplateInfo,
+    templateName,
+    useTypeScript,
+  })
+
+  const pkgManager = await resolvePackageManager({
+    interactive: !options.unattended,
+    output,
+    packageManager: options.packageManager as PackageManager,
+    targetDir: outputPath,
+  })
+
+  trace.log({
+    selectedOption: pkgManager,
+    step: 'selectPackageManager',
+  })
+
+  // Now for the slow part... installing dependencies
+  await installDeclaredPackages(outputPath, pkgManager, {
+    output,
+    workDir,
+  })
+
+  const useGit = options.git === undefined || Boolean(options.git)
+  const commitMessage = options.git
+  await writeStagingEnvIfNeeded(output, outputPath)
+
+  // Try initializing a git repository
+  if (useGit) {
+    tryGitInit(outputPath, typeof commitMessage === 'string' ? commitMessage : undefined)
+  }
+
+  return {pkgManager}
+}
+
+// ---------------------------------------------------------------------------
+// Private helpers
+// ---------------------------------------------------------------------------
+
+async function promptForTemplate(options: InitOptions): Promise<string> {
+  const template = options.template
+
+  const defaultTemplate = options.unattended || template ? template || 'clean' : null
   if (defaultTemplate) {
     return defaultTemplate
   }
@@ -50,139 +184,4 @@ async function promptForTemplate(params: {
     ],
     message: 'Select project template',
   })
-}
-
-export async function selectTemplate({
-  remoteTemplateInfo,
-  template,
-  trace,
-  typescript,
-  unattended,
-}: {
-  remoteTemplateInfo: RepoInfo | undefined
-  template?: string
-  trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  typescript?: boolean
-  unattended: boolean
-}): Promise<SelectedTemplate> {
-  const templateName = await promptForTemplate({template, unattended})
-  trace.log({
-    selectedOption: templateName,
-    step: 'selectProjectTemplate',
-  })
-
-  const resolvedTemplate = templates[templateName]
-
-  let useTypeScript = typescript
-  if (!remoteTemplateInfo && resolvedTemplate && resolvedTemplate.typescriptOnly === true) {
-    useTypeScript = true
-  } else if (!unattended && typescript === undefined) {
-    useTypeScript = await promptForTypeScript()
-    trace.log({
-      selectedOption: useTypeScript ? 'yes' : 'no',
-      step: 'useTypeScript',
-    })
-  }
-
-  return {
-    template: resolvedTemplate,
-    templateName,
-    useTypeScript,
-  }
-}
-
-export async function scaffoldAndInstall({
-  autoUpdates,
-  datasetName,
-  defaults,
-  displayName,
-  git,
-  noGit,
-  organizationId,
-  output,
-  outputPath,
-  overwriteFiles,
-  packageManager,
-  projectId,
-  remoteTemplateInfo,
-  sluggedName,
-  templateName,
-  templateToken,
-  trace,
-  unattended,
-  useTypeScript,
-  workDir,
-}: {
-  autoUpdates: boolean
-  datasetName: string
-  defaults: {projectName: string}
-  displayName: string
-  git?: boolean | string
-  noGit?: boolean
-  organizationId: string | undefined
-  output: Output
-  outputPath: string
-  overwriteFiles?: boolean
-  packageManager?: string
-  projectId: string
-  remoteTemplateInfo: RepoInfo | undefined
-  sluggedName: string
-  templateName: string
-  templateToken?: string
-  trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  unattended: boolean
-  useTypeScript: boolean | undefined
-  workDir: string
-}): Promise<{pkgManager: PackageManager}> {
-  try {
-    await bootstrapTemplate({
-      autoUpdates,
-      bearerToken: templateToken,
-      dataset: datasetName,
-      organizationId,
-      output,
-      outputPath,
-      overwriteFiles: overwriteFiles as boolean,
-      packageName: sluggedName,
-      projectId,
-      projectName: displayName || defaults.projectName,
-      remoteTemplateInfo,
-      templateName,
-      useTypeScript: useTypeScript as boolean,
-    })
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error
-    }
-    throw new Error(String(error), {cause: error})
-  }
-
-  const pkgManager = await resolvePackageManager({
-    interactive: !unattended,
-    output,
-    packageManager: packageManager as PackageManager,
-    targetDir: outputPath,
-  })
-
-  trace.log({
-    selectedOption: pkgManager,
-    step: 'selectPackageManager',
-  })
-
-  // Now for the slow part... installing dependencies
-  await installDeclaredPackages(outputPath, pkgManager, {
-    output,
-    workDir,
-  })
-
-  const useGit = !noGit && (git === undefined || Boolean(git))
-  const commitMessage = git
-  await writeStagingEnvIfNeeded(output, outputPath)
-
-  // Try initializing a git repository
-  if (useGit) {
-    tryGitInit(outputPath, typeof commitMessage === 'string' ? commitMessage : undefined)
-  }
-
-  return {pkgManager}
 }
