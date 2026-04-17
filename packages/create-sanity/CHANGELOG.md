@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.2.14
+
+### Patch Changes
+
+- Updated dependencies [[`a812f96`](https://github.com/sanity-io/cli/commit/a812f96b6445453c3dda259be2719ff1590dddcc), [`1fa3954`](https://github.com/sanity-io/cli/commit/1fa3954c208eba569d821321240321960716051b), [`6045f96`](https://github.com/sanity-io/cli/commit/6045f960a610c0115def59631d7d04cb6fdeb1d2), [`ad287b6`](https://github.com/sanity-io/cli/commit/ad287b62a8e59380bf165634532238714b9bd8b7)]:
+  - @sanity/cli@6.4.0
+
 ## 5.2.13
 
 ### Patch Changes

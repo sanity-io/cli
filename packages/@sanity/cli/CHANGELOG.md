@@ -1,5 +1,19 @@
 # Change Log
 
+## 6.4.0
+
+### Minor Changes
+
+- [#960](https://github.com/sanity-io/cli/pull/960) [`6045f96`](https://github.com/sanity-io/cli/commit/6045f960a610c0115def59631d7d04cb6fdeb1d2) Thanks [@drewlyton](https://github.com/drewlyton)! - Added MCP auto-configuration support for Antigravity, Cline CLI, Codex CLI, GitHub Copilot CLI, and MCPorter. Refactored editor detection to use dependency injection for improved testability and cross-platform reliability.
+
+### Patch Changes
+
+- [#948](https://github.com/sanity-io/cli/pull/948) [`a812f96`](https://github.com/sanity-io/cli/commit/a812f96b6445453c3dda259be2719ff1590dddcc) Thanks [@mttdnt](https://github.com/mttdnt)! - Show the correct update command based on whether the project depends on `sanity` or `@sanity/cli`
+
+- [#947](https://github.com/sanity-io/cli/pull/947) [`1fa3954`](https://github.com/sanity-io/cli/commit/1fa3954c208eba569d821321240321960716051b) Thanks [@binoy14](https://github.com/binoy14)! - Fixed environment variable loading to include all variables from `.env` files, not just `SANITY_STUDIO_`/`SANITY_APP_` prefixed ones. Client bundle exposure remains restricted to prefixed variables only.
+
+- [#959](https://github.com/sanity-io/cli/pull/959) [`ad287b6`](https://github.com/sanity-io/cli/commit/ad287b62a8e59380bf165634532238714b9bd8b7) Thanks [@binoy14](https://github.com/binoy14)! - improve schema extract error messages
+
 ## 6.3.2
 
 ### Patch Changes
