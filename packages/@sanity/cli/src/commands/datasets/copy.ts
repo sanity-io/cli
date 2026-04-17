@@ -57,6 +57,10 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
       description: 'Copy without preserving document history (faster for large datasets)',
     },
     {
+      command: '<%= config.bin %> <%= command.id %> --skip-content-releases source target',
+      description: 'Copy without content release documents',
+    },
+    {
       command: '<%= config.bin %> <%= command.id %> --detach source target',
       description: 'Start copy job without waiting for completion',
     },
@@ -103,6 +107,11 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
     offset: Flags.integer({
       dependsOn: ['list'],
       description: 'Start position in the list of jobs (default 0)',
+      required: false,
+    }),
+    'skip-content-releases': Flags.boolean({
+      description: "Don't copy content release documents to the target dataset",
+      exclusive: ['list', 'attach'],
       required: false,
     }),
     'skip-history': Flags.boolean({
@@ -222,11 +231,12 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
   private async handleCopyMode(
     projectId: string,
     args: {source?: string; target?: string},
-    flags: {detach?: boolean; 'skip-history'?: boolean},
+    flags: {'skip-content-releases'?: boolean; 'skip-history'?: boolean; detach?: boolean},
   ): Promise<void> {
     copyDatasetDebug('Starting copy mode')
 
     const skipHistory = Boolean(flags['skip-history'])
+    const skipContentReleases = Boolean(flags['skip-content-releases'])
 
     // Get and validate source dataset
     let sourceDataset = args.source
@@ -290,6 +300,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
 
       const response = await copyDataset({
         projectId,
+        skipContentReleases,
         skipHistory,
         sourceDataset,
         targetDataset,
