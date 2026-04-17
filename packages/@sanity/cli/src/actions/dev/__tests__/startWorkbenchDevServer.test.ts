@@ -11,6 +11,7 @@ const mockAcquireWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockGetRegisteredServers = vi.hoisted(() => vi.fn())
 const mockReadWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockWatchRegistry = vi.hoisted(() => vi.fn())
+const mockGetProjectById = vi.hoisted(() => vi.fn())
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -32,6 +33,9 @@ vi.mock('../devServerRegistry.js', () => ({
   getRegisteredServers: mockGetRegisteredServers,
   readWorkbenchLock: mockReadWorkbenchLock,
   watchRegistry: mockWatchRegistry,
+}))
+vi.mock('../../../services/projects.js', () => ({
+  getProjectById: mockGetProjectById,
 }))
 
 function createMockOutput(): Output {
@@ -142,7 +146,10 @@ describe('startWorkbenchDevServer', () => {
   })
 
   describe('successful startup', () => {
-    const federationConfig = {federation: {enabled: true}} as const
+    const federationConfig = {
+      app: {organizationId: 'org-test'},
+      federation: {enabled: true},
+    } as const
 
     test('returns workbenchAvailable: true and close when server starts', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
@@ -177,9 +184,7 @@ describe('startWorkbenchDevServer', () => {
       })
       mockCreateServer.mockResolvedValue(mockServer)
 
-      const result = await startWorkbenchDevServer(
-        createOptions({cliConfig: {federation: {enabled: true}}}),
-      )
+      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
 
       expect(result.workbenchPort).toBe(3334)
     })
@@ -210,15 +215,64 @@ describe('startWorkbenchDevServer', () => {
       )
     })
 
-    test('passes organizationId: undefined when not set in cliConfig', async () => {
+    test('resolves organizationId from project when only api.projectId is set', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+      mockGetProjectById.mockResolvedValue({organizationId: 'org-from-project'})
+
+      await startWorkbenchDevServer(
+        createOptions({
+          cliConfig: {api: {projectId: 'proj-123'}, federation: {enabled: true}},
+        }),
+      )
+
+      expect(mockGetProjectById).toHaveBeenCalledWith('proj-123')
+      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
+        expect.objectContaining({organizationId: 'org-from-project'}),
+      )
+    })
+
+    test('prefers cliConfig.app.organizationId over project lookup', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
-      await startWorkbenchDevServer(createOptions({cliConfig: {federation: {enabled: true}}}))
-
-      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
-        expect.objectContaining({organizationId: undefined}),
+      await startWorkbenchDevServer(
+        createOptions({
+          cliConfig: {
+            api: {projectId: 'proj-123'},
+            app: {organizationId: 'org-explicit'},
+            federation: {enabled: true},
+          },
+        }),
       )
+
+      expect(mockGetProjectById).not.toHaveBeenCalled()
+      expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
+        expect.objectContaining({organizationId: 'org-explicit'}),
+      )
+    })
+
+    test('throws when neither app.organizationId nor api.projectId is configured', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await expect(
+        startWorkbenchDevServer(createOptions({cliConfig: {federation: {enabled: true}}})),
+      ).rejects.toThrow(/Unable to determine organization ID/)
+    })
+
+    test('throws when project lookup returns no organizationId', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+      mockGetProjectById.mockResolvedValue({organizationId: undefined})
+
+      await expect(
+        startWorkbenchDevServer(
+          createOptions({
+            cliConfig: {api: {projectId: 'proj-123'}, federation: {enabled: true}},
+          }),
+        ),
+      ).rejects.toThrow(/Unable to determine organization ID/)
     })
 
     test('configures warmup for the workbench entry file', async () => {
@@ -244,7 +298,13 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(
-        createOptions({cliConfig: {federation: {enabled: true}, reactStrictMode: false}}),
+        createOptions({
+          cliConfig: {
+            app: {organizationId: 'org-test'},
+            federation: {enabled: true},
+            reactStrictMode: false,
+          },
+        }),
       )
 
       expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
@@ -258,7 +318,13 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(
-        createOptions({cliConfig: {federation: {enabled: true}, reactStrictMode: true}}),
+        createOptions({
+          cliConfig: {
+            app: {organizationId: 'org-test'},
+            federation: {enabled: true},
+            reactStrictMode: true,
+          },
+        }),
       )
 
       expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
@@ -271,7 +337,13 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(
-        createOptions({cliConfig: {federation: {enabled: true}, reactStrictMode: true}}),
+        createOptions({
+          cliConfig: {
+            app: {organizationId: 'org-test'},
+            federation: {enabled: true},
+            reactStrictMode: true,
+          },
+        }),
       )
 
       expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
@@ -281,7 +353,10 @@ describe('startWorkbenchDevServer', () => {
   })
 
   describe('server startup failure', () => {
-    const federationConfig = {federation: {enabled: true}} as const
+    const federationConfig = {
+      app: {organizationId: 'org-test'},
+      federation: {enabled: true},
+    } as const
 
     test('warns and returns without close when listen() throws', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
@@ -312,7 +387,10 @@ describe('startWorkbenchDevServer', () => {
   })
 
   describe('singleton detection', () => {
-    const federationConfig = {federation: {enabled: true}} as const
+    const federationConfig = {
+      app: {organizationId: 'org-test'},
+      federation: {enabled: true},
+    } as const
 
     test('skips starting server when lock is held by another process', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
@@ -343,7 +421,10 @@ describe('startWorkbenchDevServer', () => {
   })
 
   describe('registry integration', () => {
-    const federationConfig = {federation: {enabled: true}} as const
+    const federationConfig = {
+      app: {organizationId: 'org-test'},
+      federation: {enabled: true},
+    } as const
 
     test('updates lock with actual port after successful startup', async () => {
       const mockUpdatePort = vi.fn()
