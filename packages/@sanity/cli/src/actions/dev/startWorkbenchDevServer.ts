@@ -112,6 +112,14 @@ export async function startWorkbenchDevServer(
     },
     logLevel: 'warn',
     mode: 'development',
+    optimizeDeps: {
+      // Exclude sanity/workbench (and its transitive dep @sanity/workbench)
+      // from dep pre-bundling so that `import.meta.hot` is available at
+      // runtime — pre-bundled modules do not receive Vite's HMR client
+      // injection, which causes the custom HMR events for local application
+      // discovery to silently not fire.
+      exclude: ['sanity', '@sanity/workbench'],
+    },
     plugins: [viteReact()],
     resolve: {dedupe: ['react', 'react-dom']},
     root,
