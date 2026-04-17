@@ -129,22 +129,27 @@ describe('#checkForUpdates', () => {
     expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
   })
 
-  test('returns early if running from temporary npx cache', async () => {
+  test.each([
+    ['npx', '/home/user/.npm/_npx/abc123/node_modules/.bin/sanity'],
+    ['pnpm dlx', '/home/user/.local/share/pnpm/dlx-abc123/node_modules/.bin/sanity'],
+    ['yarn dlx', '/tmp/xfs-abc123/dlx-12345/node_modules/.bin/sanity'],
+    ['bunx', '/tmp/bunx-1000-sanity@latest/node_modules/.bin/sanity'],
+  ])('returns early if running from %s temporary cache', async (_runner, argv1) => {
     const {config} = await getCommandAndConfig('help')
-    process.argv[1] = '/home/user/.npm/_npx/abc123/node_modules/.bin/sanity'
+    process.argv[1] = argv1
 
     await testHook<'init'>(checkForUpdates, {
       config,
     })
 
     expect(mockDebug).toHaveBeenCalledWith(
-      'Running from temporary npx download, skipping update check',
+      'Running from a temporary package runner download, skipping update check',
     )
     expect(mockSpawn).not.toHaveBeenCalled()
     expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
   })
 
-  test('does NOT skip npx when resolving to local install', async () => {
+  test('does NOT skip when resolving to a local install', async () => {
     const {config} = await getCommandAndConfig('help')
     process.argv[1] = '/home/user/project/node_modules/.bin/sanity'
 
@@ -152,9 +157,8 @@ describe('#checkForUpdates', () => {
       config,
     })
 
-    // Should not have been skipped - resolveUpdateTarget should be called
     expect(mockDebug).not.toHaveBeenCalledWith(
-      'Running from temporary npx download, skipping update check',
+      'Running from a temporary package runner download, skipping update check',
     )
     expect(mockResolveUpdateTarget).toHaveBeenCalled()
   })

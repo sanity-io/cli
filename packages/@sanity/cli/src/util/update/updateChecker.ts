@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url'
 import {getUserConfig, isCi, subdebug} from '@sanity/cli-core'
 import {gt as semverGt} from 'semver'
 
+import {isTemporaryPackageRunner} from './isTemporaryPackageRunner.js'
 import {resolveUpdateTarget} from './resolveUpdateTarget.js'
 import {showUpdateNotification} from './showNotificationUpdate.js'
 
@@ -33,11 +34,11 @@ export async function updateChecker(config: {version: string}): Promise<void> {
     return
   }
 
-  // Skip for temporary npx downloads (npx @sanity/cli when not locally installed).
-  // This does NOT skip `npx sanity` resolving to a local install (path is in node_modules/.bin/).
-  const binaryPath = process.argv[1] ?? ''
-  if (binaryPath.includes('/_npx/') || binaryPath.includes('\\_npx\\')) {
-    debug('Running from temporary npx download, skipping update check')
+  // Skip for throwaway installs created by package runners (npx, pnpm dlx,
+  // yarn dlx, bunx). The download is discarded right after, so update prompts
+  // are pointless. Local `node_modules/.bin/` resolutions are not matched.
+  if (isTemporaryPackageRunner()) {
+    debug('Running from a temporary package runner download, skipping update check')
     return
   }
 
