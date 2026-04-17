@@ -513,8 +513,8 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       defaults,
       error: this.error.bind(this) as typeof this.error,
       git: this.flags.git,
-      noGit: this.flags['no-git'],
       mcpConfigured,
+      noGit: this.flags['no-git'],
       organizationId,
       output: this.output,
       outputPath,
@@ -531,7 +531,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     await (isAppTemplate
-      ? initApp(sharedParams)
+      ? initApp({...sharedParams, datasetName, projectId})
       : initStudio({
           ...sharedParams,
           datasetName,
@@ -968,36 +968,39 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     schemaUrl?: string
   }> {
     if (isAppTemplate) {
-      // If organization flag is provided, use it directly (skip prompt and API call)
-      if (this.flags.organization) {
-        return {
-          datasetName: '',
-          displayName: '',
-          isFirstProject: false,
-          organizationId: this.flags.organization,
-          projectId: '',
+      let organizationId: string | undefined = this.flags.organization
+      if (!organizationId) {
+        let organizations: ProjectOrganization[]
+        try {
+          organizations = await listOrganizations({
+            includeImplicitMemberships: 'true',
+            includeMembers: 'true',
+          })
+        } catch (err) {
+          this.error(`Failed to communicate with the Sanity API:\n${err.message}`, {
+            exit: 1,
+          })
         }
+        organizationId = await this.promptUserForOrganization({
+          isAppTemplate: true,
+          organizations,
+          user,
+        })
       }
 
-      // Interactive mode: fetch orgs and prompt
-      // Note: unattended mode without --organization is rejected by checkFlagsInUnattendedMode
-      const organizations = await listOrganizations({
-        includeImplicitMemberships: 'true',
-        includeMembers: 'true',
-      })
-
-      const appOrganizationId = await this.promptUserForOrganization({
-        isAppTemplate: true,
-        organizations,
+      const {datasetName, displayName, projectId} = await this.promptForAppProjectSetup({
+        newProject,
+        organizationId,
+        planId,
         user,
       })
 
       return {
-        datasetName: '',
-        displayName: '',
+        datasetName,
+        displayName,
         isFirstProject: false,
-        organizationId: appOrganizationId,
-        projectId: '',
+        organizationId,
+        projectId,
       }
     }
 
@@ -1051,6 +1054,91 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     })
 
     return absolutify(inputPath)
+  }
+
+  private async promptForAppProjectSetup({
+    newProject,
+    organizationId,
+    planId,
+    user,
+  }: {
+    newProject: string | undefined
+    organizationId: string | undefined
+    planId: string | undefined
+    user: SanityOrgUser
+  }): Promise<{datasetName: string; displayName: string; projectId: string}> {
+    if (this.isUnattended()) {
+      if (!this.flags.project && !newProject) {
+        return {datasetName: '', displayName: '', projectId: ''}
+      }
+      const project = await this.getOrCreateProject({newProject, planId, user})
+      const dataset = await this.getOrCreateDataset({
+        displayName: project.displayName,
+        projectId: project.projectId,
+        showDefaultConfigPrompt: false,
+      })
+      return {
+        datasetName: dataset.datasetName,
+        displayName: project.displayName,
+        projectId: project.projectId,
+      }
+    }
+
+    const projects = (await listProjects()).toSorted((a, b) =>
+      b.createdAt.localeCompare(a.createdAt),
+    )
+
+    const projectChoices = projects.map((project) => ({
+      name: `${project.displayName} (${project.id})`,
+      value: project.id,
+    }))
+
+    const SKIP_PROJECT = '__skip__'
+    const NEW_PROJECT = '__new__'
+
+    const selected = await select({
+      choices: [
+        {name: "Skip — I'll configure later", value: SKIP_PROJECT},
+        {name: 'Create new project', value: NEW_PROJECT},
+        ...(projectChoices.length > 0 ? [new Separator(), ...projectChoices] : []),
+      ],
+      message: 'Configure a project for this app?',
+    })
+
+    if (selected === SKIP_PROJECT) {
+      this._trace.log({selectedOption: 'skip', step: 'configureAppProject'})
+      return {datasetName: '', displayName: '', projectId: ''}
+    }
+
+    this._trace.log({
+      selectedOption: selected === NEW_PROJECT ? 'create' : 'existing',
+      step: 'configureAppProject',
+    })
+
+    const project =
+      selected === NEW_PROJECT
+        ? await this.promptForProjectCreation({
+            isUsersFirstProject: projects.length === 0,
+            organizationId,
+            organizations: [],
+            planId,
+            user,
+          })
+        : {
+            displayName: projects.find((p) => p.id === selected)?.displayName ?? '',
+            projectId: selected,
+          }
+
+    const dataset = await this.getOrCreateDataset({
+      displayName: project.displayName,
+      projectId: project.projectId,
+      showDefaultConfigPrompt: false,
+    })
+    return {
+      datasetName: dataset.datasetName,
+      displayName: project.displayName,
+      projectId: project.projectId,
+    }
   }
 
   private async promptForProjectCreation({

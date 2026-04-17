@@ -13,6 +13,7 @@ import {createCliConfig} from './createCliConfig.js'
 import {createPackageManifest} from './createPackageManifest.js'
 import {createStudioConfig, type GenerateConfigOptions} from './createStudioConfig.js'
 import {determineAppTemplate} from './determineAppTemplate.js'
+import {processTemplate} from './processTemplate.js'
 import {sdkAppDependencies} from './sdkAppDependencies.js'
 import {studioDependencies} from './studioDependencies.js'
 import templates from './templates/index.js'
@@ -65,6 +66,19 @@ export async function bootstrapLocalTemplate(
   }
 
   spin.succeed()
+
+  if (isAppTemplate) {
+    const appEntryPath = path.join(outputPath, 'src', 'App.tsx')
+    const raw = await fs.readFile(appEntryPath, 'utf8')
+    const rendered = processTemplate({
+      template: raw,
+      variables: {
+        dataset: variables.dataset ?? '',
+        projectId: variables.projectId ?? '',
+      },
+    })
+    await fs.writeFile(appEntryPath, rendered)
+  }
 
   // Merge global and template-specific plugins and dependencies
 
@@ -153,7 +167,9 @@ export async function bootstrapLocalTemplate(
   )
 
   debug('Updating initial template metadata')
-  await updateInitialTemplateMetadata(variables.projectId, `cli-${templateName}`)
+  if (variables.projectId) {
+    await updateInitialTemplateMetadata(variables.projectId, `cli-${templateName}`)
+  }
 
   // Finish up by providing init process with template-specific info
   spin.succeed()
