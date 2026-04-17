@@ -2,6 +2,7 @@ import {resolveLocalPackage} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig} from 'vite'
 
+import {getProjectById} from '../../services/projects.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {devDebug} from './devDebug.js'
 import {
@@ -86,10 +87,12 @@ export async function startWorkbenchDevServer(
     }
   }
 
+  const organizationId = await resolveOrganizationId(cliConfig)
+
   devDebug('Writing workbench runtime files')
   const root = await writeWorkbenchRuntime({
     cwd: workDir,
-    organizationId: cliConfig?.app?.organizationId,
+    organizationId,
     reactStrictMode,
   })
 
@@ -176,4 +179,22 @@ export async function startWorkbenchDevServer(
     workbenchAvailable,
     workbenchPort: actualPort,
   }
+}
+
+const resolveOrganizationId = async (cliConfig: DevActionOptions['cliConfig']): Promise<string> => {
+  if (cliConfig.app?.organizationId) {
+    return cliConfig.app.organizationId
+  }
+
+  if (cliConfig.api?.projectId) {
+    const project = await getProjectById(cliConfig.api.projectId)
+
+    if (project.organizationId) {
+      return project.organizationId
+    }
+  }
+
+  throw new Error(
+    'Unable to determine organization ID for workbench runtime. Please ensure that your sanity.json has either "app.organizationId" or "api.projectId" configured.',
+  )
 }
