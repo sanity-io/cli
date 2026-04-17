@@ -8,13 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       cli_version:
-        description: 'npm version/tag to test (e.g., latest, 3.82.0)'
+        description: 'npm version/tag to test (e.g., latest, 5.20.0)'
         required: true
         default: 'latest'
-      cli_package:
-        description: 'Package to install — must provide the "sanity" binary (e.g., @sanity/cli, sanity)'
-        required: false
-        default: '@sanity/cli'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -73,12 +69,15 @@ jobs:
         if: ${{ inputs.cli_version }}
         env:
           CLI_VERSION: ${{ inputs.cli_version }}
-          CLI_PACKAGE: ${{ inputs.cli_package || '@sanity/cli' }}
         run: |
           INSTALL_DIR=$(mktemp -d)
-          npm install --prefix "$INSTALL_DIR" "${CLI_PACKAGE}@${CLI_VERSION}"
+          npm install --prefix "$INSTALL_DIR" "sanity@${CLI_VERSION}"
           echo "E2E_BINARY_PATH=$INSTALL_DIR/node_modules/.bin/sanity" >> "$GITHUB_ENV"
           "$INSTALL_DIR/node_modules/.bin/sanity" --version
+
+      - name: Build test infrastructure (registry mode)
+        if: ${{ inputs.cli_version }}
+        run: pnpm --filter @sanity/cli-test build
 
       - name: Run E2E tests
         env:
@@ -99,7 +98,7 @@ jobs:
           webhook-type: incoming-webhook
           payload: |
             {
-              "text": ${{ toJSON(format('Post-release E2E failed for {0}@{1}', inputs.cli_package || '@sanity/cli', inputs.cli_version)) }},
+              "text": ${{ toJSON(format('Post-release E2E failed for sanity@{0}', inputs.cli_version)) }},
               "blocks": [
                 {
                   "type": "section",
@@ -112,7 +111,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ${{ toJSON(format('*Package:* `{0}@{1}`', inputs.cli_package || '@sanity/cli', inputs.cli_version)) }}
+                    "text": ${{ toJSON(format('*Package:* `sanity@{0}`', inputs.cli_version)) }}
                   }
                 },
                 {
