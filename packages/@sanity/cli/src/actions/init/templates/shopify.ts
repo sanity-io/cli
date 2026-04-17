@@ -59,14 +59,14 @@ export default defineConfig({
 const shopifyTemplate: ProjectTemplate = {
   configTemplate,
   dependencies: {
-    '@sanity/asset-utils': '^1.3.0',
-    '@sanity/color-input': '^3.0.2',
-    '@sanity/icons': '^2.11.0',
-    '@sanity/ui': '^2.0.0',
+    '@sanity/asset-utils': '^2.3.0',
+    '@sanity/color-input': '^6.0.4',
+    '@sanity/icons': '^3.7.4',
+    '@sanity/ui': '^3.1.14',
     'lodash.get': '^4.4.2',
     'pluralize-esm': '^9.0.2',
-    'sanity-plugin-hotspot-array': '^1.0.1',
-    'sanity-plugin-media': '^2.0.5',
+    'sanity-plugin-hotspot-array': '^3.0.2',
+    'sanity-plugin-media': '^4.1.1',
     slug: '^8.2.2',
   },
   devDependencies: {
