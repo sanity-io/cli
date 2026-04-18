@@ -15,7 +15,7 @@ export default defineConfig({
     globals: false,
     // 1. Pack @sanity/cli into a tarball and extract to tmp/ for realistic E2E testing
     // 2. Initialize test fixtures (copies fixtures, installs deps)
-    globalSetup: ['./globalSetup.ts', '@sanity/cli-test/vitest'],
+    globalSetup: ['./globalSetup.ts'],
     hookTimeout: 120_000,
     // E2E tests spawn real processes and need longer timeouts
     testTimeout: 30_000,

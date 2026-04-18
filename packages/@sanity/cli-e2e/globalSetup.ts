@@ -2,14 +2,16 @@ import {mkdtempSync, rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
+import {setup as setupFixtures, teardown as teardownFixtures} from '@sanity/cli-test/vitest'
 import {config as loadDotenv} from 'dotenv'
+import {type TestProject} from 'vitest/node'
 
 import {installFromTarball, packCli} from './helpers/packCli.js'
 
 let cleanupDir: string | undefined
 let tarballPath: string | undefined
 
-export async function setup(): Promise<void> {
+export async function setup(project: TestProject): Promise<void> {
   // Load .env file into process.env so tests can read SANITY_E2E_* vars.
   // Existing env vars take precedence (CI sets them directly).
   loadDotenv({quiet: true})
@@ -17,24 +19,27 @@ export async function setup(): Promise<void> {
   // skip pack and use the provided binary.
   if (process.env.E2E_BINARY_PATH) {
     console.log(`Using pre-set E2E_BINARY_PATH: ${process.env.E2E_BINARY_PATH}`)
-    return
+  } else {
+    console.log('Packing @sanity/cli...')
+    const tarball = packCli()
+    tarballPath = tarball
+
+    const tmpDir = mkdtempSync(join(tmpdir(), 'cli-e2e-'))
+    cleanupDir = tmpDir
+
+    console.log(`Installing tarball into ${tmpDir}...`)
+    const binaryPath = installFromTarball(tarball, tmpDir)
+
+    process.env.E2E_BINARY_PATH = binaryPath
+    console.log(`E2E_BINARY_PATH set to ${binaryPath}`)
   }
 
-  console.log('Packing @sanity/cli...')
-  const tarball = packCli()
-  tarballPath = tarball
-
-  const tmpDir = mkdtempSync(join(tmpdir(), 'cli-e2e-'))
-  cleanupDir = tmpDir
-
-  console.log(`Installing tarball into ${tmpDir}...`)
-  const binaryPath = installFromTarball(tarball, tmpDir)
-
-  process.env.E2E_BINARY_PATH = binaryPath
-  console.log(`E2E_BINARY_PATH set to ${binaryPath}`)
+  await setupFixtures(project, {ignoreWorkspace: true})
 }
 
 export async function teardown(): Promise<void> {
+  await teardownFixtures()
+
   if (tarballPath) {
     rmSync(tarballPath, {force: true})
   }
