@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url'
 import {getUserConfig, isCi, subdebug} from '@sanity/cli-core'
 import {gt as semverGt} from 'semver'
 
-import {detectTemporaryPackageRunner} from './isTemporaryPackageRunner.js'
+import {detectPackageRunner} from './packageRunner.js'
 import {resolveRunnerPackage} from './resolveRunnerPackage.js'
 import {resolveUpdateTarget} from './resolveUpdateTarget.js'
 import {showUpdateNotification} from './showNotificationUpdate.js'
@@ -35,7 +35,7 @@ export async function updateChecker(config: {version: string}): Promise<void> {
     return
   }
 
-  const runner = detectTemporaryPackageRunner()
+  const runner = detectPackageRunner()
   const {installedVersion, packageName} = runner
     ? {installedVersion: config.version, packageName: await resolveRunnerPackage()}
     : await resolveUpdateTarget(process.cwd(), config.version)

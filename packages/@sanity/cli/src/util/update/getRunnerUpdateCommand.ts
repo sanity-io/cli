@@ -1,10 +1,7 @@
 import {type SanityPackage} from '../packageManager/installationInfo/types.js'
-import {type TemporaryPackageRunner} from './isTemporaryPackageRunner.js'
+import {type PackageRunner} from './packageRunner.js'
 
-export function getRunnerUpdateCommand(
-  runner: TemporaryPackageRunner,
-  packageName: SanityPackage,
-): string {
+export function getRunnerUpdateCommand(runner: PackageRunner, packageName: SanityPackage): string {
   switch (runner) {
     case 'bunx': {
       return `bunx ${packageName}@latest`
