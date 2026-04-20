@@ -45,6 +45,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         node-version: [20, 22, 24]
+        shardIndex: [1, 2]
+        shardTotal: [2]
       fail-fast: false
 
     steps:
@@ -55,6 +57,14 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      - name: Restore Vitest cache
+        uses: actions/cache@v5
+        with:
+          path: node_modules/.vite/vitest
+          key: vitest-e2e-cache-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-${{ github.run_id }}
+          restore-keys: |
+            vitest-e2e-cache-${{ matrix.os }}-node${{ matrix.node-version }}-shard${{ matrix.shardIndex }}-
+
       - name: Build CLI
         run: pnpm build:cli
 
@@ -63,7 +73,7 @@ jobs:
           SANITY_E2E_TOKEN: ${{ secrets.SANITY_E2E_TOKEN }}
           SANITY_E2E_PROJECT_ID: ${{ secrets.SANITY_E2E_PROJECT_ID }}
           SANITY_E2E_DATASET: ${{ secrets.SANITY_E2E_DATASET }}
-        run: pnpm --filter @sanity/cli-e2e test
+        run: pnpm --filter @sanity/cli-e2e test --shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
 
   e2e-status:
     if: always()
