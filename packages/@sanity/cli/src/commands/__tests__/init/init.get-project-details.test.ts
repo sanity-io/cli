@@ -152,8 +152,6 @@ describe('#init: get project details', () => {
 
     mocks.select.mockResolvedValueOnce('org-123')
 
-    setupInitSuccessMocks('')
-
     const {error} = await testCommand(
       InitCommand,
       [

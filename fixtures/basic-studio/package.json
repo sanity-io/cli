@@ -16,13 +16,13 @@
   },
   "dependencies": {
     "@sanity/vision": "catalog:",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "sanity": "catalog:",
-    "styled-components": "^6.3.8"
+    "styled-components": "^6.4.0"
   },
   "devDependencies": {
-    "@types/react": "^19.2.9",
+    "@types/react": "^19.2.14",
     "typescript": "^5.9.3"
   }
 }

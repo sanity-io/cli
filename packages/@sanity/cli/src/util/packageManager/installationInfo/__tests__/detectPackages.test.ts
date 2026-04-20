@@ -75,6 +75,23 @@ describe('findPackageDeclaration', () => {
     expect(result).toBeNull()
   })
 
+  test('finds sanity declaration without workspaceInfo', async () => {
+    const cwd = path.join(fixturesDir, 'standalone-npm')
+    const result = await findPackageDeclaration('sanity', cwd)
+    if (!result) throw new Error('Expected result to be non-null')
+    expect(result.packageJsonPath).toBe(path.join(cwd, 'package.json'))
+    expect(result.dependencyType).toBe('dependencies')
+  })
+
+  test('returns raw declared range when no workspaceInfo provided', async () => {
+    const workspaceRoot = path.join(fixturesDir, 'pnpm-workspace-with-catalog')
+    const cwd = path.join(workspaceRoot, 'packages', 'studio')
+    const result = await findPackageDeclaration('sanity', cwd)
+    if (!result) throw new Error('Expected result to be non-null')
+    expect(result.declaredVersionRange).toBe('catalog:')
+    expect(result.versionRange).toBe('catalog:')
+  })
+
   test('resolves catalog: version in pnpm workspace', async () => {
     const workspaceRoot = path.join(fixturesDir, 'pnpm-workspace-with-catalog')
     const cwd = path.join(workspaceRoot, 'packages', 'studio')
@@ -212,6 +229,13 @@ describe('findInstalledPackage', () => {
     // In pnpm, @sanity/cli is a sibling to sanity in the .pnpm/.../node_modules folder
     const expectedSuffix = path.join('.pnpm', 'sanity@5.4.0', 'node_modules', '@sanity', 'cli')
     expect(result?.path).toContain(expectedSuffix)
+  })
+
+  test('finds sanity without explicit workspaceRoot', async () => {
+    const cwd = pnpmFixture
+    const result = await findInstalledPackage('sanity', cwd)
+    if (!result) throw new Error('Expected result to be non-null')
+    expect(result.version).toBe('5.4.0')
   })
 
   test('returns null when @sanity/cli is not found within workspace root', async () => {

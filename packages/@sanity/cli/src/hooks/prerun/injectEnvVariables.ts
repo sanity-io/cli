@@ -33,12 +33,10 @@ export const injectEnvVariables: Hook.Prerun = async function ({Command}) {
     warn(styleText('yellow', `Running in ${getSanityEnv()} environment mode\n`))
   }
 
-  const isApp = workDir.type === 'app'
   debug('Loading environment files using %s mode', mode)
 
-  const studioEnv = loadEnv(mode, workDir.directory, [
-    isApp ? 'SANITY_APP_' : 'SANITY_STUDIO_',
-    'SANITY_INTERNAL_',
-  ])
+  // Empty prefix loads all variables from .env files, not just SANITY_STUDIO_/SANITY_APP_ prefixed ones.
+  // Client bundle exposure is separately controlled by Vite's envPrefix in getViteConfig.ts.
+  const studioEnv = loadEnv(mode, workDir.directory, '')
   Object.assign(process.env, studioEnv)
 }
