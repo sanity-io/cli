@@ -38,7 +38,7 @@ export async function updateChecker(config: {version: string}): Promise<void> {
 
   const runner = detectPackageRunner()
   const {installedVersion, packageName} = runner
-    ? {installedVersion: config.version, packageName: await resolveRunnerPackage()}
+    ? await resolveRunnerPackage(process.argv[1] ?? '', config.version)
     : await resolveUpdateTarget(process.cwd(), config.version)
   debug('Update target: %s@%s%s', packageName, installedVersion, runner ? ` via ${runner}` : '')
 

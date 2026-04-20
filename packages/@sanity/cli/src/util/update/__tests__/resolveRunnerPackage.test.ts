@@ -17,36 +17,48 @@ describe('resolveRunnerPackage', () => {
     await rm(tempRoot, {force: true, recursive: true})
   })
 
-  async function buildFakeRunnerLayout(pkgName: string): Promise<string> {
+  async function buildFakeRunnerLayout(pkgName: string, version = '1.0.0'): Promise<string> {
     const runnerRoot = tempRoot
     const pkgDir = join(runnerRoot, 'node_modules', pkgName)
     const binDir = join(runnerRoot, 'node_modules', '.bin')
     await mkdir(join(pkgDir, 'bin'), {recursive: true})
     await mkdir(binDir, {recursive: true})
     await writeFile(join(pkgDir, 'bin', 'sanity'), '#!/usr/bin/env node\n')
-    await writeFile(join(pkgDir, 'package.json'), JSON.stringify({name: pkgName, version: '1.0.0'}))
+    await writeFile(join(pkgDir, 'package.json'), JSON.stringify({name: pkgName, version}))
     const binLink = join(binDir, 'sanity')
     await symlink(join(pkgDir, 'bin', 'sanity'), binLink)
     return binLink
   }
 
-  test('resolves to `sanity` when invoked from a sanity install', async () => {
-    const binLink = await buildFakeRunnerLayout('sanity')
-    expect(await resolveRunnerPackage(binLink)).toBe('sanity')
+  test('resolves `sanity` package with its own version from the install', async () => {
+    const binLink = await buildFakeRunnerLayout('sanity', '5.21.0')
+    expect(await resolveRunnerPackage(binLink)).toEqual({
+      installedVersion: '5.21.0',
+      packageName: 'sanity',
+    })
   })
 
-  test('resolves to `@sanity/cli` when invoked from a @sanity/cli install', async () => {
-    const binLink = await buildFakeRunnerLayout('@sanity/cli')
-    expect(await resolveRunnerPackage(binLink)).toBe('@sanity/cli')
+  test('resolves `@sanity/cli` package with its own version from the install', async () => {
+    const binLink = await buildFakeRunnerLayout('@sanity/cli', '6.3.2')
+    expect(await resolveRunnerPackage(binLink)).toEqual({
+      installedVersion: '6.3.2',
+      packageName: '@sanity/cli',
+    })
   })
 
-  test('falls back to `@sanity/cli` when the path does not exist', async () => {
-    expect(await resolveRunnerPackage('/does/not/exist/node_modules/.bin/sanity')).toBe(
-      '@sanity/cli',
+  test('falls back to `@sanity/cli` + fallbackVersion when the path does not exist', async () => {
+    expect(await resolveRunnerPackage('/does/not/exist/node_modules/.bin/sanity', '9.9.9')).toEqual(
+      {
+        installedVersion: '9.9.9',
+        packageName: '@sanity/cli',
+      },
     )
   })
 
-  test('falls back to `@sanity/cli` for an empty path', async () => {
-    expect(await resolveRunnerPackage('')).toBe('@sanity/cli')
+  test('falls back to `@sanity/cli` + fallbackVersion for an empty path', async () => {
+    expect(await resolveRunnerPackage('', '9.9.9')).toEqual({
+      installedVersion: '9.9.9',
+      packageName: '@sanity/cli',
+    })
   })
 })

@@ -80,7 +80,10 @@ describe('#checkForUpdates', () => {
     mockIsInstalledUsingYarn.mockReturnValue(false)
     mockSpawn.mockReturnValue({unref: vi.fn()})
     mockResolveUpdateTarget.mockResolvedValue({installedVersion: '3.60.0', packageName: 'sanity'})
-    mockResolveRunnerPackage.mockResolvedValue('@sanity/cli')
+    mockResolveRunnerPackage.mockResolvedValue({
+      installedVersion: '6.3.2',
+      packageName: '@sanity/cli',
+    })
     process.stdout.isTTY = true
     process.argv[1] = originalArgv1
 
@@ -171,6 +174,29 @@ describe('#checkForUpdates', () => {
       expect(stderr).toContain(expectedCommand)
     },
   )
+
+  test('fires notification under a runner when the installed package is `sanity` and its version is stale', async () => {
+    const {config} = await getCommandAndConfig('help')
+    process.argv[1] = '/home/user/.cache/pnpm/dlx/abc/node_modules/.bin/sanity'
+    mockResolveRunnerPackage.mockResolvedValue({
+      installedVersion: '5.21.0',
+      packageName: 'sanity',
+    })
+    setCachedLatestVersion({
+      key: 'latestVersion:sanity',
+      latestVersion: '5.22.0',
+    })
+
+    const {stderr} = await testHook<'init'>(checkForUpdates, {
+      config,
+    })
+
+    expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
+    expect(stderr).toContain('Update available')
+    expect(stderr).toContain('5.21.0')
+    expect(stderr).toContain('5.22.0')
+    expect(stderr).toContain('pnpm dlx sanity@latest')
+  })
 
   test('uses cwd-based resolution when not running from a temporary runner', async () => {
     const {config} = await getCommandAndConfig('help')
