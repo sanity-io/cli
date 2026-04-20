@@ -33,6 +33,7 @@ export function createDetectionEnv(): DetectionEnv {
 }
 
 interface EditorConfig {
+  /** Builds the server config with API token. If oauthOnly is true, the token is not used */
   buildServerConfig: (token: string) => Record<string, unknown>
   configKey: string
   /** Returns the config file path if editor is detected, null otherwise */
@@ -255,11 +256,6 @@ function buildCodexCliServerConfig(token: string): Record<string, unknown> {
   }
 }
 
-function buildCursorServerConfig(_token: string): Record<string, unknown> {
-  // Use OAuth for Cursor instead of setting the Authorization token
-  return defaultHttpConfig()
-}
-
 function buildGitHubCopilotCliServerConfig(token: string): Record<string, unknown> {
   return {
     headers: {Authorization: `Bearer ${token}`},
@@ -327,7 +323,6 @@ export const EDITOR_CONFIGS = {
   // Path: ~/.cursor/mcp.json  Key: mcpServers
   Cursor: {
     ...EDITOR_DEFAULTS,
-    buildServerConfig: buildCursorServerConfig,
     detect: detectCursor,
     oauthOnly: true,
   },

@@ -44,7 +44,7 @@ describe('buildServerConfig', () => {
   const testToken = 'test-auth-token-123'
 
   test('Cursor config uses OAuth (no Authorization header)', () => {
-    const config = EDITOR_CONFIGS.Cursor.buildServerConfig(testToken)
+    const config = EDITOR_CONFIGS.Cursor.buildServerConfig()
 
     expect(config).toStrictEqual({
       type: 'http',

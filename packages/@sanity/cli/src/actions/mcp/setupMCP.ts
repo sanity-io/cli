@@ -4,7 +4,7 @@ import {logSymbols} from '@sanity/cli-core/ux'
 
 import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
-import {type EditorName} from './editorConfigs.js'
+import {EDITOR_CONFIGS, type EditorName} from './editorConfigs.js'
 import {promptForMCPSetup} from './promptForMCPSetup.js'
 import {validateEditorTokens} from './validateEditorTokens.js'
 import {writeMCPConfig} from './writeMCPConfig.js'
@@ -125,8 +125,11 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     token = validEditor.existingToken
   }
 
+  const allOAuth = selected.every((e) => EDITOR_CONFIGS[e.name].oauthOnly)
+
   // Fall back to creating a new token
-  if (!token) {
+  // If all editors use OAuth, we don't need to create a token
+  if (!token && !allOAuth) {
     try {
       token = await createMCPToken()
     } catch (error) {

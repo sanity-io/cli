@@ -143,18 +143,20 @@ async function runEditorTest(tc: EditorTestCase): Promise<void> {
     const sessionId = `session-${tc.name.toLowerCase().replaceAll(/\s+/g, '-')}`
     const token = `test-token-${tc.name.toLowerCase().replaceAll(/\s+/g, '-')}`
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: sessionId, sid: sessionId})
+    if (!tc.usesOAuth) {
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'post',
+        uri: '/auth/session/create',
+      }).reply(200, {id: sessionId, sid: sessionId})
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: sessionId},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token})
+      mockApi({
+        apiVersion: MCP_API_VERSION,
+        method: 'get',
+        query: {sid: sessionId},
+        uri: '/auth/fetch',
+      }).reply(200, {label: 'MCP Token', token})
+    }
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
@@ -456,18 +458,7 @@ describe('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['Cursor'])
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-123', sid: 'session-123'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-123'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'test-token-123'})
+    // No token creation mocks — Cursor is OAuth-only, so setupMCP skips token creation
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
@@ -942,19 +933,7 @@ describe('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['Cursor'])
 
-    // New token creation
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-new', sid: 'session-new'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-new'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'new-token-123'})
+    // Cursor is oauthOnly — no token creation needed, OAuth replaces the expired token
 
     await testCommand(ConfigureMcpCommand, [])
 
@@ -968,6 +947,11 @@ describe('#mcp:configure', () => {
       ],
       message: 'Configure Sanity MCP server?',
     })
+
+    // Reconfigured Cursor should use OAuth (no token in config)
+    const [, writtenContent] = mockWriteFile.mock.lastCall ?? []
+    expect(writtenContent).toContain('https://mcp.sanity.io')
+    expect(writtenContent).not.toContain('Authorization')
   })
 
   test('reuses valid token from another editor instead of creating new one', async () => {
@@ -1063,10 +1047,10 @@ describe('#mcp:configure', () => {
 
   test('handles token creation error gracefully', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('.cursor')
+      return String(path).endsWith('.gemini/settings.json')
     })
 
-    mockCheckbox.mockResolvedValue(['Cursor'])
+    mockCheckbox.mockResolvedValue(['Gemini CLI'])
 
     mockApi({
       apiVersion: MCP_API_VERSION,
@@ -1083,10 +1067,10 @@ describe('#mcp:configure', () => {
 
   test('handles file write error gracefully', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('.cursor')
+      return String(path).endsWith('.gemini/settings.json')
     })
 
-    mockCheckbox.mockResolvedValue(['Cursor'])
+    mockCheckbox.mockResolvedValue(['Gemini CLI'])
 
     mockApi({
       apiVersion: MCP_API_VERSION,
@@ -1151,19 +1135,6 @@ describe('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['Cursor'])
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-merge', sid: 'session-merge'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-merge'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'merge-token-123'})
-
     await testCommand(ConfigureMcpCommand, [])
 
     expect(mockWriteFile).toHaveBeenCalledWith(
@@ -1185,23 +1156,9 @@ describe('#mcp:configure', () => {
       return String(path).includes('.cursor')
     })
 
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-ci', sid: 'session-ci'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-ci'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'test-token-ci'})
-
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
     expect(mockCheckbox).not.toHaveBeenCalled()
-    // Cursor uses OAuth, so the config should NOT contain the token
     const [, writtenContent] = mockWriteFile.mock.lastCall ?? []
     expect(mockWriteFile).toHaveBeenCalledWith(
       expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
@@ -1209,7 +1166,6 @@ describe('#mcp:configure', () => {
       'utf8',
     )
     expect(writtenContent).toContain('https://mcp.sanity.io')
-    expect(writtenContent).not.toContain('test-token-ci')
     expect(writtenContent).not.toContain('Authorization')
     expect(stdout).toContain('MCP configured for Cursor')
   })

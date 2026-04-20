@@ -18,10 +18,10 @@ interface TomlConfig {
  *
  * Note: Config parseability is already validated in detectAvailableEditors()
  */
-export async function writeMCPConfig(editor: Editor, token: string): Promise<void> {
+export async function writeMCPConfig(editor: Editor, token?: string): Promise<void> {
   const configPath = editor.configPath
-  const {buildServerConfig, configKey, format} = EDITOR_CONFIGS[editor.name]
-  const serverConfig = buildServerConfig(token)
+  const {buildServerConfig, configKey, format, oauthOnly} = EDITOR_CONFIGS[editor.name]
+  const serverConfig = oauthOnly ? buildServerConfig('') : buildServerConfig(token!)
 
   // Read existing content or start with empty object/document
   let content = format === 'toml' ? '' : '{}'
