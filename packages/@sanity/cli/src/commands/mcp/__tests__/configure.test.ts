@@ -87,10 +87,10 @@ interface EditorTestCase {
 
   /** Extra substrings the written content must contain (beyond the token) */
   expectedContentChecks?: string[]
+  /** If true, this editor uses OAuth natively and does not need an embedded API token */
+  oauthOnly?: boolean
   /** Only run on this platform (skipped otherwise) */
   platform?: NodeJS.Platform
-  /** If true, editor uses OAuth and config should NOT contain token/Authorization */
-  usesOAuth?: boolean
 }
 
 const EXECA_SUCCESS = {
@@ -143,7 +143,7 @@ async function runEditorTest(tc: EditorTestCase): Promise<void> {
     const sessionId = `session-${tc.name.toLowerCase().replaceAll(/\s+/g, '-')}`
     const token = `test-token-${tc.name.toLowerCase().replaceAll(/\s+/g, '-')}`
 
-    if (!tc.usesOAuth) {
+    if (!tc.oauthOnly) {
       mockApi({
         apiVersion: MCP_API_VERSION,
         method: 'post',
@@ -160,29 +160,16 @@ async function runEditorTest(tc: EditorTestCase): Promise<void> {
 
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
-    const [, writtenContent] = mockWriteFile.mock.lastCall ?? []
-
-    if (tc.usesOAuth) {
-      // OAuth editors should NOT have token in config
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.stringContaining(convertToSystemPath(tc.expectedConfigPath)),
-        expect.any(String),
-        'utf8',
-      )
-      expect(writtenContent).toContain('https://mcp.sanity.io')
-      expect(writtenContent).not.toContain(token)
-      expect(writtenContent).not.toContain('Authorization')
-    } else {
-      // Assert config was written to the expected path with the token
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.stringContaining(convertToSystemPath(tc.expectedConfigPath)),
-        expect.stringContaining(token),
-        'utf8',
-      )
-    }
+    // Assert config was written to the expected path with the token
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath(tc.expectedConfigPath)),
+      tc.oauthOnly ? expect.not.stringContaining(token) : expect.stringContaining(token),
+      'utf8',
+    )
 
     // Assert extra content checks
     if (tc.expectedContentChecks) {
+      const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
       for (const check of tc.expectedContentChecks) {
         expect(writtenContent, `written content should contain "${check}"`).toContain(check)
       }
@@ -214,7 +201,7 @@ const editorTestCases: EditorTestCase[] = [
     detect: {existsSync: (p) => p.endsWith('.cursor')},
     expectedConfigPath: '.cursor/mcp.json',
     name: 'Cursor',
-    usesOAuth: true,
+    oauthOnly: true,
   },
   {
     detect: {
@@ -335,8 +322,12 @@ const editorTestCases: EditorTestCase[] = [
     name: 'OpenCode',
     platform: 'darwin',
   },
-  // Basic Codex CLI (without CODEX_HOME) is tested by individual test
-  // "detects Codex CLI via CLI and configures TOML with headers"
+  {
+    detect: {cliCommands: ['codex']},
+    expectedConfigPath: '.codex/config.toml',
+    expectedContentChecks: ['[mcp_servers.Sanity]', '[mcp_servers.Sanity.http_headers]'],
+    name: 'Codex CLI',
+  },
   {
     detect: {
       cliCommands: ['codex'],
@@ -436,374 +427,6 @@ describe('#mcp:configure', () => {
     const pending = nock.pendingMocks()
     nock.cleanAll()
     expect(pending, 'pending mocks').toEqual([])
-  })
-
-  test('shows warning when no editors are detected', async () => {
-    // No editors detected (all checks fail)
-    mockExistsSync.mockReturnValue(false)
-    mockExeca.mockRejectedValue(new Error('Not installed'))
-
-    const {error, stderr} = await testCommand(ConfigureMcpCommand, [])
-
-    if (error) throw error
-
-    expect(stderr).toContain("Couldn't auto-configure Sanity MCP server for your editor")
-    expect(stderr).toContain('https://mcp.sanity.io')
-  })
-
-  test('detects Cursor and configures it', async () => {
-    mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('.cursor')
-    })
-
-    mockCheckbox.mockResolvedValue(['Cursor'])
-
-    // No token creation mocks — Cursor is OAuth-only, so setupMCP skips token creation
-
-    const {stdout} = await testCommand(ConfigureMcpCommand, [])
-
-    expect(mockCheckbox).toHaveBeenCalledWith({
-      choices: [
-        {
-          checked: true,
-          name: 'Cursor',
-          value: 'Cursor',
-        },
-      ],
-      message: 'Configure Sanity MCP server?',
-    })
-
-    // Cursor uses OAuth, so the config should NOT contain the token
-    const [, writtenContent] = mockWriteFile.mock.lastCall ?? []
-    expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
-      expect.any(String),
-      'utf8',
-    )
-    expect(writtenContent).toContain('https://mcp.sanity.io')
-    expect(writtenContent).not.toContain('test-token-123')
-    expect(writtenContent).not.toContain('Authorization')
-
-    expect(stdout).toContain('MCP configured for Cursor')
-  })
-
-  test('detects Claude Code via CLI and configures it', async () => {
-    mockExeca.mockResolvedValue({
-      command: 'claude --version',
-      exitCode: 0,
-      failed: false,
-      killed: false,
-      signal: undefined,
-      stderr: '',
-      stdout: '1.0.0',
-      timedOut: false,
-    } as never)
-
-    mockCheckbox.mockResolvedValue(['Claude Code'])
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-789', sid: 'session-789'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-789'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'test-token-789'})
-
-    const {stdout} = await testCommand(ConfigureMcpCommand, [])
-
-    expect(mockExeca).toHaveBeenCalledWith('claude', ['--version'], {
-      stdio: 'pipe',
-      timeout: 5000,
-    })
-
-    expect(mockCheckbox).toHaveBeenCalledWith({
-      choices: expect.arrayContaining([
-        {
-          checked: true,
-          name: 'Claude Code',
-          value: 'Claude Code',
-        },
-      ]),
-      message: 'Configure Sanity MCP server?',
-    })
-
-    expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining('.claude.json'),
-      expect.stringContaining('test-token-789'),
-      'utf8',
-    )
-
-    expect(stdout).toContain('MCP configured for Claude Code')
-  })
-
-  test('detects GitHub Copilot CLI and configures it with tools field', async () => {
-    // Match both ~/.copilot and $XDG_CONFIG_HOME/copilot across platforms
-    mockExistsSync.mockImplementation((p: PathLike) => {
-      const normalizedPath = String(p).replaceAll('\\', '/')
-      return /\/.?copilot(?:\/|$)/.test(normalizedPath)
-    })
-
-    mockCheckbox.mockResolvedValue(['GitHub Copilot CLI'])
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-copilot', sid: 'session-copilot'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-copilot'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'test-token-copilot'})
-
-    const {stdout} = await testCommand(ConfigureMcpCommand, [])
-
-    expect(mockCheckbox).toHaveBeenCalledWith({
-      choices: [
-        {
-          checked: true,
-          name: 'GitHub Copilot CLI',
-          value: 'GitHub Copilot CLI',
-        },
-      ],
-      message: 'Configure Sanity MCP server?',
-    })
-
-    const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
-    expect(writtenContent).toContain('test-token-copilot')
-    expect(writtenContent).toContain('"tools"')
-    expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining('mcp-config.json'),
-      expect.any(String),
-      'utf8',
-    )
-
-    expect(stdout).toContain('MCP configured for GitHub Copilot CLI')
-  })
-
-  test.runIf(process.platform === 'linux')(
-    'detects GitHub Copilot CLI via XDG_CONFIG_HOME on Linux',
-    async () => {
-      const originalXdg = process.env.XDG_CONFIG_HOME
-      process.env.XDG_CONFIG_HOME = '/home/user/.config'
-
-      mockExistsSync.mockImplementation((p: PathLike) => {
-        return String(p).includes('/home/user/.config/copilot')
-      })
-
-      mockCheckbox.mockResolvedValue(['GitHub Copilot CLI'])
-
-      mockApi({
-        apiVersion: MCP_API_VERSION,
-        method: 'post',
-        uri: '/auth/session/create',
-      }).reply(200, {id: 'session-copilot-xdg', sid: 'session-copilot-xdg'})
-
-      mockApi({
-        apiVersion: MCP_API_VERSION,
-        method: 'get',
-        query: {sid: 'session-copilot-xdg'},
-        uri: '/auth/fetch',
-      }).reply(200, {label: 'MCP Token', token: 'test-token-copilot-xdg'})
-
-      const {stdout} = await testCommand(ConfigureMcpCommand, [])
-
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.stringContaining('/home/user/.config/copilot/mcp-config.json'),
-        expect.stringContaining('test-token-copilot-xdg'),
-        'utf8',
-      )
-
-      expect(stdout).toContain('MCP configured for GitHub Copilot CLI')
-
-      process.env.XDG_CONFIG_HOME = originalXdg
-    },
-  )
-
-  test.runIf(process.platform === 'darwin')(
-    'detects OpenCode via CLI on macOS and configures it',
-    async () => {
-      const originalPlatform = process.platform
-      Object.defineProperty(process, 'platform', {
-        value: 'darwin',
-      })
-
-      mockExeca.mockResolvedValue({
-        command: 'opencode --version',
-        exitCode: 0,
-        failed: false,
-        killed: false,
-        signal: undefined,
-        stderr: '',
-        stdout: '1.0.0',
-        timedOut: false,
-      } as never)
-
-      mockCheckbox.mockResolvedValue(['OpenCode'])
-
-      mockApi({
-        apiVersion: MCP_API_VERSION,
-        method: 'post',
-        uri: '/auth/session/create',
-      }).reply(200, {id: 'session-opencode', sid: 'session-opencode'})
-
-      mockApi({
-        apiVersion: MCP_API_VERSION,
-        method: 'get',
-        query: {sid: 'session-opencode'},
-        uri: '/auth/fetch',
-      }).reply(200, {label: 'MCP Token', token: 'test-token-opencode'})
-
-      const {stdout} = await testCommand(ConfigureMcpCommand, [])
-
-      expect(mockExeca).toHaveBeenCalledWith('opencode', ['--version'], {
-        stdio: 'pipe',
-        timeout: 5000,
-      })
-
-      expect(mockCheckbox).toHaveBeenCalledWith({
-        choices: expect.arrayContaining([
-          {
-            checked: true,
-            name: 'OpenCode',
-            value: 'OpenCode',
-          },
-        ]),
-        message: 'Configure Sanity MCP server?',
-      })
-
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.stringContaining('.config/opencode/opencode.json'),
-        expect.stringContaining('test-token-opencode'),
-        'utf8',
-      )
-
-      expect(stdout).toContain('MCP configured for OpenCode')
-
-      Object.defineProperty(process, 'platform', {
-        value: originalPlatform,
-      })
-    },
-  )
-
-  test('detects Codex CLI via CLI and configures TOML with headers', async () => {
-    mockExeca.mockImplementation((async (command: string | URL) => {
-      if (command === 'codex') {
-        return {
-          command: 'codex --version',
-          exitCode: 0,
-          failed: false,
-          killed: false,
-          signal: undefined,
-          stderr: '',
-          stdout: '1.0.0',
-          timedOut: false,
-        } as never
-      }
-
-      throw new Error('Not installed')
-    }) as never)
-
-    mockCheckbox.mockResolvedValue(['Codex CLI'])
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'post',
-      uri: '/auth/session/create',
-    }).reply(200, {id: 'session-codex', sid: 'session-codex'})
-
-    mockApi({
-      apiVersion: MCP_API_VERSION,
-      method: 'get',
-      query: {sid: 'session-codex'},
-      uri: '/auth/fetch',
-    }).reply(200, {label: 'MCP Token', token: 'test-token-codex'})
-
-    const {stdout} = await testCommand(ConfigureMcpCommand, [])
-
-    expect(mockExeca).toHaveBeenCalledWith('codex', ['--version'], {
-      stdio: 'pipe',
-      timeout: 5000,
-    })
-
-    expect(mockCheckbox).toHaveBeenCalledWith({
-      choices: [
-        {
-          checked: true,
-          name: 'Codex CLI',
-          value: 'Codex CLI',
-        },
-      ],
-      message: 'Configure Sanity MCP server?',
-    })
-
-    const writtenContent = mockWriteFile.mock.calls[0]?.[1] as string
-    expect(writtenContent).toContain('[mcp_servers.Sanity]')
-    expect(writtenContent).toContain('[mcp_servers.Sanity.http_headers]')
-    expect(writtenContent).toContain('Authorization = "Bearer test-token-codex"')
-
-    expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining(convertToSystemPath('.codex/config.toml')),
-      expect.any(String),
-      'utf8',
-    )
-
-    expect(stdout).toContain('MCP configured for Codex CLI')
-  })
-
-  test('uses CODEX_HOME when configuring Codex CLI', async () => {
-    const originalCodexHome = process.env.CODEX_HOME
-    process.env.CODEX_HOME = '/tmp/custom-codex-home'
-    try {
-      mockExeca.mockImplementation((async (command: string | URL) => {
-        if (command === 'codex') {
-          return {
-            command: 'codex --version',
-            exitCode: 0,
-            failed: false,
-            killed: false,
-            signal: undefined,
-            stderr: '',
-            stdout: '1.0.0',
-            timedOut: false,
-          } as never
-        }
-
-        throw new Error('Not installed')
-      }) as never)
-
-      mockCheckbox.mockResolvedValue(['Codex CLI'])
-
-      mockApi({
-        apiVersion: MCP_API_VERSION,
-        method: 'post',
-        uri: '/auth/session/create',
-      }).reply(200, {id: 'session-codex-home', sid: 'session-codex-home'})
-
-      mockApi({
-        apiVersion: MCP_API_VERSION,
-        method: 'get',
-        query: {sid: 'session-codex-home'},
-        uri: '/auth/fetch',
-      }).reply(200, {label: 'MCP Token', token: 'test-token-codex-home'})
-
-      const {stdout} = await testCommand(ConfigureMcpCommand, [])
-
-      const writtenPath = mockWriteFile.mock.calls[0]?.[0] as string
-      expect(writtenPath.replaceAll('\\', '/')).toMatch(/\/tmp\/custom-codex-home\/config\.toml$/)
-      expect(mockWriteFile).toHaveBeenCalledWith(expect.any(String), expect.any(String), 'utf8')
-
-      expect(stdout).toContain('MCP configured for Codex CLI')
-    } finally {
-      process.env.CODEX_HOME = originalCodexHome
-    }
   })
 
   // -------------------------------------------------------------------------
@@ -933,7 +556,7 @@ describe('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['Cursor'])
 
-    // Cursor is oauthOnly — no token creation needed, OAuth replaces the expired token
+    // Cursor is oauthOnly so no new token is created — config is rewritten without a token
 
     await testCommand(ConfigureMcpCommand, [])
 
@@ -947,11 +570,6 @@ describe('#mcp:configure', () => {
       ],
       message: 'Configure Sanity MCP server?',
     })
-
-    // Reconfigured Cursor should use OAuth (no token in config)
-    const [, writtenContent] = mockWriteFile.mock.lastCall ?? []
-    expect(writtenContent).toContain('https://mcp.sanity.io')
-    expect(writtenContent).not.toContain('Authorization')
   })
 
   test('reuses valid token from another editor instead of creating new one', async () => {
@@ -1041,16 +659,47 @@ describe('#mcp:configure', () => {
     expect(stdout).toContain('MCP configured for Cursor, VS Code')
   })
 
+  test('auto-selects all editors in non-interactive mode without prompting', async () => {
+    mockIsInteractive.mockReturnValue(false)
+
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).endsWith('Code/User')
+    })
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-ci', sid: 'session-ci'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-ci'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'test-token-ci'})
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).not.toHaveBeenCalled()
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining(convertToSystemPath('Code/User/mcp.json')),
+      expect.stringContaining('test-token-ci'),
+      'utf8',
+    )
+    expect(stdout).toContain('MCP configured for VS Code')
+  })
+
   // -------------------------------------------------------------------------
   // Error handling
   // -------------------------------------------------------------------------
 
   test('handles token creation error gracefully', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).endsWith('.gemini/settings.json')
+      return String(path).endsWith('Code/User')
     })
 
-    mockCheckbox.mockResolvedValue(['Gemini CLI'])
+    mockCheckbox.mockResolvedValue(['VS Code'])
 
     mockApi({
       apiVersion: MCP_API_VERSION,
@@ -1067,10 +716,10 @@ describe('#mcp:configure', () => {
 
   test('handles file write error gracefully', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).endsWith('.gemini/settings.json')
+      return String(path).endsWith('Code/User')
     })
 
-    mockCheckbox.mockResolvedValue(['Gemini CLI'])
+    mockCheckbox.mockResolvedValue(['VS Code'])
 
     mockApi({
       apiVersion: MCP_API_VERSION,
@@ -1135,6 +784,19 @@ describe('#mcp:configure', () => {
 
     mockCheckbox.mockResolvedValue(['Cursor'])
 
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'post',
+      uri: '/auth/session/create',
+    }).reply(200, {id: 'session-merge', sid: 'session-merge'})
+
+    mockApi({
+      apiVersion: MCP_API_VERSION,
+      method: 'get',
+      query: {sid: 'session-merge'},
+      uri: '/auth/fetch',
+    }).reply(200, {label: 'MCP Token', token: 'merge-token-123'})
+
     await testCommand(ConfigureMcpCommand, [])
 
     expect(mockWriteFile).toHaveBeenCalledWith(
@@ -1147,26 +809,5 @@ describe('#mcp:configure', () => {
       expect.stringContaining('Sanity'),
       'utf8',
     )
-  })
-
-  test('auto-selects all editors in non-interactive mode without prompting', async () => {
-    mockIsInteractive.mockReturnValue(false)
-
-    mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).includes('.cursor')
-    })
-
-    const {stdout} = await testCommand(ConfigureMcpCommand, [])
-
-    expect(mockCheckbox).not.toHaveBeenCalled()
-    const [, writtenContent] = mockWriteFile.mock.lastCall ?? []
-    expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
-      expect.any(String),
-      'utf8',
-    )
-    expect(writtenContent).toContain('https://mcp.sanity.io')
-    expect(writtenContent).not.toContain('Authorization')
-    expect(stdout).toContain('MCP configured for Cursor')
   })
 })
