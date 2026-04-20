@@ -4,18 +4,16 @@ import {describe, expect, test} from 'vitest'
 
 import {getAvailablePackageManagers} from '../helpers/packageManagers.js'
 
-// Only run against a known-published version (set by post-release CI).
-// The local workspace version may not exist on npm, and package managers
-// fetch from the registry, so falling back to it would cause false failures.
-const version = process.env.E2E_PACKAGE_VERSION
+const isRegistryMode = !!process.env.E2E_BINARY_PATH
 
-describe.skipIf(!version)('create-sanity via package managers', () => {
+describe.skipIf(!isRegistryMode)('create-sanity via package managers', () => {
+  const version = 'latest'
   const managers = getAvailablePackageManagers()
 
   for (const pm of managers) {
     describe(pm.name, () => {
       test(`${pm.name} create sanity@${version} --help exits 0`, () => {
-        const [cmd, ...args] = pm.createCommand(version!, ['--help'])
+        const [cmd, ...args] = pm.createCommand(version, ['--help'])
 
         let result: string
         try {
