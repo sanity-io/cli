@@ -5,7 +5,7 @@ import {type SanityPackage} from '../packageManager/installationInfo/types.js'
 
 const KNOWN_PACKAGES = new Set<SanityPackage>(['@sanity/cli', 'sanity'])
 
-export interface RunnerPackage {
+interface RunnerPackage {
   installedVersion: string
   packageName: SanityPackage
 }

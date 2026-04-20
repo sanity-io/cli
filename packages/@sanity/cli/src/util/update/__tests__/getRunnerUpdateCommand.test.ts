@@ -11,6 +11,7 @@ describe('getRunnerUpdateCommand', () => {
 
   test('builds pnpm dlx update command', () => {
     expect(getRunnerUpdateCommand('pnpm-dlx', 'sanity')).toBe('pnpm dlx sanity@latest')
+    expect(getRunnerUpdateCommand('pnpm-dlx', '@sanity/cli')).toBe('pnpm dlx @sanity/cli@latest')
   })
 
   test('builds yarn dlx update command without -p when package name matches bin', () => {
@@ -25,6 +26,7 @@ describe('getRunnerUpdateCommand', () => {
 
   test('builds bunx update command', () => {
     expect(getRunnerUpdateCommand('bunx', 'sanity')).toBe('bunx sanity@latest')
+    expect(getRunnerUpdateCommand('bunx', '@sanity/cli')).toBe('bunx @sanity/cli@latest')
   })
 
   test('throws on an unknown runner kind (exhaustiveness guard)', () => {

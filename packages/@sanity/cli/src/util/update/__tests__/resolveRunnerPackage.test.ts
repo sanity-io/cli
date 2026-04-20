@@ -61,4 +61,48 @@ describe('resolveRunnerPackage', () => {
       packageName: '@sanity/cli',
     })
   })
+
+  test('uses fallbackVersion when package.json has a non-string version field', async () => {
+    const pkgDir = join(tempRoot, 'node_modules', 'sanity')
+    const binDir = join(tempRoot, 'node_modules', '.bin')
+    await mkdir(join(pkgDir, 'bin'), {recursive: true})
+    await mkdir(binDir, {recursive: true})
+    await writeFile(join(pkgDir, 'bin', 'sanity'), '#!/usr/bin/env node\n')
+    await writeFile(join(pkgDir, 'package.json'), JSON.stringify({name: 'sanity', version: 42}))
+    const binLink = join(binDir, 'sanity')
+    await symlink(join(pkgDir, 'bin', 'sanity'), binLink)
+
+    expect(await resolveRunnerPackage(binLink, '9.9.9')).toEqual({
+      installedVersion: '9.9.9',
+      packageName: 'sanity',
+    })
+  })
+
+  test('walks past an unrelated package.json before finding a sanity package', async () => {
+    // Layout:
+    //   <tempRoot>/node_modules/sanity/{bin/sanity, package.json (name: sanity)}
+    //   <tempRoot>/node_modules/sanity/embedded/package.json (name: something-else)  <- closer to bin
+    //   binLink -> <tempRoot>/node_modules/sanity/embedded/bin/sanity
+    const pkgDir = join(tempRoot, 'node_modules', 'sanity')
+    const embeddedDir = join(pkgDir, 'embedded')
+    const binDir = join(tempRoot, 'node_modules', '.bin')
+    await mkdir(join(embeddedDir, 'bin'), {recursive: true})
+    await mkdir(binDir, {recursive: true})
+    await writeFile(join(embeddedDir, 'bin', 'sanity'), '#!/usr/bin/env node\n')
+    await writeFile(
+      join(embeddedDir, 'package.json'),
+      JSON.stringify({name: 'something-else', version: '0.0.1'}),
+    )
+    await writeFile(
+      join(pkgDir, 'package.json'),
+      JSON.stringify({name: 'sanity', version: '5.21.0'}),
+    )
+    const binLink = join(binDir, 'sanity')
+    await symlink(join(embeddedDir, 'bin', 'sanity'), binLink)
+
+    expect(await resolveRunnerPackage(binLink, '9.9.9')).toEqual({
+      installedVersion: '5.21.0',
+      packageName: 'sanity',
+    })
+  })
 })
