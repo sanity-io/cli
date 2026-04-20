@@ -907,20 +907,21 @@ Copy a dataset or manage copy jobs
 
 ```
 USAGE
-  $ sanity datasets copy [SOURCE] [TARGET] [-p <id>] [--attach <value> | --list | --detach | --skip-history]
-    [--limit <value> ] [--offset <value> ]
+  $ sanity datasets copy [SOURCE] [TARGET] [-p <id>] [--limit <value> ] [--offset <value> ]
+    [--skip-content-releases |  | [--attach <value> | --list | --detach | --skip-history]]
 
 ARGUMENTS
   [SOURCE]  Name of the dataset to copy from
   [TARGET]  Name of the dataset to copy to
 
 FLAGS
-  --attach=<value>  Attach to the running copy process to show progress
-  --detach          Start the copy without waiting for it to finish
-  --limit=<value>   Maximum number of jobs returned (default 10, max 1000)
-  --list            Lists all dataset copy jobs
-  --offset=<value>  Start position in the list of jobs (default 0)
-  --skip-history    Don't preserve document history on copy
+  --attach=<value>         Attach to the running copy process to show progress
+  --detach                 Start the copy without waiting for it to finish
+  --limit=<value>          Maximum number of jobs returned (default 10, max 1000)
+  --list                   Lists all dataset copy jobs
+  --offset=<value>         Start position in the list of jobs (default 0)
+  --skip-content-releases  Don't copy content release documents to the target dataset
+  --skip-history           Don't preserve document history on copy
 
 OVERRIDE FLAGS
   -p, --project-id=<id>  Project ID to copy dataset in (overrides CLI configuration)
@@ -944,6 +945,10 @@ EXAMPLES
   Copy without preserving document history (faster for large datasets)
 
     $ sanity datasets copy --skip-history source target
+
+  Copy without content release documents
+
+    $ sanity datasets copy --skip-content-releases source target
 
   Start copy job without waiting for completion
 
