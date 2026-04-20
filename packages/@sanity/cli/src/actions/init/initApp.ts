@@ -12,16 +12,18 @@ import {scaffoldAndInstall, selectTemplate} from './scaffoldTemplate.js'
 
 export async function initApp({
   autoUpdates,
+  datasetName,
   defaults,
   error,
   git,
-  noGit,
   mcpConfigured,
+  noGit,
   organizationId,
   output,
   outputPath,
   overwriteFiles,
   packageManager,
+  projectId,
   remoteTemplateInfo,
   sluggedName,
   template,
@@ -32,16 +34,18 @@ export async function initApp({
   workDir,
 }: {
   autoUpdates: boolean
+  datasetName: string
   defaults: {projectName: string}
   error: Output['error']
   git?: boolean | string
-  noGit?: boolean
   mcpConfigured: EditorName[]
+  noGit?: boolean
   organizationId: string | undefined
   output: Output
   outputPath: string
   overwriteFiles?: boolean
   packageManager?: string
+  projectId: string
   remoteTemplateInfo: RepoInfo | undefined
   sluggedName: string
   template?: string
@@ -69,7 +73,7 @@ export async function initApp({
 
   await scaffoldAndInstall({
     autoUpdates,
-    datasetName: '',
+    datasetName,
     defaults,
     displayName: '',
     git,
@@ -79,7 +83,7 @@ export async function initApp({
     outputPath,
     overwriteFiles,
     packageManager,
-    projectId: '',
+    projectId,
     remoteTemplateInfo,
     sluggedName,
     templateName,
@@ -98,10 +102,20 @@ export async function initApp({
     `${logSymbols.success} ${styleText(['green', 'bold'], 'Success!')} Your custom app has been scaffolded.`,
   )
   if (!isCurrentDir) output.log(goToProjectDir)
-  output.log(
-    `\n${styleText('bold', 'Next')}, configure the project(s) and dataset(s) your app should work with.`,
-  )
-  output.log('\nGet started in `src/App.tsx`, or refer to our documentation for a walkthrough:')
+
+  if (projectId && datasetName) {
+    output.log(
+      `\nConfigured with project ${styleText('cyan', projectId)} and dataset ${styleText('cyan', datasetName)}.`,
+    )
+    output.log(
+      'Edit `src/App.tsx` to change these values or add more project / dataset pairs to your config.',
+    )
+  } else {
+    output.log(
+      `\n${styleText('bold', 'Next')}, configure the project(s) and dataset(s) your app should work with in \`src/App.tsx\`.`,
+    )
+  }
+  output.log('\nRefer to our documentation for a walkthrough:')
   output.log(
     styleText(['blue', 'underline'], 'https://www.sanity.io/docs/app-sdk/sdk-configuration'),
   )
