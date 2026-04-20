@@ -1,9 +1,9 @@
 import {execFileSync} from 'node:child_process'
-import {mkdtempSync} from 'node:fs'
+import {mkdtempSync, rmSync} from 'node:fs'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
-import {describe, expect, test} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 
 import {getAvailablePackageManagers} from '../helpers/packageManagers.js'
 
@@ -18,6 +18,14 @@ describe.skipIf(!isRegistryMode)('create-sanity via package managers', {timeout:
   const version = 'latest'
   const managers = getAvailablePackageManagers()
 
+  let tempDir: string
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'sanity-e2e-'))
+  })
+  afterEach(() => {
+    rmSync(tempDir, {force: true, recursive: true})
+  })
+
   for (const pm of managers) {
     describe(pm.name, () => {
       test.skipIf(skipYarnOnOldNode(pm.name))(
@@ -27,7 +35,7 @@ describe.skipIf(!isRegistryMode)('create-sanity via package managers', {timeout:
           let result: string
           try {
             result = execFileSync(cmd, args, {
-              cwd: mkdtempSync(join(tmpdir(), 'sanity-e2e-')),
+              cwd: tempDir,
               encoding: 'utf8',
               env: {
                 ...process.env,

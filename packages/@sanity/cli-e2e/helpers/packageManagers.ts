@@ -50,6 +50,9 @@ export function getAvailablePackageManagers(): PackageManager[] {
         name: 'yarn',
       })
     } else {
+      // yarn v1 create uses the binary name as-is, so passing a version tag
+      // (e.g. sanity@latest) causes it to look for a binary literally named
+      // "create-sanity@latest". Version is ignored — always resolves latest.
       managers.push({
         createCommand: (_version, args) => ['yarn', 'create', 'sanity', ...args],
         name: 'yarn',
