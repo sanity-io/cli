@@ -21,7 +21,14 @@ export function getAvailablePackageManagers(): PackageManager[] {
 
   if (getVersion('npm')) {
     managers.push({
-      createCommand: (version, args) => ['npm', 'create', '--yes', `sanity@${version}`, ...args],
+      createCommand: (version, args) => [
+        'npm',
+        'create',
+        '--yes',
+        `sanity@${version}`,
+        '--',
+        ...args,
+      ],
       name: 'npm',
     })
   }
