@@ -15,19 +15,19 @@
     "start": "sanity start"
   },
   "dependencies": {
-    "@sanity/code-input": "^7.0.6",
+    "@sanity/code-input": "^7.1.0",
     "@sanity/vision": "catalog:",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "sanity": "catalog:",
     "sanity-plugin-media": "^4.1.1",
-    "styled-components": "^6.3.8",
-    "vite-tsconfig-paths": "^6.0.5"
+    "styled-components": "^6.4.0",
+    "vite-tsconfig-paths": "^6.1.1"
   },
   "devDependencies": {
     "@sanity/color": "^3.0.6",
-    "@types/react": "^19.2.9",
+    "@types/react": "^19.2.14",
     "typescript": "^5.9.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.2"
   }
 }
