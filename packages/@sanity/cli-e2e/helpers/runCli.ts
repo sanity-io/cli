@@ -10,6 +10,10 @@ export function getE2EProjectId(): string {
   return readEnv('SANITY_E2E_PROJECT_ID')
 }
 
+export function getE2EOrganizationId(): string {
+  return readEnv('SANITY_E2E_ORGANIZATION_ID')
+}
+
 interface RunCliBaseOptions {
   args?: string[]
   /** Override the binary path. Defaults to E2E_BINARY_PATH (the packed `@sanity/cli`). */
