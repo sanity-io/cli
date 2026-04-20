@@ -3,7 +3,7 @@ import {mkdir, writeFile} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {type Output, subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
+import {subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 import {execa, type Options} from 'execa'
@@ -26,6 +26,7 @@ import {
 import {type EditorName} from '../mcp/editorConfigs.js'
 import {countNestedFolders} from './countNestedFolders.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
+import {InitError} from './initError.js'
 import {
   flagOrDefault,
   getPostInitMCPPrompt,
@@ -39,131 +40,33 @@ import {
   sanityFolder,
   sanityStudioTemplate,
 } from './templates/nextjs/index.js'
-import {type VersionedFramework} from './types.js'
+import {type InitContext, type InitOptions, type VersionedFramework} from './types.js'
 
-const debug = subdebug('init')
-
-async function writeOrOverwrite(
-  filePath: string,
-  content: string,
-  workDir: string,
-  params: {overwriteFiles?: boolean; unattended: boolean},
-) {
-  if (existsSync(filePath)) {
-    let overwrite = flagOrDefault(params.overwriteFiles, false)
-    if (shouldPrompt(params.unattended, params.overwriteFiles)) {
-      overwrite = await confirm({
-        default: false,
-        message: `File ${styleText(
-          'yellow',
-          filePath.replace(workDir, ''),
-        )} already exists. Do you want to overwrite it?`,
-      })
-    }
-
-    if (!overwrite) {
-      return
-    }
-  }
-
-  // make folder if not exists
-  const folderPath = path.dirname(filePath)
-
-  try {
-    await mkdir(folderPath, {recursive: true})
-  } catch {
-    debug('Error creating folder %s', folderPath)
-  }
-
-  await writeFile(filePath, content, {
-    encoding: 'utf8',
-  })
-}
-
-// write sanity folder files
-async function writeSourceFiles({
-  fileExtension,
-  files,
-  folderPath,
-  params,
-  srcFolderPrefix,
-  workDir,
-}: {
-  fileExtension: string
-  files: Record<string, Record<string, string> | string>
-  folderPath?: string
-  params: {overwriteFiles?: boolean; unattended: boolean}
-  srcFolderPrefix?: boolean
-  workDir: string
-}) {
-  for (const [filePath, content] of Object.entries(files)) {
-    // check if file ends with full stop to indicate it's file and not directory (this only works with our template tree structure)
-    if (filePath.includes('.') && typeof content === 'string') {
-      await writeOrOverwrite(
-        path.join(
-          workDir,
-          srcFolderPrefix ? 'src' : '',
-          'sanity',
-          folderPath || '',
-          `${filePath}${fileExtension}`,
-        ),
-        content,
-        workDir,
-        params,
-      )
-    } else {
-      await mkdir(path.join(workDir, srcFolderPrefix ? 'src' : '', 'sanity', filePath), {
-        recursive: true,
-      })
-      if (typeof content === 'object') {
-        await writeSourceFiles({
-          fileExtension,
-          files: content,
-          folderPath: filePath,
-          params,
-          srcFolderPrefix,
-          workDir,
-        })
-      }
-    }
-  }
-}
+const debug = subdebug('init:nextjs')
 
 export async function initNextJs({
   datasetName,
   detectedFramework,
   envFilename,
   mcpConfigured,
-  nextjsAppendEnv,
-  nextjsEmbedStudio,
+  options,
   output,
-  overwriteFiles,
-  packageManager,
   projectId,
-  template,
   trace,
-  typescript,
-  unattended,
   workDir,
 }: {
   datasetName: string
   detectedFramework: VersionedFramework | null
   envFilename: string
   mcpConfigured: EditorName[]
-  nextjsAppendEnv?: boolean
-  nextjsEmbedStudio?: boolean
-  output: Output
-  overwriteFiles?: boolean
-  packageManager?: string
+  options: InitOptions
+  output: InitContext['output']
   projectId: string
-  template?: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  typescript?: boolean
-  unattended: boolean
   workDir: string
 }): Promise<void> {
-  let useTypeScript = flagOrDefault(typescript, true)
-  if (shouldPrompt(unattended, typescript)) {
+  let useTypeScript = flagOrDefault(options.typescript, true)
+  if (shouldPrompt(options.unattended, options.typescript)) {
     useTypeScript = await promptForTypeScript()
   }
   trace.log({
@@ -172,13 +75,11 @@ export async function initNextJs({
   })
 
   const fileExtension = useTypeScript ? 'ts' : 'js'
-  let embeddedStudio = flagOrDefault(nextjsEmbedStudio, true)
-  if (shouldPrompt(unattended, nextjsEmbedStudio)) {
+  let embeddedStudio = flagOrDefault(options.nextjsEmbedStudio, true)
+  if (shouldPrompt(options.unattended, options.nextjsEmbedStudio)) {
     embeddedStudio = await promptForEmbeddedStudio()
   }
   let hasSrcFolder = false
-
-  const writeParams = {overwriteFiles, unattended}
 
   if (embeddedStudio) {
     // find source path (app or src/app)
@@ -197,7 +98,7 @@ export async function initNextJs({
       }
     }
 
-    const studioPath = unattended ? '/studio' : await promptForStudioPath()
+    const studioPath = options.unattended ? '/studio' : await promptForStudioPath()
 
     const embeddedStudioRouteFilePath = path.join(
       srcPath,
@@ -213,10 +114,10 @@ export async function initNextJs({
       embeddedStudioRouteFilePath,
       sanityStudioTemplate.replace(
         ':configPath:',
-        `${'../'.repeat(countNestedFolders(path.dirname(embeddedStudioRouteFilePath.slice(workDir.length))))}sanity.config`,
+        `${'../'.repeat(countNestedFolders(embeddedStudioRouteFilePath.slice(workDir.length)))}sanity.config`,
       ),
       workDir,
-      writeParams,
+      options,
     )
 
     const sanityConfigPath = path.join(workDir, `sanity.config.${fileExtension}`)
@@ -226,15 +127,15 @@ export async function initNextJs({
         .replace(':route:', embeddedStudioRouteFilePath.slice(workDir.length).replace('src/', ''))
         .replace(':basePath:', studioPath),
       workDir,
-      writeParams,
+      options,
     )
   }
 
   const sanityCliPath = path.join(workDir, `sanity.cli.${fileExtension}`)
-  await writeOrOverwrite(sanityCliPath, sanityCliTemplate, workDir, writeParams)
+  await writeOrOverwrite(sanityCliPath, sanityCliTemplate, workDir, options)
 
-  let templateToUse = template ?? 'clean'
-  if (shouldPrompt(unattended, template)) {
+  let templateToUse = options.template ?? 'clean'
+  if (shouldPrompt(options.unattended, options.template)) {
     templateToUse = await promptForNextTemplate()
   }
 
@@ -242,13 +143,13 @@ export async function initNextJs({
     fileExtension,
     files: sanityFolder(useTypeScript, templateToUse as 'blog' | 'clean'),
     folderPath: undefined,
-    params: writeParams,
+    options,
     srcFolderPrefix: hasSrcFolder,
     workDir,
   })
 
-  let appendEnv = flagOrDefault(nextjsAppendEnv, true)
-  if (shouldPrompt(unattended, nextjsAppendEnv)) {
+  let appendEnv = flagOrDefault(options.nextjsAppendEnv, true)
+  if (shouldPrompt(options.unattended, options.nextjsAppendEnv)) {
     appendEnv = await promptForAppendEnv(envFilename)
   }
 
@@ -285,19 +186,18 @@ export async function initNextJs({
             ? `Added ${nextjsLocalDevOrigin} to CORS origins`
             : `Failed to add ${nextjsLocalDevOrigin} to CORS origins`,
         )
-      } catch (corsError) {
-        debug(`Error creating new CORS Origin ${nextjsLocalDevOrigin}: ${corsError}`)
-        output.error(`Failed to add ${nextjsLocalDevOrigin} to CORS origins: ${corsError}`, {
-          exit: 1,
-        })
+      } catch (error) {
+        debug(`Error creating new CORS Origin ${nextjsLocalDevOrigin}: ${error}`)
+        const message = error instanceof Error ? error.message : String(error)
+        throw new InitError(`Failed to add ${nextjsLocalDevOrigin} to CORS origins: ${message}`, 1)
       }
     }
   }
 
   const chosen = await resolvePackageManager({
-    interactive: !unattended,
+    interactive: !options.unattended,
     output,
-    packageManager: packageManager as PackageManager,
+    packageManager: options.packageManager as PackageManager,
     targetDir: workDir,
   })
   trace.log({selectedOption: chosen, step: 'selectPackageManager'})
@@ -325,8 +225,12 @@ export async function initNextJs({
   }
 
   switch (chosen) {
+    case 'bun': {
+      await execa('bun', ['add', 'next-sanity@12'], execOptions)
+      break
+    }
     case 'npm': {
-      await execa('npm', ['install', 'next-sanity@12'], execOptions)
+      await execa('npm', ['install', '--legacy-peer-deps', 'next-sanity@12'], execOptions)
       break
     }
     case 'pnpm': {
@@ -342,7 +246,7 @@ export async function initNextJs({
       break
     }
     default: {
-      // bun and manual - do nothing or handle differently
+      // manual - do nothing
       break
     }
   }
@@ -360,4 +264,90 @@ export async function initNextJs({
   }
 
   await writeStagingEnvIfNeeded(output, workDir)
+}
+
+async function writeOrOverwrite(
+  filePath: string,
+  content: string,
+  workDir: string,
+  options: InitOptions,
+): Promise<void> {
+  if (existsSync(filePath)) {
+    let overwrite = flagOrDefault(options.overwriteFiles, false)
+    if (shouldPrompt(options.unattended, options.overwriteFiles)) {
+      overwrite = await confirm({
+        default: false,
+        message: `File ${styleText(
+          'yellow',
+          filePath.replace(workDir, ''),
+        )} already exists. Do you want to overwrite it?`,
+      })
+    }
+
+    if (!overwrite) {
+      return
+    }
+  }
+
+  // make folder if not exists
+  const folderPath = path.dirname(filePath)
+
+  try {
+    await mkdir(folderPath, {recursive: true})
+  } catch {
+    debug('Error creating folder %s', folderPath)
+  }
+
+  await writeFile(filePath, content, {
+    encoding: 'utf8',
+  })
+}
+
+// write sanity folder files
+async function writeSourceFiles({
+  fileExtension,
+  files,
+  folderPath,
+  options,
+  srcFolderPrefix,
+  workDir,
+}: {
+  fileExtension: string
+  files: Record<string, Record<string, string> | string>
+  folderPath?: string
+  options: InitOptions
+  srcFolderPrefix?: boolean
+  workDir: string
+}): Promise<void> {
+  for (const [filePath, content] of Object.entries(files)) {
+    // check if file ends with full stop to indicate it's file and not directory (this only works with our template tree structure)
+    if (filePath.includes('.') && typeof content === 'string') {
+      await writeOrOverwrite(
+        path.join(
+          workDir,
+          srcFolderPrefix ? 'src' : '',
+          'sanity',
+          folderPath || '',
+          `${filePath}${fileExtension}`,
+        ),
+        content,
+        workDir,
+        options,
+      )
+    } else {
+      await mkdir(path.join(workDir, srcFolderPrefix ? 'src' : '', 'sanity', filePath), {
+        recursive: true,
+      })
+      if (typeof content === 'object') {
+        await writeSourceFiles({
+          fileExtension,
+          files: content,
+          folderPath: filePath,
+          options,
+          srcFolderPrefix,
+          workDir,
+        })
+      }
+    }
+  }
 }

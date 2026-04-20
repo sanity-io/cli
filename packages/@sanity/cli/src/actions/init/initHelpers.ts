@@ -1,21 +1,17 @@
-import {type Output} from '@sanity/cli-core'
-
 import {getSanityEnv} from '../../util/getSanityEnv.js'
 import {type EditorName} from '../mcp/editorConfigs.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
 import {fetchPostInitPrompt} from './fetchPostInitPrompt.js'
+import {type InitContext} from './types.js'
 
-/**
- * Returns `true` when the user should be prompted for a flag value:
- * i.e. we are NOT in unattended mode AND the flag was not explicitly provided.
- */
+// ---------------------------------------------------------------------------
+// Helpers shared across init flows (orchestrator, Next.js, studio, etc.)
+// ---------------------------------------------------------------------------
+
 export function shouldPrompt(unattended: boolean, flagValue: unknown): boolean {
   return !unattended && flagValue === undefined
 }
 
-/**
- * Returns the flag value if it is a boolean, otherwise returns the default.
- */
 export function flagOrDefault(flagValue: boolean | undefined, defaultValue: boolean): boolean {
   return typeof flagValue === 'boolean' ? flagValue : defaultValue
 }
@@ -29,7 +25,10 @@ export async function getPostInitMCPPrompt(editorsNames: EditorName[]): Promise<
  * `SANITY_INTERNAL_ENV` variable to a `.env` file in the output directory so that
  * the bootstrapped project continues to target the same environment.
  */
-export async function writeStagingEnvIfNeeded(output: Output, outputPath: string): Promise<void> {
+export async function writeStagingEnvIfNeeded(
+  output: InitContext['output'],
+  outputPath: string,
+): Promise<void> {
   const sanityEnv = getSanityEnv()
   if (sanityEnv === 'production') return
 

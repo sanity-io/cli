@@ -1,103 +1,82 @@
 import {styleText} from 'node:util'
 
-import {type Output, type TelemetryUserProperties} from '@sanity/cli-core'
+import {subdebug, type TelemetryUserProperties} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {type EditorName} from '../mcp/editorConfigs.js'
+import {InitError} from './initError.js'
 import {getPostInitMCPPrompt} from './initHelpers.js'
 import {type RepoInfo} from './remoteTemplate.js'
 import {scaffoldAndInstall, selectTemplate} from './scaffoldTemplate.js'
+import {type InitContext, type InitOptions} from './types.js'
 
-export async function initApp({
-  autoUpdates,
-  datasetName,
-  defaults,
-  error,
-  git,
-  mcpConfigured,
-  noGit,
-  organizationId,
-  output,
-  outputPath,
-  overwriteFiles,
-  packageManager,
-  projectId,
-  remoteTemplateInfo,
-  sluggedName,
-  template,
-  templateToken,
-  trace,
-  typescript,
-  unattended,
-  workDir,
-}: {
-  autoUpdates: boolean
+const debug = subdebug('init:app')
+
+interface InitAppParams {
   datasetName: string
   defaults: {projectName: string}
-  error: Output['error']
-  git?: boolean | string
   mcpConfigured: EditorName[]
-  noGit?: boolean
+  options: InitOptions
   organizationId: string | undefined
-  output: Output
+  output: InitContext['output']
   outputPath: string
-  overwriteFiles?: boolean
-  packageManager?: string
   projectId: string
   remoteTemplateInfo: RepoInfo | undefined
   sluggedName: string
-  template?: string
-  templateToken?: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  typescript?: boolean
-  unattended: boolean
   workDir: string
-}): Promise<void> {
-  const {
-    template: resolvedTemplate,
-    templateName,
-    useTypeScript,
-  } = await selectTemplate({
-    remoteTemplateInfo,
-    template,
-    trace,
-    typescript,
-    unattended,
-  })
+}
 
-  if (!remoteTemplateInfo && !resolvedTemplate) {
-    error(`Template "${templateName}" not found`, {exit: 1})
+export async function initApp({
+  datasetName,
+  defaults,
+  mcpConfigured,
+  options,
+  organizationId,
+  output,
+  outputPath,
+  projectId,
+  remoteTemplateInfo,
+  sluggedName,
+  trace,
+  workDir,
+}: InitAppParams): Promise<void> {
+  debug('Scaffolding app template')
+
+  // Prompt for template and TypeScript
+  const {template, templateName, useTypeScript} = await selectTemplate(
+    options,
+    remoteTemplateInfo,
+    trace,
+  )
+  if (!remoteTemplateInfo && !template) {
+    throw new InitError(`Template "${templateName}" not found`, 1)
   }
 
-  await scaffoldAndInstall({
-    autoUpdates,
+  // Bootstrap, install deps, git init
+  const {pkgManager} = await scaffoldAndInstall({
     datasetName,
     defaults,
     displayName: '',
-    git,
-    noGit,
+    options,
     organizationId,
     output,
     outputPath,
-    overwriteFiles,
-    packageManager,
     projectId,
     remoteTemplateInfo,
     sluggedName,
     templateName,
-    templateToken,
     trace,
-    unattended,
     useTypeScript,
     workDir,
   })
 
-  const isCurrentDir = outputPath === process.cwd()
+  // App-specific success messages
+  const isCurrentDir = outputPath === workDir
   const goToProjectDir = `\n(${styleText('cyan', `cd ${outputPath}`)} to navigate to your new project directory)`
 
-  //output for custom apps here
   output.log(
     `${logSymbols.success} ${styleText(['green', 'bold'], 'Success!')} Your custom app has been scaffolded.`,
   )
@@ -132,4 +111,6 @@ export async function initApp({
   output.log(`npx sanity docs browse     to open the documentation in a browser`)
   output.log(`npx sanity dev             to start the development server for your app`)
   output.log(`npx sanity deploy          to deploy your app`)
+
+  debug('App scaffolding complete (pkgManager=%s)', pkgManager)
 }

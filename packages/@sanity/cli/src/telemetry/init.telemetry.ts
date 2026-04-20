@@ -31,7 +31,8 @@ interface CreateOrSelectDatasetStep {
   datasetName: string
   selectedOption: 'create' | 'none' | 'select'
   step: 'createOrSelectDataset'
-  visibility: 'private' | 'public'
+
+  visibility?: 'private' | 'public'
 }
 
 interface UseDefaultPlanCoupon {
