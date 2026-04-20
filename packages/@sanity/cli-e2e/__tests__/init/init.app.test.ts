@@ -3,15 +3,13 @@ import {existsSync, readFileSync} from 'node:fs'
 import {createTmpDir} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
 
-import {runCli} from '../../helpers/runCli.js'
+import {getE2EOrganizationId, runCli} from '../../helpers/runCli.js'
 
-const orgId = process.env.SANITY_E2E_ORGANIZATION_ID
+const orgId = getE2EOrganizationId()
 
 describe('sanity init - app', {timeout: 120_000}, () => {
   describe('non-interactive', () => {
     test('creates app with app-quickstart template', async () => {
-      if (!orgId) return
-
       const tmp = await createTmpDir()
       try {
         const {error, exitCode, stdout} = await runCli({
@@ -50,8 +48,6 @@ describe('sanity init - app', {timeout: 120_000}, () => {
     })
 
     test('creates app with JavaScript when --no-typescript', async () => {
-      if (!orgId) return
-
       const tmp = await createTmpDir()
       try {
         const {error, exitCode} = await runCli({
@@ -85,8 +81,6 @@ describe('sanity init - app', {timeout: 120_000}, () => {
 
   describe('interactive', () => {
     test('complete flow produces working app', async () => {
-      if (!orgId) return
-
       const tmp = await createTmpDir()
       try {
         const session = await runCli({

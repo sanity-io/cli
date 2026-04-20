@@ -1,9 +1,9 @@
 import {existsSync, readFileSync, writeFileSync} from 'node:fs'
 
+import {createTmpDir} from '@sanity/cli-test'
 import {describe, expect, test} from 'vitest'
 
-import {getE2EProjectId, runCli} from '../../helpers/runCli.js'
-import {createTmpDir} from './helpers.js'
+import {getE2EOrganizationId, getE2EProjectId, runCli} from '../../helpers/runCli.js'
 
 const projectId = getE2EProjectId()
 
@@ -58,6 +58,7 @@ describe('sanity init - studio', {timeout: 120_000}, () => {
               tmp.path,
               '--template',
               'blog',
+              '--no-git',
             ],
           })
 
@@ -155,6 +156,7 @@ describe('sanity init - studio', {timeout: 120_000}, () => {
               tmp.path,
               '--package-manager',
               'npm',
+              '--no-git',
             ],
           })
 
@@ -304,6 +306,7 @@ describe('sanity init - studio', {timeout: 120_000}, () => {
               'public',
               '--package-manager',
               'pnpm',
+              '--no-git',
             ],
           })
 
@@ -316,9 +319,7 @@ describe('sanity init - studio', {timeout: 120_000}, () => {
 
     describe('project creation', () => {
       test('creates new project with --project-name', async () => {
-        const orgId = process.env.SANITY_E2E_ORGANIZATION_ID
-        if (!orgId) return
-
+        const orgId = getE2EOrganizationId()
         const tmp = await createTmpDir({useSystemTmp: true})
         try {
           const randomSuffix = Math.random().toString(36).slice(2, 8)
