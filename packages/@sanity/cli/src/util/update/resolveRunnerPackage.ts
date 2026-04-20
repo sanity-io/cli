@@ -1,5 +1,4 @@
-import {realpathSync} from 'node:fs'
-import {readFile} from 'node:fs/promises'
+import {readFile, realpath} from 'node:fs/promises'
 import {dirname, resolve} from 'node:path'
 
 import {type SanityPackage} from '../packageManager/installationInfo/types.js'
@@ -10,7 +9,7 @@ export async function resolveRunnerPackage(
   binaryPath: string = process.argv[1] ?? '',
 ): Promise<SanityPackage> {
   try {
-    let dir = dirname(realpathSync(binaryPath))
+    let dir = dirname(await realpath(binaryPath))
     while (dir !== resolve(dir, '..')) {
       try {
         const pkg = JSON.parse(await readFile(resolve(dir, 'package.json'), 'utf8'))

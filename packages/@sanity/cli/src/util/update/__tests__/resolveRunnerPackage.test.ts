@@ -2,7 +2,7 @@ import {mkdir, mkdtemp, symlink, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
-import {afterEach, beforeEach, describe, expect, test} from 'vitest'
+import {beforeEach, describe, expect, test} from 'vitest'
 
 import {resolveRunnerPackage} from '../resolveRunnerPackage.js'
 
@@ -13,14 +13,7 @@ describe('resolveRunnerPackage', () => {
     tempRoot = await mkdtemp(join(tmpdir(), 'sanity-runner-pkg-test-'))
   })
 
-  afterEach(async () => {
-    // mkdtemp dirs auto-cleanup isn't guaranteed, but leaving them under
-    // $TMPDIR is harmless for a unit test.
-  })
-
   async function buildFakeRunnerLayout(pkgName: string): Promise<string> {
-    // Mirror the real layout: <runnerRoot>/node_modules/<pkg>/bin/sanity
-    //                         <runnerRoot>/node_modules/.bin/sanity -> ../<pkg>/bin/sanity
     const runnerRoot = tempRoot
     const pkgDir = join(runnerRoot, 'node_modules', pkgName)
     const binDir = join(runnerRoot, 'node_modules', '.bin')

@@ -1,6 +1,7 @@
 import {describe, expect, test} from 'vitest'
 
 import {getRunnerUpdateCommand} from '../getRunnerUpdateCommand.js'
+import {type PackageRunner} from '../packageRunner.js'
 
 describe('getRunnerUpdateCommand', () => {
   test('builds npx update command', () => {
@@ -21,5 +22,11 @@ describe('getRunnerUpdateCommand', () => {
 
   test('builds bunx update command', () => {
     expect(getRunnerUpdateCommand('bunx', 'sanity')).toBe('bunx sanity@latest')
+  })
+
+  test('throws on an unknown runner kind (exhaustiveness guard)', () => {
+    expect(() => getRunnerUpdateCommand('something-new' as PackageRunner, 'sanity')).toThrow(
+      /Unknown runner: something-new/,
+    )
   })
 })
