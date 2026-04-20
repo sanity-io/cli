@@ -972,10 +972,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       if (!organizationId) {
         let organizations: ProjectOrganization[]
         try {
-          organizations = await listOrganizations({
-            includeImplicitMemberships: 'true',
-            includeMembers: 'true',
-          })
+          organizations = await listOrganizations()
         } catch (err) {
           this.error(`Failed to communicate with the Sanity API:\n${err.message}`, {
             exit: 1,
@@ -988,7 +985,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         })
       }
 
-      const {datasetName, displayName, projectId} = await this.promptForAppProjectSetup({
+      const {datasetName, displayName, projectId} = await this.promptForAppTemplateSetup({
         newProject,
         organizationId,
         planId,
@@ -1056,7 +1053,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     return absolutify(inputPath)
   }
 
-  private async promptForAppProjectSetup({
+  private async promptForAppTemplateSetup({
     newProject,
     organizationId,
     planId,

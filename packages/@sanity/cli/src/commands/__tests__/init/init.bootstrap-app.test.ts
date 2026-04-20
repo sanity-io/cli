@@ -239,18 +239,14 @@ describe('#init: bootstrap-app-initialization', () => {
     // Reset select mock to clear any unconsumed mockResolvedValueOnce from prior tests
     mocks.select.mockReset()
 
-    // Mock organizations endpoint with app-specific query params
     mockApi({
       apiVersion: ORGANIZATIONS_API_VERSION,
       method: 'get',
-      query: {includeImplicitMemberships: 'true', includeMembers: 'true'},
       uri: '/organizations',
     }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
 
-    // select is called once for organization selection (template comes from --template flag)
-    // then once for the app project setup prompt (skip = no project/dataset configured)
     mocks.select.mockResolvedValueOnce('org-1') // organization
-    mocks.select.mockResolvedValueOnce('__skip__') // promptForAppProjectSetup
+    mocks.select.mockResolvedValueOnce('__skip__') // promptForAppTemplateSetup
 
     mockApi({
       apiVersion: MCP_JOURNEY_API_VERSION,

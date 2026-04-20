@@ -107,7 +107,9 @@ export async function initApp({
     output.log(
       `\nConfigured with project ${styleText('cyan', projectId)} and dataset ${styleText('cyan', datasetName)}.`,
     )
-    output.log('Edit `src/App.tsx` to change these values or add more sources.')
+    output.log(
+      'Edit `src/App.tsx` to change these values or add more project / dataset pairs to your config.',
+    )
   } else {
     output.log(
       `\n${styleText('bold', 'Next')}, configure the project(s) and dataset(s) your app should work with in \`src/App.tsx\`.`,

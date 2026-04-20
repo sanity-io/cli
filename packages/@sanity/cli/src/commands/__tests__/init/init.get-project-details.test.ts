@@ -140,7 +140,6 @@ describe('#init: get project details', () => {
   test('prompts user for organization if provided template is app template', async () => {
     mockApi({
       apiVersion: ORGANIZATIONS_API_VERSION,
-      query: {includeImplicitMemberships: 'true', includeMembers: 'true'},
       uri: '/organizations',
     }).reply(200, [
       {
@@ -153,7 +152,7 @@ describe('#init: get project details', () => {
     mocks.listProjects.mockResolvedValueOnce([])
 
     mocks.select.mockResolvedValueOnce('org-123') // organization
-    mocks.select.mockResolvedValueOnce('__skip__') // promptForAppProjectSetup — skip project config
+    mocks.select.mockResolvedValueOnce('__skip__') // promptForAppTemplateSetup — skip project config
 
     const {error} = await testCommand(
       InitCommand,
@@ -973,7 +972,7 @@ describe('#init: get project details', () => {
   })
 })
 
-describe('#init: promptForAppProjectSetup', () => {
+describe('#init: promptForAppTemplateSetup', () => {
   afterEach(() => {
     vi.clearAllMocks()
     const pending = nock.pendingMocks()
@@ -984,14 +983,13 @@ describe('#init: promptForAppProjectSetup', () => {
   test('skip path: returns empty projectId/datasetName and does not fetch datasets or create anything', async () => {
     mockApi({
       apiVersion: ORGANIZATIONS_API_VERSION,
-      query: {includeImplicitMemberships: 'true', includeMembers: 'true'},
       uri: '/organizations',
     }).reply(200, [{id: 'org-123', name: 'Test Organization', slug: 'test-organization'}])
 
     mocks.listProjects.mockResolvedValueOnce([])
 
     mocks.select.mockResolvedValueOnce('org-123') // organization
-    mocks.select.mockResolvedValueOnce('__skip__') // promptForAppProjectSetup — skip
+    mocks.select.mockResolvedValueOnce('__skip__') // promptForAppTemplateSetup — skip
 
     const {error} = await testCommand(
       InitCommand,
@@ -1020,7 +1018,6 @@ describe('#init: promptForAppProjectSetup', () => {
   test('existing path: picks existing project from inline list and its dataset, returns populated values', async () => {
     mockApi({
       apiVersion: ORGANIZATIONS_API_VERSION,
-      query: {includeImplicitMemberships: 'true', includeMembers: 'true'},
       uri: '/organizations',
     }).reply(200, [{id: 'org-123', name: 'Test Organization', slug: 'test-organization'}])
 
@@ -1066,7 +1063,6 @@ describe('#init: promptForAppProjectSetup', () => {
   test('create path: picks "Create new project" then enters a name and dataset', async () => {
     mockApi({
       apiVersion: ORGANIZATIONS_API_VERSION,
-      query: {includeImplicitMemberships: 'true', includeMembers: 'true'},
       uri: '/organizations',
     }).reply(200, [{id: 'org-123', name: 'Test Organization', slug: 'test-organization'}])
 
@@ -1088,7 +1084,7 @@ describe('#init: promptForAppProjectSetup', () => {
     }).reply(200, ['privateDataset'])
 
     mocks.select.mockResolvedValueOnce('org-123') // organization
-    mocks.select.mockResolvedValueOnce('__new__') // promptForAppProjectSetup — create new
+    mocks.select.mockResolvedValueOnce('__new__') // promptForAppTemplateSetup — create new
     mocks.select.mockResolvedValueOnce('production') // dataset choice
     mocks.input.mockResolvedValueOnce('New App Project') // project name
 
@@ -1124,7 +1120,7 @@ describe('#init: promptForAppProjectSetup', () => {
       uri: '/projects',
     }).reply(200, {displayName: 'My App Project', projectId: 'new-app-pid-456'})
 
-    // promptForAppProjectSetup (unattended + newProject set) → getOrCreateProject
+    // promptForAppTemplateSetup (unattended + newProject set) → getOrCreateProject
     mocks.listProjects.mockResolvedValueOnce([
       {createdAt: '2024-01-01T00:00:00Z', displayName: 'My App Project', id: 'new-app-pid-456'},
     ])
