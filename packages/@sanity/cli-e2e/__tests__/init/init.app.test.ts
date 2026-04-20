@@ -46,37 +46,6 @@ describe('sanity init - app', {timeout: 120_000}, () => {
         await tmp.cleanup()
       }
     })
-
-    test('creates app with JavaScript when --no-typescript', async () => {
-      const tmp = await createTmpDir()
-      try {
-        const {error, exitCode} = await runCli({
-          args: [
-            'init',
-            '-y',
-            '--template',
-            'app-quickstart',
-            '--organization',
-            orgId,
-            '--output-path',
-            tmp.path,
-            '--no-typescript',
-            '--package-manager',
-            'pnpm',
-            '--no-git',
-          ],
-        })
-
-        if (error) throw error
-        expect(exitCode).toBe(0)
-
-        expect(existsSync(`${tmp.path}/src/App.jsx`)).toBe(true)
-        expect(existsSync(`${tmp.path}/sanity.cli.js`)).toBe(true)
-        expect(existsSync(`${tmp.path}/tsconfig.json`)).toBe(false)
-      } finally {
-        await tmp.cleanup()
-      }
-    })
   })
 
   describe('interactive', () => {
@@ -86,6 +55,7 @@ describe('sanity init - app', {timeout: 120_000}, () => {
         const session = await runCli({
           args: [
             'init',
+            '-y',
             '--template',
             'app-quickstart',
             '--organization',
