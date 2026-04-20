@@ -10,8 +10,6 @@ export default defineConfig({
     disableConsoleIntercept: true,
     environment: 'node',
     exclude: ['**/node_modules/**', '**/dist/**'],
-    // Run tests sequentially — PTY-backed tests are resource-intensive
-    fileParallelism: false,
     globals: false,
     // 1. Pack @sanity/cli into a tarball and extract to tmp/ for realistic E2E testing
     // 2. Initialize test fixtures (copies fixtures, installs deps)
