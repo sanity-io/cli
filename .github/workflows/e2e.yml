@@ -71,9 +71,11 @@ jobs:
           CLI_VERSION: ${{ inputs.cli_version }}
         run: |
           INSTALL_DIR=$(mktemp -d)
-          npm install --prefix "$INSTALL_DIR" "sanity@${CLI_VERSION}"
+          npm install --prefix "$INSTALL_DIR" "sanity@${CLI_VERSION}" "create-sanity@latest"
           echo "E2E_BINARY_PATH=$INSTALL_DIR/node_modules/.bin/sanity" >> "$GITHUB_ENV"
+          echo "E2E_CREATE_SANITY_BINARY_PATH=$INSTALL_DIR/node_modules/.bin/create-sanity" >> "$GITHUB_ENV"
           "$INSTALL_DIR/node_modules/.bin/sanity" --version
+          "$INSTALL_DIR/node_modules/.bin/create-sanity" --help > /dev/null
 
       - name: Build test infrastructure (registry mode)
         if: ${{ inputs.cli_version }}
