@@ -200,6 +200,7 @@ describe('#checkForUpdates', () => {
         env: expect.objectContaining({
           SANITY_UPDATE_CHECK_CLI_VERSION: config.version,
           SANITY_UPDATE_CHECK_CWD: process.cwd(),
+          SANITY_UPDATE_CHECK_PACKAGE: 'sanity',
         }),
         stdio: 'ignore',
       }),

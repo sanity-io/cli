@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url'
 import {getUserConfig, isCi, subdebug} from '@sanity/cli-core'
 import {gt as semverGt} from 'semver'
 
+import {type SanityPackage} from '../packageManager/installationInfo/types.js'
 import {detectPackageRunner} from './packageRunner.js'
 import {resolveRunnerPackage} from './resolveRunnerPackage.js'
 import {resolveUpdateTarget} from './resolveUpdateTarget.js'
@@ -65,11 +66,11 @@ export async function updateChecker(config: {version: string}): Promise<void> {
 
     if (expired) {
       debug('Cache expired, spawning worker to refresh')
-      spawnFetchWorker(config.version)
+      spawnFetchWorker(config.version, packageName)
     }
   } else {
     debug('No cached update info, spawning worker to fetch')
-    spawnFetchWorker(config.version)
+    spawnFetchWorker(config.version, packageName)
   }
 }
 
@@ -103,7 +104,7 @@ function readCachedLatestVersion(
  * Spawn a detached worker process to fetch the latest version and update the cache.
  * The worker is unref'd so the parent CLI can exit immediately.
  */
-function spawnFetchWorker(cliVersion: string): void {
+function spawnFetchWorker(cliVersion: string, packageName: SanityPackage): void {
   const workerPath = fileURLToPath(new URL('fetchUpdateInfo.worker.js', import.meta.url))
   debug(`Spawning update check worker: ${process.execPath} ${workerPath}`)
 
@@ -113,6 +114,7 @@ function spawnFetchWorker(cliVersion: string): void {
       ...process.env,
       SANITY_UPDATE_CHECK_CLI_VERSION: cliVersion,
       SANITY_UPDATE_CHECK_CWD: process.cwd(),
+      SANITY_UPDATE_CHECK_PACKAGE: packageName,
     },
     stdio: debug.enabled ? 'inherit' : 'ignore',
   }).unref()
