@@ -9,7 +9,7 @@ import {getAvailablePackageManagers} from '../helpers/packageManagers.js'
 
 const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
 
-describe.skipIf(!isRegistryMode)('create-sanity via package managers', () => {
+describe.skipIf(!isRegistryMode)('create-sanity via package managers', {timeout: 60_000}, () => {
   const version = 'latest'
   const managers = getAvailablePackageManagers()
 

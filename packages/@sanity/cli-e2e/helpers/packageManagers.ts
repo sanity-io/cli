@@ -51,7 +51,7 @@ export function getAvailablePackageManagers(): PackageManager[] {
       })
     } else {
       managers.push({
-        createCommand: (version, args) => ['yarn', 'create', `sanity@${version}`, ...args],
+        createCommand: (_version, args) => ['yarn', 'create', 'sanity', ...args],
         name: 'yarn',
       })
     }
