@@ -34,6 +34,14 @@ export interface SetupTestFixturesOptions {
   additionalFixtures?: string[]
 
   /**
+   * When true, passes `--ignore-workspace` to pnpm install so fixtures get
+   * their own node_modules even when the temp directory is inside a pnpm
+   * workspace. Required for E2E tests that spawn the CLI binary against
+   * fixture directories.
+   */
+  ignoreWorkspace?: boolean
+
+  /**
    * Custom temp directory path. Defaults to process.cwd()/tmp
    */
   tempDir?: string
@@ -92,7 +100,7 @@ interface FixtureDetails {
  * ```
  */
 export async function setup(_: TestProject, options: SetupTestFixturesOptions = {}): Promise<void> {
-  const {additionalFixtures, tempDir} = options
+  const {additionalFixtures, ignoreWorkspace, tempDir} = options
 
   const spinner = ora({
     // Without this, the watch mode input is discarded
@@ -142,7 +150,8 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
 
       // Run pnpm install --no-lockfile in the temp directory
       try {
-        await exec(`pnpm install --prefer-offline --no-lockfile`, {
+        const ignoreWsFlag = ignoreWorkspace ? ' --ignore-workspace' : ''
+        await exec(`pnpm install --prefer-offline --no-lockfile${ignoreWsFlag}`, {
           cwd: toPath,
         })
       } catch (error) {
