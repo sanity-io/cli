@@ -13,8 +13,11 @@ describe('getRunnerUpdateCommand', () => {
     expect(getRunnerUpdateCommand('pnpm-dlx', 'sanity')).toBe('pnpm dlx sanity@latest')
   })
 
-  test('builds yarn dlx update command with -p and bin name', () => {
-    expect(getRunnerUpdateCommand('yarn-dlx', 'sanity')).toBe('yarn dlx -p sanity@latest sanity')
+  test('builds yarn dlx update command without -p when package name matches bin', () => {
+    expect(getRunnerUpdateCommand('yarn-dlx', 'sanity')).toBe('yarn dlx sanity@latest')
+  })
+
+  test('builds yarn dlx update command with -p when package name differs from bin', () => {
     expect(getRunnerUpdateCommand('yarn-dlx', '@sanity/cli')).toBe(
       'yarn dlx -p @sanity/cli@latest sanity',
     )

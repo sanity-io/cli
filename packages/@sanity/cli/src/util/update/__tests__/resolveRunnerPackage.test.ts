@@ -1,8 +1,8 @@
-import {mkdir, mkdtemp, symlink, writeFile} from 'node:fs/promises'
+import {mkdir, mkdtemp, rm, symlink, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
-import {beforeEach, describe, expect, test} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test} from 'vitest'
 
 import {resolveRunnerPackage} from '../resolveRunnerPackage.js'
 
@@ -11,6 +11,10 @@ describe('resolveRunnerPackage', () => {
 
   beforeEach(async () => {
     tempRoot = await mkdtemp(join(tmpdir(), 'sanity-runner-pkg-test-'))
+  })
+
+  afterEach(async () => {
+    await rm(tempRoot, {force: true, recursive: true})
   })
 
   async function buildFakeRunnerLayout(pkgName: string): Promise<string> {
