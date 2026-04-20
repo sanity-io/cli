@@ -19,9 +19,9 @@ function getVersion(command: string): string | null {
 export function getAvailablePackageManagers(): PackageManager[] {
   const managers: PackageManager[] = []
 
-  if (getVersion('npx')) {
+  if (getVersion('npm')) {
     managers.push({
-      createCommand: (version, args) => ['npx', '--yes', `create-sanity@${version}`, ...args],
+      createCommand: (version, args) => ['npm', 'create', '--yes', `sanity@${version}`, ...args],
       name: 'npm',
     })
   }

@@ -14,7 +14,6 @@ describe.skipIf(!isRegistryMode)('create-sanity via package managers', () => {
     describe(pm.name, () => {
       test(`${pm.name} create sanity@${version} --help exits 0`, () => {
         const [cmd, ...args] = pm.createCommand(version, ['--help'])
-
         let result: string
         try {
           result = execFileSync(cmd, args, {
