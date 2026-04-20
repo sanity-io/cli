@@ -40,6 +40,9 @@ interface EditorConfig {
   format: 'jsonc' | 'toml'
   /** Extracts the auth token from a parsed Sanity server config block */
   readToken: (serverConfig: Record<string, unknown>) => string | undefined
+
+  /** If true, this editor uses OAuth natively and does not need an embedded API token */
+  oauthOnly?: boolean
 }
 
 /**
@@ -224,6 +227,7 @@ const EDITOR_DEFAULTS = {
   buildServerConfig: defaultHttpConfig,
   configKey: 'mcpServers',
   format: 'jsonc' as const,
+  oauthOnly: false,
   readToken: readTokenFromHeaders,
 }
 
@@ -321,7 +325,12 @@ export const EDITOR_CONFIGS = {
   },
   // Doc: https://docs.cursor.com/context/model-context-protocol
   // Path: ~/.cursor/mcp.json  Key: mcpServers
-  Cursor: {...EDITOR_DEFAULTS, buildServerConfig: buildCursorServerConfig, detect: detectCursor},
+  Cursor: {
+    ...EDITOR_DEFAULTS,
+    buildServerConfig: buildCursorServerConfig,
+    detect: detectCursor,
+    oauthOnly: true,
+  },
   // Doc: https://googlegemini.wiki/gemini-cli/mcp-servers
   // Path: ~/.gemini/settings.json  Key: mcpServers
   'Gemini CLI': {...EDITOR_DEFAULTS, detect: detectGeminiCli},

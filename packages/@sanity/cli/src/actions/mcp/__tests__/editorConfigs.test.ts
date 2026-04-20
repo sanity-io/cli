@@ -84,10 +84,14 @@ describe('buildServerConfig', () => {
 
   test('all editors except Cursor include auth credentials', () => {
     const editorsWithToken = [
+      'Antigravity',
       'Claude Code',
+      'Cline',
+      'Cline CLI',
       'Codex CLI',
       'Gemini CLI',
       'GitHub Copilot CLI',
+      'MCPorter',
       'OpenCode',
       'VS Code',
       'VS Code Insiders',

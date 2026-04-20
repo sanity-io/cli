@@ -85,6 +85,11 @@ async function checkEditorConfig(name: EditorName, configPath: string): Promise<
       existingToken = readToken(sanityConfig as Record<string, unknown>)
     }
 
+    const {oauthOnly} = EDITOR_CONFIGS[name]
+    if (configured && !existingToken && oauthOnly) {
+      return {authStatus: 'valid', configPath, configured, name}
+    }
+
     return {configPath, configured, existingToken, name}
   } catch (err) {
     debug('Skipping %s: could not read %s: %s', name, configPath, err)
