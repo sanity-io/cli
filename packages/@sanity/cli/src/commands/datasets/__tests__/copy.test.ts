@@ -407,17 +407,63 @@ describe('#dataset:copy', () => {
         createMockDataset('production'),
         createMockDataset('staging'),
       ])
+      let capturedBody: Record<string, unknown> | undefined
       mockApi({
         apiVersion: DATASET_API_VERSION,
         method: 'put',
         projectId: testProjectId,
         uri: `/datasets/production/copy`,
-      }).reply(200, {jobId: 'job-skip'})
+      }).reply(200, (_uri, body) => {
+        capturedBody = body as Record<string, unknown>
+        return {jobId: 'job-skip'}
+      })
       mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
 
-      await testCommand(CopyDatasetCommand, ['production', 'backup', '--skip-history'], {
-        mocks: defaultMocks,
+      const {error} = await testCommand(
+        CopyDatasetCommand,
+        ['production', 'backup', '--skip-history'],
+        {mocks: defaultMocks},
+      )
+
+      if (error) throw error
+      expect(capturedBody).toEqual({
+        skipContentReleases: false,
+        skipHistory: true,
+        targetDataset: 'backup',
       })
+    })
+
+    test('copies dataset with skip-content-releases flag', async () => {
+      mockListDatasets.mockResolvedValue([
+        createMockDataset('production'),
+        createMockDataset('staging'),
+      ])
+      let capturedBody: Record<string, unknown> | undefined
+      mockApi({
+        apiVersion: DATASET_API_VERSION,
+        method: 'put',
+        projectId: testProjectId,
+        uri: `/datasets/production/copy`,
+      }).reply(200, (_uri, body) => {
+        capturedBody = body as Record<string, unknown>
+        return {jobId: 'job-no-releases'}
+      })
+      mockFollowCopyJobProgress.mockReturnValue(of({progress: 100, type: 'progress'}))
+
+      const {error, stdout} = await testCommand(
+        CopyDatasetCommand,
+        ['production', 'backup', '--skip-content-releases'],
+        {mocks: defaultMocks},
+      )
+
+      if (error) throw error
+      expect(capturedBody).toEqual({
+        skipContentReleases: true,
+        skipHistory: false,
+        targetDataset: 'backup',
+      })
+      expect(stdout).toContain('Job job-no-releases started')
+      expect(stdout).toContain('Job job-no-releases completed')
     })
 
     test('copies dataset with detach flag (does not wait for completion)', async () => {
