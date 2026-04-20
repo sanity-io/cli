@@ -4,7 +4,7 @@ import {describe, expect, test} from 'vitest'
 
 import {getAvailablePackageManagers} from '../helpers/packageManagers.js'
 
-const isRegistryMode = !!process.env.E2E_BINARY_PATH
+const isRegistryMode = process.env.E2E_REGISTRY_MODE === 'true'
 
 describe.skipIf(!isRegistryMode)('create-sanity via package managers', () => {
   const version = 'latest'

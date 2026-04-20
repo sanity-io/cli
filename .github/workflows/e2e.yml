@@ -74,6 +74,7 @@ jobs:
           npm install --prefix "$INSTALL_DIR" "sanity@${CLI_VERSION}" "create-sanity@latest"
           echo "E2E_BINARY_PATH=$INSTALL_DIR/node_modules/.bin/sanity" >> "$GITHUB_ENV"
           echo "E2E_CREATE_SANITY_BINARY_PATH=$INSTALL_DIR/node_modules/.bin/create-sanity" >> "$GITHUB_ENV"
+          echo "E2E_REGISTRY_MODE=true" >> "$GITHUB_ENV"
           "$INSTALL_DIR/node_modules/.bin/sanity" --version
           "$INSTALL_DIR/node_modules/.bin/create-sanity" --help > /dev/null
 
