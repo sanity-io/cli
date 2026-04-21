@@ -11,18 +11,17 @@ interface RunnerPackage {
 }
 
 /**
- * Recover which Sanity package + version is running when the CLI was invoked
- * via a package runner. `process.argv[1]` under a runner points at a
- * `.bin/sanity` symlink inside a temp install (e.g. `/_npx/<hash>/...`); we
- * follow the symlink to the real bin file and walk up the directory tree until
- * we find a `package.json` whose `name` is one of the known Sanity packages.
- * Falls back to `{@sanity/cli, fallbackVersion}` if the walk doesn't find one.
+ * Recover the Sanity package name + installed version when the CLI was
+ * invoked via a package runner. Falls back to `@sanity/cli` +
+ * `fallbackVersion` if the layout is unexpected.
  */
 export async function resolveRunnerPackage(
   binaryPath: string = process.argv[1] ?? '',
   fallbackVersion = '',
 ): Promise<RunnerPackage> {
   try {
+    // Follow the runner's .bin/sanity symlink to the real bin file, then walk
+    // up until we hit a package.json for a known Sanity package.
     let dir = dirname(await realpath(binaryPath))
     while (dir !== resolve(dir, '..')) {
       try {
