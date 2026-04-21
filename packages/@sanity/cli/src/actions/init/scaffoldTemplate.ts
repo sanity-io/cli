@@ -96,6 +96,7 @@ export async function scaffoldAndInstall({
   datasetName,
   defaults,
   displayName,
+  federation,
   git,
   noGit,
   organizationId,
@@ -117,6 +118,7 @@ export async function scaffoldAndInstall({
   datasetName: string
   defaults: {projectName: string}
   displayName: string
+  federation: boolean
   git?: boolean | string
   noGit?: boolean
   organizationId: string | undefined
@@ -139,6 +141,7 @@ export async function scaffoldAndInstall({
       autoUpdates,
       bearerToken: templateToken,
       dataset: datasetName,
+      federation,
       organizationId,
       output,
       outputPath,

@@ -14,9 +14,10 @@ export async function initApp({
   autoUpdates,
   defaults,
   error,
+  federation,
   git,
-  noGit,
   mcpConfigured,
+  noGit,
   organizationId,
   output,
   outputPath,
@@ -34,9 +35,10 @@ export async function initApp({
   autoUpdates: boolean
   defaults: {projectName: string}
   error: Output['error']
+  federation: boolean
   git?: boolean | string
-  noGit?: boolean
   mcpConfigured: EditorName[]
+  noGit?: boolean
   organizationId: string | undefined
   output: Output
   outputPath: string
@@ -72,6 +74,7 @@ export async function initApp({
     datasetName: '',
     defaults,
     displayName: '',
+    federation,
     git,
     noGit,
     organizationId,

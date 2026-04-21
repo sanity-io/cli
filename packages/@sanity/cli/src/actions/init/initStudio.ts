@@ -28,11 +28,12 @@ export async function initStudio({
   defaults,
   displayName,
   error,
+  federation,
   git,
-  noGit,
   importDataset,
   isFirstProject,
   mcpConfigured,
+  noGit,
   organizationId,
   output,
   outputPath,
@@ -53,11 +54,12 @@ export async function initStudio({
   defaults: {projectName: string}
   displayName: string
   error: Output['error']
+  federation: boolean
   git?: boolean | string
-  noGit?: boolean
   importDataset?: boolean
   isFirstProject: boolean
   mcpConfigured: EditorName[]
+  noGit?: boolean
   organizationId: string | undefined
   output: Output
   outputPath: string
@@ -112,6 +114,7 @@ export async function initStudio({
     datasetName,
     defaults,
     displayName,
+    federation,
     git,
     noGit,
     organizationId,

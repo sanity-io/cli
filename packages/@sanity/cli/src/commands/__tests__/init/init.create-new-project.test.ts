@@ -519,6 +519,7 @@ describe('#init: create new project', () => {
         '--no-overwrite-files',
         '--template=moviedb',
         '--no-import-dataset',
+        '--federation',
       ],
       {mocks: {...defaultMocks, isInteractive: true}},
     )

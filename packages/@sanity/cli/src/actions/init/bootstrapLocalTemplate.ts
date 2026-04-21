@@ -127,11 +127,13 @@ export async function bootstrapLocalTemplate(
   const cliConfig = isAppTemplate
     ? createAppCliConfig({
         entry: template.entry!,
+        federation: variables.federation,
         organizationId: variables.organizationId,
       })
     : createCliConfig({
         autoUpdates: variables.autoUpdates,
         dataset: variables.dataset,
+        federation: variables.federation,
         projectId: variables.projectId,
       })
 
