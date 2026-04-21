@@ -80,17 +80,23 @@ describe('fetchUpdateInfo', () => {
     expect(mockConfigStore.set).not.toHaveBeenCalled()
   })
 
-  test('uses packageOverride and skips cwd-based resolution when provided', async () => {
-    mockGetLatestVersion.mockResolvedValue('3.61.0')
-    mockPromiseRaceWithTimeout.mockResolvedValue('3.61.0')
+  test.each([
+    ['sanity', 'latestVersion:sanity'],
+    ['@sanity/cli', 'latestVersion:@sanity/cli'],
+  ])(
+    'uses packageOverride (%s) and skips cwd-based resolution when provided',
+    async (pkg, expectedKey) => {
+      mockGetLatestVersion.mockResolvedValue('3.61.0')
+      mockPromiseRaceWithTimeout.mockResolvedValue('3.61.0')
 
-    await fetchUpdateInfo('/fake/project', '6.3.1', 'sanity')
+      await fetchUpdateInfo('/fake/project', '6.3.1', pkg)
 
-    expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
-    const [cacheKey, cacheValue] = mockConfigStore.set.mock.calls[0]
-    expect(cacheKey).toBe('latestVersion:sanity')
-    expect(cacheValue.value).toBe('3.61.0')
-  })
+      expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
+      const [cacheKey, cacheValue] = mockConfigStore.set.mock.calls[0]
+      expect(cacheKey).toBe(expectedKey)
+      expect(cacheValue.value).toBe('3.61.0')
+    },
+  )
 
   test('does not write to cache if fetch times out', async () => {
     const target = {installedVersion: '3.60.0', packageName: 'sanity'}

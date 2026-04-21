@@ -233,6 +233,48 @@ describe('#checkForUpdates', () => {
     )
   })
 
+  test('spawns worker with runner-resolved package name when invoked via a runner with an expired cache', async () => {
+    const {config} = await getCommandAndConfig('help')
+    process.argv[1] = '/home/user/.npm/_npx/abc/node_modules/.bin/sanity'
+
+    setCachedLatestVersion({
+      key: 'latestVersion:@sanity/cli',
+      latestVersion: '999.0.0',
+      updatedAt: Date.now() - 13 * 60 * 60 * 1000,
+    })
+
+    await testHook<'init'>(checkForUpdates, {config})
+
+    expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
+    expect(mockSpawn).toHaveBeenCalledWith(
+      process.execPath,
+      [expect.stringContaining('fetchUpdateInfo.worker')],
+      expect.objectContaining({
+        env: expect.objectContaining({
+          SANITY_UPDATE_CHECK_PACKAGE: '@sanity/cli',
+        }),
+      }),
+    )
+  })
+
+  test('spawns worker with runner-resolved package name when invoked via a runner with no cache', async () => {
+    const {config} = await getCommandAndConfig('help')
+    process.argv[1] = '/home/user/.npm/_npx/abc/node_modules/.bin/sanity'
+
+    await testHook<'init'>(checkForUpdates, {config})
+
+    expect(mockResolveUpdateTarget).not.toHaveBeenCalled()
+    expect(mockSpawn).toHaveBeenCalledWith(
+      process.execPath,
+      [expect.stringContaining('fetchUpdateInfo.worker')],
+      expect.objectContaining({
+        env: expect.objectContaining({
+          SANITY_UPDATE_CHECK_PACKAGE: '@sanity/cli',
+        }),
+      }),
+    )
+  })
+
   test('shows notification and spawns worker when cache has expired', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
