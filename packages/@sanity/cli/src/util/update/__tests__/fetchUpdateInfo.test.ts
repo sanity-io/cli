@@ -83,7 +83,7 @@ describe('fetchUpdateInfo', () => {
   test.each([
     ['sanity', 'latestVersion:sanity'],
     ['@sanity/cli', 'latestVersion:@sanity/cli'],
-  ])(
+  ] as const)(
     'uses packageOverride (%s) and skips cwd-based resolution when provided',
     async (pkg, expectedKey) => {
       mockGetLatestVersion.mockResolvedValue('3.61.0')
