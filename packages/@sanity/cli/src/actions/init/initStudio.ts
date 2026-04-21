@@ -29,10 +29,10 @@ export async function initStudio({
   displayName,
   error,
   git,
-  noGit,
   importDataset,
   isFirstProject,
   mcpConfigured,
+  noGit,
   organizationId,
   output,
   outputPath,
@@ -54,10 +54,10 @@ export async function initStudio({
   displayName: string
   error: Output['error']
   git?: boolean | string
-  noGit?: boolean
   importDataset?: boolean
   isFirstProject: boolean
   mcpConfigured: EditorName[]
+  noGit?: boolean
   organizationId: string | undefined
   output: Output
   outputPath: string

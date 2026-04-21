@@ -40,6 +40,78 @@ function existsForSuffixes(...suffixes: string[]): (p: string) => boolean {
 // readToken (existing tests, kept as-is)
 // ---------------------------------------------------------------------------
 
+describe('buildServerConfig', () => {
+  const testToken = 'test-auth-token-123'
+
+  test('Cursor config uses OAuth (no Authorization header)', () => {
+    const config = EDITOR_CONFIGS.Cursor.buildServerConfig()
+
+    expect(config).toStrictEqual({
+      type: 'http',
+      url: 'https://mcp.sanity.io',
+    })
+  })
+
+  test('Claude Code config includes Authorization header with token', () => {
+    const config = EDITOR_CONFIGS['Claude Code'].buildServerConfig(testToken)
+
+    expect(config).toStrictEqual({
+      headers: {Authorization: `Bearer ${testToken}`},
+      type: 'http',
+      url: 'https://mcp.sanity.io',
+    })
+  })
+
+  test('VS Code config includes Authorization header with token', () => {
+    const config = EDITOR_CONFIGS['VS Code'].buildServerConfig(testToken)
+
+    expect(config).toStrictEqual({
+      headers: {Authorization: `Bearer ${testToken}`},
+      type: 'http',
+      url: 'https://mcp.sanity.io',
+    })
+  })
+
+  test('Codex CLI uses http_headers instead of headers', () => {
+    const config = EDITOR_CONFIGS['Codex CLI'].buildServerConfig(testToken)
+
+    expect(config).toStrictEqual({
+      http_headers: {Authorization: `Bearer ${testToken}`},
+      type: 'http',
+      url: 'https://mcp.sanity.io',
+    })
+  })
+
+  test('all editors except Cursor include auth credentials', () => {
+    const editorsWithToken = [
+      'Antigravity',
+      'Claude Code',
+      'Cline',
+      'Cline CLI',
+      'Codex CLI',
+      'Gemini CLI',
+      'GitHub Copilot CLI',
+      'MCPorter',
+      'OpenCode',
+      'VS Code',
+      'VS Code Insiders',
+      'Zed',
+    ] as const
+
+    for (const name of editorsWithToken) {
+      const config = EDITOR_CONFIGS[name].buildServerConfig(testToken)
+      const hasAuth =
+        (config.headers as Record<string, string> | undefined)?.Authorization?.includes(
+          testToken,
+        ) ||
+        (config.http_headers as Record<string, string> | undefined)?.Authorization?.includes(
+          testToken,
+        )
+      expect(hasAuth, `${name} should include auth token`).toBe(true)
+    }
+  })
+})
+
 describe('readToken', () => {
   const validServerConfig = {
     headers: {Authorization: 'Bearer my-secret-token'},

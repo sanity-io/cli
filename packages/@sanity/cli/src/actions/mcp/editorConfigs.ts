@@ -33,6 +33,7 @@ export function createDetectionEnv(): DetectionEnv {
 }
 
 interface EditorConfig {
+  /** Builds the server config with API token. If oauthOnly is true, the token is not used */
   buildServerConfig: (token: string) => Record<string, unknown>
   configKey: string
   /** Returns the config file path if editor is detected, null otherwise */
@@ -40,13 +41,27 @@ interface EditorConfig {
   format: 'jsonc' | 'toml'
   /** Extracts the auth token from a parsed Sanity server config block */
   readToken: (serverConfig: Record<string, unknown>) => string | undefined
+
+  /** If true, this editor uses OAuth natively and does not need an embedded API token */
+  oauthOnly?: boolean
 }
 
-const defaultHttpConfig = (token: string) => ({
-  headers: {Authorization: `Bearer ${token}`},
-  type: 'http',
-  url: MCP_SERVER_URL,
-})
+/**
+ * The Sanity MCP server uses OAuth by default
+ * If a token is provided, the server will not use OAuth instead tool calls will use the API token
+ */
+const defaultHttpConfig = (token?: string) => {
+  const defaultConfig: Record<string, unknown> = {
+    type: 'http',
+    url: MCP_SERVER_URL,
+  }
+
+  if (token) {
+    defaultConfig.headers = {Authorization: `Bearer ${token}`}
+  }
+
+  return defaultConfig
+}
 
 // -- Detect functions --
 
@@ -213,6 +228,7 @@ const EDITOR_DEFAULTS = {
   buildServerConfig: defaultHttpConfig,
   configKey: 'mcpServers',
   format: 'jsonc' as const,
+  oauthOnly: false,
   readToken: readTokenFromHeaders,
 }
 
@@ -305,7 +321,11 @@ export const EDITOR_CONFIGS = {
   },
   // Doc: https://docs.cursor.com/context/model-context-protocol
   // Path: ~/.cursor/mcp.json  Key: mcpServers
-  Cursor: {...EDITOR_DEFAULTS, detect: detectCursor},
+  Cursor: {
+    ...EDITOR_DEFAULTS,
+    detect: detectCursor,
+    oauthOnly: true,
+  },
   // Doc: https://googlegemini.wiki/gemini-cli/mcp-servers
   // Path: ~/.gemini/settings.json  Key: mcpServers
   'Gemini CLI': {...EDITOR_DEFAULTS, detect: detectGeminiCli},
