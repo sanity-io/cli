@@ -58,14 +58,8 @@ export async function updateChecker(config: {version: string}): Promise<void> {
     )
 
     if (semverGt(latestVersion, installedVersion)) {
-      const notifiedKey = `notifiedVersion:${packageName}`
-      if (store.get(notifiedKey) === latestVersion) {
-        debug('Update is available (%s), already notified, skipping', latestVersion)
-      } else {
-        debug('Update is available (%s)', latestVersion)
-        await showUpdateNotification(installedVersion, latestVersion, packageName, runner)
-        store.set(notifiedKey, latestVersion)
-      }
+      debug('Update is available (%s)', latestVersion)
+      await showUpdateNotification(installedVersion, latestVersion, packageName, runner)
     } else {
       debug('No update found')
     }

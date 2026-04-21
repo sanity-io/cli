@@ -277,49 +277,6 @@ describe('#checkForUpdates', () => {
     expect(mockSpawn).not.toHaveBeenCalled()
   })
 
-  test.each([
-    ['sanity', 'latestVersion:sanity'],
-    ['@sanity/cli', 'latestVersion:@sanity/cli'],
-  ])('does not show notification twice for the same latest version (%s)', async (pkg, cacheKey) => {
-    const cwd = await testFixture('basic-studio')
-    process.chdir(cwd)
-
-    const {config} = await getCommandAndConfig('help')
-
-    mockResolveUpdateTarget.mockResolvedValue({installedVersion: '3.60.0', packageName: pkg})
-    setCachedLatestVersion({
-      key: cacheKey,
-      latestVersion: '999.0.0',
-    })
-
-    const first = await testHook<'init'>(checkForUpdates, {config})
-    expect(first.stderr).toContain('Update available')
-    expect(first.stderr).toContain('999.0.0')
-
-    const second = await testHook<'init'>(checkForUpdates, {config})
-    expect(second.stderr).not.toContain('Update available')
-    expect(mockDebug).toHaveBeenCalledWith(
-      'Update is available (%s), already notified, skipping',
-      '999.0.0',
-    )
-  })
-
-  test('shows notification again when a newer latest version appears', async () => {
-    const cwd = await testFixture('basic-studio')
-    process.chdir(cwd)
-
-    const {config} = await getCommandAndConfig('help')
-
-    setCachedLatestVersion({latestVersion: '999.0.0'})
-    const first = await testHook<'init'>(checkForUpdates, {config})
-    expect(first.stderr).toContain('999.0.0')
-
-    setCachedLatestVersion({latestVersion: '1000.0.0'})
-    const second = await testHook<'init'>(checkForUpdates, {config})
-    expect(second.stderr).toContain('Update available')
-    expect(second.stderr).toContain('1000.0.0')
-  })
-
   test('does not show notification when versions match', async () => {
     const {config} = await getCommandAndConfig('help')
 
