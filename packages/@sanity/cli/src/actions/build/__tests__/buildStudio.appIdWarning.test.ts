@@ -23,6 +23,10 @@ vi.mock('../../../util/appId.js', () => ({
   getAppId: mockGetAppId,
 }))
 
+vi.mock('../../../util/getLocalPackageVersion.js', () => ({
+  getLocalPackageVersion: vi.fn().mockResolvedValue(null),
+}))
+
 vi.mock('../checkStudioDependencyVersions.js', () => ({
   checkStudioDependencyVersions: vi.fn().mockResolvedValue(undefined),
 }))
@@ -179,5 +183,40 @@ describe('buildStudio appId warning', () => {
     })
 
     expect(mockWarnAboutMissingAppId).not.toHaveBeenCalled()
+  })
+
+  test('passes a vision entry with cssFile when @sanity/vision is installed locally', async () => {
+    mockGetAppId.mockReturnValue('my-app-id')
+    const output = createMockOutput()
+
+    const {getLocalPackageVersion} = await import('../../../util/getLocalPackageVersion.js')
+    vi.mocked(getLocalPackageVersion).mockResolvedValueOnce('3.5.0')
+
+    const {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} =
+      await import('../getAutoUpdatesImportMap.js')
+
+    await buildStudio({
+      autoUpdatesEnabled: true,
+      cliConfig: {deployment: {appId: 'my-app-id', autoUpdates: true}},
+      flags: FLAGS,
+      outDir: '/tmp/dist',
+      output,
+      workDir: '/tmp',
+    })
+
+    const sanityDependencies = vi.mocked(getAutoUpdatesImportMap).mock.calls[0][0]
+    expect(sanityDependencies).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({cssFile: 'index.css', name: 'sanity'}),
+        expect.objectContaining({
+          cssFile: 'index.css',
+          name: '@sanity/vision',
+          version: '3.5.0',
+        }),
+      ]),
+    )
+
+    // The same dependency array is passed to getAutoUpdatesCssUrls
+    expect(vi.mocked(getAutoUpdatesCssUrls).mock.calls[0][0]).toBe(sanityDependencies)
   })
 })
