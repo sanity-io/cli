@@ -1,7 +1,7 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {startWorkbenchDevServer} from '../startWorkbenchDevServer.js'
+import {createDevOptions, createMockOutput} from './testHelpers.js'
 
 const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 const mockCreateServer = vi.hoisted(() => vi.fn())
@@ -38,14 +38,6 @@ vi.mock('../../../services/projects.js', () => ({
   getProjectById: mockGetProjectById,
 }))
 
-function createMockOutput(): Output {
-  return {
-    error: vi.fn(),
-    log: vi.fn(),
-    warn: vi.fn(),
-  } as unknown as Output
-}
-
 function createMockServer(port = 3333) {
   return {
     close: vi.fn().mockResolvedValue(undefined),
@@ -53,24 +45,6 @@ function createMockServer(port = 3333) {
     httpServer: {address: vi.fn().mockReturnValue({address: '127.0.0.1', family: 'IPv4', port})},
     listen: vi.fn().mockResolvedValue(undefined),
     ws: {on: vi.fn(), send: vi.fn()},
-  }
-}
-
-/** These are not relevant for what we are testing, but still needed to pass type checker */
-const FLAGS = {
-  'auto-updates': false,
-  host: 'localhost',
-  json: false,
-  port: '3333',
-} as const
-
-function createOptions(overrides?: {cliConfig?: CliConfig; output?: Output}) {
-  return {
-    cliConfig: overrides?.cliConfig ?? ({} as CliConfig),
-    flags: FLAGS,
-    isApp: false,
-    output: overrides?.output ?? createMockOutput(),
-    workDir: '/tmp/sanity-project',
   }
 }
 
@@ -91,7 +65,7 @@ describe('startWorkbenchDevServer', () => {
 
   describe('federation gate', () => {
     test('skips workbench entirely when federation is not enabled', async () => {
-      const result = await startWorkbenchDevServer(createOptions())
+      const result = await startWorkbenchDevServer(createDevOptions())
 
       expect(result.workbenchAvailable).toBe(false)
       expect(result.close).toBeTypeOf('function')
@@ -101,7 +75,7 @@ describe('startWorkbenchDevServer', () => {
 
     test('skips workbench when federation is explicitly disabled', async () => {
       const result = await startWorkbenchDevServer(
-        createOptions({cliConfig: {federation: {enabled: false}}}),
+        createDevOptions({cliConfig: {federation: {enabled: false}}}),
       )
 
       expect(result.workbenchAvailable).toBe(false)
@@ -112,7 +86,7 @@ describe('startWorkbenchDevServer', () => {
     test('returns httpHost and workbenchPort even when federation is disabled', async () => {
       mockGetSharedServerConfig.mockReturnValue({httpHost: '0.0.0.0', httpPort: 4000})
 
-      const result = await startWorkbenchDevServer(createOptions())
+      const result = await startWorkbenchDevServer(createDevOptions())
 
       expect(result.httpHost).toBe('0.0.0.0')
       expect(result.workbenchPort).toBe(4000)
@@ -124,7 +98,7 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockRejectedValue(new Error('Cannot find package'))
 
       const result = await startWorkbenchDevServer(
-        createOptions({cliConfig: {federation: {enabled: true}}}),
+        createDevOptions({cliConfig: {federation: {enabled: true}}}),
       )
 
       expect(result.workbenchAvailable).toBe(false)
@@ -137,7 +111,7 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockRejectedValue(new Error('Cannot find package'))
 
       const result = await startWorkbenchDevServer(
-        createOptions({cliConfig: {federation: {enabled: true}}}),
+        createDevOptions({cliConfig: {federation: {enabled: true}}}),
       )
 
       expect(result.httpHost).toBe('0.0.0.0')
@@ -155,7 +129,7 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
-      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       if (!result.close) throw new Error('Expected close to be defined')
       expect(result.workbenchAvailable).toBe(true)
@@ -167,7 +141,7 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer(4000))
 
-      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       expect(result.httpHost).toBe('0.0.0.0')
       expect(result.workbenchPort).toBe(4000)
@@ -184,7 +158,7 @@ describe('startWorkbenchDevServer', () => {
       })
       mockCreateServer.mockResolvedValue(mockServer)
 
-      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       expect(result.workbenchPort).toBe(3334)
     })
@@ -193,7 +167,7 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
-      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       expect(mockWriteWorkbenchRuntime).toHaveBeenCalledWith(
         expect.objectContaining({cwd: '/tmp/sanity-project'}),
@@ -205,7 +179,7 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(
-        createOptions({
+        createDevOptions({
           cliConfig: {app: {organizationId: 'org-123'}, federation: {enabled: true}},
         }),
       )
@@ -221,7 +195,7 @@ describe('startWorkbenchDevServer', () => {
       mockGetProjectById.mockResolvedValue({organizationId: 'org-from-project'})
 
       await startWorkbenchDevServer(
-        createOptions({
+        createDevOptions({
           cliConfig: {api: {projectId: 'proj-123'}, federation: {enabled: true}},
         }),
       )
@@ -237,7 +211,7 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(
-        createOptions({
+        createDevOptions({
           cliConfig: {
             api: {projectId: 'proj-123'},
             app: {organizationId: 'org-explicit'},
@@ -257,7 +231,7 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await expect(
-        startWorkbenchDevServer(createOptions({cliConfig: {federation: {enabled: true}}})),
+        startWorkbenchDevServer(createDevOptions({cliConfig: {federation: {enabled: true}}})),
       ).rejects.toThrow(/Unable to determine organization ID/)
     })
 
@@ -268,7 +242,7 @@ describe('startWorkbenchDevServer', () => {
 
       await expect(
         startWorkbenchDevServer(
-          createOptions({
+          createDevOptions({
             cliConfig: {api: {projectId: 'proj-123'}, federation: {enabled: true}},
           }),
         ),
@@ -279,7 +253,7 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
-      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       expect(mockCreateServer).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -298,7 +272,7 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(
-        createOptions({
+        createDevOptions({
           cliConfig: {
             app: {organizationId: 'org-test'},
             federation: {enabled: true},
@@ -318,7 +292,7 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(
-        createOptions({
+        createDevOptions({
           cliConfig: {
             app: {organizationId: 'org-test'},
             federation: {enabled: true},
@@ -337,7 +311,7 @@ describe('startWorkbenchDevServer', () => {
       mockCreateServer.mockResolvedValue(createMockServer())
 
       await startWorkbenchDevServer(
-        createOptions({
+        createDevOptions({
           cliConfig: {
             app: {organizationId: 'org-test'},
             federation: {enabled: true},
@@ -366,7 +340,7 @@ describe('startWorkbenchDevServer', () => {
       const output = createMockOutput()
 
       const result = await startWorkbenchDevServer(
-        createOptions({cliConfig: federationConfig, output}),
+        createDevOptions({cliConfig: federationConfig, output}),
       )
 
       expect(result.workbenchAvailable).toBe(false)
@@ -380,7 +354,7 @@ describe('startWorkbenchDevServer', () => {
       mockServer.listen.mockRejectedValue(new Error('Port already in use'))
       mockCreateServer.mockResolvedValue(mockServer)
 
-      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       expect(mockServer.close).toHaveBeenCalled()
     })
@@ -397,7 +371,7 @@ describe('startWorkbenchDevServer', () => {
       mockAcquireWorkbenchLock.mockReturnValue(undefined)
       mockReadWorkbenchLock.mockReturnValue({host: '0.0.0.0', pid: 12_345, port: 4000})
 
-      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       expect(result.workbenchAvailable).toBe(true)
       expect(result.workbenchPort).toBe(4000)
@@ -411,7 +385,7 @@ describe('startWorkbenchDevServer', () => {
       mockAcquireWorkbenchLock.mockReturnValue(undefined)
       mockReadWorkbenchLock.mockReturnValue(undefined)
 
-      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       expect(result.workbenchAvailable).toBe(true)
       expect(result.workbenchPort).toBe(3333)
@@ -432,7 +406,7 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer(3334))
 
-      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       expect(mockUpdatePort).toHaveBeenCalledWith(3334)
     })
@@ -441,7 +415,7 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
-      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       expect(mockWatchRegistry).toHaveBeenCalledWith(expect.any(Function))
     })
@@ -451,18 +425,71 @@ describe('startWorkbenchDevServer', () => {
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
-      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
-        {host: 'localhost', pid: 2, port: 3334, type: 'studio'},
-        {host: 'localhost', pid: 3, port: 3335, type: 'app'},
+        {
+          host: 'localhost',
+          icon: '<svg>one</svg>',
+          id: 'app-1',
+          pid: 2,
+          port: 3334,
+          type: 'studio',
+        },
+        {
+          host: 'localhost',
+          icon: '<svg>two</svg>',
+          id: 'app-2',
+          pid: 3,
+          port: 3335,
+          title: 'App Two',
+          type: 'coreApp',
+        },
       ])
 
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
         applications: [
-          {host: 'localhost', port: 3334, type: 'studio'},
-          {host: 'localhost', port: 3335, type: 'app'},
+          {
+            host: 'localhost',
+            icon: '<svg>one</svg>',
+            id: 'app-1',
+            port: 3334,
+            title: undefined,
+            type: 'studio',
+          },
+          {
+            host: 'localhost',
+            icon: '<svg>two</svg>',
+            id: 'app-2',
+            port: 3335,
+            title: 'App Two',
+            type: 'coreApp',
+          },
+        ],
+      })
+    })
+
+    test('includes undefined app metadata when a registered server has none', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([{host: 'localhost', pid: 2, port: 3334, type: 'studio'}])
+
+      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        applications: [
+          {
+            host: 'localhost',
+            icon: undefined,
+            id: undefined,
+            port: 3334,
+            title: undefined,
+            type: 'studio',
+          },
         ],
       })
     })
@@ -472,10 +499,17 @@ describe('startWorkbenchDevServer', () => {
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
       mockGetRegisteredServers.mockReturnValue([
-        {host: 'localhost', pid: 2, port: 3334, type: 'studio'},
+        {
+          host: 'localhost',
+          icon: '<svg>inline</svg>',
+          id: 'app-1',
+          pid: 2,
+          port: 3334,
+          type: 'studio',
+        },
       ])
 
-      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       // Find the handler registered for the request event
       const onCall = mockServer.ws.on.mock.calls.find(
@@ -488,7 +522,16 @@ describe('startWorkbenchDevServer', () => {
       handler(undefined, mockClient)
 
       expect(mockClient.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
-        applications: [{host: 'localhost', port: 3334, type: 'studio'}],
+        applications: [
+          {
+            host: 'localhost',
+            icon: '<svg>inline</svg>',
+            id: 'app-1',
+            port: 3334,
+            title: undefined,
+            type: 'studio',
+          },
+        ],
       })
     })
 
@@ -500,7 +543,7 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer())
 
-      const result = await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
       await result.close()
 
       expect(mockWatcherClose).toHaveBeenCalled()
@@ -515,7 +558,7 @@ describe('startWorkbenchDevServer', () => {
       mockServer.listen.mockRejectedValue(new Error('Port already in use'))
       mockCreateServer.mockResolvedValue(mockServer)
 
-      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
       expect(mockReleaseLock).toHaveBeenCalled()
     })
