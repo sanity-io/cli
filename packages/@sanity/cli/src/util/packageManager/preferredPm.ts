@@ -83,7 +83,6 @@ function detectFromWorkspaceRoot(pkgPath: string): DetectablePackageManager | nu
           if (relativePath === '' || picomatch.isMatch(relativePath, workspaces)) {
             return detectFromLockFile(dir) ?? 'yarn'
           }
-          continue
         }
       } catch {
         // malformed package.json, skip
