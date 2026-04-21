@@ -169,6 +169,7 @@ describe('#init: bootstrap-app-initialization', () => {
         '--dataset=test',
         '--package-manager=npm',
         '--typescript',
+        '--federation',
       ],
       {
         mocks: {
@@ -182,6 +183,7 @@ describe('#init: bootstrap-app-initialization', () => {
       autoUpdates: true,
       bearerToken: undefined,
       dataset: 'test',
+      federation: true,
       organizationId: undefined,
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
@@ -256,6 +258,7 @@ describe('#init: bootstrap-app-initialization', () => {
         '--output-path=/test/output',
         '--package-manager=npm',
         '--typescript',
+        '--federation',
       ],
       {
         mocks: {
@@ -269,6 +272,7 @@ describe('#init: bootstrap-app-initialization', () => {
       autoUpdates: true,
       bearerToken: undefined,
       dataset: '',
+      federation: true,
       organizationId: 'org-1',
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
@@ -331,6 +335,7 @@ describe('#init: bootstrap-app-initialization', () => {
       autoUpdates: true,
       bearerToken: undefined,
       dataset: '',
+      federation: true,
       organizationId: 'org-1',
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
@@ -401,6 +406,7 @@ describe('#init: bootstrap-app-initialization', () => {
       autoUpdates: true,
       bearerToken: undefined,
       dataset: '',
+      federation: true,
       organizationId: 'org-1',
       output: expect.any(Object),
       outputPath: convertToSystemPath('/test/output'),
