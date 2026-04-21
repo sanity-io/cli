@@ -14,10 +14,6 @@ const syncNoop = () => {}
 export async function devAction(options: DevActionOptions): Promise<{close: () => Promise<void>}> {
   const {output} = options
 
-  if (options.cliConfig) {
-    checkForDeprecatedAppId({cliConfig: options.cliConfig, output})
-  }
-
   const {
     close: closeWorkbenchServer,
     httpHost,
@@ -70,6 +66,8 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   let cleanupManifest: () => void = syncNoop
   let onSignal: (() => void) | undefined
   if (options.cliConfig?.federation?.enabled) {
+    checkForDeprecatedAppId({cliConfig: options.cliConfig, output})
+
     // Read the applied host from the Vite dev server's resolved config —
     // this reflects any user-supplied Vite config that may have overridden
     // our defaults. `server.host` is `string | boolean | undefined`; non-string
