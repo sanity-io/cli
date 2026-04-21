@@ -1,6 +1,7 @@
 import {getUserConfig, subdebug} from '@sanity/cli-core'
 import {getLatestVersion} from 'get-latest-version'
 
+import {type SanityPackage} from '../packageManager/installationInfo/types.js'
 import {promiseRaceWithTimeout} from '../promiseRaceWithTimeout.js'
 import {resolveUpdateTarget} from './resolveUpdateTarget.js'
 
@@ -11,9 +12,19 @@ const FETCH_TIMEOUT = 15_000
 /**
  * Fetch the latest version of the update target package and write it to the config cache.
  * Designed to run in a detached child process so it never blocks the main CLI.
+ *
+ * When `packageOverride` is given, the cwd-based resolver is skipped — used by
+ * the main process to pin the worker to the same package it already resolved
+ * (e.g. via a runner's symlinked install) so cache reads and writes align.
  */
-export async function fetchUpdateInfo(cwd: string, cliVersion: string): Promise<void> {
-  const {packageName} = await resolveUpdateTarget(cwd, cliVersion)
+export async function fetchUpdateInfo(
+  cwd: string,
+  cliVersion: string,
+  packageOverride?: SanityPackage,
+): Promise<void> {
+  const {packageName} = packageOverride
+    ? {packageName: packageOverride}
+    : await resolveUpdateTarget(cwd, cliVersion)
   debug('Worker: fetching latest version of %s', packageName)
 
   let latestVersion: string | null | undefined

@@ -6,8 +6,10 @@ import isInstalledGlobally from 'is-installed-globally'
 
 import {type SanityPackage} from '../packageManager/installationInfo/types.js'
 import {getPackageManagerChoice} from '../packageManager/packageManagerChoice.js'
+import {getRunnerUpdateCommand} from './getRunnerUpdateCommand.js'
 import {getUpdateCommand} from './getUpdateCommand.js'
 import {isInstalledUsingYarn} from './isInstalledUsingYarn.js'
+import {type PackageRunner} from './packageRunner.js'
 
 /**
  * Show a boxed notification about the available update
@@ -16,11 +18,13 @@ export async function showUpdateNotification(
   currentVersion: string,
   latestVersion: string,
   packageName: SanityPackage,
+  runner: PackageRunner | null = null,
 ): Promise<void> {
   let command
 
-  // Check if CLI is installed globally
-  if (isInstalledGlobally) {
+  if (runner) {
+    command = getRunnerUpdateCommand(runner, packageName)
+  } else if (isInstalledGlobally) {
     command = isInstalledUsingYarn()
       ? `yarn global add ${packageName}`
       : `npm install -g ${packageName}`
