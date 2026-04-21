@@ -8,7 +8,7 @@ import {type SanityPackage} from '../packageManager/installationInfo/types.js'
 const debug = subdebug('updateChecker')
 
 const KNOWN_PACKAGES = new Set<SanityPackage>(['@sanity/cli', 'sanity'])
-const MAX_WALK_ITERATIONS = 50
+const MAX_WALK_ITERATIONS = 25
 
 interface RunnerPackage {
   installedVersion: string

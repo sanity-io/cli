@@ -75,6 +75,29 @@ describe('resolveRunnerPackage', () => {
     })
   })
 
+  test('stops walking after the iteration cap and falls back', async () => {
+    // Valid sanity package.json at the top is unreachable within the cap.
+    await writeFile(
+      join(tempRoot, 'package.json'),
+      JSON.stringify({name: 'sanity', version: '5.0.0'}),
+    )
+
+    let dir = tempRoot
+    for (let i = 0; i < 30; i++) {
+      dir = join(dir, `lvl${i}`)
+      await mkdir(dir)
+    }
+    const binDir = join(dir, 'bin')
+    await mkdir(binDir)
+    const binPath = join(binDir, 'sanity')
+    await writeFile(binPath, '#!/usr/bin/env node\n')
+
+    expect(await resolveRunnerPackage(binPath, '9.9.9')).toEqual({
+      installedVersion: '9.9.9',
+      packageName: 'sanity',
+    })
+  })
+
   test('walks past an unrelated package.json before finding a sanity package', async () => {
     // Layout:
     //   <tempRoot>/node_modules/sanity/{bin/sanity, package.json (name: sanity)}
