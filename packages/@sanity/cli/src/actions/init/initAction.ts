@@ -6,6 +6,7 @@ import {type TelemetryTrace} from '@sanity/telemetry'
 import {type Framework, frameworks} from '@vercel/frameworks'
 import deburr from 'lodash-es/deburr.js'
 
+import {promptForFederation} from '../../prompts/init/federation.js'
 import {promptForConfigFiles} from '../../prompts/init/nextjs.js'
 import {getCliUser} from '../../services/user.js'
 import {CLIInitStepCompleted, type InitStepResult} from '../../telemetry/init.telemetry.js'
@@ -250,10 +251,15 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     return
   }
 
+  let federation = flagOrDefault(options.federation, true)
+  if (shouldPrompt(options.unattended, options.federation)) {
+    federation = await promptForFederation()
+  }
+
   const sharedParams = {
     defaults,
     mcpConfigured,
-    options,
+    options: {...options, federation},
     organizationId,
     output,
     outputPath,
