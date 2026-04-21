@@ -21,24 +21,6 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     expect(result).toContain('sanity-cdn.com')
   })
 
-  test('does not include css array in __imports JSON', () => {
-    const importMap = {
-      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
-    }
-    const cssUrls = [
-      'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890/index.css',
-    ]
-
-    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, cssUrls)
-
-    // __imports JSON should only contain imports, not css
-    const match = result.match(/id="__imports">([^<]+)</)
-    expect(match).toBeTruthy()
-    const importsData = JSON.parse(match![1])
-    expect(importsData.css).toBeUndefined()
-    expect(importsData.imports).toEqual(importMap.imports)
-  })
-
   test('injects the timestamped import map injector script', () => {
     const importMap = {
       imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
@@ -49,7 +31,7 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     expect(result).toContain('__imports')
   })
 
-  test('adds static <link> tags for CSS URLs in the HTML', () => {
+  test('includes CSS URLs as a css array in the __imports JSON', () => {
     const importMap = {
       imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
     }
@@ -60,66 +42,25 @@ describe('addTimestampedImportMapScriptToHtml', () => {
 
     const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, cssUrls)
 
-    // Static <link> tags should be in the HTML with data-auto-update-css attribute
-    expect(result).toContain(
-      '<link rel="stylesheet" href="https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890/index.css" data-auto-update-css>',
-    )
-    expect(result).toContain(
-      '<link rel="stylesheet" href="https://sanity-cdn.com/v1/modules/@sanity__vision/default/%5E3.2.0/t1234567890/index.css" data-auto-update-css>',
-    )
+    const match = result.match(/id="__imports">([^<]+)</)
+    expect(match).toBeTruthy()
+    const importsData = JSON.parse(match![1])
+    expect(importsData.css).toEqual(cssUrls)
+    expect(importsData.imports).toEqual(importMap.imports)
   })
 
-  test('does not add static <link> tags when no CSS URLs provided', () => {
-    const importMap = {
-      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
-    }
-
-    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
-
-    expect(result).not.toContain('data-auto-update-css')
-  })
-
-  test('runtime script updates existing CSS link tags instead of creating new ones', () => {
+  test('omits the css array when no CSS URLs are provided', () => {
     const importMap = {
       imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
     }
     const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
 
-    // Should query for existing links and update href
-    expect(result).toContain("querySelectorAll('link[data-auto-update-css]')")
-    expect(result).toContain('replaceTimestamp(link.href)')
-    // Should NOT create new link elements
-    expect(result).not.toContain("createElement('link')")
+    const match = result.match(/id="__imports">([^<]+)</)
+    const importsData = JSON.parse(match![1])
+    expect(importsData.css).toBeUndefined()
   })
 
-  test('runtime script uses shared replaceTimestamp for both JS and CSS', () => {
-    const importMap = {
-      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
-    }
-    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
-
-    // The replaceTimestamp function should be defined once and used for both
-    expect(result).toContain('function replaceTimestamp')
-    // Used for import map entries
-    expect(result).toContain('[specifier, replaceTimestamp(path)]')
-    // Used for CSS link tags
-    expect(result).toContain('replaceTimestamp(link.href)')
-  })
-
-  test('runtime script has error handling for JSON.parse', () => {
-    const importMap = {
-      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
-    }
-    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
-
-    // Should have try-catch around JSON.parse
-    expect(result).toContain('try')
-    expect(result).toContain('JSON.parse')
-    expect(result).toContain('console.warn')
-    expect(result).toContain('Failed to parse __imports JSON')
-  })
-
-  test('static CSS link tags appear before the runtime script', () => {
+  test('does not emit static <link> tags — CSS is created by the runtime script', () => {
     const importMap = {
       imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
     }
@@ -129,10 +70,38 @@ describe('addTimestampedImportMapScriptToHtml', () => {
 
     const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, cssUrls)
 
-    const linkPos = result.indexOf('data-auto-update-css')
-    const scriptPos = result.indexOf('auto-generated script to add import map')
-    expect(linkPos).toBeGreaterThan(-1)
-    expect(scriptPos).toBeGreaterThan(-1)
-    expect(linkPos).toBeLessThan(scriptPos)
+    // The provided CSS URL should not be emitted as a static stylesheet tag in the HTML it will be injected by the runtime script
+    expect(result).not.toContain(cssUrls[0])
+  })
+
+  test('runtime script creates link tags synchronously with fresh timestamps', () => {
+    const importMap = {
+      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
+    }
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
+
+    // Script reads the css array from __imports
+    expect(result).toContain('css = []')
+    // Script creates <link> elements
+    expect(result).toContain("createElement('link')")
+    // Script sets rel="stylesheet"
+    expect(result).toContain("linkEl.rel = 'stylesheet'")
+    // Script applies the fresh timestamp via replaceTimestamp
+    expect(result).toContain('replaceTimestamp(cssUrl)')
+    // Appended to head
+    expect(result).toContain('document.head.appendChild(linkEl)')
+  })
+
+  test('runtime script uses shared replaceTimestamp for both imports and CSS', () => {
+    const importMap = {
+      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
+    }
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
+
+    expect(result).toContain('function replaceTimestamp')
+    // Used for import map entries
+    expect(result).toContain('[specifier, replaceTimestamp(path)]')
+    // Used for CSS URLs
+    expect(result).toContain('replaceTimestamp(cssUrl)')
   })
 })
