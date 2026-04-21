@@ -10,6 +10,14 @@ interface RunnerPackage {
   packageName: SanityPackage
 }
 
+/**
+ * Recover which Sanity package + version is running when the CLI was invoked
+ * via a package runner. `process.argv[1]` under a runner points at a
+ * `.bin/sanity` symlink inside a temp install (e.g. `/_npx/<hash>/...`); we
+ * follow the symlink to the real bin file and walk up the directory tree until
+ * we find a `package.json` whose `name` is one of the known Sanity packages.
+ * Falls back to `{@sanity/cli, fallbackVersion}` if the walk doesn't find one.
+ */
 export async function resolveRunnerPackage(
   binaryPath: string = process.argv[1] ?? '',
   fallbackVersion = '',
