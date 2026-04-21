@@ -1,4 +1,5 @@
-import {describe, expect, test} from 'vitest'
+import {JSDOM} from 'jsdom'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {addTimestampedImportMapScriptToHtml} from '../addTimestampImportMapScriptToHtml'
 
@@ -70,8 +71,8 @@ describe('addTimestampedImportMapScriptToHtml', () => {
 
     const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, cssUrls)
 
-    // The provided CSS URL should not be emitted as a static stylesheet tag in the HTML it will be injected by the runtime script
-    expect(result).not.toContain(cssUrls[0])
+    // The provided CSS URL should not be emitted as a static stylesheet tag in the HTML.
+    expect(result).not.toContain(`<link rel="stylesheet" href="${cssUrls[0]}"`)
   })
 
   test('runtime script creates link tags synchronously with fresh timestamps', () => {
@@ -103,5 +104,68 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     expect(result).toContain('[specifier, replaceTimestamp(path)]')
     // Used for CSS URLs
     expect(result).toContain('replaceTimestamp(cssUrl)')
+  })
+})
+
+const fixedTimestamp = 1_700_000_000_000
+
+function createRuntimeDom(html: string) {
+  return new JSDOM(html, {
+    beforeParse(window) {
+      window.Date.now = () => fixedTimestamp
+    },
+    runScripts: 'dangerously',
+    url: 'https://example.test/',
+  })
+}
+
+describe('tests the runtime TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+  test('executes runtime script and injects the expected import map', () => {
+    const importMap = {
+      imports: {
+        external: 'https://example.com/modules/external/index.js',
+        sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890',
+      },
+    }
+
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap)
+    const dom = createRuntimeDom(result)
+
+    const importMapEl = dom.window.document.querySelector('script[type="importmap"]')
+    expect(importMapEl).toBeTruthy()
+
+    const runtimeImportMap = JSON.parse(importMapEl?.textContent || '{}') as {
+      imports?: Record<string, string>
+    }
+
+    expect(runtimeImportMap.imports?.sanity).toBe(
+      'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1700000000',
+    )
+    expect(runtimeImportMap.imports?.external).toBe('https://example.com/modules/external/index.js')
+  })
+
+  test('executes runtime script and appends stylesheet links with the expected URLs', () => {
+    const importMap = {
+      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
+    }
+    const cssUrls = [
+      'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890/index.css',
+      'https://example.com/styles/external.css',
+    ]
+
+    const result = addTimestampedImportMapScriptToHtml(baseHtml, importMap, cssUrls)
+    const dom = createRuntimeDom(result)
+
+    const stylesheetLinks = [...dom.window.document.querySelectorAll('link[rel="stylesheet"]')].map(
+      (link) => link.getAttribute('href'),
+    )
+
+    expect(stylesheetLinks).toEqual([
+      'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1700000000/index.css',
+      'https://example.com/styles/external.css',
+    ])
   })
 })
