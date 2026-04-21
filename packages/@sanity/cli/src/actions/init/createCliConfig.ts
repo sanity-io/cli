@@ -14,13 +14,17 @@ export default defineCliConfig({
      * Learn more at https://www.sanity.io/docs/studio/latest-version-of-sanity#k47faf43faf56
      */
     autoUpdates: __BOOL__autoUpdates__,
-  }
+  },
+  federation: {
+    enabled: __BOOL__federation__,
+  },
 })
 `
 
 interface GenerateCliConfigOptions {
   autoUpdates: boolean
   dataset: string
+  federation: boolean
   projectId: string
 }
 

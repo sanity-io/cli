@@ -37,6 +37,7 @@ import {getOrganizationChoices} from '../actions/organizations/getOrganizationCh
 import {getOrganizationsWithAttachGrantInfo} from '../actions/organizations/getOrganizationsWithAttachGrantInfo.js'
 import {hasProjectAttachGrant} from '../actions/organizations/hasProjectAttachGrant.js'
 import {type OrganizationChoices} from '../actions/organizations/types.js'
+import {promptForFederation} from '../prompts/init/federation.js'
 import {promptForConfigFiles} from '../prompts/init/nextjs.js'
 import {promptForDatasetName} from '../prompts/promptForDatasetName.js'
 import {promptForDefaultConfig} from '../prompts/promptForDefaultConfig.js'
@@ -130,6 +131,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         }
         return input
       },
+    }),
+    federation: Flags.boolean({
+      allowNo: true,
+      default: undefined,
+      description: 'Enable federation for this project',
     }),
     'from-create': Flags.boolean({
       description: 'Internal flag to indicate that the command is run from create-sanity',
@@ -508,10 +514,16 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       this.exit(0)
     }
 
+    let federation = flagOrDefault(this.flags.federation, true)
+    if (shouldPrompt(this.isUnattended(), this.flags.federation)) {
+      federation = await promptForFederation()
+    }
+
     const sharedParams = {
       autoUpdates: this.flags['auto-updates'],
       defaults,
       error: this.error.bind(this) as typeof this.error,
+      federation,
       git: this.flags.git,
       mcpConfigured,
       noGit: this.flags['no-git'],

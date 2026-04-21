@@ -28,6 +28,7 @@ export async function initStudio({
   defaults,
   displayName,
   error,
+  federation,
   git,
   importDataset,
   isFirstProject,
@@ -53,6 +54,7 @@ export async function initStudio({
   defaults: {projectName: string}
   displayName: string
   error: Output['error']
+  federation: boolean
   git?: boolean | string
   importDataset?: boolean
   isFirstProject: boolean
@@ -112,6 +114,7 @@ export async function initStudio({
     datasetName,
     defaults,
     displayName,
+    federation,
     git,
     noGit,
     organizationId,

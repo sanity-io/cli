@@ -15,6 +15,7 @@ export async function initApp({
   datasetName,
   defaults,
   error,
+  federation,
   git,
   mcpConfigured,
   noGit,
@@ -37,6 +38,7 @@ export async function initApp({
   datasetName: string
   defaults: {projectName: string}
   error: Output['error']
+  federation: boolean
   git?: boolean | string
   mcpConfigured: EditorName[]
   noGit?: boolean
@@ -76,6 +78,7 @@ export async function initApp({
     datasetName,
     defaults,
     displayName: '',
+    federation,
     git,
     noGit,
     organizationId,
