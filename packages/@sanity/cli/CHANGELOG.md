@@ -1,5 +1,30 @@
 # Change Log
 
+## 6.4.0
+
+### Minor Changes
+
+- [#960](https://github.com/sanity-io/cli/pull/960) [`6045f96`](https://github.com/sanity-io/cli/commit/6045f960a610c0115def59631d7d04cb6fdeb1d2) Thanks [@drewlyton](https://github.com/drewlyton)! - Added MCP auto-configuration support for Antigravity, Cline CLI, Codex CLI, GitHub Copilot CLI, and MCPorter. Refactored editor detection to use dependency injection for improved testability and cross-platform reliability.
+
+- [#954](https://github.com/sanity-io/cli/pull/954) [`696f8e0`](https://github.com/sanity-io/cli/commit/696f8e0ec18135187eaeb4b853ce0f33d086bca2) Thanks [@tzhelyazkova](https://github.com/tzhelyazkova)! - Add `--skip-content-releases` flag to `sanity datasets copy` for excluding content release documents from the target dataset.
+
+- [#955](https://github.com/sanity-io/cli/pull/955) [`5701546`](https://github.com/sanity-io/cli/commit/570154675a4fa057177f4d915c2c56f1c5372878) Thanks [@mwritter](https://github.com/mwritter)! - use oauth config for mcp with cursor
+
+- [#968](https://github.com/sanity-io/cli/pull/968) [`c88caf7`](https://github.com/sanity-io/cli/commit/c88caf7a77dc633370ce15d6e539612e53baa5d5) Thanks [@binoy14](https://github.com/binoy14)! - - Add project and dataset selection prompts to `sanity init` for app templates
+  - Fix crash when selecting "no" for TypeScript on app templates, which only ship `.tsx` files
+
+- [#980](https://github.com/sanity-io/cli/pull/980) [`80480af`](https://github.com/sanity-io/cli/commit/80480affbd0c40c093f7ffeb6add4a711b2dcff1) Thanks [@mttdnt](https://github.com/mttdnt)! - Show a runner-specific update command (npx, pnpm dlx, yarn dlx, bunx) in the update notification instead of a generic `npm update` when the CLI is invoked via one of those runners.
+
+### Patch Changes
+
+- [#948](https://github.com/sanity-io/cli/pull/948) [`a812f96`](https://github.com/sanity-io/cli/commit/a812f96b6445453c3dda259be2719ff1590dddcc) Thanks [@mttdnt](https://github.com/mttdnt)! - Show the correct update command based on whether the project depends on `sanity` or `@sanity/cli`
+
+- [#947](https://github.com/sanity-io/cli/pull/947) [`1fa3954`](https://github.com/sanity-io/cli/commit/1fa3954c208eba569d821321240321960716051b) Thanks [@binoy14](https://github.com/binoy14)! - Fixed environment variable loading to include all variables from `.env` files, not just `SANITY_STUDIO_`/`SANITY_APP_` prefixed ones. Client bundle exposure remains restricted to prefixed variables only.
+
+- [#959](https://github.com/sanity-io/cli/pull/959) [`ad287b6`](https://github.com/sanity-io/cli/commit/ad287b62a8e59380bf165634532238714b9bd8b7) Thanks [@binoy14](https://github.com/binoy14)! - improve schema extract error messages
+
+- [#977](https://github.com/sanity-io/cli/pull/977) [`10db76f`](https://github.com/sanity-io/cli/commit/10db76fa8864014ff9b3b8d678ef6818740973b3) Thanks [@rexxars](https://github.com/rexxars)! - use sanity v5 compatible dependencies in shopify templates
+
 ## 6.3.2
 
 ### Patch Changes
