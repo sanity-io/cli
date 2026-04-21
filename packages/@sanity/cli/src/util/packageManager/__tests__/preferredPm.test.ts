@@ -55,9 +55,16 @@ describe('preferredPm', () => {
     })
   })
 
-  describe('parent directory pnpm-lock.yaml walk-up', () => {
+  describe('parent directory pnpm walk-up', () => {
     it('finds pnpm-lock.yaml in a parent directory', () => {
       fs.writeFileSync(path.join(tmpDir, 'pnpm-lock.yaml'), '')
+      const childDir = path.join(tmpDir, 'packages', 'child')
+      fs.mkdirSync(childDir, {recursive: true})
+      expect(preferredPm(childDir)).toBe('pnpm')
+    })
+
+    it('finds pnpm-workspace.yaml in a parent directory', () => {
+      fs.writeFileSync(path.join(tmpDir, 'pnpm-workspace.yaml'), "packages:\n  - 'packages/*'\n")
       const childDir = path.join(tmpDir, 'packages', 'child')
       fs.mkdirSync(childDir, {recursive: true})
       expect(preferredPm(childDir)).toBe('pnpm')

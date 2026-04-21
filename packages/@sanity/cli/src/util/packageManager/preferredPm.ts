@@ -18,8 +18,8 @@ export function preferredPm(pkgPath: string): DetectablePackageManager | null {
   const fromLockFile = detectFromLockFile(pkgPath)
   if (fromLockFile) return fromLockFile
 
-  const fromParentPnpmLock = findUp('pnpm-lock.yaml', pkgPath)
-  if (fromParentPnpmLock) return 'pnpm'
+  const fromParentPnpm = findUp('pnpm-lock.yaml', pkgPath) || findUp('pnpm-workspace.yaml', pkgPath)
+  if (fromParentPnpm) return 'pnpm'
 
   const fromWorkspace = detectFromWorkspaceRoot(pkgPath)
   if (fromWorkspace) return fromWorkspace
