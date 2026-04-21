@@ -116,6 +116,26 @@ describe('preferredPm', () => {
       expect(preferredPm(childDir)).toBe('yarn')
     })
 
+    it('continues to parent workspace when inner workspace does not match', () => {
+      // Outer workspace root owns apps/*
+      fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({workspaces: ['apps/*']}))
+      fs.writeFileSync(path.join(tmpDir, 'yarn.lock'), '')
+
+      // Inner workspace root owns packages/* — does NOT own src/
+      const innerDir = path.join(tmpDir, 'apps', 'myapp')
+      fs.mkdirSync(innerDir, {recursive: true})
+      fs.writeFileSync(
+        path.join(innerDir, 'package.json'),
+        JSON.stringify({workspaces: ['packages/*']}),
+      )
+
+      // Target is inside inner workspace root but not matching its globs
+      const targetDir = path.join(innerDir, 'src')
+      fs.mkdirSync(targetDir, {recursive: true})
+      // Should traverse past inner workspace root and find outer one
+      expect(preferredPm(targetDir)).toBe('yarn')
+    })
+
     it('detects workspace PM from a subdirectory within a package', () => {
       fs.writeFileSync(
         path.join(tmpDir, 'package.json'),
@@ -184,6 +204,19 @@ describe('preferredPm', () => {
       const childDir = path.join(tmpDir, 'packages', 'child')
       fs.mkdirSync(childDir, {recursive: true})
       expect(preferredPm(childDir)).toBe('pnpm')
+    })
+  })
+
+  describe('error handling', () => {
+    it('swallows permission errors when reading .modules.yaml', () => {
+      const nmDir = path.join(tmpDir, 'node_modules')
+      fs.mkdirSync(nmDir, {recursive: true})
+      const yamlPath = path.join(nmDir, '.modules.yaml')
+      fs.writeFileSync(yamlPath, "packageManager: 'pnpm@9.0.0'\n")
+      fs.chmodSync(yamlPath, 0o000)
+      // Should not throw — falls through to npm detection (node_modules exists)
+      expect(preferredPm(tmpDir)).toBe('npm')
+      fs.chmodSync(yamlPath, 0o644)
     })
   })
 

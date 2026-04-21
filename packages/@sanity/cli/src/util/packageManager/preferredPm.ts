@@ -83,7 +83,7 @@ function detectFromWorkspaceRoot(pkgPath: string): DetectablePackageManager | nu
           if (relativePath === '' || picomatch.isMatch(relativePath, workspaces)) {
             return detectFromLockFile(dir) ?? 'yarn'
           }
-          return null
+          continue
         }
       } catch {
         // malformed package.json, skip
@@ -133,8 +133,8 @@ function detectFromNodeModules(pkgPath: string): DetectablePackageManager | null
         if (name === 'bun') return 'bun'
       }
     }
-  } catch (err: unknown) {
-    if (err && typeof err === 'object' && 'code' in err && err.code !== 'ENOENT') throw err
+  } catch {
+    // best-effort detection — swallow all read errors
   }
 
   if (fs.existsSync(modulesPath)) return 'npm'
