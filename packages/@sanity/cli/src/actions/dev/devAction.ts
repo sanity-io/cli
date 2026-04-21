@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {normalizeAppId} from '../../util/appId.js'
+import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
 import {readIconFromPath} from '../manifest/extractAppManifest.js'
 import {registerDevServer} from './devServerRegistry.js'
 import {startAppDevServer} from './startAppDevServer.js'
@@ -15,7 +15,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   const {output} = options
 
   if (options.cliConfig) {
-    normalizeAppId({cliConfig: options.cliConfig, output})
+    checkForDeprecatedAppId({cliConfig: options.cliConfig, output})
   }
 
   const {
@@ -93,7 +93,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     cleanupManifest = registerDevServer({
       host: appHost,
       icon,
-      id: options.cliConfig?.deployment?.appId,
+      id: getAppId(options.cliConfig),
       port: appPort,
       title: options.isApp ? options.cliConfig?.app?.title : undefined,
       type: options.isApp ? 'coreApp' : 'studio',

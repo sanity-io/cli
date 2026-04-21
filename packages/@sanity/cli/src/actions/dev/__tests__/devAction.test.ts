@@ -186,7 +186,7 @@ describe('devAction', () => {
       expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'app-abc'}))
     })
 
-    test('normalizes deprecated app.id into deployment.appId before registering', async () => {
+    test('warns about deprecated app.id and falls back to it when registering', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
       const output = createMockOutput()
 
@@ -205,7 +205,7 @@ describe('devAction', () => {
       )
     })
 
-    test('prefers deployment.appId over deprecated app.id when both are set', async () => {
+    test('errors out when both app.id and deployment.appId are set', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
       const output = createMockOutput()
 
@@ -220,9 +220,9 @@ describe('devAction', () => {
         }),
       )
 
-      expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'new-app'}))
-      expect(output.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Found both `app.id` (deprecated) and `deployment.appId`'),
+      expect(output.error).toHaveBeenCalledWith(
+        expect.stringContaining('Found both app.id (deprecated) and deployment.appId'),
+        expect.objectContaining({exit: 1}),
       )
     })
 
