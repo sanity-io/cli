@@ -79,7 +79,7 @@ describe('registerDevServer', () => {
       id: 'app-abc',
       port: 3334,
       title: 'My App',
-      type: 'studio',
+      type: 'coreApp',
       workDir: '/tmp/project',
     })
 

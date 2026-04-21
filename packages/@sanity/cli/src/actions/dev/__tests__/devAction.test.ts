@@ -1,7 +1,7 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {devAction} from '../devAction.js'
+import {createDevOptions, createMockOutput} from './testHelpers.js'
 
 const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartAppDevServer = vi.hoisted(() => vi.fn())
@@ -34,32 +34,6 @@ function mockServer({host, port = 3334}: {host?: boolean | string; port?: number
   }
 }
 
-function createMockOutput(): Output {
-  return {
-    error: vi.fn(),
-    log: vi.fn(),
-    warn: vi.fn(),
-  } as unknown as Output
-}
-
-/** These are not relevant for what we are testing, but still needed to pass type checker */
-const FLAGS = {
-  'auto-updates': false,
-  host: 'localhost',
-  json: false,
-  port: '3333',
-} as const
-
-function createOptions(overrides?: {cliConfig?: CliConfig; isApp?: boolean; output?: Output}) {
-  return {
-    cliConfig: overrides?.cliConfig ?? ({} as CliConfig),
-    flags: FLAGS,
-    isApp: overrides?.isApp ?? false,
-    output: overrides?.output ?? createMockOutput(),
-    workDir: '/tmp/sanity-project',
-  }
-}
-
 describe('devAction', () => {
   beforeEach(() => {
     // Default: no workbench (federation disabled)
@@ -79,7 +53,7 @@ describe('devAction', () => {
   test('studio mode without workbench uses original port', async () => {
     mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
 
-    await devAction(createOptions())
+    await devAction(createDevOptions())
 
     expect(mockStartStudioDevServer).toHaveBeenCalledWith(
       expect.objectContaining({flags: expect.objectContaining({port: '3333'})}),
@@ -96,7 +70,7 @@ describe('devAction', () => {
     mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
     const output = createMockOutput()
 
-    await devAction(createOptions({output}))
+    await devAction(createDevOptions({output}))
 
     expect(mockStartStudioDevServer).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -111,7 +85,7 @@ describe('devAction', () => {
   test('app mode routes to startAppDevServer', async () => {
     mockStartAppDevServer.mockResolvedValue(mockServer({port: 3333}))
 
-    await devAction(createOptions({isApp: true}))
+    await devAction(createDevOptions({isApp: true}))
 
     expect(mockStartAppDevServer).toHaveBeenCalled()
     expect(mockStartStudioDevServer).not.toHaveBeenCalled()
@@ -126,7 +100,7 @@ describe('devAction', () => {
     })
     mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
-    await devAction(createOptions())
+    await devAction(createDevOptions())
 
     expect(mockStartStudioDevServer).toHaveBeenCalledWith(
       expect.objectContaining({reactRefreshHost: 'http://localhost:3333'}),
@@ -136,7 +110,7 @@ describe('devAction', () => {
   test('does not pass reactRefreshHost when workbench is not running', async () => {
     mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
 
-    await devAction(createOptions())
+    await devAction(createDevOptions())
 
     expect(mockStartStudioDevServer).toHaveBeenCalledWith(
       expect.objectContaining({reactRefreshHost: undefined}),
@@ -154,7 +128,7 @@ describe('devAction', () => {
     const startupError = new Error('Port already in use')
     mockStartStudioDevServer.mockRejectedValue(startupError)
 
-    const thrown = await devAction(createOptions()).catch((err) => err)
+    const thrown = await devAction(createDevOptions()).catch((err) => err)
 
     expect(thrown).toBe(startupError)
     expect(mockWorkbenchClose).toHaveBeenCalled()
@@ -174,7 +148,7 @@ describe('devAction', () => {
       close: mockAppClose,
     })
 
-    const result = await devAction(createOptions())
+    const result = await devAction(createDevOptions())
 
     await expect(result.close()).resolves.toBeUndefined()
     expect(mockWorkbenchClose).toHaveBeenCalled()
@@ -186,7 +160,7 @@ describe('devAction', () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(
-        createOptions({
+        createDevOptions({
           cliConfig: {federation: {enabled: true}},
         }),
       )
@@ -204,7 +178,7 @@ describe('devAction', () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(
-        createOptions({
+        createDevOptions({
           cliConfig: {deployment: {appId: 'app-abc'}, federation: {enabled: true}},
         }),
       )
@@ -217,7 +191,7 @@ describe('devAction', () => {
       const output = createMockOutput()
 
       await devAction(
-        createOptions({
+        createDevOptions({
           cliConfig: {app: {id: 'legacy-app'}, federation: {enabled: true}},
           output,
         }),
@@ -236,7 +210,7 @@ describe('devAction', () => {
       const output = createMockOutput()
 
       await devAction(
-        createOptions({
+        createDevOptions({
           cliConfig: {
             app: {id: 'legacy-app'},
             deployment: {appId: 'new-app'},
@@ -257,7 +231,7 @@ describe('devAction', () => {
       mockReadIconFromPath.mockResolvedValue('<svg><path d="M0 0"/></svg>')
 
       await devAction(
-        createOptions({
+        createDevOptions({
           cliConfig: {
             app: {icon: 'public/logo.svg', title: 'My App'},
             federation: {enabled: true},
@@ -280,7 +254,7 @@ describe('devAction', () => {
       mockReadIconFromPath.mockResolvedValue('<svg><path d="M0 0"/></svg>')
 
       await devAction(
-        createOptions({
+        createDevOptions({
           cliConfig: {
             app: {icon: 'public/logo.svg', title: 'My App'},
             federation: {enabled: true},
@@ -302,7 +276,7 @@ describe('devAction', () => {
       const output = createMockOutput()
 
       await devAction(
-        createOptions({
+        createDevOptions({
           cliConfig: {
             app: {icon: 'public/missing.svg', title: 'My App'},
             federation: {enabled: true},
@@ -322,7 +296,7 @@ describe('devAction', () => {
       mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(
-        createOptions({
+        createDevOptions({
           cliConfig: {
             app: {title: 'My App'},
             federation: {enabled: true},
@@ -340,7 +314,7 @@ describe('devAction', () => {
     test('registers with undefined app metadata when nothing is configured', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
-      await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
+      await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
 
       expect(mockRegisterDevServer).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -357,7 +331,7 @@ describe('devAction', () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({host: 'mydev.local', port: 3334}))
 
       await devAction(
-        createOptions({
+        createDevOptions({
           cliConfig: {federation: {enabled: true}, server: {hostname: 'mydev.local'}},
         }),
       )
@@ -374,7 +348,7 @@ describe('devAction', () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({host: 'app.local', port: 3334}))
 
       await devAction(
-        createOptions({
+        createDevOptions({
           cliConfig: {federation: {enabled: true}, server: {hostname: 'cli-config.local'}},
         }),
       )
@@ -388,7 +362,7 @@ describe('devAction', () => {
       // `server.host: true` (bind to all interfaces) is not a usable URL host.
       mockStartStudioDevServer.mockResolvedValue(mockServer({host: true, port: 3334}))
 
-      await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
+      await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
 
       expect(mockRegisterDevServer).toHaveBeenCalledWith(
         expect.objectContaining({host: 'localhost'}),
@@ -399,7 +373,7 @@ describe('devAction', () => {
       mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(
-        createOptions({
+        createDevOptions({
           cliConfig: {federation: {enabled: true}},
           isApp: true,
         }),
@@ -411,7 +385,7 @@ describe('devAction', () => {
     test('does not register when federation is disabled', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
 
-      await devAction(createOptions())
+      await devAction(createDevOptions())
 
       expect(mockRegisterDevServer).not.toHaveBeenCalled()
     })
@@ -421,7 +395,7 @@ describe('devAction', () => {
       mockRegisterDevServer.mockReturnValue(mockCleanup)
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
-      const result = await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
+      const result = await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
 
       await result.close()
       expect(mockCleanup).toHaveBeenCalled()
@@ -432,7 +406,7 @@ describe('devAction', () => {
       mockRegisterDevServer.mockReturnValue(vi.fn())
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
-      const result = await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
+      const result = await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
       await result.close()
 
       expect(offSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function))
@@ -440,5 +414,62 @@ describe('devAction', () => {
 
       offSpy.mockRestore()
     })
+
+    test('SIGINT handler cleans up manifest and workbench, and removes itself', async () => {
+      const mockCleanup = vi.fn()
+      const mockWorkbenchClose = vi.fn().mockResolvedValue(undefined)
+      mockRegisterDevServer.mockReturnValue(mockCleanup)
+      mockStartWorkbenchDevServer.mockResolvedValue({
+        close: mockWorkbenchClose,
+        httpHost: 'localhost',
+        workbenchAvailable: true,
+        workbenchPort: 3333,
+      })
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+      const onSpy = vi.spyOn(process, 'on')
+      const offSpy = vi.spyOn(process, 'off')
+
+      const result = await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
+
+      // Grab the registered SIGINT handler (first call matching 'SIGINT')
+      const sigintCall = onSpy.mock.calls.find(([ev]) => ev === 'SIGINT')
+      expect(sigintCall).toBeDefined()
+      const handler = sigintCall![1] as () => void
+
+      // Invoke the handler directly — simulates the OS delivering SIGINT
+      handler()
+
+      expect(mockCleanup).toHaveBeenCalled()
+      expect(mockWorkbenchClose).toHaveBeenCalled()
+      expect(offSpy).toHaveBeenCalledWith('SIGINT', handler)
+      expect(offSpy).toHaveBeenCalledWith('SIGTERM', handler)
+
+      // Prevent the close teardown from double-invoking the handlers we just removed
+      await result.close()
+      onSpy.mockRestore()
+      offSpy.mockRestore()
+    })
+  })
+
+  test('returns early with workbench-only close when app server exits without a server', async () => {
+    // startAppDevServer resolves with {} when orgId is missing — no `server`.
+    const mockWorkbenchClose = vi.fn().mockResolvedValue(undefined)
+    mockStartWorkbenchDevServer.mockResolvedValue({
+      close: mockWorkbenchClose,
+      httpHost: 'localhost',
+      workbenchAvailable: false,
+      workbenchPort: 3333,
+    })
+    mockStartAppDevServer.mockResolvedValue({})
+
+    const result = await devAction(createDevOptions({isApp: true}))
+
+    expect(result.close).toBeDefined()
+    // The close must still tear down the workbench server
+    await result.close()
+    expect(mockWorkbenchClose).toHaveBeenCalled()
+    // No registration should have happened because federation wasn't evaluated
+    expect(mockRegisterDevServer).not.toHaveBeenCalled()
   })
 })
