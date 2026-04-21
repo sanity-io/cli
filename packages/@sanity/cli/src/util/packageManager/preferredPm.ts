@@ -6,6 +6,7 @@ import path from 'node:path'
 
 import picomatch from 'picomatch'
 
+import {toForwardSlashes} from '../toForwardSlashes.js'
 import {type PackageManager} from './packageManagerChoice.js'
 
 type DetectablePackageManager = Exclude<PackageManager, 'manual'>
@@ -78,7 +79,7 @@ function detectFromWorkspaceRoot(pkgPath: string): DetectablePackageManager | nu
 
         if (workspaces) {
           const matchDir = packageDir === dir ? resolvedPkgPath : packageDir
-          const relativePath = path.relative(dir, matchDir)
+          const relativePath = toForwardSlashes(path.relative(dir, matchDir))
           if (relativePath === '' || picomatch.isMatch(relativePath, workspaces)) {
             return detectFromLockFile(dir) ?? 'yarn'
           }
