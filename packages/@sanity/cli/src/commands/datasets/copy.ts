@@ -231,7 +231,7 @@ export class CopyDatasetCommand extends SanityCommand<typeof CopyDatasetCommand>
   private async handleCopyMode(
     projectId: string,
     args: {source?: string; target?: string},
-    flags: {'skip-content-releases'?: boolean; 'skip-history'?: boolean; detach?: boolean},
+    flags: {detach?: boolean; 'skip-content-releases'?: boolean; 'skip-history'?: boolean},
   ): Promise<void> {
     copyDatasetDebug('Starting copy mode')
 
