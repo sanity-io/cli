@@ -10,7 +10,7 @@ const orgId = getE2EOrganizationId()
 describe('sanity init - app', {timeout: 120_000}, () => {
   describe('non-interactive', () => {
     test('creates app with app-quickstart template', async () => {
-      const tmp = await createTmpDir()
+      const tmp = await createTmpDir({useSystemTmp: true})
       try {
         const {error, exitCode, stdout} = await runCli({
           args: [
@@ -50,7 +50,7 @@ describe('sanity init - app', {timeout: 120_000}, () => {
 
   describe('interactive', () => {
     test('complete flow produces working app', async () => {
-      const tmp = await createTmpDir()
+      const tmp = await createTmpDir({useSystemTmp: true})
       try {
         const session = await runCli({
           args: [
