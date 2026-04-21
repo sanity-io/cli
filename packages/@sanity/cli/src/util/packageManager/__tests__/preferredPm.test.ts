@@ -208,16 +208,20 @@ describe('preferredPm', () => {
   })
 
   describe('error handling', () => {
-    it('swallows permission errors when reading .modules.yaml', () => {
-      const nmDir = path.join(tmpDir, 'node_modules')
-      fs.mkdirSync(nmDir, {recursive: true})
-      const yamlPath = path.join(nmDir, '.modules.yaml')
-      fs.writeFileSync(yamlPath, "packageManager: 'pnpm@9.0.0'\n")
-      fs.chmodSync(yamlPath, 0o000)
-      // Should not throw — falls through to npm detection (node_modules exists)
-      expect(preferredPm(tmpDir)).toBe('npm')
-      fs.chmodSync(yamlPath, 0o644)
-    })
+    // chmod doesn't enforce read permissions on Windows
+    it.skipIf(process.platform === 'win32')(
+      'swallows permission errors when reading .modules.yaml',
+      () => {
+        const nmDir = path.join(tmpDir, 'node_modules')
+        fs.mkdirSync(nmDir, {recursive: true})
+        const yamlPath = path.join(nmDir, '.modules.yaml')
+        fs.writeFileSync(yamlPath, "packageManager: 'pnpm@9.0.0'\n")
+        fs.chmodSync(yamlPath, 0o000)
+        // Should not throw — falls through to npm detection (node_modules exists)
+        expect(preferredPm(tmpDir)).toBe('npm')
+        fs.chmodSync(yamlPath, 0o644)
+      },
+    )
   })
 
   describe('no detection', () => {
