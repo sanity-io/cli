@@ -15,6 +15,7 @@ import {type InitOptions} from './types.js'
 export async function initApp({
   datasetName,
   defaults,
+  federation,
   mcpConfigured,
   options,
   organizationId,
@@ -28,6 +29,7 @@ export async function initApp({
 }: {
   datasetName: string
   defaults: {projectName: string}
+  federation: boolean
   mcpConfigured: EditorName[]
   options: InitOptions
   organizationId: string | undefined
@@ -57,6 +59,7 @@ export async function initApp({
     datasetName,
     defaults,
     displayName: '',
+    federation,
     options,
     organizationId,
     output,
