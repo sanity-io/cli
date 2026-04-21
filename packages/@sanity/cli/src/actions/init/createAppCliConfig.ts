@@ -8,17 +8,22 @@ export default defineCliConfig({
     organizationId: '%organizationId%',
     entry: '%entry%',
   },
+  federation: {
+    enabled: __BOOL__federation__,
+  },
 })
 `
 
 interface GenerateCliConfigOptions {
   entry: string
+  federation: boolean
 
   organizationId?: string
 }
 
 export function createAppCliConfig(options: GenerateCliConfigOptions): string {
   return processTemplate({
+    includeBooleanTransform: true,
     template: defaultAppTemplate,
     variables: options,
   })
