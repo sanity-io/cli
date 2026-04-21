@@ -45,7 +45,7 @@
     "test:e2e": "pnpm --filter @sanity/cli-e2e test",
     "pretest:watch": "pnpm run build:cli",
     "test:watch": "vitest",
-    "version-packages": "changeset version",
+    "version-packages": "changeset version && node .changeset/postversion.mjs",
     "watch:cli": "turbo run watch --filter=@sanity/cli --filter=@sanity/cli*"
   },
   "devDependencies": {
