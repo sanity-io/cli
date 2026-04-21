@@ -1,5 +1,7 @@
 import {styleText} from 'node:util'
 
+import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
+import {readIconFromPath} from '../manifest/extractAppManifest.js'
 import {registerDevServer} from './devServerRegistry.js'
 import {startAppDevServer} from './startAppDevServer.js'
 import {startStudioDevServer} from './startStudioDevServer.js'
@@ -55,15 +57,43 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     return {close: closeWorkbenchServer}
   }
 
+  // Vite may have picked a different port if the desired one was occupied —
+  // read the actual bound port from the http server address when available.
+  const addr = server.httpServer?.address()
+  const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
+
   // Register the studio/app dev server in the registry (federated projects only)
   let cleanupManifest: () => void = syncNoop
   let onSignal: (() => void) | undefined
   if (options.cliConfig?.federation?.enabled) {
-    const addr = server.httpServer?.address()
-    const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
+    checkForDeprecatedAppId({cliConfig: options.cliConfig, output})
+
+    // Read the applied host from the Vite dev server's resolved config —
+    // this reflects any user-supplied Vite config that may have overridden
+    // our defaults. `server.host` is `string | boolean | undefined`; non-string
+    // values (true/false/undefined → 0.0.0.0/localhost) aren't useful as a
+    // URL host, so fall back to 'localhost'.
+    const resolvedHost = server.config.server.host
+    const appHost = typeof resolvedHost === 'string' ? resolvedHost : 'localhost'
+
+    const iconPath = options.cliConfig?.app?.icon
+    let icon: string | undefined
+    if (iconPath) {
+      try {
+        icon = await readIconFromPath(options.workDir, iconPath)
+      } catch (err) {
+        output.warn(
+          `Could not inline app icon for workbench discovery: ${err instanceof Error ? err.message : String(err)}`,
+        )
+      }
+    }
+
     cleanupManifest = registerDevServer({
-      host: httpHost || 'localhost',
+      host: appHost,
+      icon,
+      id: getAppId(options.cliConfig),
       port: appPort,
+      title: options.isApp ? options.cliConfig?.app?.title : undefined,
       type: options.isApp ? 'coreApp' : 'studio',
       workDir: options.workDir,
     })
@@ -83,8 +113,6 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   }
 
   if (workbenchAvailable) {
-    const addr = server.httpServer?.address()
-    const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
     const workbenchUrl = `http://${httpHost || 'localhost'}:${workbenchPort}`
     output.log(
       `Workbench dev server started at ${styleText(['blue', 'underline'], workbenchUrl)} (app on port ${appPort})`,
