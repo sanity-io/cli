@@ -46,23 +46,20 @@ describe('resolveRunnerPackage', () => {
     })
   })
 
-  test('falls back to `@sanity/cli` + fallbackVersion when the path does not exist', async () => {
+  test('falls back to `sanity` + fallbackVersion when the path does not exist', async () => {
     expect(await resolveRunnerPackage('/does/not/exist/node_modules/.bin/sanity', '9.9.9')).toEqual(
-      {
-        installedVersion: '9.9.9',
-        packageName: '@sanity/cli',
-      },
+      {installedVersion: '9.9.9', packageName: 'sanity'},
     )
   })
 
-  test('falls back to `@sanity/cli` + fallbackVersion for an empty path', async () => {
+  test('falls back to `sanity` + fallbackVersion for an empty path', async () => {
     expect(await resolveRunnerPackage('', '9.9.9')).toEqual({
       installedVersion: '9.9.9',
-      packageName: '@sanity/cli',
+      packageName: 'sanity',
     })
   })
 
-  test('uses fallbackVersion when package.json has a non-string version field', async () => {
+  test('falls back to `sanity` + fallbackVersion when package.json has a non-string version field', async () => {
     const pkgDir = join(tempRoot, 'node_modules', 'sanity')
     const binDir = join(tempRoot, 'node_modules', '.bin')
     await mkdir(join(pkgDir, 'bin'), {recursive: true})
@@ -100,7 +97,7 @@ describe('resolveRunnerPackage', () => {
     const binLink = join(binDir, 'sanity')
     await symlink(join(embeddedDir, 'bin', 'sanity'), binLink)
 
-    expect(await resolveRunnerPackage(binLink, '9.9.9')).toEqual({
+    expect(await resolveRunnerPackage(binLink)).toEqual({
       installedVersion: '5.21.0',
       packageName: 'sanity',
     })
