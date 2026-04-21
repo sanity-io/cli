@@ -51,6 +51,7 @@ describe('bootstrapLocalTemplate (app templates)', () => {
       variables: {
         autoUpdates: false,
         dataset: 'production',
+        federation: false,
         organizationId: 'org1',
         projectId: 'abc123',
         projectName: 'my-app',
@@ -74,6 +75,7 @@ describe('bootstrapLocalTemplate (app templates)', () => {
       variables: {
         autoUpdates: false,
         dataset: '',
+        federation: false,
         organizationId: 'org1',
         projectId: '',
         projectName: 'my-app',
