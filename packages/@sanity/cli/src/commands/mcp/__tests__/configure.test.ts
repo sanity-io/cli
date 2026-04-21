@@ -528,6 +528,31 @@ describe('#mcp:configure', () => {
     expect(stdout).toContain('All detected editors are already configured')
   })
 
+  test('skips prompt for oauthOnly editor configured without a bearer token', async () => {
+    mockExistsSync.mockImplementation((path: PathLike) => {
+      return String(path).includes('.cursor')
+    })
+
+    // Cursor config has Sanity entry but no Authorization header (pure OAuth)
+    mockReadFile.mockResolvedValue(
+      JSON.stringify({
+        mcpServers: {
+          Sanity: {
+            type: 'http',
+            url: 'https://mcp.sanity.io',
+          },
+        },
+      }),
+    )
+
+    // No /users/me mock — oauthOnly editors with no token skip validation entirely
+
+    const {stdout} = await testCommand(ConfigureMcpCommand, [])
+
+    expect(mockCheckbox).not.toHaveBeenCalled()
+    expect(stdout).toContain('All detected editors are already configured')
+  })
+
   test('shows auth expired annotation when configured token is invalid', async () => {
     mockExistsSync.mockImplementation((path: PathLike) => {
       return String(path).includes('.cursor')
@@ -662,9 +687,10 @@ describe('#mcp:configure', () => {
   test('auto-selects all editors in non-interactive mode without prompting', async () => {
     mockIsInteractive.mockReturnValue(false)
 
-    mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).endsWith('Code/User')
-    })
+    mockExeca.mockImplementation((async (command: string | URL) => {
+      if (command === 'claude') return EXECA_SUCCESS
+      throw new Error('Not installed')
+    }) as never)
 
     mockApi({
       apiVersion: MCP_API_VERSION,
@@ -683,11 +709,11 @@ describe('#mcp:configure', () => {
 
     expect(mockCheckbox).not.toHaveBeenCalled()
     expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining(convertToSystemPath('Code/User/mcp.json')),
+      expect.stringContaining('.claude.json'),
       expect.stringContaining('test-token-ci'),
       'utf8',
     )
-    expect(stdout).toContain('MCP configured for VS Code')
+    expect(stdout).toContain('MCP configured for Claude Code')
   })
 
   // -------------------------------------------------------------------------
@@ -695,11 +721,12 @@ describe('#mcp:configure', () => {
   // -------------------------------------------------------------------------
 
   test('handles token creation error gracefully', async () => {
-    mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).endsWith('Code/User')
-    })
+    mockExeca.mockImplementation((async (command: string | URL) => {
+      if (command === 'claude') return EXECA_SUCCESS
+      throw new Error('Not installed')
+    }) as never)
 
-    mockCheckbox.mockResolvedValue(['VS Code'])
+    mockCheckbox.mockResolvedValue(['Claude Code'])
 
     mockApi({
       apiVersion: MCP_API_VERSION,
@@ -715,11 +742,12 @@ describe('#mcp:configure', () => {
   })
 
   test('handles file write error gracefully', async () => {
-    mockExistsSync.mockImplementation((path: PathLike) => {
-      return String(path).endsWith('Code/User')
-    })
+    mockExeca.mockImplementation((async (command: string | URL) => {
+      if (command === 'claude') return EXECA_SUCCESS
+      throw new Error('Not installed')
+    }) as never)
 
-    mockCheckbox.mockResolvedValue(['VS Code'])
+    mockCheckbox.mockResolvedValue(['Claude Code'])
 
     mockApi({
       apiVersion: MCP_API_VERSION,
@@ -770,7 +798,14 @@ describe('#mcp:configure', () => {
   // -------------------------------------------------------------------------
 
   test('merges with existing config file', async () => {
-    mockExistsSync.mockReturnValue(true)
+    mockExeca.mockImplementation((async (command: string | URL) => {
+      if (command === 'claude') return EXECA_SUCCESS
+      throw new Error('Not installed')
+    }) as never)
+
+    mockExistsSync.mockImplementation((p: PathLike) => {
+      return String(p).endsWith('.claude.json')
+    })
 
     mockReadFile.mockResolvedValue(
       JSON.stringify({
@@ -782,7 +817,7 @@ describe('#mcp:configure', () => {
       }),
     )
 
-    mockCheckbox.mockResolvedValue(['Cursor'])
+    mockCheckbox.mockResolvedValue(['Claude Code'])
 
     mockApi({
       apiVersion: MCP_API_VERSION,
