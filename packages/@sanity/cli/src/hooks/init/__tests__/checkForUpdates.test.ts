@@ -322,7 +322,7 @@ describe('#checkForUpdates', () => {
   test.each([
     ['sanity', 'latestVersion:sanity'],
     ['@sanity/cli', 'latestVersion:@sanity/cli'],
-  ])('does not show notification twice for the same latest version (%s)', async (pkg, cacheKey) => {
+  ])('does not show notification twice within the same cache cycle (%s)', async (pkg, cacheKey) => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
 
@@ -332,6 +332,7 @@ describe('#checkForUpdates', () => {
     setCachedLatestVersion({
       key: cacheKey,
       latestVersion: '999.0.0',
+      updatedAt: 1_700_000_000_000,
     })
 
     const first = await testHook<'init'>(checkForUpdates, {config})
@@ -341,25 +342,27 @@ describe('#checkForUpdates', () => {
     const second = await testHook<'init'>(checkForUpdates, {config})
     expect(second.stderr).not.toContain('Update available')
     expect(mockDebug).toHaveBeenCalledWith(
-      'Update is available (%s), already notified, skipping',
+      'Update is available (%s), already notified for this cache cycle',
       '999.0.0',
     )
   })
 
-  test('shows notification again when a newer latest version appears', async () => {
+  test('shows notification again when the cache is refreshed (new updatedAt)', async () => {
     const cwd = await testFixture('basic-studio')
     process.chdir(cwd)
 
     const {config} = await getCommandAndConfig('help')
 
-    setCachedLatestVersion({latestVersion: '999.0.0'})
+    setCachedLatestVersion({latestVersion: '999.0.0', updatedAt: 1_700_000_000_000})
     const first = await testHook<'init'>(checkForUpdates, {config})
+    expect(first.stderr).toContain('Update available')
     expect(first.stderr).toContain('999.0.0')
 
-    setCachedLatestVersion({latestVersion: '1000.0.0'})
+    // Same version, but cache was refreshed (e.g. worker re-fetched after TTL).
+    setCachedLatestVersion({latestVersion: '999.0.0', updatedAt: 1_800_000_000_000})
     const second = await testHook<'init'>(checkForUpdates, {config})
     expect(second.stderr).toContain('Update available')
-    expect(second.stderr).toContain('1000.0.0')
+    expect(second.stderr).toContain('999.0.0')
   })
 
   test('does not show notification when versions match', async () => {

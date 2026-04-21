@@ -47,7 +47,7 @@ export async function updateChecker(config: {version: string}): Promise<void> {
   const cached = readCachedLatestVersion(store, cacheKey)
 
   if (cached) {
-    const {expired, latestVersion} = cached
+    const {expired, latestVersion, updatedAt} = cached
 
     debug(
       'Cache %s for %s: installed=%s, latest=%s',
@@ -58,13 +58,13 @@ export async function updateChecker(config: {version: string}): Promise<void> {
     )
 
     if (semverGt(latestVersion, installedVersion)) {
-      const notifiedKey = `notifiedVersion:${packageName}`
-      if (store.get(notifiedKey) === latestVersion) {
-        debug('Update is available (%s), already notified, skipping', latestVersion)
+      const notifiedKey = `notifiedAt:${packageName}`
+      if (store.get(notifiedKey) === updatedAt) {
+        debug('Update is available (%s), already notified for this cache cycle', latestVersion)
       } else {
         debug('Update is available (%s)', latestVersion)
         await showUpdateNotification(installedVersion, latestVersion, packageName, runner)
-        store.set(notifiedKey, latestVersion)
+        store.set(notifiedKey, updatedAt)
       }
     } else {
       debug('No update found')
@@ -88,7 +88,7 @@ export async function updateChecker(config: {version: string}): Promise<void> {
 function readCachedLatestVersion(
   store: ReturnType<typeof getUserConfig>,
   cacheKey: string,
-): {expired: boolean; latestVersion: string} | null {
+): {expired: boolean; latestVersion: string; updatedAt: number} | null {
   const stored: unknown = store.get(cacheKey)
 
   if (
@@ -103,7 +103,7 @@ function readCachedLatestVersion(
   }
 
   const expired = Date.now() - stored.updatedAt > TWELVE_HOURS
-  return {expired, latestVersion: stored.value}
+  return {expired, latestVersion: stored.value, updatedAt: stored.updatedAt}
 }
 
 /**
