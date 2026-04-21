@@ -683,12 +683,12 @@ describe('#mcp:configure', () => {
     expect(mockWriteFile).toHaveBeenCalledTimes(2)
 
     expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining('.cursor/mcp.json'),
+      expect.stringContaining(convertToSystemPath('.cursor/mcp.json')),
       expect.not.stringContaining('multi-token-123'),
       'utf8',
     )
     expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining('Code/User/mcp.json'),
+      expect.stringContaining(convertToSystemPath('Code/User/mcp.json')),
       expect.stringContaining('multi-token-123'),
       'utf8',
     )
