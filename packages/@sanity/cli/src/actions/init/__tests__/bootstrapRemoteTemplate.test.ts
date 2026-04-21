@@ -76,6 +76,7 @@ const baseOpts = {
   variables: {
     autoUpdates: false,
     dataset: 'production',
+    federation: true,
     projectId: 'test-project-id',
   },
 }

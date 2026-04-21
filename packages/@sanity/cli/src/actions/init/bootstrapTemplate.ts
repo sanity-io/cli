@@ -9,6 +9,7 @@ interface BootstrapTemplateOptions {
   autoUpdates: boolean
   bearerToken: string | undefined
   dataset: string
+  federation: boolean
   organizationId: string | undefined
   output: Output
   outputPath: string
@@ -27,6 +28,7 @@ export async function bootstrapTemplate({
   autoUpdates,
   bearerToken,
   dataset,
+  federation,
   organizationId,
   output,
   outputPath,
@@ -41,6 +43,7 @@ export async function bootstrapTemplate({
   const bootstrapVariables: GenerateConfigOptions['variables'] = {
     autoUpdates,
     dataset,
+    federation,
     organizationId,
     projectId,
     projectName,
