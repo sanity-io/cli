@@ -4,7 +4,7 @@ import {type CliConfig} from '@sanity/cli-core'
 import {input, select} from '@sanity/cli-core/ux'
 import {createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {exportDataset} from '@sanity/export'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
@@ -123,8 +123,8 @@ describe('#media:export', () => {
   afterEach(() => {
     vi.clearAllMocks()
     vi.unstubAllEnvs()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 

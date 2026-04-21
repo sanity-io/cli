@@ -4,7 +4,7 @@ import {styleText} from 'node:util'
 
 import {getCliTelemetry, getTimer, isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
-import semver from 'semver'
+import {parse as semverParse} from 'semver'
 
 import {AppBuildTrace} from '../../telemetry/build.telemetry.js'
 import {getAppId} from '../../util/appId.js'
@@ -49,14 +49,14 @@ export async function buildApp(options: BuildOptions): Promise<void> {
 
   if (autoUpdatesEnabled) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
-    const cleanSDKVersion = semver.parse(installedSdkVersion)?.version
+    const cleanSDKVersion = semverParse(installedSdkVersion)?.version
     if (!cleanSDKVersion) {
       output.error(`Failed to parse installed SDK version: ${installedSdkVersion}`, {exit: 1})
       return
     }
 
     // Sanity might not be installed, but if it is, we want to auto update it.
-    const cleanSanityVersion = semver.parse(installedSanityVersion)?.version
+    const cleanSanityVersion = semverParse(installedSanityVersion)?.version
 
     const autoUpdatedPackages = [
       {name: '@sanity/sdk', version: cleanSDKVersion},

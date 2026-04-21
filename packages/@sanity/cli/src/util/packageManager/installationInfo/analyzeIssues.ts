@@ -1,4 +1,4 @@
-import semver from 'semver'
+import {satisfies, parse as semverParse, subset, valid} from 'semver'
 
 import {
   getGlobalUninstallCommand,
@@ -81,10 +81,10 @@ export function analyzeIssues(
     // Skip @sanity/cli here — global-cli-incompatible (below) handles it with
     // better context by checking against sanity's actual required range.
     if (info.installed && name !== '@sanity/cli') {
-      const localMajor = semver.parse(info.installed.version)?.major
+      const localMajor = semverParse(info.installed.version)?.major
       if (localMajor !== undefined) {
         for (const globalMatch of globals.filter((g) => g.packageName === name)) {
-          const globalMajor = semver.parse(globalMatch.version)?.major
+          const globalMajor = semverParse(globalMatch.version)?.major
           if (globalMajor !== undefined && globalMajor !== localMajor) {
             issues.push({
               message: `${name} version mismatch: global ${globalMatch.version} (${globalMatch.packageManager}) vs local ${info.installed.version}.`,
@@ -118,7 +118,7 @@ export function analyzeIssues(
     if (cliInfo?.declared && !isNonSemverProtocol(cliInfo.declared.versionRange)) {
       const declaredRange = cliInfo.declared.versionRange
       // Only flag as redundant when every version in the declared range also
-      // satisfies the required range. semver.subset('^5.0.0', '^5.33.0') → false,
+      // satisfies the required range. subset('^5.0.0', '^5.33.0') → false,
       // so a too-wide range is correctly classified as conflicting.
       if (safeSubset(declaredRange, expectedCliRange)) {
         issues.push({
@@ -234,7 +234,7 @@ function inferPackageManager(workspace: WorkspaceInfo): LockfileType {
  */
 function safeSatisfies(version: string, range: string): boolean {
   try {
-    return semver.satisfies(version, range, {includePrerelease: true})
+    return satisfies(version, range, {includePrerelease: true})
   } catch {
     return false
   }
@@ -246,7 +246,7 @@ function safeSatisfies(version: string, range: string): boolean {
  */
 function safeSubset(sub: string, sup: string): boolean {
   try {
-    return semver.subset(sub, sup) ?? false
+    return subset(sub, sup) ?? false
   } catch {
     return false
   }
@@ -262,7 +262,7 @@ function toCaretRange(range: string): string {
     return range
   }
   // If it's a plain version like "5.33.0", treat as ^5.33.0
-  if (semver.valid(range)) {
+  if (valid(range)) {
     return `^${range}`
   }
   return range

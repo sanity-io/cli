@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import {type CliConfig, type Output, type PackageJson, readPackageJson} from '@sanity/cli-core'
 import {oneline} from 'oneline'
-import semver, {type SemVer} from 'semver'
+import {minVersion, satisfies, type SemVer} from 'semver'
 
 import {determineIsApp} from '../../util/determineIsApp.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
@@ -88,7 +88,7 @@ export async function checkRequiredDependencies(
   // Theoretically the version specified in package.json could be incorrect, eg `foo`
   let minDeclaredStyledComponentsVersion: SemVer | null = null
   try {
-    minDeclaredStyledComponentsVersion = semver.minVersion(declaredStyledComponentsVersion)
+    minDeclaredStyledComponentsVersion = minVersion(declaredStyledComponentsVersion)
   } catch {
     // Intentional fall-through (variable will be left as null, throwing below)
   }
@@ -113,7 +113,7 @@ export async function checkRequiredDependencies(
   if (
     !isStyledComponentsVersionRangeInCatalog &&
     isComparableRange(declaredStyledComponentsVersion) &&
-    !semver.satisfies(minDeclaredStyledComponentsVersion!, wantedStyledComponentsVersionRange)
+    !satisfies(minDeclaredStyledComponentsVersion!, wantedStyledComponentsVersionRange)
   ) {
     output.warn(oneline`
       Declared version of styled-components (${declaredStyledComponentsVersion})
@@ -136,7 +136,7 @@ export async function checkRequiredDependencies(
 
   // The studio should have an _installed_ version of `styled-components`, and it should
   // be semver compatible with the version specified in `sanity` peer dependencies.
-  if (!semver.satisfies(installedStyledComponentsVersion, wantedStyledComponentsVersionRange)) {
+  if (!satisfies(installedStyledComponentsVersion, wantedStyledComponentsVersionRange)) {
     output.warn(oneline`
       Installed version of styled-components (${installedStyledComponentsVersion})
       is not compatible with the version required by sanity (${wantedStyledComponentsVersionRange}).

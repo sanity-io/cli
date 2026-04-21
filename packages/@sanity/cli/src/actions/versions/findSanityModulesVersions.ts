@@ -3,7 +3,7 @@ import path from 'node:path'
 import {readPackageJson} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import promiseProps from 'promise-props-recursive'
-import semver from 'semver'
+import {compare, minVersion} from 'semver'
 
 import {getCliVersion} from '../../util/getCliVersion.js'
 import {buildPackageArray} from './buildPackageArray.js'
@@ -51,8 +51,8 @@ export async function findSanityModulesVersions(
     versionsDebug('packages:', packages)
 
     return packages.map((mod) => {
-      const current = mod.installed || semver.minVersion(mod.declared)?.toString() || ''
-      const needsUpdate = mod.latest ? semver.compare(current, mod.latest) === -1 : false
+      const current = mod.installed || minVersion(mod.declared)?.toString() || ''
+      const needsUpdate = mod.latest ? compare(current, mod.latest) === -1 : false
 
       return {...mod, needsUpdate}
     })

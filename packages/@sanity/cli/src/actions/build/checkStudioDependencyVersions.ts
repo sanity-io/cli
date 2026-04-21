@@ -1,7 +1,7 @@
 import path from 'node:path'
 
 import {type Output, readPackageJson} from '@sanity/cli-core'
-import semver, {type SemVer} from 'semver'
+import {coerce, gtr, ltr, rcompare, satisfies, type SemVer} from 'semver'
 
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 
@@ -47,7 +47,7 @@ export async function checkStudioDependencyVersions(
     }
 
     const packageVersion = await getLocalPackageVersion(pkg.name, workDir)
-    const installed = semver.coerce(packageVersion ?? dependency.replaceAll(/[\D.]/g, ''))
+    const installed = coerce(packageVersion ?? dependency.replaceAll(/[\D.]/g, ''))
 
     if (!installed) {
       return false
@@ -59,15 +59,15 @@ export async function checkStudioDependencyVersions(
     // before a release, but given that is usually works in a backwards-compatible way, we want
     // to indicate that it's _untested_, not necessarily _unsupported_
     // Ex: Installed is react@20.0.0, but we've only _tested_ with react@^19
-    const isUntested = !semver.satisfies(installed, supported) && semver.gtr(installed, supported)
+    const isUntested = !satisfies(installed, supported) && gtr(installed, supported)
 
     // "Unsupported" in that the installed version is _lower than_ the minimum version
     // Ex: Installed is react@18.0.0, but we require react@^19.2
-    const isUnsupported = !semver.satisfies(installed, supported) && !isUntested
+    const isUnsupported = !satisfies(installed, supported) && !isUntested
 
     // "Deprecated" in that we will stop supporting it at some point in the near future,
     // so users should be prompted to upgrade
-    const isDeprecated = pkg.deprecatedBelow ? semver.ltr(installed, pkg.deprecatedBelow) : false
+    const isDeprecated = pkg.deprecatedBelow ? ltr(installed, pkg.deprecatedBelow) : false
 
     return {
       ...pkg,
@@ -135,8 +135,8 @@ function getUpgradeInstructions(pkgs: PackageInfo[]) {
   const inst = pkgs
     .map((pkg) => {
       const [highestSupported] = pkg.supported
-        .map((version) => (semver.coerce(version) || {version: ''}).version)
-        .toSorted(semver.rcompare)
+        .map((version) => (coerce(version) || {version: ''}).version)
+        .toSorted(rcompare)
 
       return `"${pkg.name}@^${highestSupported}"`
     })
@@ -162,8 +162,8 @@ function getDowngradeInstructions(pkgs: PackageInfo[]) {
   const inst = pkgs
     .map((pkg) => {
       const [highestSupported] = pkg.supported
-        .map((version) => (semver.coerce(version) || {version: ''}).version)
-        .toSorted(semver.rcompare)
+        .map((version) => (coerce(version) || {version: ''}).version)
+        .toSorted(rcompare)
 
       return `"${pkg.name}@^${highestSupported}"`
     })

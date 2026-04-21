@@ -2,7 +2,7 @@ import path from 'node:path'
 
 import {readPackageJson} from '@sanity/cli-core'
 import {createRequester} from '@sanity/cli-core/request'
-import semver from 'semver'
+import {coerce, eq, prerelease, parse as semverParse} from 'semver'
 
 import {getModuleUrl} from '../actions/build/getAutoUpdatesImportMap.js'
 import {getLocalPackageVersion} from './getLocalPackageVersion.js'
@@ -78,7 +78,7 @@ export async function compareDependencyVersions(
     const resolvedVersion = await getRemoteResolvedVersion(getModuleUrl(pkg, {appId}), requester)
 
     if (resolvedVersion === null) {
-      if (semver.prerelease(pkg.version)) {
+      if (prerelease(pkg.version)) {
         unresolvedPrerelease.push({pkg: pkg.name, version: pkg.version})
         continue
       }
@@ -91,15 +91,13 @@ export async function compareDependencyVersions(
 
     const manifestVersion = dependencies[pkg.name]
 
-    const installed = semver.coerce(
-      packageVersion ? semver.parse(packageVersion) : semver.coerce(manifestVersion),
-    )
+    const installed = coerce(packageVersion ? semverParse(packageVersion) : coerce(manifestVersion))
 
     if (!installed) {
       throw new Error(`Failed to parse installed version for ${pkg.name}`)
     }
 
-    if (!semver.eq(resolvedVersion, installed.version)) {
+    if (!eq(resolvedVersion, installed.version)) {
       mismatched.push({
         installed: installed.version,
         pkg: pkg.name,

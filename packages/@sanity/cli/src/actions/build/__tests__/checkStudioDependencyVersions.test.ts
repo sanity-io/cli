@@ -1,11 +1,21 @@
 import {type Output} from '@sanity/cli-core'
-import semver from 'semver'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {checkStudioDependencyVersions} from '../checkStudioDependencyVersions.js'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+const mockCoerce = vi.hoisted(() => vi.fn())
+const originalCoerce = vi.hoisted(() => ({fn: null as typeof import('semver').coerce | null}))
+
+vi.mock('semver', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('semver')>()
+  originalCoerce.fn = actual.coerce
+  mockCoerce.mockImplementation((...args: Parameters<typeof actual.coerce>) =>
+    actual.coerce(...args),
+  )
+  return {...actual, coerce: (...args: Parameters<typeof actual.coerce>) => mockCoerce(...args)}
+})
 
 vi.mock('../../../util/getLocalPackageVersion.js', () => ({
   getLocalPackageVersion: mockGetLocalPackageVersion,
@@ -25,6 +35,7 @@ describe('checkStudioDependencyVersions', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    mockCoerce.mockImplementation((v: string) => originalCoerce.fn!(v))
   })
 
   function createMockOutput(): Output {
@@ -268,9 +279,8 @@ describe('checkStudioDependencyVersions', () => {
     test('should handle invalid version ranges in upgrade instructions', async () => {
       // Test the edge case where semver.coerce returns null in getUpgradeInstructions,
       // falling back to {version: ''}
-      const originalCoerce = semver.coerce
       let coerceCallCount = 0
-      vi.spyOn(semver, 'coerce').mockImplementation((version) => {
+      mockCoerce.mockImplementation((version: string) => {
         coerceCallCount++
         // Return null for the version range strings in getUpgradeInstructions
         if (
@@ -281,7 +291,7 @@ describe('checkStudioDependencyVersions', () => {
         ) {
           return null
         }
-        return originalCoerce(version)
+        return originalCoerce.fn!(version)
       })
 
       setupMocks({
@@ -415,8 +425,8 @@ describe('checkStudioDependencyVersions', () => {
       })
       mockGetLocalPackageVersion.mockResolvedValue(null)
 
-      // Mock semver.coerce to return null for any input
-      vi.spyOn(semver, 'coerce').mockReturnValue(null)
+      // Mock coerce to return null for any input
+      mockCoerce.mockReturnValue(null)
 
       await checkStudioDependencyVersions(workDir, mockOutput)
 
