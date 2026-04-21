@@ -8,7 +8,6 @@ const mockStartAppDevServer = vi.hoisted(() => vi.fn())
 const mockStartStudioDevServer = vi.hoisted(() => vi.fn())
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockReadIconFromPath = vi.hoisted(() => vi.fn())
-const mockGetSharedServerConfig = vi.hoisted(() => vi.fn())
 
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
@@ -25,9 +24,15 @@ vi.mock('../devServerRegistry.js', () => ({
 vi.mock('../../manifest/extractAppManifest.js', () => ({
   readIconFromPath: mockReadIconFromPath,
 }))
-vi.mock('../../../util/getSharedServerConfig.js', () => ({
-  getSharedServerConfig: mockGetSharedServerConfig,
-}))
+
+/** Create a mock Vite dev server config shape — `server.config.server.host`
+ * reflects the resolved host after user-provided Vite config has been merged in. */
+function mockServer({host, port = 3334}: {host?: boolean | string; port?: number} = {}) {
+  return {
+    close: vi.fn().mockResolvedValue(undefined),
+    server: {config: {server: {host, port}}},
+  }
+}
 
 function createMockOutput(): Output {
   return {
@@ -65,7 +70,6 @@ describe('devAction', () => {
       workbenchPort: 3333,
     })
     mockRegisterDevServer.mockReturnValue(vi.fn())
-    mockGetSharedServerConfig.mockReturnValue({httpHost: 'localhost', httpPort: 3333})
   })
 
   afterEach(() => {
@@ -73,10 +77,7 @@ describe('devAction', () => {
   })
 
   test('studio mode without workbench uses original port', async () => {
-    mockStartStudioDevServer.mockResolvedValue({
-      close: vi.fn().mockResolvedValue(undefined),
-      server: {config: {server: {port: 3333}}},
-    })
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
 
     await devAction(createOptions())
 
@@ -92,10 +93,7 @@ describe('devAction', () => {
       workbenchAvailable: true,
       workbenchPort: 3333,
     })
-    mockStartStudioDevServer.mockResolvedValue({
-      close: vi.fn().mockResolvedValue(undefined),
-      server: {config: {server: {port: 3334}}},
-    })
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
     const output = createMockOutput()
 
     await devAction(createOptions({output}))
@@ -111,10 +109,7 @@ describe('devAction', () => {
   })
 
   test('app mode routes to startAppDevServer', async () => {
-    mockStartAppDevServer.mockResolvedValue({
-      close: vi.fn().mockResolvedValue(undefined),
-      server: {config: {server: {port: 3333}}},
-    })
+    mockStartAppDevServer.mockResolvedValue(mockServer({port: 3333}))
 
     await devAction(createOptions({isApp: true}))
 
@@ -129,10 +124,7 @@ describe('devAction', () => {
       workbenchAvailable: true,
       workbenchPort: 3333,
     })
-    mockStartStudioDevServer.mockResolvedValue({
-      close: vi.fn().mockResolvedValue(undefined),
-      server: {config: {server: {port: 3334}}},
-    })
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
     await devAction(createOptions())
 
@@ -142,10 +134,7 @@ describe('devAction', () => {
   })
 
   test('does not pass reactRefreshHost when workbench is not running', async () => {
-    mockStartStudioDevServer.mockResolvedValue({
-      close: vi.fn().mockResolvedValue(undefined),
-      server: {config: {server: {port: 3333}}},
-    })
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
 
     await devAction(createOptions())
 
@@ -181,8 +170,8 @@ describe('devAction', () => {
       workbenchPort: 3333,
     })
     mockStartStudioDevServer.mockResolvedValue({
+      ...mockServer({port: 3334}),
       close: mockAppClose,
-      server: {config: {server: {port: 3334}}},
     })
 
     const result = await devAction(createOptions())
@@ -194,10 +183,7 @@ describe('devAction', () => {
 
   describe('registry integration', () => {
     test('registers studio in registry when federation is enabled', async () => {
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(
         createOptions({
@@ -215,10 +201,7 @@ describe('devAction', () => {
     })
 
     test('passes deployment.appId to registerDevServer', async () => {
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(
         createOptions({
@@ -230,10 +213,7 @@ describe('devAction', () => {
     })
 
     test('normalizes deprecated app.id into deployment.appId before registering', async () => {
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
       const output = createMockOutput()
 
       await devAction(
@@ -252,10 +232,7 @@ describe('devAction', () => {
     })
 
     test('prefers deployment.appId over deprecated app.id when both are set', async () => {
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
       const output = createMockOutput()
 
       await devAction(
@@ -275,11 +252,8 @@ describe('devAction', () => {
       )
     })
 
-    test('inlines app.icon via readIconFromPath and passes app.title to registerDevServer', async () => {
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
+    test('inlines app.icon via readIconFromPath and passes app.title to registerDevServer for SDK apps', async () => {
+      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
       mockReadIconFromPath.mockResolvedValue('<svg><path d="M0 0"/></svg>')
 
       await devAction(
@@ -288,6 +262,7 @@ describe('devAction', () => {
             app: {icon: 'public/logo.svg', title: 'My App'},
             federation: {enabled: true},
           },
+          isApp: true,
         }),
       )
 
@@ -300,11 +275,29 @@ describe('devAction', () => {
       )
     })
 
+    test('omits title for studios even when app.title is configured', async () => {
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+      mockReadIconFromPath.mockResolvedValue('<svg><path d="M0 0"/></svg>')
+
+      await devAction(
+        createOptions({
+          cliConfig: {
+            app: {icon: 'public/logo.svg', title: 'My App'},
+            federation: {enabled: true},
+          },
+        }),
+      )
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          icon: '<svg><path d="M0 0"/></svg>',
+          title: undefined,
+        }),
+      )
+    })
+
     test('warns and registers without icon when readIconFromPath fails', async () => {
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
+      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
       mockReadIconFromPath.mockRejectedValue(new Error('ENOENT'))
       const output = createMockOutput()
 
@@ -314,6 +307,7 @@ describe('devAction', () => {
             app: {icon: 'public/missing.svg', title: 'My App'},
             federation: {enabled: true},
           },
+          isApp: true,
           output,
         }),
       )
@@ -325,10 +319,7 @@ describe('devAction', () => {
     })
 
     test('does not call readIconFromPath when app.icon is not configured', async () => {
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
+      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(
         createOptions({
@@ -336,6 +327,7 @@ describe('devAction', () => {
             app: {title: 'My App'},
             federation: {enabled: true},
           },
+          isApp: true,
         }),
       )
 
@@ -346,10 +338,7 @@ describe('devAction', () => {
     })
 
     test('registers with undefined app metadata when nothing is configured', async () => {
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
 
@@ -362,12 +351,10 @@ describe('devAction', () => {
       )
     })
 
-    test('registers app under its own resolved host (server.hostname via getSharedServerConfig)', async () => {
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
-      mockGetSharedServerConfig.mockReturnValue({httpHost: 'mydev.local', httpPort: 3333})
+    test('registers app under the host applied by the vite dev server', async () => {
+      // The resolved host on `server.config.server.host` reflects the final,
+      // user-merged Vite config — use that as the authoritative source.
+      mockStartStudioDevServer.mockResolvedValue(mockServer({host: 'mydev.local', port: 3334}))
 
       await devAction(
         createOptions({
@@ -380,24 +367,15 @@ describe('devAction', () => {
       )
     })
 
-    test('registered host reflects this process when another process owns the workbench lock', async () => {
-      // startWorkbenchDevServer returns the existing workbench's host — but the
-      // registered app host must reflect THIS process's own config.
-      mockStartWorkbenchDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        httpHost: 'other-workbench.local',
-        workbenchAvailable: true,
-        workbenchPort: 3333,
-      })
-      mockGetSharedServerConfig.mockReturnValue({httpHost: 'app.local', httpPort: 4000})
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
+    test('registered host reflects the vite server even when user vite config overrides the cli config', async () => {
+      // User's vite config set `server.host` to 'app.local' — that wins over
+      // the cli config's `server.hostname`. The registered host must follow
+      // the vite server's resolved config, not the cli config.
+      mockStartStudioDevServer.mockResolvedValue(mockServer({host: 'app.local', port: 3334}))
 
       await devAction(
         createOptions({
-          cliConfig: {federation: {enabled: true}, server: {hostname: 'app.local'}},
+          cliConfig: {federation: {enabled: true}, server: {hostname: 'cli-config.local'}},
         }),
       )
 
@@ -406,12 +384,9 @@ describe('devAction', () => {
       )
     })
 
-    test('falls back to localhost when resolved host is empty', async () => {
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
-      mockGetSharedServerConfig.mockReturnValue({httpHost: '', httpPort: 3333})
+    test('falls back to localhost when the vite server host is not a string', async () => {
+      // `server.host: true` (bind to all interfaces) is not a usable URL host.
+      mockStartStudioDevServer.mockResolvedValue(mockServer({host: true, port: 3334}))
 
       await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
 
@@ -421,10 +396,7 @@ describe('devAction', () => {
     })
 
     test('registers app type when isApp is true', async () => {
-      mockStartAppDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
+      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(
         createOptions({
@@ -437,10 +409,7 @@ describe('devAction', () => {
     })
 
     test('does not register when federation is disabled', async () => {
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3333}}},
-      })
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
 
       await devAction(createOptions())
 
@@ -450,10 +419,7 @@ describe('devAction', () => {
     test('calls manifest cleanup on close', async () => {
       const mockCleanup = vi.fn()
       mockRegisterDevServer.mockReturnValue(mockCleanup)
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       const result = await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
 
@@ -464,10 +430,7 @@ describe('devAction', () => {
     test('close removes signal handlers to prevent listener leaks', async () => {
       const offSpy = vi.spyOn(process, 'off')
       mockRegisterDevServer.mockReturnValue(vi.fn())
-      mockStartStudioDevServer.mockResolvedValue({
-        close: vi.fn().mockResolvedValue(undefined),
-        server: {config: {server: {port: 3334}}},
-      })
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       const result = await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
       await result.close()
