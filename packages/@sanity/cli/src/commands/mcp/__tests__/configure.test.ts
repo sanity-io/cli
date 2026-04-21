@@ -681,6 +681,18 @@ describe('#mcp:configure', () => {
     const {stdout} = await testCommand(ConfigureMcpCommand, [])
 
     expect(mockWriteFile).toHaveBeenCalledTimes(2)
+
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining('.cursor/mcp.json'),
+      expect.not.stringContaining('multi-token-123'),
+      'utf8',
+    )
+    expect(mockWriteFile).toHaveBeenCalledWith(
+      expect.stringContaining('Code/User/mcp.json'),
+      expect.stringContaining('multi-token-123'),
+      'utf8',
+    )
+
     expect(stdout).toContain('MCP configured for Cursor, VS Code')
   })
 
