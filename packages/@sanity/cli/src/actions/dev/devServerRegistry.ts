@@ -27,7 +27,9 @@ const workbenchLockSchema = z.object({
 })
 
 const devServerManifestSchema = z.extend(workbenchLockSchema, {
-  startedAt: z.string(),
+  icon: z.optional(z.string()),
+  id: z.optional(z.string()),
+  title: z.optional(z.string()),
   type: z.enum(['coreApp', 'studio']),
   workDir: z.string(),
 })
