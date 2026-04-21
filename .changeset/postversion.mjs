@@ -66,11 +66,9 @@ function extractDepBlock(section) {
     }
   }
 
-  const depBlock = lines
-    .slice(0, endLine)
-    .join('\n')
-    .trimEnd()
-  const cleaned = section.slice(0, idx) + section.slice(idx + depBlock.length)
+  const rawBlock = lines.slice(0, endLine).join('\n')
+  const depBlock = rawBlock.trimEnd()
+  const cleaned = section.slice(0, idx) + section.slice(idx + rawBlock.length)
 
   return {section: cleaned, depBlock}
 }
