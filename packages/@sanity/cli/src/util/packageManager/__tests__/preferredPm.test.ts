@@ -105,6 +105,7 @@ describe('preferredPm', () => {
       )
       const childDir = path.join(tmpDir, 'packages', 'child')
       fs.mkdirSync(childDir, {recursive: true})
+      fs.writeFileSync(path.join(childDir, 'package.json'), JSON.stringify({name: 'child'}))
       expect(preferredPm(childDir)).toBe('yarn')
     })
 

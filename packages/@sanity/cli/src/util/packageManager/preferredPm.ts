@@ -64,12 +64,12 @@ function findNearestPackageDir(startDir: string): string {
 }
 
 function detectFromWorkspaceRoot(pkgPath: string): DetectablePackageManager | null {
-  const packageDir = findNearestPackageDir(pkgPath)
-  let dir = path.resolve(pkgPath)
+  const resolvedPkgPath = path.resolve(pkgPath)
+  const packageDir = findNearestPackageDir(resolvedPkgPath)
+  let dir = resolvedPkgPath
   const {root} = path.parse(dir)
-  let previous: string | null = null
 
-  while (dir !== previous) {
+  while (true) {
     const manifestPath = path.join(dir, 'package.json')
     if (fs.existsSync(manifestPath)) {
       try {
@@ -77,7 +77,7 @@ function detectFromWorkspaceRoot(pkgPath: string): DetectablePackageManager | nu
         const workspaces = extractWorkspaces(manifest)
 
         if (workspaces) {
-          const matchDir = packageDir === dir ? pkgPath : packageDir
+          const matchDir = packageDir === dir ? resolvedPkgPath : packageDir
           const relativePath = path.relative(dir, matchDir)
           if (relativePath === '' || picomatch.isMatch(relativePath, workspaces)) {
             return detectFromLockFile(dir) ?? 'yarn'
@@ -88,10 +88,8 @@ function detectFromWorkspaceRoot(pkgPath: string): DetectablePackageManager | nu
         // malformed package.json, skip
       }
     }
-    previous = dir
+    if (dir === root) break
     dir = path.dirname(dir)
-    if (dir === root && previous !== root) continue
-    if (dir === root && previous === root) break
   }
 
   return null
