@@ -6,6 +6,9 @@ import {parse as parseHtml} from 'node-html-parser'
  * the existing timestamp in the sanity-cdn URLs with a new runtime timestamp,
  * and injects the modified import map back into the HTML.
  *
+ * It also synchronously creates `<link rel="stylesheet">` tags for each CDN
+ * CSS URL with a fresh timestamp.
+ *
  * This will be injected into the HTML of the user's bundle.
  *
  * Note that this is in a separate constants file to prevent "Cannot access
@@ -14,7 +17,7 @@ import {parse as parseHtml} from 'node-html-parser'
 const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   // auto-generated script to add import map with timestamp
   const importsJson = document.getElementById('__imports')?.textContent;
-  const { imports = {}, ...rest } = importsJson ? JSON.parse(importsJson) : {};
+  const { imports = {}, css = [], ...rest } = importsJson ? JSON.parse(importsJson) : {};
   const importMapEl = document.createElement('script');
   importMapEl.type = 'importmap';
   const newTimestamp = \`/t\${Math.floor(Date.now() / 1000)}\`;
@@ -39,10 +42,13 @@ const TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT = `<script>
   });
   document.head.appendChild(importMapEl);
 
-  // Update existing CDN CSS <link> tags with fresh timestamps
-  document.querySelectorAll('link[data-auto-update-css]').forEach(function(link) {
-    link.href = replaceTimestamp(link.href);
-  });
+  // Creates <link rel="stylesheet"> tags with fresh timestamps.
+  for (const cssUrl of css) {
+    const linkEl = document.createElement('link');
+    linkEl.rel = 'stylesheet';
+    linkEl.href = replaceTimestamp(cssUrl);
+    document.head.appendChild(linkEl);
+  }
 </script>`
 
 /**
@@ -71,21 +77,17 @@ export function addTimestampedImportMapScriptToHtml(
     headEl = root.querySelector('head')!
   }
 
+  // Include CSS URLs in the __imports JSON so the runtime script can create
+  // <link> tags with fresh timestamps synchronously during head parsing.
+  const importMapWithCss =
+    autoUpdatesCssUrls && autoUpdatesCssUrls.length > 0
+      ? {...importMap, css: autoUpdatesCssUrls}
+      : importMap
+
   headEl.insertAdjacentHTML(
     'beforeend',
-    `<script type="application/json" id="__imports">${JSON.stringify(importMap)}</script>`,
+    `<script type="application/json" id="__imports">${JSON.stringify(importMapWithCss)}</script>`,
   )
-
-  // Add static <link> tags for CDN CSS — browser starts fetching immediately.
-  // The runtime script will replace the build-time timestamp with a fresh one.
-  if (autoUpdatesCssUrls && autoUpdatesCssUrls.length > 0) {
-    for (const cssUrl of autoUpdatesCssUrls) {
-      headEl.insertAdjacentHTML(
-        'beforeend',
-        `<link rel="stylesheet" href="${cssUrl}" data-auto-update-css>`,
-      )
-    }
-  }
 
   headEl.insertAdjacentHTML('beforeend', TIMESTAMPED_IMPORTMAP_INJECTOR_SCRIPT)
   return root.outerHTML
