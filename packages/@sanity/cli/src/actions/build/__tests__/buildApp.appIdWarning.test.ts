@@ -32,6 +32,7 @@ vi.mock('../../../util/compareDependencyVersions.js', () => ({
 }))
 
 vi.mock('../getAutoUpdatesImportMap.js', () => ({
+  getAutoUpdatesCssUrls: vi.fn().mockReturnValue([]),
   getAutoUpdatesImportMap: vi.fn().mockReturnValue({}),
 }))
 
