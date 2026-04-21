@@ -317,7 +317,8 @@ describe('sanity init - studio', {timeout: 120_000}, () => {
       })
     })
 
-    describe('project creation', () => {
+    // Skipped: creates a new project on the Sanity backend that cannot be cleaned up automatically
+    describe.skip('project creation', () => {
       test('creates new project with --project-name', async () => {
         const orgId = getE2EOrganizationId()
         const tmp = await createTmpDir({useSystemTmp: true})
