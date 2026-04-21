@@ -105,6 +105,26 @@ describe('addTimestampedImportMapScriptToHtml', () => {
     // Used for CSS URLs
     expect(result).toContain('replaceTimestamp(cssUrl)')
   })
+
+  test('handles html string with no <html> wrapper', () => {
+    const importMap = {
+      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
+    }
+    const result = addTimestampedImportMapScriptToHtml('<head></head><body></body>', importMap)
+
+    expect(result).toContain('id="__imports"')
+    expect(result).toContain('<html>')
+  })
+
+  test('handles html string with no <head>', () => {
+    const importMap = {
+      imports: {sanity: 'https://sanity-cdn.com/v1/modules/sanity/default/%5E3.2.0/t1234567890'},
+    }
+    const result = addTimestampedImportMapScriptToHtml('<html><body></body></html>', importMap)
+
+    expect(result).toContain('id="__imports"')
+    expect(result).toContain('<head>')
+  })
 })
 
 const fixedTimestamp = 1_700_000_000_000
