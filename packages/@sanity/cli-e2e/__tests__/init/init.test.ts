@@ -20,7 +20,7 @@ describe('sanity init - error handling', () => {
 
 describe('sanity init --bare', () => {
   test('outputs project info without creating any files', async () => {
-    const tmp = await createTmpDir()
+    const tmp = await createTmpDir({useSystemTmp: true})
     try {
       const {error, exitCode, stdout} = await runCli({
         args: ['init', '-y', '--bare', '--project', projectId, '--dataset', 'production'],
