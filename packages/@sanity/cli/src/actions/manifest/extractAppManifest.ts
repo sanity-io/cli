@@ -16,7 +16,7 @@ interface ExtractAppManifestOptions {
  * The manifest expects the SVG string inline, not a path.
  * Brett sanitizes SVGs so it's skipped here.
  */
-async function readIconFromPath(workDir: string, iconPath: string): Promise<string> {
+export async function readIconFromPath(workDir: string, iconPath: string): Promise<string> {
   const resolvedPath = resolve(workDir, iconPath)
   const pathRelativeToWorkDir = relative(workDir, resolvedPath)
   if (pathRelativeToWorkDir.startsWith('..')) {

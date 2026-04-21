@@ -455,14 +455,68 @@ describe('startWorkbenchDevServer', () => {
 
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
-        {host: 'localhost', pid: 2, port: 3334, type: 'studio'},
-        {host: 'localhost', pid: 3, port: 3335, type: 'app'},
+        {
+          host: 'localhost',
+          icon: '<svg>one</svg>',
+          id: 'app-1',
+          pid: 2,
+          port: 3334,
+          title: 'App One',
+          type: 'studio',
+        },
+        {
+          host: 'localhost',
+          icon: '<svg>two</svg>',
+          id: 'app-2',
+          pid: 3,
+          port: 3335,
+          title: 'App Two',
+          type: 'coreApp',
+        },
       ])
 
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
         applications: [
-          {host: 'localhost', port: 3334, type: 'studio'},
-          {host: 'localhost', port: 3335, type: 'app'},
+          {
+            host: 'localhost',
+            icon: '<svg>one</svg>',
+            id: 'app-1',
+            port: 3334,
+            title: 'App One',
+            type: 'studio',
+          },
+          {
+            host: 'localhost',
+            icon: '<svg>two</svg>',
+            id: 'app-2',
+            port: 3335,
+            title: 'App Two',
+            type: 'coreApp',
+          },
+        ],
+      })
+    })
+
+    test('includes undefined app metadata when a registered server has none', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
+
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([{host: 'localhost', pid: 2, port: 3334, type: 'studio'}])
+
+      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        applications: [
+          {
+            host: 'localhost',
+            icon: undefined,
+            id: undefined,
+            port: 3334,
+            title: undefined,
+            type: 'studio',
+          },
         ],
       })
     })
@@ -472,7 +526,15 @@ describe('startWorkbenchDevServer', () => {
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
       mockGetRegisteredServers.mockReturnValue([
-        {host: 'localhost', pid: 2, port: 3334, type: 'studio'},
+        {
+          host: 'localhost',
+          icon: '<svg>inline</svg>',
+          id: 'app-1',
+          pid: 2,
+          port: 3334,
+          title: 'App One',
+          type: 'studio',
+        },
       ])
 
       await startWorkbenchDevServer(createOptions({cliConfig: federationConfig}))
@@ -488,7 +550,16 @@ describe('startWorkbenchDevServer', () => {
       handler(undefined, mockClient)
 
       expect(mockClient.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
-        applications: [{host: 'localhost', port: 3334, type: 'studio'}],
+        applications: [
+          {
+            host: 'localhost',
+            icon: '<svg>inline</svg>',
+            id: 'app-1',
+            port: 3334,
+            title: 'App One',
+            type: 'studio',
+          },
+        ],
       })
     })
 

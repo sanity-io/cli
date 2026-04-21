@@ -7,6 +7,8 @@ const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartAppDevServer = vi.hoisted(() => vi.fn())
 const mockStartStudioDevServer = vi.hoisted(() => vi.fn())
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
+const mockReadIconFromPath = vi.hoisted(() => vi.fn())
+const mockGetSharedServerConfig = vi.hoisted(() => vi.fn())
 
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
@@ -19,6 +21,12 @@ vi.mock('../startStudioDevServer.js', () => ({
 }))
 vi.mock('../devServerRegistry.js', () => ({
   registerDevServer: mockRegisterDevServer,
+}))
+vi.mock('../../manifest/extractAppManifest.js', () => ({
+  readIconFromPath: mockReadIconFromPath,
+}))
+vi.mock('../../../util/getSharedServerConfig.js', () => ({
+  getSharedServerConfig: mockGetSharedServerConfig,
 }))
 
 function createMockOutput(): Output {
@@ -57,6 +65,7 @@ describe('devAction', () => {
       workbenchPort: 3333,
     })
     mockRegisterDevServer.mockReturnValue(vi.fn())
+    mockGetSharedServerConfig.mockReturnValue({httpHost: 'localhost', httpPort: 3333})
   })
 
   afterEach(() => {
@@ -202,6 +211,212 @@ describe('devAction', () => {
           port: 3334,
           type: 'studio',
         }),
+      )
+    })
+
+    test('passes deployment.appId to registerDevServer', async () => {
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+
+      await devAction(
+        createOptions({
+          cliConfig: {deployment: {appId: 'app-abc'}, federation: {enabled: true}},
+        }),
+      )
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'app-abc'}))
+    })
+
+    test('normalizes deprecated app.id into deployment.appId before registering', async () => {
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+      const output = createMockOutput()
+
+      await devAction(
+        createOptions({
+          cliConfig: {app: {id: 'legacy-app'}, federation: {enabled: true}},
+          output,
+        }),
+      )
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({id: 'legacy-app'}),
+      )
+      expect(output.warn).toHaveBeenCalledWith(
+        expect.stringContaining('`app.id` config has moved to `deployment.appId`'),
+      )
+    })
+
+    test('prefers deployment.appId over deprecated app.id when both are set', async () => {
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+      const output = createMockOutput()
+
+      await devAction(
+        createOptions({
+          cliConfig: {
+            app: {id: 'legacy-app'},
+            deployment: {appId: 'new-app'},
+            federation: {enabled: true},
+          },
+          output,
+        }),
+      )
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'new-app'}))
+      expect(output.warn).toHaveBeenCalledWith(
+        expect.stringContaining('Found both `app.id` (deprecated) and `deployment.appId`'),
+      )
+    })
+
+    test('inlines app.icon via readIconFromPath and passes app.title to registerDevServer', async () => {
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+      mockReadIconFromPath.mockResolvedValue('<svg><path d="M0 0"/></svg>')
+
+      await devAction(
+        createOptions({
+          cliConfig: {
+            app: {icon: 'public/logo.svg', title: 'My App'},
+            federation: {enabled: true},
+          },
+        }),
+      )
+
+      expect(mockReadIconFromPath).toHaveBeenCalledWith('/tmp/sanity-project', 'public/logo.svg')
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          icon: '<svg><path d="M0 0"/></svg>',
+          title: 'My App',
+        }),
+      )
+    })
+
+    test('warns and registers without icon when readIconFromPath fails', async () => {
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+      mockReadIconFromPath.mockRejectedValue(new Error('ENOENT'))
+      const output = createMockOutput()
+
+      await devAction(
+        createOptions({
+          cliConfig: {
+            app: {icon: 'public/missing.svg', title: 'My App'},
+            federation: {enabled: true},
+          },
+          output,
+        }),
+      )
+
+      expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('ENOENT'))
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({icon: undefined, title: 'My App'}),
+      )
+    })
+
+    test('does not call readIconFromPath when app.icon is not configured', async () => {
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+
+      await devAction(
+        createOptions({
+          cliConfig: {
+            app: {title: 'My App'},
+            federation: {enabled: true},
+          },
+        }),
+      )
+
+      expect(mockReadIconFromPath).not.toHaveBeenCalled()
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({icon: undefined, title: 'My App'}),
+      )
+    })
+
+    test('registers with undefined app metadata when nothing is configured', async () => {
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+
+      await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          icon: undefined,
+          id: undefined,
+          title: undefined,
+        }),
+      )
+    })
+
+    test('registers app under its own resolved host (server.hostname via getSharedServerConfig)', async () => {
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+      mockGetSharedServerConfig.mockReturnValue({httpHost: 'mydev.local', httpPort: 3333})
+
+      await devAction(
+        createOptions({
+          cliConfig: {federation: {enabled: true}, server: {hostname: 'mydev.local'}},
+        }),
+      )
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({host: 'mydev.local'}),
+      )
+    })
+
+    test('registered host reflects this process when another process owns the workbench lock', async () => {
+      // startWorkbenchDevServer returns the existing workbench's host — but the
+      // registered app host must reflect THIS process's own config.
+      mockStartWorkbenchDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        httpHost: 'other-workbench.local',
+        workbenchAvailable: true,
+        workbenchPort: 3333,
+      })
+      mockGetSharedServerConfig.mockReturnValue({httpHost: 'app.local', httpPort: 4000})
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+
+      await devAction(
+        createOptions({
+          cliConfig: {federation: {enabled: true}, server: {hostname: 'app.local'}},
+        }),
+      )
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({host: 'app.local'}),
+      )
+    })
+
+    test('falls back to localhost when resolved host is empty', async () => {
+      mockStartStudioDevServer.mockResolvedValue({
+        close: vi.fn().mockResolvedValue(undefined),
+        server: {config: {server: {port: 3334}}},
+      })
+      mockGetSharedServerConfig.mockReturnValue({httpHost: '', httpPort: 3333})
+
+      await devAction(createOptions({cliConfig: {federation: {enabled: true}}}))
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({host: 'localhost'}),
       )
     })
 

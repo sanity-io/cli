@@ -72,6 +72,47 @@ describe('registerDevServer', () => {
     expect(existsSync(filePath)).toBe(false)
   })
 
+  test('persists app metadata in the manifest when provided', () => {
+    const cleanup = registerDevServer({
+      host: 'localhost',
+      icon: '<svg>inline</svg>',
+      id: 'app-abc',
+      port: 3334,
+      title: 'My App',
+      type: 'studio',
+      workDir: '/tmp/project',
+    })
+
+    const manifest = JSON.parse(readFileSync(join(registryDir(), `${process.pid}.json`), 'utf8'))
+    expect(manifest.icon).toBe('<svg>inline</svg>')
+    expect(manifest.id).toBe('app-abc')
+    expect(manifest.title).toBe('My App')
+
+    cleanup()
+  })
+
+  test('omits app metadata when not provided and retains manifest through getRegisteredServers', () => {
+    const cleanup = registerDevServer({
+      host: 'localhost',
+      port: 3334,
+      type: 'studio',
+      workDir: '/tmp/project',
+    })
+
+    const manifest = JSON.parse(readFileSync(join(registryDir(), `${process.pid}.json`), 'utf8'))
+    expect(manifest.icon).toBeUndefined()
+    expect(manifest.id).toBeUndefined()
+    expect(manifest.title).toBeUndefined()
+
+    const servers = getRegisteredServers()
+    expect(servers).toHaveLength(1)
+    expect(servers[0].icon).toBeUndefined()
+    expect(servers[0].id).toBeUndefined()
+    expect(servers[0].title).toBeUndefined()
+
+    cleanup()
+  })
+
   test('cleanup does not throw if file already removed', () => {
     const cleanup = registerDevServer({
       host: 'localhost',

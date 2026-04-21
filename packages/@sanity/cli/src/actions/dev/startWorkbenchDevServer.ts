@@ -18,7 +18,14 @@ import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 const noop = async () => {}
 
 const toApplicationsPayload = (servers: DevServerManifest[]) => ({
-  applications: servers.map(({host, port, type}) => ({host, port, type})),
+  applications: servers.map(({host, icon, id, port, title, type}) => ({
+    host,
+    icon,
+    id,
+    port,
+    title,
+    type,
+  })),
 })
 
 interface WorkbenchDevServerResult {

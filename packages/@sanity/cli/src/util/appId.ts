@@ -79,3 +79,34 @@ export function getAppId(cliConfig: CliConfig): string | undefined {
 
   return undefined
 }
+
+/**
+ * Normalize the deprecated `app.id` config into `deployment.appId` so downstream
+ * code can read a single canonical field. If both are set, `deployment.appId`
+ * wins. Warns when the deprecated form is used.
+ * @internal
+ */
+export function normalizeAppId({cliConfig, output}: Options): void {
+  const hasOld = hasDeprecatedAppId(cliConfig)
+  if (!hasOld) return
+
+  const hasNew = hasNewAppId(cliConfig)
+  if (hasNew) {
+    output.warn(
+      `${styleText('bold', 'Found both `app.id` (deprecated) and `deployment.appId` in your application configuration.')} Using \`deployment.appId\`. Please remove \`app.id\` from your sanity.cli.js or sanity.cli.ts file.`,
+    )
+    return
+  }
+
+  output.warn(
+    `${styleText('bold', 'The `app.id` config has moved to `deployment.appId`.')}
+
+Please update \`sanity.cli.ts\` or \`sanity.cli.js\` and move:
+${styleText('red', `app: {id: "${getDeprecatedAppId(cliConfig)}", ... }`)}
+to
+${styleText('green', `deployment: {appId: "${getDeprecatedAppId(cliConfig)}", ... }`)}
+`,
+  )
+
+  cliConfig.deployment = {...cliConfig.deployment, appId: getDeprecatedAppId(cliConfig)}
+}

@@ -1,5 +1,8 @@
 import {styleText} from 'node:util'
 
+import {normalizeAppId} from '../../util/appId.js'
+import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
+import {readIconFromPath} from '../manifest/extractAppManifest.js'
 import {registerDevServer} from './devServerRegistry.js'
 import {startAppDevServer} from './startAppDevServer.js'
 import {startStudioDevServer} from './startStudioDevServer.js'
@@ -11,6 +14,10 @@ const syncNoop = () => {}
 
 export async function devAction(options: DevActionOptions): Promise<{close: () => Promise<void>}> {
   const {output} = options
+
+  if (options.cliConfig) {
+    normalizeAppId({cliConfig: options.cliConfig, output})
+  }
 
   const {
     close: closeWorkbenchServer,
@@ -61,9 +68,34 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   if (options.cliConfig?.federation?.enabled) {
     const addr = server.httpServer?.address()
     const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
+
+    // Resolve this process's own host from its cli config — may differ from
+    // `httpHost` (the workbench's host) when another process owns the
+    // workbench lock. We advertise the app under its own configured host.
+    const {httpHost: appHost} = getSharedServerConfig({
+      cliConfig: options.cliConfig,
+      flags: {host: options.flags.host, port: options.flags.port},
+      workDir: options.workDir,
+    })
+
+    const iconPath = options.cliConfig?.app?.icon
+    let icon: string | undefined
+    if (iconPath) {
+      try {
+        icon = await readIconFromPath(options.workDir, iconPath)
+      } catch (err) {
+        output.warn(
+          `Could not inline app icon for workbench discovery: ${err instanceof Error ? err.message : String(err)}`,
+        )
+      }
+    }
+
     cleanupManifest = registerDevServer({
-      host: httpHost || 'localhost',
+      host: appHost || 'localhost',
+      icon,
+      id: options.cliConfig?.deployment?.appId,
       port: appPort,
+      title: options.cliConfig?.app?.title,
       type: options.isApp ? 'coreApp' : 'studio',
       workDir: options.workDir,
     })
