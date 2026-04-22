@@ -49,7 +49,7 @@ afterEach(() => {
 
 describe('registerDevServer', () => {
   test('writes a manifest file and returns a cleanup function', () => {
-    const cleanup = registerDevServer({
+    const {release: cleanup} = registerDevServer({
       host: 'localhost',
       port: 3334,
       type: 'studio',
@@ -73,7 +73,7 @@ describe('registerDevServer', () => {
   })
 
   test('persists app metadata in the manifest when provided', () => {
-    const cleanup = registerDevServer({
+    const {release: cleanup} = registerDevServer({
       host: 'localhost',
       icon: '<svg>inline</svg>',
       id: 'app-abc',
@@ -92,7 +92,7 @@ describe('registerDevServer', () => {
   })
 
   test('omits app metadata when not provided and retains manifest through getRegisteredServers', () => {
-    const cleanup = registerDevServer({
+    const {release: cleanup} = registerDevServer({
       host: 'localhost',
       port: 3334,
       type: 'studio',
@@ -114,7 +114,7 @@ describe('registerDevServer', () => {
   })
 
   test('cleanup does not throw if file already removed', () => {
-    const cleanup = registerDevServer({
+    const {release: cleanup} = registerDevServer({
       host: 'localhost',
       port: 3333,
       type: 'studio',
@@ -360,7 +360,7 @@ describe('startedAt uses OS-reported process start time', () => {
     const osStart = new Date('2026-04-17T11:38:10.000Z')
     mockExecSync.mockReturnValue(osStart.toString())
 
-    const cleanup = registerDevServer({
+    const {release: cleanup} = registerDevServer({
       host: 'localhost',
       port: 3334,
       type: 'studio',
@@ -384,7 +384,7 @@ describe('startedAt uses OS-reported process start time', () => {
     const osStart = new Date(Date.now() - 5000)
     mockExecSync.mockReturnValue(osStart.toString())
 
-    const cleanup = registerDevServer({
+    const {release: cleanup} = registerDevServer({
       host: 'localhost',
       port: 3334,
       type: 'studio',
@@ -434,7 +434,7 @@ describe('startedAt uses OS-reported process start time', () => {
     })
 
     const before = Date.now()
-    const cleanup = registerDevServer({
+    const {release: cleanup} = registerDevServer({
       host: 'localhost',
       port: 3334,
       type: 'studio',

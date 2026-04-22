@@ -8,6 +8,7 @@ const mockStartAppDevServer = vi.hoisted(() => vi.fn())
 const mockStartStudioDevServer = vi.hoisted(() => vi.fn())
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockReadIconFromPath = vi.hoisted(() => vi.fn())
+const mockStartDevManifestWatcher = vi.hoisted(() => vi.fn())
 
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
@@ -20,6 +21,9 @@ vi.mock('../startStudioDevServer.js', () => ({
 }))
 vi.mock('../devServerRegistry.js', () => ({
   registerDevServer: mockRegisterDevServer,
+}))
+vi.mock('../startDevManifestWatcher.js', () => ({
+  startDevManifestWatcher: mockStartDevManifestWatcher,
 }))
 vi.mock('../../manifest/extractAppManifest.js', () => ({
   readIconFromPath: mockReadIconFromPath,
@@ -43,7 +47,8 @@ describe('devAction', () => {
       workbenchAvailable: false,
       workbenchPort: 3333,
     })
-    mockRegisterDevServer.mockReturnValue(vi.fn())
+    mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
+    mockStartDevManifestWatcher.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
   })
 
   afterEach(() => {
@@ -390,9 +395,41 @@ describe('devAction', () => {
       expect(mockRegisterDevServer).not.toHaveBeenCalled()
     })
 
+    test('does not start the manifest watcher when federation is disabled', async () => {
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3333}))
+
+      await devAction(createDevOptions())
+
+      expect(mockStartDevManifestWatcher).not.toHaveBeenCalled()
+    })
+
+    test('does not start the manifest watcher for apps even when federation is enabled', async () => {
+      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+      await devAction(
+        createDevOptions({
+          cliConfig: {federation: {enabled: true}},
+          isApp: true,
+        }),
+      )
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'coreApp'}))
+      expect(mockStartDevManifestWatcher).not.toHaveBeenCalled()
+    })
+
+    test('starts the manifest watcher for studios when federation is enabled', async () => {
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+      await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
+
+      expect(mockStartDevManifestWatcher).toHaveBeenCalledWith(
+        expect.objectContaining({workDir: '/tmp/sanity-project'}),
+      )
+    })
+
     test('calls manifest cleanup on close', async () => {
       const mockCleanup = vi.fn()
-      mockRegisterDevServer.mockReturnValue(mockCleanup)
+      mockRegisterDevServer.mockReturnValue({release: mockCleanup, update: vi.fn()})
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       const result = await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
@@ -403,7 +440,7 @@ describe('devAction', () => {
 
     test('close removes signal handlers to prevent listener leaks', async () => {
       const offSpy = vi.spyOn(process, 'off')
-      mockRegisterDevServer.mockReturnValue(vi.fn())
+      mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       const result = await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
@@ -418,7 +455,7 @@ describe('devAction', () => {
     test('SIGINT handler cleans up manifest and workbench, and removes itself', async () => {
       const mockCleanup = vi.fn()
       const mockWorkbenchClose = vi.fn().mockResolvedValue(undefined)
-      mockRegisterDevServer.mockReturnValue(mockCleanup)
+      mockRegisterDevServer.mockReturnValue({release: mockCleanup, update: vi.fn()})
       mockStartWorkbenchDevServer.mockResolvedValue({
         close: mockWorkbenchClose,
         httpHost: 'localhost',

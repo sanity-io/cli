@@ -4,6 +4,7 @@ import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
 import {readIconFromPath} from '../manifest/extractAppManifest.js'
 import {registerDevServer} from './devServerRegistry.js'
 import {startAppDevServer} from './startAppDevServer.js'
+import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 import {startStudioDevServer} from './startStudioDevServer.js'
 import {startWorkbenchDevServer} from './startWorkbenchDevServer.js'
 import {type DevActionOptions} from './types.js'
@@ -64,6 +65,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
 
   // Register the studio/app dev server in the registry (federated projects only)
   let cleanupManifest: () => void = syncNoop
+  let stopManifestWatcher: () => Promise<void> = noop
   let onSignal: (() => void) | undefined
   if (options.cliConfig?.federation?.enabled) {
     checkForDeprecatedAppId({cliConfig: options.cliConfig, output})
@@ -88,7 +90,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
       }
     }
 
-    cleanupManifest = registerDevServer({
+    const registration = registerDevServer({
       host: appHost,
       icon,
       id: getAppId(options.cliConfig),
@@ -97,6 +99,19 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
       type: options.isApp ? 'coreApp' : 'studio',
       workDir: options.workDir,
     })
+    cleanupManifest = registration.release
+
+    // For studios, generate a manifest file and keep it in sync with
+    // `sanity.config.ts` changes. Each successful regen re-touches the
+    // registry entry so any running workbench rebroadcasts to its clients.
+    if (!options.isApp) {
+      const watcher = await startDevManifestWatcher({
+        output,
+        update: registration.update,
+        workDir: options.workDir,
+      })
+      stopManifestWatcher = watcher.close
+    }
 
     // Ensure manifest and workbench lock are cleaned up on abrupt shutdown.
     // closeWorkbenchServer() starts with synchronous calls (watcher.close,
@@ -127,9 +142,9 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
         process.off('SIGTERM', onSignal)
       }
       cleanupManifest()
-      // Run both closes independently — a failing workbench close must not prevent
-      // the primary server from shutting down
-      await Promise.allSettled([closeWorkbenchServer(), closeAppDevServer()])
+      // Run all closes independently — a failure in one must not prevent the
+      // others from shutting down
+      await Promise.allSettled([stopManifestWatcher(), closeWorkbenchServer(), closeAppDevServer()])
     },
   }
 }

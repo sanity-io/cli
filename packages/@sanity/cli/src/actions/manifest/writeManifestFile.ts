@@ -11,15 +11,26 @@ const MANIFEST_FILENAME = 'create-manifest.json'
 
 const debug = subdebug('writeManifestFile')
 
+export interface WriteManifestFileOptions {
+  /**
+   * Target directory for the manifest files. May be absolute or relative — relative
+   * paths are resolved against `workDir`.
+   */
+  outPath: string
+  /**
+   * Studio root directory. Used to resolve a relative `outPath` and to look up the
+   * local `sanity` package version that gets stamped onto the manifest.
+   */
+  workDir: string
+  /** Extracted workspace manifests to serialize alongside the top-level manifest. */
+  workspaceManifests: CreateWorkspaceManifest[]
+}
+
 export async function writeManifestFile({
   outPath,
   workDir,
   workspaceManifests,
-}: {
-  outPath: string
-  workDir: string
-  workspaceManifests: CreateWorkspaceManifest[]
-}) {
+}: WriteManifestFileOptions) {
   const staticPath = isAbsolute(outPath) ? outPath : resolve(join(workDir, outPath))
   debug('Writing manifest to %s', staticPath)
   const path = join(staticPath, MANIFEST_FILENAME)

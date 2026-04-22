@@ -1,3 +1,5 @@
+import {readFile} from 'node:fs/promises'
+
 import {resolveLocalPackage} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig} from 'vite'
@@ -17,15 +19,31 @@ import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 
 const noop = async () => {}
 
-const toApplicationsPayload = (servers: DevServerManifest[]) => ({
-  applications: servers.map(({host, icon, id, port, title, type}) => ({
-    host,
-    icon,
-    id,
-    port,
-    title,
-    type,
-  })),
+/**
+ * Read and parse a studio's `create-manifest.json` from disk. Returns
+ * `undefined` when the file is missing or malformed — callers treat the
+ * manifest as absent and omit it from the payload, which is the same thing
+ * clients see before the first generation completes.
+ */
+async function readStudioManifest(path: string): Promise<unknown | undefined> {
+  try {
+    const raw = await readFile(path, 'utf8')
+    return JSON.parse(raw)
+  } catch (err) {
+    devDebug('Failed to read studio manifest at %s: %O', path, err)
+    return undefined
+  }
+}
+
+const toApplicationsPayload = async (servers: DevServerManifest[]) => ({
+  applications: await Promise.all(
+    servers.map(async ({host, icon, id, manifestPath, port, title, type}) => {
+      // Only studios ship a manifest — app bundles don't have one.
+      const manifest =
+        type === 'studio' && manifestPath ? await readStudioManifest(manifestPath) : undefined
+      return {host, icon, id, manifest, port, title, type}
+    }),
+  ),
 })
 
 interface WorkbenchDevServerResult {
@@ -163,17 +181,21 @@ export async function startWorkbenchDevServer(
   // Update the lock file with the actual port so other processes can find us
   workbenchLock.updatePort(actualPort)
 
-  // Respond to client requests for the current application list
+  // Respond to client requests for the current application list.
+  // The payload builder is async (it reads each studio's manifest file from
+  // disk), so send the response once the read completes. Errors are logged;
+  // the client will retry or wait for the next broadcast.
   server.ws.on('sanity:workbench:get-local-applications', (_, client) => {
-    client.send(
-      'sanity:workbench:local-applications',
-      toApplicationsPayload(getRegisteredServers()),
-    )
+    toApplicationsPayload(getRegisteredServers())
+      .then((payload) => client.send('sanity:workbench:local-applications', payload))
+      .catch((err) => devDebug('Failed to build applications payload: %O', err))
   })
 
   // Watch the registry and broadcast updates to all connected clients
   const registryWatcher = watchRegistry((servers) => {
-    server.ws.send('sanity:workbench:local-applications', toApplicationsPayload(servers))
+    toApplicationsPayload(servers)
+      .then((payload) => server.ws.send('sanity:workbench:local-applications', payload))
+      .catch((err) => devDebug('Failed to broadcast applications payload: %O', err))
   })
 
   return {
