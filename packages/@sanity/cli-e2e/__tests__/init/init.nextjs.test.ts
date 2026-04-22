@@ -13,7 +13,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
   let nextjsDir: string
 
   beforeEach(async () => {
-    nextjsDir = await testFixture('nextjs-app')
+    nextjsDir = await testFixture('nextjs-app', {useSystemTmp: true})
     await rm(join(nextjsDir, 'node_modules'), {force: true, recursive: true})
   })
 
