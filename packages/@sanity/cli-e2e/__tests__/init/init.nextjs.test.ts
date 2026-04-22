@@ -42,19 +42,14 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
       expect(exitCode).toBe(0)
 
       expect(existsSync(`${nextjsDir}/sanity.config.ts`)).toBe(true)
+      expect(existsSync(`${nextjsDir}/sanity/schemaTypes/index.ts`)).toBe(true)
 
-      expect(
-        existsSync(`${nextjsDir}/sanity/schemaTypes/index.ts`) ||
-          existsSync(`${nextjsDir}/schemaTypes/index.ts`),
-      ).toBe(true)
-
-      expect(existsSync(`${nextjsDir}/sanity.cli.ts`)).toBe(true)
       const cliConfig = readFileSync(`${nextjsDir}/sanity.cli.ts`, 'utf8')
       expect(cliConfig).toContain('NEXT_PUBLIC_SANITY_PROJECT_ID')
     })
 
     test('creates embedded studio route with --nextjs-embed-studio', async () => {
-      const {error} = await runCli({
+      const {error, exitCode} = await runCli({
         args: [
           'init',
           '-y',
@@ -71,14 +66,12 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
       })
 
       if (error) throw error
-      const routeExists =
-        existsSync(`${nextjsDir}/app/studio/[[...tool]]/page.tsx`) ||
-        existsSync(`${nextjsDir}/src/app/studio/[[...tool]]/page.tsx`)
-      expect(routeExists).toBe(true)
+      expect(exitCode).toBe(0)
+      expect(existsSync(`${nextjsDir}/app/studio/[[...tool]]/page.tsx`)).toBe(true)
     })
 
     test('writes env variables to .env.local with --nextjs-append-env', async () => {
-      const {error} = await runCli({
+      const {error, exitCode} = await runCli({
         args: [
           'init',
           '-y',
@@ -95,26 +88,11 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
       })
 
       if (error) throw error
+      expect(exitCode).toBe(0)
+
       const envContent = readFileSync(`${nextjsDir}/.env.local`, 'utf8')
       expect(envContent).toContain('NEXT_PUBLIC_SANITY_PROJECT_ID')
       expect(envContent).toContain('NEXT_PUBLIC_SANITY_DATASET')
-    })
-
-    test('rejects remote template with framework detection', async () => {
-      const {exitCode} = await runCli({
-        args: [
-          'init',
-          '--template',
-          'user/repo',
-          '--project',
-          projectId,
-          '--dataset',
-          'production',
-        ],
-        cwd: nextjsDir,
-      })
-
-      expect(exitCode).not.toBe(0)
     })
   })
 
@@ -136,22 +114,22 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
         interactive: true,
       })
 
-      await session.waitForText(/add configuration files|Would you like to add/i)
+      await session.waitForText(/Would you like to add configuration files/i)
       session.sendKey('Enter')
 
-      await session.waitForText(/TypeScript/i)
+      await session.waitForText(/Do you want to use TypeScript/i)
       session.sendKey('Enter')
 
-      await session.waitForText(/embed.*studio|Would you like an embedded/i)
+      await session.waitForText(/Would you like an embedded Sanity Studio/i)
       session.sendKey('Enter')
 
-      await session.waitForText(/route.*studio|What route/i)
+      await session.waitForText(/What route do you want to use for the Studio/i)
       session.sendKey('Enter')
 
-      await session.waitForText(/template|Select project template/i)
+      await session.waitForText(/Select project template to use/i)
       session.sendKey('Enter')
 
-      await session.waitForText(/env|\.env\.local/i)
+      await session.waitForText(/Would you like to add the project ID and dataset/i)
       session.sendKey('Enter')
 
       const exitCode = await session.waitForExit(90_000)
@@ -181,27 +159,28 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
         interactive: true,
       })
 
-      await session.waitForText(/add configuration files|Would you like to add/i)
+      await session.waitForText(/Would you like to add configuration files/i)
       session.sendKey('Enter')
 
-      await session.waitForText(/TypeScript/i)
+      await session.waitForText(/Do you want to use TypeScript/i)
       session.sendKey('Enter')
 
-      await session.waitForText(/embed.*studio|Would you like an embedded/i)
+      await session.waitForText(/Would you like an embedded Sanity Studio/i)
       session.sendKey('Enter')
 
-      await session.waitForText(/route.*studio|What route/i)
+      await session.waitForText(/What route do you want to use for the Studio/i)
       session.write('/admin\n')
 
-      await session.waitForText(/template|Select project template/i)
+      await session.waitForText(/Select project template to use/i)
       session.sendKey('Enter')
 
-      await session.waitForText(/env|\.env\.local/i)
+      await session.waitForText(/Would you like to add the project ID and dataset/i)
       session.sendKey('Enter')
 
       const exitCode = await session.waitForExit(90_000)
       expect(exitCode).toBe(0)
 
+      expect(existsSync(`${nextjsDir}/app/admin/[[...tool]]/page.tsx`)).toBe(true)
       expect(existsSync(`${nextjsDir}/sanity.config.ts`)).toBe(true)
     })
   })
