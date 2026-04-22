@@ -6,53 +6,37 @@ import {type TelemetryTrace} from '@sanity/telemetry'
 
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {type EditorName} from '../mcp/editorConfigs.js'
+import {InitError} from './initError.js'
 import {getPostInitMCPPrompt} from './initHelpers.js'
 import {type RepoInfo} from './remoteTemplate.js'
 import {scaffoldAndInstall, selectTemplate} from './scaffoldTemplate.js'
+import {type InitOptions} from './types.js'
 
 export async function initApp({
-  autoUpdates,
   datasetName,
   defaults,
-  error,
-  git,
   mcpConfigured,
-  noGit,
+  options,
   organizationId,
   output,
   outputPath,
-  overwriteFiles,
-  packageManager,
   projectId,
   remoteTemplateInfo,
   sluggedName,
-  template,
-  templateToken,
   trace,
-  typescript,
-  unattended,
   workDir,
 }: {
-  autoUpdates: boolean
   datasetName: string
   defaults: {projectName: string}
-  error: Output['error']
-  git?: boolean | string
   mcpConfigured: EditorName[]
-  noGit?: boolean
+  options: InitOptions
   organizationId: string | undefined
   output: Output
   outputPath: string
-  overwriteFiles?: boolean
-  packageManager?: string
   projectId: string
   remoteTemplateInfo: RepoInfo | undefined
   sluggedName: string
-  template?: string
-  templateToken?: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  typescript?: boolean
-  unattended: boolean
   workDir: string
 }): Promise<void> {
   const {
@@ -60,36 +44,28 @@ export async function initApp({
     templateName,
     useTypeScript,
   } = await selectTemplate({
+    options,
     remoteTemplateInfo,
-    template,
     trace,
-    typescript,
-    unattended,
   })
 
   if (!remoteTemplateInfo && !resolvedTemplate) {
-    error(`Template "${templateName}" not found`, {exit: 1})
+    throw new InitError(`Template "${templateName}" not found`, 1)
   }
 
   await scaffoldAndInstall({
-    autoUpdates,
     datasetName,
     defaults,
     displayName: '',
-    git,
-    noGit,
+    options,
     organizationId,
     output,
     outputPath,
-    overwriteFiles,
-    packageManager,
     projectId,
     remoteTemplateInfo,
     sluggedName,
     templateName,
-    templateToken,
     trace,
-    unattended,
     useTypeScript,
     workDir,
   })

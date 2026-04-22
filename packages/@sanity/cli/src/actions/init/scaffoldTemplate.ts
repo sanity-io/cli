@@ -12,7 +12,7 @@ import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelper
 import {type RepoInfo} from './remoteTemplate.js'
 import {resolvePackageManager} from './resolvePackageManager.js'
 import templates from './templates/index.js'
-import {type ProjectTemplate} from './types.js'
+import {type InitOptions, type ProjectTemplate} from './types.js'
 
 interface SelectedTemplate {
   template: ProjectTemplate | undefined
@@ -53,18 +53,15 @@ async function promptForTemplate(params: {
 }
 
 export async function selectTemplate({
+  options,
   remoteTemplateInfo,
-  template,
   trace,
-  typescript,
-  unattended,
 }: {
+  options: InitOptions
   remoteTemplateInfo: RepoInfo | undefined
-  template?: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  typescript?: boolean
-  unattended: boolean
 }): Promise<SelectedTemplate> {
+  const {template, typescript, unattended} = options
   const templateName = await promptForTemplate({template, unattended})
   trace.log({
     selectedOption: templateName,
@@ -92,48 +89,39 @@ export async function selectTemplate({
 }
 
 export async function scaffoldAndInstall({
-  autoUpdates,
   datasetName,
   defaults,
   displayName,
-  git,
-  noGit,
+  options,
   organizationId,
   output,
   outputPath,
-  overwriteFiles,
-  packageManager,
   projectId,
   remoteTemplateInfo,
   sluggedName,
   templateName,
-  templateToken,
   trace,
-  unattended,
   useTypeScript,
   workDir,
 }: {
-  autoUpdates: boolean
   datasetName: string
   defaults: {projectName: string}
   displayName: string
-  git?: boolean | string
-  noGit?: boolean
+  options: InitOptions
   organizationId: string | undefined
   output: Output
   outputPath: string
-  overwriteFiles?: boolean
-  packageManager?: string
   projectId: string
   remoteTemplateInfo: RepoInfo | undefined
   sluggedName: string
   templateName: string
-  templateToken?: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  unattended: boolean
   useTypeScript: boolean | undefined
   workDir: string
 }): Promise<{pkgManager: PackageManager}> {
+  const {autoUpdates, git, overwriteFiles, packageManager, templateToken, unattended} = options
+  const noGit = typeof git === 'boolean' && !git ? true : undefined
+
   try {
     await bootstrapTemplate({
       autoUpdates,

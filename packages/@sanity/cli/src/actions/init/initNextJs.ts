@@ -39,7 +39,7 @@ import {
   sanityFolder,
   sanityStudioTemplate,
 } from './templates/nextjs/index.js'
-import {type VersionedFramework} from './types.js'
+import {type InitOptions, type VersionedFramework} from './types.js'
 
 const debug = subdebug('init')
 
@@ -134,34 +134,31 @@ export async function initNextJs({
   detectedFramework,
   envFilename,
   mcpConfigured,
-  nextjsAppendEnv,
-  nextjsEmbedStudio,
+  options,
   output,
-  overwriteFiles,
-  packageManager,
   projectId,
-  template,
   trace,
-  typescript,
-  unattended,
   workDir,
 }: {
   datasetName: string
   detectedFramework: VersionedFramework | null
   envFilename: string
   mcpConfigured: EditorName[]
-  nextjsAppendEnv?: boolean
-  nextjsEmbedStudio?: boolean
+  options: InitOptions
   output: Output
-  overwriteFiles?: boolean
-  packageManager?: string
   projectId: string
-  template?: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  typescript?: boolean
-  unattended: boolean
   workDir: string
 }): Promise<void> {
+  const {
+    nextjsAppendEnv,
+    nextjsEmbedStudio,
+    overwriteFiles,
+    packageManager,
+    template,
+    typescript,
+    unattended,
+  } = options
   let useTypeScript = flagOrDefault(typescript, true)
   if (shouldPrompt(unattended, typescript)) {
     useTypeScript = await promptForTypeScript()
