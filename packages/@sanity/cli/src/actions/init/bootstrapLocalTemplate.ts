@@ -89,6 +89,7 @@ export async function bootstrapLocalTemplate(
     ...(isAppTemplate ? sdkAppDependencies.devDependencies : studioDependencies.devDependencies),
     ...template.dependencies,
     ...template.devDependencies,
+    ...(variables.federation && {sanity: 'workbench'}),
   })
   spin.succeed()
 
