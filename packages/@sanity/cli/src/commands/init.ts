@@ -555,7 +555,9 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   }) {
     debug('Unattended mode, validating required options')
 
-    // App templates only require --organization and --output-path
+    // App templates require --output-path, and either --organization or a project reference
+    // (--project / --project-name). When a project is specified, the organization is derived
+    // from it, so --organization is not required.
     if (isAppTemplate) {
       if (!this.flags['output-path']) {
         this.error('`--output-path` must be specified in unattended mode', {
@@ -563,12 +565,17 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         })
       }
 
-      if (!this.flags.organization) {
+      const hasProjectReference = Boolean(this.flags.project || createProjectName)
+      if (!this.flags.organization && !hasProjectReference) {
         this.error(
-          'The --organization flag is required for app templates in unattended mode. ' +
-            'Use --organization <id> to specify which organization to use.',
+          'The --organization flag is required for app templates in unattended mode ' +
+            'unless --project or --project-name is provided.',
           {exit: 1},
         )
+      }
+
+      if (createProjectName && !this.flags.organization) {
+        this.error('`--project-name` requires `--organization <id>` in unattended mode', {exit: 1})
       }
 
       return
@@ -805,6 +812,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   }): Promise<{
     displayName: string
     isFirstProject: boolean
+    organizationId?: string
     projectId: string
     userAction: 'create' | 'select'
   }> {
@@ -846,6 +854,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       return {
         displayName: project ? project.displayName : 'Unknown project',
         isFirstProject: false,
+        organizationId: project?.organizationId ?? undefined,
         projectId,
         userAction: 'select',
       }
@@ -926,9 +935,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     }
 
     debug(`Returning selected project (${selected})`)
+    const selectedProject = projects.find((proj) => proj.id === selected)
     return {
-      displayName: projects.find((proj) => proj.id === selected)?.displayName || '',
+      displayName: selectedProject?.displayName || '',
       isFirstProject: isUsersFirstProject,
+      organizationId: selectedProject?.organizationId ?? undefined,
       projectId: selected,
       userAction: 'select',
     }
@@ -969,7 +980,10 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
   }> {
     if (isAppTemplate) {
       let organizationId: string | undefined = this.flags.organization
-      if (!organizationId) {
+      // When --project (or --project-name) is provided, defer org resolution — it can be
+      // derived from the project itself instead of prompting the user.
+      const hasProjectSpecified = Boolean(this.flags.project || newProject)
+      if (!organizationId && !hasProjectSpecified) {
         let organizations: ProjectOrganization[]
         try {
           organizations = await listOrganizations()
@@ -985,7 +999,12 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         })
       }
 
-      const {datasetName, displayName, projectId} = await this.promptForAppTemplateSetup({
+      const {
+        datasetName,
+        displayName,
+        organizationId: resolvedOrganizationId,
+        projectId,
+      } = await this.promptForAppTemplateSetup({
         newProject,
         organizationId,
         planId,
@@ -996,7 +1015,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         datasetName,
         displayName,
         isFirstProject: false,
-        organizationId,
+        organizationId: organizationId ?? resolvedOrganizationId,
         projectId,
       }
     }
@@ -1063,11 +1082,16 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     organizationId: string | undefined
     planId: string | undefined
     user: SanityOrgUser
-  }): Promise<{datasetName: string; displayName: string; projectId: string}> {
-    if (this.isUnattended()) {
-      if (!this.flags.project && !newProject) {
-        return {datasetName: '', displayName: '', projectId: ''}
-      }
+  }): Promise<{
+    datasetName: string
+    displayName: string
+    organizationId?: string
+    projectId: string
+  }> {
+    // When --project or --project-name is specified, skip the interactive selection prompt
+    // and resolve the project/dataset directly from flags. This matches the behavior of
+    // non-app-template init and applies to both interactive and unattended modes.
+    if (this.flags.project || newProject) {
       const project = await this.getOrCreateProject({newProject, planId, user})
       const dataset = await this.getOrCreateDataset({
         displayName: project.displayName,
@@ -1077,8 +1101,14 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
       return {
         datasetName: dataset.datasetName,
         displayName: project.displayName,
+        organizationId: project.organizationId,
         projectId: project.projectId,
       }
+    }
+
+    // Unattended mode without --project: skip project configuration entirely
+    if (this.isUnattended()) {
+      return {datasetName: '', displayName: '', projectId: ''}
     }
 
     const projects = (await listProjects()).toSorted((a, b) =>
@@ -1123,6 +1153,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
           })
         : {
             displayName: projects.find((p) => p.id === selected)?.displayName ?? '',
+            organizationId: projects.find((p) => p.id === selected)?.organizationId ?? undefined,
             projectId: selected,
           }
 
@@ -1134,6 +1165,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     return {
       datasetName: dataset.datasetName,
       displayName: project.displayName,
+      organizationId: project.organizationId,
       projectId: project.projectId,
     }
   }
@@ -1180,6 +1212,7 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
     return {
       ...newProject,
       isFirstProject: isUsersFirstProject,
+      organizationId: organization,
       userAction: 'create',
     }
   }

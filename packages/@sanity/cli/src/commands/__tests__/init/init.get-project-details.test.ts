@@ -1179,4 +1179,117 @@ describe('#init: promptForAppTemplateSetup', () => {
     expect(mocks.listProjects).not.toHaveBeenCalled()
     expect(mocks.listDatasets).not.toHaveBeenCalled()
   })
+
+  test('interactive with --project and --dataset: skips the app-template selection prompt and the organization prompt', async () => {
+    // getOrCreateProject fetches projects and organizations in parallel
+    mocks.listProjects.mockResolvedValueOnce([
+      {
+        createdAt: '2024-01-01T00:00:00Z',
+        displayName: 'Existing App Project',
+        id: 'jbvzi6yv',
+        organizationId: 'org-from-project',
+      },
+    ])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-from-project', name: 'Test Organization', slug: 'test-organization'}])
+
+    // In interactive mode, getOrCreateDataset fetches datasets + project features before returning
+    mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'public', name: 'production'}])
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--template=app-quickstart',
+        '--project=jbvzi6yv',
+        '--dataset=production',
+        '--output-path=./test-project',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+
+    if (error) throw error
+
+    // No prompts should fire: neither the org selection nor the "Configure a project" app prompt
+    expect(mocks.select).not.toHaveBeenCalled()
+    expect(mocks.input).not.toHaveBeenCalled()
+    // Existing "production" dataset is reused, no dataset creation
+    expect(mocks.createDataset).not.toHaveBeenCalled()
+  })
+
+  test('unattended with --project and --dataset but no --organization: succeeds without prompts (SDK-1314)', async () => {
+    mocks.listProjects.mockResolvedValueOnce([
+      {
+        createdAt: '2024-01-01T00:00:00Z',
+        displayName: 'Existing App Project',
+        id: 'jbvzi6yv',
+        organizationId: 'org-from-project',
+      },
+    ])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-from-project', name: 'Test Organization', slug: 'test-organization'}])
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--template=app-quickstart',
+        '--project=jbvzi6yv',
+        '--dataset=production',
+        '--output-path=/tmp/test-app',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {...defaultMocks},
+      },
+    )
+
+    if (error) throw error
+
+    expect(mocks.select).not.toHaveBeenCalled()
+    expect(mocks.listDatasets).not.toHaveBeenCalled()
+    expect(mocks.createDataset).not.toHaveBeenCalled()
+  })
+
+  test('unattended without --project nor --organization: still errors with helpful message', async () => {
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--template=app-quickstart',
+        '--dataset=production',
+        '--output-path=/tmp/test-app',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {...defaultMocks},
+      },
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain(
+      'The --organization flag is required for app templates in unattended mode',
+    )
+    expect(error?.message).toContain('--project')
+  })
 })
