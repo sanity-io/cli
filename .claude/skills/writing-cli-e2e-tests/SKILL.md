@@ -111,14 +111,64 @@ __tests__/
 
 **Don't create single-test files.** If a flow only has 1-2 tests (e.g., a smoke test or a simple mode like `--bare`), merge it into the command's base `<command>.test.ts` file rather than giving it a dedicated file.
 
-**Test naming:** Descriptive names only — no numeric IDs. The name should describe the behavior being verified.
+**Test naming:** Descriptive names that accurately describe the behavior being verified. No numeric IDs. The name must match what the test actually asserts — a test for a deprecated flag should say "deprecated", not "invalid input".
 
 ```typescript
 // GOOD
 test('creates TypeScript studio with correct config files', ...)
+test('rejects deprecated --reconfigure flag', ...)
 
 // BAD
 test('2.4 default init creates correct TypeScript project', ...)
+test('rejects invalid input with helpful error', ...) // if it's testing a deprecated flag, not invalid input
+```
+
+## Test Structure Style
+
+**Flat over nested.** Don't wrap single tests in `describe` blocks. Only use `describe` when grouping 2+ related tests that share a concern. Prefer a flat list of tests under one top-level `describe`.
+
+**`beforeEach`/`afterEach` for cleanup.** Use lifecycle hooks for temp directory creation and cleanup instead of `try/finally` in every test:
+
+```typescript
+describe('sanity init', {timeout: 120_000}, () => {
+  let tmp: Awaited<ReturnType<typeof createTmpDir>>
+
+  beforeEach(async () => {
+    tmp = await createTmpDir({useSystemTmp: true})
+  })
+
+  afterEach(async () => {
+    await tmp.cleanup()
+  })
+
+  test('creates studio', async () => {
+    // use tmp.path directly — no try/finally needed
+  })
+})
+```
+
+**`test.each` for variants.** When testing the same flow with different inputs (e.g., templates, package managers), use `test.each` instead of duplicating tests:
+
+```typescript
+test.each(['clean', 'blog'])('creates studio with %s template', async (template) => {
+  // ...
+})
+```
+
+**Minimal flags.** Only include flags the test is specifically testing. Don't add `--package-manager`, `--no-git`, `--typescript` etc. unless that's the feature under test. Before omitting a flag, verify what the CLI actually does in unattended mode without it — spawn mode skips prompts and uses fallback defaults, which may differ from interactive defaults (see "Spawn mode behavior" below).
+
+**Precise assertions.** Assert on actual content, not proxies:
+
+```typescript
+// BAD: vague, tells you nothing on failure
+expect(stderr.length).toBeGreaterThan(0)
+expect(stdout).toMatch(/import/i)
+expect(exitCode).not.toBe(0)
+
+// GOOD: specific, failure message is immediately useful
+expect(stderr).toContain('--reconfigure is deprecated')
+expect(stdout).toMatch(/Done! Imported \d+ documents/)
+expect(exitCode).toBe(1)
 ```
 
 ## Available Tools
@@ -135,13 +185,21 @@ Check `@sanity/cli-test` for shared utilities before creating local helpers. Inl
 ### Non-Interactive Complete Flow
 
 ```typescript
-test('creates studio with TypeScript and correct config', async () => {
-  const tmp = await createTmpDir()
-  try {
+describe('sanity init - studio', {timeout: 120_000}, () => {
+  let tmp: Awaited<ReturnType<typeof createTmpDir>>
+
+  beforeEach(async () => {
+    tmp = await createTmpDir({useSystemTmp: true})
+  })
+
+  afterEach(async () => {
+    await tmp.cleanup()
+  })
+
+  test('creates studio with TypeScript and correct config', async () => {
     const {error, stdout} = await runCli({
       args: ['init', '-y', '--project', projectId, '--dataset', 'production',
-             '--output-path', tmp.path, '--template', 'clean', '--typescript',
-             '--package-manager', 'pnpm', '--no-git'],
+             '--output-path', tmp.path, '--typescript'],
     })
 
     if (error) throw error
@@ -151,9 +209,7 @@ test('creates studio with TypeScript and correct config', async () => {
     const config = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
     expect(config).toContain(projectId)
     expect(stdout).toMatch(/sanity docs|sanity help/i)
-  } finally {
-    await tmp.cleanup()
-  }
+  })
 })
 ```
 
@@ -161,24 +217,19 @@ test('creates studio with TypeScript and correct config', async () => {
 
 ```typescript
 test('complete interactive flow produces working studio', async () => {
-  const tmp = await createTmpDir()
-  try {
-    const session = await runCli({
-      args: ['init', '--project', projectId, '--dataset', 'production',
-             '--output-path', tmp.path, '--template', 'clean',
-             '--typescript', '--package-manager', 'pnpm', '--no-git'],
-      interactive: true,
-    })
+  const session = await runCli({
+    args: ['init', '--project', projectId, '--dataset', 'production',
+           '--output-path', tmp.path, '--template', 'clean',
+           '--typescript'],
+    interactive: true,
+  })
 
-    const exitCode = await session.waitForExit(90_000)
-    expect(exitCode).toBe(0)
+  const exitCode = await session.waitForExit(90_000)
+  expect(exitCode).toBe(0)
 
-    expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
-    const output = session.getOutput()
-    expect(output).toMatch(/sanity docs|sanity help/i)
-  } finally {
-    await tmp.cleanup()
-  }
+  expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
+  const output = session.getOutput()
+  expect(output).toMatch(/sanity docs|sanity help/i)
 })
 ```
 
@@ -241,6 +292,37 @@ await session.waitForText(/Select project|Create.*project/i)
 - Pin known values with flags rather than navigating to them
 - Assert on the *type* of prompt shown, not the *content* of dynamic options
 
+## Spawn Mode Behavior
+
+Non-interactive tests use `spawnProcess` which sets `stdio: ['ignore', 'pipe', 'pipe']` — no TTY. This means `isInteractive()` returns false, and the CLI treats the run as unattended regardless of whether `-y` is passed.
+
+**Prompts are skipped in spawn mode.** Any behavior gated behind an interactive prompt will use its fallback default, which may differ from the prompt's default selection. For example, if a prompt defaults to "Yes" when shown to a user, but the code falls back to `undefined` (falsy) when the prompt is skipped, the spawn-mode behavior differs from the interactive default.
+
+Before omitting a flag from a test, check the command source to verify what the unattended code path does without it. If the fallback differs from the interactive default, you need the flag explicitly.
+
+## Running E2E Tests
+
+After writing tests, run them — lint and type checks verify syntax, not behavior. Always validate with an actual e2e run before reporting tests as complete.
+
+```bash
+# Run a specific e2e test file
+pnpm --filter @sanity/cli-e2e exec vitest run __tests__/init/init.studio.test.ts --reporter=verbose
+
+# Run a specific test by name pattern
+pnpm --filter @sanity/cli-e2e exec vitest run __tests__/init/init.studio.test.ts -t "creates studio with default"
+```
+
+## When Tests Reveal Product Bugs
+
+If a test failure reveals a product bug rather than a test bug, file an issue in Linear, skip the affected test with a link to the issue, and move on. Don't paper over product bugs with workarounds in test assertions.
+
+```typescript
+// Skipped: unattended mode defaults to JS instead of TS. See https://linear.app/sanity/issue/SDK-1316
+describe.skip('sanity init - studio (unattended)', () => {
+  test.todo('unattended mode should match -y defaults')
+})
+```
+
 ## What Belongs in E2E vs Command Tests
 
 E2e tests validate real commands against real infrastructure with real side effects. They are expensive to run and should focus on proving the full flow works.
@@ -280,9 +362,18 @@ test('rejects invalid input with helpful error', async () => {
 | One assertion per CLI invocation | Batch related assertions in one test |
 | Hardcoded list positions via arrow keys | Use flags to pin values or type to filter |
 | Per-test timeouts | Set timeout on describe block |
-| Shared state between tests | Own temp dir per test, `try/finally` cleanup |
+| `try/finally` cleanup in every test | Use `beforeEach`/`afterEach` for temp dir lifecycle |
+| Wrapping a single test in a `describe` | Only use `describe` for 2+ related tests |
+| Vague assertions (`stderr.length > 0`) | Assert on actual content (`stderr.toContain(...)`) |
+| `expect(exitCode).not.toBe(0)` | Use `toBe(1)` when you know the expected code |
+| Test name doesn't match behavior | Name must describe what the test actually asserts |
+| Duplicating tests with different inputs | Use `test.each` for variants |
+| Adding flags the test isn't testing | Only include flags relevant to the feature under test |
+| Assuming spawn mode matches interactive defaults | Check unattended fallback behavior in source before omitting flags |
+| Papering over product bugs in assertions | File issue, skip test with link, move on |
 | `skipIf(!hasToken)` for unauthed tests | Override with `env: {SANITY_AUTH_TOKEN: ''}` |
 | Asserting on dynamic API content | Use structural regex patterns |
 | Mutating `process.env` directly | Use `vi.stubEnv()` for env overrides |
 | Mocking functions, APIs, or services | Never mock in e2e tests — test real infrastructure |
-| Testing flag validation in e2e | One smoke test per command; full validation matrix belongs in command tests |
+| Testing flag validation/deprecation in e2e | One smoke test per command; validation matrix belongs in command tests |
+| Only running lint/types to validate | Always run the actual e2e tests before reporting done |
