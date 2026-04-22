@@ -265,7 +265,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     })
     await writeStagingEnvIfNeeded(output, outputPath)
     trace.complete()
-    throw new InitError('', 0)
+    return
   }
 
   const sharedParams = {
@@ -780,6 +780,7 @@ async function getProjectDetails({
       output,
       planId,
       project,
+      trace,
       unattended,
       user,
       visibility,
@@ -872,6 +873,7 @@ async function promptForAppTemplateSetup({
   output,
   planId,
   project,
+  trace,
   unattended,
   user,
   visibility,
@@ -884,6 +886,7 @@ async function promptForAppTemplateSetup({
   output: InitContext['output']
   planId: string | undefined
   project: string | undefined
+  trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
   unattended: boolean
   user: SanityOrgUser
   visibility: 'private' | 'public' | undefined
@@ -938,8 +941,14 @@ async function promptForAppTemplateSetup({
   })
 
   if (selected === SKIP_PROJECT) {
+    trace.log({selectedOption: 'skip', step: 'configureAppProject'})
     return {datasetName: '', displayName: '', projectId: ''}
   }
+
+  trace.log({
+    selectedOption: selected === NEW_PROJECT ? 'create' : 'existing',
+    step: 'configureAppProject',
+  })
 
   const projectResult =
     selected === NEW_PROJECT

@@ -87,7 +87,13 @@ interface MCPSetupStep {
   step: 'mcpSetup'
 }
 
+interface ConfigureAppProjectStep {
+  selectedOption: 'create' | 'existing' | 'skip'
+  step: 'configureAppProject'
+}
+
 export type InitStepResult =
+  | ConfigureAppProjectStep
   | CreateOrSelectDatasetStep
   | CreateOrSelectProjectStep
   | FetchJourneyConfigStep
