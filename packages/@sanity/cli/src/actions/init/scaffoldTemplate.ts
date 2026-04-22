@@ -122,28 +122,21 @@ export async function scaffoldAndInstall({
   const {autoUpdates, git, overwriteFiles, packageManager, templateToken, unattended} = options
   const noGit = typeof git === 'boolean' && !git ? true : undefined
 
-  try {
-    await bootstrapTemplate({
-      autoUpdates,
-      bearerToken: templateToken,
-      dataset: datasetName,
-      organizationId,
-      output,
-      outputPath,
-      overwriteFiles: overwriteFiles as boolean,
-      packageName: sluggedName,
-      projectId,
-      projectName: displayName || defaults.projectName,
-      remoteTemplateInfo,
-      templateName,
-      useTypeScript: useTypeScript as boolean,
-    })
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error
-    }
-    throw new Error(String(error), {cause: error})
-  }
+  await bootstrapTemplate({
+    autoUpdates,
+    bearerToken: templateToken,
+    dataset: datasetName,
+    organizationId,
+    output,
+    outputPath,
+    overwriteFiles,
+    packageName: sluggedName,
+    projectId,
+    projectName: displayName || defaults.projectName,
+    remoteTemplateInfo,
+    templateName,
+    useTypeScript,
+  })
 
   const pkgManager = await resolvePackageManager({
     interactive: !unattended,

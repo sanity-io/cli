@@ -70,7 +70,7 @@ export async function initApp({
     workDir,
   })
 
-  const isCurrentDir = outputPath === process.cwd()
+  const isCurrentDir = outputPath === workDir
   const goToProjectDir = `\n(${styleText('cyan', `cd ${outputPath}`)} to navigate to your new project directory)`
 
   //output for custom apps here

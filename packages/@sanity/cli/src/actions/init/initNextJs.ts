@@ -26,6 +26,7 @@ import {
 import {type EditorName} from '../mcp/editorConfigs.js'
 import {countNestedFolders} from './countNestedFolders.js'
 import {createOrAppendEnvVars} from './env/createOrAppendEnvVars.js'
+import {InitError} from './initError.js'
 import {
   flagOrDefault,
   getPostInitMCPPrompt,
@@ -47,11 +48,11 @@ async function writeOrOverwrite(
   filePath: string,
   content: string,
   workDir: string,
-  params: {overwriteFiles?: boolean; unattended: boolean},
+  options: InitOptions,
 ) {
   if (existsSync(filePath)) {
-    let overwrite = flagOrDefault(params.overwriteFiles, false)
-    if (shouldPrompt(params.unattended, params.overwriteFiles)) {
+    let overwrite = flagOrDefault(options.overwriteFiles, false)
+    if (shouldPrompt(options.unattended, options.overwriteFiles)) {
       overwrite = await confirm({
         default: false,
         message: `File ${styleText(
@@ -85,14 +86,14 @@ async function writeSourceFiles({
   fileExtension,
   files,
   folderPath,
-  params,
+  options,
   srcFolderPrefix,
   workDir,
 }: {
   fileExtension: string
   files: Record<string, Record<string, string> | string>
   folderPath?: string
-  params: {overwriteFiles?: boolean; unattended: boolean}
+  options: InitOptions
   srcFolderPrefix?: boolean
   workDir: string
 }) {
@@ -109,7 +110,7 @@ async function writeSourceFiles({
         ),
         content,
         workDir,
-        params,
+        options,
       )
     } else {
       await mkdir(path.join(workDir, srcFolderPrefix ? 'src' : '', 'sanity', filePath), {
@@ -120,7 +121,7 @@ async function writeSourceFiles({
           fileExtension,
           files: content,
           folderPath: filePath,
-          params,
+          options,
           srcFolderPrefix,
           workDir,
         })
@@ -150,15 +151,8 @@ export async function initNextJs({
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
   workDir: string
 }): Promise<void> {
-  const {
-    nextjsAppendEnv,
-    nextjsEmbedStudio,
-    overwriteFiles,
-    packageManager,
-    template,
-    typescript,
-    unattended,
-  } = options
+  const {nextjsAppendEnv, nextjsEmbedStudio, packageManager, template, typescript, unattended} =
+    options
   let useTypeScript = flagOrDefault(typescript, true)
   if (shouldPrompt(unattended, typescript)) {
     useTypeScript = await promptForTypeScript()
@@ -174,8 +168,6 @@ export async function initNextJs({
     embeddedStudio = await promptForEmbeddedStudio()
   }
   let hasSrcFolder = false
-
-  const writeParams = {overwriteFiles, unattended}
 
   if (embeddedStudio) {
     // find source path (app or src/app)
@@ -213,7 +205,7 @@ export async function initNextJs({
         `${'../'.repeat(countNestedFolders(path.dirname(embeddedStudioRouteFilePath.slice(workDir.length))))}sanity.config`,
       ),
       workDir,
-      writeParams,
+      options,
     )
 
     const sanityConfigPath = path.join(workDir, `sanity.config.${fileExtension}`)
@@ -223,12 +215,12 @@ export async function initNextJs({
         .replace(':route:', embeddedStudioRouteFilePath.slice(workDir.length).replace('src/', ''))
         .replace(':basePath:', studioPath),
       workDir,
-      writeParams,
+      options,
     )
   }
 
   const sanityCliPath = path.join(workDir, `sanity.cli.${fileExtension}`)
-  await writeOrOverwrite(sanityCliPath, sanityCliTemplate, workDir, writeParams)
+  await writeOrOverwrite(sanityCliPath, sanityCliTemplate, workDir, options)
 
   let templateToUse = template ?? 'clean'
   if (shouldPrompt(unattended, template)) {
@@ -239,7 +231,7 @@ export async function initNextJs({
     fileExtension,
     files: sanityFolder(useTypeScript, templateToUse as 'blog' | 'clean'),
     folderPath: undefined,
-    params: writeParams,
+    options,
     srcFolderPrefix: hasSrcFolder,
     workDir,
   })
@@ -282,11 +274,10 @@ export async function initNextJs({
             ? `Added ${nextjsLocalDevOrigin} to CORS origins`
             : `Failed to add ${nextjsLocalDevOrigin} to CORS origins`,
         )
-      } catch (corsError) {
-        debug(`Error creating new CORS Origin ${nextjsLocalDevOrigin}: ${corsError}`)
-        output.error(`Failed to add ${nextjsLocalDevOrigin} to CORS origins: ${corsError}`, {
-          exit: 1,
-        })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error)
+        debug(`Error creating new CORS Origin ${nextjsLocalDevOrigin}: ${message}`)
+        throw new InitError(`Failed to add ${nextjsLocalDevOrigin} to CORS origins: ${message}`, 1)
       }
     }
   }

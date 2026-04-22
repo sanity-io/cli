@@ -4,7 +4,6 @@ import {getCliToken, type Output, subdebug, type TelemetryUserProperties} from '
 import {confirm} from '@sanity/cli-core/ux'
 import {type TelemetryTrace} from '@sanity/telemetry'
 
-import {ImportDatasetCommand} from '../../commands/datasets/import.js'
 import {updateProjectInitializedAt} from '../../services/projects.js'
 import {type InitStepResult} from '../../telemetry/init.telemetry.js'
 import {type PackageManager} from '../../util/packageManager/packageManagerChoice.js'
@@ -111,6 +110,8 @@ export async function initStudio({
     if (!token) {
       throw new InitError('Authentication required to import dataset', 1)
     }
+    // eslint-disable-next-line no-restricted-syntax
+    const {ImportDatasetCommand} = await import('../../commands/datasets/import.js')
     await ImportDatasetCommand.run(
       [
         resolvedTemplate.datasetUrl,
@@ -143,7 +144,7 @@ export async function initStudio({
   }
   const devCommand = devCommandMap[pkgManager]
 
-  const isCurrentDir = outputPath === process.cwd()
+  const isCurrentDir = outputPath === workDir
   const goToProjectDir = `\n(${styleText('cyan', `cd ${outputPath}`)} to navigate to your new project directory)`
 
   //output for Studios here
