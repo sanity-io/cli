@@ -71,6 +71,26 @@ describe('createPackageManifest', () => {
     })
   })
 
+  test('includes prepare script for app templates', () => {
+    const result = createPackageManifest({
+      isAppTemplate: true,
+      name: 'test-app',
+    })
+    const pkg = JSON.parse(result)
+
+    expect(pkg.scripts.prepare).toBe('sanity resources')
+    expect(pkg.scripts).not.toHaveProperty('deploy-graphql')
+  })
+
+  test('does not include prepare script for studio templates', () => {
+    const result = createPackageManifest({
+      name: 'test-studio',
+    })
+    const pkg = JSON.parse(result)
+
+    expect(pkg.scripts).not.toHaveProperty('prepare')
+  })
+
   test('uses custom scripts when provided', () => {
     const customScripts = {
       build: 'sanity build',

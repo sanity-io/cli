@@ -66,6 +66,7 @@ export function createPackageManifest(data: CreatePackageManifestOptions): strin
       deploy: 'sanity deploy',
       ...(isAppTemplate ? {} : {'deploy-graphql': 'sanity graphql deploy'}),
       dev: 'sanity dev',
+      ...(isAppTemplate ? {prepare: 'sanity resources'} : {}),
       start: 'sanity start',
     },
 
