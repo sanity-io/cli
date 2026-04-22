@@ -168,6 +168,10 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   // Determine base path for built studio
   const basePath = determineBasePath(cliConfig, 'studio', output)
 
+  if (cliConfig?.schemaExtraction?.enabled) {
+    output.log(`${logSymbols.info} Building with schema extraction enabled`)
+  }
+
   let spin: SpinnerInstance
   if (shouldClean) {
     timer.start('cleanOutputFolder')
@@ -205,6 +209,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       outputDir,
       reactCompiler:
         cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
+      schemaExtraction: cliConfig?.schemaExtraction,
       sourceMap: Boolean(flags['source-maps']),
       vite: cliConfig && 'vite' in cliConfig ? cliConfig.vite : undefined,
     })
