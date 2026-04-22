@@ -37,29 +37,15 @@ describe('resolveLatestVersions', () => {
     expect(result).toEqual({sanity: '^4.5.6'})
   })
 
-  test('resolves arbitrary dist-tags such as `workbench`', async () => {
-    mockGetLatestVersion.mockResolvedValueOnce('7.8.9-workbench.0')
-
+  test('passes arbitrary dist-tags such as `workbench` through without resolving', async () => {
     const result = await resolveLatestVersions({sanity: 'workbench'})
 
-    expect(mockGetLatestVersion).toHaveBeenCalledWith('sanity', {range: 'workbench'})
-    expect(result).toEqual({sanity: '^7.8.9-workbench.0'})
-  })
-
-  test('falls back to the original tag when the lookup returns undefined', async () => {
-    mockGetLatestVersion.mockResolvedValueOnce(undefined)
-
-    const result = await resolveLatestVersions({sanity: 'workbench'})
-
+    expect(mockGetLatestVersion).not.toHaveBeenCalled()
     expect(result).toEqual({sanity: 'workbench'})
   })
 
-  test('resolves a mix of ranges and dist-tags in a single call', async () => {
-    mockGetLatestVersion.mockImplementation(async (_pkg: string, {range}: {range: string}) => {
-      if (range === 'latest') return '1.0.0'
-      if (range === 'workbench') return '2.0.0-workbench.1'
-      return undefined
-    })
+  test('resolves `latest` alongside pass-through ranges and dist-tags in a single call', async () => {
+    mockGetLatestVersion.mockResolvedValueOnce('1.0.0')
 
     const result = await resolveLatestVersions({
       '@sanity/vision': 'latest',
@@ -70,8 +56,9 @@ describe('resolveLatestVersions', () => {
     expect(result).toEqual({
       '@sanity/vision': '^1.0.0',
       react: '^19.2.4',
-      sanity: '^2.0.0-workbench.1',
+      sanity: 'workbench',
     })
-    expect(mockGetLatestVersion).toHaveBeenCalledTimes(2)
+    expect(mockGetLatestVersion).toHaveBeenCalledTimes(1)
+    expect(mockGetLatestVersion).toHaveBeenCalledWith('@sanity/vision', {range: 'latest'})
   })
 })
