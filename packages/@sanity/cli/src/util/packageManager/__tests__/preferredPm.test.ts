@@ -136,6 +136,17 @@ describe('preferredPm', () => {
       expect(preferredPm(targetDir)).toBe('yarn')
     })
 
+    it('skips malformed package.json and continues walk-up', () => {
+      fs.writeFileSync(path.join(tmpDir, 'package.json'), JSON.stringify({workspaces: ['apps/*']}))
+      fs.writeFileSync(path.join(tmpDir, 'yarn.lock'), '')
+
+      const appDir = path.join(tmpDir, 'apps', 'myapp')
+      fs.mkdirSync(appDir, {recursive: true})
+      fs.writeFileSync(path.join(appDir, 'package.json'), '{invalid json!!!}')
+
+      expect(preferredPm(appDir)).toBe('yarn')
+    })
+
     it('detects workspace PM from a subdirectory within a package', () => {
       fs.writeFileSync(
         path.join(tmpDir, 'package.json'),

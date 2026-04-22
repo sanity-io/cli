@@ -7,9 +7,8 @@ import path from 'node:path'
 import picomatch from 'picomatch'
 
 import {toForwardSlashes} from '../toForwardSlashes.js'
-import {type PackageManager} from './packageManagerChoice.js'
 
-type DetectablePackageManager = Exclude<PackageManager, 'manual'>
+type DetectablePackageManager = 'bun' | 'npm' | 'pnpm' | 'yarn'
 
 /**
  * Detects the preferred package manager for a project by examining lock files,
