@@ -72,26 +72,22 @@ describe('registerDevServer', () => {
     expect(existsSync(filePath)).toBe(false)
   })
 
-  test('persists app metadata in the manifest when provided', () => {
+  test('persists id in the manifest when provided', () => {
     const {release: cleanup} = registerDevServer({
       host: 'localhost',
-      icon: '<svg>inline</svg>',
       id: 'app-abc',
       port: 3334,
-      title: 'My App',
       type: 'coreApp',
       workDir: '/tmp/project',
     })
 
     const manifest = JSON.parse(readFileSync(join(registryDir(), `${process.pid}.json`), 'utf8'))
-    expect(manifest.icon).toBe('<svg>inline</svg>')
     expect(manifest.id).toBe('app-abc')
-    expect(manifest.title).toBe('My App')
 
     cleanup()
   })
 
-  test('omits app metadata when not provided and retains manifest through getRegisteredServers', () => {
+  test('omits optional metadata when not provided and retains manifest through getRegisteredServers', () => {
     const {release: cleanup} = registerDevServer({
       host: 'localhost',
       port: 3334,
@@ -100,15 +96,31 @@ describe('registerDevServer', () => {
     })
 
     const manifest = JSON.parse(readFileSync(join(registryDir(), `${process.pid}.json`), 'utf8'))
-    expect(manifest.icon).toBeUndefined()
     expect(manifest.id).toBeUndefined()
-    expect(manifest.title).toBeUndefined()
+    expect(manifest.manifest).toBeUndefined()
 
     const servers = getRegisteredServers()
     expect(servers).toHaveLength(1)
-    expect(servers[0].icon).toBeUndefined()
     expect(servers[0].id).toBeUndefined()
-    expect(servers[0].title).toBeUndefined()
+    expect(servers[0].manifest).toBeUndefined()
+
+    cleanup()
+  })
+
+  test('update inlines the extracted manifest into the registry entry', () => {
+    const {release: cleanup, update} = registerDevServer({
+      host: 'localhost',
+      port: 3334,
+      type: 'studio',
+      workDir: '/tmp/project',
+    })
+
+    const inlined = {createdAt: '2026-01-01T00:00:00.000Z', version: 3, workspaces: []}
+    update({manifest: inlined, manifestUpdatedAt: '2026-01-01T00:00:00.000Z'})
+
+    const servers = getRegisteredServers()
+    expect(servers[0].manifest).toEqual(inlined)
+    expect(servers[0].manifestUpdatedAt).toBe('2026-01-01T00:00:00.000Z')
 
     cleanup()
   })

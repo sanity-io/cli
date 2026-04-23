@@ -1,8 +1,9 @@
 import {styleText} from 'node:util'
 
 import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
-import {readIconFromPath} from '../manifest/extractAppManifest.js'
+import {type CoreAppManifest, type StudioManifest} from '../manifest/types.js'
 import {registerDevServer} from './devServerRegistry.js'
+import {extractCoreAppManifest, extractStudioManifest} from './extractDevServerManifest.js'
 import {startAppDevServer} from './startAppDevServer.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 import {startStudioDevServer} from './startStudioDevServer.js'
@@ -78,32 +79,36 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     const resolvedHost = server.config.server.host
     const appHost = typeof resolvedHost === 'string' ? resolvedHost : 'localhost'
 
-    const iconPath = options.cliConfig?.app?.icon
-    let icon: string | undefined
-    if (iconPath) {
-      try {
-        icon = await readIconFromPath(options.workDir, iconPath)
-      } catch (err) {
-        output.warn(
-          `Could not inline app icon for workbench discovery: ${err instanceof Error ? err.message : String(err)}`,
-        )
-      }
+    // Extract the initial manifest once at startup so the registry entry
+    // already carries the workbench-facing payload. For studios, the
+    // watcher below keeps it in sync with subsequent `sanity.config.ts`
+    // changes; coreApps have no schema to track, so no watcher is needed.
+    let initialManifest: CoreAppManifest | StudioManifest | undefined
+    try {
+      initialManifest = options.isApp
+        ? await extractCoreAppManifest({workDir: options.workDir})
+        : await extractStudioManifest({workDir: options.workDir})
+    } catch (err) {
+      output.warn(
+        `Could not extract manifest for workbench: ${err instanceof Error ? err.message : String(err)}`,
+      )
     }
 
     const registration = registerDevServer({
       host: appHost,
-      icon,
       id: getAppId(options.cliConfig),
+      manifest: initialManifest,
+      manifestUpdatedAt: initialManifest ? new Date().toISOString() : undefined,
       port: appPort,
-      title: options.isApp ? options.cliConfig?.app?.title : undefined,
       type: options.isApp ? 'coreApp' : 'studio',
       workDir: options.workDir,
     })
     cleanupManifest = registration.release
 
-    // For studios, generate a manifest file and keep it in sync with
-    // `sanity.config.ts` changes. Each successful regen re-touches the
-    // registry entry so any running workbench rebroadcasts to its clients.
+    // For studios, run the schema extraction worker and keep the generated
+    // `create-manifest.json` in sync with `sanity.config.ts` changes. Each
+    // successful extraction inlines the manifest into the registry entry
+    // and triggers a workbench rebroadcast to connected clients.
     if (!options.isApp) {
       const watcher = await startDevManifestWatcher({
         output,

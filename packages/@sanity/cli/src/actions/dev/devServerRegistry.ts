@@ -13,6 +13,7 @@ import {join} from 'node:path'
 import {getSanityDataDir} from '@sanity/cli-core'
 import {z} from 'zod/mini'
 
+import {coreAppManifestSchema, studioManifestSchema} from '../manifest/types.js'
 import {devDebug} from './devDebug.js'
 
 /** Bump when the manifest/lock shape changes in a breaking way. */
@@ -27,21 +28,15 @@ const workbenchLockSchema = z.object({
 })
 
 const devServerManifestSchema = z.extend(workbenchLockSchema, {
-  icon: z.optional(z.string()),
   id: z.optional(z.string()),
+  /** Inlined manifest — either a {@link StudioManifest} or {@link CoreAppManifest}. */
+  manifest: z.optional(z.union([studioManifestSchema, coreAppManifestSchema])),
   /**
-   * Absolute path on disk to the generated studio manifest file
-   * (`create-manifest.json`). Only set for studios when federation is enabled
-   * and manifest generation has succeeded at least once.
-   */
-  manifestPath: z.optional(z.string()),
-  /**
-   * ISO timestamp of the most recent successful manifest generation. Bumped
+   * ISO timestamp of the most recent successful manifest extraction. Bumped
    * on every regeneration so re-writing this registry entry triggers the
    * workbench `watchRegistry` watcher and forces a rebroadcast to clients.
    */
   manifestUpdatedAt: z.optional(z.string()),
-  title: z.optional(z.string()),
   type: z.enum(['coreApp', 'studio']),
   workDir: z.string(),
 })

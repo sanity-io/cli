@@ -5,7 +5,7 @@ import {getCliConfig} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {getErrorMessage} from '../../util/getErrorMessage.js'
-import {type AppManifest} from './types.js'
+import {type CoreAppManifest, coreAppManifestSchema} from './types.js'
 
 interface ExtractAppManifestOptions {
   workDir: string
@@ -16,7 +16,7 @@ interface ExtractAppManifestOptions {
  * The manifest expects the SVG string inline, not a path.
  * Brett sanitizes SVGs so it's skipped here.
  */
-export async function readIconFromPath(workDir: string, iconPath: string): Promise<string> {
+async function readIconFromPath(workDir: string, iconPath: string): Promise<string> {
   const resolvedPath = resolve(workDir, iconPath)
   const pathRelativeToWorkDir = relative(workDir, resolvedPath)
   if (pathRelativeToWorkDir.startsWith('..')) {
@@ -54,7 +54,7 @@ export async function readIconFromPath(workDir: string, iconPath: string): Promi
  */
 export async function extractAppManifest(
   options: ExtractAppManifestOptions,
-): Promise<AppManifest | undefined> {
+): Promise<CoreAppManifest | undefined> {
   const {workDir} = options
   const {app} = await getCliConfig(workDir)
   if (!app) {
@@ -74,11 +74,11 @@ export async function extractAppManifest(
       return undefined
     }
 
-    const manifest: AppManifest = {
+    const manifest = coreAppManifestSchema.parse({
       version: '1',
       ...(icon ? {icon} : {}),
       ...(app.title ? {title: app.title} : {}),
-    }
+    })
 
     spin.succeed(`Extracted manifest`)
 

@@ -420,63 +420,57 @@ describe('startWorkbenchDevServer', () => {
       expect(mockWatchRegistry).toHaveBeenCalledWith(expect.any(Function))
     })
 
-    test('watcher callback broadcasts applications via server.hot.send', async () => {
+    test('watcher callback broadcasts applications via server.ws.send with inlined manifests', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
+      const studioManifest = {createdAt: '2026-01-01T00:00:00.000Z', version: 3, workspaces: []}
+      const appManifest = {icon: '<svg>two</svg>', title: 'App Two', version: '1'}
+
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
         {
           host: 'localhost',
-          icon: '<svg>one</svg>',
           id: 'app-1',
+          manifest: studioManifest,
           pid: 2,
           port: 3334,
           type: 'studio',
         },
         {
           host: 'localhost',
-          icon: '<svg>two</svg>',
           id: 'app-2',
+          manifest: appManifest,
           pid: 3,
           port: 3335,
-          title: 'App Two',
           type: 'coreApp',
         },
       ])
-
-      // Payload build is async (reads optional manifest files from disk) —
-      // wait until the broadcast actually happens.
-      await vi.waitFor(() => expect(mockServer.ws.send).toHaveBeenCalled())
 
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
         applications: [
           {
             host: 'localhost',
-            icon: '<svg>one</svg>',
             id: 'app-1',
-            manifest: undefined,
+            manifest: studioManifest,
             port: 3334,
-            title: undefined,
             type: 'studio',
           },
           {
             host: 'localhost',
-            icon: '<svg>two</svg>',
             id: 'app-2',
-            manifest: undefined,
+            manifest: appManifest,
             port: 3335,
-            title: 'App Two',
             type: 'coreApp',
           },
         ],
       })
     })
 
-    test('includes undefined app metadata when a registered server has none', async () => {
+    test('includes undefined manifest when a registered server has not yet extracted one', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
@@ -486,17 +480,13 @@ describe('startWorkbenchDevServer', () => {
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([{host: 'localhost', pid: 2, port: 3334, type: 'studio'}])
 
-      await vi.waitFor(() => expect(mockServer.ws.send).toHaveBeenCalled())
-
       expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
         applications: [
           {
             host: 'localhost',
-            icon: undefined,
             id: undefined,
             manifest: undefined,
             port: 3334,
-            title: undefined,
             type: 'studio',
           },
         ],
@@ -507,20 +497,20 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
+      const inlined = {icon: '<svg>inline</svg>', title: 'Title', version: '1'}
       mockGetRegisteredServers.mockReturnValue([
         {
           host: 'localhost',
-          icon: '<svg>inline</svg>',
           id: 'app-1',
+          manifest: inlined,
           pid: 2,
           port: 3334,
-          type: 'studio',
+          type: 'coreApp',
         },
       ])
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
-      // Find the handler registered for the request event
       const onCall = mockServer.ws.on.mock.calls.find(
         (args: unknown[]) => args[0] === 'sanity:workbench:get-local-applications',
       )
@@ -530,103 +520,17 @@ describe('startWorkbenchDevServer', () => {
       const handler = onCall![1] as (data: unknown, client: typeof mockClient) => void
       handler(undefined, mockClient)
 
-      await vi.waitFor(() => expect(mockClient.send).toHaveBeenCalled())
-
       expect(mockClient.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
         applications: [
           {
             host: 'localhost',
-            icon: '<svg>inline</svg>',
             id: 'app-1',
-            manifest: undefined,
+            manifest: inlined,
             port: 3334,
-            title: undefined,
-            type: 'studio',
+            type: 'coreApp',
           },
         ],
       })
-    })
-
-    test('inlines manifest contents from manifestPath for studio entries', async () => {
-      const {mkdtempSync, writeFileSync} = await import('node:fs')
-      const {tmpdir} = await import('node:os')
-      const {join} = await import('node:path')
-      const dir = mkdtempSync(join(tmpdir(), 'workbench-manifest-'))
-      const manifestPath = join(dir, 'create-manifest.json')
-      const manifestContents = {createdAt: '2026-01-01T00:00:00.000Z', version: 3, workspaces: []}
-      writeFileSync(manifestPath, JSON.stringify(manifestContents))
-
-      mockResolveLocalPackage.mockResolvedValue({})
-      const mockServer = createMockServer()
-      mockCreateServer.mockResolvedValue(mockServer)
-
-      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
-
-      const watchCallback = mockWatchRegistry.mock.calls[0][0]
-      watchCallback([
-        {
-          host: 'localhost',
-          manifestPath,
-          manifestUpdatedAt: '2026-01-01T00:00:00.000Z',
-          pid: 2,
-          port: 3334,
-          type: 'studio',
-        },
-      ])
-
-      await vi.waitFor(() => expect(mockServer.ws.send).toHaveBeenCalled())
-
-      const [, payload] = mockServer.ws.send.mock.calls[0]
-      expect(payload.applications[0].manifest).toEqual(manifestContents)
-    })
-
-    test('omits manifest when the file at manifestPath is missing or invalid', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
-      const mockServer = createMockServer()
-      mockCreateServer.mockResolvedValue(mockServer)
-
-      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
-
-      const watchCallback = mockWatchRegistry.mock.calls[0][0]
-      watchCallback([
-        {
-          host: 'localhost',
-          manifestPath: '/definitely/does/not/exist/create-manifest.json',
-          pid: 2,
-          port: 3334,
-          type: 'studio',
-        },
-      ])
-
-      await vi.waitFor(() => expect(mockServer.ws.send).toHaveBeenCalled())
-
-      const [, payload] = mockServer.ws.send.mock.calls[0]
-      expect(payload.applications[0].manifest).toBeUndefined()
-    })
-
-    test('does not read manifestPath for non-studio entries', async () => {
-      mockResolveLocalPackage.mockResolvedValue({})
-      const mockServer = createMockServer()
-      mockCreateServer.mockResolvedValue(mockServer)
-
-      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
-
-      const watchCallback = mockWatchRegistry.mock.calls[0][0]
-      watchCallback([
-        {
-          host: 'localhost',
-          // Even if set (shouldn't be in practice), coreApps don't ship a manifest
-          manifestPath: '/tmp/nope.json',
-          pid: 2,
-          port: 3335,
-          type: 'coreApp',
-        },
-      ])
-
-      await vi.waitFor(() => expect(mockServer.ws.send).toHaveBeenCalled())
-
-      const [, payload] = mockServer.ws.send.mock.calls[0]
-      expect(payload.applications[0].manifest).toBeUndefined()
     })
 
     test('close stops watcher and releases lock', async () => {

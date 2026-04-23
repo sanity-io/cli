@@ -5,12 +5,12 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {startDevManifestWatcher} from '../startDevManifestWatcher.js'
 import {createMockOutput} from './testHelpers.js'
 
-const mockExtractManifest = vi.hoisted(() => vi.fn())
+const mockExtractStudioManifest = vi.hoisted(() => vi.fn())
 const mockFindProjectRoot = vi.hoisted(() => vi.fn())
 const mockFsWatch = vi.hoisted(() => vi.fn())
 
-vi.mock('../../manifest/extractManifest.js', () => ({
-  extractManifest: mockExtractManifest,
+vi.mock('../extractDevServerManifest.js', () => ({
+  extractStudioManifest: mockExtractStudioManifest,
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -45,19 +45,20 @@ class FakeFsWatcher extends EventEmitter {
 }
 
 const WORK_DIR = '/tmp/studio'
-const CONFIG_PATH = '/tmp/studio/sanity.config.ts'
+const STUDIO_CONFIG_PATH = '/tmp/studio/sanity.config.ts'
 
 describe('startDevManifestWatcher', () => {
   let fakeWatcher: FakeFsWatcher
+  const studioManifest = {createdAt: '2026-01-01', version: 3, workspaces: []}
 
   beforeEach(() => {
     fakeWatcher = new FakeFsWatcher()
     mockFindProjectRoot.mockResolvedValue({
       directory: WORK_DIR,
-      path: CONFIG_PATH,
+      path: STUDIO_CONFIG_PATH,
       type: 'studio',
     })
-    mockExtractManifest.mockResolvedValue(undefined)
+    mockExtractStudioManifest.mockResolvedValue(studioManifest)
     mockFsWatch.mockImplementation((_dir: string, listener: FakeFsWatcher['handler']) => {
       fakeWatcher.handler = listener
       return fakeWatcher
@@ -70,7 +71,7 @@ describe('startDevManifestWatcher', () => {
     vi.clearAllMocks()
   })
 
-  test('performs an initial extraction and updates registry with manifestPath', async () => {
+  test('does not extract on startup — initial extraction happens in devAction', async () => {
     const update = vi.fn()
 
     const watcher = await startDevManifestWatcher({
@@ -79,30 +80,19 @@ describe('startDevManifestWatcher', () => {
       workDir: WORK_DIR,
     })
 
-    expect(mockExtractManifest).toHaveBeenCalledWith({
-      outPath: `${WORK_DIR}/node_modules/.sanity/manifest`,
-      path: CONFIG_PATH,
-      workDir: WORK_DIR,
-    })
-    expect(update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        manifestPath: `${WORK_DIR}/node_modules/.sanity/manifest/create-manifest.json`,
-        manifestUpdatedAt: expect.any(String),
-      }),
-    )
+    expect(mockExtractStudioManifest).not.toHaveBeenCalled()
+    expect(update).not.toHaveBeenCalled()
 
     await watcher.close()
   })
 
-  test('re-extracts after a debounced config file change', async () => {
+  test('re-extracts and inlines the new manifest after a debounced config file change', async () => {
     const update = vi.fn()
     const watcher = await startDevManifestWatcher({
       output: createMockOutput(),
       update,
       workDir: WORK_DIR,
     })
-
-    expect(mockExtractManifest).toHaveBeenCalledTimes(1)
 
     // Fire multiple rapid "change" events — should coalesce into a single
     // regeneration after the debounce window.
@@ -112,8 +102,12 @@ describe('startDevManifestWatcher', () => {
 
     await vi.advanceTimersByTimeAsync(300)
 
-    expect(mockExtractManifest).toHaveBeenCalledTimes(2)
-    expect(update).toHaveBeenCalledTimes(2)
+    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
+    expect(mockExtractStudioManifest).toHaveBeenCalledWith({workDir: WORK_DIR})
+    expect(update).toHaveBeenCalledWith({
+      manifest: studioManifest,
+      manifestUpdatedAt: expect.any(String),
+    })
 
     await watcher.close()
   })
@@ -126,14 +120,12 @@ describe('startDevManifestWatcher', () => {
       workDir: WORK_DIR,
     })
 
-    expect(mockExtractManifest).toHaveBeenCalledTimes(1)
-
     fakeWatcher.emitChange('unrelated.ts')
     fakeWatcher.emitChange('package.json')
 
     await vi.advanceTimersByTimeAsync(300)
 
-    expect(mockExtractManifest).toHaveBeenCalledTimes(1)
+    expect(mockExtractStudioManifest).not.toHaveBeenCalled()
 
     await watcher.close()
   })
@@ -141,22 +133,21 @@ describe('startDevManifestWatcher', () => {
   test('logs a warning and keeps running when extraction fails', async () => {
     const output = createMockOutput()
     const update = vi.fn()
-    mockExtractManifest
+    mockExtractStudioManifest
       .mockRejectedValueOnce(new Error('bad schema'))
-      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(studioManifest)
 
     const watcher = await startDevManifestWatcher({output, update, workDir: WORK_DIR})
 
-    expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('bad schema'))
-    // Failed extraction must not call update — we only touch the registry
-    // when a manifest actually exists at the expected path.
-    expect(update).not.toHaveBeenCalled()
-
-    // A subsequent change triggers a successful regeneration that updates the
-    // registry as normal.
+    // First change fails
     fakeWatcher.emitChange('sanity.config.ts')
     await vi.advanceTimersByTimeAsync(300)
+    expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('bad schema'))
+    expect(update).not.toHaveBeenCalled()
 
+    // Second change recovers and updates as normal
+    fakeWatcher.emitChange('sanity.config.ts')
+    await vi.advanceTimersByTimeAsync(300)
     expect(update).toHaveBeenCalledTimes(1)
 
     await watcher.close()
@@ -170,8 +161,6 @@ describe('startDevManifestWatcher', () => {
       workDir: WORK_DIR,
     })
 
-    expect(mockExtractManifest).toHaveBeenCalledTimes(1)
-
     await watcher.close()
 
     expect(fakeWatcher.closed).toBe(true)
@@ -179,6 +168,6 @@ describe('startDevManifestWatcher', () => {
     fakeWatcher.emitChange('sanity.config.ts')
     await vi.advanceTimersByTimeAsync(300)
 
-    expect(mockExtractManifest).toHaveBeenCalledTimes(1)
+    expect(mockExtractStudioManifest).not.toHaveBeenCalled()
   })
 })

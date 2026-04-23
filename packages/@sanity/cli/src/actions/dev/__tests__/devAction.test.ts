@@ -7,8 +7,9 @@ const mockStartWorkbenchDevServer = vi.hoisted(() => vi.fn())
 const mockStartAppDevServer = vi.hoisted(() => vi.fn())
 const mockStartStudioDevServer = vi.hoisted(() => vi.fn())
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
-const mockReadIconFromPath = vi.hoisted(() => vi.fn())
 const mockStartDevManifestWatcher = vi.hoisted(() => vi.fn())
+const mockExtractCoreAppManifest = vi.hoisted(() => vi.fn())
+const mockExtractStudioManifest = vi.hoisted(() => vi.fn())
 
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
@@ -25,8 +26,9 @@ vi.mock('../devServerRegistry.js', () => ({
 vi.mock('../startDevManifestWatcher.js', () => ({
   startDevManifestWatcher: mockStartDevManifestWatcher,
 }))
-vi.mock('../../manifest/extractAppManifest.js', () => ({
-  readIconFromPath: mockReadIconFromPath,
+vi.mock('../extractDevServerManifest.js', () => ({
+  extractCoreAppManifest: mockExtractCoreAppManifest,
+  extractStudioManifest: mockExtractStudioManifest,
 }))
 
 /** Create a mock Vite dev server config shape — `server.config.server.host`
@@ -49,6 +51,8 @@ describe('devAction', () => {
     })
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
     mockStartDevManifestWatcher.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
+    mockExtractCoreAppManifest.mockResolvedValue(undefined)
+    mockExtractStudioManifest.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -231,103 +235,15 @@ describe('devAction', () => {
       )
     })
 
-    test('inlines app.icon via readIconFromPath and passes app.title to registerDevServer for SDK apps', async () => {
-      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
-      mockReadIconFromPath.mockResolvedValue('<svg><path d="M0 0"/></svg>')
-
-      await devAction(
-        createDevOptions({
-          cliConfig: {
-            app: {icon: 'public/logo.svg', title: 'My App'},
-            federation: {enabled: true},
-          },
-          isApp: true,
-        }),
-      )
-
-      expect(mockReadIconFromPath).toHaveBeenCalledWith('/tmp/sanity-project', 'public/logo.svg')
-      expect(mockRegisterDevServer).toHaveBeenCalledWith(
-        expect.objectContaining({
-          icon: '<svg><path d="M0 0"/></svg>',
-          title: 'My App',
-        }),
-      )
-    })
-
-    test('omits title for studios even when app.title is configured', async () => {
-      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
-      mockReadIconFromPath.mockResolvedValue('<svg><path d="M0 0"/></svg>')
-
-      await devAction(
-        createDevOptions({
-          cliConfig: {
-            app: {icon: 'public/logo.svg', title: 'My App'},
-            federation: {enabled: true},
-          },
-        }),
-      )
-
-      expect(mockRegisterDevServer).toHaveBeenCalledWith(
-        expect.objectContaining({
-          icon: '<svg><path d="M0 0"/></svg>',
-          title: undefined,
-        }),
-      )
-    })
-
-    test('warns and registers without icon when readIconFromPath fails', async () => {
-      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
-      mockReadIconFromPath.mockRejectedValue(new Error('ENOENT'))
-      const output = createMockOutput()
-
-      await devAction(
-        createDevOptions({
-          cliConfig: {
-            app: {icon: 'public/missing.svg', title: 'My App'},
-            federation: {enabled: true},
-          },
-          isApp: true,
-          output,
-        }),
-      )
-
-      expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('ENOENT'))
-      expect(mockRegisterDevServer).toHaveBeenCalledWith(
-        expect.objectContaining({icon: undefined, title: 'My App'}),
-      )
-    })
-
-    test('does not call readIconFromPath when app.icon is not configured', async () => {
-      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
-
-      await devAction(
-        createDevOptions({
-          cliConfig: {
-            app: {title: 'My App'},
-            federation: {enabled: true},
-          },
-          isApp: true,
-        }),
-      )
-
-      expect(mockReadIconFromPath).not.toHaveBeenCalled()
-      expect(mockRegisterDevServer).toHaveBeenCalledWith(
-        expect.objectContaining({icon: undefined, title: 'My App'}),
-      )
-    })
-
-    test('registers with undefined app metadata when nothing is configured', async () => {
+    test('registers without icon/title — they are derived from the inlined manifest', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
 
-      expect(mockRegisterDevServer).toHaveBeenCalledWith(
-        expect.objectContaining({
-          icon: undefined,
-          id: undefined,
-          title: undefined,
-        }),
-      )
+      const [registerArg] = mockRegisterDevServer.mock.calls[0]
+      expect(registerArg).not.toHaveProperty('icon')
+      expect(registerArg).not.toHaveProperty('title')
+      expect(registerArg.id).toBeUndefined()
     })
 
     test('registers app under the host applied by the vite dev server', async () => {
@@ -403,7 +319,17 @@ describe('devAction', () => {
       expect(mockStartDevManifestWatcher).not.toHaveBeenCalled()
     })
 
-    test('does not start the manifest watcher for apps even when federation is enabled', async () => {
+    test('starts the manifest watcher for studios when federation is enabled', async () => {
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+      await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
+
+      expect(mockStartDevManifestWatcher).toHaveBeenCalledWith(
+        expect.objectContaining({workDir: '/tmp/sanity-project'}),
+      )
+    })
+
+    test('does not start the manifest watcher for core apps — they have no schema to keep in sync', async () => {
       mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(
@@ -417,14 +343,91 @@ describe('devAction', () => {
       expect(mockStartDevManifestWatcher).not.toHaveBeenCalled()
     })
 
-    test('starts the manifest watcher for studios when federation is enabled', async () => {
+    test('extracts the core-app manifest at startup and inlines it into registerDevServer', async () => {
+      const appManifest = {icon: '<svg><path d="M0 0"/></svg>', title: 'My App', version: '1'}
+      mockExtractCoreAppManifest.mockResolvedValue(appManifest)
+      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+      await devAction(
+        createDevOptions({
+          cliConfig: {federation: {enabled: true}},
+          isApp: true,
+        }),
+      )
+
+      expect(mockExtractCoreAppManifest).toHaveBeenCalledWith({workDir: '/tmp/sanity-project'})
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          manifest: appManifest,
+          manifestUpdatedAt: expect.any(String),
+          type: 'coreApp',
+        }),
+      )
+    })
+
+    test('warns and registers without a manifest when core-app extraction fails', async () => {
+      mockExtractCoreAppManifest.mockRejectedValue(new Error('bad config'))
+      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
+      const output = createMockOutput()
+
+      await devAction(
+        createDevOptions({
+          cliConfig: {federation: {enabled: true}},
+          isApp: true,
+          output,
+        }),
+      )
+
+      expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('bad config'))
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({manifest: undefined, manifestUpdatedAt: undefined}),
+      )
+    })
+
+    test('does not extract the core-app manifest for studios', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
 
-      expect(mockStartDevManifestWatcher).toHaveBeenCalledWith(
-        expect.objectContaining({workDir: '/tmp/sanity-project'}),
+      expect(mockExtractCoreAppManifest).not.toHaveBeenCalled()
+    })
+
+    test('extracts the studio manifest at startup and inlines it into registerDevServer', async () => {
+      const studioManifest = {createdAt: '2026-01-01', version: 3, workspaces: []}
+      mockExtractStudioManifest.mockResolvedValue(studioManifest)
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+      await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
+
+      expect(mockExtractStudioManifest).toHaveBeenCalledWith({workDir: '/tmp/sanity-project'})
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          manifest: studioManifest,
+          manifestUpdatedAt: expect.any(String),
+          type: 'studio',
+        }),
       )
+    })
+
+    test('warns and registers without a manifest when studio extraction fails', async () => {
+      mockExtractStudioManifest.mockRejectedValue(new Error('bad schema'))
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+      const output = createMockOutput()
+
+      await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}, output}))
+
+      expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('bad schema'))
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({manifest: undefined, manifestUpdatedAt: undefined}),
+      )
+    })
+
+    test('does not extract the studio manifest for core apps', async () => {
+      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+      await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}, isApp: true}))
+
+      expect(mockExtractStudioManifest).not.toHaveBeenCalled()
     })
 
     test('calls manifest cleanup on close', async () => {
