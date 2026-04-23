@@ -18,11 +18,48 @@ describe('sanity init - app', {timeout: 120_000}, () => {
     await tmp.cleanup()
   })
 
-  test('creates app with app-quickstart template', async () => {
-    const {error, exitCode, stdout} = await runCli({
+  describe.each([
+    {label: 'with -y flag', yFlag: ['-y']},
+    {label: 'unattended (no -y)', yFlag: [] as string[]},
+  ])('non-interactive ($label)', ({yFlag}) => {
+    test('creates app with app-quickstart template', async () => {
+      const {error, exitCode, stdout} = await runCli({
+        args: [
+          'init',
+          ...yFlag,
+          '--template',
+          'app-quickstart',
+          '--organization',
+          orgId,
+          '--output-path',
+          tmp.path,
+          '--typescript',
+          '--package-manager',
+          'pnpm',
+          '--no-git',
+        ],
+      })
+
+      if (error) throw error
+      expect(exitCode).toBe(0)
+
+      expect(existsSync(`${tmp.path}/src/App.tsx`)).toBe(true)
+      expect(existsSync(`${tmp.path}/package.json`)).toBe(true)
+
+      const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
+      expect(cliConfig).toContain('organizationId')
+      expect(cliConfig).toContain('entry')
+
+      expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(false)
+
+      expect(stdout).toMatch(/app has been scaffolded|Success/i)
+    })
+  })
+
+  test('shows project configuration prompt and completes when skipped', async () => {
+    const session = await runCli({
       args: [
         'init',
-        '-y',
         '--template',
         'app-quickstart',
         '--organization',
@@ -33,21 +70,22 @@ describe('sanity init - app', {timeout: 120_000}, () => {
         '--package-manager',
         'pnpm',
         '--no-git',
+        '--no-mcp',
       ],
+      interactive: true,
     })
 
-    if (error) throw error
+    await session.waitForText(/Configure a project for this app/i)
+    session.sendKey('Enter')
+
+    const exitCode = await session.waitForExit(90_000)
     expect(exitCode).toBe(0)
 
     expect(existsSync(`${tmp.path}/src/App.tsx`)).toBe(true)
     expect(existsSync(`${tmp.path}/package.json`)).toBe(true)
 
-    const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
-    expect(cliConfig).toContain('organizationId')
-    expect(cliConfig).toContain('entry')
-
-    expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(false)
-
-    expect(stdout).toMatch(/app has been scaffolded|Success/i)
+    const output = session.getOutput()
+    expect(output).toMatch(/Success/i)
+    expect(output).toMatch(/configure the project/i)
   })
 })
