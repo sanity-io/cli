@@ -14,6 +14,14 @@ export interface InteractiveSession {
   /** Kill the process */
   kill(signal?: string): void
 
+  /**
+   * Navigate to the option matching `pattern` in an active select prompt and press Enter.
+   * Waits for options to render, verifies exactly one match exists, then iterates
+   * ArrowDown until the ❯ cursor is on the matching line and confirms with Enter.
+   * Throws if zero or multiple options match.
+   */
+  selectOption(pattern: RegExp | string, opts?: {timeout?: number}): Promise<void>
+
   /** Send Ctrl+<char> (e.g., sendControl('c') for SIGINT) */
   sendControl(char: string): void
 
@@ -79,6 +87,59 @@ export function spawnPty({args = [], command, cwd, env}: SpawnPtyOptions): Inter
       if (exitResult === null) {
         ptyProcess.kill(signal)
       }
+    },
+
+    async selectOption(pattern: RegExp | string, opts?: {timeout?: number}): Promise<void> {
+      const timeout = opts?.timeout ?? DEFAULT_TIMEOUT
+      const deadline = Date.now() + timeout
+      const regex =
+        pattern instanceof RegExp
+          ? pattern
+          : new RegExp(pattern.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`))
+
+      // Navigate ArrowDown until ❯ is on a line matching the pattern.
+      // The option may be off-screen and require scrolling, so we can't
+      // wait for it to appear before navigating.
+      const seenOptions = new Set<string>()
+      while (Date.now() < deadline) {
+        const current = stripAnsi(output)
+        const selectedLine = current.split('\n').findLast((line) => line.includes('❯'))
+
+        if (selectedLine && regex.test(selectedLine)) {
+          // Before confirming, check that only one distinct option matches
+          const allOptionLines = current
+            .split('\n')
+            .filter((line) => /^\s*[❯ ]\s+\S/.test(line))
+            .map((line) => line.replace(/^\s*❯?\s*/, '').trim())
+          const matchingOptions = [...new Set(allOptionLines.filter((line) => regex.test(line)))]
+          if (matchingOptions.length > 1) {
+            throw new Error(
+              `Multiple options match ${regex} — must match exactly one\n\nMatches:\n${matchingOptions.join('\n')}`,
+            )
+          }
+
+          ptyProcess.write(KEYS.Enter)
+          return
+        }
+
+        // Track seen options to detect when we've wrapped around the full list
+        if (selectedLine) {
+          const optionText = selectedLine.replace(/^\s*❯?\s*/, '').trim()
+          if (seenOptions.has(optionText) && seenOptions.size > 1) {
+            throw new Error(
+              `Option matching ${regex} not found after scrolling through all options\n\nSeen options:\n${[...seenOptions].join('\n')}`,
+            )
+          }
+          seenOptions.add(optionText)
+        }
+
+        ptyProcess.write(KEYS.ArrowDown)
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL))
+      }
+
+      throw new Error(
+        `Timed out navigating to option matching ${regex}\n\nSeen options:\n${[...seenOptions].join('\n')}`,
+      )
     },
 
     sendControl(char: string) {

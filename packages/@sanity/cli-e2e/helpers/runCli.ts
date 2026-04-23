@@ -10,6 +10,10 @@ export function getE2EProjectId(): string {
   return readEnv('SANITY_E2E_PROJECT_ID')
 }
 
+export function getE2EDataset(): string {
+  return 'production'
+}
+
 export function getE2EOrganizationId(): string {
   return readEnv('SANITY_E2E_ORGANIZATION_ID')
 }
