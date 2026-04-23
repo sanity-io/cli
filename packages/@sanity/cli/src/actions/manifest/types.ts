@@ -20,12 +20,18 @@ export interface CreateManifest {
   workspaces: ManifestWorkspaceFile[]
 }
 
-export interface AppManifest {
-  version: '1'
+/**
+ * Core-app application manifest. Mirrors the workbench's
+ * `CoreAppUserApplicationManifest` schema. Strictly validated via zod
+ * since the CLI produces the payload in full.
+ */
+export const coreAppManifestSchema = z.object({
+  icon: z.optional(z.string()),
+  title: z.optional(z.string()),
+  version: z.string(),
+})
 
-  icon?: string
-  title?: string
-}
+export type CoreAppManifest = z.infer<typeof coreAppManifestSchema>
 
 export interface ManifestWorkspaceFile extends Omit<CreateWorkspaceManifest, 'schema' | 'tools'> {
   schema: string // filename

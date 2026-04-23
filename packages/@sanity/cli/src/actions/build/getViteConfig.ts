@@ -12,6 +12,7 @@ import debug from 'debug'
 import {readPackageUp} from 'read-package-up'
 import {type ConfigEnv, type InlineConfig, mergeConfig, type Rollup} from 'vite'
 
+import {SANITY_CACHE_DIR} from '../../constants.js'
 import {sanityBuildEntries} from '../../server/vite/plugin-sanity-build-entries.js'
 import {sanityFaviconsPlugin} from '../../server/vite/plugin-sanity-favicons.js'
 import {sanityRuntimeRewritePlugin} from '../../server/vite/plugin-sanity-runtime-rewrite.js'
@@ -121,7 +122,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     },
     // Define a custom cache directory so that sanity's vite cache
     // does not conflict with any potential local vite projects
-    cacheDir: 'node_modules/.sanity/vite',
+    cacheDir: `${SANITY_CACHE_DIR}/vite`,
     configFile: false,
     define: {
       __SANITY_BUILD_TIMESTAMP__: JSON.stringify(Date.now()),

@@ -3,6 +3,7 @@ import path from 'node:path'
 import semver from 'semver'
 import {build} from 'vite'
 
+import {SANITY_CACHE_DIR} from '../../constants.js'
 import {getLocalPackageDir, getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 
@@ -194,7 +195,7 @@ export async function buildVendorDependencies({
     },
     // Define a custom cache directory so that sanity's vite cache
     // does not conflict with any potential local vite projects
-    cacheDir: 'node_modules/.sanity/vite-vendor',
+    cacheDir: `${SANITY_CACHE_DIR}/vite-vendor`,
     configFile: false,
     define: {'process.env.NODE_ENV': JSON.stringify('production')},
     logLevel: 'silent',
