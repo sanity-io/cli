@@ -73,7 +73,7 @@ export async function buildStaticFiles(
     const entries = await resolveEntries({cwd, entry, isApp})
 
     buildDebug('Resolving vite config (federation)')
-    const viteConfig = await getViteConfig({
+    let viteConfig = await getViteConfig({
       basePath,
       cwd,
       entries,
@@ -85,6 +85,18 @@ export async function buildStaticFiles(
       reactCompiler,
       sourceMap,
     })
+
+    // Apply the user's Vite config so plugins like `@vanilla-extract/vite-plugin`
+    // transform source files before the federation environment is bundled.
+    // `finalizeViteConfig` is intentionally skipped: the federation environment
+    // has its own entry and does not use `.sanity/runtime/app.js`.
+    if (extendViteConfig) {
+      viteConfig = await extendViteConfigWithUserConfig(
+        {command: 'build', mode},
+        viteConfig,
+        extendViteConfig,
+      )
+    }
 
     buildDebug('Bundling federation environment')
     const builder = await createBuilder(viteConfig)
