@@ -7,13 +7,10 @@ import {getE2EOrganizationId, getE2EProjectId, runCli} from '../../helpers/runCl
 
 const projectId = getE2EProjectId()
 
-// Skipped: unattended mode (no -y, non-interactive terminal) defaults to JavaScript
-// instead of TypeScript, causing assertion mismatches. See https://linear.app/sanity/issue/SDK-1316
-describe.skip('sanity init - studio (unattended)', {timeout: 120_000}, () => {
-  test.todo('unattended mode should match -y defaults')
-})
-
-describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
+describe.each([
+  {label: 'with -y flag', yFlag: ['-y']},
+  {label: 'unattended (no -y)', yFlag: [] as string[]},
+])('sanity init - studio ($label)', {timeout: 120_000}, ({yFlag}) => {
   let tmp: Awaited<ReturnType<typeof createTmpDir>>
 
   beforeEach(async () => {
@@ -28,7 +25,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -51,11 +48,33 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     expect(cliConfig).toContain('autoUpdates')
   })
 
+  test('defaults to TypeScript without explicit --typescript flag', async () => {
+    const {error} = await runCli({
+      args: [
+        'init',
+        ...yFlag,
+        '--project',
+        projectId,
+        '--dataset',
+        'production',
+        '--output-path',
+        tmp.path,
+      ],
+    })
+
+    if (error) throw error
+
+    expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
+    expect(existsSync(`${tmp.path}/sanity.cli.ts`)).toBe(true)
+    expect(existsSync(`${tmp.path}/tsconfig.json`)).toBe(true)
+    expect(existsSync(`${tmp.path}/sanity.config.js`)).toBe(false)
+  })
+
   test.each(['clean', 'blog'])('creates studio with %s template', async (template) => {
     const {error} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -80,7 +99,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -109,7 +128,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -131,7 +150,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -153,7 +172,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -172,7 +191,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -198,7 +217,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset-default',
@@ -217,7 +236,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -240,7 +259,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error, exitCode} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -266,7 +285,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error, stdout} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project-name',
         `E2E Test ${randomSuffix}`,
         '--organization',
@@ -286,7 +305,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error, exitCode} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -309,7 +328,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error, stdout} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -328,7 +347,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -349,7 +368,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -373,7 +392,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error, exitCode, stdout} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -398,7 +417,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const firstResult = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
@@ -412,7 +431,7 @@ describe('sanity init - studio (with -y flag)', {timeout: 120_000}, () => {
     const {error, exitCode} = await runCli({
       args: [
         'init',
-        '-y',
+        ...yFlag,
         '--project',
         projectId,
         '--dataset',
