@@ -3,17 +3,17 @@ import {join, resolve} from 'node:path'
 
 import {findProjectRoot} from '@sanity/cli-core'
 
+import {SANITY_CACHE_DIR} from '../../constants.js'
 import {extractManifest} from '../manifest/extractManifest.js'
 import {type StudioManifest} from '../manifest/types.js'
 import {MANIFEST_FILENAME} from '../manifest/writeManifestFile.js'
 
 /**
  * Dev-time manifest output directory, relative to the studio working
- * directory. Mirrors the `node_modules/.sanity/vite` convention so it
- * stays out of `dist` and is ignored by default in typical `.gitignore`
- * files.
+ * directory. Sibling of Vite's `cacheDir` so it stays out of `dist` and is
+ * ignored by default in typical `.gitignore` files.
  */
-const MANIFEST_DIR = 'node_modules/.sanity/manifest'
+const MANIFEST_DIR = join(SANITY_CACHE_DIR, 'manifest')
 
 /**
  * Run the heavy worker-based studio schema extraction, write the

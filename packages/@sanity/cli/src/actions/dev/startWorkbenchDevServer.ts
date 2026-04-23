@@ -1,7 +1,10 @@
+import {join} from 'node:path'
+
 import {resolveLocalPackage} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig} from 'vite'
 
+import {SANITY_CACHE_DIR} from '../../constants.js'
 import {getProjectById} from '../../services/projects.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {devDebug} from './devDebug.js'
@@ -113,7 +116,7 @@ export async function startWorkbenchDevServer(
   const viteConfig: InlineConfig = {
     // Define a custom cache directory so that sanity's vite cache
     // does not conflict with any potential local vite projects
-    cacheDir: 'node_modules/.sanity/vite',
+    cacheDir: join(SANITY_CACHE_DIR, 'vite'),
     configFile: false,
     define: {
       __SANITY_STAGING__: process.env.SANITY_INTERNAL_ENV === 'staging',
