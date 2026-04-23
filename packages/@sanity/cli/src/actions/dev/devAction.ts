@@ -1,9 +1,10 @@
 import {styleText} from 'node:util'
 
 import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
+import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {type CoreAppManifest, type StudioManifest} from '../manifest/types.js'
 import {registerDevServer} from './devServerRegistry.js'
-import {extractCoreAppManifest, extractStudioManifest} from './extractDevServerManifest.js'
+import {extractStudioManifest} from './extractDevServerManifest.js'
 import {startAppDevServer} from './startAppDevServer.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 import {startStudioDevServer} from './startStudioDevServer.js'

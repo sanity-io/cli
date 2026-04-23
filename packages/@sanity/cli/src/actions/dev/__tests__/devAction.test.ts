@@ -27,8 +27,10 @@ vi.mock('../startDevManifestWatcher.js', () => ({
   startDevManifestWatcher: mockStartDevManifestWatcher,
 }))
 vi.mock('../extractDevServerManifest.js', () => ({
-  extractCoreAppManifest: mockExtractCoreAppManifest,
   extractStudioManifest: mockExtractStudioManifest,
+}))
+vi.mock('../../manifest/extractCoreAppManifest.js', () => ({
+  extractCoreAppManifest: mockExtractCoreAppManifest,
 }))
 
 /** Create a mock Vite dev server config shape — `server.config.server.host`

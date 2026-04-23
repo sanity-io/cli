@@ -3,9 +3,9 @@ import {join, resolve} from 'node:path'
 
 import {findProjectRoot} from '@sanity/cli-core'
 
-import {extractAppManifest} from '../manifest/extractAppManifest.js'
 import {extractManifest} from '../manifest/extractManifest.js'
-import {type CoreAppManifest, type StudioManifest} from '../manifest/types.js'
+import {type StudioManifest} from '../manifest/types.js'
+import {MANIFEST_FILENAME} from '../manifest/writeManifestFile.js'
 
 /**
  * Dev-time manifest output directory, relative to the studio working
@@ -14,7 +14,6 @@ import {type CoreAppManifest, type StudioManifest} from '../manifest/types.js'
  * files.
  */
 const MANIFEST_DIR = 'node_modules/.sanity/manifest'
-const MANIFEST_FILENAME = 'create-manifest.json'
 
 /**
  * Run the heavy worker-based studio schema extraction, write the
@@ -29,15 +28,4 @@ export async function extractStudioManifest(options: {
   await extractManifest({outPath, path: projectRoot.path, workDir: options.workDir})
   const raw = await readFile(join(outPath, MANIFEST_FILENAME), 'utf8')
   return JSON.parse(raw)
-}
-
-/**
- * Manually build the core-app manifest from the CLI config (title plus
- * the inlined icon SVG). No schema-extraction worker is involved — the
- * payload is small enough that the CLI writes it in full.
- */
-export async function extractCoreAppManifest(options: {
-  workDir: string
-}): Promise<CoreAppManifest | undefined> {
-  return extractAppManifest({workDir: options.workDir})
 }

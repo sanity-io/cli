@@ -7,7 +7,7 @@ import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {type CreateManifest, type CreateWorkspaceManifest} from './types.js'
 import {writeWorkspaceFiles} from './writeWorkspaceFiles.js'
 
-const MANIFEST_FILENAME = 'create-manifest.json'
+export const MANIFEST_FILENAME = 'create-manifest.json'
 
 const debug = subdebug('writeManifestFile')
 
