@@ -65,7 +65,7 @@ export async function startDevManifestWatcher({
     }
     running = true
     try {
-      const manifest = await extractStudioManifest({workDir})
+      const manifest = await extractStudioManifest({configPath, workDir})
       if (closed) return
       update({manifest, manifestUpdatedAt: new Date().toISOString()})
     } catch (err) {

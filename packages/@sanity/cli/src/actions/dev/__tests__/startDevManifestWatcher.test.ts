@@ -85,7 +85,10 @@ describe('startDevManifestWatcher', () => {
     await vi.advanceTimersByTimeAsync(0)
 
     expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
-    expect(mockExtractStudioManifest).toHaveBeenCalledWith({workDir: WORK_DIR})
+    expect(mockExtractStudioManifest).toHaveBeenCalledWith({
+      configPath: STUDIO_CONFIG_PATH,
+      workDir: WORK_DIR,
+    })
     expect(update).toHaveBeenCalledWith({
       manifest: studioManifest,
       manifestUpdatedAt: expect.any(String),

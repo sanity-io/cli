@@ -127,6 +127,11 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     // async server.close() is best-effort.
     onSignal = () => {
       cleanupManifest()
+      // `stopManifestWatcher` is async but we don't wait for it here — the
+      // signal handler can't block. It clears the debounce timer and
+      // closes the fs.watch handle synchronously, which is enough to let
+      // the event loop drain.
+      void stopManifestWatcher()
       closeWorkbenchServer()
       process.off('SIGINT', onSignal!)
       process.off('SIGTERM', onSignal!)

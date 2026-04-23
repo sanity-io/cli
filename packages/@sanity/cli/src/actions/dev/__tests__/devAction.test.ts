@@ -431,9 +431,10 @@ describe('devAction', () => {
       offSpy.mockRestore()
     })
 
-    test('SIGINT handler cleans up manifest and workbench, and removes itself', async () => {
+    test('SIGINT handler cleans up manifest, workbench, and the manifest watcher, and removes itself', async () => {
       const mockCleanup = vi.fn()
       const mockWorkbenchClose = vi.fn().mockResolvedValue(undefined)
+      const mockWatcherClose = vi.fn().mockResolvedValue(undefined)
       mockRegisterDevServer.mockReturnValue({release: mockCleanup, update: vi.fn()})
       mockStartWorkbenchDevServer.mockResolvedValue({
         close: mockWorkbenchClose,
@@ -441,6 +442,7 @@ describe('devAction', () => {
         workbenchAvailable: true,
         workbenchPort: 3333,
       })
+      mockStartDevManifestWatcher.mockResolvedValue({close: mockWatcherClose})
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       const onSpy = vi.spyOn(process, 'on')
@@ -457,6 +459,7 @@ describe('devAction', () => {
       handler()
 
       expect(mockCleanup).toHaveBeenCalled()
+      expect(mockWatcherClose).toHaveBeenCalled()
       expect(mockWorkbenchClose).toHaveBeenCalled()
       expect(offSpy).toHaveBeenCalledWith('SIGINT', handler)
       expect(offSpy).toHaveBeenCalledWith('SIGTERM', handler)
