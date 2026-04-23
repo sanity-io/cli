@@ -9,7 +9,6 @@ const mockStartStudioDevServer = vi.hoisted(() => vi.fn())
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevManifestWatcher = vi.hoisted(() => vi.fn())
 const mockExtractCoreAppManifest = vi.hoisted(() => vi.fn())
-const mockExtractStudioManifest = vi.hoisted(() => vi.fn())
 
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
@@ -25,9 +24,6 @@ vi.mock('../devServerRegistry.js', () => ({
 }))
 vi.mock('../startDevManifestWatcher.js', () => ({
   startDevManifestWatcher: mockStartDevManifestWatcher,
-}))
-vi.mock('../extractDevServerManifest.js', () => ({
-  extractStudioManifest: mockExtractStudioManifest,
 }))
 vi.mock('../../manifest/extractCoreAppManifest.js', () => ({
   extractCoreAppManifest: mockExtractCoreAppManifest,
@@ -54,7 +50,6 @@ describe('devAction', () => {
     mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: vi.fn()})
     mockStartDevManifestWatcher.mockResolvedValue({close: vi.fn().mockResolvedValue(undefined)})
     mockExtractCoreAppManifest.mockResolvedValue(undefined)
-    mockExtractStudioManifest.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -398,54 +393,17 @@ describe('devAction', () => {
       expect(mockExtractCoreAppManifest).not.toHaveBeenCalled()
     })
 
-    test('registers the studio immediately with no manifest — startup is not blocked on extraction', async () => {
+    test('registers the studio immediately with no manifest — the watcher owns extraction', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
-      mockExtractStudioManifest.mockReturnValue(new Promise(() => {}))
 
       await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
 
       expect(mockRegisterDevServer).toHaveBeenCalledWith(
         expect.not.objectContaining({manifest: expect.anything()}),
       )
-    })
-
-    test('patches the registry with the studio manifest once extraction completes', async () => {
-      const studioManifest = {createdAt: '2026-01-01', version: 3, workspaces: []}
-      const mockUpdate = vi.fn()
-      mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: mockUpdate})
-      mockExtractStudioManifest.mockResolvedValue(studioManifest)
-      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
-
-      await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
-
-      await vi.waitFor(() => expect(mockUpdate).toHaveBeenCalled())
-      expect(mockExtractStudioManifest).toHaveBeenCalledWith({workDir: '/tmp/sanity-project'})
-      expect(mockUpdate).toHaveBeenCalledWith({
-        manifest: studioManifest,
-        manifestUpdatedAt: expect.any(String),
-      })
-    })
-
-    test('warns and does not patch the registry when studio extraction fails', async () => {
-      mockExtractStudioManifest.mockRejectedValue(new Error('bad schema'))
-      const mockUpdate = vi.fn()
-      mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: mockUpdate})
-      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
-      const output = createMockOutput()
-
-      await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}, output}))
-
-      await vi.waitFor(() => expect(output.warn).toHaveBeenCalled())
-      expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('bad schema'))
-      expect(mockUpdate).not.toHaveBeenCalled()
-    })
-
-    test('does not extract the studio manifest for core apps', async () => {
-      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
-
-      await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}, isApp: true}))
-
-      expect(mockExtractStudioManifest).not.toHaveBeenCalled()
+      expect(mockStartDevManifestWatcher).toHaveBeenCalledWith(
+        expect.objectContaining({update: expect.any(Function), workDir: '/tmp/sanity-project'}),
+      )
     })
 
     test('calls manifest cleanup on close', async () => {

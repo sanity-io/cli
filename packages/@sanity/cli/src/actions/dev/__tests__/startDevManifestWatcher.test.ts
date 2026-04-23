@@ -71,7 +71,7 @@ describe('startDevManifestWatcher', () => {
     vi.clearAllMocks()
   })
 
-  test('does not extract on startup — initial extraction happens in devAction', async () => {
+  test('runs an initial extraction on startup and inlines it into update', async () => {
     const update = vi.fn()
 
     const watcher = await startDevManifestWatcher({
@@ -80,8 +80,54 @@ describe('startDevManifestWatcher', () => {
       workDir: WORK_DIR,
     })
 
-    expect(mockExtractStudioManifest).not.toHaveBeenCalled()
-    expect(update).not.toHaveBeenCalled()
+    // Flush the fire-and-forget microtask chain so the initial extraction
+    // has time to resolve and patch the registry.
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
+    expect(mockExtractStudioManifest).toHaveBeenCalledWith({workDir: WORK_DIR})
+    expect(update).toHaveBeenCalledWith({
+      manifest: studioManifest,
+      manifestUpdatedAt: expect.any(String),
+    })
+
+    await watcher.close()
+  })
+
+  test('coalesces a config-file change that fires during the initial extraction', async () => {
+    // Block the first extraction until we say otherwise. This simulates the
+    // user editing sanity.config.ts while the worker is still producing the
+    // initial manifest — the watcher must not run a parallel extraction.
+    let resolveFirst: ((value: typeof studioManifest) => void) | undefined
+    mockExtractStudioManifest
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFirst = resolve
+        }),
+      )
+      .mockResolvedValueOnce(studioManifest)
+
+    const update = vi.fn()
+    const watcher = await startDevManifestWatcher({
+      output: createMockOutput(),
+      update,
+      workDir: WORK_DIR,
+    })
+
+    // Fire a change event while the initial extraction is still in-flight.
+    fakeWatcher.emitChange('sanity.config.ts')
+    await vi.advanceTimersByTimeAsync(300)
+
+    // Only the initial extraction is running — the config change is pending.
+    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
+
+    // Release the initial extraction; the pending change-triggered run now
+    // starts, serialized behind it.
+    resolveFirst!(studioManifest)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(2)
+    expect(update).toHaveBeenCalledTimes(2)
 
     await watcher.close()
   })
@@ -94,6 +140,11 @@ describe('startDevManifestWatcher', () => {
       workDir: WORK_DIR,
     })
 
+    // Wait for the initial extraction to complete before exercising the
+    // file-change path.
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
+
     // Fire multiple rapid "change" events — should coalesce into a single
     // regeneration after the debounce window.
     fakeWatcher.emitChange('sanity.config.ts')
@@ -102,12 +153,8 @@ describe('startDevManifestWatcher', () => {
 
     await vi.advanceTimersByTimeAsync(300)
 
-    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
-    expect(mockExtractStudioManifest).toHaveBeenCalledWith({workDir: WORK_DIR})
-    expect(update).toHaveBeenCalledWith({
-      manifest: studioManifest,
-      manifestUpdatedAt: expect.any(String),
-    })
+    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(2)
+    expect(update).toHaveBeenCalledTimes(2)
 
     await watcher.close()
   })
@@ -120,12 +167,15 @@ describe('startDevManifestWatcher', () => {
       workDir: WORK_DIR,
     })
 
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
+
     fakeWatcher.emitChange('unrelated.ts')
     fakeWatcher.emitChange('package.json')
 
     await vi.advanceTimersByTimeAsync(300)
 
-    expect(mockExtractStudioManifest).not.toHaveBeenCalled()
+    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
 
     await watcher.close()
   })
@@ -139,13 +189,12 @@ describe('startDevManifestWatcher', () => {
 
     const watcher = await startDevManifestWatcher({output, update, workDir: WORK_DIR})
 
-    // First change fails
-    fakeWatcher.emitChange('sanity.config.ts')
-    await vi.advanceTimersByTimeAsync(300)
+    // The initial extraction fails.
+    await vi.advanceTimersByTimeAsync(0)
     expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('bad schema'))
     expect(update).not.toHaveBeenCalled()
 
-    // Second change recovers and updates as normal
+    // A subsequent change recovers and updates as normal.
     fakeWatcher.emitChange('sanity.config.ts')
     await vi.advanceTimersByTimeAsync(300)
     expect(update).toHaveBeenCalledTimes(1)
@@ -161,13 +210,15 @@ describe('startDevManifestWatcher', () => {
       workDir: WORK_DIR,
     })
 
-    await watcher.close()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
 
+    await watcher.close()
     expect(fakeWatcher.closed).toBe(true)
 
     fakeWatcher.emitChange('sanity.config.ts')
     await vi.advanceTimersByTimeAsync(300)
 
-    expect(mockExtractStudioManifest).not.toHaveBeenCalled()
+    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
   })
 })

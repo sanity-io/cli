@@ -3,7 +3,6 @@ import {styleText} from 'node:util'
 import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
 import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {registerDevServer} from './devServerRegistry.js'
-import {extractStudioManifest} from './extractDevServerManifest.js'
 import {startAppDevServer} from './startAppDevServer.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 import {startStudioDevServer} from './startStudioDevServer.js'
@@ -93,28 +92,27 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     })
     cleanupManifest = registration.release
 
-    // Kick off the initial manifest extraction in the background. On
-    // success the registry entry is patched, which fires the workbench's
-    // registry watcher and triggers a rebroadcast to connected clients.
-    // Updates after `release()` are no-ops (see `registerDevServer`).
-    void (async () => {
-      try {
-        const manifest = options.isApp
-          ? await extractCoreAppManifest({workDir: options.workDir})
-          : await extractStudioManifest({workDir: options.workDir})
-        registration.update({manifest, manifestUpdatedAt: new Date().toISOString()})
-      } catch (err) {
-        output.warn(
-          `Could not extract manifest for workbench: ${err instanceof Error ? err.message : String(err)}`,
-        )
-      }
-    })()
-
-    // For studios, keep the manifest in sync with subsequent
-    // `sanity.config.ts` changes. Each successful re-extraction inlines
-    // the new manifest into the registry entry and triggers a workbench
-    // rebroadcast to connected clients.
-    if (!options.isApp) {
+    if (options.isApp) {
+      // Core-apps have no schema to watch and no shared output directory
+      // with any other caller, so run the extraction fire-and-forget. On
+      // success the registry entry is patched, which fires the workbench's
+      // registry watcher and triggers a rebroadcast to connected clients.
+      // Updates after `release()` are no-ops (see `registerDevServer`).
+      void (async () => {
+        try {
+          const manifest = await extractCoreAppManifest({workDir: options.workDir})
+          registration.update({manifest, manifestUpdatedAt: new Date().toISOString()})
+        } catch (err) {
+          output.warn(
+            `Could not extract manifest for workbench: ${err instanceof Error ? err.message : String(err)}`,
+          )
+        }
+      })()
+    } else {
+      // For studios, the watcher owns both the initial extraction and the
+      // follow-up regenerations triggered by `sanity.config.ts` changes.
+      // Serializing both through `regenerate` inside the watcher prevents
+      // concurrent worker runs from racing on the manifest output directory.
       const watcher = await startDevManifestWatcher({
         output,
         update: registration.update,

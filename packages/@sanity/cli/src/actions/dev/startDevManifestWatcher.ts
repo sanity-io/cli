@@ -32,15 +32,18 @@ interface StartDevManifestWatcherOptions {
 }
 
 /**
- * Keep the studio manifest in sync with the `sanity.config.(ts|js)` file on
- * disk. The initial extraction happens in `devAction` so the registry entry
- * already carries a manifest when the watcher starts — this watcher only
- * re-extracts on subsequent file-system events. Each successful regeneration
- * inlines the new manifest into the registry via the `update` callback, so
- * any running workbench rebroadcasts to its clients.
+ * Generate the studio manifest once and then keep it in sync with the
+ * `sanity.config.(ts|js)` file on disk. The initial generation runs
+ * fire-and-forget so it doesn't block dev-server startup; subsequent
+ * file-system events are coalesced behind it via `running`/`pending`, so
+ * the single-serializer guarantees there are no overlapping writes to the
+ * manifest output directory. Each successful regeneration inlines the new
+ * manifest into the registry via the `update` callback, so any running
+ * workbench rebroadcasts to its clients.
  *
  * Errors during extraction are logged as warnings and do not crash the dev
- * server — the previously extracted manifest stays in the registry.
+ * server — the previously extracted manifest (if any) stays in the
+ * registry.
  */
 export async function startDevManifestWatcher({
   output,
@@ -80,6 +83,12 @@ export async function startDevManifestWatcher({
       }
     }
   }
+
+  // Kick off the initial extraction in the background. Routing it through
+  // `regenerate` means any file-system events arriving before the first
+  // extraction finishes will be coalesced by `running`/`pending` rather
+  // than racing against it for the shared output directory.
+  void regenerate()
 
   // Watch the config file's parent directory and filter by filename.
   // Watching the file itself is unreliable across editors that perform
