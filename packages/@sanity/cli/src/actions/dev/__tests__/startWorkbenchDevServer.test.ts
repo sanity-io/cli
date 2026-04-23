@@ -420,30 +420,32 @@ describe('startWorkbenchDevServer', () => {
       expect(mockWatchRegistry).toHaveBeenCalledWith(expect.any(Function))
     })
 
-    test('watcher callback broadcasts applications via server.hot.send', async () => {
+    test('watcher callback broadcasts applications via server.ws.send with inlined manifests', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
+      const studioManifest = {createdAt: '2026-01-01T00:00:00.000Z', version: 3, workspaces: []}
+      const appManifest = {icon: '<svg>two</svg>', title: 'App Two', version: '1'}
+
       const watchCallback = mockWatchRegistry.mock.calls[0][0]
       watchCallback([
         {
           host: 'localhost',
-          icon: '<svg>one</svg>',
           id: 'app-1',
+          manifest: studioManifest,
           pid: 2,
           port: 3334,
           type: 'studio',
         },
         {
           host: 'localhost',
-          icon: '<svg>two</svg>',
           id: 'app-2',
+          manifest: appManifest,
           pid: 3,
           port: 3335,
-          title: 'App Two',
           type: 'coreApp',
         },
       ])
@@ -452,25 +454,23 @@ describe('startWorkbenchDevServer', () => {
         applications: [
           {
             host: 'localhost',
-            icon: '<svg>one</svg>',
             id: 'app-1',
+            manifest: studioManifest,
             port: 3334,
-            title: undefined,
             type: 'studio',
           },
           {
             host: 'localhost',
-            icon: '<svg>two</svg>',
             id: 'app-2',
+            manifest: appManifest,
             port: 3335,
-            title: 'App Two',
             type: 'coreApp',
           },
         ],
       })
     })
 
-    test('includes undefined app metadata when a registered server has none', async () => {
+    test('includes undefined manifest when a registered server has not yet extracted one', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
@@ -484,10 +484,9 @@ describe('startWorkbenchDevServer', () => {
         applications: [
           {
             host: 'localhost',
-            icon: undefined,
             id: undefined,
+            manifest: undefined,
             port: 3334,
-            title: undefined,
             type: 'studio',
           },
         ],
@@ -498,20 +497,20 @@ describe('startWorkbenchDevServer', () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
       mockCreateServer.mockResolvedValue(mockServer)
+      const inlined = {icon: '<svg>inline</svg>', title: 'Title', version: '1'}
       mockGetRegisteredServers.mockReturnValue([
         {
           host: 'localhost',
-          icon: '<svg>inline</svg>',
           id: 'app-1',
+          manifest: inlined,
           pid: 2,
           port: 3334,
-          type: 'studio',
+          type: 'coreApp',
         },
       ])
 
       await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
 
-      // Find the handler registered for the request event
       const onCall = mockServer.ws.on.mock.calls.find(
         (args: unknown[]) => args[0] === 'sanity:workbench:get-local-applications',
       )
@@ -525,11 +524,10 @@ describe('startWorkbenchDevServer', () => {
         applications: [
           {
             host: 'localhost',
-            icon: '<svg>inline</svg>',
             id: 'app-1',
+            manifest: inlined,
             port: 3334,
-            title: undefined,
-            type: 'studio',
+            type: 'coreApp',
           },
         ],
       })
