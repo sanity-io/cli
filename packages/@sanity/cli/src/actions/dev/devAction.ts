@@ -63,20 +63,20 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   const addr = server.httpServer?.address()
   const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
 
+  // Read the applied host from the Vite dev server's resolved config —
+  // this reflects any user-supplied Vite config that may have overridden
+  // our defaults. `server.host` is `string | boolean | undefined`; non-string
+  // values (true/false/undefined → 0.0.0.0/localhost) aren't useful as a
+  // URL host, so fall back to 'localhost'.
+  const resolvedHost = server.config.server.host
+  const appHost = typeof resolvedHost === 'string' ? resolvedHost : 'localhost'
+
   // Register the studio/app dev server in the registry (federated projects only)
   let cleanupManifest: () => void = syncNoop
   let stopManifestWatcher: () => Promise<void> = noop
   let onSignal: (() => void) | undefined
   if (options.cliConfig?.federation?.enabled) {
     checkForDeprecatedAppId({cliConfig: options.cliConfig, output})
-
-    // Read the applied host from the Vite dev server's resolved config —
-    // this reflects any user-supplied Vite config that may have overridden
-    // our defaults. `server.host` is `string | boolean | undefined`; non-string
-    // values (true/false/undefined → 0.0.0.0/localhost) aren't useful as a
-    // URL host, so fall back to 'localhost'.
-    const resolvedHost = server.config.server.host
-    const appHost = typeof resolvedHost === 'string' ? resolvedHost : 'localhost'
 
     // Register the dev server immediately without a manifest — workbench
     // clients get the application entry first and the manifest follows in
@@ -141,9 +141,8 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   }
 
   if (workbenchAvailable) {
-    const workbenchUrl = `http://${httpHost || 'localhost'}:${workbenchPort}`
     output.log(
-      `Workbench dev server started at ${styleText(['blue', 'underline'], workbenchUrl)} (app on port ${appPort})`,
+      `Application available at ${styleText(['blue', 'underline'], `http://${httpHost || 'localhost'}:${workbenchPort}/local/${appHost}-${appPort}`)}`,
     )
   }
 
