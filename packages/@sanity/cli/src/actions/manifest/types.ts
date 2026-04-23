@@ -32,6 +32,16 @@ export const coreAppManifestSchema = z.object({
 
 export type CoreAppManifest = z.infer<typeof coreAppManifestSchema>
 
+/**
+ * Studio application manifest (serialized `create-manifest.json`). Kept
+ * loose so the CLI isn't coupled to the workbench's evolving client-side
+ * schema — the workbench consumer is authoritative on the inner shape.
+ * See its `ClientManifest` for the fields clients expect.
+ */
+export const studioManifestSchema = z.record(z.string(), z.unknown())
+
+export type StudioManifest = z.infer<typeof studioManifestSchema>
+
 export interface ManifestWorkspaceFile extends Omit<CreateWorkspaceManifest, 'schema' | 'tools'> {
   schema: string // filename
   tools: string // filename
