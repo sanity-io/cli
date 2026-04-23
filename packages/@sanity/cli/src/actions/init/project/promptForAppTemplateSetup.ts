@@ -12,6 +12,7 @@ import {promptForProjectCreation} from './promptForProjectCreation.js'
 export async function promptForAppTemplateSetup({
   coupon,
   dataset,
+  datasetDefault,
   newProject,
   organization,
   organizationId,
@@ -25,6 +26,7 @@ export async function promptForAppTemplateSetup({
 }: {
   coupon: string | undefined
   dataset: string | undefined
+  datasetDefault: boolean
   newProject: string | undefined
   organization: string | undefined
   organizationId: string | undefined
@@ -51,7 +53,7 @@ export async function promptForAppTemplateSetup({
     })
     const datasetResult = await getOrCreateDataset({
       dataset,
-      defaultConfig: undefined,
+      defaultConfig: datasetDefault || undefined,
       displayName: projectResult.displayName,
       output,
       projectId: projectResult.projectId,
@@ -112,7 +114,7 @@ export async function promptForAppTemplateSetup({
 
   const datasetResult = await getOrCreateDataset({
     dataset,
-    defaultConfig: undefined,
+    defaultConfig: datasetDefault || undefined,
     displayName: projectResult.displayName,
     output,
     projectId: projectResult.projectId,

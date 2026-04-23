@@ -1157,6 +1157,60 @@ describe('#init: promptForAppTemplateSetup', () => {
     expect(mocks.listProjects).toHaveBeenCalled()
   })
 
+  test('--dataset-default auto-names dataset "production" for app templates', async () => {
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-123', name: 'Test Organization', slug: 'test-organization'}])
+
+    mockApi({
+      apiVersion: CREATE_PROJECT_API_VERSION,
+      method: 'post',
+      uri: '/projects',
+    }).reply(200, {displayName: 'New App Project', projectId: 'new-app-pid'})
+
+    mocks.listProjects.mockResolvedValueOnce([])
+    mocks.listDatasets.mockResolvedValueOnce([])
+    mocks.createDataset.mockResolvedValueOnce(undefined)
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, [])
+
+    mocks.select.mockResolvedValueOnce('org-123') // organization
+    mocks.select.mockResolvedValueOnce('__new__') // create new project
+    mocks.input.mockResolvedValueOnce('New App Project') // project name
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--template=app-quickstart',
+        '--dataset-default',
+        '--output-path=./test-project',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+
+    if (error) throw error
+
+    expect(mocks.createDataset).toHaveBeenCalledWith(
+      'production',
+      expect.objectContaining({aclMode: 'public'}),
+    )
+    expect(mocks.input).not.toHaveBeenCalledWith(
+      expect.objectContaining({message: 'Name of your first dataset:'}),
+    )
+  })
+
   test('unattended without --project: returns empty strings without any project/dataset API calls', async () => {
     const {error} = await testCommand(
       InitCommand,

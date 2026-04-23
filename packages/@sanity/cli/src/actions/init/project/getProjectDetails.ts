@@ -74,6 +74,7 @@ export async function getProjectDetails({
     } = await promptForAppTemplateSetup({
       coupon,
       dataset,
+      datasetDefault,
       newProject,
       organization,
       organizationId: appOrganizationId,
