@@ -5,6 +5,7 @@ import {convertToSystemPath} from '@sanity/cli-test'
 import {type ConfigEnv, type InlineConfig} from 'vite'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {SANITY_CACHE_DIR} from '../../../constants.js'
 import {
   extendViteConfigWithUserConfig,
   finalizeViteConfig,
@@ -115,7 +116,7 @@ describe('#getViteConfig', () => {
         outDir: join(mockTestCwd, 'dist'),
         sourcemap: true,
       },
-      cacheDir: 'node_modules/.sanity/vite',
+      cacheDir: `${SANITY_CACHE_DIR}/vite`,
       configFile: false,
       envPrefix: 'SANITY_STUDIO_',
       logLevel: 'info',
