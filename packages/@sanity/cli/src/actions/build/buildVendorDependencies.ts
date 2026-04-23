@@ -195,7 +195,7 @@ export async function buildVendorDependencies({
     },
     // Define a custom cache directory so that sanity's vite cache
     // does not conflict with any potential local vite projects
-    cacheDir: path.join(SANITY_CACHE_DIR, 'vite-vendor'),
+    cacheDir: `${SANITY_CACHE_DIR}/vite-vendor`,
     configFile: false,
     define: {'process.env.NODE_ENV': JSON.stringify('production')},
     logLevel: 'silent',

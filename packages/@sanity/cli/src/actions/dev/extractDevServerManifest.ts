@@ -13,7 +13,7 @@ import {MANIFEST_FILENAME} from '../manifest/writeManifestFile.js'
  * directory. Sibling of Vite's `cacheDir` so it stays out of `dist` and is
  * ignored by default in typical `.gitignore` files.
  */
-const MANIFEST_DIR = join(SANITY_CACHE_DIR, 'manifest')
+const MANIFEST_DIR = `${SANITY_CACHE_DIR}/manifest`
 
 /**
  * Run the heavy worker-based studio schema extraction, write the

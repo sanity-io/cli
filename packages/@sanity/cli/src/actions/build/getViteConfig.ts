@@ -166,7 +166,7 @@ export async function getViteConfig(options: ViteOptions): Promise<InlineConfig>
     },
     // Define a custom cache directory so that sanity's vite cache
     // does not conflict with any potential local vite projects
-    cacheDir: path.join(SANITY_CACHE_DIR, 'vite'),
+    cacheDir: `${SANITY_CACHE_DIR}/vite`,
     configFile: false,
     define: {
       __SANITY_BUILD_TIMESTAMP__: JSON.stringify(Date.now()),
