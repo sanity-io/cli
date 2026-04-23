@@ -17,7 +17,7 @@ import {type InitOptions, type ProjectTemplate} from './types.js'
 interface SelectedTemplate {
   template: ProjectTemplate | undefined
   templateName: string
-  useTypeScript: boolean | undefined
+  useTypeScript: boolean
 }
 
 async function promptForTemplate(params: {
@@ -116,7 +116,7 @@ export async function scaffoldAndInstall({
   sluggedName: string
   templateName: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  useTypeScript: boolean | undefined
+  useTypeScript: boolean
   workDir: string
 }): Promise<{pkgManager: PackageManager}> {
   const {autoUpdates, git, overwriteFiles, packageManager, templateToken, unattended} = options

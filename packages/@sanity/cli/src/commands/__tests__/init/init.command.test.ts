@@ -1,6 +1,7 @@
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {InitError} from '../../../actions/init/initError.js'
 import {InitCommand} from '../../init.js'
 
 const mockInitAction = vi.hoisted(() => vi.fn())
@@ -18,7 +19,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   }
 })
 
-describe('InitCommand.run() mcpMode computation', () => {
+describe('mcpMode resolution', () => {
   afterEach(() => {
     vi.clearAllMocks()
     mockIsInteractive.mockReturnValue(true)
@@ -82,14 +83,13 @@ describe('InitCommand.run() mcpMode computation', () => {
   })
 })
 
-describe('InitCommand.run() error handling', () => {
+describe('error handling', () => {
   afterEach(() => {
     vi.clearAllMocks()
     mockIsInteractive.mockReturnValue(true)
   })
 
   test('translates InitError to oclif error', async () => {
-    const {InitError} = await import('../../../actions/init/initError.js')
     mockInitAction.mockRejectedValue(new InitError('something broke', 1))
 
     const {error} = await testCommand(InitCommand, [], {

@@ -18,8 +18,9 @@ interface BootstrapTemplateOptions {
   remoteTemplateInfo: RepoInfo | undefined
   templateName: string
 
+  useTypeScript: boolean
+
   overwriteFiles?: boolean
-  useTypeScript?: boolean
 }
 
 export async function bootstrapTemplate({
@@ -62,7 +63,7 @@ export async function bootstrapTemplate({
     overwriteFiles,
     packageName,
     templateName,
-    useTypeScript: useTypeScript ?? false,
+    useTypeScript,
     variables: bootstrapVariables,
   })
 }
