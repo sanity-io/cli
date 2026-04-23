@@ -2,6 +2,7 @@ import {resolveLocalPackage} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig} from 'vite'
 
+import {SANITY_CACHE_DIR} from '../../constants.js'
 import {getProjectById} from '../../services/projects.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
 import {devDebug} from './devDebug.js'
@@ -18,12 +19,11 @@ import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 const noop = async () => {}
 
 const toApplicationsPayload = (servers: DevServerManifest[]) => ({
-  applications: servers.map(({host, icon, id, port, title, type}) => ({
+  applications: servers.map(({host, id, manifest, port, type}) => ({
     host,
-    icon,
     id,
+    manifest,
     port,
-    title,
     type,
   })),
 })
@@ -114,7 +114,7 @@ export async function startWorkbenchDevServer(
   const viteConfig: InlineConfig = {
     // Define a custom cache directory so that sanity's vite cache
     // does not conflict with any potential local vite projects
-    cacheDir: 'node_modules/.sanity/vite',
+    cacheDir: `${SANITY_CACHE_DIR}/vite`,
     configFile: false,
     define: {
       __SANITY_STAGING__: process.env.SANITY_INTERNAL_ENV === 'staging',
@@ -163,7 +163,7 @@ export async function startWorkbenchDevServer(
   // Update the lock file with the actual port so other processes can find us
   workbenchLock.updatePort(actualPort)
 
-  // Respond to client requests for the current application list
+  // Respond to client requests for the current application list.
   server.ws.on('sanity:workbench:get-local-applications', (_, client) => {
     client.send(
       'sanity:workbench:local-applications',
