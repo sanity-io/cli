@@ -303,6 +303,16 @@ const traceMock = {
   log: vi.fn(),
 }
 
+const baseOptions = {
+  autoUpdates: true,
+  bare: false,
+  datasetDefault: false,
+  fromCreate: false,
+  mcpMode: 'skip' as const,
+  template: 'clean',
+  unattended: true,
+}
+
 describe('#init: selectTemplate', () => {
   afterEach(() => {
     vi.clearAllMocks()
@@ -310,11 +320,9 @@ describe('#init: selectTemplate', () => {
 
   test('defaults to TypeScript when unattended and typescript flag is undefined', async () => {
     const result = await selectTemplate({
+      options: {...baseOptions, typescript: undefined},
       remoteTemplateInfo: undefined,
-      template: 'clean',
       trace: traceMock as never,
-      typescript: undefined,
-      unattended: true,
     })
 
     expect(result.useTypeScript).toBe(true)
@@ -323,11 +331,9 @@ describe('#init: selectTemplate', () => {
 
   test('respects explicit --no-typescript in unattended mode', async () => {
     const result = await selectTemplate({
+      options: {...baseOptions, typescript: false},
       remoteTemplateInfo: undefined,
-      template: 'clean',
       trace: traceMock as never,
-      typescript: false,
-      unattended: true,
     })
 
     expect(result.useTypeScript).toBe(false)
@@ -336,11 +342,9 @@ describe('#init: selectTemplate', () => {
 
   test('respects explicit --typescript in unattended mode', async () => {
     const result = await selectTemplate({
+      options: {...baseOptions, typescript: true},
       remoteTemplateInfo: undefined,
-      template: 'clean',
       trace: traceMock as never,
-      typescript: true,
-      unattended: true,
     })
 
     expect(result.useTypeScript).toBe(true)
@@ -351,11 +355,9 @@ describe('#init: selectTemplate', () => {
     mocks.promptForTypeScript.mockResolvedValueOnce(false)
 
     const result = await selectTemplate({
+      options: {...baseOptions, typescript: undefined, unattended: false},
       remoteTemplateInfo: undefined,
-      template: 'clean',
       trace: traceMock as never,
-      typescript: undefined,
-      unattended: false,
     })
 
     expect(result.useTypeScript).toBe(false)
@@ -364,11 +366,9 @@ describe('#init: selectTemplate', () => {
 
   test('does not prompt when interactive and --typescript is explicitly set', async () => {
     const result = await selectTemplate({
+      options: {...baseOptions, typescript: true, unattended: false},
       remoteTemplateInfo: undefined,
-      template: 'clean',
       trace: traceMock as never,
-      typescript: true,
-      unattended: false,
     })
 
     expect(result.useTypeScript).toBe(true)
