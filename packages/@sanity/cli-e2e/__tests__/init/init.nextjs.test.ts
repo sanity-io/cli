@@ -21,12 +21,15 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
     if (nextjsDir) await rm(nextjsDir, {force: true, recursive: true})
   })
 
-  describe('non-interactive', () => {
+  describe.each([
+    {label: 'with -y flag', yFlag: ['-y']},
+    {label: 'unattended (no -y)', yFlag: [] as string[]},
+  ])('non-interactive ($label)', ({yFlag}) => {
     test('creates sanity config, schema, and cli files with --nextjs-add-config-files', async () => {
       const {error, exitCode} = await runCli({
         args: [
           'init',
-          '-y',
+          ...yFlag,
           '--project',
           projectId,
           '--dataset',
@@ -52,7 +55,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
       const {error, exitCode} = await runCli({
         args: [
           'init',
-          '-y',
+          ...yFlag,
           '--project',
           projectId,
           '--dataset',
@@ -74,7 +77,7 @@ describe('sanity init - Next.js integration', {timeout: 120_000}, () => {
       const {error, exitCode} = await runCli({
         args: [
           'init',
-          '-y',
+          ...yFlag,
           '--project',
           projectId,
           '--dataset',
