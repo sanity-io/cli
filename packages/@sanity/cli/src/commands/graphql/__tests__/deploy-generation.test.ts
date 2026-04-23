@@ -1,6 +1,6 @@
 import {getCliConfig} from '@sanity/cli-core'
 import {mockApi, testCommand, testFixture} from '@sanity/cli-test'
-import nock from 'nock'
+import nock, {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeAll, describe, expect, test, vi} from 'vitest'
 
 import {GRAPHQL_API_VERSION} from '../../../services/graphql.js'
@@ -40,8 +40,8 @@ describe('#graphql:deploy generation', {timeout: 60 * 1000}, () => {
 
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending).toEqual([])
   })
 

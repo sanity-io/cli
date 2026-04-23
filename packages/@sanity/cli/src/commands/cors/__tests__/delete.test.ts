@@ -1,5 +1,5 @@
 import {mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {CORS_API_VERSION, type CorsOrigin} from '../../../services/cors.js'
@@ -51,8 +51,8 @@ vi.mock('@sanity/cli-core/ux', async () => {
 describe('#cors:delete', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 

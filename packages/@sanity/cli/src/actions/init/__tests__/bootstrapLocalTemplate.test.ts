@@ -2,6 +2,7 @@ import {mkdtemp, readFile, rm} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import path from 'node:path'
 
+import {type Output} from '@sanity/cli-core'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {bootstrapLocalTemplate} from '../bootstrapLocalTemplate.js'
@@ -28,7 +29,7 @@ function makeOutput() {
       start: () => ({fail: vi.fn(), succeed: vi.fn()}),
     })),
     warn: vi.fn(),
-  } as any
+  } as unknown as Output
 }
 
 describe('bootstrapLocalTemplate (app templates)', () => {

@@ -7,7 +7,7 @@ import {
   MEDIA_LIBRARY_ASSET_ASPECT_TYPE_NAME,
   type MediaLibraryAssetAspectDocument,
 } from '@sanity/types'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {MEDIA_LIBRARY_API_VERSION} from '../../../services/mediaLibraries.js'
@@ -174,8 +174,8 @@ describe('#media:deploy-aspect', () => {
   afterEach(() => {
     vi.clearAllMocks()
     vi.unstubAllEnvs()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 

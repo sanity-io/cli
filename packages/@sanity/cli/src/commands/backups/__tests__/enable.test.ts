@@ -1,6 +1,6 @@
 import {input, select} from '@sanity/cli-core/ux'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {BACKUP_API_VERSION} from '../../../actions/backup/constants.js'
@@ -49,8 +49,8 @@ const mockSelect = vi.mocked(select)
 
 describe('#backup:enable', () => {
   afterEach(() => {
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     vi.clearAllMocks()
     expect(pending, 'pending mocks').toEqual([])
   })

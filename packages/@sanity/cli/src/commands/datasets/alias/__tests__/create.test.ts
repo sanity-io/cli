@@ -1,5 +1,5 @@
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DATASET_API_VERSION} from '../../../../services/datasets.js'
@@ -47,8 +47,8 @@ const defaultMocks = {
 describe('#dataset:alias:create', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 

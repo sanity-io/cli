@@ -2,7 +2,7 @@ import {styleText} from 'node:util'
 
 import {isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
-import semver from 'semver'
+import {parse as semverParse} from 'semver'
 
 import {startDevServer} from '../../server/devServer.js'
 import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
@@ -39,7 +39,7 @@ export async function startStudioDevServer(
 
   if (autoUpdatesEnabled) {
     // Get the clean version without build metadata: https://semver.org/#spec-item-10
-    const cleanSanityVersion = semver.parse(installedSanityVersion)?.version
+    const cleanSanityVersion = semverParse(installedSanityVersion)?.version
     if (!cleanSanityVersion) {
       throw new Error(`Failed to parse installed Sanity version: ${installedSanityVersion}`)
     }

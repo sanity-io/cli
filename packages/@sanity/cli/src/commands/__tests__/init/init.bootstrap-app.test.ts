@@ -1,5 +1,5 @@
 import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
@@ -139,8 +139,8 @@ mocks.createOrAppendEnvVars.mockResolvedValue(undefined)
 describe('#init: bootstrap-app-initialization', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
   test('initializes app without env files', async () => {

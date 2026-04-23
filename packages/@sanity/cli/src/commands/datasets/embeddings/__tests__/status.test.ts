@@ -1,6 +1,6 @@
 import {select} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {DatasetEmbeddingsStatusCommand} from '../status.js'
@@ -45,8 +45,8 @@ const mockSelect = vi.mocked(select)
 
 describe('#dataset:embeddings:status', () => {
   afterEach(() => {
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     vi.restoreAllMocks()
     expect(pending, 'pending mocks').toEqual([])
   })
