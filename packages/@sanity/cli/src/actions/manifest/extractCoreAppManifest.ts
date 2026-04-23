@@ -5,9 +5,9 @@ import {getCliConfig} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {getErrorMessage} from '../../util/getErrorMessage.js'
-import {type AppManifest} from './types.js'
+import {type CoreAppManifest, coreAppManifestSchema} from './types.js'
 
-interface ExtractAppManifestOptions {
+interface ExtractCoreAppManifestOptions {
   workDir: string
 }
 
@@ -52,9 +52,9 @@ async function readIconFromPath(workDir: string, iconPath: string): Promise<stri
  * We don't need to parse very complicated information like schemas and tools.
  * The app icon in config is a file path (e.g. relative to project root); its content is read and inlined in the manifest.
  */
-export async function extractAppManifest(
-  options: ExtractAppManifestOptions,
-): Promise<AppManifest | undefined> {
+export async function extractCoreAppManifest(
+  options: ExtractCoreAppManifestOptions,
+): Promise<CoreAppManifest | undefined> {
   const {workDir} = options
   const {app} = await getCliConfig(workDir)
   if (!app) {
@@ -74,11 +74,11 @@ export async function extractAppManifest(
       return undefined
     }
 
-    const manifest: AppManifest = {
+    const manifest = coreAppManifestSchema.parse({
       version: '1',
       ...(icon ? {icon} : {}),
       ...(app.title ? {title: app.title} : {}),
-    }
+    })
 
     spin.succeed(`Extracted manifest`)
 

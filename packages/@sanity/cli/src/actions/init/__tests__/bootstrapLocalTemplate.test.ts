@@ -4,6 +4,7 @@ import path from 'node:path'
 
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
+import {resolveLatestVersions} from '../../../util/resolveLatestVersions.js'
 import {bootstrapLocalTemplate} from '../bootstrapLocalTemplate.js'
 
 vi.mock('../../../util/resolveLatestVersions.js', () => ({
@@ -51,6 +52,7 @@ describe('bootstrapLocalTemplate (app templates)', () => {
       variables: {
         autoUpdates: false,
         dataset: 'production',
+        federation: false,
         organizationId: 'org1',
         projectId: 'abc123',
         projectName: 'my-app',
@@ -74,6 +76,7 @@ describe('bootstrapLocalTemplate (app templates)', () => {
       variables: {
         autoUpdates: false,
         dataset: '',
+        federation: false,
         organizationId: 'org1',
         projectId: '',
         projectName: 'my-app',
@@ -85,5 +88,85 @@ describe('bootstrapLocalTemplate (app templates)', () => {
     expect(appTsx).toContain(`dataset: ''`)
     expect(appTsx).not.toContain('%projectId%')
     expect(appTsx).not.toContain('%dataset%')
+  })
+})
+
+describe('bootstrapLocalTemplate (federation)', () => {
+  let tmp: string
+  beforeEach(async () => {
+    tmp = await mkdtemp(path.join(tmpdir(), 'cli-bootstrap-'))
+  })
+  afterEach(async () => {
+    await rm(tmp, {force: true, recursive: true})
+    vi.clearAllMocks()
+  })
+
+  test('overrides the `sanity` dependency with the `workbench` dist-tag when federation is enabled', async () => {
+    await bootstrapLocalTemplate({
+      output: makeOutput(),
+      outputPath: tmp,
+      packageName: 'my-studio',
+      templateName: 'clean',
+      useTypeScript: true,
+      variables: {
+        autoUpdates: false,
+        dataset: 'production',
+        federation: true,
+        organizationId: 'org1',
+        projectId: 'abc123',
+        projectName: 'my-studio',
+      },
+    })
+
+    expect(resolveLatestVersions).toHaveBeenCalledOnce()
+    const resolvedDeps = vi.mocked(resolveLatestVersions).mock.calls[0][0]
+    expect(resolvedDeps.sanity).toBe('workbench')
+
+    const pkgJson = JSON.parse(await readFile(path.join(tmp, 'package.json'), 'utf8'))
+    expect(pkgJson.dependencies.sanity).toBe('1.0.0')
+  })
+
+  test('keeps the `sanity` dependency on the `latest` dist-tag when federation is disabled', async () => {
+    await bootstrapLocalTemplate({
+      output: makeOutput(),
+      outputPath: tmp,
+      packageName: 'my-studio',
+      templateName: 'clean',
+      useTypeScript: true,
+      variables: {
+        autoUpdates: false,
+        dataset: 'production',
+        federation: false,
+        organizationId: 'org1',
+        projectId: 'abc123',
+        projectName: 'my-studio',
+      },
+    })
+
+    expect(resolveLatestVersions).toHaveBeenCalledOnce()
+    const resolvedDeps = vi.mocked(resolveLatestVersions).mock.calls[0][0]
+    expect(resolvedDeps.sanity).toBe('latest')
+  })
+
+  test('overrides the `sanity` devDependency for app templates when federation is enabled', async () => {
+    await bootstrapLocalTemplate({
+      output: makeOutput(),
+      outputPath: tmp,
+      packageName: 'my-app',
+      templateName: 'app-quickstart',
+      useTypeScript: true,
+      variables: {
+        autoUpdates: false,
+        dataset: 'production',
+        federation: true,
+        organizationId: 'org1',
+        projectId: 'abc123',
+        projectName: 'my-app',
+      },
+    })
+
+    expect(resolveLatestVersions).toHaveBeenCalledOnce()
+    const resolvedDeps = vi.mocked(resolveLatestVersions).mock.calls[0][0]
+    expect(resolvedDeps.sanity).toBe('workbench')
   })
 })

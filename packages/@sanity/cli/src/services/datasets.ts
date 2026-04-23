@@ -82,10 +82,11 @@ export async function createDataset({
 
 interface CopyDatasetOptions {
   projectId: string
-  skipContentReleases?: boolean
   skipHistory: boolean
   sourceDataset: string
   targetDataset: string
+
+  skipContentReleases?: boolean
 }
 
 interface CopyDatasetResponse {

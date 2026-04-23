@@ -89,6 +89,7 @@ export async function bootstrapLocalTemplate(
     ...(isAppTemplate ? sdkAppDependencies.devDependencies : studioDependencies.devDependencies),
     ...template.dependencies,
     ...template.devDependencies,
+    ...(variables.federation && {sanity: 'workbench'}),
   })
   spin.succeed()
 
@@ -141,11 +142,13 @@ export async function bootstrapLocalTemplate(
   const cliConfig = isAppTemplate
     ? createAppCliConfig({
         entry: template.entry!,
+        federation: variables.federation,
         organizationId: variables.organizationId,
       })
     : createCliConfig({
         autoUpdates: variables.autoUpdates,
         dataset: variables.dataset,
+        federation: variables.federation,
         projectId: variables.projectId,
       })
 
