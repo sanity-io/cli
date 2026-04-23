@@ -8,7 +8,7 @@ import {installDeclaredPackages} from '../../util/packageManager/installPackages
 import {type PackageManager} from '../../util/packageManager/packageManagerChoice.js'
 import {bootstrapTemplate} from './bootstrapTemplate.js'
 import {tryGitInit} from './git.js'
-import {writeStagingEnvIfNeeded} from './initHelpers.js'
+import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
 import {type RepoInfo} from './remoteTemplate.js'
 import {resolvePackageManager} from './resolvePackageManager.js'
 import templates from './templates/index.js'
@@ -73,10 +73,10 @@ export async function selectTemplate({
 
   const resolvedTemplate = templates[templateName]
 
-  let useTypeScript = typescript
+  let useTypeScript = flagOrDefault(typescript, true)
   if (!remoteTemplateInfo && resolvedTemplate && resolvedTemplate.typescriptOnly === true) {
     useTypeScript = true
-  } else if (!unattended && typescript === undefined) {
+  } else if (shouldPrompt(unattended, typescript)) {
     useTypeScript = await promptForTypeScript()
     trace.log({
       selectedOption: useTypeScript ? 'yes' : 'no',
