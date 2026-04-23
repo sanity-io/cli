@@ -1,0 +1,95 @@
+name: E2E Tests (Scheduled)
+
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    inputs:
+      cli_version:
+        description: 'npm version/tag to test (e.g., latest, 5.20.0)'
+        required: true
+        default: 'latest'
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        node-version: [20, 22, 24]
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Environment
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install CLI from npm
+        run: |
+          CLI_VERSION="${{ inputs.cli_version || 'latest' }}"
+          INSTALL_DIR=$(mktemp -d)
+          npm install --prefix "$INSTALL_DIR" "sanity@${CLI_VERSION}" "create-sanity@latest"
+          echo "E2E_BINARY_PATH=$INSTALL_DIR/node_modules/.bin/sanity" >> "$GITHUB_ENV"
+          echo "E2E_CREATE_SANITY_BINARY_PATH=$INSTALL_DIR/node_modules/.bin/create-sanity" >> "$GITHUB_ENV"
+          echo "E2E_REGISTRY_MODE=true" >> "$GITHUB_ENV"
+          "$INSTALL_DIR/node_modules/.bin/sanity" --version
+          "$INSTALL_DIR/node_modules/.bin/create-sanity" --help > /dev/null
+
+      - name: Build test infrastructure
+        run: pnpm --filter @sanity/cli-test build
+
+      - name: Run E2E tests
+        env:
+          SANITY_E2E_TOKEN: ${{ secrets.SANITY_E2E_TOKEN }}
+          SANITY_E2E_PROJECT_ID: ${{ secrets.SANITY_E2E_PROJECT_ID }}
+          SANITY_E2E_DATASET: ${{ secrets.SANITY_E2E_DATASET }}
+        run: pnpm --filter @sanity/cli-e2e test
+
+  notify-failure:
+    if: failure()
+    needs: [e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack on failure
+        uses: slackapi/slack-github-action@af78098f536edbc4de71162a307590698245be95 # v3.0.1
+        with:
+          webhook: ${{ secrets.SLACK_E2E_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": ${{ toJSON(format('Scheduled E2E failed for sanity@{0}', inputs.cli_version || 'latest')) }},
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":red_circle: *Scheduled E2E failed*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ${{ toJSON(format('*Package:* `sanity@{0}`', inputs.cli_version || 'latest')) }}
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ${{ toJSON(format('*Run:* <{0}/{1}/actions/runs/{2}|View logs>', github.server_url, github.repository, github.run_id)) }}
+                  }
+                }
+              ]
+            }
