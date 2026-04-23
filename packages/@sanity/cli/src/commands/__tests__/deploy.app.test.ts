@@ -5,7 +5,7 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {buildApp} from '../../actions/build/buildApp.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
-import {extractAppManifest} from '../../actions/manifest/extractAppManifest.js'
+import {extractCoreAppManifest} from '../../actions/manifest/extractCoreAppManifest.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
 import {DeployCommand} from '../deploy.js'
@@ -28,8 +28,8 @@ vi.mock('../../actions/deploy/checkDir.js', () => ({
   checkDir: vi.fn(),
 }))
 
-vi.mock('../../actions/manifest/extractAppManifest.js', () => ({
-  extractAppManifest: vi.fn(),
+vi.mock('../../actions/manifest/extractCoreAppManifest.js', () => ({
+  extractCoreAppManifest: vi.fn(),
 }))
 
 vi.mock('@sanity/cli-core/ux', async () => {
@@ -60,7 +60,7 @@ const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
 const mockDirIsEmptyOrNonExistent = vi.mocked(dirIsEmptyOrNonExistent)
 const mockBuildApp = vi.mocked(buildApp)
-const mockExtractAppManifest = vi.mocked(extractAppManifest)
+const mockExtractCoreAppManifest = vi.mocked(extractCoreAppManifest)
 
 const appId = 'app-id'
 const organizationId = 'org-id'
@@ -86,7 +86,7 @@ describe('#deploy app', () => {
     })
     mockCheckDir.mockResolvedValue()
     // Default to empty manifest for app deployments
-    mockExtractAppManifest.mockResolvedValue(undefined)
+    mockExtractCoreAppManifest.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -212,7 +212,7 @@ describe('#deploy app', () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    mockExtractAppManifest.mockResolvedValue({
+    mockExtractCoreAppManifest.mockResolvedValue({
       title: 'New Title From Manifest',
       version: '1',
     })
@@ -276,7 +276,7 @@ describe('#deploy app', () => {
     process.cwd = () => cwd
 
     const sameTitle = 'Test App'
-    mockExtractAppManifest.mockResolvedValue({
+    mockExtractCoreAppManifest.mockResolvedValue({
       title: sameTitle,
       version: '1',
     })
@@ -1012,7 +1012,7 @@ describe('#deploy app', () => {
       version: '1' as const,
     }
 
-    mockExtractAppManifest.mockResolvedValue(manifest)
+    mockExtractCoreAppManifest.mockResolvedValue(manifest)
 
     mockApi({
       apiVersion: USER_APPLICATIONS_API_VERSION,
@@ -1066,7 +1066,7 @@ describe('#deploy app', () => {
 
     if (error) throw error
     expect(stdout).toContain('Success! Application deployed')
-    expect(mockExtractAppManifest).toHaveBeenCalled()
+    expect(mockExtractCoreAppManifest).toHaveBeenCalled()
   })
 
   test('should test input validation for app title', async () => {
