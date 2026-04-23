@@ -189,7 +189,7 @@ export async function buildVendorDependencies({
           exports: 'named',
           format: 'es',
         },
-        treeshake: {preset: 'recommended'},
+        treeshake: true,
       },
     },
     // Define a custom cache directory so that sanity's vite cache
