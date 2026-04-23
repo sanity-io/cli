@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises'
 import {getCliConfig} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {extractAppManifest} from '../extractAppManifest.js'
+import {extractCoreAppManifest} from '../extractCoreAppManifest.js'
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -28,14 +28,14 @@ vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
 const mockGetCliConfig = vi.mocked(getCliConfig)
 const mockReadFile = vi.mocked(readFile)
 
-describe('extractAppManifest', () => {
+describe('extractCoreAppManifest', () => {
   afterEach(() => {
     vi.clearAllMocks()
   })
 
   test('returns undefined when no app config', async () => {
     mockGetCliConfig.mockResolvedValue({app: undefined} as never)
-    const result = await extractAppManifest({workDir: '/project'})
+    const result = await extractCoreAppManifest({workDir: '/project'})
     expect(result).toBeUndefined()
   })
 
@@ -44,7 +44,7 @@ describe('extractAppManifest', () => {
       app: {organizationId: 'org-1', title: 'My App'},
     } as never)
 
-    const result = await extractAppManifest({workDir: '/project'})
+    const result = await extractCoreAppManifest({workDir: '/project'})
 
     expect(result).toEqual({title: 'My App', version: '1'})
     expect(mockReadFile).not.toHaveBeenCalled()
@@ -57,7 +57,7 @@ describe('extractAppManifest', () => {
     } as never)
     mockReadFile.mockResolvedValue('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>')
 
-    const result = await extractAppManifest({workDir})
+    const result = await extractCoreAppManifest({workDir})
 
     expect(mockReadFile).toHaveBeenCalledWith(expect.stringContaining('icon.svg'), 'utf8')
     expect(result?.icon).toMatch(/<svg[\s>]/i)
@@ -70,7 +70,7 @@ describe('extractAppManifest', () => {
       app: {icon: '../../../etc/passwd', organizationId: 'org-1'},
     } as never)
 
-    await expect(extractAppManifest({workDir: '/project'})).rejects.toThrow(
+    await expect(extractCoreAppManifest({workDir: '/project'})).rejects.toThrow(
       /resolves outside the project directory/,
     )
 
@@ -83,7 +83,7 @@ describe('extractAppManifest', () => {
     } as never)
     mockReadFile.mockResolvedValue('hello world')
 
-    await expect(extractAppManifest({workDir: '/project'})).rejects.toThrow(
+    await expect(extractCoreAppManifest({workDir: '/project'})).rejects.toThrow(
       /does not contain an SVG element/,
     )
   })
@@ -94,7 +94,7 @@ describe('extractAppManifest', () => {
     } as never)
     mockReadFile.mockRejectedValue(new Error('ENOENT: no such file or directory'))
 
-    await expect(extractAppManifest({workDir: '/project'})).rejects.toThrow(
+    await expect(extractCoreAppManifest({workDir: '/project'})).rejects.toThrow(
       /Could not read icon file at "missing.svg"/,
     )
   })

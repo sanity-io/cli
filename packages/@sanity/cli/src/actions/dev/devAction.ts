@@ -1,9 +1,10 @@
 import {styleText} from 'node:util'
 
 import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
-import {readIconFromPath} from '../manifest/extractAppManifest.js'
+import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {registerDevServer} from './devServerRegistry.js'
 import {startAppDevServer} from './startAppDevServer.js'
+import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 import {startStudioDevServer} from './startStudioDevServer.js'
 import {startWorkbenchDevServer} from './startWorkbenchDevServer.js'
 import {type DevActionOptions} from './types.js'
@@ -64,6 +65,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
 
   // Register the studio/app dev server in the registry (federated projects only)
   let cleanupManifest: () => void = syncNoop
+  let stopManifestWatcher: () => Promise<void> = noop
   let onSignal: (() => void) | undefined
   if (options.cliConfig?.federation?.enabled) {
     checkForDeprecatedAppId({cliConfig: options.cliConfig, output})
@@ -76,27 +78,48 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     const resolvedHost = server.config.server.host
     const appHost = typeof resolvedHost === 'string' ? resolvedHost : 'localhost'
 
-    const iconPath = options.cliConfig?.app?.icon
-    let icon: string | undefined
-    if (iconPath) {
-      try {
-        icon = await readIconFromPath(options.workDir, iconPath)
-      } catch (err) {
-        output.warn(
-          `Could not inline app icon for workbench discovery: ${err instanceof Error ? err.message : String(err)}`,
-        )
-      }
-    }
-
-    cleanupManifest = registerDevServer({
+    // Register the dev server immediately without a manifest — workbench
+    // clients get the application entry first and the manifest follows in
+    // a rebroadcast once extraction completes. Blocks on neither the heavy
+    // studio worker nor the lighter coreApp config read, so dev startup
+    // stays fast.
+    const registration = registerDevServer({
       host: appHost,
-      icon,
       id: getAppId(options.cliConfig),
       port: appPort,
-      title: options.isApp ? options.cliConfig?.app?.title : undefined,
       type: options.isApp ? 'coreApp' : 'studio',
       workDir: options.workDir,
     })
+    cleanupManifest = registration.release
+
+    if (options.isApp) {
+      // Core-apps have no schema to watch and no shared output directory
+      // with any other caller, so run the extraction fire-and-forget. On
+      // success the registry entry is patched, which fires the workbench's
+      // registry watcher and triggers a rebroadcast to connected clients.
+      // Updates after `release()` are no-ops (see `registerDevServer`).
+      void (async () => {
+        try {
+          const manifest = await extractCoreAppManifest({workDir: options.workDir})
+          registration.update({manifest, manifestUpdatedAt: new Date().toISOString()})
+        } catch (err) {
+          output.warn(
+            `Could not extract manifest for workbench: ${err instanceof Error ? err.message : String(err)}`,
+          )
+        }
+      })()
+    } else {
+      // For studios, the watcher owns both the initial extraction and the
+      // follow-up regenerations triggered by `sanity.config.ts` changes.
+      // Serializing both through `regenerate` inside the watcher prevents
+      // concurrent worker runs from racing on the manifest output directory.
+      const watcher = await startDevManifestWatcher({
+        output,
+        update: registration.update,
+        workDir: options.workDir,
+      })
+      stopManifestWatcher = watcher.close
+    }
 
     // Ensure manifest and workbench lock are cleaned up on abrupt shutdown.
     // closeWorkbenchServer() starts with synchronous calls (watcher.close,
@@ -104,6 +127,11 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     // async server.close() is best-effort.
     onSignal = () => {
       cleanupManifest()
+      // `stopManifestWatcher` is async but we don't wait for it here — the
+      // signal handler can't block. It clears the debounce timer and
+      // closes the fs.watch handle synchronously, which is enough to let
+      // the event loop drain.
+      void stopManifestWatcher()
       closeWorkbenchServer()
       process.off('SIGINT', onSignal!)
       process.off('SIGTERM', onSignal!)
@@ -127,9 +155,9 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
         process.off('SIGTERM', onSignal)
       }
       cleanupManifest()
-      // Run both closes independently — a failing workbench close must not prevent
-      // the primary server from shutting down
-      await Promise.allSettled([closeWorkbenchServer(), closeAppDevServer()])
+      // Run all closes independently — a failure in one must not prevent the
+      // others from shutting down
+      await Promise.allSettled([stopManifestWatcher(), closeWorkbenchServer(), closeAppDevServer()])
     },
   }
 }

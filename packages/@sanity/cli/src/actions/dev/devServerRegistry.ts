@@ -13,6 +13,7 @@ import {join} from 'node:path'
 import {getSanityDataDir} from '@sanity/cli-core'
 import {z} from 'zod/mini'
 
+import {coreAppManifestSchema, studioManifestSchema} from '../manifest/types.js'
 import {devDebug} from './devDebug.js'
 
 /** Bump when the manifest/lock shape changes in a breaking way. */
@@ -27,9 +28,15 @@ const workbenchLockSchema = z.object({
 })
 
 const devServerManifestSchema = z.extend(workbenchLockSchema, {
-  icon: z.optional(z.string()),
   id: z.optional(z.string()),
-  title: z.optional(z.string()),
+  /** Inlined manifest — either a {@link StudioManifest} or {@link CoreAppManifest}. */
+  manifest: z.optional(z.union([studioManifestSchema, coreAppManifestSchema])),
+  /**
+   * ISO timestamp of the most recent successful manifest extraction. Bumped
+   * on every regeneration so re-writing this registry entry triggers the
+   * workbench `watchRegistry` watcher and forces a rebroadcast to clients.
+   */
+  manifestUpdatedAt: z.optional(z.string()),
   type: z.enum(['coreApp', 'studio']),
   workDir: z.string(),
 })
@@ -110,14 +117,26 @@ function isOurProcess(pid: number, startedAt: string): boolean {
   return Math.abs(osStart.getTime() - storedStart.getTime()) <= START_TIME_TOLERANCE_MS
 }
 
+interface DevServerRegistration {
+  /** Remove the registry entry. */
+  release: () => void
+  /**
+   * Rewrite the registry entry with partial updates merged in. Also bumps the
+   * file's mtime, which fires `watchRegistry` in any workbench process and
+   * triggers a rebroadcast to connected clients.
+   */
+  update: (patch: Partial<Omit<DevServerManifest, 'pid' | 'startedAt' | 'version'>>) => void
+}
+
 /**
- * Write a manifest file for the current process and return a cleanup function
- * that removes it. Uses synchronous I/O so the file exists before any signal
- * handler could fire.
+ * Write a manifest file for the current process and return a handle with a
+ * `release` function that removes it plus an `update` function for patching
+ * fields post-registration. Uses synchronous I/O so the file exists before
+ * any signal handler could fire.
  */
 export function registerDevServer(
   manifest: Omit<DevServerManifest, 'pid' | 'startedAt' | 'version'>,
-): () => void {
+): DevServerRegistration {
   const registryDir = getRegistryDir()
   mkdirSync(registryDir, {recursive: true})
 
@@ -128,7 +147,7 @@ export function registerDevServer(
   // process to reach this point — frequently exceeding START_TIME_TOLERANCE_MS
   // and causing the manifest to be pruned as "stale" immediately after it's
   // written.
-  const fullManifest: DevServerManifest = {
+  let current: DevServerManifest = {
     ...manifest,
     pid: process.pid,
     startedAt: (getProcessStartTime(process.pid) ?? new Date()).toISOString(),
@@ -136,14 +155,27 @@ export function registerDevServer(
   }
 
   const filePath = join(registryDir, `${process.pid}.json`)
-  writeFileSync(filePath, JSON.stringify(fullManifest, null, 2))
+  writeFileSync(filePath, JSON.stringify(current, null, 2))
 
-  return () => {
-    try {
-      unlinkSync(filePath)
-    } catch {
-      // ENOENT is fine — already cleaned up
-    }
+  // Guard against late updates from background tasks (e.g. the initial
+  // manifest extraction) landing after `release()` has deleted the file —
+  // without this, the update would re-create the registry entry and leak.
+  let released = false
+
+  return {
+    release() {
+      released = true
+      try {
+        unlinkSync(filePath)
+      } catch {
+        // ENOENT is fine — already cleaned up
+      }
+    },
+    update(patch) {
+      if (released) return
+      current = {...current, ...patch}
+      writeFileSync(filePath, JSON.stringify(current, null, 2))
+    },
   }
 }
 

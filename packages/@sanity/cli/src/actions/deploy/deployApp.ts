@@ -13,8 +13,8 @@ import {getErrorMessage} from '../../util/getErrorMessage.js'
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {buildApp} from '../build/buildApp.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
-import {extractAppManifest} from '../manifest/extractAppManifest.js'
-import {type AppManifest} from '../manifest/types.js'
+import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
+import {type CoreAppManifest} from '../manifest/types.js'
 import {checkDir} from './checkDir.js'
 import {createUserApplicationForApp} from './createUserApplicationForApp.js'
 import {deployDebug} from './deployDebug.js'
@@ -99,9 +99,9 @@ export async function deployApp(options: DeployAppOptions) {
     const parentDir = dirname(sourceDir)
     const base = basename(sourceDir)
     const tarball = pack(parentDir, {entries: [base]}).pipe(createGzip())
-    let manifest: AppManifest | undefined
+    let manifest: CoreAppManifest | undefined
     try {
-      manifest = await extractAppManifest({workDir})
+      manifest = await extractCoreAppManifest({workDir})
     } catch (err) {
       deployDebug('Error extracting app manifest', err)
       const message = getErrorMessage(err)
