@@ -136,6 +136,27 @@ describe('registerDevServer', () => {
     cleanup()
     expect(() => cleanup()).not.toThrow()
   })
+
+  test('update after release is a no-op — late background extractions do not re-create the file', () => {
+    const {release: cleanup, update} = registerDevServer({
+      host: 'localhost',
+      port: 3334,
+      type: 'studio',
+      workDir: '/tmp/project',
+    })
+
+    const filePath = join(registryDir(), `${process.pid}.json`)
+    cleanup()
+    expect(existsSync(filePath)).toBe(false)
+
+    // Simulate a background extraction completing after release.
+    update({
+      manifest: {createdAt: '2026-01-01T00:00:00.000Z', version: 3, workspaces: []},
+      manifestUpdatedAt: '2026-01-01T00:00:00.000Z',
+    })
+
+    expect(existsSync(filePath)).toBe(false)
+  })
 })
 
 describe('acquireWorkbenchLock', () => {

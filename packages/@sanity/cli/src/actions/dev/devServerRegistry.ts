@@ -157,8 +157,14 @@ export function registerDevServer(
   const filePath = join(registryDir, `${process.pid}.json`)
   writeFileSync(filePath, JSON.stringify(current, null, 2))
 
+  // Guard against late updates from background tasks (e.g. the initial
+  // manifest extraction) landing after `release()` has deleted the file —
+  // without this, the update would re-create the registry entry and leak.
+  let released = false
+
   return {
     release() {
+      released = true
       try {
         unlinkSync(filePath)
       } catch {
@@ -166,6 +172,7 @@ export function registerDevServer(
       }
     },
     update(patch) {
+      if (released) return
       current = {...current, ...patch}
       writeFileSync(filePath, JSON.stringify(current, null, 2))
     },
