@@ -10,6 +10,14 @@ export function getE2EProjectId(): string {
   return readEnv('SANITY_E2E_PROJECT_ID')
 }
 
+export function getE2EDataset(): string {
+  return 'production'
+}
+
+export function getE2EOrganizationId(): string {
+  return readEnv('SANITY_E2E_ORGANIZATION_ID')
+}
+
 interface RunCliBaseOptions {
   args?: string[]
   /** Override the binary path. Defaults to E2E_BINARY_PATH (the packed `@sanity/cli`). */
@@ -48,6 +56,12 @@ export async function runCli(
   }
 
   if (interactive) {
+    // Remove CI from env so that isInteractive() returns true for PTY-based interactive tests.
+    // GitHub Actions sets CI=true, which causes the CLI to throw NonInteractiveError
+    // instead of showing prompts. The key must be deleted (not set to '') because
+    // isInteractive() checks 'CI' in process.env (key presence, not value).
+    delete sharedEnv.CI
+
     return spawnPty({
       args: [resolvedBinaryPath, ...args],
       command: 'node',
