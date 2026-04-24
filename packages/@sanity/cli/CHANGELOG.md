@@ -1,5 +1,17 @@
 # Change Log
 
+## [6.4.1](https://github.com/sanity-io/cli/compare/cli-v6.4.0...cli-v6.4.1)
+
+_2026-04-24_
+
+### Bug Fixes
+
+- **cli:** pass schemaExtraction config through to build ([#1002](https://github.com/sanity-io/cli/pull/1002)) ([2fd358f](https://github.com/sanity-io/cli/commit/2fd358fc52ed3e2c3b89e45796e4a6044e03cd4c))
+
+- default to TypeScript in unattended mode for sanity init ([#1004](https://github.com/sanity-io/cli/pull/1004)) ([26f0fb5](https://github.com/sanity-io/cli/commit/26f0fb5774c142df2722ec3b4cd299e7419abf46))
+
+- **cli:** replace preferred-pm with local implementation ([#984](https://github.com/sanity-io/cli/pull/984)) ([154e361](https://github.com/sanity-io/cli/commit/154e36116535fa9a6f6e8458aa919616f5d1b383))
+
 ## 6.4.0
 
 ### Minor Changes

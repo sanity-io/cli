@@ -1,8 +1,10 @@
 # Changelog
 
-## 1.3.1
+## [1.3.1](https://github.com/sanity-io/cli/compare/cli-core-v1.3.0...cli-core-v1.3.1)
 
-### Patch Changes
+_2026-04-24_
+
+### Bug Fixes
 
 - [#902](https://github.com/sanity-io/cli/pull/902) [`5b86d79`](https://github.com/sanity-io/cli/commit/5b86d7983642faa8d03425880c20641453d052eb) Thanks [@mttdnt](https://github.com/mttdnt)! - remove @sanity/telemetry as a peer dependency
 

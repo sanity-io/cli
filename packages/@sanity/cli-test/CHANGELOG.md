@@ -1,8 +1,10 @@
 # Changelog
 
-## 0.3.1
+## [0.3.1](https://github.com/sanity-io/cli/compare/cli-test-v0.3.0...cli-test-v0.3.1)
 
-### Patch Changes
+_2026-04-24_
+
+### Bug Fixes
 
 - [#933](https://github.com/sanity-io/cli/pull/933) [`b181807`](https://github.com/sanity-io/cli/commit/b181807b18a202cd07bbf0a808fb3ce32b0a2d0b) Thanks [@renovate](https://github.com/apps/renovate)! - update sanity-tooling
 
