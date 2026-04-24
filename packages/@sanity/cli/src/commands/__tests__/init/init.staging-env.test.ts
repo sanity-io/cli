@@ -1,5 +1,5 @@
 import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {setupMCP} from '../../../actions/mcp/setupMCP.js'
@@ -161,8 +161,8 @@ mocks.createOrAppendEnvVars.mockResolvedValue(undefined)
 describe('#init: staging env propagation', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 
@@ -193,7 +193,7 @@ describe('#init: staging env propagation', () => {
       },
     )
 
-    expect(error?.oclif?.exit).toBe(0)
+    if (error) throw error
 
     // Should be called twice: once for project env vars, once for staging env
     expect(mocks.createOrAppendEnvVars).toHaveBeenCalledTimes(2)

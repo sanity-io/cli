@@ -1,5 +1,5 @@
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {INIT_API_VERSION} from '../../../actions/init/constants.js'
@@ -150,8 +150,8 @@ describe('#init: retrieving plan', () => {
   })
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 

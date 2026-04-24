@@ -13,13 +13,15 @@ interface BootstrapTemplateOptions {
   organizationId: string | undefined
   output: Output
   outputPath: string
-  overwriteFiles: boolean
   packageName: string
   projectId: string
   projectName: string
   remoteTemplateInfo: RepoInfo | undefined
   templateName: string
+
   useTypeScript: boolean
+
+  overwriteFiles?: boolean
 }
 
 export async function bootstrapTemplate({

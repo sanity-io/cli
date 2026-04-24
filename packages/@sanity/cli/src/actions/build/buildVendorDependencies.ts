@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import semver from 'semver'
+import {gt, minVersion, rcompare, satisfies} from 'semver'
 import {build} from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
@@ -125,26 +125,26 @@ export async function buildVendorDependencies({
 
     // Sort version ranges in descending order
     const sortedRanges = Object.keys(ranges).toSorted((range1, range2) => {
-      const min1 = semver.minVersion(range1)
-      const min2 = semver.minVersion(range2)
+      const min1 = minVersion(range1)
+      const min2 = minVersion(range2)
 
       if (!min1) throw new Error(`Could not parse range '${range1}'`)
       if (!min2) throw new Error(`Could not parse range '${range2}'`)
 
       // sort them in reverse so we can rely on array `.find` below
-      return semver.rcompare(min1.version, min2.version)
+      return rcompare(min1.version, min2.version)
     })
 
     // Find the first version range that satisfies the package version
-    const matchedRange = sortedRanges.find((range) => semver.satisfies(version, range))
+    const matchedRange = sortedRanges.find((range) => satisfies(version, range))
 
     if (!matchedRange) {
-      const min = semver.minVersion(sortedRanges.at(-1)!)
+      const min = minVersion(sortedRanges.at(-1)!)
       if (!min) {
         throw new Error(`Could not find a minimum version for package '${packageName}'`)
       }
 
-      if (semver.gt(min.version, version)) {
+      if (gt(min.version, version)) {
         throw new Error(`Package '${packageName}' requires at least ${min.version}.`)
       }
 

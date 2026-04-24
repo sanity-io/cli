@@ -8,16 +8,16 @@ import {installDeclaredPackages} from '../../util/packageManager/installPackages
 import {type PackageManager} from '../../util/packageManager/packageManagerChoice.js'
 import {bootstrapTemplate} from './bootstrapTemplate.js'
 import {tryGitInit} from './git.js'
-import {writeStagingEnvIfNeeded} from './initHelpers.js'
+import {flagOrDefault, shouldPrompt, writeStagingEnvIfNeeded} from './initHelpers.js'
 import {type RepoInfo} from './remoteTemplate.js'
 import {resolvePackageManager} from './resolvePackageManager.js'
 import templates from './templates/index.js'
-import {type ProjectTemplate} from './types.js'
+import {type InitOptions, type ProjectTemplate} from './types.js'
 
 interface SelectedTemplate {
   template: ProjectTemplate | undefined
   templateName: string
-  useTypeScript: boolean | undefined
+  useTypeScript: boolean
 }
 
 async function promptForTemplate(params: {
@@ -53,18 +53,15 @@ async function promptForTemplate(params: {
 }
 
 export async function selectTemplate({
+  options,
   remoteTemplateInfo,
-  template,
   trace,
-  typescript,
-  unattended,
 }: {
+  options: InitOptions
   remoteTemplateInfo: RepoInfo | undefined
-  template?: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  typescript?: boolean
-  unattended: boolean
 }): Promise<SelectedTemplate> {
+  const {template, typescript, unattended} = options
   const templateName = await promptForTemplate({template, unattended})
   trace.log({
     selectedOption: templateName,
@@ -73,10 +70,10 @@ export async function selectTemplate({
 
   const resolvedTemplate = templates[templateName]
 
-  let useTypeScript = typescript
+  let useTypeScript = flagOrDefault(typescript, true)
   if (!remoteTemplateInfo && resolvedTemplate && resolvedTemplate.typescriptOnly === true) {
     useTypeScript = true
-  } else if (!unattended && typescript === undefined) {
+  } else if (shouldPrompt(unattended, typescript)) {
     useTypeScript = await promptForTypeScript()
     trace.log({
       selectedOption: useTypeScript ? 'yes' : 'no',
@@ -92,73 +89,63 @@ export async function selectTemplate({
 }
 
 export async function scaffoldAndInstall({
-  autoUpdates,
   datasetName,
   defaults,
   displayName,
-  federation,
-  git,
-  noGit,
+  options,
   organizationId,
   output,
   outputPath,
-  overwriteFiles,
-  packageManager,
   projectId,
   remoteTemplateInfo,
   sluggedName,
   templateName,
-  templateToken,
   trace,
-  unattended,
   useTypeScript,
   workDir,
 }: {
-  autoUpdates: boolean
   datasetName: string
   defaults: {projectName: string}
   displayName: string
-  federation: boolean
-  git?: boolean | string
-  noGit?: boolean
+  options: InitOptions
   organizationId: string | undefined
   output: Output
   outputPath: string
-  overwriteFiles?: boolean
-  packageManager?: string
   projectId: string
   remoteTemplateInfo: RepoInfo | undefined
   sluggedName: string
   templateName: string
-  templateToken?: string
   trace: TelemetryTrace<TelemetryUserProperties, InitStepResult>
-  unattended: boolean
-  useTypeScript: boolean | undefined
+  useTypeScript: boolean
   workDir: string
 }): Promise<{pkgManager: PackageManager}> {
-  try {
-    await bootstrapTemplate({
-      autoUpdates,
-      bearerToken: templateToken,
-      dataset: datasetName,
-      federation,
-      organizationId,
-      output,
-      outputPath,
-      overwriteFiles: overwriteFiles as boolean,
-      packageName: sluggedName,
-      projectId,
-      projectName: displayName || defaults.projectName,
-      remoteTemplateInfo,
-      templateName,
-      useTypeScript: useTypeScript as boolean,
-    })
-  } catch (error) {
-    if (error instanceof Error) {
-      throw error
-    }
-    throw new Error(String(error), {cause: error})
-  }
+  const {
+    autoUpdates,
+    federation = true,
+    git,
+    overwriteFiles,
+    packageManager,
+    templateToken,
+    unattended,
+  } = options
+  const noGit = typeof git === 'boolean' && !git ? true : undefined
+
+  await bootstrapTemplate({
+    autoUpdates,
+    bearerToken: templateToken,
+    dataset: datasetName,
+    federation,
+    organizationId,
+    output,
+    outputPath,
+    overwriteFiles,
+    packageName: sluggedName,
+    projectId,
+    projectName: displayName || defaults.projectName,
+    remoteTemplateInfo,
+    templateName,
+    useTypeScript,
+  })
 
   const pkgManager = await resolvePackageManager({
     interactive: !unattended,

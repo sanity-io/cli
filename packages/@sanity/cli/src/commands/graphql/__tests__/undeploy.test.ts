@@ -1,6 +1,6 @@
 import {ProjectRootNotFoundError} from '@sanity/cli-core'
 import {convertToSystemPath, mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {getGraphQLAPIs} from '../../../actions/graphql/getGraphQLAPIs.js'
@@ -41,8 +41,8 @@ describe('graphql undeploy', () => {
   })
 
   afterEach(() => {
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 
@@ -160,7 +160,7 @@ describe('graphql undeploy', () => {
     mockConfirm.mockResolvedValue(false)
     const {stdout} = await testCommand(Undeploy, [], {mocks: defaultMocks})
     expect(stdout).toBe('Operation cancelled\n')
-    expect(nock.pendingMocks()).toHaveLength(0) // No API call should be made
+    expect(pendingMocks()).toHaveLength(0) // No API call should be made
   })
 
   test('successfully undeploys with --api flag', async () => {

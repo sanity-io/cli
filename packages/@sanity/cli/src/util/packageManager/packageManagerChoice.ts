@@ -3,8 +3,9 @@ import path from 'node:path'
 import {isInteractive} from '@sanity/cli-core'
 import {getRunningPackageManager} from '@sanity/cli-core/package-manager'
 import {select} from '@sanity/cli-core/ux'
-import {preferredPM} from 'preferred-pm'
 import which from 'which'
+
+import {preferredPm} from './preferredPm.js'
 
 export type PackageManager = 'bun' | 'manual' | 'npm' | 'pnpm' | 'yarn'
 
@@ -46,7 +47,7 @@ export async function getPackageManagerChoice(
   options: {interactive: boolean},
 ): Promise<{chosen: PackageManager; mostOptimal?: PackageManager}> {
   const rootDir = workDir || process.cwd()
-  const preferred = (await preferredPM(rootDir))?.name
+  const preferred = preferredPm(rootDir) ?? undefined
 
   if (preferred && (await hasCommand(preferred, rootDir))) {
     // There is an optimal/preferred package manager, and the user has it installed!

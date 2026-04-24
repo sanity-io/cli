@@ -1,6 +1,6 @@
 import {type CliConfig, ProjectRootNotFoundError} from '@sanity/cli-core'
 import {mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {of, throwError} from 'rxjs'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -45,8 +45,8 @@ const defaultMocks = {
 describe('#media:import', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 

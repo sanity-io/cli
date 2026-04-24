@@ -1,7 +1,7 @@
 import http from 'node:http'
 
 import {createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -113,8 +113,8 @@ function mockSingleProviderLogin(sessionId = 'test-session-id') {
 describe('#login', {timeout: 10_000}, () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 

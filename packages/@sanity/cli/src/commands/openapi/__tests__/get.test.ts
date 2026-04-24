@@ -1,5 +1,5 @@
 import {testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import nock, {cleanAll, pendingMocks} from 'nock'
 import open from 'open'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -34,8 +34,8 @@ const mockJsonSpec = JSON.stringify({
 describe('#openapi:get', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 
