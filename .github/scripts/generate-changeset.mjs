@@ -156,8 +156,8 @@ if (!bump) {
   process.exit(0)
 }
 
-// 3. Derive release notes from PR title
-const releaseNotes = PR_TITLE.replace(/^[a-z]+(\([^)]*\))?!?:\s*/, '')
+// 3. Preserve the full conventional commit title so the changelog function can parse type and scope
+const releaseNotes = PR_TITLE
 
 // 4. Detect affected packages
 const pkgMap = getWorkspacePackages()

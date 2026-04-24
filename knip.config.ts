@@ -4,9 +4,13 @@ const project = ['src/**/*.{js,jsx,ts,tsx}', '!**/docs/**']
 
 const baseConfig = {
   // For now only care about cli package
+  // Disabled: the changeset plugin can't resolve local file paths in the changelog config
+  changesets: false,
   ignore: [
     // See `helpClass` in `oclif.config.js`
     'packages/@sanity/cli/src/SanityHelp.ts',
+    // Loaded dynamically by @changesets/cli at version time
+    '.changeset/changelog.mjs',
   ],
   workspaces: {
     'fixtures/*': {
