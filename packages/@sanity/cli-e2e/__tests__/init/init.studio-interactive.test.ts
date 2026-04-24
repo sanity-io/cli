@@ -145,7 +145,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
     {
       answer: 'y\n',
       name: 'imports sample data when accepted',
-      postAnswerWait: /import/i,
+      postAnswerWait: /Imported \d+ documents/i,
     },
     {
       answer: 'n\n',
@@ -182,5 +182,10 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
 
     const exitCode = await session.waitForExit(90_000)
     expect(exitCode).toBe(0)
+
+    if (answer === 'n\n') {
+      const output = session.getOutput()
+      expect(output).not.toMatch(/Imported \d+ documents/i)
+    }
   })
 })
