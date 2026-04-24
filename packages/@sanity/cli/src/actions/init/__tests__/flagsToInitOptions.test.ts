@@ -1,6 +1,6 @@
 import {describe, expect, test} from 'vitest'
 
-import {flagsToInitOptions} from '../types.js'
+import {flagsToInitOptions} from '../flagsToInitOptions.js'
 
 /** Returns a minimal set of flags with required boolean fields set to defaults. */
 function defaultFlags(
@@ -10,19 +10,19 @@ function defaultFlags(
     'auto-updates': true,
     bare: false,
     'dataset-default': false,
-    'from-create': false,
     mcp: true,
     'no-git': false,
+    yes: false,
     ...overrides,
   } as Parameters<typeof flagsToInitOptions>[0]
 }
 
-/** Shorthand that fills in the trailing `args` and `mcpMode` parameters. */
+/** Shorthand that fills in the trailing `args` parameter. */
 function toOptions(
   flags: Parameters<typeof flagsToInitOptions>[0],
-  isUnattended: boolean,
+  interactive = true,
 ): ReturnType<typeof flagsToInitOptions> {
-  return flagsToInitOptions(flags, isUnattended, undefined, 'prompt')
+  return flagsToInitOptions(flags, interactive, undefined)
 }
 
 describe('flagsToInitOptions', () => {
@@ -88,12 +88,15 @@ describe('flagsToInitOptions', () => {
     expect(result.git).toBeUndefined()
   })
 
-  test('sets unattended from the isUnattended parameter', () => {
-    const attended = toOptions(defaultFlags(), false)
-    expect(attended.unattended).toBe(false)
+  test('sets unattended based on interactive environment and --yes flag', () => {
+    const interactive = toOptions(defaultFlags(), true)
+    expect(interactive.unattended).toBe(false)
 
-    const unattended = toOptions(defaultFlags(), true)
-    expect(unattended.unattended).toBe(true)
+    const nonInteractive = toOptions(defaultFlags(), false)
+    expect(nonInteractive.unattended).toBe(true)
+
+    const yesFlag = toOptions(defaultFlags({yes: true}), true)
+    expect(yesFlag.unattended).toBe(true)
   })
 
   test('aliases --create-project to projectName', () => {
@@ -135,14 +138,21 @@ describe('flagsToInitOptions', () => {
     expect(result.visibility).toBeUndefined()
   })
 
-  test('passes mcpMode through to options', () => {
-    const prompt = flagsToInitOptions(defaultFlags(), false, undefined, 'prompt')
+  test('computes mcpMode from flags and interactive state', () => {
+    // interactive + mcp enabled → prompt
+    const prompt = flagsToInitOptions(defaultFlags(), true, undefined)
     expect(prompt.mcpMode).toBe('prompt')
 
-    const auto = flagsToInitOptions(defaultFlags(), false, undefined, 'auto')
+    // interactive + --yes → auto
+    const auto = flagsToInitOptions(defaultFlags({yes: true}), true, undefined)
     expect(auto.mcpMode).toBe('auto')
 
-    const skip = flagsToInitOptions(defaultFlags(), false, undefined, 'skip')
-    expect(skip.mcpMode).toBe('skip')
+    // non-interactive → skip
+    const nonInteractive = flagsToInitOptions(defaultFlags(), false, undefined)
+    expect(nonInteractive.mcpMode).toBe('skip')
+
+    // --no-mcp → skip even when interactive
+    const noMcp = flagsToInitOptions(defaultFlags({mcp: false}), true, undefined)
+    expect(noMcp.mcpMode).toBe('skip')
   })
 })

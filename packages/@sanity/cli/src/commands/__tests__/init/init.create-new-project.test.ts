@@ -121,8 +121,8 @@ vi.mock('../../../actions/init/bootstrapTemplate.js', () => ({
   bootstrapTemplate: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../datasets/import.js', () => ({
-  ImportDatasetCommand: {run: mocks.importDatasetRun},
+vi.mock('execa', () => ({
+  execa: mocks.importDatasetRun,
 }))
 
 vi.mock('../../../actions/init/git.js', () => ({
@@ -555,7 +555,10 @@ describe('#init: create new project', () => {
     if (error) throw error
     expect(mocks.confirm).not.toHaveBeenCalled()
     expect(mocks.importDatasetRun).toHaveBeenCalledWith(
+      'sanity',
       expect.arrayContaining([
+        'dataset',
+        'import',
         'https://public.sanity.io/moviesdb-2018-03-06.tar.gz',
         '--project-id',
         'project-123',
@@ -565,7 +568,7 @@ describe('#init: create new project', () => {
         'test-token',
         '--missing',
       ]),
-      expect.objectContaining({root: expect.any(String)}),
+      expect.objectContaining({cwd: expect.any(String), preferLocal: true}),
     )
   })
 

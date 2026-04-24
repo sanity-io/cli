@@ -1,5 +1,4 @@
-import {ux} from '@oclif/core'
-import {confirm} from '@sanity/cli-core/ux'
+import {confirm, stdout} from '@sanity/cli-core/ux'
 
 const DATASET_INFO_TEXT =
   'Your content will be stored in a dataset that can be public or private, depending on\n' +
@@ -7,7 +6,7 @@ const DATASET_INFO_TEXT =
   'The default dataset configuration has a public dataset named "production".'
 
 export function promptForDefaultConfig(): Promise<boolean> {
-  ux.stdout(DATASET_INFO_TEXT)
+  stdout(DATASET_INFO_TEXT)
   return confirm({
     default: true,
     message: 'Use the default dataset configuration?',

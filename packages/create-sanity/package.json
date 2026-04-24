@@ -21,22 +21,34 @@
     "url": "git+https://github.com/sanity-io/cli.git",
     "directory": "packages/create-sanity"
   },
-  "bin": "./index.js",
+  "bin": "./dist/index.js",
   "files": [
-    "index.js"
+    "dist",
+    "!dist/stats.html",
+    "!dist/*.map"
   ],
   "type": "module",
   "scripts": {
+    "build": "rollup -c rollup.config.ts --configPlugin esbuild",
+    "pretest": "pnpm build",
     "publint": "publint",
     "test": "vitest"
   },
-  "dependencies": {
-    "@sanity/cli": "workspace:*",
-    "import-meta-resolve": "catalog:"
-  },
   "devDependencies": {
+    "@rollup/plugin-alias": "^6.0.0",
+    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@sanity/cli": "workspace:*",
+    "@sanity/cli-core": "workspace:*",
+    "debug": "catalog:",
+    "esbuild": "^0.25.0",
     "publint": "catalog:",
-    "vitest": "catalog:"
+    "rollup": "^4.59.0",
+    "rollup-plugin-esbuild": "^6.2.1",
+    "rollup-plugin-visualizer": "^7.0.1",
+    "vitest": "catalog:",
+    "wrap-ansi": "^10.0.0"
   },
   "engines": {
     "node": ">=20.19.1 <22 || >=22.12"
