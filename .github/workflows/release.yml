@@ -112,10 +112,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PUBLISHED_PACKAGES: ${{ needs.release.outputs.publishedPackages }}
         run: |
-          CLI_VERSION=$(echo "$PUBLISHED_PACKAGES" | jq -r '.[] | select(.name == "@sanity/cli") | .version')
-          if [ -n "$CLI_VERSION" ]; then
-            echo "Triggering E2E tests for @sanity/cli@$CLI_VERSION"
-            gh workflow run e2e.yml -f cli_version="$CLI_VERSION"
+          HAS_CLI=$(echo "$PUBLISHED_PACKAGES" | jq -r '.[] | select(.name == "@sanity/cli") | .name')
+          if [ -n "$HAS_CLI" ]; then
+            echo "Triggering E2E tests for latest sanity"
+            gh workflow run e2e-scheduled.yml -f cli_version="latest"
           else
             echo "No @sanity/cli in published packages, skipping E2E"
           fi

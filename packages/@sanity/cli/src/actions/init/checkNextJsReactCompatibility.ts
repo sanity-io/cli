@@ -1,5 +1,5 @@
 import {Output, readPackageJson} from '@sanity/cli-core'
-import semver from 'semver'
+import {coerce} from 'semver'
 
 import {VersionedFramework} from './types.js'
 
@@ -18,8 +18,8 @@ export async function checkNextJsReactCompatibility({
   const reactVersion = packageJson?.dependencies?.react
 
   if (reactVersion) {
-    const isUsingReact19 = semver.coerce(reactVersion)?.major === 19
-    const isUsingNextJs15 = semver.coerce(detectedFramework?.detectedVersion)?.major === 15
+    const isUsingReact19 = coerce(reactVersion)?.major === 19
+    const isUsingNextJs15 = coerce(detectedFramework?.detectedVersion)?.major === 15
 
     if (isUsingNextJs15 && isUsingReact19) {
       output.warn('╭────────────────────────────────────────────────────────────╮')

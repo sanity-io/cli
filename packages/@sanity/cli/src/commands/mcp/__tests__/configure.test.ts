@@ -4,7 +4,7 @@ import fs from 'node:fs/promises'
 import {checkbox} from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestToken, mockApi, testCommand} from '@sanity/cli-test'
 import {execa} from 'execa'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {MCP_API_VERSION} from '../../../services/mcp.js'
@@ -424,8 +424,8 @@ describe('#mcp:configure', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 

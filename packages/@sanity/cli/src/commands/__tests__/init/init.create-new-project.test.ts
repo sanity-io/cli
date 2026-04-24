@@ -1,6 +1,6 @@
 import * as cliUX from '@sanity/cli-core/ux'
 import {convertToSystemPath, createTestClient, mockApi, testCommand} from '@sanity/cli-test'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {setupMCP} from '../../../actions/mcp/setupMCP.js'
@@ -177,8 +177,8 @@ const defaultMocks = {
 describe('#init: create new project', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 

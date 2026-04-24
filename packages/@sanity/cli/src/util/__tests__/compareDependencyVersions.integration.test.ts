@@ -2,7 +2,7 @@ import {mkdtemp, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import path from 'node:path'
 
-import semver from 'semver'
+import {gt, valid} from 'semver'
 import {afterAll, beforeAll, describe, expect, it} from 'vitest'
 
 import {compareDependencyVersions} from '../compareDependencyVersions.js'
@@ -39,7 +39,7 @@ describe('compareDependencyVersions (integration)', {timeout: 30_000}, () => {
     const [mismatch] = result.mismatched
     expect(mismatch.pkg).toBe('sanity')
     expect(mismatch.installed).toBe('3.0.0')
-    expect(semver.valid(mismatch.remote)).toBeTruthy()
-    expect(semver.gt(mismatch.remote, '3.0.0')).toBe(true)
+    expect(valid(mismatch.remote)).toBeTruthy()
+    expect(gt(mismatch.remote, '3.0.0')).toBe(true)
   })
 })

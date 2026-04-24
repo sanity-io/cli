@@ -7,7 +7,16 @@ import {readPackageJson} from '@sanity/cli-core'
 import {getTempPath} from '@sanity/cli-test'
 import gunzipMaybe from 'gunzip-maybe'
 import {extract} from 'tar-fs'
-import ts from 'typescript'
+import {
+  createSourceFile,
+  forEachChild,
+  isExportDeclaration,
+  isInterfaceDeclaration,
+  isNamedExports,
+  isTypeAliasDeclaration,
+  ScriptTarget,
+  SyntaxKind,
+} from 'typescript'
 import {expect, test} from 'vitest'
 
 import * as newExports from '../exports/index.js'
@@ -76,20 +85,20 @@ async function getSanityPackageExports() {
 }
 
 async function extractTypes(typesPath: string) {
-  const sourceFile = ts.createSourceFile(
+  const sourceFile = createSourceFile(
     typesPath,
     await readFile(typesPath, 'utf8'),
-    ts.ScriptTarget.Latest,
+    ScriptTarget.Latest,
     true,
   )
 
   const exportedTypes: string[] = []
 
-  ts.forEachChild(sourceFile, (node) => {
+  forEachChild(sourceFile, (node) => {
     // Handle `export interface Foo { ... }` and `export type Foo = ...`
     if (
-      (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) &&
-      node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)
+      (isInterfaceDeclaration(node) || isTypeAliasDeclaration(node)) &&
+      node.modifiers?.some((m) => m.kind === SyntaxKind.ExportKeyword)
     ) {
       exportedTypes.push(node.name.text)
     }
@@ -97,7 +106,7 @@ async function extractTypes(typesPath: string) {
     // Handle type re-exports: `export type { Foo }` and `export { type Foo }`
     // Note: this only works on source files where the `type` keyword is preserved.
     // In .d.ts files built by api-extractor, `type` is stripped from re-exports.
-    if (ts.isExportDeclaration(node) && node.exportClause && ts.isNamedExports(node.exportClause)) {
+    if (isExportDeclaration(node) && node.exportClause && isNamedExports(node.exportClause)) {
       if (node.isTypeOnly) {
         // `export type { Foo, Bar }` — all specifiers are types
         for (const specifier of node.exportClause.elements) {

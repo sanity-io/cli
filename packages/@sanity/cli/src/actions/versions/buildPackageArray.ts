@@ -1,4 +1,4 @@
-import semver from 'semver'
+import {valid} from 'semver'
 
 import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {trimHashFromVersion} from '../../util/trimHashFromVersion.js'
@@ -10,7 +10,7 @@ import {tryFindLatestVersion} from './tryFindLatestVersion.js'
  * @internal
  */
 function isPinnedVersion(version: string): boolean {
-  return !!semver.valid(version)
+  return !!valid(version)
 }
 
 /**

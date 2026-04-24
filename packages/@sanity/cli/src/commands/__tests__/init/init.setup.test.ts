@@ -1,6 +1,7 @@
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {selectTemplate} from '../../../actions/init/scaffoldTemplate.js'
 import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
@@ -8,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   detectFrameworkRecord: vi.fn(),
   getById: vi.fn(),
   getGitHubRepoInfo: vi.fn(),
+  promptForTypeScript: vi.fn(),
 }))
 
 vi.mock('../../../util/detectFramework.js', () => ({
@@ -17,6 +19,10 @@ vi.mock('../../../util/detectFramework.js', () => ({
 vi.mock('../../../actions/init/remoteTemplate.js', () => ({
   checkIsRemoteTemplate: mocks.checkIsRemoteTemplate,
   getGitHubRepoInfo: mocks.getGitHubRepoInfo,
+}))
+
+vi.mock('../../../prompts/init/promptForTypescript.js', () => ({
+  promptForTypeScript: mocks.promptForTypeScript,
 }))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
@@ -290,5 +296,82 @@ describe('#init: oclif command setup', () => {
 
     // When template is not an app template, it should log "Fetching existing projects"
     expect(stdout).toContain('Fetching existing projects')
+  })
+})
+
+const traceMock = {
+  log: vi.fn(),
+}
+
+const baseOptions = {
+  autoUpdates: true,
+  bare: false,
+  datasetDefault: false,
+  fromCreate: false,
+  mcpMode: 'skip' as const,
+  template: 'clean',
+  unattended: true,
+}
+
+describe('#init: selectTemplate', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test('defaults to TypeScript when unattended and typescript flag is undefined', async () => {
+    const result = await selectTemplate({
+      options: {...baseOptions, typescript: undefined},
+      remoteTemplateInfo: undefined,
+      trace: traceMock as never,
+    })
+
+    expect(result.useTypeScript).toBe(true)
+    expect(mocks.promptForTypeScript).not.toHaveBeenCalled()
+  })
+
+  test('respects explicit --no-typescript in unattended mode', async () => {
+    const result = await selectTemplate({
+      options: {...baseOptions, typescript: false},
+      remoteTemplateInfo: undefined,
+      trace: traceMock as never,
+    })
+
+    expect(result.useTypeScript).toBe(false)
+    expect(mocks.promptForTypeScript).not.toHaveBeenCalled()
+  })
+
+  test('respects explicit --typescript in unattended mode', async () => {
+    const result = await selectTemplate({
+      options: {...baseOptions, typescript: true},
+      remoteTemplateInfo: undefined,
+      trace: traceMock as never,
+    })
+
+    expect(result.useTypeScript).toBe(true)
+    expect(mocks.promptForTypeScript).not.toHaveBeenCalled()
+  })
+
+  test('prompts for TypeScript when interactive and flag is undefined', async () => {
+    mocks.promptForTypeScript.mockResolvedValueOnce(false)
+
+    const result = await selectTemplate({
+      options: {...baseOptions, typescript: undefined, unattended: false},
+      remoteTemplateInfo: undefined,
+      trace: traceMock as never,
+    })
+
+    expect(result.useTypeScript).toBe(false)
+    expect(mocks.promptForTypeScript).toHaveBeenCalledOnce()
+  })
+
+  test('does not prompt when interactive and --typescript is explicitly set', async () => {
+    const result = await selectTemplate({
+      options: {...baseOptions, typescript: true, unattended: false},
+      remoteTemplateInfo: undefined,
+      trace: traceMock as never,
+    })
+
+    expect(result.useTypeScript).toBe(true)
+    expect(mocks.promptForTypeScript).not.toHaveBeenCalled()
   })
 })

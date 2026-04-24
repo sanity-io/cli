@@ -5,7 +5,7 @@ import {
   testCommand,
   testFixture,
 } from '@sanity/cli-test'
-import nock from 'nock'
+import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {CORS_API_VERSION} from '../../../services/cors.js'
@@ -163,8 +163,8 @@ mocks.getSanityEnv.mockReturnValue('production')
 describe('#init:nextjs-app-initialization', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    const pending = nock.pendingMocks()
-    nock.cleanAll()
+    const pending = pendingMocks()
+    cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
   test('initializes nextjs app', async () => {
