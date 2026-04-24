@@ -120,7 +120,7 @@ function transformChangelog(content, packageName, currentVersion) {
 
   section = section.replace(
     `## ${currentVersion}`,
-    `## [${currentVersion}](${compareUrl}) (${today})`,
+    `## [${currentVersion}](${compareUrl})\n\n_${today}_`,
   )
 
   for (const [from, to] of Object.entries(SECTION_MAP)) {
