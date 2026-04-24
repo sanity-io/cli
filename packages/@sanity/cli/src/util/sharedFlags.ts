@@ -64,6 +64,35 @@ export function getProjectIdFlag(options: SharedFlagOptions) {
 }
 
 /**
+ * Returns an `--org-id` / `-o` flag definition.
+ *
+ * Locked: flag name (`org-id`), char (`o`), `helpValue` (`<id>`), and parse (trims + validates non-empty).
+ */
+export function getOrgIdFlag(options: SharedFlagOptions) {
+  const {description: baseDescription, helpGroup, semantics, ...rest} = options
+  const isOverride = semantics === 'override'
+  const description =
+    (baseDescription ?? 'Organization ID to use') + (isOverride ? OVERRIDE_SUFFIX : '')
+
+  return {
+    'org-id': Flags.string({
+      description,
+      helpGroup: helpGroup ?? (isOverride ? 'OVERRIDE' : undefined),
+      helpValue: '<id>',
+      ...rest,
+      char: 'o',
+      parse: async (input: string) => {
+        const trimmed = input.trim()
+        if (trimmed === '') {
+          throw new Error('`--org-id` cannot be empty if provided')
+        }
+        return trimmed
+      },
+    }),
+  }
+}
+
+/**
  * Returns a `--dataset` / `-d` flag definition.
  *
  * Locked: flag name (`dataset`), char (`d`), `helpValue` (`<name>`), and parse (trims + validates non-empty).
