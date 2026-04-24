@@ -1233,4 +1233,152 @@ describe('#init: promptForAppTemplateSetup', () => {
     expect(mocks.listProjects).not.toHaveBeenCalled()
     expect(mocks.listDatasets).not.toHaveBeenCalled()
   })
+
+  test('interactive + --project + --dataset: skips org prompt and "Configure a project" prompt, reuses existing dataset', async () => {
+    mocks.listProjects.mockResolvedValueOnce([
+      {
+        createdAt: '2024-01-01T00:00:00Z',
+        displayName: 'App Project',
+        id: 'existing-app-pid',
+        organizationId: 'org-derived',
+      },
+    ])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-derived', name: 'Test Org', slug: 'test-org'}])
+
+    mocks.listDatasets.mockResolvedValueOnce([{aclMode: 'public', name: 'production'}])
+
+    mockApi({
+      apiVersion: PROJECT_FEATURES_API_VERSION,
+      method: 'get',
+      uri: '/features',
+    }).reply(200, ['privateDataset'])
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--template=app-quickstart',
+        '--project=existing-app-pid',
+        '--dataset=production',
+        '--output-path=./test-project',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {
+          ...defaultMocks,
+          isInteractive: true,
+        },
+      },
+    )
+
+    if (error) throw error
+
+    // Neither the org prompt nor the "Configure a project for this app?" prompt should fire
+    expect(mocks.select).not.toHaveBeenCalledWith(
+      expect.objectContaining({message: 'Select organization:'}),
+    )
+    expect(mocks.select).not.toHaveBeenCalledWith(
+      expect.objectContaining({message: 'Configure a project for this app?'}),
+    )
+    expect(mocks.createDataset).not.toHaveBeenCalled()
+  })
+
+  test('SDK-1314: unattended + --project + --dataset without --organization succeeds without prompts', async () => {
+    mocks.listProjects.mockResolvedValueOnce([
+      {
+        createdAt: '2024-01-01T00:00:00Z',
+        displayName: 'App Project',
+        id: 'existing-app-pid',
+        organizationId: 'org-derived',
+      },
+    ])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-derived', name: 'Test Org', slug: 'test-org'}])
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--template=app-quickstart',
+        '--project=existing-app-pid',
+        '--dataset=production',
+        '--output-path=/tmp/test-app',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {...defaultMocks},
+      },
+    )
+
+    if (error) throw error
+
+    expect(mocks.select).not.toHaveBeenCalled()
+    expect(mocks.createDataset).not.toHaveBeenCalled()
+  })
+
+  test('unattended + --project=<not-in-list> errors instead of silently falling through', async () => {
+    mocks.listProjects.mockResolvedValueOnce([
+      {
+        createdAt: '2024-01-01T00:00:00Z',
+        displayName: 'Some Other Project',
+        id: 'real-pid',
+        organizationId: 'org-123',
+      },
+    ])
+
+    mockApi({
+      apiVersion: ORGANIZATIONS_API_VERSION,
+      uri: '/organizations',
+    }).reply(200, [{id: 'org-123', name: 'Test Org', slug: 'test-org'}])
+
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--template=app-quickstart',
+        '--project=nonexistent-pid',
+        '--dataset=production',
+        '--output-path=/tmp/test-app',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {...defaultMocks},
+      },
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('nonexistent-pid')
+    expect(error?.message).toContain('not found')
+    expect(error?.oclif?.exit).toBe(1)
+  })
+
+  test('unattended without --project and without --organization: errors with helpful message', async () => {
+    const {error} = await testCommand(
+      InitCommand,
+      [
+        '--yes',
+        '--template=app-quickstart',
+        '--output-path=/tmp/test-app',
+        '--no-typescript',
+        '--no-overwrite-files',
+      ],
+      {
+        mocks: {...defaultMocks},
+      },
+    )
+
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('--organization')
+    expect(error?.message).toContain('--project')
+    expect(error?.oclif?.exit).toBe(1)
+  })
 })
