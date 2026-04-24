@@ -29,17 +29,7 @@ const IS_README_GENERATION = (process.argv[process.argv.indexOf('readme') - 1] ?
  */
 export default class SanityHelp extends Help {
   protected formatCommand(command: Command.Loadable): string {
-    let help = super.formatCommand(command)
-
-    // When `sanity init` is called, but originates from the `create-sanity`
-    // package/binary (eg the one used by `npm create sanity@latest` etc), we want to
-    // customize the help text to show that command instead of `sanity init`.
-    const isFromCreate = process.argv.includes('--from-create') && command.id === 'init'
-    if (isFromCreate) {
-      help = replaceInitWithCreateCommand(help)
-    }
-
-    return prefixBinName(help)
+    return prefixBinName(super.formatCommand(command))
   }
 
   protected formatRoot(): string {
