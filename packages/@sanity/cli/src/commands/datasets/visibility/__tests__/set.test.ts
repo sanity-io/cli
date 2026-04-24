@@ -104,7 +104,7 @@ describe('#dataset:visibility:set', () => {
     expect(stderr).toContain('You are about to make')
     expect(stderr).toContain('PUBLIC')
     expect(stderr).toContain('Anyone on the internet')
-    expect(stderr).toContain("'--yes' used: skipping confirmation")
+    expect(stdout).toContain('--yes acknowledged: skipping confirmation')
     expect(stdout).toContain('Dataset visibility changed')
     expect(mockEditDatasetAcl).toHaveBeenCalledWith('my-dataset', {
       aclMode: 'public',

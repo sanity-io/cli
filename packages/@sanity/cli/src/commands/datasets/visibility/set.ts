@@ -42,7 +42,7 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
       semantics: 'override',
     }),
     yes: Flags.boolean({
-      aliases: ['y'],
+      char: 'y',
       description:
         'Skip the confirmation prompt when changing a dataset to public. Required for non-interactive usage (e.g. CI or agents).',
       required: false,
@@ -104,7 +104,7 @@ export class DatasetVisibilitySetCommand extends SanityCommand<typeof DatasetVis
       )
 
       if (skipConfirmation) {
-        this.warn(`'--yes' used: skipping confirmation and changing "${dataset}" to public`)
+        this.log(`--yes acknowledged: skipping confirmation and changing "${dataset}" to public`)
       } else {
         try {
           const confirmed = await confirm({
