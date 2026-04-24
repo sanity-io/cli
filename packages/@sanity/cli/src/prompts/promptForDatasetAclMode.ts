@@ -23,10 +23,16 @@ export async function promptForDatasetAclMode(output?: Output): Promise<DatasetA
     message: 'Dataset visibility',
   })
 
-  if (mode === 'private' && output) {
-    output.warn(
-      'Please note that while documents are private, assets (files and images) are still public',
-    )
+  if (output) {
+    if (mode === 'public') {
+      output.warn(
+        'Public datasets are readable by anyone on the internet without authentication. If you plan to store any sensitive, personal, or proprietary data, choose "Private" instead.',
+      )
+    } else if (mode === 'private') {
+      output.warn(
+        'Please note that while documents are private, assets (files and images) are still public',
+      )
+    }
   }
 
   return mode
