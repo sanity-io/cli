@@ -52,7 +52,7 @@ export function createExpiringConfig<Type>({
   onRevalidate = () => null,
   store,
   ttl,
-  validateValue = (value: unknown): value is Type => true,
+  validateValue = (_value: unknown): _value is Type => true,
 }: ExpiringConfigOptions<Type>): ExpiringConfigApi<Type> {
   let currentFetch: Promise<Type> | null = null
   return {
