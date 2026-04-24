@@ -77,7 +77,6 @@ const defaultOptions: InitOptions = {
   autoUpdates: true,
   bare: false,
   datasetDefault: false,
-  fromCreate: false,
   mcpMode: 'skip',
   unattended: false,
 }

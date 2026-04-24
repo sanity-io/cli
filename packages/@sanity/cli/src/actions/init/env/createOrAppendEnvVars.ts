@@ -1,8 +1,8 @@
 import {styleText} from 'node:util'
 
-import {CLIError} from '@oclif/core/errors'
 import {Output} from '@sanity/cli-core'
 
+import {InitError} from '../initError.js'
 import {VersionedFramework} from '../types.js'
 import {writeEnvVarsToFile} from './writeEnvVarsToFile.js'
 
@@ -42,6 +42,6 @@ export async function createOrAppendEnvVars({
     })
   } catch (err) {
     output.error(err)
-    throw new CLIError('An error occurred while creating .env', {exit: 1})
+    throw new InitError('An error occurred while creating .env')
   }
 }
