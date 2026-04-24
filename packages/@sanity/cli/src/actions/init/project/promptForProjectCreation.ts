@@ -48,6 +48,7 @@ export async function promptForProjectCreation({
   return {
     ...newProjectResult,
     isFirstProject: isUsersFirstProject,
+    organizationId: org,
     userAction: 'create' as const,
   }
 }

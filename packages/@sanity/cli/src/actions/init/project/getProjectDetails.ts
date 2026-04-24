@@ -51,8 +51,9 @@ export async function getProjectDetails({
   schemaUrl?: string
 }> {
   if (isAppTemplate) {
+    const hasProjectFlag = Boolean(project || newProject)
     let appOrganizationId: string | undefined = organization
-    if (!appOrganizationId) {
+    if (!appOrganizationId && !hasProjectFlag) {
       let organizations: ProjectOrganization[]
       try {
         organizations = await listOrganizations()
@@ -70,6 +71,7 @@ export async function getProjectDetails({
     const {
       datasetName: appDatasetName,
       displayName: appDisplayName,
+      organizationId: resolvedOrganizationId,
       projectId: appProjectId,
     } = await promptForAppTemplateSetup({
       coupon,
@@ -91,7 +93,7 @@ export async function getProjectDetails({
       datasetName: appDatasetName,
       displayName: appDisplayName,
       isFirstProject: false,
-      organizationId: appOrganizationId,
+      organizationId: resolvedOrganizationId ?? appOrganizationId,
       projectId: appProjectId,
     }
   }

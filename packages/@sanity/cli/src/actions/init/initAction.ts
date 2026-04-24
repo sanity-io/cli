@@ -287,12 +287,18 @@ function checkFlagsInUnattendedMode(
       throw new InitError('`--output-path` must be specified in unattended mode', 1)
     }
 
-    if (!options.organization) {
+    const hasProjectFlag = Boolean(options.project || options.projectName)
+
+    if (!hasProjectFlag && !options.organization) {
       throw new InitError(
         'The --organization flag is required for app templates in unattended mode. ' +
-          'Use --organization <id> to specify which organization to use.',
+          'Use --organization <id>, or pass --project <id> / --project-name <name>.',
         1,
       )
+    }
+
+    if (options.projectName && !options.organization) {
+      throw new InitError('`--project-name` requires `--organization <id>` in unattended mode', 1)
     }
 
     return

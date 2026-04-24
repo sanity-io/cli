@@ -28,6 +28,7 @@ export async function getOrCreateProject({
 }): Promise<{
   displayName: string
   isFirstProject: boolean
+  organizationId?: string
   projectId: string
   userAction: 'create' | 'select'
 }> {
@@ -44,6 +45,7 @@ export async function getOrCreateProject({
       return {
         displayName: 'Unknown project',
         isFirstProject: false,
+        organizationId: organization,
         projectId,
         userAction: 'select',
       }
@@ -58,7 +60,7 @@ export async function getOrCreateProject({
 
   if (projectId) {
     const proj = projects.find((p) => p.id === projectId)
-    if (!proj && !unattended) {
+    if (!proj) {
       throw new InitError(
         `Given project ID (${projectId}) not found, or you do not have access to it`,
         1,
@@ -66,8 +68,9 @@ export async function getOrCreateProject({
     }
 
     return {
-      displayName: proj ? proj.displayName : 'Unknown project',
+      displayName: proj.displayName,
       isFirstProject: false,
+      organizationId: proj.organizationId ?? undefined,
       projectId,
       userAction: 'select',
     }
@@ -149,9 +152,11 @@ export async function getOrCreateProject({
   }
 
   debug(`Returning selected project (${selected})`)
+  const selectedProject = projects.find((proj) => proj.id === selected)
   return {
-    displayName: projects.find((proj) => proj.id === selected)?.displayName || '',
+    displayName: selectedProject?.displayName || '',
     isFirstProject: isUsersFirstProject,
+    organizationId: selectedProject?.organizationId ?? undefined,
     projectId: selected,
     userAction: 'select',
   }
