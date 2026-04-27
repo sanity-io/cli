@@ -77,7 +77,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
 
     const installedVisionVersion = await getLocalPackageVersion('@sanity/vision', workDir)
     const cleanVisionVersion = installedVisionVersion
-      ? semver.parse(installedVisionVersion)?.version
+      ? semverParse(installedVisionVersion)?.version
       : undefined
 
     const sanityDependencies = [
