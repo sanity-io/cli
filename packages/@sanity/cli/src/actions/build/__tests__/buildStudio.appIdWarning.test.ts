@@ -1,6 +1,9 @@
 import {type Output} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
+import {getLocalPackageVersion} from '../../../util/getLocalPackageVersion.js'
+import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
+
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
 /** These are not relevant for what we are testing, but still needed to pass type checker */
@@ -189,11 +192,7 @@ describe('buildStudio appId warning', () => {
     mockGetAppId.mockReturnValue('my-app-id')
     const output = createMockOutput()
 
-    const {getLocalPackageVersion} = await import('../../../util/getLocalPackageVersion.js')
     vi.mocked(getLocalPackageVersion).mockResolvedValueOnce('3.5.0')
-
-    const {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} =
-      await import('../getAutoUpdatesImportMap.js')
 
     await buildStudio({
       autoUpdatesEnabled: true,
