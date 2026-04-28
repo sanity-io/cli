@@ -3,9 +3,7 @@ import {basename, dirname} from 'node:path'
 
 import {findProjectRoot, type Output} from '@sanity/cli-core'
 
-import {type StudioManifest} from '../manifest/types.js'
 import {devDebug} from './devDebug.js'
-import {extractStudioManifest} from './extractDevServerManifest.js'
 
 /**
  * Debounce window between config file events and the next manifest
@@ -19,37 +17,45 @@ interface DevManifestWatcher {
 }
 
 /** Subset of registry fields the watcher is allowed to update. */
-interface ManifestPatch {
-  manifest: StudioManifest | undefined
+interface ManifestPatch<T> {
+  manifest: T | undefined
   manifestUpdatedAt: string
 }
 
-interface StartDevManifestWatcherOptions {
+interface StartDevManifestWatcherOptions<T> {
+  /**
+   * Run the project-specific manifest extraction and resolve to the inlined
+   * manifest. Receives the resolved config path (e.g. `sanity.config.ts` for
+   * studios, `sanity.cli.ts` for core-apps) and the working directory.
+   */
+  extract: (params: {configPath: string; workDir: string}) => Promise<T | undefined>
   output: Output
   /** Called after every successful extraction with the inlined manifest. */
-  update: (patch: ManifestPatch) => void
+  update: (patch: ManifestPatch<T>) => void
   workDir: string
 }
 
 /**
- * Generate the studio manifest once and then keep it in sync with the
- * `sanity.config.(ts|js)` file on disk. The initial generation runs
+ * Generate the project manifest once and then keep it in sync with the
+ * project's config file (`sanity.config.(ts|js)` for studios,
+ * `sanity.cli.(ts|js)` for core-apps) on disk. The initial generation runs
  * fire-and-forget so it doesn't block dev-server startup; subsequent
  * file-system events are coalesced behind it via `running`/`pending`, so
- * the single-serializer guarantees there are no overlapping writes to the
- * manifest output directory. Each successful regeneration inlines the new
- * manifest into the registry via the `update` callback, so any running
- * workbench rebroadcasts to its clients.
+ * the single-serializer guarantees there are no overlapping writes to any
+ * shared output directory used by the extractor. Each successful
+ * regeneration inlines the new manifest into the registry via the `update`
+ * callback, so any running workbench rebroadcasts to its clients.
  *
  * Errors during extraction are logged as warnings and do not crash the dev
  * server — the previously extracted manifest (if any) stays in the
  * registry.
  */
-export async function startDevManifestWatcher({
+export async function startDevManifestWatcher<T>({
+  extract,
   output,
   update,
   workDir,
-}: StartDevManifestWatcherOptions): Promise<DevManifestWatcher> {
+}: StartDevManifestWatcherOptions<T>): Promise<DevManifestWatcher> {
   const projectRoot = await findProjectRoot(workDir)
   const configPath = projectRoot.path
 
@@ -65,7 +71,7 @@ export async function startDevManifestWatcher({
     }
     running = true
     try {
-      const manifest = await extractStudioManifest({configPath, workDir})
+      const manifest = await extract({configPath, workDir})
       if (closed) return
       update({manifest, manifestUpdatedAt: new Date().toISOString()})
     } catch (err) {
@@ -113,9 +119,7 @@ export async function startDevManifestWatcher({
 
   watcher.on('error', (err) => {
     devDebug('Config watcher error: %O', err)
-    output.warn(
-      `Studio manifest watcher error: ${err instanceof Error ? err.message : String(err)}`,
-    )
+    output.warn(`Manifest watcher error: ${err instanceof Error ? err.message : String(err)}`)
   })
 
   return {
