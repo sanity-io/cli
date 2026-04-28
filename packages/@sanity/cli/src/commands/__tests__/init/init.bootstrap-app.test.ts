@@ -113,12 +113,6 @@ vi.mock('../../../actions/init/git.js', () => ({
 
 const setupInitSuccessMocks = () => {
   mockApi({
-    apiVersion: ORGANIZATIONS_API_VERSION,
-    method: 'get',
-    uri: '/organizations',
-  }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-  mockApi({
     apiVersion: PROJECT_FEATURES_API_VERSION,
     method: 'get',
     uri: '/features',

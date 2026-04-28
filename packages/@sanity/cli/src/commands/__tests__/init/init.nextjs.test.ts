@@ -11,7 +11,6 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {CORS_API_VERSION} from '../../../services/cors.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {MCP_JOURNEY_API_VERSION} from '../../../services/mcp.js'
-import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {InitCommand} from '../../init.js'
 
 const mocks = vi.hoisted(() => ({
@@ -135,12 +134,6 @@ vi.mock('../../../util/getSanityEnv.js', () => ({
 
 const setupInitSuccessMocks = () => {
   mockApi({
-    apiVersion: ORGANIZATIONS_API_VERSION,
-    method: 'get',
-    uri: '/organizations',
-  }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-  mockApi({
     apiVersion: PROJECT_FEATURES_API_VERSION,
     method: 'get',
     uri: '/features',
@@ -260,13 +253,6 @@ describe('#init:nextjs-app-initialization', () => {
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
 
-    // Mock to resolve correctly up to initializing nextjs app
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
     // Mocks for nextjs initialization
     mockApi({
       apiVersion: CORS_API_VERSION,
@@ -342,12 +328,6 @@ describe('#init:nextjs-app-initialization', () => {
 
     const cwd = await testFixture('basic-app')
     process.cwd = () => cwd
-
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
 
     mockApi({
       apiVersion: CORS_API_VERSION,

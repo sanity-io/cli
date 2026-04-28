@@ -139,12 +139,6 @@ vi.mock('../../../util/packageManager/installPackages.js', () => ({
 
 const setupInitSuccessMocks = () => {
   mockApi({
-    apiVersion: ORGANIZATIONS_API_VERSION,
-    method: 'get',
-    uri: '/organizations',
-  }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-  mockApi({
     apiVersion: PROJECT_FEATURES_API_VERSION,
     method: 'get',
     uri: '/features',
@@ -602,12 +596,6 @@ describe('#init: create new project', () => {
 
   test('initializes studio in unattended mode', async () => {
     mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-    mockApi({
       apiVersion: PROJECTS_API_VERSION,
       method: 'get',
       uri: '/projects/test',
@@ -646,12 +634,6 @@ describe('#init: create new project', () => {
 
   test('--no-git skips git initialization', async () => {
     mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-    mockApi({
       apiVersion: PROJECTS_API_VERSION,
       method: 'get',
       uri: '/projects/test',
@@ -684,12 +666,6 @@ describe('#init: create new project', () => {
   })
 
   test('initializes git by default when --no-git is not passed', async () => {
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
     mockApi({
       apiVersion: PROJECTS_API_VERSION,
       method: 'get',

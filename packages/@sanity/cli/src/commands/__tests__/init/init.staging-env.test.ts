@@ -5,7 +5,6 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 import {setupMCP} from '../../../actions/mcp/setupMCP.js'
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
 import {MCP_JOURNEY_API_VERSION} from '../../../services/mcp.js'
-import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {PROJECTS_API_VERSION} from '../../../services/projects.js'
 import {InitCommand} from '../../init.js'
 
@@ -118,12 +117,6 @@ vi.mock('../../../util/getSanityEnv.js', () => ({
 
 const setupInitSuccessMocks = () => {
   mockApi({
-    apiVersion: ORGANIZATIONS_API_VERSION,
-    method: 'get',
-    uri: '/organizations',
-  }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
-  mockApi({
     apiVersion: PROJECT_FEATURES_API_VERSION,
     method: 'get',
     uri: '/features',
@@ -169,13 +162,7 @@ describe('#init: staging env propagation', () => {
   test('writes SANITY_INTERNAL_ENV to .env when in staging (--env flag path)', async () => {
     mocks.getSanityEnv.mockReturnValue('staging')
 
-    // The --env flag path exits early, so only organizations and features are needed
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
+    // The --env flag path exits early, so only features are needed
     mockApi({
       apiVersion: PROJECT_FEATURES_API_VERSION,
       method: 'get',
