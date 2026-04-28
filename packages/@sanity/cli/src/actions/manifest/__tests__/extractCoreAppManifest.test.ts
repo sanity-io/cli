@@ -1,6 +1,6 @@
 import {readFile} from 'node:fs/promises'
 
-import {getCliConfig} from '@sanity/cli-core'
+import {getCliConfigUncached} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {extractCoreAppManifest} from '../extractCoreAppManifest.js'
@@ -9,7 +9,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
-    getCliConfig: vi.fn(),
+    getCliConfigUncached: vi.fn(),
   }
 })
 
@@ -25,7 +25,7 @@ vi.mock('@sanity/cli-core/ux', async (importOriginal) => {
   }
 })
 
-const mockGetCliConfig = vi.mocked(getCliConfig)
+const mockGetCliConfig = vi.mocked(getCliConfigUncached)
 const mockReadFile = vi.mocked(readFile)
 
 describe('extractCoreAppManifest', () => {
