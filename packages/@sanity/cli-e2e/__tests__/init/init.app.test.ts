@@ -56,6 +56,36 @@ describe('sanity init - app', {timeout: 120_000}, () => {
 
       expect(stdout).toMatch(/app has been scaffolded|Success/i)
     })
+
+    test('scaffolds app with --project and --dataset', async () => {
+      const {error, exitCode} = await runCli({
+        args: [
+          'init',
+          ...yFlag,
+          '--template',
+          'app-quickstart',
+          '--project',
+          projectId,
+          '--dataset',
+          dataset,
+          '--output-path',
+          tmp.path,
+          '--package-manager',
+          'pnpm',
+          '--no-git',
+        ],
+      })
+
+      if (error) throw error
+      expect(exitCode).toBe(0)
+
+      const appTsx = readFileSync(`${tmp.path}/src/App.tsx`, 'utf8')
+      expect(appTsx).toContain(projectId)
+      expect(appTsx).toContain(dataset)
+
+      const cliConfig = readFileSync(`${tmp.path}/sanity.cli.ts`, 'utf8')
+      expect(cliConfig).toContain(orgId)
+    })
   })
 
   test('complete interactive flow selects project and dataset', async () => {
