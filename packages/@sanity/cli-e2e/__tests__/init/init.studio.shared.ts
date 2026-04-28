@@ -1,16 +1,13 @@
 import {existsSync, readFileSync} from 'node:fs'
 
 import {createTmpDir} from '@sanity/cli-test'
-import {afterEach, beforeEach, describe, expect, test} from 'vitest'
+import {afterEach, beforeEach, expect, test} from 'vitest'
 
 import {getE2EOrganizationId, getE2EProjectId, runCli} from '../../helpers/runCli.js'
 
 const projectId = getE2EProjectId()
 
-describe.each([
-  {label: 'with -y flag', yFlag: ['-y']},
-  {label: 'unattended (no -y)', yFlag: [] as string[]},
-])('sanity init - studio ($label)', {timeout: 120_000}, ({yFlag}) => {
+export function registerStudioInitTests(yFlag: string[]): void {
   let tmp: Awaited<ReturnType<typeof createTmpDir>>
 
   beforeEach(async () => {
@@ -445,4 +442,4 @@ describe.each([
     if (error) throw error
     expect(exitCode).toBe(0)
   })
-})
+}
