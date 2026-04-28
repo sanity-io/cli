@@ -62,9 +62,9 @@ async function getReleaseLine(changeset, _type, options) {
 
   const formatted = `${scopePrefix}${firstLine}${prLink}${commitLink}`
   if (restLines.length > 0) {
-    return `\n- ${formatted}\n${restLines.map((l) => (l ? '  ' + l : l)).join('\n')}`
+    return `- ${formatted}\n${restLines.map((l) => (l ? '  ' + l : l)).join('\n')}`
   }
-  return `\n- ${formatted}`
+  return `- ${formatted}`
 }
 
 async function getDependencyReleaseLine(_changesets, dependenciesUpdated, _options) {
