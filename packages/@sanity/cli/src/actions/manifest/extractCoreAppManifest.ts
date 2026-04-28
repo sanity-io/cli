@@ -1,7 +1,7 @@
 import {readFile} from 'node:fs/promises'
 import {relative, resolve} from 'node:path'
 
-import {getCliConfig} from '@sanity/cli-core'
+import {getCliConfigUncached} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {getErrorMessage} from '../../util/getErrorMessage.js'
@@ -56,7 +56,7 @@ export async function extractCoreAppManifest(
   options: ExtractCoreAppManifestOptions,
 ): Promise<CoreAppManifest | undefined> {
   const {workDir} = options
-  const {app} = await getCliConfig(workDir)
+  const {app} = await getCliConfigUncached(workDir)
   if (!app) {
     return undefined
   }
