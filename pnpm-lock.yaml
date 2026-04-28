@@ -713,6 +713,9 @@ importers:
       '@types/gunzip-maybe':
         specifier: ^1.4.3
         version: 1.4.3
+      '@types/jsdom':
+        specifier: 'catalog:'
+        version: 28.0.1
       '@types/lodash-es':
         specifier: 'catalog:'
         version: 4.17.12
@@ -755,6 +758,9 @@ importers:
       eslint:
         specifier: 'catalog:'
         version: 10.1.0(jiti@2.6.1)
+      jsdom:
+        specifier: 'catalog:'
+        version: 29.0.2(@noble/hashes@2.0.1)
       nock:
         specifier: 'catalog:'
         version: 14.0.12

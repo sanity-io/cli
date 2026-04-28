@@ -9,6 +9,7 @@ import {type DocumentProps} from './types.js'
 export interface RenderDocumentWorkerOptions {
   studioRootPath: string
 
+  autoUpdatesCssUrls?: string[]
   importMap?: {
     imports?: Record<string, string>
   }
@@ -27,7 +28,7 @@ export async function renderDocumentWorker(
   parent: MessagePort,
   options: RenderDocumentWorkerOptions,
 ) {
-  const {importMap, isApp, props, studioRootPath} = options
+  const {autoUpdatesCssUrls, importMap, isApp, props, studioRootPath} = options
 
   if (typeof studioRootPath !== 'string') {
     parent.postMessage({
@@ -45,7 +46,14 @@ export async function renderDocumentWorker(
     return
   }
 
-  const html = await getDocumentHtml(parent, studioRootPath, props, importMap, isApp)
+  const html = await getDocumentHtml(
+    parent,
+    studioRootPath,
+    props,
+    importMap,
+    isApp,
+    autoUpdatesCssUrls,
+  )
 
   parent.postMessage({
     html,
