@@ -37,8 +37,15 @@ export async function promptForAppTemplateSetup({
   unattended: boolean
   user: SanityOrgUser
   visibility: 'private' | 'public' | undefined
-}): Promise<{datasetName: string; displayName: string; projectId: string}> {
-  if (unattended) {
+}): Promise<{
+  datasetName: string
+  displayName: string
+  organizationId?: string
+  projectId: string
+}> {
+  const hasProjectFlag = Boolean(project || newProject)
+
+  if (unattended || hasProjectFlag) {
     if (!project && !newProject) {
       return {datasetName: '', displayName: '', projectId: ''}
     }
@@ -64,6 +71,7 @@ export async function promptForAppTemplateSetup({
     return {
       datasetName: datasetResult.datasetName,
       displayName: projectResult.displayName,
+      organizationId: projectResult.organizationId,
       projectId: projectResult.projectId,
     }
   }
@@ -97,6 +105,7 @@ export async function promptForAppTemplateSetup({
     step: 'configureAppProject',
   })
 
+  const selectedProject = projects.find((p) => p.id === selected)
   const projectResult =
     selected === NEW_PROJECT
       ? await promptForProjectCreation({
@@ -108,7 +117,8 @@ export async function promptForAppTemplateSetup({
           user,
         })
       : {
-          displayName: projects.find((p) => p.id === selected)?.displayName ?? '',
+          displayName: selectedProject?.displayName ?? '',
+          organizationId: selectedProject?.organizationId ?? undefined,
           projectId: selected,
         }
 
@@ -125,6 +135,7 @@ export async function promptForAppTemplateSetup({
   return {
     datasetName: datasetResult.datasetName,
     displayName: projectResult.displayName,
+    organizationId: projectResult.organizationId,
     projectId: projectResult.projectId,
   }
 }

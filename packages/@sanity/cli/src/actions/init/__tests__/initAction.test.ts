@@ -3,7 +3,6 @@ import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
-import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {initAction} from '../initAction.js'
 import {InitError} from '../initError.js'
 import {type InitContext, type InitOptions} from '../types.js'
@@ -154,12 +153,6 @@ describe('initAction (direct)', () => {
       name: 'Test User',
       provider: 'google',
     })
-
-    mockApi({
-      apiVersion: ORGANIZATIONS_API_VERSION,
-      method: 'get',
-      uri: '/organizations',
-    }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
 
     mockApi({
       apiVersion: PROJECT_FEATURES_API_VERSION,

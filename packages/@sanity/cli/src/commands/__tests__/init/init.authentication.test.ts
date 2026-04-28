@@ -3,7 +3,6 @@ import {cleanAll, pendingMocks} from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {PROJECT_FEATURES_API_VERSION} from '../../../services/getProjectFeatures.js'
-import {ORGANIZATIONS_API_VERSION} from '../../../services/organizations.js'
 import {PROJECTS_API_VERSION} from '../../../services/projects.js'
 import {InitCommand} from '../../init.js'
 
@@ -98,12 +97,6 @@ vi.mock('../../../util/packageManager/installPackages.js', () => ({
 }))
 
 const setupInitSuccessMocks = () => {
-  mockApi({
-    apiVersion: ORGANIZATIONS_API_VERSION,
-    method: 'get',
-    uri: '/organizations',
-  }).reply(200, [{id: 'org-1', name: 'Org 1', slug: 'org-1'}])
-
   mockApi({
     apiVersion: PROJECT_FEATURES_API_VERSION,
     method: 'get',
