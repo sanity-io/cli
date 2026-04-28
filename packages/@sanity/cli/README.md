@@ -251,7 +251,7 @@ EXAMPLES
 
 ## `sanity blueprints add TYPE`
 
-Add a function resource to a Blueprint
+[deprecated] Use "functions add" instead
 
 ```
 USAGE
@@ -283,12 +283,13 @@ FLAGS
       --[no-]validate-resources  Validate resources
 
 DESCRIPTION
-  Add a function resource to a Blueprint
+  [deprecated] Use "functions add" instead
 
-  Scaffolds a new Sanity Function in your Blueprint. Functions are serverless handlers triggered by document events
-  (create, update, delete, publish) or media library events.
+  This command is deprecated. Use "functions add" instead.
 
-  After adding a function, use 'functions dev' to test locally, then 'blueprints deploy' to publish it.
+  Equivalent usage:
+  $ sanity functions add
+  $ sanity functions add --name my-function --type document-create
 
 EXAMPLES
   $ sanity blueprints add function
@@ -482,7 +483,7 @@ Initialize a Blueprint and create a remote Stack
 
 ```
 USAGE
-  $ sanity blueprints init [DIR] [--json] [--validate-resources] [--verbose] [--dir <value>] [--example <value> |
+  $ sanity blueprints init [DIR] [--json] [--validate-resources] [--dir <value>] [--example <value> |
     --blueprint-type json|js|ts | --stack-id <value> | --stack-name <value>] [--project-id <value>] [--organization-id
     <value>]
 
@@ -500,7 +501,6 @@ FLAGS
   --stack-id=<value>         Existing Stack ID used to scope local Blueprint
   --stack-name=<value>       Name to use for a new Stack provisioned during initialization
   --[no-]validate-resources  Validate resources
-  --verbose                  Verbose output
 
 DESCRIPTION
   Initialize a Blueprint and create a remote Stack
@@ -589,9 +589,11 @@ List remote Stack deployments for your project or organization
 
 ```
 USAGE
-  $ sanity blueprints stacks [--json] [--validate-resources] [--project-id <value> | --organization-id <value>]
+  $ sanity blueprints stacks [--json] [--validate-resources] [--project-id <value> | --organization-id <value> |
+    --include-projects]
 
 FLAGS
+  --include-projects         Include Stacks from all projects within the organization. Requires --organization-id.
   --json                     Format output as json
   --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
   --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
@@ -605,12 +607,16 @@ DESCRIPTION
   Use this to discover existing Stacks you can scope a local Blueprint to (using 'blueprints config --edit'), or to
   audit what's deployed across your project.
 
+  Use --include-projects with --organization-id to also list Stacks from all projects within the organization.
+
 EXAMPLES
   $ sanity blueprints stacks
 
   $ sanity blueprints stacks --project-id <projectId>
 
   $ sanity blueprints stacks --organization-id <organizationId>
+
+  $ sanity blueprints stacks --organization-id <organizationId> --include-projects
 ```
 
 ## `sanity build [OUTPUTDIR]`
