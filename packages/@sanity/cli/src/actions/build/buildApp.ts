@@ -151,7 +151,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
 
   let importMap: {imports?: Record<string, string>} | undefined
 
-  if (autoUpdatesEnabled) {
+  if (autoUpdatesEnabled && !cliConfig.federation?.enabled) {
     importMap = {
       imports: {
         ...(await buildVendorDependencies({basePath, cwd: workDir, isApp: true, outputDir})),
@@ -169,6 +169,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
       basePath,
       cwd: workDir,
       entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
+      federation: cliConfig.federation,
       importMap,
       isApp: true,
       minify: Boolean(flags.minify),

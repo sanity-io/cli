@@ -32,7 +32,10 @@ interface RuntimeOptions {
  * @returns A watcher instance if watch is enabled, undefined otherwise
  * @internal
  */
-export async function writeSanityRuntime(options: RuntimeOptions): Promise<FSWatcher | undefined> {
+export async function writeSanityRuntime(options: RuntimeOptions): Promise<{
+  entries: {relativeConfigLocation: string | null; relativeEntry: string}
+  watcher: FSWatcher | undefined
+}> {
   const {appTitle, basePath, cwd, entry, isApp, reactStrictMode, watch} = options
   const runtimeDir = path.join(cwd, '.sanity', 'runtime')
 
@@ -72,6 +75,44 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<FSWat
   await renderAndWriteDocument()
 
   buildDebug('Writing app.js to runtime directory')
+  const {relativeConfigLocation, relativeEntry} = await resolveEntries({
+    cwd,
+    entry,
+    isApp,
+    runtimeDir,
+  })
+  const appJsContent = getEntryModule({
+    basePath,
+    entry: relativeEntry,
+    isApp,
+    reactStrictMode,
+    relativeConfigLocation,
+  })
+  await fs.writeFile(path.join(runtimeDir, 'app.js'), appJsContent)
+
+  return {
+    entries: {
+      relativeConfigLocation,
+      relativeEntry,
+    },
+    watcher,
+  }
+}
+
+/**
+ * Resolves the relative entry paths for a Sanity project without writing any
+ * runtime files to disk. Used by federation builds that skip the full runtime
+ * generation but still need entry metadata for the vite plugin.
+ */
+export async function resolveEntries(options: {
+  cwd: string
+  entry?: string
+  isApp?: boolean
+  runtimeDir?: string
+}): Promise<{relativeConfigLocation: string | null; relativeEntry: string}> {
+  const {cwd, entry, isApp} = options
+  const runtimeDir = options.runtimeDir ?? path.join(cwd, '.sanity', 'runtime')
+
   let relativeConfigLocation: string | null = null
   if (!isApp) {
     const studioConfigPath = await tryFindStudioConfigPath(cwd)
@@ -83,14 +124,6 @@ export async function writeSanityRuntime(options: RuntimeOptions): Promise<FSWat
   const relativeEntry = toForwardSlashes(
     path.relative(runtimeDir, path.resolve(cwd, entry || './src/App')),
   )
-  const appJsContent = getEntryModule({
-    basePath,
-    entry: relativeEntry,
-    isApp,
-    reactStrictMode,
-    relativeConfigLocation,
-  })
-  await fs.writeFile(path.join(runtimeDir, 'app.js'), appJsContent)
 
-  return watcher
+  return {relativeConfigLocation, relativeEntry}
 }

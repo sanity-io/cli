@@ -223,6 +223,7 @@ describe('#init: staging env propagation', () => {
         '--dataset=test',
         '--package-manager=npm',
         '--typescript',
+        '--federation',
       ],
       {
         mocks: {
@@ -260,6 +261,7 @@ describe('#init: staging env propagation', () => {
         '--dataset=test',
         '--package-manager=npm',
         '--typescript',
+        '--federation',
       ],
       {
         mocks: {
@@ -289,6 +291,7 @@ describe('#init: staging env propagation', () => {
         '--dataset=test',
         '--package-manager=npm',
         '--typescript',
+        '--federation',
       ],
       {
         mocks: {

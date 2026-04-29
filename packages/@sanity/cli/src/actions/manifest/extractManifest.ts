@@ -1,11 +1,11 @@
-import {findProjectRoot, getTimer, studioWorkerTask} from '@sanity/cli-core'
+import {getTimer, studioWorkerTask} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 
 import {type ExtractSchemaWorkerError} from '../schema/types.js'
 import {SchemaExtractionError} from '../schema/utils/SchemaExtractionError.js'
 import {manifestDebug} from './debug.js'
 import {type CreateWorkspaceManifest, type ExtractManifestWorkerData} from './types'
-import {writeManifestFile} from './writeManifestFile.js'
+import {writeManifestFile, type WriteManifestFileOptions} from './writeManifestFile.js'
 
 const CREATE_TIMER = 'create-manifest'
 
@@ -16,13 +16,17 @@ interface ExtractManifestWorkerResult {
 
 type ExtractManifestWorkerMessage = ExtractManifestWorkerResult | ExtractSchemaWorkerError
 
-export async function extractManifest(outPath: string): Promise<void> {
-  const projectRoot = await findProjectRoot(process.cwd())
+interface ExtractManifestOptions extends Pick<WriteManifestFileOptions, 'outPath' | 'workDir'> {
+  /** Absolute path to the studio's `sanity.config.(ts|js)` entry file. */
+  path: string
+}
 
-  manifestDebug('Project root %o', projectRoot)
-
-  const workDir = projectRoot.directory
-  const configPath = projectRoot.path
+export async function extractManifest({
+  outPath,
+  path,
+  workDir,
+}: ExtractManifestOptions): Promise<void> {
+  manifestDebug('Project root %o', {directory: workDir, path})
 
   const timer = getTimer()
   timer.start(CREATE_TIMER)
@@ -34,7 +38,7 @@ export async function extractManifest(outPath: string): Promise<void> {
       {
         name: 'extractManifest',
         studioRootPath: workDir,
-        workerData: {configPath, workDir} satisfies ExtractManifestWorkerData,
+        workerData: {configPath: path, workDir} satisfies ExtractManifestWorkerData,
       },
     )
 
