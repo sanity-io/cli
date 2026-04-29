@@ -88,6 +88,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
       host: appHost,
       id: getAppId(options.cliConfig),
       port: appPort,
+      projectId: options.cliConfig?.api?.projectId,
       type: options.isApp ? 'coreApp' : 'studio',
       workDir: options.workDir,
     })

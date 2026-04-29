@@ -493,6 +493,40 @@ describe('startWorkbenchDevServer', () => {
       })
     })
 
+    test('forwards projectId from registry entries through the broadcast payload', async () => {
+      // Workbench needs the projectId on the very first event to resolve a
+      // local studio's primary project before the manifest arrives.
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([
+        {
+          host: 'localhost',
+          id: 'app-1',
+          pid: 2,
+          port: 3334,
+          projectId: 'x1g7jygt',
+          type: 'studio',
+        },
+      ])
+
+      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        applications: [
+          expect.objectContaining({
+            host: 'localhost',
+            id: 'app-1',
+            port: 3334,
+            projectId: 'x1g7jygt',
+            type: 'studio',
+          }),
+        ],
+      })
+    })
+
     test('responds to client request with current applications', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       const mockServer = createMockServer()
