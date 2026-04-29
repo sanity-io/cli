@@ -46,6 +46,7 @@ export function getDevServerConfig({
 
   return {
     ...baseConfig,
+    federation: cliConfig?.federation,
     reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
     reactStrictMode,
     staticPath: path.join(workDir, 'static'),

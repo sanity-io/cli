@@ -78,6 +78,11 @@ export class InitCommand extends SanityCommand<typeof InitCommand> {
         return input
       },
     }),
+    federation: Flags.boolean({
+      allowNo: true,
+      default: undefined,
+      description: 'Enable federation for this project',
+    }),
     'from-create': Flags.boolean({
       description: 'Internal flag to indicate that the command is run from create-sanity',
       hidden: true,

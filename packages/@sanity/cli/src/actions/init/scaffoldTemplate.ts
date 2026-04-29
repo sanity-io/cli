@@ -119,13 +119,22 @@ export async function scaffoldAndInstall({
   useTypeScript: boolean
   workDir: string
 }): Promise<{pkgManager: PackageManager}> {
-  const {autoUpdates, git, overwriteFiles, packageManager, templateToken, unattended} = options
+  const {
+    autoUpdates,
+    federation = true,
+    git,
+    overwriteFiles,
+    packageManager,
+    templateToken,
+    unattended,
+  } = options
   const noGit = typeof git === 'boolean' && !git ? true : undefined
 
   await bootstrapTemplate({
     autoUpdates,
     bearerToken: templateToken,
     dataset: datasetName,
+    federation,
     organizationId,
     output,
     outputPath,

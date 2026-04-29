@@ -5,7 +5,7 @@ import {debug, getGlobalCliClient} from '@sanity/cli-core'
 import FormData from 'form-data'
 import {type StudioManifest} from 'sanity'
 
-import {type AppManifest} from '../actions/manifest/types.js'
+import {type CoreAppManifest} from '../actions/manifest/types.js'
 
 export const USER_APPLICATIONS_API_VERSION = 'v2024-08-01'
 
@@ -239,7 +239,7 @@ interface CreateDeploymentOptions {
 
   isApp?: boolean
 
-  manifest?: AppManifest | StudioManifest | null
+  manifest?: CoreAppManifest | StudioManifest | null
 
   projectId?: string
 
