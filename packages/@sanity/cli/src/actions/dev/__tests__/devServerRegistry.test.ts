@@ -87,6 +87,25 @@ describe('registerDevServer', () => {
     cleanup()
   })
 
+  test('persists projectId in the manifest when provided', () => {
+    const {release: cleanup} = registerDevServer({
+      host: 'localhost',
+      port: 3334,
+      projectId: 'x1g7jygt',
+      type: 'studio',
+      workDir: '/tmp/project',
+    })
+
+    const manifest = JSON.parse(readFileSync(join(registryDir(), `${process.pid}.json`), 'utf8'))
+    expect(manifest.projectId).toBe('x1g7jygt')
+
+    const servers = getRegisteredServers()
+    expect(servers).toHaveLength(1)
+    expect(servers[0].projectId).toBe('x1g7jygt')
+
+    cleanup()
+  })
+
   test('omits optional metadata when not provided and retains manifest through getRegisteredServers', () => {
     const {release: cleanup} = registerDevServer({
       host: 'localhost',
