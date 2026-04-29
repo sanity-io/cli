@@ -196,6 +196,33 @@ describe('devAction', () => {
       expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'app-abc'}))
     })
 
+    test('forwards api.projectId from sanity.cli.ts to registerDevServer', async () => {
+      // Workbench resolves a studio's primary project against the org projects
+      // list; without the projectId in the very first registry write, the
+      // workbench falls back to a synthetic `host-port` id that has no match,
+      // breaking the dock until manifest extraction completes.
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+      await devAction(
+        createDevOptions({
+          cliConfig: {api: {projectId: 'x1g7jygt'}, federation: {enabled: true}},
+        }),
+      )
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({projectId: 'x1g7jygt'}),
+      )
+    })
+
+    test('omits projectId when api.projectId is not configured', async () => {
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+      await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
+
+      const [registerArg] = mockRegisterDevServer.mock.calls[0]
+      expect(registerArg.projectId).toBeUndefined()
+    })
+
     test('warns about deprecated app.id and falls back to it when registering', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
       const output = createMockOutput()
