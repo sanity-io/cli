@@ -54,7 +54,7 @@ jobs:
       - name: Setup Environment
         uses: ./.github/actions/setup
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Configure npm registry
         run: echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' > .npmrc

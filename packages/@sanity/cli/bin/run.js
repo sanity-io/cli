@@ -8,13 +8,7 @@ var majorVersion = nodeVersionParts[0]
 var minorVersion = nodeVersionParts[1]
 var patchVersion = nodeVersionParts[2]
 
-function isSupportedNodeVersion(major, minor, patch) {
-  if (major === 20) {
-    if (minor > 19) return true
-    if (minor === 19 && patch >= 1) return true
-    return false
-  }
-  if (major === 21) return true
+function isSupportedNodeVersion(major, minor, _patch) {
   if (major === 22 && minor >= 12) return true
   if (major > 22) return true
   return false
@@ -22,9 +16,7 @@ function isSupportedNodeVersion(major, minor, patch) {
 
 if (!isSupportedNodeVersion(majorVersion, minorVersion, patchVersion)) {
   // eslint-disable-next-line no-console
-  console.error(
-    `${err}Node.js version >=20.19.1 <22 or >=22.12 required. You are running ${process.version}`,
-  )
+  console.error(`${err}Node.js version >=22.12 required. You are running ${process.version}`)
   // eslint-disable-next-line no-console
   console.error('')
   process.exit(1)
