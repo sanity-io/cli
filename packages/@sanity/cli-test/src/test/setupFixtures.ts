@@ -151,9 +151,14 @@ export async function setup(_: TestProject, options: SetupTestFixturesOptions = 
       // Run pnpm install --no-lockfile in the temp directory
       try {
         const ignoreWsFlag = ignoreWorkspace ? ' --ignore-workspace' : ''
-        await exec(`pnpm install --prefer-offline --no-lockfile${ignoreWsFlag}`, {
-          cwd: toPath,
-        })
+        // Disable pnpm's minimumReleaseAge for fixture installs. With
+        // `--ignore-workspace`, the workspace's `minimumReleaseAgeExclude` list
+        // is not applied, which can reject freshly-published Sanity versions
+        // pinned in fixture package.json files.
+        await exec(
+          `pnpm install --prefer-offline --no-lockfile --config.minimum-release-age=0${ignoreWsFlag}`,
+          {cwd: toPath},
+        )
       } catch (error) {
         const execError = error as {message: string; stderr?: string; stdout?: string}
         spinner.fail('Failed to install dependencies')
