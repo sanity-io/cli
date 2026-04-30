@@ -56,7 +56,6 @@ export async function exportDocuments({
 
   const {token} = client.config()
   const response = await fetch(exportUrl, {
-    // eslint-disable-next-line n/no-unsupported-features/node-builtins -- Headers is stable in modern Node.js
     headers: new Headers({...(token && {Authorization: `Bearer ${token}`})}),
   })
 
