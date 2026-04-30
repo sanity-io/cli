@@ -139,6 +139,8 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
     const output = session.getOutput()
     expect(output).not.toMatch(/Select.*package manager/i)
     expect(existsSync(`${tmp.path}/sanity.config.ts`)).toBe(true)
+    expect(existsSync(`${tmp.path}/package-lock.json`)).toBe(false)
+    expect(existsSync(`${tmp.path}/yarn.lock`)).toBe(false)
   })
 
   test.each([
