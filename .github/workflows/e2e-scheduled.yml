@@ -35,6 +35,14 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
+      - name: Restore Vitest cache
+        uses: actions/cache@v5
+        with:
+          path: packages/@sanity/cli-e2e/node_modules/.vite/vitest
+          key: vitest-e2e-scheduled-cache-${{ matrix.os }}-node${{ matrix.node-version }}-${{ github.run_id }}
+          restore-keys: |
+            vitest-e2e-scheduled-cache-${{ matrix.os }}-node${{ matrix.node-version }}-
+
       - name: Install CLI from npm
         run: |
           CLI_VERSION="${{ inputs.cli_version || 'latest' }}"
@@ -54,6 +62,7 @@ jobs:
           SANITY_E2E_TOKEN: ${{ secrets.SANITY_E2E_TOKEN }}
           SANITY_E2E_PROJECT_ID: ${{ secrets.SANITY_E2E_PROJECT_ID }}
           SANITY_E2E_DATASET: ${{ secrets.SANITY_E2E_DATASET }}
+          SANITY_E2E_ORGANIZATION_ID: ${{ secrets.SANITY_E2E_ORGANIZATION_ID }}
         run: pnpm --filter @sanity/cli-e2e test
 
   notify-failure:

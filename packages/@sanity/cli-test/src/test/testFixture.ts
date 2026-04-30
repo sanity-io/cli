@@ -1,5 +1,6 @@
 import {randomBytes} from 'node:crypto'
 import {copyFile, mkdir, readdir, readFile, stat, symlink, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
 import {getFixturesPath, getTempPath} from '../utils/paths.js'
@@ -49,9 +50,15 @@ export async function testCopyDirectory(
  */
 export interface TestFixtureOptions {
   /**
-   * Custom temp directory. Defaults to process.cwd()/tmp
+   * Custom temp directory. Defaults to process.cwd()/tmp (or the OS temp directory when
+   * `useSystemTmp` is true).
    */
   tempDir?: string
+  /**
+   * Use the OS temp directory instead of cwd/tmp. Avoids monorepo workspace detection by
+   * package managers and git when tests run inside a monorepo. Ignored when `tempDir` is set.
+   */
+  useSystemTmp?: boolean
 }
 
 /**
@@ -88,14 +95,24 @@ export async function testFixture(
   fixtureName: FixtureName | (string & {}),
   options: TestFixtureOptions = {},
 ): Promise<string> {
-  const {tempDir} = options
+  const {tempDir, useSystemTmp = false} = options
   const {includeDist = false} =
     fixtureName in DEFAULT_FIXTURES ? DEFAULT_FIXTURES[fixtureName as FixtureName] : {}
 
-  const tempDirectory = getTempPath(tempDir)
+  // Source is always looked up in the default temp path (cwd/tmp) where global setup
+  // pre-clones fixtures and installs their node_modules. The destination can be redirected
+  // to system tmp to keep the working copy out of the monorepo (avoids pnpm treating it as
+  // a workspace importer and mutating pnpm-lock.yaml).
+  const sourceTempDir = getTempPath(tempDir)
+  const destTempDir = tempDir
+    ? sourceTempDir
+    : useSystemTmp
+      ? join(tmpdir(), 'sanity-cli-e2e')
+      : sourceTempDir
+  await mkdir(destTempDir, {recursive: true})
 
-  // Fixtures are cloned in the tmp directory by the setup function
-  let tempFixturePath = join(tempDirectory, `fixture-${fixtureName}`)
+  // Fixtures are cloned in the source tmp directory by the setup function
+  let tempFixturePath = join(sourceTempDir, `fixture-${fixtureName}`)
 
   try {
     const stats = await stat(tempFixturePath)
@@ -112,7 +129,7 @@ export async function testFixture(
   }
 
   const tempId = randomBytes(8).toString('hex')
-  const tempPath = join(tempDirectory, `fixture-${fixtureName}-${tempId}`)
+  const tempPath = join(destTempDir, `fixture-${fixtureName}-${tempId}`)
 
   // Always skip node_modules (will be symlinked), tmp and (unless specifically included) dist
   const skipDirs = ['node_modules', 'tmp', ...(includeDist ? [] : ['dist'])]
