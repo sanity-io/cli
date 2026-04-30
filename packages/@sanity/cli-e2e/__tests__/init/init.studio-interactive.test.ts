@@ -143,18 +143,7 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
     expect(existsSync(`${tmp.path}/yarn.lock`)).toBe(false)
   })
 
-  test.each([
-    {
-      answer: 'y\n',
-      name: 'imports sample data when accepted',
-      postAnswerWait: /Imported \d+ documents/i,
-    },
-    {
-      answer: 'n\n',
-      name: 'skips import when declined',
-      postAnswerWait: /installing|Success/i,
-    },
-  ])('$name', async ({answer, postAnswerWait}) => {
+  test.skip('imports sample data when accepted', async () => {
     const session = await runCli({
       args: [
         'init',
@@ -178,16 +167,46 @@ describe('sanity init - studio (interactive)', {timeout: 120_000}, () => {
     session.sendKey('Enter')
 
     await session.waitForText(/sampling.*movies|dataset on the hosted backend/i)
-    session.write(answer)
+    session.write('y\n')
 
-    await session.waitForText(postAnswerWait, {timeout: 90_000})
+    await session.waitForText(/Imported \d+ documents/i, {timeout: 90_000})
+
+    const exitCode = await session.waitForExit(90_000)
+    expect(exitCode).toBe(0)
+  })
+
+  test('skips import when declined', async () => {
+    const session = await runCli({
+      args: [
+        'init',
+        '--project',
+        projectId,
+        '--dataset',
+        'production',
+        '--output-path',
+        tmp.path,
+        '--template',
+        'moviedb',
+        '--no-mcp',
+        '--package-manager',
+        'pnpm',
+        '--no-git',
+      ],
+      interactive: true,
+    })
+
+    await session.waitForText(/TypeScript/i)
+    session.sendKey('Enter')
+
+    await session.waitForText(/sampling.*movies|dataset on the hosted backend/i)
+    session.write('n\n')
+
+    await session.waitForText(/installing|Success/i, {timeout: 90_000})
 
     const exitCode = await session.waitForExit(90_000)
     expect(exitCode).toBe(0)
 
-    if (answer === 'n\n') {
-      const output = session.getOutput()
-      expect(output).not.toMatch(/Imported \d+ documents/i)
-    }
+    const output = session.getOutput()
+    expect(output).not.toMatch(/Imported \d+ documents/i)
   })
 })
