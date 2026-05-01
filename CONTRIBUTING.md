@@ -827,6 +827,26 @@ This creates a changeset file in `.changeset/`. If you do this, write `N/A` in t
 3. **Merging the Version Packages PR** triggers publishing to npm
 4. **GitHub Releases** are automatically created for each published package
 
+### Propagating Releases to the Sanity Monorepo
+
+Publishing `@sanity/cli` and `create-sanity` to npm is only the first step. Most users do not depend on `@sanity/cli` directly — they invoke it through `npx sanity` or as a transitive dependency of the `sanity` package. For a release to actually reach those users, the CLI version must also be bumped in the [sanity-io/sanity](https://github.com/sanity-io/sanity) monorepo.
+
+**Do not open this bump PR by hand.** The sanity monorepo has Renovate automation that:
+
+- Detects new `@sanity/cli` releases on npm
+- Opens a dependency-update PR
+- Pulls the changelog entries from this repo's release notes into the sanity repo's release notes
+
+Manually bumping the version short-circuits that automation and results in missing or duplicated changelog entries. If a release looks stuck, check Renovate in the sanity repo before intervening.
+
+End-to-end flow for a typical change:
+
+1. PR merged into this repo (with a changeset)
+2. Changesets bot opens / updates the **Version Packages** PR here
+3. Merging the Version Packages PR publishes `@sanity/cli` and `create-sanity` to npm
+4. Renovate in sanity-io/sanity opens a PR bumping `@sanity/cli`, importing the changelog
+5. That PR is reviewed and merged, which is what ships the change to `npx sanity` users
+
 ### Snapshot Releases
 
 Snapshot releases publish ephemeral versions (e.g., `0.0.0-20260327120000`) under a custom npm dist tag for testing:
