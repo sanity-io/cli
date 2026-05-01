@@ -25,18 +25,25 @@ export async function setup(project: TestProject): Promise<void> {
       )
     }
   } else {
+    console.log('Packing @sanity/cli-core...')
+    const cliCoreTarball = packPackage('@sanity/cli-core')
+
     console.log('Packing @sanity/cli...')
     const cliTarball = packCli()
 
     console.log('Packing create-sanity...')
     const createSanityTarball = packPackage('create-sanity')
-    tarballPaths = [cliTarball, createSanityTarball]
+    tarballPaths = [cliCoreTarball, cliTarball, createSanityTarball]
 
     const tmpDir = mkdtempSync(join(tmpdir(), 'cli-e2e-'))
     cleanupDir = tmpDir
 
     console.log(`Installing tarballs into ${tmpDir}...`)
-    const binaryPath = installFromTarball([cliTarball, createSanityTarball], tmpDir, 'sanity')
+    const binaryPath = installFromTarball(
+      [cliCoreTarball, cliTarball, createSanityTarball],
+      tmpDir,
+      'sanity',
+    )
 
     process.env.E2E_BINARY_PATH = binaryPath
     console.log(`E2E_BINARY_PATH set to ${binaryPath}`)
