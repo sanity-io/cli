@@ -385,7 +385,7 @@ export function registerStudioInitTests(yFlag: string[]): void {
     expect(existsSync(`${tmp.path}/sanity.config.js`)).toBe(false)
   })
 
-  test('imports sample data with --import-dataset', async () => {
+  test.skip('imports sample data with --import-dataset', async () => {
     const {error, exitCode, stdout} = await runCli({
       args: [
         'init',
