@@ -8,7 +8,7 @@ export type CheckResultStatus = 'error' | 'passed' | 'warning'
 
 export type MessageType = 'error' | 'info' | 'success' | 'warning'
 
-export type SummaryTypes = 'errors' | 'passed' | 'warnings'
+type SummaryTypes = 'errors' | 'passed' | 'warnings'
 
 export interface DoctorContext {
   cwd: string

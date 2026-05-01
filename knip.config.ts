@@ -11,6 +11,8 @@ const baseConfig = {
     'packages/@sanity/cli/src/SanityHelp.ts',
     // Loaded dynamically by @changesets/cli at version time
     '.changeset/changelog.mjs',
+    // Generated test fixture copies (gitignored, populated during test runs)
+    'packages/@sanity/cli-test/fixtures/**',
   ],
   workspaces: {
     'fixtures/*': {

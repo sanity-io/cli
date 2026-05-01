@@ -9,7 +9,7 @@ import {
   type TypeResolvedGraphQLAPI,
 } from './types.js'
 
-export interface Source {
+interface Source {
   dataset: string
   name: string
   projectId: string
