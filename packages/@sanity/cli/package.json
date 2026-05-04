@@ -155,7 +155,7 @@
     "@types/lodash-es": "catalog:",
     "@types/minimist": "^1.2.5",
     "@types/node": "catalog:",
-    "@types/picomatch": "^4.0.2",
+    "@types/picomatch": "^4.0.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/react-is": "^19.2.0",

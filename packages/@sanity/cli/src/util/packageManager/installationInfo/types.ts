@@ -75,7 +75,7 @@ export interface GlobalInstallation {
   version: string
 }
 
-export type IssueType =
+type IssueType =
   | 'cli-not-installed'
   | 'cli-version-incompatible'
   | 'conflicting-cli-dependency'
@@ -86,7 +86,7 @@ export type IssueType =
   | 'override-in-effect'
   | 'redundant-cli-dependency'
 
-export type IssueSeverity = 'error' | 'info' | 'warning'
+type IssueSeverity = 'error' | 'info' | 'warning'
 
 export interface Issue {
   message: string
@@ -95,5 +95,3 @@ export interface Issue {
   suggestion: string | null
   type: IssueType
 }
-
-export {type PackageManager} from '../packageManagerChoice.js'

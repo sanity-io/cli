@@ -3,7 +3,6 @@ import {type MediaLibraryConfig} from 'sanity'
 import {z} from 'zod/mini'
 
 export const SANITY_WORKSPACE_SCHEMA_ID_PREFIX = '_.schemas'
-export const SANITY_WORKSPACE_SCHEMA_TYPE = 'system.schema'
 export const CURRENT_WORKSPACE_SCHEMA_VERSION = '2025-05-01'
 
 export type ManifestSerializable =
@@ -127,7 +126,7 @@ export type WorkspaceSchemaId = DefaultWorkspaceSchemaId | PrefixedWorkspaceSche
 
 export interface StoredWorkspaceSchema extends SanityDocumentLike {
   _id: WorkspaceSchemaId
-  _type: typeof SANITY_WORKSPACE_SCHEMA_TYPE
+  _type: 'system.schema'
   /**
    * The API expects JSON coming in, but will store a string to save on attribute paths.
    * Consumers must use JSON.parse on the value, but we deploy to the API using ManifestSchemaType[]
