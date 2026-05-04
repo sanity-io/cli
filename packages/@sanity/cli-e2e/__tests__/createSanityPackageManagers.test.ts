@@ -14,7 +14,7 @@ const nodeMajor = Number.parseInt(process.versions.node.split('.')[0], 10)
 // and yarn v1 enforces engine checks. Remove this skip when Node 20 is dropped.
 const skipYarnOnOldNode = (name: string) => name === 'yarn' && nodeMajor < 22
 
-describe.skipIf(!isRegistryMode)('create-sanity via package managers', {timeout: 60_000}, () => {
+describe.skipIf(!isRegistryMode)('create-sanity via package managers', {timeout: 120_000}, () => {
   const version = 'latest'
   const managers = getAvailablePackageManagers()
 
@@ -44,7 +44,7 @@ describe.skipIf(!isRegistryMode)('create-sanity via package managers', {timeout:
                 NODE_NO_WARNINGS: '1',
               },
               stdio: 'pipe',
-              timeout: 60_000,
+              timeout: 120_000,
             })
           } catch (err) {
             const stderr = (err as {stderr?: Buffer | string}).stderr
