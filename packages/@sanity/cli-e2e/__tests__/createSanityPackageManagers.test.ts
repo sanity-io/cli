@@ -51,7 +51,7 @@ describe.skipIf(!isRegistryMode)('create-sanity via package managers', {timeout:
             throw new Error(`${cmd} failed:\n${String(stderr || err)}`, {cause: err})
           }
 
-          expect(result).toContain('Initialize a new Sanity Studio')
+          expect(result).toContain('Initialize a new Sanity project')
         },
       )
     })

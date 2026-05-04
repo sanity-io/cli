@@ -1,3 +1,4 @@
+import {getSanityEnv} from '../../util/getSanityEnv.js'
 import {InitError} from './initError.js'
 import {type InitOptions} from './types.js'
 
@@ -80,11 +81,11 @@ export function flagsToInitOptions(
   const isUnattended = flags.yes || !interactive
 
   // MCP setup mode:
-  // - CI (no TTY) or --no-mcp: skip MCP entirely
+  // - CI (no TTY), --no-mcp, or non-production env (e.g. staging): skip MCP entirely
   // - --yes (user terminal): auto-configure all detected editors
   // - Interactive: prompt user
   let mcpMode: InitOptions['mcpMode'] = 'prompt'
-  if (!flags.mcp || !interactive) {
+  if (!flags.mcp || !interactive || getSanityEnv() !== 'production') {
     mcpMode = 'skip'
   } else if (flags.yes) {
     mcpMode = 'auto'

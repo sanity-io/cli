@@ -1,4 +1,4 @@
-import {describe, expect, test} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {flagsToInitOptions} from '../flagsToInitOptions.js'
 
@@ -26,6 +26,10 @@ function toOptions(
 }
 
 describe('flagsToInitOptions', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs()
+  })
+
   test('maps kebab-case flags to camelCase options', () => {
     const result = toOptions(
       defaultFlags({
@@ -154,5 +158,17 @@ describe('flagsToInitOptions', () => {
     // --no-mcp → skip even when interactive
     const noMcp = flagsToInitOptions(defaultFlags({mcp: false}), true, undefined)
     expect(noMcp.mcpMode).toBe('skip')
+  })
+
+  test('skips mcpMode when SANITY_INTERNAL_ENV is non-production', () => {
+    vi.stubEnv('SANITY_INTERNAL_ENV', 'staging')
+
+    // interactive + mcp enabled would normally be 'prompt', but staging forces 'skip'
+    const staging = flagsToInitOptions(defaultFlags(), true, undefined)
+    expect(staging.mcpMode).toBe('skip')
+
+    // --yes in staging is also forced to 'skip'
+    const stagingYes = flagsToInitOptions(defaultFlags({yes: true}), true, undefined)
+    expect(stagingYes.mcpMode).toBe('skip')
   })
 })
