@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.2](https://github.com/sanity-io/cli/compare/cli-test-v0.3.1...cli-test-v0.3.2)
+
+_2026-05-04_
+
+### Bug Fixes
+
+- **deps:** update sanity-tooling ([#1024](https://github.com/sanity-io/cli/pull/1024)) ([c6d5501](https://github.com/sanity-io/cli/commit/c6d55011a5fe7120fb77703d364fbebbd9889550))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 1.3.1
+
 ## 0.3.1
 
 ### Patch Changes
