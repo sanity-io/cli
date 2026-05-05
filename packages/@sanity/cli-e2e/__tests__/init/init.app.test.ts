@@ -100,6 +100,7 @@ describe('sanity init - app', {timeout: 120_000}, () => {
         tmp.path,
         '--no-git',
         '--no-mcp',
+        '--no-federation',
       ],
       interactive: true,
     })
