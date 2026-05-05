@@ -123,6 +123,16 @@ Interactive sessions speak through `node-pty` and expose:
 
 Always prefer `selectOption(pattern)` over counting `ArrowDown` presses — option order is not stable across template/dataset/project changes.
 
+### Environment helpers
+
+`helpers/runCli.ts` also exports three helpers that read the credentials `globalSetup` injects, so tests don't have to touch `process.env` directly:
+
+- `getE2EProjectId()` — reads `SANITY_E2E_PROJECT_ID`
+- `getE2EOrganizationId()` — reads `SANITY_E2E_ORGANIZATION_ID`
+- `getE2EDataset()` — currently hardcoded to `'production'` (see the CI env vars note below)
+
+Each throws with a clear message if the underlying env var is missing, so tests fail loudly instead of passing `undefined` to the CLI.
+
 ### Common options
 
 - `args: string[]` — args passed to the CLI binary
