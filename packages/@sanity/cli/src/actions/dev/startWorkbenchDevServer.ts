@@ -140,7 +140,7 @@ export async function startWorkbenchDevServer(
       port: workbenchPort,
       strictPort: false,
       warmup: {
-        clientFiles: ['./workbench.js', 'sanity/workbench', '@sanity/workbench/_internal'],
+        clientFiles: ['./workbench.js'],
       },
     },
   }
