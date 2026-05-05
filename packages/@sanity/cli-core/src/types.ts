@@ -1,9 +1,15 @@
-import {type Command} from '@oclif/core'
-
+/**
+ * Abstraction over console output methods shared by both the oclif CLI
+ * (`SanityCommand`) and the standalone `create-sanity` entry point.
+ *
+ * Signatures are defined explicitly to avoid a type-level dependency on
+ * `@oclif/core` — keeping `Output` usable from oclif-free code paths.
+ */
 export interface Output {
-  error: Command['error']
-  log: Command['log']
-  warn: Command['warn']
+  error(input: Error | string, options?: {exit?: number; suggestions?: string[]}): never
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- matches oclif's Command.log signature
+  log(message?: string, ...args: any[]): void
+  warn(input: Error | string): Error | string
 }
 
 export type RequireProps<T, K extends keyof T> = Omit<T, K> & Required<Pick<T, K>>

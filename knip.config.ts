@@ -3,10 +3,9 @@ import {type KnipConfig} from 'knip'
 const project = ['src/**/*.{js,jsx,ts,tsx}', '!**/docs/**']
 
 const baseConfig = {
-  // For now only care about cli package
-  // Disabled: the changeset plugin can't resolve local file paths in the changelog config
-  changesets: false,
   ignore: [
+    'packages/@sanity/cli-test/fixtures/**',
+
     // See `helpClass` in `oclif.config.js`
     'packages/@sanity/cli/src/SanityHelp.ts',
     // Loaded dynamically by @changesets/cli at version time
@@ -82,7 +81,9 @@ const baseConfig = {
       project,
     },
     'packages/create-sanity': {
-      ignoreDependencies: ['@sanity/cli'],
+      // @sanity/cli is imported via relative source paths (../../@sanity/cli/src/...)
+      // for bundling, but the workspace link is still needed for resolution
+      ignoreDependencies: ['@sanity/cli', 'rxjs'],
     },
   },
 } satisfies KnipConfig
