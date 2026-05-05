@@ -259,7 +259,7 @@ describe('startWorkbenchDevServer', () => {
         expect.objectContaining({
           server: expect.objectContaining({
             warmup: {
-              clientFiles: ['./workbench.js', 'sanity/workbench', '@sanity/workbench/_internal'],
+              clientFiles: ['./workbench.js'],
             },
           }),
         }),
