@@ -89,5 +89,5 @@ minimumReleaseAgeExclude:
   - 'dotenv'
   - 'oxfmt'
   - '@oxfmt/*'
-  # Bump for oclif with `--no-source-links` support, can remove after ~Apr 11th
-  - 'oclif@4.23.0'
+  # Bump for jiti with ts path support, can remove after ~May 9th
+  - 'jiti@2.7.0'

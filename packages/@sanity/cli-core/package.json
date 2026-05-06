@@ -65,7 +65,6 @@
   "dependencies": {
     "@inquirer/prompts": "^8.3.0",
     "@oclif/core": "catalog:",
-    "@rexxars/jiti": "^2.6.2",
     "@sanity/client": "catalog:",
     "babel-plugin-react-compiler": "^1.0.0",
     "boxen": "^8.0.1",
@@ -73,6 +72,7 @@
     "get-it": "^8.7.0",
     "get-tsconfig": "catalog:",
     "import-meta-resolve": "catalog:",
+    "jiti": "^2.7.0",
     "jsdom": "catalog:",
     "json-lexer": "^1.2.0",
     "log-symbols": "^7.0.1",
