@@ -1,4 +1,4 @@
-import { type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {checkRequiredDependencies} from '../checkRequiredDependencies'
