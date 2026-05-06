@@ -4,17 +4,21 @@ import {existsSync} from 'node:fs'
 import {testCommand} from '@sanity/cli-test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {CodemodCommand} from '../codemod.js'
 
-vi.mock('../../util/getLocalPackageVersion.js', () => ({
-  getLocalPackageVersion: vi.fn(),
-}))
+const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    getLocalPackageVersion: mockGetLocalPackageVersion,
+  }
+})
 
 vi.mock('node:child_process')
 vi.mock('node:fs')
 
-const mockGetLocalPackageVersion = vi.mocked(getLocalPackageVersion)
 const mockSpawn = vi.mocked(spawn)
 const mockExecSync = vi.mocked(execSync)
 const mockExistsSync = vi.mocked(existsSync)

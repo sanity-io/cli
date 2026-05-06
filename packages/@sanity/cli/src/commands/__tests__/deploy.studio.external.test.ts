@@ -7,10 +7,9 @@ import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 import {buildStudio} from '../../actions/build/buildStudio.js'
 import {checkDir} from '../../actions/deploy/checkDir.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {DeployCommand} from '../deploy.js'
 
-vi.mock('../../util/getLocalPackageVersion.js')
+const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 
 vi.mock('../../actions/build/buildStudio.js', () => ({
   buildStudio: vi.fn(),
@@ -31,6 +30,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
         start: vi.fn(),
       }),
     }),
+    getLocalPackageVersion: mockGetLocalPackageVersion,
     studioWorkerTask: vi.fn(),
   }
 })
@@ -60,7 +60,6 @@ const mockStudioWorkerTask = vi.mocked(studioWorkerTask)
 const mockSelect = vi.mocked(select)
 const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
-const mockGetLocalPackageVersion = vi.mocked(getLocalPackageVersion)
 const mockBuildStudio = vi.mocked(buildStudio)
 
 describe('#deploy studio (external)', () => {

@@ -4,7 +4,7 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {Versions} from '../../commands/versions.js'
 import {getCliVersion} from '../../util/getCliVersion.js'
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
+import {getLocalPackageVersion} from '@sanity/cli-core'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 
@@ -13,10 +13,10 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
+    getLocalPackageVersion: vi.fn(),
     readPackageJson: mockReadPackageJson,
   }
 })
-vi.mock(import('../../util/getLocalPackageVersion.js'))
 vi.mock(import('get-latest-version'))
 
 const defaultMocks = {

@@ -4,16 +4,13 @@ import {compareDependencyVersions} from '../compareDependencyVersions'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 const mockRequest = vi.hoisted(() => vi.fn())
-
 const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
-vi.mock('../../util/getLocalPackageVersion.js', () => ({
-  getLocalPackageVersion: mockGetLocalPackageVersion,
-}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
+    getLocalPackageVersion: mockGetLocalPackageVersion,
     readPackageJson: mockReadPackageJson,
   }
 })

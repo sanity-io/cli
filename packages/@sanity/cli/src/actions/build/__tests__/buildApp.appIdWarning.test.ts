@@ -23,10 +23,6 @@ vi.mock('../../../util/appId.js', () => ({
   getAppId: mockGetAppId,
 }))
 
-vi.mock('../../../util/getLocalPackageVersion.js', () => ({
-  getLocalPackageVersion: vi.fn().mockResolvedValue('1.0.0'),
-}))
-
 vi.mock('../../../util/compareDependencyVersions.js', () => ({
   compareDependencyVersions: vi.fn().mockResolvedValue({mismatched: [], unresolvedPrerelease: []}),
 }))
@@ -59,6 +55,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
     getCliTelemetry: vi.fn().mockReturnValue({
       trace: vi.fn().mockReturnValue({complete: vi.fn(), log: vi.fn(), start: vi.fn()}),
     }),
+    getLocalPackageVersion: vi.fn().mockResolvedValue('1.0.0'),
     getTimer: vi.fn().mockReturnValue({end: vi.fn().mockReturnValue(0), start: vi.fn()}),
     isInteractive: vi.fn().mockReturnValue(false),
   }

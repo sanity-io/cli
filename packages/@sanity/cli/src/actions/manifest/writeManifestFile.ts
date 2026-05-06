@@ -1,9 +1,8 @@
 import {mkdir, writeFile} from 'node:fs/promises'
 import {isAbsolute, join, resolve} from 'node:path'
 
-import {subdebug} from '@sanity/cli-core'
+import {getLocalPackageVersion, subdebug} from '@sanity/cli-core'
 
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {type CreateManifest, type CreateWorkspaceManifest} from './types.js'
 import {writeWorkspaceFiles} from './writeWorkspaceFiles.js'
 

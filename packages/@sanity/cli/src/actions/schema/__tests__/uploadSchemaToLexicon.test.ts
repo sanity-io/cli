@@ -2,8 +2,9 @@ import {resolveLocalPackage} from '@sanity/cli-core'
 import {type Workspace} from 'sanity'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {getLocalPackageVersion} from '../../../util/getLocalPackageVersion.js'
 import {uploadSchemaToLexicon} from '../uploadSchemaToLexicon.js'
+
+const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 
 const mockUploadSchema = vi.fn()
 const mockGenerateStudioManifest = vi.fn()
@@ -16,20 +17,16 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
     getProjectCliClient: vi.fn().mockResolvedValue({
       withConfig: (...args: unknown[]) => mockWithConfig(...args),
     }),
+    getLocalPackageVersion: mockGetLocalPackageVersion,
     resolveLocalPackage: vi.fn(),
   }
 })
-
-vi.mock('../../../util/getLocalPackageVersion.js', () => ({
-  getLocalPackageVersion: vi.fn(),
-}))
 
 // Mock the icon resolver to avoid React/DOM dependencies
 vi.mock('../../manifest/iconResolver.js', () => ({
   resolveIcon: vi.fn().mockResolvedValue(undefined),
 }))
 
-const mockGetLocalPackageVersion = vi.mocked(getLocalPackageVersion)
 const mockResolveLocalPackage = vi.mocked(resolveLocalPackage)
 
 function createWorkspace(overrides: Record<string, unknown> = {}) {

@@ -2,11 +2,10 @@ import {readFile} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {type UserViteConfig} from '@sanity/cli-core'
+import {type UserViteConfig, getLocalPackageVersion} from '@sanity/cli-core'
 import {type InlineConfig, preview} from 'vite'
 
 import {extendViteConfigWithUserConfig} from '../actions/build/getViteConfig.js'
-import {getLocalPackageVersion} from '../util/getLocalPackageVersion.js'
 import {serverDebug} from './serverDebug.js'
 import {sanityBasePathRedirectPlugin} from './vite/plugin-sanity-basepath-redirect.js'
 

@@ -1,11 +1,11 @@
 import {type Output} from '@sanity/cli-core'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {getLocalPackageVersion} from '../../../util/getLocalPackageVersion.js'
 import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from '../getAutoUpdatesImportMap.js'
 
 const mockWarnAboutMissingAppId = vi.hoisted(() => vi.fn())
 const mockGetAppId = vi.hoisted(() => vi.fn())
+const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 /** These are not relevant for what we are testing, but still needed to pass type checker */
 const FLAGS = {
   'auto-updates': true,
@@ -24,10 +24,6 @@ vi.mock('../../../util/warnAboutMissingAppId.js', () => ({
 
 vi.mock('../../../util/appId.js', () => ({
   getAppId: mockGetAppId,
-}))
-
-vi.mock('../../../util/getLocalPackageVersion.js', () => ({
-  getLocalPackageVersion: vi.fn().mockResolvedValue(null),
 }))
 
 vi.mock('../checkStudioDependencyVersions.js', () => ({
@@ -74,6 +70,7 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
     getCliTelemetry: vi.fn().mockReturnValue({
       trace: vi.fn().mockReturnValue({complete: vi.fn(), log: vi.fn(), start: vi.fn()}),
     }),
+    getLocalPackageVersion: mockGetLocalPackageVersion,
     getTimer: vi.fn().mockReturnValue({end: vi.fn().mockReturnValue(0), start: vi.fn()}),
     isInteractive: vi.fn().mockReturnValue(false),
   }
@@ -192,7 +189,7 @@ describe('buildStudio appId warning', () => {
     mockGetAppId.mockReturnValue('my-app-id')
     const output = createMockOutput()
 
-    vi.mocked(getLocalPackageVersion).mockResolvedValueOnce('3.5.0')
+    mockGetLocalPackageVersion.mockResolvedValueOnce('3.5.0')
 
     await buildStudio({
       autoUpdatesEnabled: true,

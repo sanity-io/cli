@@ -1,11 +1,13 @@
 import path from 'node:path'
 
-import {type CliConfig, type Output, type PackageJson, readPackageJson} from '@sanity/cli-core'
+import {
+  type Output,
+  type PackageJson,
+  getLocalPackageVersion,
+  readPackageJson,
+} from '@sanity/cli-core'
 import {oneline} from 'oneline'
 import {minVersion, satisfies, type SemVer} from 'semver'
-
-import {determineIsApp} from '../../util/determineIsApp.js'
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 
 const defaultStudioManifestProps: Partial<PackageJson> = {
   name: 'studio',
@@ -17,9 +19,9 @@ interface CheckResult {
 }
 
 interface CheckRequiredDependenciesOptions {
-  cliConfig: CliConfig
   output: Output
   workDir: string
+  isApp: boolean
 }
 
 const styledComponentsVersionRange = '^6.1.15'
@@ -38,10 +40,9 @@ const styledComponentsVersionRange = '^6.1.15'
 export async function checkRequiredDependencies(
   options: CheckRequiredDependenciesOptions,
 ): Promise<CheckResult> {
-  const {cliConfig, output, workDir: studioPath} = options
+  const {isApp, output, workDir: studioPath} = options
   // currently there's no check needed for core apps,
   // but this should be removed once they are more mature
-  const isApp = determineIsApp(cliConfig)
   if (isApp) {
     return {installedSanityVersion: ''}
   }

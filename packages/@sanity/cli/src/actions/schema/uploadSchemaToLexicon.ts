@@ -1,12 +1,17 @@
 import {styleText} from 'node:util'
 
 import {ux} from '@oclif/core/ux'
-import {doImport, getProjectCliClient, resolveLocalPackage, subdebug} from '@sanity/cli-core'
+import {
+  doImport,
+  getLocalPackageVersion,
+  getProjectCliClient,
+  resolveLocalPackage,
+  subdebug,
+} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {type StudioManifest, type Workspace} from 'sanity'
 
 import {SCHEMA_API_VERSION} from '../../services/schemas.js'
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 
 const iconResolverPath = new URL('../manifest/iconResolver.js', import.meta.url).href
 

@@ -1,6 +1,6 @@
 import {styleText} from 'node:util'
 
-import {isInteractive} from '@sanity/cli-core'
+import {getLocalPackageVersion, isInteractive} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner} from '@sanity/cli-core/ux'
 import {parse as semverParse} from 'semver'
 
@@ -9,7 +9,6 @@ import {gracefulServerDeath} from '../../server/gracefulServerDeath.js'
 import {getProjectById} from '../../services/projects.js'
 import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
 import {checkRequiredDependencies} from '../build/checkRequiredDependencies.js'

@@ -1,10 +1,10 @@
 import path from 'node:path'
 
+import {getLocalPackageDir, getLocalPackageVersion} from '@sanity/cli-core'
 import {gt, minVersion, rcompare, satisfies} from 'semver'
 import {build} from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
-import {getLocalPackageDir, getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {createExternalFromImportMap} from './createExternalFromImportMap.js'
 
 // Directory where vendor packages will be stored
