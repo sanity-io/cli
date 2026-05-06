@@ -14,10 +14,10 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
+    getLocalPackageVersion: mockGetLocalPackageVersion,
     getProjectCliClient: vi.fn().mockResolvedValue({
       withConfig: (...args: unknown[]) => mockWithConfig(...args),
     }),
-    getLocalPackageVersion: mockGetLocalPackageVersion,
     resolveLocalPackage: vi.fn(),
   }
 })

@@ -1,10 +1,10 @@
+import {getLocalPackageVersion} from '@sanity/cli-core'
 import {testCommand} from '@sanity/cli-test'
 import {getLatestVersion} from 'get-latest-version'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {Versions} from '../../commands/versions.js'
 import {getCliVersion} from '../../util/getCliVersion.js'
-import {getLocalPackageVersion} from '@sanity/cli-core'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 

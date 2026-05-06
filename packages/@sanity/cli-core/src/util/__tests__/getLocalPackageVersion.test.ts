@@ -1,9 +1,10 @@
 import {dirname, join, resolve} from 'node:path'
 import {fileURLToPath, pathToFileURL} from 'node:url'
 
-import {type PackageJson} from '@sanity/cli-core'
 import {moduleResolve} from 'import-meta-resolve'
 import {afterEach, describe, expect, test, vi} from 'vitest'
+
+import {type PackageJson} from '../readPackageJson.js'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 

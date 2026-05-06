@@ -1,4 +1,4 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import { type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {checkRequiredDependencies} from '../checkRequiredDependencies'
@@ -10,8 +10,8 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
-    readPackageJson: mockReadPackageJson,
     getLocalPackageVersion: mockedGetLocalPackageVersion,
+    readPackageJson: mockReadPackageJson,
   }
 })
 
@@ -23,7 +23,6 @@ describe('#checkRequiredDependencies', () => {
     print: vi.fn(),
     warn: vi.fn(),
   } as unknown as Output
-  const mockCliConfig: Partial<CliConfig> = {}
 
   beforeEach(() => {
     vi.clearAllMocks()

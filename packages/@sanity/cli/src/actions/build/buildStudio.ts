@@ -37,8 +37,8 @@ import {type BuildOptions} from './types.js'
 interface InternalBuildOptions {
   appId: string | undefined
   autoUpdatesEnabled: boolean
-  basePath: string
   calledFromDeploy: boolean | undefined
+  determineBasePath: () => string
   isApp: boolean
   minify: boolean
   outDir: string | undefined
@@ -60,14 +60,11 @@ interface InternalBuildOptions {
  * @internal
  */
 export async function buildStudio(options: BuildOptions): Promise<void> {
-  const {cliConfig, flags, calledFromDeploy, outDir, output, workDir} = options
+  const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
 
-  let autoUpdatesEnabled = options.calledFromDeploy
+  const autoUpdatesEnabled = options.calledFromDeploy
     ? options.autoUpdatesEnabled
     : shouldAutoUpdate({cliConfig, flags, output})
-
-  // Determine base path for built studio
-  const basePath = determineBasePath(cliConfig, 'studio', output)
 
   const upgradePkgs = async (options: {
     packages: [name: string, version: string][]
@@ -84,10 +81,12 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   await internalBuildStudio({
     appId: getAppId(cliConfig),
     autoUpdatesEnabled,
-    basePath,
     calledFromDeploy,
+    determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
     isApp: determineIsApp(cliConfig),
     minify: Boolean(flags.minify),
+    outDir,
+    output,
     projectId: cliConfig?.api?.projectId,
     reactCompiler: cliConfig.reactCompiler,
     schemaExtraction: cliConfig.schemaExtraction,
@@ -96,24 +95,24 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     unattendedMode: Boolean(flags.yes),
     upgradePackages: upgradePkgs,
     vite: cliConfig.vite,
-    outDir,
-    output,
     workDir,
   })
 }
 
 /**
  * Internal build studio that avoids depending on flags for CLI config.
- * @param options options for the build
+ * @param options - options for the build
  */
 async function internalBuildStudio(options: InternalBuildOptions): Promise<void> {
   const timer = getTimer()
   const {
     appId,
-    basePath,
-    projectId,
+    determineBasePath,
     isApp,
     minify,
+    outDir,
+    output,
+    projectId,
     reactCompiler,
     schemaExtraction,
     sourceMap,
@@ -121,8 +120,6 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
     unattendedMode,
     upgradePackages,
     vite,
-    outDir,
-    output,
     workDir,
   } = options
   let autoUpdatesEnabled = options.autoUpdatesEnabled
@@ -255,6 +252,9 @@ async function internalBuildStudio(options: InternalBuildOptions): Promise<void>
       message: `Do you want to delete the existing directory (${outputDir}) first?`,
     })
   }
+
+  // Determine base path for built studio
+  const basePath = determineBasePath()
 
   if (schemaExtraction?.enabled) {
     output.log(`${logSymbols.info} Building with schema extraction enabled`)

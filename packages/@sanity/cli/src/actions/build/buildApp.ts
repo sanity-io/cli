@@ -43,8 +43,8 @@ interface InternalBuildOptions {
   sourceMap: boolean
   stats: boolean
   unattendedMode: boolean
-  workDir: string
   vite: UserViteConfig | undefined
+  workDir: string
 }
 
 /**
@@ -65,21 +65,21 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     calledFromDeploy: options.calledFromDeploy,
     entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
     minify: flags.minify,
-    reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
-    schemaExtraction: cliConfig?.schemaExtraction,
-    stats: flags.stats,
-    sourceMap: Boolean(flags['source-maps']),
-    unattendedMode: flags.yes,
-    vite: cliConfig.vite,
     outDir,
     output,
+    reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
+    schemaExtraction: cliConfig?.schemaExtraction,
+    sourceMap: Boolean(flags['source-maps']),
+    stats: flags.stats,
+    unattendedMode: flags.yes,
+    vite: cliConfig.vite,
     workDir,
   })
 }
 
 /**
  * Internal build app that avoids depending on flags for CLI config.
- * @param options options for the build
+ * @param options - options for the build
  */
 async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
   const {appId, basePath, outDir, output, workDir} = options

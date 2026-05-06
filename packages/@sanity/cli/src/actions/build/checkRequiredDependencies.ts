@@ -1,9 +1,9 @@
 import path from 'node:path'
 
 import {
+  getLocalPackageVersion,
   type Output,
   type PackageJson,
-  getLocalPackageVersion,
   readPackageJson,
 } from '@sanity/cli-core'
 import {oneline} from 'oneline'
@@ -19,9 +19,9 @@ interface CheckResult {
 }
 
 interface CheckRequiredDependenciesOptions {
+  isApp: boolean
   output: Output
   workDir: string
-  isApp: boolean
 }
 
 const styledComponentsVersionRange = '^6.1.15'
