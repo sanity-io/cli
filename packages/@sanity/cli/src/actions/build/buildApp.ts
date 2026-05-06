@@ -3,12 +3,12 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {
-  CliConfig,
+  type CliConfig,
   getCliTelemetry,
   getLocalPackageVersion,
   getTimer,
   isInteractive,
-  Output,
+  type Output,
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
@@ -32,8 +32,8 @@ interface InternalBuildOptions {
   appId: string | undefined
   appTitle: string | undefined
   autoUpdatesEnabled: boolean
-  basePath: string
   calledFromDeploy: boolean | undefined
+  determineBasePath: () => string
   entry: string | undefined
   minify: boolean
   outDir: string | undefined
@@ -55,14 +55,12 @@ interface InternalBuildOptions {
 export async function buildApp(options: BuildOptions): Promise<void> {
   const {cliConfig, flags, outDir, output, workDir} = options
 
-  const basePath = determineBasePath(cliConfig, 'app', output)
-
   await internalBuildApp({
     appId: getAppId(cliConfig),
     appTitle: cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined,
     autoUpdatesEnabled: options.autoUpdatesEnabled,
-    basePath,
     calledFromDeploy: options.calledFromDeploy,
+    determineBasePath: () => determineBasePath(cliConfig, 'app', output),
     entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
     minify: flags.minify,
     outDir,
@@ -82,7 +80,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
  * @param options - options for the build
  */
 async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
-  const {appId, basePath, outDir, output, workDir} = options
+  const {appId, determineBasePath, outDir, output, workDir} = options
   let {autoUpdatesEnabled} = options
   const unattendedMode = options.unattendedMode
   const timer = getTimer()
@@ -183,6 +181,8 @@ async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
       message: `Do you want to delete the existing directory (${outputDir}) first?`,
     })
   }
+
+  const basePath = determineBasePath()
 
   let spin: SpinnerInstance
   if (shouldClean) {

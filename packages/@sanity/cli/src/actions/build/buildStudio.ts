@@ -3,12 +3,12 @@ import path from 'node:path'
 import {styleText} from 'node:util'
 
 import {
-  CliConfig,
+  type CliConfig,
   getCliTelemetry,
   getLocalPackageVersion,
   getTimer,
   isInteractive,
-  Output,
+  type Output,
   UserViteConfig,
 } from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
