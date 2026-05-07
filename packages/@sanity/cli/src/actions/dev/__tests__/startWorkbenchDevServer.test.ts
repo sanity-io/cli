@@ -258,10 +258,129 @@ describe('startWorkbenchDevServer', () => {
       expect(mockCreateServer).toHaveBeenCalledWith(
         expect.objectContaining({
           server: expect.objectContaining({
-            warmup: {clientFiles: ['./workbench.js']},
+            warmup: {
+              clientFiles: ['./workbench.js', 'sanity/workbench', '@sanity/workbench/_internal'],
+            },
           }),
         }),
       )
+    })
+  })
+
+  describe('remote-preload Link header', () => {
+    const federationConfig = {
+      app: {organizationId: 'org-test'},
+      federation: {enabled: true},
+    } as const
+
+    function getMiddleware(): (req: {url?: string}, res: ResLike, next: () => void) => void {
+      const calls = mockCreateServer.mock.calls
+      const lastCall = calls.at(-1)
+      if (!lastCall) throw new Error('createServer was not called')
+      const config = lastCall[0] as {plugins: PluginLike[]}
+      const plugin = config.plugins.find(
+        (p) => p && typeof p === 'object' && p.name === 'sanity:workbench-remote-preload-header',
+      )
+      if (!plugin) throw new Error('remote-preload plugin not registered')
+      const middlewareUse = vi.fn()
+      plugin.configureServer?.({middlewares: {use: middlewareUse}})
+      return middlewareUse.mock.calls[0][0]
+    }
+
+    interface ResLike {
+      setHeader: (name: string, value: string) => void
+    }
+
+    interface PluginLike {
+      configureServer?: (server: {middlewares: {use: (mw: unknown) => void}}) => void
+      name?: string
+    }
+
+    test('does not register plugin when remoteUrl is not set', async () => {
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const config = mockCreateServer.mock.calls[0][0] as {plugins: PluginLike[]}
+      expect(
+        config.plugins.find((p) => p?.name === 'sanity:workbench-remote-preload-header'),
+      ).toBeUndefined()
+    })
+
+    test('sets Link header on the root document', async () => {
+      vi.stubEnv(
+        'SANITY_INTERNAL_WORKBENCH_REMOTE_URL',
+        'https://workbench.example/mf-manifest.json',
+      )
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const middleware = getMiddleware()
+      const setHeader = vi.fn()
+      const next = vi.fn()
+      middleware({url: '/'}, {setHeader}, next)
+
+      expect(setHeader).toHaveBeenCalledWith(
+        'Link',
+        '<https://workbench.example/mf-manifest.json>; rel=preload; as=fetch; crossorigin',
+      )
+      expect(next).toHaveBeenCalled()
+    })
+
+    test('sets Link header on /index.html', async () => {
+      vi.stubEnv(
+        'SANITY_INTERNAL_WORKBENCH_REMOTE_URL',
+        'https://workbench.example/mf-manifest.json',
+      )
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const middleware = getMiddleware()
+      const setHeader = vi.fn()
+      middleware({url: '/index.html'}, {setHeader}, vi.fn())
+
+      expect(setHeader).toHaveBeenCalledWith('Link', expect.stringContaining('as=fetch'))
+    })
+
+    test('ignores query strings when matching the index document', async () => {
+      vi.stubEnv(
+        'SANITY_INTERNAL_WORKBENCH_REMOTE_URL',
+        'https://workbench.example/mf-manifest.json',
+      )
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const middleware = getMiddleware()
+      const setHeader = vi.fn()
+      middleware({url: '/?t=1'}, {setHeader}, vi.fn())
+
+      expect(setHeader).toHaveBeenCalledWith('Link', expect.stringContaining('rel=preload'))
+    })
+
+    test('does not set Link header on non-document requests', async () => {
+      vi.stubEnv(
+        'SANITY_INTERNAL_WORKBENCH_REMOTE_URL',
+        'https://workbench.example/mf-manifest.json',
+      )
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const middleware = getMiddleware()
+      const setHeader = vi.fn()
+      const next = vi.fn()
+      middleware({url: '/workbench.js'}, {setHeader}, next)
+
+      expect(setHeader).not.toHaveBeenCalled()
+      expect(next).toHaveBeenCalled()
     })
   })
 
@@ -489,6 +608,40 @@ describe('startWorkbenchDevServer', () => {
             port: 3334,
             type: 'studio',
           },
+        ],
+      })
+    })
+
+    test('forwards projectId from registry entries through the broadcast payload', async () => {
+      // Workbench needs the projectId on the very first event to resolve a
+      // local studio's primary project before the manifest arrives.
+      mockResolveLocalPackage.mockResolvedValue({})
+      const mockServer = createMockServer()
+      mockCreateServer.mockResolvedValue(mockServer)
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const watchCallback = mockWatchRegistry.mock.calls[0][0]
+      watchCallback([
+        {
+          host: 'localhost',
+          id: 'app-1',
+          pid: 2,
+          port: 3334,
+          projectId: 'x1g7jygt',
+          type: 'studio',
+        },
+      ])
+
+      expect(mockServer.ws.send).toHaveBeenCalledWith('sanity:workbench:local-applications', {
+        applications: [
+          expect.objectContaining({
+            host: 'localhost',
+            id: 'app-1',
+            port: 3334,
+            projectId: 'x1g7jygt',
+            type: 'studio',
+          }),
         ],
       })
     })
