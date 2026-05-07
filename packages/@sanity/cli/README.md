@@ -24,7 +24,9 @@ Code for sanity cli
 - [`sanity blueprints info`](#sanity-blueprints-info)
 - [`sanity blueprints init [DIR]`](#sanity-blueprints-init-dir)
 - [`sanity blueprints logs`](#sanity-blueprints-logs)
+- [`sanity blueprints mint-deploy-token`](#sanity-blueprints-mint-deploy-token)
 - [`sanity blueprints plan`](#sanity-blueprints-plan)
+- [`sanity blueprints promote`](#sanity-blueprints-promote)
 - [`sanity blueprints stacks`](#sanity-blueprints-stacks)
 - [`sanity build [OUTPUTDIR]`](#sanity-build-outputdir)
 - [`sanity codemod [CODEMODNAME]`](#sanity-codemod-codemodname)
@@ -255,7 +257,7 @@ EXAMPLES
 
 ```
 USAGE
-  $ sanity blueprints add TYPE [--json] [--validate-resources] [--example <value> | -n <value> | --fn-type
+  $ sanity blueprints add TYPE [--json] [--example <value> | -n <value> | --fn-type
     document-publish|document-create|document-delete|document-update|media-library-asset-create|media-library-asset-dele
     te|media-library-asset-update|scheduled-function|sync-tag-invalidate... | --language ts|js | --javascript |
     --fn-helpers | --fn-installer skip|npm|pnpm|yarn] [-i | ]
@@ -264,23 +266,22 @@ ARGUMENTS
   TYPE  (function) Type of resource to add (only "function" is supported)
 
 FLAGS
-  -i, --install                  Shortcut for --fn-installer npm
-  -n, --name=<value>             Name of the resource to add
-      --example=<value>          Example to use for the function resource. Discover examples at
-                                 https://www.sanity.io/exchange/type=recipes/by=sanity
-      --[no-]fn-helpers          Add helpers to the new function
-      --fn-installer=<option>    Which package manager to use when installing the @sanity/functions helpers
-                                 <options: skip|npm|pnpm|yarn>
-      --fn-type=<option>...      Document change event(s) that should trigger the function; you can specify multiple
-                                 events by specifying this flag multiple times
-                                 <options: document-publish|document-create|document-delete|document-update|media-librar
-                                 y-asset-create|media-library-asset-delete|media-library-asset-update|scheduled-function
-                                 |sync-tag-invalidate>
-      --javascript               Use JavaScript instead of TypeScript
-      --json                     Format output as json
-      --language=<option>        [default: ts] Language of the new function
-                                 <options: ts|js>
-      --[no-]validate-resources  Validate resources
+  -i, --install                Shortcut for --fn-installer npm
+  -n, --name=<value>           Name of the resource to add
+      --example=<value>        Example to use for the function resource. Discover examples at
+                               https://www.sanity.io/exchange/type=recipes/by=sanity
+      --[no-]fn-helpers        Add helpers to the new function
+      --fn-installer=<option>  Which package manager to use when installing the @sanity/functions helpers
+                               <options: skip|npm|pnpm|yarn>
+      --fn-type=<option>...    Document change event(s) that should trigger the function; you can specify multiple
+                               events by specifying this flag multiple times
+                               <options: document-publish|document-create|document-delete|document-update|media-library-
+                               asset-create|media-library-asset-delete|media-library-asset-update|scheduled-function|syn
+                               c-tag-invalidate>
+      --javascript             Use JavaScript instead of TypeScript
+      --json                   Format output as json
+      --language=<option>      [default: ts] Language of the new function
+                               <options: ts|js>
 
 DESCRIPTION
   [deprecated] Use "functions add" instead
@@ -309,8 +310,7 @@ View or edit the local Blueprint configuration
 
 ```
 USAGE
-  $ sanity blueprints config [--json] [--validate-resources] [--stack <value> -e] [--project-id <value> ]
-    [--organization-id <value> ]
+  $ sanity blueprints config [--json] [--stack <value> -e] [--project-id <value> ] [--organization-id <value> ]
 
 FLAGS
   -e, --edit                     Modify the configuration interactively, or directly when combined with ID flags.
@@ -318,7 +318,6 @@ FLAGS
       --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
       --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
       --stack=<value>            Stack name or ID to set in the configuration. Requires --edit flag
-      --[no-]validate-resources  Validate resources
 
 DESCRIPTION
   View or edit the local Blueprint configuration
@@ -346,14 +345,17 @@ Deploy the local Blueprint to the remote Stack
 
 ```
 USAGE
-  $ sanity blueprints deploy [--json] [--validate-resources] [--stack <value>] [-m <value>] [--no-wait]
+  $ sanity blueprints deploy [--json] [--stack <value>] [--project-id <value> | --organization-id <value>] [-m <value>]
+    [--no-wait] [--new-stack-name <value>]
 
 FLAGS
   -m, --message=<value>          Message describing the deployment (e.g. reason for change)
       --json                     Format output as json
+      --new-stack-name=<value>   Set a new name for the Stack
       --no-wait                  Do not wait for Stack deployment to complete
+      --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
+      --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
       --stack=<value>            Stack name or ID to use instead of the locally configured Stack
-      --[no-]validate-resources  Validate resources
 
 DESCRIPTION
   Deploy the local Blueprint to the remote Stack
@@ -378,6 +380,12 @@ EXAMPLES
   $ sanity blueprints deploy --no-wait
 
   $ sanity blueprints deploy --fn-installer npm
+
+  $ sanity blueprints deploy --stack <name-or-id>
+
+  $ sanity blueprints deploy --organization-id <orgId> --stack <name-or-id>
+
+  $ sanity blueprints deploy --new-stack-name <new-name>
 ```
 
 ## `sanity blueprints destroy`
@@ -386,8 +394,8 @@ Destroy a remote Stack deployment and its resources
 
 ```
 USAGE
-  $ sanity blueprints destroy [--json] [--validate-resources] [--project-id <value> --stack <value> --force]
-    [--organization-id <value>  ] [--no-wait]
+  $ sanity blueprints destroy [--json] [--project-id <value> --stack <value> --force] [--organization-id <value>  ]
+    [--no-wait]
 
 FLAGS
   --force                    Force Stack destruction (skip confirmation)
@@ -396,7 +404,6 @@ FLAGS
   --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
   --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
   --stack=<value>            Stack name or ID to destroy (defaults to the locally configured Stack)
-  --[no-]validate-resources  Validate resources
 
 DESCRIPTION
   Destroy a remote Stack deployment and its resources
@@ -420,14 +427,13 @@ Diagnose potential issues with local Blueprint and remote Stack configuration
 
 ```
 USAGE
-  $ sanity blueprints doctor [--json] [-p <value>] [--validate-resources] [--verbose] [--fix]
+  $ sanity blueprints doctor [--json] [-p <value>] [--verbose] [--fix]
 
 FLAGS
-  -p, --path=<value>             [env: SANITY_BLUEPRINT_PATH] Path to a Blueprint file or directory containing one
-      --fix                      Interactively fix configuration issues
-      --json                     Format output as json
-      --[no-]validate-resources  Validate resources
-      --[no-]verbose             Verbose output; defaults to true
+  -p, --path=<value>  [env: SANITY_BLUEPRINT_PATH] Path to a Blueprint file or directory containing one
+      --fix           Interactively fix configuration issues
+      --json          Format output as json
+      --[no-]verbose  Verbose output; defaults to true
 
 DESCRIPTION
   Diagnose potential issues with local Blueprint and remote Stack configuration
@@ -450,13 +456,13 @@ Display the status and resources of the remote Stack deployment
 
 ```
 USAGE
-  $ sanity blueprints info [--json] [--validate-resources] [--stack <value>] [--project-id <value>]
+  $ sanity blueprints info [--json] [--stack <value>] [--project-id <value> | --organization-id <value>]
 
 FLAGS
   --json                     Format output as json
+  --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
   --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
   --stack=<value>            Stack name or ID
-  --[no-]validate-resources  Validate resources
 
 DESCRIPTION
   Display the status and resources of the remote Stack deployment
@@ -475,6 +481,8 @@ EXAMPLES
   $ sanity blueprints info --stack <name-or-id>
 
   $ sanity blueprints info --project-id <id> --stack <name-or-id>
+
+  $ sanity blueprints info --organization-id <orgId> --stack <name-or-id>
 ```
 
 ## `sanity blueprints init [DIR]`
@@ -483,9 +491,8 @@ Initialize a Blueprint and create a remote Stack
 
 ```
 USAGE
-  $ sanity blueprints init [DIR] [--json] [--validate-resources] [--dir <value>] [--example <value> |
-    --blueprint-type json|js|ts | --stack-id <value> | --stack-name <value>] [--project-id <value>] [--organization-id
-    <value>]
+  $ sanity blueprints init [DIR] [--json] [--dir <value>] [--example <value> | --blueprint-type json|js|ts |
+    --stack-id <value> | --stack-name <value>] [--project-id <value> | --organization-id <value>]
 
 ARGUMENTS
   [DIR]  Directory to create the local Blueprint in
@@ -500,7 +507,6 @@ FLAGS
   --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
   --stack-id=<value>         Existing Stack ID used to scope local Blueprint
   --stack-name=<value>       Name to use for a new Stack provisioned during initialization
-  --[no-]validate-resources  Validate resources
 
 DESCRIPTION
   Initialize a Blueprint and create a remote Stack
@@ -534,20 +540,27 @@ Display logs for the current Blueprint's Stack deployment
 
 ```
 USAGE
-  $ sanity blueprints logs [--json] [--validate-resources] [--stack <value>] [-w]
+  $ sanity blueprints logs [--json] [--stack <value>] [--project-id <value> | --organization-id <value>] [-l <value>
+    | -w] [--since <value> | ] [--before <value> | ]
 
 FLAGS
-  -w, --watch                    Watch for new Stack logs (streaming mode)
+  -l, --limit=<value>            Maximum number of log entries to retrieve (1-500)
+  -w, --watch                    Watch for new Stack logs
+      --before=<value>           Only show logs before this ISO 8601 timestamp
       --json                     Format output as json
+      --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
+      --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
+      --since=<value>            Only show logs after this ISO 8601 timestamp
       --stack=<value>            Stack name or ID to use instead of the locally configured Stack
-      --[no-]validate-resources  Validate resources
 
 DESCRIPTION
   Display logs for the current Blueprint's Stack deployment
 
   Retrieves Stack deployment logs, useful for debugging and monitoring deployment activity.
 
-  Use --watch (-w) to stream logs in real-time.
+  Use --watch (-w) to tail logs in real-time.
+
+  Use --limit, --since, or --before to narrow the result set when not watching.
 
   If you're not seeing expected logs, verify your Stack is deployed with 'blueprints info'.
 
@@ -555,6 +568,57 @@ EXAMPLES
   $ sanity blueprints logs
 
   $ sanity blueprints logs --watch
+
+  $ sanity blueprints logs --stack <name-or-id>
+
+  $ sanity blueprints logs --limit 500
+
+  $ sanity blueprints logs --since 2026-05-01T00:00:00Z
+
+  $ sanity blueprints logs --before 2026-05-01T00:00:00Z
+```
+
+## `sanity blueprints mint-deploy-token`
+
+Create a robot API token for deploying Blueprints from CI/CD
+
+```
+USAGE
+  $ sanity blueprints mint-deploy-token [--project-id <value> | --organization-id <value>] [--label <value>] [-P |
+  --json]
+
+FLAGS
+  -P, --print                    Print only the raw token to stdout (suitable for shell substitution)
+      --json                     Format output as json
+      --label=<value>            Human-readable label for the robot. Defaults to a generated value.
+      --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
+      --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
+
+DESCRIPTION
+  Create a robot API token for deploying Blueprints from CI/CD
+
+  Mints a long-lived robot token with the role required to plan, deploy, and destroy Blueprints in this project or
+  organization.
+
+  By default the command runs interactively and asks how you want to receive the token (clipboard, print, or exit). Use
+  --print to emit only the raw token for shell pipelines, or --json for full API output.
+
+  The minted token is also visible in your Sanity Manage UI under Robots, where it can be revoked.
+
+EXAMPLES
+  $ sanity blueprints mint-deploy-token
+
+  $ sanity blueprints mint-deploy-token --label "ci-deploy"
+
+  $ sanity blueprints mint-deploy-token --print
+
+  export SANITY_AUTH_TOKEN=$(sanity blueprints mint-deploy-token --print)
+
+  $ sanity blueprints mint-deploy-token --json
+
+  $ sanity blueprints mint-deploy-token --project-id <projectId>
+
+  $ sanity blueprints mint-deploy-token --organization-id <orgId>
 ```
 
 ## `sanity blueprints plan`
@@ -563,12 +627,13 @@ Preview changes that will be applied to the remote Stack
 
 ```
 USAGE
-  $ sanity blueprints plan [--json] [--validate-resources] [--stack <value>]
+  $ sanity blueprints plan [--json] [--stack <value>] [--project-id <value> | --organization-id <value>]
 
 FLAGS
   --json                     Format output as json
+  --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
+  --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
   --stack=<value>            Stack name or ID to use instead of the locally configured Stack
-  --[no-]validate-resources  Validate resources
 
 DESCRIPTION
   Preview changes that will be applied to the remote Stack
@@ -581,6 +646,43 @@ DESCRIPTION
 
 EXAMPLES
   $ sanity blueprints plan
+
+  $ sanity blueprints plan --stack <name-or-id>
+
+  $ sanity blueprints plan --organization-id <orgId> --stack <name-or-id>
+```
+
+## `sanity blueprints promote`
+
+Promote a Stack from project scope to organization scope
+
+```
+USAGE
+  $ sanity blueprints promote [--json] [--stack <value>] [--project-id <value> | ] [--force] [--new-stack-name <value>]
+
+FLAGS
+  --force                   Skip confirmation prompt
+  --json                    Format output as json
+  --new-stack-name=<value>  Set a new name for the Stack while promoting
+  --project-id=<value>      Sanity project ID used to scope Blueprint and Stack
+  --stack=<value>           Stack name or ID to promote
+
+DESCRIPTION
+  Promote a Stack from project scope to organization scope
+
+  Promotes a deployed Stack to organization scope, enabling management of org-level resources. Promotion cannot be
+  reversed.
+
+  Your local Blueprint configuration will be updated to reflect the new scope.
+
+EXAMPLES
+  $ sanity blueprints promote
+
+  $ sanity blueprints promote --stack <name-or-id>
+
+  $ sanity blueprints promote --project-id <projectId> --stack <name-or-id>
+
+  $ sanity blueprints promote --new-stack-name <new-name>
 ```
 
 ## `sanity blueprints stacks`
@@ -589,15 +691,13 @@ List remote Stack deployments for your project or organization
 
 ```
 USAGE
-  $ sanity blueprints stacks [--json] [--validate-resources] [--project-id <value> | --organization-id <value> |
-    --include-projects]
+  $ sanity blueprints stacks [--json] [--project-id <value> | --organization-id <value> | --include-projects]
 
 FLAGS
   --include-projects         Include Stacks from all projects within the organization. Requires --organization-id.
   --json                     Format output as json
   --organization-id=<value>  Sanity organization ID used to scope Blueprint and Stack
   --project-id=<value>       Sanity project ID used to scope Blueprint and Stack
-  --[no-]validate-resources  Validate resources
 
 DESCRIPTION
   List remote Stack deployments for your project or organization
@@ -1762,28 +1862,27 @@ Add a Function to your Blueprint
 
 ```
 USAGE
-  $ sanity functions add [--json] [--validate-resources] [--example <value> | -n <value> |  | --language ts|js |
-    --javascript |  | ] [--type document-publish|document-create|document-delete|document-update|media-library-asset-cre
-    ate|media-library-asset-delete|media-library-asset-update|scheduled-function|sync-tag-invalidate... ] [--helpers]
-    [--installer skip|npm|pnpm|yarn] [-i | ]
+  $ sanity functions add [--json] [--example <value> | -n <value> |  | --language ts|js | --javascript |  | ]
+    [--type document-publish|document-create|document-delete|document-update|media-library-asset-create|media-library-as
+    set-delete|media-library-asset-update|scheduled-function|sync-tag-invalidate... ] [--helpers] [--installer
+    skip|npm|pnpm|yarn] [-i | ]
 
 FLAGS
-  -i, --install                  Shortcut for --fn-installer npm
-  -n, --name=<value>             Name of the Function to add
-      --example=<value>          Example to use for the Function
-      --[no-]helpers             Add helpers to the new Function
-      --installer=<option>       How to install the @sanity/functions helpers
-                                 <options: skip|npm|pnpm|yarn>
-      --javascript               Use JavaScript instead of TypeScript
-      --json                     Format output as json
-      --language=<option>        [default: ts] Language of the new Function
-                                 <options: ts|js>
-      --type=<option>...         Document change event(s) that should trigger the function; you can specify multiple
-                                 events by specifying this flag multiple times
-                                 <options: document-publish|document-create|document-delete|document-update|media-librar
-                                 y-asset-create|media-library-asset-delete|media-library-asset-update|scheduled-function
-                                 |sync-tag-invalidate>
-      --[no-]validate-resources  Validate resources
+  -i, --install             Shortcut for --fn-installer npm
+  -n, --name=<value>        Name of the Function to add
+      --example=<value>     Example to use for the Function
+      --[no-]helpers        Add helpers to the new Function
+      --installer=<option>  How to install the @sanity/functions helpers
+                            <options: skip|npm|pnpm|yarn>
+      --javascript          Use JavaScript instead of TypeScript
+      --json                Format output as json
+      --language=<option>   [default: ts] Language of the new Function
+                            <options: ts|js>
+      --type=<option>...    Document change event(s) that should trigger the function; you can specify multiple events
+                            by specifying this flag multiple times
+                            <options: document-publish|document-create|document-delete|document-update|media-library-ass
+                            et-create|media-library-asset-delete|media-library-asset-update|scheduled-function|sync-tag-
+                            invalidate>
 
 DESCRIPTION
   Add a Function to your Blueprint
@@ -1813,15 +1912,14 @@ Start the Sanity Function emulator
 
 ```
 USAGE
-  $ sanity functions dev [--json] [--validate-resources] [-h <value>] [-p <value>] [-t <value>]
+  $ sanity functions dev [--json] [-h <value>] [-p <value>] [-t <value>]
 
 FLAGS
-  -h, --host=<value>             The local network interface at which to listen. [default: "localhost"]
-  -p, --port=<value>             TCP port to start emulator on. [default: 8080]
-  -t, --timeout=<value>          Maximum execution time for all functions, in seconds. Takes precedence over
-                                 function-specific `timeout`
-      --json                     Format output as json
-      --[no-]validate-resources  Validate resources
+  -h, --host=<value>     The local network interface at which to listen. [default: "localhost"]
+  -p, --port=<value>     TCP port to start emulator on. [default: 8080]
+  -t, --timeout=<value>  Maximum execution time for all functions, in seconds. Takes precedence over function-specific
+                         `timeout`
+      --json             Format output as json
 
 DESCRIPTION
   Start the Sanity Function emulator
@@ -1847,7 +1945,7 @@ Add or set an environment variable for a deployed function
 
 ```
 USAGE
-  $ sanity functions env add NAME KEY VALUE [--json] [--validate-resources]
+  $ sanity functions env add NAME KEY VALUE [--json]
 
 ARGUMENTS
   NAME   The name of the Sanity Function
@@ -1855,8 +1953,7 @@ ARGUMENTS
   VALUE  The value of the environment variable
 
 FLAGS
-  --json                     Format output as json
-  --[no-]validate-resources  Validate resources
+  --json  Format output as json
 
 DESCRIPTION
   Add or set an environment variable for a deployed function
@@ -1876,14 +1973,13 @@ List environment variables for a deployed function
 
 ```
 USAGE
-  $ sanity functions env list NAME [--json] [--validate-resources]
+  $ sanity functions env list NAME [--json]
 
 ARGUMENTS
   NAME  The name of the Sanity Function
 
 FLAGS
-  --json                     Format output as json
-  --[no-]validate-resources  Validate resources
+  --json  Format output as json
 
 DESCRIPTION
   List environment variables for a deployed function
@@ -1902,15 +1998,14 @@ Remove an environment variable from a deployed function
 
 ```
 USAGE
-  $ sanity functions env remove NAME KEY [--json] [--validate-resources]
+  $ sanity functions env remove NAME KEY [--json]
 
 ARGUMENTS
   NAME  The name of the Sanity Function
   KEY   The name of the environment variable
 
 FLAGS
-  --json                     Format output as json
-  --[no-]validate-resources  Validate resources
+  --json  Format output as json
 
 DESCRIPTION
   Remove an environment variable from a deployed function
@@ -1930,20 +2025,19 @@ Retrieve or delete logs for a Sanity Function
 
 ```
 USAGE
-  $ sanity functions logs [NAME] [--validate-resources] [--stack <value>] [-u] [-f [-d | -l <value> | --json]] [-w]
+  $ sanity functions logs [NAME] [--stack <value>] [-u] [-f [-d | -l <value> | --json]] [-w]
 
 ARGUMENTS
   [NAME]  The name of the Sanity Function
 
 FLAGS
-  -d, --delete                   Delete all logs for the function
-  -f, --force                    Skip confirmation for deleting logs
-  -l, --limit=<value>            [default: 50] Total number of log entries to retrieve
-  -u, --utc                      Show dates in UTC time zone
-  -w, --watch                    Watch for new logs (streaming mode)
-      --json                     Format output as json
-      --stack=<value>            Stack name or ID to use instead of the locally configured Stack
-      --[no-]validate-resources  Validate resources
+  -d, --delete         Delete all logs for the function
+  -f, --force          Skip confirmation for deleting logs
+  -l, --limit=<value>  [default: 50] Total number of log entries to retrieve
+  -u, --utc            Show dates in UTC time zone
+  -w, --watch          Watch for new logs (streaming mode)
+      --json           Format output as json
+      --stack=<value>  Stack name or ID to use instead of the locally configured Stack
 
 DESCRIPTION
   Retrieve or delete logs for a Sanity Function
@@ -1969,11 +2063,10 @@ Invoke a local Sanity Function
 
 ```
 USAGE
-  $ sanity functions test [NAME] [--json] [--validate-resources] [--organization-id <value>] [--data-before <value>
-    | [-d <value> | -f <value> | --document-id <value>] |  |  | --file-before <value> | --file-after <value> |
-    --document-id-before <value> | --document-id-after <value>] [--data-after <value> |  |  |  |  |  |  | ] [-e
-    create|update|delete] [-t <value>] [-a <value>] [--with-user-token] [--media-library-id <value> | --project-id
-    <value> | --dataset <value>]
+  $ sanity functions test [NAME] [--json] [--data-before <value> | [-d <value> | -f <value> | --document-id <value>]
+    |  |  | --file-before <value> | --file-after <value> | --document-id-before <value> | --document-id-after <value>]
+    [--data-after <value> |  |  |  |  |  |  | ] [-e create|update|delete] [-t <value>] [-a <value>] [--with-user-token]
+    [--media-library-id <value> | [--project-id <value> | --organization-id <value>] | --dataset <value>]
 
 ARGUMENTS
   [NAME]  The name of the Sanity Function
@@ -1997,7 +2090,6 @@ FLAGS
       --media-library-id=<value>    Sanity Media Library ID to use
       --organization-id=<value>     Sanity organization ID used to scope Blueprint and Stack
       --project-id=<value>          Sanity project ID used to scope Blueprint and Stack
-      --[no-]validate-resources     Validate resources
       --with-user-token             Prime access token from CLI config
 
 DESCRIPTION
