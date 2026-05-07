@@ -4,13 +4,11 @@ import {readFile} from 'node:fs/promises'
 import {dirname, resolve} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
-import {moduleResolve} from 'import-meta-resolve'
-
 const args = process.argv.slice(2)
 
 let cliBin
 try {
-  const cliPkgDir = fileURLToPath(await moduleResolve('@sanity/cli/package.json', import.meta.url))
+  const cliPkgDir = fileURLToPath(import.meta.resolve('@sanity/cli/package.json'))
   const cliDir = dirname(cliPkgDir)
 
   // Read the package.json file and extract the bin path

@@ -31,8 +31,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@sanity/cli": "workspace:*",
-    "import-meta-resolve": "catalog:"
+    "@sanity/cli": "workspace:*"
   },
   "devDependencies": {
     "publint": "catalog:",

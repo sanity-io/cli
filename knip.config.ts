@@ -81,9 +81,7 @@ const baseConfig = {
       entry: ['package.config.ts'],
       project,
     },
-    'packages/create-sanity': {
-      ignoreDependencies: ['@sanity/cli'],
-    },
+    'packages/create-sanity': {},
   },
 } satisfies KnipConfig
 
