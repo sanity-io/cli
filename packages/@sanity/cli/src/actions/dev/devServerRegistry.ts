@@ -228,23 +228,38 @@ export function getRegisteredServers(): DevServerManifest[] {
 export function readWorkbenchLock(): z.infer<typeof workbenchLockSchema> | undefined {
   const lockPath = join(getRegistryDir(), 'workbench.lock')
 
-  let raw: unknown
+  let contents: string
   try {
-    raw = JSON.parse(readFileSync(lockPath, 'utf8'))
+    contents = readFileSync(lockPath, 'utf8')
   } catch {
+    // File doesn't exist — nothing to prune, nothing to return
     return undefined
   }
 
-  const {data, success} = workbenchLockSchema.safeParse(raw)
-
-  devDebug('Read workbench lock: %o', data)
-
-  if (success && isOurProcess(data.pid, data.startedAt)) {
+  // Past this point the file exists. Anything that isn't a live, valid lock
+  // (unparsable JSON, schema mismatch, dead/reused PID) is stale and must be
+  // pruned — otherwise the next `acquireWorkbenchLock` call is blocked by
+  // EEXIST forever and `sanity dev` silently no-ops the workbench server.
+  const data = parseLockContents(contents)
+  if (data && isOurProcess(data.pid, data.startedAt)) {
     devDebug('Workbench process is alive at pid %d on port %d', data.pid, data.port)
     return data
   }
 
-  // Stale lock — prune it
+  pruneWorkbenchLock(lockPath)
+  return undefined
+}
+
+function parseLockContents(contents: string): z.infer<typeof workbenchLockSchema> | undefined {
+  try {
+    const {data, success} = workbenchLockSchema.safeParse(JSON.parse(contents))
+    return success ? data : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function pruneWorkbenchLock(lockPath: string): void {
   try {
     devDebug('Removing stale workbench lock')
     unlinkSync(lockPath)
@@ -252,7 +267,6 @@ export function readWorkbenchLock(): z.infer<typeof workbenchLockSchema> | undef
   } catch {
     // Another process may have already cleaned it up
   }
-  return undefined
 }
 
 interface WorkbenchLock {
