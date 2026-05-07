@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2](https://github.com/sanity-io/cli/compare/cli-core-v1.3.1...cli-core-v1.3.2)
+
+_2026-05-07_
+
+### Bug Fixes
+
+- Move getLocalPackageVersion to cli-core ([#1053](https://github.com/sanity-io/cli/pull/1053)) ([02eb330](https://github.com/sanity-io/cli/commit/02eb330c66e1ea14dcf72cd3fdbffec2d10b0b04))
+
 ## [1.3.1](https://github.com/sanity-io/cli/compare/cli-core-v1.3.0...cli-core-v1.3.1)
 
 _2026-05-04_
