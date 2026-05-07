@@ -1,17 +1,12 @@
 import {EventEmitter} from 'node:events'
 
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, type Mock, test, vi} from 'vitest'
 
 import {startDevManifestWatcher} from '../startDevManifestWatcher.js'
 import {createMockOutput} from './testHelpers.js'
 
-const mockExtractStudioManifest = vi.hoisted(() => vi.fn())
 const mockFindProjectRoot = vi.hoisted(() => vi.fn())
 const mockFsWatch = vi.hoisted(() => vi.fn())
-
-vi.mock('../extractDevServerManifest.js', () => ({
-  extractStudioManifest: mockExtractStudioManifest,
-}))
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -49,16 +44,17 @@ const STUDIO_CONFIG_PATH = '/tmp/studio/sanity.config.ts'
 
 describe('startDevManifestWatcher', () => {
   let fakeWatcher: FakeFsWatcher
+  let mockExtract: Mock<(params: {configPath: string; workDir: string}) => Promise<unknown>>
   const studioManifest = {createdAt: '2026-01-01', version: 3, workspaces: []}
 
   beforeEach(() => {
     fakeWatcher = new FakeFsWatcher()
+    mockExtract = vi.fn(async () => studioManifest)
     mockFindProjectRoot.mockResolvedValue({
       directory: WORK_DIR,
       path: STUDIO_CONFIG_PATH,
       type: 'studio',
     })
-    mockExtractStudioManifest.mockResolvedValue(studioManifest)
     mockFsWatch.mockImplementation((_dir: string, listener: FakeFsWatcher['handler']) => {
       fakeWatcher.handler = listener
       return fakeWatcher
@@ -75,6 +71,7 @@ describe('startDevManifestWatcher', () => {
     const update = vi.fn()
 
     const watcher = await startDevManifestWatcher({
+      extract: mockExtract,
       output: createMockOutput(),
       update,
       workDir: WORK_DIR,
@@ -84,8 +81,8 @@ describe('startDevManifestWatcher', () => {
     // has time to resolve and patch the registry.
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
-    expect(mockExtractStudioManifest).toHaveBeenCalledWith({
+    expect(mockExtract).toHaveBeenCalledTimes(1)
+    expect(mockExtract).toHaveBeenCalledWith({
       configPath: STUDIO_CONFIG_PATH,
       workDir: WORK_DIR,
     })
@@ -102,7 +99,7 @@ describe('startDevManifestWatcher', () => {
     // user editing sanity.config.ts while the worker is still producing the
     // initial manifest — the watcher must not run a parallel extraction.
     let resolveFirst: ((value: typeof studioManifest) => void) | undefined
-    mockExtractStudioManifest
+    mockExtract
       .mockReturnValueOnce(
         new Promise((resolve) => {
           resolveFirst = resolve
@@ -112,6 +109,7 @@ describe('startDevManifestWatcher', () => {
 
     const update = vi.fn()
     const watcher = await startDevManifestWatcher({
+      extract: mockExtract,
       output: createMockOutput(),
       update,
       workDir: WORK_DIR,
@@ -122,14 +120,14 @@ describe('startDevManifestWatcher', () => {
     await vi.advanceTimersByTimeAsync(300)
 
     // Only the initial extraction is running — the config change is pending.
-    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
+    expect(mockExtract).toHaveBeenCalledTimes(1)
 
     // Release the initial extraction; the pending change-triggered run now
     // starts, serialized behind it.
     resolveFirst!(studioManifest)
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(2)
+    expect(mockExtract).toHaveBeenCalledTimes(2)
     expect(update).toHaveBeenCalledTimes(2)
 
     await watcher.close()
@@ -138,6 +136,7 @@ describe('startDevManifestWatcher', () => {
   test('re-extracts and inlines the new manifest after a debounced config file change', async () => {
     const update = vi.fn()
     const watcher = await startDevManifestWatcher({
+      extract: mockExtract,
       output: createMockOutput(),
       update,
       workDir: WORK_DIR,
@@ -146,7 +145,7 @@ describe('startDevManifestWatcher', () => {
     // Wait for the initial extraction to complete before exercising the
     // file-change path.
     await vi.advanceTimersByTimeAsync(0)
-    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
+    expect(mockExtract).toHaveBeenCalledTimes(1)
 
     // Fire multiple rapid "change" events — should coalesce into a single
     // regeneration after the debounce window.
@@ -156,7 +155,7 @@ describe('startDevManifestWatcher', () => {
 
     await vi.advanceTimersByTimeAsync(300)
 
-    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(2)
+    expect(mockExtract).toHaveBeenCalledTimes(2)
     expect(update).toHaveBeenCalledTimes(2)
 
     await watcher.close()
@@ -165,20 +164,21 @@ describe('startDevManifestWatcher', () => {
   test('ignores changes to other files in the config directory', async () => {
     const update = vi.fn()
     const watcher = await startDevManifestWatcher({
+      extract: mockExtract,
       output: createMockOutput(),
       update,
       workDir: WORK_DIR,
     })
 
     await vi.advanceTimersByTimeAsync(0)
-    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
+    expect(mockExtract).toHaveBeenCalledTimes(1)
 
     fakeWatcher.emitChange('unrelated.ts')
     fakeWatcher.emitChange('package.json')
 
     await vi.advanceTimersByTimeAsync(300)
 
-    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
+    expect(mockExtract).toHaveBeenCalledTimes(1)
 
     await watcher.close()
   })
@@ -186,11 +186,14 @@ describe('startDevManifestWatcher', () => {
   test('logs a warning and keeps running when extraction fails', async () => {
     const output = createMockOutput()
     const update = vi.fn()
-    mockExtractStudioManifest
-      .mockRejectedValueOnce(new Error('bad schema'))
-      .mockResolvedValueOnce(studioManifest)
+    mockExtract.mockRejectedValueOnce(new Error('bad schema')).mockResolvedValueOnce(studioManifest)
 
-    const watcher = await startDevManifestWatcher({output, update, workDir: WORK_DIR})
+    const watcher = await startDevManifestWatcher({
+      extract: mockExtract,
+      output,
+      update,
+      workDir: WORK_DIR,
+    })
 
     // The initial extraction fails.
     await vi.advanceTimersByTimeAsync(0)
@@ -208,13 +211,14 @@ describe('startDevManifestWatcher', () => {
   test('stops regenerating after close', async () => {
     const update = vi.fn()
     const watcher = await startDevManifestWatcher({
+      extract: mockExtract,
       output: createMockOutput(),
       update,
       workDir: WORK_DIR,
     })
 
     await vi.advanceTimersByTimeAsync(0)
-    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
+    expect(mockExtract).toHaveBeenCalledTimes(1)
 
     await watcher.close()
     expect(fakeWatcher.closed).toBe(true)
@@ -222,6 +226,48 @@ describe('startDevManifestWatcher', () => {
     fakeWatcher.emitChange('sanity.config.ts')
     await vi.advanceTimersByTimeAsync(300)
 
-    expect(mockExtractStudioManifest).toHaveBeenCalledTimes(1)
+    expect(mockExtract).toHaveBeenCalledTimes(1)
+  })
+
+  test('watches sanity.cli.ts for app projects', async () => {
+    const APP_WORK_DIR = '/tmp/sdk-app'
+    const APP_CONFIG_PATH = '/tmp/sdk-app/sanity.cli.ts'
+    const appManifest = {icon: '<svg/>', title: 'My App', version: '1'}
+    mockFindProjectRoot.mockResolvedValue({
+      directory: APP_WORK_DIR,
+      path: APP_CONFIG_PATH,
+      type: 'app',
+    })
+    mockExtract.mockResolvedValue(appManifest)
+    const update = vi.fn()
+
+    const watcher = await startDevManifestWatcher({
+      extract: mockExtract,
+      output: createMockOutput(),
+      update,
+      workDir: APP_WORK_DIR,
+    })
+
+    await vi.advanceTimersByTimeAsync(0)
+    expect(mockExtract).toHaveBeenCalledWith({
+      configPath: APP_CONFIG_PATH,
+      workDir: APP_WORK_DIR,
+    })
+    expect(update).toHaveBeenCalledWith({
+      manifest: appManifest,
+      manifestUpdatedAt: expect.any(String),
+    })
+
+    // sanity.config.ts is not the app's config — should be ignored.
+    fakeWatcher.emitChange('sanity.config.ts')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(mockExtract).toHaveBeenCalledTimes(1)
+
+    // sanity.cli.ts saves trigger regeneration.
+    fakeWatcher.emitChange('sanity.cli.ts')
+    await vi.advanceTimersByTimeAsync(300)
+    expect(mockExtract).toHaveBeenCalledTimes(2)
+
+    await watcher.close()
   })
 })

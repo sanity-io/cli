@@ -37,6 +37,7 @@ const devServerManifestSchema = z.extend(workbenchLockSchema, {
    * workbench `watchRegistry` watcher and forces a rebroadcast to clients.
    */
   manifestUpdatedAt: z.optional(z.string()),
+  projectId: z.optional(z.string()),
   type: z.enum(['coreApp', 'studio']),
   workDir: z.string(),
 })

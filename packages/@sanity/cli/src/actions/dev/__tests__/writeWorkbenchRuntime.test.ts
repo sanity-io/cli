@@ -143,5 +143,63 @@ describe('writeWorkbenchRuntime', () => {
       expect(content).toContain('<!DOCTYPE html>')
       expect(content).toContain('<meta charset="UTF-8" />')
     })
+
+    describe('prefetch hints', () => {
+      test('omits prefetch hints when remoteUrl is not provided', async () => {
+        await writeWorkbenchRuntime({cwd: tmpDir, reactStrictMode: false})
+
+        const content = await fs.readFile(
+          join(tmpDir, '.sanity', 'workbench', 'index.html'),
+          'utf8',
+        )
+        expect(content).not.toContain('rel="preconnect"')
+        expect(content).not.toContain('rel="preload"')
+      })
+
+      test('omits prefetch hints when remoteUrl is invalid', async () => {
+        await writeWorkbenchRuntime({
+          cwd: tmpDir,
+          reactStrictMode: false,
+          remoteUrl: 'not-a-url',
+        })
+
+        const content = await fs.readFile(
+          join(tmpDir, '.sanity', 'workbench', 'index.html'),
+          'utf8',
+        )
+        expect(content).not.toContain('rel="preconnect"')
+        expect(content).not.toContain('rel="preload"')
+      })
+
+      test('emits a preconnect hint pointing at the remote origin', async () => {
+        await writeWorkbenchRuntime({
+          cwd: tmpDir,
+          reactStrictMode: false,
+          remoteUrl: 'https://workbench.example/mf-manifest.json',
+        })
+
+        const content = await fs.readFile(
+          join(tmpDir, '.sanity', 'workbench', 'index.html'),
+          'utf8',
+        )
+        expect(content).toContain('<link rel="preconnect" href="https://workbench.example" />')
+      })
+
+      test('emits a preload hint for the manifest with as=fetch and crossorigin', async () => {
+        await writeWorkbenchRuntime({
+          cwd: tmpDir,
+          reactStrictMode: false,
+          remoteUrl: 'https://workbench.example/mf-manifest.json',
+        })
+
+        const content = await fs.readFile(
+          join(tmpDir, '.sanity', 'workbench', 'index.html'),
+          'utf8',
+        )
+        expect(content).toContain(
+          '<link rel="preload" as="fetch" href="https://workbench.example/mf-manifest.json" crossorigin />',
+        )
+      })
+    })
   })
 })
