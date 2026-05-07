@@ -809,6 +809,9 @@ importers:
       debug:
         specifier: 'catalog:'
         version: 4.4.3(supports-color@8.1.1)
+      esbuild:
+        specifier: ^0.28.0
+        version: 0.28.0
       get-it:
         specifier: ^8.7.0
         version: 8.7.2

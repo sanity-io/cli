@@ -22,10 +22,23 @@ import {doImport} from './doImport.js'
  *
  * @internal
  */
+/**
+ * Symbol where the studio-config bundle stashes the sanity module it baked in.
+ * Reusing the bundled sanity is much cheaper than re-importing it through
+ * vite-node, which would re-SSR-transform the entire package.
+ *
+ * @internal
+ */
+export const BUNDLED_SANITY_KEY = Symbol.for('@sanity/cli-core:bundled-sanity')
+
 export async function resolveLocalPackage<T = unknown>(
   packageName: string,
   workDir: string,
 ): Promise<T> {
+  if (packageName === 'sanity') {
+    const cached = (globalThis as Record<symbol, unknown>)[BUNDLED_SANITY_KEY]
+    if (cached) return cached as T
+  }
   const packageUrl = resolveLocalPackagePath(packageName, workDir)
   const module = await doImport(packageUrl.href)
   return module as T

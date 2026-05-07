@@ -15,6 +15,17 @@ import {resolveSchemaIcon, type SchemaIconProps} from './resolveSchemaIcon.js'
  * instance problem where the dispatcher set by one instance is invisible to the other.
  */
 export const resolveIcon = async (props: SchemaIconProps): Promise<string | null> => {
+  // If the studio-config bundle stashed its own icon renderer, use it. The bundle
+  // wraps the icon in its own `<ThemeProvider>` from its own bundled `@sanity/ui`
+  // module instance — using a separately-loaded `@sanity/ui` here would mismatch
+  // React contexts and crash with "useTheme is not within a ThemeProvider".
+  const bundleRenderIcon = (
+    globalThis as Record<symbol, ((props: SchemaIconProps) => Promise<string | null>) | undefined>
+  )[Symbol.for('@sanity/cli-core:bundled-render-icon')]
+  if (bundleRenderIcon) {
+    const html = await bundleRenderIcon(props)
+    return html ? DOMPurify.sanitize(html, config) : null
+  }
   try {
     const [{renderToReadableStream}, element] = await Promise.all([
       resolveLocalPackage<typeof import('react-dom/server')>('react-dom/server', props.workDir),

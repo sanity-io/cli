@@ -51,7 +51,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts' --ignore '**/__tests__/**'",
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts' --ignore '**/__tests__/**' --copy-files",
     "build:types": "pkg-utils build --emitDeclarationOnly",
     "check:types": "tsc --noEmit",
     "lint": "eslint .",
@@ -70,6 +70,7 @@
     "babel-plugin-react-compiler": "^1.0.0",
     "boxen": "^8.0.1",
     "debug": "catalog:",
+    "esbuild": "^0.28.0",
     "get-it": "^8.7.0",
     "get-tsconfig": "catalog:",
     "import-meta-resolve": "catalog:",
