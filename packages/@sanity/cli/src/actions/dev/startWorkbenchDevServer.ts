@@ -1,6 +1,6 @@
 import {resolveLocalPackage} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
-import {createServer, type InlineConfig} from 'vite'
+import {createServer, type InlineConfig, type Plugin} from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {getProjectById} from '../../services/projects.js'
@@ -19,11 +19,12 @@ import {writeWorkbenchRuntime} from './writeWorkbenchRuntime.js'
 const noop = async () => {}
 
 const toApplicationsPayload = (servers: DevServerManifest[]) => ({
-  applications: servers.map(({host, id, manifest, port, type}) => ({
+  applications: servers.map(({host, id, manifest, port, projectId, type}) => ({
     host,
     id,
     manifest,
     port,
+    projectId,
     type,
   })),
 })
@@ -96,13 +97,6 @@ export async function startWorkbenchDevServer(
 
   const organizationId = await resolveOrganizationId(cliConfig)
 
-  devDebug('Writing workbench runtime files')
-  const root = await writeWorkbenchRuntime({
-    cwd: workDir,
-    organizationId,
-    reactStrictMode,
-  })
-
   let remoteUrl: string | undefined = undefined
 
   try {
@@ -110,6 +104,14 @@ export async function startWorkbenchDevServer(
   } catch {
     // Ignore parsing errors, the variable might not be set or might be an invalid URL, in which case we just won't use it
   }
+
+  devDebug('Writing workbench runtime files')
+  const root = await writeWorkbenchRuntime({
+    cwd: workDir,
+    organizationId,
+    reactStrictMode,
+    remoteUrl,
+  })
 
   const viteConfig: InlineConfig = {
     // Define a custom cache directory so that sanity's vite cache
@@ -130,7 +132,7 @@ export async function startWorkbenchDevServer(
       // discovery to silently not fire.
       exclude: ['sanity', '@sanity/workbench'],
     },
-    plugins: [viteReact()],
+    plugins: [viteReact(), ...(remoteUrl ? [remoteManifestPreloadHeaderPlugin(remoteUrl)] : [])],
     resolve: {dedupe: ['react', 'react-dom']},
     root,
     server: {
@@ -138,7 +140,7 @@ export async function startWorkbenchDevServer(
       port: workbenchPort,
       strictPort: false,
       warmup: {
-        clientFiles: ['./workbench.js'],
+        clientFiles: ['./workbench.js', 'sanity/workbench', '@sanity/workbench/_internal'],
       },
     },
   }
@@ -162,6 +164,15 @@ export async function startWorkbenchDevServer(
 
   // Update the lock file with the actual port so other processes can find us
   workbenchLock.updatePort(actualPort)
+
+  // Fire-and-forget: warm the workbench remote's Vite transform pipeline so
+  // the first browser request hits a pre-populated module graph.
+  if (remoteUrl) {
+    fetch(remoteUrl)
+      .then((r) => r.body?.cancel())
+      .catch(() => {})
+    devDebug('Warming workbench remote at %s', remoteUrl)
+  }
 
   // Respond to client requests for the current application list.
   server.ws.on('sanity:workbench:get-local-applications', (_, client) => {
@@ -204,4 +215,27 @@ const resolveOrganizationId = async (cliConfig: DevActionOptions['cliConfig']): 
   throw new Error(
     'Unable to determine organization ID for workbench runtime. Please ensure that your sanity.json has either "app.organizationId" or "api.projectId" configured.',
   )
+}
+
+/**
+ * Sets a `Link: <remoteUrl>; rel=preload; as=fetch; crossorigin` response header
+ * on the index document so the browser can start fetching the Module Federation
+ * manifest as soon as response headers arrive — before HTML parsing reaches the
+ * in-head preconnect hint. `as=fetch` matches how the federation runtime later
+ * retrieves the JSON manifest, allowing the preload entry to satisfy that fetch.
+ */
+function remoteManifestPreloadHeaderPlugin(remoteUrl: string): Plugin {
+  return {
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const pathname = (req.url || '/').split('?')[0]
+        if (pathname === '/' || pathname === '/index.html') {
+          res.setHeader('Link', `<${remoteUrl}>; rel=preload; as=fetch; crossorigin`)
+        }
+        next()
+      })
+    },
+    name: 'sanity:workbench-remote-preload-header',
+  }
 }

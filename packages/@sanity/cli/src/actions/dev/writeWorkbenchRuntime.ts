@@ -15,13 +15,14 @@ renderWorkbench(
 )
 `
 
-const indexHtml = `\
+const indexHtmlTemplate = `\
 <!DOCTYPE html>
 <!-- This file is auto-generated on 'sanity dev' -->
 <!-- Modifications to this file are automatically discarded -->
 <html>
   <head>
     <meta charset="UTF-8" />
+%SANITY_WORKBENCH_PREFETCH_HINTS%
   </head>
   <body>
     <div id="workbench"></div>
@@ -42,8 +43,9 @@ export async function writeWorkbenchRuntime(options: {
   cwd: string
   organizationId?: string
   reactStrictMode: boolean
+  remoteUrl?: string
 }): Promise<string> {
-  const {cwd, organizationId, reactStrictMode} = options
+  const {cwd, organizationId, reactStrictMode, remoteUrl} = options
   const workbenchDir = path.join(cwd, '.sanity', 'workbench')
 
   const workbenchJs = workbenchJsTemplate
@@ -52,6 +54,10 @@ export async function writeWorkbenchRuntime(options: {
       organizationId === undefined ? 'undefined' : JSON.stringify(organizationId),
     )
     .replace(/%SANITY_WORKBENCH_REACT_STRICT_MODE%/, JSON.stringify(reactStrictMode))
+
+  const prefetchHints = buildPrefetchHints(remoteUrl)
+
+  const indexHtml = indexHtmlTemplate.replace(/%SANITY_WORKBENCH_PREFETCH_HINTS%/, prefetchHints)
 
   devDebug('Making workbench runtime directory')
   await fs.mkdir(workbenchDir, {recursive: true})
@@ -63,4 +69,18 @@ export async function writeWorkbenchRuntime(options: {
   await fs.writeFile(path.join(workbenchDir, 'index.html'), indexHtml)
 
   return workbenchDir
+}
+
+function buildPrefetchHints(remoteUrl: string | undefined): string {
+  if (!remoteUrl) return ''
+
+  try {
+    const url = new URL(remoteUrl)
+    return [
+      `    <link rel="preconnect" href="${url.origin}" />`,
+      `    <link rel="preload" as="fetch" href="${url.toString()}" crossorigin />`,
+    ].join('\n')
+  } catch {
+    return ''
+  }
 }

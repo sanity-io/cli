@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {checkForDeprecatedAppId, getAppId} from '../../util/appId.js'
 import {extractCoreAppManifest} from '../manifest/extractCoreAppManifest.js'
 import {registerDevServer} from './devServerRegistry.js'
+import {extractStudioManifest} from './extractDevServerManifest.js'
 import {startAppDevServer} from './startAppDevServer.js'
 import {startDevManifestWatcher} from './startDevManifestWatcher.js'
 import {startStudioDevServer} from './startStudioDevServer.js'
@@ -87,39 +88,27 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
       host: appHost,
       id: getAppId(options.cliConfig),
       port: appPort,
+      projectId: options.cliConfig?.api?.projectId,
       type: options.isApp ? 'coreApp' : 'studio',
       workDir: options.workDir,
     })
     cleanupManifest = registration.release
 
-    if (options.isApp) {
-      // Core-apps have no schema to watch and no shared output directory
-      // with any other caller, so run the extraction fire-and-forget. On
-      // success the registry entry is patched, which fires the workbench's
-      // registry watcher and triggers a rebroadcast to connected clients.
-      // Updates after `release()` are no-ops (see `registerDevServer`).
-      void (async () => {
-        try {
-          const manifest = await extractCoreAppManifest({workDir: options.workDir})
-          registration.update({manifest, manifestUpdatedAt: new Date().toISOString()})
-        } catch (err) {
-          output.warn(
-            `Could not extract manifest for workbench: ${err instanceof Error ? err.message : String(err)}`,
-          )
-        }
-      })()
-    } else {
-      // For studios, the watcher owns both the initial extraction and the
-      // follow-up regenerations triggered by `sanity.config.ts` changes.
-      // Serializing both through `regenerate` inside the watcher prevents
-      // concurrent worker runs from racing on the manifest output directory.
-      const watcher = await startDevManifestWatcher({
-        output,
-        update: registration.update,
-        workDir: options.workDir,
-      })
-      stopManifestWatcher = watcher.close
-    }
+    // The watcher owns both the initial extraction and the follow-up
+    // regenerations triggered by config-file changes (`sanity.config.ts`
+    // for studios, `sanity.cli.ts` for core-apps). Serializing both
+    // through `regenerate` inside the watcher prevents concurrent worker
+    // runs from racing on the manifest output directory (studio path) and
+    // keeps the `update` callback ordered for both.
+    const watcher = await startDevManifestWatcher({
+      extract: options.isApp
+        ? ({workDir}) => extractCoreAppManifest({workDir})
+        : extractStudioManifest,
+      output,
+      update: registration.update,
+      workDir: options.workDir,
+    })
+    stopManifestWatcher = watcher.close
 
     // Ensure manifest and workbench lock are cleaned up on abrupt shutdown.
     // closeWorkbenchServer() starts with synchronous calls (watcher.close,
