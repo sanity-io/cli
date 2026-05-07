@@ -27,3 +27,6 @@
 
 # Dotenv and similar local-only files
 *.local
+
+# Module federation temporary files
+.__mf__temp/
