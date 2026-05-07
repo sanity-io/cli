@@ -1,5 +1,21 @@
 # Change Log
 
+## [6.5.1](https://github.com/sanity-io/cli/compare/cli-v6.5.0...cli-v6.5.1)
+
+_2026-05-07_
+
+### Bug Fixes
+
+- Move getLocalPackageVersion to cli-core ([#1053](https://github.com/sanity-io/cli/pull/1053)) ([02eb330](https://github.com/sanity-io/cli/commit/02eb330c66e1ea14dcf72cd3fdbffec2d10b0b04))
+- **deps:** update dependency @sanity/runtime-cli to v15 ([#1059](https://github.com/sanity-io/cli/pull/1059)) ([7ae960a](https://github.com/sanity-io/cli/commit/7ae960ab5350ce97013c924f5740930262fb4381))
+- rename manifest types and share cache dir ([#1008](https://github.com/sanity-io/cli/pull/1008)) ([fa32892](https://github.com/sanity-io/cli/commit/fa328920d886bbdbe308a3b8548da05a17ca3708))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-core bumped to 1.3.2
+
 ## [6.5.0](https://github.com/sanity-io/cli/compare/cli-v6.4.0...cli-v6.5.0)
 
 _2026-05-04_
