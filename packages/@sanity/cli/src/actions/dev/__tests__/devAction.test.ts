@@ -9,6 +9,7 @@ const mockStartStudioDevServer = vi.hoisted(() => vi.fn())
 const mockRegisterDevServer = vi.hoisted(() => vi.fn())
 const mockStartDevManifestWatcher = vi.hoisted(() => vi.fn())
 const mockExtractCoreAppManifest = vi.hoisted(() => vi.fn())
+const mockExtractStudioManifest = vi.hoisted(() => vi.fn())
 
 vi.mock('../startWorkbenchDevServer.js', () => ({
   startWorkbenchDevServer: mockStartWorkbenchDevServer,
@@ -27,6 +28,9 @@ vi.mock('../startDevManifestWatcher.js', () => ({
 }))
 vi.mock('../../manifest/extractCoreAppManifest.js', () => ({
   extractCoreAppManifest: mockExtractCoreAppManifest,
+}))
+vi.mock('../extractDevServerManifest.js', () => ({
+  extractStudioManifest: mockExtractStudioManifest,
 }))
 
 /** Create a mock Vite dev server config shape — `server.config.server.host`
@@ -192,6 +196,33 @@ describe('devAction', () => {
       expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({id: 'app-abc'}))
     })
 
+    test('forwards api.projectId from sanity.cli.ts to registerDevServer', async () => {
+      // Workbench resolves a studio's primary project against the org projects
+      // list; without the projectId in the very first registry write, the
+      // workbench falls back to a synthetic `host-port` id that has no match,
+      // breaking the dock until manifest extraction completes.
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+      await devAction(
+        createDevOptions({
+          cliConfig: {api: {projectId: 'x1g7jygt'}, federation: {enabled: true}},
+        }),
+      )
+
+      expect(mockRegisterDevServer).toHaveBeenCalledWith(
+        expect.objectContaining({projectId: 'x1g7jygt'}),
+      )
+    })
+
+    test('omits projectId when api.projectId is not configured', async () => {
+      mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+
+      await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
+
+      const [registerArg] = mockRegisterDevServer.mock.calls[0]
+      expect(registerArg.projectId).toBeUndefined()
+    })
+
     test('warns about deprecated app.id and falls back to it when registering', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
       const output = createMockOutput()
@@ -326,7 +357,7 @@ describe('devAction', () => {
       )
     })
 
-    test('does not start the manifest watcher for core apps — they have no schema to keep in sync', async () => {
+    test('starts the manifest watcher for core apps — keeps title/icon in sync with sanity.cli.ts', async () => {
       mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(
@@ -337,13 +368,13 @@ describe('devAction', () => {
       )
 
       expect(mockRegisterDevServer).toHaveBeenCalledWith(expect.objectContaining({type: 'coreApp'}))
-      expect(mockStartDevManifestWatcher).not.toHaveBeenCalled()
+      expect(mockStartDevManifestWatcher).toHaveBeenCalledWith(
+        expect.objectContaining({extract: expect.any(Function), workDir: '/tmp/sanity-project'}),
+      )
     })
 
     test('registers the core-app immediately with no manifest — startup is not blocked on extraction', async () => {
       mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
-      // Never resolves — simulates a slow extraction. devAction must still return.
-      mockExtractCoreAppManifest.mockReturnValue(new Promise(() => {}))
 
       await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}, isApp: true}))
 
@@ -352,45 +383,32 @@ describe('devAction', () => {
       )
     })
 
-    test('patches the registry with the core-app manifest once extraction completes', async () => {
+    test('wires extractCoreAppManifest into the core-app watcher', async () => {
       const appManifest = {icon: '<svg><path d="M0 0"/></svg>', title: 'My App', version: '1'}
-      const mockUpdate = vi.fn()
-      mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: mockUpdate})
       mockExtractCoreAppManifest.mockResolvedValue(appManifest)
       mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}, isApp: true}))
 
-      await vi.waitFor(() => expect(mockUpdate).toHaveBeenCalled())
+      const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
+      // The watcher invokes `extract` with the resolved configPath; the
+      // core-app extractor reads `sanity.cli.ts` via `getCliConfigUncached(workDir)`,
+      // so only `workDir` is forwarded.
+      await expect(
+        extract({configPath: '/tmp/sanity-project/sanity.cli.ts', workDir: '/tmp/sanity-project'}),
+      ).resolves.toEqual(appManifest)
       expect(mockExtractCoreAppManifest).toHaveBeenCalledWith({workDir: '/tmp/sanity-project'})
-      expect(mockUpdate).toHaveBeenCalledWith({
-        manifest: appManifest,
-        manifestUpdatedAt: expect.any(String),
-      })
     })
 
-    test('warns and does not patch the registry when core-app extraction fails', async () => {
-      mockExtractCoreAppManifest.mockRejectedValue(new Error('bad config'))
-      const mockUpdate = vi.fn()
-      mockRegisterDevServer.mockReturnValue({release: vi.fn(), update: mockUpdate})
-      mockStartAppDevServer.mockResolvedValue(mockServer({port: 3334}))
-      const output = createMockOutput()
-
-      await devAction(
-        createDevOptions({cliConfig: {federation: {enabled: true}}, isApp: true, output}),
-      )
-
-      await vi.waitFor(() => expect(output.warn).toHaveBeenCalled())
-      expect(output.warn).toHaveBeenCalledWith(expect.stringContaining('bad config'))
-      expect(mockUpdate).not.toHaveBeenCalled()
-    })
-
-    test('does not extract the core-app manifest for studios', async () => {
+    test('wires extractStudioManifest into the studio watcher', async () => {
       mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
 
       await devAction(createDevOptions({cliConfig: {federation: {enabled: true}}}))
 
-      expect(mockExtractCoreAppManifest).not.toHaveBeenCalled()
+      const {extract} = mockStartDevManifestWatcher.mock.calls[0][0]
+      // The studio extractor is passed by reference — the watcher's
+      // `{configPath, workDir}` arg is forwarded as-is.
+      expect(extract).toBe(mockExtractStudioManifest)
     })
 
     test('registers the studio immediately with no manifest — the watcher owns extraction', async () => {
