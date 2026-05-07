@@ -1,24 +1,19 @@
-import {type CliConfig, type Output} from '@sanity/cli-core'
+import {type Output} from '@sanity/cli-core'
 import {beforeEach, describe, expect, test, vi} from 'vitest'
 
-import {determineIsApp} from '../../../util/determineIsApp'
-import {getLocalPackageVersion} from '../../../util/getLocalPackageVersion.js'
 import {checkRequiredDependencies} from '../checkRequiredDependencies'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
+const mockedGetLocalPackageVersion = vi.hoisted(() => vi.fn())
 
-vi.mock('../../../util/determineIsApp')
-vi.mock('../../../util/getLocalPackageVersion.js')
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
+    getLocalPackageVersion: mockedGetLocalPackageVersion,
     readPackageJson: mockReadPackageJson,
   }
 })
-
-const mockedDetermineIsApp = vi.mocked(determineIsApp)
-const mockedGetLocalPackageVersion = vi.mocked(getLocalPackageVersion)
 
 describe('#checkRequiredDependencies', () => {
   const workDir = '/tmp/test-studio'
@@ -28,16 +23,14 @@ describe('#checkRequiredDependencies', () => {
     print: vi.fn(),
     warn: vi.fn(),
   } as unknown as Output
-  const mockCliConfig: Partial<CliConfig> = {}
 
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
   test('should return early if the project is an app', async () => {
-    mockedDetermineIsApp.mockReturnValue(true)
     const result = await checkRequiredDependencies({
-      cliConfig: mockCliConfig as CliConfig,
+      isApp: true,
       output: mockOutput,
       workDir,
     })
@@ -46,7 +39,6 @@ describe('#checkRequiredDependencies', () => {
   })
 
   test('should call output.error and return empty string if sanity is not installed', async () => {
-    mockedDetermineIsApp.mockReturnValue(false)
     mockReadPackageJson.mockResolvedValue({
       dependencies: {},
       devDependencies: {},
@@ -61,7 +53,7 @@ describe('#checkRequiredDependencies', () => {
     })
 
     const result = await checkRequiredDependencies({
-      cliConfig: mockCliConfig as CliConfig,
+      isApp: false,
       output: mockOutput,
       workDir,
     })
@@ -73,7 +65,6 @@ describe('#checkRequiredDependencies', () => {
   })
 
   test('should call output.error and return sanity version if styled-components is not declared', async () => {
-    mockedDetermineIsApp.mockReturnValue(false)
     mockReadPackageJson.mockResolvedValue({
       dependencies: {},
       devDependencies: {},
@@ -88,7 +79,7 @@ describe('#checkRequiredDependencies', () => {
     })
 
     const result = await checkRequiredDependencies({
-      cliConfig: mockCliConfig as CliConfig,
+      isApp: false,
       output: mockOutput,
       workDir,
     })
@@ -101,7 +92,6 @@ describe('#checkRequiredDependencies', () => {
   })
 
   test('should call output.error and return sanity version for invalid styled-components version range', async () => {
-    mockedDetermineIsApp.mockReturnValue(false)
     mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': 'some-invalid-range'},
       devDependencies: {},
@@ -111,7 +101,7 @@ describe('#checkRequiredDependencies', () => {
     mockedGetLocalPackageVersion.mockResolvedValue('3.0.0') // for sanity
 
     const result = await checkRequiredDependencies({
-      cliConfig: mockCliConfig as CliConfig,
+      isApp: false,
       output: mockOutput,
       workDir,
     })
@@ -126,7 +116,6 @@ describe('#checkRequiredDependencies', () => {
   })
 
   test('should warn on incompatible declared styled-components version', async () => {
-    mockedDetermineIsApp.mockReturnValue(false)
     mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': '^5.0.0'},
       devDependencies: {},
@@ -136,7 +125,7 @@ describe('#checkRequiredDependencies', () => {
     mockedGetLocalPackageVersion.mockResolvedValue('6.1.15')
 
     await checkRequiredDependencies({
-      cliConfig: mockCliConfig as CliConfig,
+      isApp: false,
       output: mockOutput,
       workDir,
     })
@@ -149,7 +138,6 @@ describe('#checkRequiredDependencies', () => {
   })
 
   test('should not warn on complex but valid styled-components version range', async () => {
-    mockedDetermineIsApp.mockReturnValue(false)
     mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': '>=6.0.0 <7.0.0'},
       devDependencies: {},
@@ -159,7 +147,7 @@ describe('#checkRequiredDependencies', () => {
     mockedGetLocalPackageVersion.mockResolvedValue('6.1.15')
 
     await checkRequiredDependencies({
-      cliConfig: mockCliConfig as CliConfig,
+      isApp: false,
       output: mockOutput,
       workDir,
     })
@@ -168,7 +156,6 @@ describe('#checkRequiredDependencies', () => {
   })
 
   test('should call output.error and return sanity version if styled-components is declared but not installed', async () => {
-    mockedDetermineIsApp.mockReturnValue(false)
     mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': '^6.1.15'},
       devDependencies: {},
@@ -183,7 +170,7 @@ describe('#checkRequiredDependencies', () => {
     })
 
     const result = await checkRequiredDependencies({
-      cliConfig: mockCliConfig as CliConfig,
+      isApp: false,
       output: mockOutput,
       workDir,
     })
@@ -196,7 +183,6 @@ describe('#checkRequiredDependencies', () => {
   })
 
   test('should warn on incompatible installed styled-components version', async () => {
-    mockedDetermineIsApp.mockReturnValue(false)
     mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': '^6.1.15'},
       devDependencies: {},
@@ -211,7 +197,7 @@ describe('#checkRequiredDependencies', () => {
     })
 
     await checkRequiredDependencies({
-      cliConfig: mockCliConfig as CliConfig,
+      isApp: false,
       output: mockOutput,
       workDir,
     })
@@ -224,7 +210,6 @@ describe('#checkRequiredDependencies', () => {
   })
 
   test('should not error on catalog: prefix for styled-components version', async () => {
-    mockedDetermineIsApp.mockReturnValue(false)
     mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': 'catalog:'},
       devDependencies: {},
@@ -238,7 +223,7 @@ describe('#checkRequiredDependencies', () => {
     })
 
     const result = await checkRequiredDependencies({
-      cliConfig: mockCliConfig as CliConfig,
+      isApp: false,
       output: mockOutput,
       workDir,
     })
@@ -249,7 +234,6 @@ describe('#checkRequiredDependencies', () => {
   })
 
   test('should not warn on version comparison when using catalog: prefix', async () => {
-    mockedDetermineIsApp.mockReturnValue(false)
     mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': 'catalog:react'},
       devDependencies: {},
@@ -263,7 +247,7 @@ describe('#checkRequiredDependencies', () => {
     })
 
     const result = await checkRequiredDependencies({
-      cliConfig: mockCliConfig as CliConfig,
+      isApp: false,
       output: mockOutput,
       workDir,
     })
@@ -274,7 +258,6 @@ describe('#checkRequiredDependencies', () => {
   })
 
   test('should still warn on incompatible installed version when using catalog: prefix', async () => {
-    mockedDetermineIsApp.mockReturnValue(false)
     mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': 'catalog:'},
       devDependencies: {},
@@ -288,7 +271,7 @@ describe('#checkRequiredDependencies', () => {
     })
 
     await checkRequiredDependencies({
-      cliConfig: mockCliConfig as CliConfig,
+      isApp: false,
       output: mockOutput,
       workDir,
     })
@@ -302,7 +285,6 @@ describe('#checkRequiredDependencies', () => {
   })
 
   test('should succeed on happy path', async () => {
-    mockedDetermineIsApp.mockReturnValue(false)
     mockReadPackageJson.mockResolvedValue({
       dependencies: {'styled-components': '^6.1.15'},
       devDependencies: {},
@@ -317,7 +299,7 @@ describe('#checkRequiredDependencies', () => {
     })
 
     const result = await checkRequiredDependencies({
-      cliConfig: mockCliConfig as CliConfig,
+      isApp: false,
       output: mockOutput,
       workDir,
     })

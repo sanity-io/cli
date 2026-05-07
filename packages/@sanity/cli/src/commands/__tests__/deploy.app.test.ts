@@ -8,10 +8,17 @@ import {checkDir} from '../../actions/deploy/checkDir.js'
 import {extractAppManifest} from '../../actions/manifest/extractAppManifest.js'
 import {USER_APPLICATIONS_API_VERSION} from '../../services/userApplications.js'
 import {dirIsEmptyOrNonExistent} from '../../util/dirIsEmptyOrNonExistent.js'
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {DeployCommand} from '../deploy.js'
 
-vi.mock('../../util/getLocalPackageVersion.js')
+const mockGetLocalPackageVersion = vi.hoisted(() => vi.fn())
+
+vi.mock('@sanity/cli-core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
+  return {
+    ...actual,
+    getLocalPackageVersion: mockGetLocalPackageVersion,
+  }
+})
 
 vi.mock('../../actions/build/buildApp.js', () => ({
   buildApp: vi.fn(),
@@ -52,7 +59,6 @@ const mockConfirm = vi.mocked(confirm)
 const mockInput = vi.mocked(input)
 const mockCheckDir = vi.mocked(checkDir)
 const mockDirIsEmptyOrNonExistent = vi.mocked(dirIsEmptyOrNonExistent)
-const mockGetLocalPackageVersion = vi.mocked(getLocalPackageVersion)
 const mockBuildApp = vi.mocked(buildApp)
 const mockExtractAppManifest = vi.mocked(extractAppManifest)
 

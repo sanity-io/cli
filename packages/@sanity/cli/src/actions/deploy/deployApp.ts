@@ -3,6 +3,7 @@ import {styleText} from 'node:util'
 import {createGzip} from 'node:zlib'
 
 import {CLIError} from '@oclif/core/errors'
+import {getLocalPackageVersion} from '@sanity/cli-core'
 import {spinner} from '@sanity/cli-core/ux'
 import {pack} from 'tar-fs'
 
@@ -10,7 +11,6 @@ import {createDeployment, updateUserApplication} from '../../services/userApplic
 import {getAppId} from '../../util/appId.js'
 import {NO_ORGANIZATION_ID} from '../../util/errorMessages.js'
 import {getErrorMessage} from '../../util/getErrorMessage.js'
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {buildApp} from '../build/buildApp.js'
 import {shouldAutoUpdate} from '../build/shouldAutoUpdate.js'
 import {extractAppManifest} from '../manifest/extractAppManifest.js'

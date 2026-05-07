@@ -1,25 +1,22 @@
 import {dirname, join, resolve} from 'node:path'
 import {fileURLToPath, pathToFileURL} from 'node:url'
 
-import {type PackageJson} from '@sanity/cli-core'
 import {moduleResolve} from 'import-meta-resolve'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
-import {getLocalPackageDir, getLocalPackageVersion} from '../getLocalPackageVersion.js'
+import {type PackageJson} from '../readPackageJson.js'
 
 const mockReadPackageJson = vi.hoisted(() => vi.fn())
 
 vi.mock('import-meta-resolve')
 
-vi.mock('@sanity/cli-core', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@sanity/cli-core')>()
-  return {
-    ...actual,
-    readPackageJson: mockReadPackageJson,
-  }
-})
+vi.mock('../readPackageJson.js', () => ({
+  readPackageJson: mockReadPackageJson,
+}))
 
 const mockedModuleResolve = vi.mocked(moduleResolve)
+
+const {getLocalPackageDir, getLocalPackageVersion} = await import('../getLocalPackageVersion.js')
 
 function createNodeError(code: string, message: string): Error {
   const err = new Error(message)

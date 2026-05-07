@@ -17,14 +17,11 @@ vi.mock('semver', async (importOriginal) => {
   return {...actual, coerce: (...args: Parameters<typeof actual.coerce>) => mockCoerce(...args)}
 })
 
-vi.mock('../../../util/getLocalPackageVersion.js', () => ({
-  getLocalPackageVersion: mockGetLocalPackageVersion,
-}))
-
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
   return {
     ...actual,
+    getLocalPackageVersion: mockGetLocalPackageVersion,
     readPackageJson: mockReadPackageJson,
   }
 })

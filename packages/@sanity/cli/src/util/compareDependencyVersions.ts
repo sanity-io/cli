@@ -1,11 +1,10 @@
 import path from 'node:path'
 
-import {readPackageJson} from '@sanity/cli-core'
+import {getLocalPackageVersion, readPackageJson} from '@sanity/cli-core'
 import {createRequester} from '@sanity/cli-core/request'
 import {coerce, eq, prerelease, parse as semverParse} from 'semver'
 
 import {getModuleUrl} from '../actions/build/getAutoUpdatesImportMap.js'
-import {getLocalPackageVersion} from './getLocalPackageVersion.js'
 
 const defaultRequester = createRequester({
   middleware: {httpErrors: false, promise: {onlyBody: false}},

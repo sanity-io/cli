@@ -2,14 +2,21 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {getCliTelemetry, getTimer, isInteractive} from '@sanity/cli-core'
+import {
+  type CliConfig,
+  getCliTelemetry,
+  getLocalPackageVersion,
+  getTimer,
+  isInteractive,
+  type Output,
+  UserViteConfig,
+} from '@sanity/cli-core'
 import {confirm, logSymbols, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {parse as semverParse} from 'semver'
 
 import {AppBuildTrace} from '../../telemetry/build.telemetry.js'
 import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {warnAboutMissingAppId} from '../../util/warnAboutMissingAppId.js'
 import {buildDebug} from './buildDebug.js'
@@ -21,6 +28,25 @@ import {getAutoUpdatesCssUrls, getAutoUpdatesImportMap} from './getAutoUpdatesIm
 import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {type BuildOptions} from './types.js'
 
+interface InternalBuildOptions {
+  appId: string | undefined
+  appTitle: string | undefined
+  autoUpdatesEnabled: boolean
+  calledFromDeploy: boolean | undefined
+  determineBasePath: () => string
+  entry: string | undefined
+  minify: boolean
+  outDir: string | undefined
+  output: Output
+  reactCompiler: CliConfig['reactCompiler']
+  schemaExtraction: CliConfig['schemaExtraction']
+  sourceMap: boolean
+  stats: boolean
+  unattendedMode: boolean
+  vite: UserViteConfig | undefined
+  workDir: string
+}
+
 /**
  * Build the Sanity app.
  *
@@ -28,14 +54,39 @@ import {type BuildOptions} from './types.js'
  */
 export async function buildApp(options: BuildOptions): Promise<void> {
   const {cliConfig, flags, outDir, output, workDir} = options
+
+  await internalBuildApp({
+    appId: getAppId(cliConfig),
+    appTitle: cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined,
+    autoUpdatesEnabled: options.autoUpdatesEnabled,
+    calledFromDeploy: options.calledFromDeploy,
+    determineBasePath: () => determineBasePath(cliConfig, 'app', output),
+    entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
+    minify: flags.minify,
+    outDir,
+    output,
+    reactCompiler: cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
+    schemaExtraction: cliConfig?.schemaExtraction,
+    sourceMap: Boolean(flags['source-maps']),
+    stats: flags.stats,
+    unattendedMode: flags.yes,
+    vite: cliConfig.vite,
+    workDir,
+  })
+}
+
+/**
+ * Internal build app that avoids depending on flags for CLI config.
+ * @param options - options for the build
+ */
+async function internalBuildApp(options: InternalBuildOptions): Promise<void> {
+  const {appId, determineBasePath, outDir, output, workDir} = options
   let {autoUpdatesEnabled} = options
-  const unattendedMode = flags.yes
+  const unattendedMode = options.unattendedMode
   const timer = getTimer()
 
   const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
   const outputDir = path.resolve(outDir || defaultOutputDir)
-
-  const appId = getAppId(cliConfig)
 
   const installedSdkVersion = await getLocalPackageVersion('@sanity/sdk-react', workDir)
   const installedSanityVersion = await getLocalPackageVersion('sanity', workDir)
@@ -131,8 +182,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     })
   }
 
-  // Determine base path for built app
-  const basePath = determineBasePath(cliConfig, 'app', output)
+  const basePath = determineBasePath()
 
   let spin: SpinnerInstance
   if (shouldClean) {
@@ -164,20 +214,19 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     timer.start('bundleStudio')
 
     const bundle = await buildStaticFiles({
-      appTitle: cliConfig && 'app' in cliConfig ? cliConfig.app?.title : undefined,
+      appTitle: options.appTitle,
       autoUpdatesCssUrls: autoUpdatesCssUrls.length > 0 ? autoUpdatesCssUrls : undefined,
       basePath,
       cwd: workDir,
-      entry: cliConfig && 'app' in cliConfig ? cliConfig.app?.entry : undefined,
+      entry: options.entry,
       importMap,
       isApp: true,
-      minify: Boolean(flags.minify),
+      minify: options.minify,
       outputDir,
-      reactCompiler:
-        cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
-      schemaExtraction: cliConfig?.schemaExtraction,
-      sourceMap: Boolean(flags['source-maps']),
-      vite: cliConfig && 'vite' in cliConfig ? cliConfig.vite : undefined,
+      reactCompiler: options.reactCompiler,
+      schemaExtraction: options.schemaExtraction,
+      sourceMap: options.sourceMap,
+      vite: options.vite,
     })
 
     trace.log({
@@ -190,7 +239,7 @@ export async function buildApp(options: BuildOptions): Promise<void> {
     spin.text = `Build Sanity application (${buildDuration.toFixed(0)}ms)`
     spin.succeed()
 
-    if (flags.stats) {
+    if (options.stats) {
       output.log('\nLargest module files:')
       output.log(formatModuleSizes(sortModulesBySize(bundle.chunks).slice(0, 15)))
     }

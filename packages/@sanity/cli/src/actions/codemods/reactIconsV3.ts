@@ -1,6 +1,6 @@
+import {getLocalPackageVersion} from '@sanity/cli-core'
 import {compare} from 'semver'
 
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {type CodeMod} from './types.js'
 
 const purpose = 'Transform react-icons v2 imports to v3 form'

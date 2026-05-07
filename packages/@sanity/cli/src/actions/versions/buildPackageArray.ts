@@ -1,6 +1,6 @@
+import {getLocalPackageVersion} from '@sanity/cli-core'
 import {valid} from 'semver'
 
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 import {trimHashFromVersion} from '../../util/trimHashFromVersion.js'
 import {tryFindLatestVersion} from './tryFindLatestVersion.js'
 

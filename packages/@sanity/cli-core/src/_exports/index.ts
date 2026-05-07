@@ -37,6 +37,7 @@ export {
 export {type Output, type SanityOrgUser} from '../types.js'
 export {doImport} from '../util/doImport.js'
 export * from '../util/environment/mockBrowserEnvironment.js'
+export * from '../util/getLocalPackageVersion.js'
 export * from '../util/getSanityEnvVar.js'
 export * from '../util/getSanityUrl.js'
 export * from '../util/importModule.js'

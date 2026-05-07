@@ -1,9 +1,7 @@
 import path from 'node:path'
 
-import {type Output, readPackageJson} from '@sanity/cli-core'
+import {getLocalPackageVersion, type Output, readPackageJson} from '@sanity/cli-core'
 import {coerce, gtr, ltr, rcompare, satisfies, type SemVer} from 'semver'
-
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
 
 interface PackageInfo {
   deprecatedBelow: string | null

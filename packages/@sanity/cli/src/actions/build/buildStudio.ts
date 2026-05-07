@@ -2,14 +2,22 @@ import {rm} from 'node:fs/promises'
 import path from 'node:path'
 import {styleText} from 'node:util'
 
-import {getCliTelemetry, getTimer, isInteractive} from '@sanity/cli-core'
+import {
+  type CliConfig,
+  getCliTelemetry,
+  getLocalPackageVersion,
+  getTimer,
+  isInteractive,
+  type Output,
+  UserViteConfig,
+} from '@sanity/cli-core'
 import {confirm, logSymbols, select, spinner, type SpinnerInstance} from '@sanity/cli-core/ux'
 import {parse as semverParse} from 'semver'
 
 import {StudioBuildTrace} from '../../telemetry/build.telemetry.js'
 import {getAppId} from '../../util/appId.js'
 import {compareDependencyVersions} from '../../util/compareDependencyVersions.js'
-import {getLocalPackageVersion} from '../../util/getLocalPackageVersion.js'
+import {determineIsApp} from '../../util/determineIsApp.js'
 import {formatModuleSizes, sortModulesBySize} from '../../util/moduleFormatUtils.js'
 import {getPackageManagerChoice} from '../../util/packageManager/packageManagerChoice.js'
 import {upgradePackages} from '../../util/packageManager/upgradePackages.js'
@@ -26,16 +34,95 @@ import {handlePrereleaseVersions} from './handlePrereleaseVersions.js'
 import {shouldAutoUpdate} from './shouldAutoUpdate.js'
 import {type BuildOptions} from './types.js'
 
+interface InternalBuildOptions {
+  appId: string | undefined
+  autoUpdatesEnabled: boolean
+  calledFromDeploy: boolean | undefined
+  determineBasePath: () => string
+  isApp: boolean
+  minify: boolean
+  outDir: string | undefined
+  output: Output
+  projectId: string | undefined
+  reactCompiler: CliConfig['reactCompiler']
+  schemaExtraction: CliConfig['schemaExtraction']
+  sourceMap: boolean
+  stats: boolean
+  unattendedMode: boolean
+  upgradePackages(options: {packages: [name: string, version: string][]}): Promise<void>
+  vite: UserViteConfig | undefined
+  workDir: string
+}
+
 /**
  * Build the Sanity Studio.
  *
  * @internal
  */
 export async function buildStudio(options: BuildOptions): Promise<void> {
-  const timer = getTimer()
-  const {cliConfig, flags, outDir, output, workDir} = options
+  const {calledFromDeploy, cliConfig, flags, outDir, output, workDir} = options
 
-  const unattendedMode = Boolean(flags.yes)
+  const autoUpdatesEnabled = options.calledFromDeploy
+    ? options.autoUpdatesEnabled
+    : shouldAutoUpdate({cliConfig, flags, output})
+
+  const upgradePkgs = async (options: {
+    packages: [name: string, version: string][]
+  }): Promise<void> => {
+    await upgradePackages(
+      {
+        packageManager: (await getPackageManagerChoice(workDir, {interactive: false})).chosen,
+        packages: options.packages,
+      },
+      {output, workDir},
+    )
+  }
+
+  await internalBuildStudio({
+    appId: getAppId(cliConfig),
+    autoUpdatesEnabled,
+    calledFromDeploy,
+    determineBasePath: () => determineBasePath(cliConfig, 'studio', output),
+    isApp: determineIsApp(cliConfig),
+    minify: Boolean(flags.minify),
+    outDir,
+    output,
+    projectId: cliConfig?.api?.projectId,
+    reactCompiler: cliConfig.reactCompiler,
+    schemaExtraction: cliConfig.schemaExtraction,
+    sourceMap: Boolean(flags['source-maps']),
+    stats: flags.stats,
+    unattendedMode: Boolean(flags.yes),
+    upgradePackages: upgradePkgs,
+    vite: cliConfig.vite,
+    workDir,
+  })
+}
+
+/**
+ * Internal build studio that avoids depending on flags for CLI config.
+ * @param options - options for the build
+ */
+async function internalBuildStudio(options: InternalBuildOptions): Promise<void> {
+  const timer = getTimer()
+  const {
+    appId,
+    determineBasePath,
+    isApp,
+    minify,
+    outDir,
+    output,
+    projectId,
+    reactCompiler,
+    schemaExtraction,
+    sourceMap,
+    stats,
+    unattendedMode,
+    upgradePackages,
+    vite,
+    workDir,
+  } = options
+  let autoUpdatesEnabled = options.autoUpdatesEnabled
   const defaultOutputDir = path.resolve(path.join(workDir, 'dist'))
   const outputDir = path.resolve(outDir || defaultOutputDir)
 
@@ -44,14 +131,10 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   // If the check resulted in a dependency install, the CLI command will be re-run,
   // thus we want to exit early
   const {installedSanityVersion} = await checkRequiredDependencies({
-    cliConfig,
+    isApp,
     output,
     workDir,
   })
-
-  let autoUpdatesEnabled = options.calledFromDeploy
-    ? options.autoUpdatesEnabled
-    : shouldAutoUpdate({cliConfig, flags, output})
 
   let autoUpdatesImports = {}
   let autoUpdatesCssUrls: string[] = []
@@ -64,9 +147,6 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     }
 
     output.log(`${logSymbols.info} Building with auto-updates enabled`)
-
-    const projectId = cliConfig?.api?.projectId
-    const appId = getAppId(cliConfig)
 
     // Warn if auto updates enabled but no appId configured.
     // Skip when called from deploy, since deploy handles appId itself
@@ -141,13 +221,9 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
         }
 
         if (choice === 'upgrade' || choice === 'upgrade-and-proceed') {
-          await upgradePackages(
-            {
-              packageManager: (await getPackageManagerChoice(workDir, {interactive: false})).chosen,
-              packages: mismatched.map((res) => [res.pkg, res.remote]),
-            },
-            {output, workDir},
-          )
+          await upgradePackages({
+            packages: mismatched.map((res) => [res.pkg, res.remote]),
+          })
 
           if (choice === 'upgrade') {
             return
@@ -178,9 +254,9 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
   }
 
   // Determine base path for built studio
-  const basePath = determineBasePath(cliConfig, 'studio', output)
+  const basePath = determineBasePath()
 
-  if (cliConfig?.schemaExtraction?.enabled) {
+  if (schemaExtraction?.enabled) {
     output.log(`${logSymbols.info} Building with schema extraction enabled`)
   }
 
@@ -218,13 +294,12 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
       basePath,
       cwd: workDir,
       importMap,
-      minify: Boolean(flags.minify),
+      minify,
       outputDir,
-      reactCompiler:
-        cliConfig && 'reactCompiler' in cliConfig ? cliConfig.reactCompiler : undefined,
-      schemaExtraction: cliConfig?.schemaExtraction,
-      sourceMap: Boolean(flags['source-maps']),
-      vite: cliConfig && 'vite' in cliConfig ? cliConfig.vite : undefined,
+      reactCompiler,
+      schemaExtraction,
+      sourceMap,
+      vite,
     })
 
     trace.log({
@@ -238,7 +313,7 @@ export async function buildStudio(options: BuildOptions): Promise<void> {
     spin.succeed()
 
     trace.complete()
-    if (flags.stats) {
+    if (stats) {
       output.log('\nLargest module files:')
       output.log(formatModuleSizes(sortModulesBySize(bundle.chunks).slice(0, 15)))
     }

@@ -1,8 +1,9 @@
 import {dirname, join, normalize, resolve} from 'node:path'
 import {fileURLToPath, pathToFileURL} from 'node:url'
 
-import {readPackageJson} from '@sanity/cli-core'
 import {moduleResolve} from 'import-meta-resolve'
+
+import {readPackageJson} from './readPackageJson.js'
 
 /**
  * Get the version of a package installed locally.
