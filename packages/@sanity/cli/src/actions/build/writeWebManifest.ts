@@ -1,8 +1,9 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 
+import {generateWebManifest} from '@sanity/cli-build'
+
 import {skipIfExistsError} from '../../util/copyDir.js'
-import {generateWebManifest} from './generateWebManifest.js'
 
 /**
  * @internal

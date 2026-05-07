@@ -31,6 +31,7 @@ export default defineConfig({
       ],
       include: [
         'packages/@sanity/cli/**/*.{ts,tsx}',
+        'packages/@sanity/cli-build/**/*.{ts,tsx}',
         'packages/@sanity/cli-core/**/*.{ts,tsx}',
         'packages/create-sanity/**/*.{ts,tsx}',
       ],
@@ -52,7 +53,12 @@ export default defineConfig({
       }
     },
     outputFile: OUTPUT_FILE,
-    projects: ['packages/@sanity/cli', 'packages/@sanity/cli-core', 'packages/create-sanity'],
+    projects: [
+      'packages/@sanity/cli',
+      'packages/@sanity/cli-build',
+      'packages/@sanity/cli-core',
+      'packages/create-sanity',
+    ],
     reporters: ['default', ...(IS_AGENT ? ['json'] : [])],
   },
 })

@@ -26,7 +26,7 @@
     "check:deps": "knip",
     "check:format": "oxfmt --check",
     "check:lint": "turbo run lint -- --fix",
-    "check:types": "turbo run check:types --filter=@sanity/cli --filter=@sanity/cli-core --filter=@sanity/cli-e2e",
+    "check:types": "turbo run check:types --filter=@sanity/cli --filter=@sanity/cli-build --filter=@sanity/cli-core --filter=@sanity/cli-e2e",
     "clean": "rimraf packages/@sanity/*/lib packages/*/lib packages/@sanity/*/dist packages/*/dist",
     "clean:deps": "rimraf packages/*/node_modules fixtures/*/node_modules node_modules",
     "depcheck": "knip",

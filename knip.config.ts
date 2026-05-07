@@ -63,6 +63,10 @@ const baseConfig = {
       },
       project,
     },
+    'packages/@sanity/cli-build': {
+      entry: ['package.config.ts'],
+      project,
+    },
     'packages/@sanity/cli-core': {
       entry: [
         // Worker files

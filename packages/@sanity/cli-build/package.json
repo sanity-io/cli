@@ -1,0 +1,68 @@
+{
+  "name": "@sanity/cli-build",
+  "version": "1.0.0",
+  "description": "Sanity package for building studios and apps",
+  "keywords": [
+    "cli",
+    "cms",
+    "content",
+    "headless",
+    "realtime",
+    "sanity",
+    "tool"
+  ],
+  "homepage": "https://github.com/sanity-io/cli",
+  "bugs": "https://github.com/sanity-io/cli/issues",
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanity-io/cli.git",
+    "directory": "packages/@sanity/cli-build"
+  },
+  "files": [
+    "./dist",
+    "!./dist/**/__tests__"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/_exports/index.js",
+  "types": "dist/_exports/index.d.ts",
+  "exports": {
+    ".": {
+      "source": "./src/_exports/index.ts",
+      "default": "./dist/_exports/index.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ src --ignore '**/*.test.ts' --ignore '**/__tests__/**'",
+    "build:types": "pkg-utils build --emitDeclarationOnly",
+    "check:types": "tsc --noEmit",
+    "lint": "eslint .",
+    "publint": "publint",
+    "test": "vitest run",
+    "posttest": "pnpm run lint",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@eslint/compat": "catalog:",
+    "@repo/package.config": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "@sanity/eslint-config-cli": "workspace:^",
+    "@sanity/pkg-utils": "catalog:",
+    "@swc/cli": "catalog:",
+    "@swc/core": "catalog:",
+    "publint": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=20.19.1 <22 || >=22.12"
+  }
+}
