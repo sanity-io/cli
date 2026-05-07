@@ -7,7 +7,7 @@ import {importModule} from '../importModule.js'
 const mockJitiImport = vi.hoisted(() => vi.fn())
 const mockCreateJiti = vi.hoisted(() => vi.fn().mockReturnValue({import: mockJitiImport}))
 
-vi.mock('@rexxars/jiti', () => ({
+vi.mock('jiti', () => ({
   createJiti: mockCreateJiti,
 }))
 

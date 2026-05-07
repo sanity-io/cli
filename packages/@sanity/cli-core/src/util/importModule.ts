@@ -1,6 +1,6 @@
 import {fileURLToPath, pathToFileURL} from 'node:url'
 
-import {createJiti, type JitiResolveOptions} from '@rexxars/jiti'
+import {createJiti, type JitiResolveOptions} from 'jiti'
 
 import {subdebug} from '../debug.js'
 
