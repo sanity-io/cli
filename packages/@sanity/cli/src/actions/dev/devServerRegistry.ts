@@ -241,6 +241,7 @@ export function readWorkbenchLock(): z.infer<typeof workbenchLockSchema> | undef
   // pruned — otherwise the next `acquireWorkbenchLock` call is blocked by
   // EEXIST forever and `sanity dev` silently no-ops the workbench server.
   const data = parseLockContents(contents)
+  devDebug('Read workbench lock: %o', data)
   if (data && isOurProcess(data.pid, data.startedAt)) {
     devDebug('Workbench process is alive at pid %d on port %d', data.pid, data.port)
     return data
