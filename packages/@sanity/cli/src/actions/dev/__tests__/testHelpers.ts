@@ -2,6 +2,7 @@ import {type CliConfig, type Output} from '@sanity/cli-core'
 // eslint-disable-next-line import-x/no-extraneous-dependencies
 import {vi} from 'vitest'
 
+import {type StartWorkbenchOptions} from '../startWorkbenchDevServer.js'
 import {type DevActionOptions} from '../types.js'
 
 /** Shared test helpers for dev-action test suites. */
@@ -23,7 +24,22 @@ const DEV_FLAGS = {
   port: '3333',
 } as const
 
-export function createDevOptions(overrides: Partial<DevActionOptions> = {}): DevActionOptions {
+export function createDevOptions(
+  overrides: Partial<StartWorkbenchOptions> = {},
+): StartWorkbenchOptions {
+  return {
+    cliConfig: {} as CliConfig,
+    flags: DEV_FLAGS,
+    httpHost: 'localhost',
+    httpPort: 3333,
+    isApp: false,
+    output: createMockOutput(),
+    workDir: '/tmp/sanity-project',
+    ...overrides,
+  }
+}
+
+export function createBaseDevOptions(overrides: Partial<DevActionOptions> = {}): DevActionOptions {
   return {
     cliConfig: {} as CliConfig,
     flags: DEV_FLAGS,
