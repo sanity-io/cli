@@ -50,6 +50,9 @@
     "test:watch": "vitest",
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
+  "dependencies": {
+    "read-package-up": "catalog:"
+  },
   "devDependencies": {
     "@eslint/compat": "catalog:",
     "@repo/package.config": "workspace:*",
@@ -58,6 +61,7 @@
     "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
+    "@types/node": "catalog:",
     "publint": "catalog:",
     "vitest": "catalog:"
   },

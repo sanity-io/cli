@@ -790,6 +790,10 @@ importers:
         version: 4.1.5(@types/node@20.19.39)(@vitest/coverage-istanbul@4.1.5)(jsdom@29.0.2(@noble/hashes@2.0.1))(vite@7.3.2(@types/node@20.19.39)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
 
   packages/@sanity/cli-build:
+    dependencies:
+      read-package-up:
+        specifier: 'catalog:'
+        version: 12.0.0
     devDependencies:
       '@eslint/compat':
         specifier: 'catalog:'
@@ -805,19 +809,22 @@ importers:
         version: link:../eslint-config-cli
       '@sanity/pkg-utils':
         specifier: 'catalog:'
-        version: 10.4.18(@types/babel__core@7.20.5)(@types/node@25.0.10)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(oxc-resolver@11.19.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(typescript@5.9.3)
+        version: 10.4.18(@types/babel__core@7.20.5)(@types/node@20.19.39)(babel-plugin-macros@3.1.0)(babel-plugin-react-compiler@1.0.0)(oxc-resolver@11.19.1(@emnapi/core@1.10.0)(@emnapi/runtime@1.10.0))(typescript@5.9.3)
       '@swc/cli':
         specifier: 'catalog:'
         version: 0.8.1(@swc/core@1.15.33)(chokidar@5.0.0)
       '@swc/core':
         specifier: 'catalog:'
         version: 1.15.33
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.39
       publint:
         specifier: 'catalog:'
         version: 0.3.18
       vitest:
         specifier: 'catalog:'
-        version: 4.1.5(@types/node@25.0.10)(@vitest/coverage-istanbul@4.1.5)(jsdom@29.0.2(@noble/hashes@2.0.1))(vite@8.0.10(@types/node@25.0.10)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
+        version: 4.1.5(@types/node@20.19.39)(@vitest/coverage-istanbul@4.1.5)(jsdom@29.0.2(@noble/hashes@2.0.1))(vite@8.0.10(@types/node@20.19.39)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
 
   packages/@sanity/cli-core:
     dependencies:
@@ -15398,7 +15405,7 @@ snapshots:
       magicast: 0.5.2
       obug: 2.1.1
       tinyrainbow: 3.1.0
-      vitest: 4.1.5(@types/node@25.0.10)(@vitest/coverage-istanbul@4.1.5)(jsdom@29.0.2(@noble/hashes@2.0.1))(vite@8.0.10(@types/node@25.0.10)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
+      vitest: 4.1.5(@types/node@20.19.39)(@vitest/coverage-istanbul@4.1.5)(jsdom@29.0.2(@noble/hashes@2.0.1))(vite@8.0.10(@types/node@20.19.39)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
     transitivePeerDependencies:
       - supports-color
 
