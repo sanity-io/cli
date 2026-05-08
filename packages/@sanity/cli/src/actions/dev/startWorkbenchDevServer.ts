@@ -1,6 +1,7 @@
 import {resolveLocalPackage} from '@sanity/cli-core'
 import viteReact from '@vitejs/plugin-react'
 import {createServer, type InlineConfig, type Plugin} from 'vite'
+import {z} from 'zod/mini'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {getProjectById} from '../../services/projects.js'
@@ -134,15 +135,9 @@ async function createWorkbenchViteServer(
 ): Promise<CreateWorkbenchViteServerResult | undefined> {
   const {cliConfig, httpHost, output, workbenchPort, workDir} = options
 
+  const remoteUrl = parseRemoteUrl(process.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL)
   const reactStrictMode = resolveReactStrictMode(cliConfig)
   const organizationId = await resolveOrganizationId(cliConfig)
-
-  let remoteUrl: string | undefined = undefined
-  try {
-    remoteUrl = new URL(process.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL || '').toString()
-  } catch {
-    // Ignore parsing errors
-  }
 
   devDebug('Writing workbench runtime files')
   const root = await writeWorkbenchRuntime({
@@ -244,6 +239,24 @@ const resolveOrganizationId = async (cliConfig: DevActionOptions['cliConfig']): 
   throw new Error(
     'Unable to determine organization ID for workbench runtime. Please ensure that your sanity.json has either "app.organizationId" or "api.projectId" configured.',
   )
+}
+
+// Restricts protocol to http(s) so the URL is safe to interpolate into HTML
+// attributes and Link headers downstream.
+const remoteUrlSchema = z.url({normalize: true, protocol: /^https?$/})
+
+function parseRemoteUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined
+
+  const result = remoteUrlSchema.safeParse(value)
+
+  if (!result.success) {
+    throw new Error(
+      `Invalid SANITY_INTERNAL_WORKBENCH_REMOTE_URL: ${value} (must be an http(s) URL)`,
+    )
+  }
+
+  return result.data
 }
 
 /**
