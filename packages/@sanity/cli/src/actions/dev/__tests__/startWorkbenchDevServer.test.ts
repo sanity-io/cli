@@ -381,6 +381,36 @@ describe('startWorkbenchDevServer', () => {
       expect(setHeader).not.toHaveBeenCalled()
       expect(next).toHaveBeenCalled()
     })
+
+    test('throws when remote URL is set but invalid', async () => {
+      vi.stubEnv('SANITY_INTERNAL_WORKBENCH_REMOTE_URL', 'javascript:alert(1)')
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await expect(
+        startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig})),
+      ).rejects.toThrow(/Invalid SANITY_INTERNAL_WORKBENCH_REMOTE_URL/)
+    })
+
+    test('accepts an http:// remote URL', async () => {
+      vi.stubEnv(
+        'SANITY_INTERNAL_WORKBENCH_REMOTE_URL',
+        'http://workbench.example/mf-manifest.json',
+      )
+      mockResolveLocalPackage.mockResolvedValue({})
+      mockCreateServer.mockResolvedValue(createMockServer())
+
+      await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+
+      const middleware = getMiddleware()
+      const setHeader = vi.fn()
+      middleware({url: '/'}, {setHeader}, vi.fn())
+
+      expect(setHeader).toHaveBeenCalledWith(
+        'Link',
+        '<http://workbench.example/mf-manifest.json>; rel=preload; as=fetch; crossorigin',
+      )
+    })
   })
 
   describe('reactStrictMode', () => {
