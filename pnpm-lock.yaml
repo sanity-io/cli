@@ -942,6 +942,9 @@ importers:
       '@sanity/cli':
         specifier: workspace:*
         version: link:../cli
+      '@sanity/cli-build':
+        specifier: workspace:*
+        version: link:../cli-build
       '@sanity/cli-core':
         specifier: workspace:*
         version: link:../cli-core
