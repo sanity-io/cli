@@ -4,7 +4,7 @@ import {createServer, type InlineConfig, type Plugin} from 'vite'
 
 import {SANITY_CACHE_DIR} from '../../constants.js'
 import {getProjectById} from '../../services/projects.js'
-import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
+import {resolveReactStrictMode} from '../../util/resolveReactStrictMode.js'
 import {devDebug} from './devDebug.js'
 import {
   acquireWorkbenchLock,
@@ -36,39 +36,33 @@ interface WorkbenchDevServerResult {
   workbenchPort: number
 }
 
-export async function startWorkbenchDevServer(
-  options: DevActionOptions,
-): Promise<WorkbenchDevServerResult> {
-  const {cliConfig, flags, output, workDir} = options
+export interface StartWorkbenchOptions extends DevActionOptions {
+  httpHost: string | undefined
+  httpPort: number
+}
 
-  const {httpHost, httpPort: workbenchPort} = getSharedServerConfig({
-    cliConfig,
-    flags: {host: flags.host, port: flags.port},
-    workDir,
-  })
+/**
+ * Attempts to start the workbench dev server if federation is enabled and the workbench package is available.
+ * It also handles the case where the desired port is already occupied, either by another workbench instance or
+ * an unrelated process, by falling back to running without a workbench and letting the app/studio dev server
+ * claim the configured port.
+ */
+export async function startWorkbenchDevServer(
+  options: StartWorkbenchOptions,
+): Promise<WorkbenchDevServerResult> {
+  const {cliConfig, httpHost, httpPort: workbenchPort, output, workDir} = options
 
   if (!cliConfig?.federation?.enabled) {
     devDebug('Federation not enabled, skipping workbench dev server')
     return {close: noop, httpHost, workbenchAvailable: false, workbenchPort}
   }
 
-  const reactStrictMode = process.env.SANITY_STUDIO_REACT_STRICT_MODE
-    ? process.env.SANITY_STUDIO_REACT_STRICT_MODE === 'true'
-    : Boolean(cliConfig?.reactStrictMode)
-
   let workbenchAvailable = false
 
-  /**
-   * Check whether the `sanity` package has the `workbench` export available. If not,
-   * it means an incompatible version of `sanity` is installed and workbench will not
-   * be able to start, because the runtime requires the `renderWorkbench` function from
-   * that export.
-   */
   try {
     await resolveLocalPackage('sanity/workbench', workDir)
     workbenchAvailable = true
   } catch {
-    // sanity/workbench not available in this version — skip workbench server
     devDebug('Workbench not available, skipping workbench dev server')
   }
 
@@ -95,14 +89,59 @@ export async function startWorkbenchDevServer(
     }
   }
 
+  const result = await createWorkbenchViteServer({
+    cliConfig,
+    httpHost,
+    output,
+    workbenchPort,
+    workDir,
+  })
+
+  if (!result) {
+    workbenchLock.release()
+    return {close: noop, httpHost, workbenchAvailable: false, workbenchPort}
+  }
+
+  const {actualPort, close} = result
+  workbenchLock.updatePort(actualPort)
+
+  return {
+    close: async () => {
+      workbenchLock.release()
+      await close()
+    },
+    httpHost,
+    workbenchAvailable,
+    workbenchPort: actualPort,
+  }
+}
+
+interface CreateWorkbenchViteServerOptions {
+  cliConfig: DevActionOptions['cliConfig']
+  httpHost: string | undefined
+  output: DevActionOptions['output']
+  workbenchPort: number
+  workDir: string
+}
+
+interface CreateWorkbenchViteServerResult {
+  actualPort: number
+  close: () => Promise<void>
+}
+
+async function createWorkbenchViteServer(
+  options: CreateWorkbenchViteServerOptions,
+): Promise<CreateWorkbenchViteServerResult | undefined> {
+  const {cliConfig, httpHost, output, workbenchPort, workDir} = options
+
+  const reactStrictMode = resolveReactStrictMode(cliConfig)
   const organizationId = await resolveOrganizationId(cliConfig)
 
   let remoteUrl: string | undefined = undefined
-
   try {
     remoteUrl = new URL(process.env.SANITY_INTERNAL_WORKBENCH_REMOTE_URL || '').toString()
   } catch {
-    // Ignore parsing errors, the variable might not be set or might be an invalid URL, in which case we just won't use it
+    // Ignore parsing errors
   }
 
   devDebug('Writing workbench runtime files')
@@ -114,8 +153,7 @@ export async function startWorkbenchDevServer(
   })
 
   const viteConfig: InlineConfig = {
-    // Define a custom cache directory so that sanity's vite cache
-    // does not conflict with any potential local vite projects
+    // Custom cache directory so sanity's vite cache doesn't conflict with local vite projects
     cacheDir: `${SANITY_CACHE_DIR}/vite`,
     configFile: false,
     define: {
@@ -151,19 +189,15 @@ export async function startWorkbenchDevServer(
     await server.listen()
   } catch (err) {
     await server.close()
-    workbenchLock.release()
     output.warn(
       `Workbench dev server failed to start: ${err instanceof Error ? err.message : String(err)}`,
     )
-    return {close: noop, httpHost, workbenchAvailable: false, workbenchPort}
+    return undefined
   }
 
   // Vite may have picked a different port if the desired one was occupied
   const addr = server.httpServer?.address()
   const actualPort = typeof addr === 'object' && addr ? addr.port : workbenchPort
-
-  // Update the lock file with the actual port so other processes can find us
-  workbenchLock.updatePort(actualPort)
 
   // Fire-and-forget: warm the workbench remote's Vite transform pipeline so
   // the first browser request hits a pre-populated module graph.
@@ -174,7 +208,6 @@ export async function startWorkbenchDevServer(
     devDebug('Warming workbench remote at %s', remoteUrl)
   }
 
-  // Respond to client requests for the current application list.
   server.ws.on('sanity:workbench:get-local-applications', (_, client) => {
     client.send(
       'sanity:workbench:local-applications',
@@ -182,20 +215,16 @@ export async function startWorkbenchDevServer(
     )
   })
 
-  // Watch the registry and broadcast updates to all connected clients
   const registryWatcher = watchRegistry((servers) => {
     server.ws.send('sanity:workbench:local-applications', toApplicationsPayload(servers))
   })
 
   return {
+    actualPort,
     close: async () => {
       registryWatcher.close()
-      workbenchLock.release()
       await server.close()
     },
-    httpHost,
-    workbenchAvailable,
-    workbenchPort: actualPort,
   }
 }
 
