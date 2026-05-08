@@ -5,7 +5,6 @@ import {createDevOptions, createMockOutput} from './testHelpers.js'
 
 const mockResolveLocalPackage = vi.hoisted(() => vi.fn())
 const mockCreateServer = vi.hoisted(() => vi.fn())
-const mockGetSharedServerConfig = vi.hoisted(() => vi.fn())
 const mockWriteWorkbenchRuntime = vi.hoisted(() => vi.fn())
 const mockAcquireWorkbenchLock = vi.hoisted(() => vi.fn())
 const mockGetRegisteredServers = vi.hoisted(() => vi.fn())
@@ -22,9 +21,6 @@ vi.mock('@sanity/cli-core', async (importOriginal) => {
 })
 vi.mock('vite', () => ({createServer: mockCreateServer}))
 vi.mock('@vitejs/plugin-react', () => ({default: vi.fn(() => [])}))
-vi.mock('../../../util/getSharedServerConfig.js', () => ({
-  getSharedServerConfig: mockGetSharedServerConfig,
-}))
 vi.mock('../writeWorkbenchRuntime.js', () => ({
   writeWorkbenchRuntime: mockWriteWorkbenchRuntime,
 }))
@@ -50,7 +46,6 @@ function createMockServer(port = 3333) {
 
 describe('startWorkbenchDevServer', () => {
   beforeEach(() => {
-    mockGetSharedServerConfig.mockReturnValue({httpHost: 'localhost', httpPort: 3333})
     mockWriteWorkbenchRuntime.mockResolvedValue('/tmp/sanity-project/.sanity/workbench')
     mockAcquireWorkbenchLock.mockReturnValue({release: vi.fn(), updatePort: vi.fn()})
     mockGetRegisteredServers.mockReturnValue([])
@@ -84,9 +79,9 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('returns httpHost and workbenchPort even when federation is disabled', async () => {
-      mockGetSharedServerConfig.mockReturnValue({httpHost: '0.0.0.0', httpPort: 4000})
-
-      const result = await startWorkbenchDevServer(createDevOptions())
+      const result = await startWorkbenchDevServer(
+        createDevOptions({httpHost: '0.0.0.0', httpPort: 4000}),
+      )
 
       expect(result.httpHost).toBe('0.0.0.0')
       expect(result.workbenchPort).toBe(4000)
@@ -107,11 +102,14 @@ describe('startWorkbenchDevServer', () => {
     })
 
     test('returns httpHost and workbenchPort even when workbench is unavailable', async () => {
-      mockGetSharedServerConfig.mockReturnValue({httpHost: '0.0.0.0', httpPort: 4000})
       mockResolveLocalPackage.mockRejectedValue(new Error('Cannot find package'))
 
       const result = await startWorkbenchDevServer(
-        createDevOptions({cliConfig: {federation: {enabled: true}}}),
+        createDevOptions({
+          cliConfig: {federation: {enabled: true}},
+          httpHost: '0.0.0.0',
+          httpPort: 4000,
+        }),
       )
 
       expect(result.httpHost).toBe('0.0.0.0')
@@ -136,12 +134,13 @@ describe('startWorkbenchDevServer', () => {
       expect(result.close).toBeDefined()
     })
 
-    test('returns httpHost and workbenchPort from getSharedServerConfig', async () => {
-      mockGetSharedServerConfig.mockReturnValue({httpHost: '0.0.0.0', httpPort: 4000})
+    test('returns httpHost and workbenchPort from provided options', async () => {
       mockResolveLocalPackage.mockResolvedValue({})
       mockCreateServer.mockResolvedValue(createMockServer(4000))
 
-      const result = await startWorkbenchDevServer(createDevOptions({cliConfig: federationConfig}))
+      const result = await startWorkbenchDevServer(
+        createDevOptions({cliConfig: federationConfig, httpHost: '0.0.0.0', httpPort: 4000}),
+      )
 
       expect(result.httpHost).toBe('0.0.0.0')
       expect(result.workbenchPort).toBe(4000)
