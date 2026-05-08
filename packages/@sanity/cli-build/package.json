@@ -50,8 +50,6 @@
     "test:watch": "vitest",
     "watch": "swc --delete-dir-on-start --strip-leading-paths --out-dir dist/ --watch src"
   },
-  "dependencies": {
-  },
   "devDependencies": {
     "@eslint/compat": "catalog:",
     "@repo/package.config": "workspace:*",
