@@ -29,7 +29,8 @@ jobs:
 
       - uses: rexxars/bundle-stats@1bc291f60df8eafeb2793bc5592a1c7b812d5684 # v1.11.2
         with:
-          packages: packages/@sanity/cli, packages/@sanity/cli-build, packages/@sanity/cli-core, packages/create-sanity
+          # TODO add packages/@sanity/cli-build after initial release
+          packages: packages/@sanity/cli, packages/@sanity/cli-core, packages/create-sanity
           build-command: pnpm build:cli
           only: '.'
           ignore: 'bin/**'
