@@ -27,6 +27,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
 
   const {
     close: closeWorkbenchServer,
+    httpHost: workbenchHost,
     workbenchAvailable,
     workbenchPort,
   } = await startWorkbenchDevServer({...options, httpHost, httpPort})
@@ -35,7 +36,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
   const desiredAppPort = workbenchAvailable ? workbenchPort + 1 : workbenchPort
 
   const reactRefreshHost = workbenchAvailable
-    ? `http://${httpHost || 'localhost'}:${workbenchPort}`
+    ? `http://${workbenchHost || 'localhost'}:${workbenchPort}`
     : undefined
 
   const appOptions: DevActionOptions = {
@@ -73,7 +74,7 @@ export async function devAction(options: DevActionOptions): Promise<{close: () =
     : undefined
 
   if (workbenchAvailable) {
-    const workbenchUrl = `http://${httpHost || 'localhost'}:${workbenchPort}`
+    const workbenchUrl = `http://${workbenchHost || 'localhost'}:${workbenchPort}`
     const addr = server.httpServer?.address()
     const appPort = typeof addr === 'object' && addr ? addr.port : server.config.server.port
     output.log(

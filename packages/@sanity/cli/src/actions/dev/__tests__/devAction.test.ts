@@ -252,6 +252,30 @@ describe('devAction', () => {
     expect(process.listenerCount('SIGTERM')).toBe(sigtermBefore)
   })
 
+  test('uses local httpHost for workbench URL even when existing lock reports a different host', async () => {
+    // Scenario: process A started workbench on mydev.local:3333, process B starts
+    // with --host localhost. startWorkbenchDevServer returns the existing lock's host,
+    // but devAction ignores it and uses its own httpHost from getSharedServerConfig.
+    mockGetSharedServerConfig.mockReturnValue({httpHost: 'localhost', httpPort: 3333})
+    mockStartWorkbenchDevServer.mockResolvedValue({
+      close: vi.fn().mockResolvedValue(undefined),
+      httpHost: 'mydev.local',
+      workbenchAvailable: true,
+      workbenchPort: 3333,
+    })
+    mockStartStudioDevServer.mockResolvedValue(mockServer({port: 3334}))
+    const output = createMockOutput()
+
+    await devAction(createBaseDevOptions({output}))
+
+    // The workbench is running on mydev.local — the URL and reactRefreshHost
+    // should reflect the existing workbench's host, not the caller's.
+    expect(output.log).toHaveBeenCalledWith(expect.stringContaining('mydev.local:3333'))
+    expect(mockStartStudioDevServer).toHaveBeenCalledWith(
+      expect.objectContaining({reactRefreshHost: 'http://mydev.local:3333'}),
+    )
+  })
+
   test('returns early with workbench-only close when app server exits without a server', async () => {
     // startAppDevServer resolves with {} when orgId is missing — no `server`.
     const mockWorkbenchClose = vi.fn().mockResolvedValue(undefined)
