@@ -32,7 +32,8 @@
     ".": {
       "source": "./src/_exports/index.ts",
       "default": "./dist/_exports/index.js"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "publishConfig": {
     "access": "public"
