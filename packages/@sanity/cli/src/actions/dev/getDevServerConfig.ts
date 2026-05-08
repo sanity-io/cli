@@ -5,6 +5,7 @@ import {spinner} from '@sanity/cli-core/ux'
 
 import {type DevServerOptions} from '../../server/devServer.js'
 import {getSharedServerConfig} from '../../util/getSharedServerConfig.js'
+import {resolveReactStrictMode} from '../../util/resolveReactStrictMode.js'
 import {type DevFlags} from './types.js'
 
 export function getDevServerConfig({
@@ -32,10 +33,7 @@ export function getDevServerConfig({
   configSpinner.succeed()
 
   const isApp = cliConfig && 'app' in cliConfig
-  const env = process.env
-  const reactStrictMode = env.SANITY_STUDIO_REACT_STRICT_MODE
-    ? env.SANITY_STUDIO_REACT_STRICT_MODE === 'true'
-    : Boolean(cliConfig?.reactStrictMode)
+  const reactStrictMode = resolveReactStrictMode(cliConfig)
 
   const envBasePath = getSanityEnvVar('BASEPATH', isApp ?? false)
   if (envBasePath && cliConfig?.project?.basePath) {
