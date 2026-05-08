@@ -302,6 +302,33 @@ describe('readWorkbenchLock', () => {
     expect(readWorkbenchLock()).toBeUndefined()
     expect(existsSync(lockPath)).toBe(false)
   })
+
+  // Regression: a zero-byte lock (e.g. left behind by a crashed writer or a
+  // killed `sanity dev` mid-write) used to early-return undefined without
+  // pruning, so the next acquire attempt hit EEXIST forever — `sanity dev`
+  // logged "Workbench dev server started at …" while no Vite was actually
+  // listening.
+  test('prunes zero-byte lock and returns undefined', () => {
+    const dir = registryDir()
+    mkdirSync(dir, {recursive: true})
+
+    const lockPath = join(dir, 'workbench.lock')
+    writeFileSync(lockPath, '')
+
+    expect(readWorkbenchLock()).toBeUndefined()
+    expect(existsSync(lockPath)).toBe(false)
+  })
+
+  test('prunes unparsable-JSON lock and returns undefined', () => {
+    const dir = registryDir()
+    mkdirSync(dir, {recursive: true})
+
+    const lockPath = join(dir, 'workbench.lock')
+    writeFileSync(lockPath, 'not json {{{')
+
+    expect(readWorkbenchLock()).toBeUndefined()
+    expect(existsSync(lockPath)).toBe(false)
+  })
 })
 
 describe('PID-reuse detection', () => {
