@@ -22,7 +22,8 @@
   },
   "files": [
     "./dist",
-    "!./dist/**/__tests__"
+    "!./dist/**/__tests__",
+    "./static"
   ],
   "type": "module",
   "sideEffects": false,
