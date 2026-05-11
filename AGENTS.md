@@ -12,8 +12,8 @@ All commands are run from the root of the repo.
 - `pnpm check:deps` - unused dependency / export check
 - `pnpm build:cli` - build the project
 - `pnpm watch:cli` - build in watch mode
-- `pnpm --filter @sanity/cli-e2e exec vitest run <file>` - run specific e2e test file
-- `pnpm --filter @sanity/cli-e2e exec vitest run <file> -t "<pattern>"` - run specific e2e test by name
+- `pnpm test:e2e <file>` - run specific e2e test file (args pass through to vitest)
+- `pnpm test:e2e <file> -t "<pattern>"` - run specific e2e test by name
 
 # Workflow
 

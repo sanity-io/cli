@@ -9,6 +9,8 @@ description: Use when writing, adding, or modifying e2e tests for CLI commands i
 
 E2e tests run real CLI commands against real infrastructure with real side effects. They validate that commands work end-to-end for both humans (interactive) and agents/CI (non-interactive). This skill defines the philosophy and patterns for writing effective e2e tests in `packages/@sanity/cli-e2e/`.
 
+For local setup, CI behavior, and how to add new env vars, see [`packages/@sanity/cli-e2e/README.md`](../../../packages/@sanity/cli-e2e/README.md).
+
 ## When to Use
 
 - Adding e2e test coverage for a new CLI command
@@ -35,23 +37,24 @@ Discover behavior by running the CLI, not by reading source code. The test shoul
 
 **Step 3: Get user approval.** Wait for the user to review and revise the plan before writing any test code.
 
-Example plan output:
+Example plan output (describe behaviors, not final `test()` names — those get refined during implementation):
+
 ```
 __tests__/init/
   init.test.ts
-    - "rejects invalid input with helpful error" (smoke test, no auth)
-    - "outputs project info without creating files" (--bare, non-interactive)
+    - smoke: rejects a known-bad flag (no auth)
+    - --bare mode prints project info without creating any files (non-interactive)
   init.studio.test.ts
     describe.each([{-y}, {no -y}]) — non-interactive, both unattended modes
-      - "creates studio with clean template" → init --template clean ...
-      - "generates JavaScript files with --no-typescript" → init --no-typescript ...
+      - default flow creates a TypeScript studio with the expected config files
+      - --no-typescript produces JavaScript files
   init.studio-interactive.test.ts
-    - "Ctrl+C aborts cleanly" → init (interactive, send Ctrl+C, expect 130)
-    - "walks through all prompts" → init (interactive, no --template/--typescript/--package-manager)
+    - Ctrl+C at the first prompt aborts with exit code 130
+    - walks through all prompts (template, TypeScript, package manager) and produces a working studio
   init.app.test.ts
     describe.each([{-y}, {no -y}]) — non-interactive
-      - "creates app with app-quickstart template" → init --template app-quickstart ...
-    - "shows project config prompt" → init --template app-quickstart (interactive)
+      - app-quickstart template produces the expected app scaffold
+    - interactive: project/dataset prompts appear and selectable
 ```
 
 ## Core Principles
@@ -206,15 +209,7 @@ expect(stdout).toMatch(/Done! Imported \d+ documents/)
 expect(exitCode).toBe(1)
 ```
 
-## Available Tools
-
-- **`runCli()`** — Execute CLI commands. `interactive: true` for PTY, default for spawn. See `helpers/runCli.ts`.
-- **`testFixture()`** — Get an isolated copy of a pre-built project fixture (e.g., `'basic-studio'`, `'nextjs-app'`). From `@sanity/cli-test`.
-- **`createTmpDir()`** — Create an isolated temp directory with a cleanup function. From `@sanity/cli-test`.
-- **Interactive session API** — `waitForText(regex)`, `selectOption(pattern)`, `sendKey('ArrowDown')`, `write('text')`, `sendControl('c')`, `getOutput()`, `waitForExit()`, `kill()`. See `helpers/spawnPty.ts`.
-- **`getE2EDataset()`** — Returns the e2e dataset name (currently `'production'`). From `helpers/runCli.ts`.
-
-Check `@sanity/cli-test` for shared utilities before creating local helpers. Inline CLI args directly in each test for clarity — avoid abstracting args into helper functions as it obscures what each test actually runs.
+**Inline args, don't abstract.** Inline CLI args directly in each test rather than building helper functions that produce them — abstraction obscures what each test actually runs. The full `runCli()` API and interactive session methods are documented in [`packages/@sanity/cli-e2e/README.md`](../../../packages/@sanity/cli-e2e/README.md); shared `testFixture()` / `createTmpDir()` helpers live in `@sanity/cli-test`.
 
 ## Test Structure Patterns
 
@@ -251,7 +246,7 @@ describe('sanity init - studio', {timeout: 120_000}, () => {
 
 ### Interactive Complete Flow
 
-Use `selectOption(pattern)` to navigate select prompts by text instead of counting ArrowDown presses. It scrolls through the list, handles off-screen options, and throws if zero or multiple options match. Pass a string for exact match or a regex for partial match (e.g., matching a project ID inside `"Project Name (id)"`).
+Use `selectOption(pattern)` to navigate select prompts by text instead of counting ArrowDown presses. It scrolls through the list, handles off-screen options, and throws if zero or multiple options match. Pass a string for a literal substring match or a regex for pattern matching (e.g., matching a project ID inside `"Project Name (id)"`). Strings are escaped before matching, so they're treated as literal text — but they still match anywhere in the option line, so prefer regex with anchors when collisions are likely (e.g., `'dev'` would also match `'development'`).
 
 ```typescript
 test('complete interactive flow selects project and dataset', async () => {
@@ -340,15 +335,13 @@ expect(output).toContain('Your custom app has been scaffolded')
 - Use `selectOption(pattern)` for all select prompts — never count ArrowDown presses
 - Use `waitForText(regex)` to detect prompt appearance before interacting
 - Use regex patterns for structural prompts, exact strings for known output messages
-- For `selectOption`, use a string for exact matches (`'production'`) and regex when the display text wraps the value (`new RegExp(`\\(${projectId}\\)`)`)
+- For `selectOption`, pass a string for a literal substring match (`'production'`) and regex when you need anchoring or pattern matching (e.g., `new RegExp(`\\(${projectId}\\)`)` to find an ID inside parentheses). Note that `selectOption` will throw if multiple options match the substring, so collisions surface loudly.
 
 ## Spawn Mode Behavior
 
-Non-interactive tests use `spawnProcess` which sets `stdio: ['ignore', 'pipe', 'pipe']` — no TTY. This means `isInteractive()` returns false, and the CLI treats the run as unattended regardless of whether `-y` is passed.
+Non-interactive runs have no TTY, so the CLI treats them as unattended and skips prompts (see the README's gotcha for the mechanics). The implication for tests: any behavior gated behind a prompt uses its **fallback default**, which often differs from the prompt's default selection. For example, a prompt that defaults to "Yes" interactively may fall back to `undefined` (falsy) when skipped — so the spawn-mode result differs from the interactive default.
 
-**Prompts are skipped in spawn mode.** Any behavior gated behind an interactive prompt will use its fallback default, which may differ from the prompt's default selection. For example, if a prompt defaults to "Yes" when shown to a user, but the code falls back to `undefined` (falsy) when the prompt is skipped, the spawn-mode behavior differs from the interactive default.
-
-Before omitting a flag from a non-interactive test, run the command without it to verify the unattended default matches what your test expects. If the fallback differs from what you'd expect, add the flag explicitly.
+Before omitting a flag from a non-interactive test, run the command without it and verify the unattended default matches what your test expects. If it doesn't, pass the flag explicitly.
 
 **Test both `-y` and non-`-y` unattended modes.** Both `-y` and a non-interactive terminal trigger `isUnattended() === true`, but they enter through different code paths. Use `describe.each` to parameterize all non-interactive tests across both modes. This also gives vitest distinct test entries for better sharding.
 
@@ -368,18 +361,6 @@ describe.each([
 })
 ```
 
-## Running E2E Tests
-
-After writing tests, run them — lint and type checks verify syntax, not behavior. Always validate with an actual e2e run before reporting tests as complete.
-
-```bash
-# Run a specific e2e test file
-pnpm --filter @sanity/cli-e2e exec vitest run __tests__/init/init.studio.test.ts --reporter=verbose
-
-# Run a specific test by name pattern
-pnpm --filter @sanity/cli-e2e exec vitest run __tests__/init/init.studio.test.ts -t "creates studio with default"
-```
-
 ## When Tests Reveal Product Bugs
 
 If a test failure reveals a product bug rather than a test bug, file an issue in Linear, skip the affected test with a link to the issue, and move on. Don't paper over product bugs with workarounds in test assertions.
@@ -391,21 +372,21 @@ test.skip('bare init creates minimal project', () => {
 })
 ```
 
-## What Belongs in E2E vs Command Tests
+## What Belongs in E2E vs Unit Tests
 
 E2e tests validate real commands against real infrastructure with real side effects. They are expensive to run and should focus on proving the full flow works.
 
-**Command tests** (`packages/@sanity/cli/src/commands/__tests__/`) test command handlers with mocked HTTP or client methods. They are fast, isolated, and appropriate for testing the full matrix of input validation, flag parsing, error messages, and edge cases.
+**Unit tests** (`packages/@sanity/cli/src/commands/__tests__/`) exercise command handlers with mocked HTTP or client methods. They are fast, isolated, and appropriate for testing the full matrix of input validation, flag parsing, error messages, and edge cases.
 
-| Concern | Where to test |
-|---------|---------------|
-| Flag validation, argument parsing | Command tests |
-| Error messages and exit codes for bad input | Command tests |
-| Config file parsing, input sanitization | Command tests |
-| Complete command flows with real side effects | E2e tests |
-| Files generated, APIs called, prompts displayed | E2e tests |
+| Concern                                       | Where to test |
+| --------------------------------------------- | ------------- |
+| Flag validation, argument parsing             | Unit tests    |
+| Error messages and exit codes for bad input   | Unit tests    |
+| Config file parsing, input sanitization       | Unit tests    |
+| Complete command flows with real side effects | E2e tests     |
+| Files generated, APIs called, prompts displayed | E2e tests   |
 
-For error handling in e2e, keep a single smoke test per command that confirms the binary rejects bad input. Test the full matrix of validation rules as command tests.
+For error handling in e2e, keep a single smoke test per command that confirms the binary rejects bad input. Test the full matrix of validation rules as unit tests.
 
 ```typescript
 // ONE e2e smoke test for error rejection
@@ -418,7 +399,7 @@ test('rejects deprecated --reconfigure flag', async () => {
   expect(stderr).toContain('--reconfigure is deprecated')
 })
 
-// Individual validation rules → command tests in
+// Individual validation rules → unit tests in
 // packages/@sanity/cli/src/commands/__tests__/
 ```
 
@@ -446,6 +427,6 @@ test('rejects deprecated --reconfigure flag', async () => {
 | Asserting on dynamic API content | Use structural regex patterns |
 | Mutating `process.env` directly | Use `vi.stubEnv()` for env overrides |
 | Mocking functions, APIs, or services | Never mock in e2e tests — test real infrastructure |
-| Testing flag validation/deprecation in e2e | One smoke test per command; validation matrix belongs in command tests |
+| Testing flag validation/deprecation in e2e | One smoke test per command; validation matrix belongs in unit tests |
 | Reading source to predict prompt order | Run the test and observe the actual CLI output to understand the flow |
 | Only running lint/types to validate | Always run the actual e2e tests before reporting done |
