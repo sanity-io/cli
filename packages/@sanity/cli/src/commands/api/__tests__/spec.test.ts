@@ -126,15 +126,16 @@ describe('#api:spec', () => {
       version: 'v2021-06-07',
     })
     expect(parsed.operations).toHaveLength(2)
-    expect(
-      parsed.operations.find((op: {operationId: string}) => op.operationId === 'jobStatus'),
-    ).toMatchObject({
+    const jobStatus = parsed.operations.find(
+      (op: {operationId: string}) => op.operationId === 'jobStatus',
+    )
+    expect(jobStatus).toMatchObject({
       capability: 'read',
       endpoint: 'v2021-06-07/jobs/:jobId',
       isStreaming: false,
       method: 'GET',
-      pathParams: ['jobId'],
     })
+    expect(jobStatus.pathParams.map((p: {name: string}) => p.name)).toEqual(['jobId'])
   })
 
   test('--format=openapi passes through the raw YAML', async () => {

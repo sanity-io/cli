@@ -33,19 +33,84 @@ export function classifyCapability(method: string): Capability {
  *  Parsed spec types                                                      *
  * ---------------------------------------------------------------------- */
 
+/** A request parameter (path / query / header). */
+export interface ParsedParam {
+  description: string
+  in: 'header' | 'path' | 'query'
+  name: string
+  required: boolean
+  type: string
+
+  default?: unknown
+  enum?: (number | string)[]
+  example?: unknown
+  /** When the param's schema is a `$ref`, the referenced schema name. */
+  ref?: string
+}
+
+/**
+ * One field of a request body schema. Refs are **linked**, not
+ * expanded: when a field's schema is `$ref: '#/components/schemas/Foo'`,
+ * `ref` carries `'Foo'` and `fields` stays empty. Agents resolve refs
+ * via `sanity api spec <slug> --schema <name>` rather than getting
+ * a pre-expanded tree.
+ */
+export interface ParsedBodyField {
+  description: string
+  fields: ParsedBodyField[]
+  name: string
+  required: boolean
+  type: string
+
+  default?: unknown
+  enum?: (number | string)[]
+  ref?: string
+}
+
+export interface ParsedRequestBody {
+  contentType: string
+  /** Top-level object fields (empty for refs / non-JSON / opaque). */
+  fields: ParsedBodyField[]
+  /** Referenced schemas appearing at the body root (via `$ref` or composition). */
+  refs: string[]
+  required: boolean
+  /** One-line summary, used for non-JSON or as a header above `fields`. */
+  schemaSummary: string
+}
+
+export interface ParsedResponse {
+  contentType: string
+  schemaSummary: string
+  /** HTTP status code as a number, or `0` for `default` (rare in Sanity specs). */
+  status: number
+
+  /** When the response schema is a `$ref`, the referenced schema name. */
+  ref?: string
+}
+
+interface SecurityScheme {
+  /** Normalized scheme name, e.g. `BearerAuth`. */
+  scheme: string
+}
+
 /** One parsed operation, denormalized for the CLI's operations index. */
 export interface ParsedOperation {
   capability: Capability
+  description: string
   /** `<api-version>/<path>` with `:name` placeholders (URL Pattern API style). */
   endpoint: string
+  headerParams: ParsedParam[]
   isStreaming: boolean
   /** Uppercase HTTP method: `GET`, `POST`, … */
   method: string
   operationId: string
   /** Native OpenAPI path with `{name}` placeholders. */
   path: string
-  pathParams: string[]
-  requiredQueryParams: string[]
+  pathParams: ParsedParam[]
+  queryParams: ParsedParam[]
+  requestBody: ParsedRequestBody | null
+  responses: ParsedResponse[]
+  security: SecurityScheme[]
   summary: string
 
   /** Spec slug; populated by buildOperationsIndex, not the parser. */
@@ -87,19 +152,41 @@ export function toUrlPatternForm(value: string): string {
 }
 
 /* ---------------------------------------------------------------------- *
- *  OpenAPI parser                                                         *
+ *  Generic helpers                                                        *
  * ---------------------------------------------------------------------- */
-
-interface ParameterObject {
-  in?: string
-  name?: string
-  required?: boolean
-}
 
 interface ServerVariable {
   default?: string
   description?: string
 }
+
+function asString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback
+}
+
+function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : []
+}
+
+function asObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {}
+}
+
+/**
+ * Extract the schema name from a `#/components/schemas/Foo` pointer.
+ * Returns an empty string for non-local or malformed refs — we don't
+ * follow remote refs, and any spec that ships one is broken anyway.
+ */
+function refName(ref: string): string {
+  if (!ref.startsWith('#/components/schemas/')) return ''
+  return ref.slice('#/components/schemas/'.length)
+}
+
+/* ---------------------------------------------------------------------- *
+ *  Server URL helpers                                                     *
+ * ---------------------------------------------------------------------- */
 
 /**
  * Substitute server-variable defaults into a server URL template.
@@ -147,38 +234,396 @@ function extractServerPathSegment(serverUrlWithPlaceholders: string): string {
   return pathname.replaceAll(/^\/+|\/+$/g, '')
 }
 
-function asString(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback
-}
+/* ---------------------------------------------------------------------- *
+ *  Schema → type label                                                    *
+ * ---------------------------------------------------------------------- */
 
-function asArray<T>(value: unknown): T[] {
-  return Array.isArray(value) ? (value as T[]) : []
-}
-
-function collectParamNames(
-  params: ParameterObject[],
-  location: 'header' | 'path' | 'query',
-  opts?: {requiredOnly?: boolean},
-): string[] {
-  const out: string[] = []
-  for (const p of params) {
-    if (!p || typeof p !== 'object') continue
-    if (p.in !== location) continue
-    if (opts?.requiredOnly && p.required !== true) continue
-    const name = asString(p.name)
-    if (name) out.push(name)
+/**
+ * One-word type label suitable for table / help display.
+ *
+ * Refs collapse to the schema name (`'Foo'`) so the output is
+ * immediately useful without resolution. Composition collapses to
+ * `'object'` — the body walker handles `allOf`/`oneOf`/`anyOf` itself.
+ */
+function describeType(schema: Record<string, unknown>): string {
+  const ref = asString(schema.$ref)
+  if (ref) {
+    const name = refName(ref)
+    return name || 'unknown'
   }
-  return out
+  const t = asString(schema.type)
+  if (t) {
+    if (t === 'array') {
+      const items = asObject(schema.items)
+      const inner = describeType(items)
+      return inner === 'unknown' ? 'array' : `${inner}[]`
+    }
+    return t
+  }
+  if (Array.isArray(schema.enum) && schema.enum.length > 0) {
+    return typeof schema.enum[0] === 'number' ? 'number' : 'string'
+  }
+  if (Array.isArray(schema.allOf) || Array.isArray(schema.oneOf) || Array.isArray(schema.anyOf)) {
+    return 'object'
+  }
+  return 'unknown'
 }
 
-function isStreamingResponse(responses: unknown): boolean {
-  if (!responses || typeof responses !== 'object') return false
-  const ok = (responses as Record<string, unknown>)['200']
-  if (!ok || typeof ok !== 'object') return false
-  const content = (ok as Record<string, unknown>).content
-  if (!content || typeof content !== 'object') return false
-  return Boolean((content as Record<string, unknown>)['text/event-stream'])
+/** Compact `{ a, b, c }` summary of an inline object schema. */
+function summarizeInlineObject(properties: Record<string, unknown>): string {
+  const names = Object.keys(properties)
+  if (names.length === 0) return ''
+  const head = names.slice(0, 6).join(', ')
+  return names.length > 6 ? `{ ${head}, … }` : `{ ${head} }`
 }
+
+/* ---------------------------------------------------------------------- *
+ *  Parameter extraction                                                   *
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Resolve a `#/components/parameters/<name>` ref against the spec root.
+ * Unlike schema refs (which we link-not-resolve), parameter refs MUST
+ * resolve — path params especially: without them, the URL template
+ * loses placeholders and the operation becomes uncallable.
+ *
+ * Parameter refs are inline, simple, and don't recurse, so resolution
+ * is cheap and cycle-free.
+ */
+function resolveParameterRef(
+  ref: string,
+  root: Record<string, unknown>,
+): Record<string, unknown> | null {
+  const prefix = '#/components/parameters/'
+  if (!ref.startsWith(prefix)) return null
+  const name = ref.slice(prefix.length)
+  const components = asObject(root.components)
+  const parameters = asObject(components.parameters)
+  const target = parameters[name]
+  return target && typeof target === 'object' ? (target as Record<string, unknown>) : null
+}
+
+/**
+ * Convert one OpenAPI parameter object into a `ParsedParam`. Pulls
+ * metadata from both the param level and its `schema` (OpenAPI lets
+ * `enum`/`default`/`example` live on either).
+ *
+ * Returns `null` for malformed params (no `name`/`in`) so callers can
+ * filter without crashing on bad specs.
+ */
+function parseParam(rawParam: unknown, root: Record<string, unknown>): ParsedParam | null {
+  let param = asObject(rawParam)
+  const paramRef = asString(param.$ref)
+  if (paramRef) {
+    const resolved = resolveParameterRef(paramRef, root)
+    if (!resolved) return null
+    param = resolved
+  }
+
+  const name = asString(param.name)
+  const location = asString(param.in)
+  if (!name || (location !== 'path' && location !== 'query' && location !== 'header')) {
+    return null
+  }
+
+  const schema = asObject(param.schema)
+  const enumValues =
+    asArray<number | string>(schema.enum).length > 0
+      ? asArray<number | string>(schema.enum)
+      : asArray<number | string>(param.enum)
+
+  const parsed: ParsedParam = {
+    description: asString(param.description) || asString(schema.description),
+    in: location,
+    name,
+    required: location === 'path' ? true : param.required === true,
+    type: describeType(schema),
+  }
+  const schemaRef = asString(schema.$ref)
+  if (schemaRef) {
+    const name = refName(schemaRef)
+    if (name) parsed.ref = name
+  }
+  if (enumValues.length > 0) parsed.enum = enumValues
+  const defaultValue = schema.default ?? param.default
+  if (defaultValue !== undefined) parsed.default = defaultValue
+  const exampleValue = schema.example ?? param.example
+  if (exampleValue !== undefined) parsed.example = exampleValue
+  return parsed
+}
+
+/* ---------------------------------------------------------------------- *
+ *  Request body extraction                                                *
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Walk one property schema into a `ParsedBodyField`. Refs stop here:
+ * the ref name lands on `ref`, recursion does not follow.
+ *
+ * Inline objects recurse one level; arrays-of-objects recurse into
+ * their element schema. We don't cap recursion artificially — refs
+ * are the natural terminator for the deep specs (agent-actions).
+ */
+function walkProperty(name: string, rawSchema: unknown, isRequired: boolean): ParsedBodyField {
+  const schema = asObject(rawSchema)
+  const ref = asString(schema.$ref)
+  const refSchemaName = ref ? refName(ref) : ''
+
+  const field: ParsedBodyField = {
+    description: asString(schema.description),
+    fields: [],
+    name,
+    required: isRequired,
+    type: describeType(schema),
+  }
+  if (refSchemaName) field.ref = refSchemaName
+  const enumValues = asArray<number | string>(schema.enum)
+  if (enumValues.length > 0) field.enum = enumValues
+  if (schema.default !== undefined) field.default = schema.default
+
+  // Don't follow refs — that's the whole point of the link-not-resolve approach.
+  if (ref) return field
+
+  // Inline object: walk one level deeper.
+  if (asString(schema.type) === 'object' || asObject(schema.properties).constructor === Object) {
+    field.fields = walkProperties(schema)
+  } else if (asString(schema.type) === 'array') {
+    const items = asObject(schema.items)
+    if (asString(items.type) === 'object' || asObject(items.properties).constructor === Object) {
+      field.fields = walkProperties(items)
+    }
+  }
+  return field
+}
+
+/**
+ * Pull `{name, schema, required}` out of an inline object schema.
+ * Composition is handled by `flattenComposition` before this is called —
+ * here we just enumerate `properties`.
+ */
+function walkProperties(schema: Record<string, unknown>): ParsedBodyField[] {
+  const properties = asObject(schema.properties)
+  const required = new Set(asArray<string>(schema.required))
+  const fields: ParsedBodyField[] = []
+  for (const [propName, propSchema] of Object.entries(properties)) {
+    fields.push(walkProperty(propName, propSchema, required.has(propName)))
+  }
+  return fields
+}
+
+/**
+ * Flatten `allOf` at a schema root by collecting inline properties from
+ * every variant. `oneOf`/`anyOf` pick the first variant. Refs at any
+ * variant slot are returned via `refs` for the caller to surface as
+ * follow-up pointers.
+ */
+function flattenComposition(schema: Record<string, unknown>): {
+  fields: ParsedBodyField[]
+  refs: string[]
+} {
+  const refs = new Set<string>()
+  const ownFields = walkProperties(schema)
+  const fieldsByName = new Map(ownFields.map((f) => [f.name, f]))
+
+  const ownRef = asString(schema.$ref)
+  if (ownRef) {
+    const name = refName(ownRef)
+    if (name) refs.add(name)
+  }
+
+  for (const variant of asArray<Record<string, unknown>>(schema.allOf)) {
+    const sub = flattenComposition(variant)
+    for (const f of sub.fields) {
+      if (!fieldsByName.has(f.name)) {
+        fieldsByName.set(f.name, f)
+      }
+    }
+    for (const r of sub.refs) refs.add(r)
+  }
+
+  for (const key of ['oneOf', 'anyOf'] as const) {
+    const variants = asArray<Record<string, unknown>>(schema[key])
+    for (const variant of variants) {
+      const variantRef = asString(variant.$ref)
+      if (variantRef) {
+        const name = refName(variantRef)
+        if (name) refs.add(name)
+        continue
+      }
+      // For inline variants, take the first one's properties to keep the
+      // output usable. oneOf-of-refs (the common case) lands in `refs`.
+      if (variants.indexOf(variant) === 0) {
+        const sub = flattenComposition(variant)
+        for (const f of sub.fields) {
+          if (!fieldsByName.has(f.name)) fieldsByName.set(f.name, f)
+        }
+        for (const r of sub.refs) refs.add(r)
+      }
+    }
+  }
+
+  return {fields: [...fieldsByName.values()], refs: [...refs]}
+}
+
+/**
+ * Pick the canonical media type from a `requestBody.content` map.
+ * Prefers `application/json`; otherwise returns the first declared
+ * media type (covering `multipart/form-data`, `image/*`, etc).
+ */
+function pickContentType(content: Record<string, unknown>): string {
+  const keys = Object.keys(content)
+  if (keys.length === 0) return ''
+  if ('application/json' in content) return 'application/json'
+  return keys[0]
+}
+
+function isJsonContentType(contentType: string): boolean {
+  return contentType === 'application/json' || contentType.endsWith('+json')
+}
+
+function summarizeBodySchema(schema: Record<string, unknown>, refs: string[]): string {
+  const props = asObject(schema.properties)
+  const inline = summarizeInlineObject(props)
+  if (inline) return inline
+  if (refs.length > 0) return refs.length === 1 ? refs[0] : `oneOf(${refs.join(', ')})`
+  return describeType(schema)
+}
+
+function parseRequestBody(opRaw: Record<string, unknown>): ParsedRequestBody | null {
+  const body = asObject(opRaw.requestBody)
+  if (asString(body.$ref)) return null // Rare; specs we own don't use it.
+  const content = asObject(body.content)
+  if (Object.keys(content).length === 0) return null
+
+  const contentType = pickContentType(content)
+  const mediaTypeObj = asObject(content[contentType])
+  const schema = asObject(mediaTypeObj.schema)
+
+  if (!isJsonContentType(contentType)) {
+    return {
+      contentType,
+      fields: [],
+      refs: [],
+      required: body.required === true,
+      schemaSummary: `<${contentType}>`,
+    }
+  }
+
+  const {fields, refs} = flattenComposition(schema)
+  return {
+    contentType,
+    fields,
+    refs,
+    required: body.required === true,
+    schemaSummary: summarizeBodySchema(schema, refs),
+  }
+}
+
+/* ---------------------------------------------------------------------- *
+ *  Response extraction                                                    *
+ * ---------------------------------------------------------------------- */
+
+function parseResponses(opRaw: Record<string, unknown>): ParsedResponse[] {
+  const responses = asObject(opRaw.responses)
+  const out: ParsedResponse[] = []
+  for (const [statusKey, rawResponse] of Object.entries(responses)) {
+    const status = statusKey === 'default' ? 0 : Number.parseInt(statusKey, 10)
+    if (!Number.isFinite(status) && statusKey !== 'default') continue
+    const response = asObject(rawResponse)
+    if (asString(response.$ref)) continue // Skip ref'd responses; uncommon in our specs.
+
+    const content = asObject(response.content)
+    const contentType = pickContentType(content)
+    const mediaObj = asObject(content[contentType])
+    const schema = asObject(mediaObj.schema)
+
+    let schemaSummary = ''
+    let ref: string | undefined
+    if (contentType) {
+      const schemaRef = asString(schema.$ref)
+      if (schemaRef) {
+        const name = refName(schemaRef)
+        if (name) {
+          ref = name
+          schemaSummary = name
+        }
+      } else if (isJsonContentType(contentType)) {
+        const props = asObject(schema.properties)
+        schemaSummary =
+          summarizeInlineObject(props) ||
+          (Object.keys(schema).length > 0 ? describeType(schema) : '')
+      } else {
+        schemaSummary = `<${contentType}>`
+      }
+    }
+
+    const entry: ParsedResponse = {contentType, schemaSummary, status}
+    if (ref) entry.ref = ref
+    out.push(entry)
+  }
+  return out.toSorted((a, b) => a.status - b.status)
+}
+
+/* ---------------------------------------------------------------------- *
+ *  Security extraction                                                    *
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Specs inconsistently spell `BearerAuth` / `bearerAuth`. Same scheme
+ * either way; we capitalize the first letter so display is uniform.
+ */
+function normalizeSchemeName(name: string): string {
+  if (!name) return ''
+  return name[0].toUpperCase() + name.slice(1)
+}
+
+function parseSecurity(opRaw: Record<string, unknown>, rootSecurity: unknown): SecurityScheme[] {
+  const opSecurity = asArray<Record<string, unknown>>(opRaw.security)
+  const source = opSecurity.length > 0 ? opSecurity : asArray<Record<string, unknown>>(rootSecurity)
+  const schemes = new Set<string>()
+  for (const requirement of source) {
+    for (const key of Object.keys(requirement)) schemes.add(normalizeSchemeName(key))
+  }
+  return [...schemes].map((scheme) => ({scheme}))
+}
+
+/* ---------------------------------------------------------------------- *
+ *  Streaming detection                                                    *
+ * ---------------------------------------------------------------------- */
+
+function isStreamingResponse(responses: ParsedResponse[]): boolean {
+  return responses.some((r) => r.status === 200 && r.contentType === 'text/event-stream')
+}
+
+/* ---------------------------------------------------------------------- *
+ *  Schema lookup (for `sanity api spec <slug> --schema <name>`)           *
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Return the raw `components.schemas.<name>` object from a spec YAML,
+ * or `null` if the schema doesn't exist. Used by the `--schema` flag
+ * on `api spec` to let agents follow ref pointers.
+ */
+export function lookupComponentSchema(yaml: string, name: string): unknown {
+  const doc = parseYaml(yaml)
+  if (!doc || typeof doc !== 'object') return null
+  const components = asObject((doc as Record<string, unknown>).components)
+  const schemas = asObject(components.schemas)
+  return name in schemas ? schemas[name] : null
+}
+
+/** List all `components.schemas` keys defined by a spec. */
+export function listComponentSchemas(yaml: string): string[] {
+  const doc = parseYaml(yaml)
+  if (!doc || typeof doc !== 'object') return []
+  const components = asObject((doc as Record<string, unknown>).components)
+  const schemas = asObject(components.schemas)
+  return Object.keys(schemas)
+}
+
+/* ---------------------------------------------------------------------- *
+ *  OpenAPI parser                                                         *
+ * ---------------------------------------------------------------------- */
 
 /**
  * Parse an OpenAPI spec (YAML string) into the CLI's denormalized form.
@@ -192,10 +637,7 @@ export function parseOpenApi(slug: string, yaml: string): ParsedSpec {
   }
   const root = doc as Record<string, unknown>
 
-  const info = (root.info && typeof root.info === 'object' ? root.info : {}) as Record<
-    string,
-    unknown
-  >
+  const info = asObject(root.info)
   const title = asString(info.title) || slug
   const description = asString(info.description)
   const version = asString(info.version)
@@ -203,10 +645,7 @@ export function parseOpenApi(slug: string, yaml: string): ParsedSpec {
   const servers = asArray<Record<string, unknown>>(root.servers)
   const serverObj = servers[0] || {}
   const serverUrlRaw = asString(serverObj.url)
-  const serverVars =
-    serverObj.variables && typeof serverObj.variables === 'object'
-      ? (serverObj.variables as Record<string, ServerVariable>)
-      : {}
+  const serverVars = asObject(serverObj.variables) as Record<string, ServerVariable>
 
   // The version path-segment lives in the resolved server URL's pathname
   // — NOT `info.version` (which can be a meaningless semver like `1.0.0`
@@ -223,27 +662,32 @@ export function parseOpenApi(slug: string, yaml: string): ParsedSpec {
   const serverPathSegment = extractServerPathSegment(serverUrlWithContextVars)
   const serverTemplate = toUrlPatternForm(serverUrlWithContextVars)
 
-  const paths = (root.paths && typeof root.paths === 'object' ? root.paths : {}) as Record<
-    string,
-    unknown
-  >
+  const rootSecurity = root.security
+  const paths = asObject(root.paths)
 
   const operations: ParsedOperation[] = []
   for (const [rawPath, pathItemRaw] of Object.entries(paths)) {
-    if (!pathItemRaw || typeof pathItemRaw !== 'object') continue
-    const pathItem = pathItemRaw as Record<string, unknown>
-    const commonParams = asArray<ParameterObject>(pathItem.parameters)
+    const pathItem = asObject(pathItemRaw)
+    if (Object.keys(pathItem).length === 0) continue
+    const commonParams = asArray<unknown>(pathItem.parameters)
 
     for (const method of HTTP_METHODS) {
       const opRaw = pathItem[method]
-      if (!opRaw || typeof opRaw !== 'object') continue
-      const op = opRaw as Record<string, unknown>
+      const op = asObject(opRaw)
+      if (Object.keys(op).length === 0) continue
 
-      const opParams = asArray<ParameterObject>(op.parameters)
+      const opParams = asArray<unknown>(op.parameters)
       const allParams = [...commonParams, ...opParams]
+        .map((raw) => parseParam(raw, root))
+        .filter((p): p is ParsedParam => p !== null)
 
-      const pathParams = collectParamNames(allParams, 'path')
-      const requiredQueryParams = collectParamNames(allParams, 'query', {requiredOnly: true})
+      const pathParams = allParams.filter((p) => p.in === 'path')
+      const queryParams = allParams.filter((p) => p.in === 'query')
+      const headerParams = allParams.filter((p) => p.in === 'header')
+
+      const requestBody = parseRequestBody(op)
+      const responses = parseResponses(op)
+      const security = parseSecurity(op, rootSecurity)
 
       const methodUpper = method.toUpperCase()
       const opPath = rawPath.replace(/^\/+/, '')
@@ -252,13 +696,18 @@ export function parseOpenApi(slug: string, yaml: string): ParsedSpec {
 
       operations.push({
         capability: classifyCapability(methodUpper),
+        description: asString(op.description),
         endpoint,
-        isStreaming: isStreamingResponse(op.responses),
+        headerParams,
+        isStreaming: isStreamingResponse(responses),
         method: methodUpper,
         operationId: asString(op.operationId),
         path: rawPath,
         pathParams,
-        requiredQueryParams,
+        queryParams,
+        requestBody,
+        responses,
+        security,
         summary: asString(op.summary),
       })
     }

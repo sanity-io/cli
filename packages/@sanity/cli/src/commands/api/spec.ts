@@ -1,10 +1,17 @@
 import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
+import {stringify as stringifyYaml} from 'yaml'
 
 import {readSpec} from '../../api/cache.js'
 import {type OpenApiSpecIndexEntry} from '../../api/docsClient.js'
-import {type ParsedOperation, type ParsedSpec, parseOpenApi} from '../../api/parser.js'
+import {
+  listComponentSchemas,
+  lookupComponentSchema,
+  type ParsedOperation,
+  type ParsedSpec,
+  parseOpenApi,
+} from '../../api/parser.js'
 import {revalidateSpecs} from '../../api/revalidate.js'
 import {buildSpecJsonView, renderSpecHumanView} from '../../api/views.js'
 
@@ -41,6 +48,10 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
       description: 'Narrow any of the three output modes to one operation',
     },
     {
+      command: '<%= config.bin %> <%= command.id %> agent-actions --schema GenerateInclude',
+      description: 'Print one component schema by name (resolves a `$ref` an op points at)',
+    },
+    {
       command: '<%= config.bin %> <%= command.id %> jobs --web',
       description: 'Open the spec docs page in browser',
     },
@@ -54,6 +65,11 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
       options: ['json', 'openapi'],
     }),
     operation: Flags.string({description: 'Narrow to a single operation by operationId'}),
+    schema: Flags.string({
+      description:
+        'Print one `components.schemas.<name>` entry. Use this to follow `$ref` pointers ' +
+        'surfaced in operation output. Honors `--format` (default: YAML).',
+    }),
     web: Flags.boolean({char: 'w', description: 'Open the spec docs page in browser'}),
   }
 
@@ -69,6 +85,11 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     }
 
     const {entry, yaml} = await this.loadSpec(slug)
+
+    if (flags.schema) {
+      this.printSchema(slug, yaml, flags.schema, flags.format)
+      return
+    }
 
     // openapi: byte-for-byte passthrough of the cached YAML.
     if (flags.format === 'openapi') {
@@ -120,6 +141,23 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     }
 
     return {entry, yaml}
+  }
+
+  private printSchema(slug: string, yaml: string, name: string, format: string | undefined): void {
+    const schema = lookupComponentSchema(yaml, name)
+    if (schema === null) {
+      const known = listComponentSchemas(yaml)
+      this.error(
+        `Schema "${name}" not found in spec "${slug}".\n` +
+          `Known schemas: ${known.join(', ') || '(none)'}`,
+        {exit: 1},
+      )
+    }
+    if (format === 'json') {
+      this.log(JSON.stringify(schema, null, 2))
+      return
+    }
+    this.log(stringifyYaml(schema))
   }
 
   private selectOperations(parsed: ParsedSpec, operationFilter?: string): ParsedOperation[] {
