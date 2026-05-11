@@ -106,7 +106,44 @@ Required shape:
 }
 ```
 
-The change lives in `sanity-io/sanity-internal-api-reference` (the Next.js app backing `sanity.io/docs`). Trivial — the source Sanity dataset's `_rev` system field is already present on every `openApiReference` document; the docs API projects it as `revision` on the index response. The `revision` name on the public contract avoids leaking the Sanity-system underscore convention into a docs-team-owned API surface. Coordinate with the docs team before Phase 1 PR opens; the contract change is the gating dependency.
+The change lives in **`sanity-io/www-sanity-io`** — the main `sanity.io` monorepo. Specifically `apps/docs/`:
+
+- `src/app/api/openapi/route.ts` — the index endpoint handler
+- `src/app/api/openapi/[slug]/route.ts` — the per-spec handler (supports `?format=yaml|json`)
+- `src/sanity/queries/openApiQueries.ts` — the GROQ queries
+- `src/sanity/openApiService.ts` — the service layer + YAML/JSON conversion
+
+_(An earlier draft of this spec named `sanity-io/sanity-internal-api-reference`. That repo is unrelated — it powers `openapi.sanity.build`, an internal preview behind Vercel SSO, using a different schema (`apiSpecification`, plain-string slug) and a different dataset. It is **not** the source for `sanity.io/docs/api/openapi`.)_
+
+The change itself is trivial — projection-only — and **already landed locally** on branch `feat/openapi-index-revision-field` (commit `f5190eb9e`):
+
+1. `openApiQueries.ts`: add `"revision": _rev` to the index projection.
+2. `openApiService.ts`: add `revision: string` to the `OpenApiSpec` interface and the returned `.map(...)` object.
+3. Run `pnpm typegen:generate` from `apps/docs/` to refresh `sanity.types.ts`.
+4. Update tests to assert the new field.
+
+Each `openApiReference` document already has Sanity's `_rev` system field. The docs API just projects it as `revision` on the response — the public name drops the underscore-prefix so the docs-team contract doesn't leak the Sanity-internal convention.
+
+**Other index-endpoint details verified while making the change** (worth knowing for Phase 1 implementation):
+
+- **Parent vs child specs.** The GROQ filter is `*[_type == "openApiReference" && schemaLevel != "child"]` — only `schemaLevel: "parent"` specs are returned. The `openApiReference` schema has a `schemaLevel` field with values `"parent"` or `"child"` (defined in `packages/sanity-config/src/schemas/docs/documents/openApiReference.ts`). **Child specs are merge fragments** — small OpenAPI definitions that get composed into a parent spec via the `childSchemas` reference array. They never render their own docs page, and the CLI should never see them. The 23-spec count we audited reflects parent specs only.
+- Ordering is `order(title asc)`, not slug-alphabetical. Stable output but sorted by title.
+- The endpoint sets `Cache-Control: s-maxage=1800, stale-while-revalidate` — a 30-minute CDN cache. **Implication for the revision mechanism:** spec changes are visible to the CLI within ~30 minutes (CDN edge TTL) at worst, instant if the edge is cold. The revalidation primitive is correct; the ceiling on freshness comes from the upstream CDN, not the CLI cache.
+
+**Development source (preview deployments).** While the docs PR is still in preview (PR [#3740](https://github.com/sanity-io/www-sanity-io/pull/3740)), the CLI's base URL points at the per-branch Vercel preview, not production:
+
+```
+DEV  base URL:  https://sanity-docs-git-feat-openapi-index-revision-field.sanity.build
+PROD base URL:  https://www.sanity.io/docs                                  (post-merge)
+```
+
+The preview URL is stable for the lifetime of the branch (Vercel's `git-<branch>` pattern). It serves the same `/api/openapi` and `/api/openapi/<slug>` routes the production URL will once merged. **One catch:** Vercel preview deployments are gated by **Vercel SSO** — anonymous `curl` returns 401 and an SSO redirect. Three workarounds (mutually exclusive, pick one):
+
+1. `vercel curl <url>` — Vercel CLI authenticates transparently. Works if `vercel login` was run.
+2. **Vercel Protection-Bypass token** (preferred for CLI dev): a project-level token that bypasses SSO via a query string. Add `?x-vercel-set-bypass-cookie=true&x-vercel-protection-bypass=$TOKEN` to set a cookie, then anonymous requests on the same browser/CLI session work. Docs: [`vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation`](https://vercel.com/docs/deployment-protection/methods-to-bypass-deployment-protection/protection-bypass-automation). The CLI's `fetchSpecIndex.ts` should read the token from `SANITY_DOCS_API_BYPASS_TOKEN` env var and append it when set.
+3. Wait for merge. Once the docs PR merges to `main`, `www.sanity.io/docs/api/openapi` will serve the new `revision` field anonymously; the preview is no longer needed.
+
+**Phase 1 should make the base URL configurable** — a single env var (`SANITY_DOCS_API_URL`, default `https://www.sanity.io/docs`) plus the bypass-token env above is enough. No flag needed; this is dev-only plumbing.
 
 **Why not GROQ direct against `3do82whm/next`:** the docs endpoint is the stable, owned contract. The Sanity dataset schema may change (field renames, restructuring) without warning; the docs endpoint won't. Extending the docs endpoint with `revision` keeps the CLI on one contract instead of two.
 
@@ -206,7 +243,7 @@ Both commands sit on the same parsed-ops index, the same revision-keyed cache, a
 
 **PR scope (one PR):**
 
-1. Extract inline fetch logic from existing `commands/openapi/{list,get}.ts` into `packages/@sanity/cli/src/openapi/{fetchSpecIndex,fetchSpec,cache}.ts`.
+1. Extract inline fetch logic from existing `commands/openapi/{list,get}.ts` into `packages/@sanity/cli/src/openapi/{fetchSpecIndex,fetchSpec,cache}.ts`. **Base URL is env-configurable** (`SANITY_DOCS_API_URL`, default `https://www.sanity.io/docs`) so the dev loop can point at the Vercel preview branch (Section 5.1) until the docs PR merges. Bypass token via `SANITY_DOCS_API_BYPASS_TOKEN` when set.
 2. Add `parseOpenApi.ts`, `operationsIndex.ts`, `capability.ts` — parse each spec into a list of operations (with full param metadata, including `requiredQueryParams` and `enum` values for body fields), flatten across specs into one index, cache parsed output alongside YAML.
 3. Land the revision-keyed cache once.
 4. **Add canonical commands** `commands/api/list.ts` and `commands/api/spec.ts` with the new behaviors (operation-row table for `list`; flag-driven three-mode output for `spec` — default human, `--format=json`, `--format=openapi`).
@@ -860,5 +897,5 @@ Next: `sanity api list --spec=agent-actions` to see operations in this spec.
 1. **`call` namespacing.** `sanity api <endpoint>` (positional path) vs `sanity api call <endpoint>` (explicit verb). Recommendation: positional (matches gh/vercel and is shorter); explicit `call` adds typing for no clarity gain.
 2. **Capability tags.** Heuristic in Phase 1, or push for `x-sanity-capability` extension in producer-repo YAMLs? Heuristic is right for v1; revisit if false positives become noisy.
 3. ~~**Telemetry for the MCP-gap signal.**~~ **Resolved** — existing CLI infrastructure already tags every outbound request: `User-Agent: @sanity/cli-core@<version>` (set unconditionally by `cli-core`'s `createRequester`, [`createRequester.ts:48-58`](packages/@sanity/cli-core/src/request/createRequester.ts#L48-L58)) plus `?tag=sanity.cli.api` (added by Phase 2 on every `sanity api` outbound; see Phase 2 behavior section). The MCP team filters server-side logs on `tag=sanity.cli.api` and groups by request path. No new telemetry pipeline.
-4. **Docs endpoint `revision` extension (blocker for Phase 1).** Requires `sanity.io/docs/api/openapi` to expose a `revision` field per spec (Section 5.1). Coordinated change in `sanity-io/sanity-internal-api-reference`. Trivial implementation but not yet in flight — open a tracking issue and ship the docs change first.
+4. ~~**Docs endpoint `revision` extension (blocker for Phase 1).**~~ **In flight** — change made in `sanity-io/www-sanity-io` (`apps/docs/`), local commit `f5190eb9e` on branch `feat/openapi-index-revision-field`. Ready to push and open a PR. Once merged + deployed, Phase 1 PR is unblocked.
 5. **HTTP-reference embeddings index (blocker for Phase 10).** Requires a Sanity Embeddings Index on `3do82whm/next` scoped to `*[_type == "openApiReference"]`, with anonymous query access. Owned by the docs team; coordinate alongside the `revision` request. Without the index, Phase 10 ships as keyword-only fallback (still useful, but not the semantic experience).
