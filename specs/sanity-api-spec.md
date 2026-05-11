@@ -150,27 +150,31 @@ The preview URL is stable for the lifetime of the branch (Vercel's `git-<branch>
 ### 5.2 Cache layout and revision-based invalidation
 
 ```
-~/.sanity/cache/api/
+~/.config/sanity[-staging]/cache/api/
   revisions.json        # {slug → revision} — source of truth for "is X stale?"
   specs/<slug>.yaml     # raw OpenAPI YAML, written on fetch
-  specs/<slug>.json     # parsed/normalized form (built by `list`)
-  operations.json       # flattened operations index built from specs (Phase 1)
-  meta.json             # {schemaVersion, lastRevalidation}
 ```
+
+**Test-time override:** `SANITY_CLI_CACHE_PATH` env var redirects the root. Tests use a per-`describe` `mkdtemp` directory so they never touch the developer's real cache. Production callers leave it unset.
+
+The v1 cache is intentionally minimal — two file shapes. Earlier drafts called for `specs/<slug>.json` (parsed form), `operations.json` (flattened index), and `meta.json` (TTL fallback). All three are deferred — Phase 1 parses YAML on demand and never persists derived data. `meta.json` comes back when Phase 3 (`sanity api refresh`) introduces TTL fallback semantics.
 
 **Invalidation strategy: revision-keyed, not TTL.** Any command that reads the cache performs a revalidation step before serving content:
 
 1. Fetch the index from `https://www.sanity.io/docs/api/openapi`. Anonymous, ~30–60 ms, small payload. Each entry carries `revision` (per Section 5.1).
-2. Diff the returned `{slug → revision}` map against `revisions.json` locally.
-3. For each spec whose `revision` differs (or is missing locally), refetch the full spec from `https://www.sanity.io/docs/api/openapi/<slug>` and update both the YAML cache and `revisions.json`.
-4. If no `revision` differs, no per-spec refetch occurs — the index fetch is the only network call.
+2. For each entry, decide whether to refetch the spec body. The check is in `src/api/revalidate.ts:shouldRefetch`:
+   - **No cached YAML on disk** → refetch.
+   - **Upstream revision is `''`** (pre-merge fallback — the docs PR adding `revision` hasn't deployed yet) → refetch.
+   - **Cached revision differs from upstream** → refetch.
+   - **Otherwise** → serve cache (no network call for this spec).
+3. Refetched specs get written to `specs/<slug>.yaml`; `revisions.json` is updated with the new revisions.
 
 Consequences:
 
-- Warm cache = one small network call (index) per command, zero per-spec fetches.
-- A producer-repo deploy invalidates only the specs that actually changed.
-- TTL is a fallback (default 24h since last successful revalidation) for when the index endpoint is unreachable.
+- **Post-merge (docs revision field deployed)** — warm cache = one small network call (the index) per command, zero per-spec fetches. A producer-repo deploy invalidates only the specs that actually changed.
+- **Pre-merge fallback** — `revision: ''` from upstream means the CLI can't tell what changed, so it conservatively refetches every spec on every invocation. Slower but correct. The earlier "trust cache forever when revision missing" behavior was a bug — the CLI would have happily served stale specs for weeks.
 - Only one contract to talk to. The CLI never reaches around the docs endpoint into the underlying Sanity dataset.
+- TTL fallback (for index-endpoint outages) is deferred to Phase 3.
 
 ### 5.3 Command structure
 
@@ -193,34 +197,43 @@ Operation-id mode (`sanity api <spec>.<opId>`) is dropped from the v1 plan for t
 ### 5.4 Files added
 
 ```
-packages/@sanity/cli/src/commands/api/   # Canonical
-  index.ts                # `api` namespace registration
-  list.ts                 # `sanity api list` — Phase 1 (canonical)
-  spec.ts                 # `sanity api spec <slug>` — Phase 1 (canonical)
-  call.ts                 # `sanity api <endpoint>` — Phase 2
-  refresh.ts              # Phase 3
+packages/@sanity/cli/src/commands/api/                 # Canonical — minimal command shells
+  list.ts                       # `sanity api list` — Phase 1
+  spec.ts                       # `sanity api spec <slug>` — Phase 1
+  call.ts                       # `sanity api <endpoint>` — Phase 2
+  refresh.ts                    # Phase 3
   __tests__/
     list.test.ts
     spec.test.ts
-    call.test.ts
-    refresh.test.ts
     ...
 
-packages/@sanity/cli/src/commands/openapi/   # Deprecated forwarders (one minor cycle, then deleted)
-  list.ts                 # prints deprecation warning, delegates to commands/api/list.ts
-  get.ts                  # prints deprecation warning, translates --format → new flags, delegates to commands/api/spec.ts
+packages/@sanity/cli/src/commands/openapi/             # Deprecated forwarders (one minor cycle, then deleted)
+  list.ts                       # prints deprecation warning, delegates to commands/api/list.ts
+  get.ts                        # prints deprecation warning, translates --format → new flags, delegates to commands/api/spec.ts
 
-packages/@sanity/cli/src/openapi/   # Shared internals (no command code here; both commands/api/* and commands/openapi/* import from this module)
-  fetchSpecIndex.ts       # docs endpoint /openapi → index (includes revision per spec)
-  fetchSpec.ts            # docs endpoint /openapi/<slug> → YAML or JSON
-  parseOpenApi.ts         # OpenAPI parser → operation list per spec (Phase 1)
-  cache.ts                # revision-keyed local cache (Phase 1)
-  operationsIndex.ts      # flattened operations index across all specs (Phase 1)
-  resolveEndpoint.ts      # map `<api-version>/<path>` → spec metadata (Phase 2)
-  capability.ts           # capability tagging heuristic (Phase 1, used by list output)
+packages/@sanity/cli/src/api/                          # Shared internals (no command code here)
+  cache.ts                      # revision-keyed local cache (Phase 1)
+  capability.ts                 # method-based capability heuristic (Phase 1)
+  fetchSpecIndex.ts             # docs endpoint /openapi → index (includes revision per spec)
+  fetchSpec.ts                  # docs endpoint /openapi/<slug> → YAML
+  parseOpenApi.ts               # OpenAPI YAML → ParsedSpec / ParsedOperation
+  operationsIndex.ts            # flatten parsed specs → sorted operations list
+  loadParsedSpecs.ts            # read every cached YAML and parse it (Phase 1)
+  operationsListView.ts         # table renderer + JSON projection for `list` (Phase 1)
+  specView.ts                   # human renderer + JSON projection for `spec` (Phase 1)
+  revalidate.ts                 # orchestrates the revision-keyed revalidation flow
+  resolveEndpoint.ts            # map `<api-version>/<path>` → spec metadata (Phase 2)
+  types.ts                      # shared types (OpenApiSpecIndexEntry)
+  __tests__/
+    capability.test.ts
+    parseOpenApi.test.ts
 ```
 
-**Migration mechanic:** the deprecation forwarders in `commands/openapi/{list,get}.ts` print one stderr line (`warning: sanity openapi <verb> is deprecated, use sanity api <verb> instead. Removed in the next major.`), translate any legacy flags (`--format=yaml` → `--format=openapi`; `--format=json` passes through unchanged — same value, same meaning), then delegate to the canonical implementation. Behavior is otherwise identical. Removed at the next major version.
+**oclif auto-discovers commands from the directory** — no `index.ts` registration needed. The only build-time step is `packages/@sanity/cli/scripts/check-topic-aliases.ts`, where every new top-level directory under `commands/` (here, `api/`) must be listed in `knownTopicsWithoutAliases` or in `topicAliases`. Phase 1 adds `'api'` to the former.
+
+**Command files are intentionally thin.** Each is ~75–135 lines: flag schema, the `run()` flow control, and at most a couple of `private` helpers that delegate to `src/api/*` view modules. **No rendering, parsing, or cache logic in the command file.** Adding the call command (`commands/api/call.ts`, Phase 2) follows the same template — see `list.ts` for the shape.
+
+**Migration mechanic:** the deprecation forwarders in `commands/openapi/{list,get}.ts` print one stderr line (`warning: sanity openapi <verb> is deprecated, use sanity api <verb> instead. Removed in the next major.`), translate any legacy flags (`--format=yaml` → `--format=openapi`; `--format=json` passes through unchanged — same value, same meaning), then delegate via `ApiListCommand.run(argv, this.config)` to the canonical implementation. Behavior is otherwise identical. Removed at the next major version.
 
 ---
 
@@ -471,6 +484,20 @@ Optional `--operation <id>` flag narrows to a single operation (returns the same
 - All 23 live specs parse without error; total flattened operation count is logged.
 - Cache revalidation < 50 ms warm; < 1 s cold.
 - The endpoint string produced for every operation is verbatim what Phase 2 will accept as input.
+
+**Implementation notes (Phase 1, as built):**
+
+- **Shared internals live at `src/api/`, not `src/api/lib/` or `src/openapi/`.** Co-located under one namespace makes the import paths clean (`from '../../api/...'`) and matches the canonical command name. Command files never own rendering, parsing, or cache logic — those are imported from `src/api/`.
+- **Two JSON projections, intentionally different.** `operationsListView.toOperationJsonRow` (for `list --json`) includes `spec` and `docsUrl` per row — the row stands alone. `specView.buildSpecJsonView` (for `spec --format=json`) wraps operations under a single `{ spec, title, version, docsUrl, operations: [...] }` envelope, and each operation drops `spec`/`docsUrl` since they'd be redundant. Don't unify the two — each fits its consumer.
+- **`SANITY_CLI_CACHE_PATH` env var is the test-time cache override.** Tests `mkdtemp` per `describe`, set the env var in `beforeEach`, delete it in `afterEach`. Real users leave it unset.
+- **Topic registration via `check-topic-aliases.ts`.** Every new top-level directory under `commands/` must be listed somewhere — either in `topicAliases` (with aliases) or `knownTopicsWithoutAliases` (without). Phase 1 adds `'api'` to the latter. Missing this trips the `postbuild` step, not anything earlier — easy to discover but worth flagging.
+- **Pre-merge fallback was a near-miss bug.** The first cut of `shouldRefetch()` checked `entry.revision !== '' && cachedRevision !== entry.revision` — which silently became "trust cache forever" whenever upstream's revision was missing. The corrected behavior treats `revision === ''` as "can't trust cache, refetch every call" (see Section 5.2). The fix matters in the window between Phase 1 PR landing and the docs-side `revision` extension deploying. Tests now cover both states.
+- **Forwarder delegation pattern:** `await ApiListCommand.run(argv, this.config)` from inside the deprecated forwarder. Passing `this.config` carries the oclif config through so help text, telemetry, and other framework wiring stays consistent. Returning the canonical command's exit code is automatic — the static `run()` propagates errors.
+- **Phase 2 hook-in points already wired:**
+  - `revalidateSpecs()` exposes `{index, updated}` — Phase 2's `<endpoint>` lookup uses the same index to resolve `<api-version>/<path>` → spec.
+  - `parseOpenApi` already extracts `serverTemplate` (with `{apiVersion}` substituted) — Phase 2's host resolution reads it.
+  - Operation entries already carry `capability` — Phase 2's destructive guard reads it.
+  - Nothing in Phase 1 needs to change for Phase 2 to land cleanly.
 
 ---
 
@@ -897,5 +924,5 @@ Next: `sanity api list --spec=agent-actions` to see operations in this spec.
 1. **`call` namespacing.** `sanity api <endpoint>` (positional path) vs `sanity api call <endpoint>` (explicit verb). Recommendation: positional (matches gh/vercel and is shorter); explicit `call` adds typing for no clarity gain.
 2. **Capability tags.** Heuristic in Phase 1, or push for `x-sanity-capability` extension in producer-repo YAMLs? Heuristic is right for v1; revisit if false positives become noisy.
 3. ~~**Telemetry for the MCP-gap signal.**~~ **Resolved** — existing CLI infrastructure already tags every outbound request: `User-Agent: @sanity/cli-core@<version>` (set unconditionally by `cli-core`'s `createRequester`, [`createRequester.ts:48-58`](packages/@sanity/cli-core/src/request/createRequester.ts#L48-L58)) plus `?tag=sanity.cli.api` (added by Phase 2 on every `sanity api` outbound; see Phase 2 behavior section). The MCP team filters server-side logs on `tag=sanity.cli.api` and groups by request path. No new telemetry pipeline.
-4. ~~**Docs endpoint `revision` extension (blocker for Phase 1).**~~ **In flight** — change made in `sanity-io/www-sanity-io` (`apps/docs/`), local commit `f5190eb9e` on branch `feat/openapi-index-revision-field`. Ready to push and open a PR. Once merged + deployed, Phase 1 PR is unblocked.
+4. ~~**Docs endpoint `revision` extension (blocker for Phase 1).**~~ **In review** — PR [`sanity-io/www-sanity-io#3740`](https://github.com/sanity-io/www-sanity-io/pull/3740) (branch `feat/openapi-index-revision-field`). Until it merges + deploys, the CLI's `revalidate.ts` falls back to "refetch every call" — slower but correct (see Section 5.2). Phase 1 has already shipped against this pre-merge state; the warm-cache fast path activates automatically once upstream populates `revision`.
 5. **HTTP-reference embeddings index (blocker for Phase 10).** Requires a Sanity Embeddings Index on `3do82whm/next` scoped to `*[_type == "openApiReference"]`, with anonymous query access. Owned by the docs team; coordinate alongside the `revision` request. Without the index, Phase 10 ships as keyword-only fallback (still useful, but not the semantic experience).

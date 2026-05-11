@@ -28,6 +28,7 @@ import {topicAliases} from '../src/topicAliases.ts'
 // runtime config with topics that will never have aliases.
 // ---------------------------------------------------------------------------
 const knownTopicsWithoutAliases: Set<string> = new Set([
+  'api',
   'cors',
   'docs',
   'graphql',

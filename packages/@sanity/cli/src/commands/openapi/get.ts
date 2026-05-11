@@ -1,9 +1,25 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
-import open from 'open'
+import {SanityCommand} from '@sanity/cli-core'
 
-const getOpenapiDebug = subdebug('openapi:get')
+import {ApiSpecCommand} from '../api/spec.js'
 
+/**
+ * Deprecation forwarder.
+ *
+ * `sanity openapi get <slug>` is the legacy name for what is now
+ * `sanity api spec <slug>`. The forwarder prints a stderr warning,
+ * translates the legacy `--format=yaml|json` flag to the canonical
+ * `--format=openapi|json`, and delegates. Removed in the next major.
+ *
+ * **Behavior changes called out in release notes:**
+ *
+ * - The default output (no flag) changes from raw OpenAPI YAML to the
+ *   structured human view. Users who want the old YAML behavior pass
+ *   `--format=yaml` (translated to `--format=openapi`).
+ * - The `--format=json` value's semantics flip from "raw OpenAPI as JSON"
+ *   to "structured per-operation JSON". For the old behavior, parse the
+ *   raw YAML and convert externally (e.g. via `yq -o=json`).
+ */
 export class GetOpenApiCommand extends SanityCommand<typeof GetOpenApiCommand> {
   static override args = {
     slug: Args.string({
@@ -12,79 +28,44 @@ export class GetOpenApiCommand extends SanityCommand<typeof GetOpenApiCommand> {
     }),
   }
 
-  static override description = 'Get an OpenAPI specification by slug'
+  static override description =
+    'DEPRECATED: inspect an OpenAPI specification by slug (use `sanity api spec` instead)'
 
   static override examples = [
     {
-      command: '<%= config.bin %> <%= command.id %> query',
-      description: 'Get a specification (YAML format, default)',
+      command: '<%= config.bin %> <%= command.id %> jobs',
+      description: 'Forwards to `sanity api spec jobs` (default human view)',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> query --format=json',
-      description: 'Get specification in JSON format',
-    },
-    {
-      command: '<%= config.bin %> <%= command.id %> query --web',
-      description: 'Open specification in browser',
-    },
-    {
-      command: '<%= config.bin %> <%= command.id %> query > query-api.yaml',
-      description: 'Pipe to file',
+      command: '<%= config.bin %> <%= command.id %> jobs --format=yaml',
+      description: 'Forwards to `sanity api spec jobs --format=openapi` (raw YAML)',
     },
   ]
 
   static override flags = {
     format: Flags.string({
-      default: 'yaml',
-      description: 'Output format: yaml (default), json',
-      options: ['yaml', 'json'],
+      description:
+        'Legacy: yaml (raw OpenAPI) or json (structured per-op). Prefer `--format=openapi|json` on the new command.',
+      options: ['json', 'yaml'],
     }),
-    web: Flags.boolean({
-      char: 'w',
-      description: 'Open in web browser',
-    }),
+    web: Flags.boolean({char: 'w', description: 'Open in web browser'}),
   }
 
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(GetOpenApiCommand)
-    const {slug} = args
-    const {format, web} = flags
+    this.warn(
+      'sanity openapi get is deprecated, use sanity api spec instead. ' +
+        'Will be removed in the next major.',
+    )
 
-    if (web) {
-      const url = `https://www.sanity.io/docs/http-reference/${slug}`
-      this.log(`Opening ${url}`)
-      await open(url)
-      return
+    const argv: string[] = [args.slug]
+    if (flags.format === 'yaml') {
+      argv.push('--format=openapi')
+    } else if (flags.format === 'json') {
+      argv.push('--format=json')
     }
+    if (flags.web) argv.push('--web')
 
-    try {
-      const specContent = await this.getSpecContent(slug, format)
-
-      this.log(specContent)
-    } catch (error) {
-      getOpenapiDebug(`Error fetching OpenAPI spec ${slug}`, error)
-
-      if (error instanceof Response && error.status === 404) {
-        this.error(`OpenAPI specification not found. ${slug}`, {exit: 1})
-      }
-
-      this.error('The OpenAPI service is currently unavailable. Please try again later.', {
-        exit: 1,
-      })
-    }
-  }
-
-  private async getSpecContent(slug: string, format: string): Promise<string> {
-    const url = new URL(`https://www.sanity.io/docs/api/openapi/${slug}`)
-    url.searchParams.set('format', format)
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(10_000),
-    })
-
-    if (response.ok) {
-      return response.text()
-    }
-
-    throw response
+    await ApiSpecCommand.run(argv, this.config)
   }
 }
