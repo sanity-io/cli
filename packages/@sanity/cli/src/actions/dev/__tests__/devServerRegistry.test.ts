@@ -5,6 +5,7 @@ import {join} from 'node:path'
 import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
+  __resetStartTimeCacheForTesting,
   acquireWorkbenchLock,
   type DevServerManifest,
   getRegisteredServers,
@@ -40,6 +41,7 @@ beforeEach(() => {
   mkdirSync(testDataDir, {recursive: true})
   // By default, return a start time matching "now" so our own PID passes isOurProcess
   mockExecSync.mockReturnValue(new Date().toString())
+  __resetStartTimeCacheForTesting()
 })
 
 afterEach(() => {
@@ -424,6 +426,127 @@ describe('PID-reuse detection', () => {
 
     expect(readWorkbenchLock()).toBeUndefined()
     expect(existsSync(lockPath)).toBe(false)
+  })
+})
+
+describe('Windows / win32', () => {
+  let originalPlatform: NodeJS.Platform
+
+  beforeEach(() => {
+    originalPlatform = process.platform
+    Object.defineProperty(process, 'platform', {configurable: true, value: 'win32'})
+    __resetStartTimeCacheForTesting()
+  })
+
+  afterEach(() => {
+    Object.defineProperty(process, 'platform', {configurable: true, value: originalPlatform})
+  })
+
+  test('shells out to PowerShell with -NoProfile -NonInteractive', () => {
+    mockExecSync.mockReturnValue('2026-04-17T11:38:10.0000000+00:00')
+
+    const {release: cleanup} = registerDevServer({
+      host: 'localhost',
+      port: 3334,
+      type: 'studio',
+      workDir: 'C:\\projects\\win',
+    })
+
+    expect(mockExecSync).toHaveBeenCalled()
+    const cmd = mockExecSync.mock.calls[0][0] as string
+    expect(cmd).toMatch(/^powershell\.exe /)
+    expect(cmd).toContain('-NoProfile')
+    expect(cmd).toContain('-NonInteractive')
+    expect(cmd).toContain('Get-CimInstance Win32_Process')
+    expect(cmd).toContain(`ProcessId=${process.pid}`)
+    expect(cmd).toContain("CreationDate.ToString('o')")
+
+    cleanup()
+  })
+
+  test('parses PowerShell ISO 8601 round-trip output', () => {
+    const osStart = new Date('2026-04-17T11:38:10.000Z')
+    mockExecSync.mockReturnValue('2026-04-17T11:38:10.0000000+00:00')
+
+    const {release: cleanup} = registerDevServer({
+      host: 'localhost',
+      port: 3334,
+      type: 'studio',
+      workDir: 'C:\\projects\\win',
+    })
+
+    const manifest = JSON.parse(readFileSync(join(registryDir(), `${process.pid}.json`), 'utf8'))
+    expect(new Date(manifest.startedAt).getTime()).toBe(osStart.getTime())
+
+    cleanup()
+  })
+
+  test('detects PID reuse on Windows (PowerShell start time mismatch)', () => {
+    const dir = registryDir()
+    mkdirSync(dir, {recursive: true})
+
+    const staleManifest: DevServerManifest = {
+      host: 'localhost',
+      pid: process.pid,
+      port: 9999,
+      startedAt: '2020-01-01T00:00:00.000Z',
+      type: 'studio',
+      version: 1,
+      workDir: 'C:\\projects\\stale',
+    }
+    writeFileSync(join(dir, `${process.pid}.json`), JSON.stringify(staleManifest))
+
+    mockExecSync.mockReturnValue('2026-04-17T11:38:10.0000000+00:00')
+
+    const servers = getRegisteredServers()
+    expect(servers).toHaveLength(0)
+    expect(existsSync(join(dir, `${process.pid}.json`))).toBe(false)
+  })
+
+  test('falls back to alive-check when PowerShell fails (e.g. no PowerShell)', () => {
+    const dir = registryDir()
+    mkdirSync(dir, {recursive: true})
+
+    const manifest: DevServerManifest = {
+      host: 'localhost',
+      pid: process.pid,
+      port: 9999,
+      startedAt: new Date().toISOString(),
+      type: 'studio',
+      version: 1,
+      workDir: 'C:\\projects\\fallback',
+    }
+    writeFileSync(join(dir, `${process.pid}.json`), JSON.stringify(manifest))
+
+    mockExecSync.mockImplementation(() => {
+      throw new Error("'powershell.exe' is not recognized")
+    })
+
+    const servers = getRegisteredServers()
+    expect(servers).toHaveLength(1)
+  })
+
+  test("memoises own PID's start time across calls (avoids repeated PowerShell spawns)", () => {
+    mockExecSync.mockReturnValue('2026-04-17T11:38:10.0000000+00:00')
+
+    const {release: cleanup} = registerDevServer({
+      host: 'localhost',
+      port: 3334,
+      type: 'studio',
+      workDir: 'C:\\projects\\cache',
+    })
+
+    const callsAfterRegistration = mockExecSync.mock.calls.length
+
+    // Each of these recomputes isOurProcess(process.pid, ...) → would
+    // shell out again without the cache.
+    getRegisteredServers()
+    getRegisteredServers()
+    getRegisteredServers()
+
+    expect(mockExecSync.mock.calls.length).toBe(callsAfterRegistration)
+
+    cleanup()
   })
 })
 
