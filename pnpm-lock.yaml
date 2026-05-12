@@ -991,6 +991,9 @@ importers:
 
   packages/@sanity/cli-test:
     dependencies:
+      '@sanity/cli-core':
+        specifier: workspace:*
+        version: link:../cli-core
       '@swc/core':
         specifier: 'catalog:'
         version: 1.15.33
@@ -1022,9 +1025,6 @@ importers:
       '@repo/tsconfig':
         specifier: workspace:*
         version: link:../../@repo/tsconfig
-      '@sanity/cli-core':
-        specifier: workspace:*
-        version: link:../cli-core
       '@sanity/client':
         specifier: ^7.22.0
         version: 7.22.0

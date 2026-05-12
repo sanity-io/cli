@@ -6,8 +6,6 @@
     "jsx": "react-jsx",
     "types": ["node"],
     "paths": {
-      "@sanity/cli-core": ["./node_modules/@sanity/cli-core/src/_exports/index.ts"],
-      "@sanity/cli-core/*": ["./node_modules/@sanity/cli-core/src/_exports/*"],
       "@sanity/cli-test": ["./node_modules/@sanity/cli-test/src/index.ts"],
       "@sanity/cli-test/vitest": ["./node_modules/@sanity/cli-test/src/vitest.ts"]
     }
