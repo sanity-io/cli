@@ -66,6 +66,7 @@
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "publint": "catalog:",
+    "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "engines": {

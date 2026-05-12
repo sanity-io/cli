@@ -825,6 +825,9 @@ importers:
       publint:
         specifier: 'catalog:'
         version: 0.3.18
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
       vitest:
         specifier: 'catalog:'
         version: 4.1.5(@types/node@20.19.39)(@vitest/coverage-istanbul@4.1.5)(jsdom@29.0.2(@noble/hashes@2.0.1))(vite@8.0.10(@types/node@20.19.39)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.4))
