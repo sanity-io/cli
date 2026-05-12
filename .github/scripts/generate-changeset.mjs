@@ -1,14 +1,29 @@
 /* eslint-disable no-console */
-import {execFileSync, spawnSync} from 'node:child_process'
-import {existsSync, readdirSync, readFileSync, writeFileSync} from 'node:fs'
-import {join, resolve} from 'node:path'
+import {appendFileSync} from 'node:fs'
 
 // --- Env vars ---
-const {GH_TOKEN, GITHUB_REPOSITORY, PR_BODY = '', PR_NUMBER, PR_REPO, PR_TITLE} = process.env
+const {
+  GH_TOKEN,
+  GITHUB_OUTPUT,
+  GITHUB_REPOSITORY,
+  PR_BODY = '',
+  PR_HEAD_SHA,
+  PR_NUMBER,
+  PR_REPO,
+  PR_TITLE,
+} = process.env
 
-if (!GH_TOKEN || !GITHUB_REPOSITORY || !PR_NUMBER || !PR_TITLE || !PR_REPO) {
+if (
+  !GH_TOKEN ||
+  !GITHUB_REPOSITORY ||
+  !GITHUB_OUTPUT ||
+  !PR_HEAD_SHA ||
+  !PR_NUMBER ||
+  !PR_TITLE ||
+  !PR_REPO
+) {
   throw new Error(
-    'Missing required env vars: GH_TOKEN, GITHUB_REPOSITORY, PR_NUMBER, PR_TITLE, PR_REPO',
+    'Missing required env vars: GH_TOKEN, GITHUB_REPOSITORY, GITHUB_OUTPUT, PR_HEAD_SHA, PR_NUMBER, PR_TITLE, PR_REPO',
   )
 }
 
@@ -17,27 +32,17 @@ const AUTO_GENERATED_MARKER = '<!-- auto-generated -->'
 
 // --- Helpers ---
 
-// Use execFileSync to avoid shell interpretation of arguments
-function git(...args) {
-  return execFileSync('git', args, {encoding: 'utf8'}).trim()
+async function ghApi(path) {
+  const url = path.startsWith('https://') ? path : `https://api.github.com${path}`
+  const res = await fetch(url, {
+    headers: {Accept: 'application/vnd.github+json', Authorization: `Bearer ${GH_TOKEN}`},
+  })
+  if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${await res.text()}`)
+  return res.json()
 }
 
-let gitConfigured = false
-function ensureGitConfigured() {
-  if (gitConfigured) return
-  git('config', 'user.name', 'squiggler-app[bot]')
-  git('config', 'user.email', '265501495+squiggler-app[bot]@users.noreply.github.com')
-  git('remote', 'set-url', 'origin', `https://x-access-token:${GH_TOKEN}@github.com/${PR_REPO}.git`)
-  gitConfigured = true
-}
-
-function removeChangeset() {
-  if (existsSync(CHANGESET_FILE)) {
-    ensureGitConfigured()
-    git('rm', CHANGESET_FILE)
-    git('commit', '-m', `chore: remove auto-generated changeset for PR #${PR_NUMBER}`)
-    git('push', '--force-with-lease')
-  }
+function setOutput(key, value) {
+  appendFileSync(GITHUB_OUTPUT, `${key}=${value}\n`)
 }
 
 function parseConventionalCommit(title) {
@@ -60,12 +65,9 @@ async function getChangedFiles() {
   let page = 1
 
   while (true) {
-    const url = `https://api.github.com/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100&page=${page}`
-    const res = await fetch(url, {
-      headers: {Accept: 'application/vnd.github+json', Authorization: `Bearer ${GH_TOKEN}`},
-    })
-    if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${await res.text()}`)
-    const data = await res.json()
+    const data = await ghApi(
+      `/repos/${GITHUB_REPOSITORY}/pulls/${PR_NUMBER}/files?per_page=100&page=${page}`,
+    )
     if (data.length === 0) break
     files.push(...data.map((f) => f.filename))
     page++
@@ -74,58 +76,53 @@ async function getChangedFiles() {
   return files
 }
 
-// Discover non-private workspace packages.
+// Discover non-private workspace packages using the GitHub API.
+// Reads the PR head tree to find packages/*/package.json files.
 // Returns a Map of dirPrefix -> packageName.
-function getWorkspacePackages() {
+async function getWorkspacePackages() {
   const pkgMap = new Map()
-  const parentDirs = ['packages']
 
-  // Auto-discover scoped package dirs
-  if (existsSync('packages')) {
-    for (const entry of readdirSync('packages', {withFileTypes: true})) {
-      if (entry.isDirectory() && entry.name.startsWith('@')) {
-        parentDirs.push(`packages/${entry.name}`)
-      }
-    }
-  }
+  // Fetch the full tree for the PR head commit
+  const tree = await ghApi(`/repos/${GITHUB_REPOSITORY}/git/trees/${PR_HEAD_SHA}?recursive=1`)
 
-  for (const parent of parentDirs) {
-    const parentPath = resolve(parent)
-    if (!existsSync(parentPath)) continue
+  // Match package.json files under packages/ (including scoped dirs like packages/@scope/name/)
+  const pkgJsonEntries = tree.tree.filter(
+    (entry) =>
+      entry.type === 'blob' &&
+      (entry.path.match(/^packages\/[^@][^/]*\/package\.json$/) ||
+        entry.path.match(/^packages\/@[^/]+\/[^/]+\/package\.json$/)),
+  )
 
-    for (const entry of readdirSync(parentPath, {withFileTypes: true})) {
-      if (!entry.isDirectory()) continue
-      if (parent === 'packages' && entry.name.startsWith('@')) continue
+  for (const entry of pkgJsonEntries) {
+    const blob = await ghApi(`/repos/${GITHUB_REPOSITORY}/git/blobs/${entry.sha}`)
+    const pkg = JSON.parse(Buffer.from(blob.content, 'base64').toString())
+    if (pkg.private) continue
 
-      const pkgJsonPath = join(parentPath, entry.name, 'package.json')
-      if (!existsSync(pkgJsonPath)) continue
-
-      const pkg = JSON.parse(readFileSync(pkgJsonPath, 'utf8'))
-      if (pkg.private) continue
-
-      const dirPrefix = `${parent}/${entry.name}/`
-      pkgMap.set(dirPrefix, pkg.name)
-    }
+    const dirPrefix = entry.path.replace('package.json', '')
+    pkgMap.set(dirPrefix, pkg.name)
   }
 
   return pkgMap
 }
 
+// Check if the auto-generated changeset file exists on the PR branch via API.
+// Returns its content if it exists, or null.
+async function getExistingChangeset() {
+  try {
+    const data = await ghApi(`/repos/${PR_REPO}/contents/${CHANGESET_FILE}?ref=${PR_HEAD_SHA}`)
+    return Buffer.from(data.content, 'base64').toString()
+  } catch {
+    return null
+  }
+}
+
 // --- Main ---
 
 // 0. Check for existing changesets using marker-based logic
-// Only consider changesets that are part of this PR's changed files,
-// not pre-existing ones inherited from the base branch.
 const prChangedFiles = await getChangedFiles()
+const existingChangeset = await getExistingChangeset()
 
-if (existsSync(CHANGESET_FILE)) {
-  const content = readFileSync(CHANGESET_FILE, 'utf8')
-  if (!content.startsWith(AUTO_GENERATED_MARKER)) {
-    console.log('Skipping: changeset was manually edited (marker removed)')
-    process.exit(0)
-  }
-  // Marker present — bot still owns the file, will overwrite below
-} else {
+if (existingChangeset === null) {
   const manualChangesets = prChangedFiles.filter(
     (f) =>
       f.startsWith('.changeset/') &&
@@ -136,15 +133,27 @@ if (existsSync(CHANGESET_FILE)) {
   if (manualChangesets.length > 0) {
     const names = manualChangesets.map((f) => f.replace('.changeset/', ''))
     console.log(`Skipping: found manual changeset(s) in PR: ${names.join(', ')}`)
+    setOutput('action', 'skip')
     process.exit(0)
   }
+} else {
+  if (!existingChangeset.startsWith(AUTO_GENERATED_MARKER)) {
+    console.log('Skipping: changeset was manually edited (marker removed)')
+    setOutput('action', 'skip')
+    process.exit(0)
+  }
+  // Marker present — bot still owns the file, will overwrite below
 }
 
 // 1. Parse conventional commit
 const parsed = parseConventionalCommit(PR_TITLE)
 if (!parsed) {
   console.log('::warning::PR title does not match conventional commit format')
-  removeChangeset()
+  if (existingChangeset === null) {
+    setOutput('action', 'skip')
+  } else {
+    setOutput('action', 'remove')
+  }
   process.exit(0)
 }
 
@@ -152,7 +161,11 @@ if (!parsed) {
 const bump = determineBump(parsed.type, parsed.breaking, PR_BODY)
 if (!bump) {
   console.log(`PR type '${parsed.type}' does not require a changeset`)
-  removeChangeset()
+  if (existingChangeset === null) {
+    setOutput('action', 'skip')
+  } else {
+    setOutput('action', 'remove')
+  }
   process.exit(0)
 }
 
@@ -160,7 +173,7 @@ if (!bump) {
 const releaseNotes = PR_TITLE
 
 // 4. Detect affected packages
-const pkgMap = getWorkspacePackages()
+const pkgMap = await getWorkspacePackages()
 const affected = new Set()
 
 for (const file of prChangedFiles) {
@@ -173,27 +186,25 @@ for (const file of prChangedFiles) {
 
 if (affected.size === 0) {
   console.log('No public packages affected by changed files')
-  removeChangeset()
+  if (existingChangeset === null) {
+    setOutput('action', 'skip')
+  } else {
+    setOutput('action', 'remove')
+  }
   process.exit(0)
 }
 
-// 5. Write changeset
+// 5. Output changeset content for the workflow to commit
 const frontmatter = [...affected].map((pkg) => `'${pkg}': ${bump}`).join('\n')
 const changesetContent = `${AUTO_GENERATED_MARKER}\n---\n${frontmatter}\n---\n\n${releaseNotes}\n`
 
-writeFileSync(CHANGESET_FILE, changesetContent)
 console.log('Generated changeset:')
 console.log(changesetContent)
 
-// 6. Commit and push
-ensureGitConfigured()
-git('add', CHANGESET_FILE)
-
-const {status} = spawnSync('git', ['diff', '--cached', '--quiet'], {stdio: 'ignore'})
-if (status !== 1) {
-  console.log('No changes to changeset file')
-  process.exit(status ?? 1)
-}
-
-git('commit', '-m', `chore: update auto-generated changeset for PR #${PR_NUMBER}`)
-git('push', '--force-with-lease')
+setOutput('action', 'write')
+// Use delimiter syntax for multiline output
+appendFileSync(
+  GITHUB_OUTPUT,
+  `changeset_content<<CHANGESET_EOF\n${changesetContent}CHANGESET_EOF\n`,
+)
+setOutput('changeset_file', CHANGESET_FILE)
