@@ -60,23 +60,27 @@ jobs:
 
       - name: Configure git
         if: steps.analyze.outputs.action == 'write' || steps.analyze.outputs.action == 'remove'
+        env:
+          GH_APP_TOKEN: ${{ steps.generate_token.outputs.token }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
         run: |
           git config user.name 'squiggler-app[bot]'
           git config user.email '265501495+squiggler-app[bot]@users.noreply.github.com'
-          git remote set-url origin "https://x-access-token:${{ steps.generate_token.outputs.token }}@github.com/${{ github.event.pull_request.head.repo.full_name }}.git"
+          git remote set-url origin "https://x-access-token:${GH_APP_TOKEN}@github.com/${PR_HEAD_REPO}.git"
 
       - name: Write changeset and push
         if: steps.analyze.outputs.action == 'write'
         env:
           CHANGESET_CONTENT: ${{ steps.analyze.outputs.changeset_content }}
           CHANGESET_FILE: ${{ steps.analyze.outputs.changeset_file }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           mkdir -p "$(dirname "$CHANGESET_FILE")"
           printf '%s' "$CHANGESET_CONTENT" > "$CHANGESET_FILE"
           git add "$CHANGESET_FILE"
           if ! git diff --cached --quiet; then
             git commit -m "chore: update auto-generated changeset for PR #${{ github.event.pull_request.number }}"
-            git push --force-with-lease origin HEAD:${{ github.event.pull_request.head.ref }}
+            git push --force-with-lease origin "HEAD:${PR_HEAD_REF}"
           else
             echo "No changes to changeset file"
           fi
@@ -85,9 +89,10 @@ jobs:
         if: steps.analyze.outputs.action == 'remove'
         env:
           CHANGESET_FILE: ${{ steps.analyze.outputs.changeset_file }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
           if [ -f "$CHANGESET_FILE" ]; then
             git rm "$CHANGESET_FILE"
             git commit -m "chore: remove auto-generated changeset for PR #${{ github.event.pull_request.number }}"
-            git push --force-with-lease origin HEAD:${{ github.event.pull_request.head.ref }}
+            git push --force-with-lease origin "HEAD:${PR_HEAD_REF}"
           fi
