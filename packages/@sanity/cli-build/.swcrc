@@ -2,9 +2,7 @@
   "$schema": "https://swc.rs/schema.json",
   "jsc": {
     "parser": {
-      "syntax": "typescript",
-      "tsx": true,
-      "jsx": true
+      "syntax": "typescript"
     },
     "transform": {
       "react": {
