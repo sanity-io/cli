@@ -14,7 +14,7 @@ export async function writeFavicons(basePath: string, destDir: string): Promise<
     : undefined
 
   if (!faviconsPath) {
-    throw new Error('Unable to resolve `@sanity/cli` module root')
+    throw new Error('Unable to resolve `@sanity/cli-build` module root')
   }
 
   await fs.mkdir(destDir, {recursive: true})
