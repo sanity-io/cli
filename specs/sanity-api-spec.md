@@ -212,22 +212,16 @@ packages/@sanity/cli/src/commands/openapi/             # Deprecated forwarders (
   get.ts                        # prints deprecation warning, translates --format → new flags, delegates to commands/api/spec.ts
 
 packages/@sanity/cli/src/api/                          # Shared internals (no command code here)
-  cache.ts                      # revision-keyed local cache (Phase 1)
-  capability.ts                 # method-based capability heuristic (Phase 1)
-  fetchSpecIndex.ts             # docs endpoint /openapi → index (includes revision per spec)
-  fetchSpec.ts                  # docs endpoint /openapi/<slug> → YAML
-  parseOpenApi.ts               # OpenAPI YAML → ParsedSpec / ParsedOperation
-  operationsIndex.ts            # flatten parsed specs → sorted operations list
-  loadParsedSpecs.ts            # read every cached YAML and parse it (Phase 1)
-  operationsListView.ts         # table renderer + JSON projection for `list` (Phase 1)
-  specView.ts                   # human renderer + JSON projection for `spec` (Phase 1)
-  revalidate.ts                 # orchestrates the revision-keyed revalidation flow
-  resolveEndpoint.ts            # map `<api-version>/<path>` → spec metadata (Phase 2)
-  types.ts                      # shared types (OpenApiSpecIndexEntry)
+  cache.ts                      # revision-keyed local cache (read/write YAML + revisions.json)
+  docsClient.ts                 # docs endpoint HTTP layer — fetchSpecIndex, fetchSpec, env-configurable base URL
+  parser.ts                     # OpenAPI YAML → ParsedSpec / ParsedOperation; capability classifier; schema lookup
+  revalidate.ts                 # revision-keyed revalidation orchestrator
+  views.ts                      # table + JSON + human renderers for `list` and `spec`
   __tests__/
-    capability.test.ts
-    parseOpenApi.test.ts
+    parser.test.ts              # single test file — capability, parser, schema lookup
 ```
+
+**Why five files, not eleven.** Earlier drafts had one file per concern (`fetchSpec.ts`, `fetchSpecIndex.ts`, `parseOpenApi.ts`, `operationsIndex.ts`, `capability.ts`, `loadParsedSpecs.ts`, `operationsListView.ts`, `specView.ts`, `types.ts`). Consolidated post-implementation: HTTP lives in `docsClient.ts`, all parsing (including capability classification + schema lookup) in `parser.ts`, all rendering in `views.ts`. Cleaner imports, no semantic loss, and the file boundaries match the natural seams in the code.
 
 **oclif auto-discovers commands from the directory** — no `index.ts` registration needed. The only build-time step is `packages/@sanity/cli/scripts/check-topic-aliases.ts`, where every new top-level directory under `commands/` (here, `api/`) must be listed in `knownTopicsWithoutAliases` or in `topicAliases`. Phase 1 adds `'api'` to the former.
 
@@ -256,8 +250,8 @@ Both commands sit on the same parsed-ops index, the same revision-keyed cache, a
 
 **PR scope (one PR):**
 
-1. Extract inline fetch logic from existing `commands/openapi/{list,get}.ts` into `packages/@sanity/cli/src/openapi/{fetchSpecIndex,fetchSpec,cache}.ts`. **Base URL is env-configurable** (`SANITY_DOCS_API_URL`, default `https://www.sanity.io/docs`) so the dev loop can point at the Vercel preview branch (Section 5.1) until the docs PR merges. Bypass token via `SANITY_DOCS_API_BYPASS_TOKEN` when set.
-2. Add `parseOpenApi.ts`, `operationsIndex.ts`, `capability.ts` — parse each spec into a list of operations (with full param metadata, including `requiredQueryParams` and `enum` values for body fields), flatten across specs into one index, cache parsed output alongside YAML.
+1. Extract inline fetch logic from existing `commands/openapi/{list,get}.ts` into `packages/@sanity/cli/src/api/{docsClient,cache}.ts`. **Base URL is env-configurable** (`SANITY_DOCS_API_URL`, default `https://www.sanity.io/docs`) so the dev loop can point at the Vercel preview branch (Section 5.1) until the docs PR merges. Bypass token via `SANITY_DOCS_API_BYPASS_TOKEN` when set.
+2. Add `parser.ts` — parse each spec into operations with full param metadata (`pathParams` / `queryParams` / `headerParams` with type + description + enum + default), structured `requestBody`, `responses` (with status + content type + schema summary), `security`, and operation-level `isStreaming` / `capability`. Schema `$ref` is linked, not expanded (see "Schema `$ref` policy" below). `buildOperationsIndex()` flattens parsed specs into one sorted operations list. Cache is YAML-only; parsed form is rebuilt on demand (cheap enough).
 3. Land the revision-keyed cache once.
 4. **Add canonical commands** `commands/api/list.ts` and `commands/api/spec.ts` with the new behaviors (operation-row table for `list`; flag-driven three-mode output for `spec` — default human, `--format=json`, `--format=openapi`).
 5. **Convert `commands/openapi/{list,get}.ts` into deprecation forwarders.** Each invocation:
@@ -271,7 +265,11 @@ Both commands sit on the same parsed-ops index, the same revision-keyed cache, a
 
 `<api-version>/<path>`, where:
 
-- `<api-version>` comes from the spec's `info.version` (e.g. `v2021-06-07`) — already date-pinned, already the form Sanity URLs use.
+- `<api-version>` derives from the **resolved server URL's pathname** — NOT `info.version`. Implementation note: an audit during build revealed `info.version` is a meaningless `1.0.0` semver on several specs whose real API version lives in `servers[0].url` (as a `{apiVersion}` template variable or as a literal path segment). Three real-world shapes the parser handles:
+  - `servers[0].url: 'https://api.sanity.io/{apiVersion}'` + `variables.apiVersion.default: 'v2021-06-07'` → version segment `v2021-06-07` (jobs, projects-api, media-library).
+  - `servers[0].url: 'https://api.sanity.io/vX/agent'` → literal `vX/agent` segment preserved (content-agent).
+  - `servers[0].url: 'https://api.sanity.io'` + version baked into the OpenAPI `paths` keys like `/v2026-04-27/organizations/{organizationId}/…` → version segment comes through the path key (user-attributes).
+  - Server-variable substitution **preserves** `{projectId}` / `{dataset}` / `{organizationId}` (the "context vars") so they survive into the URL-Pattern form as `:name` placeholders. Phase 2 fills them at call time.
 - `<path>` is the OpenAPI `paths` key, with **placeholders rendered in URL Pattern API syntax** (`:jobId`, `:dataset`, `:projectId`). The CLI parses OpenAPI's native `{name}` and emits `:name` consistently in every user-facing surface (list, spec, errors, examples). Rationale: URL Pattern API is the W3C standard, matches Express/Next.js route conventions, and avoids bash brace-expansion edge cases.
 - The `<endpoint>` argument to `sanity api <endpoint>` (Phase 2) accepts **both** `:name` (preferred — what `list` renders) and `{name}` (compatibility for users copy-pasting from the docs site, which still shows OpenAPI's `{name}`). Treated identically internally.
 - Host is resolved at call time by Phase 2 from the spec's `servers` block — agents never have to think about whether an endpoint goes to `api.sanity.io` or `<projectId>.api.sanity.io`.
@@ -349,25 +347,39 @@ GET  v2021-06-07/jobs/:jobId  ·  jobStatus  ·  read
 Get the status of a job.
 
   Path params:
-    jobId   string  required   The job identifier returned from a job-creation operation.
+    jobId  string  required
+      The job identifier returned from a job-creation operation.
 
-  Query params:
+  Query params (required):
     (none)
 
-  Auth:    Bearer token (JWT)
+  Responses:
+    200  application/json  { id, state, authors, createdAt, updatedAt }
+
+  Auth: BearerAuth
 
 ──────────────────────────────────────────────────────────────────────
 GET  v2021-06-07/jobs/:jobId/listen  ·  jobListen  ·  read · stream
 Each job has a `/listen` endpoint to allow you to monitor its status programmatically.
 
   Path params:
-    jobId   string  required   The job identifier returned from a job-creation operation.
+    jobId  string  required
+      The job identifier returned from a job-creation operation.
 
-  Query params:
+  Query params (required):
     (none)
 
-  Response: text/event-stream (use `sanity api … --stream`, Phase 8)
-  Auth:     Bearer token (JWT)
+  Responses:
+    200  text/event-stream
+
+  Auth: BearerAuth
+```
+
+When an operation's body or responses reference component schemas, the human view adds a `Schemas referenced` footer and tells the agent how to drill in:
+
+```
+  Schemas referenced: ErrorResponse, MutationRequest, MutationResponse
+  Resolve any: sanity api spec mutation --schema <name>
 ```
 
 JSON output (`--json`):
@@ -413,13 +425,83 @@ JSON output (`--json`):
 }
 ```
 
+Richer example (write op with a body that points at component schemas):
+
+```json
+{
+  "operationId": "mutate",
+  "method": "POST",
+  "endpoint": "v2025-02-19/data/mutate/:dataset",
+  "capability": "write",
+  "isStreaming": false,
+  "pathParams": [
+    {
+      "name": "dataset",
+      "in": "path",
+      "type": "string",
+      "required": true,
+      "description": "The dataset to mutate"
+    }
+  ],
+  "queryParams": [
+    {
+      "name": "returnIds",
+      "in": "query",
+      "type": "boolean",
+      "required": false,
+      "default": false,
+      "description": "If true, the ids of modified documents are returned."
+    },
+    {
+      "name": "visibility",
+      "in": "query",
+      "type": "string",
+      "required": false,
+      "default": "sync",
+      "description": "Can be: sync, async or deferred"
+    }
+  ],
+  "requestBody": {
+    "contentType": "application/json",
+    "required": true,
+    "fields": [],
+    "refs": ["MutationRequest"],
+    "schemaSummary": "MutationRequest"
+  },
+  "responses": [
+    {
+      "status": 200,
+      "contentType": "application/json",
+      "schemaSummary": "MutationResponse",
+      "ref": "MutationResponse"
+    },
+    {"status": 400, "contentType": "", "schemaSummary": ""},
+    {"status": 401, "contentType": "", "schemaSummary": ""}
+  ],
+  "security": [{"scheme": "BearerAuth"}]
+}
+```
+
+`MutationRequest` and `MutationResponse` are not expanded. The agent's next call is `sanity api spec mutation --schema MutationRequest` (returns the raw component schema in YAML, or JSON with `--format=json`).
+
 Notes on the shape:
 
 - One JSON object per spec; operations is an array (no nested paths/methods/responses dance — pre-flattened).
-- All params (`pathParams`, `queryParams`, `headerParams`) carry `name`, `in`, `type`, `required`, `description`, plus `default`, `example`, and **`enum: [...]`** when the spec provides them. Surfacing enum is non-negotiable — without it, agents have to do a second API call to discover valid values (e.g. `roleName` on `createToken`, `state` filters on schedules). See body-schema note below.
-- `requestBody` (when present) is **structured**, not a one-line summary: `{ contentType, required: bool, fields: [{ name, type, required, description, enum?, default? }] }`. Body field enums are first-class — `roleName: ["administrator", "editor", "viewer", "contributor"]` ships in the JSON without a follow-up fetch. For deeply nested body shapes, fields can be objects themselves (recursive `fields` array); we cap recursion at 3 levels and emit `"…"` for deeper structures to keep payload size reasonable.
+- All params (`pathParams`, `queryParams`, `headerParams`) carry `name`, `in`, `type`, `required`, `description`, plus `default`, `example`, and **`enum: [...]`** when the spec provides them. Surfacing enum is non-negotiable — without it, agents have to do a second API call to discover valid values (e.g. `roleName` on `createToken`, `state` filters on schedules).
+- Optional `ref` field on params and body fields names a referenced schema (link-not-resolve — see "Schema `$ref` policy" below).
+- `requestBody` (when present) is **structured**: `{ contentType, required, fields: [{ name, type, required, description, enum?, default?, fields?, ref? }], refs: [], schemaSummary }`. Inline object/array properties recurse naturally; `$ref` schemas terminate with `ref: "<schemaName>"` and `fields: []`. Composition (`allOf`/`oneOf`/`anyOf`) at the body root is flattened: `allOf` merges properties across variants, `oneOf`/`anyOf` of refs surface the variant names in `refs`. Non-JSON content types (`multipart/form-data`, `image/*`, etc.) come through opaque with `schemaSummary: "<contentType>"` and `fields: []`.
+- `responses` is an array of `{status, contentType, schemaSummary, ref?}`. Inline JSON schemas summarize to `"{ id, state, authors }"` (top properties only); `$ref` responses carry `ref: "ErrorResponse"` so agents can drill into the named schema.
+- `security` carries normalized scheme names (`bearerAuth` and `BearerAuth` both collapse to `BearerAuth`); falls back to the spec's top-level `security:` when an operation doesn't declare its own.
 - Capability and streaming flags match `list --json` exactly — agents can reason consistently.
-- No `$ref` resolution required on the consumer side; we resolve refs during parse.
+
+**Schema `$ref` policy: link, don't resolve.** Schema refs are surfaced as `ref: "<schemaName>"`, not expanded into a nested tree. Agents follow them via the `--schema <name>` flag (described below). Rationale:
+
+1. Avoids depth caps and `"…"` truncation in deeply nested specs (agent-actions ships recursive `Path` / `Include` schemas).
+2. Avoids cycle handling — recursive refs would otherwise need a visited-set.
+3. Keeps the operation JSON payload small and predictable — refs are unbounded by their nature.
+4. Mirrors how humans actually navigate API docs: see the type name, look it up if needed.
+
+**Parameter `$ref` policy is the opposite: resolve.** Component-parameter refs (`#/components/parameters/datasetParam`) MUST resolve inline — without the param's `name`, `in`, and `type`, the operation becomes uncallable (path placeholders disappear, required-query enforcement breaks). 8 of 22 specs use this pattern; resolution is cheap (params are small and don't recurse).
 
 Optional `--operation <id>` flag narrows to a single operation (returns the same JSON shape with `operations` filtered to one entry). Trivial filter, big agent QoL.
 
@@ -435,22 +517,24 @@ Optional `--operation <id>` flag narrows to a single operation (returns the same
 
 **Flags considered (`spec` / `openapi get`):**
 
-| Flag                       | From                      | Verdict                          | Reason                                                                                                                                                  |
-| -------------------------- | ------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--format <json\|openapi>` | own                       | **Keep**                         | Picks the machine-readable output mode. Default (no flag) renders the human view. `openapi` = raw OpenAPI YAML; `json` = structured per-operation JSON. |
-| `--operation <id>`         | own                       | **Keep**                         | Narrow to one operation by `operationId`. Works in all three output modes.                                                                              |
-| `--web` / `-w`             | existing                  | **Keep**                         | Opens `sanity.io/docs/http-reference/<slug>` in browser.                                                                                                |
-| `--json` (boolean)         | own                       | **Drop entirely**                | Folded into `--format=json`. Two orthogonal flags (`--json` + `--openapi`) was awkward; one `--format` value is clearer.                                |
-| `--openapi` (boolean)      | own                       | **Drop entirely**                | Folded into `--format=openapi`.                                                                                                                         |
-| Legacy `--format yaml`     | existing on `openapi get` | **Deprecated alias (one cycle)** | Translates to `--format=openapi` with a stderr warning. Removed after.                                                                                  |
-| Legacy `--format json`     | existing on `openapi get` | **Same flag, same value**        | `--format=json` is now the canonical name. No translation needed; the legacy invocation works as-is on the new command.                                 |
+| Flag                       | From                      | Verdict                          | Reason                                                                                                                                                    |
+| -------------------------- | ------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--format <json\|openapi>` | own                       | **Keep**                         | Picks the machine-readable output mode. Default (no flag) renders the human view. `openapi` = raw OpenAPI YAML; `json` = structured per-operation JSON.   |
+| `--operation <id>`         | own                       | **Keep**                         | Narrow to one operation by `operationId`. Works in all three output modes.                                                                                |
+| `--schema <name>`          | own                       | **Keep**                         | Print one `components.schemas.<name>` entry, in YAML (default) or JSON (`--format=json`). The follow-up for `ref:` pointers surfaced in operation output. |
+| `--web` / `-w`             | existing                  | **Keep**                         | Opens `sanity.io/docs/http-reference/<slug>` in browser.                                                                                                  |
+| `--json` (boolean)         | own                       | **Drop entirely**                | Folded into `--format=json`. Two orthogonal flags (`--json` + `--openapi`) was awkward; one `--format` value is clearer.                                  |
+| `--openapi` (boolean)      | own                       | **Drop entirely**                | Folded into `--format=openapi`.                                                                                                                           |
+| Legacy `--format yaml`     | existing on `openapi get` | **Deprecated alias (one cycle)** | Translates to `--format=openapi` with a stderr warning. Removed after.                                                                                    |
+| Legacy `--format json`     | existing on `openapi get` | **Same flag, same value**        | `--format=json` is now the canonical name. No translation needed; the legacy invocation works as-is on the new command.                                   |
 
 **Files touched:**
 
-- Add: `packages/@sanity/cli/src/openapi/{fetchSpecIndex,fetchSpec,cache,parseOpenApi,operationsIndex,capability}.ts` + tests.
-- Add: `packages/@sanity/cli/src/commands/api/{index,list,spec}.ts` + tests — canonical implementations of `sanity api list` (operation-row table; `--json` payload of operations) and `sanity api spec <slug>` (default human view; `--format=json` structured per-op JSON; `--format=openapi` raw YAML; `--operation <id>` narrowing).
+- Add: `packages/@sanity/cli/src/api/{cache,docsClient,parser,revalidate,views}.ts` + `__tests__/parser.test.ts`.
+- Add: `packages/@sanity/cli/src/commands/api/{list,spec}.ts` + tests — canonical implementations of `sanity api list` (operation-row table; `--json` payload of operations) and `sanity api spec <slug>` (default human view; `--format=json` structured per-op JSON; `--format=openapi` raw YAML; `--operation <id>` narrowing; `--schema <name>` component-schema lookup).
 - Modify: `commands/openapi/list.ts` — convert to a deprecation forwarder; print stderr warning naming `sanity api list`; delegate to canonical implementation.
 - Modify: `commands/openapi/get.ts` — convert to a deprecation forwarder; print stderr warning naming `sanity api spec`; translate legacy `--format=yaml` → `--format=openapi` (pass `--format=json` through unchanged); delegate to canonical implementation.
+- Modify: `packages/@sanity/cli/scripts/check-topic-aliases.ts` — add `'api'` to `knownTopicsWithoutAliases`.
 - Delete: nothing.
 
 **Tests:**
@@ -464,14 +548,20 @@ Optional `--operation <id>` flag narrows to a single operation (returns the same
 - **Invalid `--format` value** (e.g., `--format=yaml` on the canonical command, or `--format=xml`): clean error before sending; lists valid values `json|openapi`.
 - **Legacy `--format` translation on the forwarder:** `sanity openapi get <slug> --format=yaml` → emits deprecation warning AND translates to `--format=openapi`; `--format=json` emits deprecation warning but passes the value through unchanged.
 - **Operation enumeration:** fixtures with 3 small specs covering plain paths, path placeholders, multiple methods on one path, and an SSE response. Assert the flattened index matches expected operation counts and shapes.
-- **Endpoint string format:** assert `v<date>/<path>` rendering with `:name` placeholders (URL Pattern API style).
+- **Endpoint string format:** assert `v<date>/<path>` rendering with `:name` placeholders (URL Pattern API style), plus all four real-world version-segment shapes (apiVersion variable; literal path segment; version baked into OpenAPI path keys; bare host with path-baked version).
 - **Capability tagging (method-based):** GET/HEAD/OPTIONS → untagged (read); PATCH/PUT/DELETE → destructive; POST → write; SSE response → stream.
+- **Parameter resolution:** `$ref: '#/components/parameters/<name>'` resolves to a full param object (path params especially — without resolution the URL template loses placeholders).
+- **Request body shape:** inline JSON bodies emit typed `fields[]` with required flags; `$ref` body schemas surface `refs[]` and `schemaSummary: "<schemaName>"` without expansion; `allOf` flattens properties across variants; `oneOf` of refs surfaces all variant names; non-JSON bodies (multipart, image/\*, octet-stream) are opaque with `schemaSummary: "<contentType>"`.
+- **Response shape:** multiple responses sorted by status; `$ref` responses surface `ref` + `schemaSummary` as the schema name; inline JSON responses summarize as `{ a, b, c }`; SSE detected from `200.content['text/event-stream']`.
+- **Security:** top-level `security:` inherited when an operation doesn't override; `bearerAuth` ↔ `BearerAuth` normalized to title case.
+- **Schema lookup (`--schema <name>`):** prints the named `components.schemas` entry in YAML by default, JSON with `--format=json`. Unknown name errors with a list of known schemas.
 - **Table output (`list`):** snapshot at 80, 120, and 200 column widths. Method/endpoint/spec columns never truncate; description ellipsizes.
-- **JSON shape (`list --json`):** assert all fields present; assert top-level array of operations.
+- **JSON shape (`list --json`):** assert all fields present; assert top-level array of operations; assert `pathParams: string[]` and `requiredQueryParams: string[]` (names only — the rich shape lives in `spec --format=json`).
 - **Cache behavior:**
-  - First call hits the index endpoint, writes `revisions.json` + YAML + parsed-ops cache.
-  - Second call with unchanged `revision`: only the index endpoint is hit (no per-spec fetch, no re-parse — assert via `mockApi` call counts and timing).
-  - Second call with changed `revision` for one slug: refetches and re-parses only that slug.
+  - First call hits the index endpoint, writes `revisions.json` + YAML.
+  - Second call with unchanged `revision`: only the index endpoint is hit (no per-spec fetch — assert via `mockApi` call counts).
+  - Second call with changed `revision` for one slug: refetches only that slug.
+  - Pre-merge fallback: when `revision: ''` arrives from upstream, every call refetches (the bug-fixed branch).
 - Existing `openapi/*` tests update to assert the deprecation warning on stderr and the delegated behavior. Release notes call out the namespace deprecation, the `list --json` shape change, and the `get` default-output change.
 
 **Acceptance:**
@@ -479,8 +569,9 @@ Optional `--operation <id>` flag narrows to a single operation (returns the same
 - `sanity api list` ≡ `sanity openapi list` byte-identical stdout at any terminal width (modulo a single deprecation warning on stderr from the openapi form).
 - `sanity api spec <slug>` ≡ `sanity openapi get <slug>` byte-identical stdout in all three output modes (same modulo).
 - Default `sanity api spec <slug>` (no flag) renders the structured human view — the answer to "what params does this endpoint take?".
-- `sanity api spec <slug> --format=json --operation <id>` returns a single-operation JSON object with full params + descriptions (incl. enum values) — agents extract everything needed for a call in one fetch.
+- `sanity api spec <slug> --format=json --operation <id>` returns a single-operation JSON object with full params + descriptions (incl. enum values), structured request body (with `ref` pointers for component-schema references), responses, and security — agents extract everything needed for a call in one fetch.
 - `sanity api spec <slug> --format=openapi` returns the same bytes that `sanity openapi get <slug>` used to return by default (no information loss for users who reach for the raw spec).
+- `sanity api spec <slug> --schema <name>` returns the named `components.schemas` entry (YAML default; JSON with `--format=json`); errors with a list of known schemas on unknown names. This is the documented follow-up for `ref:` pointers surfaced anywhere in the JSON output.
 - All 23 live specs parse without error; total flattened operation count is logged.
 - Cache revalidation < 50 ms warm; < 1 s cold.
 - The endpoint string produced for every operation is verbatim what Phase 2 will accept as input.
@@ -488,15 +579,20 @@ Optional `--operation <id>` flag narrows to a single operation (returns the same
 **Implementation notes (Phase 1, as built):**
 
 - **Shared internals live at `src/api/`, not `src/api/lib/` or `src/openapi/`.** Co-located under one namespace makes the import paths clean (`from '../../api/...'`) and matches the canonical command name. Command files never own rendering, parsing, or cache logic — those are imported from `src/api/`.
-- **Two JSON projections, intentionally different.** `operationsListView.toOperationJsonRow` (for `list --json`) includes `spec` and `docsUrl` per row — the row stands alone. `specView.buildSpecJsonView` (for `spec --format=json`) wraps operations under a single `{ spec, title, version, docsUrl, operations: [...] }` envelope, and each operation drops `spec`/`docsUrl` since they'd be redundant. Don't unify the two — each fits its consumer.
+- **Five files, not eleven.** The first cut sharded utilities one-per-concern. Post-implementation consolidation collapsed them into `cache.ts` (revision-keyed YAML cache), `docsClient.ts` (HTTP layer), `parser.ts` (parsing + capability + schema lookup), `revalidate.ts` (revalidation orchestration), `views.ts` (rendering). No semantic loss; cleaner imports.
+- **Two JSON projections, intentionally different.** `views.toOperationJsonRow` (for `list --json`) includes `spec` and `docsUrl` per row — the row stands alone — and projects `pathParams` / `requiredQueryParams` to **names only**. `views.buildSpecJsonView` (for `spec --format=json`) wraps operations under a single `{ spec, title, version, docsUrl, operations: [...] }` envelope, and each operation gets the **full rich shape** (typed params, structured request body, responses, security). Don't unify the two — each fits its consumer (`list` is for picking an endpoint; `spec` is for figuring out how to call it).
+- **Link, don't resolve, for schema refs.** Early drafts called for a 3-level recursion cap with `"…"` truncation past it. Replaced with a simpler design: when a body field or response is a `$ref`, record the schema name on a `ref` field and stop. Agents follow up via `sanity api spec <slug> --schema <name>`. Reasons: avoids the cap-vs-correctness tradeoff (agent-actions has natural depth ≥ 4); avoids cycle handling (the same spec self-refs `Path` / `Include` schemas); keeps the operation payload small; mirrors how humans navigate API docs.
+- **Parameter refs MUST resolve.** The link-not-resolve policy applies to schemas only. Parameter refs (`#/components/parameters/<name>`) resolve inline — otherwise path placeholders disappear from the URL template and the operation becomes uncallable. Discovered during smoke-testing against agent-actions, where `dataset` is declared once under `components.parameters.datasetParam` and referenced from many operations.
+- **The endpoint version segment comes from the resolved server URL pathname, not `info.version`.** Early implementation used `info.version` and produced bogus prefixes like `1.0.0/projects` or `1.0/v2026-04-27/...`. The fix derives the segment by substituting `servers[0].url`'s build-time variables (preserving `{projectId}`/`{dataset}`/`{organizationId}` as URL Pattern placeholders), extracting the pathname (via regex since `{` isn't a legal host character), and stripping slashes. Four real-world shapes handled — see "Endpoint string format" above.
 - **`SANITY_CLI_CACHE_PATH` env var is the test-time cache override.** Tests `mkdtemp` per `describe`, set the env var in `beforeEach`, delete it in `afterEach`. Real users leave it unset.
 - **Topic registration via `check-topic-aliases.ts`.** Every new top-level directory under `commands/` must be listed somewhere — either in `topicAliases` (with aliases) or `knownTopicsWithoutAliases` (without). Phase 1 adds `'api'` to the latter. Missing this trips the `postbuild` step, not anything earlier — easy to discover but worth flagging.
 - **Pre-merge fallback was a near-miss bug.** The first cut of `shouldRefetch()` checked `entry.revision !== '' && cachedRevision !== entry.revision` — which silently became "trust cache forever" whenever upstream's revision was missing. The corrected behavior treats `revision === ''` as "can't trust cache, refetch every call" (see Section 5.2). The fix matters in the window between Phase 1 PR landing and the docs-side `revision` extension deploying. Tests now cover both states.
 - **Forwarder delegation pattern:** `await ApiListCommand.run(argv, this.config)` from inside the deprecated forwarder. Passing `this.config` carries the oclif config through so help text, telemetry, and other framework wiring stays consistent. Returning the canonical command's exit code is automatic — the static `run()` propagates errors.
+- **Lightweight parsing package considered, rejected.** Audited `@apidevtools/swagger-parser`, `@readme/openapi-parser`, `oas`, and `@apidevtools/json-schema-ref-parser`. The lightest reasonable option (`json-schema-ref-parser`, 750 KB + one transitive dep) would have replaced ~80 lines of ref-handling plumbing — but the link-not-resolve policy makes that plumbing unnecessary anyway. Hand-rolled parser stayed; revisit if/when we start consuming third-party specs where validation matters.
 - **Phase 2 hook-in points already wired:**
   - `revalidateSpecs()` exposes `{index, updated}` — Phase 2's `<endpoint>` lookup uses the same index to resolve `<api-version>/<path>` → spec.
-  - `parseOpenApi` already extracts `serverTemplate` (with `{apiVersion}` substituted) — Phase 2's host resolution reads it.
-  - Operation entries already carry `capability` — Phase 2's destructive guard reads it.
+  - `parseOpenApi` already extracts `serverTemplate` (with `{apiVersion}` substituted, context vars preserved) — Phase 2's host resolution reads it.
+  - Operation entries already carry `capability`, structured `requestBody`, full param objects, and `security` — Phase 2's destructive guard, body-validation logic, required-param enforcement, and auth handling all read from the same shape.
   - Nothing in Phase 1 needs to change for Phase 2 to land cleanly.
 
 ---
