@@ -30,7 +30,6 @@
     "!./dist/**/__tests__",
     "./oclif.config.js",
     "./oclif.manifest.json",
-    "./static",
     "./templates"
   ],
   "type": "module",
