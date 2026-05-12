@@ -125,7 +125,6 @@
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-is": "^19.2.4",
-    "read-package-up": "catalog:",
     "rxjs": "catalog:",
     "semver": "^7.7.4",
     "smol-toml": "^1.6.1",
