@@ -12,7 +12,6 @@ export default defineConfig({
       ],
       provider: 'istanbul',
     },
-    disableConsoleIntercept: true, // helps oclif test helpers
     environment: 'node',
     exclude: ['**/node_modules/**', '**/dist/**'],
     globals: false,

@@ -64,6 +64,7 @@
     "@swc/cli": "catalog:",
     "@swc/core": "catalog:",
     "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
     "publint": "catalog:",
     "vitest": "catalog:"
   },

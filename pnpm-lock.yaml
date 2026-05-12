@@ -819,6 +819,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.39
+      '@vitest/coverage-istanbul':
+        specifier: 'catalog:'
+        version: 4.1.5(vitest@4.1.5)
       publint:
         specifier: 'catalog:'
         version: 0.3.18

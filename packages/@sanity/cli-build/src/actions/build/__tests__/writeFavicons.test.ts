@@ -17,6 +17,9 @@ describe('#getDefaultFaviconsPath', () => {
       packageJson: {name: 'sanity'},
       path: join(mockPackagePath, 'package.json'),
     })
+
+    const path = await getDefaultFaviconsPath()
+    expect(path).toEqual(join(mockPackagePath, 'static', 'favicons'))
   })
 
   test('should throw error when @sanity/cli-build package path cannot be resolved', async () => {
