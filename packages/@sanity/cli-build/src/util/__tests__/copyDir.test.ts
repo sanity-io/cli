@@ -13,7 +13,7 @@ beforeEach(async () => {
 })
 
 afterEach(async () => {
-  await fs.rm(workDir, {recursive: true, force: true})
+  await fs.rm(workDir, {force: true, recursive: true})
 })
 
 describe('#skipIfExistsError', () => {

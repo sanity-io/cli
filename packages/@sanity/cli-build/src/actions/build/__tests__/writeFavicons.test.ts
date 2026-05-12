@@ -2,6 +2,7 @@ import {join} from 'node:path'
 
 import {convertToSystemPath} from '@sanity/cli-test'
 import {describe, expect, test, vi} from 'vitest'
+
 import {getDefaultFaviconsPath} from '../writeFavicons'
 
 vi.mock('read-package-up', () => ({
