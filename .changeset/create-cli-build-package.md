@@ -3,4 +3,4 @@
 "@sanity/cli": patch
 ---
 
-Create a new cli-build package and move some logic from the main cli package into that package
+Introduces @sanity/cli-build, a new package exposing shared build utilities for use across Sanity CLI packages.
