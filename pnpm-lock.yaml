@@ -822,6 +822,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.5(vitest@4.1.5)
+      eslint:
+        specifier: 'catalog:'
+        version: 10.2.1(jiti@2.7.0)
       publint:
         specifier: 'catalog:'
         version: 0.3.18

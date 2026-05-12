@@ -65,6 +65,7 @@
     "@swc/core": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "eslint": "catalog:",
     "publint": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
