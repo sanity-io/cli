@@ -16,7 +16,7 @@ const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
 const mockTypegenPlugin = vi.hoisted(() => vi.fn())
 
 // Mock all external dependencies
-vi.mock('@sanity/cli-build', () => ({
+vi.mock('@sanity/cli-build/_internal', () => ({
   getDefaultFaviconsPath: vi.fn(),
 }))
 
@@ -90,7 +90,7 @@ describe('#getViteConfig', () => {
     vi.clearAllMocks()
 
     // Setup default mock for readPackageUp
-    const {getDefaultFaviconsPath} = await import('@sanity/cli-build')
+    const {getDefaultFaviconsPath} = await import('@sanity/cli-build/_internal')
     vi.mocked(getDefaultFaviconsPath).mockResolvedValue(join(mockSanityPath, 'static', 'favicons'))
   })
 

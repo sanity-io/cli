@@ -1,6 +1,6 @@
 import path from 'node:path'
 
-import {getDefaultFaviconsPath} from '@sanity/cli-build'
+import {getDefaultFaviconsPath} from '@sanity/cli-build/_internal'
 import {
   type CliConfig,
   findProjectRoot,

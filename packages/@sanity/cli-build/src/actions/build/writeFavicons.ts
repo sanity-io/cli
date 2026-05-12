@@ -6,6 +6,9 @@ import {readPackageUp} from 'read-package-up'
 import {copyDir} from '../../util/copyDir.js'
 import {writeWebManifest} from './writeWebManifest.js'
 
+/**
+ * @internal
+ */
 export async function getDefaultFaviconsPath(): Promise<string> {
   const sanityCliPkgPath = (await readPackageUp({cwd: import.meta.dirname}))?.path
   if (!sanityCliPkgPath) {
@@ -15,6 +18,9 @@ export async function getDefaultFaviconsPath(): Promise<string> {
   return path.join(path.dirname(sanityCliPkgPath), 'static', 'favicons')
 }
 
+/**
+ * @internal
+ */
 export async function writeFavicons(basePath: string, destDir: string): Promise<void> {
   const faviconsPath = await getDefaultFaviconsPath()
 

@@ -1,7 +1,7 @@
 {
   "name": "@sanity/cli-build",
   "version": "0.0.1",
-  "description": "Sanity package for building studios and apps",
+  "description": "Internal Sanity package for building studios and apps",
   "keywords": [
     "cli",
     "cms",
@@ -27,12 +27,12 @@
   ],
   "type": "module",
   "sideEffects": false,
-  "main": "./dist/_exports/index.js",
-  "types": "./dist/_exports/index.d.ts",
+  "main": "./dist/_exports/_internal.js",
+  "types": "./dist/_exports/_internal.d.ts",
   "exports": {
-    ".": {
-      "source": "./src/_exports/index.ts",
-      "default": "./dist/_exports/index.js"
+    "./_internal": {
+      "source": "./src/_exports/_internal.ts",
+      "default": "./dist/_exports/_internal.js"
     },
     "./package.json": "./package.json"
   },
