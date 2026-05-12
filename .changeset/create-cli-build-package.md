@@ -1,5 +1,5 @@
 ---
-"@sanity/cli-build": major
+"@sanity/cli-build": minor
 "@sanity/cli": patch
 ---
 
