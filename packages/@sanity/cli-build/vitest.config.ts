@@ -13,9 +13,6 @@ export default defineConfig({
       provider: 'istanbul',
     },
     disableConsoleIntercept: true, // helps oclif test helpers
-    env: {
-      OCLIF_TEST_ROOT: 'packages/@sanity/cli',
-    },
     environment: 'node',
     exclude: ['**/node_modules/**', '**/dist/**'],
     globals: false,

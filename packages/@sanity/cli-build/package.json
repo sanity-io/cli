@@ -58,6 +58,7 @@
     "@eslint/compat": "catalog:",
     "@repo/package.config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
+    "@sanity/cli-test": "workspace:*",
     "@sanity/eslint-config-cli": "workspace:^",
     "@sanity/pkg-utils": "catalog:",
     "@swc/cli": "catalog:",
