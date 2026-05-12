@@ -76,7 +76,7 @@ jobs:
           git add "$CHANGESET_FILE"
           if ! git diff --cached --quiet; then
             git commit -m "chore: update auto-generated changeset for PR #${{ github.event.pull_request.number }}"
-            git push --force-with-lease
+            git push --force-with-lease origin HEAD:${{ github.event.pull_request.head.ref }}
           else
             echo "No changes to changeset file"
           fi
@@ -84,10 +84,10 @@ jobs:
       - name: Remove changeset and push
         if: steps.analyze.outputs.action == 'remove'
         env:
-          CHANGESET_FILE: .changeset/pr-${{ github.event.pull_request.number }}.md
+          CHANGESET_FILE: ${{ steps.analyze.outputs.changeset_file }}
         run: |
           if [ -f "$CHANGESET_FILE" ]; then
             git rm "$CHANGESET_FILE"
             git commit -m "chore: remove auto-generated changeset for PR #${{ github.event.pull_request.number }}"
-            git push --force-with-lease
+            git push --force-with-lease origin HEAD:${{ github.event.pull_request.head.ref }}
           fi

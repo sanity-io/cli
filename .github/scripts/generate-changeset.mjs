@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import {randomUUID} from 'node:crypto'
 import {appendFileSync} from 'node:fs'
 
 // --- Env vars ---
@@ -84,6 +85,7 @@ async function getWorkspacePackages() {
 
   // Fetch the full tree for the PR head commit
   const tree = await ghApi(`/repos/${GITHUB_REPOSITORY}/git/trees/${PR_HEAD_SHA}?recursive=1`)
+  if (tree.truncated) throw new Error('Git tree was truncated; cannot reliably detect packages')
 
   // Match package.json files under packages/ (including scoped dirs like packages/@scope/name/)
   const pkgJsonEntries = tree.tree.filter(
@@ -108,12 +110,14 @@ async function getWorkspacePackages() {
 // Check if the auto-generated changeset file exists on the PR branch via API.
 // Returns its content if it exists, or null.
 async function getExistingChangeset() {
-  try {
-    const data = await ghApi(`/repos/${PR_REPO}/contents/${CHANGESET_FILE}?ref=${PR_HEAD_SHA}`)
-    return Buffer.from(data.content, 'base64').toString()
-  } catch {
-    return null
-  }
+  const url = `https://api.github.com/repos/${PR_REPO}/contents/${CHANGESET_FILE}?ref=${PR_HEAD_SHA}`
+  const res = await fetch(url, {
+    headers: {Accept: 'application/vnd.github+json', Authorization: `Bearer ${GH_TOKEN}`},
+  })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`GitHub API error: ${res.status} ${await res.text()}`)
+  const data = await res.json()
+  return Buffer.from(data.content, 'base64').toString()
 }
 
 // --- Main ---
@@ -153,6 +157,7 @@ if (!parsed) {
     setOutput('action', 'skip')
   } else {
     setOutput('action', 'remove')
+    setOutput('changeset_file', CHANGESET_FILE)
   }
   process.exit(0)
 }
@@ -165,6 +170,7 @@ if (!bump) {
     setOutput('action', 'skip')
   } else {
     setOutput('action', 'remove')
+    setOutput('changeset_file', CHANGESET_FILE)
   }
   process.exit(0)
 }
@@ -190,6 +196,7 @@ if (affected.size === 0) {
     setOutput('action', 'skip')
   } else {
     setOutput('action', 'remove')
+    setOutput('changeset_file', CHANGESET_FILE)
   }
   process.exit(0)
 }
@@ -202,9 +209,7 @@ console.log('Generated changeset:')
 console.log(changesetContent)
 
 setOutput('action', 'write')
-// Use delimiter syntax for multiline output
-appendFileSync(
-  GITHUB_OUTPUT,
-  `changeset_content<<CHANGESET_EOF\n${changesetContent}CHANGESET_EOF\n`,
-)
 setOutput('changeset_file', CHANGESET_FILE)
+// Use delimiter syntax with a random delimiter to prevent output injection
+const delimiter = `CHANGESET_EOF_${randomUUID().replaceAll('-', '')}`
+appendFileSync(GITHUB_OUTPUT, `changeset_content<<${delimiter}\n${changesetContent}${delimiter}\n`)
