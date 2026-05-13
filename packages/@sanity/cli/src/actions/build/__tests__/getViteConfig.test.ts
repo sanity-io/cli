@@ -16,8 +16,8 @@ const mockExtractSchemaPlugin = vi.hoisted(() => vi.fn())
 const mockTypegenPlugin = vi.hoisted(() => vi.fn())
 
 // Mock all external dependencies
-vi.mock('read-package-up', () => ({
-  readPackageUp: vi.fn(),
+vi.mock('@sanity/cli-build/_internal', () => ({
+  getDefaultFaviconsPath: vi.fn(),
 }))
 
 vi.mock('@vitejs/plugin-react', () => ({
@@ -90,11 +90,8 @@ describe('#getViteConfig', () => {
     vi.clearAllMocks()
 
     // Setup default mock for readPackageUp
-    const {readPackageUp} = await import('read-package-up')
-    vi.mocked(readPackageUp).mockResolvedValue({
-      packageJson: {name: 'sanity'},
-      path: join(mockSanityPath, 'package.json'),
-    })
+    const {getDefaultFaviconsPath} = await import('@sanity/cli-build/_internal')
+    vi.mocked(getDefaultFaviconsPath).mockResolvedValue(join(mockSanityPath, 'static', 'favicons'))
   })
 
   afterEach(() => {
@@ -316,21 +313,6 @@ describe('#getViteConfig', () => {
       importMap,
       isApp: undefined,
     })
-  })
-
-  test('should throw error when sanity package path cannot be resolved', async () => {
-    const {readPackageUp} = await import('read-package-up')
-    vi.mocked(readPackageUp).mockResolvedValue(undefined)
-
-    const options = {
-      cwd: mockTestCwd,
-      mode: 'development' as const,
-      reactCompiler: undefined,
-    }
-
-    await expect(getViteConfig(options)).rejects.toThrow(
-      'Unable to resolve `@sanity/cli` module root',
-    )
   })
 
   test('should configure favicon plugin with correct paths', async () => {
