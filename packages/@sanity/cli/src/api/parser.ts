@@ -321,6 +321,8 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
     }
   }
 
+  assertUniqueOperationIds(operations, slug)
+
   return {
     description: doc.info?.description ?? '',
     operations,
@@ -329,6 +331,44 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
     title: doc.info?.title || slug,
     version: doc.info?.version ?? '',
   }
+}
+
+/**
+ * Guard against intra-spec operationId collisions. The OpenAPI spec
+ * requires uniqueness within a document, but two ways exist for the
+ * invariant to slip through us:
+ *
+ *   1. Spec authors give two operations the same `operationId`
+ *      (validators are lenient about this).
+ *   2. An authored operationId happens to match what
+ *      `synthesizeOperationId` would emit for a different operation
+ *      that lacked one — e.g. authored `get_jobs` next to a synthesized
+ *      `get_jobs` from `GET /jobs`.
+ *
+ * Either case causes `--operation=<id>` lookups to silently route to
+ * whichever record sorts last, with no trace back. Failing here
+ * surfaces the collision and lets `fetchAndParseEntry` skip the spec
+ * (other specs still load), instead of indexing a broken view.
+ */
+function assertUniqueOperationIds(operations: ParsedOperation[], slug: string): void {
+  const seen = new Map<string, string[]>()
+  for (const op of operations) {
+    const where = `${op.method} ${op.openApiPath}`
+    const existing = seen.get(op.operationId)
+    if (existing) {
+      existing.push(where)
+    } else {
+      seen.set(op.operationId, [where])
+    }
+  }
+  const collisions = [...seen.entries()].filter(([, places]) => places.length > 1)
+  if (collisions.length === 0) return
+
+  const detail = collisions.map(([id, places]) => `  - "${id}" on ${places.join(', ')}`).join('\n')
+  throw new Error(
+    `Spec "${slug}" has duplicate operationId(s):\n${detail}\n` +
+      'Each operationId must be unique within a spec.',
+  )
 }
 
 /* ---------------------------------------------------------------------- *

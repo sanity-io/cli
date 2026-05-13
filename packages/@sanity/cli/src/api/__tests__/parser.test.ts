@@ -420,6 +420,59 @@ paths:
       'post_data_mutate_dataset',
     ])
   })
+
+  test('rejects specs whose operationIds collide (authored + synthesized)', async () => {
+    // The risky case: an authored operationId matches what
+    // `synthesizeOperationId` would emit for another path. Without the
+    // post-loop check, `--operation=get_jobs` would silently resolve to
+    // whichever record sorted last in the index.
+    const spec = `
+openapi: 3.1.1
+info:
+  title: T
+  version: '1.0.0'
+servers:
+  - url: "https://api.sanity.io/v1"
+paths:
+  /jobs:
+    get:
+      responses:
+        '200':
+          description: ok
+  /something-else:
+    get:
+      operationId: get_jobs
+      responses:
+        '200':
+          description: ok
+`
+    await expect(parseOpenApi('t', spec)).rejects.toThrow(/duplicate operationId/)
+  })
+
+  test('rejects specs whose authored operationIds collide', async () => {
+    const spec = `
+openapi: 3.1.1
+info:
+  title: T
+  version: '1.0.0'
+servers:
+  - url: "https://api.sanity.io/v1"
+paths:
+  /a:
+    get:
+      operationId: dup
+      responses:
+        '200':
+          description: ok
+  /b:
+    get:
+      operationId: dup
+      responses:
+        '200':
+          description: ok
+`
+    await expect(parseOpenApi('t', spec)).rejects.toThrow(/duplicate operationId/)
+  })
 })
 
 describe('parseOpenApi — parameters', () => {

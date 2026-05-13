@@ -24,15 +24,6 @@ import {subdebug} from '@sanity/cli-core'
 import {type OpenAPIV3, type OpenAPIV3_1} from '@scalar/openapi-types'
 
 import {
-  asArray,
-  asObject,
-  asString,
-  describeType,
-  type SchemaLike,
-  schemaRefName,
-  summarizeInlineObject,
-} from './internal.js'
-import {
   type ParsedBodyField,
   type ParsedParam,
   type ParsedRequestBody,
@@ -44,9 +35,75 @@ type OperationObject = OpenAPIV3.OperationObject | OpenAPIV3_1.OperationObject
 type ParameterObject = OpenAPIV3.ParameterObject | OpenAPIV3_1.ParameterObject
 type RefOrParameter = OpenAPIV3.ReferenceObject | ParameterObject
 
+type SchemaLike = Record<string, unknown>
+
 const debug = subdebug('api:extractors')
 
 const PARAMETER_REF_PREFIX = '#/components/parameters/'
+const SCHEMA_REF_PREFIX = '#/components/schemas/'
+
+/* ---------------------------------------------------------------------- *
+ *  Shape coercion + OpenAPI-shape helpers                                 *
+ *                                                                         *
+ *  Local because they're only meaningful inside the extractor pipeline.   *
+ *  Lifting them out earned a separate module + import surface without     *
+ *  earning real depth — the bug risk lives in how `walkProperty` /        *
+ *  `flattenComposition` compose them, not in the guards themselves.       *
+ * ---------------------------------------------------------------------- */
+
+function asObject(value: unknown): SchemaLike {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as SchemaLike) : {}
+}
+
+function asString(value: unknown): string {
+  return typeof value === 'string' ? value : ''
+}
+
+function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : []
+}
+
+/**
+ * Extract the schema name from `#/components/schemas/Foo`. Returns ''
+ * for non-local or malformed refs — we don't follow remote refs.
+ */
+function schemaRefName(ref: string): string {
+  return ref.startsWith(SCHEMA_REF_PREFIX) ? ref.slice(SCHEMA_REF_PREFIX.length) : ''
+}
+
+/**
+ * One-word type label for table / help display. Refs collapse to the
+ * schema name (`'Foo'`) so the output is immediately useful without
+ * resolution. Composition (`allOf`/`oneOf`/`anyOf`) collapses to
+ * `'object'`; the body walker handles composition itself.
+ */
+function describeType(schema: SchemaLike): string {
+  const ref = asString(schema.$ref)
+  if (ref) return schemaRefName(ref) || 'unknown'
+  const t = asString(schema.type)
+  if (t) {
+    if (t === 'array') {
+      const inner = describeType(asObject(schema.items))
+      return inner === 'unknown' ? 'array' : `${inner}[]`
+    }
+    return t
+  }
+  if (Array.isArray(schema.enum) && schema.enum.length > 0) {
+    return typeof schema.enum[0] === 'number' ? 'number' : 'string'
+  }
+  if (Array.isArray(schema.allOf) || Array.isArray(schema.oneOf) || Array.isArray(schema.anyOf)) {
+    return 'object'
+  }
+  return 'unknown'
+}
+
+/** Compact `{ a, b, c }` summary of an inline object schema. */
+function summarizeInlineObject(properties: SchemaLike): string {
+  const names = Object.keys(properties)
+  if (names.length === 0) return ''
+  const head = names.slice(0, 6).join(', ')
+  return names.length > 6 ? `{ ${head}, … }` : `{ ${head} }`
+}
 
 /* ---------------------------------------------------------------------- *
  *  Parameters                                                             *
