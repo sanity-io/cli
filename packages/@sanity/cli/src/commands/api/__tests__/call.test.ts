@@ -1,10 +1,11 @@
 import {getCliToken, SanityCommand} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 import {testCommand} from '@sanity/cli-test'
-import nock, {cleanAll, pendingMocks} from 'nock'
+import nock from 'nock'
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {ApiCallCommand} from '../index.js'
+import {mockIndexAndSpecs, setupApiTestCleanup} from './fixtures.js'
 
 vi.mock('@sanity/cli-core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@sanity/cli-core')>()
@@ -139,31 +140,16 @@ paths:
           description: ok
 `
 
-function mockIndexAndSpecs(specs: Array<{slug: string; yaml: string}>) {
-  nock('https://www.sanity.io')
-    .get('/docs/api/openapi')
-    .reply(200, {
-      specs: specs.map((s) => ({description: '', revision: '', slug: s.slug, title: s.slug})),
-    })
-  for (const spec of specs) {
-    nock('https://www.sanity.io')
-      .get(`/docs/api/openapi/${spec.slug}`)
-      .query({format: 'yaml'})
-      .reply(200, spec.yaml)
-  }
-}
-
 describe('#api:call', () => {
+  setupApiTestCleanup()
   afterEach(() => {
     // `mockReset` drops queued `mockResolvedValueOnce` values that
     // weren't consumed (e.g. tests that error before the token is
     // resolved). Without this, leftover values leak into later tests.
+    // Runs alongside the shared `setupApiTestCleanup` afterEach —
+    // afterEach hooks compose; both fire.
     vi.mocked(getCliToken).mockReset()
     vi.mocked(confirm).mockReset()
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
   })
 
   test('GET returns pretty-printed JSON by default', async () => {
