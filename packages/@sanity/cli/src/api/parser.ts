@@ -1,5 +1,6 @@
 import {subdebug} from '@sanity/cli-core'
-import {parse as parseYaml} from 'yaml'
+import {validate} from '@scalar/openapi-parser'
+import {type OpenAPIV3, type OpenAPIV3_1} from '@scalar/openapi-types'
 
 import {readSpec} from './cache.js'
 import {type OpenApiSpecIndexEntry} from './docsClient.js'
@@ -73,6 +74,8 @@ export type OperationIndexEntry = ParsedOperation & {spec: string}
 
 const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch', 'trace'] as const
 
+type HttpMethod = (typeof HTTP_METHODS)[number]
+
 /**
  * Server variables that are runtime context (filled by `--project`,
  * `--dataset`, etc. at call time), not build-time defaults. These get
@@ -87,19 +90,8 @@ export function toUrlPatternForm(value: string): string {
 }
 
 /* ---------------------------------------------------------------------- *
- *  OpenAPI parser                                                         *
+ *  Server URL helpers                                                     *
  * ---------------------------------------------------------------------- */
-
-interface ParameterObject {
-  in?: string
-  name?: string
-  required?: boolean
-}
-
-interface ServerVariable {
-  default?: string
-  description?: string
-}
 
 /**
  * Substitute server-variable defaults into a server URL template.
@@ -111,14 +103,15 @@ interface ServerVariable {
  */
 function substituteServerVars(
   rawUrl: string,
-  vars: Record<string, ServerVariable>,
+  vars: Record<string, OpenAPIV3.ServerVariableObject> | undefined,
   options: {preserveContext: boolean},
 ): string {
+  if (!vars) return rawUrl
   let url = rawUrl
   for (const [name, variable] of Object.entries(vars)) {
     if (options.preserveContext && CONTEXT_SERVER_VARS.has(name)) continue
     if (variable?.default !== undefined) {
-      url = url.replaceAll(`{${name}}`, variable.default)
+      url = url.replaceAll(`{${name}}`, String(variable.default))
     }
   }
   return url
@@ -131,13 +124,6 @@ function substituteServerVars(
  * We can't use `new URL()` because `{` is not a legal host character —
  * `https://{projectId}.api.sanity.io/…` throws. Instead, strip the
  * `scheme://host` prefix manually via regex.
- *
- * E.g.
- *   `https://api.sanity.io/v2021-06-07`               → `v2021-06-07`
- *   `https://api.sanity.io/vX/agent`                  → `vX/agent`
- *   `https://api.sanity.io/v2025-02-19/projects/{projectId}` → `v2025-02-19/projects/{projectId}`
- *   `https://{projectId}.api.sanity.io/v2025-02-19`   → `v2025-02-19`
- *   `https://api.sanity.io`                           → empty string
  */
 function extractServerPathSegment(serverUrlWithPlaceholders: string): string {
   if (!serverUrlWithPlaceholders) return ''
@@ -147,66 +133,80 @@ function extractServerPathSegment(serverUrlWithPlaceholders: string): string {
   return pathname.replaceAll(/^\/+|\/+$/g, '')
 }
 
-function asString(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback
-}
+/* ---------------------------------------------------------------------- *
+ *  OpenAPI parser                                                         *
+ * ---------------------------------------------------------------------- */
 
-function asArray<T>(value: unknown): T[] {
-  return Array.isArray(value) ? (value as T[]) : []
+/**
+ * A 3.0-or-3.1 operation. Sanity's public specs use both major versions;
+ * the fields we read (parameters, responses, operationId, summary) live
+ * at the same paths in both, so we union the operation types.
+ */
+type OperationObject = OpenAPIV3.OperationObject | OpenAPIV3_1.OperationObject
+type PathItemObject = OpenAPIV3.PathItemObject | OpenAPIV3_1.PathItemObject
+type ParameterObject = OpenAPIV3.ParameterObject | OpenAPIV3_1.ParameterObject
+
+function isParameterObject(p: unknown): p is ParameterObject {
+  return Boolean(p && typeof p === 'object' && !('$ref' in p))
 }
 
 function collectParamNames(
-  params: ParameterObject[],
+  params: (OpenAPIV3.ReferenceObject | ParameterObject)[] | undefined,
   location: 'header' | 'path' | 'query',
   opts?: {requiredOnly?: boolean},
 ): string[] {
+  if (!params) return []
   const out: string[] = []
   for (const p of params) {
-    if (!p || typeof p !== 'object') continue
+    if (!isParameterObject(p)) continue
     if (p.in !== location) continue
     if (opts?.requiredOnly && p.required !== true) continue
-    const name = asString(p.name)
-    if (name) out.push(name)
+    if (p.name) out.push(p.name)
   }
   return out
 }
 
-function isStreamingResponse(responses: unknown): boolean {
-  if (!responses || typeof responses !== 'object') return false
+function isStreamingResponse(responses: OperationObject['responses']): boolean {
+  if (!responses) return false
   const ok = (responses as Record<string, unknown>)['200']
-  if (!ok || typeof ok !== 'object') return false
-  const content = (ok as Record<string, unknown>).content
-  if (!content || typeof content !== 'object') return false
-  return Boolean((content as Record<string, unknown>)['text/event-stream'])
+  if (!ok || typeof ok !== 'object' || '$ref' in ok) return false
+  const content = (ok as OpenAPIV3.ResponseObject).content
+  return Boolean(content && content['text/event-stream'])
 }
 
 /**
- * Parse an OpenAPI spec (YAML string) into the CLI's denormalized form.
+ * Parse an OpenAPI spec (YAML or JSON string) into the CLI's
+ * denormalized form. Validation goes through `@scalar/openapi-parser`,
+ * which leaves `$ref`s in place (link-not-resolve) and returns a typed
+ * AST for the matched OpenAPI version.
  *
- * Throws if the YAML is invalid or the document isn't an OpenAPI spec.
+ * Throws if the document isn't valid OpenAPI 3.x.
  */
-export function parseOpenApi(slug: string, yaml: string): ParsedSpec {
-  const doc = parseYaml(yaml)
-  if (!doc || typeof doc !== 'object') {
-    throw new Error(`Spec "${slug}" did not parse to an object`)
+export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSpec> {
+  const result = await validate(yaml)
+  // We use `validate` for the YAML → typed-AST step. Strict validation
+  // warnings (missing descriptions, unbound path params, etc.) are not
+  // fatal here — we surface anything we can read, and let the docs site
+  // own enforcing strict OpenAPI conformance. Only hard parse failures
+  // (`specification` missing entirely) abort.
+  if (!result.specification) {
+    const messages = result.errors?.map((e) => e.message).join('; ') ?? 'unknown error'
+    throw new Error(`Spec "${slug}" failed to parse: ${messages}`)
   }
-  const root = doc as Record<string, unknown>
+  if (result.version && result.version !== '3.0' && result.version !== '3.1') {
+    debug(`spec "${slug}" uses OpenAPI ${result.version} — proceeding with best-effort parse`)
+  }
+  const doc = result.specification as OpenAPIV3_1.Document
 
-  const info = (root.info && typeof root.info === 'object' ? root.info : {}) as Record<
-    string,
-    unknown
-  >
-  const title = asString(info.title) || slug
-  const description = asString(info.description)
-  const version = asString(info.version)
+  const title = doc.info?.title || slug
+  const description = doc.info?.description || ''
+  const version = doc.info?.version || ''
 
-  const servers = asArray<Record<string, unknown>>(root.servers)
-  const serverObj = servers[0] || {}
-  const serverUrlRaw = asString(serverObj.url)
-  const serverVars =
-    serverObj.variables && typeof serverObj.variables === 'object'
-      ? (serverObj.variables as Record<string, ServerVariable>)
-      : {}
+  const serverObj = doc.servers?.[0]
+  const serverUrlRaw = serverObj?.url || ''
+  const serverVars = serverObj?.variables as
+    | Record<string, OpenAPIV3.ServerVariableObject>
+    | undefined
 
   // The version path-segment lives in the resolved server URL's pathname
   // — NOT `info.version` (which can be a meaningless semver like `1.0.0`
@@ -223,25 +223,17 @@ export function parseOpenApi(slug: string, yaml: string): ParsedSpec {
   const serverPathSegment = extractServerPathSegment(serverUrlWithContextVars)
   const serverTemplate = toUrlPatternForm(serverUrlWithContextVars)
 
-  const paths = (root.paths && typeof root.paths === 'object' ? root.paths : {}) as Record<
-    string,
-    unknown
-  >
-
   const operations: ParsedOperation[] = []
-  for (const [rawPath, pathItemRaw] of Object.entries(paths)) {
-    if (!pathItemRaw || typeof pathItemRaw !== 'object') continue
-    const pathItem = pathItemRaw as Record<string, unknown>
-    const commonParams = asArray<ParameterObject>(pathItem.parameters)
+  for (const [rawPath, pathItem] of Object.entries(doc.paths ?? {})) {
+    if (!pathItem) continue
+    const pathItemObj = pathItem as PathItemObject
+    const commonParams = pathItemObj.parameters
 
     for (const method of HTTP_METHODS) {
-      const opRaw = pathItem[method]
-      if (!opRaw || typeof opRaw !== 'object') continue
-      const op = opRaw as Record<string, unknown>
+      const op = pathItemObj[method as HttpMethod] as OperationObject | undefined
+      if (!op) continue
 
-      const opParams = asArray<ParameterObject>(op.parameters)
-      const allParams = [...commonParams, ...opParams]
-
+      const allParams = [...(commonParams ?? []), ...(op.parameters ?? [])]
       const pathParams = collectParamNames(allParams, 'path')
       const requiredQueryParams = collectParamNames(allParams, 'query', {requiredOnly: true})
 
@@ -255,11 +247,11 @@ export function parseOpenApi(slug: string, yaml: string): ParsedSpec {
         endpoint,
         isStreaming: isStreamingResponse(op.responses),
         method: methodUpper,
-        operationId: asString(op.operationId),
+        operationId: op.operationId ?? '',
         path: rawPath,
         pathParams,
         requiredQueryParams,
-        summary: asString(op.summary),
+        summary: op.summary ?? '',
       })
     }
   }
@@ -306,7 +298,7 @@ export async function loadParsedSpecs(index: OpenApiSpecIndexEntry[]): Promise<P
     const yaml = await readSpec(entry.slug)
     if (yaml === null) continue
     try {
-      const parsed = parseOpenApi(entry.slug, yaml)
+      const parsed = await parseOpenApi(entry.slug, yaml)
       specs.push({
         ...parsed,
         description: entry.description || parsed.description,

@@ -125,83 +125,83 @@ paths:
 `
 
 describe('classifyCapability', () => {
-  test('treats GET / HEAD / OPTIONS as read', () => {
+  test('treats GET / HEAD / OPTIONS as read', async () => {
     expect(classifyCapability('GET')).toBe('read')
     expect(classifyCapability('get')).toBe('read')
     expect(classifyCapability('HEAD')).toBe('read')
     expect(classifyCapability('OPTIONS')).toBe('read')
   })
 
-  test('treats PATCH / PUT / DELETE as destructive', () => {
+  test('treats PATCH / PUT / DELETE as destructive', async () => {
     expect(classifyCapability('PATCH')).toBe('destructive')
     expect(classifyCapability('PUT')).toBe('destructive')
     expect(classifyCapability('DELETE')).toBe('destructive')
     expect(classifyCapability('delete')).toBe('destructive')
   })
 
-  test('treats POST and unknown methods as write', () => {
+  test('treats POST and unknown methods as write', async () => {
     expect(classifyCapability('POST')).toBe('write')
     expect(classifyCapability('TRACE')).toBe('write')
   })
 })
 
 describe('parseOpenApi', () => {
-  test('extracts spec metadata', () => {
-    const result = parseOpenApi('jobs', JOBS_SPEC)
+  test('extracts spec metadata', async () => {
+    const result = await parseOpenApi('jobs', JOBS_SPEC)
     expect(result.slug).toBe('jobs')
     expect(result.title).toBe('Jobs API')
     expect(result.version).toBe('v2021-06-07')
     expect(result.description).toBe('Manage jobs')
   })
 
-  test('renders endpoints with :name placeholders and api-version prefix', () => {
-    const result = parseOpenApi('jobs', JOBS_SPEC)
+  test('renders endpoints with :name placeholders and api-version prefix', async () => {
+    const result = await parseOpenApi('jobs', JOBS_SPEC)
     expect(result.operations.map((op) => op.endpoint).toSorted()).toEqual([
       'v2021-06-07/jobs/:jobId',
       'v2021-06-07/jobs/:jobId/listen',
     ])
   })
 
-  test('captures path params (names only)', () => {
-    const result = parseOpenApi('jobs', JOBS_SPEC)
+  test('captures path params (names only)', async () => {
+    const result = await parseOpenApi('jobs', JOBS_SPEC)
     expect(result.operations[0].pathParams).toEqual(['jobId'])
   })
 
-  test('captures required query params (excludes optional)', () => {
-    const result = parseOpenApi('query', QUERY_SPEC)
+  test('captures required query params (excludes optional)', async () => {
+    const result = await parseOpenApi('query', QUERY_SPEC)
     const op = result.operations[0]
     expect(op.requiredQueryParams).toEqual(['query'])
   })
 
-  test('detects SSE streaming responses', () => {
-    const result = parseOpenApi('jobs', JOBS_SPEC)
+  test('detects SSE streaming responses', async () => {
+    const result = await parseOpenApi('jobs', JOBS_SPEC)
     const jobStatus = result.operations.find((op) => op.operationId === 'jobStatus')!
     const jobListen = result.operations.find((op) => op.operationId === 'jobListen')!
     expect(jobStatus.isStreaming).toBe(false)
     expect(jobListen.isStreaming).toBe(true)
   })
 
-  test('classifies capabilities by method', () => {
-    const mutate = parseOpenApi('mutate', MUTATE_SPEC)
+  test('classifies capabilities by method', async () => {
+    const mutate = await parseOpenApi('mutate', MUTATE_SPEC)
     const post = mutate.operations.find((op) => op.method === 'POST')!
     const del = mutate.operations.find((op) => op.method === 'DELETE')!
     expect(post.capability).toBe('write')
     expect(del.capability).toBe('destructive')
   })
 
-  test('substitutes {apiVersion} in server template, leaves {projectId} as :projectId', () => {
-    const result = parseOpenApi('query', QUERY_SPEC)
+  test('substitutes {apiVersion} in server template, leaves {projectId} as :projectId', async () => {
+    const result = await parseOpenApi('query', QUERY_SPEC)
     expect(result.serverTemplate).toBe('https://:projectId.api.sanity.io/v2024-01-01')
   })
 
-  test('throws on non-object root', () => {
-    expect(() => parseOpenApi('bad', 'just a string')).toThrow(/did not parse to an object/)
+  test('rejects invalid OpenAPI documents', async () => {
+    await expect(parseOpenApi('bad', 'just a string')).rejects.toThrow(/failed to parse/)
   })
 
   // Regression: the version segment must come from the resolved server
   // URL pathname, NOT info.version. The four shapes we hit on real specs:
   describe('version-segment shape', () => {
-    test('apiVersion variable default fills the pathname segment', () => {
+    test('apiVersion variable default fills the pathname segment', async () => {
       // jobs / projects-api / media-library shape
       const spec = `
 openapi: 3.1.1
@@ -221,11 +221,11 @@ paths:
         '200':
           description: ok
 `
-      const result = parseOpenApi('t', spec)
+      const result = await parseOpenApi('t', spec)
       expect(result.operations[0].endpoint).toBe('v2021-06-07/projects')
     })
 
-    test('literal path segment in server URL is preserved (content-agent shape)', () => {
+    test('literal path segment in server URL is preserved (content-agent shape)', async () => {
       const spec = `
 openapi: 3.1.1
 info:
@@ -241,11 +241,11 @@ paths:
         '200':
           description: ok
 `
-      const result = parseOpenApi('t', spec)
+      const result = await parseOpenApi('t', spec)
       expect(result.operations[0].endpoint).toBe('vX/agent/:organizationId/threads/:threadId')
     })
 
-    test('version baked into OpenAPI path keys (user-attributes shape)', () => {
+    test('version baked into OpenAPI path keys (user-attributes shape)', async () => {
       const spec = `
 openapi: 3.1.1
 info:
@@ -261,13 +261,13 @@ paths:
         '200':
           description: ok
 `
-      const result = parseOpenApi('t', spec)
+      const result = await parseOpenApi('t', spec)
       expect(result.operations[0].endpoint).toBe(
         'v2026-04-27/organizations/:organizationId/attribute-definitions',
       )
     })
 
-    test('info.version is never used as a path prefix', () => {
+    test('info.version is never used as a path prefix', async () => {
       // The bug we fixed: info.version='1.0.0' MUST NOT prefix the endpoint.
       const spec = `
 openapi: 3.1.1
@@ -287,7 +287,7 @@ paths:
         '200':
           description: ok
 `
-      const result = parseOpenApi('t', spec)
+      const result = await parseOpenApi('t', spec)
       expect(result.operations[0].endpoint).not.toMatch(/^1\.0\.0/)
       expect(result.operations[0].endpoint.startsWith('v2021-06-07')).toBe(true)
     })
@@ -295,7 +295,7 @@ paths:
 })
 
 describe('toUrlPatternForm', () => {
-  test('converts {name} to :name', () => {
+  test('converts {name} to :name', async () => {
     expect(toUrlPatternForm('/jobs/{jobId}')).toBe('/jobs/:jobId')
     expect(toUrlPatternForm('/data/query/{dataset}')).toBe('/data/query/:dataset')
     expect(toUrlPatternForm('/projects/{projectId}/datasets/{dataset}')).toBe(
@@ -303,7 +303,7 @@ describe('toUrlPatternForm', () => {
     )
   })
 
-  test('leaves URLs without placeholders unchanged', () => {
+  test('leaves URLs without placeholders unchanged', async () => {
     expect(toUrlPatternForm('/health')).toBe('/health')
   })
 })
