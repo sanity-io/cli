@@ -2,12 +2,11 @@ import {Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
+import {HTTP_REFERENCE_URL} from '../../api/docsClient.js'
 import {loadOperationsIndex} from '../../api/parser.js'
 import {printOperationsTable, toOperationJsonRow} from '../../api/views.js'
 
 const debug = subdebug('api:list')
-
-const HTTP_REFERENCE_URL = 'https://www.sanity.io/docs/http-reference'
 
 export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
   static override description = 'List all OpenAPI operations across the public Sanity HTTP specs'

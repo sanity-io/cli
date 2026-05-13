@@ -16,7 +16,7 @@ const debug = subdebug('api:parser')
  *
  * `GET`/`HEAD`/`OPTIONS` → `read` (untagged).
  * `PATCH`/`PUT`/`DELETE` → `destructive`.
- * `POST`                 → `write`.
+ * `POST` (and any other method, including `TRACE`/`CONNECT`) → `write`.
  *
  * Method-only by design — no path-name inspection. Keeps the rule
  * auditable and avoids false positives from path naming.
@@ -140,14 +140,17 @@ function collectParamNames(
   opts?: {requiredOnly?: boolean},
 ): string[] {
   if (!params) return []
-  const out: string[] = []
+  // Per OpenAPI 3.x, operation-level params override path-item-level
+  // params with the same `(name, in)`. Last-wins via a name-keyed set
+  // dedupes when both levels declare the same param.
+  const out = new Set<string>()
   for (const p of params) {
     if (!isParameterObject(p)) continue
     if (p.in !== location) continue
     if (opts?.requiredOnly && p.required !== true) continue
-    if (p.name) out.push(p.name)
+    if (p.name) out.add(p.name)
   }
-  return out
+  return [...out]
 }
 
 function isStreamingResponse(responses: OperationObject['responses']): boolean {
@@ -281,13 +284,16 @@ export async function loadOperationsIndex(
 }
 
 async function fetchAndParseEntry(entry: OpenApiSpecIndexEntry): Promise<OperationIndexEntry[]> {
-  const yaml = await fetchSpec(entry.slug)
-  if (yaml === null) return []
+  // Wrap both fetch and parse — one spec's 5xx / timeout / parse error
+  // mustn't poison the whole `list` invocation. Per-spec failures are
+  // debug-logged; the remaining 21 specs still surface to the user.
   try {
+    const yaml = await fetchSpec(entry.slug)
+    if (yaml === null) return []
     const operations = await parseOpenApi(entry.slug, yaml)
     return operations.map((op) => ({...op, spec: entry.slug}))
   } catch (error) {
-    debug(`skipping spec "${entry.slug}" — parse error`, error)
+    debug(`skipping spec "${entry.slug}" — fetch/parse error`, error)
     return []
   }
 }

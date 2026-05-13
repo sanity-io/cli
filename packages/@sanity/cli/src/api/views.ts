@@ -8,9 +8,8 @@
 
 import {Table} from 'console-table-printer'
 
+import {HTTP_REFERENCE_URL} from './docsClient.js'
 import {type OperationIndexEntry} from './parser.js'
-
-const HTTP_REFERENCE_BASE_URL = 'https://www.sanity.io/docs/http-reference'
 
 interface OperationJsonRow {
   capability: string
@@ -28,7 +27,7 @@ interface OperationJsonRow {
 export function toOperationJsonRow(op: OperationIndexEntry): OperationJsonRow {
   return {
     capability: op.capability,
-    docsUrl: `${HTTP_REFERENCE_BASE_URL}/${encodeURIComponent(op.spec)}`,
+    docsUrl: `${HTTP_REFERENCE_URL}/${encodeURIComponent(op.spec)}`,
     endpoint: op.endpoint,
     isStreaming: op.isStreaming,
     method: op.method,

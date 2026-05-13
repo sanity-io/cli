@@ -2,11 +2,9 @@ import {Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
-import {fetchSpecIndex} from '../../api/docsClient.js'
+import {fetchSpecIndex, HTTP_REFERENCE_URL} from '../../api/docsClient.js'
 
 const debug = subdebug('openapi:list')
-
-const HTTP_REFERENCE_URL = 'https://www.sanity.io/docs/http-reference'
 
 interface OpenApiSpecRow {
   description: string

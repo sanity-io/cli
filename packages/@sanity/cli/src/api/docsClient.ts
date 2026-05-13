@@ -13,15 +13,14 @@ const DEFAULT_DOCS_API_URL = 'https://www.sanity.io/docs'
 const FETCH_TIMEOUT_MS = 10_000
 
 /**
- * One entry from the docs index endpoint (`/api/openapi`).
- *
- * `revision` is the Sanity document `_rev`, projected onto the public
- * response. Not consumed today (no cache); kept on the interface
- * because the upstream contract emits it.
+ * Public HTTP Reference docs URL — shared by every command that
+ * surfaces a docs link or accepts `--web` to open the docs site.
  */
+export const HTTP_REFERENCE_URL = 'https://www.sanity.io/docs/http-reference'
+
+/** One entry from the docs index endpoint (`/api/openapi`). */
 export interface OpenApiSpecIndexEntry {
   description: string
-  revision: string
   slug: string
   title: string
 }
@@ -42,10 +41,7 @@ function buildHeaders(): HeadersInit {
   return token ? {'x-vercel-protection-bypass': token} : {}
 }
 
-/**
- * Fetch the docs index — one entry per parent spec, including
- * `revision` for revision-keyed cache invalidation.
- */
+/** Fetch the docs index — one entry per parent spec. */
 export async function fetchSpecIndex(): Promise<OpenApiSpecIndexEntry[]> {
   const url = `${getDocsApiBaseUrl()}/api/openapi`
   const response = await fetch(url, {
@@ -66,7 +62,6 @@ export async function fetchSpecIndex(): Promise<OpenApiSpecIndexEntry[]> {
     const spec = (raw ?? {}) as Record<string, unknown>
     return {
       description: typeof spec.description === 'string' ? spec.description : '',
-      revision: typeof spec.revision === 'string' ? spec.revision : '',
       slug: typeof spec.slug === 'string' ? spec.slug : '',
       title: typeof spec.title === 'string' ? spec.title : '',
     }

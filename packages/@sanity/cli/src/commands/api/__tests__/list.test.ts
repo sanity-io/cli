@@ -173,6 +173,37 @@ describe('#api:list', () => {
     expect(parsed.every((op: {spec: string}) => op.spec === 'jobs')).toBe(true)
   })
 
+  test('one spec 5xx does not break the whole listing', async () => {
+    // Per-spec fetch errors must not poison the run — the docstring on
+    // fetchAndParseEntry promises this. Without the try/catch widening,
+    // a single Promise.all rejection surfaces "service unavailable" for
+    // every other healthy spec.
+    nock('https://www.sanity.io')
+      .get('/docs/api/openapi')
+      .reply(200, {
+        specs: [
+          {description: '', revision: '', slug: 'jobs', title: 'Jobs'},
+          {description: '', revision: '', slug: 'broken', title: 'Broken'},
+        ],
+      })
+
+    nock('https://www.sanity.io')
+      .get('/docs/api/openapi/jobs')
+      .query({format: 'yaml'})
+      .reply(200, JOBS_SPEC_YAML)
+
+    nock('https://www.sanity.io')
+      .get('/docs/api/openapi/broken')
+      .query({format: 'yaml'})
+      .reply(500, 'internal server error')
+
+    const {stdout} = await testCommand(ApiListCommand, ['--json'])
+
+    const parsed = JSON.parse(stdout)
+    expect(parsed.every((op: {spec: string}) => op.spec === 'jobs')).toBe(true)
+    expect(parsed.length).toBeGreaterThan(0)
+  })
+
   test('honors SANITY_DOCS_API_URL for base-URL override', async () => {
     process.env.SANITY_DOCS_API_URL = 'https://preview.sanity.io/docs'
     try {
