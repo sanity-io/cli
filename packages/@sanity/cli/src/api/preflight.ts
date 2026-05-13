@@ -3,9 +3,8 @@
  * that run before any network call, so failures show up as fast,
  * specific errors instead of a server-side 4xx round-trip.
  *
- * The goal is for agents (and humans) to get the same precise
- * feedback the spec-discovery command would, without ever sending
- * the doomed request.
+ * The goal is the same precise feedback the spec-discovery command
+ * would surface, delivered without ever sending the doomed request.
  *
  * Each check returns a `PreflightIssue` rather than throwing — the
  * command layer translates issues into oclif `this.error()` messages.

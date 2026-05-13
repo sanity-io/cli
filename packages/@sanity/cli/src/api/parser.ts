@@ -59,8 +59,8 @@ export interface ParsedParam {
 /**
  * One field of a request body schema. Refs are **linked**, not
  * expanded: when a field's schema is `$ref: '#/components/schemas/Foo'`,
- * `ref` carries `'Foo'` and `fields` stays empty. Agents resolve refs
- * via `sanity api spec <slug> --schema <name>`.
+ * `ref` carries `'Foo'` and `fields` stays empty. Callers follow the
+ * ref via `sanity api spec <slug> --schema <name>`.
  */
 export interface ParsedBodyField {
   description: string
