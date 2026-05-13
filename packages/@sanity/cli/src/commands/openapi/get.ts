@@ -2,8 +2,25 @@ import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
-const getOpenapiDebug = subdebug('openapi:get')
+const debug = subdebug('openapi:get')
 
+const HTTP_REFERENCE_BASE_URL = 'https://www.sanity.io/docs/http-reference'
+const DOCS_API_URL = 'https://www.sanity.io/docs/api/openapi'
+const FETCH_TIMEOUT_MS = 10_000
+
+/**
+ * Deprecated. Preserved as a back-compat shim until the next major:
+ *
+ * - Output shape unchanged (raw OpenAPI spec body, YAML by default).
+ * - `--format=yaml` / `--format=json` / `--web` behave as before.
+ * - Adds a one-line stderr warning pointing users at the canonical
+ *   `sanity api spec` (which emits a structured per-operation view).
+ *
+ * The new structured output lives on `sanity api spec <slug>` —
+ * default human view, `--format=json` per-op JSON, `--format=openapi`
+ * raw YAML. This forwarder keeps the legacy passthrough so scripts
+ * piping stdout keep working.
+ */
 export class GetOpenApiCommand extends SanityCommand<typeof GetOpenApiCommand> {
   static override args = {
     slug: Args.string({
@@ -12,7 +29,8 @@ export class GetOpenApiCommand extends SanityCommand<typeof GetOpenApiCommand> {
     }),
   }
 
-  static override description = 'Get an OpenAPI specification by slug'
+  static override description =
+    'DEPRECATED: get an OpenAPI specification by slug (use `sanity api spec` instead)'
 
   static override examples = [
     {
@@ -39,10 +57,7 @@ export class GetOpenApiCommand extends SanityCommand<typeof GetOpenApiCommand> {
       description: 'Output format: yaml (default), json',
       options: ['yaml', 'json'],
     }),
-    web: Flags.boolean({
-      char: 'w',
-      description: 'Open in web browser',
-    }),
+    web: Flags.boolean({char: 'w', description: 'Open in web browser'}),
   }
 
   public async run(): Promise<void> {
@@ -50,41 +65,39 @@ export class GetOpenApiCommand extends SanityCommand<typeof GetOpenApiCommand> {
     const {slug} = args
     const {format, web} = flags
 
+    this.warn(
+      'sanity openapi get is deprecated, use sanity api spec instead. ' +
+        'Will be removed in the next major.',
+    )
+
     if (web) {
-      const url = `https://www.sanity.io/docs/http-reference/${slug}`
+      const url = `${HTTP_REFERENCE_BASE_URL}/${encodeURIComponent(slug)}`
       this.log(`Opening ${url}`)
       await open(url)
       return
     }
 
-    try {
-      const specContent = await this.getSpecContent(slug, format)
-
-      this.log(specContent)
-    } catch (error) {
-      getOpenapiDebug(`Error fetching OpenAPI spec ${slug}`, error)
-
-      if (error instanceof Response && error.status === 404) {
-        this.error(`OpenAPI specification not found. ${slug}`, {exit: 1})
-      }
-
-      this.error('The OpenAPI service is currently unavailable. Please try again later.', {
-        exit: 1,
-      })
-    }
+    const content = await this.fetchSpecContent(slug, format)
+    this.log(content)
   }
 
-  private async getSpecContent(slug: string, format: string): Promise<string> {
-    const url = new URL(`https://www.sanity.io/docs/api/openapi/${slug}`)
+  private async fetchSpecContent(slug: string, format: string): Promise<string> {
+    const url = new URL(`${DOCS_API_URL}/${encodeURIComponent(slug)}`)
     url.searchParams.set('format', format)
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(10_000),
-    })
-
-    if (response.ok) {
-      return response.text()
+    let response: Response
+    try {
+      response = await fetch(url, {signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)})
+    } catch (error) {
+      debug('openapi get fetch failed', error)
+      this.error('The OpenAPI service is currently unavailable. Try again later.', {exit: 1})
     }
 
-    throw response
+    if (response.status === 404) {
+      this.error(`OpenAPI specification "${slug}" not found.`, {exit: 1})
+    }
+    if (!response.ok) {
+      this.error('The OpenAPI service is currently unavailable. Try again later.', {exit: 1})
+    }
+    return await response.text()
   }
 }

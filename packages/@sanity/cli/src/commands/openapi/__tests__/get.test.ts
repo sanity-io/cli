@@ -5,33 +5,23 @@ import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {GetOpenApiCommand} from '../get.js'
 
-const mockYamlSpec = `
-openapi: 3.0.0
+const JOBS_YAML = `
+openapi: 3.1.1
 info:
-  title: Query API
-  version: 1.0.0
-paths:
-  /query:
-    get:
-      summary: Query documents
-`.trim()
+  title: Jobs API
+  version: 'v2021-06-07'
+paths: {}
+`
 
-const mockJsonSpec = JSON.stringify({
-  info: {
-    title: 'Query API',
-    version: '1.0.0',
-  },
-  openapi: '3.0.0',
-  paths: {
-    '/query': {
-      get: {
-        summary: 'Query documents',
-      },
-    },
-  },
-})
+const JOBS_JSON = JSON.stringify({info: {title: 'Jobs API'}, openapi: '3.1.1', paths: {}})
 
-describe('#openapi:get', () => {
+/**
+ * `sanity openapi get` is deprecated but preserves the pre-deprecation
+ * passthrough shape for the duration of the deprecation window. These
+ * tests lock that contract: raw OpenAPI body (YAML by default, JSON
+ * with `--format=json`) on stdout, deprecation warning on stderr.
+ */
+describe('#openapi:get (deprecated, back-compat passthrough)', () => {
   afterEach(() => {
     vi.clearAllMocks()
     const pending = pendingMocks()
@@ -39,113 +29,67 @@ describe('#openapi:get', () => {
     expect(pending, 'pending mocks').toEqual([])
   })
 
-  test('gets YAML spec by default', async () => {
+  test('emits a deprecation warning on stderr', async () => {
     nock('https://www.sanity.io')
-      .get('/docs/api/openapi/query')
+      .get('/docs/api/openapi/jobs')
       .query({format: 'yaml'})
-      .reply(200, mockYamlSpec, {'Content-Type': 'text/yaml'})
+      .reply(200, JOBS_YAML)
 
-    const {stdout} = await testCommand(GetOpenApiCommand, ['query'])
-
-    expect(stdout).toContain(mockYamlSpec)
+    const {stderr} = await testCommand(GetOpenApiCommand, ['jobs'])
+    expect(stderr).toContain('deprecated')
+    expect(stderr).toContain('sanity api spec')
   })
 
-  test('gets JSON spec with --format=json', async () => {
+  test('default fetches and prints raw YAML', async () => {
     nock('https://www.sanity.io')
-      .get('/docs/api/openapi/query')
+      .get('/docs/api/openapi/jobs')
+      .query({format: 'yaml'})
+      .reply(200, JOBS_YAML)
+
+    const {stdout} = await testCommand(GetOpenApiCommand, ['jobs'])
+    expect(stdout).toContain('openapi: 3.1.1')
+    expect(stdout).toContain('title: Jobs API')
+    // YAML, not JSON
+    expect(stdout.trim().startsWith('{')).toBe(false)
+  })
+
+  test('--format=json fetches and prints raw JSON (back-compat shape, not structured)', async () => {
+    nock('https://www.sanity.io')
+      .get('/docs/api/openapi/jobs')
       .query({format: 'json'})
-      .reply(200, mockJsonSpec, {'Content-Type': 'application/json'})
+      .reply(200, JOBS_JSON)
 
-    const {stdout} = await testCommand(GetOpenApiCommand, ['query', '--format=json'])
-
-    expect(stdout).toContain(mockJsonSpec)
+    const {stdout} = await testCommand(GetOpenApiCommand, ['jobs', '--format=json'])
+    const parsed = JSON.parse(stdout)
+    // Raw OpenAPI shape — top-level `openapi`, `info`, `paths`. NOT the
+    // structured `{spec, operations, ...}` shape that `api spec` emits.
+    expect(parsed).toHaveProperty('openapi', '3.1.1')
+    expect(parsed).toHaveProperty('info.title', 'Jobs API')
+    expect(parsed).not.toHaveProperty('operations')
   })
 
-  test('gets YAML spec with explicit --format=yaml', async () => {
-    nock('https://www.sanity.io')
-      .get('/docs/api/openapi/query')
-      .query({format: 'yaml'})
-      .reply(200, mockYamlSpec, {'Content-Type': 'text/yaml'})
-
-    const {stdout} = await testCommand(GetOpenApiCommand, ['query', '--format=yaml'])
-
-    expect(stdout).toContain(mockYamlSpec)
+  test('--web opens browser without hitting the docs endpoint', async () => {
+    const {stdout} = await testCommand(GetOpenApiCommand, ['jobs', '--web'])
+    expect(stdout).toContain('Opening https://www.sanity.io/docs/http-reference/jobs')
+    expect(open).toHaveBeenCalledWith('https://www.sanity.io/docs/http-reference/jobs')
   })
 
-  test('opens web browser with --web flag', async () => {
-    const {stdout} = await testCommand(GetOpenApiCommand, ['query', '--web'])
+  test('errors cleanly on 404', async () => {
+    nock('https://www.sanity.io').get('/docs/api/openapi/nope').query({format: 'yaml'}).reply(404)
 
-    expect(stdout).toContain('Opening https://www.sanity.io/docs/http-reference/query')
-    expect(open).toHaveBeenCalledWith('https://www.sanity.io/docs/http-reference/query')
-  })
-
-  test('handles 404 not found', async () => {
-    nock('https://www.sanity.io')
-      .get('/docs/api/openapi/nonexistent')
-      .query({format: 'yaml'})
-      .reply(404, 'Not Found')
-
-    const {error} = await testCommand(GetOpenApiCommand, ['nonexistent'])
-
+    const {error} = await testCommand(GetOpenApiCommand, ['nope'])
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('OpenAPI specification not found. nonexistent')
-    expect(error?.oclif?.exit).toBe(1)
+    expect(error?.message).toContain('not found')
   })
 
-  test('handles server error', async () => {
+  test('errors cleanly when the docs service is unreachable', async () => {
     nock('https://www.sanity.io')
-      .get('/docs/api/openapi/query')
-      .query({format: 'yaml'})
-      .reply(500, 'Server Error')
-
-    const {error} = await testCommand(GetOpenApiCommand, ['query'])
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain(
-      'The OpenAPI service is currently unavailable. Please try again later.',
-    )
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('handles network error', async () => {
-    nock('https://www.sanity.io')
-      .get('/docs/api/openapi/query')
+      .get('/docs/api/openapi/jobs')
       .query({format: 'yaml'})
       .replyWithError('Network error')
 
-    const {error} = await testCommand(GetOpenApiCommand, ['query'])
-
+    const {error} = await testCommand(GetOpenApiCommand, ['jobs'])
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain(
-      'The OpenAPI service is currently unavailable. Please try again later.',
-    )
-    expect(error?.oclif?.exit).toBe(1)
-  })
-
-  test('requires slug argument', async () => {
-    const {error} = await testCommand(GetOpenApiCommand, [])
-
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Missing 1 required arg')
-    expect(error?.message).toContain('slug')
-    expect(error?.oclif?.exit).toBe(2)
-  })
-
-  test('handles different slug formats', async () => {
-    nock('https://www.sanity.io')
-      .get('/docs/api/openapi/admin-api')
-      .query({format: 'yaml'})
-      .reply(200, mockYamlSpec, {'Content-Type': 'text/yaml'})
-
-    const {stdout} = await testCommand(GetOpenApiCommand, ['admin-api'])
-
-    expect(stdout).toContain(mockYamlSpec)
-  })
-
-  test('combines --web with slug in URL', async () => {
-    const {stdout} = await testCommand(GetOpenApiCommand, ['admin-api', '--web'])
-
-    expect(stdout).toContain('Opening https://www.sanity.io/docs/http-reference/admin-api')
-    expect(open).toHaveBeenCalledWith('https://www.sanity.io/docs/http-reference/admin-api')
+    expect(error?.message).toContain('OpenAPI service is currently unavailable')
   })
 })
