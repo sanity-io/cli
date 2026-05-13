@@ -31,32 +31,6 @@ paths:
           description: ok
 `
 
-const MUTATE_SPEC_YAML = `
-openapi: 3.1.1
-info:
-  title: Mutate API
-  version: 'v2024-01-01'
-servers:
-  - url: 'https://api.sanity.io/{apiVersion}'
-    variables:
-      apiVersion:
-        default: 'v2024-01-01'
-paths:
-  /data/mutate/{dataset}:
-    post:
-      summary: Apply mutations
-      operationId: mutateDataset
-      parameters:
-        - in: path
-          name: dataset
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: ok
-`
-
 function mockIndexAndSpecs(specs: Array<{slug: string; title?: string; yaml: string}>) {
   nock('https://www.sanity.io')
     .get('/docs/api/openapi')
@@ -121,17 +95,41 @@ describe('#api:list', () => {
     })
   })
 
-  test('--spec narrows to a single spec', async () => {
-    mockIndexAndSpecs([
-      {slug: 'jobs', yaml: JOBS_SPEC_YAML},
-      {slug: 'mutate', yaml: MUTATE_SPEC_YAML},
-    ])
+  test('--spec narrows to a single spec and only fetches that spec', async () => {
+    // Index advertises both specs; `--spec=jobs` should push the filter
+    // down into the loader — only the jobs spec body is fetched.
+    nock('https://www.sanity.io')
+      .get('/docs/api/openapi')
+      .reply(200, {
+        specs: [
+          {description: '', revision: '', slug: 'jobs', title: 'Jobs'},
+          {description: '', revision: '', slug: 'mutate', title: 'Mutate'},
+        ],
+      })
+    nock('https://www.sanity.io')
+      .get('/docs/api/openapi/jobs')
+      .query({format: 'yaml'})
+      .reply(200, JOBS_SPEC_YAML)
+    // No mock for /docs/api/openapi/mutate — the assertion that no mocks
+    // are left pending in afterEach proves we didn't fetch it.
 
     const {stdout} = await testCommand(ApiListCommand, ['--spec=jobs', '--json'])
 
     const parsed = JSON.parse(stdout)
     expect(parsed.every((op: {spec: string}) => op.spec === 'jobs')).toBe(true)
     expect(parsed).toHaveLength(1)
+  })
+
+  test('--spec=<unknown-slug> emits the empty-result message', async () => {
+    nock('https://www.sanity.io')
+      .get('/docs/api/openapi')
+      .reply(200, {
+        specs: [{description: '', revision: '', slug: 'jobs', title: 'Jobs'}],
+      })
+    // No per-spec mock — the unknown slug shouldn't trigger a fetch.
+
+    const {stdout} = await testCommand(ApiListCommand, ['--spec=nope'])
+    expect(stdout).toContain('No operations found for spec "nope"')
   })
 
   test('--web opens browser (open is globally mocked)', async () => {
@@ -173,5 +171,45 @@ describe('#api:list', () => {
 
     const parsed = JSON.parse(stdout)
     expect(parsed.every((op: {spec: string}) => op.spec === 'jobs')).toBe(true)
+  })
+
+  test('honors SANITY_DOCS_API_URL for base-URL override', async () => {
+    process.env.SANITY_DOCS_API_URL = 'https://preview.sanity.io/docs'
+    try {
+      nock('https://preview.sanity.io')
+        .get('/docs/api/openapi')
+        .reply(200, {
+          specs: [{description: '', revision: '', slug: 'jobs', title: 'Jobs'}],
+        })
+      nock('https://preview.sanity.io')
+        .get('/docs/api/openapi/jobs')
+        .query({format: 'yaml'})
+        .reply(200, JOBS_SPEC_YAML)
+
+      const {stdout} = await testCommand(ApiListCommand, ['--json'])
+      expect(JSON.parse(stdout)).toHaveLength(1)
+    } finally {
+      delete process.env.SANITY_DOCS_API_URL
+    }
+  })
+
+  test('attaches SANITY_DOCS_API_BYPASS_TOKEN as the Vercel bypass header', async () => {
+    process.env.SANITY_DOCS_API_BYPASS_TOKEN = 'secret-token'
+    try {
+      nock('https://www.sanity.io', {reqheaders: {'x-vercel-protection-bypass': 'secret-token'}})
+        .get('/docs/api/openapi')
+        .reply(200, {
+          specs: [{description: '', revision: '', slug: 'jobs', title: 'Jobs'}],
+        })
+      nock('https://www.sanity.io', {reqheaders: {'x-vercel-protection-bypass': 'secret-token'}})
+        .get('/docs/api/openapi/jobs')
+        .query({format: 'yaml'})
+        .reply(200, JOBS_SPEC_YAML)
+
+      const {stdout} = await testCommand(ApiListCommand, ['--json'])
+      expect(JSON.parse(stdout)).toHaveLength(1)
+    } finally {
+      delete process.env.SANITY_DOCS_API_BYPASS_TOKEN
+    }
   })
 })

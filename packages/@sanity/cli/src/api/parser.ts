@@ -11,14 +11,15 @@ const debug = subdebug('api:parser')
  * ---------------------------------------------------------------------- */
 
 /**
- * Method-based capability classification.
+ * Method-based capability classification used to tag operations in
+ * `list` output: `[write]` / `[destructive]` / unmarked (read).
  *
- * `GET`/`HEAD`/`OPTIONS` → `read` (untagged in list output).
- * `PATCH`/`PUT`/`DELETE` → `destructive` (Phase 2 destructive guard fires).
+ * `GET`/`HEAD`/`OPTIONS` → `read` (untagged).
+ * `PATCH`/`PUT`/`DELETE` → `destructive`.
  * `POST`                 → `write`.
  *
  * Method-only by design — no path-name inspection. Keeps the rule
- * auditable and matches the Phase 2 guard that reads this same field.
+ * auditable and avoids false positives from path naming.
  */
 type Capability = 'destructive' | 'read' | 'write'
 
@@ -47,21 +48,6 @@ interface ParsedOperation {
   pathParams: string[]
   requiredQueryParams: string[]
   summary: string
-
-  /** Spec slug; populated by buildOperationsIndex, not the parser. */
-  spec?: string
-}
-
-/** One parsed spec — header info plus its denormalized operations. */
-interface ParsedSpec {
-  description: string
-  operations: ParsedOperation[]
-  /** OpenAPI `servers[0].url` template with `:name` placeholders. */
-  serverTemplate: string
-  slug: string
-  title: string
-  /** `info.version`, e.g. `v2021-06-07`. */
-  version: string
 }
 
 /** Flat operations index — one row per (spec, operation). */
@@ -76,10 +62,10 @@ const HTTP_METHODS = ['get', 'put', 'post', 'delete', 'options', 'head', 'patch'
 type HttpMethod = (typeof HTTP_METHODS)[number]
 
 /**
- * Server variables that are runtime context (filled by `--project`,
- * `--dataset`, etc. at call time), not build-time defaults. These get
- * left as `:name` placeholders in `serverTemplate` so Phase 2 can
- * resolve them when actually executing a call.
+ * Server variables we treat as runtime context: a future
+ * request-execution layer fills them at call time, so we keep them
+ * as `:name` placeholders in the endpoint string rather than
+ * substituting build-time defaults.
  */
 const CONTEXT_SERVER_VARS = new Set(['dataset', 'organizationId', 'projectId'])
 
@@ -97,8 +83,7 @@ export function toUrlPatternForm(value: string): string {
  *
  * `preserveContext: true` leaves `{projectId}` / `{dataset}` /
  * `{organizationId}` alone so they survive into the URL-Pattern form
- * as `:name` placeholders (filled by Phase 2 at call time, or
- * displayed verbatim by Phase 1's `list`).
+ * as `:name` placeholders — displayed verbatim in `list` output.
  */
 function substituteServerVars(
   rawUrl: string,
@@ -174,20 +159,19 @@ function isStreamingResponse(responses: OperationObject['responses']): boolean {
 }
 
 /**
- * Parse an OpenAPI spec (YAML or JSON string) into the CLI's
- * denormalized form. Validation goes through `@scalar/openapi-parser`,
- * which leaves `$ref`s in place (link-not-resolve) and returns a typed
- * AST for the matched OpenAPI version.
+ * Parse an OpenAPI spec (YAML or JSON string) into a flat list of
+ * operations. Validation goes through `@scalar/openapi-parser`, which
+ * leaves `$ref`s in place (link-not-resolve) and returns a typed AST
+ * for the matched OpenAPI version.
  *
- * Throws if the document isn't valid OpenAPI 3.x.
+ * Strict validation warnings (missing descriptions, unbound path params,
+ * etc.) are not fatal — surfaces whatever it can read. Only hard parse
+ * failures (`specification` missing entirely) throw.
+ *
+ * Operations without an `operationId` are skipped and debug-logged.
  */
-export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSpec> {
+export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedOperation[]> {
   const result = await validate(yaml)
-  // We use `validate` for the YAML → typed-AST step. Strict validation
-  // warnings (missing descriptions, unbound path params, etc.) are not
-  // fatal here — we surface anything we can read, and let the docs site
-  // own enforcing strict OpenAPI conformance. Only hard parse failures
-  // (`specification` missing entirely) abort.
   if (!result.specification) {
     const messages = result.errors?.map((e) => e.message).join('; ') ?? 'unknown error'
     throw new Error(`Spec "${slug}" failed to parse: ${messages}`)
@@ -196,10 +180,6 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
     debug(`spec "${slug}" uses OpenAPI ${result.version} — proceeding with best-effort parse`)
   }
   const doc = result.specification as OpenAPIV3_1.Document
-
-  const title = doc.info?.title || slug
-  const description = doc.info?.description || ''
-  const version = doc.info?.version || ''
 
   const serverObj = doc.servers?.[0]
   const serverUrlRaw = serverObj?.url || ''
@@ -210,17 +190,13 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
   // The version path-segment lives in the resolved server URL's pathname
   // — NOT `info.version` (which can be a meaningless semver like `1.0.0`
   // for specs whose API version is declared in server variables, or
-  // baked literally into the OpenAPI `paths` keys).
-  //
-  // We preserve `{projectId}` / `{dataset}` / `{organizationId}` so they
-  // survive as `:name` placeholders in the final URL-Pattern form
-  // (otherwise specs that put `{projectId}` in the path would render as
-  // the literal default value like `projectId`).
+  // baked literally into the OpenAPI `paths` keys). Context vars
+  // (`{projectId}`, `{dataset}`, `{organizationId}`) are preserved so
+  // they survive as `:name` placeholders in the final URL-Pattern form.
   const serverUrlWithContextVars = substituteServerVars(serverUrlRaw, serverVars, {
     preserveContext: true,
   })
   const serverPathSegment = extractServerPathSegment(serverUrlWithContextVars)
-  const serverTemplate = toUrlPatternForm(serverUrlWithContextVars)
 
   const operations: ParsedOperation[] = []
   for (const [rawPath, pathItem] of Object.entries(doc.paths ?? {})) {
@@ -232,11 +208,19 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
       const op = pathItemObj[method as HttpMethod] as OperationObject | undefined
       if (!op) continue
 
+      const methodUpper = method.toUpperCase()
+      const operationId = op.operationId ?? ''
+      if (!operationId) {
+        // Agent consumers index by `operationId`; emitting `''` would
+        // collide silently. Skip and surface under DEBUG=sanity:cli:api:parser.
+        debug(`skipping ${methodUpper} ${rawPath} — missing operationId`)
+        continue
+      }
+
       const allParams = [...(commonParams ?? []), ...(op.parameters ?? [])]
       const pathParams = collectParamNames(allParams, 'path')
       const requiredQueryParams = collectParamNames(allParams, 'query', {requiredOnly: true})
 
-      const methodUpper = method.toUpperCase()
       const opPath = rawPath.replace(/^\/+/, '')
       const combined = serverPathSegment ? `${serverPathSegment}/${opPath}` : opPath
       const endpoint = toUrlPatternForm(combined)
@@ -246,7 +230,7 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
         endpoint,
         isStreaming: isStreamingResponse(op.responses),
         method: methodUpper,
-        operationId: op.operationId ?? '',
+        operationId,
         path: rawPath,
         pathParams,
         requiredQueryParams,
@@ -255,7 +239,7 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
     }
   }
 
-  return {description, operations, serverTemplate, slug, title, version}
+  return operations
 }
 
 /* ---------------------------------------------------------------------- *
@@ -266,8 +250,13 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
  * Fetch the docs index and every per-spec body, parse each, and return
  * the flat operations index — sorted by spec → path → method.
  *
- * Single seam for the discovery pipeline (index → fan-out → flatten +
- * sort). Callers don't need to wire the three steps themselves.
+ * Single seam for the discovery pipeline. Callers don't need to wire
+ * the index fetch + fan-out + flatten + sort steps themselves.
+ *
+ * `onlySlug` short-circuits the fan-out: when set, the index is
+ * filtered before any per-spec fetches happen, so
+ * `sanity api list --spec=jobs` makes one index request + one spec
+ * request instead of one + 22.
  *
  * Error semantics:
  *   - The index fetch throws on network/non-2xx — callers translate
@@ -277,53 +266,37 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
  *   - Per-spec parse errors are debug-logged and skipped (visible
  *     under `DEBUG=sanity:cli:api:parser`) without breaking the run.
  *
- * Specs are fetched in parallel — the index is small (~22 entries) and
- * each request is independent, so serializing would be needless latency.
+ * Specs are fetched in parallel — independent requests, no reason to
+ * serialize.
  */
-export async function loadOperationsIndex(): Promise<OperationIndexEntry[]> {
+export async function loadOperationsIndex(
+  options: {onlySlug?: string} = {},
+): Promise<OperationIndexEntry[]> {
   const index = await fetchSpecIndex()
-  const specs = await loadParsedSpecs(index)
-  return buildOperationsIndex(specs)
+  const targets = options.onlySlug
+    ? index.filter((entry) => entry.slug === options.onlySlug)
+    : index
+  const buckets = await Promise.all(targets.map((entry) => fetchAndParseEntry(entry)))
+  return sortOperations(buckets.flat())
 }
 
-async function loadParsedSpecs(index: OpenApiSpecIndexEntry[]): Promise<ParsedSpec[]> {
-  const results = await Promise.all(
-    index.map(async (entry): Promise<ParsedSpec | null> => {
-      const yaml = await fetchSpec(entry.slug)
-      if (yaml === null) return null
-      try {
-        const parsed = await parseOpenApi(entry.slug, yaml)
-        return {
-          ...parsed,
-          description: entry.description || parsed.description,
-          slug: entry.slug,
-          title: entry.title || parsed.title,
-        }
-      } catch (error) {
-        debug(`skipping spec "${entry.slug}" — parse error`, error)
-        return null
-      }
-    }),
-  )
-  return results.filter((s): s is ParsedSpec => s !== null)
-}
-
-/**
- * Flatten parsed specs into a sorted operations array. Sort order:
- * spec asc → path asc → method asc — stable ordering for diffability
- * and agent re-runs.
- */
-function buildOperationsIndex(specs: ParsedSpec[]): OperationIndexEntry[] {
-  const entries: OperationIndexEntry[] = []
-  for (const spec of specs) {
-    for (const op of spec.operations) {
-      entries.push({...op, spec: spec.slug})
-    }
+async function fetchAndParseEntry(entry: OpenApiSpecIndexEntry): Promise<OperationIndexEntry[]> {
+  const yaml = await fetchSpec(entry.slug)
+  if (yaml === null) return []
+  try {
+    const operations = await parseOpenApi(entry.slug, yaml)
+    return operations.map((op) => ({...op, spec: entry.slug}))
+  } catch (error) {
+    debug(`skipping spec "${entry.slug}" — parse error`, error)
+    return []
   }
-  entries.sort((a, b) => {
+}
+
+/** Sort by spec asc → path asc → method asc — stable for diffability. */
+function sortOperations(entries: OperationIndexEntry[]): OperationIndexEntry[] {
+  return entries.toSorted((a, b) => {
     if (a.spec !== b.spec) return a.spec < b.spec ? -1 : 1
     if (a.path !== b.path) return a.path < b.path ? -1 : 1
     return a.method < b.method ? -1 : a.method > b.method ? 1 : 0
   })
-  return entries
 }

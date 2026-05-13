@@ -73,8 +73,7 @@ export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
 
   private async loadOperations(specFilter: string | undefined) {
     try {
-      const operations = await loadOperationsIndex()
-      return specFilter ? operations.filter((op) => op.spec === specFilter) : operations
+      return await loadOperationsIndex({onlySlug: specFilter})
     } catch (error) {
       debug('list failed', error)
       this.error('The OpenAPI service is currently unavailable. Try again later.', {exit: 1})

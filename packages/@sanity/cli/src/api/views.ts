@@ -28,7 +28,7 @@ interface OperationJsonRow {
 export function toOperationJsonRow(op: OperationIndexEntry): OperationJsonRow {
   return {
     capability: op.capability,
-    docsUrl: `${HTTP_REFERENCE_BASE_URL}/${op.spec}`,
+    docsUrl: `${HTTP_REFERENCE_BASE_URL}/${encodeURIComponent(op.spec)}`,
     endpoint: op.endpoint,
     isStreaming: op.isStreaming,
     method: op.method,

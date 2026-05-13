@@ -16,11 +16,8 @@ const FETCH_TIMEOUT_MS = 10_000
  * One entry from the docs index endpoint (`/api/openapi`).
  *
  * `revision` is the Sanity document `_rev`, projected onto the public
- * response. The CLI uses it as the cache invalidation key.
- *
- * `revision` may be the empty string if the upstream endpoint hasn't
- * deployed the contract extension yet — in that case the revalidation
- * loop conservatively refetches on every invocation (see revalidate.ts).
+ * response. Not consumed today (no cache); kept on the interface
+ * because the upstream contract emits it.
  */
 export interface OpenApiSpecIndexEntry {
   description: string

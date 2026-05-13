@@ -146,56 +146,67 @@ describe('classifyCapability', () => {
 })
 
 describe('parseOpenApi', () => {
-  test('extracts spec metadata', async () => {
-    const result = await parseOpenApi('jobs', JOBS_SPEC)
-    expect(result.slug).toBe('jobs')
-    expect(result.title).toBe('Jobs API')
-    expect(result.version).toBe('v2021-06-07')
-    expect(result.description).toBe('Manage jobs')
-  })
-
   test('renders endpoints with :name placeholders and api-version prefix', async () => {
-    const result = await parseOpenApi('jobs', JOBS_SPEC)
-    expect(result.operations.map((op) => op.endpoint).toSorted()).toEqual([
+    const operations = await parseOpenApi('jobs', JOBS_SPEC)
+    expect(operations.map((op) => op.endpoint).toSorted()).toEqual([
       'v2021-06-07/jobs/:jobId',
       'v2021-06-07/jobs/:jobId/listen',
     ])
   })
 
   test('captures path params (names only)', async () => {
-    const result = await parseOpenApi('jobs', JOBS_SPEC)
-    expect(result.operations[0].pathParams).toEqual(['jobId'])
+    const operations = await parseOpenApi('jobs', JOBS_SPEC)
+    expect(operations[0].pathParams).toEqual(['jobId'])
   })
 
   test('captures required query params (excludes optional)', async () => {
-    const result = await parseOpenApi('query', QUERY_SPEC)
-    const op = result.operations[0]
-    expect(op.requiredQueryParams).toEqual(['query'])
+    const operations = await parseOpenApi('query', QUERY_SPEC)
+    expect(operations[0].requiredQueryParams).toEqual(['query'])
   })
 
   test('detects SSE streaming responses', async () => {
-    const result = await parseOpenApi('jobs', JOBS_SPEC)
-    const jobStatus = result.operations.find((op) => op.operationId === 'jobStatus')!
-    const jobListen = result.operations.find((op) => op.operationId === 'jobListen')!
+    const operations = await parseOpenApi('jobs', JOBS_SPEC)
+    const jobStatus = operations.find((op) => op.operationId === 'jobStatus')!
+    const jobListen = operations.find((op) => op.operationId === 'jobListen')!
     expect(jobStatus.isStreaming).toBe(false)
     expect(jobListen.isStreaming).toBe(true)
   })
 
   test('classifies capabilities by method', async () => {
-    const mutate = await parseOpenApi('mutate', MUTATE_SPEC)
-    const post = mutate.operations.find((op) => op.method === 'POST')!
-    const del = mutate.operations.find((op) => op.method === 'DELETE')!
+    const operations = await parseOpenApi('mutate', MUTATE_SPEC)
+    const post = operations.find((op) => op.method === 'POST')!
+    const del = operations.find((op) => op.method === 'DELETE')!
     expect(post.capability).toBe('write')
     expect(del.capability).toBe('destructive')
   })
 
-  test('substitutes {apiVersion} in server template, leaves {projectId} as :projectId', async () => {
-    const result = await parseOpenApi('query', QUERY_SPEC)
-    expect(result.serverTemplate).toBe('https://:projectId.api.sanity.io/v2024-01-01')
-  })
-
   test('rejects invalid OpenAPI documents', async () => {
     await expect(parseOpenApi('bad', 'just a string')).rejects.toThrow(/failed to parse/)
+  })
+
+  test('skips operations without an operationId', async () => {
+    const spec = `
+openapi: 3.1.1
+info:
+  title: T
+  version: '1.0.0'
+servers:
+  - url: "https://api.sanity.io/v1"
+paths:
+  /a:
+    get:
+      operationId: hasId
+      responses:
+        '200':
+          description: ok
+  /b:
+    get:
+      responses:
+        '200':
+          description: ok
+`
+    const operations = await parseOpenApi('t', spec)
+    expect(operations.map((op) => op.operationId)).toEqual(['hasId'])
   })
 
   // Regression: the version segment must come from the resolved server
@@ -221,8 +232,8 @@ paths:
         '200':
           description: ok
 `
-      const result = await parseOpenApi('t', spec)
-      expect(result.operations[0].endpoint).toBe('v2021-06-07/projects')
+      const operations = await parseOpenApi('t', spec)
+      expect(operations[0].endpoint).toBe('v2021-06-07/projects')
     })
 
     test('literal path segment in server URL is preserved (content-agent shape)', async () => {
@@ -241,8 +252,8 @@ paths:
         '200':
           description: ok
 `
-      const result = await parseOpenApi('t', spec)
-      expect(result.operations[0].endpoint).toBe('vX/agent/:organizationId/threads/:threadId')
+      const operations = await parseOpenApi('t', spec)
+      expect(operations[0].endpoint).toBe('vX/agent/:organizationId/threads/:threadId')
     })
 
     test('version baked into OpenAPI path keys (user-attributes shape)', async () => {
@@ -261,8 +272,8 @@ paths:
         '200':
           description: ok
 `
-      const result = await parseOpenApi('t', spec)
-      expect(result.operations[0].endpoint).toBe(
+      const operations = await parseOpenApi('t', spec)
+      expect(operations[0].endpoint).toBe(
         'v2026-04-27/organizations/:organizationId/attribute-definitions',
       )
     })
@@ -287,9 +298,9 @@ paths:
         '200':
           description: ok
 `
-      const result = await parseOpenApi('t', spec)
-      expect(result.operations[0].endpoint).not.toMatch(/^1\.0\.0/)
-      expect(result.operations[0].endpoint.startsWith('v2021-06-07')).toBe(true)
+      const operations = await parseOpenApi('t', spec)
+      expect(operations[0].endpoint).not.toMatch(/^1\.0\.0/)
+      expect(operations[0].endpoint.startsWith('v2021-06-07')).toBe(true)
     })
   })
 })
