@@ -1,105 +1,18 @@
 import {testCommand} from '@sanity/cli-test'
-import nock, {cleanAll, pendingMocks} from 'nock'
+import nock from 'nock'
 import open from 'open'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {describe, expect, test} from 'vitest'
 
 import {ApiListCommand} from '../list.js'
-
-const JOBS_SPEC_YAML = `
-openapi: 3.1.1
-info:
-  title: Jobs API
-  version: 'v2021-06-07'
-servers:
-  - url: 'https://api.sanity.io/{apiVersion}'
-    variables:
-      apiVersion:
-        default: 'v2021-06-07'
-paths:
-  /jobs/{jobId}:
-    get:
-      summary: Get the status of a job
-      operationId: jobStatus
-      parameters:
-        - in: path
-          name: jobId
-          required: true
-          schema:
-            type: string
-        - in: query
-          name: detail
-          required: false
-          schema:
-            type: string
-      responses:
-        '200':
-          description: ok
-`
-
-const MUTATE_SPEC_YAML = `
-openapi: 3.1.1
-info:
-  title: Mutate API
-  version: 'v2024-01-01'
-servers:
-  - url: 'https://api.sanity.io/{apiVersion}'
-    variables:
-      apiVersion:
-        default: 'v2024-01-01'
-paths:
-  /data/mutate/{dataset}:
-    post:
-      summary: Apply mutations
-      operationId: mutateDocuments
-      parameters:
-        - in: path
-          name: dataset
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: ok
-    delete:
-      summary: Drop the dataset
-      operationId: dropDataset
-      parameters:
-        - in: path
-          name: dataset
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: ok
-`
-
-function mockIndexAndSpecs(specs: Array<{slug: string; title?: string; yaml: string}>) {
-  nock('https://www.sanity.io')
-    .get('/docs/api/openapi')
-    .reply(200, {
-      specs: specs.map((s) => ({
-        description: '',
-        revision: '',
-        slug: s.slug,
-        title: s.title ?? s.slug,
-      })),
-    })
-  for (const spec of specs) {
-    nock('https://www.sanity.io')
-      .get(`/docs/api/openapi/${spec.slug}`)
-      .query({format: 'yaml'})
-      .reply(200, spec.yaml)
-  }
-}
+import {
+  JOBS_SPEC_YAML,
+  mockIndexAndSpecs,
+  MUTATE_SPEC_YAML,
+  setupApiTestCleanup,
+} from './fixtures.js'
 
 describe('#api:list', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  setupApiTestCleanup()
 
   test('renders the operation table', async () => {
     mockIndexAndSpecs([{slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML}])
