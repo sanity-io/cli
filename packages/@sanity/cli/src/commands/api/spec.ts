@@ -3,13 +3,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 import {stringify as stringifyYaml} from 'yaml'
 
-import {
-  listComponentSchemas,
-  loadSingleSpec,
-  lookupComponentSchema,
-  type ParsedOperation,
-  type ParsedSpec,
-} from '../../api/parser.js'
+import {loadSingleSpec, type ParsedOperation, type ParsedSpec} from '../../api/parser.js'
 import {buildSpecJsonView, renderSpecHumanView} from '../../api/views.js'
 
 const debug = subdebug('api:spec')
@@ -84,7 +78,7 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     const loaded = await this.loadSpec(slug)
 
     if (flags.schema) {
-      this.printSchema(slug, loaded.yaml, flags.schema, flags.format)
+      this.printSchema(slug, loaded.parsed.schemas, flags.schema, flags.format)
       return
     }
 
@@ -124,16 +118,21 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     return loaded
   }
 
-  private printSchema(slug: string, yaml: string, name: string, format: string | undefined): void {
-    const schema = lookupComponentSchema(yaml, name)
-    if (schema === null) {
-      const known = listComponentSchemas(yaml)
+  private printSchema(
+    slug: string,
+    schemas: Record<string, unknown>,
+    name: string,
+    format: string | undefined,
+  ): void {
+    if (!(name in schemas)) {
+      const known = Object.keys(schemas)
       this.error(
         `Schema "${name}" not found in spec "${slug}".\n` +
           `Known schemas: ${known.join(', ') || '(none)'}`,
         {exit: 1},
       )
     }
+    const schema = schemas[name]
     if (format === 'json') {
       this.log(JSON.stringify(schema, null, 2))
       return

@@ -2,4 +2,4 @@
 "@sanity/cli": minor
 ---
 
-Add `sanity api spec <slug>` for inspecting a single public Sanity HTTP spec. Default output is a structured per-operation view (typed params, request body, responses, auth, schema-reference footer); `--format=json` emits the same shape as JSON; `--format=openapi` passes through the raw OpenAPI YAML. `--operation=<id>` narrows to a single operation. `--schema=<name>` prints a single `components.schemas` entry (the follow-up for `$ref` pointers surfaced in operation output). `sanity openapi get` is deprecated (warning on stderr) and keeps its pre-deprecation passthrough output for the back-compat window.
+Adds `sanity api spec <slug>` for inspecting a single OpenAPI spec — default human view, `--format=json` for structured per-operation output, `--format=openapi` for raw YAML, `--operation` to narrow to one operation, `--schema` to follow `$ref` pointers. Deprecates `sanity openapi get` (passthrough output preserved during the back-compat window).

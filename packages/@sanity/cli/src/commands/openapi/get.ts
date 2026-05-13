@@ -2,11 +2,11 @@ import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
+import {fetchSpec} from '../../api/docsClient.js'
+
 const debug = subdebug('openapi:get')
 
 const HTTP_REFERENCE_BASE_URL = 'https://www.sanity.io/docs/http-reference'
-const DOCS_API_URL = 'https://www.sanity.io/docs/api/openapi'
-const FETCH_TIMEOUT_MS = 10_000
 
 /**
  * Deprecated. Preserved as a back-compat shim until the next major:
@@ -77,27 +77,16 @@ export class GetOpenApiCommand extends SanityCommand<typeof GetOpenApiCommand> {
       return
     }
 
-    const content = await this.fetchSpecContent(slug, format)
-    this.log(content)
-  }
-
-  private async fetchSpecContent(slug: string, format: string): Promise<string> {
-    const url = new URL(`${DOCS_API_URL}/${encodeURIComponent(slug)}`)
-    url.searchParams.set('format', format)
-    let response: Response
+    let body: string | null
     try {
-      response = await fetch(url, {signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)})
+      body = await fetchSpec(slug, {format: format as 'json' | 'yaml'})
     } catch (error) {
       debug('openapi get fetch failed', error)
       this.error('The OpenAPI service is currently unavailable. Try again later.', {exit: 1})
     }
-
-    if (response.status === 404) {
+    if (body === null) {
       this.error(`OpenAPI specification "${slug}" not found.`, {exit: 1})
     }
-    if (!response.ok) {
-      this.error('The OpenAPI service is currently unavailable. Try again later.', {exit: 1})
-    }
-    return await response.text()
+    this.log(body)
   }
 }

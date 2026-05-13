@@ -71,13 +71,18 @@ export async function fetchSpecIndex(): Promise<OpenApiSpecIndexEntry[]> {
 }
 
 /**
- * Fetch a single OpenAPI spec by slug. Always requests YAML — the
- * canonical source-of-truth shape. Returns null on 404; throws on
- * other non-2xx statuses.
+ * Fetch a single OpenAPI spec body by slug. Defaults to YAML — the
+ * canonical source-of-truth shape; pass `format: 'json'` for the
+ * docs endpoint's JSON projection (used by the legacy `openapi get`
+ * forwarder). Returns null on 404; throws on other non-2xx statuses.
  */
-export async function fetchSpec(slug: string): Promise<string | null> {
+export async function fetchSpec(
+  slug: string,
+  options: {format?: 'json' | 'yaml'} = {},
+): Promise<string | null> {
+  const format = options.format ?? 'yaml'
   const url = new URL(`${getDocsApiBaseUrl()}/api/openapi/${encodeURIComponent(slug)}`)
-  url.searchParams.set('format', 'yaml')
+  url.searchParams.set('format', format)
 
   const response = await fetch(url, {
     headers: buildHeaders(),

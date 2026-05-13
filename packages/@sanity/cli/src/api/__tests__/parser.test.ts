@@ -1,12 +1,6 @@
 import {describe, expect, test} from 'vitest'
 
-import {
-  classifyCapability,
-  listComponentSchemas,
-  lookupComponentSchema,
-  parseOpenApi,
-  toUrlPatternForm,
-} from '../parser.js'
+import {classifyCapability, parseOpenApi, toUrlPatternForm} from '../parser.js'
 
 const JOBS_SPEC = `
 openapi: 3.1.1
@@ -366,6 +360,29 @@ describe('parseOpenApi — operations', () => {
     expect(jobListen.isStreaming).toBe(true)
   })
 
+  test('detects SSE streaming on any 2xx status, not just 200', async () => {
+    const spec = `
+openapi: 3.1.1
+info:
+  title: T
+  version: '1.0.0'
+servers:
+  - url: "https://api.sanity.io/v1"
+paths:
+  /watch:
+    post:
+      operationId: startWatch
+      responses:
+        '201':
+          content:
+            text/event-stream:
+              schema:
+                type: string
+`
+    const result = await parseOpenApi('t', spec)
+    expect(result.operations[0].isStreaming).toBe(true)
+  })
+
   test('classifies capabilities by method', async () => {
     const result = await parseOpenApi('mutate', MUTATE_SPEC)
     const post = result.operations.find((op) => op.method === 'POST')!
@@ -459,6 +476,43 @@ components:
     ])
   })
 
+  test('operation-level params override path-item-level params on (name, in)', async () => {
+    // Per OpenAPI 3.x — when a (name, in) appears at both levels, the
+    // operation-level one wins, no duplicate row in the output.
+    const spec = `
+openapi: 3.1.1
+info:
+  title: T
+  version: '1.0.0'
+servers:
+  - url: "https://api.sanity.io/v1"
+paths:
+  /things/{dataset}:
+    parameters:
+      - in: path
+        name: dataset
+        required: true
+        description: original (path-item-level)
+        schema:
+          type: string
+    get:
+      operationId: getThing
+      parameters:
+        - in: path
+          name: dataset
+          required: true
+          description: overridden (op-level)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+`
+    const result = await parseOpenApi('t', spec)
+    expect(result.operations[0].pathParams).toHaveLength(1)
+    expect(result.operations[0].pathParams[0].description).toBe('overridden (op-level)')
+  })
+
   test('separates required and optional query params; carries enum + default', async () => {
     const result = await parseOpenApi('query', QUERY_SPEC)
     const op = result.operations[0]
@@ -507,6 +561,49 @@ describe('parseOpenApi — request body', () => {
     const op = result.operations.find((o) => o.operationId === 'classify')!
     expect(op.requestBody?.fields).toEqual([])
     expect(op.requestBody?.refs.toSorted()).toEqual(['ImageInput', 'TextInput'])
+  })
+
+  test('array<$ref> body fields surface the element schema name on `ref`', async () => {
+    // Without this, the `Schemas referenced` footer silently omits
+    // the element type, and agents miss a drill-target.
+    const spec = `
+openapi: 3.1.1
+info:
+  title: T
+  version: '1.0.0'
+servers:
+  - url: "https://api.sanity.io/v1"
+paths:
+  /bulk:
+    post:
+      operationId: bulkCreate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Item'
+      responses:
+        '200':
+          description: ok
+components:
+  schemas:
+    Item:
+      type: object
+      properties:
+        id: { type: string }
+`
+    const result = await parseOpenApi('t', spec)
+    const op = result.operations[0]
+    const items = op.requestBody!.fields.find((f) => f.name === 'items')!
+    expect(items.type).toBe('Item[]')
+    expect(items.ref).toBe('Item')
   })
 
   test('non-JSON body kept opaque (schemaSummary names the content type)', async () => {
@@ -665,27 +762,21 @@ describe('toUrlPatternForm', () => {
   })
 })
 
-describe('schema lookup', () => {
-  test('lookupComponentSchema returns the named schema object', () => {
-    const schema = lookupComponentSchema(REF_SPEC, 'Thing') as Record<string, unknown>
-    expect(schema?.type).toBe('object')
-    expect(schema?.properties).toMatchObject({id: {type: 'string'}, name: {type: 'string'}})
-  })
-
-  test('lookupComponentSchema returns null for unknown names', () => {
-    expect(lookupComponentSchema(REF_SPEC, 'Nope')).toBeNull()
-  })
-
-  test('listComponentSchemas enumerates available schema names', () => {
-    expect(listComponentSchemas(REF_SPEC).toSorted()).toEqual([
+describe('parseOpenApi — schemas', () => {
+  test('threads components.schemas through ParsedSpec.schemas', async () => {
+    const result = await parseOpenApi('ref', REF_SPEC)
+    expect(Object.keys(result.schemas).toSorted()).toEqual([
       'CreateThingRequest',
       'ErrorResponse',
       'Thing',
     ])
+    const thing = result.schemas.Thing as Record<string, unknown>
+    expect(thing.type).toBe('object')
   })
 
-  test('listComponentSchemas returns empty array when components.schemas missing', () => {
-    const spec = `openapi: 3.1.1\ninfo: { title: T, version: '1' }\npaths: {}\n`
-    expect(listComponentSchemas(spec)).toEqual([])
+  test('returns an empty object when components.schemas is missing', async () => {
+    const spec = `openapi: 3.1.1\ninfo:\n  title: T\n  version: '1'\nservers:\n  - url: https://api.sanity.io/v1\npaths: {}\n`
+    const result = await parseOpenApi('t', spec)
+    expect(result.schemas).toEqual({})
   })
 })
