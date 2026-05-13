@@ -3,6 +3,7 @@ import {SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
 import {fetchSpecIndex, HTTP_REFERENCE_URL} from '../../api/docsClient.js'
+import {DOCS_SERVICE_UNAVAILABLE} from '../../api/parser.js'
 
 const debug = subdebug('openapi:list')
 
@@ -94,7 +95,7 @@ export class ListOpenApiCommand extends SanityCommand<typeof ListOpenApiCommand>
       return index.map(({description, slug, title}) => ({description, slug, title}))
     } catch (error) {
       debug('openapi list failed', error)
-      this.error('The OpenAPI service is currently unavailable. Try again later.', {exit: 1})
+      this.error(DOCS_SERVICE_UNAVAILABLE, {exit: 1})
     }
   }
 }

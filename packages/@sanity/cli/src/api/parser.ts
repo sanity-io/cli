@@ -272,7 +272,7 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedOp
  * Specs are fetched in parallel — independent requests, no reason to
  * serialize.
  */
-export async function loadOperationsIndex(
+async function loadOperationsIndex(
   options: {onlySlug?: string} = {},
 ): Promise<OperationIndexEntry[]> {
   const index = await fetchSpecIndex()
@@ -295,6 +295,31 @@ async function fetchAndParseEntry(entry: OpenApiSpecIndexEntry): Promise<Operati
   } catch (error) {
     debug(`skipping spec "${entry.slug}" — fetch/parse error`, error)
     return []
+  }
+}
+
+/**
+ * The user-facing message every command surfaces when the docs
+ * service is unreachable. Lives next to the loader so the wrappers
+ * in command files don't each redefine their own copy.
+ */
+export const DOCS_SERVICE_UNAVAILABLE =
+  'The OpenAPI service is currently unavailable. Try again later.'
+
+/**
+ * Convenience wrapper around `loadOperationsIndex` that re-throws
+ * network / parse errors as a single user-friendly Error. Saves
+ * every consumer command from re-implementing the same try/catch
+ * + `this.error(…)` shape.
+ */
+export async function loadOperationsIndexOrThrow(
+  options: {onlySlug?: string} = {},
+): Promise<OperationIndexEntry[]> {
+  try {
+    return await loadOperationsIndex(options)
+  } catch (error) {
+    debug('loadOperationsIndex failed', error)
+    throw new Error(DOCS_SERVICE_UNAVAILABLE, {cause: error})
   }
 }
 

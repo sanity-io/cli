@@ -18,6 +18,11 @@ const FETCH_TIMEOUT_MS = 10_000
  */
 export const HTTP_REFERENCE_URL = 'https://www.sanity.io/docs/http-reference'
 
+/** Build the public docs URL for a single spec slug. */
+export function docsUrlFor(slug: string): string {
+  return `${HTTP_REFERENCE_URL}/${encodeURIComponent(slug)}`
+}
+
 /** One entry from the docs index endpoint (`/api/openapi`). */
 export interface OpenApiSpecIndexEntry {
   description: string

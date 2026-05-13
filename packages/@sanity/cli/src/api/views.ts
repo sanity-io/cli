@@ -8,7 +8,7 @@
 
 import {Table} from 'console-table-printer'
 
-import {HTTP_REFERENCE_URL} from './docsClient.js'
+import {docsUrlFor} from './docsClient.js'
 import {type OperationIndexEntry} from './parser.js'
 
 interface OperationJsonRow {
@@ -27,7 +27,7 @@ interface OperationJsonRow {
 export function toOperationJsonRow(op: OperationIndexEntry): OperationJsonRow {
   return {
     capability: op.capability,
-    docsUrl: `${HTTP_REFERENCE_URL}/${encodeURIComponent(op.spec)}`,
+    docsUrl: docsUrlFor(op.spec),
     endpoint: op.endpoint,
     isStreaming: op.isStreaming,
     method: op.method,

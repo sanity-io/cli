@@ -1,12 +1,10 @@
 import {Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 import open from 'open'
 
 import {HTTP_REFERENCE_URL} from '../../api/docsClient.js'
-import {loadOperationsIndex} from '../../api/parser.js'
+import {loadOperationsIndexOrThrow} from '../../api/parser.js'
 import {printOperationsTable, toOperationJsonRow} from '../../api/views.js'
-
-const debug = subdebug('api:list')
 
 export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
   static override description = 'List all OpenAPI operations across the public Sanity HTTP specs'
@@ -31,7 +29,7 @@ export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
   ]
 
   static override flags = {
-    json: Flags.boolean({description: 'Emit JSON: one entry per operation'}),
+    json: Flags.boolean({description: 'Emit JSON: one row per operation'}),
     spec: Flags.string({description: 'Narrow to a single spec (by slug)'}),
     web: Flags.boolean({char: 'w', description: 'Open the HTTP Reference in browser'}),
   }
@@ -45,7 +43,7 @@ export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
       return
     }
 
-    const operations = await this.loadOperations(flags.spec)
+    const operations = await loadOperationsIndexOrThrow({onlySlug: flags.spec})
 
     if (flags.json) {
       this.log(
@@ -68,14 +66,5 @@ export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
     }
 
     printOperationsTable(operations)
-  }
-
-  private async loadOperations(specFilter: string | undefined) {
-    try {
-      return await loadOperationsIndex({onlySlug: specFilter})
-    } catch (error) {
-      debug('list failed', error)
-      this.error('The OpenAPI service is currently unavailable. Try again later.', {exit: 1})
-    }
   }
 }
