@@ -4,9 +4,16 @@ import {type Editor} from '../../mcp/types.js'
 import {SANITY_SKILLS_REPO, setupSkills} from '../setupSkills.js'
 
 const mockExeca = vi.hoisted(() => vi.fn())
+const mockMkdir = vi.hoisted(() => vi.fn())
 
 vi.mock('execa', () => ({
   execa: mockExeca,
+}))
+
+vi.mock('node:fs/promises', () => ({
+  default: {
+    mkdir: mockMkdir,
+  },
 }))
 
 function editor(name: Editor['name']): Editor {
@@ -51,6 +58,7 @@ describe('setupSkills', () => {
     })
 
     expect(mockExeca).toHaveBeenCalledTimes(1)
+    expect(mockMkdir).toHaveBeenCalledWith(PROJECT_DIR, {recursive: true})
     expect(mockExeca).toHaveBeenCalledWith(
       'npx',
       ['-y', 'skills', 'add', SANITY_SKILLS_REPO, '-a', 'cursor', '-a', 'claude-code', '-y'],
