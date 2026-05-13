@@ -136,14 +136,28 @@ export interface ParsedSpec {
    * `$ref` pointers without re-parsing the YAML.
    */
   schemas: Record<string, unknown>
+  /**
+   * Resolved `servers[0].url` template with build-time defaults
+   * substituted, context vars (`:projectId` / `:dataset` /
+   * `:organizationId`) preserved as URL Pattern placeholders.
+   *
+   * Used by `sanity api <endpoint>` to derive the outbound host
+   * (e.g. `https://api.sanity.io/v2021-06-07`,
+   * `https://:projectId.api.sanity.io/v2024-01-01`).
+   */
+  serverTemplate: string
   slug: string
   title: string
   /** `info.version` (may be a meaningless semver — the endpoint version comes from the server URL). */
   version: string
 }
 
-/** Flat operations index — one row per (spec, operation). */
-export type OperationIndexEntry = ParsedOperation & {spec: string}
+/**
+ * Flat operations index — one row per (spec, operation), with the
+ * owning spec's slug and resolved server template attached so
+ * downstream consumers can route requests without a second fetch.
+ */
+export type OperationIndexEntry = ParsedOperation & {serverTemplate: string; spec: string}
 
 /* ---------------------------------------------------------------------- *
  *  URL Pattern helpers                                                    *
@@ -273,6 +287,7 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
     preserveContext: true,
   })
   const serverPathSegment = extractServerPathSegment(serverUrlWithContextVars)
+  const serverTemplate = toUrlPatternForm(serverUrlWithContextVars)
 
   const operations: ParsedOperation[] = []
   for (const [rawPath, pathItem] of Object.entries(doc.paths ?? {})) {
@@ -327,6 +342,7 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
     description: doc.info?.description ?? '',
     operations,
     schemas: (doc.components?.schemas as Record<string, unknown> | undefined) ?? {},
+    serverTemplate,
     slug,
     title: doc.info?.title || slug,
     version: doc.info?.version ?? '',
@@ -416,7 +432,11 @@ async function fetchAndParseEntry(entry: OpenApiSpecIndexEntry): Promise<Operati
     const yaml = await fetchSpec(entry.slug)
     if (yaml === null) return []
     const parsed = await parseOpenApi(entry.slug, yaml)
-    return parsed.operations.map((op) => ({...op, spec: entry.slug}))
+    return parsed.operations.map((op) => ({
+      ...op,
+      serverTemplate: parsed.serverTemplate,
+      spec: entry.slug,
+    }))
   } catch (error) {
     debug(`skipping spec "${entry.slug}" — fetch/parse error`, error)
     return []
