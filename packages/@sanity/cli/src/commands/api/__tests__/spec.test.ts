@@ -1,46 +1,10 @@
 import {testCommand} from '@sanity/cli-test'
-import nock, {cleanAll, pendingMocks} from 'nock'
+import nock from 'nock'
 import open from 'open'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {describe, expect, test} from 'vitest'
 
 import {ApiSpecCommand} from '../spec.js'
-
-const JOBS_SPEC_YAML = `
-openapi: 3.1.1
-info:
-  title: Jobs API
-  version: 'v2021-06-07'
-  description: Manage jobs
-security:
-  - BearerAuth: []
-servers:
-  - url: 'https://api.sanity.io/{apiVersion}'
-    variables:
-      apiVersion:
-        default: 'v2021-06-07'
-paths:
-  /jobs/{jobId}:
-    get:
-      summary: Get the status of a job
-      operationId: jobStatus
-      parameters:
-        - in: path
-          name: jobId
-          required: true
-          description: The job identifier.
-          schema:
-            type: string
-      responses:
-        '200':
-          description: ok
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id: { type: string }
-                  state: { type: string }
-`
+import {JOBS_SPEC_YAML, mockIndexAndSpecs, setupApiTestCleanup} from './fixtures.js'
 
 const OPTIONAL_QUERY_SPEC_YAML = `
 openapi: 3.1.1
@@ -107,28 +71,11 @@ components:
         name: { type: string }
 `
 
-function mockIndexAndSpec(slug: string, yaml: string, title = slug) {
-  nock('https://www.sanity.io')
-    .get('/docs/api/openapi')
-    .reply(200, {
-      specs: [{description: '', revision: '', slug, title}],
-    })
-  nock('https://www.sanity.io')
-    .get(`/docs/api/openapi/${slug}`)
-    .query({format: 'yaml'})
-    .reply(200, yaml)
-}
-
 describe('#api:spec', () => {
-  afterEach(() => {
-    vi.clearAllMocks()
-    const pending = pendingMocks()
-    cleanAll()
-    expect(pending, 'pending mocks').toEqual([])
-  })
+  setupApiTestCleanup()
 
   test('default renders the structured human view', async () => {
-    mockIndexAndSpec('jobs', JOBS_SPEC_YAML, 'Jobs API')
+    mockIndexAndSpecs([{slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML}])
 
     const {stdout} = await testCommand(ApiSpecCommand, ['jobs'])
 
@@ -146,7 +93,7 @@ describe('#api:spec', () => {
   })
 
   test('--format=json emits the structured per-operation envelope', async () => {
-    mockIndexAndSpec('jobs', JOBS_SPEC_YAML, 'Jobs API')
+    mockIndexAndSpecs([{slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML}])
 
     const {stdout} = await testCommand(ApiSpecCommand, ['jobs', '--format=json'])
 
@@ -174,7 +121,7 @@ describe('#api:spec', () => {
   })
 
   test('--format=openapi passes through the raw YAML', async () => {
-    mockIndexAndSpec('jobs', JOBS_SPEC_YAML)
+    mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_SPEC_YAML}])
 
     const {stdout} = await testCommand(ApiSpecCommand, ['jobs', '--format=openapi'])
     expect(stdout).toContain('openapi: 3.1.1')
@@ -184,7 +131,7 @@ describe('#api:spec', () => {
   })
 
   test('--operation narrows to a single operation', async () => {
-    mockIndexAndSpec('jobs', JOBS_SPEC_YAML)
+    mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_SPEC_YAML}])
 
     const {stdout} = await testCommand(ApiSpecCommand, [
       'jobs',
@@ -212,7 +159,7 @@ describe('#api:spec', () => {
   })
 
   test('--operation errors with known operationIds on unknown id', async () => {
-    mockIndexAndSpec('jobs', JOBS_SPEC_YAML)
+    mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_SPEC_YAML}])
 
     const {error} = await testCommand(ApiSpecCommand, ['jobs', '--operation=nope'])
     expect(error).toBeInstanceOf(Error)
@@ -224,7 +171,7 @@ describe('#api:spec', () => {
     // Agents are the primary consumer following a `$ref` pointer; JSON
     // is parseable without a YAML library. Humans opt into YAML with
     // `--format=yaml`.
-    mockIndexAndSpec('refs', REF_SPEC_YAML)
+    mockIndexAndSpecs([{slug: 'refs', yaml: REF_SPEC_YAML}])
 
     const {stdout} = await testCommand(ApiSpecCommand, ['refs', '--schema', 'Thing'])
     const parsed = JSON.parse(stdout)
@@ -235,7 +182,7 @@ describe('#api:spec', () => {
   })
 
   test('--schema --format=yaml prints the schema as YAML', async () => {
-    mockIndexAndSpec('refs', REF_SPEC_YAML)
+    mockIndexAndSpecs([{slug: 'refs', yaml: REF_SPEC_YAML}])
 
     const {stdout} = await testCommand(ApiSpecCommand, [
       'refs',
@@ -251,7 +198,7 @@ describe('#api:spec', () => {
   })
 
   test('--schema --format=json prints the schema as JSON (matches default)', async () => {
-    mockIndexAndSpec('refs', REF_SPEC_YAML)
+    mockIndexAndSpecs([{slug: 'refs', yaml: REF_SPEC_YAML}])
 
     const {stdout} = await testCommand(ApiSpecCommand, [
       'refs',
@@ -267,7 +214,7 @@ describe('#api:spec', () => {
   })
 
   test('--schema errors with known schemas on unknown name', async () => {
-    mockIndexAndSpec('refs', REF_SPEC_YAML)
+    mockIndexAndSpecs([{slug: 'refs', yaml: REF_SPEC_YAML}])
 
     const {error} = await testCommand(ApiSpecCommand, ['refs', '--schema', 'Nope'])
     expect(error).toBeInstanceOf(Error)
@@ -281,7 +228,7 @@ describe('#api:spec', () => {
     // params used to render a dead `Query params (required): (none)`
     // block. The gate keeps the required block out entirely when there's
     // nothing to show.
-    mockIndexAndSpec('search', OPTIONAL_QUERY_SPEC_YAML, 'Search API')
+    mockIndexAndSpecs([{slug: 'search', title: 'Search API', yaml: OPTIONAL_QUERY_SPEC_YAML}])
 
     const {stdout} = await testCommand(ApiSpecCommand, ['search'])
     expect(stdout).not.toContain('Query params (required)')
@@ -290,7 +237,7 @@ describe('#api:spec', () => {
   })
 
   test('schemas-referenced footer points back at --schema', async () => {
-    mockIndexAndSpec('refs', REF_SPEC_YAML)
+    mockIndexAndSpecs([{slug: 'refs', yaml: REF_SPEC_YAML}])
 
     const {stdout} = await testCommand(ApiSpecCommand, ['refs'])
     expect(stdout).toContain('Schemas referenced: CreateThingRequest, Thing')

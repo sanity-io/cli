@@ -60,16 +60,21 @@ export function setupApiTestCleanup(): void {
 }
 
 /**
- * Minimum-viable Jobs spec: one `GET /jobs/{jobId}` with a required path
- * parameter and an optional query parameter. Big enough to exercise
- * capability classification, basic table rendering, and operation
- * resolution; small enough that tests don't bury their intent in YAML.
+ * Canonical Jobs spec: one `GET /jobs/{jobId}` with a described path
+ * parameter, an optional query parameter, a bearer-auth requirement,
+ * and a typed JSON 200 response. Exercises the full spread —
+ * capability classification, table rendering, operation resolution,
+ * structured view, parameter/response rendering. Kept just complex
+ * enough that every command's tests can share it.
  */
 export const JOBS_SPEC_YAML = `
 openapi: 3.1.1
 info:
   title: Jobs API
   version: 'v2021-06-07'
+  description: Manage jobs
+security:
+  - BearerAuth: []
 servers:
   - url: 'https://api.sanity.io/{apiVersion}'
     variables:
@@ -84,6 +89,7 @@ paths:
         - in: path
           name: jobId
           required: true
+          description: The job identifier.
           schema:
             type: string
         - in: query
@@ -94,6 +100,13 @@ paths:
       responses:
         '200':
           description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  state: { type: string }
 `
 
 /**
