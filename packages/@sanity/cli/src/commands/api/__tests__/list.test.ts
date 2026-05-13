@@ -26,6 +26,49 @@ paths:
           required: true
           schema:
             type: string
+        - in: query
+          name: detail
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+`
+
+const MUTATE_SPEC_YAML = `
+openapi: 3.1.1
+info:
+  title: Mutate API
+  version: 'v2024-01-01'
+servers:
+  - url: 'https://api.sanity.io/{apiVersion}'
+    variables:
+      apiVersion:
+        default: 'v2024-01-01'
+paths:
+  /data/mutate/{dataset}:
+    post:
+      summary: Apply mutations
+      operationId: mutateDocuments
+      parameters:
+        - in: path
+          name: dataset
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+    delete:
+      summary: Drop the dataset
+      operationId: dropDataset
+      parameters:
+        - in: path
+          name: dataset
+          required: true
+          schema:
+            type: string
       responses:
         '200':
           description: ok
@@ -66,10 +109,12 @@ describe('#api:list', () => {
     expect(stdout).toContain('METHOD')
     expect(stdout).toContain('ENDPOINT')
     expect(stdout).toContain('SPEC')
+    expect(stdout).toContain('OPERATION')
     expect(stdout).toContain('DESCRIPTION')
     expect(stdout).toContain('GET')
     expect(stdout).toContain('v2021-06-07/jobs/:jobId')
     expect(stdout).toContain('jobs')
+    expect(stdout).toContain('jobStatus')
     expect(stdout).toContain('Get the status of a job')
   })
 
@@ -88,11 +133,82 @@ describe('#api:list', () => {
       isStreaming: false,
       method: 'GET',
       operationId: 'jobStatus',
+      optionalQueryParams: ['detail'],
       pathParams: ['jobId'],
       requiredQueryParams: [],
       spec: 'jobs',
       summary: 'Get the status of a job',
     })
+  })
+
+  test('--method narrows to a single HTTP verb', async () => {
+    mockIndexAndSpecs([
+      {slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML},
+      {slug: 'mutate', title: 'Mutate API', yaml: MUTATE_SPEC_YAML},
+    ])
+
+    const {stdout} = await testCommand(ApiListCommand, ['--method=POST', '--json'])
+    const parsed = JSON.parse(stdout)
+    expect(parsed.every((op: {method: string}) => op.method === 'POST')).toBe(true)
+    expect(parsed).toHaveLength(1)
+    expect(parsed[0].operationId).toBe('mutateDocuments')
+  })
+
+  test('--capability narrows to one capability bucket', async () => {
+    mockIndexAndSpecs([
+      {slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML},
+      {slug: 'mutate', title: 'Mutate API', yaml: MUTATE_SPEC_YAML},
+    ])
+
+    const {stdout} = await testCommand(ApiListCommand, ['--capability=destructive', '--json'])
+    const parsed = JSON.parse(stdout)
+    expect(parsed.every((op: {capability: string}) => op.capability === 'destructive')).toBe(true)
+    expect(parsed.map((op: {operationId: string}) => op.operationId)).toEqual(['dropDataset'])
+  })
+
+  test('--grep matches substring across endpoint, operationId, and summary', async () => {
+    mockIndexAndSpecs([
+      {slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML},
+      {slug: 'mutate', title: 'Mutate API', yaml: MUTATE_SPEC_YAML},
+    ])
+
+    // 'mutations' only appears in `mutateDocuments`'s summary
+    // ("Apply mutations") — neither endpoint nor `dropDataset`'s
+    // summary mentions the word, so the filter narrows cleanly.
+    const {stdout} = await testCommand(ApiListCommand, ['--grep=mutations', '--json'])
+    const parsed = JSON.parse(stdout)
+    expect(parsed.map((op: {operationId: string}) => op.operationId)).toEqual(['mutateDocuments'])
+  })
+
+  test('--grep is case-insensitive', async () => {
+    mockIndexAndSpecs([{slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML}])
+
+    const {stdout} = await testCommand(ApiListCommand, ['--grep=JOBSTATUS', '--json'])
+    const parsed = JSON.parse(stdout)
+    expect(parsed).toHaveLength(1)
+    expect(parsed[0].operationId).toBe('jobStatus')
+  })
+
+  test('--method + --grep combine (AND semantics)', async () => {
+    mockIndexAndSpecs([
+      {slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML},
+      {slug: 'mutate', title: 'Mutate API', yaml: MUTATE_SPEC_YAML},
+    ])
+
+    const {stdout} = await testCommand(ApiListCommand, [
+      '--method=DELETE',
+      '--grep=dataset',
+      '--json',
+    ])
+    const parsed = JSON.parse(stdout)
+    expect(parsed.map((op: {operationId: string}) => op.operationId)).toEqual(['dropDataset'])
+  })
+
+  test('filters with no matches surface a filter-aware empty message', async () => {
+    mockIndexAndSpecs([{slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML}])
+
+    const {stdout} = await testCommand(ApiListCommand, ['--method=DELETE'])
+    expect(stdout).toContain('No operations match method=DELETE')
   })
 
   test('--spec narrows to a single spec and only fetches that spec', async () => {
@@ -129,7 +245,7 @@ describe('#api:list', () => {
     // No per-spec mock — the unknown slug shouldn't trigger a fetch.
 
     const {stdout} = await testCommand(ApiListCommand, ['--spec=nope'])
-    expect(stdout).toContain('No operations found for spec "nope"')
+    expect(stdout).toContain('No operations match spec="nope"')
   })
 
   test('--web opens browser (open is globally mocked)', async () => {

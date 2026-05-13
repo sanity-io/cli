@@ -43,6 +43,7 @@ interface ParsedOperation {
   /** Uppercase HTTP method: `GET`, `POST`, … */
   method: string
   operationId: string
+  optionalQueryParams: string[]
   /** Native OpenAPI path with `{name}` placeholders. */
   path: string
   pathParams: string[]
@@ -137,7 +138,7 @@ function isParameterObject(p: unknown): p is ParameterObject {
 function collectParamNames(
   params: (OpenAPIV3.ReferenceObject | ParameterObject)[] | undefined,
   location: 'header' | 'path' | 'query',
-  opts?: {requiredOnly?: boolean},
+  opts?: {required?: boolean},
 ): string[] {
   if (!params) return []
   // Per OpenAPI 3.x, operation-level params override path-item-level
@@ -147,7 +148,7 @@ function collectParamNames(
   for (const p of params) {
     if (!isParameterObject(p)) continue
     if (p.in !== location) continue
-    if (opts?.requiredOnly && p.required !== true) continue
+    if (opts?.required !== undefined && (p.required === true) !== opts.required) continue
     if (p.name) out.add(p.name)
   }
   return [...out]
@@ -222,7 +223,8 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedOp
 
       const allParams = [...(commonParams ?? []), ...(op.parameters ?? [])]
       const pathParams = collectParamNames(allParams, 'path')
-      const requiredQueryParams = collectParamNames(allParams, 'query', {requiredOnly: true})
+      const requiredQueryParams = collectParamNames(allParams, 'query', {required: true})
+      const optionalQueryParams = collectParamNames(allParams, 'query', {required: false})
 
       const opPath = rawPath.replace(/^\/+/, '')
       const combined = serverPathSegment ? `${serverPathSegment}/${opPath}` : opPath
@@ -234,6 +236,7 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedOp
         isStreaming: isStreamingResponse(op.responses),
         method: methodUpper,
         operationId,
+        optionalQueryParams,
         path: rawPath,
         pathParams,
         requiredQueryParams,

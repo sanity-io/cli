@@ -18,6 +18,7 @@ interface OperationJsonRow {
   isStreaming: boolean
   method: string
   operationId: string
+  optionalQueryParams: string[]
   pathParams: string[]
   requiredQueryParams: string[]
   spec: string
@@ -32,6 +33,7 @@ export function toOperationJsonRow(op: OperationIndexEntry): OperationJsonRow {
     isStreaming: op.isStreaming,
     method: op.method,
     operationId: op.operationId,
+    optionalQueryParams: op.optionalQueryParams,
     pathParams: op.pathParams,
     requiredQueryParams: op.requiredQueryParams,
     spec: op.spec,
@@ -40,7 +42,12 @@ export function toOperationJsonRow(op: OperationIndexEntry): OperationJsonRow {
 }
 
 /**
- * Print operations as a 4-column human table.
+ * Print operations as a 5-column human table.
+ *
+ * `OPERATION` (the operationId) is included so a user reading the
+ * table can cross-reference into `sanity api spec --operation=<id>`
+ * without first re-fetching the JSON form.
+ *
  * Writes directly to stdout; does not return a string.
  */
 export function printOperationsTable(operations: OperationIndexEntry[]): void {
@@ -49,6 +56,7 @@ export function printOperationsTable(operations: OperationIndexEntry[]): void {
       {alignment: 'left', name: 'method', title: 'METHOD'},
       {alignment: 'left', name: 'endpoint', title: 'ENDPOINT'},
       {alignment: 'left', name: 'spec', title: 'SPEC'},
+      {alignment: 'left', name: 'operation', title: 'OPERATION'},
       {alignment: 'left', name: 'description', title: 'DESCRIPTION'},
     ],
   })
@@ -58,6 +66,7 @@ export function printOperationsTable(operations: OperationIndexEntry[]): void {
       description: `${op.summary}${formatTagSuffix(op)}`,
       endpoint: op.endpoint,
       method: op.method,
+      operation: op.operationId,
       spec: op.spec,
     })
   }
