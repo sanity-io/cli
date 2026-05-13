@@ -187,7 +187,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
     workDir,
   })
 
-  const mcpResult = await setupMCP({mode: options.mcpMode})
+  const mcpResult = await setupMCP({cwd: outputPath, mode: options.mcpMode})
 
   trace.log({
     configuredEditors: mcpResult.configuredEditors,

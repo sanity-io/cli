@@ -111,7 +111,7 @@ describe('setupMCP', () => {
     expect(mockPromptForMCPSetup).toHaveBeenCalledWith(editors)
   })
 
-  test('invokes setupSkills with the configured editors after a successful MCP setup', async () => {
+  test('invokes setupSkills with the configured editors after a successful MCP setup when cwd is provided', async () => {
     const editors = [
       {authStatus: 'unknown', configured: false, name: 'Cursor'},
       {authStatus: 'unknown', configured: false, name: 'Claude Code'},
@@ -125,11 +125,25 @@ describe('setupMCP', () => {
       skipped: false,
     })
 
-    const result = await setupMCP({mode: 'auto'})
+    const result = await setupMCP({cwd: '/tmp/project', mode: 'auto'})
 
     expect(mockSetupSkills).toHaveBeenCalledTimes(1)
-    expect(mockSetupSkills).toHaveBeenCalledWith({editors})
+    expect(mockSetupSkills).toHaveBeenCalledWith({cwd: '/tmp/project', editors})
     expect(result.installedSkillsCliAgents).toEqual(['cursor', 'claude-code'])
+    expect(result.skillsError).toBeUndefined()
+  })
+
+  test('does not invoke setupSkills when cwd is not provided (e.g. sanity mcp configure)', async () => {
+    const editors = [{authStatus: 'unknown', configured: false, name: 'Cursor'}]
+    mockDetectAvailableEditors.mockResolvedValue(editors)
+    mockValidateEditorTokens.mockResolvedValue(undefined)
+    mockCreateMCPToken.mockResolvedValue('test-token')
+    mockWriteMCPConfig.mockResolvedValue(undefined)
+
+    const result = await setupMCP({mode: 'auto'})
+
+    expect(mockSetupSkills).not.toHaveBeenCalled()
+    expect(result.installedSkillsCliAgents).toEqual([])
     expect(result.skillsError).toBeUndefined()
   })
 
@@ -146,7 +160,7 @@ describe('setupMCP', () => {
       skipped: false,
     })
 
-    const result = await setupMCP({mode: 'auto'})
+    const result = await setupMCP({cwd: '/tmp/project', mode: 'auto'})
 
     expect(result.configuredEditors).toEqual(['Cursor'])
     expect(result.skipped).toBe(false)
@@ -154,10 +168,10 @@ describe('setupMCP', () => {
     expect(result.skillsError).toBe(skillsError)
   })
 
-  test('does not invoke setupSkills when no editors are configured', async () => {
+  test('does not invoke setupSkills when no editors are detected', async () => {
     mockDetectAvailableEditors.mockResolvedValue([])
 
-    await setupMCP({mode: 'auto'})
+    await setupMCP({cwd: '/tmp/project', mode: 'auto'})
 
     expect(mockSetupSkills).not.toHaveBeenCalled()
   })

@@ -16,6 +16,14 @@ const NO_EDITORS_DETECTED_MESSAGE = `Couldn't auto-configure Sanity MCP server f
 
 interface MCPSetupOptions {
   /**
+   * Working directory to install agent skills into. When provided, agent skills
+   * are installed into this directory after MCP is configured. When omitted
+   * (e.g. `sanity mcp configure`), skills installation is skipped — we don't
+   * want to write skill files into an arbitrary cwd like `~/dev`.
+   */
+  cwd?: string
+
+  /**
    * Whether the user explicitly requested MCP configuration (e.g. `sanity mcp configure`).
    * When true, shows status messages even when there's nothing to do.
    * When false/undefined (e.g. called from `sanity init`), stays quiet.
@@ -50,7 +58,7 @@ interface MCPSetupResult {
  * Opt-out by default: runs automatically unless skip option is set
  */
 export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResult> {
-  const {explicit = false, mode = 'prompt'} = options ?? {}
+  const {cwd, explicit = false, mode = 'prompt'} = options ?? {}
 
   // 1. Check for explicit opt-out
   if (mode === 'skip') {
@@ -91,17 +99,24 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
 
   if (actionable.length === 0) {
     mcpDebug('All editors configured with valid credentials')
-    const alreadyConfiguredEditors = editors
-      .filter((e) => e.configured && e.authStatus === 'valid')
-      .map((e) => e.name)
+    const alreadyConfiguredEditorObjects = editors.filter(
+      (e) => e.configured && e.authStatus === 'valid',
+    )
+    const alreadyConfiguredEditors = alreadyConfiguredEditorObjects.map((e) => e.name)
     if (explicit) {
       ux.stdout(`${logSymbols.success} All detected editors are already configured`)
     }
+
+    const skillsResult = cwd
+      ? await setupSkills({cwd, editors: alreadyConfiguredEditorObjects})
+      : undefined
+
     return {
       alreadyConfiguredEditors,
       configuredEditors: [],
       detectedEditors,
-      installedSkillsCliAgents: [],
+      installedSkillsCliAgents: skillsResult?.installedAgents ?? [],
+      skillsError: skillsResult?.error,
       skipped: true,
     }
   }
@@ -182,16 +197,19 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   ux.stdout(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
 
   // 8. Install Sanity agent skills for the same editors (best-effort)
-  const skillsResult = await setupSkills({
-    editors: selected.filter((editor) => configuredEditors.includes(editor.name)),
-  })
+  const skillsResult = cwd
+    ? await setupSkills({
+        cwd,
+        editors: selected.filter((editor) => configuredEditors.includes(editor.name)),
+      })
+    : undefined
 
   return {
     alreadyConfiguredEditors,
     configuredEditors,
     detectedEditors,
-    installedSkillsCliAgents: skillsResult.installedAgents,
-    skillsError: skillsResult.error,
+    installedSkillsCliAgents: skillsResult?.installedAgents ?? [],
+    skillsError: skillsResult?.error,
     skipped: false,
   }
 }

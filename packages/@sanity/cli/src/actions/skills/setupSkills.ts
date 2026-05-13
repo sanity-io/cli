@@ -19,6 +19,13 @@ export const SANITY_SKILLS_REPO = 'sanity-io/agent-toolkit'
 
 interface SetupSkillsOptions {
   /**
+   * Working directory in which to run `npx skills add`. Required so skills are
+   * always written into a concrete project directory rather than wherever the
+   * user happened to invoke the CLI from (e.g. `~/dev`).
+   */
+  cwd: string
+
+  /**
    * Editors that MCP was (or will be) configured for. Skills will be installed
    * for each editor's mapped `skillsCliAgent`.
    */
@@ -47,7 +54,7 @@ interface SetupSkillsResult {
  * best-effort and should never abort MCP setup or `sanity init`.
  */
 export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSkillsResult> {
-  const {editors, mode = 'auto'} = options
+  const {cwd, editors, mode = 'auto'} = options
 
   if (mode === 'skip') {
     skillsDebug('Skipping skills installation (mode: skip)')
@@ -78,7 +85,7 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
   skillsDebug('Running: npx %s', args.join(' '))
 
   try {
-    const result = await execa('npx', args, {stdio: 'pipe', timeout: 90_000})
+    const result = await execa('npx', args, {cwd, stdio: 'pipe', timeout: 90_000})
     skillsDebug('skills stdout: %s', result.stdout)
     skillsDebug('skills stderr: %s', result.stderr)
     ux.stdout(`${logSymbols.success} Installed Sanity agent skills for ${uniqueAgents.join(', ')}`)
