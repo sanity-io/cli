@@ -3,7 +3,13 @@ import {getCliToken, SanityCommand} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {buildRequestBody, parseHeaderFlags} from '../../api/body.js'
-import {composeEndpointUrl} from '../../api/endpointUrl.js'
+import {
+  collectContextValues,
+  formatMalformedQueryError,
+  formatMethodNotAllowedError,
+  formatNoMatchError,
+  formatPreflightError,
+} from '../../api/errors.js'
 import {loadOperationsIndexOrThrow, type OperationIndexEntry} from '../../api/parser.js'
 import {type PreflightIssue, runPreflight} from '../../api/preflight.js'
 import {buildRequestUrl, sendApiRequest, streamApiResponse} from '../../api/request.js'
@@ -322,35 +328,7 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     context: Record<string, string>,
     path: string,
   ): never {
-    switch (issue.kind) {
-      case 'missing-required-query': {
-        // Endpoints with a `query` parameter (e.g. /data/query, /data/listen)
-        // take it as a GROQ filter — the dedicated `--query` flag exists
-        // specifically for that, so we surface it instead of the generic
-        // `-q query=<value>` route when applicable.
-        const hint = issue.names.includes('query')
-          ? `Hint: pass the GROQ filter with --query '<groq>' (e.g. --query '*[_type=="post"]'). For other params, use -q name=value.`
-          : `Hint: pass with -q name=value.`
-        this.error(
-          `Missing required query parameter(s): ${issue.names.join(', ')}\n` +
-            `${hint}\nSee: sanity api spec ${operation.spec} ` +
-            `--operation=${operation.operationId} --format=json`,
-          {exit: 1},
-        )
-        break
-      }
-      case 'unfilled-placeholder': {
-        this.error(formatUnfilledPlaceholders(issue.names, operation, context, path), {exit: 1})
-        break
-      }
-      default: {
-        const _exhaustive: never = issue
-        throw new Error(`Unhandled preflight issue: ${JSON.stringify(_exhaustive)}`)
-      }
-    }
-    // `this.error()` is `never`; the explicit throw keeps the TS narrowing
-    // honest in case someone replaces it with a non-fatal logger.
-    throw new Error('unreachable')
+    this.error(formatPreflightError(issue, operation, context, path), {exit: 1})
   }
 
   private resolveMatch(
@@ -360,25 +338,13 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
   ): {inlineQuery: string; operation: OperationIndexEntry; path: string} {
     const result = resolveEndpoint(rawEndpoint, method, index)
     if (result.ok) return result.resolved
-
     if (result.kind === 'method-not-allowed') {
       this.error(
-        `Method ${result.userMethod} not allowed on "${result.userPath}". ` +
-          `Available: ${result.available.join(', ')}.`,
+        formatMethodNotAllowedError(result.userMethod, result.userPath, result.available),
         {exit: 1},
       )
     }
-
-    const suggestions = suggestSimilarEndpoints(result.userPath, index)
-    const suggestionLine =
-      suggestions.length > 0
-        ? `\nDid you mean:\n  ${suggestions.map((s) => `- ${s}`).join('\n  ')}`
-        : ''
-    this.error(
-      `No operation matches path "${result.userPath}".${suggestionLine}\n` +
-        'Hint: run `sanity api list` to see valid endpoints.',
-      {exit: 1},
-    )
+    this.error(formatNoMatchError(result.userPath, index), {exit: 1})
   }
 
   private async resolveToken(override: string | undefined): Promise<string | null> {
@@ -394,13 +360,7 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
    */
   private validateQueryFlags(queryFlags: readonly string[]): void {
     for (const pair of queryFlags) {
-      if (!pair.includes('=')) {
-        this.error(
-          `-q values must be in key=value form (got "${pair}").\n` +
-            'Hint: pass empty values as `-q key=`.',
-          {exit: 1},
-        )
-      }
+      if (!pair.includes('=')) this.error(formatMalformedQueryError(pair), {exit: 1})
     }
   }
 }
@@ -446,133 +406,9 @@ function stripTelemetryTag(url: string): string {
  * `--projectId`) so users don't have to translate. Adding a new
  * supported placeholder is a single-row change.
  */
-const CONTEXT_PLACEHOLDERS = {
-  dataset: {envVar: 'SANITY_DATASET', flag: 'dataset'},
-  organizationId: {envVar: 'SANITY_ORGANIZATION_ID', flag: 'organizationId'},
-  projectId: {envVar: 'SANITY_PROJECT_ID', flag: 'projectId'},
-} as const
-
-type ContextPlaceholder = keyof typeof CONTEXT_PLACEHOLDERS
-
-function collectContextValues(flags: {
-  dataset?: string
-  organizationId?: string
-  projectId?: string
-}): Record<string, string> {
-  const values: Record<string, string> = {}
-  for (const name of Object.keys(CONTEXT_PLACEHOLDERS) as ContextPlaceholder[]) {
-    const value = flags[name] ?? process.env[CONTEXT_PLACEHOLDERS[name].envVar]
-    if (value) values[name] = value
-  }
-  return values
-}
-
-function formatUnfilledPlaceholders(
-  names: string[],
-  operation: OperationIndexEntry,
-  context: Record<string, string>,
-  path: string,
-): string {
-  const contextNames = names.filter(
-    (name): name is ContextPlaceholder => name in CONTEXT_PLACEHOLDERS,
-  )
-  const nonContext = names.filter((name) => !(name in CONTEXT_PLACEHOLDERS))
-
-  // Show the URL the call would resolve to. Same composition function
-  // as the request layer — guarantees the user sees the same shape
-  // that would have been sent. Subdomain placeholders (e.g. `:projectId`
-  // in `https://:projectId.api.sanity.io/…`) are invisible from the
-  // endpoint string the user typed, so listing names alone leaves them
-  // wondering where the value would go — the preview makes it obvious.
-  const resolvedUrl = composeEndpointUrl(operation, path, context)
-
-  const lines = [
-    `Endpoint requires value(s) for: ${names.map((n) => `:${n}`).join(', ')}`,
-    `Resolved URL: ${resolvedUrl}`,
-  ]
-  if (contextNames.length > 0) {
-    const {envVar, flag} = CONTEXT_PLACEHOLDERS[contextNames[0]]
-    lines.push(
-      `Hint: pass --${flag}=<value>, set ${envVar}, ` +
-        'or run from a directory with `sanity.cli.ts`.',
-    )
-  }
-  if (nonContext.length > 0) {
-    lines.push(
-      'Hint: substitute the value directly in the endpoint string ' +
-        `(e.g. ${operation.endpoint.replaceAll(/:(\w+)/g, '<$1>')}).`,
-    )
-  }
-  return lines.join('\n')
-}
-
-/**
- * Suggest the closest endpoint(s) when the user's path doesn't match
- * any operation. Typos in the api-version segment (`v2024-01-01` vs
- * `v2025-02-19`) are the common case — agents pulling examples from a
- * stale source surface them often, and saving a round-trip there is
- * the highest-value fuzzy match this can do.
- *
- * Returns up to 3 candidate endpoint strings ordered by similarity.
- * The threshold is intentionally tight: only suggest when the distance
- * is small relative to the path length, so we don't flood the error
- * with unrelated near-misses.
- */
-function suggestSimilarEndpoints(
-  userPath: string,
-  index: readonly OperationIndexEntry[],
-): string[] {
-  if (userPath.length === 0 || index.length === 0) return []
-  // Normalize a candidate endpoint to its template shape so a user-typed
-  // `v2024-01-01/data/query/production` can score against
-  // `v2025-02-19/data/query/:dataset` without `production`/`:dataset`
-  // contributing fake distance.
-  const userTokens = tokenize(userPath)
-  const seen = new Set<string>()
-  const scored: {endpoint: string; score: number}[] = []
-  for (const op of index) {
-    if (seen.has(op.endpoint)) continue
-    seen.add(op.endpoint)
-    const score = tokenDistance(userTokens, tokenize(op.endpoint))
-    scored.push({endpoint: op.endpoint, score})
-  }
-  scored.sort((a, b) => a.score - b.score)
-  const lengthThreshold = Math.max(2, Math.floor(userPath.length / 6))
-  return scored
-    .filter((s) => s.score <= lengthThreshold)
-    .slice(0, 3)
-    .map((s) => s.endpoint)
-}
-
-function tokenize(path: string): string[] {
-  return path.split('/').filter((s) => s.length > 0)
-}
-
-/**
- * Edit-distance over path segments. Placeholder segments (`:name` /
- * `{name}`) match any user segment with zero cost — that's the whole
- * point: a user value where the template has a placeholder shouldn't
- * register as a typo.
- */
-function tokenDistance(user: readonly string[], template: readonly string[]): number {
-  const rows = user.length + 1
-  const cols = template.length + 1
-  const dp: number[][] = Array.from({length: rows}, () => Array.from({length: cols}, () => 0))
-  for (let i = 0; i < rows; i++) dp[i][0] = i
-  for (let j = 0; j < cols; j++) dp[0][j] = j
-  for (let i = 1; i < rows; i++) {
-    for (let j = 1; j < cols; j++) {
-      const u = user[i - 1]
-      const t = template[j - 1]
-      const isPlaceholder = t.startsWith(':') || (t.startsWith('{') && t.endsWith('}'))
-      const same = u === t || isPlaceholder
-      dp[i][j] = same
-        ? dp[i - 1][j - 1]
-        : Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]) + 1
-    }
-  }
-  return dp[rows - 1][cols - 1]
-}
+// Placeholder/context plumbing + all error-message construction live in
+// `./errors.ts`. Keep the command file focused on flag parsing, the
+// orchestration pipeline, and the destructive prompt.
 
 /**
  * Build the schema hint surfaced when the operation requires a body
