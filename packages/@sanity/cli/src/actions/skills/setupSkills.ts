@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises'
+
 import {ux} from '@oclif/core'
 import {subdebug} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
@@ -82,9 +84,12 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
     '-y',
   ]
 
-  skillsDebug('Running: npx %s', args.join(' '))
+  skillsDebug('Running: npx %s (cwd: %s)', args.join(' '), cwd)
 
   try {
+    // The cwd may not exist yet when called during `sanity init` (project
+    // bootstrap happens later). Create it so `npx` doesn't bail with ENOENT.
+    await fs.mkdir(cwd, {recursive: true})
     const result = await execa('npx', args, {cwd, stdio: 'pipe', timeout: 90_000})
     skillsDebug('skills stdout: %s', result.stdout)
     skillsDebug('skills stderr: %s', result.stderr)
