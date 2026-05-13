@@ -27,17 +27,6 @@ describe('setupSkills', () => {
     vi.clearAllMocks()
   })
 
-  test('mode: skip returns early without calling npx', async () => {
-    const result = await setupSkills({
-      cwd: PROJECT_DIR,
-      editors: [editor('Cursor')],
-      mode: 'skip',
-    })
-
-    expect(result).toEqual({installedAgents: [], skipped: true})
-    expect(mockExeca).not.toHaveBeenCalled()
-  })
-
   test('skips when no editors have a skills agent mapping', async () => {
     // Zed and MCPorter do not have a skillsCliAgent mapping
     const result = await setupSkills({

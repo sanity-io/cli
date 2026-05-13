@@ -1,7 +1,7 @@
 import {getGlobalCliClient, subdebug} from '@sanity/cli-core'
 import {isHttpError} from '@sanity/client'
 
-export const MCP_API_VERSION = '2025-12-09'
+const MCP_API_VERSION = '2025-12-09'
 export const MCP_SERVER_URL = 'https://mcp.sanity.io'
 export const MCP_JOURNEY_API_VERSION = 'v2024-02-23'
 

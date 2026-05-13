@@ -32,13 +32,6 @@ interface SetupSkillsOptions {
    * for each editor's mapped `skillsCliAgent`.
    */
   editors: Editor[]
-
-  /**
-   * Controls how skills setup behaves:
-   * - 'auto': Install for the editors' mapped agents (default)
-   * - 'skip': Skip skills installation entirely
-   */
-  mode?: 'auto' | 'skip'
 }
 
 interface SetupSkillsResult {
@@ -56,12 +49,7 @@ interface SetupSkillsResult {
  * best-effort and should never abort MCP setup or `sanity init`.
  */
 export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSkillsResult> {
-  const {cwd, editors, mode = 'auto'} = options
-
-  if (mode === 'skip') {
-    skillsDebug('Skipping skills installation (mode: skip)')
-    return {installedAgents: [], skipped: true}
-  }
+  const {cwd, editors} = options
 
   const agents = editors.flatMap((editor) => {
     const agent = getSkillsCliAgent(editor.name)
