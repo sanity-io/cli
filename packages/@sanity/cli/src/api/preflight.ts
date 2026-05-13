@@ -16,8 +16,8 @@
  * not here, since the work is async file I/O rather than a pure check.
  */
 
+import {findUnfilledEndpointPlaceholders} from './endpointUrl.js'
 import {type OperationIndexEntry} from './parser.js'
-import {fillPlaceholders, findUnfilledPlaceholders} from './resolveEndpoint.js'
 
 export type PreflightIssue =
   | {kind: 'missing-required-query'; names: string[]}
@@ -54,7 +54,7 @@ export function runPreflight(inputs: PreflightInputs): PreflightIssue[] {
   const {context, inlineQuery, queryFlags, resolved} = inputs
   const issues: PreflightIssue[] = []
 
-  const unfilled = collectUnfilledPlaceholders(resolved, context)
+  const unfilled = findUnfilledEndpointPlaceholders(resolved.operation, resolved.path, context)
   if (unfilled.length > 0) {
     issues.push({kind: 'unfilled-placeholder', names: unfilled})
   }
@@ -65,19 +65,6 @@ export function runPreflight(inputs: PreflightInputs): PreflightIssue[] {
   }
 
   return issues
-}
-
-function collectUnfilledPlaceholders(
-  resolved: {operation: OperationIndexEntry; path: string},
-  context: Record<string, string>,
-): string[] {
-  const filledPath = fillPlaceholders(resolved.path, context)
-  const filledHost = fillPlaceholders(resolved.operation.serverTemplate, context)
-  const unfilled = [
-    ...findUnfilledPlaceholders(filledPath),
-    ...findUnfilledPlaceholders(filledHost),
-  ]
-  return [...new Set(unfilled)]
 }
 
 function collectMissingRequiredQuery(

@@ -3,10 +3,11 @@ import {getCliToken, SanityCommand} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {buildRequestBody, parseHeaderFlags} from '../../api/body.js'
+import {composeEndpointUrl} from '../../api/endpointUrl.js'
 import {loadOperationsIndexOrThrow, type OperationIndexEntry} from '../../api/parser.js'
 import {type PreflightIssue, runPreflight} from '../../api/preflight.js'
 import {buildRequestUrl, sendApiRequest, streamApiResponse} from '../../api/request.js'
-import {fillPlaceholders, resolveEndpoint} from '../../api/resolveEndpoint.js'
+import {resolveEndpoint} from '../../api/resolveEndpoint.js'
 
 const DESTRUCTIVE_METHODS = new Set(['DELETE', 'PATCH', 'PUT'])
 
@@ -477,15 +478,13 @@ function formatUnfilledPlaceholders(
   )
   const nonContext = names.filter((name) => !(name in CONTEXT_PLACEHOLDERS))
 
-  // Show the URL the call would resolve to, with the host stitched onto
-  // the path. Subdomain placeholders (e.g. `:projectId` in
-  // `https://:projectId.api.sanity.io/…`) are invisible from the
+  // Show the URL the call would resolve to. Same composition function
+  // as the request layer — guarantees the user sees the same shape
+  // that would have been sent. Subdomain placeholders (e.g. `:projectId`
+  // in `https://:projectId.api.sanity.io/…`) are invisible from the
   // endpoint string the user typed, so listing names alone leaves them
   // wondering where the value would go — the preview makes it obvious.
-  const resolvedUrl = composeUrlTemplate(
-    fillPlaceholders(operation.serverTemplate, context),
-    fillPlaceholders(path, context),
-  )
+  const resolvedUrl = composeEndpointUrl(operation, path, context)
 
   const lines = [
     `Endpoint requires value(s) for: ${names.map((n) => `:${n}`).join(', ')}`,
@@ -591,26 +590,4 @@ function buildBodySchemaHint(operation: OperationIndexEntry): {
     docsCommand: `sanity api spec ${operation.spec} --operation=${operation.operationId} --format=json`,
     requiredFields: required,
   }
-}
-
-/**
- * String-only variant of buildRequestUrl's host+path join. Used in error
- * messages where the input still contains unfilled `:name` placeholders —
- * `new URL()` would reject those because `:` isn't valid in a hostname.
- */
-function composeUrlTemplate(serverTemplate: string, path: string): string {
-  const schemeEnd = serverTemplate.indexOf('://')
-  const afterScheme = schemeEnd === -1 ? serverTemplate : serverTemplate.slice(schemeEnd + 3)
-  const firstSlash = afterScheme.indexOf('/')
-  const hostPath =
-    firstSlash === -1 ? '' : afterScheme.slice(firstSlash + 1).replaceAll(/^\/+|\/+$/g, '')
-
-  const cleanPath = path.replace(/^\/+/, '')
-  const relative =
-    hostPath && cleanPath.startsWith(`${hostPath}/`)
-      ? cleanPath.slice(hostPath.length + 1)
-      : cleanPath
-
-  const base = serverTemplate.replace(/\/+$/, '')
-  return `${base}/${relative}`
 }

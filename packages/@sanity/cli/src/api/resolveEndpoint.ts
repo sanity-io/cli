@@ -126,27 +126,7 @@ function countPlaceholders(template: string): number {
   return matches ? matches.length : 0
 }
 
-/* ---------------------------------------------------------------------- *
- *  Placeholder utilities (for the command layer)                          *
- * ---------------------------------------------------------------------- */
-
-/**
- * Substitute `:name` placeholders in `template` from `values`. Values
- * not present in `values` are left as-is — callers detect remaining
- * placeholders via `findUnfilledPlaceholders`.
- */
-export function fillPlaceholders(template: string, values: Record<string, string>): string {
-  return template.replaceAll(PLACEHOLDER_RE, (match, colonName, braceName) => {
-    const name = (colonName ?? braceName) as string
-    return name in values ? values[name] : match
-  })
-}
-
-/** Return the unique placeholder names remaining in `value`. */
-export function findUnfilledPlaceholders(value: string): string[] {
-  const names = new Set<string>()
-  for (const match of value.matchAll(PLACEHOLDER_RE)) {
-    names.add((match[1] ?? match[2]) as string)
-  }
-  return [...names]
-}
+// Placeholder substitution + unfilled detection live in `./endpointUrl.ts`
+// — that module owns URL composition and the post-match substitution lifecycle.
+// `resolveEndpoint` itself only consumes `PLACEHOLDER_RE` for input
+// normalization + match scoring, so the utilities stay there.

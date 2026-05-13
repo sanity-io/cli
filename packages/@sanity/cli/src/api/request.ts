@@ -16,8 +16,8 @@
  * how the user invoked the CLI.
  */
 
+import {composeEndpointUrl} from './endpointUrl.js'
 import {type OperationIndexEntry} from './parser.js'
-import {fillPlaceholders} from './resolveEndpoint.js'
 
 const FETCH_TIMEOUT_MS = 60_000
 
@@ -77,36 +77,20 @@ interface BuildRequestUrlInputs {
 /**
  * Build the final outbound URL.
  *
- * Composition order (subtle; the api-version overlap-stripping is the
- * easy-to-get-wrong part):
+ * Two steps:
  *
- *   1. Fill `:name` placeholders in host + path from `context`.
- *   2. Strip the api-version segment from the path if the host already
- *      includes it. Real-world specs put the api-version in EITHER
- *      `servers[0].url` (e.g. `https://api.sanity.io/v2021-06-07`) or
- *      as the leading segment of every operation path (e.g.
- *      `/v2026-04-27/organizations/{org}/…`). The path template emitted
- *      by `parser.ts` always carries the version, so when the host has
- *      it too we'd double up without the strip.
- *   3. Merge query params: inline first (lower precedence), `-q` flags
+ *   1. {@link composeEndpointUrl} handles host + path: placeholder
+ *      substitution and the api-version overlap strip (real-world specs
+ *      put the version in EITHER `servers[0].url` or the operation path
+ *      key — both forms exist, and `parser.ts` always carries it on the
+ *      path, so we'd double up without the strip).
+ *   2. Merge query params: inline first (lower precedence), `-q` flags
  *      next (override on key conflict, preserve repetition for array
  *      semantics), telemetry tag last (unless the user set one).
  */
 export function buildRequestUrl(inputs: BuildRequestUrlInputs): string {
   const {context, inlineQuery, operation, path, queryFlags} = inputs
-
-  const resolvedHost = fillPlaceholders(operation.serverTemplate, context)
-  const resolvedPath = fillPlaceholders(path, context)
-
-  const hostPath = new URL(resolvedHost).pathname.replaceAll(/^\/+|\/+$/g, '')
-  const cleanPath = resolvedPath.replace(/^\/+/, '')
-  const relative =
-    hostPath && cleanPath.startsWith(`${hostPath}/`)
-      ? cleanPath.slice(hostPath.length + 1)
-      : cleanPath
-
-  const base = resolvedHost.replace(/\/$/, '')
-  const url = `${base}/${relative}`
+  const url = composeEndpointUrl(operation, path, context)
   const queryString = buildQueryString(inlineQuery, queryFlags)
   return queryString ? `${url}?${queryString}` : url
 }
