@@ -208,6 +208,25 @@ describe('#api:call', () => {
     ])
   })
 
+  test('--project is accepted as an alias for --projectId', async () => {
+    // The CLI's longstanding convention elsewhere is `--project`; the new
+    // command uses `--projectId` to mirror the placeholder name. The
+    // alias keeps users coming from `sanity init` etc. unblocked.
+    mockIndexAndSpecs([{slug: 'query', yaml: QUERY_YAML}])
+    nock('https://xyz789.api.sanity.io')
+      .get('/v2024-01-01/data/query/production')
+      .query({query: '*[0]', tag: 'sanity.cli.api'})
+      .reply(200, {result: []}, {'content-type': 'application/json'})
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    await testCommand(ApiCallCommand, [
+      'v2024-01-01/data/query/production',
+      '--project=xyz789',
+      '-q',
+      'query=*[0]',
+    ])
+  })
+
   test('--token overrides the stored token in Authorization header', async () => {
     mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
     nock('https://api.sanity.io', {reqheaders: {authorization: 'Bearer flag-token'}})
@@ -371,6 +390,19 @@ paths:
     expect(error?.message).toContain('No operation matches path')
   })
 
+  test('no-match error surfaces "Did you mean" with the closest endpoint', async () => {
+    // Typo in the api-version segment is the canonical case — the
+    // /jobs/:jobId template matches the user's path with one segment
+    // diff, so the suggestion saves a `sanity api list` round-trip.
+    mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    const {error} = await testCommand(ApiCallCommand, ['v2099-01-01/jobs/abc123'])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Did you mean')
+    expect(error?.message).toContain('v2021-06-07/jobs/:jobId')
+  })
+
   test('accepts {name} placeholder syntax interchangeably with :name', async () => {
     mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
     nock('https://api.sanity.io')
@@ -411,6 +443,9 @@ paths:
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('POST needs a request body')
     expect(error?.message).toMatch(/-f.*-F.*--input/)
+    // The error should point at `sanity api spec` so the user can fetch
+    // the operation's full body schema in one follow-up command.
+    expect(error?.message).toContain('sanity api spec mutate --operation=mutate --format=json')
   })
 
   test('-f builds a JSON body and sends application/json', async () => {
@@ -668,6 +703,27 @@ paths:
     const message = vi.mocked(confirm).mock.calls[0]?.[0]?.message ?? ''
     expect(message).not.toContain('tag=sanity.cli.api')
     expect(message).toContain('/v2024-01-01/projects/abc123')
+
+    isUnattended.mockRestore()
+  })
+
+  test('destructive prompt warns that the op modifies server state', async () => {
+    // The "modifies server state" hint helps agents catch logically-
+    // benign PUT operations (e.g. PUT-to-accept-invite) that are still
+    // classified destructive by method.
+    mockIndexAndSpecs([{slug: 'projects', yaml: PROJECTS_YAML}])
+    const isUnattended = vi.spyOn(
+      SanityCommand.prototype as unknown as {isUnattended: () => boolean},
+      'isUnattended',
+    )
+    isUnattended.mockReturnValue(false)
+    vi.mocked(confirm).mockResolvedValueOnce(false)
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    await testCommand(ApiCallCommand, ['-X', 'DELETE', 'v2024-01-01/projects/abc123'])
+
+    const message = vi.mocked(confirm).mock.calls[0]?.[0]?.message ?? ''
+    expect(message).toContain('modifies server state')
 
     isUnattended.mockRestore()
   })

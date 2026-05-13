@@ -60,7 +60,14 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     {
       command:
         '<%= config.bin %> <%= command.id %> -X POST v2024-01-01/mutate/:dataset --input ./body.json',
-      description: 'Send a request body verbatim from file (or `--input -` for stdin)',
+      description:
+        'Send a request body verbatim from file (or `--input -` for stdin). Deterministic JSON shape — bypasses `-f` value coercion.',
+    },
+    {
+      command:
+        '<%= config.bin %> <%= command.id %> -X POST v.../endpoint -f count=5 -f name=hello -f \'tag="5"\'',
+      description:
+        '-f values JSON-parse when valid (numbers/booleans), fall back to string. Force string with embedded quotes (`tag="5"`).',
     },
     {
       command: '<%= config.bin %> <%= command.id %> -X DELETE v2024-01-01/projects/abc --yes',
@@ -77,13 +84,17 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     field: Flags.string({
       char: 'f',
       description:
-        'Repeatable `key=value` JSON body field (value JSON-parsed when possible; dotted keys nest)',
+        'Repeatable `key=value` JSON body field. Values JSON-parse when valid (numbers/booleans/objects); ' +
+        'fall back to a string otherwise. Force a string by embedding quotes: `-f tag=\'"5"\'`. ' +
+        'Dotted keys nest (`profile.name=Bob` → `{profile: {name: "Bob"}}`). ' +
+        'For deterministic body shape, prefer `--input <path>`.',
       multiple: true,
     }),
     fieldFile: Flags.string({
       char: 'F',
       description:
-        'Repeatable `key=@path` body field — value is the file contents (JSON-parsed when possible)',
+        'Repeatable `key=@path` body field — value is the file contents (JSON-parsed when valid, ' +
+        'falls back to a string). For deterministic body shape, prefer `--input <path>`.',
       multiple: true,
     }),
     header: Flags.string({
@@ -105,9 +116,13 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       options: ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'],
     }),
     organizationId: Flags.string({
-      description: 'Fills `:organizationId` placeholders in host or path',
+      aliases: ['organization'],
+      description: 'Fills `:organizationId` placeholders in host or path (alias: `--organization`)',
     }),
-    projectId: Flags.string({description: 'Fills `:projectId` placeholders in host or path'}),
+    projectId: Flags.string({
+      aliases: ['project'],
+      description: 'Fills `:projectId` placeholders in host or path (alias: `--project`)',
+    }),
     query: Flags.string({
       description:
         'GROQ filter — shorthand for `-q query=<value>`. Required for /data/query and /data/listen endpoints.',
@@ -150,6 +165,7 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       filePairs: flags.fieldFile ?? [],
       inputPath: flags.input ?? null,
       method: operation.method,
+      schemaHint: buildBodySchemaHint(operation),
     })
     const extraHeaders = parseHeaderFlags(flags.header ?? [])
     const token = await this.resolveToken(flags.token)
@@ -211,10 +227,15 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
 
     // Hide the telemetry tag from the prompt — it's CLI implementation
     // noise the user shouldn't have to mentally subtract.
+    //
+    // The "modifies server state" hint matters most for PUT, which an
+    // agent might assume is benign-by-method (e.g. a PUT-to-accept-invite
+    // endpoint). All three methods in DESTRUCTIVE_METHODS mutate, so the
+    // same prompt fits PATCH/PUT/DELETE.
     const displayUrl = stripTelemetryTag(url)
     const confirmed = await confirm({
       default: false,
-      message: `This will ${method} ${displayUrl}. Continue?`,
+      message: `This will ${method} ${displayUrl} (modifies server state). Continue?`,
     })
     if (!confirmed) this.error('Aborted.', {exit: 1})
   }
@@ -346,8 +367,14 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
         {exit: 1},
       )
     }
+
+    const suggestions = suggestSimilarEndpoints(result.userPath, index)
+    const suggestionLine =
+      suggestions.length > 0
+        ? `\nDid you mean:\n  ${suggestions.map((s) => `- ${s}`).join('\n  ')}`
+        : ''
     this.error(
-      `No operation matches path "${result.userPath}".\n` +
+      `No operation matches path "${result.userPath}".${suggestionLine}\n` +
         'Hint: run `sanity api list` to see valid endpoints.',
       {exit: 1},
     )
@@ -478,6 +505,92 @@ function formatUnfilledPlaceholders(
     )
   }
   return lines.join('\n')
+}
+
+/**
+ * Suggest the closest endpoint(s) when the user's path doesn't match
+ * any operation. Typos in the api-version segment (`v2024-01-01` vs
+ * `v2025-02-19`) are the common case — agents pulling examples from a
+ * stale source surface them often, and saving a round-trip there is
+ * the highest-value fuzzy match this can do.
+ *
+ * Returns up to 3 candidate endpoint strings ordered by similarity.
+ * The threshold is intentionally tight: only suggest when the distance
+ * is small relative to the path length, so we don't flood the error
+ * with unrelated near-misses.
+ */
+function suggestSimilarEndpoints(
+  userPath: string,
+  index: readonly OperationIndexEntry[],
+): string[] {
+  if (userPath.length === 0 || index.length === 0) return []
+  // Normalize a candidate endpoint to its template shape so a user-typed
+  // `v2024-01-01/data/query/production` can score against
+  // `v2025-02-19/data/query/:dataset` without `production`/`:dataset`
+  // contributing fake distance.
+  const userTokens = tokenize(userPath)
+  const seen = new Set<string>()
+  const scored: {endpoint: string; score: number}[] = []
+  for (const op of index) {
+    if (seen.has(op.endpoint)) continue
+    seen.add(op.endpoint)
+    const score = tokenDistance(userTokens, tokenize(op.endpoint))
+    scored.push({endpoint: op.endpoint, score})
+  }
+  scored.sort((a, b) => a.score - b.score)
+  const lengthThreshold = Math.max(2, Math.floor(userPath.length / 6))
+  return scored
+    .filter((s) => s.score <= lengthThreshold)
+    .slice(0, 3)
+    .map((s) => s.endpoint)
+}
+
+function tokenize(path: string): string[] {
+  return path.split('/').filter((s) => s.length > 0)
+}
+
+/**
+ * Edit-distance over path segments. Placeholder segments (`:name` /
+ * `{name}`) match any user segment with zero cost — that's the whole
+ * point: a user value where the template has a placeholder shouldn't
+ * register as a typo.
+ */
+function tokenDistance(user: readonly string[], template: readonly string[]): number {
+  const rows = user.length + 1
+  const cols = template.length + 1
+  const dp: number[][] = Array.from({length: rows}, () => Array.from({length: cols}, () => 0))
+  for (let i = 0; i < rows; i++) dp[i][0] = i
+  for (let j = 0; j < cols; j++) dp[0][j] = j
+  for (let i = 1; i < rows; i++) {
+    for (let j = 1; j < cols; j++) {
+      const u = user[i - 1]
+      const t = template[j - 1]
+      const isPlaceholder = t.startsWith(':') || (t.startsWith('{') && t.endsWith('}'))
+      const same = u === t || isPlaceholder
+      dp[i][j] = same
+        ? dp[i - 1][j - 1]
+        : Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]) + 1
+    }
+  }
+  return dp[rows - 1][cols - 1]
+}
+
+/**
+ * Build the schema hint surfaced when the operation requires a body
+ * but the user gave none. Names the required top-level fields and
+ * points at `sanity api spec --operation=<id>` for the full schema —
+ * so the next attempt has everything it needs without an exploratory
+ * round-trip.
+ */
+function buildBodySchemaHint(operation: OperationIndexEntry): {
+  docsCommand?: string
+  requiredFields?: string[]
+} {
+  const required = operation.requestBody?.fields.filter((f) => f.required).map((f) => f.name) ?? []
+  return {
+    docsCommand: `sanity api spec ${operation.spec} --operation=${operation.operationId} --format=json`,
+    requiredFields: required,
+  }
 }
 
 /**

@@ -39,6 +39,19 @@ interface BodyInputs {
   inputPath: string | null
   /** Uppercase HTTP method — used to enforce method/body compatibility. */
   method: string
+
+  /**
+   * Optional schema hint surfaced when the method requires a body but
+   * the user provided none. Lets the error name the operation's
+   * required fields and point at `sanity api spec` for the full
+   * schema, instead of just saying "needs a body" generically.
+   */
+  schemaHint?: {
+    /** Suggestion to run for full schema details (already formatted). */
+    docsCommand?: string
+    /** Names of the operation's top-level required body fields. */
+    requiredFields?: string[]
+  }
 }
 
 /** Methods that may not carry a request body in HTTP semantics. */
@@ -60,7 +73,7 @@ const BODY_METHODS = new Set(['PATCH', 'POST', 'PUT'])
  * Throwing means the function never has to know about exit codes.
  */
 export async function buildRequestBody(inputs: BodyInputs): Promise<BuildBodyResult> {
-  const {fieldPairs, filePairs, inputPath, method} = inputs
+  const {fieldPairs, filePairs, inputPath, method, schemaHint} = inputs
 
   const hasFields = fieldPairs.length > 0 || filePairs.length > 0
   const hasInput = inputPath !== null
@@ -94,10 +107,7 @@ export async function buildRequestBody(inputs: BodyInputs): Promise<BuildBodyRes
   }
 
   if (BODY_METHODS.has(method)) {
-    throw new Error(
-      `${method} needs a request body. ` +
-        'Pass -f key=value (JSON object), -F key=@path (file), or --input <path>.',
-    )
+    throw new Error(formatBodyRequiredError(method, schemaHint))
   }
 
   return {body: null, contentType: null}
@@ -235,6 +245,27 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
  * Returns lower-cased keys for stable lookup; HTTP header names are
  * case-insensitive.
  */
+/**
+ * Format the "method needs a body" error. When the operation hints at
+ * required fields and where to read the schema, surface both so the
+ * caller (often an agent) can fix the request on the next try without
+ * an exploratory round-trip.
+ */
+function formatBodyRequiredError(
+  method: string,
+  hint?: {docsCommand?: string; requiredFields?: string[]},
+): string {
+  const lines = [`${method} needs a request body.`]
+  if (hint?.requiredFields && hint.requiredFields.length > 0) {
+    lines.push(`Required fields: ${hint.requiredFields.join(', ')}`)
+  }
+  lines.push('Pass -f key=value (JSON object), -F key=@path (file), or --input <path>.')
+  if (hint?.docsCommand) {
+    lines.push(`For the full schema: ${hint.docsCommand}`)
+  }
+  return lines.join('\n')
+}
+
 export function parseHeaderFlags(headerPairs: readonly string[]): Record<string, string> {
   const headers: Record<string, string> = {}
   for (const raw of headerPairs) {

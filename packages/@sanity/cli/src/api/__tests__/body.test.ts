@@ -39,6 +39,24 @@ describe('buildRequestBody', () => {
     ).rejects.toThrow(/POST needs a request body/)
   })
 
+  test('body-required error names required fields when a schema hint is passed', async () => {
+    // When the call command knows the operation's required body fields,
+    // it threads them through so the error names them — an agent can
+    // self-correct on the next attempt without re-fetching the spec.
+    await expect(
+      buildRequestBody({
+        fieldPairs: [],
+        filePairs: [],
+        inputPath: null,
+        method: 'POST',
+        schemaHint: {
+          docsCommand: 'sanity api spec agent-actions --operation=generate --format=json',
+          requiredFields: ['schemaId', 'instruction'],
+        },
+      }),
+    ).rejects.toThrow(/Required fields: schemaId, instruction/)
+  })
+
   test('-f and --input together are rejected as mutually exclusive', async () => {
     await expect(
       buildRequestBody({
