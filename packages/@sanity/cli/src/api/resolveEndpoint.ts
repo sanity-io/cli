@@ -13,9 +13,9 @@
  * `/jobs/listen` and a placeholder `/jobs/:jobId`), the candidate with
  * the fewest placeholder slots wins.
  *
- * The matcher is pure. Placeholder substitution (`--project` /
- * `--dataset`), pre-flight validation, query-param merging, and the
- * destructive guard live in the command layer.
+ * The matcher is pure. Placeholder substitution (`--projectId` /
+ * `--organizationId` / `--dataset`), pre-flight validation, query-param
+ * merging, and the destructive guard live in the command layer.
  */
 
 import {type OperationIndexEntry} from './parser.js'
@@ -33,7 +33,7 @@ interface ResolvedEndpoint {
   operation: OperationIndexEntry
   /**
    * The user's path with `{name}` placeholders normalized to `:name`.
-   * Not yet substituted with `--project`/`--dataset`.
+   * Not yet substituted with `--projectId`/`--organizationId`/`--dataset`.
    */
   path: string
 }

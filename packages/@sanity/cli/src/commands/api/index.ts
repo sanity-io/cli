@@ -6,7 +6,7 @@ import {buildRequestBody, parseHeaderFlags} from '../../api/body.js'
 import {loadOperationsIndexOrThrow, type OperationIndexEntry} from '../../api/parser.js'
 import {type PreflightIssue, runPreflight} from '../../api/preflight.js'
 import {buildRequestUrl, sendApiRequest, streamApiResponse} from '../../api/request.js'
-import {resolveEndpoint} from '../../api/resolveEndpoint.js'
+import {fillPlaceholders, resolveEndpoint} from '../../api/resolveEndpoint.js'
 
 const DESTRUCTIVE_METHODS = new Set(['DELETE', 'PATCH', 'PUT'])
 
@@ -16,7 +16,8 @@ const DESTRUCTIVE_METHODS = new Set(['DELETE', 'PATCH', 'PUT'])
  * Routes when the user's first argument doesn't match a known
  * subcommand (`list`, `spec`). Takes the verbatim endpoint string
  * that `sanity api list` rendered, plus standard request flags
- * (`-X`, `-q`, `--token`, `--project`, `--dataset`, `--json`, `--yes`).
+ * (`-X`, `-q`, `--token`, `--projectId`, `--organizationId`,
+ * `--dataset`, `--json`, `--yes`).
  *
  * The command itself is the orchestration shell: load index → resolve
  * match → run preflight → destructive guard → build URL → send →
@@ -44,8 +45,9 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       description: 'Pass query params via flag (CLI URL-encodes the value)',
     },
     {
-      command: '<%= config.bin %> <%= command.id %> --project=xyz v2024-01-01/projects/:projectId',
-      description: 'Auto-fill :projectId / :dataset placeholders from flags',
+      command:
+        '<%= config.bin %> <%= command.id %> --projectId=xyz v2024-01-01/projects/:projectId',
+      description: 'Auto-fill :projectId / :organizationId / :dataset placeholders from flags',
     },
     {
       command:
@@ -99,7 +101,10 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       description: 'HTTP method',
       options: ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'],
     }),
-    project: Flags.string({description: 'Fills `:projectId` placeholders in host or path'}),
+    organizationId: Flags.string({
+      description: 'Fills `:organizationId` placeholders in host or path',
+    }),
+    projectId: Flags.string({description: 'Fills `:projectId` placeholders in host or path'}),
     query: Flags.string({
       char: 'q',
       description: 'Repeatable `key=value` query parameter (CLI URL-encodes the value)',
@@ -128,7 +133,7 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     const context = collectContextValues(flags)
 
     const issues = runPreflight({context, inlineQuery, queryFlags, resolved: {operation, path}})
-    if (issues.length > 0) this.reportPreflight(issues[0], operation)
+    if (issues.length > 0) this.reportPreflight(issues[0], operation, context, path)
 
     const url = buildRequestUrl({context, inlineQuery, operation, path, queryFlags})
     const {body, contentType} = await buildRequestBody({
@@ -280,7 +285,12 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
    * variant trips a `never`-type error here instead of silently falling
    * through to an unrelated message.
    */
-  private reportPreflight(issue: PreflightIssue, operation: OperationIndexEntry): never {
+  private reportPreflight(
+    issue: PreflightIssue,
+    operation: OperationIndexEntry,
+    context: Record<string, string>,
+    path: string,
+  ): never {
     switch (issue.kind) {
       case 'missing-required-query': {
         this.error(
@@ -292,7 +302,7 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
         break
       }
       case 'unfilled-placeholder': {
-        this.error(formatUnfilledPlaceholders(issue.names, operation), {exit: 1})
+        this.error(formatUnfilledPlaceholders(issue.names, operation, context, path), {exit: 1})
         break
       }
       default: {
@@ -386,28 +396,62 @@ function stripTelemetryTag(url: string): string {
   }
 }
 
-function collectContextValues(flags: {dataset?: string; project?: string}): Record<string, string> {
+/**
+ * Placeholders the CLI fills from flags / env / `sanity.cli.ts`. Flag
+ * names mirror the URL placeholder verbatim (e.g. `:projectId` →
+ * `--projectId`) so users don't have to translate. Adding a new
+ * supported placeholder is a single-row change.
+ */
+const CONTEXT_PLACEHOLDERS = {
+  dataset: {envVar: 'SANITY_DATASET', flag: 'dataset'},
+  organizationId: {envVar: 'SANITY_ORGANIZATION_ID', flag: 'organizationId'},
+  projectId: {envVar: 'SANITY_PROJECT_ID', flag: 'projectId'},
+} as const
+
+type ContextPlaceholder = keyof typeof CONTEXT_PLACEHOLDERS
+
+function collectContextValues(flags: {
+  dataset?: string
+  organizationId?: string
+  projectId?: string
+}): Record<string, string> {
   const values: Record<string, string> = {}
-  const project = flags.project ?? process.env.SANITY_PROJECT_ID
-  const dataset = flags.dataset ?? process.env.SANITY_DATASET
-  if (project) values.projectId = project
-  if (dataset) values.dataset = dataset
+  for (const name of Object.keys(CONTEXT_PLACEHOLDERS) as ContextPlaceholder[]) {
+    const value = flags[name] ?? process.env[CONTEXT_PLACEHOLDERS[name].envVar]
+    if (value) values[name] = value
+  }
   return values
 }
 
-function formatUnfilledPlaceholders(names: string[], operation: OperationIndexEntry): string {
-  const contextNames = names.filter((name) =>
-    ['dataset', 'organizationId', 'projectId'].includes(name),
+function formatUnfilledPlaceholders(
+  names: string[],
+  operation: OperationIndexEntry,
+  context: Record<string, string>,
+  path: string,
+): string {
+  const contextNames = names.filter(
+    (name): name is ContextPlaceholder => name in CONTEXT_PLACEHOLDERS,
   )
-  const nonContext = names.filter((name) => !contextNames.includes(name))
+  const nonContext = names.filter((name) => !(name in CONTEXT_PLACEHOLDERS))
 
-  const lines = [`Unfilled path placeholder(s): ${names.map((n) => `:${n}`).join(', ')}`]
+  // Show the URL the call would resolve to, with the host stitched onto
+  // the path. Subdomain placeholders (e.g. `:projectId` in
+  // `https://:projectId.api.sanity.io/…`) are invisible from the
+  // endpoint string the user typed, so listing names alone leaves them
+  // wondering where the value would go — the preview makes it obvious.
+  const resolvedUrl = composeUrlTemplate(
+    fillPlaceholders(operation.serverTemplate, context),
+    fillPlaceholders(path, context),
+  )
+
+  const lines = [
+    `Endpoint requires value(s) for: ${names.map((n) => `:${n}`).join(', ')}`,
+    `Resolved URL: ${resolvedUrl}`,
+  ]
   if (contextNames.length > 0) {
-    const hint = contextNames[0]
-    const flag = hint === 'projectId' ? 'project' : hint
-    const env = `SANITY_${hint === 'projectId' ? 'PROJECT_ID' : hint.toUpperCase()}`
+    const {envVar, flag} = CONTEXT_PLACEHOLDERS[contextNames[0]]
     lines.push(
-      `Hint: pass --${flag}=<value>, set ${env}, ` +
+      `Hint: pass --${flag}=<value>, set ${envVar}, ` +
         'or run from a directory with `sanity.cli.ts`.',
     )
   }
@@ -418,4 +462,26 @@ function formatUnfilledPlaceholders(names: string[], operation: OperationIndexEn
     )
   }
   return lines.join('\n')
+}
+
+/**
+ * String-only variant of buildRequestUrl's host+path join. Used in error
+ * messages where the input still contains unfilled `:name` placeholders —
+ * `new URL()` would reject those because `:` isn't valid in a hostname.
+ */
+function composeUrlTemplate(serverTemplate: string, path: string): string {
+  const schemeEnd = serverTemplate.indexOf('://')
+  const afterScheme = schemeEnd === -1 ? serverTemplate : serverTemplate.slice(schemeEnd + 3)
+  const firstSlash = afterScheme.indexOf('/')
+  const hostPath =
+    firstSlash === -1 ? '' : afterScheme.slice(firstSlash + 1).replaceAll(/^\/+|\/+$/g, '')
+
+  const cleanPath = path.replace(/^\/+/, '')
+  const relative =
+    hostPath && cleanPath.startsWith(`${hostPath}/`)
+      ? cleanPath.slice(hostPath.length + 1)
+      : cleanPath
+
+  const base = serverTemplate.replace(/\/+$/, '')
+  return `${base}/${relative}`
 }

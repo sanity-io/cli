@@ -25,8 +25,8 @@ export type PreflightIssue =
 
 export interface PreflightInputs {
   /**
-   * `--project` / `--dataset` values + env-var fallbacks. Used to
-   * fill `:projectId` / `:dataset` placeholders in the host + path
+   * `--projectId` / `--organizationId` / `--dataset` values + env-var
+   * fallbacks. Used to fill the matching placeholders in the host + path
    * before checking what's still unfilled.
    */
   context: Record<string, string>

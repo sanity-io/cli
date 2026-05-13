@@ -192,7 +192,7 @@ describe('#api:call', () => {
     expect(stdout.trim()).toBe(raw)
   })
 
-  test('--project fills :projectId in the host', async () => {
+  test('--projectId fills :projectId in the host', async () => {
     mockIndexAndSpecs([{slug: 'query', yaml: QUERY_YAML}])
     nock('https://xyz789.api.sanity.io')
       .get('/v2024-01-01/data/query/production')
@@ -202,7 +202,7 @@ describe('#api:call', () => {
     vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
     await testCommand(ApiCallCommand, [
       'v2024-01-01/data/query/production',
-      '--project=xyz789',
+      '--projectId=xyz789',
       '-q',
       'query=*[0]',
     ])
@@ -251,7 +251,65 @@ describe('#api:call', () => {
     vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
     const {error} = await testCommand(ApiCallCommand, ['v2021-06-07/jobs/:jobId'])
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Unfilled path placeholder(s): :jobId')
+    expect(error?.message).toContain('Endpoint requires value(s) for: :jobId')
+    expect(error?.message).toContain('Resolved URL: https://api.sanity.io/v2021-06-07/jobs/:jobId')
+  })
+
+  test('host-only :projectId placeholder is reported with the resolved URL', async () => {
+    // `--dataset production` is enough to fill the path, but `:projectId`
+    // is only in the server template (subdomain). Listing names alone
+    // would hide that — the resolved-URL line is what makes it obvious.
+    mockIndexAndSpecs([{slug: 'query', yaml: QUERY_YAML}])
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    const {error} = await testCommand(ApiCallCommand, [
+      'v2024-01-01/data/query/:dataset',
+      '--dataset=production',
+    ])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Endpoint requires value(s) for: :projectId')
+    expect(error?.message).toContain(
+      'Resolved URL: https://:projectId.api.sanity.io/v2024-01-01/data/query/production',
+    )
+    expect(error?.message).toContain('--projectId=<value>')
+    expect(error?.message).toContain('SANITY_PROJECT_ID')
+  })
+
+  test('--organizationId fills :organizationId in the path', async () => {
+    const ORG_YAML = `
+openapi: 3.1.1
+info:
+  title: Orgs API
+  version: 'v2021-10-04'
+servers:
+  - url: 'https://api.sanity.io/{apiVersion}'
+    variables:
+      apiVersion:
+        default: 'v2021-10-04'
+paths:
+  /organizations/{organizationId}/acl:
+    get:
+      operationId: orgAcl
+      parameters:
+        - in: path
+          name: organizationId
+          required: true
+          schema: {type: string}
+      responses:
+        '200':
+          description: ok
+`
+    mockIndexAndSpecs([{slug: 'orgs', yaml: ORG_YAML}])
+    nock('https://api.sanity.io')
+      .get('/v2021-10-04/organizations/org-abc/acl')
+      .query({tag: 'sanity.cli.api'})
+      .reply(200, {acl: []}, {'content-type': 'application/json'})
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    await testCommand(ApiCallCommand, [
+      'v2021-10-04/organizations/:organizationId/acl',
+      '--organizationId=org-abc',
+    ])
   })
 
   test('errors before sending when a required query param is missing', async () => {
@@ -261,7 +319,7 @@ describe('#api:call', () => {
     vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
     const {error} = await testCommand(ApiCallCommand, [
       'v2024-01-01/data/query/production',
-      '--project=xyz789',
+      '--projectId=xyz789',
     ])
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Missing required query parameter(s): query')
