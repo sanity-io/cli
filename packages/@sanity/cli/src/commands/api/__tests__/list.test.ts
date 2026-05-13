@@ -14,7 +14,7 @@ import {
 describe('#api:list', () => {
   setupApiTestCleanup()
 
-  test('renders the operation table', async () => {
+  test('renders the operation table (OPERATION column hidden by default)', async () => {
     mockIndexAndSpecs([{slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML}])
 
     const {stdout} = await testCommand(ApiListCommand)
@@ -22,13 +22,23 @@ describe('#api:list', () => {
     expect(stdout).toContain('METHOD')
     expect(stdout).toContain('ENDPOINT')
     expect(stdout).toContain('SPEC')
-    expect(stdout).toContain('OPERATION')
     expect(stdout).toContain('DESCRIPTION')
+    // OPERATION column is opt-in via --operation-ids — synthesized
+    // ids can be long enough to blow out the column width.
+    expect(stdout).not.toContain('OPERATION')
+    expect(stdout).not.toContain('jobStatus')
     expect(stdout).toContain('GET')
     expect(stdout).toContain('v2021-06-07/jobs/:jobId')
     expect(stdout).toContain('jobs')
-    expect(stdout).toContain('jobStatus')
     expect(stdout).toContain('Get the status of a job')
+  })
+
+  test('--operation-ids reveals the OPERATION column', async () => {
+    mockIndexAndSpecs([{slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML}])
+
+    const {stdout} = await testCommand(ApiListCommand, ['--operation-ids'])
+    expect(stdout).toContain('OPERATION')
+    expect(stdout).toContain('jobStatus')
   })
 
   test('emits an operation array under --json', async () => {

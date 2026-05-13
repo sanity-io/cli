@@ -50,28 +50,82 @@ export function toOperationJsonRow(op: OperationIndexEntry): OperationJsonRow {
  *
  * Writes directly to stdout; does not return a string.
  */
-export function printOperationsTable(operations: OperationIndexEntry[]): void {
-  const table = new Table({
-    columns: [
-      {alignment: 'left', name: 'method', title: 'METHOD'},
-      {alignment: 'left', name: 'endpoint', title: 'ENDPOINT'},
-      {alignment: 'left', name: 'spec', title: 'SPEC'},
-      {alignment: 'left', name: 'operation', title: 'OPERATION'},
-      {alignment: 'left', name: 'description', title: 'DESCRIPTION'},
-    ],
-  })
+// `console-table-printer`'s `maxLen` only breaks on whitespace —
+// `:projectId/.../jobs/{jobId}` endpoints never contain any, so we
+// pre-wrap them with `\n`s. Without this, one deeply-nested endpoint
+// in the real index (97 chars) sets the column width for the whole
+// table and the output overflows any reasonable terminal.
+const ENDPOINT_MAX_WIDTH = 45
+
+interface PrintOperationsTableOptions {
+  /**
+   * Include the OPERATION (operationId) column. Off by default: the
+   * id is always present in `--json`, and synthesized ids can be very
+   * long (e.g. `delete_organizations_organizationId_providers_...`).
+   * Pass `true` when the caller wants the column on screen — e.g.
+   * for cross-referencing into `sanity api spec --operation=<id>`.
+   */
+  showOperationIds?: boolean
+}
+
+export function printOperationsTable(
+  operations: OperationIndexEntry[],
+  options: PrintOperationsTableOptions = {},
+): void {
+  const columns = [
+    {alignment: 'left' as const, name: 'method', title: 'METHOD'},
+    {alignment: 'left' as const, name: 'endpoint', title: 'ENDPOINT'},
+    {alignment: 'left' as const, name: 'spec', title: 'SPEC'},
+    ...(options.showOperationIds
+      ? [{alignment: 'left' as const, name: 'operation', title: 'OPERATION'}]
+      : []),
+    {alignment: 'left' as const, maxLen: 50, name: 'description', title: 'DESCRIPTION'},
+  ]
+  const table = new Table({columns})
 
   for (const op of operations) {
-    table.addRow({
+    const row: Record<string, string> = {
       description: `${op.summary}${formatTagSuffix(op)}`,
-      endpoint: op.endpoint,
+      endpoint: wrapForCell(op.endpoint, ENDPOINT_MAX_WIDTH),
       method: op.method,
-      operation: op.operationId,
       spec: op.spec,
-    })
+    }
+    if (options.showOperationIds) row.operation = op.operationId
+    table.addRow(row)
   }
 
   table.printTable()
+}
+
+/**
+ * Hard-wrap a no-whitespace string at `width` characters with `\n`s.
+ * `console-table-printer` honors embedded newlines as cell line breaks.
+ * Breaks prefer separator characters (`/`, `_`, `-`) when one falls in
+ * the last ~25% of the line so the wrap doesn't slice through the
+ * middle of a path segment / id chunk.
+ */
+function wrapForCell(value: string, width: number): string {
+  if (value.length <= width) return value
+  const lines: string[] = []
+  let remaining = value
+  while (remaining.length > width) {
+    // Look for a separator in the back-quarter of the slice to favor
+    // segment boundaries. Falls back to a hard slice if none exists.
+    const slice = remaining.slice(0, width)
+    const minBreakAt = Math.floor(width * 0.75)
+    let breakAt = -1
+    for (let i = slice.length - 1; i >= minBreakAt; i--) {
+      if (/[/_\-.]/.test(slice[i])) {
+        breakAt = i + 1
+        break
+      }
+    }
+    if (breakAt === -1) breakAt = width
+    lines.push(remaining.slice(0, breakAt))
+    remaining = remaining.slice(breakAt)
+  }
+  if (remaining.length > 0) lines.push(remaining)
+  return lines.join('\n')
 }
 
 function formatTagSuffix(op: OperationIndexEntry): string {

@@ -19,7 +19,7 @@ export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
     },
     {
       command: '<%= config.bin %> <%= command.id %> --json',
-      description: 'Emit JSON (one row per operation) — agent-friendly',
+      description: 'Emit JSON: one row per operation',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --spec=jobs',
@@ -35,7 +35,7 @@ export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
     },
     {
       command: '<%= config.bin %> <%= command.id %> --web',
-      description: 'Open the HTTP Reference index in a browser (human-only)',
+      description: 'Open the HTTP Reference index in a browser',
     },
   ]
 
@@ -52,10 +52,14 @@ export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
       description: 'Filter by HTTP method (case-insensitive)',
       options: [...METHODS],
     }),
+    'operation-ids': Flags.boolean({
+      description:
+        'Include the OPERATION column in the human table. The operationId is always present in --json; off in the table by default since synthesized ids can be long and humans rarely cross-reference them.',
+    }),
     spec: Flags.string({description: 'Narrow to a single spec (by slug)'}),
     web: Flags.boolean({
       char: 'w',
-      description: 'Open the HTTP Reference in browser (human-only; no machine output)',
+      description: 'Open the HTTP Reference in browser',
     }),
   }
 
@@ -91,7 +95,7 @@ export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
       return
     }
 
-    printOperationsTable(operations)
+    printOperationsTable(operations, {showOperationIds: flags['operation-ids']})
   }
 }
 
