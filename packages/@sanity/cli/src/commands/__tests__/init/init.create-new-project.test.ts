@@ -109,6 +109,7 @@ vi.mock('../../../actions/mcp/setupMCP.js', () => ({
     configuredEditors: [],
     detectedEditors: [],
     error: undefined,
+    installedSkillsCliAgents: [],
     skipped: false,
   }),
 }))
@@ -350,6 +351,7 @@ describe('#init: create new project', () => {
       alreadyConfiguredEditors: ['VS Code'],
       configuredEditors: [],
       detectedEditors: ['VS Code'],
+      installedSkillsCliAgents: [],
       skipped: true,
     })
 
@@ -401,6 +403,7 @@ describe('#init: create new project', () => {
       alreadyConfiguredEditors: ['VS Code', 'Cursor'],
       configuredEditors: [],
       detectedEditors: ['VS Code', 'Cursor'],
+      installedSkillsCliAgents: [],
       skipped: true,
     })
 

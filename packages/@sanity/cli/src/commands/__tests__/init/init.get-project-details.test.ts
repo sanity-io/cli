@@ -89,6 +89,7 @@ vi.mock('../../../actions/mcp/setupMCP.js', () => ({
     configuredEditors: [],
     detectedEditors: [],
     error: undefined,
+    installedSkillsCliAgents: [],
     skipped: false,
   }),
 }))

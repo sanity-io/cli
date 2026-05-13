@@ -58,6 +58,12 @@ vi.mock('execa', () => ({
   execa: vi.fn(),
 }))
 
+const mockSetupSkills = vi.hoisted(() => vi.fn())
+vi.mock('../../../actions/skills/setupSkills.js', () => ({
+  SANITY_SKILLS_REPO: 'sanity-io/agent-toolkit',
+  setupSkills: mockSetupSkills,
+}))
+
 const mockCheckbox = vi.mocked(checkbox)
 const mockExistsSync = vi.mocked(existsSync)
 const mockReadFile = vi.mocked(fs.readFile)
@@ -419,6 +425,7 @@ describe('#mcp:configure', () => {
     mockReadFile.mockResolvedValue('{}') // Default: empty config file
     mockWriteFile.mockResolvedValue()
     mockExeca.mockRejectedValue(new Error('Not installed'))
+    mockSetupSkills.mockResolvedValue({installedAgents: [], skipped: true})
     createTestToken('test-token')
   })
 
@@ -593,7 +600,7 @@ describe('#mcp:configure', () => {
           value: 'Cursor',
         },
       ],
-      message: 'Configure Sanity MCP server?',
+      message: 'Configure Sanity MCP and agent skills for your editor?',
     })
   })
 
@@ -694,6 +701,15 @@ describe('#mcp:configure', () => {
     )
 
     expect(stdout).toContain('MCP configured for Cursor, VS Code')
+
+    // Skills install was invoked for both selected editors
+    expect(mockSetupSkills).toHaveBeenCalledTimes(1)
+    expect(mockSetupSkills).toHaveBeenCalledWith({
+      editors: expect.arrayContaining([
+        expect.objectContaining({name: 'Cursor'}),
+        expect.objectContaining({name: 'VS Code'}),
+      ]),
+    })
   })
 
   test('auto-selects all editors in non-interactive mode without prompting', async () => {

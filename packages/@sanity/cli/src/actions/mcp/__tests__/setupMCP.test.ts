@@ -1,4 +1,4 @@
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {setupMCP} from '../setupMCP.js'
 
@@ -7,6 +7,7 @@ const mockPromptForMCPSetup = vi.hoisted(() => vi.fn())
 const mockValidateEditorTokens = vi.hoisted(() => vi.fn())
 const mockCreateMCPToken = vi.hoisted(() => vi.fn())
 const mockWriteMCPConfig = vi.hoisted(() => vi.fn())
+const mockSetupSkills = vi.hoisted(() => vi.fn())
 
 vi.mock('../detectAvailableEditors.js', () => ({
   detectAvailableEditors: mockDetectAvailableEditors,
@@ -29,9 +30,18 @@ vi.mock('../writeMCPConfig.js', () => ({
   writeMCPConfig: mockWriteMCPConfig,
 }))
 
+vi.mock('../../skills/setupSkills.js', () => ({
+  setupSkills: mockSetupSkills,
+}))
+
 describe('setupMCP', () => {
   afterEach(() => {
     vi.clearAllMocks()
+  })
+
+  // Default skills mock to a no-op success so existing tests don't have to set it
+  beforeEach(() => {
+    mockSetupSkills.mockResolvedValue({installedAgents: [], skipped: true})
   })
 
   test('mode: skip returns early without detecting editors', async () => {
@@ -99,5 +109,56 @@ describe('setupMCP', () => {
     await setupMCP({explicit: true})
 
     expect(mockPromptForMCPSetup).toHaveBeenCalledWith(editors)
+  })
+
+  test('invokes setupSkills with the configured editors after a successful MCP setup', async () => {
+    const editors = [
+      {authStatus: 'unknown', configured: false, name: 'Cursor'},
+      {authStatus: 'unknown', configured: false, name: 'Claude Code'},
+    ]
+    mockDetectAvailableEditors.mockResolvedValue(editors)
+    mockValidateEditorTokens.mockResolvedValue(undefined)
+    mockCreateMCPToken.mockResolvedValue('test-token')
+    mockWriteMCPConfig.mockResolvedValue(undefined)
+    mockSetupSkills.mockResolvedValue({
+      installedAgents: ['cursor', 'claude-code'],
+      skipped: false,
+    })
+
+    const result = await setupMCP({mode: 'auto'})
+
+    expect(mockSetupSkills).toHaveBeenCalledTimes(1)
+    expect(mockSetupSkills).toHaveBeenCalledWith({editors})
+    expect(result.installedSkillsCliAgents).toEqual(['cursor', 'claude-code'])
+    expect(result.skillsError).toBeUndefined()
+  })
+
+  test('surfaces skills install error without failing MCP setup', async () => {
+    const editors = [{authStatus: 'unknown', configured: false, name: 'Cursor'}]
+    mockDetectAvailableEditors.mockResolvedValue(editors)
+    mockValidateEditorTokens.mockResolvedValue(undefined)
+    mockCreateMCPToken.mockResolvedValue('test-token')
+    mockWriteMCPConfig.mockResolvedValue(undefined)
+    const skillsError = new Error('skills install failed')
+    mockSetupSkills.mockResolvedValue({
+      error: skillsError,
+      installedAgents: [],
+      skipped: false,
+    })
+
+    const result = await setupMCP({mode: 'auto'})
+
+    expect(result.configuredEditors).toEqual(['Cursor'])
+    expect(result.skipped).toBe(false)
+    expect(result.installedSkillsCliAgents).toEqual([])
+    expect(result.skillsError).toBe(skillsError)
+  })
+
+  test('does not invoke setupSkills when no editors are configured', async () => {
+    mockDetectAvailableEditors.mockResolvedValue([])
+
+    await setupMCP({mode: 'auto'})
+
+    expect(mockSetupSkills).not.toHaveBeenCalled()
   })
 })

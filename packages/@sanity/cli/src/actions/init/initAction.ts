@@ -192,6 +192,7 @@ export async function initAction(options: InitOptions, context: InitContext): Pr
   trace.log({
     configuredEditors: mcpResult.configuredEditors,
     detectedEditors: mcpResult.detectedEditors,
+    installedSkillsCliAgents: mcpResult.installedSkillsCliAgents,
     skipped: mcpResult.skipped,
     step: 'mcpSetup',
   })

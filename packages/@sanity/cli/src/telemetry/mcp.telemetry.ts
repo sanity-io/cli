@@ -5,6 +5,7 @@ import {type EditorName} from '../actions/mcp/editorConfigs.js'
 interface MCPConfigureTraceData {
   configuredEditors: EditorName[]
   detectedEditors: EditorName[]
+  installedSkillsCliAgents: string[]
 }
 
 export const MCPConfigureTrace = defineTrace<MCPConfigureTraceData>({

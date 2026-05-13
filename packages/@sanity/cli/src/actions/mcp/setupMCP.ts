@@ -3,6 +3,7 @@ import {subdebug} from '@sanity/cli-core'
 import {logSymbols} from '@sanity/cli-core/ux'
 
 import {createMCPToken, MCP_SERVER_URL} from '../../services/mcp.js'
+import {setupSkills} from '../skills/setupSkills.js'
 import {detectAvailableEditors} from './detectAvailableEditors.js'
 import {EDITOR_CONFIGS, type EditorName} from './editorConfigs.js'
 import {promptForMCPSetup} from './promptForMCPSetup.js'
@@ -35,9 +36,13 @@ interface MCPSetupResult {
   alreadyConfiguredEditors: EditorName[]
   configuredEditors: EditorName[]
   detectedEditors: EditorName[]
+  /** Skills CLI `--agent` values that received `sanity-io/agent-toolkit` */
+  installedSkillsCliAgents: string[]
   skipped: boolean
 
   error?: Error
+  /** Set when skills install failed; MCP setup itself may still have succeeded. */
+  skillsError?: Error
 }
 
 /**
@@ -54,6 +59,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       alreadyConfiguredEditors: [],
       configuredEditors: [],
       detectedEditors: [],
+      installedSkillsCliAgents: [],
       skipped: true,
     }
   }
@@ -72,6 +78,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       alreadyConfiguredEditors: [],
       configuredEditors: [],
       detectedEditors,
+      installedSkillsCliAgents: [],
       skipped: true,
     }
   }
@@ -94,6 +101,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       alreadyConfiguredEditors,
       configuredEditors: [],
       detectedEditors,
+      installedSkillsCliAgents: [],
       skipped: true,
     }
   }
@@ -111,6 +119,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       alreadyConfiguredEditors,
       configuredEditors: [],
       detectedEditors,
+      installedSkillsCliAgents: [],
       skipped: true,
     }
   }
@@ -142,6 +151,7 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
         configuredEditors: [],
         detectedEditors,
         error: err,
+        installedSkillsCliAgents: [],
         skipped: false,
       }
     }
@@ -164,16 +174,24 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       configuredEditors,
       detectedEditors,
       error: err,
+      installedSkillsCliAgents: [],
       skipped: false,
     }
   }
 
   ux.stdout(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
 
+  // 8. Install Sanity agent skills for the same editors (best-effort)
+  const skillsResult = await setupSkills({
+    editors: selected.filter((editor) => configuredEditors.includes(editor.name)),
+  })
+
   return {
     alreadyConfiguredEditors,
     configuredEditors,
     detectedEditors,
+    installedSkillsCliAgents: skillsResult.installedAgents,
+    skillsError: skillsResult.error,
     skipped: false,
   }
 }
