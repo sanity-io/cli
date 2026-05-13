@@ -20,6 +20,7 @@
  * knows about HTTP, loading, or the list/spec views.
  */
 
+import {subdebug} from '@sanity/cli-core'
 import {type OpenAPIV3, type OpenAPIV3_1} from '@scalar/openapi-types'
 
 import {
@@ -42,6 +43,8 @@ import {
 type OperationObject = OpenAPIV3.OperationObject | OpenAPIV3_1.OperationObject
 type ParameterObject = OpenAPIV3.ParameterObject | OpenAPIV3_1.ParameterObject
 type RefOrParameter = OpenAPIV3.ReferenceObject | ParameterObject
+
+const debug = subdebug('api:extractors')
 
 const PARAMETER_REF_PREFIX = '#/components/parameters/'
 
@@ -251,14 +254,24 @@ function summarizeBodySchema(schema: SchemaLike, refs: string[]): string {
   return describeType(schema)
 }
 
-export function extractRequestBody(opRaw: OperationObject): ParsedRequestBody | null {
+export function extractRequestBody(
+  opRaw: OperationObject,
+  context?: {operationId?: string; specSlug?: string},
+): ParsedRequestBody | null {
   const body = opRaw.requestBody as
     | OpenAPIV3.ReferenceObject
     | OpenAPIV3.RequestBodyObject
     | undefined
   if (!body) return null
   // Body-level $refs are rare; specs we own don't use them. Treat as no body.
-  if ('$ref' in body) return null
+  // Debug-log so operators can spot specs that start using this shape — the
+  // parser would otherwise silently render the operation as bodyless.
+  if ('$ref' in body) {
+    debug(
+      `body-level $ref skipped (treated as no body) in ${context?.specSlug ?? '<unknown spec>'}:${context?.operationId ?? '<unknown op>'} → ${body.$ref}`,
+    )
+    return null
+  }
 
   const content = asObject(body.content)
   if (Object.keys(content).length === 0) return null

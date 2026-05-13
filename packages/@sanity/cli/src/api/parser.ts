@@ -310,7 +310,7 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
         path: rawPath,
         pathParams,
         queryParams,
-        requestBody: extractRequestBody(op),
+        requestBody: extractRequestBody(op, {operationId, specSlug: slug}),
         responses,
         security: extractSecurity(op, doc),
         summary: op.summary ?? '',

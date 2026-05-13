@@ -42,6 +42,31 @@ paths:
                   state: { type: string }
 `
 
+const OPTIONAL_QUERY_SPEC_YAML = `
+openapi: 3.1.1
+info:
+  title: Search API
+  version: 'v2024-01-01'
+servers:
+  - url: 'https://api.sanity.io/{apiVersion}'
+    variables:
+      apiVersion:
+        default: 'v2024-01-01'
+paths:
+  /things:
+    get:
+      summary: List things
+      operationId: listThings
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ok
+`
+
 const REF_SPEC_YAML = `
 openapi: 3.1.1
 info:
@@ -171,6 +196,21 @@ describe('#api:spec', () => {
     expect(parsed.operations[0].operationId).toBe('jobStatus')
   })
 
+  test('--operation conflicts with --format=openapi', async () => {
+    // The raw YAML passthrough is byte-for-byte by design — narrowing it to
+    // a single operation would either silently produce a mismatched output
+    // or require slicing the YAML. We refuse upfront so a typo in
+    // `--operation` doesn't succeed silently. No index fetch should
+    // happen for this argv combo.
+    const {error} = await testCommand(ApiSpecCommand, [
+      'jobs',
+      '--operation=jobStatus',
+      '--format=openapi',
+    ])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('not compatible with `--format=openapi`')
+  })
+
   test('--operation errors with known operationIds on unknown id', async () => {
     mockIndexAndSpec('jobs', JOBS_SPEC_YAML)
 
@@ -187,6 +227,23 @@ describe('#api:spec', () => {
     expect(stdout).toContain('type: object')
     expect(stdout).toContain('id:')
     expect(stdout).toContain('name:')
+  })
+
+  test('--schema --format=openapi prints YAML (matches default)', async () => {
+    // The `--format=openapi` flag is shorthand for "raw OpenAPI source",
+    // which is YAML. `--schema` slices the schema and prints the same
+    // YAML — locking in the documented default ("default: YAML").
+    mockIndexAndSpec('refs', REF_SPEC_YAML)
+
+    const {stdout} = await testCommand(ApiSpecCommand, [
+      'refs',
+      '--schema',
+      'Thing',
+      '--format=openapi',
+    ])
+    expect(stdout).toContain('type: object')
+    expect(stdout).toContain('id:')
+    expect(stdout.trim().startsWith('{')).toBe(false)
   })
 
   test('--schema --format=json prints the schema as JSON', async () => {
@@ -213,6 +270,19 @@ describe('#api:spec', () => {
     expect(error?.message).toContain('Schema "Nope" not found')
     expect(error?.message).toContain('CreateThingRequest')
     expect(error?.message).toContain('Thing')
+  })
+
+  test('omits "Query params (required)" when only optional params exist', async () => {
+    // Empty-section regression: an operation with only optional query
+    // params used to render a dead `Query params (required): (none)`
+    // block. The gate keeps the required block out entirely when there's
+    // nothing to show.
+    mockIndexAndSpec('search', OPTIONAL_QUERY_SPEC_YAML, 'Search API')
+
+    const {stdout} = await testCommand(ApiSpecCommand, ['search'])
+    expect(stdout).not.toContain('Query params (required)')
+    expect(stdout).toContain('Query params (optional)')
+    expect(stdout).toContain('limit  integer  optional')
   })
 
   test('schemas-referenced footer points back at --schema', async () => {

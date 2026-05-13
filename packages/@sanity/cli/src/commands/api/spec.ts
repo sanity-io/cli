@@ -75,6 +75,17 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
       return
     }
 
+    // `--operation` doesn't apply to the raw YAML passthrough — the
+    // upstream YAML is byte-for-byte by design. Reject upfront so a
+    // typo in `--operation` doesn't silently succeed.
+    if (flags.format === 'openapi' && flags.operation) {
+      this.error(
+        '`--operation` is not compatible with `--format=openapi` — the raw OpenAPI ' +
+          'YAML is a byte-for-byte passthrough. Drop one of the flags.',
+        {exit: 1},
+      )
+    }
+
     const loaded = await this.loadSpec(slug)
 
     if (flags.schema) {

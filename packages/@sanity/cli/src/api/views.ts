@@ -267,7 +267,13 @@ function renderOperationBlock(op: ParsedOperation, slug: string): string[] {
   ]
 
   appendParamSection(lines, 'Path params', op.pathParams)
-  appendParamSection(lines, 'Query params (required)', requiredQueryParams)
+  // Gate optional sections behind length checks so we don't render a
+  // dead `Query params (required): (none)` block on endpoints that
+  // only have optional query params. Path params stay unconditional —
+  // most operations have at least one, and absence is itself signal.
+  if (requiredQueryParams.length > 0) {
+    appendParamSection(lines, 'Query params (required)', requiredQueryParams)
+  }
   if (optionalQueryParams.length > 0) {
     appendParamSection(lines, 'Query params (optional)', optionalQueryParams)
   }
