@@ -175,4 +175,58 @@ describe('setupMCP', () => {
 
     expect(mockSetupSkills).not.toHaveBeenCalled()
   })
+
+  test('still installs skills for already-MCP-configured editors during init (cwd provided)', async () => {
+    const editors = [
+      {
+        authStatus: 'valid',
+        configured: true,
+        existingToken: 'tok',
+        name: 'Cursor',
+      },
+      {
+        authStatus: 'valid',
+        configured: true,
+        existingToken: 'tok',
+        name: 'Claude Code',
+      },
+    ]
+    mockDetectAvailableEditors.mockResolvedValue(editors)
+    mockValidateEditorTokens.mockResolvedValue(undefined)
+    mockPromptForMCPSetup.mockImplementation(async (eds) => eds)
+    mockSetupSkills.mockResolvedValue({
+      installedAgents: ['cursor', 'claude-code'],
+      skipped: false,
+    })
+
+    const result = await setupMCP({cwd: '/tmp/project', mode: 'auto'})
+
+    // No MCP writes needed — already configured
+    expect(mockWriteMCPConfig).not.toHaveBeenCalled()
+    expect(mockCreateMCPToken).not.toHaveBeenCalled()
+    // But skills still installed for both editors
+    expect(mockSetupSkills).toHaveBeenCalledWith({cwd: '/tmp/project', editors})
+    expect(result.installedSkillsCliAgents).toEqual(['cursor', 'claude-code'])
+    expect(result.configuredEditors).toEqual([])
+  })
+
+  test('skips already-MCP-configured editors during sanity mcp configure (no cwd)', async () => {
+    const editors = [
+      {
+        authStatus: 'valid',
+        configured: true,
+        existingToken: 'tok',
+        name: 'Cursor',
+      },
+    ]
+    mockDetectAvailableEditors.mockResolvedValue(editors)
+    mockValidateEditorTokens.mockResolvedValue(undefined)
+
+    const result = await setupMCP({mode: 'auto'})
+
+    expect(mockSetupSkills).not.toHaveBeenCalled()
+    expect(mockWriteMCPConfig).not.toHaveBeenCalled()
+    expect(result.skipped).toBe(true)
+    expect(result.alreadyConfiguredEditors).toEqual(['Cursor'])
+  })
 })

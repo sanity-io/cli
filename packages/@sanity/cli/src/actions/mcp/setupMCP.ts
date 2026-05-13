@@ -95,10 +95,17 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
   await validateEditorTokens(editors)
 
   // 4. Check if there's anything actionable
-  const actionable = editors.filter((e) => !e.configured || e.authStatus !== 'valid')
+  // An editor needs MCP setup if it's not configured yet or its credentials
+  // aren't valid. When a `cwd` is set (sanity init), every detected editor
+  // also needs skills installed into the new project — MCP being already
+  // configured globally doesn't imply project-local skills exist.
+  const needsMCPSetup = (e: (typeof editors)[number]) => !e.configured || e.authStatus !== 'valid'
+  const needsSkillsSetup = (e: (typeof editors)[number]) =>
+    Boolean(cwd && (EDITOR_CONFIGS[e.name] as {skillsCliAgent?: string}).skillsCliAgent)
+  const actionable = editors.filter((e) => needsMCPSetup(e) || needsSkillsSetup(e))
 
   if (actionable.length === 0) {
-    mcpDebug('All editors configured with valid credentials')
+    mcpDebug('All editors configured with valid credentials and no skills setup needed')
     const alreadyConfiguredEditorObjects = editors.filter(
       (e) => e.configured && e.authStatus === 'valid',
     )
@@ -107,21 +114,17 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
       ux.stdout(`${logSymbols.success} All detected editors are already configured`)
     }
 
-    const skillsResult = cwd
-      ? await setupSkills({cwd, editors: alreadyConfiguredEditorObjects})
-      : undefined
-
     return {
       alreadyConfiguredEditors,
       configuredEditors: [],
       detectedEditors,
-      installedSkillsCliAgents: skillsResult?.installedAgents ?? [],
-      skillsError: skillsResult?.error,
+      installedSkillsCliAgents: [],
       skipped: true,
     }
   }
 
-  // Non-actionable editors are already configured with valid credentials
+  // Non-actionable editors are already configured with valid credentials and
+  // don't need skills setup either.
   const alreadyConfiguredEditors = editors.filter((e) => !actionable.includes(e)).map((e) => e.name)
 
   // 5. Select editors to configure — prompt interactively or auto-select all
@@ -139,6 +142,10 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     }
   }
 
+  // Of the selected editors, only some need MCP config written. Others are
+  // already configured globally and only need project-local skills installed.
+  const selectedForMCP = selected.filter((e) => needsMCPSetup(e))
+
   // 6. Get a token — reuse a valid existing one or create a new one
   let token: string | undefined
 
@@ -149,11 +156,12 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     token = validEditor.existingToken
   }
 
-  const allOAuth = selected.every((e) => EDITOR_CONFIGS[e.name].oauthOnly)
+  const allOAuth =
+    selectedForMCP.length > 0 && selectedForMCP.every((e) => EDITOR_CONFIGS[e.name].oauthOnly)
 
-  // Fall back to creating a new token
-  // If all editors use OAuth, we don't need to create a token
-  if (!token && !allOAuth) {
+  // Fall back to creating a new token. Skip when no editors need MCP set up
+  // or when all of them use OAuth (no token required).
+  if (!token && !allOAuth && selectedForMCP.length > 0) {
     try {
       token = await createMCPToken()
     } catch (error) {
@@ -172,10 +180,10 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     }
   }
 
-  // 7. Write configs for each selected editor
+  // 7. Write configs for editors that actually need MCP setup
   const configuredEditors: EditorName[] = []
   try {
-    for (const editor of selected) {
+    for (const editor of selectedForMCP) {
       await writeMCPConfig(editor, token)
       configuredEditors.push(editor.name)
     }
@@ -194,15 +202,14 @@ export async function setupMCP(options?: MCPSetupOptions): Promise<MCPSetupResul
     }
   }
 
-  ux.stdout(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
+  if (configuredEditors.length > 0) {
+    ux.stdout(`${logSymbols.success} MCP configured for ${configuredEditors.join(', ')}`)
+  }
 
-  // 8. Install Sanity agent skills for the same editors (best-effort)
-  const skillsResult = cwd
-    ? await setupSkills({
-        cwd,
-        editors: selected.filter((editor) => configuredEditors.includes(editor.name)),
-      })
-    : undefined
+  // 8. Install Sanity agent skills for every selected editor (best-effort).
+  // This includes editors whose MCP was already configured — they may still
+  // be missing project-local skills.
+  const skillsResult = cwd ? await setupSkills({cwd, editors: selected}) : undefined
 
   return {
     alreadyConfiguredEditors,
