@@ -26,7 +26,7 @@ describe('setupSkills', () => {
   })
 
   test('skips when no editors have a skills agent mapping', async () => {
-    // Zed and MCPorter do not have a skillsAgent mapping
+    // Zed and MCPorter do not have a skillsCliAgent mapping
     const result = await setupSkills({editors: [editor('Zed'), editor('MCPorter')]})
 
     expect(result).toEqual({installedAgents: [], skipped: true})

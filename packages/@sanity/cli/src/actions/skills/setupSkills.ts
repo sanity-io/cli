@@ -20,7 +20,7 @@ export const SANITY_SKILLS_REPO = 'sanity-io/agent-toolkit'
 interface SetupSkillsOptions {
   /**
    * Editors that MCP was (or will be) configured for. Skills will be installed
-   * for each editor's mapped `skillsAgent`.
+   * for each editor's mapped `skillsCliAgent`.
    */
   editors: Editor[]
 
@@ -55,7 +55,7 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
   }
 
   const agents = editors.flatMap((editor) => {
-    const agent = (EDITOR_CONFIGS[editor.name] as {skillsAgent?: string}).skillsAgent
+    const agent = (EDITOR_CONFIGS[editor.name] as {skillsCliAgent?: string}).skillsCliAgent
     return agent ? [agent] : []
   })
 
