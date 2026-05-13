@@ -1,5 +1,19 @@
 # Change Log
 
+## [6.5.3](https://github.com/sanity-io/cli/compare/cli-v6.5.2...cli-v6.5.3)
+
+_2026-05-13_
+
+### Bug Fixes
+
+- release to re-publish new cli-build package ([#1077](https://github.com/sanity-io/cli/pull/1077)) ([2fae51f](https://github.com/sanity-io/cli/commit/2fae51f7c06acdf5b5cb711cfdcfa36749b7ba97))
+
+### Dependencies
+
+- The following workspace dependencies were updated
+  - dependencies
+    - @sanity/cli-build bumped to 0.1.1
+
 ## [6.5.2](https://github.com/sanity-io/cli/compare/cli-v6.5.1...cli-v6.5.2)
 
 _2026-05-13_
