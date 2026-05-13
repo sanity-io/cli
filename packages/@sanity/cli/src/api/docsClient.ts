@@ -29,12 +29,6 @@ export interface OpenApiSpecIndexEntry {
   title: string
 }
 
-interface FetchSpecResult {
-  /** Raw response body (YAML text). */
-  content: string
-  contentType: string
-}
-
 /**
  * Resolve the docs API base URL.
  *
@@ -87,7 +81,7 @@ export async function fetchSpecIndex(): Promise<OpenApiSpecIndexEntry[]> {
  * canonical source-of-truth shape. Returns null on 404; throws on
  * other non-2xx statuses.
  */
-export async function fetchSpec(slug: string): Promise<FetchSpecResult | null> {
+export async function fetchSpec(slug: string): Promise<string | null> {
   const url = new URL(`${getDocsApiBaseUrl()}/api/openapi/${encodeURIComponent(slug)}`)
   url.searchParams.set('format', 'yaml')
 
@@ -103,8 +97,5 @@ export async function fetchSpec(slug: string): Promise<FetchSpecResult | null> {
     )
   }
 
-  return {
-    content: await response.text(),
-    contentType: response.headers.get('content-type') || 'application/x-yaml',
-  }
+  return await response.text()
 }

@@ -2,8 +2,7 @@ import {Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
-import {fetchSpecIndex} from '../../api/docsClient.js'
-import {buildOperationsIndex, loadParsedSpecs} from '../../api/parser.js'
+import {loadOperationsIndex} from '../../api/parser.js'
 import {printOperationsTable, toOperationJsonRow} from '../../api/views.js'
 
 const debug = subdebug('api:list')
@@ -74,9 +73,7 @@ export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
 
   private async loadOperations(specFilter: string | undefined) {
     try {
-      const index = await fetchSpecIndex()
-      const parsedSpecs = await loadParsedSpecs(index)
-      const operations = buildOperationsIndex(parsedSpecs)
+      const operations = await loadOperationsIndex()
       return specFilter ? operations.filter((op) => op.spec === specFilter) : operations
     } catch (error) {
       debug('list failed', error)

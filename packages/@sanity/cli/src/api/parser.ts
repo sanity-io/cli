@@ -2,7 +2,7 @@ import {subdebug} from '@sanity/cli-core'
 import {validate} from '@scalar/openapi-parser'
 import {type OpenAPIV3, type OpenAPIV3_1} from '@scalar/openapi-types'
 
-import {fetchSpec, type OpenApiSpecIndexEntry} from './docsClient.js'
+import {fetchSpec, fetchSpecIndex, type OpenApiSpecIndexEntry} from './docsClient.js'
 
 const debug = subdebug('api:parser')
 
@@ -259,49 +259,40 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
 }
 
 /* ---------------------------------------------------------------------- *
- *  Index builder + cache loader                                           *
+ *  Operations index loader                                                *
  * ---------------------------------------------------------------------- */
 
 /**
- * Flatten parsed specs into a single sorted operations array.
+ * Fetch the docs index and every per-spec body, parse each, and return
+ * the flat operations index — sorted by spec → path → method.
  *
- * Sort order matches the `list` table in the spec: spec asc → path asc → method asc.
- * Stable ordering matters for diffability and agent re-runs.
- */
-export function buildOperationsIndex(specs: ParsedSpec[]): OperationIndexEntry[] {
-  const entries: OperationIndexEntry[] = []
-  for (const spec of specs) {
-    for (const op of spec.operations) {
-      entries.push({...op, spec: spec.slug})
-    }
-  }
-  entries.sort((a, b) => {
-    if (a.spec !== b.spec) return a.spec < b.spec ? -1 : 1
-    if (a.path !== b.path) return a.path < b.path ? -1 : 1
-    return a.method < b.method ? -1 : a.method > b.method ? 1 : 0
-  })
-  return entries
-}
-
-/**
- * For each index entry, fetch the spec YAML from the docs endpoint
- * and parse it.
+ * Single seam for the discovery pipeline (index → fan-out → flatten +
+ * sort). Callers don't need to wire the three steps themselves.
  *
- * Skips entries that 404 (the index lied or the spec was deleted
- * between calls). Skips entries whose YAML fails to parse —
- * debug-logged so they show up under `DEBUG=sanity:cli:api:parser`
- * without breaking the caller.
+ * Error semantics:
+ *   - The index fetch throws on network/non-2xx — callers translate
+ *     that into a user-facing message.
+ *   - Per-spec 404s are skipped silently (the index lied or the spec
+ *     was deleted between calls).
+ *   - Per-spec parse errors are debug-logged and skipped (visible
+ *     under `DEBUG=sanity:cli:api:parser`) without breaking the run.
  *
  * Specs are fetched in parallel — the index is small (~22 entries) and
  * each request is independent, so serializing would be needless latency.
  */
-export async function loadParsedSpecs(index: OpenApiSpecIndexEntry[]): Promise<ParsedSpec[]> {
+export async function loadOperationsIndex(): Promise<OperationIndexEntry[]> {
+  const index = await fetchSpecIndex()
+  const specs = await loadParsedSpecs(index)
+  return buildOperationsIndex(specs)
+}
+
+async function loadParsedSpecs(index: OpenApiSpecIndexEntry[]): Promise<ParsedSpec[]> {
   const results = await Promise.all(
     index.map(async (entry): Promise<ParsedSpec | null> => {
-      const fetched = await fetchSpec(entry.slug)
-      if (fetched === null) return null
+      const yaml = await fetchSpec(entry.slug)
+      if (yaml === null) return null
       try {
-        const parsed = await parseOpenApi(entry.slug, fetched.content)
+        const parsed = await parseOpenApi(entry.slug, yaml)
         return {
           ...parsed,
           description: entry.description || parsed.description,
@@ -315,4 +306,24 @@ export async function loadParsedSpecs(index: OpenApiSpecIndexEntry[]): Promise<P
     }),
   )
   return results.filter((s): s is ParsedSpec => s !== null)
+}
+
+/**
+ * Flatten parsed specs into a sorted operations array. Sort order:
+ * spec asc → path asc → method asc — stable ordering for diffability
+ * and agent re-runs.
+ */
+function buildOperationsIndex(specs: ParsedSpec[]): OperationIndexEntry[] {
+  const entries: OperationIndexEntry[] = []
+  for (const spec of specs) {
+    for (const op of spec.operations) {
+      entries.push({...op, spec: spec.slug})
+    }
+  }
+  entries.sort((a, b) => {
+    if (a.spec !== b.spec) return a.spec < b.spec ? -1 : 1
+    if (a.path !== b.path) return a.path < b.path ? -1 : 1
+    return a.method < b.method ? -1 : a.method > b.method ? 1 : 0
+  })
+  return entries
 }
