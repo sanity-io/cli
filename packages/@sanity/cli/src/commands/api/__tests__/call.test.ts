@@ -85,6 +85,36 @@ paths:
           description: ok
 `
 
+const POST_YAML = `
+openapi: 3.1.1
+info:
+  title: Mutate API
+  version: 'v2024-01-01'
+servers:
+  - url: 'https://api.sanity.io/{apiVersion}'
+    variables:
+      apiVersion:
+        default: 'v2024-01-01'
+paths:
+  /mutate/{dataset}:
+    post:
+      summary: Apply mutations
+      operationId: mutate
+      parameters:
+        - in: path
+          name: dataset
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object}
+      responses:
+        '200':
+          description: ok
+`
+
 const PROJECTS_YAML = `
 openapi: 3.1.1
 info:
@@ -232,6 +262,23 @@ describe('#api:call', () => {
     expect(error?.message).toContain('Missing required query parameter(s): query')
   })
 
+  test.each(['list', 'spec'])(
+    'subcommand name "%s" passed as endpoint errors cleanly (routing safety)',
+    async (subcommand) => {
+      // oclif routes `sanity api list` → ApiListCommand and `sanity api spec`
+      // → ApiSpecCommand. This test is a guardrail: if the routing ever
+      // regressed and a subcommand name slipped through to ApiCallCommand,
+      // the command must reject it cleanly rather than try to fetch
+      // `/list` or `/spec` as an HTTP endpoint.
+      mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
+
+      vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+      const {error} = await testCommand(ApiCallCommand, [subcommand])
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain('No spec found owning path')
+    },
+  )
+
   test('errors when the endpoint does not match any operation', async () => {
     mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
 
@@ -253,16 +300,34 @@ describe('#api:call', () => {
     await testCommand(ApiCallCommand, ['v2021-06-07/jobs/abc123'])
   })
 
-  test('POST without body flags errors before sending and names Phase 4', async () => {
+  test('errors with method-not-allowed when method is not declared on path', async () => {
+    // JOBS_YAML only declares GET on /jobs/{jobId}. Resolving with
+    // `-X POST` should surface the method-not-allowed error from
+    // `resolveEndpoint`, not the body-not-yet-supported preflight gate
+    // (that gate only fires once a POST operation actually matches).
     mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
 
     vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
     const {error} = await testCommand(ApiCallCommand, ['v2021-06-07/jobs/abc123', '-X', 'POST'])
-    // The endpoint doesn't have a POST, but the body-method gate fires
-    // first only when a POST operation IS matched. Here the endpoint has
-    // only GET, so we expect a method-not-allowed error.
     expect(error).toBeInstanceOf(Error)
     expect(error?.message.toLowerCase()).toMatch(/method post not allowed|method not allowed/)
+  })
+
+  test('POST that resolves to a body op errors at the Phase-4 gate', async () => {
+    // Real POST operation: the resolver succeeds, then preflight's
+    // body-not-yet-supported gate fires with the Phase-4 hint. Locks
+    // down the user-facing copy that points at the upcoming feature.
+    mockIndexAndSpecs([{slug: 'mutate', yaml: POST_YAML}])
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    const {error} = await testCommand(ApiCallCommand, [
+      'v2024-01-01/mutate/production',
+      '-X',
+      'POST',
+    ])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('POST needs a request body')
+    expect(error?.message).toContain('Phase 4')
   })
 
   test('refuses DELETE in unattended mode without --yes', async () => {
@@ -286,6 +351,79 @@ describe('#api:call', () => {
     expect(error?.message).toContain('--yes')
 
     isUnattended.mockRestore()
+  })
+
+  test('rejects -q values that are missing `=`', async () => {
+    // No index/outbound mocks: validation runs before the index fetch,
+    // so getting past validation would surface as an unrelated nock
+    // pending-mock failure.
+    const {error} = await testCommand(ApiCallCommand, [
+      'v2021-06-07/jobs/abc123',
+      '-q',
+      'malformed',
+    ])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('key=value form')
+    expect(error?.message).toContain('"malformed"')
+  })
+
+  test('aborted destructive prompt exits non-zero', async () => {
+    // Force interactive (not unattended), then decline the prompt. A
+    // user-declined destructive op should exit non-zero so wrapping
+    // scripts don't treat it as a successful no-op.
+    mockIndexAndSpecs([{slug: 'projects', yaml: PROJECTS_YAML}])
+    const isUnattended = vi.spyOn(
+      SanityCommand.prototype as unknown as {isUnattended: () => boolean},
+      'isUnattended',
+    )
+    isUnattended.mockReturnValue(false)
+    vi.mocked(confirm).mockResolvedValueOnce(false)
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    const {error} = await testCommand(ApiCallCommand, [
+      '-X',
+      'DELETE',
+      'v2024-01-01/projects/abc123',
+    ])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Aborted')
+
+    isUnattended.mockRestore()
+  })
+
+  test('destructive prompt strips the telemetry tag from the URL', async () => {
+    // The `?tag=sanity.cli.api` parameter is CLI implementation noise.
+    // It must not appear in the confirmation message — the user shouldn't
+    // have to mentally subtract it when deciding whether to proceed.
+    mockIndexAndSpecs([{slug: 'projects', yaml: PROJECTS_YAML}])
+    const isUnattended = vi.spyOn(
+      SanityCommand.prototype as unknown as {isUnattended: () => boolean},
+      'isUnattended',
+    )
+    isUnattended.mockReturnValue(false)
+    vi.mocked(confirm).mockResolvedValueOnce(false)
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    await testCommand(ApiCallCommand, ['-X', 'DELETE', 'v2024-01-01/projects/abc123'])
+
+    expect(confirm).toHaveBeenCalledOnce()
+    const message = vi.mocked(confirm).mock.calls[0]?.[0]?.message ?? ''
+    expect(message).not.toContain('tag=sanity.cli.api')
+    expect(message).toContain('/v2024-01-01/projects/abc123')
+
+    isUnattended.mockRestore()
+  })
+
+  test('surfaces a friendly error when the docs index is unreachable', async () => {
+    // Every `sanity api <endpoint>` call depends on the operations
+    // index. If the docs service is down we want a clean, single-line
+    // error — not a raw fetch trace.
+    nock('https://www.sanity.io').get('/docs/api/openapi').replyWithError('Network error')
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    const {error} = await testCommand(ApiCallCommand, ['v2021-06-07/jobs/abc123'])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('OpenAPI service is currently unavailable')
   })
 
   test('DELETE with --yes proceeds without prompting', async () => {

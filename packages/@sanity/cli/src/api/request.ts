@@ -109,6 +109,9 @@ function buildQueryString(inline: string, flagPairs: readonly string[]): string 
   }
 
   // Flag values override on conflict — drop inline values for the same key.
+  // Pairs without `=` are rejected upstream in the command layer, so the
+  // defensive guard below is unreachable at runtime. Keep it as a belt-
+  // and-suspenders safety net for callers that bypass the CLI surface.
   const flagKeys = new Set<string>()
   for (const pair of flagPairs) {
     const eq = pair.indexOf('=')

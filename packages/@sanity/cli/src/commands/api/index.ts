@@ -81,11 +81,13 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(ApiCallCommand)
 
+    const queryFlags = flags.query ?? []
+    this.validateQueryFlags(queryFlags)
+
     const index = await this.loadIndex()
     const {inlineQuery, operation, path} = this.resolveMatch(args.endpoint, flags.method, index)
 
     const context = collectContextValues(flags)
-    const queryFlags = flags.query ?? []
 
     const issues = runPreflight({context, inlineQuery, queryFlags, resolved: {operation, path}})
     if (issues.length > 0) this.reportPreflight(issues[0], operation)
@@ -93,7 +95,7 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     const url = buildRequestUrl({context, inlineQuery, operation, path, queryFlags})
 
     if (DESTRUCTIVE_METHODS.has(operation.method)) {
-      await this.confirmDestructive(operation.method, url, flags.yes ?? false)
+      await this.confirmDestructive(operation.method, url)
     }
 
     const token = await this.resolveToken(flags.token)
@@ -108,10 +110,16 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
    *  error copy, and the destructive prompt.
    * -------------------------------------------------------------------- */
 
-  private async confirmDestructive(method: string, url: string, yes: boolean): Promise<void> {
-    if (yes) return
-
+  /**
+   * Destructive-op guard. `isUnattended()` is the single source of truth
+   * (it folds in `--yes` and TTY detection); we either refuse outright
+   * or prompt — never both. Aborting via the prompt exits non-zero so a
+   * wrapping script doesn't continue as if the call succeeded.
+   */
+  private async confirmDestructive(method: string, url: string): Promise<void> {
     if (this.isUnattended()) {
+      // `--yes` already short-circuits via isUnattended()'s false branch.
+      if (this.flags.yes) return
       this.error(
         `Refusing to execute a destructive operation (${method}) in unattended mode.\n` +
           'Hint: pass --yes to confirm (e.g. `sanity api -X DELETE … --yes`).',
@@ -119,14 +127,14 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       )
     }
 
+    // Hide the telemetry tag from the prompt — it's CLI implementation
+    // noise the user shouldn't have to mentally subtract.
+    const displayUrl = stripTelemetryTag(url)
     const confirmed = await confirm({
       default: false,
-      message: `This will ${method} ${url}. Continue?`,
+      message: `This will ${method} ${displayUrl}. Continue?`,
     })
-    if (!confirmed) {
-      this.log('Aborted.')
-      this.exit(0)
-    }
+    if (!confirmed) this.error('Aborted.', {exit: 1})
   }
 
   private async loadIndex(): Promise<OperationIndexEntry[]> {
@@ -171,25 +179,43 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     this.log(response.body)
   }
 
-  /** Translate a single preflight issue into a friendly error + exit. */
+  /**
+   * Translate a single preflight issue into a friendly error + exit.
+   * The `switch` is exhaustive on `kind`; adding a new `PreflightIssue`
+   * variant trips a `never`-type error here instead of silently falling
+   * through to an unrelated message.
+   */
   private reportPreflight(issue: PreflightIssue, operation: OperationIndexEntry): never {
-    if (issue.kind === 'body-not-yet-supported') {
-      this.error(
-        `${issue.method} needs a request body. ` +
-          'Body construction (`-f`, `-F`, `--input`) ships in Phase 4.',
-        {exit: 1},
-      )
+    switch (issue.kind) {
+      case 'body-not-yet-supported': {
+        this.error(
+          `${issue.method} needs a request body. ` +
+            'Body construction (`-f`, `-F`, `--input`) ships in Phase 4.',
+          {exit: 1},
+        )
+        break
+      }
+      case 'missing-required-query': {
+        this.error(
+          `Missing required query parameter(s): ${issue.names.join(', ')}\n` +
+            `Hint: pass with -q name=value. See: sanity api spec ${operation.spec} ` +
+            `--operation=${operation.operationId} --format=json`,
+          {exit: 1},
+        )
+        break
+      }
+      case 'unfilled-placeholder': {
+        this.error(formatUnfilledPlaceholders(issue.names, operation), {exit: 1})
+        break
+      }
+      default: {
+        const _exhaustive: never = issue
+        throw new Error(`Unhandled preflight issue: ${JSON.stringify(_exhaustive)}`)
+      }
     }
-    if (issue.kind === 'unfilled-placeholder') {
-      this.error(formatUnfilledPlaceholders(issue.names, operation), {exit: 1})
-    }
-    // missing-required-query
-    this.error(
-      `Missing required query parameter(s): ${issue.names.join(', ')}\n` +
-        `Hint: pass with -q name=value. See: sanity api spec ${operation.spec} ` +
-        `--operation=${operation.operationId} --format=json`,
-      {exit: 1},
-    )
+    // `this.error()` is `never`; the explicit throw keeps the TS narrowing
+    // honest in case someone replaces it with a non-fatal logger.
+    throw new Error('unreachable')
   }
 
   private resolveMatch(
@@ -228,11 +254,49 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       this.error(`Request failed: ${(error as Error).message ?? String(error)}`, {exit: 1})
     }
   }
+
+  /**
+   * Reject `-q foo` (no `=`) up front — silently dropping malformed
+   * values would send the request without the param the user thought
+   * they'd set, which is a much more confusing failure than a 4xx.
+   */
+  private validateQueryFlags(queryFlags: readonly string[]): void {
+    for (const pair of queryFlags) {
+      if (!pair.includes('=')) {
+        this.error(
+          `-q values must be in key=value form (got "${pair}").\n` +
+            'Hint: pass empty values as `-q key=`.',
+          {exit: 1},
+        )
+      }
+    }
+  }
 }
 
 /* ---------------------------------------------------------------------- *
  *  Pure helpers (no command coupling)                                     *
  * ---------------------------------------------------------------------- */
+
+/**
+ * Drop the `tag=sanity.cli.api` telemetry parameter for display
+ * purposes. The tag is merged into every outbound URL, but it's
+ * implementation noise the user shouldn't have to mentally subtract
+ * when reading a confirmation prompt. Only strips when the value
+ * matches the CLI's telemetry sentinel — user-supplied `tag=…`
+ * values pass through untouched.
+ */
+function stripTelemetryTag(url: string): string {
+  try {
+    const parsed = new URL(url)
+    if (parsed.searchParams.get('tag') === 'sanity.cli.api') {
+      parsed.searchParams.delete('tag')
+    }
+    const query = parsed.searchParams.toString()
+    return `${parsed.origin}${parsed.pathname}${query ? `?${query}` : ''}`
+  } catch {
+    return url
+  }
+}
 
 function collectContextValues(flags: {dataset?: string; project?: string}): Record<string, string> {
   const values: Record<string, string> = {}
