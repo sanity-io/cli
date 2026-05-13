@@ -1,11 +1,7 @@
-import fs from 'node:fs/promises'
-import os from 'node:os'
-import path from 'node:path'
-
 import {testCommand} from '@sanity/cli-test'
 import nock, {cleanAll, pendingMocks} from 'nock'
 import open from 'open'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {ListOpenApiCommand} from '../list.js'
 
@@ -35,11 +31,14 @@ paths:
           description: ok
 `
 
-async function seedCache(cacheRoot: string, revision: string, yaml: string) {
-  const apiDir = path.join(cacheRoot, 'api')
-  await fs.mkdir(path.join(apiDir, 'specs'), {recursive: true})
-  await fs.writeFile(path.join(apiDir, 'specs', 'jobs.yaml'), yaml, 'utf8')
-  await fs.writeFile(path.join(apiDir, 'revisions.json'), JSON.stringify({jobs: revision}), 'utf8')
+function mockIndexAndJobs() {
+  nock('https://www.sanity.io')
+    .get('/docs/api/openapi')
+    .reply(200, {specs: [{description: '', revision: '', slug: 'jobs', title: 'Jobs API'}]})
+  nock('https://www.sanity.io')
+    .get('/docs/api/openapi/jobs')
+    .query({format: 'yaml'})
+    .reply(200, JOBS_SPEC_YAML)
 }
 
 /**
@@ -48,16 +47,7 @@ async function seedCache(cacheRoot: string, revision: string, yaml: string) {
  * to the canonical command.
  */
 describe('#openapi:list (deprecation forwarder)', () => {
-  let tmpDir: string
-
-  beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'sanity-cli-openapi-list-test-'))
-    process.env.SANITY_CLI_CACHE_PATH = tmpDir
-  })
-
-  afterEach(async () => {
-    delete process.env.SANITY_CLI_CACHE_PATH
-    await fs.rm(tmpDir, {force: true, recursive: true})
+  afterEach(() => {
     vi.clearAllMocks()
     const pending = pendingMocks()
     cleanAll()
@@ -65,10 +55,7 @@ describe('#openapi:list (deprecation forwarder)', () => {
   })
 
   test('emits a deprecation warning and delegates to api list', async () => {
-    await seedCache(tmpDir, 'rev1', JOBS_SPEC_YAML)
-    nock('https://www.sanity.io')
-      .get('/docs/api/openapi')
-      .reply(200, {specs: [{description: '', revision: 'rev1', slug: 'jobs', title: 'Jobs API'}]})
+    mockIndexAndJobs()
 
     const {stderr, stdout} = await testCommand(ListOpenApiCommand)
 
@@ -82,10 +69,7 @@ describe('#openapi:list (deprecation forwarder)', () => {
   })
 
   test('forwards --json flag through', async () => {
-    await seedCache(tmpDir, 'rev1', JOBS_SPEC_YAML)
-    nock('https://www.sanity.io')
-      .get('/docs/api/openapi')
-      .reply(200, {specs: [{description: '', revision: 'rev1', slug: 'jobs', title: 'Jobs API'}]})
+    mockIndexAndJobs()
 
     const {stderr, stdout} = await testCommand(ListOpenApiCommand, ['--json'])
     expect(stderr).toContain('deprecated')

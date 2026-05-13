@@ -2,8 +2,7 @@ import {subdebug} from '@sanity/cli-core'
 import {validate} from '@scalar/openapi-parser'
 import {type OpenAPIV3, type OpenAPIV3_1} from '@scalar/openapi-types'
 
-import {readSpec} from './cache.js'
-import {type OpenApiSpecIndexEntry} from './docsClient.js'
+import {fetchSpec, type OpenApiSpecIndexEntry} from './docsClient.js'
 
 const debug = subdebug('api:parser')
 
@@ -285,29 +284,35 @@ export function buildOperationsIndex(specs: ParsedSpec[]): OperationIndexEntry[]
 }
 
 /**
- * For each index entry, read the cached YAML and parse it.
+ * For each index entry, fetch the spec YAML from the docs endpoint
+ * and parse it.
  *
- * Skips entries we don't have on disk (revalidation hasn't run, or the
- * entry was added upstream after our last fetch). Skips entries whose
- * YAML fails to parse — debug-logged so they show up under
- * `DEBUG=sanity:cli:api:parser` without breaking the caller.
+ * Skips entries that 404 (the index lied or the spec was deleted
+ * between calls). Skips entries whose YAML fails to parse —
+ * debug-logged so they show up under `DEBUG=sanity:cli:api:parser`
+ * without breaking the caller.
+ *
+ * Specs are fetched in parallel — the index is small (~22 entries) and
+ * each request is independent, so serializing would be needless latency.
  */
 export async function loadParsedSpecs(index: OpenApiSpecIndexEntry[]): Promise<ParsedSpec[]> {
-  const specs: ParsedSpec[] = []
-  for (const entry of index) {
-    const yaml = await readSpec(entry.slug)
-    if (yaml === null) continue
-    try {
-      const parsed = await parseOpenApi(entry.slug, yaml)
-      specs.push({
-        ...parsed,
-        description: entry.description || parsed.description,
-        slug: entry.slug,
-        title: entry.title || parsed.title,
-      })
-    } catch (error) {
-      debug(`skipping spec "${entry.slug}" — parse error`, error)
-    }
-  }
-  return specs
+  const results = await Promise.all(
+    index.map(async (entry): Promise<ParsedSpec | null> => {
+      const fetched = await fetchSpec(entry.slug)
+      if (fetched === null) return null
+      try {
+        const parsed = await parseOpenApi(entry.slug, fetched.content)
+        return {
+          ...parsed,
+          description: entry.description || parsed.description,
+          slug: entry.slug,
+          title: entry.title || parsed.title,
+        }
+      } catch (error) {
+        debug(`skipping spec "${entry.slug}" — parse error`, error)
+        return null
+      }
+    }),
+  )
+  return results.filter((s): s is ParsedSpec => s !== null)
 }

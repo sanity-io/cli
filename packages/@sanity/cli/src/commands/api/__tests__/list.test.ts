@@ -1,11 +1,7 @@
-import fs from 'node:fs/promises'
-import os from 'node:os'
-import path from 'node:path'
-
 import {testCommand} from '@sanity/cli-test'
 import nock, {cleanAll, pendingMocks} from 'nock'
 import open from 'open'
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {ApiListCommand} from '../list.js'
 
@@ -61,45 +57,35 @@ paths:
           description: ok
 `
 
-async function seedCache(
-  cacheRoot: string,
-  specs: Array<{revision: string; slug: string; yaml: string}>,
-) {
-  const apiDir = path.join(cacheRoot, 'api')
-  await fs.mkdir(path.join(apiDir, 'specs'), {recursive: true})
-  const revisions: Record<string, string> = {}
+function mockIndexAndSpecs(specs: Array<{slug: string; title?: string; yaml: string}>) {
+  nock('https://www.sanity.io')
+    .get('/docs/api/openapi')
+    .reply(200, {
+      specs: specs.map((s) => ({
+        description: '',
+        revision: '',
+        slug: s.slug,
+        title: s.title ?? s.slug,
+      })),
+    })
   for (const spec of specs) {
-    revisions[spec.slug] = spec.revision
-    await fs.writeFile(path.join(apiDir, 'specs', `${spec.slug}.yaml`), spec.yaml, 'utf8')
+    nock('https://www.sanity.io')
+      .get(`/docs/api/openapi/${spec.slug}`)
+      .query({format: 'yaml'})
+      .reply(200, spec.yaml)
   }
-  await fs.writeFile(path.join(apiDir, 'revisions.json'), JSON.stringify(revisions), 'utf8')
 }
 
 describe('#api:list', () => {
-  let tmpDir: string
-
-  beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'sanity-cli-api-list-test-'))
-    process.env.SANITY_CLI_CACHE_PATH = tmpDir
-  })
-
-  afterEach(async () => {
-    delete process.env.SANITY_CLI_CACHE_PATH
-    await fs.rm(tmpDir, {force: true, recursive: true})
+  afterEach(() => {
     vi.clearAllMocks()
     const pending = pendingMocks()
     cleanAll()
     expect(pending, 'pending mocks').toEqual([])
   })
 
-  test('renders the operation table when cache is warm', async () => {
-    await seedCache(tmpDir, [{revision: 'rev1', slug: 'jobs', yaml: JOBS_SPEC_YAML}])
-
-    nock('https://www.sanity.io')
-      .get('/docs/api/openapi')
-      .reply(200, {
-        specs: [{description: 'Job ops', revision: 'rev1', slug: 'jobs', title: 'Jobs API'}],
-      })
+  test('renders the operation table', async () => {
+    mockIndexAndSpecs([{slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML}])
 
     const {stdout} = await testCommand(ApiListCommand)
 
@@ -114,11 +100,7 @@ describe('#api:list', () => {
   })
 
   test('emits an operation array under --json', async () => {
-    await seedCache(tmpDir, [{revision: 'rev1', slug: 'jobs', yaml: JOBS_SPEC_YAML}])
-
-    nock('https://www.sanity.io')
-      .get('/docs/api/openapi')
-      .reply(200, {specs: [{description: '', revision: 'rev1', slug: 'jobs', title: 'Jobs API'}]})
+    mockIndexAndSpecs([{slug: 'jobs', title: 'Jobs API', yaml: JOBS_SPEC_YAML}])
 
     const {stdout} = await testCommand(ApiListCommand, ['--json'])
 
@@ -140,19 +122,10 @@ describe('#api:list', () => {
   })
 
   test('--spec narrows to a single spec', async () => {
-    await seedCache(tmpDir, [
-      {revision: 'rev1', slug: 'jobs', yaml: JOBS_SPEC_YAML},
-      {revision: 'rev2', slug: 'mutate', yaml: MUTATE_SPEC_YAML},
+    mockIndexAndSpecs([
+      {slug: 'jobs', yaml: JOBS_SPEC_YAML},
+      {slug: 'mutate', yaml: MUTATE_SPEC_YAML},
     ])
-
-    nock('https://www.sanity.io')
-      .get('/docs/api/openapi')
-      .reply(200, {
-        specs: [
-          {description: '', revision: 'rev1', slug: 'jobs', title: 'Jobs'},
-          {description: '', revision: 'rev2', slug: 'mutate', title: 'Mutate'},
-        ],
-      })
 
     const {stdout} = await testCommand(ApiListCommand, ['--spec=jobs', '--json'])
 
@@ -176,26 +149,29 @@ describe('#api:list', () => {
     expect(error?.message).toContain('OpenAPI service is currently unavailable')
   })
 
-  test('refetches when upstream revision changes', async () => {
-    await seedCache(tmpDir, [{revision: 'rev1', slug: 'jobs', yaml: JOBS_SPEC_YAML}])
-
-    // Upstream advances to rev2 → CLI should refetch
+  test('skips entries whose spec endpoint returns 404', async () => {
     nock('https://www.sanity.io')
       .get('/docs/api/openapi')
-      .reply(200, {specs: [{description: '', revision: 'rev2', slug: 'jobs', title: 'Jobs'}]})
+      .reply(200, {
+        specs: [
+          {description: '', revision: '', slug: 'jobs', title: 'Jobs'},
+          {description: '', revision: '', slug: 'missing', title: 'Missing'},
+        ],
+      })
 
     nock('https://www.sanity.io')
       .get('/docs/api/openapi/jobs')
       .query({format: 'yaml'})
       .reply(200, JOBS_SPEC_YAML)
 
-    const {stdout} = await testCommand(ApiListCommand)
-    expect(stdout).toContain('v2021-06-07/jobs/:jobId')
+    nock('https://www.sanity.io')
+      .get('/docs/api/openapi/missing')
+      .query({format: 'yaml'})
+      .reply(404)
 
-    // Cache now reflects rev2
-    const revisions = JSON.parse(
-      await fs.readFile(path.join(tmpDir, 'api', 'revisions.json'), 'utf8'),
-    )
-    expect(revisions.jobs).toBe('rev2')
+    const {stdout} = await testCommand(ApiListCommand, ['--json'])
+
+    const parsed = JSON.parse(stdout)
+    expect(parsed.every((op: {spec: string}) => op.spec === 'jobs')).toBe(true)
   })
 })
