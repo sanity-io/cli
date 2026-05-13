@@ -31,13 +31,13 @@ import {type PreflightIssue} from './preflight.js'
  * `--projectId`) so users don't have to translate. Adding a new
  * supported placeholder is a single-row change.
  */
-export const CONTEXT_PLACEHOLDERS = {
+const CONTEXT_PLACEHOLDERS = {
   dataset: {envVar: 'SANITY_DATASET', flag: 'dataset'},
   organizationId: {envVar: 'SANITY_ORGANIZATION_ID', flag: 'organizationId'},
   projectId: {envVar: 'SANITY_PROJECT_ID', flag: 'projectId'},
 } as const
 
-export type ContextPlaceholder = keyof typeof CONTEXT_PLACEHOLDERS
+type ContextPlaceholder = keyof typeof CONTEXT_PLACEHOLDERS
 
 export function collectContextValues(flags: {
   dataset?: string
