@@ -44,13 +44,7 @@ export default [
     },
   },
   {
-    // Colocated test scaffolding (shared fixtures, mock helpers) imports
-    // from devDependencies the same way `*.test.ts` files do. Without
-    // this, splitting test setup out of `*.test.ts` files trips the
-    // extraneous-deps rule. `test/__fixtures__/**/*.ts` covered the
-    // legacy project-test fixtures dir; `**/__tests__/**/*.ts` extends
-    // the same exemption to colocated helpers next to source.
-    files: ['test/__fixtures__/**/*.ts', '**/__tests__/**/*.ts'],
+    files: ['test/__fixtures__/**/*.ts'],
     rules: {
       'import-x/no-extraneous-dependencies': 'off',
       'import-x/no-unresolved': 'off',

@@ -6,7 +6,10 @@
  * focused on what they're actually asserting.
  */
 
+// nock + vitest are devDeps; this fixtures module is test-only scaffolding.
+// eslint-disable-next-line import-x/no-extraneous-dependencies
 import nock, {cleanAll, pendingMocks} from 'nock'
+// eslint-disable-next-line import-x/no-extraneous-dependencies
 import {afterEach, expect, vi} from 'vitest'
 
 const DOCS_HOST = 'https://www.sanity.io'
