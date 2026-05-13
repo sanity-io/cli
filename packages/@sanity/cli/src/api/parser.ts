@@ -431,7 +431,7 @@ interface LoadedSpec {
  * isn't in the docs index, or the spec body 404s. Throws on network
  * or parse errors so callers can translate into a user-facing message.
  */
-export async function loadSingleSpec(slug: string): Promise<LoadedSpec | null> {
+async function loadSingleSpec(slug: string): Promise<LoadedSpec | null> {
   const index = await fetchSpecIndex()
   const entry = index.find((e) => e.slug === slug)
   if (!entry) return null
@@ -441,4 +441,18 @@ export async function loadSingleSpec(slug: string): Promise<LoadedSpec | null> {
 
   const parsed = await parseOpenApi(slug, yaml)
   return {index: entry, parsed, yaml}
+}
+
+/**
+ * Mirror of `loadOperationsIndexOrThrow` for single-spec loads —
+ * re-throws fetch/parse errors as one user-friendly Error so callers
+ * don't re-implement the same try/catch.
+ */
+export async function loadSingleSpecOrThrow(slug: string): Promise<LoadedSpec | null> {
+  try {
+    return await loadSingleSpec(slug)
+  } catch (error) {
+    debug('loadSingleSpec failed', error)
+    throw new Error(DOCS_SERVICE_UNAVAILABLE, {cause: error})
+  }
 }

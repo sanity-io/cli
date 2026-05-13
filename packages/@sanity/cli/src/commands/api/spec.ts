@@ -1,14 +1,11 @@
 import {Args, Flags} from '@oclif/core'
-import {SanityCommand, subdebug} from '@sanity/cli-core'
+import {SanityCommand} from '@sanity/cli-core'
 import open from 'open'
 import {stringify as stringifyYaml} from 'yaml'
 
-import {loadSingleSpec, type ParsedOperation, type ParsedSpec} from '../../api/parser.js'
+import {docsUrlFor} from '../../api/docsClient.js'
+import {loadSingleSpecOrThrow, type ParsedOperation, type ParsedSpec} from '../../api/parser.js'
 import {buildSpecJsonView, renderSpecHumanView} from '../../api/views.js'
-
-const debug = subdebug('api:spec')
-
-const HTTP_REFERENCE_BASE_URL = 'https://www.sanity.io/docs/http-reference'
 
 export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
   static override args = {
@@ -19,7 +16,7 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
   }
 
   static override description =
-    'Inspect a public Sanity HTTP spec — structured human view, structured JSON, or raw OpenAPI'
+    'Inspect a public Sanity HTTP spec — human view (default), per-operation JSON, or raw OpenAPI YAML'
 
   static override examples = [
     {
@@ -69,7 +66,7 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     const slug = args.slug
 
     if (flags.web) {
-      const url = `${HTTP_REFERENCE_BASE_URL}/${encodeURIComponent(slug)}`
+      const url = docsUrlFor(slug)
       this.log(`Opening ${url}`)
       await open(url)
       return
@@ -86,7 +83,12 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
       )
     }
 
-    const loaded = await this.loadSpec(slug)
+    const loaded = await loadSingleSpecOrThrow(slug)
+    if (!loaded) {
+      this.error(`Spec "${slug}" not found. Run \`sanity api list\` to see available specs.`, {
+        exit: 1,
+      })
+    }
 
     if (flags.schema) {
       this.printSchema(slug, loaded.parsed.schemas, flags.schema, flags.format)
@@ -109,24 +111,6 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     }
 
     this.log(renderSpecHumanView(slug, loaded.index, loaded.parsed, operations))
-  }
-
-  private async loadSpec(slug: string) {
-    let loaded: Awaited<ReturnType<typeof loadSingleSpec>> = null
-    try {
-      loaded = await loadSingleSpec(slug)
-    } catch (error) {
-      debug('spec load failed', error)
-      this.error('The OpenAPI service is currently unavailable. Try again later.', {exit: 1})
-    }
-
-    if (!loaded) {
-      this.error(`Spec "${slug}" not found. Run \`sanity api list\` to see available specs.`, {
-        exit: 1,
-      })
-    }
-
-    return loaded
   }
 
   private printSchema(

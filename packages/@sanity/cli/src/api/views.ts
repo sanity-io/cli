@@ -161,26 +161,16 @@ function formatTagSuffix(op: OperationIndexEntry): string {
  *  spec view (JSON)                                                       *
  * ---------------------------------------------------------------------- */
 
-interface OperationJsonView {
-  capability: string
-  description: string
-  endpoint: string
-  headerParams: ParsedParam[]
-  isStreaming: boolean
-  method: string
-  operationId: string
-  pathParams: ParsedParam[]
-  queryParams: ParsedParam[]
-  requestBody: ParsedRequestBody | null
-  responses: ParsedResponse[]
-  security: {scheme: string}[]
-  summary: string
-}
-
 interface SpecJsonView {
   description: string
   docsUrl: string
-  operations: OperationJsonView[]
+  /**
+   * Reuses `ParsedOperation` directly — every field on it is already
+   * shaped for JSON output, and a separate projection would be a
+   * pass-through. If `ParsedOperation` ever grows an internal-only
+   * field, drop it from the JSON surface by widening the type here.
+   */
+  operations: ParsedOperation[]
   spec: string
   title: string
   version: string
@@ -194,29 +184,11 @@ export function buildSpecJsonView(
 ): SpecJsonView {
   return {
     description: entry?.description || parsed.description,
-    docsUrl: `${HTTP_REFERENCE_URL}/${encodeURIComponent(slug)}`,
-    operations: operations.map((op) => toOperationJsonView(op)),
+    docsUrl: docsUrlFor(slug),
+    operations,
     spec: slug,
     title: entry?.title || parsed.title || slug,
     version: parsed.version,
-  }
-}
-
-function toOperationJsonView(op: ParsedOperation): OperationJsonView {
-  return {
-    capability: op.capability,
-    description: op.description,
-    endpoint: op.endpoint,
-    headerParams: op.headerParams,
-    isStreaming: op.isStreaming,
-    method: op.method,
-    operationId: op.operationId,
-    pathParams: op.pathParams,
-    queryParams: op.queryParams,
-    requestBody: op.requestBody,
-    responses: op.responses,
-    security: op.security,
-    summary: op.summary,
   }
 }
 
@@ -238,7 +210,7 @@ export function renderSpecHumanView(
 ): string {
   const title = entry?.title || parsed.title || slug
   const description = entry?.description || parsed.description
-  const docsUrl = `${HTTP_REFERENCE_URL}/${encodeURIComponent(slug)}`
+  const docsUrl = docsUrlFor(slug)
 
   const header = [`${title}${parsed.version ? ` — ${parsed.version}` : ''}`]
   if (description) header.push(description)

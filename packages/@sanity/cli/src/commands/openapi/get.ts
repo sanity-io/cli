@@ -2,11 +2,10 @@ import {Args, Flags} from '@oclif/core'
 import {SanityCommand, subdebug} from '@sanity/cli-core'
 import open from 'open'
 
-import {fetchSpec} from '../../api/docsClient.js'
+import {docsUrlFor, fetchSpec} from '../../api/docsClient.js'
+import {DOCS_SERVICE_UNAVAILABLE} from '../../api/parser.js'
 
 const debug = subdebug('openapi:get')
-
-const HTTP_REFERENCE_BASE_URL = 'https://www.sanity.io/docs/http-reference'
 
 /**
  * Deprecated. Preserved as a back-compat shim until the next major:
@@ -71,7 +70,7 @@ export class GetOpenApiCommand extends SanityCommand<typeof GetOpenApiCommand> {
     )
 
     if (web) {
-      const url = `${HTTP_REFERENCE_BASE_URL}/${encodeURIComponent(slug)}`
+      const url = docsUrlFor(slug)
       this.log(`Opening ${url}`)
       await open(url)
       return
@@ -82,7 +81,7 @@ export class GetOpenApiCommand extends SanityCommand<typeof GetOpenApiCommand> {
       body = await fetchSpec(slug, {format: format as 'json' | 'yaml'})
     } catch (error) {
       debug('openapi get fetch failed', error)
-      this.error('The OpenAPI service is currently unavailable. Try again later.', {exit: 1})
+      this.error(DOCS_SERVICE_UNAVAILABLE, {exit: 1})
     }
     if (body === null) {
       this.error(`OpenAPI specification "${slug}" not found.`, {exit: 1})
