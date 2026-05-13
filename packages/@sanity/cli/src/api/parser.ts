@@ -286,8 +286,8 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
       const methodUpper = method.toUpperCase()
       // Some specs we don't control omit `operationId` (e.g. the `mutation`
       // spec's POST). Synthesize a deterministic id from method + path so
-      // every row stays uniquely addressable for agents indexing by
-      // operationId. Real ids win when present.
+      // every row stays uniquely addressable by `operationId`. Real ids
+      // win when present.
       const operationId = op.operationId ?? synthesizeOperationId(method, rawPath)
       if (!op.operationId) {
         debug(`synthesized operationId "${operationId}" for ${methodUpper} ${rawPath}`)

@@ -67,15 +67,6 @@ export function toOperationJsonRow(op: OperationIndexEntry): OperationJsonRow {
   }
 }
 
-/**
- * Print operations as a 5-column human table.
- *
- * `OPERATION` (the operationId) is included so a user reading the
- * table can cross-reference into `sanity api spec --operation=<id>`
- * without first re-fetching the JSON form.
- *
- * Writes directly to stdout; does not return a string.
- */
 // `console-table-printer`'s `maxLen` only breaks on whitespace —
 // `:projectId/.../jobs/{jobId}` endpoints never contain any, so we
 // pre-wrap them with `\n`s. Without this, one deeply-nested endpoint

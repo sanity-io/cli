@@ -25,7 +25,7 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     },
     {
       command: '<%= config.bin %> <%= command.id %> jobs --format=json',
-      description: 'Structured per-operation JSON (agent-friendly)',
+      description: 'Structured per-operation JSON',
     },
     {
       command: '<%= config.bin %> <%= command.id %> jobs --format=openapi',
@@ -46,7 +46,7 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     },
     {
       command: '<%= config.bin %> <%= command.id %> jobs --web',
-      description: 'Open the spec docs page in browser (human-only; no machine output)',
+      description: 'Open the spec docs page in browser',
     },
   ]
 
@@ -66,7 +66,7 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     }),
     web: Flags.boolean({
       char: 'w',
-      description: 'Open the spec docs page in browser (human-only; no machine output)',
+      description: 'Open the spec docs page in browser',
     }),
   }
 
