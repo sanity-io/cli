@@ -360,6 +360,61 @@ describe('parseOpenApi — operations', () => {
     expect(jobListen.isStreaming).toBe(true)
   })
 
+  test('skips OpenAPI range status keys (2XX/4XX/5XX) instead of mis-parsing to single digits', async () => {
+    // `Number.parseInt('2XX', 10)` returns 2 — without the regex guard
+    // the row would render as `status: 2`, which is more misleading
+    // than dropping the row.
+    const spec = `
+openapi: 3.1.1
+info:
+  title: T
+  version: '1.0.0'
+servers:
+  - url: "https://api.sanity.io/v1"
+paths:
+  /thing:
+    get:
+      operationId: getThing
+      responses:
+        '200':
+          description: ok
+        '2XX':
+          description: any success
+        '4XX':
+          description: any client error
+`
+    const result = await parseOpenApi('t', spec)
+    const statuses = result.operations[0].responses.map((r) => r.status)
+    expect(statuses).toEqual([200])
+  })
+
+  test('sorts `default` response after specific status codes', async () => {
+    // `default` maps to status: 0 internally; conventional UI order
+    // puts the catch-all after the specific codes.
+    const spec = `
+openapi: 3.1.1
+info:
+  title: T
+  version: '1.0.0'
+servers:
+  - url: "https://api.sanity.io/v1"
+paths:
+  /thing:
+    get:
+      operationId: getThing
+      responses:
+        default:
+          description: catch-all
+        '404':
+          description: not found
+        '200':
+          description: ok
+`
+    const result = await parseOpenApi('t', spec)
+    const statuses = result.operations[0].responses.map((r) => r.status)
+    expect(statuses).toEqual([200, 404, 0])
+  })
+
   test('detects SSE streaming on any 2xx status, not just 200', async () => {
     const spec = `
 openapi: 3.1.1

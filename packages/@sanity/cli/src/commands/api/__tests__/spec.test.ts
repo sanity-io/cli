@@ -223,6 +223,72 @@ describe('#api:spec', () => {
     expect(error?.message).toContain('Thing')
   })
 
+  test('--schema rejects prototype method names (no Object.prototype walk)', async () => {
+    // `--schema toString` previously slipped past the `in` guard and
+    // rendered `Object.prototype.toString` as JSON `undefined`. With
+    // `Object.hasOwn` it's surfaced as not-found cleanly.
+    mockIndexAndSpecs([{slug: 'refs', yaml: REF_SPEC_YAML}])
+    const {error} = await testCommand(ApiSpecCommand, ['refs', '--schema', 'toString'])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('Schema "toString" not found')
+  })
+
+  test('--schema conflicts with --operation', async () => {
+    // Without the guard, `--schema X --operation typoId` would silently
+    // succeed: the schema branch returns before the operation lookup
+    // ever runs. The guard fires before any index fetch, so no nock
+    // mocks are registered.
+    const {error} = await testCommand(ApiSpecCommand, [
+      'refs',
+      '--schema',
+      'Thing',
+      '--operation=anything',
+    ])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('`--operation` is not compatible with `--schema`')
+  })
+
+  test('--schema conflicts with --format=openapi', async () => {
+    // Guard fires before any index fetch — no mocks registered.
+    const {error} = await testCommand(ApiSpecCommand, [
+      'refs',
+      '--schema',
+      'Thing',
+      '--format=openapi',
+    ])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('`--format=openapi` is not compatible with `--schema`')
+  })
+
+  test('parse errors propagate distinctly from service-unavailable', async () => {
+    // A spec with duplicate operationIds is the canonical "spec is bad,
+    // service is fine" case. Without the parse/fetch split in
+    // `loadSingleSpecOrThrow`, the user would get the misleading
+    // "service is unavailable" message.
+    const DUPE_YAML = `
+openapi: 3.1.1
+info:
+  title: Dupe API
+  version: 'v1'
+servers:
+  - url: 'https://api.sanity.io/v1'
+paths:
+  /a:
+    get:
+      operationId: same
+      responses: {'200': {description: ok}}
+  /b:
+    get:
+      operationId: same
+      responses: {'200': {description: ok}}
+`
+    mockIndexAndSpecs([{slug: 'dupe', yaml: DUPE_YAML}])
+    const {error} = await testCommand(ApiSpecCommand, ['dupe'])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('duplicate operationId')
+    expect(error?.message).not.toContain('service is currently unavailable')
+  })
+
   test('omits "Query params (required)" when only optional params exist', async () => {
     // Empty-section regression: an operation with only optional query
     // params used to render a dead `Query params (required): (none)`

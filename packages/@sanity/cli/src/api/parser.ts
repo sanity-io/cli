@@ -470,32 +470,42 @@ interface LoadedSpec {
 }
 
 /**
- * Fetch + parse a single spec by slug. Returns null when the slug
- * isn't in the docs index, or the spec body 404s. Throws on network
- * or parse errors so callers can translate into a user-facing message.
+ * Fetch a single spec body by slug. Returns null when the slug isn't
+ * in the docs index, or the spec body 404s. Throws `DOCS_SERVICE_UNAVAILABLE`
+ * on network errors so callers don't re-implement the same try/catch.
  */
-async function loadSingleSpec(slug: string): Promise<LoadedSpec | null> {
-  const index = await fetchSpecIndex()
-  const entry = index.find((e) => e.slug === slug)
-  if (!entry) return null
+async function fetchSingleSpec(
+  slug: string,
+): Promise<{entry: OpenApiSpecIndexEntry; yaml: string} | null> {
+  try {
+    const index = await fetchSpecIndex()
+    const entry = index.find((e) => e.slug === slug)
+    if (!entry) return null
 
-  const yaml = await fetchSpec(slug)
-  if (yaml === null) return null
+    const yaml = await fetchSpec(slug)
+    if (yaml === null) return null
 
-  const parsed = await parseOpenApi(slug, yaml)
-  return {index: entry, parsed, yaml}
+    return {entry, yaml}
+  } catch (error) {
+    debug('fetchSingleSpec failed', error)
+    throw new Error(DOCS_SERVICE_UNAVAILABLE, {cause: error})
+  }
 }
 
 /**
- * Mirror of `loadOperationsIndexOrThrow` for single-spec loads —
- * re-throws fetch/parse errors as one user-friendly Error so callers
- * don't re-implement the same try/catch.
+ * Fetch + parse a single spec by slug. Returns null when the slug
+ * isn't in the docs index, or the spec body 404s. Distinguishes the
+ * two failure modes:
+ *
+ *   - Network / fetch errors → `DOCS_SERVICE_UNAVAILABLE` (wrapped
+ *     inside `fetchSingleSpec`).
+ *   - Parse errors (`parseOpenApi` throws) propagate with their
+ *     original message — these point at a problem with the spec
+ *     itself (e.g. duplicate operationIds), not the service.
  */
 export async function loadSingleSpecOrThrow(slug: string): Promise<LoadedSpec | null> {
-  try {
-    return await loadSingleSpec(slug)
-  } catch (error) {
-    debug('loadSingleSpec failed', error)
-    throw new Error(DOCS_SERVICE_UNAVAILABLE, {cause: error})
-  }
+  const fetched = await fetchSingleSpec(slug)
+  if (!fetched) return null
+  const parsed = await parseOpenApi(slug, fetched.yaml)
+  return {index: fetched.entry, parsed, yaml: fetched.yaml}
 }

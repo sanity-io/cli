@@ -91,6 +91,29 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
       )
     }
 
+    // `--schema` prints a single component schema — `--operation` is
+    // about operations, not schemas. Without this guard, a typo'd
+    // `--operation=bad-id` would silently succeed (the schema branch
+    // returns early before any operation lookup happens).
+    if (flags.schema && flags.operation) {
+      this.error(
+        '`--operation` is not compatible with `--schema` — they select different ' +
+          'targets. Drop one of the flags.',
+        {exit: 1},
+      )
+    }
+
+    // `--format=openapi` + `--schema` is undefined: openapi means raw
+    // YAML of the whole spec, schema means a single component. Reject
+    // the combo upfront so the fallthrough to JSON doesn't surprise.
+    if (flags.schema && flags.format === 'openapi') {
+      this.error(
+        '`--format=openapi` is not compatible with `--schema` — use `--format=yaml` ' +
+          'or omit `--format` (JSON) for schema output.',
+        {exit: 1},
+      )
+    }
+
     const loaded = await loadSingleSpecOrThrow(slug)
     if (!loaded) {
       this.error(`Spec "${slug}" not found. Run \`sanity api list\` to see available specs.`, {
@@ -127,7 +150,11 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     name: string,
     format: string | undefined,
   ): void {
-    if (!(name in schemas)) {
+    // `Object.hasOwn` instead of `name in schemas`: `in` walks the
+    // prototype chain, so `--schema toString` would slip past the
+    // not-found guard and hit `JSON.stringify` on `Object.prototype`'s
+    // method.
+    if (!Object.hasOwn(schemas, name)) {
       const known = Object.keys(schemas)
       this.error(
         `Schema "${name}" not found in spec "${slug}".\n` +
@@ -136,9 +163,9 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
       )
     }
     const schema = schemas[name]
-    // Default to JSON for `--schema`. The primary consumer following a
-    // `$ref` pointer is going to be an agent — JSON is parseable
-    // without a YAML library. Humans opt into YAML with `--format=yaml`.
+    // Default to JSON for `--schema` — it's parseable without a YAML
+    // library, so the most common follow-up (resolving a `$ref` pointer)
+    // works straight from stdout. `--format=yaml` opts into YAML.
     if (format === 'yaml') {
       this.log(stringifyYaml(schema))
       return

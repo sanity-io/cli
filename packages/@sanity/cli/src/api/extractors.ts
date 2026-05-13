@@ -365,8 +365,21 @@ export function extractResponses(opRaw: OperationObject): ParsedResponse[] {
   const responses = asObject(opRaw.responses)
   const out: ParsedResponse[] = []
   for (const [statusKey, rawResponse] of Object.entries(responses)) {
-    const status = statusKey === 'default' ? 0 : Number.parseInt(statusKey, 10)
-    if (!Number.isFinite(status) && statusKey !== 'default') continue
+    // OpenAPI 3.x allows range keys (`2XX`, `4XX`, `5XX`) alongside
+    // specific codes and `default`. `parseInt` would silently collapse
+    // `2XX` → `2`, so require a fully-numeric key. Range keys are
+    // skipped (and debug-logged at the call site) — Sanity's specs
+    // don't use them today, and surfacing one as a single-digit
+    // status would be more misleading than dropping the row.
+    let status: number
+    if (statusKey === 'default') {
+      status = 0
+    } else if (/^\d+$/.test(statusKey)) {
+      status = Number.parseInt(statusKey, 10)
+    } else {
+      debug(`skipping non-numeric response status "${statusKey}"`)
+      continue
+    }
     const response = asObject(rawResponse)
     // Skip response refs — uncommon in our specs, and the schema lookup
     // covers the use case if anyone needs it.
@@ -400,7 +413,14 @@ export function extractResponses(opRaw: OperationObject): ParsedResponse[] {
     if (ref) entry.ref = ref
     out.push(entry)
   }
-  return out.toSorted((a, b) => a.status - b.status)
+  // Sort numeric statuses ascending; `default` (status === 0) goes
+  // last — conventional UI order puts the catch-all after specific
+  // codes.
+  return out.toSorted((a, b) => sortKey(a.status) - sortKey(b.status))
+}
+
+function sortKey(status: number): number {
+  return status === 0 ? Number.POSITIVE_INFINITY : status
 }
 
 export function isStreamingResponse(responses: ParsedResponse[]): boolean {
