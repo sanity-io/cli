@@ -78,13 +78,20 @@ export async function setupSkills(options: SetupSkillsOptions): Promise<SetupSki
   skillsDebug('Running: npx %s', args.join(' '))
 
   try {
-    await execa('npx', args, {stdio: 'inherit', timeout: 90_000})
+    const result = await execa('npx', args, {stdio: 'pipe', timeout: 90_000})
+    skillsDebug('skills stdout: %s', result.stdout)
+    skillsDebug('skills stderr: %s', result.stderr)
     ux.stdout(`${logSymbols.success} Installed Sanity agent skills for ${uniqueAgents.join(', ')}`)
     return {installedAgents: uniqueAgents, skipped: false}
   } catch (error) {
     skillsDebug('Error installing skills %O', error)
     const err = toError(error)
     ux.warn(`Could not install Sanity agent skills: ${getErrorMessage(error)}`)
+    if (error && typeof error === 'object') {
+      const {stderr, stdout} = error as {stderr?: string; stdout?: string}
+      if (stdout) ux.warn(stdout)
+      if (stderr) ux.warn(stderr)
+    }
     return {error: err, installedAgents: [], skipped: false}
   }
 }

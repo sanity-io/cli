@@ -44,7 +44,7 @@ describe('setupSkills', () => {
     expect(mockExeca).toHaveBeenCalledWith(
       'npx',
       ['-y', 'skills', 'add', SANITY_SKILLS_REPO, '-a', 'cursor', '-a', 'claude-code', '-y'],
-      expect.objectContaining({stdio: 'inherit'}),
+      expect.objectContaining({stdio: 'pipe'}),
     )
     expect(result.installedAgents).toEqual(['cursor', 'claude-code'])
     expect(result.skipped).toBe(false)
