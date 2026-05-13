@@ -155,6 +155,11 @@ function mockIndexAndSpecs(specs: Array<{slug: string; yaml: string}>) {
 
 describe('#api:call', () => {
   afterEach(() => {
+    // `mockReset` drops queued `mockResolvedValueOnce` values that
+    // weren't consumed (e.g. tests that error before the token is
+    // resolved). Without this, leftover values leak into later tests.
+    vi.mocked(getCliToken).mockReset()
+    vi.mocked(confirm).mockReset()
     vi.clearAllMocks()
     const pending = pendingMocks()
     cleanAll()
@@ -313,10 +318,10 @@ describe('#api:call', () => {
     expect(error?.message.toLowerCase()).toMatch(/method post not allowed|method not allowed/)
   })
 
-  test('POST that resolves to a body op errors at the Phase-4 gate', async () => {
-    // Real POST operation: the resolver succeeds, then preflight's
-    // body-not-yet-supported gate fires with the Phase-4 hint. Locks
-    // down the user-facing copy that points at the upcoming feature.
+  test('POST with no body flags surfaces a "needs a body" hint pointing at -f/-F/--input', async () => {
+    // Real POST operation, no -f/-F/--input — the body-construction
+    // module flags the missing body upfront so the user gets a clear
+    // hint rather than a server-side 4xx.
     mockIndexAndSpecs([{slug: 'mutate', yaml: POST_YAML}])
 
     vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
@@ -327,7 +332,182 @@ describe('#api:call', () => {
     ])
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('POST needs a request body')
-    expect(error?.message).toContain('Phase 4')
+    expect(error?.message).toMatch(/-f.*-F.*--input/)
+  })
+
+  test('-f builds a JSON body and sends application/json', async () => {
+    mockIndexAndSpecs([{slug: 'mutate', yaml: POST_YAML}])
+    nock('https://api.sanity.io', {reqheaders: {'content-type': 'application/json'}})
+      .post('/v2024-01-01/mutate/production', {mutations: [{create: {_type: 'doc'}}]})
+      .query({tag: 'sanity.cli.api'})
+      .reply(200, '{"transactionId":"abc"}', {'content-type': 'application/json'})
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    const {stdout} = await testCommand(ApiCallCommand, [
+      '-X',
+      'POST',
+      'v2024-01-01/mutate/production',
+      '-f',
+      'mutations=[{"create":{"_type":"doc"}}]',
+    ])
+    expect(stdout).toContain('"transactionId": "abc"')
+  })
+
+  test('-f with dotted keys nests the JSON object', async () => {
+    mockIndexAndSpecs([{slug: 'mutate', yaml: POST_YAML}])
+    nock('https://api.sanity.io')
+      .post('/v2024-01-01/mutate/production', {profile: {age: 42, name: 'Bob'}})
+      .query({tag: 'sanity.cli.api'})
+      .reply(200, '{}', {'content-type': 'application/json'})
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    await testCommand(ApiCallCommand, [
+      '-X',
+      'POST',
+      'v2024-01-01/mutate/production',
+      '-f',
+      'profile.name=Bob',
+      '-f',
+      'profile.age=42',
+    ])
+  })
+
+  test('GET refuses body flags (HTTP semantics)', async () => {
+    mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    const {error} = await testCommand(ApiCallCommand, ['v2021-06-07/jobs/abc123', '-f', 'foo=bar'])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('GET requests cannot carry a body')
+  })
+
+  test('-f and --input are mutually exclusive', async () => {
+    mockIndexAndSpecs([{slug: 'mutate', yaml: POST_YAML}])
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    const {error} = await testCommand(ApiCallCommand, [
+      '-X',
+      'POST',
+      'v2024-01-01/mutate/production',
+      '-f',
+      'foo=bar',
+      '--input',
+      '/tmp/whatever',
+    ])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('mutually exclusive')
+  })
+
+  test('-H overrides the default Authorization header', async () => {
+    mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
+    // The default would be `Bearer user-token`; the user's -H wins.
+    nock('https://api.sanity.io', {reqheaders: {authorization: 'Basic Zm9vOmJhcg=='}})
+      .get('/v2021-06-07/jobs/abc123')
+      .query({tag: 'sanity.cli.api'})
+      .reply(200, '{}', {'content-type': 'application/json'})
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    await testCommand(ApiCallCommand, [
+      'v2021-06-07/jobs/abc123',
+      '-H',
+      'Authorization: Basic Zm9vOmJhcg==',
+    ])
+  })
+
+  test('--dry-run prints the request and skips the network call', async () => {
+    // No outbound nock — proves the request never goes out.
+    mockIndexAndSpecs([{slug: 'mutate', yaml: POST_YAML}])
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token-secret')
+    const {stdout} = await testCommand(ApiCallCommand, [
+      '-X',
+      'POST',
+      'v2024-01-01/mutate/production',
+      '-f',
+      'mutations=[]',
+      '--dry-run',
+    ])
+    expect(stdout).toContain('POST https://api.sanity.io/v2024-01-01/mutate/production')
+    expect(stdout).toContain('content-type: application/json')
+    expect(stdout).toContain('"mutations":[]')
+  })
+
+  test('--dry-run masks the bearer token in the printed Authorization header', async () => {
+    // Avoid leaking secrets via screenshot / paste. The masked form
+    // is just enough to identify the token without making it readable.
+    mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('sk-abcdefghijklmnop')
+    const {stdout} = await testCommand(ApiCallCommand, ['v2021-06-07/jobs/abc123', '--dry-run'])
+    expect(stdout).toContain('GET ')
+    expect(stdout).toMatch(/authorization: Bearer sk-a…mnop/)
+    expect(stdout).not.toContain('sk-abcdefghijklmnop')
+  })
+
+  test('--dry-run on a destructive op never prompts', async () => {
+    // The destructive guard is part of the send path; dry-run sits
+    // before it so the user can preview a DELETE without confirming.
+    mockIndexAndSpecs([{slug: 'projects', yaml: PROJECTS_YAML}])
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    const {stdout} = await testCommand(ApiCallCommand, [
+      '-X',
+      'DELETE',
+      'v2024-01-01/projects/abc123',
+      '--dry-run',
+    ])
+    expect(stdout).toContain('DELETE')
+    expect(confirm).not.toHaveBeenCalled()
+  })
+
+  test('--stream pipes the response body chunk-by-chunk to stdout', async () => {
+    // Build a multi-chunk SSE-like response. nock supports streamed
+    // replies via a function — the body is delivered as written.
+    mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
+    const sseBody = 'data: chunk1\n\ndata: chunk2\n\n'
+    nock('https://api.sanity.io')
+      .get('/v2021-06-07/jobs/abc123/listen')
+      .query({tag: 'sanity.cli.api'})
+      .reply(200, sseBody, {'content-type': 'text/event-stream'})
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    const {stdout} = await testCommand(ApiCallCommand, [
+      'v2021-06-07/jobs/abc123/listen',
+      '--stream',
+    ])
+    expect(stdout).toContain('data: chunk1')
+    expect(stdout).toContain('data: chunk2')
+  })
+
+  test('--stream exits non-zero on a 4xx', async () => {
+    // Stream still emits the body so the user sees the error payload,
+    // but the exit code stays non-zero so wrapping scripts notice.
+    mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
+    nock('https://api.sanity.io')
+      .get('/v2021-06-07/jobs/abc123/listen')
+      .query({tag: 'sanity.cli.api'})
+      .reply(404, 'not found', {'content-type': 'text/plain'})
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    const {error, stdout} = await testCommand(ApiCallCommand, [
+      'v2021-06-07/jobs/abc123/listen',
+      '--stream',
+    ])
+    expect(stdout).toContain('not found')
+    expect(error).toBeInstanceOf(Error)
+  })
+
+  test('-H without `:` errors before sending', async () => {
+    mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    const {error} = await testCommand(ApiCallCommand, [
+      'v2021-06-07/jobs/abc123',
+      '-H',
+      'malformed',
+    ])
+    expect(error).toBeInstanceOf(Error)
+    expect(error?.message).toContain('"Name: Value" form')
   })
 
   test('refuses DELETE in unattended mode without --yes', async () => {

@@ -26,6 +26,16 @@ const REQUEST_TAG_KEY = 'tag'
 const REQUEST_TAG_VALUE = 'sanity.cli.api'
 
 interface ApiRequest {
+  /** Request body bytes/string. `null` means no body. */
+  body: string | null
+  /** `Content-Type` for the body. Honored only when `body` is non-null. */
+  contentType: string | null
+  /**
+   * Additional headers from `-H`. Lower-cased keys. Values here win
+   * over the CLI's defaults (Authorization, Content-Type) — escape
+   * hatch for users overriding auth or content-type explicitly.
+   */
+  extraHeaders: Record<string, string>
   /** Uppercase HTTP method. */
   method: string
   /** Bearer token. `null` means send unauthenticated. */
@@ -143,11 +153,9 @@ function buildQueryString(inline: string, flagPairs: readonly string[]): string 
  * whether to error.
  */
 export async function sendApiRequest(request: ApiRequest): Promise<ApiResponse> {
-  const headers: Record<string, string> = {}
-  if (request.token) headers.Authorization = `Bearer ${request.token}`
-
   const response = await fetch(request.url, {
-    headers,
+    body: request.body ?? undefined,
+    headers: buildOutboundHeaders(request),
     method: request.method,
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
   })
@@ -157,4 +165,70 @@ export async function sendApiRequest(request: ApiRequest): Promise<ApiResponse> 
     contentType: response.headers.get('content-type') ?? '',
     status: response.status,
   }
+}
+
+/**
+ * Stream a response body to a `chunk → void` sink. The sink runs for
+ * every decoded text chunk as it arrives — the caller buffers nothing.
+ *
+ * Returns `{status, contentType}` only; the body lives in the chunks
+ * the sink consumed. Non-2xx is still surfaced so the caller can
+ * decide whether the stream output is the error itself or a payload.
+ *
+ * Timeout note: the AbortSignal applies to the *fetch* and to the
+ * entire response read, not to the time between chunks. SSE endpoints
+ * can stay idle for minutes between events; if that matters we'd
+ * need a per-chunk timeout, but the current 60s budget covers the
+ * Sanity endpoints we route to.
+ */
+export async function streamApiResponse(
+  request: ApiRequest,
+  sink: (chunk: string) => void,
+): Promise<{contentType: string; status: number}> {
+  const response = await fetch(request.url, {
+    body: request.body ?? undefined,
+    headers: buildOutboundHeaders(request),
+    method: request.method,
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  })
+
+  if (response.body) {
+    const decoder = new TextDecoder()
+    const reader = response.body.getReader()
+    try {
+      for (;;) {
+        const {done, value} = await reader.read()
+        if (done) break
+        sink(decoder.decode(value, {stream: true}))
+      }
+      const flush = decoder.decode()
+      if (flush) sink(flush)
+    } finally {
+      reader.releaseLock()
+    }
+  }
+
+  return {
+    contentType: response.headers.get('content-type') ?? '',
+    status: response.status,
+  }
+}
+
+/**
+ * Compose outbound headers. CLI defaults (Authorization, Content-Type)
+ * go in first; `-H` values overwrite — explicit user intent wins. All
+ * keys are lower-cased so case-only collisions can't end up sending
+ * both `Authorization` and `authorization`; HTTP header names are
+ * case-insensitive on the wire.
+ */
+function buildOutboundHeaders(request: ApiRequest): Record<string, string> {
+  const headers: Record<string, string> = {}
+  if (request.token) headers.authorization = `Bearer ${request.token}`
+  if (request.body !== null && request.contentType) {
+    headers['content-type'] = request.contentType
+  }
+  for (const [name, value] of Object.entries(request.extraHeaders)) {
+    headers[name] = value
+  }
+  return headers
 }

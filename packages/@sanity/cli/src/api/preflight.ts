@@ -12,18 +12,14 @@
  * Keeping issue _data_ separate from error _copy_ lets the tests
  * assert behavior without coupling to message strings.
  *
- * Future phases add more issue kinds: body-schema validation (Phase 4),
- * `--dry-run` (Phase 5, which runs preflight + skips the send).
+ * Body construction (`-f` / `-F` / `--input`) lives in `body.ts` —
+ * not here, since the work is async file I/O rather than a pure check.
  */
 
 import {type OperationIndexEntry} from './parser.js'
 import {fillPlaceholders, findUnfilledPlaceholders} from './resolveEndpoint.js'
 
-/** Method kinds that need a request body. Body construction lands in Phase 4. */
-const BODY_METHODS = new Set(['PATCH', 'POST', 'PUT'])
-
 export type PreflightIssue =
-  | {kind: 'body-not-yet-supported'; method: string}
   | {kind: 'missing-required-query'; names: string[]}
   | {kind: 'unfilled-placeholder'; names: string[]}
 
@@ -54,12 +50,6 @@ export interface PreflightInputs {
 export function runPreflight(inputs: PreflightInputs): PreflightIssue[] {
   const {context, inlineQuery, queryFlags, resolved} = inputs
   const issues: PreflightIssue[] = []
-
-  // Order matters: body gate first so PATCH/PUT without a body doesn't
-  // get a misleading "missing required query param" message instead.
-  if (BODY_METHODS.has(resolved.operation.method)) {
-    issues.push({kind: 'body-not-yet-supported', method: resolved.operation.method})
-  }
 
   const unfilled = collectUnfilledPlaceholders(resolved, context)
   if (unfilled.length > 0) {

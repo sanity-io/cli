@@ -100,15 +100,6 @@ describe('runPreflight', () => {
     expect(missing).toEqual([{kind: 'missing-required-query', names: ['query']}])
   })
 
-  test('body-not-yet-supported fires first so PATCH/PUT without a body is unambiguous', () => {
-    const op = buildOp({
-      method: 'PATCH',
-      queryParams: [{description: '', in: 'query', name: 'query', required: true, type: 'string'}],
-    })
-    const issues = runPreflight(buildInputs({resolved: {operation: op, path: 'v1/things/abc'}}))
-    expect(issues[0]).toEqual({kind: 'body-not-yet-supported', method: 'PATCH'})
-  })
-
   test('accumulates multiple issues for callers that want to report them all', () => {
     const op = buildOp({
       method: 'PATCH',
@@ -116,10 +107,8 @@ describe('runPreflight', () => {
       serverTemplate: 'https://:projectId.api.sanity.io/v1',
     })
     const issues = runPreflight(buildInputs({resolved: {operation: op, path: 'v1/things/:id'}}))
-    expect(issues.map((i) => i.kind)).toEqual([
-      'body-not-yet-supported',
-      'unfilled-placeholder',
-      'missing-required-query',
-    ])
+    // Body construction lives in `body.ts` (Phase 4); preflight only
+    // accumulates placeholder + query gaps now.
+    expect(issues.map((i) => i.kind)).toEqual(['unfilled-placeholder', 'missing-required-query'])
   })
 })
