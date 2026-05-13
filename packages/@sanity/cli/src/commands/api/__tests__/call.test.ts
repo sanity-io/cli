@@ -138,6 +138,36 @@ paths:
       responses:
         '204':
           description: ok
+    patch:
+      operationId: patchProject
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object}
+      responses:
+        '200':
+          description: ok
+    put:
+      operationId: replaceProject
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema: {type: string}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object}
+      responses:
+        '200':
+          description: ok
 `
 
 describe('#api:call', () => {
@@ -543,6 +573,46 @@ paths:
     expect(stdout).not.toContain('sk-abcdefghijklmnop')
   })
 
+  test('--dry-run reflects -H overrides of CLI default headers', async () => {
+    // `buildOutboundHeaders` lets `-H Authorization: ...` win over
+    // the default Bearer line on the wire. Without this guard the
+    // dry-run preview would show *both* — misleading users about
+    // what's actually sent.
+    mockIndexAndSpecs([{slug: 'jobs', yaml: JOBS_YAML}])
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('sk-default-token')
+    const {stdout} = await testCommand(ApiCallCommand, [
+      'v2021-06-07/jobs/abc123',
+      '--dry-run',
+      '-H',
+      'Authorization: Basic dXNlcjpwYXNz',
+    ])
+    // The override is rendered (masked) and the default Bearer line
+    // is suppressed.
+    expect(stdout).toMatch(/authorization: Basic /)
+    expect(stdout).not.toContain('Bearer')
+    expect(stdout).not.toContain('dXNlcjpwYXNz')
+  })
+
+  test('--dry-run -H Content-Type override suppresses the default content-type line', async () => {
+    mockIndexAndSpecs([{slug: 'projects', yaml: PROJECTS_YAML}])
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    // POST with `--input` to force a default content-type, then
+    // override via `-H`.
+    const {stdout} = await testCommand(ApiCallCommand, [
+      '-X',
+      'DELETE',
+      'v2024-01-01/projects/abc123',
+      '--dry-run',
+      '-H',
+      'Content-Type: text/plain',
+    ])
+    const contentTypeLines = stdout
+      .split('\n')
+      .filter((l) => l.toLowerCase().startsWith('content-type:'))
+    expect(contentTypeLines).toEqual(['content-type: text/plain'])
+  })
+
   test('--dry-run on a destructive op never prompts', async () => {
     // The destructive guard is part of the send path; dry-run sits
     // before it so the user can preview a DELETE without confirming.
@@ -609,28 +679,34 @@ paths:
     expect(error?.message).toContain('"Name: Value" form')
   })
 
-  test('destructive op without TTY requires --yes', async () => {
-    mockIndexAndSpecs([{slug: 'projects', yaml: PROJECTS_YAML}])
-    // Force unattended. `isUnattended` is `protected` on SanityCommand;
-    // the cast through `unknown` is the simplest path to vi.spyOn.
-    const isUnattended = vi.spyOn(
-      SanityCommand.prototype as unknown as {isUnattended: () => boolean},
-      'isUnattended',
-    )
-    isUnattended.mockReturnValue(true)
+  // `DESTRUCTIVE_METHODS = {DELETE, PATCH, PUT}` in index.ts. Cover each
+  // case so a regression that drops one from the set is caught.
+  test.each(['DELETE', 'PATCH', 'PUT'])(
+    'destructive op without TTY requires --yes (%s)',
+    async (method) => {
+      mockIndexAndSpecs([{slug: 'projects', yaml: PROJECTS_YAML}])
+      // Force unattended. `isUnattended` is `protected` on SanityCommand;
+      // the cast through `unknown` is the simplest path to vi.spyOn.
+      const isUnattended = vi.spyOn(
+        SanityCommand.prototype as unknown as {isUnattended: () => boolean},
+        'isUnattended',
+      )
+      isUnattended.mockReturnValue(true)
 
-    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
-    const {error} = await testCommand(ApiCallCommand, [
-      '-X',
-      'DELETE',
-      'v2024-01-01/projects/abc123',
-    ])
-    expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('Destructive operation (DELETE) needs --yes')
-    expect(error?.message).toContain('--yes')
+      vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+      // PATCH/PUT routes have required bodies; pass `-f` so body
+      // construction succeeds and the destructive guard is what fires.
+      const args = ['-X', method, 'v2024-01-01/projects/abc123']
+      if (method !== 'DELETE') args.push('-f', 'foo=bar')
 
-    isUnattended.mockRestore()
-  })
+      const {error} = await testCommand(ApiCallCommand, args)
+
+      expect(error).toBeInstanceOf(Error)
+      expect(error?.message).toContain(`Destructive operation (${method}) needs --yes`)
+
+      isUnattended.mockRestore()
+    },
+  )
 
   test('rejects -q values that are missing `=`', async () => {
     // No index/outbound mocks: validation runs before the index fetch,

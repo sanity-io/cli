@@ -238,18 +238,10 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 /**
- * Parse repeated `-H 'Name: Value'` flag values into a header map.
- * Later occurrences of the same header overwrite earlier ones —
- * predictable for users who pipe through a wrapper script.
- *
- * Returns lower-cased keys for stable lookup; HTTP header names are
- * case-insensitive.
- */
-/**
  * Format the "method needs a body" error. When the operation hints at
  * required fields and where to read the schema, surface both so the
- * caller (often an agent) can fix the request on the next try without
- * an exploratory round-trip.
+ * caller can fix the request on the next try without an exploratory
+ * round-trip.
  */
 function formatBodyRequiredError(
   method: string,
@@ -266,6 +258,14 @@ function formatBodyRequiredError(
   return lines.join('\n')
 }
 
+/**
+ * Parse repeated `-H 'Name: Value'` flag values into a header map.
+ * Later occurrences of the same header overwrite earlier ones —
+ * predictable for users who pipe through a wrapper script.
+ *
+ * Returns lower-cased keys for stable lookup; HTTP header names are
+ * case-insensitive.
+ */
 export function parseHeaderFlags(headerPairs: readonly string[]): Record<string, string> {
   const headers: Record<string, string> = {}
   for (const raw of headerPairs) {

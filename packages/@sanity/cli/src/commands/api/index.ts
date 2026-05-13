@@ -114,7 +114,9 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
         'Read request body from file path (or `-` for stdin). Mutually exclusive with -f/-F.',
     }),
     json: Flags.boolean({
-      description: 'Emit the raw response body verbatim (default: pretty-printed JSON)',
+      description:
+        'Emit the raw response body verbatim (default: pretty-printed JSON). ' +
+        'No effect with `--stream` — streamed output is always verbatim.',
     }),
     method: Flags.string({
       char: 'X',
@@ -266,14 +268,22 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
   }): void {
     const lines: string[] = [`${request.method} ${request.url}`]
 
-    if (request.token) {
+    // Mirror `buildOutboundHeaders` so the preview reflects what's
+    // actually sent: `extraHeaders` (from `-H`) wins on collision with
+    // the CLI defaults. `extraHeaders` is already lower-cased by
+    // `parseHeaderFlags`, so a presence check on the same key works.
+    const userOverrides = request.extraHeaders
+    if (request.token && !('authorization' in userOverrides)) {
       lines.push(`authorization: Bearer ${maskToken(request.token)}`)
     }
-    if (request.body !== null && request.contentType) {
+    if (request.body !== null && request.contentType && !('content-type' in userOverrides)) {
       lines.push(`content-type: ${request.contentType}`)
     }
-    for (const [name, value] of Object.entries(request.extraHeaders)) {
-      lines.push(`${name}: ${value}`)
+    for (const [name, value] of Object.entries(userOverrides)) {
+      // Mask any user-supplied bearer token the same way the default
+      // line does — `--dry-run` output is the most likely candidate
+      // for "paste into a bug report".
+      lines.push(`${name}: ${name === 'authorization' ? maskAuthorizationHeader(value) : value}`)
     }
 
     if (request.body !== null) {
@@ -377,6 +387,18 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
 function maskToken(token: string): string {
   if (token.length <= 8) return '***'
   return `${token.slice(0, 4)}…${token.slice(-4)}`
+}
+
+/**
+ * Mask the credential portion of an `Authorization` header value for
+ * dry-run display. Preserves the scheme prefix (`Bearer`, `Basic`,
+ * etc.) so the user can see *which* auth mechanism would be sent —
+ * just not the secret material itself.
+ */
+function maskAuthorizationHeader(value: string): string {
+  const match = value.match(/^(\S+)\s+(.+)$/)
+  if (!match) return maskToken(value)
+  return `${match[1]} ${maskToken(match[2])}`
 }
 
 /**
