@@ -74,13 +74,14 @@ jobs:
           CHANGESET_CONTENT: ${{ steps.analyze.outputs.changeset_content }}
           CHANGESET_FILE: ${{ steps.analyze.outputs.changeset_file }}
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           mkdir -p "$(dirname "$CHANGESET_FILE")"
           printf '%s' "$CHANGESET_CONTENT" > "$CHANGESET_FILE"
           git add "$CHANGESET_FILE"
           if ! git diff --cached --quiet; then
             git commit -m "chore: update auto-generated changeset for PR #${{ github.event.pull_request.number }}"
-            git push --force-with-lease origin "HEAD:${PR_HEAD_REF}"
+            git push --force-with-lease="${PR_HEAD_REF}:${PR_HEAD_SHA}" origin "HEAD:${PR_HEAD_REF}"
           else
             echo "No changes to changeset file"
           fi
@@ -90,9 +91,10 @@ jobs:
         env:
           CHANGESET_FILE: ${{ steps.analyze.outputs.changeset_file }}
           PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           if [ -f "$CHANGESET_FILE" ]; then
             git rm "$CHANGESET_FILE"
             git commit -m "chore: remove auto-generated changeset for PR #${{ github.event.pull_request.number }}"
-            git push --force-with-lease origin "HEAD:${PR_HEAD_REF}"
+            git push --force-with-lease="${PR_HEAD_REF}:${PR_HEAD_SHA}" origin "HEAD:${PR_HEAD_REF}"
           fi
