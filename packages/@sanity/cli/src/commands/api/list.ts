@@ -10,12 +10,12 @@ const CAPABILITIES = ['read', 'write', 'destructive'] as const
 const METHODS = ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'] as const
 
 export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
-  static override description = 'List all OpenAPI operations across the public Sanity HTTP specs'
+  static override description = 'List every operation in the Sanity HTTP API'
 
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %>',
-      description: 'Render a table of operations across every spec',
+      description: 'Show a table of operations across every spec',
     },
     {
       command: '<%= config.bin %> <%= command.id %> --json',
@@ -41,7 +41,7 @@ export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
 
   static override flags = {
     capability: Flags.string({
-      description: 'Filter by capability bucket',
+      description: 'Filter by capability (read / write / destructive)',
       options: [...CAPABILITIES],
     }),
     grep: Flags.string({
@@ -54,7 +54,7 @@ export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
     }),
     'operation-ids': Flags.boolean({
       description:
-        'Include the OPERATION column in the human table. The operationId is always present in --json; off in the table by default since synthesized ids can be long and humans rarely cross-reference them.',
+        'Include the OPERATION column. Off by default — synthesized ids can be long; --json always carries them.',
     }),
     spec: Flags.string({description: 'Narrow to a single spec (by slug)'}),
     web: Flags.boolean({
