@@ -220,33 +220,37 @@ describe('#api:spec', () => {
     expect(error?.message).toContain('jobStatus')
   })
 
-  test('--schema prints a component schema (YAML default)', async () => {
+  test('--schema prints a component schema (JSON default)', async () => {
+    // Agents are the primary consumer following a `$ref` pointer; JSON
+    // is parseable without a YAML library. Humans opt into YAML with
+    // `--format=yaml`.
     mockIndexAndSpec('refs', REF_SPEC_YAML)
 
     const {stdout} = await testCommand(ApiSpecCommand, ['refs', '--schema', 'Thing'])
-    expect(stdout).toContain('type: object')
-    expect(stdout).toContain('id:')
-    expect(stdout).toContain('name:')
+    const parsed = JSON.parse(stdout)
+    expect(parsed).toEqual({
+      properties: {id: {type: 'string'}, name: {type: 'string'}},
+      type: 'object',
+    })
   })
 
-  test('--schema --format=openapi prints YAML (matches default)', async () => {
-    // The `--format=openapi` flag is shorthand for "raw OpenAPI source",
-    // which is YAML. `--schema` slices the schema and prints the same
-    // YAML — locking in the documented default ("default: YAML").
+  test('--schema --format=yaml prints the schema as YAML', async () => {
     mockIndexAndSpec('refs', REF_SPEC_YAML)
 
     const {stdout} = await testCommand(ApiSpecCommand, [
       'refs',
       '--schema',
       'Thing',
-      '--format=openapi',
+      '--format=yaml',
     ])
     expect(stdout).toContain('type: object')
     expect(stdout).toContain('id:')
+    expect(stdout).toContain('name:')
+    // YAML output, not JSON: opening character is not `{`.
     expect(stdout.trim().startsWith('{')).toBe(false)
   })
 
-  test('--schema --format=json prints the schema as JSON', async () => {
+  test('--schema --format=json prints the schema as JSON (matches default)', async () => {
     mockIndexAndSpec('refs', REF_SPEC_YAML)
 
     const {stdout} = await testCommand(ApiSpecCommand, [

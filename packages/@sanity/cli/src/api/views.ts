@@ -40,11 +40,14 @@ interface OperationJsonRow {
   isStreaming: boolean
   method: string
   operationId: string
+  /** Names only — query params are split required/optional in the spec view. */
+  optionalQueryParams: string[]
   /** Names only — the rich shape lives in `sanity api spec`. */
   pathParams: string[]
   /** Names only — query params are split required/optional in the spec view. */
   requiredQueryParams: string[]
   spec: string
+  /** Falls back to the operation's description when `summary` is empty. */
   summary: string
 }
 
@@ -56,10 +59,11 @@ export function toOperationJsonRow(op: OperationIndexEntry): OperationJsonRow {
     isStreaming: op.isStreaming,
     method: op.method,
     operationId: op.operationId,
+    optionalQueryParams: op.queryParams.filter((p) => !p.required).map((p) => p.name),
     pathParams: op.pathParams.map((p) => p.name),
     requiredQueryParams: op.queryParams.filter((p) => p.required).map((p) => p.name),
     spec: op.spec,
-    summary: op.summary,
+    summary: op.summary || op.description,
   }
 }
 

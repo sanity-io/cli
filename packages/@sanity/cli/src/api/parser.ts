@@ -110,10 +110,14 @@ export interface ParsedOperation {
   isStreaming: boolean
   /** Uppercase HTTP method: `GET`, `POST`, … */
   method: string
+  /**
+   * Native OpenAPI path with `{name}` placeholders, e.g.
+   * `/jobs/{jobId}`. The callable form lives on `endpoint` —
+   * `openApiPath` is here for cross-referencing the upstream OpenAPI
+   * document, not for passing back to `sanity api <endpoint>`.
+   */
+  openApiPath: string
   operationId: string
-  optionalQueryParams: string[]
-  /** Native OpenAPI path with `{name}` placeholders. */
-  path: string
   pathParams: ParsedParam[]
   queryParams: ParsedParam[]
   requestBody: ParsedRequestBody | null
@@ -305,9 +309,8 @@ export async function parseOpenApi(slug: string, yaml: string): Promise<ParsedSp
         headerParams,
         isStreaming: isStreamingResponse(responses),
         method: methodUpper,
+        openApiPath: rawPath,
         operationId,
-        optionalQueryParams,
-        path: rawPath,
         pathParams,
         queryParams,
         requestBody: extractRequestBody(op, {operationId, specSlug: slug}),
@@ -409,7 +412,7 @@ export async function loadOperationsIndexOrThrow(
 function sortOperations(entries: OperationIndexEntry[]): OperationIndexEntry[] {
   return entries.toSorted((a, b) => {
     if (a.spec !== b.spec) return a.spec < b.spec ? -1 : 1
-    if (a.path !== b.path) return a.path < b.path ? -1 : 1
+    if (a.openApiPath !== b.openApiPath) return a.openApiPath < b.openApiPath ? -1 : 1
     return a.method < b.method ? -1 : a.method > b.method ? 1 : 0
   })
 }

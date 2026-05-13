@@ -40,25 +40,34 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
       description: 'Print one component schema by name (follow a `$ref` pointer)',
     },
     {
+      command:
+        '<%= config.bin %> <%= command.id %> agent-actions --schema GenerateInclude --format=yaml',
+      description: 'Same, but emit the schema as raw YAML (human-friendly)',
+    },
+    {
       command: '<%= config.bin %> <%= command.id %> jobs --web',
-      description: 'Open the spec docs page in browser',
+      description: 'Open the spec docs page in browser (human-only; no machine output)',
     },
   ]
 
   static override flags = {
     format: Flags.string({
       description:
-        'Output mode. Default (no flag) is the human view. ' +
-        '`json` = structured per-operation JSON. `openapi` = raw OpenAPI YAML.',
-      options: ['json', 'openapi'],
+        'Output mode. Default (no flag) is the human view for the whole spec, ' +
+        'or JSON for `--schema`. `json` = structured per-operation JSON. ' +
+        '`openapi` = raw OpenAPI YAML. `yaml` = YAML output of `--schema` (no effect otherwise).',
+      options: ['json', 'openapi', 'yaml'],
     }),
     operation: Flags.string({description: 'Narrow to a single operation by operationId'}),
     schema: Flags.string({
       description:
         'Print one `components.schemas.<name>` entry. Use this to follow `$ref` pointers ' +
-        'surfaced in operation output. Honors `--format` (default: YAML).',
+        'surfaced in operation output. Defaults to JSON; pass `--format=yaml` for YAML.',
     }),
-    web: Flags.boolean({char: 'w', description: 'Open the spec docs page in browser'}),
+    web: Flags.boolean({
+      char: 'w',
+      description: 'Open the spec docs page in browser (human-only; no machine output)',
+    }),
   }
 
   public async run(): Promise<void> {
@@ -128,11 +137,14 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
       )
     }
     const schema = schemas[name]
-    if (format === 'json') {
-      this.log(JSON.stringify(schema, null, 2))
+    // Default to JSON for `--schema`. The primary consumer following a
+    // `$ref` pointer is going to be an agent — JSON is parseable
+    // without a YAML library. Humans opt into YAML with `--format=yaml`.
+    if (format === 'yaml') {
+      this.log(stringifyYaml(schema))
       return
     }
-    this.log(stringifyYaml(schema))
+    this.log(JSON.stringify(schema, null, 2))
   }
 
   private selectOperations(parsed: ParsedSpec, operationFilter?: string): ParsedOperation[] {
