@@ -16,12 +16,12 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
   }
 
   static override description =
-    'Inspect a public Sanity HTTP spec — human view (default), per-operation JSON, or raw OpenAPI YAML'
+    'Inspect a Sanity HTTP API spec — structured view by default, per-operation JSON, or raw OpenAPI YAML'
 
   static override examples = [
     {
       command: '<%= config.bin %> <%= command.id %> jobs',
-      description: 'Default: human-readable structured view of every operation',
+      description: 'Show a structured view of every operation in the spec',
     },
     {
       command: '<%= config.bin %> <%= command.id %> jobs --format=json',
@@ -29,7 +29,7 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     },
     {
       command: '<%= config.bin %> <%= command.id %> jobs --format=openapi',
-      description: 'Raw OpenAPI YAML — the canonical spec source',
+      description: 'Raw OpenAPI YAML',
     },
     {
       command: '<%= config.bin %> <%= command.id %> jobs --operation=jobStatus',
@@ -42,7 +42,7 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     {
       command:
         '<%= config.bin %> <%= command.id %> agent-actions --schema GenerateInclude --format=yaml',
-      description: 'Same, but emit the schema as raw YAML (human-friendly)',
+      description: 'Print the schema as YAML instead of JSON',
     },
     {
       command: '<%= config.bin %> <%= command.id %> jobs --web',
@@ -53,16 +53,15 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
   static override flags = {
     format: Flags.string({
       description:
-        'Output mode. Default (no flag) is the human view for the whole spec, ' +
-        'or JSON for `--schema`. `json` = structured per-operation JSON. ' +
-        '`openapi` = raw OpenAPI YAML. `yaml` = YAML output of `--schema` (no effect otherwise).',
+        'Output format: `json` for per-operation JSON, `openapi` for raw OpenAPI YAML, ' +
+        '`yaml` for YAML output (paired with `--schema`; no effect otherwise).',
       options: ['json', 'openapi', 'yaml'],
     }),
     operation: Flags.string({description: 'Narrow to a single operation by operationId'}),
     schema: Flags.string({
       description:
-        'Print one `components.schemas.<name>` entry. Use this to follow `$ref` pointers ' +
-        'surfaced in operation output. Defaults to JSON; pass `--format=yaml` for YAML.',
+        'Print one named component schema. Use this to follow `$ref` pointers from ' +
+        'operation output. JSON by default; pass `--format=yaml` for YAML.',
     }),
     web: Flags.boolean({
       char: 'w',
@@ -86,8 +85,8 @@ export class ApiSpecCommand extends SanityCommand<typeof ApiSpecCommand> {
     // typo in `--operation` doesn't silently succeed.
     if (flags.format === 'openapi' && flags.operation) {
       this.error(
-        '`--operation` is not compatible with `--format=openapi` — the raw OpenAPI ' +
-          'YAML is a byte-for-byte passthrough. Drop one of the flags.',
+        'Cannot narrow `--format=openapi` output — it is the raw upstream YAML. ' +
+          'Drop `--operation` or pick another format.',
         {exit: 1},
       )
     }

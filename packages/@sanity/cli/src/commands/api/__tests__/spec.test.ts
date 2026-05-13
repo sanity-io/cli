@@ -144,10 +144,10 @@ describe('#api:spec', () => {
   })
 
   test('--operation conflicts with --format=openapi', async () => {
-    // The raw YAML passthrough is byte-for-byte by design — narrowing it to
-    // a single operation would either silently produce a mismatched output
-    // or require slicing the YAML. We refuse upfront so a typo in
-    // `--operation` doesn't succeed silently. No index fetch should
+    // The raw YAML passthrough is the upstream spec verbatim — narrowing
+    // to a single operation would either silently produce a mismatched
+    // output or require slicing the YAML. We refuse upfront so a typo
+    // in `--operation` doesn't succeed silently. No index fetch should
     // happen for this argv combo.
     const {error} = await testCommand(ApiSpecCommand, [
       'jobs',
@@ -155,7 +155,7 @@ describe('#api:spec', () => {
       '--format=openapi',
     ])
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('not compatible with `--format=openapi`')
+    expect(error?.message).toContain('Cannot narrow `--format=openapi`')
   })
 
   test('--operation errors with known operationIds on unknown id', async () => {
