@@ -267,8 +267,12 @@ describe('#api:call', () => {
 
   test('refuses DELETE in unattended mode without --yes', async () => {
     mockIndexAndSpecs([{slug: 'projects', yaml: PROJECTS_YAML}])
-    // Force unattended.
-    const isUnattended = vi.spyOn(SanityCommand.prototype as never, 'isUnattended')
+    // Force unattended. `isUnattended` is `protected` on SanityCommand;
+    // the cast through `unknown` is the simplest path to vi.spyOn.
+    const isUnattended = vi.spyOn(
+      SanityCommand.prototype as unknown as {isUnattended: () => boolean},
+      'isUnattended',
+    )
     isUnattended.mockReturnValue(true)
 
     vi.mocked(getCliToken).mockResolvedValueOnce('user-token')

@@ -3,17 +3,13 @@ import {getCliToken, SanityCommand, subdebug} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {loadOperationsIndex, type OperationIndexEntry} from '../../api/parser.js'
-import {buildQueryString, sendApiRequest} from '../../api/request.js'
-import {
-  fillPlaceholders,
-  findUnfilledPlaceholders,
-  resolveEndpoint,
-} from '../../api/resolveEndpoint.js'
+import {type PreflightIssue, runPreflight} from '../../api/preflight.js'
+import {buildRequestUrl, sendApiRequest} from '../../api/request.js'
+import {resolveEndpoint} from '../../api/resolveEndpoint.js'
 
 const debug = subdebug('api:call')
 
 const DESTRUCTIVE_METHODS = new Set(['DELETE', 'PATCH', 'PUT'])
-const BODY_METHODS = new Set(['PATCH', 'POST', 'PUT'])
 
 /**
  * Default command for the `api` topic — `sanity api <endpoint>`.
@@ -23,10 +19,9 @@ const BODY_METHODS = new Set(['PATCH', 'POST', 'PUT'])
  * that `sanity api list` rendered, plus standard request flags
  * (`-X`, `-q`, `--token`, `--project`, `--dataset`, `--json`, `--yes`).
  *
- * Phase 2 of the spec — see [spec doc, Phase 2]. POST/PUT/PATCH with
- * no body flags error before sending and name Phase 4 (body
- * construction). Destructive ops (PATCH/PUT/DELETE) prompt
- * interactively, refuse in unattended mode without `--yes`.
+ * The command itself is the orchestration shell: load index → resolve
+ * match → run preflight → destructive guard → build URL → send →
+ * render. Each step lives behind its own seam in `src/api/`.
  */
 export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
   static override args = {
@@ -87,29 +82,15 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     const {args, flags} = await this.parse(ApiCallCommand)
 
     const index = await this.loadIndex()
-    const matched = this.resolveMatch(args.endpoint, flags.method, index)
-    const {inlineQuery, operation, path} = matched
+    const {inlineQuery, operation, path} = this.resolveMatch(args.endpoint, flags.method, index)
 
-    // Body methods without `-f`/`-F`/`--input` (which ship in Phase 4)
-    // get a clean upfront error — fires before the destructive guard so
-    // we don't mask the missing-body case for PATCH/PUT.
-    if (BODY_METHODS.has(operation.method)) {
-      this.error(
-        `${operation.method} needs a request body. ` +
-          'Body construction (`-f`, `-F`, `--input`) ships in Phase 4.',
-        {exit: 1},
-      )
-    }
+    const context = collectContextValues(flags)
+    const queryFlags = flags.query ?? []
 
-    const contextValues = this.collectContextValues(flags)
-    const resolvedPath = fillPlaceholders(path, contextValues)
-    const resolvedHost = fillPlaceholders(operation.serverTemplate, contextValues)
+    const issues = runPreflight({context, inlineQuery, queryFlags, resolved: {operation, path}})
+    if (issues.length > 0) this.reportPreflight(issues[0], operation)
 
-    this.assertNoUnfilledPlaceholders(resolvedPath, resolvedHost, operation)
-    this.assertRequiredQueryParamsPresent(operation, inlineQuery, flags.query ?? [])
-
-    const queryString = buildQueryString(inlineQuery, flags.query ?? [])
-    const url = this.buildOutboundUrl(resolvedHost, resolvedPath, queryString)
+    const url = buildRequestUrl({context, inlineQuery, operation, path, queryFlags})
 
     if (DESTRUCTIVE_METHODS.has(operation.method)) {
       await this.confirmDestructive(operation.method, url, flags.yes ?? false)
@@ -121,98 +102,11 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
   }
 
   /* -------------------------------------------------------------------- *
-   *  Resolution                                                           *
+   *  Each step is a thin oclif translation around a seam in src/api/.
+   *  Resolution, preflight, URL assembly, send, and render all live
+   *  outside the command — keeps this file focused on flag parsing,
+   *  error copy, and the destructive prompt.
    * -------------------------------------------------------------------- */
-
-  private assertNoUnfilledPlaceholders(
-    resolvedPath: string,
-    resolvedHost: string,
-    operation: OperationIndexEntry,
-  ): void {
-    const unfilled = [
-      ...findUnfilledPlaceholders(resolvedPath),
-      ...findUnfilledPlaceholders(resolvedHost),
-    ]
-    if (unfilled.length === 0) return
-
-    const unique = [...new Set(unfilled)]
-    const contextHints = unique.filter((name) =>
-      ['dataset', 'organizationId', 'projectId'].includes(name),
-    )
-    const nonContext = unique.filter((name) => !contextHints.includes(name))
-
-    const lines = [`Unfilled path placeholder(s): ${unique.map((n) => `:${n}`).join(', ')}`]
-    if (contextHints.length > 0) {
-      lines.push(
-        `Hint: pass --${contextHints[0] === 'projectId' ? 'project' : contextHints[0]}=<value>, ` +
-          `set SANITY_${contextHints[0] === 'projectId' ? 'PROJECT_ID' : contextHints[0].toUpperCase()}, ` +
-          'or run from a directory with `sanity.cli.ts`.',
-      )
-    }
-    if (nonContext.length > 0) {
-      lines.push(
-        `Hint: substitute the value directly in the endpoint string ` +
-          `(e.g. ${operation.endpoint.replaceAll(/:(\w+)/g, '<$1>')}).`,
-      )
-    }
-    this.error(lines.join('\n'), {exit: 1})
-  }
-
-  private assertRequiredQueryParamsPresent(
-    operation: OperationIndexEntry,
-    inlineQuery: string,
-    flagPairs: readonly string[],
-  ): void {
-    const provided = new Set<string>()
-    if (inlineQuery) for (const [key] of new URLSearchParams(inlineQuery)) provided.add(key)
-    for (const pair of flagPairs) {
-      const eq = pair.indexOf('=')
-      if (eq !== -1) provided.add(pair.slice(0, eq))
-    }
-
-    const missing = operation.queryParams
-      .filter((p) => p.required && !provided.has(p.name))
-      .map((p) => p.name)
-    if (missing.length === 0) return
-
-    this.error(
-      `Missing required query parameter(s): ${missing.join(', ')}\n` +
-        `Hint: pass with -q name=value. See: sanity api spec ${operation.spec} ` +
-        `--operation=${operation.operationId} --format=json`,
-      {exit: 1},
-    )
-  }
-
-  /* -------------------------------------------------------------------- *
-   *  Placeholders / pre-flight validation                                 *
-   * -------------------------------------------------------------------- */
-
-  private buildOutboundUrl(host: string, path: string, queryString: string): string {
-    // `host` already includes the api-version segment from the server
-    // URL. `path` starts with the api-version segment too — strip the
-    // overlap before concatenating.
-    const hostPath = new URL(host).pathname.replaceAll(/^\/+|\/+$/g, '')
-    const cleanPath = path.replace(/^\/+/, '')
-    const relative =
-      hostPath && cleanPath.startsWith(`${hostPath}/`)
-        ? cleanPath.slice(hostPath.length + 1)
-        : cleanPath
-    const base = host.replace(/\/$/, '')
-    const url = `${base}/${relative}`
-    return queryString ? `${url}?${queryString}` : url
-  }
-
-  private collectContextValues(flags: {
-    dataset?: string
-    project?: string
-  }): Record<string, string> {
-    const values: Record<string, string> = {}
-    const project = flags.project ?? process.env.SANITY_PROJECT_ID
-    const dataset = flags.dataset ?? process.env.SANITY_DATASET
-    if (project) values.projectId = project
-    if (dataset) values.dataset = dataset
-    return values
-  }
 
   private async confirmDestructive(method: string, url: string, yes: boolean): Promise<void> {
     if (yes) return
@@ -235,10 +129,6 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     }
   }
 
-  /* -------------------------------------------------------------------- *
-   *  URL assembly                                                         *
-   * -------------------------------------------------------------------- */
-
   private async loadIndex(): Promise<OperationIndexEntry[]> {
     try {
       return await loadOperationsIndex()
@@ -247,10 +137,6 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       this.error('The OpenAPI service is currently unavailable. Try again later.', {exit: 1})
     }
   }
-
-  /* -------------------------------------------------------------------- *
-   *  Destructive guard                                                    *
-   * -------------------------------------------------------------------- */
 
   private renderResponse(
     response: {body: string; contentType: string; status: number},
@@ -285,9 +171,26 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     this.log(response.body)
   }
 
-  /* -------------------------------------------------------------------- *
-   *  Auth / send / render                                                 *
-   * -------------------------------------------------------------------- */
+  /** Translate a single preflight issue into a friendly error + exit. */
+  private reportPreflight(issue: PreflightIssue, operation: OperationIndexEntry): never {
+    if (issue.kind === 'body-not-yet-supported') {
+      this.error(
+        `${issue.method} needs a request body. ` +
+          'Body construction (`-f`, `-F`, `--input`) ships in Phase 4.',
+        {exit: 1},
+      )
+    }
+    if (issue.kind === 'unfilled-placeholder') {
+      this.error(formatUnfilledPlaceholders(issue.names, operation), {exit: 1})
+    }
+    // missing-required-query
+    this.error(
+      `Missing required query parameter(s): ${issue.names.join(', ')}\n` +
+        `Hint: pass with -q name=value. See: sanity api spec ${operation.spec} ` +
+        `--operation=${operation.operationId} --format=json`,
+      {exit: 1},
+    )
+  }
 
   private resolveMatch(
     rawEndpoint: string,
@@ -304,7 +207,6 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
         {exit: 1},
       )
     }
-    // no-path-match
     this.error(
       `No spec found owning path "${result.userPath}".\n` +
         'Hint: run `sanity api list` to see valid endpoints.',
@@ -326,4 +228,42 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       this.error(`Request failed: ${(error as Error).message ?? String(error)}`, {exit: 1})
     }
   }
+}
+
+/* ---------------------------------------------------------------------- *
+ *  Pure helpers (no command coupling)                                     *
+ * ---------------------------------------------------------------------- */
+
+function collectContextValues(flags: {dataset?: string; project?: string}): Record<string, string> {
+  const values: Record<string, string> = {}
+  const project = flags.project ?? process.env.SANITY_PROJECT_ID
+  const dataset = flags.dataset ?? process.env.SANITY_DATASET
+  if (project) values.projectId = project
+  if (dataset) values.dataset = dataset
+  return values
+}
+
+function formatUnfilledPlaceholders(names: string[], operation: OperationIndexEntry): string {
+  const contextNames = names.filter((name) =>
+    ['dataset', 'organizationId', 'projectId'].includes(name),
+  )
+  const nonContext = names.filter((name) => !contextNames.includes(name))
+
+  const lines = [`Unfilled path placeholder(s): ${names.map((n) => `:${n}`).join(', ')}`]
+  if (contextNames.length > 0) {
+    const hint = contextNames[0]
+    const flag = hint === 'projectId' ? 'project' : hint
+    const env = `SANITY_${hint === 'projectId' ? 'PROJECT_ID' : hint.toUpperCase()}`
+    lines.push(
+      `Hint: pass --${flag}=<value>, set ${env}, ` +
+        'or run from a directory with `sanity.cli.ts`.',
+    )
+  }
+  if (nonContext.length > 0) {
+    lines.push(
+      'Hint: substitute the value directly in the endpoint string ' +
+        `(e.g. ${operation.endpoint.replaceAll(/:(\w+)/g, '<$1>')}).`,
+    )
+  }
+  return lines.join('\n')
 }

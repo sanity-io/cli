@@ -1,0 +1,102 @@
+/**
+ * Pre-flight validation for `sanity api <endpoint>` — pure checks
+ * that run before any network call, so failures show up as fast,
+ * specific errors instead of a server-side 4xx round-trip.
+ *
+ * The goal is for agents (and humans) to get the same precise
+ * feedback the spec-discovery command would, without ever sending
+ * the doomed request.
+ *
+ * Each check returns a `PreflightIssue` rather than throwing — the
+ * command layer translates issues into oclif `this.error()` messages.
+ * Keeping issue _data_ separate from error _copy_ lets the tests
+ * assert behavior without coupling to message strings.
+ *
+ * Future phases add more issue kinds: body-schema validation (Phase 4),
+ * `--dry-run` (Phase 5, which runs preflight + skips the send).
+ */
+
+import {type OperationIndexEntry} from './parser.js'
+import {fillPlaceholders, findUnfilledPlaceholders} from './resolveEndpoint.js'
+
+/** Method kinds that need a request body. Body construction lands in Phase 4. */
+const BODY_METHODS = new Set(['PATCH', 'POST', 'PUT'])
+
+export type PreflightIssue =
+  | {kind: 'body-not-yet-supported'; method: string}
+  | {kind: 'missing-required-query'; names: string[]}
+  | {kind: 'unfilled-placeholder'; names: string[]}
+
+export interface PreflightInputs {
+  /**
+   * `--project` / `--dataset` values + env-var fallbacks. Used to
+   * fill `:projectId` / `:dataset` placeholders in the host + path
+   * before checking what's still unfilled.
+   */
+  context: Record<string, string>
+  /** Inline query string from the user's endpoint argument (no leading `?`). */
+  inlineQuery: string
+  /** Repeatable `-q key=value` flag values (as passed by the user). */
+  queryFlags: readonly string[]
+  /** The matched operation (with `serverTemplate`, `queryParams`, etc.). */
+  resolved: {operation: OperationIndexEntry; path: string}
+}
+
+/**
+ * Collect every reason the request can't be sent yet. Returns an
+ * empty array when the request is good to go.
+ *
+ * Issues come back in source-of-friction order: body-not-yet-supported
+ * first (fires before destructive-guard masking), then unfilled
+ * placeholders (caller probably forgot a substitution), then
+ * missing required query params (caller probably didn't read the spec).
+ */
+export function runPreflight(inputs: PreflightInputs): PreflightIssue[] {
+  const {context, inlineQuery, queryFlags, resolved} = inputs
+  const issues: PreflightIssue[] = []
+
+  // Order matters: body gate first so PATCH/PUT without a body doesn't
+  // get a misleading "missing required query param" message instead.
+  if (BODY_METHODS.has(resolved.operation.method)) {
+    issues.push({kind: 'body-not-yet-supported', method: resolved.operation.method})
+  }
+
+  const unfilled = collectUnfilledPlaceholders(resolved, context)
+  if (unfilled.length > 0) {
+    issues.push({kind: 'unfilled-placeholder', names: unfilled})
+  }
+
+  const missing = collectMissingRequiredQuery(resolved.operation, inlineQuery, queryFlags)
+  if (missing.length > 0) {
+    issues.push({kind: 'missing-required-query', names: missing})
+  }
+
+  return issues
+}
+
+function collectUnfilledPlaceholders(
+  resolved: {operation: OperationIndexEntry; path: string},
+  context: Record<string, string>,
+): string[] {
+  const filledPath = fillPlaceholders(resolved.path, context)
+  const filledHost = fillPlaceholders(resolved.operation.serverTemplate, context)
+  const unfilled = [
+    ...findUnfilledPlaceholders(filledPath),
+    ...findUnfilledPlaceholders(filledHost),
+  ]
+  return [...new Set(unfilled)]
+}
+
+function collectMissingRequiredQuery(
+  operation: OperationIndexEntry,
+  inlineQuery: string,
+  queryFlags: readonly string[],
+): string[] {
+  const provided = new Set<string>()
+  if (inlineQuery) for (const [key] of new URLSearchParams(inlineQuery)) provided.add(key)
+  for (const pair of queryFlags) {
+    const eq = pair.indexOf('=')
+    if (eq !== -1) provided.add(pair.slice(0, eq))
+  }
+  return operation.queryParams.filter((p) => p.required && !provided.has(p.name)).map((p) => p.name)
+}

@@ -1,14 +1,23 @@
 /**
  * Outbound HTTP for `sanity api <endpoint>`.
  *
- * Single seam responsible for: bearer-token auth, the `tag` query
- * param the Sanity backend logs for MCP-fallback telemetry, request
- * timeout, and turning the raw response into a status/contentType/body
- * triple for the command layer to render.
+ * Two named seams:
  *
- * Knows nothing about endpoint matching, placeholder resolution, or
+ *   - `buildRequestUrl` assembles the final URL — fills host + path
+ *     placeholders from caller context, strips the api-version
+ *     overlap between the server template and the operation path,
+ *     and merges inline + flag query params with the CLI's
+ *     telemetry tag. Single point where every URL-shape decision
+ *     lives.
+ *   - `sendApiRequest` runs the actual fetch — bearer-token auth,
+ *     timeout, status/contentType/body triple for the renderer.
+ *
+ * Knows nothing about endpoint matching, preflight validation, or
  * how the user invoked the CLI.
  */
+
+import {type OperationIndexEntry} from './parser.js'
+import {fillPlaceholders} from './resolveEndpoint.js'
 
 const FETCH_TIMEOUT_MS = 60_000
 
@@ -31,39 +40,65 @@ interface ApiResponse {
   status: number
 }
 
-/**
- * Send an API request. Throws on network errors / timeouts so callers
- * can surface a friendly "service unreachable" message. Non-2xx
- * statuses come back as a regular `ApiResponse` — callers decide
- * whether to error.
- */
-export async function sendApiRequest(request: ApiRequest): Promise<ApiResponse> {
-  const headers: Record<string, string> = {}
-  if (request.token) headers.Authorization = `Bearer ${request.token}`
+/* ---------------------------------------------------------------------- *
+ *  URL assembly                                                           *
+ * ---------------------------------------------------------------------- */
 
-  const response = await fetch(request.url, {
-    headers,
-    method: request.method,
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  })
-
-  return {
-    body: await response.text(),
-    contentType: response.headers.get('content-type') ?? '',
-    status: response.status,
-  }
+interface BuildRequestUrlInputs {
+  /**
+   * `--project` / `--dataset` values + env-var fallbacks. Used to
+   * substitute `:projectId` / `:dataset` placeholders in the host
+   * + path.
+   */
+  context: Record<string, string>
+  /** Inline query string from the user's endpoint argument (no leading `?`). */
+  inlineQuery: string
+  /** The matched operation entry — provides `serverTemplate` and the path template. */
+  operation: OperationIndexEntry
+  /** The user's path (after `{name}` → `:name` normalization), pre-substitution. */
+  path: string
+  /** Repeatable `-q key=value` flag values. */
+  queryFlags: readonly string[]
 }
 
 /**
- * Build the final outbound query string by merging inline-query +
- * `-q` flags, then add the CLI's telemetry tag. `-q` wins on key
- * conflict with inline. A user-supplied `tag=…` (either form) is
- * respected — we don't override it.
+ * Build the final outbound URL.
  *
- * Repeated keys are preserved (server-side array semantics):
- * `-q tag=a -q tag=b` → `tag=a&tag=b`.
+ * Composition order (subtle; the api-version overlap-stripping is the
+ * easy-to-get-wrong part):
+ *
+ *   1. Fill `:name` placeholders in host + path from `context`.
+ *   2. Strip the api-version segment from the path if the host already
+ *      includes it. Real-world specs put the api-version in EITHER
+ *      `servers[0].url` (e.g. `https://api.sanity.io/v2021-06-07`) or
+ *      as the leading segment of every operation path (e.g.
+ *      `/v2026-04-27/organizations/{org}/…`). The path template emitted
+ *      by `parser.ts` always carries the version, so when the host has
+ *      it too we'd double up without the strip.
+ *   3. Merge query params: inline first (lower precedence), `-q` flags
+ *      next (override on key conflict, preserve repetition for array
+ *      semantics), telemetry tag last (unless the user set one).
  */
-export function buildQueryString(inline: string, flagPairs: readonly string[]): string {
+export function buildRequestUrl(inputs: BuildRequestUrlInputs): string {
+  const {context, inlineQuery, operation, path, queryFlags} = inputs
+
+  const resolvedHost = fillPlaceholders(operation.serverTemplate, context)
+  const resolvedPath = fillPlaceholders(path, context)
+
+  const hostPath = new URL(resolvedHost).pathname.replaceAll(/^\/+|\/+$/g, '')
+  const cleanPath = resolvedPath.replace(/^\/+/, '')
+  const relative =
+    hostPath && cleanPath.startsWith(`${hostPath}/`)
+      ? cleanPath.slice(hostPath.length + 1)
+      : cleanPath
+
+  const base = resolvedHost.replace(/\/$/, '')
+  const url = `${base}/${relative}`
+  const queryString = buildQueryString(inlineQuery, queryFlags)
+  return queryString ? `${url}?${queryString}` : url
+}
+
+function buildQueryString(inline: string, flagPairs: readonly string[]): string {
   const params = new URLSearchParams()
 
   // Inline first (lower precedence on conflict).
@@ -92,4 +127,31 @@ export function buildQueryString(inline: string, flagPairs: readonly string[]): 
   }
 
   return params.toString()
+}
+
+/* ---------------------------------------------------------------------- *
+ *  Send                                                                   *
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Send an API request. Throws on network errors / timeouts so callers
+ * can surface a friendly "service unreachable" message. Non-2xx
+ * statuses come back as a regular `ApiResponse` — callers decide
+ * whether to error.
+ */
+export async function sendApiRequest(request: ApiRequest): Promise<ApiResponse> {
+  const headers: Record<string, string> = {}
+  if (request.token) headers.Authorization = `Bearer ${request.token}`
+
+  const response = await fetch(request.url, {
+    headers,
+    method: request.method,
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  })
+
+  return {
+    body: await response.text(),
+    contentType: response.headers.get('content-type') ?? '',
+    status: response.status,
+  }
 }
