@@ -1,14 +1,12 @@
 import {Args, Flags} from '@oclif/core'
-import {getCliToken, SanityCommand, subdebug} from '@sanity/cli-core'
+import {getCliToken, SanityCommand} from '@sanity/cli-core'
 import {confirm} from '@sanity/cli-core/ux'
 
 import {buildRequestBody, parseHeaderFlags} from '../../api/body.js'
-import {loadOperationsIndex, type OperationIndexEntry} from '../../api/parser.js'
+import {loadOperationsIndexOrThrow, type OperationIndexEntry} from '../../api/parser.js'
 import {type PreflightIssue, runPreflight} from '../../api/preflight.js'
 import {buildRequestUrl, sendApiRequest, streamApiResponse} from '../../api/request.js'
 import {resolveEndpoint} from '../../api/resolveEndpoint.js'
-
-const debug = subdebug('api:call')
 
 const DESTRUCTIVE_METHODS = new Set(['DELETE', 'PATCH', 'PUT'])
 
@@ -124,7 +122,7 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     const queryFlags = flags.query ?? []
     this.validateQueryFlags(queryFlags)
 
-    const index = await this.loadIndex()
+    const index = await loadOperationsIndexOrThrow()
     const {inlineQuery, operation, path} = this.resolveMatch(args.endpoint, flags.method, index)
 
     const context = collectContextValues(flags)
@@ -133,8 +131,13 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     if (issues.length > 0) this.reportPreflight(issues[0], operation)
 
     const url = buildRequestUrl({context, inlineQuery, operation, path, queryFlags})
-    const {body, contentType} = await this.buildBody(operation.method, flags)
-    const extraHeaders = this.parseHeaders(flags.header ?? [])
+    const {body, contentType} = await buildRequestBody({
+      fieldPairs: flags.field ?? [],
+      filePairs: flags.fieldFile ?? [],
+      inputPath: flags.input ?? null,
+      method: operation.method,
+    })
+    const extraHeaders = parseHeaderFlags(flags.header ?? [])
     const token = await this.resolveToken(flags.token)
 
     // `--dry-run` prints the assembled request and exits before any
@@ -159,11 +162,12 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     }
 
     if (flags.stream) {
-      await this.streamRequest(apiRequest)
+      const {status} = await streamApiResponse(apiRequest, (chunk) => process.stdout.write(chunk))
+      if (status >= 400) this.exit(1)
       return
     }
 
-    const response = await this.sendRequest(apiRequest)
+    const response = await sendApiRequest(apiRequest)
     this.renderResponse(response, flags.json ?? false)
   }
 
@@ -173,28 +177,6 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
    *  outside the command — keeps this file focused on flag parsing,
    *  error copy, and the destructive prompt.
    * -------------------------------------------------------------------- */
-
-  /**
-   * Translate `-f` / `-F` / `--input` flags into a request body.
-   * Errors from `buildRequestBody` already carry user-facing copy —
-   * just forward them through `this.error()`.
-   */
-  private async buildBody(
-    method: string,
-    flags: {field?: string[]; fieldFile?: string[]; input?: string},
-  ): Promise<{body: string | null; contentType: string | null}> {
-    try {
-      return await buildRequestBody({
-        fieldPairs: flags.field ?? [],
-        filePairs: flags.fieldFile ?? [],
-        inputPath: flags.input ?? null,
-        method,
-      })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      this.error(message, {exit: 1})
-    }
-  }
 
   /**
    * Destructive-op guard. `isUnattended()` is the single source of truth
@@ -221,24 +203,6 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       message: `This will ${method} ${displayUrl}. Continue?`,
     })
     if (!confirmed) this.error('Aborted.', {exit: 1})
-  }
-
-  private async loadIndex(): Promise<OperationIndexEntry[]> {
-    try {
-      return await loadOperationsIndex()
-    } catch (error) {
-      debug('failed to load operations index', error)
-      this.error('The OpenAPI service is currently unavailable. Try again later.', {exit: 1})
-    }
-  }
-
-  private parseHeaders(headerFlags: readonly string[]): Record<string, string> {
-    try {
-      return parseHeaderFlags(headerFlags)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      this.error(message, {exit: 1})
-    }
   }
 
   /**
@@ -357,7 +321,7 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       )
     }
     this.error(
-      `No spec found owning path "${result.userPath}".\n` +
+      `No operation matches path "${result.userPath}".\n` +
         'Hint: run `sanity api list` to see valid endpoints.',
       {exit: 1},
     )
@@ -367,50 +331,6 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     if (override) return override
     const stored = await getCliToken()
     return stored ?? null
-  }
-
-  private async sendRequest(request: {
-    body: string | null
-    contentType: string | null
-    extraHeaders: Record<string, string>
-    method: string
-    token: string | null
-    url: string
-  }) {
-    try {
-      return await sendApiRequest(request)
-    } catch (error) {
-      debug('outbound request failed', error)
-      this.error(`Request failed: ${(error as Error).message ?? String(error)}`, {exit: 1})
-    }
-  }
-
-  /**
-   * Stream the response body to stdout chunk-by-chunk. Used for SSE
-   * endpoints (`isStreaming: true` in `sanity api list`) and any
-   * long-running text response where buffering the whole body would
-   * defeat the point.
-   *
-   * On non-2xx we still emit the chunks (the server's error payload
-   * is often the most useful signal) and exit non-zero afterwards.
-   */
-  private async streamRequest(request: {
-    body: string | null
-    contentType: string | null
-    extraHeaders: Record<string, string>
-    method: string
-    token: string | null
-    url: string
-  }): Promise<void> {
-    let status: number
-    try {
-      const result = await streamApiResponse(request, (chunk) => process.stdout.write(chunk))
-      status = result.status
-    } catch (error) {
-      debug('outbound stream failed', error)
-      this.error(`Request failed: ${(error as Error).message ?? String(error)}`, {exit: 1})
-    }
-    if (status >= 400) this.exit(1)
   }
 
   /**

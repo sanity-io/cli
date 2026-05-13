@@ -280,7 +280,7 @@ describe('#api:call', () => {
       vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
       const {error} = await testCommand(ApiCallCommand, [subcommand])
       expect(error).toBeInstanceOf(Error)
-      expect(error?.message).toContain('No spec found owning path')
+      expect(error?.message).toContain('No operation matches path')
     },
   )
 
@@ -290,7 +290,7 @@ describe('#api:call', () => {
     vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
     const {error} = await testCommand(ApiCallCommand, ['v9999-99-99/something/made/up'])
     expect(error).toBeInstanceOf(Error)
-    expect(error?.message).toContain('No spec found owning path')
+    expect(error?.message).toContain('No operation matches path')
   })
 
   test('accepts {name} placeholder syntax interchangeably with :name', async () => {
