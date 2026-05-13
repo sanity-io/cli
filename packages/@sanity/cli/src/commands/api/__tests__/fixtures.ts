@@ -35,7 +35,6 @@ export function mockIndexAndSpecs(specs: MockSpec[]): void {
     .reply(200, {
       specs: specs.map((s) => ({
         description: '',
-        revision: '',
         slug: s.slug,
         title: s.title ?? s.slug,
       })),

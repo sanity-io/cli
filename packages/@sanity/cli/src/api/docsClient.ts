@@ -31,11 +31,8 @@ export interface OpenApiSpecIndexEntry {
 }
 
 /**
- * Resolve the docs API base URL.
- *
- * Defaults to production. The dev loop points at a Vercel preview via
- * `SANITY_DOCS_API_URL` until the docs-team PR adding the `revision`
- * field merges (see spec, section 5.1).
+ * Resolve the docs API base URL. Defaults to production; override with
+ * `SANITY_DOCS_API_URL` to point at a preview deployment.
  */
 function getDocsApiBaseUrl(): string {
   return process.env.SANITY_DOCS_API_URL || DEFAULT_DOCS_API_URL
@@ -61,7 +58,7 @@ export async function fetchSpecIndex(): Promise<OpenApiSpecIndexEntry[]> {
   }
 
   const body = (await response.json()) as {specs?: unknown}
-  const rawSpecs = Array.isArray(body?.specs) ? body.specs : []
+  const rawSpecs = Array.isArray(body.specs) ? body.specs : []
 
   return rawSpecs.map((raw): OpenApiSpecIndexEntry => {
     const spec = (raw ?? {}) as Record<string, unknown>

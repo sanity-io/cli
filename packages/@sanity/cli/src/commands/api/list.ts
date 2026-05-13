@@ -2,7 +2,7 @@ import {Flags} from '@oclif/core'
 import {SanityCommand} from '@sanity/cli-core'
 import open from 'open'
 
-import {HTTP_REFERENCE_URL} from '../../api/docsClient.js'
+import {docsUrlFor, HTTP_REFERENCE_URL} from '../../api/docsClient.js'
 import {loadOperationsIndexOrThrow, type OperationIndexEntry} from '../../api/parser.js'
 import {printOperationsTable, toOperationJsonRow} from '../../api/views.js'
 
@@ -67,8 +67,12 @@ export class ApiListCommand extends SanityCommand<typeof ApiListCommand> {
     const {flags} = await this.parse(ApiListCommand)
 
     if (flags.web) {
-      this.log(`Opening ${HTTP_REFERENCE_URL}`)
-      await open(HTTP_REFERENCE_URL)
+      // Honor `--spec` when both are passed — opens the per-spec docs
+      // page instead of the index. `docsUrlFor` lives in `docsClient`;
+      // no validation here, the docs site 404s on unknown slugs.
+      const url = flags.spec ? docsUrlFor(flags.spec) : HTTP_REFERENCE_URL
+      this.log(`Opening ${url}`)
+      await open(url)
       return
     }
 
@@ -135,7 +139,11 @@ function formatEmptyMessage(flags: {
     flags.grep && `grep="${flags.grep}"`,
   ].filter(Boolean)
   if (active.length === 0) {
-    return 'No OpenAPI specifications available. The docs service may be unreachable — try again later.'
+    // Reaching this branch means `loadOperationsIndexOrThrow` returned
+    // an empty list — the docs service responded but had no specs to
+    // share. A service outage would have thrown earlier with the
+    // canonical "service unavailable" message.
+    return 'No operations to list.'
   }
   return `No operations match ${active.join(', ')}. Run \`sanity api list\` to see all operations.`
 }

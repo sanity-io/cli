@@ -141,8 +141,8 @@ describe('#api:list', () => {
       .get('/docs/api/openapi')
       .reply(200, {
         specs: [
-          {description: '', revision: '', slug: 'jobs', title: 'Jobs'},
-          {description: '', revision: '', slug: 'mutate', title: 'Mutate'},
+          {description: '', slug: 'jobs', title: 'Jobs'},
+          {description: '', slug: 'mutate', title: 'Mutate'},
         ],
       })
     nock('https://www.sanity.io')
@@ -163,7 +163,7 @@ describe('#api:list', () => {
     nock('https://www.sanity.io')
       .get('/docs/api/openapi')
       .reply(200, {
-        specs: [{description: '', revision: '', slug: 'jobs', title: 'Jobs'}],
+        specs: [{description: '', slug: 'jobs', title: 'Jobs'}],
       })
     // No per-spec mock — the unknown slug shouldn't trigger a fetch.
 
@@ -186,13 +186,22 @@ describe('#api:list', () => {
     expect(error?.message).toContain('OpenAPI service is currently unavailable')
   })
 
+  test('--web --spec opens the per-spec docs page', async () => {
+    // Without `--spec`, `--web` opens the index. With `--spec`, it
+    // should open the spec-specific page — otherwise the flag is
+    // silently dropped.
+    const {stdout} = await testCommand(ApiListCommand, ['--web', '--spec=jobs'])
+    expect(stdout).toContain('Opening https://www.sanity.io/docs/http-reference/jobs')
+    expect(open).toHaveBeenCalledWith('https://www.sanity.io/docs/http-reference/jobs')
+  })
+
   test('skips entries whose spec endpoint returns 404', async () => {
     nock('https://www.sanity.io')
       .get('/docs/api/openapi')
       .reply(200, {
         specs: [
-          {description: '', revision: '', slug: 'jobs', title: 'Jobs'},
-          {description: '', revision: '', slug: 'missing', title: 'Missing'},
+          {description: '', slug: 'jobs', title: 'Jobs'},
+          {description: '', slug: 'missing', title: 'Missing'},
         ],
       })
 
@@ -221,8 +230,8 @@ describe('#api:list', () => {
       .get('/docs/api/openapi')
       .reply(200, {
         specs: [
-          {description: '', revision: '', slug: 'jobs', title: 'Jobs'},
-          {description: '', revision: '', slug: 'broken', title: 'Broken'},
+          {description: '', slug: 'jobs', title: 'Jobs'},
+          {description: '', slug: 'broken', title: 'Broken'},
         ],
       })
 
@@ -249,7 +258,7 @@ describe('#api:list', () => {
       nock('https://preview.sanity.io')
         .get('/docs/api/openapi')
         .reply(200, {
-          specs: [{description: '', revision: '', slug: 'jobs', title: 'Jobs'}],
+          specs: [{description: '', slug: 'jobs', title: 'Jobs'}],
         })
       nock('https://preview.sanity.io')
         .get('/docs/api/openapi/jobs')
@@ -269,7 +278,7 @@ describe('#api:list', () => {
       nock('https://www.sanity.io', {reqheaders: {'x-vercel-protection-bypass': 'secret-token'}})
         .get('/docs/api/openapi')
         .reply(200, {
-          specs: [{description: '', revision: '', slug: 'jobs', title: 'Jobs'}],
+          specs: [{description: '', slug: 'jobs', title: 'Jobs'}],
         })
       nock('https://www.sanity.io', {reqheaders: {'x-vercel-protection-bypass': 'secret-token'}})
         .get('/docs/api/openapi/jobs')

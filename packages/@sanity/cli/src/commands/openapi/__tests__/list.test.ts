@@ -88,5 +88,9 @@ describe('#openapi:list (deprecated, back-compat shape)', () => {
     const {error} = await testCommand(ListOpenApiCommand)
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('OpenAPI service is currently unavailable')
+    // `openapi list` wraps with `this.error(..., {exit: 1})` directly,
+    // so the exit code is on the error. (api/list.ts propagates the
+    // plain Error from the seam, which oclif handles separately.)
+    expect(error?.oclif?.exit).toBe(1)
   })
 })
