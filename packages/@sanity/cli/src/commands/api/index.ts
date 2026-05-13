@@ -40,9 +40,12 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
       description: 'GET an endpoint (default method)',
     },
     {
-      command:
-        '<%= config.bin %> <%= command.id %> v2024-01-01/data/query/:dataset -q "query=*[0]"',
-      description: 'Pass query params via flag (CLI URL-encodes the value)',
+      command: '<%= config.bin %> <%= command.id %> v2024-01-01/data/query/:dataset --query "*[0]"',
+      description: 'Pass a GROQ filter to /data/query or /data/listen',
+    },
+    {
+      command: '<%= config.bin %> <%= command.id %> v2024-01-01/data/query/:dataset -q tag=my-app',
+      description: 'Append an arbitrary query parameter (repeatable, URL-encoded)',
     },
     {
       command:
@@ -106,6 +109,10 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
     }),
     projectId: Flags.string({description: 'Fills `:projectId` placeholders in host or path'}),
     query: Flags.string({
+      description:
+        'GROQ filter — shorthand for `-q query=<value>`. Required for /data/query and /data/listen endpoints.',
+    }),
+    queryParam: Flags.string({
       char: 'q',
       description: 'Repeatable `key=value` query parameter (CLI URL-encodes the value)',
       multiple: true,
@@ -124,8 +131,10 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
   public async run(): Promise<void> {
     const {args, flags} = await this.parse(ApiCallCommand)
 
-    const queryFlags = flags.query ?? []
-    this.validateQueryFlags(queryFlags)
+    const queryParamFlags = flags.queryParam ?? []
+    this.validateQueryFlags(queryParamFlags)
+    const queryFlags =
+      flags.query === undefined ? queryParamFlags : [...queryParamFlags, `query=${flags.query}`]
 
     const index = await loadOperationsIndexOrThrow()
     const {inlineQuery, operation, path} = this.resolveMatch(args.endpoint, flags.method, index)
@@ -293,9 +302,16 @@ export class ApiCallCommand extends SanityCommand<typeof ApiCallCommand> {
   ): never {
     switch (issue.kind) {
       case 'missing-required-query': {
+        // Endpoints with a `query` parameter (e.g. /data/query, /data/listen)
+        // take it as a GROQ filter — the dedicated `--query` flag exists
+        // specifically for that, so we surface it instead of the generic
+        // `-q query=<value>` route when applicable.
+        const hint = issue.names.includes('query')
+          ? `Hint: pass the GROQ filter with --query '<groq>' (e.g. --query '*[_type=="post"]'). For other params, use -q name=value.`
+          : `Hint: pass with -q name=value.`
         this.error(
           `Missing required query parameter(s): ${issue.names.join(', ')}\n` +
-            `Hint: pass with -q name=value. See: sanity api spec ${operation.spec} ` +
+            `${hint}\nSee: sanity api spec ${operation.spec} ` +
             `--operation=${operation.operationId} --format=json`,
           {exit: 1},
         )

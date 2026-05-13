@@ -32,7 +32,10 @@ export interface PreflightInputs {
   context: Record<string, string>
   /** Inline query string from the user's endpoint argument (no leading `?`). */
   inlineQuery: string
-  /** Repeatable `-q key=value` flag values (as passed by the user). */
+  /**
+   * Query-string pairs from the user (`-q key=value` and the dedicated
+   * `--query <groq>` shortcut, after the latter has been folded in).
+   */
   queryFlags: readonly string[]
   /** The matched operation (with `serverTemplate`, `queryParams`, etc.). */
   resolved: {operation: OperationIndexEntry; path: string}

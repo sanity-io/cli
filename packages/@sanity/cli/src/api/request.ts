@@ -67,7 +67,10 @@ interface BuildRequestUrlInputs {
   operation: OperationIndexEntry
   /** The user's path (after `{name}` → `:name` normalization), pre-substitution. */
   path: string
-  /** Repeatable `-q key=value` flag values. */
+  /**
+   * Query-string pairs from the user (`-q key=value` and the dedicated
+   * `--query <groq>` shortcut, after the latter has been folded in).
+   */
   queryFlags: readonly string[]
 }
 

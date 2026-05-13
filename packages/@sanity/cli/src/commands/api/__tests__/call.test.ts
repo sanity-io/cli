@@ -323,6 +323,26 @@ paths:
     ])
     expect(error).toBeInstanceOf(Error)
     expect(error?.message).toContain('Missing required query parameter(s): query')
+    // The required `query` parameter is GROQ on this endpoint, so the
+    // error should point at the dedicated `--query` flag rather than
+    // the generic `-q query=<value>` form.
+    expect(error?.message).toContain("--query '<groq>'")
+  })
+
+  test('--query is sugar for ?query=<value> (GROQ shortcut)', async () => {
+    mockIndexAndSpecs([{slug: 'query', yaml: QUERY_YAML}])
+    nock('https://xyz789.api.sanity.io')
+      .get('/v2024-01-01/data/query/production')
+      .query({query: '*[_type=="post"]', tag: 'sanity.cli.api'})
+      .reply(200, {result: []}, {'content-type': 'application/json'})
+
+    vi.mocked(getCliToken).mockResolvedValueOnce('user-token')
+    await testCommand(ApiCallCommand, [
+      'v2024-01-01/data/query/production',
+      '--projectId=xyz789',
+      '--query',
+      '*[_type=="post"]',
+    ])
   })
 
   test.each(['list', 'spec'])(
